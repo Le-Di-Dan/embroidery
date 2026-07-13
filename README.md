@@ -1,0 +1,94 @@
+# Embroidery Commerce Platform — Product Documentation
+
+**Document set version:** 0.2.1  
+**Status:** Product baseline established  
+**Primary language:** Vietnamese  
+**Purpose:** Nguồn tham chiếu chính thức cho việc phân tích, thiết kế và phát triển hệ thống bằng Claude.
+
+## 1. Mục tiêu của bộ tài liệu
+
+Bộ tài liệu này mô tả sản phẩm, phạm vi, quy trình nghiệp vụ, trải nghiệm người dùng, yêu cầu chất lượng và các ràng buộc đã được xác nhận.
+
+Tech stack nền tảng, cấu trúc repository và coding conventions đã được khóa. Các quyết định còn mở như ORM, queue/broker, canvas library, CI/CD chi tiết, production topology và quy trình delivery với Claude phải được khóa bằng ADR hoặc tài liệu chuyên biệt.
+
+## 2. Thứ tự ưu tiên khi có mâu thuẫn
+
+Khi hai tài liệu có nội dung mâu thuẫn, áp dụng thứ tự sau:
+
+1. `docs/00-PROJECT-CHARTER.md`
+2. `docs/01-PRODUCT-REQUIREMENTS.md`
+3. `docs/04-BUSINESS-RULES.md`
+4. `docs/05-DESIGN-STUDIO-SPEC.md`
+5. `docs/06-ORDER-AND-DESIGN-LIFECYCLE.md`
+6. Các tài liệu còn lại
+
+Mọi thay đổi baseline phải được ghi vào `docs/12-DECISION-LOG.md`.
+
+## 3. Danh sách tài liệu
+
+| Mã | Tài liệu | Mục đích |
+|---|---|---|
+| 00 | [PROJECT CHARTER](docs/00-PROJECT-CHARTER.md) | Tầm nhìn, mục tiêu, nguyên tắc và ranh giới cấp cao |
+| 01 | [PRODUCT REQUIREMENTS](docs/01-PRODUCT-REQUIREMENTS.md) | Yêu cầu sản phẩm chính thức |
+| 02 | [SCOPE AND BOUNDARIES](docs/02-SCOPE-AND-BOUNDARIES.md) | Phạm vi có/không có |
+| 03 | [USER JOURNEYS](docs/03-USER-JOURNEYS.md) | Luồng người dùng đầu-cuối |
+| 04 | [BUSINESS RULES](docs/04-BUSINESS-RULES.md) | Quy tắc kinh doanh bắt buộc |
+| 05 | [DESIGN STUDIO SPEC](docs/05-DESIGN-STUDIO-SPEC.md) | Đặc tả editor thiết kế custom |
+| 06 | [ORDER AND DESIGN LIFECYCLE](docs/06-ORDER-AND-DESIGN-LIFECYCLE.md) | Vòng đời yêu cầu, thiết kế, báo giá và đơn hàng |
+| 07 | [ADMIN OPERATIONS](docs/07-ADMIN-OPERATIONS.md) | Phạm vi vận hành dành cho Admin |
+| 08 | [SEO AND CONTENT](docs/08-SEO-AND-CONTENT.md) | SEO, gallery và nội dung thương mại |
+| 09 | [SECURITY AND ABUSE PREVENTION](docs/09-SECURITY-AND-ABUSE-PREVENTION.md) | Bảo mật và chống lạm dụng editor |
+| 10 | [NON-FUNCTIONAL REQUIREMENTS](docs/10-NON-FUNCTIONAL-REQUIREMENTS.md) | Chất lượng, hiệu năng, độ tin cậy và vận hành |
+| 11 | [DOMAIN GLOSSARY](docs/11-DOMAIN-GLOSSARY.md) | Từ điển nghiệp vụ chuẩn |
+| 12 | [DECISION LOG](docs/12-DECISION-LOG.md) | Nhật ký quyết định đã khóa và vấn đề còn mở |
+| 13 | [ACCEPTANCE PRINCIPLES](docs/13-ACCEPTANCE-PRINCIPLES.md) | Nguyên tắc nghiệm thu về sau |
+
+
+## 3.1. Tài liệu kỹ thuật
+
+| Tài liệu | Mục đích |
+|---|---|
+| [CLAUDE.md](CLAUDE.md) | Chỉ mục bắt buộc dành cho Claude |
+| [SYSTEM ARCHITECTURE](docs/architecture/SYSTEM_ARCHITECTURE.md) | Kiến trúc logic và ranh giới hệ thống |
+| [REPOSITORY STRUCTURE](docs/architecture/REPOSITORY_STRUCTURE.md) | Cấu trúc monorepo và quy tắc đặt code |
+| [FRONTEND CONVENTIONS](docs/development/FRONTEND_CONVENTIONS.md) | Quy ước Next.js, TanStack Query, Zustand và component |
+| [BACKEND CONVENTIONS](docs/development/BACKEND_CONVENTIONS.md) | Quy ước NestJS modular monolith và module boundaries |
+
+## 4. Phạm vi của phiên bản tài liệu 0.2.1
+
+Phiên bản này đã khóa:
+
+- Mô hình kinh doanh B2C là chính.
+- Sản phẩm nền và dịch vụ thêu.
+- Advanced Product Customizer.
+- Preview 2D.
+- Watermark và chống export.
+- Autosave và versioning nội bộ.
+- Quy trình digitizing thủ công.
+- Phê duyệt thiết kế qua liên kết bảo mật.
+- Đặt cọc 40% sau khi khách duyệt thiết kế.
+- Thanh toán 60% còn lại trước giao hàng.
+- Một Admin duy nhất.
+- Zalo và Messenger chỉ là liên kết liên hệ đơn giản.
+- Quản lý tồn kho theo SKU.
+- SEO mạnh nhưng không có blog.
+- Self-host tại cửa hàng.
+- Quy mô dưới 100 đơn/tháng và dưới 10 người dùng editor đồng thời.
+
+## 5. Nội dung cố ý chưa quyết định
+
+- Tech stack.
+- Monorepo hay multi-repo.
+- Git hosting.
+- Branching strategy.
+- CI/CD.
+- Kiến trúc triển khai chi tiết.
+- Database engine.
+- Framework frontend/backend.
+- Thư viện canvas.
+- Quy trình làm việc với Claude.
+- Coding standards.
+- Test tooling.
+- Release model.
+
+Các nội dung này phải được thảo luận kỹ thuật riêng trước khi bổ sung vào tài liệu kiến trúc.

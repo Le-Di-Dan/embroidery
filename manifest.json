@@ -1,0 +1,27 @@
+{
+  "name": "Embroidery Commerce Platform Documentation",
+  "version": "0.2.1",
+  "status": "product-and-technical-baseline",
+  "documents": [
+    "CLAUDE.md",
+    "README.md",
+    "docs/00-PROJECT-CHARTER.md",
+    "docs/01-PRODUCT-REQUIREMENTS.md",
+    "docs/02-SCOPE-AND-BOUNDARIES.md",
+    "docs/03-USER-JOURNEYS.md",
+    "docs/04-BUSINESS-RULES.md",
+    "docs/05-DESIGN-STUDIO-SPEC.md",
+    "docs/06-ORDER-AND-DESIGN-LIFECYCLE.md",
+    "docs/07-ADMIN-OPERATIONS.md",
+    "docs/08-SEO-AND-CONTENT.md",
+    "docs/09-SECURITY-AND-ABUSE-PREVENTION.md",
+    "docs/10-NON-FUNCTIONAL-REQUIREMENTS.md",
+    "docs/11-DOMAIN-GLOSSARY.md",
+    "docs/12-DECISION-LOG.md",
+    "docs/13-ACCEPTANCE-PRINCIPLES.md",
+    "docs/architecture/REPOSITORY_STRUCTURE.md",
+    "docs/architecture/SYSTEM_ARCHITECTURE.md",
+    "docs/development/BACKEND_CONVENTIONS.md",
+    "docs/development/FRONTEND_CONVENTIONS.md"
+  ]
+}

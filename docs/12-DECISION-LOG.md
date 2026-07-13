@@ -1,0 +1,227 @@
+# 12 — Decision Log
+
+**Status:** Active  
+**Version:** 0.1.0
+
+## D-001 — Business focus
+
+**Decision:** B2C first, target mix 70% B2C / 30% B2B.  
+**Status:** Locked.
+
+## D-002 — Product types
+
+**Decision:** Primary products are teddy bears, towels and clothing.  
+**Status:** Locked.
+
+## D-003 — Product ownership
+
+**Decision:** Support store products and customer-owned products.  
+**Status:** Locked.
+
+## D-004 — Editor level
+
+**Decision:** Advanced Product Customizer, not a general design suite.  
+**Status:** Locked.
+
+## D-005 — Preview
+
+**Decision:** 2D product image composition only. No 3D.  
+**Status:** Locked.
+
+## D-006 — Customer save behavior
+
+**Decision:** Temporary autosave is allowed. No customer design library.  
+**Status:** Locked.
+
+## D-007 — Customer export
+
+**Decision:** No download/export of design or high-resolution preview.  
+**Status:** Locked.
+
+## D-008 — Watermark
+
+**Decision:** Dynamic repeated watermark on customer-facing preview.  
+**Status:** Locked.
+
+## D-009 — Screenshot limitation
+
+**Decision:** The system cannot guarantee prevention of OS screenshots or external photography. The target is deterrence and value reduction.  
+**Status:** Locked.
+
+## D-010 — Digitizing
+
+**Decision:** Manual digitizing.  
+**Status:** Locked.
+
+## D-011 — Revisions
+
+**Decision:** No hard revision limit. Historical versions must remain.  
+**Status:** Locked.
+
+## D-012 — Approval
+
+**Decision:** Approval through secure link; messaging apps are not the source of truth.  
+**Status:** Locked.
+
+## D-013 — Deposit
+
+**Decision:** 40% deposit after design approval.  
+**Status:** Locked.
+
+## D-014 — Final payment
+
+**Decision:** Remaining 60% before delivery.  
+**Status:** Locked.
+
+## D-015 — Chat
+
+**Decision:** Zalo and Messenger links only. No chatbot or message synchronization.  
+**Status:** Locked.
+
+## D-016 — Inventory
+
+**Decision:** Inventory by SKU, color and size. Official reservation after approval and deposit.  
+**Status:** Locked.
+
+## D-017 — Shipping
+
+**Decision:** Manual shipping fee and internal shipping data. No shipping API, adapter or customer tracking.  
+**Status:** Locked.
+
+## D-018 — Admin model
+
+**Decision:** One Admin, one operator, no role hierarchy.  
+**Status:** Locked.
+
+## D-019 — SEO
+
+**Decision:** Strong SEO, gallery, landing pages, no blog system.  
+**Status:** Locked.
+
+## D-020 — Hosting
+
+**Decision:** Self-host on store-controlled infrastructure located at the store.  
+**Status:** Locked, with operational risk controls required.
+
+## D-021 — Scale
+
+**Decision:** 20–100 products, under 100 orders/month, under 10 concurrent editor users.  
+**Status:** Locked.
+
+## D-022 — Monorepo tooling
+
+**Decision:** pnpm workspaces with Turborepo.  
+**Status:** Locked.
+
+## D-023 — Frontend architecture
+
+**Decision:** Separate Next.js App Router applications for storefront and admin, using server-first hybrid rendering.  
+**Status:** Locked.
+
+## D-024 — Backend architecture
+
+**Decision:** NestJS modular monolith plus a separate asynchronous worker application.  
+**Status:** Locked.
+
+## D-025 — Database
+
+**Decision:** PostgreSQL is the system-of-record database.  
+**Status:** Locked.
+
+## D-026 — Deployment
+
+**Decision:** Docker and Docker Compose for development; Kubernetes for production.  
+**Status:** Locked. Production topology remains open.
+
+## D-027 — Object storage
+
+**Decision:** Depend on an S3-compatible object-storage abstraction; the concrete product remains open.  
+**Status:** Architecture locked; product open.
+
+## D-028 — Frontend state
+
+**Decision:** TanStack Query owns server state; Zustand owns browser-only interaction and editor state.  
+**Status:** Locked.
+
+## D-029 — Repository organization
+
+**Decision:** Feature-first/module-first with responsibility-based subfolders inside every feature/module.  
+**Status:** Locked.
+
+## D-030 — React component organization
+
+**Decision:** One production React component per file.  
+**Status:** Locked.
+
+## D-031 — Code quality
+
+**Decision:** Prettier, ESLint, strict TypeScript, automated tests, and SonarQube quality gates.  
+**Status:** Locked.
+
+## D-032 — File size
+
+**Decision:** Source/logic files have a 400-line hard limit; test files have a 600-line hard limit, with controlled generated-file exceptions.  
+**Status:** Locked.
+
+## D-033 — Hard-coded values
+
+**Decision:** Magic numbers, magic strings, duplicated business values, URLs, statuses, limits, timeouts, and user-facing copy must be centralized at the narrowest valid scope. Obvious syntax-only literals need not be converted into meaningless constants.  
+**Status:** Locked.
+
+## D-034 — Standard API envelope
+
+**Decision:** All internal JSON business APIs use one standard success/error envelope with stable machine-readable codes, human-readable messages, payload data or structured errors, request metadata, and correct HTTP status semantics. Binary streams, health endpoints, redirects, and third-party protocol responses are controlled exceptions.  
+**Status:** Locked.
+
+## D-035 — Frontend HTTP client
+
+**Decision:** Axios is the only approved frontend HTTP client for internal application APIs. Direct use of `fetch` is prohibited. Axios access is centralized through browser/server clients and feature services.  
+**Status:** Locked.
+
+# Open Decisions
+
+The following are intentionally unresolved:
+
+## O-001 — Remaining technology selections
+
+ORM, queue/broker, canvas library, UI system, testing stack and image-processing implementation.
+
+## O-003 — Git hosting and source governance
+
+GitHub/GitLab/self-hosted Git, branch model, review rules and release policy.
+
+## O-004 — Claude development workflow
+
+Prompt granularity, task templates, checkpoint model, review gate and evidence format.
+
+## O-005 — Authentication implementation
+
+OTP method, email/phone verification provider, secure link duration and revocation.
+
+## O-006 — Payment implementation
+
+Provider onboarding, webhook contract, bank transfer reconciliation and refund flow.
+
+## O-007 — Self-host topology
+
+Hardware, reverse proxy, public connectivity, backup, monitoring and external dependency placement.
+
+## O-008 — Temporary session retention
+
+Exact expiration period.
+
+## O-009 — Cancellation and refund policy
+
+Detailed business rules before and after deposit or production.
+
+## O-010 — Performance budgets
+
+Concrete web performance and editor responsiveness targets.
+
+## O-011 — Browser support matrix
+
+Exact minimum versions.
+
+## O-012 — Data retention and privacy
+
+Detailed retention periods and deletion process.
