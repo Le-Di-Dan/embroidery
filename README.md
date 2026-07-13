@@ -53,6 +53,7 @@ Mọi thay đổi baseline phải được ghi vào `docs/12-DECISION-LOG.md`.
 | [REPOSITORY STRUCTURE](docs/architecture/REPOSITORY_STRUCTURE.md) | Cấu trúc monorepo và quy tắc đặt code |
 | [FRONTEND CONVENTIONS](docs/development/FRONTEND_CONVENTIONS.md) | Quy ước Next.js, TanStack Query, Zustand và component |
 | [BACKEND CONVENTIONS](docs/development/BACKEND_CONVENTIONS.md) | Quy ước NestJS modular monolith và module boundaries |
+| [LOCAL DEVELOPMENT](docs/development/LOCAL_DEVELOPMENT.md) | Hướng dẫn cài đặt, chạy local, Docker Compose và quality gates |
 
 ## 4. Phạm vi của phiên bản tài liệu 0.2.1
 
@@ -75,20 +76,32 @@ Phiên bản này đã khóa:
 - Self-host tại cửa hàng.
 - Quy mô dưới 100 đơn/tháng và dưới 10 người dùng editor đồng thời.
 
-## 5. Nội dung cố ý chưa quyết định
+## 5. Technical baseline đã khóa
 
-- Tech stack.
-- Monorepo hay multi-repo.
-- Git hosting.
-- Branching strategy.
-- CI/CD.
-- Kiến trúc triển khai chi tiết.
-- Database engine.
-- Framework frontend/backend.
-- Thư viện canvas.
-- Quy trình làm việc với Claude.
-- Coding standards.
-- Test tooling.
-- Release model.
+Các quyết định sau đã được khóa (xem `docs/12-DECISION-LOG.md` D-022 → D-035 và `CLAUDE.md` §4):
 
-Các nội dung này phải được thảo luận kỹ thuật riêng trước khi bổ sung vào tài liệu kiến trúc.
+- Monorepo với pnpm workspaces và Turborepo.
+- Next.js App Router cho storefront và admin (hai application riêng), server-first hybrid rendering.
+- NestJS modular monolith cho API và worker application riêng.
+- PostgreSQL là system-of-record database.
+- Docker + Docker Compose cho development; Kubernetes là production target.
+- Axios là HTTP client duy nhất cho internal API; TanStack Query cho server state; Zustand cho browser-only state.
+- TypeScript strict, ESLint, Prettier, SonarQube và file-size limits (400/600 dòng).
+- Standard API response envelope cho internal JSON APIs.
+
+## 6. Nội dung cố ý chưa quyết định
+
+Các open decision thật sự (xem `docs/12-DECISION-LOG.md` mục Open Decisions):
+
+- ORM và migration framework.
+- Queue/message broker.
+- Concrete object-storage product (chỉ abstraction S3-compatible đã khóa).
+- Canvas library.
+- UI component library.
+- Authentication/OTP implementation.
+- Payment provider implementation.
+- Kubernetes distribution và production topology.
+- Observability vendor.
+- Git hosting, branching strategy, CI/CD và release model.
+
+Các nội dung này phải được khóa bằng ADR trước khi triển khai.

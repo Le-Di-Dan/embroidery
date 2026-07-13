@@ -1,0 +1,16 @@
+# Generated / third-party
+node_modules
+.next
+dist
+out
+coverage
+.turbo
+pnpm-lock.yaml
+next-env.d.ts
+.scannerwork
+
+# Product documentation is a locked baseline — do not reformat (CLAUDE.md §19)
+docs/
+README.md
+CLAUDE.md
+manifest.json

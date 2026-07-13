@@ -1,4 +1,25 @@
+# Dependencies
 node_modules/
 
+# Environment files (examples are kept)
 .env*
 !.env.example
+
+# Build outputs
+.next/
+dist/
+out/
+*.tsbuildinfo
+
+# Test outputs
+coverage/
+
+# Turborepo
+.turbo/
+
+# SonarQube scanner
+.scannerwork/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

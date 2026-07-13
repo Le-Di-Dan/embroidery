@@ -1,0 +1,23 @@
+# Dependencies are installed inside the image (any nesting level)
+**/node_modules
+
+# Build outputs are produced inside the image
+**/.next
+**/dist
+**/out
+**/coverage
+**/.turbo
+*.tsbuildinfo
+
+# Local environment and secrets never enter build context
+.env
+.env.*
+!.env.example
+
+# Repo metadata not needed at build time
+.git
+.scannerwork
+docs
+infrastructure/kubernetes
+infrastructure/monitoring
+infrastructure/backup

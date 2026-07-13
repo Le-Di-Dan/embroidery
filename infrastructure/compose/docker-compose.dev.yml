@@ -1,0 +1,164 @@
+# Development stack for the Embroidery Commerce Platform.
+#
+#   Full stack:        docker compose -f infrastructure/compose/docker-compose.dev.yml up -d
+#   Infrastructure:    docker compose -f infrastructure/compose/docker-compose.dev.yml up -d postgres
+#   Quality tooling:   docker compose -f infrastructure/compose/docker-compose.dev.yml --profile quality up -d
+#
+# Values default to the development credentials documented in .env.example.
+# Real secrets never live in this file.
+
+name: embroidery-dev
+
+services:
+  storefront:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/storefront.Dockerfile
+      target: dev
+    ports:
+      - '${STOREFRONT_PORT:-3000}:3000'
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
+      API_BASE_URL: http://api:4000
+      # Bind-mounted sources need polling for reliable change detection on Windows/macOS hosts.
+      WATCHPACK_POLLING: 'true'
+    volumes:
+      - ../../apps/storefront/src:/app/apps/storefront/src
+      - ../../packages/contracts/src:/app/packages/contracts/src
+      - ../../packages/api-client/src:/app/packages/api-client/src
+    networks:
+      - embroidery
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/admin.Dockerfile
+      target: dev
+    ports:
+      - '${ADMIN_PORT:-3001}:3001'
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
+      API_BASE_URL: http://api:4000
+      WATCHPACK_POLLING: 'true'
+    volumes:
+      - ../../apps/admin/src:/app/apps/admin/src
+      - ../../packages/contracts/src:/app/packages/contracts/src
+      - ../../packages/api-client/src:/app/packages/api-client/src
+    networks:
+      - embroidery
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/api.Dockerfile
+      target: dev
+    ports:
+      - '${API_PORT:-4000}:4000'
+    environment:
+      NODE_ENV: development
+      API_PORT: '4000'
+      CHOKIDAR_USEPOLLING: 'true'
+      TSC_WATCHFILE: DynamicPriorityPolling
+    volumes:
+      - ../../apps/api/src:/app/apps/api/src
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4000/health']
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    networks:
+      - embroidery
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/worker.Dockerfile
+      target: dev
+    environment:
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: 'true'
+      TSC_WATCHFILE: DynamicPriorityPolling
+    volumes:
+      - ../../apps/worker/src:/app/apps/worker/src
+    networks:
+      - embroidery
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-embroidery}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-embroidery_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-embroidery}
+    ports:
+      # Bound to loopback only — the database is never exposed publicly.
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - embroidery_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    networks:
+      - embroidery
+    restart: unless-stopped
+
+  sonarqube:
+    image: sonarqube:10.7.0-community
+    profiles: ['quality']
+    depends_on:
+      sonarqube-db:
+        condition: service_healthy
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/${SONARQUBE_DB_NAME:-sonar}
+      SONAR_JDBC_USERNAME: ${SONARQUBE_DB_USER:-sonar}
+      SONAR_JDBC_PASSWORD: ${SONARQUBE_DB_PASSWORD:-sonar_dev_password}
+    ports:
+      - '127.0.0.1:${SONARQUBE_PORT:-9000}:9000'
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - quality
+    restart: unless-stopped
+
+  sonarqube-db:
+    image: postgres:15.8-alpine
+    profiles: ['quality']
+    environment:
+      POSTGRES_USER: ${SONARQUBE_DB_USER:-sonar}
+      POSTGRES_PASSWORD: ${SONARQUBE_DB_PASSWORD:-sonar_dev_password}
+      POSTGRES_DB: ${SONARQUBE_DB_NAME:-sonar}
+    volumes:
+      - sonarqube_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    networks:
+      - quality
+    restart: unless-stopped
+
+networks:
+  embroidery:
+    name: embroidery-dev
+  quality:
+    name: embroidery-quality
+
+volumes:
+  embroidery_postgres_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_db_data:

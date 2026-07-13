@@ -1,0 +1,4 @@
+{
+  "extends": "@embroidery/typescript-config/library.json",
+  "include": ["src/**/*", "eslint.config.mjs", "jest.config.mjs"]
+}

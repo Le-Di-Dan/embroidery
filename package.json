@@ -1,0 +1,38 @@
+{
+  "name": "embroidery-commerce",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Embroidery Commerce Platform monorepo",
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test && node --test \"tools/*.test.mjs\"",
+    "test:coverage": "turbo run test:coverage",
+    "check:file-size": "node tools/check-file-size.mjs",
+    "docker:dev:config": "node tools/docker-dev.mjs config",
+    "docker:dev:build": "node tools/docker-dev.mjs build",
+    "docker:dev:up": "node tools/docker-dev.mjs up -d",
+    "docker:dev:ps": "node tools/docker-dev.mjs ps",
+    "docker:dev:logs": "node tools/docker-dev.mjs logs --tail 200",
+    "docker:dev:down": "node tools/docker-dev.mjs down",
+    "docker:quality:up": "node tools/docker-dev.mjs --quality up -d",
+    "docker:quality:down": "node tools/docker-dev.mjs --quality down",
+    "docker:clean:volumes": "node tools/docker-dev.mjs --quality down -v",
+    "quality": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:file-size",
+    "clean": "turbo run clean"
+  },
+  "prettier": "@embroidery/prettier-config",
+  "devDependencies": {
+    "@embroidery/prettier-config": "workspace:*",
+    "prettier": "^3.9.5",
+    "turbo": "^2.10.4"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "@embroidery/typescript-config/nextjs.json",
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    "eslint.config.mjs",
+    "jest.config.mjs",
+    "src/**/*",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}
