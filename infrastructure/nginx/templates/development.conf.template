@@ -1,0 +1,124 @@
+# Development gateway routing (D-036). Rendered by the official Nginx image
+# entrypoint: only environment variables defined on the gateway service are
+# substituted; Nginx runtime variables ($host, $request_id, ...) are untouched.
+#
+# Public contract:
+#   http://${STOREFRONT_HOST}         → storefront (Next.js)
+#   http://${ADMIN_HOST}              → admin (Next.js)
+#   /api/* on either host             → NestJS API (global prefix "api")
+#   /healthz on either host           → owning Next.js app
+#   unknown Host                      → 404 (never falls through to an app)
+
+# Effective request id: one id shared by the upstream X-Request-ID header,
+# the gateway access log and the X-Request-ID response header. A safe incoming
+# X-Request-ID (bounded length, conservative charset) is reused; anything
+# missing/oversized/unsafe falls back to the natively generated id. Prevents
+# log pollution / header abuse without third-party modules. Correlation only —
+# never an authentication or authorization token.
+map $http_x_request_id $effective_request_id {
+    default                      $request_id;
+    '~^[A-Za-z0-9._-]{1,64}$'    $http_x_request_id;
+}
+
+# Close the connection unless the client asked for a WebSocket upgrade.
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# Gateway-level limits (named values from .env; application-level upload
+# validation is still mandatory when upload features arrive).
+client_max_body_size ${GATEWAY_CLIENT_MAX_BODY_SIZE};
+proxy_connect_timeout ${GATEWAY_PROXY_CONNECT_TIMEOUT};
+proxy_read_timeout ${GATEWAY_PROXY_READ_TIMEOUT};
+proxy_send_timeout ${GATEWAY_PROXY_SEND_TIMEOUT};
+
+# Development: never cache proxied responses at the gateway.
+proxy_cache off;
+
+upstream storefront_upstream {
+    server storefront:3000;
+}
+
+upstream admin_upstream {
+    server admin:3001;
+}
+
+upstream api_upstream {
+    server api:4000;
+}
+
+server {
+    listen 8080;
+    server_name ${STOREFRONT_HOST};
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header X-Request-ID $effective_request_id always;
+
+    location = /healthz {
+        # add_header in a location replaces server-level headers; acceptable
+        # for an infrastructure health endpoint that must never be cached.
+        add_header Cache-Control "no-store" always;
+        add_header X-Request-ID $effective_request_id always;
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://storefront_upstream;
+    }
+
+    location /api/ {
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://api_upstream;
+    }
+
+    location / {
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://storefront_upstream;
+    }
+}
+
+server {
+    listen 8080;
+    server_name ${ADMIN_HOST};
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header X-Request-ID $effective_request_id always;
+
+    location = /healthz {
+        add_header Cache-Control "no-store" always;
+        add_header X-Request-ID $effective_request_id always;
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://admin_upstream;
+    }
+
+    location /api/ {
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://api_upstream;
+    }
+
+    location / {
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://admin_upstream;
+    }
+}
+
+# Unknown hostnames must never fall through to an application.
+server {
+    listen 8080 default_server;
+    server_name _;
+
+    add_header X-Request-ID $effective_request_id always;
+
+    # Gateway self-health for the container health check.
+    location = /gateway/healthz {
+        add_header Cache-Control "no-store" always;
+        add_header X-Request-ID $effective_request_id always;
+        return 200 'ok';
+    }
+
+    location / {
+        return 404 'unknown host';
+    }
+}

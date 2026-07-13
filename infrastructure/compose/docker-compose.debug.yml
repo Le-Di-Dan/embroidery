@@ -1,0 +1,25 @@
+# Debug overlay (D-036): exposes direct application ports in addition to the
+# gateway. Apply on top of the base file — never alone:
+#
+#   pnpm docker:debug:up
+#   (equivalent to: docker compose -f docker-compose.dev.yml -f docker-compose.debug.yml up -d)
+#
+# Only port mappings live here so the base service definitions cannot drift.
+# PostgreSQL is already published on loopback in the base file for the
+# "infrastructure in Docker, apps local" workflow.
+
+# Debug ports bind loopback only: they are a local developer convenience, not
+# a public or LAN contract, and direct access must never bypass the gateway's
+# trusted-proxy boundary from another machine.
+services:
+  storefront:
+    ports:
+      - '127.0.0.1:${STOREFRONT_PORT:-3000}:3000'
+
+  admin:
+    ports:
+      - '127.0.0.1:${ADMIN_PORT:-3001}:3001'
+
+  api:
+    ports:
+      - '127.0.0.1:${API_PORT:-4000}:4000'

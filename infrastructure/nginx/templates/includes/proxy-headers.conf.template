@@ -1,0 +1,24 @@
+# Shared upstream proxy headers (D-036). Included by every proxied location.
+# Rendered by the official image entrypoint into
+# /etc/nginx/conf.d/includes/proxy-headers.conf (only defined environment
+# variables are substituted; Nginx runtime variables stay untouched).
+#
+# X-Forwarded-Port must carry the PUBLIC client-facing port
+# (GATEWAY_HTTP_PORT), not $server_port: Nginx listens on internal
+# container port 8080, which is never what the client used.
+#
+# $effective_request_id and $connection_upgrade are defined by maps in the
+# rendered development.conf.
+
+proxy_http_version 1.1;
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-Port ${GATEWAY_HTTP_PORT};
+proxy_set_header X-Request-ID $effective_request_id;
+
+# WebSocket upgrade support (required for Next.js dev hot reload).
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection $connection_upgrade;

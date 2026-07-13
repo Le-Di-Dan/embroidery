@@ -85,6 +85,7 @@ Các quyết định sau đã được khóa (xem `docs/12-DECISION-LOG.md` D-02
 - NestJS modular monolith cho API và worker application riêng.
 - PostgreSQL là system-of-record database.
 - Docker + Docker Compose cho development; Kubernetes là production target.
+- Nginx Open Source là development edge gateway; production sẽ dùng Kubernetes Gateway API, không dùng ingress-nginx (D-036).
 - Axios là HTTP client duy nhất cho internal API; TanStack Query cho server state; Zustand cho browser-only state.
 - TypeScript strict, ESLint, Prettier, SonarQube và file-size limits (400/600 dòng).
 - Standard API response envelope cho internal JSON APIs.

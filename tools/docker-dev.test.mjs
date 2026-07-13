@@ -7,12 +7,13 @@ import test from 'node:test';
 
 import { buildComposeArgs, parseWrapperArgs } from './docker-dev.mjs';
 
-const COMPOSE_FILE = 'infrastructure/compose/docker-compose.dev.yml';
+const BASE_FILE = 'infrastructure/compose/docker-compose.dev.yml';
+const DEBUG_FILE = 'infrastructure/compose/docker-compose.debug.yml';
 const ENV_FILE = '.env';
 
 test('places global flags before the subcommand in the required order', () => {
   const args = buildComposeArgs({
-    composeFile: COMPOSE_FILE,
+    composeFiles: [BASE_FILE],
     envFile: ENV_FILE,
     profile: 'quality',
     commandArgs: ['up', '-d'],
@@ -22,7 +23,7 @@ test('places global flags before the subcommand in the required order', () => {
     '--env-file',
     ENV_FILE,
     '-f',
-    COMPOSE_FILE,
+    BASE_FILE,
     '--profile',
     'quality',
     'up',
@@ -30,19 +31,29 @@ test('places global flags before the subcommand in the required order', () => {
   ]);
 });
 
+test('applies the debug overlay after the base file so it merges on top', () => {
+  const args = buildComposeArgs({
+    composeFiles: [BASE_FILE, DEBUG_FILE],
+    envFile: undefined,
+    profile: undefined,
+    commandArgs: ['up', '-d'],
+  });
+  assert.deepEqual(args, ['compose', '-f', BASE_FILE, '-f', DEBUG_FILE, 'up', '-d']);
+});
+
 test('omits --env-file when no .env exists', () => {
   const args = buildComposeArgs({
-    composeFile: COMPOSE_FILE,
+    composeFiles: [BASE_FILE],
     envFile: undefined,
     profile: undefined,
     commandArgs: ['config'],
   });
-  assert.deepEqual(args, ['compose', '-f', COMPOSE_FILE, 'config']);
+  assert.deepEqual(args, ['compose', '-f', BASE_FILE, 'config']);
 });
 
 test('omits --profile for the default stack', () => {
   const args = buildComposeArgs({
-    composeFile: COMPOSE_FILE,
+    composeFiles: [BASE_FILE],
     envFile: ENV_FILE,
     profile: undefined,
     commandArgs: ['down'],
@@ -53,7 +64,7 @@ test('omits --profile for the default stack', () => {
 
 test('passes extra compose arguments through unchanged', () => {
   const args = buildComposeArgs({
-    composeFile: COMPOSE_FILE,
+    composeFiles: [BASE_FILE],
     envFile: undefined,
     profile: undefined,
     commandArgs: ['logs', '--tail', '100', 'api'],
@@ -61,14 +72,21 @@ test('passes extra compose arguments through unchanged', () => {
   assert.deepEqual(args.slice(-4), ['logs', '--tail', '100', 'api']);
 });
 
-test('parseWrapperArgs extracts the --quality flag from any position', () => {
+test('parseWrapperArgs extracts wrapper flags from any position', () => {
   assert.deepEqual(parseWrapperArgs(['--quality', 'up', '-d']), {
     quality: true,
+    debug: false,
     commandArgs: ['up', '-d'],
   });
-  assert.deepEqual(parseWrapperArgs(['down', '--quality']), {
+  assert.deepEqual(parseWrapperArgs(['--debug', 'up', '-d']), {
+    quality: false,
+    debug: true,
+    commandArgs: ['up', '-d'],
+  });
+  assert.deepEqual(parseWrapperArgs(['down', '--debug', '--quality']), {
     quality: true,
+    debug: true,
     commandArgs: ['down'],
   });
-  assert.deepEqual(parseWrapperArgs(['ps']), { quality: false, commandArgs: ['ps'] });
+  assert.deepEqual(parseWrapperArgs(['ps']), { quality: false, debug: false, commandArgs: ['ps'] });
 });

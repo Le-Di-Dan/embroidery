@@ -1,4 +1,4 @@
-import { GET } from '../../app/api/health/route';
+import { GET } from '../../app/healthz/route';
 
 describe('admin health route', () => {
   it('responds with a healthy status payload', async () => {

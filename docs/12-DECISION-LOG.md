@@ -178,6 +178,27 @@
 **Decision:** Axios is the only approved frontend HTTP client for internal application APIs. Direct use of `fetch` is prohibited. Axios access is centralized through browser/server clients and feature services.  
 **Status:** Locked.
 
+## D-036 — Development edge gateway and production routing contract
+
+**Decision:**
+
+- Development: Nginx Open Source runs as the default edge gateway of the Docker
+  Compose stack and is the primary browser entrypoint. Storefront, Admin and
+  API are routed by hostname and path (`STOREFRONT_HOST`/`ADMIN_HOST`,
+  `/api/*` → API). Worker, PostgreSQL and the SonarQube database are never
+  routed through the gateway. Direct application ports are exposed only
+  through the documented debug overlay. The gateway is a reverse proxy/router
+  only — with one replica per application it is not a load balancer.
+- Routing contract: the browser-visible API path is `/api/*`; the NestJS API
+  uses global prefix `api` (health endpoint: `GET /api/health`); Next.js
+  applications expose their own health at `/healthz`, never under `/api/*`.
+- Production: Kubernetes will use the Gateway API and Kubernetes Services.
+  `ingress-nginx` will not be used. The concrete Gateway API controller,
+  production TLS and topology remain open decisions. The development Nginx
+  gateway is not production topology.
+
+**Status:** Locked (development contract); production controller open.
+
 # Open Decisions
 
 The following are intentionally unresolved:

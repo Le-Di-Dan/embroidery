@@ -396,6 +396,31 @@ Supported workflows should include:
 - Infrastructure in containers with applications running locally for fast hot reload.
 - Entire stack in Docker Compose for environment parity.
 
+#### Development edge gateway (D-036)
+
+Nginx Open Source runs as the default edge gateway of the Compose stack and is
+the primary browser entrypoint. It routes by hostname and path:
+
+- `STOREFRONT_HOST` (default `embroidery.local`) → storefront; `ADMIN_HOST`
+  (default `admin.embroidery.local`) → admin; `/api/*` on either host → API.
+- The API owns the matching global prefix `api`, so gateway and upstream paths
+  are identical (health: `GET /api/health`). Next.js apps expose `/healthz`.
+- Unknown hostnames return 404. Worker, PostgreSQL and the SonarQube database
+  are never routed through the gateway.
+- Direct application ports exist only in the documented debug overlay.
+- Browsers call the API same-origin via `NEXT_PUBLIC_API_BASE_PATH`; Server
+  Components use the server-only `INTERNAL_API_BASE_URL`.
+- The gateway forwards Host/X-Real-IP/X-Forwarded-*/X-Request-ID and supports
+  WebSocket upgrades for dev hot reload. With one replica per application it
+  is a reverse proxy/router, not a load balancer, and it is not production
+  topology.
+
+#### Production routing contract
+
+Kubernetes production will use the Gateway API and Kubernetes Services.
+`ingress-nginx` will not be used. The concrete Gateway API controller, TLS
+strategy and topology remain open decisions requiring an ADR.
+
 ### Production
 
 Kubernetes runs stateless applications:

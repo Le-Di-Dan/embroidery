@@ -1,8 +1,10 @@
 # Development stack for the Embroidery Commerce Platform.
+# Use the root wrapper scripts (they resolve this file and the root .env):
 #
-#   Full stack:        docker compose -f infrastructure/compose/docker-compose.dev.yml up -d
-#   Infrastructure:    docker compose -f infrastructure/compose/docker-compose.dev.yml up -d postgres
-#   Quality tooling:   docker compose -f infrastructure/compose/docker-compose.dev.yml --profile quality up -d
+#   Full stack (gateway entrypoint):  pnpm docker:dev:up
+#   Infrastructure only:              pnpm docker:dev:up postgres
+#   Direct app ports (debug):         pnpm docker:debug:up
+#   Quality tooling (SonarQube):      pnpm docker:quality:up
 #
 # Values default to the development credentials documented in .env.example.
 # Real secrets never live in this file.
@@ -10,23 +12,65 @@
 name: embroidery-dev
 
 services:
+  # Edge gateway — the only public browser entrypoint in normal mode (D-036).
+  # Direct application ports are exposed only via docker-compose.debug.yml.
+  gateway:
+    image: nginx:1.27.3-alpine
+    ports:
+      - '${GATEWAY_HTTP_PORT:-80}:8080'
+    environment:
+      # Public client-facing port, rendered into X-Forwarded-Port — must match
+      # the host side of the port mapping above.
+      GATEWAY_HTTP_PORT: ${GATEWAY_HTTP_PORT:-80}
+      STOREFRONT_HOST: ${STOREFRONT_HOST:-embroidery.local}
+      ADMIN_HOST: ${ADMIN_HOST:-admin.embroidery.local}
+      GATEWAY_CLIENT_MAX_BODY_SIZE: ${GATEWAY_CLIENT_MAX_BODY_SIZE:-20m}
+      GATEWAY_PROXY_CONNECT_TIMEOUT: ${GATEWAY_PROXY_CONNECT_TIMEOUT:-10s}
+      GATEWAY_PROXY_READ_TIMEOUT: ${GATEWAY_PROXY_READ_TIMEOUT:-60s}
+      GATEWAY_PROXY_SEND_TIMEOUT: ${GATEWAY_PROXY_SEND_TIMEOUT:-60s}
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/templates:/etc/nginx/templates:ro
+    depends_on:
+      storefront:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/gateway/healthz']
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    networks:
+      - embroidery
+    restart: unless-stopped
+
   storefront:
     build:
       context: ../..
       dockerfile: infrastructure/docker/storefront.Dockerfile
       target: dev
-    ports:
-      - '${STOREFRONT_PORT:-3000}:3000'
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
-      API_BASE_URL: http://api:4000
+      # Browser calls the same-origin gateway path; never a direct host:port.
+      NEXT_PUBLIC_API_BASE_PATH: ${NEXT_PUBLIC_API_BASE_PATH:-/api}
+      # Server Components call the internal service URL (never in the client bundle).
+      INTERNAL_API_BASE_URL: http://api:4000/api
       # Bind-mounted sources need polling for reliable change detection on Windows/macOS hosts.
       WATCHPACK_POLLING: 'true'
     volumes:
       - ../../apps/storefront/src:/app/apps/storefront/src
       - ../../packages/contracts/src:/app/packages/contracts/src
       - ../../packages/api-client/src:/app/packages/api-client/src
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/healthz']
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
     networks:
       - embroidery
     restart: unless-stopped
@@ -36,17 +80,21 @@ services:
       context: ../..
       dockerfile: infrastructure/docker/admin.Dockerfile
       target: dev
-    ports:
-      - '${ADMIN_PORT:-3001}:3001'
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
-      API_BASE_URL: http://api:4000
+      NEXT_PUBLIC_API_BASE_PATH: ${NEXT_PUBLIC_API_BASE_PATH:-/api}
+      INTERNAL_API_BASE_URL: http://api:4000/api
       WATCHPACK_POLLING: 'true'
     volumes:
       - ../../apps/admin/src:/app/apps/admin/src
       - ../../packages/contracts/src:/app/packages/contracts/src
       - ../../packages/api-client/src:/app/packages/api-client/src
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3001/healthz']
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
     networks:
       - embroidery
     restart: unless-stopped
@@ -56,8 +104,6 @@ services:
       context: ../..
       dockerfile: infrastructure/docker/api.Dockerfile
       target: dev
-    ports:
-      - '${API_PORT:-4000}:4000'
     environment:
       NODE_ENV: development
       API_PORT: '4000'
@@ -66,7 +112,7 @@ services:
     volumes:
       - ../../apps/api/src:/app/apps/api/src
     healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4000/health']
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4000/api/health']
       interval: 15s
       timeout: 5s
       start_period: 30s
