@@ -1,6 +1,9 @@
 # ADR-DB1-014 — Backup and Restore Architecture
 
-- Status: Accepted
+- Status: Accepted (amended by DB1-C1 correction, 2026-07-15 — manifest now
+  records exact PG version + locale/collation; restore-target pre-check and
+  separate major-upgrade runbook made explicit; see
+  [`DB1_CORRECTION_REPORT.md`](../../database/DB1_CORRECTION_REPORT.md))
 - Date: 2026-07-15
 - Git HEAD: `563d9863c5d9591095038a28887e217058d816e4`
 - Decision IDs: DEC-11, DEC-12
@@ -60,20 +63,26 @@ is small (well under 1 GB for years).
 Every managed backup = dump file + manifest (JSON) + checksum:
 
 - `pg_dump` custom format, internal compression enabled.
-- Manifest records: UTC timestamp; PostgreSQL server version; `pg_dump`
-  version; database name; applied-migration ID list + latest migration ID
-  (ADR-DB1-004's schema-version definition); application Git commit of the
-  running deployment; dump file SHA-256.
+- Manifest records: UTC timestamp; **exact source PostgreSQL server version**
+  (major.minor); `pg_dump` version; **database locale/collation configuration**
+  (encoding, collation/ctype, provider — per the ADR-DB1-001 baseline as
+  amended by DB1-C1); database name; applied-migration ID list + latest
+  migration ID (ADR-DB1-004's schema-version definition); application Git
+  commit of the running deployment; dump file SHA-256.
 - Backup success = exit codes checked **and** manifest written **and**
   checksum verified after off-site copy; failures alert (observability
   hooks, `SYSTEM_ARCHITECTURE §14`).
 
 ### Restore compatibility (locked — DEC-12)
 
-1. **Same-major restore:** a backup restores into the same PostgreSQL major
-   version it was taken from (ADR-DB1-001 pin makes this checkable via the
-   manifest). `pg_dump` archives also restore forward into newer majors —
-   allowed during a planned major upgrade only.
+1. **Same-major restore:** a backup restores into a PostgreSQL server within
+   the **supported same-major PostgreSQL 16 baseline** (the governed patch
+   pin of ADR-DB1-001 as amended by DB1-C1). **The restore target is
+   compatibility-checked before any restore starts:** target major version,
+   locale/collation configuration, and the manifest's migration IDs are
+   verified against the target environment first. `pg_dump` archives also
+   restore forward into newer majors — but a **major-version restore/upgrade
+   is a separate runbook** (DB10 family), never part of routine restore.
 2. **Restore-then-forward-migrate is the supported path:** restore
    reproduces the database at its recorded migration state; if the target
    deployment is newer, run pending migrations afterward (forward-only,

@@ -63,7 +63,10 @@ Official sources cited inside each ADR. Key capability evidence:
   query builder but is under-documented upstream (drizzle-orm issues #2875,
   #3554) → ADR-DB1-002 mandates a DB6 spike and sanctions raw SQL fallback;
   DB8 tests close the loop.
-- Prisma partial-index limitation: prisma/prisma#6974.
+- ~~Prisma partial-index limitation: prisma/prisma#6974.~~ **Superseded by
+  DB1-C1 (see §9):** current official Prisma docs support partial indexes
+  via `where` behind the `partialIndexes` Preview feature; #6974 is
+  historical evidence only.
 - RFC 8785 (JCS), RFC 9562 (UUIDv7), FIPS 180-4 (SHA-256), PostgreSQL 16
   docs (pg_dump/pg_restore, identity columns, template databases,
   versioning policy).
@@ -127,3 +130,32 @@ Every architecture decision required by the DB1 exit gate is locked
 Parameters` where the remaining items are business parameters/details owned
 by DB3/DB4/DB6/DB10 with explicit acceptance conditions (handoff §9). No
 architecture question blocks DB2. DB2 does not start in this checkpoint.
+
+## 9. Addendum — DB1-C1 correction (2026-07-15, applied after `a0e29b4`)
+
+A correction checkpoint audited this report's evidence and amended the DB1
+documents (full record: [`DB1_CORRECTION_REPORT.md`](./DB1_CORRECTION_REPORT.md)):
+
+1. **PostgreSQL baseline:** the `16.6-alpine` exact-tag pin was stale
+   repository state, not a patch policy. ADR-DB1-001 now locks **major 16 +
+   governed reviewed patch pin**; official current 16.x at correction date
+   is **16.14**; DB6 must move Compose to `16.14-alpine` or a newer reviewed
+   16.x. Backup manifests record exact version + locale/collation
+   (ADR-DB1-014).
+2. **ORM evidence:** the claim that Drizzle is "the only candidate"
+   expressing partial unique indexes + CHECK constraints was wrong per
+   current official docs (Prisma: Preview `where`; TypeORM: `@Index({where})`
+   + `@Check`; MikroORM: `@Check` + raw index expressions). ADR-DB1-002's
+   comparison was re-run; **Drizzle remains `Accepted`** on overall-fit
+   grounds (stable non-Preview declarations, SQL-explicit model, reviewable
+   SQL migrations); a package-pin/compatibility-spike policy and an expanded
+   DB6 row-lock spike were added.
+3. **Collation:** the absolute "removes the musl-vs-glibc index-corruption
+   class of bugs" claim was narrowed to what PostgreSQL docs support; `C`
+   default is scoped to technical ordering; Vietnamese user-facing
+   sort/search gets explicit ICU/locale-aware design at DB4/DB5;
+   collation-version drift checks remain required; hashing is
+   collation-independent.
+
+The consolidated verdict **remains DB1 PASS WITH DEFERRED PARAMETERS**
+(correction verdict: DB1 CORRECTION PASS).

@@ -74,6 +74,11 @@ migration in production) must check:
 4. Hash mismatch on an applied ID → **hard fail: shared-migration edit or
    local tampering** (INV-26/31); never auto-repair.
 
+In addition to the migration-set checks, the verification step asserts basic
+environment parity: PostgreSQL **major version** matches the locked baseline
+and the recorded locale/collation settings match the documented baseline
+(ADR-DB1-001, as amended by DB1-C1).
+
 ### Rules
 
 - Manual database changes outside migrations are prohibited (INV-31);

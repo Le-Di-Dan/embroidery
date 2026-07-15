@@ -170,6 +170,10 @@ compensating control.
 ## Deferred Details
 
 - Exact migrations directory path and pnpm command names → DB6.
+- Exact `drizzle-kit` version: pinned at DB6 together with `drizzle-orm` and
+  the driver under the package-pin policy of ADR-DB1-002 (DB1-C1) —
+  compatibility spike (incl. migration generation and history-table
+  behavior) runs on the exact pinned set before the first real migration.
 - Runbook texts (RB-03, RB-06, RB-09) → DB10.
 
 ## Implementation Checkpoint

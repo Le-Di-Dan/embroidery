@@ -4,6 +4,7 @@
 **Current checkpoint:** DB1 — Persistence Architecture & ADR Lockdown — **COMPLETED** (`DB1 PASS WITH DEFERRED PARAMETERS`, 2026-07-15)
 **DB0:** COMPLETED (`DB0 PASS WITH OPEN DECISIONS`, committed `563d986`)
 **DB1 audited Git HEAD:** `563d9863c5d9591095038a28887e217058d816e4` (branch `production`)
+**DB1-C1 correction (2026-07-15):** applied after `a0e29b4` — PostgreSQL patch governance (16.x baseline 16.14 at correction date), ORM evidence refresh (exclusivity claim removed; Drizzle retained), collation scope correction. See [`DB1_CORRECTION_REPORT.md`](./DB1_CORRECTION_REPORT.md); verdict remains PASS WITH DEFERRED PARAMETERS.
 **Next allowed checkpoint:** DB2 — Conceptual Domain Model (only now that DB1 has passed)
 **Status of this document set:** discovery (DB0) + persistence ADRs (DB1) only. **No schema, no migration, no ORM install, no table has been designed or created.** That rule holds until DB6 for physical artifacts; DB2–DB5 remain documentation-only.
 

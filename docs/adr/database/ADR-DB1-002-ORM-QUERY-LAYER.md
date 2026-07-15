@@ -1,8 +1,11 @@
 # ADR-DB1-002 — ORM / Query Layer
 
-- Status: Accepted
+- Status: Accepted (evidence refreshed by DB1-C1 correction, 2026-07-15 —
+  exclusivity claim removed, comparison re-run on current official docs,
+  package-pin policy added; see
+  [`DB1_CORRECTION_REPORT.md`](../../database/DB1_CORRECTION_REPORT.md))
 - Date: 2026-07-15
-- Git HEAD: `563d9863c5d9591095038a28887e217058d816e4`
+- Git HEAD: `563d9863c5d9591095038a28887e217058d816e4` (amended at `a0e29b4`+)
 - Decision IDs: DEC-01
 - Requirement IDs: REQ-OPS-001, REQ-INT-001, REQ-INT-002, REQ-INT-004,
   REQ-INT-005, REQ-INV-005, REQ-DVER-003, REQ-PAY-005, REQ-SESS-003,
@@ -45,19 +48,26 @@ Claude-assisted, multi-machine.
 5. Kysely (type-safe query builder only) and raw SQL boundary — considered as
    supplements, not primaries.
 
-### Evaluation highlights
+### Evaluation highlights (re-run against current official docs, evidence date 2026-07-15)
+
+All four candidates can express the load-bearing PostgreSQL structures in
+some supported way — **no candidate is excluded on raw capability**. The
+comparison is therefore about *how* each expresses them (stable vs preview,
+declarative vs raw-expression escape), and about runtime/migration model fit.
 
 | Criterion | Prisma | Drizzle | MikroORM | TypeORM |
 | --- | --- | --- | --- | --- |
-| Partial unique index in schema source | No (DSL cannot express; requires hand-edited SQL that diverges from the DSL — prisma/prisma#6974) | **Yes** (`uniqueIndex().where(sql...)`, official docs) | Partial (`@Index({ expression })` raw SQL string) | Partial (raw expression) |
-| Check constraints in schema source | No (hand-edited migration only) | **Yes** (`check(name, sql...)`) | Yes (`@Check`) | Yes (`@Check`) |
-| Row locking | Raw SQL only (no query API) | `.for('update')` exists in the pg query builder but is under-documented (drizzle-orm #2875; noWait bug #3554) → must be spike-verified at DB6; raw SQL fallback sanctioned | Yes (LockMode) | Partial |
-| Explicit isolation level / savepoints | Interactive tx with isolation; no savepoint API | **Yes** (isolationLevel option; nested tx = savepoints, official docs) | Yes | Partial |
-| Migration files | SQL, checksummed history, strong drift detection | **SQL**, timestamped folders, `--custom` blank migrations, snapshot journal | SQL/TS via generator | TS/SQL, weak diffing |
-| Schema source of truth stays honest when using PG-specific features | Degrades (DSL ≠ DB once SQL is hand-edited) | **Holds** (features expressible in schema code) | Holds mostly | Weak |
-| Runtime model | Generated client, own engine layer | Thin SQL builder, no hidden state | Unit of Work + identity map (implicit flush semantics) | Active-record-ish patterns, known soundness issues |
+| Partial (unique) index in schema source | **Yes** — `where` on `@unique`/`@@unique`/`@@index`, raw or type-safe form, **behind the `partialIndexes` Preview feature** (official indexes docs) | **Yes, stable** — `uniqueIndex().where(sql...)` (official docs) | Yes — via custom index `expression` (raw `CREATE INDEX` SQL callback, official docs) | Yes — `@Index(..., { where: '...' })`, PostgreSQL-only (official indices docs) |
+| Check constraints in schema source | Not in the DSL; official workflow = customize generated migration SQL for unsupported features | **Yes, stable** — `check(name, sql...)` (official docs) | **Yes** — `@Check({ expression })` (official docs; "currently supported only in postgres driver") | **Yes** — `@Check` entity decorator (official decorator reference) |
+| Row locking | Raw SQL (no dedicated query API) | `.for('update')` in the pg query builder; historically under-documented (#2875); `noWait` bug #3554 **closed** via PR #3555 → still spike-verified at DB6, raw-SQL fallback sanctioned | Yes (LockMode API) | Pessimistic lock modes on QueryBuilder/find options |
+| Explicit isolation level / savepoints | Interactive tx with isolation; no savepoint API | **Yes** — isolationLevel option; nested tx = savepoints (official docs) | Yes (UoW-managed) | Isolation on transaction; savepoints not first-class |
+| Migration files | SQL, checksummed history, strong drift detection/`migrate diff` — best-in-class tooling | SQL, timestamped folders, `--custom` blank migrations, snapshot journal (weaker drift tooling → bespoke verify command, ADR-DB1-004) | SQL/TS via generator (snapshot-based) | Generated TS/SQL; docs themselves note index-sync limitations (`synchronize: false` escape for unsupported index options) |
+| Reliance on Preview/unstable features for critical constraints | **Yes** — partial indexes are Preview; production risk until GA | **No** — needed features are stable API | No (but raw-SQL expressions for partial indexes bypass the schema model) | No (but PG-only `where`, sync caveats) |
+| Runtime model / hidden magic | Generated client + engine layer | Thin SQL builder, no hidden state | Unit of Work + identity map (implicit flush semantics) | Data-mapper/Active-Record mix; weakest compile-time typing of the four |
 | Fit with "repositories own persistence, domain never sees ORM" | OK | **Good** (plain functions/objects, easy to confine) | UoW encourages entity-centric flow across boundaries | OK but weak typing |
-| 1–3 dev onboarding / Claude generation reliability | Good docs; two-language surface (DSL + TS) | Single-language TS; SQL-shaped output easy to review | Larger concept surface | Aging docs, many pitfalls |
+| SQL debugging / review of what runs | Generated by engine | SQL-shaped code, near-1:1 | UoW batching obscures write timing | QueryBuilder readable; metadata layer less so |
+| 1–3 dev onboarding / Claude generation reliability | Good docs; two-language surface (DSL + TS) | Single-language TS; SQL-shaped output easy to review | Larger concept surface | Long-lived API with many legacy patterns in circulation |
+| Maturity / upgrade risk | High maturity; Preview-feature churn | Pre-1.0 minor churn → strict exact pinning required | Mature, active | Mature, slower feature velocity |
 
 ## Decision
 
@@ -77,19 +87,70 @@ Claude-assisted, multi-machine.
   wraps `db.transaction()` (with isolation options and savepoint support);
   use cases own boundaries (ADR-DB1-009).
 
-### Proof against the critical structures
+### Selection rationale (corrected — DB1-C1)
+
+Drizzle is **not** the only candidate able to express partial unique indexes
+and CHECK constraints — Prisma (Preview `where` argument), TypeORM
+(`@Index({ where })` + `@Check`) and MikroORM (`@Check` + raw index
+expressions) all can, per current official docs. Drizzle is selected because
+it is the best *overall* fit for this codebase's constraints:
+
+- **SQL-like explicit model** with no Unit-of-Work/Active-Record magic —
+  matches the explicit-transaction, repository-adapter conventions.
+- **Native, stable (non-Preview) declaration** of the required PostgreSQL
+  structures (partial unique indexes, CHECK constraints) inside the schema
+  source of truth — Prisma's equivalent is Preview-gated (production risk for
+  load-bearing constraints), MikroORM's partial indexes drop to raw
+  `CREATE INDEX` strings, TypeORM documents its own index-sync limitations.
+- **Reviewable plain-SQL migrations** with first-class hand-authored
+  (`--custom`) migrations (ADR-DB1-003).
+- **Raw SQL escape hatch** in the same tool, keeping module boundaries.
+- No dependence on Preview features for anything invariant-bearing.
+
+Trade-off accepted: Prisma's migrate tooling (drift detection) is stronger;
+we compensate with the bespoke verification command (ADR-DB1-004).
+
+### Mapping to the critical structures
 
 - Single-active-review partial unique index (INV-16): native
   `uniqueIndex(...).where(...)`.
-- Inventory row locking (LC-17): `.for('update')` — verified by mandatory DB6
-  spike; sanctioned raw SQL if the builder output is defective.
+- Inventory row locking (LC-17): `.for('update')` — DB6 spike-gated (below);
+  sanctioned raw SQL if the builder output is defective.
 - Immutable snapshot constraints (INV-01/02/12): check constraints + triggers
   authored in migrations (`--custom`), per ADR-DB1-010.
 - Idempotency uniqueness (INV-19/24): unique/composite unique — native.
 - JSONB design document: native `jsonb` column type.
 - Exact money (INV-11): native `numeric` (returned as string — no float).
 - Outbox claim/update (INV-23): `FOR UPDATE SKIP LOCKED` pattern — builder
-  supports `skipLocked`; raw SQL fallback sanctioned.
+  exposes `skipLocked`; raw SQL fallback sanctioned.
+
+### Row-locking risk posture (honest status)
+
+- Drizzle has an API for `SELECT ... FOR UPDATE`; its documentation has
+  historically lagged the implementation (#2875). The `noWait` SQL bug
+  (#3554) is **closed** (fix PR #3555); the release containing the fix is
+  not stated in the issue.
+- **Advanced lock options are not treated as verified by type signature.**
+  The mandatory DB6 spike, on the exact pinned versions, must assert
+  generated SQL and observed behavior for: plain `FOR UPDATE`; `NOWAIT`;
+  `SKIP LOCKED` (if used by the outbox relay); lock behavior inside a
+  transaction; a concurrent inventory-reservation scenario.
+- If any part of the spike fails, that lock pattern is implemented via a
+  **documented raw-SQL adapter** in the owning module — sanctioned, not a
+  workaround.
+
+### Package pin policy (added by DB1-C1)
+
+- DB1 selects the **technology family only**; nothing is installed at DB1.
+- DB6 pins **exact, verified-compatible versions** of `drizzle-orm`,
+  `drizzle-kit`, and the PostgreSQL driver. Compatibility across their
+  versions is **never assumed** — the DB6 compatibility spike (schema
+  aggregation, migration generation, history-table behavior, locking SQL)
+  runs on the exact pinned set **before** the production schema foundation
+  is built on it.
+- The pnpm lockfile is part of multi-machine reproducibility; every upgrade
+  of these packages is a reviewed change re-running the spike-level checks
+  (CI migration + DB7/DB8 suites once they exist).
 
 ## Detailed Rules
 
@@ -127,17 +188,32 @@ Claude-assisted, multi-machine.
   **Mitigation:** exact-version pinning in lockfile; upgrades are deliberate
   commits with migration-tool regression check in CI (DB7).
 
-## Rejected Alternatives
+## Rejected Alternatives (evidence refreshed 2026-07-15)
 
-- **Prisma:** partial unique indexes and check constraints — load-bearing for
-  INV-16/18 — are not expressible in the schema DSL; the required hand-edited
-  SQL breaks the DSL-as-truth model, and locking needs raw SQL anyway. Strong
-  migrate tooling acknowledged but not decisive.
-- **MikroORM:** capable, but Unit of Work/identity-map implicit flush is
-  hidden runtime magic the conventions explicitly avoid; larger surface for a
-  1–3 dev team.
-- **TypeORM:** long-standing correctness/maintenance concerns, weakest
-  compile-time safety of the four; no advantage over the others here.
+- **Prisma:** current official docs *do* support partial (unique) indexes via
+  the `where` argument on `@unique`/`@@unique`/`@@index` — but behind the
+  `partialIndexes` **Preview feature**, and CHECK constraints still go
+  through the documented customize-generated-migration workflow rather than
+  the DSL. Relying on a Preview feature for the invariant-bearing
+  single-active-review index, plus hand-edited SQL for CHECKs, is a
+  production risk and dilutes DSL-as-truth. Strong migrate tooling
+  acknowledged but not decisive. (The earlier citation of prisma/prisma#6974
+  as proof the feature "does not exist" is retained only as **historical**
+  evidence — the feature/status has since changed.)
+- **MikroORM:** check constraints are native (`@Check`, postgres driver) and
+  partial indexes are expressible via raw `CREATE INDEX` expression
+  callbacks — capability confirmed. Rejected on fit: Unit of Work/identity-
+  map implicit flush is hidden runtime state the conventions explicitly
+  avoid, partial-index DDL drops out of the declarative schema model into
+  raw strings, and the concept surface is large for a 1–3 dev team.
+- **TypeORM:** partial indexes (`@Index` with `where`, PostgreSQL-only) and
+  `@Check` are documented — capability confirmed. Rejected on concrete
+  grounds, not a label: TypeORM's own docs state some index options cannot
+  be represented/synchronized (mitigated only by `synchronize: false`
+  opt-outs), its compile-time typing is the weakest of the four evaluated,
+  and its migration diffing is less reviewable than plain-SQL-first flows —
+  all friction exactly where this project needs precision (constraint-heavy,
+  migration-reviewed schema).
 - **Kysely/raw-SQL-only:** maximum control but no schema→migration
   generation and more hand-written mapping; rejected as primary, its role is
   covered by the sanctioned `sql` escape hatch.
@@ -162,17 +238,30 @@ Medium: schema truth is plain SQL migrations, so replacing Drizzle later
 means rewriting repository adapters, not the database. Confinement to
 `infrastructure/persistence` caps the blast radius.
 
-## References
+## References (evidence dates noted; all official pages re-checked 2026-07-15)
 
-- Drizzle indexes & constraints (partial unique index, check, named FK) —
-  https://orm.drizzle.team/docs/indexes-constraints
+- Drizzle indexes & constraints (partial unique index `.where()`, check,
+  named FK) — https://orm.drizzle.team/docs/indexes-constraints
 - Drizzle transactions (isolation levels, savepoints/nested) —
   https://orm.drizzle.team/docs/transactions
 - drizzle-kit generate (SQL output, `--custom`, timestamped ordering) —
   https://orm.drizzle.team/docs/drizzle-kit-generate
-- Drizzle `SELECT FOR UPDATE` documentation gap — 
-  https://github.com/drizzle-team/drizzle-orm/issues/2875 ; noWait bug —
+- Drizzle `SELECT FOR UPDATE` documentation-gap issue (documented risk, not
+  capability evidence) — https://github.com/drizzle-team/drizzle-orm/issues/2875 ;
+  `noWait` SQL bug, **closed** via PR #3555 —
   https://github.com/drizzle-team/drizzle-orm/issues/3554
-- Prisma partial/expression index limitation —
+- Prisma indexes (partial indexes via `where` on `@unique`/`@@unique`/`@@index`,
+  `partialIndexes` **Preview** feature; PostgreSQL supported) —
+  https://www.prisma.io/docs/orm/prisma-schema/data-model/indexes
+- Prisma customizing migrations for unsupported database features —
+  https://www.prisma.io/docs/orm/prisma-migrate/workflows/customizing-migrations
+- Historical only (feature/status has since changed — do not cite as current):
   https://github.com/prisma/prisma/issues/6974
+- TypeORM indices (partial `where` — PostgreSQL-only; `synchronize: false`;
+  unsupported index options note) — https://typeorm.io/docs/advanced-topics/indices/
+  (see also https://typeorm.io/docs/indexes/ )
+- TypeORM `@Check` decorator — https://typeorm.io/docs/help/decorator-reference/
+- MikroORM `@Check` constraints and custom index expressions —
+  https://mikro-orm.io/docs/defining-entities
 - `docs/development/BACKEND_CONVENTIONS.md` §2, §9, §10, §11
+- `docs/database/DB1_CORRECTION_REPORT.md` (DB1-C1 amendment record)

@@ -4,6 +4,13 @@
 **Date:** 2026-07-15 · **Git HEAD:** `563d9863c5d9591095038a28887e217058d816e4` · **Branch:** `production`
 **Scope:** All 19 B1 decisions from [`DB0_OPEN_DECISIONS.md`](./DB0_OPEN_DECISIONS.md). ADRs live in [`../adr/database/`](../adr/database/).
 
+> **DB1-C1 correction (2026-07-15):** DEC-01/02/03/11/12 entries updated —
+> PostgreSQL patch governance (current 16.x baseline **16.14**), ORM
+> comparison re-run on current official docs (exclusivity claim removed;
+> Prisma partial indexes exist behind the `partialIndexes` Preview feature),
+> collation rationale scoped, backup manifest extended. See
+> [`DB1_CORRECTION_REPORT.md`](./DB1_CORRECTION_REPORT.md).
+
 Status legend: `Accepted` · `Accepted with Deferred Parameters` (AwDP).
 Reversal cost: relative cost of changing the decision after implementation.
 
@@ -15,7 +22,7 @@ Reversal cost: relative cost of changing the decision after implementation.
 | --- | ---- | --- | ------ | --------------- |
 | DEC-01 | A | [ADR-DB1-002](../adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md) | Accepted | Drizzle ORM (+ sanctioned raw SQL escape hatch) |
 | DEC-02 | A | [ADR-DB1-003](../adr/database/ADR-DB1-003-MIGRATION-STRATEGY.md) | Accepted | drizzle-kit, generated-then-reviewed SQL, immutable shared migrations |
-| DEC-03 | A | [ADR-DB1-001](../adr/database/ADR-DB1-001-POSTGRESQL-VERSION.md) | Accepted | PostgreSQL 16, exact-tag pin (16.6-alpine), UTF8/C/UTC baseline |
+| DEC-03 | A | [ADR-DB1-001](../adr/database/ADR-DB1-001-POSTGRESQL-VERSION.md) | Accepted | PostgreSQL major 16 + governed reviewed patch pin (baseline 16.14 at DB1-C1; DB6 applies); UTF8/UTC; `C` default scoped to technical ordering |
 | DEC-04 | A | [ADR-DB1-007](../adr/database/ADR-DB1-007-ID-STRATEGY.md) | Accepted | UUIDv7 (app-generated) business / bigint identity append-only / separate codes |
 | DEC-05 | A | [ADR-DB1-008](../adr/database/ADR-DB1-008-STATUS-REPRESENTATION.md) | Accepted | text + CHECK constraint; TS constants as source; PG enums prohibited |
 | DEC-06 | B | [ADR-DB1-012](../adr/database/ADR-DB1-012-DESIGN-DOCUMENT-CANONICALIZATION.md) | AwDP | `packages/design-document` owns; RFC 8785 JCS + SHA-256; versioned payload |
@@ -46,10 +53,10 @@ Cross-cutting policy ADRs without their own DEC ID:
 ### DEC-01 — ORM / query layer (Tier A, Accepted)
 
 - **ADR:** ADR-DB1-002 · **REQ:** REQ-OPS-001, REQ-INT-001/002/004/005, REQ-PAY-005, REQ-SESS-003, REQ-OUTBOX-001, REQ-IDEM-001 · **INV:** INV-01/07/11/16/18/19/23/24/25 · **GAP:** —
-- **Options:** Prisma, Drizzle, MikroORM, TypeORM (+ Kysely/raw-SQL as supplements).
+- **Options:** Prisma, Drizzle, MikroORM, TypeORM (+ Kysely/raw-SQL as supplements). *(DB1-C1: all four can express partial indexes + CHECK per current official docs — no capability exclusivity.)*
 - **Selected:** Drizzle ORM; raw SQL sanctioned inside module persistence adapters.
-- **Rationale:** only candidate expressing partial unique indexes + CHECK constraints in the schema source of truth; thin SQL, no hidden UoW, fits repository/port conventions.
-- **Deferred:** package versions/driver → DB6 (spike required: `.for('update')` output).
+- **Rationale (refreshed):** best overall fit — stable (non-Preview) native declaration of partial unique indexes + CHECK in the schema source of truth; SQL-like explicit model without UoW/Active-Record magic; reviewable SQL migrations; raw-SQL escape hatch. Prisma's partial indexes are Preview-gated; MikroORM's partial indexes drop to raw DDL strings + UoW magic; TypeORM has documented index-sync limitations and weakest typing.
+- **Deferred:** exact compatible pins of drizzle-orm/drizzle-kit/driver + compatibility spike → DB6 (row-lock spike: plain FOR UPDATE, NOWAIT, SKIP LOCKED, in-transaction behavior, concurrent reservation, generated-SQL assertions).
 - **Impl:** DB6 · **Verify:** DB7/DB8 · **Reversal:** medium (adapters only; SQL history tool-agnostic).
 - **Risks:** pre-1.0 churn (pin exact versions); under-documented locking (spike + raw-SQL fallback).
 - **Multi-machine:** TS schema + SQL migrations fully Git-tracked; no machine-local codegen state.
@@ -65,15 +72,15 @@ Cross-cutting policy ADRs without their own DEC ID:
 - **Risks:** branch timestamp interleaving (rebase-and-regenerate rule); snapshot corruption (CI fresh-install arbiter).
 - **Multi-machine:** migrations are the only schema channel between machines.
 
-### DEC-03 — PostgreSQL version (Tier A, Accepted)
+### DEC-03 — PostgreSQL version (Tier A, Accepted — amended DB1-C1)
 
-- **ADR:** ADR-DB1-001 · **REQ:** REQ-OPS-004/013, REQ-INT-003 · **INV:** INV-28/29/34 · **GAP:** GAP-02 (resolved: version now documented as locked).
-- **Options:** pin 16.x exact; move to 17; float major tag.
-- **Selected:** major 16 locked; exact tag pin (currently `16.6-alpine`); UTF8 + collation `C` + UTC baseline; no baseline extensions; major upgrades need ADR + backup.
-- **Deferred:** production image variant → deployment ADR; per-column collation → DB4/DB5.
-- **Impl:** DB6 · **Verify:** DB7/DB10 · **Reversal:** major upgrade = standard dump/restore; collation change = expensive (locked deliberately).
-- **Risks:** forgotten patch bumps (DB10 currency check).
-- **Multi-machine:** identical engine everywhere; manifest-tagged backups.
+- **ADR:** ADR-DB1-001 · **REQ:** REQ-OPS-004/013, REQ-INT-003 · **INV:** INV-28/29/34 · **GAP:** GAP-02 (resolved: version policy now documented as locked).
+- **Options:** major 16 + governed patch pin; move to 17; float major tag; freeze on repo's 16.6.
+- **Selected:** major 16 locked; **governed patch policy** — one reviewed exact tag tracking the current 16.x (official baseline **16.14** at correction date; Compose's `16.6-alpine` is stale state, replaced at DB6 with `16.14-alpine` or newer reviewed); patch bumps = controlled maintenance change with release-notes review + migration/smoke gates. UTF8 + UTC; default collation `C` scoped to technical deterministic ordering (Vietnamese user-facing text gets explicit ICU/locale-aware design at DB4/DB5; hashing independent of collation); no baseline extensions; major upgrades need ADR + backup + separate runbook.
+- **Deferred:** production image variant → deployment ADR; per-column/ICU collation design → DB4/DB5; exact tag re-confirmation → DB6.
+- **Impl:** DB6 · **Verify:** DB7/DB10 · **Reversal:** major upgrade = standard dump/restore; collation-default change = expensive (locked deliberately).
+- **Risks:** forgotten patch bumps (governance + DB10 currency check); collation-version drift once ICU collations exist (REINDEX discipline in runbook).
+- **Multi-machine:** identical engine + recorded locale/collation everywhere; manifest-tagged backups.
 
 ### DEC-04 — ID strategy (Tier A, Accepted)
 
@@ -149,7 +156,7 @@ Cross-cutting policy ADRs without their own DEC ID:
 
 - **ADR:** ADR-DB1-014 · **REQ:** REQ-OPS-002/003, REQ-ASSET-007 · **INV:** INV-33 · **GAP:** GAP-07 (strategy now locked; runbooks remain DB10).
 - **Options:** pg_dump -Fc, plain SQL dump, base backup/PITR, volume snapshot, managed snapshot.
-- **Selected:** scheduled `pg_dump -Fc` + JSON manifest (PG version, migration set, git commit, SHA-256) + off-site encrypted/access-controlled copy; PITR named as escalation path.
+- **Selected:** scheduled `pg_dump -Fc` + JSON manifest (**exact** PG version, locale/collation config, migration set, git commit, SHA-256) + off-site encrypted/access-controlled copy; PITR named as escalation path. *(DB1-C1: manifest fields extended.)*
 - **Deferred:** cadence/off-site target (O-007 topology) → operations/DB10.
 - **Impl:** DB6 hooks + DB10 · **Verify:** DB10 (RB-04/05) · **Reversal:** low (additive).
 - **Risks:** untested backups (DP-04 restore-test gate); missing off-site target flagged as go-live blocker.
@@ -158,7 +165,7 @@ Cross-cutting policy ADRs without their own DEC ID:
 ### DEC-12 — Restore compatibility (Tier A, Accepted)
 
 - **ADR:** ADR-DB1-014 · **REQ:** REQ-OPS-002/003 · **INV:** INV-34 · **GAP:** GAP-07
-- **Selected:** same-major restore; restore-then-forward-migrate; never restore newer-than-code; schema recovery from Git only, data recovery from backup; manifest-gated incompatibility detection; verified restore = scratch restore + verification command + smoke checks; DB-before-assets restore order.
+- **Selected:** same-major restore within the supported PostgreSQL 16 baseline with **mandatory pre-restore target compatibility check** (major version, locale/collation, migration IDs); restore-then-forward-migrate retained; never restore newer-than-code; schema recovery from Git only, data recovery from backup; major-version restore/upgrade = separate runbook; verified restore = scratch restore + verification command + smoke checks; DB-before-assets restore order. *(DB1-C1: pre-check + runbook separation made explicit.)*
 - **Impl/Verify/Reversal/Risks/Multi-machine:** as DEC-11.
 
 ### DEC-13 — Retention framework (Tier B, AwDP)

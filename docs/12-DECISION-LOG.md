@@ -224,6 +224,30 @@ O-001 remain open.
 **Status:** Locked (architecture); deferred parameters tracked in
 `docs/database/DB1_IMPLEMENTATION_HANDOFF.md` §9.
 
+## D-038 — DB1-C1 correction of persistence evidence and PostgreSQL baseline
+
+**Decision:** Correction checkpoint DB1-C1 (2026-07-15) amends D-037's
+baseline without changing selected technologies: (1) PostgreSQL policy is
+restated as **major 16 locked + governed reviewed patch pin** — the
+repository's `postgres:16.6-alpine` tag is stale state, the official current
+16.x baseline at correction date is **16.14**, and DB6 must update the
+development image to `postgres:16.14-alpine` or a newer reviewed 16.x;
+patch upgrades are controlled maintenance changes with release-note review
+and migration/smoke gates. (2) The ORM comparison evidence is refreshed
+against current official documentation — Prisma, TypeORM and MikroORM can
+all express partial indexes and CHECK constraints (Prisma behind the
+`partialIndexes` Preview feature); **Drizzle remains selected** on
+overall-fit grounds, with an added exact-version pin/compatibility-spike
+policy and a mandatory DB6 row-locking spike. (3) The collation rationale is
+narrowed: `C` remains the database default for technical deterministic
+ordering only; user-facing Vietnamese sorting/search receives explicit
+ICU/locale-aware design at DB4/DB5; canonical hashing is independent of
+database collation; backup manifests record exact server version and
+locale/collation configuration. Full record:
+`docs/database/DB1_CORRECTION_REPORT.md`.
+**Status:** Locked (correction applied; DB1 verdict remains PASS WITH
+DEFERRED PARAMETERS).
+
 # Open Decisions
 
 The following are intentionally unresolved:

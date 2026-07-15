@@ -84,9 +84,9 @@ All B1 decisions were resolved at checkpoint **DB1 — Persistence Architecture
 
 | ID | Resolution (2026-07-15) | ADR | Status | Deferred parameter → owner |
 | -- | ----------------------- | --- | ------ | -------------------------- |
-| DEC-01 | Drizzle ORM (+ sanctioned raw SQL in module adapters) | [ADR-DB1-002](../adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md) | Accepted | versions/driver/spike → DB6 |
+| DEC-01 | Drizzle ORM (+ sanctioned raw SQL in module adapters); rationale refreshed at DB1-C1 (overall fit, not capability exclusivity) | [ADR-DB1-002](../adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md) | Accepted (evidence refreshed DB1-C1) | exact pins + compatibility/row-lock spike → DB6 |
 | DEC-02 | drizzle-kit; generated-then-reviewed SQL; immutable shared migrations | [ADR-DB1-003](../adr/database/ADR-DB1-003-MIGRATION-STRATEGY.md) | Accepted | dir/commands → DB6 |
-| DEC-03 | PostgreSQL 16, exact-tag pin (16.6-alpine), UTF8/C/UTC baseline | [ADR-DB1-001](../adr/database/ADR-DB1-001-POSTGRESQL-VERSION.md) | Accepted | prod image variant → deployment ADR |
+| DEC-03 | PostgreSQL major 16 + governed reviewed patch pin (16.x baseline 16.14 at DB1-C1; DB6 applies tag); UTF8/UTC; `C` default scoped to technical ordering | [ADR-DB1-001](../adr/database/ADR-DB1-001-POSTGRESQL-VERSION.md) | Accepted (amended DB1-C1) | exact tag + collation verification → DB6; ICU collation design → DB4/DB5; prod image variant → deployment ADR |
 | DEC-04 | UUIDv7 app-generated (business) / bigint identity (append-only) / separate codes | [ADR-DB1-007](../adr/database/ADR-DB1-007-ID-STRATEGY.md) | Accepted | library → DB6; code formats → DB3/DB4 |
 | DEC-05 | text + CHECK constraint; TS constants as source; PG enums prohibited | [ADR-DB1-008](../adr/database/ADR-DB1-008-STATUS-REPRESENTATION.md) | Accepted | final state names → DB3 (GAP-01) |
 | DEC-06 | `packages/design-document` owner; RFC 8785 JCS + SHA-256; versioned opaque payload | [ADR-DB1-012](../adr/database/ADR-DB1-012-DESIGN-DOCUMENT-CANONICALIZATION.md) | AwDP | document schema/implementation → DB2/DB4 + package CP |

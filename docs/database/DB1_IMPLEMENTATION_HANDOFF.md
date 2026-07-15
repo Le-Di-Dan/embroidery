@@ -72,9 +72,27 @@ This file implements nothing and contains no DB2 work. ADR links:
 
 ## 4. Decisions DB6 (physical schema & migration foundation) must implement
 
-- Install Drizzle ORM + drizzle-kit (exact versions pinned) + **spike
-  report**: `.for('update')`/`skipLocked` SQL output, migration history
-  table behavior/naming config, multi-file schema aggregation (ADR-DB1-002).
+- **PostgreSQL patch update (DB1-C1):** replace Compose `postgres:16.6-alpine`
+  with **`postgres:16.14-alpine` or a newer reviewed 16.x** current at DB6
+  time (re-confirm against postgresql.org); follow the patch-upgrade
+  procedure of ADR-DB1-001 (release notes, fresh+upgrade migration, smoke
+  gates).
+- **Exact dependency pins (DB1-C1):** pin verified-compatible exact versions
+  of `drizzle-orm`, `drizzle-kit`, and the PostgreSQL driver; compatibility
+  is never assumed — run the compatibility spike on the pinned set before
+  any production schema foundation; lockfile is part of reproducibility
+  (ADR-DB1-002).
+- **Mandatory row-lock spike (DB1-C1 scope):** on the exact pinned versions,
+  assert generated SQL and observed behavior for plain `FOR UPDATE`,
+  `NOWAIT`, `SKIP LOCKED` (if used), lock behavior inside a transaction, and
+  a concurrent inventory-reservation scenario; on failure, use the
+  documented raw-SQL adapter for lock queries (ADR-DB1-002).
+- **Spike report** also covers: migration history table behavior/naming
+  config, multi-file schema aggregation (ADR-DB1-002/003).
+- **Collation/locale verification (DB1-C1):** record and verify initdb
+  encoding/collation/ctype/provider against the ADR-DB1-001 baseline; feed
+  the same fields into the backup manifest (ADR-DB1-014) and the
+  environment-parity assertions of the verification command (ADR-DB1-004).
 - Migration foundation: single ordered SQL history under the API app;
   commands for generate/migrate/verify/reset/seed; immutability + naming
   rules (ADR-DB1-003, ADR-DB1-006).
@@ -159,6 +177,8 @@ This file implements nothing and contains no DB2 work. ADR links:
 | 10 | Backup cadence, off-site target (O-007), restore-test cadence | ADR-DB1-014 | DB10 + operations | production go-live blocker if unset |
 | 11 | Exact tooling paths/commands (migrations dir, scripts, driver, UUIDv7 lib) | ADR-DB1-002/003/013 | DB6 | spike report + working commands |
 | 12 | Test runner/framework (O-001 remainder) | ADR-DB1-016 | testing-stack ADR (outside DB scope) | chosen before DB7 harness build |
+| 13 | PostgreSQL exact 16.x tag (16.14-alpine or newer reviewed at DB6) | ADR-DB1-001 (DB1-C1) | DB6 | Compose updated; patch-upgrade procedure followed |
+| 14 | Vietnamese/ICU collation design per user-facing text field (incl. case/accent-insensitive needs) | ADR-DB1-001 (DB1-C1) | DB4/DB5 | every user-facing text sort/search has an assigned semantics; collation-version drift check in upgrade runbook |
 
 None of these blocks DB2: they are parameters/details inside locked
 architecture, each with an owner and acceptance condition.

@@ -41,6 +41,11 @@
 > ownership is registered in the handoff §9 (business durations → DB3;
 > tooling wiring → DB6; runbooks → DB10). Next checkpoint: **DB2**.
 > The DB0–DB10 order below remains locked and unchanged.
+>
+> **DB1-C1 correction (2026-07-15):** evidence/policy correction applied
+> after `a0e29b4` (PostgreSQL patch governance — 16.x baseline 16.14; ORM
+> evidence refresh; collation scoping). Verdict unchanged. See
+> [`DB1_CORRECTION_REPORT.md`](./DB1_CORRECTION_REPORT.md).
 
 ### DB1 — Persistence ADR
 
