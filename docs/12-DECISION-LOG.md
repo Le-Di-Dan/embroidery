@@ -199,6 +199,31 @@
 
 **Status:** Locked (development contract); production controller open.
 
+## D-037 — Persistence architecture baseline (DB1)
+
+**Decision:** The persistence foundation is locked by the DB1 ADR set under
+`docs/adr/database/` (ADR-DB1-001 … ADR-DB1-018): PostgreSQL 16 (exact-tag
+pin, UTF8/collation C/UTC baseline); Drizzle ORM with drizzle-kit migrations
+(generated-then-reviewed SQL, immutable shared migrations, forward-only/
+forward-fix, no `down` recovery path); single `public` schema with a
+documented module ownership map; snake_case naming conventions; UUIDv7
+application-generated IDs for business entities, bigint identity for
+append-only records, human-readable codes separate from PKs; statuses as
+text + CHECK constraints; immutability via app guards + versioned records +
+DB reject-mutation triggers; delete/archive category framework with named
+retention classes (durations remain business decisions — O-008/O-012);
+design-document canonicalization per RFC 8785 JCS + SHA-256 owned by
+`packages/design-document`; DB-arbitrated idempotency records; explicit
+timestamp-based, configurable reservation expiry; `pg_dump -Fc` backups with
+version/migration manifest and restore-then-forward-migrate compatibility;
+one Docker volume per repository with a mandatory schema-mismatch check;
+three-tier idempotent seeds; real-PostgreSQL test databases (template per
+worker). This resolves the ORM and migration portions of O-001; the
+queue/broker, canvas, UI-system, image-processing and test-runner portions of
+O-001 remain open.
+**Status:** Locked (architecture); deferred parameters tracked in
+`docs/database/DB1_IMPLEMENTATION_HANDOFF.md` §9.
+
 # Open Decisions
 
 The following are intentionally unresolved:

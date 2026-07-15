@@ -3,6 +3,10 @@
 **Audit date:** 2026-07-15 · **Audited Git HEAD:** `223e4db`
 **Rule:** DB0 records and classifies open decisions. It does **not** choose any final option. Candidate options are listed only where a document already mentions them.
 
+> **DB1 update (2026-07-15, HEAD `563d986`):** all 19 B1 decisions are resolved
+> by ADR — see §5 below. The original register (§2–§4) is preserved unchanged
+> as history; IDs are not renumbered. B2/B3/NB decisions remain open.
+
 ---
 
 ## 1. Blocker levels
@@ -69,3 +73,43 @@ Cross-links: `O-xxx` = Decision Log open item in `docs/12-DECISION-LOG.md`.
   land.
 - No option is selected in DB0. Selection happens via ADRs at the target
   checkpoints.
+
+## 5. DB1 resolution status (added 2026-07-15, Git HEAD `563d986`)
+
+All B1 decisions were resolved at checkpoint **DB1 — Persistence Architecture
+& ADR Lockdown**. Statuses: `Accepted` or `Accepted with Deferred Parameters`
+(AwDP — architecture locked; parameter owner listed). Full detail:
+[`DB1_DECISION_MATRIX.md`](./DB1_DECISION_MATRIX.md) and
+[`DB1_IMPLEMENTATION_HANDOFF.md`](./DB1_IMPLEMENTATION_HANDOFF.md) §9.
+
+| ID | Resolution (2026-07-15) | ADR | Status | Deferred parameter → owner |
+| -- | ----------------------- | --- | ------ | -------------------------- |
+| DEC-01 | Drizzle ORM (+ sanctioned raw SQL in module adapters) | [ADR-DB1-002](../adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md) | Accepted | versions/driver/spike → DB6 |
+| DEC-02 | drizzle-kit; generated-then-reviewed SQL; immutable shared migrations | [ADR-DB1-003](../adr/database/ADR-DB1-003-MIGRATION-STRATEGY.md) | Accepted | dir/commands → DB6 |
+| DEC-03 | PostgreSQL 16, exact-tag pin (16.6-alpine), UTF8/C/UTC baseline | [ADR-DB1-001](../adr/database/ADR-DB1-001-POSTGRESQL-VERSION.md) | Accepted | prod image variant → deployment ADR |
+| DEC-04 | UUIDv7 app-generated (business) / bigint identity (append-only) / separate codes | [ADR-DB1-007](../adr/database/ADR-DB1-007-ID-STRATEGY.md) | Accepted | library → DB6; code formats → DB3/DB4 |
+| DEC-05 | text + CHECK constraint; TS constants as source; PG enums prohibited | [ADR-DB1-008](../adr/database/ADR-DB1-008-STATUS-REPRESENTATION.md) | Accepted | final state names → DB3 (GAP-01) |
+| DEC-06 | `packages/design-document` owner; RFC 8785 JCS + SHA-256; versioned opaque payload | [ADR-DB1-012](../adr/database/ADR-DB1-012-DESIGN-DOCUMENT-CANONICALIZATION.md) | AwDP | document schema/implementation → DB2/DB4 + package CP |
+| DEC-07 | snake_case, plural tables, explicit constraint names, `_at` timestamptz UTC | [ADR-DB1-006](../adr/database/ADR-DB1-006-NAMING-CONVENTIONS.md) | Accepted | money precision → DB4 |
+| DEC-08 | Single schema `public` + documented module ownership map | [ADR-DB1-005](../adr/database/ADR-DB1-005-DATABASE-SCHEMA-ORGANIZATION.md) | Accepted | ownership map → DB2/DB4 |
+| DEC-09 | Defense-in-depth: app guards + versioned records + reject-mutation triggers | [ADR-DB1-010](../adr/database/ADR-DB1-010-IMMUTABILITY-ENFORCEMENT.md) | AwDP | per-table map → DB3/DB4; role hardening → DB6/DB10 |
+| DEC-10 | Category framework (archive / hard delete / anonymize / immutable / tombstone) | [ADR-DB1-011](../adr/database/ADR-DB1-011-DELETE-ARCHIVE-RETENTION.md) | Accepted | — |
+| DEC-11 | `pg_dump -Fc` + manifest (versions, migration set, commit, SHA-256), off-site | [ADR-DB1-014](../adr/database/ADR-DB1-014-BACKUP-AND-RESTORE.md) | Accepted | cadence/off-site target → DB10 + O-007 |
+| DEC-12 | Same-major restore; restore-then-forward-migrate; manifest-gated compatibility | [ADR-DB1-014](../adr/database/ADR-DB1-014-BACKUP-AND-RESTORE.md) | Accepted | restore-test cadence → DB10 |
+| DEC-13 | Retention classes + configured durations + audited worker cleanup; default-safe | [ADR-DB1-011](../adr/database/ADR-DB1-011-DELETE-ARCHIVE-RETENTION.md) | AwDP | durations (O-008/O-012) → DB3 + business |
+| DEC-14 | Explicit `expires_at`, configurable audited policy, idempotent sweep, no negative stock | [ADR-DB1-018](../adr/database/ADR-DB1-018-INVENTORY-RESERVATION-EXPIRY.md) | AwDP | TTLs + insufficient-stock behavior → DB3 |
+| DEC-15 | DB-arbitrated idempotency records: (namespace, key) unique + fingerprint + TTL classes | [ADR-DB1-017](../adr/database/ADR-DB1-017-IDEMPOTENCY-POLICY.md) | AwDP | per-operation TTLs → DB3/DB4 |
+| DEC-17 | One volume per repo/machine + mandatory schema-mismatch check; dev data disposable | [ADR-DB1-013](../adr/database/ADR-DB1-013-MULTI-MACHINE-AND-DOCKER-VOLUMES.md) | Accepted | command wiring → DB6; runbooks → DB10 |
+| DEC-18 | Forward-only/forward-fix; no `down` recovery path; backup before destructive | [ADR-DB1-003](../adr/database/ADR-DB1-003-MIGRATION-STRATEGY.md) | Accepted | runbook RB-06 → DB10 |
+| DEC-19 | 3 seed tiers, idempotent upsert, deterministic IDs, never inside migrations | [ADR-DB1-015](../adr/database/ADR-DB1-015-SEED-STRATEGY.md) | Accepted | datasets → DB9 |
+| DEC-20 | Real pinned PostgreSQL, template-DB-per-worker, rollback + truncate modes | [ADR-DB1-016](../adr/database/ADR-DB1-016-TEST-DATABASE-STRATEGY.md) | Accepted | test runner (O-001 remainder) → testing-stack ADR |
+
+Supporting cross-cutting ADRs (no DEC ID):
+[ADR-DB1-004](../adr/database/ADR-DB1-004-SCHEMA-VERSIONING-AND-GIT-TRACEABILITY.md)
+(Git ↔ schema traceability) and
+[ADR-DB1-009](../adr/database/ADR-DB1-009-PERSISTENCE-AND-TRANSACTION-BOUNDARIES.md)
+(persistence/transaction boundaries).
+
+**Unchanged:** DEC-16, DEC-21..DEC-26 (B2/B3) and DEC-27..DEC-30 (NB) remain
+open at their original target checkpoints; DB1 verified its decisions do not
+preclude any of them.

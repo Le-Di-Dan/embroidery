@@ -1,10 +1,11 @@
 # Database Phase — Overview
 
 **Phase:** Database Architecture & Persistence Foundation
-**Current checkpoint:** DB0 — Database Discovery & Requirement-to-Data Matrix
-**Audit date:** 2026-07-15
-**Audited Git HEAD:** `223e4db45b325fc982390a58180c7d8638676f7d` (branch `production`)
-**Status of this document set:** DB0 discovery only. **No schema, no migration, no ORM, no table has been designed or created.**
+**Current checkpoint:** DB1 — Persistence Architecture & ADR Lockdown — **COMPLETED** (`DB1 PASS WITH DEFERRED PARAMETERS`, 2026-07-15)
+**DB0:** COMPLETED (`DB0 PASS WITH OPEN DECISIONS`, committed `563d986`)
+**DB1 audited Git HEAD:** `563d9863c5d9591095038a28887e217058d816e4` (branch `production`)
+**Next allowed checkpoint:** DB2 — Conceptual Domain Model (only now that DB1 has passed)
+**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) only. **No schema, no migration, no ORM install, no table has been designed or created.** That rule holds until DB6 for physical artifacts; DB2–DB5 remain documentation-only.
 
 ---
 
@@ -83,6 +84,32 @@ require an ADR and must not be silently made inside an implementation task.
 | [`DB0_OPEN_DECISIONS.md`](./DB0_OPEN_DECISIONS.md) | Open-decision register with target checkpoints and blocker level. |
 | [`DB0_CONFLICTS_AND_GAPS.md`](./DB0_CONFLICTS_AND_GAPS.md) | Conflicts, gaps, and proposed decision questions. |
 | [`DB0_COMPLETION_REPORT.md`](./DB0_COMPLETION_REPORT.md) | Evidence, counts, validation, verdict. |
+| [`DB1_DECISION_MATRIX.md`](./DB1_DECISION_MATRIX.md) | All 19 B1 decisions: ADR, status, rationale, deferred parameters. |
+| [`DB1_IMPLEMENTATION_HANDOFF.md`](./DB1_IMPLEMENTATION_HANDOFF.md) | What DB2–DB10 must obey/implement/test; deferred-parameter register. |
+| [`DB1_COMPLETION_REPORT.md`](./DB1_COMPLETION_REPORT.md) | DB1 evidence, validation, verdict. |
+
+### DB1 ADR index (`docs/adr/database/`)
+
+| ADR | Decides |
+| --- | ------- |
+| [ADR-DB1-001](../adr/database/ADR-DB1-001-POSTGRESQL-VERSION.md) | PostgreSQL 16 pin, parity, UTF8/C/UTC baseline (DEC-03) |
+| [ADR-DB1-002](../adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md) | Drizzle ORM + raw-SQL policy (DEC-01) |
+| [ADR-DB1-003](../adr/database/ADR-DB1-003-MIGRATION-STRATEGY.md) | drizzle-kit, immutable shared migrations, forward-fix (DEC-02, DEC-18) |
+| [ADR-DB1-004](../adr/database/ADR-DB1-004-SCHEMA-VERSIONING-AND-GIT-TRACEABILITY.md) | Git ↔ schema traceability, drift detection |
+| [ADR-DB1-005](../adr/database/ADR-DB1-005-DATABASE-SCHEMA-ORGANIZATION.md) | Single `public` schema + ownership map (DEC-08) |
+| [ADR-DB1-006](../adr/database/ADR-DB1-006-NAMING-CONVENTIONS.md) | Naming + money/timestamp baseline (DEC-07) |
+| [ADR-DB1-007](../adr/database/ADR-DB1-007-ID-STRATEGY.md) | UUIDv7 / bigint identity / codes (DEC-04) |
+| [ADR-DB1-008](../adr/database/ADR-DB1-008-STATUS-REPRESENTATION.md) | text + CHECK statuses (DEC-05) |
+| [ADR-DB1-009](../adr/database/ADR-DB1-009-PERSISTENCE-AND-TRANSACTION-BOUNDARIES.md) | Module persistence ownership, use-case transactions |
+| [ADR-DB1-010](../adr/database/ADR-DB1-010-IMMUTABILITY-ENFORCEMENT.md) | Immutability defense-in-depth (DEC-09) |
+| [ADR-DB1-011](../adr/database/ADR-DB1-011-DELETE-ARCHIVE-RETENTION.md) | Delete/archive categories + retention classes (DEC-10, DEC-13) |
+| [ADR-DB1-012](../adr/database/ADR-DB1-012-DESIGN-DOCUMENT-CANONICALIZATION.md) | RFC 8785 JCS + SHA-256 hashing, ownership (DEC-06) |
+| [ADR-DB1-013](../adr/database/ADR-DB1-013-MULTI-MACHINE-AND-DOCKER-VOLUMES.md) | Volumes, branch divergence, machine switch (DEC-17) |
+| [ADR-DB1-014](../adr/database/ADR-DB1-014-BACKUP-AND-RESTORE.md) | pg_dump -Fc + manifest, restore compatibility (DEC-11, DEC-12) |
+| [ADR-DB1-015](../adr/database/ADR-DB1-015-SEED-STRATEGY.md) | Seed tiers/direction (DEC-19) |
+| [ADR-DB1-016](../adr/database/ADR-DB1-016-TEST-DATABASE-STRATEGY.md) | Real-PG test database strategy (DEC-20) |
+| [ADR-DB1-017](../adr/database/ADR-DB1-017-IDEMPOTENCY-POLICY.md) | Idempotency record model (DEC-15) |
+| [ADR-DB1-018](../adr/database/ADR-DB1-018-INVENTORY-RESERVATION-EXPIRY.md) | Reservation expiry direction (DEC-14) |
 
 ## 6. Identifier conventions
 

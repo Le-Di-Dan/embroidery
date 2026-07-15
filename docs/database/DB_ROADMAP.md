@@ -31,6 +31,17 @@
   [`DB0_COMPLETION_REPORT.md`](./DB0_COMPLETION_REPORT.md). No schema/migration
   created.
 
+> **Status update (2026-07-15, HEAD `563d986`):** **DB0 — COMPLETED**
+> (`DB0 PASS WITH OPEN DECISIONS`, committed `563d986`). **DB1 — COMPLETED**
+> (`DB1 PASS WITH DEFERRED PARAMETERS`): all 19 B1 decisions resolved by the
+> 18 ADRs under [`../adr/database/`](../adr/database/) — see
+> [`DB1_DECISION_MATRIX.md`](./DB1_DECISION_MATRIX.md),
+> [`DB1_IMPLEMENTATION_HANDOFF.md`](./DB1_IMPLEMENTATION_HANDOFF.md),
+> [`DB1_COMPLETION_REPORT.md`](./DB1_COMPLETION_REPORT.md). Deferred detail
+> ownership is registered in the handoff §9 (business durations → DB3;
+> tooling wiring → DB6; runbooks → DB10). Next checkpoint: **DB2**.
+> The DB0–DB10 order below remains locked and unchanged.
+
 ### DB1 — Persistence ADR
 
 - **Goal:** Lock consequential persistence decisions via ADR(s): ORM, migration
