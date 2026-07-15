@@ -54,6 +54,16 @@
 > Deliverables: `DB2_*` documents + [`DB2_COMPLETION_REPORT.md`](./DB2_COMPLETION_REPORT.md);
 > DB3/DB4 handoff in [`DB2_IMPLEMENTATION_HANDOFF.md`](./DB2_IMPLEMENTATION_HANDOFF.md).
 > Next checkpoint: **DB3**. Locked DB0–DB10 order unchanged.
+>
+> **DB3 status (2026-07-15, HEAD `0563866`): COMPLETED** —
+> `DB3 PASS WITH DEFERRED PARAMETERS`. Final state names locked (GAP-01);
+> B3 decisions resolved (ADR-DB3-001..004: acceptance→digitizing ordering,
+> cancellation stage matrix S1–S9, hold-and-supersede revision, grant/step-up
+> policy); 35/35 invariants mapped; GRD-001..030, SE-001..020, CC-01..28,
+> D7/D8 test handoffs. Deliverables: `DB3_*` documents +
+> [`DB3_COMPLETION_REPORT.md`](./DB3_COMPLETION_REPORT.md). Deferred = config
+> values only (TTL/retention/retry/provider mappings), owners registered.
+> Next checkpoint: **DB4**. Locked DB0–DB10 order unchanged.
 
 ### DB1 — Persistence ADR
 

@@ -218,3 +218,14 @@ remain DB10).
 | GAP-11 analytics storage | **Resolved (DB2 scope)** | [`DB2_ANALYTICS_STORAGE_DECISION.md`](./DB2_ANALYTICS_STORAGE_DECISION.md) — no app-DB event store; outbox emission, external tool authoritative (tool still deferred) |
 | GAP-01, GAP-03, GAP-04, GAP-12 | Still open → DB3 | confirmed not preclosed by DB2 |
 | GAP-10 stitch count | Still open → DB4 | DB2 records it as admin-entered pricing input (CON-093 note) |
+
+**DB3 (2026-07-15, HEAD `0563866`):**
+
+| GAP | Status | Resolution record |
+| --- | ------ | ----------------- |
+| GAP-01 final state names | **Resolved** | [`DB3_LIFECYCLE_SPECIFICATIONS.md`](./DB3_LIFECYCLE_SPECIFICATIONS.md) + [`DB3_DB4_HANDOFF.md`](./DB3_DB4_HANDOFF.md) §1 (synonym eliminations documented: ABANDONED→EXPIRED, REVISED→SUPERSEDED; new states QUOTE_ACCEPTED, ON_HOLD, CANCELLING) |
+| GAP-03 approval vs acceptance ordering | **Resolved** | [ADR-DB3-001](../adr/database/ADR-DB3-001-APPROVAL-QUOTATION-ORDERING.md) |
+| GAP-04 cancellation/refund | **Resolved (policy baseline)** | [ADR-DB3-002](../adr/database/ADR-DB3-002-CANCELLATION-REFUND-POLICY.md) + [`DB3_CANCELLATION_COMPENSATION_SPEC.md`](./DB3_CANCELLATION_COMPENSATION_SPEC.md); refund defaults = config |
+| GAP-09 (DB3 portion) terms linkage | **Resolved** | [`DB3_AGREEMENT_ACCEPTANCE_SPEC.md`](./DB3_AGREEMENT_ACCEPTANCE_SPEC.md) (GRD-008; type set = config) |
+| GAP-12 re-verification triggers | **Resolved** | [ADR-DB3-004](../adr/database/ADR-DB3-004-SECURE-GRANT-AND-REVERIFICATION.md) (locked sensitive set) |
+| GAP-10 stitch count | Still open → DB4 | unchanged |

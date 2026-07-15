@@ -273,6 +273,29 @@ refund, approval-vs-acceptance ordering, production rework, secure-link
 expiry) remain open for DB3.
 **Status:** Locked (conceptual model); lifecycle finalization at DB3.
 
+## D-040 — Lifecycle and invariant specification (DB3)
+
+**Decision:** Checkpoint DB3 locks the platform's state machines and
+enforcement plan (`docs/database/DB3_*`, `docs/adr/database/ADR-DB3-*`):
+final lifecycle state names for all 23 DB0 lifecycles plus the DB2 additions
+(new order states ON_HOLD/CANCELLING; request state QUOTE_ACCEPTED; synonym
+states ABANDONED and REVISED eliminated); the commercial ordering is locked
+as quotation acceptance → digitizing → design review → approval → order
+creation with both payment obligations, deposit computed from the accepted
+total, price changes requiring re-acceptance (ADR-DB3-001, resolves O-009's
+ordering sibling GAP-03); cancellation/refund is a stage-matrix (S1–S9)
+compensation saga with reviewed refund records and manual execution —
+refund-amount defaults are business configuration (ADR-DB3-002, resolves
+O-009 baseline); post-approval revision uses hold-and-supersede with
+deposit carry-over and obligation recalculation (ADR-DB3-003); secure links
+use one reusable request-access grant with token rotation and mandatory
+step-up re-verification for a locked sensitive-action set (ADR-DB3-004,
+answers the O-005 policy portion; provider still open). All 35 invariants
+are mapped to DB/TX/APP/EXT/PROC enforcement layers with DB4 constraint and
+DB7/DB8 test handoffs. Remaining deferrals are configuration values only
+(TTLs, retention durations, retry counts, provider-specific mappings).
+**Status:** Locked (lifecycle baseline); relational schema at DB4.
+
 # Open Decisions
 
 The following are intentionally unresolved:

@@ -1,12 +1,11 @@
 # Database Phase — Overview
 
 **Phase:** Database Architecture & Persistence Foundation
-**Current checkpoint:** DB2 — Conceptual Domain Model & Aggregate Ownership — **COMPLETED** (`DB2 PASS WITH DEFERRED PARAMETERS`, 2026-07-15)
-**DB0:** COMPLETED (`DB0 PASS WITH OPEN DECISIONS`, committed `563d986`)
-**DB1:** COMPLETED (`DB1 PASS WITH DEFERRED PARAMETERS`, `a0e29b4` + correction `f90f78c` — see [`DB1_CORRECTION_REPORT.md`](./DB1_CORRECTION_REPORT.md))
-**DB2 audited Git HEAD:** `f90f78c0cb6891f46874723ae50c3b73de405675` (branch `production`)
-**Next allowed checkpoint:** DB3 — Lifecycle & Invariant Specification (only now that DB2 has passed)
-**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) + conceptual domain model (DB2). **No schema, no migration, no ORM install, no table/column/FK/index has been designed or created.** That rule holds until DB6 for physical artifacts; DB3–DB5 remain documentation-only.
+**Current checkpoint:** DB3 — Lifecycle & Invariant Specification — **COMPLETED** (`DB3 PASS WITH DEFERRED PARAMETERS`, 2026-07-15)
+**DB0:** COMPLETED (`563d986`) · **DB1:** COMPLETED (`a0e29b4` + correction `f90f78c`) · **DB2:** COMPLETED (`0563866`)
+**DB3 audited Git HEAD:** `0563866e0c1a53472a07e892e6cc1ecabe086b5a` (branch `production`)
+**Next allowed checkpoint:** DB4 — Logical Relational Schema (only now that DB3 has passed)
+**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) + conceptual domain model (DB2) + lifecycle/invariant specifications (DB3). **No schema, no migration, no ORM install, no table/column/FK/index has been designed or created.** That rule holds until DB6 for physical artifacts; DB4–DB5 remain documentation-only.
 
 ---
 
@@ -111,6 +110,36 @@ DB2 ADRs (in `docs/adr/database/`):
 [ADR-DB2-001 Customer Identity](../adr/database/ADR-DB2-001-CUSTOMER-IDENTITY-MODEL.md) ·
 [ADR-DB2-002 Shipping Address](../adr/database/ADR-DB2-002-SHIPPING-ADDRESS-MODEL.md) ·
 [ADR-DB2-003 Notification Persistence](../adr/database/ADR-DB2-003-NOTIFICATION-PERSISTENCE.md)
+
+### DB3 document set
+
+| File | Contents |
+| ---- | -------- |
+| [`DB3_LIFECYCLE_SPECIFICATIONS.md`](./DB3_LIFECYCLE_SPECIFICATIONS.md) | Master: final states, TR-* transition matrices, guards/effects per lifecycle. |
+| [`DB3_STATE_DIAGRAMS.md`](./DB3_STATE_DIAGRAMS.md) | 19 Mermaid state diagrams. |
+| [`DB3_CORE_WORKFLOW_ORCHESTRATION.md`](./DB3_CORE_WORKFLOW_ORCHESTRATION.md) | Phases 1–7 end-to-end orchestration. |
+| [`DB3_INVARIANT_ENFORCEMENT_PLAN.md`](./DB3_INVARIANT_ENFORCEMENT_PLAN.md) | 35/35 invariants → DB/TX/APP/EXT/PROC layers. |
+| [`DB3_TRANSITION_GUARD_CATALOG.md`](./DB3_TRANSITION_GUARD_CATALOG.md) | GRD-001..030. |
+| [`DB3_SIDE_EFFECT_OUTBOX_CATALOG.md`](./DB3_SIDE_EFFECT_OUTBOX_CATALOG.md) | SE-001..020 (in-tx vs after-commit). |
+| [`DB3_IDEMPOTENCY_SPECIFICATION.md`](./DB3_IDEMPOTENCY_SPECIFICATION.md) | Namespaces, keys, fingerprints, TTL classes. |
+| [`DB3_CONCURRENCY_SPECIFICATION.md`](./DB3_CONCURRENCY_SPECIFICATION.md) | CC-01..28 races + strategies. |
+| [`DB3_CANCELLATION_COMPENSATION_SPEC.md`](./DB3_CANCELLATION_COMPENSATION_SPEC.md) | Saga per stage S1–S9. |
+| [`DB3_SHIPPING_FEE_AND_FREEZE_SPEC.md`](./DB3_SHIPPING_FEE_AND_FREEZE_SPEC.md) | Fee lifecycle + dispatch freeze. |
+| [`DB3_AGREEMENT_ACCEPTANCE_SPEC.md`](./DB3_AGREEMENT_ACCEPTANCE_SPEC.md) | GRD-008 terms guard + evidence. |
+| [`DB3_CUSTOMER_VERIFICATION_MERGE_SPEC.md`](./DB3_CUSTOMER_VERIFICATION_MERGE_SPEC.md) | Challenges, link rules, admin merge. |
+| [`DB3_NOTIFICATION_LIFECYCLE_SPEC.md`](./DB3_NOTIFICATION_LIFECYCLE_SPEC.md) | Intent/attempt machines. |
+| [`DB3_DERIVED_STATE_CATALOG.md`](./DB3_DERIVED_STATE_CATALOG.md) | Authoritative vs projection. |
+| [`DB3_AUDIT_SPECIFICATION.md`](./DB3_AUDIT_SPECIFICATION.md) | Audit actions, reasons, redaction. |
+| [`DB3_DB4_HANDOFF.md`](./DB3_DB4_HANDOFF.md) | Final state sets + constraint candidates. |
+| [`DB3_TEST_HANDOFF.md`](./DB3_TEST_HANDOFF.md) | D7-01..15, D8-01..25. |
+| [`DB3_COMPLETENESS_MATRIX.md`](./DB3_COMPLETENESS_MATRIX.md) | Full coverage; 0 unresolved. |
+| [`DB3_COMPLETION_REPORT.md`](./DB3_COMPLETION_REPORT.md) | Evidence, validation, verdict. |
+
+DB3 ADRs:
+[ADR-DB3-001 Approval/Quotation Ordering](../adr/database/ADR-DB3-001-APPROVAL-QUOTATION-ORDERING.md) ·
+[ADR-DB3-002 Cancellation/Refund](../adr/database/ADR-DB3-002-CANCELLATION-REFUND-POLICY.md) ·
+[ADR-DB3-003 Post-Approval Revision](../adr/database/ADR-DB3-003-POST-APPROVAL-PRODUCTION-REVISION.md) ·
+[ADR-DB3-004 Secure Grant & Re-verification](../adr/database/ADR-DB3-004-SECURE-GRANT-AND-REVERIFICATION.md)
 
 ### DB1 ADR index (`docs/adr/database/`)
 

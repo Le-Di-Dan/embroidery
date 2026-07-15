@@ -128,3 +128,19 @@ Original register rows (§2) unchanged; IDs not renumbered.
 **Still open after DB2:** DEC-16, DEC-22, DEC-23, DEC-26 (B3 — DB3) and
 DEC-27..DEC-30 (NB) — verified not precluded by the DB2 model
 ([`DB2_IMPLEMENTATION_HANDOFF.md`](./DB2_IMPLEMENTATION_HANDOFF.md) §1).
+
+## 7. DB3 resolution status (added 2026-07-15, Git HEAD `0563866`)
+
+Checkpoint **DB3 — Lifecycle & Invariant Specification** resolved the B3
+decisions. Original register unchanged; IDs not renumbered.
+
+| ID | Resolution (2026-07-15) | Record | Status | Deferred detail → owner |
+| -- | ----------------------- | ------ | ------ | ----------------------- |
+| DEC-16 | Option A: quotation acceptance gates digitizing; approval gates order creation + both obligations; deposit from accepted total; price change → re-acceptance | [ADR-DB3-001](../adr/database/ADR-DB3-001-APPROVAL-QUOTATION-ORDERING.md) | Accepted | split/soft-hold values = config |
+| DEC-22 | Stage matrix S1–S9 + compensation saga; refunds as reviewed records; manual execution | [ADR-DB3-002](../adr/database/ADR-DB3-002-CANCELLATION-REFUND-POLICY.md) | Accepted with Deferred Parameters | stage refund defaults = config (business sign-off) |
+| DEC-23 | Hold-and-supersede: order ON_HOLD; job cancel + new job/spec per approval; deposit carries over with obligation recalculation | [ADR-DB3-003](../adr/database/ADR-DB3-003-POST-APPROVAL-PRODUCTION-REVISION.md) | Accepted with Deferred Parameters | hold-release TTL, rounding = config |
+| DEC-26 | One request-access grant type + step-up re-verification for locked sensitive set; rotation-on-reissue; revoke-wins-in-tx | [ADR-DB3-004](../adr/database/ADR-DB3-004-SECURE-GRANT-AND-REVERIFICATION.md) | Accepted with Deferred Parameters | expiry/step-up/limit values = config; OTP provider O-005 |
+
+**Still open after DB3:** only NB decisions DEC-27..DEC-30 (object storage,
+queue/broker, auth/OTP provider, payment provider) — provider selections by
+their own ADRs; the DB3 specs are provider-agnostic by construction.
