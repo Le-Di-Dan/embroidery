@@ -113,3 +113,18 @@ Supporting cross-cutting ADRs (no DEC ID):
 **Unchanged:** DEC-16, DEC-21..DEC-26 (B2/B3) and DEC-27..DEC-30 (NB) remain
 open at their original target checkpoints; DB1 verified its decisions do not
 preclude any of them.
+
+## 6. DB2 resolution status (added 2026-07-15, Git HEAD `f90f78c`)
+
+Checkpoint **DB2 — Conceptual Domain Model** resolved the B2 decisions.
+Original register rows (§2) unchanged; IDs not renumbered.
+
+| ID | Resolution (2026-07-15) | Record | Status | Deferred detail → owner |
+| -- | ----------------------- | ------ | ------ | ----------------------- |
+| DEC-21 | Customer created only at verified submission (Option A); guest session ≠ Customer; no password/account in MVP; verified-possession linking only (no raw-string auto-merge); audited exceptional merge; grants ≠ identity; Admin identity fully separate | [ADR-DB2-001](../adr/database/ADR-DB2-001-CUSTOMER-IDENTITY-MODEL.md) | Accepted with Deferred Parameters | merge mechanics, uniqueness design, re-verification triggers → DB3/DB4 |
+| DEC-24 | Order-owned Shipping Detail, mutable until dispatch then immutable snapshot (Option C); no address book in MVP; recipient may differ from customer; quoted fee in quotation version + final fee in shipping snapshot | [ADR-DB2-002](../adr/database/ADR-DB2-002-SHIPPING-ADDRESS-MODEL.md) | Accepted with Deferred Parameters | post-dispatch correction pattern, anonymization window → DB3 |
+| DEC-25 | Persist Notification Intent + append-only Delivery Attempts (Option B); template ref + redacted params, never rendered bodies/secrets/OTP/tokens; distinct from Outbox; operational retention | [ADR-DB2-003](../adr/database/ADR-DB2-003-NOTIFICATION-PERSISTENCE.md) | Accepted with Deferred Parameters | channels/providers (O-005), retention duration → DB3/provider ADR |
+
+**Still open after DB2:** DEC-16, DEC-22, DEC-23, DEC-26 (B3 — DB3) and
+DEC-27..DEC-30 (NB) — verified not precluded by the DB2 model
+([`DB2_IMPLEMENTATION_HANDOFF.md`](./DB2_IMPLEMENTATION_HANDOFF.md) §1).

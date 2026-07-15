@@ -198,3 +198,23 @@ guardrail.
 Every conflict/gap has a database impact, a resolution owner, and a proposed
 (unanswered) decision question. Answers are the user's to make at the target
 checkpoint.
+
+## 6. Resolution status updates (append-only)
+
+**DB1 (2026-07-15, `a0e29b4`/`f90f78c`):** GAP-02 resolved by
+[ADR-DB1-001](../adr/database/ADR-DB1-001-POSTGRESQL-VERSION.md) (major 16 +
+governed patch pin); GAP-07 strategy resolved by
+[ADR-DB1-014](../adr/database/ADR-DB1-014-BACKUP-AND-RESTORE.md) (runbooks
+remain DB10).
+
+**DB2 (2026-07-15, HEAD `f90f78c`):**
+
+| GAP | Status | Resolution record |
+| --- | ------ | ----------------- |
+| GAP-05 shipping address/history | **Resolved (DB2 scope)** | [ADR-DB2-002](../adr/database/ADR-DB2-002-SHIPPING-ADDRESS-MODEL.md) — per-order detail → snapshot at dispatch; no MVP address book |
+| GAP-06 notification persistence | **Resolved (DB2 scope)** | [ADR-DB2-003](../adr/database/ADR-DB2-003-NOTIFICATION-PERSISTENCE.md) — intent + attempts, no bodies/secrets |
+| GAP-08 design templates | **Resolved (DB2 scope)** | [`DB2_DESIGN_TEMPLATE_DECISION.md`](./DB2_DESIGN_TEMPLATE_DECISION.md) — Design-owned, design-document schema, clone-on-use |
+| GAP-09 terms versioning (DB2 portion) | **Resolved (entity/ownership)**; approval guard → DB3 | [`DB2_TERMS_VERSION_DECISION.md`](./DB2_TERMS_VERSION_DECISION.md) — Content-owned Agreement + immutable versions; snapshot stores ref + content hash |
+| GAP-11 analytics storage | **Resolved (DB2 scope)** | [`DB2_ANALYTICS_STORAGE_DECISION.md`](./DB2_ANALYTICS_STORAGE_DECISION.md) — no app-DB event store; outbox emission, external tool authoritative (tool still deferred) |
+| GAP-01, GAP-03, GAP-04, GAP-12 | Still open → DB3 | confirmed not preclosed by DB2 |
+| GAP-10 stitch count | Still open → DB4 | DB2 records it as admin-entered pricing input (CON-093 note) |

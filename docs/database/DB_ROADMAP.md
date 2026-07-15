@@ -46,6 +46,14 @@
 > after `a0e29b4` (PostgreSQL patch governance — 16.x baseline 16.14; ORM
 > evidence refresh; collation scoping). Verdict unchanged. See
 > [`DB1_CORRECTION_REPORT.md`](./DB1_CORRECTION_REPORT.md).
+>
+> **DB2 status (2026-07-15, HEAD `f90f78c`): COMPLETED** —
+> `DB2 PASS WITH DEFERRED PARAMETERS`. 15 bounded contexts, 23 aggregates,
+> 75 canonical concepts, one owner each; B2 decisions resolved
+> (ADR-DB2-001/002/003); DB2-owned gaps resolved (GAP-05/06/08/09-DB2/11).
+> Deliverables: `DB2_*` documents + [`DB2_COMPLETION_REPORT.md`](./DB2_COMPLETION_REPORT.md);
+> DB3/DB4 handoff in [`DB2_IMPLEMENTATION_HANDOFF.md`](./DB2_IMPLEMENTATION_HANDOFF.md).
+> Next checkpoint: **DB3**. Locked DB0–DB10 order unchanged.
 
 ### DB1 — Persistence ADR
 

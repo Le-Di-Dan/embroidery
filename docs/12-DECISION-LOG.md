@@ -248,6 +248,31 @@ locale/collation configuration. Full record:
 **Status:** Locked (correction applied; DB1 verdict remains PASS WITH
 DEFERRED PARAMETERS).
 
+## D-039 — Conceptual domain model and aggregate ownership (DB2)
+
+**Decision:** Checkpoint DB2 locks the conceptual domain model documented
+under `docs/database/DB2_*` and `docs/adr/database/ADR-DB2-*`: 15 bounded
+contexts mapped onto the modular-monolith module set (Custom Request and
+Order are separate aggregates inside the `order` module; Content — SEO
+pages, redirects, terms/agreements — maps to a new `content` module, allowed
+by the non-exhaustive module list; outbox/idempotency/policy configuration
+are platform infrastructure, not business modules); 23 aggregates with
+exactly one owner per concept; snapshot-versus-reference boundaries
+(quotation versions, approval snapshots, order items, shipping-at-dispatch,
+production specifications, agreement versions are immutable snapshots).
+B2 decisions resolved: customer identity created only at verified submission
+(no password accounts, no raw-contact auto-merge, grants are not identity —
+ADR-DB2-001); per-order shipping detail frozen at dispatch, no MVP address
+book (ADR-DB2-002); notifications persist intent + delivery attempts with
+redacted parameters, never rendered bodies or secrets (ADR-DB2-003). Design
+templates are Design-owned, clone-on-use documents; agreement/terms versions
+are Content-owned immutable versions referenced by approval snapshots with a
+content hash; analytics events are not stored in the application database
+(external tool authoritative; tool still open). B3 items (cancellation/
+refund, approval-vs-acceptance ordering, production rework, secure-link
+expiry) remain open for DB3.
+**Status:** Locked (conceptual model); lifecycle finalization at DB3.
+
 # Open Decisions
 
 The following are intentionally unresolved:

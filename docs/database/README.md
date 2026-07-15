@@ -1,12 +1,12 @@
 # Database Phase — Overview
 
 **Phase:** Database Architecture & Persistence Foundation
-**Current checkpoint:** DB1 — Persistence Architecture & ADR Lockdown — **COMPLETED** (`DB1 PASS WITH DEFERRED PARAMETERS`, 2026-07-15)
+**Current checkpoint:** DB2 — Conceptual Domain Model & Aggregate Ownership — **COMPLETED** (`DB2 PASS WITH DEFERRED PARAMETERS`, 2026-07-15)
 **DB0:** COMPLETED (`DB0 PASS WITH OPEN DECISIONS`, committed `563d986`)
-**DB1 audited Git HEAD:** `563d9863c5d9591095038a28887e217058d816e4` (branch `production`)
-**DB1-C1 correction (2026-07-15):** applied after `a0e29b4` — PostgreSQL patch governance (16.x baseline 16.14 at correction date), ORM evidence refresh (exclusivity claim removed; Drizzle retained), collation scope correction. See [`DB1_CORRECTION_REPORT.md`](./DB1_CORRECTION_REPORT.md); verdict remains PASS WITH DEFERRED PARAMETERS.
-**Next allowed checkpoint:** DB2 — Conceptual Domain Model (only now that DB1 has passed)
-**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) only. **No schema, no migration, no ORM install, no table has been designed or created.** That rule holds until DB6 for physical artifacts; DB2–DB5 remain documentation-only.
+**DB1:** COMPLETED (`DB1 PASS WITH DEFERRED PARAMETERS`, `a0e29b4` + correction `f90f78c` — see [`DB1_CORRECTION_REPORT.md`](./DB1_CORRECTION_REPORT.md))
+**DB2 audited Git HEAD:** `f90f78c0cb6891f46874723ae50c3b73de405675` (branch `production`)
+**Next allowed checkpoint:** DB3 — Lifecycle & Invariant Specification (only now that DB2 has passed)
+**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) + conceptual domain model (DB2). **No schema, no migration, no ORM install, no table/column/FK/index has been designed or created.** That rule holds until DB6 for physical artifacts; DB3–DB5 remain documentation-only.
 
 ---
 
@@ -88,6 +88,29 @@ require an ADR and must not be silently made inside an implementation task.
 | [`DB1_DECISION_MATRIX.md`](./DB1_DECISION_MATRIX.md) | All 19 B1 decisions: ADR, status, rationale, deferred parameters. |
 | [`DB1_IMPLEMENTATION_HANDOFF.md`](./DB1_IMPLEMENTATION_HANDOFF.md) | What DB2–DB10 must obey/implement/test; deferred-parameter register. |
 | [`DB1_COMPLETION_REPORT.md`](./DB1_COMPLETION_REPORT.md) | DB1 evidence, validation, verdict. |
+| [`DB1_CORRECTION_REPORT.md`](./DB1_CORRECTION_REPORT.md) | DB1-C1 evidence/policy correction record. |
+| [`DB2_CONCEPT_INVENTORY.md`](./DB2_CONCEPT_INVENTORY.md) | 75 canonical concepts: type, owner, classification, retention. |
+| [`DB2_BOUNDED_CONTEXT_MAP.md`](./DB2_BOUNDED_CONTEXT_MAP.md) | 15 contexts, responsibilities, integration styles, diagram. |
+| [`DB2_AGGREGATE_CATALOG.md`](./DB2_AGGREGATE_CATALOG.md) | 23 aggregates: roots, children, invariants, boundaries. |
+| [`DB2_ENTITY_VALUE_OBJECT_CATALOG.md`](./DB2_ENTITY_VALUE_OBJECT_CATALOG.md) | Entity vs VO classification + ID categories. |
+| [`DB2_RELATIONSHIP_MODEL.md`](./DB2_RELATIONSHIP_MODEL.md) | Cardinalities, composition/reference/snapshot, domain diagrams. |
+| [`DB2_OWNERSHIP_MATRIX.md`](./DB2_OWNERSHIP_MATRIX.md) | One owner per concept; read/mutate/reference rights. |
+| [`DB2_SNAPSHOT_AND_HISTORY_MODEL.md`](./DB2_SNAPSHOT_AND_HISTORY_MODEL.md) | Versioned/snapshot/append-only/mutable classes + correction rules. |
+| [`DB2_CROSS_CONTEXT_WORKFLOWS.md`](./DB2_CROSS_CONTEXT_WORKFLOWS.md) | W1–W7 orchestration, idempotency/audit points, DB3 guards. |
+| [`DB2_TRANSACTION_BOUNDARY_CANDIDATES.md`](./DB2_TRANSACTION_BOUNDARY_CANDIDATES.md) | Use-case transaction candidates + DB8 hotspots. |
+| [`DB2_DATA_CLASSIFICATION_MAP.md`](./DB2_DATA_CLASSIFICATION_MAP.md) | Per-concept classification, access, retention, redaction. |
+| [`DB2_PACKAGE_MODULE_MAPPING.md`](./DB2_PACKAGE_MODULE_MAPPING.md) | Context → module/package mapping (incl. new `content` module note). |
+| [`DB2_DESIGN_TEMPLATE_DECISION.md`](./DB2_DESIGN_TEMPLATE_DECISION.md) | GAP-08 resolution. |
+| [`DB2_TERMS_VERSION_DECISION.md`](./DB2_TERMS_VERSION_DECISION.md) | GAP-09 (DB2 portion) resolution. |
+| [`DB2_ANALYTICS_STORAGE_DECISION.md`](./DB2_ANALYTICS_STORAGE_DECISION.md) | GAP-11 resolution. |
+| [`DB2_COMPLETENESS_MATRIX.md`](./DB2_COMPLETENESS_MATRIX.md) | Full DB0 trace: concepts/REQ/DOM/LC/INV/Q coverage. |
+| [`DB2_IMPLEMENTATION_HANDOFF.md`](./DB2_IMPLEMENTATION_HANDOFF.md) | DB3/DB4 handoff + deferred-parameter register additions. |
+| [`DB2_COMPLETION_REPORT.md`](./DB2_COMPLETION_REPORT.md) | DB2 evidence, validation, verdict. |
+
+DB2 ADRs (in `docs/adr/database/`):
+[ADR-DB2-001 Customer Identity](../adr/database/ADR-DB2-001-CUSTOMER-IDENTITY-MODEL.md) ·
+[ADR-DB2-002 Shipping Address](../adr/database/ADR-DB2-002-SHIPPING-ADDRESS-MODEL.md) ·
+[ADR-DB2-003 Notification Persistence](../adr/database/ADR-DB2-003-NOTIFICATION-PERSISTENCE.md)
 
 ### DB1 ADR index (`docs/adr/database/`)
 
