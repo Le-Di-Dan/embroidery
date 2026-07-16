@@ -1,11 +1,11 @@
 # Database Phase — Overview
 
 **Phase:** Database Architecture & Persistence Foundation
-**Current checkpoint:** DB3 — Lifecycle & Invariant Specification — **COMPLETED** (`DB3 PASS WITH DEFERRED PARAMETERS`, 2026-07-15)
-**DB0:** COMPLETED (`563d986`) · **DB1:** COMPLETED (`a0e29b4` + correction `f90f78c`) · **DB2:** COMPLETED (`0563866`)
-**DB3 audited Git HEAD:** `0563866e0c1a53472a07e892e6cc1ecabe086b5a` (branch `production`)
-**Next allowed checkpoint:** DB4 — Logical Relational Schema (only now that DB3 has passed)
-**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) + conceptual domain model (DB2) + lifecycle/invariant specifications (DB3). **No schema, no migration, no ORM install, no table/column/FK/index has been designed or created.** That rule holds until DB6 for physical artifacts; DB4–DB5 remain documentation-only.
+**Current checkpoint:** DB4 — Logical Relational Schema — **COMPLETED** (`DB4 PASS WITH DEFERRED PHYSICAL MECHANISMS`, 2026-07-15)
+**DB0:** COMPLETED (`563d986`) · **DB1:** COMPLETED (`a0e29b4` + correction `f90f78c`) · **DB2:** COMPLETED (`0563866`) · **DB3:** COMPLETED (`a79f523`)
+**DB4 audited Git HEAD:** `a79f5235fd35f76076148cfc53a3eb18f538730b` (branch `production`)
+**Next allowed checkpoint:** DB5 — Query & Index Design (only now that DB4 has passed)
+**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) + conceptual domain model (DB2) + lifecycle/invariant specifications (DB3) + logical relational schema (DB4 — logical tables/columns/keys/relationships as documentation). **No migration, no ORM install, no physical table/constraint/index/trigger has been created.** That rule holds until DB6 for physical artifacts; DB5 remains documentation-only.
 
 ---
 
@@ -140,6 +140,35 @@ DB3 ADRs:
 [ADR-DB3-002 Cancellation/Refund](../adr/database/ADR-DB3-002-CANCELLATION-REFUND-POLICY.md) ·
 [ADR-DB3-003 Post-Approval Revision](../adr/database/ADR-DB3-003-POST-APPROVAL-PRODUCTION-REVISION.md) ·
 [ADR-DB3-004 Secure Grant & Re-verification](../adr/database/ADR-DB3-004-SECURE-GRANT-AND-REVERIFICATION.md)
+
+### DB4 document set
+
+| File | Contents |
+| ---- | -------- |
+| [`DB4_TABLE_CATALOG.md`](./DB4_TABLE_CATALOG.md) | 78 logical tables (TBL-001..078): owner, row meaning, category, PK, mutability, retention. |
+| [`DB4_COLUMN_DICTIONARY.md`](./DB4_COLUMN_DICTIONARY.md) | Per-table columns (COL-*): type family, nullability, mutability, sensitivity, references. |
+| [`DB4_KEYS_AND_CONSTRAINTS.md`](./DB4_KEYS_AND_CONSTRAINTS.md) | CST-*: PK/unique/partial-unique/check/immutability/append-only/TX-only rules. |
+| [`DB4_RELATIONSHIP_AND_FK_MODEL.md`](./DB4_RELATIONSHIP_AND_FK_MODEL.md) | REL-*: cardinality, FK direction, on-delete, cross-context legality. |
+| `DB4_SCHEMA_*.md` (×7) | Context schema docs: identity/customer, catalog/inventory/asset, design/ordering, quotation/payment, production/shipping, content/gallery/agreement, notification/audit/platform. |
+| [`DB4_STATE_AND_TRANSITION_STORAGE.md`](./DB4_STATE_AND_TRANSITION_STORAGE.md) | 29 lifecycles → authoritative state columns + history tiers. |
+| [`DB4_SNAPSHOT_AND_VERSIONING_MODEL.md`](./DB4_SNAPSHOT_AND_VERSIONING_MODEL.md) | Header/version and immutable-snapshot patterns. |
+| [`DB4_MONEY_QUANTITY_MEASUREMENT_MODEL.md`](./DB4_MONEY_QUANTITY_MEASUREMENT_MODEL.md) | Money/percent/quantity/dimensions; **GAP-10 stitch count closed**. |
+| [`DB4_JSONB_PAYLOAD_MAP.md`](./DB4_JSONB_PAYLOAD_MAP.md) | Closed allowed JSONB set (9 columns) per ADR-DB4-004. |
+| [`DB4_DELETE_ARCHIVE_RETENTION_MAPPING.md`](./DB4_DELETE_ARCHIVE_RETENTION_MAPPING.md) | Per-table delete category + retention class (durations deferred). |
+| [`DB4_LOGICAL_RELATIONAL_DIAGRAMS.md`](./DB4_LOGICAL_RELATIONAL_DIAGRAMS.md) | 7 Mermaid ER diagrams. |
+| [`DB4_INVARIANT_SCHEMA_TRACEABILITY.md`](./DB4_INVARIANT_SCHEMA_TRACEABILITY.md) | 35/35 invariants → structures/constraints/tests. |
+| [`DB4_GUARD_SCHEMA_TRACEABILITY.md`](./DB4_GUARD_SCHEMA_TRACEABILITY.md) | 30/30 guards → supplying tables/columns + locks. |
+| [`DB4_DB5_HANDOFF.md`](./DB4_DB5_HANDOFF.md) | Q-01..33 + 11 operational access paths (no index design). |
+| [`DB4_DB6_HANDOFF.md`](./DB4_DB6_HANDOFF.md) | Dependency-ordered groups G1–G19, constraint order, raw-SQL/trigger/spike list. |
+| [`DB4_TEST_HANDOFF.md`](./DB4_TEST_HANDOFF.md) | D7/D8 tests mapped to DB4 structures. |
+| [`DB4_COMPLETENESS_MATRIX.md`](./DB4_COMPLETENESS_MATRIX.md) | 75 concepts / 23 aggregates / 29 lifecycles / 35 INV / 30 GRD / queries / races — 0 unresolved. |
+| [`DB4_COMPLETION_REPORT.md`](./DB4_COMPLETION_REPORT.md) | Evidence, validation, verdict. |
+
+DB4 ADRs:
+[ADR-DB4-001 Money Representation](../adr/database/ADR-DB4-001-MONEY-REPRESENTATION.md) ·
+[ADR-DB4-002 Transition-History Storage](../adr/database/ADR-DB4-002-TRANSITION-HISTORY-STORAGE.md) ·
+[ADR-DB4-003 Asset Association Model](../adr/database/ADR-DB4-003-ASSET-ASSOCIATION-MODEL.md) ·
+[ADR-DB4-004 JSONB Boundaries](../adr/database/ADR-DB4-004-JSONB-BOUNDARIES.md)
 
 ### DB1 ADR index (`docs/adr/database/`)
 

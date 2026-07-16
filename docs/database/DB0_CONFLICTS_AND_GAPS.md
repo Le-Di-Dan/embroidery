@@ -229,3 +229,12 @@ remain DB10).
 | GAP-09 (DB3 portion) terms linkage | **Resolved** | [`DB3_AGREEMENT_ACCEPTANCE_SPEC.md`](./DB3_AGREEMENT_ACCEPTANCE_SPEC.md) (GRD-008; type set = config) |
 | GAP-12 re-verification triggers | **Resolved** | [ADR-DB3-004](../adr/database/ADR-DB3-004-SECURE-GRANT-AND-REVERIFICATION.md) (locked sensitive set) |
 | GAP-10 stitch count | Still open → DB4 | unchanged |
+
+**DB4 (2026-07-15, HEAD `a79f523`):**
+
+| GAP | Status | Resolution record |
+| --- | ------ | ----------------- |
+| GAP-10 stitch count | **Resolved** | [`DB4_MONEY_QUANTITY_MEASUREMENT_MODEL.md`](./DB4_MONEY_QUANTITY_MEASUREMENT_MODEL.md) §3 — admin-entered quotation pricing input (`quotation_versions.stitch_count`, integer ≥ 0, nullable in DRAFT, required at send, correction = new version, audited); never derived; never sourced from the design document |
+
+All GAP-01..GAP-12 are now resolved; no open conflicts/gaps remain in this
+register.

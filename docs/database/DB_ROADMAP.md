@@ -64,6 +64,20 @@
 > [`DB3_COMPLETION_REPORT.md`](./DB3_COMPLETION_REPORT.md). Deferred = config
 > values only (TTL/retention/retry/provider mappings), owners registered.
 > Next checkpoint: **DB4**. Locked DB0–DB10 order unchanged.
+>
+> **DB4 status (2026-07-15, HEAD `a79f523`): COMPLETED** —
+> `DB4 PASS WITH DEFERRED PHYSICAL MECHANISMS`. Logical relational schema:
+> 78 tables across 15 contexts (catalog + column dictionary + keys/
+> constraints + relationship/FK model + 7 context schema docs); DB4-owned
+> decisions locked (ADR-DB4-001 money numeric(14,2)+currency, ADR-DB4-002
+> hybrid transition history, ADR-DB4-003 asset associations, ADR-DB4-004
+> JSONB closed set); GAP-10 resolved (stitch count = admin-entered
+> quotation input). 75 concepts / 23 aggregates / 29 lifecycles / 35
+> invariants / 30 guards / 33+11 queries / 28 races mapped with 0
+> unresolved rows. Deferred = trigger/partial-unique/exclusion DDL + lock
+> spikes (DB6), index design (DB5), config values (business/CON-144).
+> Deliverables: `DB4_*` documents + [`DB4_COMPLETION_REPORT.md`](./DB4_COMPLETION_REPORT.md).
+> Next checkpoint: **DB5**. Locked DB0–DB10 order unchanged.
 
 ### DB1 — Persistence ADR
 

@@ -296,6 +296,35 @@ DB7/DB8 test handoffs. Remaining deferrals are configuration values only
 (TTLs, retention durations, retry counts, provider-specific mappings).
 **Status:** Locked (lifecycle baseline); relational schema at DB4.
 
+## D-041 — Logical relational schema (DB4)
+
+**Decision:** Checkpoint DB4 locks the logical relational schema
+(`docs/database/DB4_*`, `docs/adr/database/ADR-DB4-*`): 78 logical tables
+in the single `public` schema covering all 75 DB2 concepts and 23
+aggregates, with column dictionary, keys/uniqueness/check semantics,
+FK/reference directions and delete/archive behavior. DB4-owned modeling
+decisions: money is exact `numeric(14,2)` plus an explicit ISO-4217
+currency-code column ('VND' MVP), percentages `numeric(5,2)` 0–100,
+rounding owned by the application Money VO at one derivation point, and
+the deposit/remaining split is CHECK-verified to sum to the frozen total
+(ADR-DB4-001); transition history is a hybrid — dedicated append-only
+transition tables for request/order/production, structural history
+(immutable versions and append-only records) for design/quotation/payment/
+inventory and the other historized lifecycles, state timestamps plus audit
+for administrative publication lifecycles, and audit never substitutes for
+business history (ADR-DB4-002); asset associations use context-owned
+association tables and direct FK columns — no generic polymorphic
+`asset_links` (ADR-DB4-003); JSONB is restricted to a closed nine-column
+set (design documents, outbox payload, idempotency result, redacted
+provider events, audit summary, redacted notification params, versioned
+policy config), each with a schema-version key and owner — all
+invariant-bearing facts stay relational (ADR-DB4-004). GAP-10 is resolved:
+stitch count is an admin-entered quotation pricing input stored in the
+immutable quotation version, never derived. Deferred: trigger/
+partial-unique/exclusion DDL and locking spikes (DB6), index design (DB5),
+configuration values (business, CON-144).
+**Status:** Locked (logical schema); access-path/index design at DB5.
+
 # Open Decisions
 
 The following are intentionally unresolved:
