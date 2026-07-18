@@ -1,9 +1,11 @@
 # DB6 — Foundation Review Report
 
-**Date:** 2026-07-18 · **Slice:** DB6-C0 (correction)
+**Date:** 2026-07-18 · **Slices:** DB6-C0 (correction), DB6-C1 (metric
+reconciliation + G2 evidence, §8–§12)
 **Scope:** retro-validation of the foundation (`3855207`) and G1 (`1da5669`)
-against DB4/DB5 source of truth, plus completion of the S00 manifests.
-**Neither existing commit was amended.** One defect found in G1 was corrected
+against DB4/DB5 source of truth, completion of the S00 manifests, and the full
+G2 evidence record.
+**No existing commit was amended.** One defect found in G1 was corrected
 by a **forward migration**, per ADR-DB1-003.
 
 ---
@@ -198,17 +200,216 @@ A01 and A02 are closed **because** the index manifest is complete, as required.
 
 ---
 
-## 7. Progress (absolute counts)
+## 7. Progress (absolute counts, current through G2/C1)
 
 | Metric | Done | Total |
 |---|---|---|
-| Foundation slices completed | **S00, S01, S02, S03, S04, C0** | 6 |
-| Groups completed | **1** | 19 |
-| Tables implemented | **3** | 78 |
-| FK edges implemented | **3** | 129 |
-| Constraints implemented | **10** | see manifest §5 |
-| Launch indexes implemented | **6** | 211 physical (83 explicit) |
+| Foundation slices completed | **S00, S01, S02, S03, S04, C0, C1** | 7 |
+| Groups completed | **2** | 19 |
+| Tables implemented | **8** | 78 |
+| FK edges implemented | **6** | 129 logical (128 physical + REL-104 no-FK) |
+| Constraint objects implemented | **26** (8 PK + 6 FK + 6 UQ + 6 CK) | see manifest §2.3 |
+| Launch physical indexes implemented | **15** | 211 (83 explicit + 128 constraint-created) |
 | Required documents completed | **7** | 15 |
+
+---
+
+# Part II — DB6-C1: metric reconciliation and G2 evidence
+
+## 8. Canonical metric reconciliation
+
+Four metric families, each with separate ID-range / documented / expanded /
+physical figures. The manifest checker re-derives the REL expansion from the
+DB4 source document and verifies the index formula on every run.
+
+### 8.1. Relationships
+
+| Metric | Value |
+|---|---|
+| REL ID range | REL-001..105 (13 IDs unassigned) |
+| Documented REL rows | **92** |
+| Expanded logical FK edges | **129** (×1:66, ×2:20, ×3:3, ×4:1, ×5:2 — checker-verified) |
+| Physical FK target | 128 (REL-104 is polymorphic, no FK by design) |
+| Implemented physical FKs | 6 |
+
+The 26 multi-target rows and their per-edge expansion are enumerated in the
+schema manifest §2.2. No edge is invented for an unassigned ID.
+
+### 8.2. Constraints
+
+| Metric | Value |
+|---|---|
+| CST ID range | CST-001..125 (31 IDs unassigned) |
+| Documented CST IDs | **94** (92 table rows + CST-001/CST-080 blanket prose) |
+| Expanded logical constraint instances | **265** (77 single + 110 multi + 78 PK; CST-080 column-level, sized per dictionary) |
+| TX/App-only (no physical object) | **15** |
+| Conditional (not built) | 1 (CST-046 exclusion) |
+| Implemented physical constraint objects | **26** |
+
+`125` is never a physical constraint count. Per-CST expansion basis: schema
+manifest §2.3.
+
+### 8.3. Indexes
+
+| Metric | Value |
+|---|---|
+| IDX ID range | IDX-001..138 |
+| Catalog entries | 134 (4 IDs retired, never reused) |
+| Expanded logical index specifications | **134 — 1:1 with entries**; DB5 expanded at ID-assignment time, so no child-ID namespace is needed |
+| Constraint-created physical | **128** = 78 PK backing + 50 UNIQUE backing |
+| Explicit physical | **83** = 13 partial unique + 70 performance |
+| **Total physical at launch** | **211** |
+| Conditional | 1 (IDX-056) · Rejected: 15 `IDX-R*` · No-index decisions: 3 (Q-20/Q-33/QX-08) |
+
+**Formula (checker-enforced):** `(78 + 50) + (13 + 70) = 211`. The 13 partial
+uniques are *inside* the 83; PK backing is *not* inside the 50; FK-support
+indexes are never auto-created by PostgreSQL and live inside the 70.
+
+### 8.4. Tables
+
+78 TBL rows, each assigned to exactly one implementation group G1–G19;
+checker verifies uniqueness, no orphan, and group totals summing to 78.
+
+## 9. G2 scope record
+
+| Item | Value |
+|---|---|
+| Group / context | G2 — Platform base (CTX-PLT) |
+| TBL IDs | TBL-073, 074, 075, 076, 077 |
+| Physical tables | `outbox_events`, `idempotency_records`, `background_job_attempts`, `policy_configurations`, `policy_configuration_versions` |
+| COL ranges | COL-TBL073-01..10 (×2 on -02/-08), COL-TBL074-01..07 (×2 on -07), COL-TBL075-01..07, COL-TBL076-01..03, COL-TBL077-01..07 |
+| Physical columns | **49** (14 + 11 + 9 + 6 + 9, incl. convention columns) |
+| REL rows | REL-101 (target side; FK lands in G18), REL-102, REL-104 (no FK) |
+| Expanded FK edges in G2 | **3** (REL-102: versions→configurations, versions→admin_accounts, configurations→versions) |
+| CST IDs | CST-001, CST-048, CST-049, CST-050, CST-060 (×3), CST-062, plus CST-098/099 trigger targets (S24) |
+| Physical constraint objects in G2 | **16** = 5 PK + 4 UNIQUE + 4 CHECK + 3 FK (per-table breakdown in §10) |
+| IDX logical entries | IDX-058..061 (constraint-created now); IDX-088/090/093/094/131 (explicit, S25) |
+| Physical indexes selected for G2 | 9 constraint-created now + 5 explicit at S25 |
+| Dependencies on G1 | `policy_configuration_versions.created_by_admin_id` → `admin_accounts` |
+| Migrations | `0002` (generated), `0003` (generated, CST-060 rename), `0004` (custom SQL, REL-102 pointer) |
+| Custom SQL objects | 1 (FK `fk_policy_configurations__current_version_id`) |
+| DB7 targets | §11.3 |
+| DB8 targets | §11.3 |
+
+## 10. G2 implementation evidence (per table)
+
+| | TBL-076 | TBL-077 | TBL-074 | TBL-073 | TBL-075 |
+|---|---|---|---|---|---|
+| File (`schema/platform/`) | `policy-configurations.ts` | `policy-configuration-versions.ts` | `idempotency-records.ts` | `outbox-events.ts` | `background-job-attempts.ts` |
+| Migration | 0002 (+0004 FK) | 0002 | 0002 | 0002 | 0002 |
+| PK strategy | uuid7 | uuid7 | bigint identity | bigint identity | bigint identity |
+| Columns | 6 | 9 | 11 | 14 | 9 |
+| State field / check | — | — | `status` LC-23, `ck_..__status_allowed` | `status` LC-22, `ck_..__status_allowed` | `outcome`, `ck_..__outcome_allowed` |
+| FK edges | → versions (0004) | → configurations, → admin_accounts | — | — (REL-104 no-FK) | — |
+| Unique | `uq_..__config_key` (IDX-060) | `uq_..__config_version` (IDX-061) | `uq_..__namespace_scope_key` (**IDX-058, arbiter**) | — | `uq_..__kind_key_attempt` (IDX-059) |
+| Other checks | — | — | — | — | `ck_..__attempt_no_positive` (CST-062) |
+| Mutability | header | immutable (S24 trigger) | mutable operational (no trigger — DB5-A10) | column-scoped (S24 trigger, CST-099) | append-only (S24 trigger, CST-098) |
+| Delete/archive | retain | retain | hard-ttl | hard-ttl (processed) | hard-ttl (oper) |
+| JSONB | — | `value` (#9) | `result` (#5) | `payload` (#4) | — |
+| `updated_at` | yes (mutable) | **no** (immutable) | yes | **no** (not in CST-099 set) | **no** (append-only) |
+| Deviations | — | — | — | — | — |
+
+Parity confirmations: column counts match the DB4 dictionary expansion exactly
+(×2 rows expand); nullability verified column-by-column; no database default on
+any business column; state literals byte-identical to DB3 (`PENDING/DISPATCHED/
+FAILED/DEAD_LETTER`, `IN_PROGRESS/COMPLETED`, `SUCCEEDED/FAILED_RETRYABLE/
+FAILED_TERMINAL`); no extra column/table/index; **no missing FK** (REL-102's
+three edges present; REL-104 has none by design — checked against the
+129-edge expansion, the REL-003-class gap cannot recur silently); no plaintext
+token/OTP/credential column; no rejected/deferred DB5 index present.
+
+## 11. G2 migration and validation evidence
+
+### 11.1. Migrations
+
+| File | Source | Contents |
+|---|---|---|
+| `0002_create_platform_base_tables.sql` | generated, human-reviewed | 5 tables, 5 PK, 4 UNIQUE, 4 CHECK, 2 FK — G2 only |
+| `0003_align_status_check_names.sql` | generated, human-reviewed | 2 constraint renames (CST-060 pattern) — G1 correction, no G2 objects |
+| `0004_add_policy_configuration_current_version_fk.sql` | **custom, hand-authored, reviewed** | 1 FK (REL-102 cycle) |
+
+0 functions/triggers (S24). Longest identifier 57 bytes (constraint), 48
+(index) — limit 63. `0000`/`0001` byte-identical to their commits (git diff
+empty).
+
+### 11.2. Validation battery (all executed, this slice)
+
+| Check | Result |
+|---|---|
+| Typecheck / lint / format / tests / file-size | PASS (18 tests) |
+| Manifest checker (8 checks incl. formula, REL expansion, group sums, retired-IDX scan) | PASS |
+| Fresh empty DB → 5 migrations | PASS, `up-to-date` |
+| No-op reapply | PASS, nothing applied |
+| Upgrade from G1-only prefix | PASS: 2 applied → 3 pending detected → 5 applied |
+| Drift / checksums | clean; migration files restored byte-identical after prefix test |
+| Physical parity | 8 tables; columns 9/8/9/6/9/11/14/9 per table; 8 PK + 6 FK + 6 UQ + 6 CK; 15 indexes |
+| Duplicate-index scan | 0 |
+| Naming conformance (prefix-based) | 0 non-conforming constraints or indexes |
+| Valid insert path | config → version → point header: OK |
+| Invalid FK | dangling `current_version_id` rejected |
+| Invalid CHECK | bad status ×2, `attempt_no=0` rejected |
+| Unique violation | duplicate idempotency scope, duplicate attempt rejected; cross-namespace allowed |
+| Delete-restrict | version-under-pointer and admin-under-version both rejected |
+| Update per category | header fields OK; outbox CST-099 mutable set OK |
+| Rollback | smoke row count after rollback: 0 |
+| Security scans | no plaintext secrets, no unparameterised SQL, `.env` ignored |
+
+This battery does not replace DB7's full suite.
+
+### 11.3. G2 → DB7/DB8 handoff
+
+DB7 (SQLSTATE targets): CST-048 `23505` (+cross-namespace negative), CST-049
+`23505`, CST-050 `23505` ×2, CST-060 `23514` ×3, CST-062 `23514`, REL-102
+`23503` ×3 (orphan version, orphan admin, dangling pointer; delete-restrict
+both directions). After S24: CST-098 append-only reject, CST-099 column-scope
+reject (`23001`), TBL-077 immutability reject.
+
+DB8: CST-048 claim race (two concurrent claims → one `23505` loser, D8-25);
+outbox `SKIP LOCKED` disjoint claim on IDX-088 (CC-25); stuck-IN_PROGRESS
+timeout sweep.
+
+## 12. DB5 adjustment status — A03/A08/A09/A10 (per-group ledger)
+
+### A03 — partial predicates (open, closes per group)
+
+| Metric | Value |
+|---|---|
+| Launch partial indexes total | **45** (13 partial unique + 32 partial performance) |
+| Implemented through G2 | **1** (IDX-002) |
+| Volatile predicates found | 0 (engine rejects them outright — proven) |
+| Remaining owners | partial uniques with their groups; partial performance in S25 |
+
+### A08 — VND scale (partially closed)
+
+G1/G2 contain **no money column** (first `_amount` arrives in G5
+`products.base_price_amount`). Mechanism proven by spike + primitive
+implemented; **no global closure is claimed from the spike alone**. Closes
+when all 14 `_amount` columns carry the conditional CHECK; DB7 owns negative
+tests.
+
+### A09 — state parity (open, closes per group)
+
+| Table | DB3 source | TS constant | CHECK values | Partial-index values | Parity |
+|---|---|---|---|---|---|
+| admin_accounts | `DB3_DB4_HANDOFF` §1 | `ADMIN_ACCOUNT_STATES` | ACTIVE/LOCKED/DISABLED | `'ACTIVE'` (IDX-002) | **byte-identical** |
+| admin_sessions | same | `ADMIN_SESSION_STATES` | ACTIVE/EXPIRED/REVOKED | — | **byte-identical** |
+| outbox_events | LC-22 | `OUTBOX_EVENT_STATES` | PENDING/DISPATCHED/FAILED/DEAD_LETTER | S25 (IDX-088/090) | **byte-identical** |
+| idempotency_records | LC-23 | `IDEMPOTENCY_RECORD_STATES` | IN_PROGRESS/COMPLETED | S25 (IDX-094) | **byte-identical** |
+| background_job_attempts | COL-TBL075-04 | `JOB_ATTEMPT_OUTCOMES` | SUCCEEDED/FAILED_RETRYABLE/FAILED_TERMINAL | — | **byte-identical** |
+
+Each CHECK and each future partial predicate derives from the one exported
+tuple; a literal cannot drift between code and database.
+
+### A10 — immutability vs operational metadata (open, closes per group)
+
+| Table | Category | Immutable | Mutable | Mechanism | DB7 |
+|---|---|---|---|---|---|
+| admin_accounts/credentials/sessions | mutable | — | all | none needed | — |
+| policy_configurations | header | identity | description, pointer | app + FK restrict | pointer tests |
+| policy_configuration_versions | immutable | whole row | — | **S24 trigger** | reject-update |
+| idempotency_records | operational | identity, fingerprint | status/result/expiry/claim | **no trigger — DB5-A10 exception** | claim races |
+| outbox_events | column-scoped | payload, identity, event time | CST-099 seven-column set (exported as `OUTBOX_MUTABLE_COLUMNS`) | **S24 column-scoped trigger** | scope reject |
+| background_job_attempts | append-only | whole row | — | **S24 trigger** (CST-098) | reject-update/delete |
 
 Documents complete: version matrix, capability spike report, deviation
 register, schema manifest, index manifest, migration governance, foundation

@@ -193,6 +193,7 @@ a lapse fails a gate rather than surviving review.
 | Field | Value |
 |---|---|
 | Source IDs | DB4 completion report ("REL-001..105", "CST-001..125"), DB5-A01 (same trap, index side) |
+| Nature | **counting/traceability interpretation correction** — not a logical schema change; no relationship or constraint is added, removed, or altered |
 | Status | **closed** (documentation correction; no schema change) |
 
 **Problem.** DB4 reports "105 relationships" and "125 constraints". Those are
@@ -220,9 +221,22 @@ explicitly; DB4 did not.
 parity gate counts FK edges, not `REL-*` rows.
 
 **Behaviour impact.** None — no table, column, FK or constraint is missing.
-This is a counting/documentation correction.
-**Test impact.** DB7/DB8 must size their coverage from the physical object
-counts, not from the ID ranges.
+**Physical implementation impact.** Prevents invented objects: without this
+correction, a later checkpoint chasing "105 relationships" could fabricate 13
+edges that DB4 never modelled.
+**Historical documents.** Unchanged — DB4 is not edited to fill the gaps.
+**Canonical implementation baseline.** The DB6 manifests; the checker
+re-derives the expansion from the DB4 source document on every run, so the
+manifests cannot drift from DB4 silently.
+**Test/audit impact.** DB7/DB8 size their coverage from expanded object counts
+(129 FK edges, 265 constraint instances), not ID-range maxima. **DB10 audits
+must do the same** — an audit that reconciles `pg_constraint` against "125"
+would report a permanent false deficit.
+
+**Scope guard.** This deviation covers only the counting interpretation. If a
+later group discovers that DB4 actually *omitted* a needed edge or constraint
+(a modelling gap, as REL-003's omission from G1 was an implementation gap), a
+**separate** deviation is opened; nothing is folded into this one.
 
 ---
 

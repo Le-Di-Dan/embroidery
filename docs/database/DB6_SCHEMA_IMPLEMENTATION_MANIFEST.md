@@ -75,7 +75,17 @@ DB7–DB10.
 
 ### 2.2. FK edge multiplicity
 
-92 `REL-*` rows expand to **129 physical FK edges**:
+Four relationship metrics, kept separate and never interchanged:
+
+| Metric | Value |
+|---|---|
+| Relationship ID range | REL-001..105 (105 slots) |
+| Documented REL rows | **92** |
+| Expanded logical FK/reference edges | **129** |
+| Implemented physical FK constraints | grows per group (parity gate counts these) |
+
+92 `REL-*` rows expand to **129 FK edges** (checker-verified against the DB4
+source document on every run):
 
 | Multiplicity | Rows | Edges |
 |---|---|---|
@@ -86,11 +96,90 @@ DB7–DB10.
 | ×5 | 2 | 10 |
 | **Total** | **92** | **129** |
 
-The parity gate counts **FK edges**, not `REL-*` rows.
+The 26 multi-target rows and their expansions:
+
+| REL | ×N | Expansion (source → target per edge) |
+|---|---|---|
+| REL-012 | 2 | merge_cases → customers (survivor); → customers (loser) |
+| REL-023 | 2 | product_sides → products; embroidery_areas → product_sides |
+| REL-025 | 2 | product_media → products; → assets |
+| REL-028 | 3 | ledger_entries → soft_holds; → reservations; → orders |
+| REL-029 | 2 | soft_holds → sku_stocks; → custom_requests |
+| REL-031 | 2 | reservations → sku_stocks; → orders |
+| REL-032 | 2 | asset_inspections → assets; asset_derivatives → assets |
+| REL-033 | 2 | assets → customers (uploaded_by); → design_sessions (uploaded_via) |
+| REL-042 | 2 | design_session_assets → design_sessions; → assets |
+| REL-048 | 2 | design_version_assets → design_versions; → assets |
+| REL-052 | 3 | approval_snapshots → design_cases; → custom_requests; → customers |
+| REL-053 | 2 | approval_snapshots → grants; → challenges |
+| REL-055 | 2 | acceptances → approval_snapshots; → agreement_versions |
+| REL-058 | 3 | design_templates → products; → sides; → areas |
+| REL-061 | 2 | custom_requests → products; → variants |
+| REL-062 | 2 | custom_requests → design_cases; → quotations (current pointers) |
+| REL-063 | 5 | COP / breakdowns / request_assets / moderation_notes / request_transitions → custom_requests |
+| REL-066 | 2 | quotation_versions → quotations; line_items → versions |
+| REL-070 | 4 | quotation_acceptances → versions; → customers; → grants; → challenges |
+| REL-076 | 2 | order_items → skus; → customer_owned_products |
+| REL-078 | 5 | order_transitions / cancellations / shipping_details / shipping_snapshots / fee_acks → orders |
+| REL-080 | 2 | cancellation_requests → grants; → challenges |
+| REL-083 | 2 | obligations → obligations (superseded_by); → attempts (satisfied_by) |
+| REL-085 | 2 | payment_attempts → grants; → challenges |
+| REL-087 | 2 | reconciliations → attempts; → obligations |
+| REL-095 | 2 | gallery_entry_assets → gallery_entries; → assets |
+
+No edge is invented for a missing ID; the 13 unassigned IDs stay unassigned.
+The parity gate counts **FK edges**, not `REL-*` rows. REL-104 (outbox
+polymorphic aggregate reference) is a logical edge with **no physical FK** by
+design — it is counted in the 129 logical edges but excluded from the physical
+FK target.
+
+### 2.3. Constraint metric model
+
+Five constraint metrics, kept separate:
+
+| Metric | Value |
+|---|---|
+| Constraint ID range | CST-001..125 (125 slots) |
+| Documented CST IDs | **94** (92 table rows + 2 blanket prose: CST-001, CST-080) |
+| Expanded logical constraint instances | **265** (see expansion table; CST-080 excluded — column-level NN, sized per dictionary) |
+| TX/App-only rules (no physical object) | **15** (CST-110..123 range, 15 rows) |
+| Implemented physical constraint objects | grows per group (parity gate counts these) |
+
+`125` is never a physical constraint count. The 15 multi-target rows and the
+two blankets expand as follows; every other row is 1 instance:
+
+| CST | Instances | Basis |
+|---|---|---|
+| CST-001 | 78 | PK on every table |
+| CST-011 | 4 | slug uniques (categories, products, gallery_entries, design_templates → IDX-010..013) |
+| CST-035 | 2 | quotations: request_id + code (IDX-037/038) |
+| CST-043 | 6 | asset-association uniques (IDX-046..051) |
+| CST-044 | 3 | content_pages / redirect_rules / agreements (IDX-052..054) |
+| CST-050 | 2 | config key + (config, version) (IDX-060/061) |
+| CST-051 | 2 | business_profiles + thread_colors (IDX-062/063) |
+| CST-060 | 25 | one CHECK per status column |
+| CST-062 | 7 | quantity/attempt positivity across 7 tables |
+| CST-063 | 14 | one per `_amount` column (dictionary scan) |
+| CST-064 | 4 | quotation arithmetic: deposit+remaining=total; total composition; percent 0–100; validity window |
+| CST-066 | 7 | dimension positivity across 7 tables |
+| CST-069 | 2 | customers self-merge + merge_cases survivor≠loser |
+| CST-070 | 13 | one per hash column (dictionary scan) |
+| CST-074 | 2 | design_versions hash-at-sent + agreement_versions hash-at-published |
+| CST-098 | 17 | append-only trigger per listed table |
+
+Arithmetic: 77 single-instance rows + 110 multi-row instances + 78 (CST-001)
+= **265**. Of these, 15 are TX/App-only and 1 (CST-046) is the conditional
+exclusion — neither produces a physical object at launch. Trigger-enforced
+categories (IMM 9 rows, APP 2 rows → 18 table targets, TRG 1) become physical
+trigger objects in slice S24; their exact object count is recorded there.
 
 ---
 
 ## 3. Table manifest (78 tables)
+
+78 TBL rows, each assigned to exactly one implementation group G1–G19. The
+checker verifies: 78 unique TBL IDs, no orphan table, no table in two groups,
+and group totals summing to 78.
 
 Columns: TBL → physical table · context · implementation group · schema source
 file · PK strategy · mutability class · status.

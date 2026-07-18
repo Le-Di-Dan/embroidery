@@ -118,14 +118,57 @@ physical objects and are counted by the parity gate.
 
 ### 2.5. Physical object roll-up at launch
 
-| Physical origin | Count | Explicit DDL? |
-|---|---|---|
-| PK constraint backing | 78 | no |
-| UNIQUE constraint backing | 50 | no |
-| Explicit partial unique | 13 | **yes** |
-| Explicit performance | 70 | **yes** |
-| **Total physical indexes at launch** | **211** | 83 explicit |
-| Not built (conditional) | 1 (IDX-056) | — |
+Canonical metric model — one row per metric, no metric reused under another
+name. The manifest checker verifies the formula balances.
+
+| Metric | Value |
+|---|---|
+| IDX ID range | IDX-001..138 (138 slots) |
+| Catalog entries | 134 |
+| Retired IDs (never reused) | 4 |
+| Logical selected entries (launch) | 133 (134 − IDX-056 conditional) |
+| Expanded logical index specifications | **134 — identical to catalog entries** (see below) |
+| Constraint-created physical indexes | **128** = 78 PK backing + 50 UNIQUE backing |
+| Explicit physical indexes | **83** = 13 partial unique + 70 performance |
+| **Total physical indexes at launch** | **211** |
+| Conditional physical indexes (not built) | 1 (IDX-056) |
+| Rejected candidates (never built) | 15 (`IDX-R01..R15`) |
+| No-index query decisions | 3 (Q-20, Q-33, QX-08) |
+
+**Formula (checker-enforced):**
+
+```text
+constraint-created (78 PK + 50 UNIQUE = 128)
++ explicit          (13 partial unique + 70 performance = 83)
+= total physical indexes at launch: 211
+```
+
+Four clarifications that the formula depends on:
+
+1. **Every `IDX-*` maps 1:1 to exactly one physical index.** No entry expands
+   to multiple physical objects — DB5 already performed that expansion when it
+   assigned IDs (e.g. CST-011's four slug uniques are IDX-010/011/012/013,
+   four separate entries, not one entry ×4). Expanded logical specifications
+   therefore equal catalog entries (134), and no child-ID namespace
+   (`IDX-xxx.a`) is needed. The *CST* side is where ×N expansion happens — see
+   the schema manifest §2.3.
+2. **The 13 partial uniques are inside the 83 explicit indexes**, not added on
+   top. PostgreSQL has no partial unique *constraint*, so they must be
+   explicit `CREATE UNIQUE INDEX` statements; they are counted once, in the
+   explicit column.
+3. **The 78 PK backing indexes are *not* inside the 50.** The 50 are backing
+   indexes of `UNIQUE` constraints only (the `U`-marked integrity entries).
+   PK backing indexes carry no `IDX-*` ID at all and are counted separately.
+4. **PostgreSQL does not auto-create FK-support indexes.** Every FK-support
+   index DB5 selected (IDX-069, 075, 077, 099, 100, 101, 102, 106, 107, 134,
+   …) is an explicit performance entry inside the 70. A FK constraint alone
+   creates no index — assuming otherwise would silently lose the entire
+   FK-lookup tier.
+
+Per-`IDX-*` physical identity: table, keys, predicate, owner and
+implementation group are given in §2.2 (partial uniques), §2.3 (constraint
+backing) and §3 (performance). No physical object appears in more than one of
+those registers; the checker fails on any overlap.
 
 **83 explicit `CREATE INDEX` statements — not 134.** This is the DB5-A01
 answer.
