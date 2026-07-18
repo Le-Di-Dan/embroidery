@@ -1,0 +1,470 @@
+# DB6 — Schema Implementation Manifest
+
+**Date:** 2026-07-18 · **Slice:** DB6-C0 · **Checkpoint:** DB6
+**Nature:** canonical map from DB4 logical IDs to physical objects. This is the
+authority the fresh-install parity gate checks the database against.
+
+**Status values:** `implemented` · `planned` (physical name/group/mechanism
+locked, not yet built) · `deferred` (owner named) · `not-built` (explicit
+decision).
+
+> **Rule applied throughout:** an ID *range* is not an object *count*. DB4
+> allocated ID ranges and then compacted them, leaving unassigned IDs. This
+> manifest reports what is actually defined and lists what is unassigned,
+> rather than inventing rows to reach a headline number. See §2.
+
+---
+
+## 1. Physical conventions (binding for all groups)
+
+| Concern | Rule | Source |
+|---|---|---|
+| PostgreSQL schema | `public` only; `drizzle` holds migration history | ADR-DB1-005 |
+| Table names | snake_case, plural, no module prefix | ADR-DB1-006 |
+| PK name | `pk_<table>` | ADR-DB1-006 |
+| FK name | `fk_<table>__<column>` | ADR-DB1-006 |
+| Unique | `uq_<table>__<cols>[__<tag>]` | ADR-DB1-006 / DB5 naming |
+| Check | `ck_<table>__<rule_slug>` | ADR-DB1-006 |
+| Index | `ix_<table>__<cols>[__<tag>]` | DB5 naming |
+| Trigger / function | `tg_<table>__<purpose>` / `fn_<purpose>` | ADR-DB1-006 |
+| Key declaration | **table-level** `primaryKey({name})` / `foreignKey({name})` / `unique(name)` only | DEV-DB6-006 |
+| Business PK | `uuid`, UUIDv7 app-generated | ADR-DB1-007 cat. 1 |
+| Append-only PK | `bigint GENERATED ALWAYS AS IDENTITY` | ADR-DB1-007 cat. 2 |
+| Timestamps | `timestamptz`, UTC; `updated_at` only on mutable tables | ADR-DB1-006 |
+| Money | `numeric(14,2)` + row `currency_code` | ADR-DB4-001 |
+| State | `text` + CHECK from the canonical tuple | ADR-DB1-008, DB5-A09 |
+| On delete | `restrict` everywhere; `cascade-temp` only for temp children | DB4 REL legend |
+| Schema source root | `packages/database/src/schema/<context>/<table>.ts` | DB6-S03 |
+
+---
+
+## 2. Baseline ID reconciliation (counts vs ranges)
+
+| Artifact | Range claimed by DB4/DB5 | IDs actually defined | Unassigned IDs | Physical objects |
+|---|---|---|---|---|
+| Tables `TBL-*` | TBL-001..078 | **78** | none | 78 tables |
+| Relationships `REL-*` | REL-001..105 | **92 rows** | **13** | **129 FK edges** |
+| Constraints `CST-*` | CST-001..125 | **94** (92 table rows + CST-001/060 blanket prose) | **31** | see §5 |
+| Indexes `IDX-*` | IDX-001..138 | **134** | 4 (retired, documented by DB5) | see index manifest |
+| Lifecycles | 29 lifecycles | **23 `LC-*` IDs** covering 29 state machines | none | 25 status columns |
+| JSONB payloads | 9 | **9** | none | 9 `jsonb` columns |
+
+### 2.1. Unassigned DB4 IDs — finding DB6-F01
+
+These IDs appear in no DB4 document:
+
+```text
+REL-015 REL-016 REL-017 REL-018 REL-019
+REL-034 REL-035 REL-036 REL-037 REL-038 REL-039
+REL-059 REL-089
+
+CST-052..059  CST-075..079  CST-081..089  CST-101..109
+```
+
+DB5 documented its four retired `IDX-*` IDs explicitly; DB4 did not document
+its unassigned `REL-*`/`CST-*` IDs. The cause is visible in the surviving
+rows: DB4 collapsed multi-target relationships into a single ID with a `×N`
+multiplicity marker (`REL-033 ×2`, `REL-058 ×3`, `REL-063 ×5`, `REL-078 ×5`)
+and left the neighbouring allocated IDs unused.
+
+**This is a documentation gap, not a modelling gap.** No table, column, FK or
+constraint is missing — every FK edge and constraint in the DB4 context
+documents is accounted for below. Recorded as **DEV-DB6-007** so that "105
+relationships" and "125 constraints" are never re-read as object counts by
+DB7–DB10.
+
+### 2.2. FK edge multiplicity
+
+92 `REL-*` rows expand to **129 physical FK edges**:
+
+| Multiplicity | Rows | Edges |
+|---|---|---|
+| ×1 | 66 | 66 |
+| ×2 | 20 | 40 |
+| ×3 | 3 | 9 |
+| ×4 | 1 | 4 |
+| ×5 | 2 | 10 |
+| **Total** | **92** | **129** |
+
+The parity gate counts **FK edges**, not `REL-*` rows.
+
+---
+
+## 3. Table manifest (78 tables)
+
+Columns: TBL → physical table · context · implementation group · schema source
+file · PK strategy · mutability class · status.
+
+Schema files live under `packages/database/src/schema/<context>/`.
+
+### G1 — Identity (CTX-IDN) · **implemented**
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-001 | `admin_accounts` | `identity/admin-accounts.ts` | uuid7 | mutable | **implemented** |
+| TBL-002 | `admin_credentials` | `identity/admin-credentials.ts` | uuid7 | mutable | **implemented** |
+| TBL-003 | `admin_sessions` | `identity/admin-sessions.ts` | uuid7 | mutable | **implemented** |
+
+### G2 — Platform base (CTX-PLT) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-076 | `policy_configurations` | `platform/policy-configurations.ts` | uuid7 | header | planned |
+| TBL-077 | `policy_configuration_versions` | `platform/policy-configuration-versions.ts` | uuid7 | immutable | planned |
+| TBL-074 | `idempotency_records` | `platform/idempotency-records.ts` | bigint | mutable (state) | planned |
+| TBL-073 | `outbox_events` | `platform/outbox-events.ts` | bigint | column-scoped | planned |
+| TBL-075 | `background_job_attempts` | `platform/background-job-attempts.ts` | bigint | append | planned |
+
+### G3 — Customer (CTX-CUS) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-004 | `customers` | `customer/customers.ts` | uuid7 | mutable | planned |
+| TBL-078 | `business_profiles` | `customer/business-profiles.ts` | uuid7 | mutable | planned |
+| TBL-005 | `customer_contact_points` | `customer/customer-contact-points.ts` | uuid7 | mutable | planned |
+
+### G4 — Asset (CTX-AST) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-022 | `assets` | `asset/assets.ts` | uuid7 | mutable | planned |
+| TBL-023 | `asset_inspections` | `asset/asset-inspections.ts` | bigint | append | planned |
+| TBL-024 | `asset_derivatives` | `asset/asset-derivatives.ts` | uuid7 | mutable | planned |
+
+### G5 — Catalog (CTX-CAT) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-011 | `categories` | `catalog/categories.ts` | uuid7 | mutable | planned |
+| TBL-012 | `products` | `catalog/products.ts` | uuid7 | mutable | planned |
+| TBL-013 | `product_variants` | `catalog/product-variants.ts` | uuid7 | mutable | planned |
+| TBL-014 | `skus` | `catalog/skus.ts` | uuid7 | mutable | planned |
+| TBL-015 | `product_sides` | `catalog/product-sides.ts` | uuid7 | mutable | planned |
+| TBL-016 | `embroidery_areas` | `catalog/embroidery-areas.ts` | uuid7 | mutable | planned |
+| TBL-017 | `product_media` | `catalog/product-media.ts` | uuid7 | mutable | planned |
+
+### G6 — Inventory core (CTX-INV) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-018 | `sku_stocks` | `inventory/sku-stocks.ts` | uuid7 | mutable (lock anchor) | planned |
+| TBL-019 | `inventory_ledger_entries` | `inventory/inventory-ledger-entries.ts` | bigint | append | planned |
+
+### G7 — Design pre-request (CTX-DSN) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-034 | `design_templates` | `design/design-templates.ts` | uuid7 | header | planned |
+| TBL-035 | `design_template_versions` | `design/design-template-versions.ts` | uuid7 | immutable-once-published | planned |
+| TBL-036 | `design_template_assets` | `design/design-template-assets.ts` | uuid7 | mutable | planned |
+| TBL-025 | `design_sessions` | `design/design-sessions.ts` | uuid7 | temp | planned |
+| TBL-026 | `design_session_assets` | `design/design-session-assets.ts` | uuid7 | mutable | planned |
+
+### G8 — Verification (CTX-CUS) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-006 | `contact_verification_challenges` | `customer/contact-verification-challenges.ts` | uuid7 | temp | planned |
+| TBL-007 | `contact_verification_attempts` | `customer/contact-verification-attempts.ts` | bigint | append | planned |
+
+### G9 — Request (CTX-ORD / CTX-DSN) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-037 | `custom_requests` | `ordering/custom-requests.ts` | uuid7 | mutable | planned |
+| TBL-038 | `customer_owned_products` | `ordering/customer-owned-products.ts` | uuid7 | mutable | planned |
+| TBL-039 | `custom_request_quantity_breakdowns` | `ordering/custom-request-quantity-breakdowns.ts` | uuid7 | mutable-until-quoted | planned |
+| TBL-040 | `custom_request_assets` | `ordering/custom-request-assets.ts` | uuid7 | mutable | planned |
+| TBL-041 | `request_moderation_notes` | `ordering/request-moderation-notes.ts` | bigint | append | planned |
+| TBL-042 | `custom_request_transitions` | `ordering/custom-request-transitions.ts` | bigint | append | planned |
+| TBL-027 | `design_cases` | `design/design-cases.ts` | uuid7 | header | planned |
+
+### G10 — Grants, holds, merge (CTX-CUS / CTX-INV) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-008 | `secure_access_grants` | `customer/secure-access-grants.ts` | uuid7 | mutable | planned |
+| TBL-020 | `inventory_soft_holds` | `inventory/inventory-soft-holds.ts` | uuid7 | mutable | planned |
+| TBL-009 | `customer_merge_cases` | `customer/customer-merge-cases.ts` | uuid7 | mutable | planned |
+| TBL-010 | `customer_merge_events` | `customer/customer-merge-events.ts` | bigint | append | planned |
+
+### G11 — Design formal (CTX-DSN) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-028 | `design_versions` | `design/design-versions.ts` | uuid7 | immutable-once-sent | planned |
+| TBL-029 | `design_version_assets` | `design/design-version-assets.ts` | uuid7 | immutable w/ version | planned |
+| TBL-030 | `design_reviews` | `design/design-reviews.ts` | bigint | append | planned |
+
+### G12 — Content, gallery, agreement (CTX-CNT / CTX-GAL) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-066 | `content_pages` | `content/content-pages.ts` | uuid7 | mutable | planned |
+| TBL-067 | `redirect_rules` | `content/redirect-rules.ts` | uuid7 | mutable | planned |
+| TBL-068 | `agreements` | `content/agreements.ts` | uuid7 | header | planned |
+| TBL-069 | `agreement_versions` | `content/agreement-versions.ts` | uuid7 | immutable-once-published | planned |
+| TBL-064 | `gallery_entries` | `gallery/gallery-entries.ts` | uuid7 | mutable | planned |
+| TBL-065 | `gallery_entry_assets` | `gallery/gallery-entry-assets.ts` | uuid7 | mutable | planned |
+
+### G13 — Approval (CTX-DSN) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-031 | `approval_snapshots` | `design/approval-snapshots.ts` | uuid7 | immutable | planned |
+| TBL-032 | `approval_snapshot_thread_colors` | `design/approval-snapshot-thread-colors.ts` | bigint | immutable | planned |
+| TBL-033 | `approval_snapshot_agreement_acceptances` | `design/approval-snapshot-agreement-acceptances.ts` | bigint | immutable | planned |
+
+### G14 — Quotation (CTX-QUO) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-050 | `quotations` | `quotation/quotations.ts` | uuid7 | header | planned |
+| TBL-051 | `quotation_versions` | `quotation/quotation-versions.ts` | uuid7 | immutable-once-sent | planned |
+| TBL-052 | `quotation_line_items` | `quotation/quotation-line-items.ts` | uuid7 | immutable w/ version | planned |
+| TBL-053 | `quotation_acceptances` | `quotation/quotation-acceptances.ts` | bigint | append | planned |
+
+### G15 — Order & shipping (CTX-ORD) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-043 | `orders` | `ordering/orders.ts` | uuid7 | mutable | planned |
+| TBL-044 | `order_items` | `ordering/order-items.ts` | uuid7 | immutable | planned |
+| TBL-045 | `order_transitions` | `ordering/order-transitions.ts` | bigint | append | planned |
+| TBL-046 | `order_cancellation_requests` | `ordering/order-cancellation-requests.ts` | uuid7 | mutable | planned |
+| TBL-047 | `shipping_details` | `ordering/shipping-details.ts` | uuid7 | mutable-until-frozen | planned |
+| TBL-048 | `shipping_snapshots` | `ordering/shipping-snapshots.ts` | uuid7 | immutable | planned |
+| TBL-049 | `shipping_fee_acknowledgements` | `ordering/shipping-fee-acknowledgements.ts` | bigint | append | planned |
+| TBL-021 | `inventory_reservations` | `inventory/inventory-reservations.ts` | uuid7 | mutable | planned |
+
+### G16 — Payment (CTX-PAY) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-054 | `payment_obligations` | `payment/payment-obligations.ts` | uuid7 | mutable | planned |
+| TBL-055 | `payment_attempts` | `payment/payment-attempts.ts` | uuid7 | mutable | planned |
+| TBL-056 | `payment_provider_events` | `payment/payment-provider-events.ts` | bigint | append | planned |
+| TBL-057 | `payment_reconciliations` | `payment/payment-reconciliations.ts` | bigint | append | planned |
+| TBL-058 | `refunds` | `payment/refunds.ts` | uuid7 | state mutable + amounts immutable | planned |
+
+### G17 — Production (CTX-PRD) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-059 | `production_jobs` | `production/production-jobs.ts` | uuid7 | mutable | planned |
+| TBL-060 | `production_specifications` | `production/production-specifications.ts` | uuid7 | immutable | planned |
+| TBL-061 | `production_artifacts` | `production/production-artifacts.ts` | uuid7 | mutable | planned |
+| TBL-062 | `production_notes` | `production/production-notes.ts` | bigint | append | planned |
+| TBL-063 | `production_job_transitions` | `production/production-job-transitions.ts` | bigint | append | planned |
+
+### G18 — Notification (CTX-NTF) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-070 | `notification_intents` | `notification/notification-intents.ts` | uuid7 | mutable (status) | planned |
+| TBL-071 | `notification_delivery_attempts` | `notification/notification-delivery-attempts.ts` | bigint | append | planned |
+
+### G19 — Audit (CTX-AUD) · planned
+
+| TBL | Table | File | PK | Mut | Status |
+|---|---|---|---|---|---|
+| TBL-072 | `audit_events` | `audit/audit-events.ts` | bigint | append | planned |
+
+### 3.1. Group roll-up
+
+| Group | Tables | Cumulative | Status |
+|---|---|---|---|
+| G1 | 3 | 3 | **implemented** |
+| G2 | 5 | 8 | planned |
+| G3 | 3 | 11 | planned |
+| G4 | 3 | 14 | planned |
+| G5 | 7 | 21 | planned |
+| G6 | 2 | 23 | planned |
+| G7 | 5 | 28 | planned |
+| G8 | 2 | 30 | planned |
+| G9 | 7 | 37 | planned |
+| G10 | 4 | 41 | planned |
+| G11 | 3 | 44 | planned |
+| G12 | 6 | 50 | planned |
+| G13 | 3 | 53 | planned |
+| G14 | 4 | 57 | planned |
+| G15 | 8 | 65 | planned |
+| G16 | 5 | 70 | planned |
+| G17 | 5 | 75 | planned |
+| G18 | 2 | 77 | planned |
+| G19 | 1 | 78 | planned |
+
+**3 of 78 implemented.**
+
+`inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
+listed by DB4 under G6 but **created** in G10 and G15 respectively, because
+their FKs need `custom_requests` and `orders`. They are counted once, in their
+creation group.
+
+---
+
+## 4. Column mapping
+
+The authoritative column list is `DB4_COLUMN_DICTIONARY.md`. This manifest does
+not duplicate ~700 column rows; it binds the *rules* by which each column is
+rendered, and records per-group parity results in
+`DB6_FOUNDATION_REVIEW_REPORT.md`.
+
+| DB4 notation | Physical rendering |
+|---|---|
+| `uuid` | `uuid` |
+| `text` | `text` (never `varchar(n)`) |
+| `timestamptz` | `timestamp with time zone` |
+| money | `numeric(14,2)` + sibling `currency_code char(3)` |
+| percentage | `numeric(5,2)` |
+| `jsonb` | `jsonb`, opaque, app-validated (ADR-DB4-004) |
+| **N? = no** | `NOT NULL` |
+| **N? = yes** | nullable |
+| **M? = no** | immutability enforced per §5.3, not by column type |
+| implicit | `created_at` NOT NULL on every table |
+| implicit | `updated_at` NOT NULL on mutable tables only |
+
+Every table additionally carries `id` per ADR-DB1-007. The column dictionary
+does not list `id`/`created_at`/`updated_at` per row; they are conventions
+(DB4 table catalog §1 legend).
+
+**Per-group column parity is a gate**, verified by counting the DB4 dictionary
+rows for each TBL and comparing against `information_schema.columns` minus the
+three convention columns.
+
+---
+
+## 5. Constraint mapping
+
+### 5.1. Blanket constraints
+
+| CST | Scope | Mechanism | Physical count |
+|---|---|---|---|
+| CST-001 | PK on all 78 tables | `primaryKey({name:'pk_<table>'})` | 78 PK constraints → **78 backing indexes** |
+| CST-060 | status sets, all state-owning tables | `check('ck_<table>__status', stateCheck(...))` | one per status column (25) |
+| CST-080 | NOT NULL rules | column `.notNull()` | per column dictionary |
+
+### 5.2. Enforcement mechanism split (92 catalogued rows)
+
+| Type | Count | Mechanism |
+|---|---|---|
+| `UQ` unique | 37 | `unique(name)` → PostgreSQL-created backing index |
+| `pUQ` partial unique | 12 | **explicit** `uniqueIndex(name).where(...)` — PostgreSQL has no partial unique *constraint* |
+| `CK` check | 15 | `check(name, sql)` |
+| `IMM` immutability | 9 | custom SQL trigger, `tg_<table>__reject_mutation` |
+| `APP` append-only | 2 | custom SQL trigger |
+| `TRG` other trigger | 1 | custom SQL trigger |
+| `XCL` exclusion | 1 | **conditional, not built** (CST-046/IDX-056) |
+| `TX` transaction/app only | 15 | no DB mechanism; DB7 tests representation, DB8 the race |
+
+`pUQ` count (12) is the constraint-side count. The index manifest lists **13**
+partial unique indexes because IDX-064 implements a partial unique that DB4
+files under the CST-017 family rather than as its own `pUQ` row.
+
+### 5.3. Immutability and append-only (DB5-A10)
+
+Enforced by trigger, authored as reviewed custom SQL, **scoped** — never a
+blanket update ban where DB4 permits mutable operational metadata:
+
+| Category | Tables | Scope rule |
+|---|---|---|
+| Immutable once sent/published | TBL-028, 051, 035, 069 | `WHEN (OLD.status = <sent/published>)` |
+| Immutable snapshots | TBL-031, 032, 033, 044, 048, 060 | full-row reject |
+| Immutable versions | TBL-052, 077 | full-row reject |
+| Append-only | TBL-019, 072, 056, 042, 045, 063, 030, 010, 007, 041, 049, 053, 057, 062, 071, 023 | reject UPDATE/DELETE |
+| **Column-scoped** | TBL-073 `outbox_events` | payload/identity immutable; `status`, `next_attempt_at`, `dispatched_at`, attempt metadata **mutable** (CST-099) |
+| **Operational-metadata exception** | TBL-074 `idempotency_records`, TBL-075 `background_job_attempts` | claim/retry/expiry fields mutable by design |
+
+G1 has **no** immutability constraint: all three identity tables are mutable
+per DB4.
+
+---
+
+## 6. Lifecycle state storage (29 machines, 23 `LC-*` IDs)
+
+Each state column is `text` + CHECK built from a single canonical tuple
+exported by the table's schema file (DB5-A09). No state literal is written
+twice.
+
+| LC | Machines | Status column(s) | Group | Status |
+|---|---|---|---|---|
+| LC-01 | Admin Account, Admin Session | `admin_accounts.status`, `admin_sessions.status` | G1 | **implemented** |
+| LC-02 | Verification Challenge | `contact_verification_challenges.status` | G8 | planned |
+| LC-03 | Secure Access Grant | `secure_access_grants.status` | G10 | planned |
+| LC-04 | Product | `products.status` | G5 | planned |
+| LC-05 | SKU (definition + stock) | `skus.status` | G5/G6 | planned |
+| LC-06 | Asset, Derivative | `assets.status`, `asset_derivatives.status` | G4 | planned |
+| LC-07 | Design Session | `design_sessions.status` | G7 | planned |
+| LC-08 | Design Version | `design_versions.status` | G11 | planned |
+| LC-09 | Design Review | `design_reviews.outcome` | G11 | planned |
+| LC-10 | Approval (exists-or-not) | — (row existence) | G13 | planned |
+| LC-11 | Custom Request | `custom_requests.status` | G9 | planned |
+| LC-12 | Quotation | `quotations.status` | G14 | planned |
+| LC-13 | Quotation Version | `quotation_versions.status` | G14 | planned |
+| LC-14 | Order | `orders.status` | G15 | planned |
+| LC-15 | Payment Obligation | `payment_obligations.status` | G16 | planned |
+| LC-16 | Payment Attempt | `payment_attempts.status` | G16 | planned |
+| LC-17 | Soft Hold, Reservation | `inventory_soft_holds.status`, `inventory_reservations.status` | G10/G15 | planned |
+| LC-18 | Production Job | `production_jobs.status` | G17 | planned |
+| LC-19 | Shipping Details | `shipping_details.status` | G15 | planned |
+| LC-20 | Refund | `refunds.status` | G16 | planned |
+| LC-21 | Delivery | `orders` delivery fields + `order_transitions` | G15 | planned |
+| LC-22 | Outbox Event | `outbox_events.status` | G2 | planned |
+| LC-23 | Idempotency Record | `idempotency_records.status` | G2 | planned |
+
+Plus non-`LC` publication states (`categories`, `gallery_entries`,
+`content_pages`, `design_templates`, `agreement_versions`) and secondary
+statuses (`asset_inspections.inspection_status`), reaching 25 status columns
+across 29 machines.
+
+---
+
+## 7. JSONB boundaries (9 payloads)
+
+All 9 are **opaque to the database** (ADR-DB4-004 r2): no DB-side JSON schema
+check, no GIN index (IDX-R10), every invariant fact extracted to a relational
+column. Validation is application-level with a recorded schema version.
+
+| # | Table | Column | Group | Status |
+|---|---|---|---|---|
+| 1 | TBL-025 `design_sessions` | `design_document` | G7 | planned |
+| 2 | TBL-028 `design_versions` | `design_document` | G11 | planned |
+| 3 | TBL-035 `design_template_versions` | `design_document` | G7 | planned |
+| 4 | TBL-031 `approval_snapshots` | `design_document` | G13 | planned |
+| 5 | TBL-060 `production_specifications` | `specification_document` | G17 | planned |
+| 6 | TBL-056 `payment_provider_events` | `callback_payload` (redacted) | G16 | planned |
+| 7 | TBL-073 `outbox_events` | `event_payload` | G2 | planned |
+| 8 | TBL-070 `notification_intents` | `template_params` (redacted) | G18 | planned |
+| 9 | TBL-072 `audit_events` | `change_summary` | G19 | planned |
+
+**Closed set.** A tenth JSONB column requires an ADR (ADR-DB4-004).
+
+---
+
+## 8. Migration ownership
+
+| Migration | Group | Contents | Status |
+|---|---|---|---|
+| `0000_create_identity_tables.sql` | G1 | 3 tables, 3 PK, 2 UQ, 2 FK, 2 CK, 1 partial unique | **applied** |
+| `0001_*` | G2 | platform base | planned |
+| … | G3..G19 | one migration per group | planned |
+| custom SQL | S24 | triggers + functions (immutability, append-only, outbox column-scope, actor consistency) | planned |
+| index migration(s) | S25 | explicit performance indexes | planned |
+
+Fresh install runs all in order (INV-28). Forward-only; a shared migration is
+never edited (ADR-DB1-003).
+
+---
+
+## 9. Validation ownership
+
+| Object class | Verified by |
+|---|---|
+| Table/column/FK/constraint existence | DB6 fresh-install parity gate |
+| Constraint *behaviour* (rejects bad data) | **DB7** |
+| Concurrency/lock behaviour | **DB8** |
+| Index *usage* under representative data | **DB9** (`EXPLAIN`) |
+| Backup/restore, collation drift, REINDEX | **DB10** |
+
+DB6 asserts objects exist and are correctly shaped. It makes **no** performance
+claim (DB5-A12).

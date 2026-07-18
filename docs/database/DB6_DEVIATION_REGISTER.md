@@ -8,7 +8,7 @@ evidence. DB0–DB5 documents are **not edited**; deviations are additive.
 **Status legend:** `open` · `closed` (implemented + evidenced) ·
 `deferred` (owner named, non-blocking)
 
-**Blocking count: 0.**
+**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-008.
 
 ---
 
@@ -61,11 +61,13 @@ collation-drift-on-restore if an ICU collation is ever adopted.
 **Problem.** The repository pinned `postgres:16.6-alpine`, which ADR-DB1-001
 already identified as stale repository state rather than an approved baseline.
 
-**Evidence.** 16.14 released 2026-05-14 is the current 16.x. The gap carries 11
-security fixes (four at CVSS 8.8), plus two correctness fixes that touch
-mechanisms this schema depends on: incorrect results with nondeterministic
-collations over unique indexes, and restored FK-trigger deferrability. Image
-digest recorded in `DB6_VERSION_CAPABILITY_MATRIX.md` §1.
+**Evidence.** 16.14, released 2026-05-14, is the current 16.x. The release
+family announcement lists **11 security issues**; **nine affect PostgreSQL
+16**, four of those at CVSS 8.8. The release also carries two correctness fixes
+touching mechanisms this schema depends on: incorrect results with
+nondeterministic collations over unique indexes, and restored FK-trigger
+deferrability. Image digest and the full nine-issue list are recorded in
+`DB6_VERSION_CAPABILITY_MATRIX.md` §1.
 
 **Selected implementation.** Pin `postgres:16.14-alpine`, major 16 retained,
 dev/test/CI parity, floating tags prohibited.
@@ -183,6 +185,79 @@ a lapse fails a gate rather than surviving review.
 
 **Behaviour impact.** None — naming only. Error messages and
 `pg_stat_user_indexes` stay readable, which is why ADR-DB1-006 required it.
+
+---
+
+## DEV-DB6-007 — DB4 `REL-*`/`CST-*` ID ranges are not object counts
+
+| Field | Value |
+|---|---|
+| Source IDs | DB4 completion report ("REL-001..105", "CST-001..125"), DB5-A01 (same trap, index side) |
+| Status | **closed** (documentation correction; no schema change) |
+
+**Problem.** DB4 reports "105 relationships" and "125 constraints". Those are
+**ID ranges**, not object counts. 13 `REL-*` and 31 `CST-*` IDs appear in no
+DB4 document:
+
+```text
+REL-015..019  REL-034..039  REL-059  REL-089
+CST-052..059  CST-075..079  CST-081..089  CST-101..109
+```
+
+Read as counts, they would make DB6 look permanently incomplete — 92 of 105
+relationships — or, worse, invite invention of 13 relationships that do not
+exist.
+
+**Evidence.** Exhaustive scan of all `DB4_*.md`: the listed IDs occur nowhere.
+The cause is visible in the surviving rows: DB4 collapsed multi-target
+relationships into one ID with a `×N` marker (`REL-033 ×2`, `REL-058 ×3`,
+`REL-063 ×5`, `REL-078 ×5`) and left neighbouring allocated IDs unused. DB5 hit
+the same pattern on the index side and documented its four retired IDs
+explicitly; DB4 did not.
+
+**Selected implementation.** Record the true figures in the schema manifest:
+**92 `REL-*` rows → 129 physical FK edges**, **94 `CST-*` IDs defined**. The
+parity gate counts FK edges, not `REL-*` rows.
+
+**Behaviour impact.** None — no table, column, FK or constraint is missing.
+This is a counting/documentation correction.
+**Test impact.** DB7/DB8 must size their coverage from the physical object
+counts, not from the ID ranges.
+
+---
+
+## DEV-DB6-008 — REL-003 omitted from the first G1 implementation
+
+| Field | Value |
+|---|---|
+| Source IDs | REL-003 (`admin_accounts → admin_accounts` replaced_by), LC-01 |
+| Status | **closed** (corrected by forward migration `0001`) |
+
+**Problem.** `admin_accounts.replaced_by_admin_account_id` was created with the
+correct type and nullability but **no foreign key**. The LC-01 successor chain
+had no referential integrity: a replaced account could have been deleted out
+from under a successor pointer.
+
+**Evidence.** `pg_constraint` showed 2 FKs where DB4 requires 3. Found by the
+DB6-C0 retro-validation, not by any tool — the column existed, typechecked, and
+passed naming checks vacuously (an `fk_` name check cannot fail when no FK
+exists).
+
+**Selected implementation.**
+`0001_add_admin_accounts_successor_fk.sql`, adding
+`fk_admin_accounts__replaced_by_admin_account_id` with `ON DELETE RESTRICT`.
+Migration `0000` was **not** edited (ADR-DB1-003 forward-fix).
+
+**Root cause.** The `idReference()` primitive produces a correctly-typed `uuid`
+column but does not create a constraint, so a reference column looks complete
+in review while carrying no FK.
+
+**Generalisation.** From G2 onward a group's gate fails if any `uuid` column
+named `*_id` has no matching `fk_` constraint, and FK edges are counted against
+the 129-edge expansion rather than the 92 `REL-*` rows.
+
+**Test impact.** DB7 adds REL-003 negative cases (orphan successor pointer;
+delete of a still-referenced predecessor).
 
 ---
 

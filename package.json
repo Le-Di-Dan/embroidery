@@ -36,7 +36,8 @@
     "db:migrate": "pnpm --filter @embroidery/database db:migrate",
     "db:status": "pnpm --filter @embroidery/database db:status",
     "db:reset": "node tools/db-reset.mjs",
-    "quality": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:file-size",
+    "db:check:manifest": "node tools/db-manifest-check.mjs",
+    "quality": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:file-size && pnpm db:check:manifest",
     "clean": "turbo run clean"
   },
   "prettier": "@embroidery/prettier-config",

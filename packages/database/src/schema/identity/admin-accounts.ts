@@ -8,7 +8,15 @@
  * Owner: Identity module.
  */
 import { sql } from 'drizzle-orm';
-import { check, pgTable, primaryKey, text, unique, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  check,
+  foreignKey,
+  pgTable,
+  primaryKey,
+  text,
+  unique,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 import { idColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant, updatedAt } from '../../primitives/temporal';
@@ -44,6 +52,14 @@ export const adminAccounts = pgTable(
     uniqueIndex('uq_admin_accounts__status__active')
       .on(t.status)
       .where(sql`${t.status} = 'ACTIVE'`),
+    // REL-003 — successor chain on replacement (LC-01). Self-referencing,
+    // nullable, `restrict`: a replaced account is retained as evidence, so the
+    // predecessor row must never be deletable out from under the pointer.
+    foreignKey({
+      name: 'fk_admin_accounts__replaced_by_admin_account_id',
+      columns: [t.replacedByAdminAccountId],
+      foreignColumns: [t.id],
+    }).onDelete('restrict'),
     // CST-060 — status set from DB3.
     check('ck_admin_accounts__status', stateCheck(t.status, ADMIN_ACCOUNT_STATES)),
   ],

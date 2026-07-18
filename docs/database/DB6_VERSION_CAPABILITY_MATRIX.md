@@ -32,8 +32,16 @@ by executing against the pinned artifacts, not by reading documentation alone.
 
 ### 1.1. Patch-bump justification (DB5-A06)
 
-16.6 → 16.14 crosses **11 security fixes**, several of them high-severity and
-directly relevant to a database reached by application code:
+**Precise statement of the evidence:** the PostgreSQL 16.14 release family
+announcement (2026-05-14, covering 18.4 / 17.10 / 16.14 / 15.18 / 14.23) lists
+**11 security issues**. **Nine of the listed issues affect PostgreSQL 16**; of
+those nine, **four carry CVSS 8.8**. The other two listed issues do not apply
+to the 16 branch.
+
+Source: <https://www.postgresql.org/about/news/postgresql-184-1710-1614-1518-and-1423-released-3297/>
+· evidence date 2026-07-18.
+
+The nine issues affecting PostgreSQL 16:
 
 | CVE | Summary | CVSS |
 |---|---|---|

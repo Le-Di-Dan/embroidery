@@ -1,0 +1,1 @@
+ALTER TABLE "admin_accounts" ADD CONSTRAINT "fk_admin_accounts__replaced_by_admin_account_id" FOREIGN KEY ("replaced_by_admin_account_id") REFERENCES "public"."admin_accounts"("id") ON DELETE restrict ON UPDATE no action;
