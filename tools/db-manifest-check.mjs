@@ -19,6 +19,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 
+import {
+  checkRelCardinality,
+  checkIndexFormula,
+  checkForbiddenIndexReferences,
+} from './db-metric-check.mjs';
+
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(REPO_ROOT, 'docs', 'database');
 const SCHEMA_DIR = join(REPO_ROOT, 'packages', 'database', 'src', 'schema');
@@ -169,6 +175,43 @@ const indexManifest = stripEmphasis(read(INDEX_MANIFEST));
       `schema: ${onDisk.length} files on disk, ${exported.length} exported, all manifest-referenced`,
     );
   }
+}
+
+// --- 8. TBL group assignment: totals must sum to 78, no orphan/double ------
+{
+  // Roll-up rows look like `| G2 | 5 | 8 | ... |`; the group sections were
+  // already validated per-TBL in check 1 — this validates the arithmetic.
+  const rollup = schemaManifest.match(/### 3\.1[\s\S]*?(?=\n---|\n## )/);
+  const groupRows = (rollup?.[0].split('\n') ?? []).filter((l) => /^\| G\d+ \|/.test(l));
+  let sum = 0;
+  for (const row of groupRows) {
+    const cells = row.split('|').map((s) => s.trim());
+    sum += Number(cells[2]);
+  }
+  if (groupRows.length !== 19) {
+    fail(`group roll-up has ${groupRows.length} rows, expected 19 (G1..G19)`);
+  }
+  if (sum !== TOTAL_TABLES) {
+    fail(`group roll-up table counts sum to ${sum}, expected ${TOTAL_TABLES}`);
+  }
+  notes.push(`groups: ${groupRows.length} groups, table counts sum to ${sum}`);
+}
+
+// --- 9..11. Metric reconciliation (DEV-DB6-007) — see db-metric-check.mjs --
+{
+  const context = {
+    read,
+    docs: DOCS,
+    schemaDir: SCHEMA_DIR,
+    migrationsDir: join(REPO_ROOT, 'packages', 'database', 'migrations'),
+    indexManifest,
+    retiredIdx: RETIRED_IDX,
+    fail,
+    note: (message) => notes.push(message),
+  };
+  checkRelCardinality(context);
+  checkIndexFormula(context);
+  checkForbiddenIndexReferences(context);
 }
 
 for (const note of notes) console.log(`[manifest] ${note}`);
