@@ -408,6 +408,35 @@ creation group.
 
 ## 4. Column mapping
 
+### 4.0. Convention-column register (canonical, checker-enforced)
+
+Every physical column that does not carry a DB4 `COL-*` ID comes from exactly
+this closed register. Nothing else may be added without a `DEV-DB6-*` entry —
+a column with no COL ID and no convention ID is an orphan and fails review.
+
+| Convention | Source decision | Purpose | Applies to | Type | Default | Mutable | Indexed | Checker |
+|---|---|---|---|---|---|---|---|---|
+| `id` (uuid7) | ADR-DB1-007 cat. 1, CST-001 | business/public identity, app-generated | every business table | `uuid` | none (app supplies) | no | PK backing | **yes** — file must use `idColumn()` or `sequenceColumn()` |
+| `id` (bigint) | ADR-DB1-007 cat. 2, CST-001 | internal append-only surrogate | append-only/operational tables | `bigint GENERATED ALWAYS AS IDENTITY` | DB identity | no | PK backing | **yes** — same check |
+| `created_at` | ADR-DB1-006 (implicit per DB4 table-catalog §1 legend) | row creation instant | **every** table | `timestamptz` | `now()` | no | only where a DB5 `IDX-*` keys on it | **yes** — file must use `createdAt()` |
+| `updated_at` | ADR-DB1-006 (mutable tables only; **forbidden** on immutable/append-only/column-scoped tables) | last modification instant | mutable/header/temp/operational tables | `timestamptz` | `now()` | yes | never | **yes** — presence must match the table's manifest mutability class |
+
+Rules the register encodes:
+
+- these columns never change row meaning or aggregate ownership — they are
+  identity and bookkeeping, not business state;
+- none is a derived-state authority (`updated_at` is bookkeeping, not a
+  lifecycle signal — lifecycles use their own status/timestamp columns);
+- `updated_at` presence is **derived from the manifest's mutability class**,
+  not chosen per table: classes matching `immutable`/`append`/`column-scoped`/
+  `snap`/`ver` must not have it, all others must;
+- the checker cross-checks every *implemented* table's schema file against
+  this register and its manifest mutability class on every run.
+
+Per-group accounting therefore always reports three figures:
+`DB4 logical COL IDs` + `convention physical columns` = `total physical
+columns`.
+
 The authoritative column list is `DB4_COLUMN_DICTIONARY.md`. This manifest does
 not duplicate ~700 column rows; it binds the *rules* by which each column is
 rendered, and records per-group parity results in

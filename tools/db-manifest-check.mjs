@@ -197,6 +197,38 @@ const indexManifest = stripEmphasis(read(INDEX_MANIFEST));
   notes.push(`groups: ${groupRows.length} groups, table counts sum to ${sum}`);
 }
 
+// --- 12. Convention-column ownership (G4 guardrail) -------------------------
+{
+  // Every implemented table must use the shared primitives for its convention
+  // columns, and `updated_at` presence must match the manifest's mutability
+  // class — immutable/append-only/column-scoped tables must not carry it.
+  const NO_UPDATED_AT = /immutable|append|column-scoped|snap\b|\bver\b/;
+  let checked = 0;
+  for (const row of schemaManifest.split('\n')) {
+    if (!/^\| TBL-\d{3} \|/.test(row) || !row.trim().endsWith('implemented |')) continue;
+    const file = row.match(/`([a-z-]+\/[a-z0-9-]+\.ts)`/)?.[1];
+    const mutability = row.split('|').map((s) => s.trim())[5] ?? '';
+    if (file === undefined || !existsSync(join(SCHEMA_DIR, file))) continue;
+    const source = readFileSync(join(SCHEMA_DIR, file), 'utf8');
+    checked += 1;
+    if (!/\b(idColumn|sequenceColumn)\(/.test(source)) {
+      fail(`${file}: id column does not come from the convention register primitives`);
+    }
+    if (!/\bcreatedAt\(/.test(source)) {
+      fail(`${file}: created_at does not come from the convention register primitive`);
+    }
+    const hasUpdatedAt = /\bupdatedAt\(/.test(source);
+    const expectsUpdatedAt = !NO_UPDATED_AT.test(mutability);
+    if (hasUpdatedAt && !expectsUpdatedAt) {
+      fail(`${file}: has updated_at but its mutability class "${mutability}" forbids it`);
+    }
+    if (!hasUpdatedAt && expectsUpdatedAt) {
+      fail(`${file}: missing updated_at required by mutability class "${mutability}"`);
+    }
+  }
+  notes.push(`convention columns: ${checked} implemented tables conform to the register`);
+}
+
 // --- 9..11. Metric reconciliation (DEV-DB6-007) — see db-metric-check.mjs --
 {
   const context = {
