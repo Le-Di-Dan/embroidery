@@ -1,11 +1,11 @@
 # Database Phase — Overview
 
 **Phase:** Database Architecture & Persistence Foundation
-**Current checkpoint:** DB4 — Logical Relational Schema — **COMPLETED** (`DB4 PASS WITH DEFERRED PHYSICAL MECHANISMS`, 2026-07-15)
-**DB0:** COMPLETED (`563d986`) · **DB1:** COMPLETED (`a0e29b4` + correction `f90f78c`) · **DB2:** COMPLETED (`0563866`) · **DB3:** COMPLETED (`a79f523`)
-**DB4 audited Git HEAD:** `a79f5235fd35f76076148cfc53a3eb18f538730b` (branch `production`)
-**Next allowed checkpoint:** DB5 — Query & Index Design (only now that DB4 has passed)
-**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) + conceptual domain model (DB2) + lifecycle/invariant specifications (DB3) + logical relational schema (DB4 — logical tables/columns/keys/relationships as documentation). **No migration, no ORM install, no physical table/constraint/index/trigger has been created.** That rule holds until DB6 for physical artifacts; DB5 remains documentation-only.
+**Current checkpoint:** DB5 — Query, Access Path & Index Design — **COMPLETED** (`DB5 PASS WITH DEFERRED MEASURED TUNING`, 2026-07-18)
+**DB0:** COMPLETED (`563d986`) · **DB1:** COMPLETED (`a0e29b4` + correction `f90f78c`) · **DB2:** COMPLETED (`0563866`) · **DB3:** COMPLETED (`a79f523`) · **DB4:** COMPLETED (`456e101`)
+**DB5 audited Git HEAD:** `456e1014fd1543a7efcf3ebe1860e62f2d0e1111` (branch `production`)
+**Next allowed checkpoint:** DB6 — Physical Schema & Migration Foundation (only now that DB5 has passed)
+**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) + conceptual domain model (DB2) + lifecycle/invariant specifications (DB3) + logical relational schema (DB4) + query/access-path/index architecture (DB5 — logical index definitions as documentation). **No migration, no ORM install, no physical table/constraint/index/trigger has been created.** That rule holds until DB6; DB5 remained documentation-only.
 
 ---
 
@@ -169,6 +169,43 @@ DB4 ADRs:
 [ADR-DB4-002 Transition-History Storage](../adr/database/ADR-DB4-002-TRANSITION-HISTORY-STORAGE.md) ·
 [ADR-DB4-003 Asset Association Model](../adr/database/ADR-DB4-003-ASSET-ASSOCIATION-MODEL.md) ·
 [ADR-DB4-004 JSONB Boundaries](../adr/database/ADR-DB4-004-JSONB-BOUNDARIES.md)
+
+### DB5 document set
+
+| File | Contents |
+| ---- | -------- |
+| [`DB5_QUERY_SHAPE_CATALOG.md`](./DB5_QUERY_SHAPE_CATALOG.md) | Q-01..Q-33, QX-01..QX-11 and 30 retained paths: actor, scope, joins, predicates, sort, pagination, locking, indexes. |
+| [`DB5_ACCESS_PATH_MATRIX.md`](./DB5_ACCESS_PATH_MATRIX.md) | One row per query: entry table, join order, filter/sort `COL-*`, selectivity, index, fallback, EXPLAIN scenario. |
+| [`DB5_INDEX_CATALOG.md`](./DB5_INDEX_CATALOG.md) | 134 logical indexes (`IDX-001`..`IDX-138`) + 15 recorded rejections; composite-order rules. |
+| [`DB5_CONSTRAINT_INDEX_MAP.md`](./DB5_CONSTRAINT_INDEX_MAP.md) | Every `CST-*` with an index consequence; zero duplicates. |
+| [`DB5_FK_INDEX_REVIEW.md`](./DB5_FK_INDEX_REVIEW.md) | All 105 `REL-*` reviewed individually; no mechanical FK indexing. |
+| [`DB5_INDEXES_IDENTITY_CUSTOMER.md`](./DB5_INDEXES_IDENTITY_CUSTOMER.md) | Admin/session, contacts, challenges, grants, merge. |
+| [`DB5_INDEXES_CATALOG_GALLERY_CONTENT.md`](./DB5_INDEXES_CATALOG_GALLERY_CONTENT.md) | Public listings, slug lookup, publication ordering, effective agreement. |
+| [`DB5_INDEXES_INVENTORY_ASSET.md`](./DB5_INDEXES_INVENTORY_ASSET.md) | Stock lock anchor, holds/reservations, ledger, asset queues, signed access. |
+| [`DB5_INDEXES_DESIGN_ORDERING.md`](./DB5_INDEXES_DESIGN_ORDERING.md) | Sessions, versions, single-active-review, requests, orders, saga, freeze. |
+| [`DB5_INDEXES_QUOTATION_PAYMENT.md`](./DB5_INDEXES_QUOTATION_PAYMENT.md) | Quotation versions/expiry, obligations, attempts, provider events, refunds. |
+| [`DB5_INDEXES_PRODUCTION_SHIPPING.md`](./DB5_INDEXES_PRODUCTION_SHIPPING.md) | Production queue, approval linkage, rework, dispatch freeze. |
+| [`DB5_INDEXES_NOTIFICATION_AUDIT_PLATFORM.md`](./DB5_INDEXES_NOTIFICATION_AUDIT_PLATFORM.md) | Outbox claim, notification retry, audit, idempotency, dead-letter, config. |
+| [`DB5_ARCHIVE_RETENTION_INDEXING.md`](./DB5_ARCHIVE_RETENTION_INDEXING.md) | Archive vs cleanup patterns; 11 indexed scans; no hard-coded durations. |
+| [`DB5_JSONB_INDEX_REVIEW.md`](./DB5_JSONB_INDEX_REVIEW.md) | All 9 JSONB columns reviewed → no index; escalation ladder. |
+| [`DB5_ADMIN_DASHBOARD_ACCESS_PATHS.md`](./DB5_ADMIN_DASHBOARD_ACCESS_PATHS.md) | Q-22 decomposed into 12 buckets adding zero indexes. |
+| [`DB5_PAGINATION_ORDERING_MATRIX.md`](./DB5_PAGINATION_ORDERING_MATRIX.md) | Per-query pagination class, sort keys, tie-breakers, cursors, null order. |
+| [`DB5_SECURITY_SCOPE_REVIEW.md`](./DB5_SECURITY_SCOPE_REVIEW.md) | Owner/grant predicates, token lookups, IDOR risk, PII search restrictions. |
+| [`DB5_LOCKING_ACCESS_PATHS.md`](./DB5_LOCKING_ACCESS_PATHS.md) | CC-01..CC-28: lock anchors, lookup indexes, lock order, deadlock risk. |
+| [`DB5_EXPLAIN_VALIDATION_PLAN.md`](./DB5_EXPLAIN_VALIDATION_PLAN.md) | 43 EXPLAIN + 7 locking scenarios; datasets D-A..D-G; failure criteria. |
+| [`DB5_INDEX_COST_REDUNDANCY_REPORT.md`](./DB5_INDEX_COST_REDUNDANCY_REPORT.md) | Per-table census, write amplification, overlaps, budget exceptions, bloat. |
+| [`DB5_INDEX_NAMING_AND_HANDOFF.md`](./DB5_INDEX_NAMING_AND_HANDOFF.md) | `IDX-*` → physical names, all within the 63-byte limit. |
+| [`DB5_SCHEMA_CHANGE_REQUESTS.md`](./DB5_SCHEMA_CHANGE_REQUESTS.md) | Zero requests; four observations resolved without schema change. |
+| [`DB5_DB6_HANDOFF.md`](./DB5_DB6_HANDOFF.md) | Implementation order, raw-SQL needs, spikes, definition of done. |
+| [`DB5_TEST_AND_OPERATIONS_HANDOFF.md`](./DB5_TEST_AND_OPERATIONS_HANDOFF.md) | DB7/DB8/DB9/DB10 assertions, seed distribution, governance. |
+| [`DB5_COMPLETENESS_MATRIX.md`](./DB5_COMPLETENESS_MATRIX.md) | Full coverage trace; 0 unresolved critical items; deferred register. |
+| [`DB5_COMPLETION_REPORT.md`](./DB5_COMPLETION_REPORT.md) | Evidence, validation, verdict. |
+
+DB5 ADRs:
+[ADR-DB5-001 Pagination Strategy](../adr/database/ADR-DB5-001-PAGINATION-STRATEGY.md) ·
+[ADR-DB5-002 Text Search, Collation & Indexing](../adr/database/ADR-DB5-002-TEXT-SEARCH-COLLATION-INDEXING.md) ·
+[ADR-DB5-003 Worker Claim Indexing](../adr/database/ADR-DB5-003-WORKER-CLAIM-INDEXING.md) ·
+[ADR-DB5-004 Index Governance](../adr/database/ADR-DB5-004-INDEX-GOVERNANCE.md)
 
 ### DB1 ADR index (`docs/adr/database/`)
 

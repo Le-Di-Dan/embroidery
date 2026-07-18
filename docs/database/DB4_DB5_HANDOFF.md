@@ -61,6 +61,12 @@ design owner (module).
 | QX-10 hold/reservation expiry sweep | inventory_soft_holds / inventory_reservations status + expires_at < now | expires_at | S (locked per row) | CC-22 |
 | QX-11 challenge/attempt rate window | contact_verification_attempts by challenge/contact within window | attempted_at | S | GRD-026 |
 
+> **Consumed by DB5 (2026-07-18, HEAD `456e101`).** Every row above is
+> designed in [`DB5_QUERY_SHAPE_CATALOG.md`](./DB5_QUERY_SHAPE_CATALOG.md)
+> and [`DB5_ACCESS_PATH_MATRIX.md`](./DB5_ACCESS_PATH_MATRIX.md); indexes in
+> [`DB5_INDEX_CATALOG.md`](./DB5_INDEX_CATALOG.md). This handoff is a DB4
+> artifact and is **not** modified by DB5 — this pointer is the only addition.
+
 ## 3. Notes for DB5
 
 Uniqueness assumptions above are constraint-backed (CST refs) — DB5 must

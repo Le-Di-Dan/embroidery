@@ -325,6 +325,45 @@ partial-unique/exclusion DDL and locking spikes (DB6), index design (DB5),
 configuration values (business, CON-144).
 **Status:** Locked (logical schema); access-path/index design at DB5.
 
+## D-042 — Query, access-path and index design (DB5)
+
+**Decision:** Checkpoint DB5 locks the query/access-path and index
+architecture (`docs/database/DB5_*`, `docs/adr/database/ADR-DB5-*`) over the
+unmodified DB4 logical schema: 74 access paths (33 catalogued queries, 11
+operational queries, 30 additional retained paths) and **134 logical indexes**
+(`IDX-001`..`IDX-138`), of which 64 are integrity-backed consequences of
+locked `CST-*` constraints and 70 are performance indexes, plus 15 rejections
+recorded with rationale. DB5-owned decisions: pagination is classified into
+five locked classes with every sort ending in a unique tie-breaker, keyset
+paging used only where offset is genuinely unsafe (payment reconciliation)
+and immutable cursors for append-only history, ledger replay and cancellation
+saga resume (ADR-DB5-001); text lookups are split into technical
+exact-match identifiers, which keep the `C` bytewise baseline and need no
+expression indexes because values are stored pre-normalized, and
+user-facing Vietnamese text, for which `vi-x-icu` is locked as the mechanism
+but built only when a database-side name-ordered listing exists — **no
+extension is requested and none is required** (ADR-DB5-002); worker queues
+are split into contended claims (`FOR UPDATE SKIP LOCKED`) and sweeps, with
+time-dependent claimability deliberately kept out of index predicates and
+expressed as an ordered range scan, dead-letter rows excluded structurally,
+and claims required to leave the claimable set in the same transaction
+(ADR-DB5-003); index governance locks deterministic naming, mandatory
+per-index metadata and removal criteria, a prohibition on speculative and
+mechanical foreign-key indexing, mechanical redundancy review, and
+per-write-profile index budgets (ADR-DB5-004). All 9 JSONB payload columns
+were reviewed and **none is indexed**; the admin dashboard decomposes into 12
+buckets that add **zero** indexes and no materialized view; 28/28 concurrency
+scenarios have a lock anchor, lookup index and lock order, with four races
+arbitrated by uniqueness rather than locking. **Zero blocking schema change
+requests** were raised and the DB4 logical schema is unmodified. Deferred:
+row-lock emission syntax and partial-predicate match verification (DB6
+spikes), configuration values for page/batch sizes, TTLs and retry curves
+(DB6), measured `INCLUDE` columns and unused-index removal (DB9/DB10),
+extension-dependent exclusion constraint and Vietnamese search escalation
+(future ADR), latency budgets and autovacuum tuning (DB10).
+**Status:** Locked (access-path and index architecture); physical
+implementation at DB6.
+
 # Open Decisions
 
 The following are intentionally unresolved:

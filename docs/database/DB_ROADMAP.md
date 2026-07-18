@@ -130,6 +130,24 @@
 - **Exit gate:** Every cataloged query has a supporting access path; consistency
   and security scope documented.
 
+> **DB5 status (2026-07-18, HEAD `456e101`): COMPLETED** —
+> `DB5 PASS WITH DEFERRED MEASURED TUNING`. 74 access paths covered (33
+> catalogued + 11 operational + 30 retained); **134 logical indexes**
+> (`IDX-001`..`IDX-138`: 64 integrity-backed, 70 performance) plus 15 recorded
+> rejections; 0 duplicate indexes; 0 JSONB indexes; **0 extensions required**;
+> 28/28 concurrency scenarios given a lock anchor and index; **0 blocking
+> schema change requests** and the DB4 logical schema unmodified. B5 decisions
+> resolved by ADR-DB5-001..004 (pagination, text/collation, worker claim,
+> index governance). Deliverables: `DB5_*` documents +
+> [`DB5_COMPLETION_REPORT.md`](./DB5_COMPLETION_REPORT.md); implementation
+> handoff in [`DB5_DB6_HANDOFF.md`](./DB5_DB6_HANDOFF.md), verification in
+> [`DB5_TEST_AND_OPERATIONS_HANDOFF.md`](./DB5_TEST_AND_OPERATIONS_HANDOFF.md).
+> Deferred (all with owner + acceptance condition): row-lock emission syntax
+> and partial-predicate verification (DB6 spikes), configuration values (DB6),
+> measured INCLUDE columns and unused-index removal (DB9/DB10), latency
+> budgets and autovacuum tuning (DB10). Next checkpoint: **DB6**. Locked
+> DB0–DB10 order unchanged.
+
 ### DB6 — Physical Schema & Migration Foundation
 
 - **Goal:** First real migrations and a reproducible Docker database setup.
