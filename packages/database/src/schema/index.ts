@@ -19,3 +19,8 @@ export * from './platform/policy-configuration-versions';
 export * from './platform/idempotency-records';
 export * from './platform/outbox-events';
 export * from './platform/background-job-attempts';
+
+// G3 — Customer (CTX-CUS)
+export * from './customer/customers';
+export * from './customer/business-profiles';
+export * from './customer/customer-contact-points';

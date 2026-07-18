@@ -204,13 +204,27 @@ Schema files live under `packages/database/src/schema/<context>/`.
 | TBL-073 | `outbox_events` | `platform/outbox-events.ts` | bigint | column-scoped | **implemented** |
 | TBL-075 | `background_job_attempts` | `platform/background-job-attempts.ts` | bigint | append | **implemented** |
 
-### G3 — Customer (CTX-CUS) · planned
+### G3 — Customer (CTX-CUS) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-004 | `customers` | `customer/customers.ts` | uuid7 | mutable | planned |
-| TBL-078 | `business_profiles` | `customer/business-profiles.ts` | uuid7 | mutable | planned |
-| TBL-005 | `customer_contact_points` | `customer/customer-contact-points.ts` | uuid7 | mutable | planned |
+| TBL-004 | `customers` | `customer/customers.ts` | uuid7 | mutable | **implemented** |
+| TBL-078 | `business_profiles` | `customer/business-profiles.ts` | uuid7 | mutable | **implemented** |
+| TBL-005 | `customer_contact_points` | `customer/customer-contact-points.ts` | uuid7 | mutable | **implemented** |
+
+G3 traceability: COL-TBL004-01..05, COL-TBL078-01..04, COL-TBL005-01..09 (18
+COL IDs → 27 physical columns incl. conventions). REL-004/005/014 → 3 FK
+edges. CST-005/006 (partial uniques, IDX-004/005), CST-051 first instance
+(IDX-062), CST-069 first instance (`ck_customers__no_self_merge`),
+COL-TBL005-02 `(CK)` (`ck_customer_contact_points__contact_kind_allowed`).
+IDX-134 (P0) implemented with the group; IDX-129 (recommended) ships at S25
+phase 4. No status column exists in G3 — contact-link state is carried by
+`verified_at`/`deactivated_at`, which is exactly what the CST-005 predicate
+reads. PII columns (`display_name`, `notes`, `normalized_value`,
+`display_value`, `company_name`, `tax_code`, `billing_contact`) are
+anonymize-class with `anonymized_at` markers; **application layers must not
+forward PostgreSQL constraint DETAIL text to logs or clients**, since unique
+violations on contact values echo the value.
 
 ### G4 — Asset (CTX-AST) · planned
 
@@ -365,7 +379,7 @@ Schema files live under `packages/database/src/schema/<context>/`.
 |---|---|---|---|
 | G1 | 3 | 3 | **implemented** |
 | G2 | 5 | 8 | **implemented** |
-| G3 | 3 | 11 | planned |
+| G3 | 3 | 11 | **implemented** |
 | G4 | 3 | 14 | planned |
 | G5 | 7 | 21 | planned |
 | G6 | 2 | 23 | planned |
@@ -383,7 +397,7 @@ Schema files live under `packages/database/src/schema/<context>/`.
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**8 of 78 implemented.**
+**11 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -551,6 +565,7 @@ no guard ever reads inside a payload.
 | `0002_create_platform_base_tables.sql` | G2 | 5 tables, 5 PK, 4 UQ, 2 FK, 4 CK | **applied** |
 | `0003_align_status_check_names.sql` | G1 | CST-060 naming alignment (`__status_allowed`) | **applied** |
 | `0004_add_policy_configuration_current_version_fk.sql` | G2 | REL-102 header pointer, **custom SQL** | **applied** |
+| `0005_create_customer_tables.sql` | G3 | 3 tables, 3 PK, 1 UQ, 2 CK, 3 FK, 2 partial uniques, IDX-134 | **applied** |
 | … | G3..G19 | one migration per group | planned |
 | custom SQL | S24 | triggers + functions (immutability, append-only, outbox column-scope, actor consistency) | planned |
 | index migration(s) | S25 | explicit performance indexes | planned |

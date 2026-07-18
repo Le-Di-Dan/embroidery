@@ -389,27 +389,30 @@ own non-transactional migration step.
 
 ## 7. Current state
 
-After G1 + G2 (8 of 78 tables):
+After G1 + G2 + G3 (11 of 78 tables):
 
 | Metric | Implemented | Selected for launch |
 |---|---|---|
-| PK backing indexes | 8 | 78 |
-| UNIQUE constraint backing | 6 (IDX-001, 003, 058, 059, 060, 061) | 50 |
-| Explicit partial unique | 1 (IDX-002) | 13 |
-| Explicit performance | 0 | 70 |
-| **Physical indexes** | **15** | **211** |
-| `IDX-*` entries satisfied | 7 | 133 of 134 |
+| PK backing indexes | 11 | 78 |
+| UNIQUE constraint backing | 7 (IDX-001, 003, 058, 059, 060, 061, 062) | 50 |
+| Explicit partial unique | 3 (IDX-002, 004, 005) | 13 |
+| Explicit performance | 1 (IDX-134) | 70 |
+| **Physical indexes** | **22** | **211** |
+| `IDX-*` entries satisfied | 11 | 133 of 134 |
 
-Performance indexes are **not yet built** in any group — they ship in slice
-S25 after the tables exist (`DB4_DB6_HANDOFF.md` §2 step 5). Outstanding so
-far, tracked here rather than lost:
+**Policy from G3 onward (per review directive):** each group implements its
+own **required** (P0/P1) performance indexes with the group — IDX-134 shipped
+inside G3's migration. Recommended-tier indexes still ship at S25 phase 4.
+G1/G2 predate the directive; their required indexes remain in the S25 queue,
+tracked below rather than lost:
 
-| Group | Pending performance indexes |
-|---|---|
-| G1 | IDX-120, IDX-121 |
-| G2 | IDX-088, IDX-090, IDX-093, IDX-094, IDX-131 |
+| Group | Pending | Tier |
+|---|---|---|
+| G1 | IDX-121 | required (S25 backlog) · IDX-120 recommended |
+| G2 | IDX-088, IDX-090, IDX-093, IDX-094 | required (S25 backlog) · IDX-131 recommended |
+| G3 | IDX-129 | recommended (S25 phase 4) |
 
-Verified in the database after G2: 15 index objects across 8 tables, zero
+Verified in the database after G3: 22 index objects across 11 tables, zero
 duplicates, zero non-conforming names (every constraint and index name carries
 an approved `pk_`/`fk_`/`uq_`/`ck_`/`ix_` prefix), and no index outside this
 manifest.

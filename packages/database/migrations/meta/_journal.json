@@ -36,6 +36,13 @@
       "when": 1784381371163,
       "tag": "0004_add_policy_configuration_current_version_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784383432415,
+      "tag": "0005_create_customer_tables",
+      "breakpoints": true
     }
   ]
 }
