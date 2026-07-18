@@ -137,11 +137,23 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:16.6-alpine
+    # Exact reviewed patch (ADR-DB1-001, DEV-DB6-002). Never a floating tag:
+    # `postgres:16` would let machines drift onto different patches.
+    # Digest: sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+    image: postgres:16.14-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-embroidery}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-embroidery_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-embroidery}
+      # C collation is the documented baseline (ADR-DB1-001, DEV-DB6-001):
+      # technical identifiers compare bytewise, independent of the image's
+      # locale library. The stock image would default to en_US.utf8 and build
+      # every text index under it silently. ICU stays available for an explicit
+      # COLLATE "vi-x-icu" clause when Vietnamese sort is needed.
+      # NOTE: initdb runs ONCE per volume — changing this needs a volume reset.
+      POSTGRES_INITDB_ARGS: '--locale=C --encoding=UTF8'
+      TZ: UTC
+      PGTZ: UTC
     ports:
       # Bound to loopback only — the database is never exposed publicly.
       - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
