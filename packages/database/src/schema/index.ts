@@ -38,3 +38,7 @@ export * from './catalog/skus';
 export * from './catalog/product-sides';
 export * from './catalog/embroidery-areas';
 export * from './catalog/product-media';
+
+// G6 — Inventory core (CTX-INV)
+export * from './inventory/sku-stocks';
+export * from './inventory/inventory-ledger-entries';

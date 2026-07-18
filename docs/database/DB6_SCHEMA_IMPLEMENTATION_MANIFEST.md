@@ -289,12 +289,40 @@ no parent column, so no tree machinery exists. Required indexes
 IDX-065/068/069/070/071 ship with the group; slug uniqueness is global
 (technical identity), deliberately not published-scoped.
 
-### G6 — Inventory core (CTX-INV) · planned
+### G6 — Inventory core (CTX-INV) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-018 | `sku_stocks` | `inventory/sku-stocks.ts` | uuid7 | mutable (lock anchor) | planned |
-| TBL-019 | `inventory_ledger_entries` | `inventory/inventory-ledger-entries.ts` | bigint | append | planned |
+| TBL-018 | `sku_stocks` | `inventory/sku-stocks.ts` | uuid7 | mutable (lock anchor) | **implemented** |
+| TBL-019 | `inventory_ledger_entries` | `inventory/inventory-ledger-entries.ts` | bigint | append | **implemented** |
+
+G6 traceability: COL-TBL018-01..03, COL-TBL019-01..09 (-09 ×3) — **12 logical
+COL IDs → 14 business columns + 5 convention columns (2 id, 2 created_at, 1
+updated_at — none on the append-only ledger) = 19 physical columns** (6/13).
+REL-026 + REL-027 → **2 FK edges implemented**; REL-028 ×3 (ledger →
+soft_holds / reservations / orders) — **all three deferred**: nullable columns
+exist now, FKs land with owner groups **G10** (soft_hold_id, reservation_id
+target tables created there) and **G15** (order_id). Constraints: CST-014
+(IDX-016 — the Q-32 **lock anchor**, verified `Index Scan using
+uq_sku_stocks__sku` under `LockRows`), CST-061 (INV-18 non-negative stock,
+enforced on INSERT and UPDATE), CST-062 (ledger quantity > 0), CST-071
+(ADJUSTMENT → reason NOT NULL, GRD-023), entry-kind closed set (9 values,
+dictionary `(CK)`), threshold ≥ 0 (dictionary CK). `actor_kind` carries **no**
+CHECK — DB4 marks no `(CK)` on it, so the value set stays app-owned; actor
+refs (`admin_id`, `system_job_key`) are evidence without REL rows, hence
+**no FK by design**. Balance semantics: `quantity_on_hand` is the
+authoritative operational counter mutated only inside a row-locked tx that
+appends a ledger entry; the ledger is the rebuild source
+(Σ `on_hand_delta`); `available` is computed, never stored (DB4 §3). **No
+`available`/`reserved`/`is_low_stock` column, no `lock_version`** — DB4
+assigns concurrency to the row lock. Index budget honoured: sku_stocks PK +
+IDX-016 only; ledger PK + IDX-115 only. Q-20 low-stock stays a no-index
+decision. CST-098 append-only trigger for the ledger is an **S24 target** —
+until it lands, append-only is an app/privilege expectation (smoke case 16
+documents that an UPDATE currently succeeds) and DB7's reject-mutation test
+stays open. Atomicity handoff (DB8/app checkpoint): lock stock row →
+validate → update counter → append ledger → outbox if required → commit;
+no trigger performs this orchestration.
 
 ### G7 — Design pre-request (CTX-DSN) · planned
 
@@ -425,7 +453,7 @@ IDX-065/068/069/070/071 ship with the group; slug uniqueness is global
 | G3 | 3 | 11 | **implemented** |
 | G4 | 3 | 14 | **implemented** |
 | G5 | 7 | 21 | **implemented** |
-| G6 | 2 | 23 | planned |
+| G6 | 2 | 23 | **implemented** |
 | G7 | 5 | 28 | planned |
 | G8 | 2 | 30 | planned |
 | G9 | 7 | 37 | planned |
@@ -440,7 +468,7 @@ IDX-065/068/069/070/071 ship with the group; slug uniqueness is global
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**21 of 78 implemented.**
+**23 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -640,6 +668,7 @@ no guard ever reads inside a payload.
 | `0005_create_customer_tables.sql` | G3 | 3 tables, 3 PK, 1 UQ, 2 CK, 3 FK, 2 partial uniques, IDX-134 | **applied** |
 | `0006_create_asset_tables.sql` | G4 | 3 tables, 3 PK, 1 UQ, 10 CK, 3 FK, 2 partial uniques, 4 perf indexes | **applied** |
 | `0007_create_catalog_tables.sql` | G5 | 7 tables, 7 PK, 4 UQ, 14 CK, 8 FK, 5 perf indexes | **applied** |
+| `0008_create_inventory_core_tables.sql` | G6 | 2 tables, 2 PK, 1 UQ, 5 CK, 2 FK, IDX-115 | **applied** |
 | … | G3..G19 | one migration per group | planned |
 | custom SQL | S24 | triggers + functions (immutability, append-only, outbox column-scope, actor consistency) | planned |
 | index migration(s) | S25 | explicit performance indexes | planned |
