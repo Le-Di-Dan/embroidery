@@ -226,13 +226,34 @@ anonymize-class with `anonymized_at` markers; **application layers must not
 forward PostgreSQL constraint DETAIL text to logs or clients**, since unique
 violations on contact values echo the value.
 
-### G4 — Asset (CTX-AST) · planned
+### G4 — Asset (CTX-AST) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-022 | `assets` | `asset/assets.ts` | uuid7 | mutable | planned |
-| TBL-023 | `asset_inspections` | `asset/asset-inspections.ts` | bigint | append | planned |
-| TBL-024 | `asset_derivatives` | `asset/asset-derivatives.ts` | uuid7 | mutable | planned |
+| TBL-022 | `assets` | `asset/assets.ts` | uuid7 | mutable | **implemented** |
+| TBL-023 | `asset_inspections` | `asset/asset-inspections.ts` | bigint | append | **implemented** |
+| TBL-024 | `asset_derivatives` | `asset/asset-derivatives.ts` | uuid7 | mutable | **implemented** |
+
+G4 traceability: COL-TBL022-01..12, COL-TBL023-01..04, COL-TBL024-01..06 —
+**22 logical COL IDs + 8 convention columns (3 id, 3 created_at, 2
+updated_at — none on the append-only inspections) = 30 physical columns**
+(15/6/9). REL-032 ×2 → 2 FK edges implemented; REL-033 ×2 → **1 of 2 edges
+implemented** (→ customers); the → design_sessions edge is a **deferred FK,
+owner G7** — the nullable column `uploaded_via_session_id` exists now, the
+constraint is added when the target table exists (DB4_DB6_HANDOFF §1
+nullable-ref pattern; same mechanism as the G2 REL-102 pointer, not a
+missing-FK defect). Constraints: CST-017 (IDX-019), CST-018 (IDX-020),
+CST-017-family (IDX-064), CST-060 ×3 (asset status, derivative status,
+inspection outcome), CST-070 ×2 (both checksum columns,
+`^sha256:[0-9a-f]{64}$`), plus two dictionary-note checks traced to their
+COL IDs: `ck_assets__size_bytes_positive` (COL-TBL022-05 "CK > 0") and
+`ck_asset_derivatives__ready_has_storage_key` (COL-TBL024-04 "set at
+READY"). Kind/classification closed sets are dictionary `(CK)` columns.
+**No binary, base64, bytea or URL-authority column exists** — `storage_key`
+is the internal object reference (INV-10), classification drives signed
+access (INV-09, CON-044). Required indexes IDX-086/087/099/133 ship with the
+group; IDX-119/132 (recommended) → S25. CST-098 append-only trigger for
+inspections lands at S24.
 
 ### G5 — Catalog (CTX-CAT) · planned
 
@@ -380,7 +401,7 @@ violations on contact values echo the value.
 | G1 | 3 | 3 | **implemented** |
 | G2 | 5 | 8 | **implemented** |
 | G3 | 3 | 11 | **implemented** |
-| G4 | 3 | 14 | planned |
+| G4 | 3 | 14 | **implemented** |
 | G5 | 7 | 21 | planned |
 | G6 | 2 | 23 | planned |
 | G7 | 5 | 28 | planned |
@@ -397,7 +418,7 @@ violations on contact values echo the value.
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**11 of 78 implemented.**
+**14 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -595,6 +616,7 @@ no guard ever reads inside a payload.
 | `0003_align_status_check_names.sql` | G1 | CST-060 naming alignment (`__status_allowed`) | **applied** |
 | `0004_add_policy_configuration_current_version_fk.sql` | G2 | REL-102 header pointer, **custom SQL** | **applied** |
 | `0005_create_customer_tables.sql` | G3 | 3 tables, 3 PK, 1 UQ, 2 CK, 3 FK, 2 partial uniques, IDX-134 | **applied** |
+| `0006_create_asset_tables.sql` | G4 | 3 tables, 3 PK, 1 UQ, 10 CK, 3 FK, 2 partial uniques, 4 perf indexes | **applied** |
 | … | G3..G19 | one migration per group | planned |
 | custom SQL | S24 | triggers + functions (immutability, append-only, outbox column-scope, actor consistency) | planned |
 | index migration(s) | S25 | explicit performance indexes | planned |

@@ -43,6 +43,13 @@
       "when": 1784383432415,
       "tag": "0005_create_customer_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784384308540,
+      "tag": "0006_create_asset_tables",
+      "breakpoints": true
     }
   ]
 }

@@ -24,3 +24,8 @@ export * from './platform/background-job-attempts';
 export * from './customer/customers';
 export * from './customer/business-profiles';
 export * from './customer/customer-contact-points';
+
+// G4 — Asset (CTX-AST)
+export * from './asset/assets';
+export * from './asset/asset-inspections';
+export * from './asset/asset-derivatives';
