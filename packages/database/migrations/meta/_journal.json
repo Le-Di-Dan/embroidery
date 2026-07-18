@@ -15,6 +15,27 @@
       "when": 1784380737221,
       "tag": "0001_add_admin_accounts_successor_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784381323612,
+      "tag": "0002_create_platform_base_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784381358977,
+      "tag": "0003_align_status_check_names",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784381371163,
+      "tag": "0004_add_policy_configuration_current_version_fk",
+      "breakpoints": true
     }
   ]
 }

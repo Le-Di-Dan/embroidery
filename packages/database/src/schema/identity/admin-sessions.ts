@@ -48,6 +48,6 @@ export const adminSessions = pgTable(
       columns: [t.adminAccountId],
       foreignColumns: [adminAccounts.id],
     }).onDelete('restrict'),
-    check('ck_admin_sessions__status', stateCheck(t.status, ADMIN_SESSION_STATES)),
+    check('ck_admin_sessions__status_allowed', stateCheck(t.status, ADMIN_SESSION_STATES)),
   ],
 );

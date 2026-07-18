@@ -61,6 +61,6 @@ export const adminAccounts = pgTable(
       foreignColumns: [t.id],
     }).onDelete('restrict'),
     // CST-060 — status set from DB3.
-    check('ck_admin_accounts__status', stateCheck(t.status, ADMIN_ACCOUNT_STATES)),
+    check('ck_admin_accounts__status_allowed', stateCheck(t.status, ADMIN_ACCOUNT_STATES)),
   ],
 );

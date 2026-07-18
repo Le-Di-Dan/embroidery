@@ -1,0 +1,790 @@
+{
+  "id": "32a2b16a-5336-4bd3-937f-d06bc966979d",
+  "prevId": "f837296e-02f8-4544-87fa-2466b24bb942",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.admin_accounts": {
+      "name": "admin_accounts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locked_at": {
+          "name": "locked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disabled_at": {
+          "name": "disabled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "replaced_by_admin_account_id": {
+          "name": "replaced_by_admin_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "uq_admin_accounts__status__active": {
+          "name": "uq_admin_accounts__status__active",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"admin_accounts\".\"status\" = 'ACTIVE'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fk_admin_accounts__replaced_by_admin_account_id": {
+          "name": "fk_admin_accounts__replaced_by_admin_account_id",
+          "tableFrom": "admin_accounts",
+          "tableTo": "admin_accounts",
+          "columnsFrom": ["replaced_by_admin_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_admin_accounts": {
+          "name": "pk_admin_accounts",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {
+        "uq_admin_accounts__email": {
+          "name": "uq_admin_accounts__email",
+          "nullsNotDistinct": false,
+          "columns": ["email"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_admin_accounts__status": {
+          "name": "ck_admin_accounts__status",
+          "value": "\"admin_accounts\".\"status\" in ('ACTIVE', 'LOCKED', 'DISABLED')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.admin_credentials": {
+      "name": "admin_credentials",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "admin_account_id": {
+          "name": "admin_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_kind": {
+          "name": "credential_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_reference": {
+          "name": "credential_reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rotated_at": {
+          "name": "rotated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fk_admin_credentials__admin_account_id": {
+          "name": "fk_admin_credentials__admin_account_id",
+          "tableFrom": "admin_credentials",
+          "tableTo": "admin_accounts",
+          "columnsFrom": ["admin_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_admin_credentials": {
+          "name": "pk_admin_credentials",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.admin_sessions": {
+      "name": "admin_sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "admin_account_id": {
+          "name": "admin_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "client_metadata": {
+          "name": "client_metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fk_admin_sessions__admin_account_id": {
+          "name": "fk_admin_sessions__admin_account_id",
+          "tableFrom": "admin_sessions",
+          "tableTo": "admin_accounts",
+          "columnsFrom": ["admin_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_admin_sessions": {
+          "name": "pk_admin_sessions",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {
+        "uq_admin_sessions__token_hash": {
+          "name": "uq_admin_sessions__token_hash",
+          "nullsNotDistinct": false,
+          "columns": ["token_hash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_admin_sessions__status": {
+          "name": "ck_admin_sessions__status",
+          "value": "\"admin_sessions\".\"status\" in ('ACTIVE', 'EXPIRED', 'REVOKED')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.policy_configurations": {
+      "name": "policy_configurations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "config_key": {
+          "name": "config_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_version_id": {
+          "name": "current_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "pk_policy_configurations": {
+          "name": "pk_policy_configurations",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {
+        "uq_policy_configurations__config_key": {
+          "name": "uq_policy_configurations__config_key",
+          "nullsNotDistinct": false,
+          "columns": ["config_key"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.policy_configuration_versions": {
+      "name": "policy_configuration_versions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "policy_configuration_id": {
+          "name": "policy_configuration_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value_schema_version": {
+          "name": "value_schema_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_from": {
+          "name": "effective_from",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_admin_id": {
+          "name": "created_by_admin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fk_policy_configuration_versions__policy_configuration_id": {
+          "name": "fk_policy_configuration_versions__policy_configuration_id",
+          "tableFrom": "policy_configuration_versions",
+          "tableTo": "policy_configurations",
+          "columnsFrom": ["policy_configuration_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_policy_configuration_versions__created_by_admin_id": {
+          "name": "fk_policy_configuration_versions__created_by_admin_id",
+          "tableFrom": "policy_configuration_versions",
+          "tableTo": "admin_accounts",
+          "columnsFrom": ["created_by_admin_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_policy_configuration_versions": {
+          "name": "pk_policy_configuration_versions",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {
+        "uq_policy_configuration_versions__config_version": {
+          "name": "uq_policy_configuration_versions__config_version",
+          "nullsNotDistinct": false,
+          "columns": ["policy_configuration_id", "version"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.idempotency_records": {
+      "name": "idempotency_records",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "idempotency_records_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "operation_namespace": {
+          "name": "operation_namespace",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_key": {
+          "name": "scope_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fingerprint": {
+          "name": "fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result": {
+          "name": "result",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "pk_idempotency_records": {
+          "name": "pk_idempotency_records",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {
+        "uq_idempotency_records__namespace_scope_key": {
+          "name": "uq_idempotency_records__namespace_scope_key",
+          "nullsNotDistinct": false,
+          "columns": ["operation_namespace", "scope_key"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_idempotency_records__status_allowed": {
+          "name": "ck_idempotency_records__status_allowed",
+          "value": "\"idempotency_records\".\"status\" in ('IN_PROGRESS', 'COMPLETED')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.outbox_events": {
+      "name": "outbox_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "outbox_events_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aggregate_kind": {
+          "name": "aggregate_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aggregate_id": {
+          "name": "aggregate_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload_schema_version": {
+          "name": "payload_schema_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempt_count": {
+          "name": "attempt_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claimed_by": {
+          "name": "claimed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dispatched_at": {
+          "name": "dispatched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "pk_outbox_events": {
+          "name": "pk_outbox_events",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_outbox_events__status_allowed": {
+          "name": "ck_outbox_events__status_allowed",
+          "value": "\"outbox_events\".\"status\" in ('PENDING', 'DISPATCHED', 'FAILED', 'DEAD_LETTER')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.background_job_attempts": {
+      "name": "background_job_attempts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "background_job_attempts_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "job_kind": {
+          "name": "job_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "job_key": {
+          "name": "job_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempt_no": {
+          "name": "attempt_no",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_dead_letter": {
+          "name": "is_dead_letter",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error_class": {
+          "name": "error_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "pk_background_job_attempts": {
+          "name": "pk_background_job_attempts",
+          "columns": ["id"]
+        }
+      },
+      "uniqueConstraints": {
+        "uq_background_job_attempts__kind_key_attempt": {
+          "name": "uq_background_job_attempts__kind_key_attempt",
+          "nullsNotDistinct": false,
+          "columns": ["job_kind", "job_key", "attempt_no"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_background_job_attempts__outcome_allowed": {
+          "name": "ck_background_job_attempts__outcome_allowed",
+          "value": "\"background_job_attempts\".\"outcome\" in ('SUCCEEDED', 'FAILED_RETRYABLE', 'FAILED_TERMINAL')"
+        },
+        "ck_background_job_attempts__attempt_no_positive": {
+          "name": "ck_background_job_attempts__attempt_no_positive",
+          "value": "\"background_job_attempts\".\"attempt_no\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

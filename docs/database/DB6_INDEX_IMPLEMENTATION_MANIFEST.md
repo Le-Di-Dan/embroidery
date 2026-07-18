@@ -346,18 +346,27 @@ own non-transactional migration step.
 
 ## 7. Current state
 
+After G1 + G2 (8 of 78 tables):
+
 | Metric | Implemented | Selected for launch |
 |---|---|---|
-| PK backing indexes | 3 | 78 |
-| UNIQUE constraint backing | 2 (IDX-001, IDX-003) | 50 |
+| PK backing indexes | 8 | 78 |
+| UNIQUE constraint backing | 6 (IDX-001, 003, 058, 059, 060, 061) | 50 |
 | Explicit partial unique | 1 (IDX-002) | 13 |
 | Explicit performance | 0 | 70 |
-| **Physical indexes** | **6** | **211** |
-| `IDX-*` entries satisfied | 3 | 133 of 134 |
+| **Physical indexes** | **15** | **211** |
+| `IDX-*` entries satisfied | 7 | 133 of 134 |
 
-G1's two performance indexes (**IDX-120**, **IDX-121**) are **not yet built** —
-performance indexes ship in slice S25 after the tables exist
-(`DB4_DB6_HANDOFF.md` §2 step 5). They are tracked here, not lost.
+Performance indexes are **not yet built** in any group — they ship in slice
+S25 after the tables exist (`DB4_DB6_HANDOFF.md` §2 step 5). Outstanding so
+far, tracked here rather than lost:
 
-Verified in the database: 6 index objects across the 3 G1 tables, zero
-duplicates, zero tool-generated names, and no index outside this manifest.
+| Group | Pending performance indexes |
+|---|---|
+| G1 | IDX-120, IDX-121 |
+| G2 | IDX-088, IDX-090, IDX-093, IDX-094, IDX-131 |
+
+Verified in the database after G2: 15 index objects across 8 tables, zero
+duplicates, zero non-conforming names (every constraint and index name carries
+an approved `pk_`/`fk_`/`uq_`/`ck_`/`ix_` prefix), and no index outside this
+manifest.

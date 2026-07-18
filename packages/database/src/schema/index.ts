@@ -12,3 +12,10 @@
 export * from './identity/admin-accounts';
 export * from './identity/admin-credentials';
 export * from './identity/admin-sessions';
+
+// G2 — Platform base (CTX-PLT)
+export * from './platform/policy-configurations';
+export * from './platform/policy-configuration-versions';
+export * from './platform/idempotency-records';
+export * from './platform/outbox-events';
+export * from './platform/background-job-attempts';

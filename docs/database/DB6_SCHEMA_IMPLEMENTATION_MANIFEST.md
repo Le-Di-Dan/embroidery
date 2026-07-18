@@ -105,15 +105,15 @@ Schema files live under `packages/database/src/schema/<context>/`.
 | TBL-002 | `admin_credentials` | `identity/admin-credentials.ts` | uuid7 | mutable | **implemented** |
 | TBL-003 | `admin_sessions` | `identity/admin-sessions.ts` | uuid7 | mutable | **implemented** |
 
-### G2 — Platform base (CTX-PLT) · planned
+### G2 — Platform base (CTX-PLT) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-076 | `policy_configurations` | `platform/policy-configurations.ts` | uuid7 | header | planned |
-| TBL-077 | `policy_configuration_versions` | `platform/policy-configuration-versions.ts` | uuid7 | immutable | planned |
-| TBL-074 | `idempotency_records` | `platform/idempotency-records.ts` | bigint | mutable (state) | planned |
-| TBL-073 | `outbox_events` | `platform/outbox-events.ts` | bigint | column-scoped | planned |
-| TBL-075 | `background_job_attempts` | `platform/background-job-attempts.ts` | bigint | append | planned |
+| TBL-076 | `policy_configurations` | `platform/policy-configurations.ts` | uuid7 | header | **implemented** |
+| TBL-077 | `policy_configuration_versions` | `platform/policy-configuration-versions.ts` | uuid7 | immutable | **implemented** |
+| TBL-074 | `idempotency_records` | `platform/idempotency-records.ts` | bigint | mutable (state) | **implemented** |
+| TBL-073 | `outbox_events` | `platform/outbox-events.ts` | bigint | column-scoped | **implemented** |
+| TBL-075 | `background_job_attempts` | `platform/background-job-attempts.ts` | bigint | append | **implemented** |
 
 ### G3 — Customer (CTX-CUS) · planned
 
@@ -275,7 +275,7 @@ Schema files live under `packages/database/src/schema/<context>/`.
 | Group | Tables | Cumulative | Status |
 |---|---|---|---|
 | G1 | 3 | 3 | **implemented** |
-| G2 | 5 | 8 | planned |
+| G2 | 5 | 8 | **implemented** |
 | G3 | 3 | 11 | planned |
 | G4 | 3 | 14 | planned |
 | G5 | 7 | 21 | planned |
@@ -294,7 +294,7 @@ Schema files live under `packages/database/src/schema/<context>/`.
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**3 of 78 implemented.**
+**8 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -409,8 +409,9 @@ twice.
 | LC-19 | Shipping Details | `shipping_details.status` | G15 | planned |
 | LC-20 | Refund | `refunds.status` | G16 | planned |
 | LC-21 | Delivery | `orders` delivery fields + `order_transitions` | G15 | planned |
-| LC-22 | Outbox Event | `outbox_events.status` | G2 | planned |
-| LC-23 | Idempotency Record | `idempotency_records.status` | G2 | planned |
+| LC-22 | Outbox Event | `outbox_events.status` | G2 | **implemented** |
+| LC-23 | Idempotency Record | `idempotency_records.status` | G2 | **implemented** |
+| (none) | Job attempt outcome | `background_job_attempts.outcome` | G2 | **implemented** |
 
 Plus non-`LC` publication states (`categories`, `gallery_entries`,
 `content_pages`, `design_templates`, `agreement_versions`) and secondary
@@ -425,19 +426,30 @@ All 9 are **opaque to the database** (ADR-DB4-004 r2): no DB-side JSON schema
 check, no GIN index (IDX-R10), every invariant fact extracted to a relational
 column. Validation is application-level with a recorded schema version.
 
-| # | Table | Column | Group | Status |
+Numbering, column names and version keys are taken verbatim from
+`DB4_JSONB_PAYLOAD_MAP.md` — this table must not be paraphrased.
+
+| # | Column (COL) | Version key | Group | Status |
 |---|---|---|---|---|
-| 1 | TBL-025 `design_sessions` | `design_document` | G7 | planned |
-| 2 | TBL-028 `design_versions` | `design_document` | G11 | planned |
-| 3 | TBL-035 `design_template_versions` | `design_document` | G7 | planned |
-| 4 | TBL-031 `approval_snapshots` | `design_document` | G13 | planned |
-| 5 | TBL-060 `production_specifications` | `specification_document` | G17 | planned |
-| 6 | TBL-056 `payment_provider_events` | `callback_payload` (redacted) | G16 | planned |
-| 7 | TBL-073 `outbox_events` | `event_payload` | G2 | planned |
-| 8 | TBL-070 `notification_intents` | `template_params` (redacted) | G18 | planned |
-| 9 | TBL-072 `audit_events` | `change_summary` | G19 | planned |
+| 1 | `design_sessions.design_document` (COL-TBL025-03) | `document_schema_version` | G7 | planned |
+| 2 | `design_versions.design_document` (COL-TBL028-05) | `document_schema_version` | G11 | planned |
+| 3 | `design_template_versions.design_document` (COL-TBL035-03) | `document_schema_version` | G7 | planned |
+| 4 | `outbox_events.payload` (COL-TBL073-03) | `payload_schema_version` | **G2** | **implemented** |
+| 5 | `idempotency_records.result` (COL-TBL074-05) | fixed internal shape | **G2** | **implemented** |
+| 6 | `payment_provider_events.redacted_payload` (COL-TBL056-06) | `provider_key` discriminates | G16 | planned |
+| 7 | `audit_events.summary` (COL-TBL072-07) | fixed internal shape | G19 | planned |
+| 8 | `notification_intents.params` (COL-TBL070-06) | `template_version` | G18 | planned |
+| 9 | `policy_configuration_versions.value` (COL-TBL077-03) | `value_schema_version` | **G2** | **implemented** |
 
 **Closed set.** A tenth JSONB column requires an ADR (ADR-DB4-004).
+
+`approval_snapshots` and `production_specifications` hold **no** JSONB payload:
+their evidence is carried by extracted relational columns plus the design
+document's hash. Neither appears in the closed set.
+
+All nine are opaque: validation is application-side, and every invariant fact
+(hash, uniqueness, status, fingerprint, amount) lives in a relational column, so
+no guard ever reads inside a payload.
 
 ---
 
@@ -446,7 +458,10 @@ column. Validation is application-level with a recorded schema version.
 | Migration | Group | Contents | Status |
 |---|---|---|---|
 | `0000_create_identity_tables.sql` | G1 | 3 tables, 3 PK, 2 UQ, 2 FK, 2 CK, 1 partial unique | **applied** |
-| `0001_*` | G2 | platform base | planned |
+| `0001_add_admin_accounts_successor_fk.sql` | G1 | REL-003 forward fix (DEV-DB6-008) | **applied** |
+| `0002_create_platform_base_tables.sql` | G2 | 5 tables, 5 PK, 4 UQ, 2 FK, 4 CK | **applied** |
+| `0003_align_status_check_names.sql` | G1 | CST-060 naming alignment (`__status_allowed`) | **applied** |
+| `0004_add_policy_configuration_current_version_fk.sql` | G2 | REL-102 header pointer, **custom SQL** | **applied** |
 | … | G3..G19 | one migration per group | planned |
 | custom SQL | S24 | triggers + functions (immutability, append-only, outbox column-scope, actor consistency) | planned |
 | index migration(s) | S25 | explicit performance indexes | planned |
