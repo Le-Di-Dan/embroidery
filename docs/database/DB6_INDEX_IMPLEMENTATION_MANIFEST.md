@@ -389,22 +389,22 @@ own non-transactional migration step.
 
 ## 7. Current state
 
-After G1 + G2 + G3 + G4 (14 of 78 tables):
+After G1 + G2 + G3 + G4 + G5 (21 of 78 tables):
 
 | Metric | Implemented | Selected for launch |
 |---|---|---|
-| PK backing indexes | 14 | 78 |
-| UNIQUE constraint backing | 8 (IDX-001, 003, 019, 058, 059, 060, 061, 062) | 50 |
+| PK backing indexes | 21 | 78 |
+| UNIQUE constraint backing | 12 (IDX-001, 003, 010, 011, 014, 015, 019, 058, 059, 060, 061, 062) | 50 |
 | Explicit partial unique | 5 (IDX-002, 004, 005, 020, 064) | 13 |
-| Explicit performance | 5 (IDX-086, 087, 099, 133, 134) | 70 |
-| **Physical indexes** | **32** | **211** |
-| `IDX-*` entries satisfied | 18 | 133 of 134 |
+| Explicit performance | 10 (IDX-065, 068, 069, 070, 071, 086, 087, 099, 133, 134) | 70 |
+| **Physical indexes** | **48** | **211** |
+| `IDX-*` entries satisfied | 27 | 133 of 134 |
 
 **Policy from G3 onward (per review directive):** each group implements its
-own **required** (P0/P1) performance indexes with the group — G3 shipped
-IDX-134, G4 shipped IDX-086/087/099/133. Recommended-tier indexes still ship
-at S25 phase 4. G1/G2 predate the directive; their required indexes remain in
-the S25 queue, tracked below rather than lost:
+own **required** (P0/P1) performance indexes with the group — G3: IDX-134;
+G4: IDX-086/087/099/133; G5: IDX-065/068/069/070/071. Recommended-tier
+indexes still ship at S25 phase 4. G1/G2 predate the directive; their
+required indexes remain in the S25 queue, tracked below rather than lost:
 
 | Group | Pending | Tier |
 |---|---|---|
@@ -412,8 +412,9 @@ the S25 queue, tracked below rather than lost:
 | G2 | IDX-088, IDX-090, IDX-093, IDX-094 | required (S25 backlog) · IDX-131 recommended |
 | G3 | IDX-129 | recommended (S25 phase 4) |
 | G4 | IDX-119, IDX-132 | recommended (S25 phase 4) |
+| G5 | — none pending | all five selected entries were required and shipped |
 
-Verified in the database after G4: 32 index objects across 14 tables, zero
+Verified in the database after G5: 48 index objects across 21 tables, zero
 duplicates, zero non-conforming names (every constraint and index name carries
 an approved `pk_`/`fk_`/`uq_`/`ck_`/`ix_` prefix), and no index outside this
 manifest.

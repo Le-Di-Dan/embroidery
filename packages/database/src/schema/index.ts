@@ -29,3 +29,12 @@ export * from './customer/customer-contact-points';
 export * from './asset/assets';
 export * from './asset/asset-inspections';
 export * from './asset/asset-derivatives';
+
+// G5 — Catalog (CTX-CAT)
+export * from './catalog/categories';
+export * from './catalog/products';
+export * from './catalog/product-variants';
+export * from './catalog/skus';
+export * from './catalog/product-sides';
+export * from './catalog/embroidery-areas';
+export * from './catalog/product-media';

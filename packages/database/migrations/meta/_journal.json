@@ -50,6 +50,13 @@
       "when": 1784384308540,
       "tag": "0006_create_asset_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784386583423,
+      "tag": "0007_create_catalog_tables",
+      "breakpoints": true
     }
   ]
 }

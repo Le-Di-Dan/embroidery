@@ -255,17 +255,39 @@ access (INV-09, CON-044). Required indexes IDX-086/087/099/133 ship with the
 group; IDX-119/132 (recommended) → S25. CST-098 append-only trigger for
 inspections lands at S24.
 
-### G5 — Catalog (CTX-CAT) · planned
+### G5 — Catalog (CTX-CAT) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-011 | `categories` | `catalog/categories.ts` | uuid7 | mutable | planned |
-| TBL-012 | `products` | `catalog/products.ts` | uuid7 | mutable | planned |
-| TBL-013 | `product_variants` | `catalog/product-variants.ts` | uuid7 | mutable | planned |
-| TBL-014 | `skus` | `catalog/skus.ts` | uuid7 | mutable | planned |
-| TBL-015 | `product_sides` | `catalog/product-sides.ts` | uuid7 | mutable | planned |
-| TBL-016 | `embroidery_areas` | `catalog/embroidery-areas.ts` | uuid7 | mutable | planned |
-| TBL-017 | `product_media` | `catalog/product-media.ts` | uuid7 | mutable | planned |
+| TBL-011 | `categories` | `catalog/categories.ts` | uuid7 | mutable | **implemented** |
+| TBL-012 | `products` | `catalog/products.ts` | uuid7 | mutable | **implemented** |
+| TBL-013 | `product_variants` | `catalog/product-variants.ts` | uuid7 | mutable | **implemented** |
+| TBL-014 | `skus` | `catalog/skus.ts` | uuid7 | mutable | **implemented** |
+| TBL-015 | `product_sides` | `catalog/product-sides.ts` | uuid7 | mutable | **implemented** |
+| TBL-016 | `embroidery_areas` | `catalog/embroidery-areas.ts` | uuid7 | mutable | **implemented** |
+| TBL-017 | `product_media` | `catalog/product-media.ts` | uuid7 | mutable | **implemented** |
+
+G5 traceability: **52 logical COL IDs** (TBL011: 9, TBL012: 13, TBL013: 5,
+TBL014: 5, TBL015: 9, TBL016: 7 with ×2 on -03/-04, TBL017: 4) → 54 business
+columns + **21 convention columns** (7 id, 7 created_at, 7 updated_at — all
+mutable roots/children) = **75 physical columns** (12/16/8/8/12/12/7).
+REL-020/021/022/023(×2)/024/025(×2) → **8 FK edges, all implemented** —
+including both cross-context asset edges (REL-024 background, REL-025 media),
+possible because G4 precedes G5. CST: CST-011 instances 2/4 (IDX-010/011),
+CST-012 (IDX-014), CST-013 (IDX-015), CST-060 ×2 (publication set
+DRAFT/PUBLISHED/ARCHIVED per DB3 handoff §1), CST-063 ×2 + CST-068 ×2 +
+DEV-DB6-005 ×2 (both money columns), CST-066 ×5 (image px, physical mm,
+px_per_mm, area bounds, max mm when set), role closed set (COL-TBL017-03).
+**First money group:** `products.base_price_amount` (display price, INV-12 —
+history copies by value) and `skus.price_override_amount` (nullable),
+both `numeric(14,2)` + `currency_code` CK `'VND'` closed set + VND
+integer-scale CHECK. Dimensions are bare `numeric` exactly as DB4's
+measurement model locks them — no invented precision. **No stock column
+exists in Catalog** (`is_display_out_of_stock` is DB4's manual override
+COL-TBL012-09, not derived availability). Categories are **flat** — DB4 has
+no parent column, so no tree machinery exists. Required indexes
+IDX-065/068/069/070/071 ship with the group; slug uniqueness is global
+(technical identity), deliberately not published-scoped.
 
 ### G6 — Inventory core (CTX-INV) · planned
 
@@ -402,7 +424,7 @@ inspections lands at S24.
 | G2 | 5 | 8 | **implemented** |
 | G3 | 3 | 11 | **implemented** |
 | G4 | 3 | 14 | **implemented** |
-| G5 | 7 | 21 | planned |
+| G5 | 7 | 21 | **implemented** |
 | G6 | 2 | 23 | planned |
 | G7 | 5 | 28 | planned |
 | G8 | 2 | 30 | planned |
@@ -418,7 +440,7 @@ inspections lands at S24.
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**14 of 78 implemented.**
+**21 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -617,6 +639,7 @@ no guard ever reads inside a payload.
 | `0004_add_policy_configuration_current_version_fk.sql` | G2 | REL-102 header pointer, **custom SQL** | **applied** |
 | `0005_create_customer_tables.sql` | G3 | 3 tables, 3 PK, 1 UQ, 2 CK, 3 FK, 2 partial uniques, IDX-134 | **applied** |
 | `0006_create_asset_tables.sql` | G4 | 3 tables, 3 PK, 1 UQ, 10 CK, 3 FK, 2 partial uniques, 4 perf indexes | **applied** |
+| `0007_create_catalog_tables.sql` | G5 | 7 tables, 7 PK, 4 UQ, 14 CK, 8 FK, 5 perf indexes | **applied** |
 | … | G3..G19 | one migration per group | planned |
 | custom SQL | S24 | triggers + functions (immutability, append-only, outbox column-scope, actor consistency) | planned |
 | index migration(s) | S25 | explicit performance indexes | planned |
