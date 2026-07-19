@@ -127,6 +127,15 @@ Checker-enforced in `tools/db-metric-check.mjs` (`EXPECTED_FK_EDGES = 164`,
   list) specifying the exact FKs (DEV-DB6-013/014) or no-FK treatment
   (DEV-DB6-015) their execution prompts must apply — so those groups do not
   need to re-derive this from scratch.
+- G13's own 9 Class-A edges plus the DEV-DB6-013 finding: **zero remaining
+  Class-C/D findings** for this group. **Implemented (2026-07-19,
+  DB6-G13):** REL-051/052 ×3/053 ×2/054/055 ×2 and all four DEV-DB6-013
+  placement FKs are now physical (migration
+  `0020_create_approval_snapshot_tables.sql`). Existence is physical for
+  all nine placement/version/anchor edges; **cross-column placement
+  hierarchy consistency** (variant/side/area actually belonging to the
+  same product) is **TX/App**, not DB-enforced — live-verified, see
+  `DB6_G13_GROUP_REPORT.md` §D.
 - No physical defect was found in G1–G11 (the already-implemented tables).
   No forward-fix migration is required. DB6-C4 makes **no schema change**.
 

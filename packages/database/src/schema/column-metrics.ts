@@ -108,6 +108,10 @@ const ROWS: readonly MetricRow[] = [
   ['redirect_rules', 'G12', 4, 0, 3, 7],
   ['agreements', 'G12', 3, 0, 3, 6],
   ['agreement_versions', 'G12', 9, 2, 2, 13],
+  // G13 — Approval
+  ['approval_snapshots', 'G13', 11, 12, 2, 25],
+  ['approval_snapshot_thread_colors', 'G13', 4, 0, 2, 6],
+  ['approval_snapshot_agreement_acceptances', 'G13', 5, 0, 2, 7],
 ];
 
 export const COLUMN_METRICS: readonly TableColumnMetric[] = ROWS.map(

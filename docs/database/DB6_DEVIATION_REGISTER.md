@@ -476,7 +476,7 @@ is superseded by this register entry under the standing scope-guard clause.
 |---|---|
 | Source IDs | DB4_COLUMN_DICTIONARY.md COL-TBL031-05a..05d, DB4_COMPLETENESS_MATRIX.md CON-058..060 (explicitly names TBL-031 alongside TBL-028); DEV-DB6-009's scope guard; DEV-DB6-012 (identical class of gap, same CON-058..060 source, different table) |
 | Nature | **genuinely missing edge family** in the REL model, found by DB6-C4's pre-G12 relationship-coverage audit — a separate deviation per DEV-DB6-009's scope guard |
-| Status | **open — planned owner G13** (target table `approval_snapshots`, TBL-031, not yet implemented; no migration in DB6-C4) |
+| Status | **closed — implemented in G13** (migration `0020_create_approval_snapshot_tables.sql`; all four FKs live, physical FK target count now includes these four) |
 
 **Problem.** `approval_snapshots` (TBL-031) freezes four placement references
 — `product_id`, `product_variant_id`, `product_side_id`, `embroidery_area_id`
@@ -495,7 +495,7 @@ mandated on `approval_snapshots` and not merely inferred from column-name
 similarity. Full-text scan of the REL model and the manifest's §2.2 implied
 map found no covering entry.
 
-**Selected implementation (planned, G13).** Four `foreignKey()` FKs to
+**Selected implementation (implemented, G13).** Four `foreignKey()` FKs to
 `products`/`product_variants`/`product_sides`/`embroidery_areas` (all
 already implemented since G5), `restrict`, following the exact
 DEV-DB6-012/`design_versions` pattern. No deferred-owner ledger row is

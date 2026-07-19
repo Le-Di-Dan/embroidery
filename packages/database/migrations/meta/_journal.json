@@ -134,6 +134,13 @@
       "when": 1784455956228,
       "tag": "0019_add_agreement_current_version_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784457204734,
+      "tag": "0020_create_approval_snapshot_tables",
+      "breakpoints": true
     }
   ]
 }

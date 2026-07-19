@@ -612,7 +612,7 @@ no index per DB5 catalog rejection entry R15), REL-095 ×2
 (gallery_entry_assets → gallery_entries/assets), REL-097
 (agreement_versions → agreements, restrict), REL-098 (agreements
 .current_version_id → agreement_versions — implemented in this group by
-custom SQL, migration `0018_add_agreement_current_version_fk.sql`, same
+custom SQL, migration `0019_add_agreement_current_version_fk.sql`, same
 header↔child cycle class as REL-044/0016: declaring it in `agreements.ts`
 would need a circular module import)
 Indexes shipped with the group: IDX-012/050/052/053/054/055
@@ -631,19 +631,54 @@ REL-098's own "TX consistency" classification in
 (`design_cases.current_version_id`, DB6-C4). No trigger or composite FK
 invented; the publish transaction (GRD-008 direction) owns it.
 
-### G13 — Approval (CTX-DSN) · planned
+### G13 — Approval (CTX-DSN) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-031 | `approval_snapshots` | `design/approval-snapshots.ts` | uuid7 | immutable | planned |
-| TBL-032 | `approval_snapshot_thread_colors` | `design/approval-snapshot-thread-colors.ts` | bigint | immutable | planned |
-| TBL-033 | `approval_snapshot_agreement_acceptances` | `design/approval-snapshot-agreement-acceptances.ts` | bigint | immutable | planned |
+| TBL-031 | `approval_snapshots` | `design/approval-snapshots.ts` | uuid7 | immutable | **implemented** |
+| TBL-032 | `approval_snapshot_thread_colors` | `design/approval-snapshot-thread-colors.ts` | bigint | immutable | **implemented** |
+| TBL-033 | `approval_snapshot_agreement_acceptances` | `design/approval-snapshot-agreement-acceptances.ts` | bigint | immutable | **implemented** |
 
-**DB6-C4 note:** `approval_snapshots` (COL-TBL031-05a..05d) carries the same
-placement-VO quartet (`product_id`/`product_variant_id`/`product_side_id`/
-`embroidery_area_id`) as `design_versions` did before DEV-DB6-012 — DEV-DB6-013
-mandates four native FKs to `products`/`product_variants`/`product_sides`/
-`embroidery_areas` (all already implemented since G5) when G13 builds.
+Columns: COL-TBL031-01..11 (-02 ×3, -05 ×4, -06 ×4, -07 ×2, -09 ×3, -10 ×2),
+COL-TBL032-01..04, COL-TBL033-01..05 · Constraints: CST-001 ×3, CST-023
+(`uq_approval_snapshots__version`, IDX-025), CST-024
+(`uq_approval_acceptances__approval_agrversion`, IDX-026), CST-051 instance
+(`uq_approval_thread_colors__approval_position`, IDX-063), CST-066 instance
+(dims > 0), CST-070 ×3 (hash format), CST-091 (**full reject-mutation
+trigger candidate, S24** — stronger than CST-090/096: no status column
+exists to except, per LC-10 exists-or-not)
+Relationships: REL-051 (→ design_versions, restrict), REL-052 ×3
+(→ design_cases/custom_requests/customers, restrict), REL-053 ×2
+(→ secure_access_grants/contact_verification_challenges, restrict),
+REL-054 (thread_colors → approval_snapshots), REL-055 ×2 (acceptances →
+approval_snapshots/agreement_versions), **DEV-DB6-013 implemented**: four
+native FKs `approval_snapshots.product_id/product_variant_id/`
+`product_side_id/embroidery_area_id` → `products/product_variants/`
+`product_sides/embroidery_areas` (COL-TBL031-05a..05d), same class of gap
+as DEV-DB6-012, closed with this group.
+Indexes shipped: IDX-025/026/063 (constraint-created); IDX-136
+(recommended, on `custom_request_id`) → deferred to S25, same pattern as
+IDX-116. No Quotation/Order/Payment/Reservation field, no 3D field, no
+generic placement/asset polymorphism, no plaintext token/OTP, no
+auto-orchestration trigger.
+
+**Placement hierarchy integrity (existence vs same-hierarchy, DB6-C4
+pattern applied):** the four new FKs prove each placement column's target
+row *exists*; they do **not** prove the rows are mutually consistent (e.g.
+`product_variant_id` actually belonging to `product_id`). That
+cross-column hierarchy consistency (`CON-058..060`) is **TX/App** —
+verified in the approval transaction against the referenced Design
+Version's own placement, same tier as `design_versions`' identical
+placement quartet (DEV-DB6-012, G11) — no composite FK or trigger
+invented. Live-verified: a variant/side/area from an unrelated product is
+accepted by the physical schema (see `DB6_G13_GROUP_REPORT.md` §D).
+
+**Exact-version authority:** `approval_snapshots.design_version_id` and
+`approval_snapshot_agreement_acceptances.agreement_version_id` reference
+the exact immutable version rows, never `design_cases.current_version_id`
+or `agreements.current_version_id` (both mutable pointers) — a later
+pointer move does not and cannot (CST-091) change historical approval
+evidence.
 
 ### G14 — Quotation (CTX-QUO) · planned
 
@@ -736,7 +771,7 @@ DEV-DB6-015, stays a no-FK evidence reference, same treatment as
 | G10 | 4 | 41 | **implemented** |
 | G11 | 3 | 44 | **implemented** |
 | G12 | 6 | 50 | **implemented** |
-| G13 | 3 | 53 | planned |
+| G13 | 3 | 53 | **implemented** |
 | G14 | 4 | 57 | planned |
 | G15 | 8 | 65 | planned |
 | G16 | 5 | 70 | planned |
@@ -825,7 +860,8 @@ that register on every run.
 | G10 | 4 | 27 | 0 | 27 | 11 | 38 |
 | G11 | 3 | 20 | 9 | 29 | 6 | 35 |
 | G12 | 6 | 38 | 2 | 40 | 17 | 57 |
-| **Total** | **50** | **312** | **31** | **343** | **136** | **479** |
+| G13 | 3 | 20 | 12 | 32 | 6 | 38 |
+| **Total** | **53** | **332** | **43** | **375** | **142** | **517** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database

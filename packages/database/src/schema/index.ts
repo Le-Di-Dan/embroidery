@@ -81,3 +81,8 @@ export * from './content/content-pages';
 export * from './content/redirect-rules';
 export * from './content/agreements';
 export * from './content/agreement-versions';
+
+// G13 — Approval (CTX-DSN)
+export * from './design/approval-snapshots';
+export * from './design/approval-snapshot-thread-colors';
+export * from './design/approval-snapshot-agreement-acceptances';
