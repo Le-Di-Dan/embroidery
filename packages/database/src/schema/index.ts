@@ -120,3 +120,6 @@ export * from './production/production-job-transitions';
 // G18 — Notification (CTX-NTF)
 export * from './notification/notification-intents';
 export * from './notification/notification-delivery-attempts';
+
+// G19 — Audit (CTX-AUD)
+export * from './audit/audit-events';

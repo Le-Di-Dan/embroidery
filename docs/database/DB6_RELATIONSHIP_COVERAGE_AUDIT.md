@@ -113,6 +113,16 @@ Checker-enforced in `tools/db-metric-check.mjs` (`EXPECTED_FK_EDGES = 164`,
 [manifest] all checks passed
 ```
 
+**164 logical edges above is checker-verified and unchanged.** The physical
+FK **target** of 162 stated in this section's heading, however, is
+**superseded by DEV-DB6-017** (2026-07-19, G19 final reconciliation): the
+correct target is **160**, not 162 — no tool ever derived "162" from
+source, and summing every group's own already-committed physical-FK delta
+against 164 lands on 160. This section's arithmetic is retained verbatim
+as the historical record of what DB6-C4 declared at the time; see
+`DB6_DEVIATION_REGISTER.md` DEV-DB6-017 for the corrected figure and full
+evidence trail.
+
 ## 5. What G12 inherits
 
 - G12's own 6 tables: **zero Class-C findings** — G12 may proceed once this
@@ -205,6 +215,23 @@ Checker-enforced in `tools/db-metric-check.mjs` (`EXPECTED_FK_EDGES = 164`,
   rather than introducing a new classification. One physical FK total;
   164/162 logical/physical-FK-target denominators unaffected — neither
   no-FK column was ever counted toward the physical-FK-target side.
+- G19 — Audit: no Class-C/D findings for this group; this audit's
+  pre-registered 3A/0B/0C/0D held exactly. **Implemented (2026-07-19,
+  DB6-G19):** all three REL-105 (TBL-072 subset) actor edges are now
+  physical FKs — `admin_id` → `admin_accounts`, `customer_id` →
+  `customers`, `grant_id` → `secure_access_grants`, all restrict, backed by
+  IDX-095/IDX-096's leading columns. This closes REL-105's full 10-edge
+  enumeration (TBL-042/045/063/072) at **10/10 physical**. The 2 Class-B
+  findings (REL-103 polymorphic target; `system_job_key` bare evidence,
+  no REL row) stay no-FK by design, exactly as pre-registered — no schema
+  change, no new classification. **DEV-DB6-017 correction:** with this
+  group's 3 edges added, the running implemented count reaches
+  **160**, not the previously-repeated **162** — the "162" physical-FK-target
+  ceiling declared at this audit's own §4 was miscomputed by 2 at
+  authoring time and never re-verified against the full G1–G19 delta chain
+  until this group closed the ledger; see `DB6_DEVIATION_REGISTER.md`
+  DEV-DB6-017 for the full evidence trail. §4's arithmetic below is
+  retained as history; the corrected ceiling is **160**.
 - No physical defect was found in G1–G11 (the already-implemented tables).
   No forward-fix migration is required. DB6-C4 makes **no schema change**.
 

@@ -82,7 +82,7 @@ Four relationship metrics, kept separate and never interchanged:
 | Relationship ID range | REL-001..105 (105 slots) |
 | Documented REL rows | **92** |
 | Expanded logical FK/reference edges | **164** = 153 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) + 4 documented additions (DEV-DB6-013: approval_snapshots placement refs, planned owner G13) + 2 documented additions (DEV-DB6-014: shipping_fee_acknowledgements grant/challenge, implemented G15) |
-| Physical FK target | **162** (164 − REL-103 audit polymorphic − REL-104 outbox polymorphic, both no-FK by design) |
+| Physical FK target | **160** (corrected G19, DEV-DB6-017 — see note below; not 162) |
 | Implemented physical FK constraints | grows per group (parity gate counts these) |
 
 92 `REL-*` rows expand to **153 FK edges**. The original 129 counted only
@@ -145,7 +145,20 @@ No edge is invented for a missing ID; the 13 unassigned IDs stay unassigned.
 The parity gate counts **FK edges**, not `REL-*` rows. Two edges are logical
 only, with **no physical FK by design**: REL-104 (outbox polymorphic
 aggregate reference) and REL-103 (audit polymorphic target) — counted in the
-164 logical edges, excluded from the 162 physical target. Evidence columns
+164 logical edges, excluded from the physical target.
+
+**DEV-DB6-017 (2026-07-19, G19 final reconciliation):** the physical target
+was declared **162** at DB6-C4 (`164 − 2`) and repeated unchanged through
+G12–G18; summing every group's own already-committed physical-FK delta
+(G11 ends 78; +5/+13/+11/+26/+13/+10/+1/+3 across G12–G19) and live-catalog
+verification on disposable databases both independently land on **160**,
+not 162, once every documented edge (including REL-105's now-complete
+10/10) is physical. No missing edge exists anywhere in the deferred-FK
+ledger (§2.2.1, fully closed) or the DB6-C4 Class-A/B/C findings — the
+ceiling itself was miscomputed once and carried forward unverified. The
+target is corrected to **160** (see full evidence trail in
+`DB6_DEVIATION_REGISTER.md` DEV-DB6-017); **164 logical edges is
+unchanged** and remains checker-enforced. Evidence columns
 with **no REL row at all** (ledger actor refs on TBL-019,
 `design_sessions.submitted_request_id`, and — per DEV-DB6-015 — the bare
 `admin_id`-shaped columns on TBL-046/057/058/062, same class as TBL-041/009)
@@ -896,11 +909,56 @@ DEC-25). See `DB6_DEVIATION_REGISTER.md` DEV-DB6-016.
   TR-NTF-01..06 (DB3) remain worker/App-owned; this group stores only the
   resulting facts.
 
-### G19 — Audit (CTX-AUD) · planned
+### G19 — Audit (CTX-AUD) · implemented
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-072 | `audit_events` | `audit/audit-events.ts` | bigint | append | planned |
+| TBL-072 | `audit_events` | `audit/audit-events.ts` | bigint | append | **implemented** |
+
+**Implementation notes (2026-07-19, DB6-G19):**
+- Column metrics: 9 logical COL IDs (COL-TBL072-01..09), 4 expansion columns
+  (COL-03 → `admin_id`/`customer_id`/`grant_id`/`system_job_key`, +3; COL-05
+  → `target_kind`/`target_id`, +1) = 13 business columns + 2 convention
+  (`id`, `created_at`; no `updated_at` — append-only) = **15 physical
+  columns**. Live-verified.
+- REL-105 (TBL-072 subset ×3) implemented as real physical FKs: `admin_id`
+  → `admin_accounts`, `customer_id` → `customers`, `grant_id` →
+  `secure_access_grants`, all `ON DELETE RESTRICT` — REL-105's full 10-edge
+  enumeration (TBL-042/045/063/072) is now **10/10 physical**.
+  `system_job_key` remains bare no-FK evidence (no target table for a job
+  key), same treatment as the sibling transition tables.
+- REL-103 (`target_kind`/`target_id`) implemented exactly as the justified
+  cross-cutting polymorphic-target exception: no physical FK, no
+  target-kind registry table, no EAV. IDX-095 is the only access path.
+- CST-072 (actor_kind ↔ matching actor-ref exclusivity) is implemented as a
+  same-row CHECK (`ck_audit_events__actor_kind_ref_match`) covering
+  `admin_id`/`customer_id`/`system_job_key` in both directions;
+  `grant_id` is independent evidence outside this CHECK (may accompany any
+  `actor_kind`, same as the sibling REL-105 tables). `actor_kind`'s own
+  domain is left open — no dictionary closed set exists in DB4, so none is
+  invented, matching the precedent already set by
+  `custom_request_transitions`/`order_transitions`.
+- JSONB boundary **#7** (`audit_events.summary`) is now physically
+  implemented — the 9th and last of the 9 closed-set JSONB definitions to
+  land. Closed-set: **9/9 definitions, 9/9 physical**. See the G18 report
+  correction note below — this column's canonical boundary number is #7,
+  not #9; the earlier "boundary #9 remains G19" phrasing in the G18 report
+  was a numbering slip, not a physical error.
+- IDX-095 (`(target_kind, target_id, occurred_at DESC, id DESC)`) and
+  IDX-096 (`(occurred_at DESC, id DESC)`) implemented exactly, both
+  non-partial, both required tier. IDX-097/IDX-098 remain deferred to S25
+  per DB5's own tiering — not implemented in G19.
+- CST-098 (append-only reject UPDATE/DELETE) is **not** implemented in G19
+  — `audit_events` is added to the S24 trigger target list; UPDATE/DELETE
+  currently succeed against this table pre-S24, an honestly-reported gap,
+  not a regression.
+- **Final physical FK reconciliation is 160/162, not 162/162** — see
+  DEV-DB6-017 below. The three genuine remaining edges this group owed
+  (`admin_id`, `customer_id`, `grant_id`) are now all physical; no other
+  undocumented edge exists anywhere in the deferred-FK ledger (§2.2.1,
+  fully closed since G15) or in DB6-C4's Class-A/B/C findings. The
+  "162" ceiling itself is off by 2 — DEV-DB6-017 documents the root cause
+  and corrects it to 160.
 
 ### 3.1. Group roll-up
 
@@ -924,9 +982,9 @@ DEC-25). See `DB6_DEVIATION_REGISTER.md` DEV-DB6-016.
 | G16 | 5 | 70 | **implemented** |
 | G17 | 5 | 75 | **implemented** |
 | G18 | 2 | 77 | **implemented** |
-| G19 | 1 | 78 | planned |
+| G19 | 1 | 78 | **implemented** |
 
-**77 of 78 implemented.**
+**78 of 78 implemented. DB6-G01..G19 physical schema implementation COMPLETE.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -1013,7 +1071,8 @@ that register on every run.
 | G16 | 5 | 48 | 6 | 54 | 13 | 67 |
 | G17 | 5 | 25 | 9 | 34 | 12 | 46 |
 | G18 | 2 | 15 | 1 | 16 | 5 | 21 |
-| **Total** | **77** | **528** | **89** | **617** | **201** | **818** |
+| G19 | 1 | 9 | 4 | 13 | 2 | 15 |
+| **Total** | **78** | **537** | **93** | **630** | **203** | **833** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
@@ -1153,17 +1212,26 @@ Numbering, column names and version keys are taken verbatim from
 
 | # | Column (COL) | Version key | Group | Status |
 |---|---|---|---|---|
-| 1 | `design_sessions.design_document` (COL-TBL025-03) | `document_schema_version` | G7 | planned |
+| 1 | `design_sessions.design_document` (COL-TBL025-03) | `document_schema_version` | G7 | **implemented** |
 | 2 | `design_versions.design_document` (COL-TBL028-05) | `document_schema_version` | G11 | implemented |
-| 3 | `design_template_versions.design_document` (COL-TBL035-03) | `document_schema_version` | G7 | planned |
+| 3 | `design_template_versions.design_document` (COL-TBL035-03) | `document_schema_version` | G7 | **implemented** |
 | 4 | `outbox_events.payload` (COL-TBL073-03) | `payload_schema_version` | **G2** | **implemented** |
 | 5 | `idempotency_records.result` (COL-TBL074-05) | fixed internal shape | **G2** | **implemented** |
 | 6 | `payment_provider_events.redacted_payload` (COL-TBL056-06) | `provider_key` discriminates | G16 | **implemented** |
-| 7 | `audit_events.summary` (COL-TBL072-07) | fixed internal shape | G19 | planned |
+| 7 | `audit_events.summary` (COL-TBL072-07) | fixed internal shape | G19 | **implemented** |
 | 8 | `notification_intents.params` (COL-TBL070-06) | `template_version` | G18 | **implemented** |
 | 9 | `policy_configuration_versions.value` (COL-TBL077-03) | `value_schema_version` | **G2** | **implemented** |
 
 **Closed set.** A tenth JSONB column requires an ADR (ADR-DB4-004).
+
+**(DB6-G19 preflight correction, 2026-07-19):** rows #1 and #3 were still
+marked `planned` above despite G7 (`design_sessions`,
+`design_template_versions`) having been implemented and committed long
+before this group — a stale status label, not a physical gap. Live-catalog
+confirmation on the persistent dev database (`information_schema.columns`,
+`data_type='jsonb'`) shows both `design_document` columns physically
+present today. Status corrected to `implemented`; no schema change. All 9
+closed-set JSONB columns are now `implemented` (**9/9**).
 
 `approval_snapshots` and `production_specifications` hold **no** JSONB payload:
 their evidence is carried by extracted relational columns plus the design

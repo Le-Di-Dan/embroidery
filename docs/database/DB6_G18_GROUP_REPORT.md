@@ -133,6 +133,20 @@ explicit performance), +1 physical partial index (IDX-091 only).
 - Retention/redaction: hard-TTL operational class (`ADR-DB2-003` rule 6);
   attempts deleted with their parent intent; no bodies/secrets stored, so
   no redaction pass is needed on these tables specifically.
+
+  **(DB6-G19 preflight reconciliation, 2026-07-19):** "attempts deleted
+  with their parent intent" describes the canonical **retention-job/
+  application ordering**, not a database cascade. The live FK
+  (`fk_notification_delivery_attempts__intent_id`) remains and must remain
+  `ON DELETE RESTRICT` — it is not being changed to `CASCADE`, and no
+  migration `0028` correction is needed. In practice this means the
+  retention-expiry job deletes `notification_delivery_attempts` rows for an
+  intent *before* deleting the intent row itself (child-first, same
+  transaction or ordered batch); if canonical retention instead requires
+  the whole intent+attempts family to be retained or purged together, that
+  is a family-retention policy enforced by the job, not a database-level
+  `CASCADE`. No claim of database-cascade delete should be read into the
+  original phrasing.
 - Sensitive-data classification: `cpriv(min)` — masked recipient copy only,
   no OTP/token/secret/full-body anywhere in either table.
 
@@ -304,7 +318,14 @@ partial index, +1 physical JSONB column.
   entries (IDX-091, IDX-092), nothing invented.
 - **JSONB**: closed-set definitions remain 9/9; physical JSONB columns
   implemented moves 7 → **8**/9 (boundary #8, `notification_intents.
-  params`, this group's delta). Boundary #9 remains G19's scope.
+  params`, this group's delta). **(DB6-G19 preflight correction,
+  2026-07-19):** the column still owed after this group is
+  `audit_events.summary`, whose canonical `DB4_JSONB_PAYLOAD_MAP.md` row
+  number is **boundary #7**, not "#9" — "#9" in the original text above
+  referred only to chronological landing order (the 9th of 9 to be
+  implemented), not the canonical boundary ID. `policy_configuration_
+  versions.value` is canonical boundary #9 and was already implemented in
+  G2. No schema or migration change results; this is a prose-only fix.
 
 ## G. Validation
 

@@ -143,6 +143,9 @@ const ROWS: readonly MetricRow[] = [
   // G18 — Notification
   ['notification_intents', 'G18', 9, 1, 3, 13],
   ['notification_delivery_attempts', 'G18', 6, 0, 2, 8],
+
+  // G19 — Audit
+  ['audit_events', 'G19', 9, 4, 2, 15],
 ];
 
 export const COLUMN_METRICS: readonly TableColumnMetric[] = ROWS.map(

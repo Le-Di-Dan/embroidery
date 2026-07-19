@@ -8,7 +8,7 @@ evidence. DB0–DB5 documents are **not edited**; deviations are additive.
 **Status legend:** `open` · `closed` (implemented + evidenced) ·
 `deferred` (owner named, non-blocking)
 
-**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-016.
+**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-017.
 
 ---
 
@@ -681,6 +681,72 @@ row, and must not validate `channel` against an invented closed set.
 DB7 should assert these three columns remain unconstrained as designed
 (no accidental FK/CHECK added later without a matching DEV-DB6 update);
 DB8/DB9 are not affected.
+
+---
+
+## DEV-DB6-017 — The 162 physical-FK-target ceiling was never reachable; corrected to 160 (G19 final-reconciliation finding)
+
+| Field | Value |
+|---|---|
+| Source IDs | `DB6_RELATIONSHIP_COVERAGE_AUDIT.md` §4 (162 ceiling declared pre-G12); `DB6_G11_GROUP_REPORT.md` (78/156 ending count); `DB6_G12..G18_GROUP_REPORT.md` (per-group deltas 83→96→107→133→146→156→157); live catalog on `embroidery_g19_fresh`/`embroidery_g19_upgrade` (160/160 physical FKs after G19) |
+| Nature | **documentation/arithmetic correction, not a schema change** — no missing edge exists anywhere in the current canonical documents; the target ceiling itself was miscomputed once, at DB6-C4, and silently carried forward unverified through 7 subsequent group reports |
+| Status | **closed** (ceiling corrected; no schema change; checker unaffected — no tool ever computed "162" from source, it only ever appeared as hand-carried prose) |
+
+**Problem.** DB6-C4 (pre-G12) declared `164 logical edges / 162 physical FK
+target`, computed as `164 − 2` (subtracting only REL-103 and REL-104, the
+two documented intentional no-FK-by-design polymorphic edges). Every group
+report from G12 through G18 repeated "162" as the unchanged target and
+reported its own running implemented-count against it (`83/162`, `96/162`,
+`107/162`, `133/162`, `146/162`, `156/162`, `157/162`) without ever
+re-summing the full G1–G19 delta chain against 162 directly — each group
+checked only its own delta, not the grand total. G19 is the first point
+in the engagement where that full chain closes and must reconcile to a
+concrete final sum, and it does not reach 162.
+
+**Evidence.** Live-verified chain, disposable databases
+`embroidery_g19_fresh` (empty → all 29 migrations) and
+`embroidery_g19_upgrade` (G18-prefix upgrade), both giving **160**
+physical FK constraints in the `public` schema (`pg_constraint` where
+`contype='f'`) after migration `0029`. Reconstructing the delta chain from
+each group's own already-committed report: G11 ends at **78**/156 (pre-C4);
+DB6-C4 raises the target to 162 without changing the implemented count;
+G12 +5 → 83; G13 +13 → 96; G14 +11 → 107; G15 +26 → 133; G16 +13 → 146;
+G17 +10 → 156; G18 +1 → 157 (per DEV-DB6-016, only `REL-100` of that
+group's 3 audited Class-A candidates became physical — the other 2,
+`REL-099`/`REL-101`, were correctly *never counted* toward either
+denominator, per that entry's own text); G19 +3 (`admin_id`/`customer_id`/
+`grant_id`, REL-105's TBL-072 subset) → **160**. Every intermediate step
+was independently checked this round: the deferred-FK edge ledger
+(manifest §2.2.1) is fully closed, all 7 rows `implemented`; DEV-DB6-010/
+012/013/014's corrective edges are all live-present; REL-105's full
+10-edge enumeration (TBL-042:3, TBL-045:3, TBL-063:1, TBL-072:3) is now
+10/10 physical. No fifth or sixth remaining edge exists in any canonical
+document read for this group (DB4 relationship/FK/keys/column docs, DB5
+FK-index review, DB6 relationship coverage audit, deviation register,
+deferred-FK ledger) — the shortfall is arithmetic, not a missing table or
+column.
+
+**Selected implementation.** Correct the physical-FK-target denominator
+from **162 to 160** going forward. No schema change, no new FK invented to
+force the old number, no migration touched. `164` (logical edges,
+checker-enforced by `tools/db-metric-check.mjs`'s `EXPECTED_FK_EDGES`) is
+**unchanged** — this correction is scoped to the physical-target
+side-computation only, which no tool has ever derived from source (it has
+only ever existed as hand-carried report prose). The provenance of the
+original 2-edge overcount could not be pinpointed with certainty from the
+documents read this round — the most likely explanation is that the
+DB6-C4 audit's "`− 2`" subtraction should have been "`− 4`" (two more
+edges belonging to a no-FK-by-design category not documented as such at
+that time), but no second REL-103/104-shaped edge surfaced in this
+group's search. This is flagged as an open provenance question for a
+future documentation pass, not a blocker: the physical schema is correct
+and fully verified regardless of which historical arithmetic error
+produced the stale "162."
+
+**Behaviour impact.** None. **Historical documents.** DB4 unchanged; DB6
+manifest/coverage-audit/index-manifest updated to read 160 instead of 162
+wherever the ceiling is cited. **Audit impact.** None — DB7 relationship
+tests should assert 160/160 physical FKs at launch, not 162.
 
 ---
 

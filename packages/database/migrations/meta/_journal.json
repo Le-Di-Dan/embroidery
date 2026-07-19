@@ -197,6 +197,13 @@
       "when": 1784471995681,
       "tag": "0028_create_notification_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1784474378330,
+      "tag": "0029_create_audit_events_table",
+      "breakpoints": true
     }
   ]
 }
