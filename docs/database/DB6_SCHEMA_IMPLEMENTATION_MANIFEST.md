@@ -148,6 +148,32 @@ with **no REL row at all** (ledger actor refs on TBL-019,
 counts. Also updated in §2 header table: `REL-001..105 → 92 rows → 153
 edges`.
 
+### 2.2.1. Deferred FK edge ledger (canonical, checker-enforced — DEV-DB6-011)
+
+Every FK edge whose target table does not exist yet at the edge's source
+group gets exactly one row here. `resolution_owner_group` MUST equal
+`target_table_creation_group` (no exception exists in DB6). The checker
+fails if an edge has zero or two owners, if a deferred column exists with no
+row here, if the row's target-table group disagrees with §3, or if an edge
+is marked `implemented` before its target table's creation group has run.
+
+| Edge | REL | Source table (group) | Source column | Target table (group) | Resolution owner | Delete behavior | Status |
+|---|---|---|---|---|---|---|---|
+| ledger → soft_holds | REL-028 | `inventory_ledger_entries` (G6) | `soft_hold_id` | `inventory_soft_holds` (G10) | **G10** | restrict | implemented (G10) |
+| ledger → reservations | REL-028 | `inventory_ledger_entries` (G6) | `reservation_id` | `inventory_reservations` (G15) | **G15** | restrict | deferred |
+| ledger → orders | REL-028 | `inventory_ledger_entries` (G6) | `order_id` | `orders` (G15) | **G15** | restrict | deferred |
+| soft_holds → reservations (converted) | REL-030 | `inventory_soft_holds` (G10) | `converted_reservation_id` | `inventory_reservations` (G15) | **G15** | restrict | deferred |
+| request_transitions → grants | REL-105 (TBL-042 subset) | `custom_request_transitions` (G9) | `grant_id` | `secure_access_grants` (G10) | **G10** | restrict | implemented (G10) |
+| design_cases → quotations (current) | REL-062 e2 | `custom_requests` (G9) | `current_quotation_id` | `quotations` (G14) | **G14** | restrict | deferred |
+| design_cases → design_versions (current) | REL-044 | `design_cases` (G9) | `current_version_id` | `design_versions` (G11) | **G11** | restrict | deferred |
+
+**Root cause this ledger closes (DEV-DB6-011):** before this table existed,
+`reservation_id`'s owner was recorded only in prose (`DB6_G06_GROUP_REPORT.md`
+§B and this manifest's G6 traceability note), and the prose named the wrong
+owner group (G10 instead of G15). The structured ledger is the single source
+of truth from this point forward; prose summaries elsewhere must agree with
+it, and the checker parses this table directly rather than free text.
+
 ### 2.3. Constraint metric model
 
 Five constraint metrics, kept separate:
@@ -316,8 +342,10 @@ COL IDs → 14 business columns + 5 convention columns (2 id, 2 created_at, 1
 updated_at — none on the append-only ledger) = 19 physical columns** (6/13).
 REL-026 + REL-027 → **2 FK edges implemented**; REL-028 ×3 (ledger →
 soft_holds / reservations / orders) — **all three deferred**: nullable columns
-exist now, FKs land with owner groups **G10** (soft_hold_id, reservation_id
-target tables created there) and **G15** (order_id). Constraints: CST-014
+exist now. **DEV-DB6-011 corrected owner mapping — G10 resolves
+`soft_hold_id` only; G15 resolves `reservation_id` and `order_id`**
+(`inventory_reservations`/TBL-021 and `orders` are both G15-created tables;
+see §3 G10/G15 group tables and DEV-DB6-011). Constraints: CST-014
 (IDX-016 — the Q-32 **lock anchor**, verified `Index Scan using
 uq_sku_stocks__sku` under `LockRows`), CST-061 (INV-18 non-negative stock,
 enforced on INSERT and UPDATE), CST-062 (ledger quantity > 0), CST-071

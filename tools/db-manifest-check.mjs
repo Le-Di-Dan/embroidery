@@ -25,6 +25,7 @@ import {
   checkForbiddenIndexReferences,
   checkColumnMetrics,
 } from './db-metric-check.mjs';
+import { checkDeferredOwnership } from './db-deferred-owner-check.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(REPO_ROOT, 'docs', 'database');
@@ -250,6 +251,7 @@ const indexManifest = stripEmphasis(read(INDEX_MANIFEST));
     packagesDir: join(REPO_ROOT, 'packages'),
     schemaManifest,
   });
+  checkDeferredOwnership({ ...context, schemaManifest });
 }
 
 for (const note of notes) console.log(`[manifest] ${note}`);

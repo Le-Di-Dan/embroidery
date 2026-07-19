@@ -8,7 +8,7 @@ evidence. DB0–DB5 documents are **not edited**; deviations are additive.
 **Status legend:** `open` · `closed` (implemented + evidenced) ·
 `deferred` (owner named, non-blocking)
 
-**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-010.
+**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-011.
 
 ---
 
@@ -347,6 +347,77 @@ disagree.
 154/152 from this point; the review-locked 153/151 is superseded by this
 register entry under the standing scope-guard clause ("a genuinely missing
 edge gets its own deviation").
+
+---
+
+## DEV-DB6-011 — Deferred FK owner reconciliation for Reservation-bound references
+
+| Field | Value |
+|---|---|
+| Source IDs | DB6_G06_GROUP_REPORT.md §B (deferred-edge row), DB6_SCHEMA_IMPLEMENTATION_MANIFEST.md (G10 wording), REL-028, REL-030, REL-031, TBL-020, TBL-021 |
+| Nature | **traceability / implementation-order correction** — not a logical schema deviation; no relationship added, removed, or altered |
+| Status | **closed** (documentation + checker correction; no schema/migration change) |
+
+**Problem.** Before G10 scope derivation, the deferred-FK ownership records for
+`inventory_ledger_entries.reservation_id`/`.order_id` and
+`inventory_soft_holds.converted_reservation_id` were wrong or ambiguous:
+
+- `DB6_G06_GROUP_REPORT.md` §B stated *"soft_hold_id/reservation_id → owner
+  G10, order_id → owner G15"* — `reservation_id`'s owner was wrong.
+- `DB6_SCHEMA_IMPLEMENTATION_MANIFEST.md`'s prose ("FKs land with owner
+  groups G10 (soft_hold_id, reservation_id target tables created there) and
+  G15 (order_id)") reads as if both target tables are created in G10, which
+  contradicts §3 of the same manifest where `TBL-021 inventory_reservations`
+  is unambiguously assigned to G15.
+- The REL-030 edge (`inventory_soft_holds.converted_reservation_id →
+  inventory_reservations`) — created in G10, resolved in G15 — was never
+  carried into the G6/G10 handoff at all.
+
+Left uncorrected, this would have caused G10 to attempt creating
+`inventory_reservations` (TBL-021) one group early, out of canonical order
+and without its required `orders` composition target (REL-031, `orders`
+does not exist until G15).
+
+**Evidence.** `inventory_reservations` (TBL-021) is listed under G15 in
+`DB6_SCHEMA_IMPLEMENTATION_MANIFEST.md` §3 with G15's roll-up at 8 tables
+(dòng 518, 566). `DB4_TABLE_CATALOG.md:71` defines TBL-021's business
+identity as *"one official reservation of quantity for an order"* with
+arbiter `(order, sku) active partial`. `DB4_RELATIONSHIP_AND_FK_MODEL.md:59`
+(REL-031) requires `inventory_reservations → sku_stocks / orders`, both
+edges **required** (`yes`) — the `orders` edge cannot exist before G15.
+
+**Selected implementation.** Corrected owner map, checker-enforced from this
+point forward:
+
+```text
+inventory_ledger_entries.soft_hold_id          source G6  → owner G10
+custom_request_transitions.grant_id            source G9  → owner G10
+inventory_ledger_entries.reservation_id         source G6  → owner G15
+inventory_ledger_entries.order_id               source G6  → owner G15
+inventory_soft_holds.converted_reservation_id   source G10 → owner G15
+```
+
+Rule going forward: a deferred FK's resolution owner group must be the
+target table's creation group (`resolution_owner_group ==
+target_table_creation_group`), enforced by `db-manifest-check.mjs` against a
+structured deferred-edge ledger. No exception exists for this checkpoint.
+
+**Behaviour impact.** None. **Physical schema impact.** None — no table,
+column, or migration changes; this closes purely as a scheduling/wording
+correction ahead of G10. **Migration impact.** None. **Historical
+documents.** `DB6_G06_GROUP_REPORT.md`'s original text is not rewritten; a
+dated addendum is appended per this deviation. **Relationship denominator.**
+Unaffected — remains **154 logical edges / 152 physical FK targets** (no
+edge added, removed, or reinterpreted; this deviation only reassigns which
+group implements an already-counted edge).
+
+**Test/audit impact.** The manifest checker's deferred-owner validation
+(added under this deviation) fails the run if any future deferred edge names
+an owner group that precedes its target table's creation group, if a target
+table is absent from both the owner group and all groups before it, if an
+edge has two owners or none, if a deferred column exists with no ledger row,
+or if group roll-up counts (G10 = 4, G15 = 8, total = 78) drift from the
+approved manifest.
 
 ---
 

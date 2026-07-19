@@ -37,6 +37,25 @@ same checkpoint. Header current-pointer FKs (design_cases.current_version_id,
 quotations.current_version_id, agreements/policy current pointers) are
 added after their version tables.
 
+**DB6-C3 implementation-order addendum (DEV-DB6-011, added 2026-07-19 — this
+row's original text above is unchanged):** the G6 row's phrase *"FKs to
+holds/reservations added after G10"* and the dependency note's *"+G10 for
+request/order FKs"* read ambiguously on which group creates
+`inventory_reservations`. Canonical DB6 group ownership (unambiguous,
+checker-enforced in `DB6_SCHEMA_IMPLEMENTATION_MANIFEST.md` §3 and §2.2.1):
+
+```text
+TBL-020 inventory_soft_holds  created in G10
+TBL-021 inventory_reservations created in G15
+```
+
+Reservation-bound FKs (`inventory_ledger_entries.reservation_id`,
+`inventory_ledger_entries.order_id`,
+`inventory_soft_holds.converted_reservation_id`) cannot be created before
+G15, since `inventory_reservations` and `orders` do not exist until then.
+Only `inventory_ledger_entries.soft_hold_id` and
+`custom_request_transitions.grant_id` resolve at G10.
+
 ## 2. Constraint implementation order
 
 1. PKs + NOT NULLs with each table (CST-001/080).

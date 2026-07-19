@@ -159,3 +159,20 @@ Task board: `DB6-G01..G19` = 6/19 (open) · `DB6-S24..S28` open.
 | Migration impact | **none** |
 | Behavior impact | **none** — counting semantics only |
 | Checker change | canonical register `packages/database/src/schema/column-metrics.ts` verified against the live schema by `column-metrics.spec.ts` (bijection, exact counts, formula, tampered-row fixture) and cross-checked against manifest §4.1 by the manifest checker; a deliberate tamper produces 3 failures |
+
+---
+
+## Addendum — DB6-C3 deferred FK owner correction (DEV-DB6-011)
+
+| Field | Value |
+|---|---|
+| Original statement (§B, above) | *"Deferred FK edges | REL-028 ×3: `soft_hold_id`/`reservation_id` → **owner G10**, `order_id` → **owner G15**"* |
+| Corrected owner mapping | `soft_hold_id` → **G10** · `reservation_id` → **G15** · `order_id` → **G15** |
+| Additional carried-forward edge (not previously listed here) | `inventory_soft_holds.converted_reservation_id → inventory_reservations` (REL-030) — source table created **G10**, FK resolved **G15** |
+| Reason | `inventory_reservations` (TBL-021) is a G15-created table (manifest §3): its business identity is *"one official reservation of quantity for an order"* (`DB4_TABLE_CATALOG.md:71`) and REL-031 requires a **required** edge to `orders`, which does not exist until G15. A FK naming G10 as resolution owner would have required creating `inventory_reservations` one group early, without its mandatory Order composition target. |
+| Impact | physical schema: **none** · migrations: **none** · G6 verdict: **unchanged PASS** · G10 scope: corrected to 4 canonical tables (excludes `inventory_reservations`) · G15 handoff: expanded to explicitly carry `reservation_id`, `order_id`, and `converted_reservation_id` |
+| Canonical ledger | `DB6_SCHEMA_IMPLEMENTATION_MANIFEST.md` §2.2.1 (structured deferred-edge table, checker-enforced) |
+| Deviation | `DEV-DB6-011` |
+
+This addendum does not alter the original §A–H text above; it corrects the
+owner-group claim in §B for a review that occurred after G9, ahead of G10.
