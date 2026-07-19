@@ -23,6 +23,7 @@ import {
   checkRelCardinality,
   checkIndexFormula,
   checkForbiddenIndexReferences,
+  checkColumnMetrics,
 } from './db-metric-check.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -244,6 +245,11 @@ const indexManifest = stripEmphasis(read(INDEX_MANIFEST));
   checkRelCardinality(context);
   checkIndexFormula(context);
   checkForbiddenIndexReferences(context);
+  checkColumnMetrics({
+    ...context,
+    packagesDir: join(REPO_ROOT, 'packages'),
+    schemaManifest,
+  });
 }
 
 for (const note of notes) console.log(`[manifest] ${note}`);

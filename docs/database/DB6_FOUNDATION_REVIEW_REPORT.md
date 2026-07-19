@@ -416,3 +416,71 @@ register, schema manifest, index manifest, migration governance, foundation
 review. Outstanding: constraint implementation report, fresh-install report,
 upgrade-path report, schema-status/drift, multi-machine workflow, test handoff,
 completeness matrix, completion report.
+
+---
+
+# Part III — DB6-C2: column-metric reconciliation
+
+## 13. Finding and root cause
+
+The G6 chat report's global totals (`142 logical / 62 convention / 200
+physical`) did not balance (142+62=204) and were wrong on all three numbers.
+Root cause: running totals were hand-accumulated across group reports using
+the wrong implicit formula (`logical IDs + convention = physical`), which
+ignores DB4's ×N COL expansions, and carried arithmetic slips (G1 was
+reported as 16 IDs — actually 17; G2 as 24 — actually 34). The manifest's
+per-group traceability notes were correct throughout; only the accumulated
+chat totals were wrong. **Physical schema impact: none. Migration impact:
+none. Behavior impact: none** — every parity gate had verified real objects
+all along.
+
+## 14. Canonical model (checker-enforced)
+
+```text
+documented logical COL IDs + ×N expansions = business columns
+business columns + convention columns      = total physical columns
+```
+
+Per-group reconciliation, re-derived from the DB4 dictionary and verified
+against the live schema (`pg_attribute` anchor: 226):
+
+| Group | Tables | Logical IDs | Expansions | Business | Convention | Physical |
+|---|---|---|---|---|---|---|
+| G1 | 3 | 17 | 0 | 17 | 9 | 26 |
+| G2 | 5 | 34 | 3 | 37 | 12 | 49 |
+| G3 | 3 | 18 | 0 | 18 | 9 | 27 |
+| G4 | 3 | 22 | 0 | 22 | 8 | 30 |
+| G5 | 7 | 52 | 2 | 54 | 21 | 75 |
+| G6 | 2 | 12 | 2 | 14 | 5 | 19 |
+| **Total** | **23** | **155** | **7** | **162** | **64** | **226** |
+
+The seven ×N expansions and the G6 local difference (12+5=17 vs 19 —
+COL-TBL019-09 ×3) are enumerated in the schema manifest §4.1. No logical COL
+ID is non-physical and none is shared/composite in G1–G6.
+
+## 15. Enforcement added
+
+- `packages/database/src/schema/column-metrics.ts` — machine-readable
+  register, one row per implemented table.
+- `column-metrics.spec.ts` — verifies against the **live** drizzle schema:
+  export↔register bijection, exact physical counts per table, per-row and
+  global formula balance, and a tampered-row negative fixture (27 new tests;
+  suite 45/45).
+- Manifest checker — cross-checks register vs manifest §4.1 group table
+  (per-row formula, group sums, global total, register↔implemented-table
+  bijection). A deliberate tamper of one register row produced **3 failures**
+  (row formula, group sum, total) and was restored.
+- Nothing is hard-coded per group; G7+ tables join the register and are
+  verified by the same machinery.
+
+## 16. C2 exit gate
+
+G1–G6 formulas balance · global formula balances and matches the live
+database · every logical COL ID mapped (155, none orphaned) · every physical
+column owned (bijection test) · convention ownership complete (checker §4.0
+check) · deliberate-mismatch fixture caught · G1–G6 parity unchanged · no old
+migration touched · drift clean · working tree clean after commit.
+
+```text
+DB6-C2  PASS
+```

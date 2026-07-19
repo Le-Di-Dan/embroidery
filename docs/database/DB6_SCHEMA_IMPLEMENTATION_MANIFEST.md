@@ -504,9 +504,57 @@ Rules the register encodes:
 - the checker cross-checks every *implemented* table's schema file against
   this register and its manifest mutability class on every run.
 
-Per-group accounting therefore always reports three figures:
-`DB4 logical COL IDs` + `convention physical columns` = `total physical
-columns`.
+### 4.1. Column-metric model (DB6-C2, canonical and checker-enforced)
+
+**The formula is NOT `logical IDs + convention = physical`.** DB4 collapses
+some multi-column concepts into one `COL-*` ID with a `×N` marker (the same
+compaction pattern as REL rows), so IDs undercount physical columns. The
+canonical formula, enforced per table, per group and globally:
+
+```text
+documented logical COL IDs + ×N expansions = business columns
+business columns + convention columns      = total physical columns
+```
+
+The seven `×N` COL expansions across G1–G6 (each +N−1 columns):
+
+| COL ID | ×N | Physical children |
+|---|---|---|
+| COL-TBL073-02 | 2 | `aggregate_kind`, `aggregate_id` |
+| COL-TBL073-08 | 2 | `claimed_by`, `claimed_at` |
+| COL-TBL074-07 | 2 | `claimed_at`, `completed_at` |
+| COL-TBL016-03 | 2 | `bound_x_px`, `bound_y_px` |
+| COL-TBL016-04 | 2 | `bound_width_px`, `bound_height_px` |
+| COL-TBL019-09 | 3 | `actor_kind`, `admin_id`, `system_job_key` |
+
+No logical COL ID is non-physical, and none shares a physical column, in
+G1–G6. The machine-readable per-table register lives in
+`packages/database/src/schema/column-metrics.ts`; its spec verifies every row
+against the **live** drizzle schema (bijection between exported tables and
+register rows, exact physical counts, formula balance, and a tampered-row
+negative fixture). The manifest checker cross-checks this group table against
+that register on every run.
+
+| Group | Tables | Logical IDs | Expansions | Business | Convention | Physical |
+|---|---|---|---|---|---|---|
+| G1 | 3 | 17 | 0 | 17 | 9 | 26 |
+| G2 | 5 | 34 | 3 | 37 | 12 | 49 |
+| G3 | 3 | 18 | 0 | 18 | 9 | 27 |
+| G4 | 3 | 22 | 0 | 22 | 8 | 30 |
+| G5 | 7 | 52 | 2 | 54 | 21 | 75 |
+| G6 | 2 | 12 | 2 | 14 | 5 | 19 |
+| **Total** | **23** | **155** | **7** | **162** | **64** | **226** |
+
+Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
+columns across the 23 implemented tables — the formula and the database
+agree. Earlier *chat-report running totals* ("142 logical / 62 convention /
+200 physical") were hand-accumulated with the wrong implicit formula and were
+wrong on all three numbers; the per-group manifest notes were correct
+throughout. Root cause and correction: `DB6_G06_GROUP_REPORT.md` addendum.
+
+Per-group accounting therefore always reports: logical COL IDs, ×N
+expansions, business columns, convention columns, and total physical columns
+— five figures, two balancing equations.
 
 The authoritative column list is `DB4_COLUMN_DICTIONARY.md`. This manifest does
 not duplicate ~700 column rows; it binds the *rules* by which each column is

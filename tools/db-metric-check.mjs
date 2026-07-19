@@ -132,3 +132,129 @@ export function checkForbiddenIndexReferences({
   }
   note(`retired/conditional/rejected IDX scan: ${sources.length} source files clean`);
 }
+
+/**
+ * Column-metric reconciliation (DB6-C2). Parses the machine-readable register
+ * (`column-metrics.ts`) and the manifest §4.1 group table, then verifies:
+ * per-row formula balance, register↔manifest group sums, global totals, and
+ * that the register covers exactly the manifest's implemented tables. The
+ * live-schema side (physical counts, export bijection, negative fixture) is
+ * owned by `column-metrics.spec.ts`, which runs in the same quality gate.
+ */
+export function checkColumnMetrics({ read, packagesDir, schemaManifest, fail, note }) {
+  const registerSource = read(join(packagesDir, 'database', 'src', 'schema', 'column-metrics.ts'));
+  // Whitespace-tolerant: prettier may wrap register rows across lines.
+  const rowRe =
+    /table:\s*'([a-z_]+)',\s*group:\s*'(G\d+)',\s*logicalIds:\s*(\d+),\s*expansions:\s*(\d+),\s*convention:\s*(\d+),\s*physical:\s*(\d+)/g;
+  const rows = [];
+  for (const m of registerSource.matchAll(rowRe)) {
+    rows.push({
+      table: m[1],
+      group: m[2],
+      logicalIds: Number(m[3]),
+      expansions: Number(m[4]),
+      convention: Number(m[5]),
+      physical: Number(m[6]),
+    });
+  }
+  if (rows.length === 0) {
+    fail('column-metric register has no parseable rows');
+    return;
+  }
+  const seen = new Set();
+  const groupSums = new Map();
+  for (const row of rows) {
+    if (seen.has(row.table)) fail(`column metrics: ${row.table} registered twice`);
+    seen.add(row.table);
+    const business = row.logicalIds + row.expansions;
+    if (business + row.convention !== row.physical) {
+      fail(
+        `column metrics: ${row.table} formula does not balance (${row.logicalIds}+${row.expansions}+${row.convention} != ${row.physical})`,
+      );
+    }
+    const g = groupSums.get(row.group) ?? {
+      tables: 0,
+      logicalIds: 0,
+      expansions: 0,
+      convention: 0,
+      physical: 0,
+    };
+    g.tables += 1;
+    g.logicalIds += row.logicalIds;
+    g.expansions += row.expansions;
+    g.convention += row.convention;
+    g.physical += row.physical;
+    groupSums.set(row.group, g);
+  }
+
+  // manifest §4.1 group rows: | G1 | 3 | 17 | 0 | 17 | 9 | 26 |
+  const manifestRows = schemaManifest
+    .split('\n')
+    .filter((l) => /^\| (G\d+|Total) \| \d+ \| \d+ \| \d+ \| \d+ \| \d+ \| \d+ \|/.test(l));
+  let manifestTotal = null;
+  for (const line of manifestRows) {
+    const c = line.split('|').map((s) => s.trim());
+    const entry = {
+      tables: Number(c[2]),
+      logicalIds: Number(c[3]),
+      expansions: Number(c[4]),
+      business: Number(c[5]),
+      convention: Number(c[6]),
+      physical: Number(c[7]),
+    };
+    if (entry.logicalIds + entry.expansions !== entry.business) {
+      fail(`manifest §4.1 ${c[1]}: ids+expansions != business`);
+    }
+    if (entry.business + entry.convention !== entry.physical) {
+      fail(`manifest §4.1 ${c[1]}: business+convention != physical`);
+    }
+    if (c[1] === 'Total') {
+      manifestTotal = entry;
+      continue;
+    }
+    const g = groupSums.get(c[1]);
+    if (g === undefined) {
+      fail(`manifest §4.1 lists ${c[1]} but the register has no rows for it`);
+      continue;
+    }
+    for (const key of ['tables', 'logicalIds', 'expansions', 'convention', 'physical']) {
+      if (g[key] !== entry[key]) {
+        fail(`manifest §4.1 ${c[1]} ${key}=${entry[key]} disagrees with register sum ${g[key]}`);
+      }
+    }
+  }
+  for (const group of groupSums.keys()) {
+    if (!manifestRows.some((l) => l.includes(`| ${group} |`))) {
+      fail(`register has ${group} rows but manifest §4.1 has no ${group} line`);
+    }
+  }
+  const total = rows.reduce(
+    (a, r) => ({ physical: a.physical + r.physical, tables: a.tables + 1 }),
+    { physical: 0, tables: 0 },
+  );
+  if (manifestTotal === null) {
+    fail('manifest §4.1 has no Total row');
+  } else if (manifestTotal.physical !== total.physical || manifestTotal.tables !== total.tables) {
+    fail(
+      `manifest §4.1 Total (${manifestTotal.tables} tables, ${manifestTotal.physical} cols) disagrees with register (${total.tables}, ${total.physical})`,
+    );
+  }
+
+  // the register must cover exactly the manifest's implemented tables
+  const implemented = schemaManifest
+    .split('\n')
+    .filter((l) => /^\| TBL-\d{3} \|/.test(l) && l.trim().endsWith('implemented |'))
+    .map((l) => l.match(/`([a-z_]+)`/)?.[1])
+    .filter(Boolean);
+  for (const table of implemented) {
+    if (!seen.has(table)) fail(`implemented table ${table} missing from column-metric register`);
+  }
+  for (const table of seen) {
+    if (!implemented.includes(table)) {
+      fail(`register table ${table} is not marked implemented in the manifest`);
+    }
+  }
+  note(
+    `column metrics: ${total.tables} tables, ${total.physical} physical columns, register/manifest/formulas agree`,
+  );
+}

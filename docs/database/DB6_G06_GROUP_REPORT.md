@@ -142,3 +142,20 @@ OVERALL DB6  IN PROGRESS
 ```
 
 Task board: `DB6-G01..G19` = 6/19 (open) · `DB6-S24..S28` open.
+
+---
+
+## Addendum — DB6-C2 column-metric correction
+
+| Field | Value |
+|---|---|
+| Original metric (this report §D) | `142 logical / 62 convention / 200 physical` |
+| Corrected metric | **155 logical COL IDs + 7 ×N expansions = 162 business; + 64 convention = 226 physical** |
+| Live anchor | `pg_attribute` reports 226 columns across 23 tables |
+| Root cause | Global running totals in chat reports were **hand-accumulated** across groups with the wrong implicit formula (`ids + convention = physical`, which ignores ×N COL expansions) and with arithmetic slips (G1 reported as 16 IDs — actually 17; G2 as 24 — actually 34). The per-group manifest notes were correct throughout; only the accumulated totals were wrong. |
+| G6 local difference (12+5=17 vs 19) | COL-TBL019-09 is a ×3 expansion (`actor_kind`, `admin_id`, `system_job_key`) → +2 physical columns. Enumerated in manifest §4.1. |
+| Global difference (204 vs 200 vs 226) | Both prior numbers were wrong: 204 was a sum of already-wrong operands, 200 was a stale hand-carried total. The re-derived, live-verified total is 226. |
+| Physical schema impact | **none** — every migration/parity gate had already verified the real objects |
+| Migration impact | **none** |
+| Behavior impact | **none** — counting semantics only |
+| Checker change | canonical register `packages/database/src/schema/column-metrics.ts` verified against the live schema by `column-metrics.spec.ts` (bijection, exact counts, formula, tampered-row fixture) and cross-checked against manifest §4.1 by the manifest checker; a deliberate tamper produces 3 failures |
