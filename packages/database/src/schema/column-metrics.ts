@@ -166,6 +166,47 @@ export const COLUMN_METRICS: readonly TableColumnMetric[] = [
     physical: 12,
   },
   { table: 'product_media', group: 'G5', logicalIds: 4, expansions: 0, convention: 3, physical: 7 },
+  // G7 — Design pre-request
+  {
+    table: 'design_templates',
+    group: 'G7',
+    logicalIds: 8,
+    expansions: 2,
+    convention: 3,
+    physical: 13,
+  },
+  {
+    table: 'design_template_versions',
+    group: 'G7',
+    logicalIds: 5,
+    expansions: 0,
+    convention: 2,
+    physical: 7,
+  },
+  {
+    table: 'design_template_assets',
+    group: 'G7',
+    logicalIds: 2,
+    expansions: 0,
+    convention: 3,
+    physical: 5,
+  },
+  {
+    table: 'design_sessions',
+    group: 'G7',
+    logicalIds: 10,
+    expansions: 4,
+    convention: 3,
+    physical: 17,
+  },
+  {
+    table: 'design_session_assets',
+    group: 'G7',
+    logicalIds: 2,
+    expansions: 0,
+    convention: 3,
+    physical: 5,
+  },
   // G6 — Inventory core
   { table: 'sku_stocks', group: 'G6', logicalIds: 3, expansions: 0, convention: 3, physical: 6 },
   {

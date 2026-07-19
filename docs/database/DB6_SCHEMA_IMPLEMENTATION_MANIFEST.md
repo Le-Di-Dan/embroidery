@@ -43,7 +43,7 @@ decision).
 | Artifact | Range claimed by DB4/DB5 | IDs actually defined | Unassigned IDs | Physical objects |
 |---|---|---|---|---|
 | Tables `TBL-*` | TBL-001..078 | **78** | none | 78 tables |
-| Relationships `REL-*` | REL-001..105 | **92 rows** | **13** | **129 FK edges** |
+| Relationships `REL-*` | REL-001..105 | **92 rows** | **13** | **153 FK edges** (DEV-DB6-009) |
 | Constraints `CST-*` | CST-001..125 | **94** (92 table rows + CST-001/060 blanket prose) | **31** | see §5 |
 | Indexes `IDX-*` | IDX-001..138 | **134** | 4 (retired, documented by DB5) | see index manifest |
 | Lifecycles | 29 lifecycles | **23 `LC-*` IDs** covering 29 state machines | none | 25 status columns |
@@ -81,20 +81,30 @@ Four relationship metrics, kept separate and never interchanged:
 |---|---|
 | Relationship ID range | REL-001..105 (105 slots) |
 | Documented REL rows | **92** |
-| Expanded logical FK/reference edges | **129** |
+| Expanded logical FK/reference edges | **153** (corrected by DEV-DB6-009; was 129) |
+| Physical FK target | **151** (153 − REL-103 audit polymorphic − REL-104 outbox polymorphic, both no-FK by design) |
 | Implemented physical FK constraints | grows per group (parity gate counts these) |
 
-92 `REL-*` rows expand to **129 FK edges** (checker-verified against the DB4
-source document on every run):
+92 `REL-*` rows expand to **153 FK edges**. The original 129 counted only
+rows carrying an explicit `×N` marker; **DEV-DB6-009** found eight further
+rows that list multiple targets *without* a marker (slash lists, `·`-joined
+statements, parenthetical extra edges) and undercounted as 1 each. The
+checker now derives edges from markers **plus** the curated
+implied-multiplicity map below, re-verified against the DB4 source on every
+run:
 
-| Multiplicity | Rows | Edges |
+| Multiplicity source | Rows | Edges |
 |---|---|---|
-| ×1 | 66 | 66 |
-| ×2 | 20 | 40 |
-| ×3 | 3 | 9 |
-| ×4 | 1 | 4 |
-| ×5 | 2 | 10 |
-| **Total** | **92** | **129** |
+| ×1 (single target) | 58 | 58 |
+| ×N marker: ×2 | 20 | 40 |
+| ×N marker: ×3 | 3 | 9 |
+| ×N marker: ×4 | 1 | 4 |
+| ×N marker: ×5 | 2 | 10 |
+| implied (DEV-DB6-009): REL-093 (2) | 1 | 2 |
+| implied: REL-050, REL-057, REL-088, REL-102 (3 each) | 4 | 12 |
+| implied: REL-040, REL-094 (4 each) | 2 | 8 |
+| implied: REL-105 (10 — actor refs on TBL-042/045/063/072) | 1 | 10 |
+| **Total** | **92** | **153** |
 
 The 26 multi-target rows and their expansions:
 
@@ -128,10 +138,14 @@ The 26 multi-target rows and their expansions:
 | REL-095 | 2 | gallery_entry_assets → gallery_entries; → assets |
 
 No edge is invented for a missing ID; the 13 unassigned IDs stay unassigned.
-The parity gate counts **FK edges**, not `REL-*` rows. REL-104 (outbox
-polymorphic aggregate reference) is a logical edge with **no physical FK** by
-design — it is counted in the 129 logical edges but excluded from the physical
-FK target.
+The parity gate counts **FK edges**, not `REL-*` rows. Two edges are logical
+only, with **no physical FK by design**: REL-104 (outbox polymorphic
+aggregate reference) and REL-103 (audit polymorphic target) — counted in the
+153 logical edges, excluded from the 151 physical target. Evidence columns
+with **no REL row at all** (ledger actor refs on TBL-019,
+`design_sessions.submitted_request_id`) carry no FK and are outside both
+counts. Also updated in §2 header table: `REL-001..105 → 92 rows → 153
+edges`.
 
 ### 2.3. Constraint metric model
 
@@ -324,15 +338,44 @@ stays open. Atomicity handoff (DB8/app checkpoint): lock stock row →
 validate → update counter → append ledger → outbox if required → commit;
 no trigger performs this orchestration.
 
-### G7 — Design pre-request (CTX-DSN) · planned
+### G7 — Design pre-request (CTX-DSN) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-034 | `design_templates` | `design/design-templates.ts` | uuid7 | header | planned |
-| TBL-035 | `design_template_versions` | `design/design-template-versions.ts` | uuid7 | immutable-once-published | planned |
-| TBL-036 | `design_template_assets` | `design/design-template-assets.ts` | uuid7 | mutable | planned |
-| TBL-025 | `design_sessions` | `design/design-sessions.ts` | uuid7 | temp | planned |
-| TBL-026 | `design_session_assets` | `design/design-session-assets.ts` | uuid7 | mutable | planned |
+| TBL-034 | `design_templates` | `design/design-templates.ts` | uuid7 | header | **implemented** |
+| TBL-035 | `design_template_versions` | `design/design-template-versions.ts` | uuid7 | immutable-once-published | **implemented** |
+| TBL-036 | `design_template_assets` | `design/design-template-assets.ts` | uuid7 | mutable | **implemented** |
+| TBL-025 | `design_sessions` | `design/design-sessions.ts` | uuid7 | temp | **implemented** |
+| TBL-026 | `design_session_assets` | `design/design-session-assets.ts` | uuid7 | mutable | **implemented** |
+
+G7 traceability: **27 logical COL IDs + 6 ×N expansions (TBL034-04 ×3,
+TBL025-02 ×4, TBL025-06 ×2) = 33 business + 14 convention = 47 physical**
+(13/7/5/17/5; no `updated_at` on the `ver`-category version table). REL
+edges implemented: REL-056 (1), REL-057 ×3, REL-058 ×3, REL-040 ×4, REL-041
+(1), REL-042 ×2 = **14 schema FKs**, plus the **deferred REL-033 edge
+resolved**: `fk_assets__uploaded_via_session_id` via custom migration `0010`
+with **ON DELETE SET NULL** — the parent is hard-TTL-deleted, so provenance
+must clear (the customers edge stayed `restrict` in G4 because customers are
+never hard-deleted; the two REL-033 edges legitimately differ per the
+`set-null-cand` legend). REL-042's session edge is the schema's one
+sanctioned **cascade-temp** (`ON DELETE CASCADE`): association rows die with
+their hard-deleted temp session; the asset edge stays restrict. REL-058
+targets are archive-only → restrict, clearing stays an app operation.
+Constraints: CST-011 instance 3/4 (IDX-013), CST-019 (IDX-021), CST-025
+(IDX-027), CST-043 ×2 (IDX-048/049), CST-060 ×2 (template publication set;
+session LC-07 ACTIVE/SUBMITTED/EXPIRED/DELETED), autosave_revision ≥ 0
+(COL-TBL025-05 floor; monotonic protocol is app/DB8). JSONB payloads **#1**
+(`design_sessions.design_document`) and **#3**
+(`design_template_versions.design_document`) implemented — 5 of 9 boundaries
+now live; **neither carries a hash column** (working docs are not hashed;
+canonical hashing starts at the formal design version, G11 — none invented).
+Evidence columns without REL rows carry no FK: `submitted_request_id`
+(handover evidence) and `template_version` (integer provenance stamp, no
+live link per REL-041/GRD-028). IDX-085 ships with the group as the
+session table's **only** non-unique index (highest-write table, CC-01
+autosave). S24 trigger target: TBL-035 immutable-once-published, scoped
+`WHEN (published_at IS NOT NULL)`. 2D-only honoured — no 3D/mesh/camera
+field exists.
 
 ### G8 — Verification (CTX-CUS) · planned
 
@@ -454,7 +497,7 @@ no trigger performs this orchestration.
 | G4 | 3 | 14 | **implemented** |
 | G5 | 7 | 21 | **implemented** |
 | G6 | 2 | 23 | **implemented** |
-| G7 | 5 | 28 | planned |
+| G7 | 5 | 28 | **implemented** |
 | G8 | 2 | 30 | planned |
 | G9 | 7 | 37 | planned |
 | G10 | 4 | 41 | planned |
@@ -468,7 +511,7 @@ no trigger performs this orchestration.
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**23 of 78 implemented.**
+**28 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -543,7 +586,8 @@ that register on every run.
 | G4 | 3 | 22 | 0 | 22 | 8 | 30 |
 | G5 | 7 | 52 | 2 | 54 | 21 | 75 |
 | G6 | 2 | 12 | 2 | 14 | 5 | 19 |
-| **Total** | **23** | **155** | **7** | **162** | **64** | **226** |
+| G7 | 5 | 27 | 6 | 33 | 14 | 47 |
+| **Total** | **28** | **182** | **13** | **195** | **78** | **273** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
@@ -717,6 +761,8 @@ no guard ever reads inside a payload.
 | `0006_create_asset_tables.sql` | G4 | 3 tables, 3 PK, 1 UQ, 10 CK, 3 FK, 2 partial uniques, 4 perf indexes | **applied** |
 | `0007_create_catalog_tables.sql` | G5 | 7 tables, 7 PK, 4 UQ, 14 CK, 8 FK, 5 perf indexes | **applied** |
 | `0008_create_inventory_core_tables.sql` | G6 | 2 tables, 2 PK, 1 UQ, 5 CK, 2 FK, IDX-115 | **applied** |
+| `0009_create_design_prerequest_tables.sql` | G7 | 5 tables, 5 PK, 5 UQ, 3 CK, 14 FK, IDX-085 | **applied** |
+| `0010_add_deferred_session_fk.sql` | G7 | REL-033 deferred edge, **custom SQL**, ON DELETE SET NULL | **applied** |
 | … | G3..G19 | one migration per group | planned |
 | custom SQL | S24 | triggers + functions (immutability, append-only, outbox column-scope, actor consistency) | planned |
 | index migration(s) | S25 | explicit performance indexes | planned |

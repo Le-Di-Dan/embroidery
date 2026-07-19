@@ -64,6 +64,20 @@
       "when": 1784387317408,
       "tag": "0008_create_inventory_core_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784443990531,
+      "tag": "0009_create_design_prerequest_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784444003918,
+      "tag": "0010_add_deferred_session_fk",
+      "breakpoints": true
     }
   ]
 }

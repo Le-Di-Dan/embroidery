@@ -8,7 +8,7 @@ evidence. DB0–DB5 documents are **not edited**; deviations are additive.
 **Status legend:** `open` · `closed` (implemented + evidenced) ·
 `deferred` (owner named, non-blocking)
 
-**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-008.
+**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-009.
 
 ---
 
@@ -272,6 +272,44 @@ the 129-edge expansion rather than the 92 `REL-*` rows.
 
 **Test impact.** DB7 adds REL-003 negative cases (orphan successor pointer;
 delete of a still-referenced predecessor).
+
+---
+
+## DEV-DB6-009 — Eight REL rows carry implied multiplicity without ×N markers
+
+| Field | Value |
+|---|---|
+| Source IDs | REL-040, REL-050, REL-057, REL-088, REL-093, REL-094, REL-102, REL-105; DEV-DB6-007 (scope guard: separate deviation required) |
+| Nature | **counting/traceability interpretation correction** — no relationship is added, removed or altered; DB4 is not edited |
+| Status | **closed** |
+
+**Problem.** The 129-edge expansion accepted at DB6-C1 derived edge counts
+from explicit `×N` markers only. G7 scope derivation found REL-040
+(`design_sessions → products/variants/sides/areas`) listing four targets with
+**no marker** — and a full scan found eight such rows using slash lists,
+`·`-joined statements, or parenthetical extra edges. Counted as 1 each, the
+physical FK layer would eventually exceed its own "expanded" baseline: G2 had
+already implemented 3 FKs for REL-102 against a baseline that counted it
+as 1.
+
+**Evidence.** Programmatic scan of all 92 rows for multi-target descriptions
+without markers, cross-checked against the column dictionary for the actor
+rows: REL-040 → 4, REL-050 → 3, REL-057 → 3, REL-088 → 3, REL-093 → 2,
+REL-094 → 4, REL-102 → 3, REL-105 → 10 (TBL-042: 3, TBL-045: 3, TBL-063: 1,
+TBL-072: 3). Extra edges: **+24**.
+
+**Selected implementation.** Corrected totals: **153 expanded logical
+edges**, **151 physical FK target** (excluding REL-103/REL-104, no-FK by
+design). The checker derives edges from `×N` markers **plus** a curated
+implied-multiplicity map, fails if a row ever carries both, and re-verifies
+against the DB4 source on every run. Manifest §2.2 records the corrected
+distribution.
+
+**Behaviour impact.** None. **Physical impact.** Prevents both invented and
+silently-missing FKs at G9/G11/G16/G17/G19 where the implied rows land.
+**Historical documents.** DB4 unchanged; DB6-C1's 129 superseded by this
+register entry, not rewritten. **Audit impact.** DB7–DB10 size FK coverage
+from 153/151, not 129/128.
 
 ---
 

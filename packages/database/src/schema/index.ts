@@ -42,3 +42,10 @@ export * from './catalog/product-media';
 // G6 — Inventory core (CTX-INV)
 export * from './inventory/sku-stocks';
 export * from './inventory/inventory-ledger-entries';
+
+// G7 — Design pre-request (CTX-DSN)
+export * from './design/design-templates';
+export * from './design/design-template-versions';
+export * from './design/design-template-assets';
+export * from './design/design-sessions';
+export * from './design/design-session-assets';

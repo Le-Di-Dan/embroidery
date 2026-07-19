@@ -11,7 +11,25 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const EXPECTED_REL_ROWS = 92;
-const EXPECTED_FK_EDGES = 129;
+const EXPECTED_FK_EDGES = 153;
+
+/**
+ * DEV-DB6-009: eight DB4 REL rows list multiple targets WITHOUT a ×N marker
+ * (slash lists, `·`-joined statements, parenthetical extra edges). The marker
+ * scan alone undercounted them as 1 edge each. This curated map records their
+ * actual edge counts, derived from the row text and the column dictionary;
+ * the deviation register documents each expansion.
+ */
+const IMPLIED_MULTIPLICITY = new Map([
+  ['REL-040', 4], // sessions → products / variants / sides / areas
+  ['REL-050', 3], // reviews → customers / grants / challenges
+  ['REL-057', 3], // templates → derivative preview; template_assets → templates / assets
+  ['REL-088', 3], // refunds → attempts / orders / cancellation_requests
+  ['REL-093', 2], // specifications → jobs / approval_snapshots
+  ['REL-094', 4], // artifacts → jobs / assets; notes → jobs; job_transitions → jobs
+  ['REL-102', 3], // config versions → configs; configs → versions (pointer); versions → admins
+  ['REL-105', 10], // actor refs: TBL-042 (3) + TBL-045 (3) + TBL-063 (1) + TBL-072 (3)
+]);
 
 /**
  * REL cardinality: re-derives the row→edge expansion from the DB4 source
@@ -29,7 +47,11 @@ export function checkRelCardinality({ read, docs, fail, note }) {
     if (seen.has(id)) continue;
     seen.add(id);
     const m = row.match(/×(\d)/);
-    const n = m ? Number(m[1]) : 1;
+    const implied = IMPLIED_MULTIPLICITY.get(id);
+    if (m !== null && implied !== undefined) {
+      fail(`${id} has both a ×N marker and an implied-multiplicity entry — resolve to one source`);
+    }
+    const n = m ? Number(m[1]) : (implied ?? 1);
     edges += n;
     dist[n] = (dist[n] ?? 0) + 1;
   }

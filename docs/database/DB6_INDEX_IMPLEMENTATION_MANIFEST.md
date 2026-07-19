@@ -389,16 +389,16 @@ own non-transactional migration step.
 
 ## 7. Current state
 
-After G1 + G2 + G3 + G4 + G5 + G6 (23 of 78 tables):
+After G1..G7 (28 of 78 tables):
 
 | Metric | Implemented | Selected for launch |
 |---|---|---|
-| PK backing indexes | 23 | 78 |
-| UNIQUE constraint backing | 13 (IDX-001, 003, 010, 011, 014, 015, **016**, 019, 058, 059, 060, 061, 062) | 50 |
+| PK backing indexes | 28 | 78 |
+| UNIQUE constraint backing | 18 (IDX-001, 003, 010, 011, **013**, 014, 015, 016, 019, **021**, **027**, **048**, **049**, 058, 059, 060, 061, 062) | 50 |
 | Explicit partial unique | 5 (IDX-002, 004, 005, 020, 064) | 13 |
-| Explicit performance | 11 (IDX-065, 068, 069, 070, 071, 086, 087, 099, **115**, 133, 134) | 70 |
-| **Physical indexes** | **52** | **211** |
-| `IDX-*` entries satisfied | 29 | 133 of 134 |
+| Explicit performance | 12 (IDX-065, 068, 069, 070, 071, **085**, 086, 087, 099, 115, 133, 134) | 70 |
+| **Physical indexes** | **63** | **211** |
+| `IDX-*` entries satisfied | 35 | 133 of 134 |
 
 G6 honoured the DB5 hot-table budgets: `sku_stocks` carries **PK + IDX-016
 only** (the lock anchor — `EXPLAIN` shows `Index Scan using uq_sku_stocks__sku`
@@ -419,6 +419,7 @@ required indexes remain in the S25 queue, tracked below rather than lost:
 | G4 | IDX-119, IDX-132 | recommended (S25 phase 4) |
 | G5 | — none pending | all five selected entries were required and shipped |
 | G6 | — none pending | IDX-016/115 shipped; no recommended tier exists |
+| G7 | — none pending | IDX-085 shipped with the group; no recommended tier exists |
 
 Verified in the database after G5: 48 index objects across 21 tables, zero
 duplicates, zero non-conforming names (every constraint and index name carries
