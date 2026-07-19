@@ -81,8 +81,8 @@ Four relationship metrics, kept separate and never interchanged:
 |---|---|
 | Relationship ID range | REL-001..105 (105 slots) |
 | Documented REL rows | **92** |
-| Expanded logical FK/reference edges | **154** = 153 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) |
-| Physical FK target | **152** (154 − REL-103 audit polymorphic − REL-104 outbox polymorphic, both no-FK by design) |
+| Expanded logical FK/reference edges | **158** = 153 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) |
+| Physical FK target | **156** (158 − REL-103 audit polymorphic − REL-104 outbox polymorphic, both no-FK by design) |
 | Implemented physical FK constraints | grows per group (parity gate counts these) |
 
 92 `REL-*` rows expand to **153 FK edges**. The original 129 counted only
@@ -105,7 +105,8 @@ run:
 | implied: REL-040, REL-094 (4 each) | 2 | 8 |
 | implied: REL-105 (10 — actor refs on TBL-042/045/063/072) | 1 | 10 |
 | DEV-DB6-010 addition: custom_request_assets → assets (no REL row exists) | — | 1 |
-| **Total** | **92 rows** | **154** |
+| DEV-DB6-012 addition: design_versions placement refs — product/variant/side/area (no REL row exists) | — | 4 |
+| **Total** | **92 rows** | **158** |
 
 The 26 multi-target rows and their expansions:
 
@@ -142,10 +143,10 @@ No edge is invented for a missing ID; the 13 unassigned IDs stay unassigned.
 The parity gate counts **FK edges**, not `REL-*` rows. Two edges are logical
 only, with **no physical FK by design**: REL-104 (outbox polymorphic
 aggregate reference) and REL-103 (audit polymorphic target) — counted in the
-154 logical edges, excluded from the 152 physical target. Evidence columns
+158 logical edges, excluded from the 156 physical target. Evidence columns
 with **no REL row at all** (ledger actor refs on TBL-019,
 `design_sessions.submitted_request_id`) carry no FK and are outside both
-counts. Also updated in §2 header table: `REL-001..105 → 92 rows → 153
+counts. Also updated in §2 header table: `REL-001..105 → 92 rows → 158
 edges`.
 
 ### 2.2.1. Deferred FK edge ledger (canonical, checker-enforced — DEV-DB6-011)
@@ -165,7 +166,7 @@ is marked `implemented` before its target table's creation group has run.
 | soft_holds → reservations (converted) | REL-030 | `inventory_soft_holds` (G10) | `converted_reservation_id` | `inventory_reservations` (G15) | **G15** | restrict | deferred |
 | request_transitions → grants | REL-105 (TBL-042 subset) | `custom_request_transitions` (G9) | `grant_id` | `secure_access_grants` (G10) | **G10** | restrict | implemented (G10) |
 | design_cases → quotations (current) | REL-062 e2 | `custom_requests` (G9) | `current_quotation_id` | `quotations` (G14) | **G14** | restrict | deferred |
-| design_cases → design_versions (current) | REL-044 | `design_cases` (G9) | `current_version_id` | `design_versions` (G11) | **G11** | restrict | deferred |
+| design_cases → design_versions (current) | REL-044 | `design_cases` (G9) | `current_version_id` | `design_versions` (G11) | **G11** | restrict | implemented (G11) |
 
 **Root cause this ledger closes (DEV-DB6-011):** before this table existed,
 `reservation_id`'s owner was recorded only in prose (`DB6_G06_GROUP_REPORT.md`
@@ -530,13 +531,48 @@ trigger, no stored available/reserved/low-stock quantity, and no
 `inventory_reservations` table, lifecycle constant, constraint or index
 of any kind.
 
-### G11 — Design formal (CTX-DSN) · planned
+### G11 — Design formal (CTX-DSN) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-028 | `design_versions` | `design/design-versions.ts` | uuid7 | immutable-once-sent | planned |
-| TBL-029 | `design_version_assets` | `design/design-version-assets.ts` | uuid7 | immutable w/ version | planned |
-| TBL-030 | `design_reviews` | `design/design-reviews.ts` | bigint | append | planned |
+| TBL-028 | `design_versions` | `design/design-versions.ts` | uuid7 | immutable-once-sent | implemented |
+| TBL-029 | `design_version_assets` | `design/design-version-assets.ts` | uuid7 | immutable w/ version | implemented |
+| TBL-030 | `design_reviews` | `design/design-reviews.ts` | bigint | append | implemented |
+
+G11 traceability: COL-TBL028-01..13 (-10 ×4, -11 ×2, -12 ×4),
+COL-TBL029-01..02, COL-TBL030-01..05 (-04 ×3) — **20 logical COL IDs → 29
+business columns (9 expansions) + 6 convention columns (2 each: id +
+created_at, no `updated_at` — the manifest's mutability class for
+`design_versions` is "immutable-once-sent" and for `design_version_assets`
+"immutable w/ version", both matched by the convention checker's
+`NO_UPDATED_AT` rule; `design_reviews` is append-only) = 35 physical
+columns** (22/4/9). REL-045 + REL-046
+(self-ref parent chain) + REL-047 (→ asset_derivatives preview) + REL-048
+×2 (version_assets → versions/assets) + REL-049 + REL-050 ×3 (reviews →
+customers/grants/challenges) → **9 native FK edges implemented**, plus
+the **DEV-DB6-012 addition** (+4: `design_versions.product_id` /
+`product_variant_id` / `product_side_id` / `embroidery_area_id` — no REL
+row exists, same class of gap as DEV-DB6-010) and the **REL-044
+resolution** (+1: `design_cases.current_version_id`, by custom SQL
+`0016_add_design_case_current_version_fk.sql` — header↔child cycle, same
+mechanism as REL-062/0013 and REL-102/0004) = **14 physical FKs added in
+G11**. No further deferred edges are owed to G11; `design_cases →
+quotations (current)` (REL-062 e2) remains deferred, owner **G14**, per
+§2.2.1. Constraints: CST-021 (IDX-023, UQ case+version), CST-022 (IDX-024,
+LC-08 pUQ single active review — INV-16 arbiter, not an optimisation),
+CST-043 instance (IDX-047, UQ version_assets), CST-066 instance (physical
+dims > 0, always-NOT-NULL unlike COP's "when set" variant), CST-070 ×2
+(document_hash/preview_hash format), CST-074 instance (document_hash
+required once status ≠ DRAFT — GRD-007), status closed set (LC-08, 6
+values), outcome closed set (LC-09, 2 values), void-reason-required
+conditional. **CST-090** (design_versions reject-mutation once sent) and
+**CST-098** (design_reviews append-only) are **S24 trigger targets, not
+yet database mechanisms** — honestly not claimed early (same documented
+gap as every other append/immutable table implemented so far).
+Indexes shipped with the group: IDX-023/024/047 (constraint-created);
+IDX-116 (recommended) → S25. No Quotation/Order/Payment/Inventory field,
+no 3D field, no generic polymorphic asset link, no auto-approve/auto-advance
+trigger, no plaintext secret.
 
 ### G12 — Content, gallery, agreement (CTX-CNT / CTX-GAL) · planned
 
@@ -626,7 +662,7 @@ of any kind.
 | G8 | 2 | 30 | **implemented** |
 | G9 | 7 | 37 | **implemented** |
 | G10 | 4 | 41 | **implemented** |
-| G11 | 3 | 44 | planned |
+| G11 | 3 | 44 | **implemented** |
 | G12 | 6 | 50 | planned |
 | G13 | 3 | 53 | planned |
 | G14 | 4 | 57 | planned |
@@ -636,7 +672,7 @@ of any kind.
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**41 of 78 implemented.**
+**44 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -715,7 +751,8 @@ that register on every run.
 | G8 | 2 | 12 | 0 | 12 | 5 | 17 |
 | G9 | 7 | 33 | 7 | 40 | 19 | 59 |
 | G10 | 4 | 27 | 0 | 27 | 11 | 38 |
-| **Total** | **41** | **254** | **20** | **274** | **113** | **387** |
+| G11 | 3 | 20 | 9 | 29 | 6 | 35 |
+| **Total** | **44** | **274** | **29** | **303** | **119** | **422** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
@@ -818,8 +855,8 @@ twice.
 | LC-05 | SKU (definition + stock) | `skus.status` | G5/G6 | planned |
 | LC-06 | Asset, Derivative | `assets.status`, `asset_derivatives.status` | G4 | planned |
 | LC-07 | Design Session | `design_sessions.status` | G7 | planned |
-| LC-08 | Design Version | `design_versions.status` | G11 | planned |
-| LC-09 | Design Review | `design_reviews.outcome` | G11 | planned |
+| LC-08 | Design Version | `design_versions.status` | G11 | implemented |
+| LC-09 | Design Review | `design_reviews.outcome` | G11 | implemented |
 | LC-10 | Approval (exists-or-not) | — (row existence) | G13 | planned |
 | LC-11 | Custom Request | `custom_requests.status` | G9 | planned |
 | LC-12 | Quotation | `quotations.status` | G14 | planned |
@@ -855,7 +892,7 @@ Numbering, column names and version keys are taken verbatim from
 | # | Column (COL) | Version key | Group | Status |
 |---|---|---|---|---|
 | 1 | `design_sessions.design_document` (COL-TBL025-03) | `document_schema_version` | G7 | planned |
-| 2 | `design_versions.design_document` (COL-TBL028-05) | `document_schema_version` | G11 | planned |
+| 2 | `design_versions.design_document` (COL-TBL028-05) | `document_schema_version` | G11 | implemented |
 | 3 | `design_template_versions.design_document` (COL-TBL035-03) | `document_schema_version` | G7 | planned |
 | 4 | `outbox_events.payload` (COL-TBL073-03) | `payload_schema_version` | **G2** | **implemented** |
 | 5 | `idempotency_records.result` (COL-TBL074-05) | fixed internal shape | **G2** | **implemented** |

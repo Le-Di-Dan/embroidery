@@ -8,7 +8,7 @@ evidence. DB0–DB5 documents are **not edited**; deviations are additive.
 **Status legend:** `open` · `closed` (implemented + evidenced) ·
 `deferred` (owner named, non-blocking)
 
-**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-011.
+**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-012.
 
 ---
 
@@ -407,9 +407,12 @@ column, or migration changes; this closes purely as a scheduling/wording
 correction ahead of G10. **Migration impact.** None. **Historical
 documents.** `DB6_G06_GROUP_REPORT.md`'s original text is not rewritten; a
 dated addendum is appended per this deviation. **Relationship denominator.**
-Unaffected — remains **154 logical edges / 152 physical FK targets** (no
-edge added, removed, or reinterpreted; this deviation only reassigns which
-group implements an already-counted edge).
+Unaffected at the time of this deviation — remained **154 logical edges /
+152 physical FK targets** (no edge added, removed, or reinterpreted here;
+this deviation only reassigns which group implements an already-counted
+edge). DEV-DB6-012 later moves the denominator to 158/156 for an unrelated
+reason (a second missing-edge family); that change does not revisit this
+entry's reasoning.
 
 **Test/audit impact.** The manifest checker's deferred-owner validation
 (added under this deviation) fails the run if any future deferred edge names
@@ -418,6 +421,52 @@ table is absent from both the owner group and all groups before it, if an
 edge has two owners or none, if a deferred column exists with no ledger row,
 or if group roll-up counts (G10 = 4, G15 = 8, total = 78) drift from the
 approved manifest.
+
+---
+
+## DEV-DB6-012 — A second mandated FK edge family absent from the REL model
+
+| Field | Value |
+|---|---|
+| Source IDs | DB4_COLUMN_DICTIONARY.md COL-TBL028-10, DB4_COMPLETENESS_MATRIX.md CON-058..060, ADR-DB4-003; DEV-DB6-009's scope guard, DEV-DB6-010 (same class of gap) |
+| Nature | **genuinely missing edge family** in the REL model — a separate deviation per DEV-DB6-009's scope guard, not a counting reinterpretation |
+| Status | **closed** (edges implemented in G11) |
+
+**Problem.** `design_versions` freezes four placement references at send —
+`product_id`, `product_variant_id`, `product_side_id`, `embroidery_area_id`
+(COL-TBL028-10) — the same shape as `design_sessions`' placement columns,
+which the REL model covers explicitly as REL-040 (curated ×4 implied
+multiplicity, DEV-DB6-009). No equivalent row, marker, or implied-multiplicity
+entry exists for `design_versions`: REL-044 through REL-051 (the Design
+section's full set of rows mentioning `design_versions`) stop at the
+case/parent/preview/version-asset/review/approval edges. Without these four
+FKs, a formal, hash-frozen design version could point at a deleted product,
+variant, side, or embroidery area — an invariant the column dictionary and
+CON-058..060 both presuppose is enforced.
+
+**Evidence.** Full-text scan of `DB4_RELATIONSHIP_AND_FK_MODEL.md` §4
+(Design) and the manifest's §2.2 implied-multiplicity map: neither mentions
+`product_id`/`product_variant_id`/`product_side_id`/`embroidery_area_id` on
+`design_versions` anywhere. `DB4_COLUMN_DICTIONARY.md` COL-TBL028-10 and
+`DB4_COMPLETENESS_MATRIX.md` CON-058..060 both mandate the four columns as
+placement facts frozen at send, with a single non-nullable `N?` cell for the
+whole group (unlike `design_sessions`' COL-TBL025-02, which explicitly marks
+the variant column nullable — `no/yes/no/no` — confirming the two rows are
+deliberately different: by formal-send time, all four placement facts are
+resolved).
+
+**Selected implementation.** Four `foreignKey()` FKs
+(`fk_design_versions__product_id`, `__product_variant_id`, `__product_side_id`,
+`__embroidery_area_id`, all `restrict`) implemented in G11 migration `0015`.
+Checker counts them as **documented additions** on top of the derived
+expansion and DEV-DB6-010's prior addition: totals move **154 → 158 logical
+edges, 152 → 156 physical FK target**, and the checker fails if the addition
+constant and manifest ever disagree.
+
+**Behaviour impact.** None — the edges were always semantically mandated.
+**Historical documents.** DB4 unchanged. **Audit impact.** DB7–DB10 use
+158/156 from this point; the 154/152 figure established through DEV-DB6-010
+is superseded by this register entry under the standing scope-guard clause.
 
 ---
 

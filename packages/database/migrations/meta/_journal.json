@@ -106,6 +106,20 @@
       "when": 1784449437930,
       "tag": "0014_create_secure_grants_soft_holds_and_customer_merge",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1784452174682,
+      "tag": "0015_create_formal_design_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1784452174683,
+      "tag": "0016_add_design_case_current_version_fk",
+      "breakpoints": true
     }
   ]
 }

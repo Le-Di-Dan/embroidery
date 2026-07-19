@@ -97,6 +97,10 @@ const ROWS: readonly MetricRow[] = [
   ['inventory_soft_holds', 'G10', 7, 0, 3, 10],
   ['customer_merge_cases', 'G10', 6, 0, 3, 9],
   ['customer_merge_events', 'G10', 5, 0, 2, 7],
+  // G11 — Design formal
+  ['design_versions', 'G11', 13, 7, 2, 22],
+  ['design_version_assets', 'G11', 2, 0, 2, 4],
+  ['design_reviews', 'G11', 5, 2, 2, 9],
 ];
 
 export const COLUMN_METRICS: readonly TableColumnMetric[] = ROWS.map(

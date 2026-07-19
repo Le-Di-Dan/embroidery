@@ -4,9 +4,10 @@
  *
  * Columns: COL-TBL027-01..02 · Constraints: CST-001, CST-020 (IDX-022)
  * Relationships: REL-043 (→ custom_requests, 1–1), REL-044
- * (current_version_id → design_versions — **deferred, owner G11**: the
- * version table does not exist yet; nullable pointer present now, FK follows
- * the header-pointer pattern)
+ * (current_version_id → design_versions — **implemented in G11** by custom
+ * SQL, `0016_add_design_case_current_version_fk.sql`: declaring it here
+ * would need a circular module import, the same header↔child cycle class as
+ * REL-062/0013 and REL-102/0004)
  * Indexes: IDX-022 (constraint-created)
  * Owner: Design module — a separate workflow aggregate, never collapsed
  * into the request.
@@ -20,7 +21,7 @@
  *
  * The reverse pointer `custom_requests.current_design_case_id` (REL-062)
  * completes a header↔child cycle, so it is added by reviewed custom SQL in
- * this group's migration — the same mechanism as REL-102 (0004) and REL-033
+ * G9's migration — the same mechanism as REL-102 (0004) and REL-033
  * (0010). Versions/reviews/approval structures belong to G11/G13 and are
  * not touched here.
  */
@@ -50,6 +51,7 @@ export const designCases = pgTable(
       columns: [t.customRequestId],
       foreignColumns: [customRequests.id],
     }).onDelete('restrict'),
-    // REL-044 current_version_id FK lands with G11 (design_versions).
+    // REL-044 current_version_id FK added by custom SQL — see G11 migration
+    // 0016 (circular-import cycle with design_versions.ts otherwise).
   ],
 );

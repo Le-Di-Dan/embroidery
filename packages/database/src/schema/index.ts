@@ -68,3 +68,8 @@ export * from './customer/secure-access-grants';
 export * from './inventory/inventory-soft-holds';
 export * from './customer/customer-merge-cases';
 export * from './customer/customer-merge-events';
+
+// G11 — Design formal (CTX-DSN)
+export * from './design/design-versions';
+export * from './design/design-version-assets';
+export * from './design/design-reviews';

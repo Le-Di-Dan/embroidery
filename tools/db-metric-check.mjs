@@ -11,18 +11,27 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const EXPECTED_REL_ROWS = 92;
-const EXPECTED_FK_EDGES = 154;
+const EXPECTED_FK_EDGES = 158;
 
 /**
- * DEV-DB6-010: one mandated edge is absent from the REL model entirely —
- * `custom_request_assets → assets`. Every other asset-association table has
- * an explicit ×2 REL row covering both edges (REL-025/042/048/057/095);
- * TBL-040 was bundled into REL-063's five →custom_requests edges and its
- * asset edge was dropped. ADR-DB4-003 and CST-043 mandate it, so it is
- * implemented and counted here as a documented addition on top of the
- * derived row expansion.
+ * Mandated edges absent from the REL model entirely, each its own deviation
+ * per DEV-DB6-009's scope guard ("a genuinely missing edge gets its own
+ * deviation, not a counting reinterpretation"):
+ *
+ * - DEV-DB6-010 (+1): `custom_request_assets → assets`. Every other
+ *   asset-association table has an explicit ×2 REL row covering both edges
+ *   (REL-025/042/048/057/095); TBL-040 was bundled into REL-063's five
+ *   →custom_requests edges and its asset edge was dropped. ADR-DB4-003 and
+ *   CST-043 mandate it.
+ * - DEV-DB6-012 (+4): `design_versions.product_id` /
+ *   `product_variant_id` / `product_side_id` / `embroidery_area_id`
+ *   (COL-TBL028-10). The column dictionary mandates all four (frz@sent,
+ *   NOT NULL) but no REL row and no implied-multiplicity entry covers them
+ *   — REL-044..051 stop at the case/version/asset/review/approval edges,
+ *   and the ×N/implied maps used for the sibling `design_sessions` row
+ *   (REL-040) do not extend to design_versions.
  */
-const ADDITIONAL_EDGES = 1;
+const ADDITIONAL_EDGES = 5;
 
 /**
  * DEV-DB6-009: eight DB4 REL rows list multiple targets WITHOUT a ×N marker
@@ -80,7 +89,7 @@ export function checkRelCardinality({ read, docs, fail, note }) {
     .map(([n, c]) => `x${n}:${c}`)
     .join(' ');
   note(
-    `REL: ${seen.size} rows -> ${edges} derived + ${ADDITIONAL_EDGES} added (DEV-DB6-010) = ${edges + ADDITIONAL_EDGES} FK edges (${distText})`,
+    `REL: ${seen.size} rows -> ${edges} derived + ${ADDITIONAL_EDGES} added (DEV-DB6-010/012) = ${edges + ADDITIONAL_EDGES} FK edges (${distText})`,
   );
 }
 
