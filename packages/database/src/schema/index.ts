@@ -109,3 +109,10 @@ export * from './payment/payment-attempts';
 export * from './payment/payment-provider-events';
 export * from './payment/payment-reconciliations';
 export * from './payment/refunds';
+
+// G17 — Production (CTX-PRD)
+export * from './production/production-jobs';
+export * from './production/production-specifications';
+export * from './production/production-artifacts';
+export * from './production/production-notes';
+export * from './production/production-job-transitions';

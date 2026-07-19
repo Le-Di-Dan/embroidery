@@ -175,6 +175,21 @@ Checker-enforced in `tools/db-metric-check.mjs` (`EXPECTED_FK_EDGES = 164`,
   physical for all thirteen edges; which attempt wins the satisfaction race
   (CC-10) stays TX/App, same tier as every other current-pointer finding in
   this engagement.
+- G17 — Production: no Class-C/D findings for this group beyond the one
+  DEV-DB6-015 reclassification (`production_notes.admin_id`, the fourth
+  and last forward column that entry named). **Implemented (2026-07-19,
+  DB6-G17):** REL-090/091/092/093 ×2/094 ×4 are now physical FKs (migration
+  `0027_create_production_tables.sql`) — ten edges total: `production_jobs`
+  → orders / approval_snapshots / self (rework lineage);
+  `production_specifications` → production_jobs / approval_snapshots;
+  `production_artifacts` → production_jobs / assets; `production_notes` →
+  production_jobs; `production_job_transitions` → production_jobs /
+  admin_accounts (the REL-105 actor edge, real FK — distinct from
+  `production_notes.admin_id`'s no-FK treatment on the same group). Zero
+  header↔child import cycles; no custom SQL needed. Existence is physical
+  for all ten edges; that `production_specifications.approval_snapshot_id`
+  is the *same* snapshot the parent job itself references is TX/App, same
+  tier as every other current-pointer/chain finding in this engagement.
 - No physical defect was found in G1–G11 (the already-implemented tables).
   No forward-fix migration is required. DB6-C4 makes **no schema change**.
 

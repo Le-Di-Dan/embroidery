@@ -612,6 +612,16 @@ classification ambiguity, not a missing edge.
 columns, no `foreignKey()` declared, outside REL-105's enumeration. No
 denominator change.
 
+**G17 implementation (2026-07-19):** `production_notes.admin_id`
+(COL-TBL062-03) — the fourth and last of this entry's four forward
+columns — is now implemented exactly as prescribed: bare uuid column, no
+`foreignKey()` declared. All four forward columns this entry named are now
+closed. **Not applied** to `production_job_transitions.admin_id`
+(TBL-063, COL-TBL063-03): TBL-063 is one of REL-105's four explicitly
+enumerated tables, so its actor column gets a real `foreignKey()` to
+`admin_accounts` instead — the two tables are not interchangeable under
+this rule, and no denominator change resulted from either.
+
 ---
 
 ## Deviations considered and **not** taken

@@ -183,6 +183,13 @@
       "when": 1784467646502,
       "tag": "0026_enforce_vnd_currency_scale",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1784470223021,
+      "tag": "0027_create_production_tables",
+      "breakpoints": true
     }
   ]
 }

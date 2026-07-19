@@ -389,26 +389,29 @@ own non-transactional migration step.
 
 ## 7. Current state
 
-**After G1..G16 (70 of 78 tables), corrected 2026-07-19 by DB6-C5 §B3/B4**
-**against the live catalog** — see `DB6_INDEX_METRIC_RECONCILIATION.md` for
-the full derivation and the accounting error it corrects:
+**After G1..G17 (75 of 78 tables), live-catalog-derived** — G16+C5's figures
+were corrected 2026-07-19 by DB6-C5 §B3/B4 (see
+`DB6_INDEX_METRIC_RECONCILIATION.md` for that derivation); this row extends
+the same live-catalog method through G17's migration `0027`:
 
 | Metric | Implemented | Selected for launch |
 |---|---|---|
-| PK backing indexes | 70 | 78 |
-| UNIQUE constraint backing | 46 | 50 |
+| PK backing indexes | 75 | 78 |
+| UNIQUE constraint backing | 49 | 50 |
 | Explicit partial unique | 13 (all 13 selected entries now implemented) | 13 |
-| Explicit performance | 37 | 70 |
-| **Physical indexes** | **166** | **211** |
-| Physical partial indexes | 33 (13 unique + 20 performance) | 45 (13 unique + 32 performance) |
-| `IDX-*` entries satisfied (excludes PK) | 96 (46 UNIQUE + 13 partial-unique + 37 performance) | 133 of 134 |
+| Explicit performance | 39 | 70 |
+| **Physical indexes** | **176** | **211** |
+| Physical partial indexes | 34 (13 unique + 21 performance) | 45 (13 unique + 32 performance) |
+| `IDX-*` entries satisfied (excludes PK) | 101 (49 UNIQUE + 13 partial-unique + 39 performance) | 133 of 134 |
 
-`166` and `96` are read directly from `pg_class`/`pg_index` on a disposable
-database built through migration `0026`, not accumulated by hand. Every
-prior "After G1..G11" figure in this section (44/26/10/21/101/57) is
-retained above only as superseded history — it was not independently
-re-verified against a live catalog at the time and should not be treated as
-authoritative for G1–G11 individually; the G16+C5 row is.
+`176`/`34`/`101` are read directly from `pg_class`/`pg_index` on a disposable
+database built through migration `0027`, not accumulated by hand. G17's own
+delta: +5 PK-backing, +3 UNIQUE-backing (CST-041/042/043 — all plain, none
+partial), +2 explicit performance (IDX-082 partial, IDX-102 non-partial),
++1 physical partial index. `166`/`33`/`96` (the prior G16+C5 row) and every
+prior "After G1..G11" figure in this section (44/26/10/21/101/57) are
+retained above only as superseded history — the G17 row is authoritative
+going forward.
 
 ### 7.1. History (before this reconciliation)
 
@@ -449,6 +452,7 @@ required indexes remain in the S25 queue, tracked below rather than lost:
 | G10 | IDX-127, IDX-135 | recommended (S25 phase 4) |
 | G11 | IDX-116 | recommended (S25 phase 4) |
 | G16 | IDX-078, IDX-122, IDX-123, IDX-124 | recommended (S25 phase 4) |
+| G17 | IDX-138 | recommended (S25 phase 4) |
 
 Verified in the database after G5: 48 index objects across 21 tables, zero
 duplicates, zero non-conforming names (every constraint and index name carries

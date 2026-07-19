@@ -132,6 +132,13 @@ const ROWS: readonly MetricRow[] = [
   ['payment_provider_events', 'G16', 9, 1, 2, 12],
   ['payment_reconciliations', 'G16', 8, 0, 2, 10],
   ['refunds', 'G16', 11, 3, 3, 17],
+
+  // G17 — Production
+  ['production_jobs', 'G17', 6, 2, 3, 11],
+  ['production_specifications', 'G17', 7, 4, 2, 13],
+  ['production_artifacts', 'G17', 4, 0, 3, 7],
+  ['production_notes', 'G17', 3, 0, 2, 5],
+  ['production_job_transitions', 'G17', 5, 3, 2, 10],
 ];
 
 export const COLUMN_METRICS: readonly TableColumnMetric[] = ROWS.map(

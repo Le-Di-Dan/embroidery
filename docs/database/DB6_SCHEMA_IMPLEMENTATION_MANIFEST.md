@@ -818,19 +818,48 @@ DEV-DB6-015, stay no-FK evidence references, same treatment as
 - C5 adds zero tables, columns, FKs, or indexes. `column-metrics.ts` and the
   §4.1 table below are unchanged by C5.
 
-### G17 — Production (CTX-PRD) · planned
+### G17 — Production (CTX-PRD) · implemented
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-059 | `production_jobs` | `production/production-jobs.ts` | uuid7 | mutable | planned |
-| TBL-060 | `production_specifications` | `production/production-specifications.ts` | uuid7 | immutable | planned |
-| TBL-061 | `production_artifacts` | `production/production-artifacts.ts` | uuid7 | mutable | planned |
-| TBL-062 | `production_notes` | `production/production-notes.ts` | bigint | append | planned |
-| TBL-063 | `production_job_transitions` | `production/production-job-transitions.ts` | bigint | append | planned |
+| TBL-059 | `production_jobs` | `production/production-jobs.ts` | uuid7 | mutable | implemented |
+| TBL-060 | `production_specifications` | `production/production-specifications.ts` | uuid7 | immutable | implemented |
+| TBL-061 | `production_artifacts` | `production/production-artifacts.ts` | uuid7 | mutable | implemented |
+| TBL-062 | `production_notes` | `production/production-notes.ts` | bigint | append | implemented |
+| TBL-063 | `production_job_transitions` | `production/production-job-transitions.ts` | bigint | append | implemented |
 
 **DB6-C4 note:** `production_notes.admin_id` (COL-TBL062-03) — per
 DEV-DB6-015, stays a no-FK evidence reference, same treatment as
 `request_moderation_notes.admin_id` (G9).
+
+**Implementation notes (2026-07-19, DB6-G17):**
+
+- **Zero header↔child import cycles** — all five files import only
+  "earlier" modules (`orders`, `approval_snapshots`, `production_jobs`,
+  `assets`, `admin_accounts`); `production_jobs` self-references
+  `reworked_from_job_id` inline (no cycle, same as
+  `quotation_versions.parent_version_id`). Single generated migration
+  `0027_create_production_tables.sql`, no custom SQL needed.
+- **Order-scoped identity, not Order-Item-scoped.** DB4's column dictionary
+  carries no `order_item_id` on `production_jobs` — CST-041's unique pair is
+  `(order_id, approval_snapshot_id)`, a plain (non-partial) UNIQUE
+  constraint, not a partial-unique index.
+- **DEV-DB6-015 applied correctly and asymmetrically within this group**:
+  `production_notes.admin_id` (TBL-062, not in REL-105's enumeration)
+  stays a bare no-FK evidence column; `production_job_transitions.admin_id`
+  (TBL-063, one of REL-105's four explicitly enumerated tables) gets a real
+  `foreignKey()` to `admin_accounts` — the two are not interchangeable
+  under the same deviation entry.
+- `production_specifications` is immutable (no `updated_at`); its
+  same-chain integrity with the parent job's own `approval_snapshot_id` is
+  existence-physical (two independent FKs) but not cross-chain-enforced —
+  same tier as every other current-pointer/chain finding in this
+  engagement, documented rather than invented as a composite FK.
+- No JSONB, no money field in this group — DB4 confirms both; A08 and the
+  9/9 JSONB closed set are both unaffected.
+- No trigger creates a job from Payment, starts Production automatically,
+  consumes a Reservation, or transitions `orders.status` — TR-LC18-01/02/03
+  (DB3) remain TX/App-owned; this group stores only the resulting facts.
 
 ### G18 — Notification (CTX-NTF) · planned
 
@@ -865,11 +894,11 @@ DEV-DB6-015, stays a no-FK evidence reference, same treatment as
 | G14 | 4 | 57 | **implemented** |
 | G15 | 8 | 65 | **implemented** |
 | G16 | 5 | 70 | **implemented** |
-| G17 | 5 | 75 | planned |
+| G17 | 5 | 75 | **implemented** |
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**70 of 78 implemented.**
+**75 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -954,7 +983,8 @@ that register on every run.
 | G14 | 4 | 37 | 10 | 47 | 9 | 56 |
 | G15 | 8 | 71 | 20 | 91 | 20 | 111 |
 | G16 | 5 | 48 | 6 | 54 | 13 | 67 |
-| **Total** | **70** | **488** | **79** | **567** | **184** | **751** |
+| G17 | 5 | 25 | 9 | 34 | 12 | 46 |
+| **Total** | **75** | **513** | **88** | **601** | **196** | **797** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
@@ -1067,7 +1097,7 @@ twice.
 | LC-15 | Payment Obligation | `payment_obligations.status` | G16 | **implemented** |
 | LC-16 | Payment Attempt | `payment_attempts.status` | G16 | **implemented** |
 | LC-17 | Soft Hold, Reservation | `inventory_soft_holds.status`, `inventory_reservations.status` | G10/G15 | **implemented** |
-| LC-18 | Production Job | `production_jobs.status` | G17 | planned |
+| LC-18 | Production Job | `production_jobs.status` | G17 | **implemented** |
 | LC-19 | Shipping Details | `shipping_details.status` | G15 | **implemented** |
 | LC-20 | Refund | `refunds.status` | G16 | **implemented** |
 | LC-21 | Delivery | `orders` delivery fields + `order_transitions` | G15 | **implemented** |
