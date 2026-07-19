@@ -362,7 +362,7 @@ particular bijection suite does not separately enumerate).
 
 ```text
 0736e9c  fix(database): enforce VND currency scale
-<recorded after this commit — see repository `git log`>  chore(database): reconcile DB6 G16 metrics and report
+bf17e41  chore(database): reconcile DB6 G16 metrics and report
 ```
 
 No amend of `701ebb0` or any earlier commit. Not pushed.
