@@ -149,6 +149,19 @@ Checker-enforced in `tools/db-metric-check.mjs` (`EXPECTED_FK_EDGES = 164`,
   `quotations.current_version_id` and same-request ownership of
   `custom_requests.current_quotation_id` stay TX/App, same tier already
   applied to REL-044/REL-098 — see `DB6_G14_GROUP_REPORT.md` §D.
+- G15 — Order & shipping: no Class-C/D findings for this group beyond
+  DEV-DB6-014 (see §3 table, row "G15 — Order & shipping | 8 | 21 | 0 | 3 |
+  0" — the 3 Class-C findings are DEV-DB6-014 (grant/challenge) and the
+  two DEV-DB6-015 reclassifications, `order_cancellation_requests.
+  decided_by_admin_id`). **Implemented (2026-07-19, DB6-G15):** all 21
+  Class-A edges (REL-071/072/073/074/075/076 ×2/077/078 ×5/079/080 ×2/031
+  ×2/105 ×3) plus DEV-DB6-014's two grant/challenge FKs and the three
+  REL-028/030 deferred-ledger resolutions are now physical (migration
+  `0023_create_order_reservation_shipping_tables.sql`). `orders.
+  current_approval_snapshot_id` (REL-074) is an audited pointer with no
+  header↔child cycle (target predates this group) — existence physical,
+  same-case chain TX/App, same tier as every other current-pointer
+  finding in this engagement.
 - No physical defect was found in G1–G11 (the already-implemented tables).
   No forward-fix migration is required. DB6-C4 makes **no schema change**.
 

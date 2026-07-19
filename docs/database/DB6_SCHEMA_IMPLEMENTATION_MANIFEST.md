@@ -81,7 +81,7 @@ Four relationship metrics, kept separate and never interchanged:
 |---|---|
 | Relationship ID range | REL-001..105 (105 slots) |
 | Documented REL rows | **92** |
-| Expanded logical FK/reference edges | **164** = 153 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) + 4 documented additions (DEV-DB6-013: approval_snapshots placement refs, planned owner G13) + 2 documented additions (DEV-DB6-014: shipping_fee_acknowledgements grant/challenge, planned owner G15) |
+| Expanded logical FK/reference edges | **164** = 153 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) + 4 documented additions (DEV-DB6-013: approval_snapshots placement refs, planned owner G13) + 2 documented additions (DEV-DB6-014: shipping_fee_acknowledgements grant/challenge, implemented G15) |
 | Physical FK target | **162** (164 − REL-103 audit polymorphic − REL-104 outbox polymorphic, both no-FK by design) |
 | Implemented physical FK constraints | grows per group (parity gate counts these) |
 
@@ -107,7 +107,7 @@ run:
 | DEV-DB6-010 addition: custom_request_assets → assets (no REL row exists) | — | 1 |
 | DEV-DB6-012 addition: design_versions placement refs — product/variant/side/area (no REL row exists) | — | 4 |
 | DEV-DB6-013 addition: approval_snapshots placement refs — product/variant/side/area (no REL row exists; planned owner G13) | — | 4 |
-| DEV-DB6-014 addition: shipping_fee_acknowledgements → secure_access_grants / contact_verification_challenges (no REL row exists; planned owner G15) | — | 2 |
+| DEV-DB6-014 addition: shipping_fee_acknowledgements → secure_access_grants / contact_verification_challenges (no REL row exists; implemented G15) | — | 2 |
 | **Total** | **92 rows** | **164** |
 
 The 26 multi-target rows and their expansions:
@@ -154,10 +154,9 @@ carry no FK and are outside both counts. Also updated in §2 header table:
 
 **DB6-C4 addendum (2026-07-19):** DEV-DB6-013 and DEV-DB6-014 were found by
 DB6-C4's pre-G12 relationship-coverage audit, targeting tables not yet
-implemented (`approval_snapshots`/G13, `shipping_fee_acknowledgements`/G15).
-No migration exists for them yet — they are planned-owner entries the same
-way DEV-DB6-011's ledger rows are, and G13/G15 must implement them and mark
-the register entries `closed`. DEV-DB6-015 formalizes (not extends) the
+implemented at the time (`approval_snapshots`/G13, `shipping_fee_acknowledgements`/G15).
+Both are now closed — implemented in G13 and G15 respectively (migrations
+`0020` and `0023`). DEV-DB6-015 formalizes (not extends) the
 existing bare-admin-actor no-FK precedent from TBL-041/TBL-009 onto four
 more forward columns; it changes no denominator.
 
@@ -173,9 +172,9 @@ is marked `implemented` before its target table's creation group has run.
 | Edge | REL | Source table (group) | Source column | Target table (group) | Resolution owner | Delete behavior | Status |
 |---|---|---|---|---|---|---|---|
 | ledger → soft_holds | REL-028 | `inventory_ledger_entries` (G6) | `soft_hold_id` | `inventory_soft_holds` (G10) | **G10** | restrict | implemented (G10) |
-| ledger → reservations | REL-028 | `inventory_ledger_entries` (G6) | `reservation_id` | `inventory_reservations` (G15) | **G15** | restrict | deferred |
-| ledger → orders | REL-028 | `inventory_ledger_entries` (G6) | `order_id` | `orders` (G15) | **G15** | restrict | deferred |
-| soft_holds → reservations (converted) | REL-030 | `inventory_soft_holds` (G10) | `converted_reservation_id` | `inventory_reservations` (G15) | **G15** | restrict | deferred |
+| ledger → reservations | REL-028 | `inventory_ledger_entries` (G6) | `reservation_id` | `inventory_reservations` (G15) | **G15** | restrict | implemented (G15) |
+| ledger → orders | REL-028 | `inventory_ledger_entries` (G6) | `order_id` | `orders` (G15) | **G15** | restrict | implemented (G15) |
+| soft_holds → reservations (converted) | REL-030 | `inventory_soft_holds` (G10) | `converted_reservation_id` | `inventory_reservations` (G15) | **G15** | restrict | implemented (G15) |
 | request_transitions → grants | REL-105 (TBL-042 subset) | `custom_request_transitions` (G9) | `grant_id` | `secure_access_grants` (G10) | **G10** | restrict | implemented (G10) |
 | design_cases → quotations (current) | REL-062 e2 | `custom_requests` (G9) | `current_quotation_id` | `quotations` (G14) | **G14** | restrict | implemented (G14) |
 | design_cases → design_versions (current) | REL-044 | `design_cases` (G9) | `current_version_id` | `design_versions` (G11) | **G11** | restrict | implemented (G11) |
@@ -709,29 +708,47 @@ evidence.
   implemented in this group, not deferred — it is the only launch-required
   performance index in the G14/G16 register section.
 
-### G15 — Order & shipping (CTX-ORD) · planned
+### G15 — Order & shipping (CTX-ORD) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-043 | `orders` | `ordering/orders.ts` | uuid7 | mutable | planned |
-| TBL-044 | `order_items` | `ordering/order-items.ts` | uuid7 | immutable | planned |
-| TBL-045 | `order_transitions` | `ordering/order-transitions.ts` | bigint | append | planned |
-| TBL-046 | `order_cancellation_requests` | `ordering/order-cancellation-requests.ts` | uuid7 | mutable | planned |
-| TBL-047 | `shipping_details` | `ordering/shipping-details.ts` | uuid7 | mutable-until-frozen | planned |
-| TBL-048 | `shipping_snapshots` | `ordering/shipping-snapshots.ts` | uuid7 | immutable | planned |
-| TBL-049 | `shipping_fee_acknowledgements` | `ordering/shipping-fee-acknowledgements.ts` | bigint | append | planned |
-| TBL-021 | `inventory_reservations` | `inventory/inventory-reservations.ts` | uuid7 | mutable | planned |
+| TBL-043 | `orders` | `ordering/orders.ts` | uuid7 | mutable | **implemented** |
+| TBL-044 | `order_items` | `ordering/order-items.ts` | uuid7 | immutable | **implemented** |
+| TBL-045 | `order_transitions` | `ordering/order-transitions.ts` | bigint | append | **implemented** |
+| TBL-046 | `order_cancellation_requests` | `ordering/order-cancellation-requests.ts` | uuid7 | mutable | **implemented** |
+| TBL-047 | `shipping_details` | `ordering/shipping-details.ts` | uuid7 | mutable-until-frozen | **implemented** |
+| TBL-048 | `shipping_snapshots` | `ordering/shipping-snapshots.ts` | uuid7 | immutable | **implemented** |
+| TBL-049 | `shipping_fee_acknowledgements` | `ordering/shipping-fee-acknowledgements.ts` | bigint | append | **implemented** |
+| TBL-021 | `inventory_reservations` | `inventory/inventory-reservations.ts` | uuid7 | mutable | **implemented** |
 
-**DB6-C4 notes:**
+**Implementation notes (2026-07-19, DB6-G15):**
 - `shipping_fee_acknowledgements.grant_id`/`.step_up_challenge_id`
-  (COL-TBL049-04a/04b) — DEV-DB6-014 mandates two native FKs to
-  `secure_access_grants`/`contact_verification_challenges` (both already
-  implemented since G10/G8) when G15 builds, matching the sibling
-  REL-050/053/070/080/085 secure-flow evidence tables.
+  (COL-TBL049-04a/04b) — **DEV-DB6-014 closed**: both native FKs to
+  `secure_access_grants`/`contact_verification_challenges` are implemented
+  (NOT NULL, restrict), matching the sibling REL-050/053/070/080/085
+  secure-flow evidence tables. Existence is physical; purpose/scope
+  validation stays TX/App (GRD-002/003), same tier as every sibling table.
 - `order_cancellation_requests.decided_by_admin_id` (COL-TBL046-08) —
   per DEV-DB6-015, stays a no-FK evidence reference (bare admin actor,
   outside REL-105's enumeration), same treatment as
   `request_moderation_notes.admin_id` (G9).
+- Three deferred ledger/hold FKs resolved by direct edit of their existing
+  G6/G10 schema files (no circular-import cycle exists for any of the
+  three, so no custom SQL was needed — all three ship in the same
+  generated migration as the eight new tables):
+  `inventory_ledger_entries.reservation_id` → `inventory_reservations`,
+  `inventory_ledger_entries.order_id` → `orders`, and
+  `inventory_soft_holds.converted_reservation_id` →
+  `inventory_reservations` (REL-028 ×2, REL-030 — manifest §2.2.1 ledger).
+- `orders.current_approval_snapshot_id` (REL-074) is an audited pointer,
+  NOT NULL from creation, no header↔child cycle (target `approval_snapshots`
+  already existed since G13) — a plain inline FK, existence physical,
+  same-case chain TX/App (same tier as every current-pointer finding).
+- Money columns use `numeric(14,2)` with a closed `currency_code = 'VND'`
+  CHECK; no arithmetic CHECK was added across `order_items`/`orders`
+  totals (unlike `quotation_versions`' CST-064) — DB4 does not cite an
+  equivalent cross-column arithmetic constraint for the Order group, and
+  none is invented here.
 
 ### G16 — Payment (CTX-PAY) · planned
 
@@ -793,7 +810,7 @@ DEV-DB6-015, stays a no-FK evidence reference, same treatment as
 | G12 | 6 | 50 | **implemented** |
 | G13 | 3 | 53 | **implemented** |
 | G14 | 4 | 57 | **implemented** |
-| G15 | 8 | 65 | planned |
+| G15 | 8 | 65 | **implemented** |
 | G16 | 5 | 70 | planned |
 | G17 | 5 | 75 | planned |
 | G18 | 2 | 77 | planned |
@@ -882,7 +899,8 @@ that register on every run.
 | G12 | 6 | 38 | 2 | 40 | 17 | 57 |
 | G13 | 3 | 20 | 12 | 32 | 6 | 38 |
 | G14 | 4 | 37 | 10 | 47 | 9 | 56 |
-| **Total** | **57** | **369** | **53** | **422** | **151** | **573** |
+| G15 | 8 | 71 | 20 | 91 | 20 | 111 |
+| **Total** | **65** | **440** | **73** | **513** | **171** | **684** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
@@ -991,14 +1009,14 @@ twice.
 | LC-11 | Custom Request | `custom_requests.status` | G9 | planned |
 | LC-12 | Quotation | `quotations.status` | G14 | planned |
 | LC-13 | Quotation Version | `quotation_versions.status` | G14 | planned |
-| LC-14 | Order | `orders.status` | G15 | planned |
+| LC-14 | Order | `orders.status` | G15 | **implemented** |
 | LC-15 | Payment Obligation | `payment_obligations.status` | G16 | planned |
 | LC-16 | Payment Attempt | `payment_attempts.status` | G16 | planned |
-| LC-17 | Soft Hold, Reservation | `inventory_soft_holds.status`, `inventory_reservations.status` | G10/G15 | planned |
+| LC-17 | Soft Hold, Reservation | `inventory_soft_holds.status`, `inventory_reservations.status` | G10/G15 | **implemented** |
 | LC-18 | Production Job | `production_jobs.status` | G17 | planned |
-| LC-19 | Shipping Details | `shipping_details.status` | G15 | planned |
+| LC-19 | Shipping Details | `shipping_details.status` | G15 | **implemented** |
 | LC-20 | Refund | `refunds.status` | G16 | planned |
-| LC-21 | Delivery | `orders` delivery fields + `order_transitions` | G15 | planned |
+| LC-21 | Delivery | `orders` delivery fields + `order_transitions` | G15 | **implemented** |
 | LC-22 | Outbox Event | `outbox_events.status` | G2 | **implemented** |
 | LC-23 | Idempotency Record | `idempotency_records.status` | G2 | **implemented** |
 | (none) | Job attempt outcome | `background_job_attempts.outcome` | G2 | **implemented** |

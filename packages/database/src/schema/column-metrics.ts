@@ -117,6 +117,15 @@ const ROWS: readonly MetricRow[] = [
   ['quotation_versions', 'G14', 20, 7, 2, 29],
   ['quotation_line_items', 'G14', 8, 1, 2, 11],
   ['quotation_acceptances', 'G14', 5, 2, 2, 9],
+  // G15 — Order, official inventory reservation & shipping
+  ['orders', 'G15', 11, 2, 3, 16],
+  ['order_items', 'G15', 9, 3, 2, 14],
+  ['order_transitions', 'G15', 8, 5, 2, 15],
+  ['order_cancellation_requests', 'G15', 8, 2, 3, 13],
+  ['shipping_details', 'G15', 11, 4, 3, 18],
+  ['shipping_snapshots', 'G15', 12, 2, 2, 16],
+  ['shipping_fee_acknowledgements', 'G15', 5, 2, 2, 9],
+  ['inventory_reservations', 'G15', 7, 0, 3, 10],
 ];
 
 export const COLUMN_METRICS: readonly TableColumnMetric[] = ROWS.map(

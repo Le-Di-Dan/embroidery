@@ -5,8 +5,8 @@
  * Columns: COL-TBL020-01..07 · Constraints: CST-001, CST-015 (IDX-017,
  * LC-17), quantity > 0
  * Relationships: REL-029 (→ sku_stocks, → custom_requests), REL-030 (→
- * inventory_reservations — **deferred, owner G15**: `inventory_reservations`
- * is a G15-created table per DEV-DB6-011; the nullable column exists now)
+ * inventory_reservations — **implemented now (G15)**, DEV-DB6-011:
+ * `inventory_reservations` is created in this group)
  * Indexes: IDX-017 (constraint-created, pUQ active hold); IDX-109/113 (P0/P1,
  * with group); IDX-127 (recommended) → S25
  * Owner: Inventory module.
@@ -42,6 +42,7 @@ import { createdAt, instant, updatedAt } from '../../primitives/temporal';
 import { stateCheck, stateColumn } from '../../primitives/lifecycle-state';
 import { skuStocks } from './sku-stocks';
 import { customRequests } from '../ordering/custom-requests';
+import { inventoryReservations } from './inventory-reservations';
 
 /** LC-17 (hold side). Canonical source — see DB5-A09. */
 export const INVENTORY_SOFT_HOLD_STATES = ['HELD', 'CONVERTED', 'RELEASED', 'EXPIRED'] as const;
@@ -57,8 +58,6 @@ export const inventorySoftHolds = pgTable(
     status: stateColumn().notNull(),
     expiresAt: instant('expires_at').notNull(),
     releasedReason: text('released_reason'),
-    // REL-030 — converted_reservation_id: target table (inventory_reservations)
-    // is created in G15 (DEV-DB6-011). Column exists now, nullable, no FK.
     convertedReservationId: idReference('converted_reservation_id'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -82,6 +81,12 @@ export const inventorySoftHolds = pgTable(
       name: 'fk_inventory_soft_holds__custom_request_id',
       columns: [t.customRequestId],
       foreignColumns: [customRequests.id],
+    }).onDelete('restrict'),
+    // REL-030 — resolved (G15, DEV-DB6-011): inventory_reservations now exists.
+    foreignKey({
+      name: 'fk_inventory_soft_holds__converted_reservation_id',
+      columns: [t.convertedReservationId],
+      foreignColumns: [inventoryReservations.id],
     }).onDelete('restrict'),
     check(
       'ck_inventory_soft_holds__status_allowed',

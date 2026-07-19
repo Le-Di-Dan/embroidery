@@ -517,7 +517,7 @@ implement these four FKs and mark this entry `closed`.
 |---|---|
 | Source IDs | DB4_COLUMN_DICTIONARY.md COL-TBL049-04a/04b; sibling REL rows REL-050 (design_reviews), REL-053 (approval_snapshots), REL-070 (quotation_acceptances), REL-080 (order_cancellation_requests), REL-085 (payment_attempts) |
 | Nature | **genuinely missing edge**, found by DB6-C4's pre-G12 relationship-coverage audit — the one secure-flow evidence table whose sibling pattern breaks |
-| Status | **open — planned owner G15** (target tables `secure_access_grants` (G10) and `contact_verification_challenges` (G8) already exist; source table `shipping_fee_acknowledgements`, TBL-049, not yet implemented; no migration in DB6-C4) |
+| Status | **closed — implemented in G15** (migration `0023_create_order_reservation_shipping_tables.sql`; both FKs live, physical FK target count now includes these two) |
 
 **Problem.** Every customer step-up-evidence table in the model carries an
 explicit `grant_id` + `step_up_challenge_id` pair with its own REL row:
@@ -536,7 +536,7 @@ of REL-078's five-way composition list (`order_transitions` /
 `fee_acknowledgements` → `orders`). No row extends to the grant/challenge
 pair, unlike its five structural siblings above.
 
-**Selected implementation (planned, G15).** Two `foreignKey()` FKs to
+**Selected implementation (implemented, G15).** Two `foreignKey()` FKs to
 `secure_access_grants` and `contact_verification_challenges` (both already
 implemented since G10/G8), `restrict`, mirroring the five sibling tables'
 treatment. No deferred-owner ledger row needed — both targets predate G15.

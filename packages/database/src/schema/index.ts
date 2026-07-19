@@ -92,3 +92,13 @@ export * from './quotation/quotations';
 export * from './quotation/quotation-versions';
 export * from './quotation/quotation-line-items';
 export * from './quotation/quotation-acceptances';
+
+// G15 — Order, official inventory reservation & shipping (CTX-ORD)
+export * from './ordering/orders';
+export * from './ordering/order-items';
+export * from './ordering/order-transitions';
+export * from './ordering/order-cancellation-requests';
+export * from './ordering/shipping-details';
+export * from './ordering/shipping-snapshots';
+export * from './ordering/shipping-fee-acknowledgements';
+export * from './inventory/inventory-reservations';
