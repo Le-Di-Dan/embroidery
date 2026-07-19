@@ -861,12 +861,40 @@ DEV-DB6-015, stays a no-FK evidence reference, same treatment as
   consumes a Reservation, or transitions `orders.status` — TR-LC18-01/02/03
   (DB3) remain TX/App-owned; this group stores only the resulting facts.
 
-### G18 — Notification (CTX-NTF) · planned
+### G18 — Notification (CTX-NTF) · implemented
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-070 | `notification_intents` | `notification/notification-intents.ts` | uuid7 | mutable (status) | planned |
-| TBL-071 | `notification_delivery_attempts` | `notification/notification-delivery-attempts.ts` | bigint | append | planned |
+| TBL-070 | `notification_intents` | `notification/notification-intents.ts` | uuid7 | mutable (status) | implemented |
+| TBL-071 | `notification_delivery_attempts` | `notification/notification-delivery-attempts.ts` | bigint | append | implemented |
+
+**DEV-DB6-016 note:** `notification_intents.recipient_contact_point_id`
+(REL-099) and `notification_intents.source_outbox_event_id` (REL-101) stay
+no-FK evidence/trace references; `channel` (both tables) has no closed-set
+CHECK — DB4/ADR-DB2-003 leave channel/provider enumeration open (O-005,
+DEC-25). See `DB6_DEVIATION_REGISTER.md` DEV-DB6-016.
+
+**Implementation notes (2026-07-19, DB6-G18):**
+
+- **Zero header↔child import cycles** — `notification-delivery-attempts.ts`
+  imports only `notification-intents.ts`; no cycle. Single generated
+  migration `0028_create_notification_tables.sql`, no custom SQL needed.
+- **JSONB boundary #8** (`notification_intents.params`) is now physically
+  implemented — the 8th of 9 closed-set JSONB definitions to land; the 9th
+  (`audit_events`, if any) remains G19's scope. Closed-set definition count
+  stays 9/9 (unchanged); physical JSONB columns implemented moves 7 → 8.
+- **`intent_key` (CST-047) is UQ-backed by the implicit unique index**
+  (`uq_notification_intents__intent_key`), satisfying IDX-057 — no separate
+  `uniqueIndex()`/`index()` call needed.
+- **REL-100 is the only real physical FK in this group**
+  (`notification_delivery_attempts.intent_id` → `notification_intents.id`,
+  restrict). REL-099 and REL-101 are intentional no-FK references
+  (DEV-DB6-016); logical/physical-FK-target denominators (164/162) are
+  unaffected — neither was ever counted as a physical FK target.
+- No trigger creates this row from a source event, marks it `SATISFIED`,
+  spawns a Delivery Attempt, or mutates any other domain table —
+  TR-NTF-01..06 (DB3) remain worker/App-owned; this group stores only the
+  resulting facts.
 
 ### G19 — Audit (CTX-AUD) · planned
 
@@ -895,10 +923,10 @@ DEV-DB6-015, stays a no-FK evidence reference, same treatment as
 | G15 | 8 | 65 | **implemented** |
 | G16 | 5 | 70 | **implemented** |
 | G17 | 5 | 75 | **implemented** |
-| G18 | 2 | 77 | planned |
+| G18 | 2 | 77 | **implemented** |
 | G19 | 1 | 78 | planned |
 
-**75 of 78 implemented.**
+**77 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -984,7 +1012,8 @@ that register on every run.
 | G15 | 8 | 71 | 20 | 91 | 20 | 111 |
 | G16 | 5 | 48 | 6 | 54 | 13 | 67 |
 | G17 | 5 | 25 | 9 | 34 | 12 | 46 |
-| **Total** | **75** | **513** | **88** | **601** | **196** | **797** |
+| G18 | 2 | 15 | 1 | 16 | 5 | 21 |
+| **Total** | **77** | **528** | **89** | **617** | **201** | **818** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
@@ -1104,6 +1133,7 @@ twice.
 | LC-22 | Outbox Event | `outbox_events.status` | G2 | **implemented** |
 | LC-23 | Idempotency Record | `idempotency_records.status` | G2 | **implemented** |
 | (none) | Job attempt outcome | `background_job_attempts.outcome` | G2 | **implemented** |
+| (none) | Notification Intent | `notification_intents.status` | G18 | **implemented** |
 
 Plus non-`LC` publication states (`categories`, `gallery_entries`,
 `content_pages`, `design_templates`, `agreement_versions`) and secondary
@@ -1130,7 +1160,7 @@ Numbering, column names and version keys are taken verbatim from
 | 5 | `idempotency_records.result` (COL-TBL074-05) | fixed internal shape | **G2** | **implemented** |
 | 6 | `payment_provider_events.redacted_payload` (COL-TBL056-06) | `provider_key` discriminates | G16 | **implemented** |
 | 7 | `audit_events.summary` (COL-TBL072-07) | fixed internal shape | G19 | planned |
-| 8 | `notification_intents.params` (COL-TBL070-06) | `template_version` | G18 | planned |
+| 8 | `notification_intents.params` (COL-TBL070-06) | `template_version` | G18 | **implemented** |
 | 9 | `policy_configuration_versions.value` (COL-TBL077-03) | `value_schema_version` | **G2** | **implemented** |
 
 **Closed set.** A tenth JSONB column requires an ADR (ADR-DB4-004).

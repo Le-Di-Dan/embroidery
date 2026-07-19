@@ -11,11 +11,13 @@
   migrations before this group's migration ran.
 - `drizzle-kit check` clean before starting.
 - Jest: 92/92 passing before starting.
-- Corrected baseline confirmed live (not hand-added): 70 tables, 797→751
-  physical columns *before* this group (751 confirmed pre-G17), 146 FKs, 70
-  PK, 46 UQ, 177 CHECK, 166 physical indexes, 33 physical partial indexes
-  (13 unique + 20 performance) — matches `DB6_INDEX_METRIC_RECONCILIATION.md`
-  exactly.
+- Corrected baseline confirmed live (not hand-added): 70 tables, **751**
+  physical columns pre-G17, 146 FKs, 70 PK, 46 UQ, 177 CHECK, 166 physical
+  indexes, 33 physical partial indexes (13 unique + 20 performance) —
+  matches `DB6_INDEX_METRIC_RECONCILIATION.md` exactly. **(DB6-G18 preflight
+  reconciliation, 2026-07-19):** the original "797→751" phrasing above was
+  ambiguous — the canonical reading is pre-G17: 751, G17 delta: +46,
+  post-G17: 797, as confirmed live in this report's own §E below.
 - Canonical G17 scope derived from `DB6_SCHEMA_IMPLEMENTATION_MANIFEST.md`
   §3 ("G17 — Production (CTX-PRD)") and confirmed against
   `DB4_TABLE_CATALOG.md` (TBL-059..063), `DB4_COLUMN_DICTIONARY.md`,
@@ -239,9 +241,16 @@ fine 🐶🔥". Every number above is read directly from `pg_class`/`pg_index`/
 - **Reapply/drift**: a second `drizzle-kit check` on both disposable
   databases reported "Everything's fine 🐶🔥"; no generated diff on
   reapply.
-- **Physical parity**: exact 5-table, 46-column, 10-FK, 9-CHECK-plus-3-UQ,
-  2-index (2 constraint-created backing + 2 explicit) match between the
-  schema, the generated migration, and both live disposable databases.
+- **Physical parity**: exact 5-table, 46-column, 10-FK, 9-CHECK-plus-3-UQ
+  match between the schema, the generated migration, and both live
+  disposable databases. **(DB6-G18 preflight reconciliation, 2026-07-19):**
+  the original "2-index (2 constraint-created backing + 2 explicit)" phrase
+  above did not balance against the group's actual physical-index delta.
+  The exact G17 physical-index delta is 5 PK-backing + 3 UNIQUE-backing
+  (CST-041/042/043, all plain, none partial) + 2 explicit performance
+  (IDX-082 partial, IDX-102 non-partial) = 10 physical indexes, taking the
+  running total 166 pre-G17 → 176 post-G17 — both confirmed live in §E
+  below and in `DB6_INDEX_IMPLEMENTATION_MANIFEST.md` §7.
 - **Behavioral smoke** (19 cases against the disposable upgrade
   database, generated case table, not hand-counted): 3 expected successes
   (mutable-root re-transition, CANCELLED transition with reason,

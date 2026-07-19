@@ -190,6 +190,21 @@ Checker-enforced in `tools/db-metric-check.mjs` (`EXPECTED_FK_EDGES = 164`,
   for all ten edges; that `production_specifications.approval_snapshot_id`
   is the *same* snapshot the parent job itself references is TX/App, same
   tier as every other current-pointer/chain finding in this engagement.
+- G18 — Notification: no Class-C/D findings for this group; all three
+  reference-shaped columns (REL-099, REL-100, REL-101) already carried REL
+  rows in `DB4_RELATIONSHIP_AND_FK_MODEL.md` (Class A per this audit's own
+  definition — "has a clear REL row", not "gets a physical FK"), so this
+  audit's pre-registered 3A/0B/0C/0D held exactly. **Implemented (2026-07-19,
+  DB6-G18):** only REL-100 (`notification_delivery_attempts.intent_id` →
+  `notification_intents`, restrict) is a physical FK — the one edge
+  `DB5_FK_INDEX_REVIEW.md` marks "required", backed by IDX-092. REL-099
+  (`recipient_contact_point_id`) and REL-101 (`source_outbox_event_id`) stay
+  no-FK by design, exactly as their own REL rows already specified ("FK
+  exists? no", index verdict "unnecessary") — `DEV-DB6-016` formalizes the
+  rationale (contact-point anonymization/merge cleanup, outbox transience)
+  rather than introducing a new classification. One physical FK total;
+  164/162 logical/physical-FK-target denominators unaffected — neither
+  no-FK column was ever counted toward the physical-FK-target side.
 - No physical defect was found in G1–G11 (the already-implemented tables).
   No forward-fix migration is required. DB6-C4 makes **no schema change**.
 

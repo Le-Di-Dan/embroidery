@@ -116,3 +116,7 @@ export * from './production/production-specifications';
 export * from './production/production-artifacts';
 export * from './production/production-notes';
 export * from './production/production-job-transitions';
+
+// G18 — Notification (CTX-NTF)
+export * from './notification/notification-intents';
+export * from './notification/notification-delivery-attempts';

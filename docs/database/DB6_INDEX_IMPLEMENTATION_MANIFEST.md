@@ -389,29 +389,33 @@ own non-transactional migration step.
 
 ## 7. Current state
 
-**After G1..G17 (75 of 78 tables), live-catalog-derived** — G16+C5's figures
+**After G1..G18 (77 of 78 tables), live-catalog-derived** — G16+C5's figures
 were corrected 2026-07-19 by DB6-C5 §B3/B4 (see
 `DB6_INDEX_METRIC_RECONCILIATION.md` for that derivation); this row extends
-the same live-catalog method through G17's migration `0027`:
+the same live-catalog method through G18's migration `0028`:
 
 | Metric | Implemented | Selected for launch |
 |---|---|---|
-| PK backing indexes | 75 | 78 |
-| UNIQUE constraint backing | 49 | 50 |
+| PK backing indexes | 77 | 78 |
+| UNIQUE constraint backing | 50 | 50 |
 | Explicit partial unique | 13 (all 13 selected entries now implemented) | 13 |
-| Explicit performance | 39 | 70 |
-| **Physical indexes** | **176** | **211** |
-| Physical partial indexes | 34 (13 unique + 21 performance) | 45 (13 unique + 32 performance) |
-| `IDX-*` entries satisfied (excludes PK) | 101 (49 UNIQUE + 13 partial-unique + 39 performance) | 133 of 134 |
+| Explicit performance | 41 | 70 |
+| **Physical indexes** | **181** | **211** |
+| Physical partial indexes | 35 (13 unique + 22 performance) | 45 (13 unique + 32 performance) |
+| `IDX-*` entries satisfied (excludes PK) | 104 (50 UNIQUE + 13 partial-unique + 41 performance) | 134 of 134 |
 
-`176`/`34`/`101` are read directly from `pg_class`/`pg_index` on a disposable
-database built through migration `0027`, not accumulated by hand. G17's own
-delta: +5 PK-backing, +3 UNIQUE-backing (CST-041/042/043 — all plain, none
-partial), +2 explicit performance (IDX-082 partial, IDX-102 non-partial),
-+1 physical partial index. `166`/`33`/`96` (the prior G16+C5 row) and every
-prior "After G1..G11" figure in this section (44/26/10/21/101/57) are
-retained above only as superseded history — the G17 row is authoritative
-going forward.
+`181`/`35`/`104` are read directly from `pg_class`/`pg_index` on a disposable
+database built through migration `0028`, not accumulated by hand. G18's own
+delta: +2 PK-backing, +1 UNIQUE-backing (`uq_notification_intents__intent_key`
+— CST-047/IDX-057, plain, not partial), +2 explicit performance (IDX-091
+partial, IDX-092 non-partial), +1 physical partial index. UNIQUE backing now
+reaches its full launch target (50/50); `IDX-*` satisfied reaches 104/134 —
+both G18 required-tier entries (IDX-091, IDX-092) ship with this group; the
+remaining 30-entry gap is the S25 recommended-tier backlog tracked below plus
+G19's not-yet-implemented entries (G19 has not landed).
+`176`/`34`/`101` (the prior G17 row) and every earlier superseded figure in
+this section (including "After G1..G11") are retained only as history — the
+G18 row is authoritative going forward.
 
 ### 7.1. History (before this reconciliation)
 

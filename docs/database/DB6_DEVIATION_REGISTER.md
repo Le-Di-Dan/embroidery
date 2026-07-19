@@ -8,7 +8,7 @@ evidence. DB0–DB5 documents are **not edited**; deviations are additive.
 **Status legend:** `open` · `closed` (implemented + evidenced) ·
 `deferred` (owner named, non-blocking)
 
-**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-015.
+**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-016.
 
 ---
 
@@ -621,6 +621,66 @@ closed. **Not applied** to `production_job_transitions.admin_id`
 enumerated tables, so its actor column gets a real `foreignKey()` to
 `admin_accounts` instead — the two tables are not interchangeable under
 this rule, and no denominator change resulted from either.
+
+---
+
+## DEV-DB6-016 — Notification's two nullable no-FK references and the open channel/provider set (G18 finding)
+
+| Field | Value |
+|---|---|
+| Source IDs | `DB4_RELATIONSHIP_AND_FK_MODEL.md` REL-099, REL-101; `DB5_FK_INDEX_REVIEW.md` REL-099/REL-101 rows (verdict "unnecessary"); `DB4_COLUMN_DICTIONARY.md` COL-TBL070-03 ("provider open O-005"); `ADR-DB2-003-NOTIFICATION-PERSISTENCE.md` rule 4, DEC-25 |
+| Nature | **documentation formalization** for two intentional no-FK references, plus one intentional no-CHECK column — none is a missing edge or a missing constraint |
+| Status | **closed** (implemented as written in G18; no denominator change) |
+
+**Problem.** `notification_intents` carries three columns that look like they
+should get the same treatment as every other `_id`/closed-set column
+elsewhere in this schema, but each has a documented reason not to:
+
+1. `recipient_contact_point_id` (REL-099) — a nullable reference to
+   `customer_contact_points`. A restrict FK here would block contact-point
+   anonymization/merge cleanup (G10) whenever a customer's contact point is
+   later merged or scrubbed, and `recipient_masked` already carries the
+   frozen display evidence that must survive such changes. `DB5_FK_INDEX_
+   REVIEW.md` marks this column's index need "unnecessary" — the opposite
+   of every real-FK column in this engagement, which are always "required".
+2. `source_outbox_event_id` (REL-101) — a nullable origin trace to
+   `outbox_events`. Outbox rows are transient and get deleted once
+   processed (ADR-DB2-003 rule 1: "NTF ≠ outbox"); a restrict FK would block
+   that cleanup, and a cascade/set-null FK would need a trigger this
+   engagement does not invent. Same "unnecessary" index verdict.
+3. `channel` (COL-TBL070-03, and its sibling column on
+   `notification_delivery_attempts`) — DB4 documents only "EMAIL/SMS/…"
+   with an explicit ellipsis, and ADR-DB2-003 rule 4 states plainly "no
+   provider is chosen (O-005 untouched)". Unlike `payment_attempts.method`
+   (a genuinely closed 3-value product enum despite provider abstraction
+   elsewhere), channel has no canonical closed tuple to check against —
+   only open examples pending a deferred decision (DEC-25).
+
+**Evidence.** `DB4_RELATIONSHIP_AND_FK_MODEL.md` lines 134/136 (REL-099,
+REL-101); `DB5_FK_INDEX_REVIEW.md` REL-099/REL-101 rows, verdict
+"unnecessary" both times, contrasted with REL-100's "required" verdict
+(which does get a real FK, backed by IDX-092); `ADR-DB2-003` rule 4:
+"channel is a value (email/SMS/…); provider adapters sit behind the
+notification port; **no provider is chosen** (O-005 untouched)".
+
+**Selected implementation (G18).** `recipient_contact_point_id` and
+`source_outbox_event_id` are declared as bare nullable columns with no
+`foreignKey()` — the same no-FK evidence-reference shape as DEV-DB6-015,
+but for a *nullable optional trace* rather than a *required actor*
+rationale. `channel` (both tables) is declared as a plain `NOT NULL text`
+column with no CHECK constraint; the closed-set CHECK direction DB4 notes
+is deferred until O-005/DEC-25 resolves the channel/provider enumeration.
+No logical relationship-edge or CHECK-constraint denominator changes as a
+result — these were never counted as physical FKs or physical CHECKs in
+the pre-G18 baseline.
+
+**Behaviour impact.** None. Application/worker code must not assume
+`recipient_contact_point_id` or `source_outbox_event_id` resolve to a live
+row, and must not validate `channel` against an invented closed set.
+**Historical documents.** DB4/DB5/ADR-DB2-003 unchanged. **Audit impact.**
+DB7 should assert these three columns remain unconstrained as designed
+(no accidental FK/CHECK added later without a matching DEV-DB6 update);
+DB8/DB9 are not affected.
 
 ---
 
