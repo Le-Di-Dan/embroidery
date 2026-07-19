@@ -261,7 +261,7 @@ fine 🐶🔥". Every number above is read directly from `pg_class`/`pg_index`/
 ## H. Commits
 
 ```text
-<recorded below after commit>  feat(database): implement DB6 schema group G17
+bc1c096  feat(database): implement DB6 schema group G17
 ```
 
 Tree clean immediately after commit. Not pushed.
