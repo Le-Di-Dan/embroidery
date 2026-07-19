@@ -389,7 +389,31 @@ own non-transactional migration step.
 
 ## 7. Current state
 
-After G1..G11 (44 of 78 tables):
+**After G1..G16 (70 of 78 tables), corrected 2026-07-19 by DB6-C5 §B3/B4**
+**against the live catalog** — see `DB6_INDEX_METRIC_RECONCILIATION.md` for
+the full derivation and the accounting error it corrects:
+
+| Metric | Implemented | Selected for launch |
+|---|---|---|
+| PK backing indexes | 70 | 78 |
+| UNIQUE constraint backing | 46 | 50 |
+| Explicit partial unique | 13 (all 13 selected entries now implemented) | 13 |
+| Explicit performance | 37 | 70 |
+| **Physical indexes** | **166** | **211** |
+| Physical partial indexes | 33 (13 unique + 20 performance) | 45 (13 unique + 32 performance) |
+| `IDX-*` entries satisfied (excludes PK) | 96 (46 UNIQUE + 13 partial-unique + 37 performance) | 133 of 134 |
+
+`166` and `96` are read directly from `pg_class`/`pg_index` on a disposable
+database built through migration `0026`, not accumulated by hand. Every
+prior "After G1..G11" figure in this section (44/26/10/21/101/57) is
+retained above only as superseded history — it was not independently
+re-verified against a live catalog at the time and should not be treated as
+authoritative for G1–G11 individually; the G16+C5 row is.
+
+### 7.1. History (before this reconciliation)
+
+After G1..G11 (44 of 78 tables) — as originally recorded, unverified against
+a live catalog:
 
 | Metric | Implemented | Selected for launch |
 |---|---|---|

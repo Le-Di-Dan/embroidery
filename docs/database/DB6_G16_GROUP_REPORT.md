@@ -224,14 +224,153 @@ disposable G15-prefix upgrade database: **70 tables, 751 physical columns,
 ## H. Commits
 
 ```text
-<pending — see chat delivery for hash>  feat(database): implement DB6 schema group G16
+701ebb0  feat(database): implement DB6 schema group G16
 ```
 
-Tree clean immediately after commit. Not pushed.
+Verified via `git log` at the start of DB6-C5: parent `4dee744` (G15), tree
+clean immediately after, 26 commits ahead of `origin/production`, not
+pushed. `<pending — see chat delivery for hash>` above was a defect in this
+report, not a missing commit — the commit existed at that time; the hash was
+simply never copied back in. Corrected here without amending the commit
+itself (B1).
 
-## I. Verdict
+## I. Verdict (as originally reported — superseded by the addendum below)
 
 ```text
 DB6-G16      PASS
+OVERALL DB6  IN PROGRESS
+```
+
+---
+
+## DB6-C5 Addendum (2026-07-19)
+
+The verdict above was accepted provisionally, then reopened on review: seven
+internal-consistency defects were found in this report's own numbers (not in
+the underlying schema, except §B2 below, which *was* a real physical
+defect). Original findings above are left unedited as history; this
+addendum documents what was wrong and the forward-only fix. Full detail in
+`DB6_MONEY_SCALE_AUDIT.md` and `DB6_INDEX_METRIC_RECONCILIATION.md`; short
+form here.
+
+### B1 — commit hash
+
+Fixed in §H above. `701ebb0` was always the correct hash; it was omitted,
+not invented. No amend.
+
+### B2 — fractional VND acceptance (real defect, not a report error)
+
+§G's smoke case 26 ("fractional-VND acceptance — documented gap, matching
+sibling tables") described a genuine physical defect, not an acceptable
+parity with `orders`/`quotation_versions`: **those tables had the same gap**,
+undetected until this review. Root cause: `primitives/money.ts`'s
+`currencyScaleCheck()` (DEV-DB6-005, "closed") was applied only to
+`products`/`skus` at G5 and never re-applied to any of the thirteen money
+columns added G6–G16. Fixed forward by `migrations/0026_
+enforce_vnd_currency_scale.sql` — 21 new CHECKs, one per affected amount
+column (`payment_reconciliations.amount` uses the documented unconditional
+equivalent, since it has no per-row `currency_code`). No `0000`–`0025`
+migration was edited. Existing-data scan of the persistent dev database
+(the only one with data) found zero fractional-VND rows across every money
+column that exists there — no blocker, no round/truncate/delete. Verified
+live: a pre-existing fractional row seeded on a disposable database blocks
+the migration atomically (SQLSTATE `23514`, migration not recorded, row
+unchanged); a disposable upgrade seeded with only integer-VND data applies
+cleanly and immediately starts rejecting fractional inserts/updates
+afterward. Full detail: `DB6_MONEY_SCALE_AUDIT.md`.
+
+### B3 — launch-index arithmetic
+
+§E's "133 / 211" and §A03's implied "+8 this group" both undercounted: the
+group's true physical-index delta is **+13** (5 PK-backing + 1 UNIQUE-backing
++ 7 explicit), not +8 — the 8 figure only ever counted the explicit-plus-
+partial-unique subset. Corrected, live-catalog-verified value: **166 / 211**
+implemented launch indexes after G16 (unchanged by C5, which adds none). The
+"127" pre-G16 baseline this report inherited as canonical does not
+reconcile against any metric measurable in a live catalog at the G15
+boundary either — reset to the verified value going forward. Full
+derivation: `DB6_INDEX_METRIC_RECONCILIATION.md` §3/§5.
+
+### B4 — partial-index denominator
+
+§E's "47 (+2 ... 4 new partial predicates)" is corrected to **33 / 45**
+implemented/target (13/13 unique-partial complete, 20/32 performance-partial).
+**Outcome A** — report arithmetic error, not a denominator change: `45`
+(13 unique + 32 performance) is the manifest's own full-launch target,
+verbatim in `DB6_INDEX_IMPLEMENTATION_MANIFEST.md` §4; it was never 47, and
+no deviation is recorded because none is needed. G16's own true delta is +4
+partial indexes (IDX-042 partial-unique; IDX-076/080/081 partial-
+performance), which this report's "+2" and "4 new" both partially stated
+without reconciling into one consistent number.
+
+### B5 — constraint counts
+
+§E's "+16 CHECK" and §G's "8 CHECK" are both wrong; the true delta,
+read from `pg_constraint.contype='c'` on a live catalog (never from
+`information_schema.table_constraints`, which folds `NOT NULL` into the same
+bucket), is **+22 CHECK constraints** for G16 (5+5+4+3+5 across the five
+tables) and **+1 UNIQUE constraint** (`uq_payment_provider_events__
+provider_key__provider_event_ref`, CST-040/IDX-043 — already correct in the
+narrative, just not reconciled against the CHECK figure). Confirmed live:
+none of the 13 partial-unique indexes (including this group's new IDX-042)
+is ever also represented as a `pg_constraint` row — no double count.
+C5 itself adds **+21 CHECK constraints**, 0 of anything else.
+
+### B6 — behavioral smoke count
+
+§G's "26 cases / 18 success / 8 rejection" summary did not match its own
+enumerated rejection list. Superseded by a generated 22-case table (query,
+not hand count) run against the fresh-install database with the corrected
+fractional-VND-must-reject expectation: **5 expected successes, 17 expected
+rejections, all 22 verdicts PASS**. Full case table in
+`DB6_MONEY_SCALE_AUDIT.md` §6 / this addendum's validation run.
+
+### B7 — Jest chronology
+
+Corrected chronology, confirmed via `git show <commit>:.../column-metrics.ts`
+row counts (65 rows at `4dee744`, 70 at `701ebb0`) cross-checked against the
+spec file's `it.each` structure: **pre-G16 baseline (`4dee744`): 87/87 →
+post-G16 (`701ebb0`): 92/92 → post-C5 (`0026`): 92/92** (unchanged — C5 adds
+no tables/columns/relationships, only CHECK constraints, which this
+particular bijection suite does not separately enumerate).
+
+### C5 validation summary
+
+- **Static**: `tsc --noEmit`, `eslint`, `prettier --check` all clean;
+  Jest 92/92 (§B7); all edited files still within the 400-line source limit.
+- **Fresh disposable** (`embroidery_c5_fresh`, empty → `0000`–`0026`): 70
+  tables, 751 columns, 146 FKs, 166 physical indexes, 177 CHECK constraints,
+  26 migrations, `drizzle-kit check` clean.
+- **Disposable G16-prefix upgrade** (`embroidery_c5_g16`, `0000`–`0025` →
+  seeded a full integer-VND order→payment chain across all 13 affected
+  tables → `0026` via the real config): succeeded, old rows byte-identical
+  afterward, fractional insert/update rejected afterward on both an early-
+  file table (`orders`) and a late-file table (`payment_obligations`),
+  drift clean. Dropped after verification.
+- **Negative existing-data test** (separate disposable G16-prefix database,
+  a pre-existing fractional-VND `quotation_versions` row seeded before
+  `0026` ran): migration aborted atomically (SQLSTATE `23514`), migration
+  0026 never recorded, seeded values unchanged. Dropped after verification.
+- **Behavioral smoke**: 22/22 generated cases PASS (§B6).
+- **Persistent dev database**: confirmed at 65 tables / 23 migrations before,
+  during, and after all of DB6-C5's work — never used for any upgrade test.
+- **Index/constraint metric reconciliation**: `DB6_INDEX_METRIC_
+  RECONCILIATION.md` (new document).
+- **Money scale audit**: `DB6_MONEY_SCALE_AUDIT.md` (new document).
+
+### C5 commit
+
+```text
+0736e9c  fix(database): enforce VND currency scale
+<recorded after this commit — see repository `git log`>  chore(database): reconcile DB6 G16 metrics and report
+```
+
+No amend of `701ebb0` or any earlier commit. Not pushed.
+
+## Final Verdict
+
+```text
+DB6-G16      PASS
+DB6-C5       PASS
 OVERALL DB6  IN PROGRESS
 ```

@@ -795,6 +795,29 @@ DEV-DB6-015, stay no-FK evidence references, same treatment as
 - No `deposit_paid`/`fully_paid` boolean exists anywhere in this group —
   "fully paid" is derived (both obligations SATISFIED), never stored.
 
+**DB6-C5 addendum (2026-07-19, forward correction, migration `0026`):**
+
+- G16's own review (not a G17 activity) found `payment_reconciliations.
+  amount` fractional-VND acceptance recorded as a documented gap instead of
+  fixed — and, on audit, the same gap existed on **every** money column
+  implemented since G5 except `products`/`skus` (the only two using
+  `currencyScaleCheck()` from `primitives/money.ts`, DEV-DB6-005). C5 applies
+  the same helper to all thirteen remaining money-bearing tables (nine from
+  Quotation/Ordering, four more Payment tables besides
+  `payment_reconciliations`, which needed the unconditional-form equivalent
+  since it carries no per-row `currency_code`) — twenty-one new CHECKs,
+  one per affected amount column. Full detail: `DB6_MONEY_SCALE_AUDIT.md`.
+- The G16 group report's own metrics (launch-index count, partial-index
+  count, CHECK-constraint count, Jest chronology, commit hash) were found
+  internally inconsistent on review and are corrected in
+  `DB6_INDEX_METRIC_RECONCILIATION.md` and the report's own addendum — no
+  additional schema objects resulted from that correction, only accurate
+  counting of what G16 had already built. Commit hash of the G16
+  implementation itself: `701ebb0` (verified via `git log`, parent
+  `4dee744`, tree clean, not pushed at time of writing).
+- C5 adds zero tables, columns, FKs, or indexes. `column-metrics.ts` and the
+  §4.1 table below are unchanged by C5.
+
 ### G17 — Production (CTX-PRD) · planned
 
 | TBL | Table | File | PK | Mut | Status |

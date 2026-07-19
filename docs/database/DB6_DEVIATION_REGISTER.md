@@ -157,6 +157,22 @@ fractional acceptance.
 DB4 is not edited (DB5-A08 explicitly permits this route where DB4 carries no
 specific `CST-*`).
 
+**DB6-C5 correction (2026-07-19).** "Closed" above was accurate only for
+`products.base_price_amount`/`skus.price_override_amount` (G5, the only two
+columns using it at the time). It was never re-applied when nine further
+tables (TBL-043/044/047/048/049/051/052/053) and, at G16, five more
+(TBL-054..058) added their own money columns G6–G16 — each of those columns
+shipped with only the non-negative/positive and `= 'VND'` CHECKs, never the
+scale CHECK. DB6-G16's review caught this as a live defect (fractional VND
+accepted on `payment_reconciliations.amount`), and DB6-C5 closed it for real:
+`0026_enforce_vnd_currency_scale.sql` adds one `currencyScaleCheck()`-based
+CHECK per affected amount column across all thirteen tables (twenty-one
+CHECKs total), using the same helper this entry already specified — no new
+deviation ID, no change to the selected implementation, no denominator
+change. Full column-by-column detail: `DB6_MONEY_SCALE_AUDIT.md`. Status
+remains **closed**, now actually true for every money column implemented
+G1–G16, not only G5's two.
+
 ---
 
 ## DEV-DB6-006 — Inline drizzle key shorthands prohibited (naming)
