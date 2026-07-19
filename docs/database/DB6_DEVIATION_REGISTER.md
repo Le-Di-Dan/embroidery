@@ -590,6 +590,12 @@ prospectively by this entry; G14–G17 implement them exactly as written
 **Audit impact.** None — no edge count changes; this closes a
 classification ambiguity, not a missing edge.
 
+**G16 implementation (2026-07-19):** `payment_reconciliations.admin_id`
+(COL-TBL057-07) and `refunds.approved_by_admin_id`/`executed_by_admin_id`
+(COL-TBL058-10) are now implemented exactly as prescribed — bare uuid
+columns, no `foreignKey()` declared, outside REL-105's enumeration. No
+denominator change.
+
 ---
 
 ## Deviations considered and **not** taken

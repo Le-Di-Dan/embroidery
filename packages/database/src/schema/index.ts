@@ -102,3 +102,10 @@ export * from './ordering/shipping-details';
 export * from './ordering/shipping-snapshots';
 export * from './ordering/shipping-fee-acknowledgements';
 export * from './inventory/inventory-reservations';
+
+// G16 — Payment (CTX-PAY)
+export * from './payment/payment-obligations';
+export * from './payment/payment-attempts';
+export * from './payment/payment-provider-events';
+export * from './payment/payment-reconciliations';
+export * from './payment/refunds';

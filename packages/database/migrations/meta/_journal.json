@@ -162,6 +162,20 @@
       "when": 1784464286233,
       "tag": "0023_create_order_reservation_shipping_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1784465977736,
+      "tag": "0024_create_payment_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1784466027899,
+      "tag": "0025_add_payment_obligation_satisfied_by_fk",
+      "breakpoints": true
     }
   ]
 }

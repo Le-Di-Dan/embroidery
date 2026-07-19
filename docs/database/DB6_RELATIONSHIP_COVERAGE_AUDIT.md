@@ -162,6 +162,19 @@ Checker-enforced in `tools/db-metric-check.mjs` (`EXPECTED_FK_EDGES = 164`,
   header↔child cycle (target predates this group) — existence physical,
   same-case chain TX/App, same tier as every other current-pointer
   finding in this engagement.
+- G16 — Payment: no Class-C/D findings for this group beyond the two
+  DEV-DB6-015 reclassifications (`payment_reconciliations.admin_id`,
+  `refunds.approved_by_admin_id`/`executed_by_admin_id`). **Implemented
+  (2026-07-19, DB6-G16):** REL-081/082/083 ×2/084/085 ×2/086/087 ×2/088 ×3
+  are now physical FKs (migration `0024_create_payment_tables.sql`).
+  `payment_obligations.satisfied_by_attempt_id` (REL-083's second edge) is
+  the one deferred-by-cycle resolution this group needed — same
+  header↔child cycle mechanism as REL-044/0016, REL-098/0019 and
+  REL-068/0022, resolved by custom SQL
+  (`0025_add_payment_obligation_satisfied_by_fk.sql`). Existence is
+  physical for all thirteen edges; which attempt wins the satisfaction race
+  (CC-10) stays TX/App, same tier as every other current-pointer finding in
+  this engagement.
 - No physical defect was found in G1–G11 (the already-implemented tables).
   No forward-fix migration is required. DB6-C4 makes **no schema change**.
 

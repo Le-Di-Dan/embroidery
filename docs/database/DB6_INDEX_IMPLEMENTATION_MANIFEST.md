@@ -424,6 +424,7 @@ required indexes remain in the S25 queue, tracked below rather than lost:
 | G9 | IDX-117, IDX-137 | recommended (S25 phase 4) |
 | G10 | IDX-127, IDX-135 | recommended (S25 phase 4) |
 | G11 | IDX-116 | recommended (S25 phase 4) |
+| G16 | IDX-078, IDX-122, IDX-123, IDX-124 | recommended (S25 phase 4) |
 
 Verified in the database after G5: 48 index objects across 21 tables, zero
 duplicates, zero non-conforming names (every constraint and index name carries

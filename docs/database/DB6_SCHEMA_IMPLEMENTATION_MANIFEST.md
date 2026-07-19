@@ -750,20 +750,50 @@ evidence.
   equivalent cross-column arithmetic constraint for the Order group, and
   none is invented here.
 
-### G16 — Payment (CTX-PAY) · planned
+### G16 — Payment (CTX-PAY) · implemented
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-054 | `payment_obligations` | `payment/payment-obligations.ts` | uuid7 | mutable | planned |
-| TBL-055 | `payment_attempts` | `payment/payment-attempts.ts` | uuid7 | mutable | planned |
-| TBL-056 | `payment_provider_events` | `payment/payment-provider-events.ts` | bigint | append | planned |
-| TBL-057 | `payment_reconciliations` | `payment/payment-reconciliations.ts` | bigint | append | planned |
-| TBL-058 | `refunds` | `payment/refunds.ts` | uuid7 | state mutable + amounts immutable | planned |
+| TBL-054 | `payment_obligations` | `payment/payment-obligations.ts` | uuid7 | mutable | implemented |
+| TBL-055 | `payment_attempts` | `payment/payment-attempts.ts` | uuid7 | mutable | implemented |
+| TBL-056 | `payment_provider_events` | `payment/payment-provider-events.ts` | bigint | append | implemented |
+| TBL-057 | `payment_reconciliations` | `payment/payment-reconciliations.ts` | bigint | append | implemented |
+| TBL-058 | `refunds` | `payment/refunds.ts` | uuid7 | state mutable + amounts immutable | implemented |
 
 **DB6-C4 note:** `payment_reconciliations.admin_id` (COL-TBL057-07) and
 `refunds.approved_by_admin_id`/`executed_by_admin_id` (COL-TBL058-10) — per
 DEV-DB6-015, stay no-FK evidence references, same treatment as
 `request_moderation_notes.admin_id` (G9).
+
+**Implementation notes (2026-07-19, DB6-G16):**
+
+- **One header↔child cycle, resolved by custom SQL** — same class as
+  G12/G13/G14, unlike G15's zero-cycle outcome. `payment_attempts.
+  payment_obligation_id → payment_obligations` (REL-084) lives inline in
+  `payment-attempts.ts`; the reverse pointer, `payment_obligations.
+  satisfied_by_attempt_id → payment_attempts` (REL-083, exactly-once
+  application evidence, CC-10), would need a circular module import, so it
+  is added by hand-authored SQL in `0025_add_payment_obligation_satisfied_by_fk.sql`,
+  following the same generated migration (`0024_create_payment_tables.sql`)
+  that created both tables — mirroring `0016`/`0019`/`0022`.
+- `payment_obligations.superseded_by_obligation_id` (REL-083, recalculation
+  chain, ADR-DB3-003 r7) is self-referencing — no cycle, declared inline.
+- **DEV-DB6-015 closed for this group's two forward columns**:
+  `payment_reconciliations.admin_id` and `refunds.approved_by_admin_id`/
+  `executed_by_admin_id` are implemented exactly as the deviation entry
+  prescribed — bare evidence columns, no `foreignKey()`.
+- `payment_reconciliations.resolved_status` and `refunds.method`/
+  `transfer_reference` are documented `[R]`/free-text per DB4's column
+  dictionary; no cross-domain enum was invented for `resolved_status`
+  (DB4 does not define it as its own closed set — it borrows from either
+  LC-15 or LC-16 depending on which target was resolved).
+- CST-100 (refunds amount/target/currency immutable after insert) and
+  CST-117 (refund ≤ reconciled refundable amount) are **not** database
+  mechanisms in this group — same honestly-documented gap as CST-090/092/096
+  for prior groups; S24 owns the immutability trigger, TX/App and DB7-10/
+  D8-03 own the cross-row reconciliation.
+- No `deposit_paid`/`fully_paid` boolean exists anywhere in this group —
+  "fully paid" is derived (both obligations SATISFIED), never stored.
 
 ### G17 — Production (CTX-PRD) · planned
 
@@ -811,12 +841,12 @@ DEV-DB6-015, stays a no-FK evidence reference, same treatment as
 | G13 | 3 | 53 | **implemented** |
 | G14 | 4 | 57 | **implemented** |
 | G15 | 8 | 65 | **implemented** |
-| G16 | 5 | 70 | planned |
+| G16 | 5 | 70 | **implemented** |
 | G17 | 5 | 75 | planned |
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**44 of 78 implemented.**
+**70 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -900,7 +930,8 @@ that register on every run.
 | G13 | 3 | 20 | 12 | 32 | 6 | 38 |
 | G14 | 4 | 37 | 10 | 47 | 9 | 56 |
 | G15 | 8 | 71 | 20 | 91 | 20 | 111 |
-| **Total** | **65** | **440** | **73** | **513** | **171** | **684** |
+| G16 | 5 | 48 | 6 | 54 | 13 | 67 |
+| **Total** | **70** | **488** | **79** | **567** | **184** | **751** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
@@ -1010,12 +1041,12 @@ twice.
 | LC-12 | Quotation | `quotations.status` | G14 | planned |
 | LC-13 | Quotation Version | `quotation_versions.status` | G14 | planned |
 | LC-14 | Order | `orders.status` | G15 | **implemented** |
-| LC-15 | Payment Obligation | `payment_obligations.status` | G16 | planned |
-| LC-16 | Payment Attempt | `payment_attempts.status` | G16 | planned |
+| LC-15 | Payment Obligation | `payment_obligations.status` | G16 | **implemented** |
+| LC-16 | Payment Attempt | `payment_attempts.status` | G16 | **implemented** |
 | LC-17 | Soft Hold, Reservation | `inventory_soft_holds.status`, `inventory_reservations.status` | G10/G15 | **implemented** |
 | LC-18 | Production Job | `production_jobs.status` | G17 | planned |
 | LC-19 | Shipping Details | `shipping_details.status` | G15 | **implemented** |
-| LC-20 | Refund | `refunds.status` | G16 | planned |
+| LC-20 | Refund | `refunds.status` | G16 | **implemented** |
 | LC-21 | Delivery | `orders` delivery fields + `order_transitions` | G15 | **implemented** |
 | LC-22 | Outbox Event | `outbox_events.status` | G2 | **implemented** |
 | LC-23 | Idempotency Record | `idempotency_records.status` | G2 | **implemented** |
@@ -1044,7 +1075,7 @@ Numbering, column names and version keys are taken verbatim from
 | 3 | `design_template_versions.design_document` (COL-TBL035-03) | `document_schema_version` | G7 | planned |
 | 4 | `outbox_events.payload` (COL-TBL073-03) | `payload_schema_version` | **G2** | **implemented** |
 | 5 | `idempotency_records.result` (COL-TBL074-05) | fixed internal shape | **G2** | **implemented** |
-| 6 | `payment_provider_events.redacted_payload` (COL-TBL056-06) | `provider_key` discriminates | G16 | planned |
+| 6 | `payment_provider_events.redacted_payload` (COL-TBL056-06) | `provider_key` discriminates | G16 | **implemented** |
 | 7 | `audit_events.summary` (COL-TBL072-07) | fixed internal shape | G19 | planned |
 | 8 | `notification_intents.params` (COL-TBL070-06) | `template_version` | G18 | planned |
 | 9 | `policy_configuration_versions.value` (COL-TBL077-03) | `value_schema_version` | **G2** | **implemented** |
