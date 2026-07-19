@@ -43,6 +43,7 @@ import {
 import { idColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant, updatedAt } from '../../primitives/temporal';
 import { stateCheck, stateColumn } from '../../primitives/lifecycle-state';
+import { currencyScaleCheck } from '../../primitives/money';
 import { orders } from '../ordering/orders';
 import { quotationVersions } from '../quotation/quotation-versions';
 
@@ -110,6 +111,11 @@ export const paymentObligations = pgTable(
     // CST-063 — obligations amounts are strictly positive.
     check('ck_payment_obligations__amount_positive', sql`${t.amount} > 0`),
     check('ck_payment_obligations__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005).
+    check(
+      'ck_payment_obligations__amount_currency_scale',
+      currencyScaleCheck(t.amount, t.currencyCode),
+    ),
     // COL-TBL054-06/07 — set exactly once on satisfaction (CC-10 race is TX/App).
     check(
       'ck_payment_obligations__satisfied_evidence_required',

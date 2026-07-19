@@ -29,6 +29,7 @@ import { check, foreignKey, numeric, pgTable, primaryKey, text, unique } from 'd
 
 import { idColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant } from '../../primitives/temporal';
+import { currencyScaleCheck } from '../../primitives/money';
 import { orders } from './orders';
 import { shippingDetails } from './shipping-details';
 
@@ -70,5 +71,10 @@ export const shippingSnapshots = pgTable(
     }).onDelete('restrict'),
     check('ck_shipping_snapshots__fee_non_negative', sql`${t.feeAmount} >= 0`),
     check('ck_shipping_snapshots__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005).
+    check(
+      'ck_shipping_snapshots__fee_currency_scale',
+      currencyScaleCheck(t.feeAmount, t.currencyCode),
+    ),
   ],
 );

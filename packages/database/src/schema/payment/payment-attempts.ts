@@ -28,6 +28,7 @@ import { check, foreignKey, index, numeric, pgTable, primaryKey, text } from 'dr
 import { idColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant, updatedAt } from '../../primitives/temporal';
 import { stateCheck, stateColumn } from '../../primitives/lifecycle-state';
+import { currencyScaleCheck } from '../../primitives/money';
 import { paymentObligations } from './payment-obligations';
 import { secureAccessGrants } from '../customer/secure-access-grants';
 import { contactVerificationChallenges } from '../customer/contact-verification-challenges';
@@ -93,6 +94,11 @@ export const paymentAttempts = pgTable(
     // CST-063 — attempt amounts are strictly positive.
     check('ck_payment_attempts__amount_positive', sql`${t.amount} > 0`),
     check('ck_payment_attempts__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005).
+    check(
+      'ck_payment_attempts__amount_currency_scale',
+      currencyScaleCheck(t.amount, t.currencyCode),
+    ),
     // COL-TBL055-11 — [R] REQUIRES_REVIEW entry/resolution context.
     check(
       'ck_payment_attempts__review_reason_required',

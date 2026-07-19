@@ -31,6 +31,7 @@ import { check, foreignKey, numeric, pgTable, primaryKey, text, unique } from 'd
 
 import { sequenceColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant } from '../../primitives/temporal';
+import { currencyScaleCheck } from '../../primitives/money';
 import { quotationVersions } from './quotation-versions';
 import { customers } from '../customer/customers';
 import { secureAccessGrants } from '../customer/secure-access-grants';
@@ -77,5 +78,10 @@ export const quotationAcceptances = pgTable(
     }).onDelete('restrict'),
     check('ck_quotation_acceptances__amount_non_negative', sql`${t.acceptedTotalAmount} >= 0`),
     check('ck_quotation_acceptances__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005).
+    check(
+      'ck_quotation_acceptances__amount_currency_scale',
+      currencyScaleCheck(t.acceptedTotalAmount, t.currencyCode),
+    ),
   ],
 );

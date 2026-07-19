@@ -47,6 +47,7 @@ import {
 import { idColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant, updatedAt } from '../../primitives/temporal';
 import { stateCheck, stateColumn } from '../../primitives/lifecycle-state';
+import { currencyScaleCheck } from '../../primitives/money';
 import { customRequests } from './custom-requests';
 import { customers } from '../customer/customers';
 import { quotationVersions } from '../quotation/quotation-versions';
@@ -121,6 +122,8 @@ export const orders = pgTable(
     check('ck_orders__status_allowed', stateCheck(t.status, ORDER_STATES)),
     check('ck_orders__total_non_negative', sql`${t.totalAmount} >= 0`),
     check('ck_orders__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005).
+    check('ck_orders__total_currency_scale', currencyScaleCheck(t.totalAmount, t.currencyCode)),
     // [R] on ON_HOLD — evidence for why the fulfillment machine paused.
     check(
       'ck_orders__hold_reason_required',

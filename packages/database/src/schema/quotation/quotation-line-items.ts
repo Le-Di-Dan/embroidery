@@ -36,6 +36,7 @@ import {
 
 import { idColumn, idReference } from '../../primitives/identifiers';
 import { createdAt } from '../../primitives/temporal';
+import { currencyScaleCheck } from '../../primitives/money';
 import { quotationVersions } from './quotation-versions';
 import { skus } from '../catalog/skus';
 
@@ -88,5 +89,14 @@ export const quotationLineItems = pgTable(
     check('ck_quotation_line_items__unit_price_non_negative', sql`${t.unitPriceAmount} >= 0`),
     check('ck_quotation_line_items__line_total_non_negative', sql`${t.lineTotalAmount} >= 0`),
     check('ck_quotation_line_items__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005).
+    check(
+      'ck_quotation_line_items__unit_price_currency_scale',
+      currencyScaleCheck(t.unitPriceAmount, t.currencyCode),
+    ),
+    check(
+      'ck_quotation_line_items__line_total_currency_scale',
+      currencyScaleCheck(t.lineTotalAmount, t.currencyCode),
+    ),
   ],
 );

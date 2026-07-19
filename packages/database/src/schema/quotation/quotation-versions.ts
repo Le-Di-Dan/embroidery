@@ -54,6 +54,7 @@ import {
 import { idColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant } from '../../primitives/temporal';
 import { stateCheck, stateColumn } from '../../primitives/lifecycle-state';
+import { currencyScaleCheck } from '../../primitives/money';
 import { quotations } from './quotations';
 
 /** LC-13 version states. Canonical source — see DB3 §"LC-12 / LC-13". */
@@ -153,6 +154,31 @@ export const quotationVersions = pgTable(
       sql`${t.manualAdjustmentAmount} = 0 or ${t.adjustmentReason} is not null`,
     ),
     check('ck_quotation_versions__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005); null-safe (manual_adjustment_amount).
+    check(
+      'ck_quotation_versions__subtotal_currency_scale',
+      currencyScaleCheck(t.subtotalAmount, t.currencyCode),
+    ),
+    check(
+      'ck_quotation_versions__manual_adjustment_currency_scale',
+      currencyScaleCheck(t.manualAdjustmentAmount, t.currencyCode),
+    ),
+    check(
+      'ck_quotation_versions__shipping_fee_currency_scale',
+      currencyScaleCheck(t.shippingFeeAmount, t.currencyCode),
+    ),
+    check(
+      'ck_quotation_versions__total_currency_scale',
+      currencyScaleCheck(t.totalAmount, t.currencyCode),
+    ),
+    check(
+      'ck_quotation_versions__deposit_currency_scale',
+      currencyScaleCheck(t.depositAmount, t.currencyCode),
+    ),
+    check(
+      'ck_quotation_versions__remaining_currency_scale',
+      currencyScaleCheck(t.remainingAmount, t.currencyCode),
+    ),
     // COL-TBL051-18 — validity window; required at send is a TX/App guard.
     check(
       'ck_quotation_versions__validity_window',

@@ -40,6 +40,7 @@ import {
 import { sequenceColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant } from '../../primitives/temporal';
 import { stateCheck } from '../../primitives/lifecycle-state';
+import { currencyScaleCheck } from '../../primitives/money';
 import { paymentAttempts } from './payment-attempts';
 
 /** COL-TBL056-04 closed event-kind set (DB4). */
@@ -100,6 +101,11 @@ export const paymentProviderEvents = pgTable(
     check(
       'ck_payment_provider_events__currency_vnd',
       sql`${t.currencyCode} is null or ${t.currencyCode} = 'VND'`,
+    ),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005); null-safe (both nullable).
+    check(
+      'ck_payment_provider_events__amount_currency_scale',
+      currencyScaleCheck(t.amount, t.currencyCode),
     ),
     // IDX-079 — event timeline, most-recent first.
     index('ix_payment_provider_events__received_id').on(t.receivedAt.desc(), t.id.desc()),

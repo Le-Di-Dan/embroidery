@@ -37,6 +37,7 @@ import { check, foreignKey, numeric, pgTable, primaryKey, text } from 'drizzle-o
 import { idColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant, updatedAt } from '../../primitives/temporal';
 import { stateCheck, stateColumn } from '../../primitives/lifecycle-state';
+import { currencyScaleCheck } from '../../primitives/money';
 import { paymentAttempts } from './payment-attempts';
 import { orders } from '../ordering/orders';
 import { orderCancellationRequests } from '../ordering/order-cancellation-requests';
@@ -96,6 +97,8 @@ export const refunds = pgTable(
     // CST-063 — refund amounts are strictly positive.
     check('ck_refunds__amount_positive', sql`${t.amount} > 0`),
     check('ck_refunds__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005).
+    check('ck_refunds__amount_currency_scale', currencyScaleCheck(t.amount, t.currencyCode)),
     // CST-073 — unevidenced refund execution.
     check(
       'ck_refunds__transfer_reference_required',

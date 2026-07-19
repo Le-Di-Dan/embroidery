@@ -82,6 +82,15 @@ export const paymentReconciliations = pgTable(
       'ck_payment_reconciliations__amount_non_negative',
       sql`${t.amount} is null or ${t.amount} >= 0`,
     ),
+    // DB6-C5 (B2) — this table has no per-row currency_code (it borrows whichever
+    // currency the resolved payment_attempt/payment_obligation carries); every
+    // currency_code column in this schema is closed to 'VND' (DEV-DB6-005), so the
+    // equivalent scale rule is unconditional here rather than the conditional
+    // currencyScaleCheck() form used on tables with their own currency column.
+    check(
+      'ck_payment_reconciliations__amount_currency_scale',
+      sql`${t.amount} is null or ${t.amount} = trunc(${t.amount})`,
+    ),
     // IDX-124 (recommended) deferred to S25 — not implemented in this group.
   ],
 );

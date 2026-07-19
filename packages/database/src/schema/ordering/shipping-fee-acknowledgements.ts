@@ -31,6 +31,7 @@ import { check, foreignKey, numeric, pgTable, primaryKey, text } from 'drizzle-o
 
 import { sequenceColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant } from '../../primitives/temporal';
+import { currencyScaleCheck } from '../../primitives/money';
 import { orders } from './orders';
 import { secureAccessGrants } from '../customer/secure-access-grants';
 import { contactVerificationChallenges } from '../customer/contact-verification-challenges';
@@ -73,5 +74,14 @@ export const shippingFeeAcknowledgements = pgTable(
     ),
     check('ck_shipping_fee_acknowledgements__new_fee_non_negative', sql`${t.newFeeAmount} >= 0`),
     check('ck_shipping_fee_acknowledgements__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005).
+    check(
+      'ck_shipping_fee_acknowledgements__previous_fee_currency_scale',
+      currencyScaleCheck(t.previousFeeAmount, t.currencyCode),
+    ),
+    check(
+      'ck_shipping_fee_acknowledgements__new_fee_currency_scale',
+      currencyScaleCheck(t.newFeeAmount, t.currencyCode),
+    ),
   ],
 );

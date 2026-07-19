@@ -176,6 +176,13 @@
       "when": 1784466027899,
       "tag": "0025_add_payment_obligation_satisfied_by_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1784467646502,
+      "tag": "0026_enforce_vnd_currency_scale",
+      "breakpoints": true
     }
   ]
 }

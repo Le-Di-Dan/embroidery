@@ -33,6 +33,7 @@ import { check, foreignKey, numeric, pgTable, primaryKey, text, unique } from 'd
 import { idColumn, idReference } from '../../primitives/identifiers';
 import { createdAt, instant, updatedAt } from '../../primitives/temporal';
 import { stateCheck, stateColumn } from '../../primitives/lifecycle-state';
+import { currencyScaleCheck } from '../../primitives/money';
 import { orders } from './orders';
 
 export const SHIPPING_DETAIL_STATES = ['EDITABLE', 'FROZEN'] as const;
@@ -76,6 +77,11 @@ export const shippingDetails = pgTable(
       sql`${t.feeAmount} is null or ${t.feeAmount} >= 0`,
     ),
     check('ck_shipping_details__currency_vnd', sql`${t.currencyCode} = 'VND'`),
+    // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005); null-safe (nullable amount).
+    check(
+      'ck_shipping_details__fee_currency_scale',
+      currencyScaleCheck(t.feeAmount, t.currencyCode),
+    ),
     // [R] on FROZEN — the freeze boundary must be evidenced.
     check(
       'ck_shipping_details__frozen_at_required',
