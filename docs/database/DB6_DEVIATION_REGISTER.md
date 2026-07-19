@@ -8,7 +8,7 @@ evidence. DB0–DB5 documents are **not edited**; deviations are additive.
 **Status legend:** `open` · `closed` (implemented + evidenced) ·
 `deferred` (owner named, non-blocking)
 
-**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-012.
+**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-015.
 
 ---
 
@@ -467,6 +467,128 @@ constant and manifest ever disagree.
 **Historical documents.** DB4 unchanged. **Audit impact.** DB7–DB10 use
 158/156 from this point; the 154/152 figure established through DEV-DB6-010
 is superseded by this register entry under the standing scope-guard clause.
+
+---
+
+## DEV-DB6-013 — A third mandated FK edge family absent from the REL model (pre-G13 finding, DB6-C4)
+
+| Field | Value |
+|---|---|
+| Source IDs | DB4_COLUMN_DICTIONARY.md COL-TBL031-05a..05d, DB4_COMPLETENESS_MATRIX.md CON-058..060 (explicitly names TBL-031 alongside TBL-028); DEV-DB6-009's scope guard; DEV-DB6-012 (identical class of gap, same CON-058..060 source, different table) |
+| Nature | **genuinely missing edge family** in the REL model, found by DB6-C4's pre-G12 relationship-coverage audit — a separate deviation per DEV-DB6-009's scope guard |
+| Status | **open — planned owner G13** (target table `approval_snapshots`, TBL-031, not yet implemented; no migration in DB6-C4) |
+
+**Problem.** `approval_snapshots` (TBL-031) freezes four placement references
+— `product_id`, `product_variant_id`, `product_side_id`, `embroidery_area_id`
+(COL-TBL031-05, dictionary note: `"refs (4 columns -05a..-05d)"`) — the same
+placement-VO shape DEV-DB6-012 already resolved for `design_versions`
+(TBL-028). No REL row, `×N` marker, or implied-multiplicity entry covers
+this quartet for TBL-031: `DB4_RELATIONSHIP_AND_FK_MODEL.md`'s Design
+section (REL-044..055) stops at REL-051 (`approval_snapshots.design_version_id`)
+and REL-052/053 (case/request/customer/grant/challenge edges) — none of
+these three rows mention the catalog placement columns.
+
+**Evidence.** `DB4_COMPLETENESS_MATRIX.md` line 26 (`CON-058..060 | Hash /
+Thread color / Placement VOs | hash columns; TBL-032; placement columns on
+TBL-028/031 | C`) names **TBL-031 by ID**, confirming the placement VO is
+mandated on `approval_snapshots` and not merely inferred from column-name
+similarity. Full-text scan of the REL model and the manifest's §2.2 implied
+map found no covering entry.
+
+**Selected implementation (planned, G13).** Four `foreignKey()` FKs to
+`products`/`product_variants`/`product_sides`/`embroidery_areas` (all
+already implemented since G5), `restrict`, following the exact
+DEV-DB6-012/`design_versions` pattern. No deferred-owner ledger row is
+needed — all four target tables already exist before G13 runs, so this is a
+plain native FK set, not a header/child cycle. Denominator moves **158 → 162
+logical edges, 156 → 160 physical FK target** as of this register entry;
+checker-enforced (`tools/db-metric-check.mjs`, `ADDITIONAL_EDGES`).
+
+**Behaviour impact.** None yet — no physical schema exists for TBL-031
+before G13. **Historical documents.** DB4 unchanged. **Audit impact.** DB7+
+must use 162/160 once G13 lands; G13's own execution prompt/report must
+implement these four FKs and mark this entry `closed`.
+
+---
+
+## DEV-DB6-014 — A fourth mandated FK edge, one sibling short of full REL-050/053/070/080/085 coverage (pre-G15 finding, DB6-C4)
+
+| Field | Value |
+|---|---|
+| Source IDs | DB4_COLUMN_DICTIONARY.md COL-TBL049-04a/04b; sibling REL rows REL-050 (design_reviews), REL-053 (approval_snapshots), REL-070 (quotation_acceptances), REL-080 (order_cancellation_requests), REL-085 (payment_attempts) |
+| Nature | **genuinely missing edge**, found by DB6-C4's pre-G12 relationship-coverage audit — the one secure-flow evidence table whose sibling pattern breaks |
+| Status | **open — planned owner G15** (target tables `secure_access_grants` (G10) and `contact_verification_challenges` (G8) already exist; source table `shipping_fee_acknowledgements`, TBL-049, not yet implemented; no migration in DB6-C4) |
+
+**Problem.** Every customer step-up-evidence table in the model carries an
+explicit `grant_id` + `step_up_challenge_id` pair with its own REL row:
+`design_reviews` (REL-050), `approval_snapshots` (REL-053),
+`quotation_acceptances` (REL-070), `order_cancellation_requests` (REL-080),
+`payment_attempts` (REL-085). `shipping_fee_acknowledgements`
+(COL-TBL049-04a/04b, dictionary note: `"secure-flow acknowledgement
+evidence"`) is structurally identical to these five — a customer
+acknowledgement gated by an active grant plus a completed step-up challenge
+— but no REL row names it.
+
+**Evidence.** Full-text scan of `DB4_RELATIONSHIP_AND_FK_MODEL.md` for
+`shipping_fee_acknowledgements`: only the `order_id` edge is covered, as one
+of REL-078's five-way composition list (`order_transitions` /
+`cancellation_requests` / `shipping_details` / `shipping_snapshots` /
+`fee_acknowledgements` → `orders`). No row extends to the grant/challenge
+pair, unlike its five structural siblings above.
+
+**Selected implementation (planned, G15).** Two `foreignKey()` FKs to
+`secure_access_grants` and `contact_verification_challenges` (both already
+implemented since G10/G8), `restrict`, mirroring the five sibling tables'
+treatment. No deferred-owner ledger row needed — both targets predate G15.
+Denominator moves **162 → 164 logical edges, 160 → 162 physical FK target**
+(stacking on DEV-DB6-013 above); checker-enforced.
+
+**Behaviour impact.** None yet — no physical schema exists for TBL-049
+before G15. **Historical documents.** DB4 unchanged. **Audit impact.** DB7+
+must use 164/162 once G15 lands; G15's execution prompt/report must
+implement these two FKs and mark this entry `closed`.
+
+---
+
+## DEV-DB6-015 — Formalizing the bare admin-actor-evidence no-FK pattern (pre-G14..G17 finding, DB6-C4)
+
+| Field | Value |
+|---|---|
+| Source IDs | `request_moderation_notes.admin_id` (G9, see file-level note in `request-moderation-notes.ts`); `customer_merge_cases.requested_by_admin_id` (G10); REL-105's closed enumeration (TBL-042/045/063/072 only) |
+| Nature | **documentation formalization, not a new relationship** — generalizes an already-applied, twice-precedented classification so it does not have to be re-litigated per table |
+| Status | **closed** (rule stated; no schema change; no denominator change) |
+
+**Problem.** DB6-C4's pre-G12 audit found four forward `admin_id`-shaped
+columns with no per-table no-FK rationale written anywhere yet:
+`order_cancellation_requests.decided_by_admin_id` (G15, COL-TBL046-08),
+`payment_reconciliations.admin_id` (G16, COL-TBL057-07),
+`refunds.approved_by_admin_id`/`executed_by_admin_id` (G16, COL-TBL058-10),
+`production_notes.admin_id` (G17, COL-TBL062-03). Each is the same bare
+actor-evidence shape already resolved twice for TBL-041 and TBL-009: a
+column with a dictionary arrow toward `admin_accounts` but no REL row,
+because DB4's REL-105 only FKs actor references on the four tables it
+explicitly enumerates (TBL-042/045/063/072).
+
+**Evidence.** `request-moderation-notes.ts` and `customer-merge-cases.ts`'s
+existing file-level comments state the rule per-column
+("...exactly like the G6 ledger actor refs the review accepted..."), but no
+DB4 or DB6 document states it as a *general* rule applicable to any table
+outside REL-105's list. The four columns above are outside that list, same
+as TBL-041/TBL-009 were.
+
+**Selected implementation.** No schema change (targets not yet
+implemented). This entry states the general rule explicitly so G14–G17 do
+not need to re-derive it column-by-column: **any bare `admin_id`-shaped
+actor-evidence column on a table not named in REL-105 stays a no-FK evidence
+reference (Class B), unless a future DB4 document explicitly adds it to
+REL-105 or a dedicated REL row.** The four forward columns above are
+prospectively Class B under this rule. No FK is added retroactively or
+prospectively by this entry; G14–G17 implement them exactly as written
+(evidence column, no `foreignKey()`), same as TBL-041/TBL-009.
+
+**Behaviour impact.** None. **Historical documents.** DB4 unchanged.
+**Audit impact.** None — no edge count changes; this closes a
+classification ambiguity, not a missing edge.
 
 ---
 

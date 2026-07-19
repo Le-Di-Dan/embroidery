@@ -81,8 +81,8 @@ Four relationship metrics, kept separate and never interchanged:
 |---|---|
 | Relationship ID range | REL-001..105 (105 slots) |
 | Documented REL rows | **92** |
-| Expanded logical FK/reference edges | **158** = 153 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) |
-| Physical FK target | **156** (158 − REL-103 audit polymorphic − REL-104 outbox polymorphic, both no-FK by design) |
+| Expanded logical FK/reference edges | **164** = 153 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) + 4 documented additions (DEV-DB6-013: approval_snapshots placement refs, planned owner G13) + 2 documented additions (DEV-DB6-014: shipping_fee_acknowledgements grant/challenge, planned owner G15) |
+| Physical FK target | **162** (164 − REL-103 audit polymorphic − REL-104 outbox polymorphic, both no-FK by design) |
 | Implemented physical FK constraints | grows per group (parity gate counts these) |
 
 92 `REL-*` rows expand to **153 FK edges**. The original 129 counted only
@@ -106,7 +106,9 @@ run:
 | implied: REL-105 (10 — actor refs on TBL-042/045/063/072) | 1 | 10 |
 | DEV-DB6-010 addition: custom_request_assets → assets (no REL row exists) | — | 1 |
 | DEV-DB6-012 addition: design_versions placement refs — product/variant/side/area (no REL row exists) | — | 4 |
-| **Total** | **92 rows** | **158** |
+| DEV-DB6-013 addition: approval_snapshots placement refs — product/variant/side/area (no REL row exists; planned owner G13) | — | 4 |
+| DEV-DB6-014 addition: shipping_fee_acknowledgements → secure_access_grants / contact_verification_challenges (no REL row exists; planned owner G15) | — | 2 |
+| **Total** | **92 rows** | **164** |
 
 The 26 multi-target rows and their expansions:
 
@@ -143,11 +145,21 @@ No edge is invented for a missing ID; the 13 unassigned IDs stay unassigned.
 The parity gate counts **FK edges**, not `REL-*` rows. Two edges are logical
 only, with **no physical FK by design**: REL-104 (outbox polymorphic
 aggregate reference) and REL-103 (audit polymorphic target) — counted in the
-158 logical edges, excluded from the 156 physical target. Evidence columns
+164 logical edges, excluded from the 162 physical target. Evidence columns
 with **no REL row at all** (ledger actor refs on TBL-019,
-`design_sessions.submitted_request_id`) carry no FK and are outside both
-counts. Also updated in §2 header table: `REL-001..105 → 92 rows → 158
-edges`.
+`design_sessions.submitted_request_id`, and — per DEV-DB6-015 — the bare
+`admin_id`-shaped columns on TBL-046/057/058/062, same class as TBL-041/009)
+carry no FK and are outside both counts. Also updated in §2 header table:
+`REL-001..105 → 92 rows → 164 edges`.
+
+**DB6-C4 addendum (2026-07-19):** DEV-DB6-013 and DEV-DB6-014 were found by
+DB6-C4's pre-G12 relationship-coverage audit, targeting tables not yet
+implemented (`approval_snapshots`/G13, `shipping_fee_acknowledgements`/G15).
+No migration exists for them yet — they are planned-owner entries the same
+way DEV-DB6-011's ledger rows are, and G13/G15 must implement them and mark
+the register entries `closed`. DEV-DB6-015 formalizes (not extends) the
+existing bare-admin-actor no-FK precedent from TBL-041/TBL-009 onto four
+more forward columns; it changes no denominator.
 
 ### 2.2.1. Deferred FK edge ledger (canonical, checker-enforced — DEV-DB6-011)
 
@@ -593,6 +605,12 @@ trigger, no plaintext secret.
 | TBL-032 | `approval_snapshot_thread_colors` | `design/approval-snapshot-thread-colors.ts` | bigint | immutable | planned |
 | TBL-033 | `approval_snapshot_agreement_acceptances` | `design/approval-snapshot-agreement-acceptances.ts` | bigint | immutable | planned |
 
+**DB6-C4 note:** `approval_snapshots` (COL-TBL031-05a..05d) carries the same
+placement-VO quartet (`product_id`/`product_variant_id`/`product_side_id`/
+`embroidery_area_id`) as `design_versions` did before DEV-DB6-012 — DEV-DB6-013
+mandates four native FKs to `products`/`product_variants`/`product_sides`/
+`embroidery_areas` (all already implemented since G5) when G13 builds.
+
 ### G14 — Quotation (CTX-QUO) · planned
 
 | TBL | Table | File | PK | Mut | Status |
@@ -615,6 +633,17 @@ trigger, no plaintext secret.
 | TBL-049 | `shipping_fee_acknowledgements` | `ordering/shipping-fee-acknowledgements.ts` | bigint | append | planned |
 | TBL-021 | `inventory_reservations` | `inventory/inventory-reservations.ts` | uuid7 | mutable | planned |
 
+**DB6-C4 notes:**
+- `shipping_fee_acknowledgements.grant_id`/`.step_up_challenge_id`
+  (COL-TBL049-04a/04b) — DEV-DB6-014 mandates two native FKs to
+  `secure_access_grants`/`contact_verification_challenges` (both already
+  implemented since G10/G8) when G15 builds, matching the sibling
+  REL-050/053/070/080/085 secure-flow evidence tables.
+- `order_cancellation_requests.decided_by_admin_id` (COL-TBL046-08) —
+  per DEV-DB6-015, stays a no-FK evidence reference (bare admin actor,
+  outside REL-105's enumeration), same treatment as
+  `request_moderation_notes.admin_id` (G9).
+
 ### G16 — Payment (CTX-PAY) · planned
 
 | TBL | Table | File | PK | Mut | Status |
@@ -625,6 +654,11 @@ trigger, no plaintext secret.
 | TBL-057 | `payment_reconciliations` | `payment/payment-reconciliations.ts` | bigint | append | planned |
 | TBL-058 | `refunds` | `payment/refunds.ts` | uuid7 | state mutable + amounts immutable | planned |
 
+**DB6-C4 note:** `payment_reconciliations.admin_id` (COL-TBL057-07) and
+`refunds.approved_by_admin_id`/`executed_by_admin_id` (COL-TBL058-10) — per
+DEV-DB6-015, stay no-FK evidence references, same treatment as
+`request_moderation_notes.admin_id` (G9).
+
 ### G17 — Production (CTX-PRD) · planned
 
 | TBL | Table | File | PK | Mut | Status |
@@ -634,6 +668,10 @@ trigger, no plaintext secret.
 | TBL-061 | `production_artifacts` | `production/production-artifacts.ts` | uuid7 | mutable | planned |
 | TBL-062 | `production_notes` | `production/production-notes.ts` | bigint | append | planned |
 | TBL-063 | `production_job_transitions` | `production/production-job-transitions.ts` | bigint | append | planned |
+
+**DB6-C4 note:** `production_notes.admin_id` (COL-TBL062-03) — per
+DEV-DB6-015, stays a no-FK evidence reference, same treatment as
+`request_moderation_notes.admin_id` (G9).
 
 ### G18 — Notification (CTX-NTF) · planned
 

@@ -11,7 +11,7 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const EXPECTED_REL_ROWS = 92;
-const EXPECTED_FK_EDGES = 158;
+const EXPECTED_FK_EDGES = 164;
 
 /**
  * Mandated edges absent from the REL model entirely, each its own deviation
@@ -30,8 +30,16 @@ const EXPECTED_FK_EDGES = 158;
  *   — REL-044..051 stop at the case/version/asset/review/approval edges,
  *   and the ×N/implied maps used for the sibling `design_sessions` row
  *   (REL-040) do not extend to design_versions.
+ * - DEV-DB6-013 (+4, planned owner G13): `approval_snapshots.product_id` /
+ *   `product_variant_id` / `product_side_id` / `embroidery_area_id`
+ *   (COL-TBL031-05a..05d) — the identical placement-VO gap as DEV-DB6-012,
+ *   found by DB6-C4's pre-G12 audit; CON-058..060 names TBL-031 explicitly.
+ * - DEV-DB6-014 (+2, planned owner G15):
+ *   `shipping_fee_acknowledgements.grant_id` / `.step_up_challenge_id`
+ *   (COL-TBL049-04a/04b) — every sibling secure-flow evidence table
+ *   (REL-050/053/070/080/085) has this pair covered; this one alone did not.
  */
-const ADDITIONAL_EDGES = 5;
+const ADDITIONAL_EDGES = 11;
 
 /**
  * DEV-DB6-009: eight DB4 REL rows list multiple targets WITHOUT a ×N marker
@@ -89,7 +97,7 @@ export function checkRelCardinality({ read, docs, fail, note }) {
     .map(([n, c]) => `x${n}:${c}`)
     .join(' ');
   note(
-    `REL: ${seen.size} rows -> ${edges} derived + ${ADDITIONAL_EDGES} added (DEV-DB6-010/012) = ${edges + ADDITIONAL_EDGES} FK edges (${distText})`,
+    `REL: ${seen.size} rows -> ${edges} derived + ${ADDITIONAL_EDGES} added (DEV-DB6-010/012/013/014) = ${edges + ADDITIONAL_EDGES} FK edges (${distText})`,
   );
 }
 

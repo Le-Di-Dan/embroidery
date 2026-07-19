@@ -100,3 +100,53 @@ OVERALL DB6  IN PROGRESS
 ```
 
 Task board: `DB6-G01..G19` = **11/19** (open) · `DB6-S24..S28` open.
+
+## Addendum (DB6-C4) — same-case current-version pointer enforcement
+
+Section E's one-line disclosure ("cross-case pointer ownership is TX/App") is
+expanded here with evidence, per DB6-C4's current-pointer integrity audit.
+Original sections A–H above are unchanged.
+
+**Existence enforcement (physical):** `fk_design_cases__current_version_id`
+(migration `0016`) — `design_cases.current_version_id` must reference an
+existing `design_versions.id` row or be `NULL`. Live-verified: an `UPDATE`
+setting the column to a non-existent UUID is rejected by the FK.
+
+**Same-case ownership enforcement (TX/App, not physical) — live-verified
+gap.** A single-column FK only proves the pointed-to version *exists*; it
+does not prove that version belongs to the *same* Design Case. Reproduced
+live on a disposable database (`embroidery_c4_audit`, dropped after use):
+
+1. Created Design Case A (own Custom Request A) and Design Case B (own
+   Custom Request B, different customer).
+2. Created Design Version `v1` owned by Case B (`design_case_id = B`).
+3. Ran `UPDATE design_cases SET current_version_id = v1.id WHERE id = A.id`.
+4. **Result: the `UPDATE` succeeded.** Case A now points at a version that
+   belongs to Case B. No trigger, composite FK, or CHECK rejects this — the
+   physical schema alone cannot express "the pointed-to row's
+   `design_case_id` equals my own `id`" without a same-table self-referencing
+   composite mechanism DB4 does not define for this edge.
+
+**Canonical classification (not invented — sourced):**
+`DB4_SNAPSHOT_AND_VERSIONING_MODEL.md`, "Design Case → Versions" row,
+explicitly marks REL-044 **"(TX-consistent)"** — DB4 itself classifies this
+edge's ownership guarantee as transaction/application-enforced, not
+database-enforced. No dedicated `GRD-*` entry in
+`DB4_GUARD_SCHEMA_TRACEABILITY.md` names this specific guard by ID (GRD-004
+covers the single-active-review partial unique, GRD-007 covers
+hash/status-binding at approval — both are adjacent but distinct edges); the
+TX-consistent classification is carried directly on the relationship row
+itself. This is a minor documentation-precision gap (no dedicated GRD-ID),
+not a missing guard — DB4 already states the enforcement tier.
+
+**Verdict: TX/App PASS.** The guard is not silently absent; it is DB4's own
+explicit design (`TX-consistent`), the same tier as GRD-006's analogous
+"exact current version acceptance" guard on the Quotation family. Whichever
+service mutates `design_cases.current_version_id` (expected: the design-case
+module, on version send/approve) must set it inside the same transaction
+that reads and validates `design_versions.design_case_id = design_cases.id`
+for the target version. No trigger or composite FK is added here — none is
+canonical, and DB6-C4 does not invent one. This TX/App owner is not yet a
+NestJS module (no feature code has been written per the "no
+repository/service/controller" instruction); it stays open as a DB7
+integration-test target referencing the same row DB4 cites (D7-03/04/15).
