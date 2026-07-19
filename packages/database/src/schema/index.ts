@@ -86,3 +86,9 @@ export * from './content/agreement-versions';
 export * from './design/approval-snapshots';
 export * from './design/approval-snapshot-thread-colors';
 export * from './design/approval-snapshot-agreement-acceptances';
+
+// G14 — Quotation (CTX-QUO)
+export * from './quotation/quotations';
+export * from './quotation/quotation-versions';
+export * from './quotation/quotation-line-items';
+export * from './quotation/quotation-acceptances';

@@ -177,7 +177,7 @@ is marked `implemented` before its target table's creation group has run.
 | ledger → orders | REL-028 | `inventory_ledger_entries` (G6) | `order_id` | `orders` (G15) | **G15** | restrict | deferred |
 | soft_holds → reservations (converted) | REL-030 | `inventory_soft_holds` (G10) | `converted_reservation_id` | `inventory_reservations` (G15) | **G15** | restrict | deferred |
 | request_transitions → grants | REL-105 (TBL-042 subset) | `custom_request_transitions` (G9) | `grant_id` | `secure_access_grants` (G10) | **G10** | restrict | implemented (G10) |
-| design_cases → quotations (current) | REL-062 e2 | `custom_requests` (G9) | `current_quotation_id` | `quotations` (G14) | **G14** | restrict | deferred |
+| design_cases → quotations (current) | REL-062 e2 | `custom_requests` (G9) | `current_quotation_id` | `quotations` (G14) | **G14** | restrict | implemented (G14) |
 | design_cases → design_versions (current) | REL-044 | `design_cases` (G9) | `current_version_id` | `design_versions` (G11) | **G11** | restrict | implemented (G11) |
 
 **Root cause this ledger closes (DEV-DB6-011):** before this table existed,
@@ -680,14 +680,34 @@ or `agreements.current_version_id` (both mutable pointers) — a later
 pointer move does not and cannot (CST-091) change historical approval
 evidence.
 
-### G14 — Quotation (CTX-QUO) · planned
+### G14 — Quotation (CTX-QUO) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-050 | `quotations` | `quotation/quotations.ts` | uuid7 | header | planned |
-| TBL-051 | `quotation_versions` | `quotation/quotation-versions.ts` | uuid7 | immutable-once-sent | planned |
-| TBL-052 | `quotation_line_items` | `quotation/quotation-line-items.ts` | uuid7 | immutable w/ version | planned |
-| TBL-053 | `quotation_acceptances` | `quotation/quotation-acceptances.ts` | bigint | append | planned |
+| TBL-050 | `quotations` | `quotation/quotations.ts` | uuid7 | header | **implemented** |
+| TBL-051 | `quotation_versions` | `quotation/quotation-versions.ts` | uuid7 | immutable-once-sent | **implemented** |
+| TBL-052 | `quotation_line_items` | `quotation/quotation-line-items.ts` | uuid7 | immutable w/ version | **implemented** |
+| TBL-053 | `quotation_acceptances` | `quotation/quotation-acceptances.ts` | bigint | append | **implemented** |
+
+**Implementation notes (2026-07-19, DB6-G14):**
+- REL-062's second edge (`custom_requests.current_quotation_id` →
+  `quotations`, deferred owner G14 per §2.2.1 ledger) and REL-068
+  (`quotations.current_version_id` → `quotation_versions`, an intra-group
+  header↔child cycle) are both implemented by hand-authored custom SQL in
+  `0022_add_quotation_current_version_and_request_pointer_fks.sql` — the
+  same sanctioned mechanism as REL-044/0016 and REL-098/0019. Existence is
+  physical for both pointers; same-quotation/same-request ownership of the
+  pointed-to row stays TX/App (documented "TX consistency" in
+  `DB4_RELATIONSHIP_AND_FK_MODEL.md`), same tier as REL-044/REL-098 — no
+  trigger or composite FK invented.
+- Money columns use `numeric(14,2)` (amounts) / `numeric(5,2)`
+  (`deposit_percent`) with a closed `currency_code = 'VND'` CHECK (ADR-DB4-001).
+  `total_amount = subtotal + manual_adjustment + shipping_fee` and
+  `deposit_amount + remaining_amount = total_amount` are CHECK-enforced
+  (CST-064) — live-verified.
+- IDX-084 (`ix_quotation_versions__valid_until_id__sent`, P0 required) is
+  implemented in this group, not deferred — it is the only launch-required
+  performance index in the G14/G16 register section.
 
 ### G15 — Order & shipping (CTX-ORD) · planned
 
@@ -772,7 +792,7 @@ DEV-DB6-015, stays a no-FK evidence reference, same treatment as
 | G11 | 3 | 44 | **implemented** |
 | G12 | 6 | 50 | **implemented** |
 | G13 | 3 | 53 | **implemented** |
-| G14 | 4 | 57 | planned |
+| G14 | 4 | 57 | **implemented** |
 | G15 | 8 | 65 | planned |
 | G16 | 5 | 70 | planned |
 | G17 | 5 | 75 | planned |
@@ -861,7 +881,8 @@ that register on every run.
 | G11 | 3 | 20 | 9 | 29 | 6 | 35 |
 | G12 | 6 | 38 | 2 | 40 | 17 | 57 |
 | G13 | 3 | 20 | 12 | 32 | 6 | 38 |
-| **Total** | **53** | **332** | **43** | **375** | **142** | **517** |
+| G14 | 4 | 37 | 10 | 47 | 9 | 56 |
+| **Total** | **57** | **369** | **53** | **422** | **151** | **573** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database

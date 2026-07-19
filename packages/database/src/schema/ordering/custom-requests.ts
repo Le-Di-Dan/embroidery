@@ -7,7 +7,9 @@
  * Relationships: REL-060 (→ customers), REL-061 ×2 (→ products/variants,
  * nullable — store-product subject), REL-062 ×2 current pointers:
  * → design_cases (**custom SQL in this group** — header↔child cycle, same
- * mechanism as REL-102/0004) and → quotations (**deferred, owner G14**)
+ * mechanism as REL-102/0004) and → quotations (**implemented in G14** by
+ * custom SQL, same header↔child cycle class — `quotations` did not exist
+ * when this group ran)
  * Indexes: IDX-028 (constraint-created), IDX-073 (P1, with group);
  * IDX-117 (recommended, S25)
  * Owner: Ordering module.
@@ -96,9 +98,10 @@ export const customRequests = pgTable(
       columns: [t.productVariantId],
       foreignColumns: [productVariants.id],
     }).onDelete('restrict'),
-    // REL-062 pointer FKs are NOT declared here: design_cases would be a
-    // module cycle (added by custom SQL in this group's migration) and
-    // quotations does not exist yet (deferred, owner G14).
+    // REL-062 pointer FKs are NOT declared here — both design_cases and
+    // quotations would be module cycles; the design_cases FK was added by
+    // custom SQL in this group's migration, and the quotations FK by custom
+    // SQL in G14's migration once that table existed.
     check('ck_custom_requests__status_allowed', stateCheck(t.status, CUSTOM_REQUEST_STATES)),
     // IDX-073 / Q-21/Q-22 — admin queue: equality on status leads, sort
     // (created_at DESC, id DESC) matches the query direction exactly.

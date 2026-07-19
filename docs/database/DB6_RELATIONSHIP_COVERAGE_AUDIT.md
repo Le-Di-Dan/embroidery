@@ -136,6 +136,19 @@ Checker-enforced in `tools/db-metric-check.mjs` (`EXPECTED_FK_EDGES = 164`,
   hierarchy consistency** (variant/side/area actually belonging to the
   same product) is **TX/App**, not DB-enforced — live-verified, see
   `DB6_G13_GROUP_REPORT.md` §D.
+- G14 — Quotation: no Class-C/D findings for this group (see §3 table, row
+  "G14 — Quotation | 4 | 10 | 0 | 0 | 0"). **Implemented (2026-07-19,
+  DB6-G14):** all 10 Class-A edges (REL-065, REL-066 ×2, REL-067, REL-068,
+  REL-069, REL-070 ×4) are now physical FKs, plus the deferred REL-062
+  second edge (`custom_requests.current_quotation_id` → `quotations`,
+  §2.2.1 ledger, owner G14) — 11 physical FKs total. REL-068 and REL-062 e2
+  both resolved by custom SQL
+  (`0022_add_quotation_current_version_and_request_pointer_fks.sql`), the
+  same header↔child cycle mechanism as REL-044/0016 and REL-098/0019.
+  Existence is physical for all eleven edges; same-quotation ownership of
+  `quotations.current_version_id` and same-request ownership of
+  `custom_requests.current_quotation_id` stay TX/App, same tier already
+  applied to REL-044/REL-098 — see `DB6_G14_GROUP_REPORT.md` §D.
 - No physical defect was found in G1–G11 (the already-implemented tables).
   No forward-fix migration is required. DB6-C4 makes **no schema change**.
 
