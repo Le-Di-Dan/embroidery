@@ -586,16 +586,50 @@ IDX-116 (recommended) → S25. No Quotation/Order/Payment/Inventory field,
 no 3D field, no generic polymorphic asset link, no auto-approve/auto-advance
 trigger, no plaintext secret.
 
-### G12 — Content, gallery, agreement (CTX-CNT / CTX-GAL) · planned
+### G12 — Content, gallery, agreement (CTX-CNT / CTX-GAL) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-066 | `content_pages` | `content/content-pages.ts` | uuid7 | mutable | planned |
-| TBL-067 | `redirect_rules` | `content/redirect-rules.ts` | uuid7 | mutable | planned |
-| TBL-068 | `agreements` | `content/agreements.ts` | uuid7 | header | planned |
-| TBL-069 | `agreement_versions` | `content/agreement-versions.ts` | uuid7 | immutable-once-published | planned |
-| TBL-064 | `gallery_entries` | `gallery/gallery-entries.ts` | uuid7 | mutable | planned |
-| TBL-065 | `gallery_entry_assets` | `gallery/gallery-entry-assets.ts` | uuid7 | mutable | planned |
+| TBL-066 | `content_pages` | `content/content-pages.ts` | uuid7 | mutable | **implemented** |
+| TBL-067 | `redirect_rules` | `content/redirect-rules.ts` | uuid7 | mutable | **implemented** |
+| TBL-068 | `agreements` | `content/agreements.ts` | uuid7 | header | **implemented** |
+| TBL-069 | `agreement_versions` | `content/agreement-versions.ts` | uuid7 | immutable-once-published | **implemented** |
+| TBL-064 | `gallery_entries` | `gallery/gallery-entries.ts` | uuid7 | mutable | **implemented** |
+| TBL-065 | `gallery_entry_assets` | `gallery/gallery-entry-assets.ts` | uuid7 | mutable | **implemented** |
+
+Columns: COL-TBL064-01..10, COL-TBL065-01..03, COL-TBL066-01..09,
+COL-TBL067-01..04, COL-TBL068-01..03, COL-TBL069-01..09 (-08 ×3) ·
+Constraints: CST-001 ×6, CST-011 instance (`uq_gallery_entries__slug`,
+IDX-012), CST-043 instance (`uq_gallery_entry_assets__entry_asset`,
+IDX-050), CST-044 instances (`uq_content_pages__page_type_slug`/IDX-052,
+`uq_redirect_rules__source_path`/IDX-053, `uq_agreements__agreement_type`/
+IDX-054), CST-045 (`uq_agreement_versions__agreement_version`, IDX-055),
+CST-060 ×4 (status/page_type CHECKs), CST-070 instance (content_hash
+format), CST-096 (**S24 trigger candidate, not yet a database mechanism**
+— same treatment as CST-090/`design_versions`)
+Relationships: REL-096 (gallery_entries → products, nullable set-null-cand,
+no index per DB5 catalog rejection entry R15), REL-095 ×2
+(gallery_entry_assets → gallery_entries/assets), REL-097
+(agreement_versions → agreements, restrict), REL-098 (agreements
+.current_version_id → agreement_versions — implemented in this group by
+custom SQL, migration `0018_add_agreement_current_version_fk.sql`, same
+header↔child cycle class as REL-044/0016: declaring it in `agreements.ts`
+would need a circular module import)
+Indexes shipped with the group: IDX-012/050/052/053/054/055
+(constraint-created); IDX-066/067/108 (explicit partial, P0). **CST-046**
+(one-effective-agreement exclusion) remains the documented
+**conditional, not-built** candidate (DB5's own deferral) — not fabricated
+here. No Quotation/Order/Payment/Inventory field, no 3D field, no generic
+polymorphic asset link beyond the reviewed association tables, no
+auto-approve/auto-advance trigger, no plaintext secret.
+
+**Same-agreement current-pointer integrity (DB6-C4 pattern applied):**
+existence enforcement is physical (`fk_agreements__current_version_id`);
+same-agreement ownership of the pointed-to version is **TX/App**, per
+REL-098's own "TX consistency" classification in
+`DB4_RELATIONSHIP_AND_FK_MODEL.md` — the same tier as REL-044
+(`design_cases.current_version_id`, DB6-C4). No trigger or composite FK
+invented; the publish transaction (GRD-008 direction) owns it.
 
 ### G13 — Approval (CTX-DSN) · planned
 
@@ -701,7 +735,7 @@ DEV-DB6-015, stays a no-FK evidence reference, same treatment as
 | G9 | 7 | 37 | **implemented** |
 | G10 | 4 | 41 | **implemented** |
 | G11 | 3 | 44 | **implemented** |
-| G12 | 6 | 50 | planned |
+| G12 | 6 | 50 | **implemented** |
 | G13 | 3 | 53 | planned |
 | G14 | 4 | 57 | planned |
 | G15 | 8 | 65 | planned |
@@ -790,7 +824,8 @@ that register on every run.
 | G9 | 7 | 33 | 7 | 40 | 19 | 59 |
 | G10 | 4 | 27 | 0 | 27 | 11 | 38 |
 | G11 | 3 | 20 | 9 | 29 | 6 | 35 |
-| **Total** | **44** | **274** | **29** | **303** | **119** | **422** |
+| G12 | 6 | 38 | 2 | 40 | 17 | 57 |
+| **Total** | **50** | **312** | **31** | **343** | **136** | **479** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database

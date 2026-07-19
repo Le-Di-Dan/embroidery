@@ -101,6 +101,13 @@ const ROWS: readonly MetricRow[] = [
   ['design_versions', 'G11', 13, 7, 2, 22],
   ['design_version_assets', 'G11', 2, 0, 2, 4],
   ['design_reviews', 'G11', 5, 2, 2, 9],
+  // G12 — Content, gallery, agreement
+  ['gallery_entries', 'G12', 10, 0, 3, 13],
+  ['gallery_entry_assets', 'G12', 3, 0, 3, 6],
+  ['content_pages', 'G12', 9, 0, 3, 12],
+  ['redirect_rules', 'G12', 4, 0, 3, 7],
+  ['agreements', 'G12', 3, 0, 3, 6],
+  ['agreement_versions', 'G12', 9, 2, 2, 13],
 ];
 
 export const COLUMN_METRICS: readonly TableColumnMetric[] = ROWS.map(

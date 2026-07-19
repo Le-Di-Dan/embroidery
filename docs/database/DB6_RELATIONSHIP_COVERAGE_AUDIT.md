@@ -116,7 +116,12 @@ Checker-enforced in `tools/db-metric-check.mjs` (`EXPECTED_FK_EDGES = 164`,
 ## 5. What G12 inherits
 
 - G12's own 6 tables: **zero Class-C findings** — G12 may proceed once this
-  audit is accepted.
+  audit is accepted. **Implemented (2026-07-19, DB6-G12):** all 5 Class-A
+  edges (REL-095 ×2, REL-096, REL-097, REL-098) are now physical FKs; REL-098
+  (`agreements.current_version_id`) resolved by custom SQL
+  (`0019_add_agreement_current_version_fk.sql`), same header↔child cycle
+  mechanism as REL-044/0016 — existence is physical, same-agreement
+  ownership is TX/App (live-verified, see `DB6_G12_GROUP_REPORT.md`).
 - G13, G15, G16, G17 each inherit one or more DB6-C4 notes (added inline in
   `DB6_SCHEMA_IMPLEMENTATION_MANIFEST.md` §3 next to their group's table
   list) specifying the exact FKs (DEV-DB6-013/014) or no-FK treatment

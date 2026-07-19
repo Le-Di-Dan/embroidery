@@ -73,3 +73,11 @@ export * from './customer/customer-merge-events';
 export * from './design/design-versions';
 export * from './design/design-version-assets';
 export * from './design/design-reviews';
+
+// G12 — Content, gallery, agreement (CTX-CNT / CTX-GAL)
+export * from './gallery/gallery-entries';
+export * from './gallery/gallery-entry-assets';
+export * from './content/content-pages';
+export * from './content/redirect-rules';
+export * from './content/agreements';
+export * from './content/agreement-versions';
