@@ -391,10 +391,10 @@ partial index, +1 physical JSONB column.
 ## H. Commits
 
 ```text
-<pending — filled in after commit>
+8a6e5ad — feat(database): implement DB6 schema group G18
 ```
 
-Maximum 2 commits, no amend, no squash, no push, no G19 work.
+Tree clean after commit; no amend, no squash, no push, no G19 work.
 
 ## I. Verdict
 
