@@ -389,16 +389,16 @@ own non-transactional migration step.
 
 ## 7. Current state
 
-After G1..G9 (37 of 78 tables):
+After G1..G10 (41 of 78 tables):
 
 | Metric | Implemented | Selected for launch |
 |---|---|---|
-| PK backing indexes | 37 | 78 |
-| UNIQUE constraint backing | 23 (IDX-001, 003, 010, 011, 013, 014, 015, 016, 019, 021, **022**, 027, **028**, **029**, **030**, 048, 049, **051**, 058, 059, 060, 061, 062) | 50 |
-| Explicit partial unique | 6 (IDX-002, 004, 005, **006**, 020, 064) | 13 |
-| Explicit performance | 16 (IDX-065, 068, 069, 070, 071, **073**, 085, 086, 087, 099, **100**, 111, 112, 115, 133, 134) | 70 |
-| **Physical indexes** | **82** | **211** |
-| `IDX-*` entries satisfied | 45 | 133 of 134 |
+| PK backing indexes | 41 | 78 |
+| UNIQUE constraint backing | 24 (IDX-001, 003, 007, 010, 011, 013, 014, 015, 016, 019, 021, **022**, 027, **028**, **029**, **030**, 048, 049, **051**, 058, 059, 060, 061, 062) | 50 |
+| Explicit partial unique | 9 (IDX-002, 004, 005, **006**, **008**, **009**, **017**, 020, 064) | 13 |
+| Explicit performance | 21 (IDX-065, 068, 069, 070, 071, **073**, 085, 086, 087, 099, **100**, **105**, **106**, **107**, **109**, **113**, 111, 112, 115, 133, 134) | 70 |
+| **Physical indexes** | **95** | **211** |
+| `IDX-*` entries satisfied | 54 | 133 of 134 |
 
 G6 honoured the DB5 hot-table budgets: `sku_stocks` carries **PK + IDX-016
 only** (the lock anchor — `EXPLAIN` shows `Index Scan using uq_sku_stocks__sku`
@@ -422,6 +422,7 @@ required indexes remain in the S25 queue, tracked below rather than lost:
 | G7 | — none pending | IDX-085 shipped with the group; no recommended tier exists |
 | G8 | IDX-130 | recommended (S25 phase 4) |
 | G9 | IDX-117, IDX-137 | recommended (S25 phase 4) |
+| G10 | IDX-127, IDX-135 | recommended (S25 phase 4) |
 
 Verified in the database after G5: 48 index objects across 21 tables, zero
 duplicates, zero non-conforming names (every constraint and index name carries

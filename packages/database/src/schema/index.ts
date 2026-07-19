@@ -62,3 +62,9 @@ export * from './ordering/custom-request-assets';
 export * from './ordering/request-moderation-notes';
 export * from './ordering/custom-request-transitions';
 export * from './design/design-cases';
+
+// G10 — Secure grants, inventory soft holds, customer merge (CTX-CUS / CTX-INV)
+export * from './customer/secure-access-grants';
+export * from './inventory/inventory-soft-holds';
+export * from './customer/customer-merge-cases';
+export * from './customer/customer-merge-events';

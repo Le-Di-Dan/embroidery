@@ -6,10 +6,9 @@
  * Columns: COL-TBL042-01..06 (-02 ×2, -03 ×5) · Constraints: CST-001,
  * CST-060 family (from/to in the LC-11 set), CST-098 (append-only, S24)
  * Relationships: REL-063 (fifth edge — → custom_requests) · REL-105 actor
- * edges for this table: admin_id → admin_accounts and customer_id →
- * customers **implemented now**; grant_id → secure_access_grants
- * **deferred, owner G10** (target table does not exist yet — nullable
- * column present, FK follows the DB4_DB6_HANDOFF nullable-ref pattern)
+ * edges for this table: admin_id → admin_accounts, customer_id →
+ * customers, and grant_id → secure_access_grants — **all three implemented
+ * now** (grant_id resolved in G10; target table created there)
  * Indexes: IDX-100 (P1, with group — QX-01 timeline; the table's only
  * non-PK index, append-heavy)
  * Owner: Ordering module.
@@ -30,6 +29,7 @@ import { stateCheck } from '../../primitives/lifecycle-state';
 import { customRequests, CUSTOM_REQUEST_STATES } from './custom-requests';
 import { adminAccounts } from '../identity/admin-accounts';
 import { customers } from '../customer/customers';
+import { secureAccessGrants } from '../customer/secure-access-grants';
 
 export const customRequestTransitions = pgTable(
   'custom_request_transitions',
@@ -66,7 +66,12 @@ export const customRequestTransitions = pgTable(
       columns: [t.customerId],
       foreignColumns: [customers.id],
     }).onDelete('restrict'),
-    // grant_id FK lands with G10 (secure_access_grants does not exist yet).
+    // REL-105 — resolved (G10): the grant this action was authorized under.
+    foreignKey({
+      name: 'fk_custom_request_transitions__grant_id',
+      columns: [t.grantId],
+      foreignColumns: [secureAccessGrants.id],
+    }).onDelete('restrict'),
     check(
       'ck_custom_request_transitions__from_status_allowed',
       stateCheck(t.fromStatus, CUSTOM_REQUEST_STATES),

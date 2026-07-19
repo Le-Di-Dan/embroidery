@@ -92,6 +92,11 @@ const ROWS: readonly MetricRow[] = [
   ['request_moderation_notes', 'G9', 4, 0, 2, 6],
   ['custom_request_transitions', 'G9', 6, 5, 2, 13],
   ['design_cases', 'G9', 2, 0, 3, 5],
+  // G10 — Grants, holds, merge
+  ['secure_access_grants', 'G10', 9, 0, 3, 12],
+  ['inventory_soft_holds', 'G10', 7, 0, 3, 10],
+  ['customer_merge_cases', 'G10', 6, 0, 3, 9],
+  ['customer_merge_events', 'G10', 5, 0, 2, 7],
 ];
 
 export const COLUMN_METRICS: readonly TableColumnMetric[] = ROWS.map(

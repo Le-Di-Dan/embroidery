@@ -5,10 +5,11 @@
  * Columns: COL-TBL019-01..09 (-09 ×3 → 11 business columns)
  * Constraints: CST-001, CST-062 (quantity > 0), CST-071 (ADJUSTMENT → reason),
  * entry-kind closed set, CST-098 (**append-only trigger target, S24**)
- * Relationships: REL-027 (→ sku_stocks, now) · REL-028 ×3 (→ soft_holds,
- * → reservations, → orders) — **all three deferred**: targets are created in
- * G10/G15, the nullable columns exist now and the FKs land with their owner
- * groups (DB4_DB6_HANDOFF §1 nullable-ref pattern)
+ * Relationships: REL-027 (→ sku_stocks, now) · REL-028 ×3 (→ soft_holds
+ * **implemented now (G10)**, → reservations, → orders — **both still
+ * deferred, owner G15** per DEV-DB6-011: `inventory_reservations` and
+ * `orders` are G15-created tables; the nullable columns exist now and the
+ * FKs land with G15)
  * Indexes: IDX-115 — the table's **only** non-PK index; the ledger is
  * append-heavy and DB5 caps it deliberately
  * Owner: Inventory module.
@@ -38,6 +39,7 @@ import { sequenceColumn, idReference } from '../../primitives/identifiers';
 import { createdAt } from '../../primitives/temporal';
 import { stateCheck } from '../../primitives/lifecycle-state';
 import { skuStocks } from './sku-stocks';
+import { inventorySoftHolds } from './inventory-soft-holds';
 
 /** COL-TBL019-02 closed movement-kind set (DB4). A type, not a lifecycle. */
 export const INVENTORY_ENTRY_KINDS = [
@@ -79,7 +81,14 @@ export const inventoryLedgerEntries = pgTable(
       columns: [t.skuStockId],
       foreignColumns: [skuStocks.id],
     }).onDelete('restrict'),
-    // REL-028 FKs (soft_hold_id / reservation_id / order_id) land in G10/G15.
+    // REL-028 — resolved (G10): soft_hold_id target table now exists.
+    foreignKey({
+      name: 'fk_inventory_ledger_entries__soft_hold_id',
+      columns: [t.softHoldId],
+      foreignColumns: [inventorySoftHolds.id],
+    }).onDelete('restrict'),
+    // REL-028 FKs (reservation_id / order_id) remain deferred, owner G15
+    // (DEV-DB6-011): inventory_reservations / orders do not exist yet.
     check(
       'ck_inventory_ledger_entries__entry_kind_allowed',
       stateCheck(t.entryKind, INVENTORY_ENTRY_KINDS),

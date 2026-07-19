@@ -487,14 +487,48 @@ resolve/create customer + contact → request + children + design case →
 outbox → commit; idempotency via CST-048 (`request.submit`, CC-18); DB8
 owns duplicate-submission and pointer races.
 
-### G10 — Grants, holds, merge (CTX-CUS / CTX-INV) · planned
+### G10 — Grants, holds, merge (CTX-CUS / CTX-INV) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-008 | `secure_access_grants` | `customer/secure-access-grants.ts` | uuid7 | mutable | planned |
-| TBL-020 | `inventory_soft_holds` | `inventory/inventory-soft-holds.ts` | uuid7 | mutable | planned |
-| TBL-009 | `customer_merge_cases` | `customer/customer-merge-cases.ts` | uuid7 | mutable | planned |
-| TBL-010 | `customer_merge_events` | `customer/customer-merge-events.ts` | bigint | append | planned |
+| TBL-008 | `secure_access_grants` | `customer/secure-access-grants.ts` | uuid7 | mutable | implemented |
+| TBL-020 | `inventory_soft_holds` | `inventory/inventory-soft-holds.ts` | uuid7 | mutable | implemented |
+| TBL-009 | `customer_merge_cases` | `customer/customer-merge-cases.ts` | uuid7 | mutable | implemented |
+| TBL-010 | `customer_merge_events` | `customer/customer-merge-events.ts` | bigint | append | implemented |
+
+G10 traceability: COL-TBL008-01..09, COL-TBL020-01..07, COL-TBL009-01..06,
+COL-TBL010-01..05 — **27 logical COL IDs → 27 business columns + 11
+convention columns (4 id, 4 created_at, 3 updated_at — none on the
+append-only `customer_merge_events`) = 38 physical columns** (12/10/9/7).
+REL-009 + REL-010 + REL-011 (grants, incl. self-referencing reissue chain)
++ REL-012 ×2 (merge_cases → customers) + REL-013 (merge_events →
+merge_cases) + REL-029 ×2 (soft_holds → sku_stocks / custom_requests) →
+**8 native FK edges implemented**, plus the two owner-G10 deferred
+resolutions (**+2**: `inventory_ledger_entries.soft_hold_id`,
+`custom_request_transitions.grant_id`) = **10 physical FKs added in
+G10**. REL-030 (`inventory_soft_holds.converted_reservation_id` →
+`inventory_reservations`) remains **deferred, owner G15** per
+DEV-DB6-011 §2.2.1 — the nullable column exists now, no FK, no
+Reservation table. `customer_merge_cases.requested_by_admin_id` carries
+**no REL row and no FK** (REL-105's actor-evidence enumeration lists only
+TBL-042/045/063/072, not TBL-009 — same evidence class already accepted
+for `inventory_ledger_entries.admin_id` and
+`request_moderation_notes.admin_id`). Constraints: CST-008 (IDX-007, UQ
+token_hash), CST-009 (IDX-008, LC-03 pUQ single active grant), CST-010
+(IDX-009, pUQ one open merge/pair), CST-015 (IDX-017, LC-17 pUQ one held
+hold/pair), CST-069 second instance (`ck_customer_merge_cases__no_self_merge`
+— the first instance guards `customers.merged_into_customer_id`, G3),
+scope_kind closed set (single value `REQUEST_ACCESS`), step_kind closed
+set (4 values), quantity > 0, revoke/release-reason-required conditionals.
+CST-116 (grant active/scope/step-up check) and CST-111 (official
+reservation gate) are **TX/App-only** — no CHECK can arbitrate a
+wall-clock or cross-context race. Indexes shipped with the group:
+IDX-007/008/009/017 (constraint-created) + IDX-105/106/107 (grants,
+P0/P1) + IDX-109/113 (holds, P0/P1); IDX-127/135 (recommended) → S25. No
+Secure Grant plaintext token, no Customer-account field, no auto-merge
+trigger, no stored available/reserved/low-stock quantity, and no
+`inventory_reservations` table, lifecycle constant, constraint or index
+of any kind.
 
 ### G11 — Design formal (CTX-DSN) · planned
 
@@ -591,7 +625,7 @@ owns duplicate-submission and pointer races.
 | G7 | 5 | 28 | **implemented** |
 | G8 | 2 | 30 | **implemented** |
 | G9 | 7 | 37 | **implemented** |
-| G10 | 4 | 41 | planned |
+| G10 | 4 | 41 | **implemented** |
 | G11 | 3 | 44 | planned |
 | G12 | 6 | 50 | planned |
 | G13 | 3 | 53 | planned |
@@ -602,7 +636,7 @@ owns duplicate-submission and pointer races.
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**37 of 78 implemented.**
+**41 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -680,7 +714,8 @@ that register on every run.
 | G7 | 5 | 27 | 6 | 33 | 14 | 47 |
 | G8 | 2 | 12 | 0 | 12 | 5 | 17 |
 | G9 | 7 | 33 | 7 | 40 | 19 | 59 |
-| **Total** | **37** | **227** | **20** | **247** | **102** | **349** |
+| G10 | 4 | 27 | 0 | 27 | 11 | 38 |
+| **Total** | **41** | **254** | **20** | **274** | **113** | **387** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
