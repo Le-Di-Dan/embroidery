@@ -78,6 +78,13 @@
       "when": 1784444003918,
       "tag": "0010_add_deferred_session_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784445013562,
+      "tag": "0011_create_contact_verification_tables",
+      "breakpoints": true
     }
   ]
 }

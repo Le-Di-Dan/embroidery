@@ -49,3 +49,7 @@ export * from './design/design-template-versions';
 export * from './design/design-template-assets';
 export * from './design/design-sessions';
 export * from './design/design-session-assets';
+
+// G8 — Contact verification (CTX-CUS)
+export * from './customer/contact-verification-challenges';
+export * from './customer/contact-verification-attempts';

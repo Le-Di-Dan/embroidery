@@ -377,12 +377,40 @@ autosave). S24 trigger target: TBL-035 immutable-once-published, scoped
 `WHEN (published_at IS NOT NULL)`. 2D-only honoured — no 3D/mesh/camera
 field exists.
 
-### G8 — Verification (CTX-CUS) · planned
+### G8 — Verification (CTX-CUS) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-006 | `contact_verification_challenges` | `customer/contact-verification-challenges.ts` | uuid7 | temp | planned |
-| TBL-007 | `contact_verification_attempts` | `customer/contact-verification-attempts.ts` | bigint | append | planned |
+| TBL-006 | `contact_verification_challenges` | `customer/contact-verification-challenges.ts` | uuid7 | temp | **implemented** |
+| TBL-007 | `contact_verification_attempts` | `customer/contact-verification-attempts.ts` | bigint | append | **implemented** |
+
+G8 traceability: COL-TBL006-01..09 + COL-TBL007-01..03 — **12 logical IDs +
+0 expansions = 12 business + 5 convention (no `updated_at` on the append
+table) = 17 physical** (12/5). REL edges: REL-006 (→ contact_points,
+**nullable — verification precedes customer creation**, ADR-DB2-001; restrict
+because contact points are anonymize-class), REL-007 (→ design_sessions,
+**SET NULL** — hard-TTL parent, same `set-null-cand` reasoning as the
+REL-033 session edge), REL-008 (attempts → challenges, **cascade-temp** —
+the transient family is hard-TTL-deleted together) = **3 physical FKs**.
+Constraints: CST-007 (IDX-006 — the CC-17 single-open-challenge arbiter on
+(kind, normalized_value, purpose) WHERE ISSUED), CST-060 (LC-02
+ISSUED/VERIFIED/FAILED/EXPIRED/CANCELLED), purpose closed set
+(SUBMISSION/STEP_UP), contact-kind closed set, attempt outcome closed set
+(MATCH/MISMATCH/EXPIRED_AT_ENTRY). **Security shape:** `code_hash` is the
+only secret representation — opaque one-way value with **no format CHECK
+(CST-070 does not cover it), no algorithm/salt/version columns (DB4 defines
+none), no index and no hash-lookup path** (low-entropy guardrail: lookup is
+by id or target+purpose); no plaintext code/OTP/password column exists
+(scanned = 0); hashing/KDF and constant-time compare are app-security-owned.
+Rate limiting is **derived** from attempt rows over IDX-111 (GRD-026) — no
+stored counter, lockout state or next-attempt column, none invented; no
+IP/device metadata. Expiry does not self-remove rows from the CST-007
+partial index: the issue tx marks stale rows EXPIRED then inserts, handling
+23505 (verified in smoke). Indexes: IDX-006 (explicit pUQ), IDX-112 (P0
+expiry sweep), IDX-111 (P0, the append table's only non-PK index); IDX-130
+(recommended) → S25. S24 target: CST-098 append-only trigger on attempts.
+DB8 targets: duplicate-issue race, verify-vs-expire, double-consume (smoke
+shows first conditional transition UPDATE 1, second UPDATE 0).
 
 ### G9 — Request (CTX-ORD / CTX-DSN) · planned
 
@@ -498,7 +526,7 @@ field exists.
 | G5 | 7 | 21 | **implemented** |
 | G6 | 2 | 23 | **implemented** |
 | G7 | 5 | 28 | **implemented** |
-| G8 | 2 | 30 | planned |
+| G8 | 2 | 30 | **implemented** |
 | G9 | 7 | 37 | planned |
 | G10 | 4 | 41 | planned |
 | G11 | 3 | 44 | planned |
@@ -511,7 +539,7 @@ field exists.
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**28 of 78 implemented.**
+**30 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -587,7 +615,8 @@ that register on every run.
 | G5 | 7 | 52 | 2 | 54 | 21 | 75 |
 | G6 | 2 | 12 | 2 | 14 | 5 | 19 |
 | G7 | 5 | 27 | 6 | 33 | 14 | 47 |
-| **Total** | **28** | **182** | **13** | **195** | **78** | **273** |
+| G8 | 2 | 12 | 0 | 12 | 5 | 17 |
+| **Total** | **30** | **194** | **13** | **207** | **83** | **290** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
@@ -763,6 +792,7 @@ no guard ever reads inside a payload.
 | `0008_create_inventory_core_tables.sql` | G6 | 2 tables, 2 PK, 1 UQ, 5 CK, 2 FK, IDX-115 | **applied** |
 | `0009_create_design_prerequest_tables.sql` | G7 | 5 tables, 5 PK, 5 UQ, 3 CK, 14 FK, IDX-085 | **applied** |
 | `0010_add_deferred_session_fk.sql` | G7 | REL-033 deferred edge, **custom SQL**, ON DELETE SET NULL | **applied** |
+| `0011_create_contact_verification_tables.sql` | G8 | 2 tables, 2 PK, 4 CK, 3 FK, IDX-006/111/112 | **applied** |
 | … | G3..G19 | one migration per group | planned |
 | custom SQL | S24 | triggers + functions (immutability, append-only, outbox column-scope, actor consistency) | planned |
 | index migration(s) | S25 | explicit performance indexes | planned |

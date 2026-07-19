@@ -207,6 +207,23 @@ export const COLUMN_METRICS: readonly TableColumnMetric[] = [
     convention: 3,
     physical: 5,
   },
+  // G8 — Contact verification
+  {
+    table: 'contact_verification_challenges',
+    group: 'G8',
+    logicalIds: 9,
+    expansions: 0,
+    convention: 3,
+    physical: 12,
+  },
+  {
+    table: 'contact_verification_attempts',
+    group: 'G8',
+    logicalIds: 3,
+    expansions: 0,
+    convention: 2,
+    physical: 5,
+  },
   // G6 — Inventory core
   { table: 'sku_stocks', group: 'G6', logicalIds: 3, expansions: 0, convention: 3, physical: 6 },
   {
