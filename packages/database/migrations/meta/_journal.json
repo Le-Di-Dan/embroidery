@@ -85,6 +85,20 @@
       "when": 1784445013562,
       "tag": "0011_create_contact_verification_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784445959010,
+      "tag": "0012_create_request_and_design_case_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1784445960089,
+      "tag": "0013_add_request_design_case_pointer_fk",
+      "breakpoints": true
     }
   ]
 }

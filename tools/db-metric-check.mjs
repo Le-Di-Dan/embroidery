@@ -11,7 +11,18 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const EXPECTED_REL_ROWS = 92;
-const EXPECTED_FK_EDGES = 153;
+const EXPECTED_FK_EDGES = 154;
+
+/**
+ * DEV-DB6-010: one mandated edge is absent from the REL model entirely —
+ * `custom_request_assets → assets`. Every other asset-association table has
+ * an explicit ×2 REL row covering both edges (REL-025/042/048/057/095);
+ * TBL-040 was bundled into REL-063's five →custom_requests edges and its
+ * asset edge was dropped. ADR-DB4-003 and CST-043 mandate it, so it is
+ * implemented and counted here as a documented addition on top of the
+ * derived row expansion.
+ */
+const ADDITIONAL_EDGES = 1;
 
 /**
  * DEV-DB6-009: eight DB4 REL rows list multiple targets WITHOUT a ×N marker
@@ -58,14 +69,19 @@ export function checkRelCardinality({ read, docs, fail, note }) {
   if (seen.size !== EXPECTED_REL_ROWS) {
     fail(`DB4 defines ${seen.size} REL rows, manifest claims ${EXPECTED_REL_ROWS}`);
   }
-  if (edges !== EXPECTED_FK_EDGES) {
-    fail(`DB4 REL rows expand to ${edges} FK edges, manifest claims ${EXPECTED_FK_EDGES}`);
+  const totalEdges = edges + ADDITIONAL_EDGES;
+  if (totalEdges !== EXPECTED_FK_EDGES) {
+    fail(
+      `DB4 REL rows expand to ${edges} + ${ADDITIONAL_EDGES} documented additions = ${totalEdges}, manifest claims ${EXPECTED_FK_EDGES}`,
+    );
   }
   const distText = Object.entries(dist)
     .sort(([a], [b]) => Number(a) - Number(b))
     .map(([n, c]) => `x${n}:${c}`)
     .join(' ');
-  note(`REL: ${seen.size} rows -> ${edges} FK edges (${distText})`);
+  note(
+    `REL: ${seen.size} rows -> ${edges} derived + ${ADDITIONAL_EDGES} added (DEV-DB6-010) = ${edges + ADDITIONAL_EDGES} FK edges (${distText})`,
+  );
 }
 
 /**
@@ -165,9 +181,8 @@ export function checkForbiddenIndexReferences({
  */
 export function checkColumnMetrics({ read, packagesDir, schemaManifest, fail, note }) {
   const registerSource = read(join(packagesDir, 'database', 'src', 'schema', 'column-metrics.ts'));
-  // Whitespace-tolerant: prettier may wrap register rows across lines.
-  const rowRe =
-    /table:\s*'([a-z_]+)',\s*group:\s*'(G\d+)',\s*logicalIds:\s*(\d+),\s*expansions:\s*(\d+),\s*convention:\s*(\d+),\s*physical:\s*(\d+)/g;
+  // Tuple rows: ['table', 'G1', ids, expansions, convention, physical],
+  const rowRe = /\['([a-z_]+)',\s*'(G\d+)',\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\]/g;
   const rows = [];
   for (const m of registerSource.matchAll(rowRe)) {
     rows.push({

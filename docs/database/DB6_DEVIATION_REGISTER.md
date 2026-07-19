@@ -8,7 +8,7 @@ evidence. DB0–DB5 documents are **not edited**; deviations are additive.
 **Status legend:** `open` · `closed` (implemented + evidenced) ·
 `deferred` (owner named, non-blocking)
 
-**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-009.
+**Blocking count: 0.** Deviations recorded: DEV-DB6-001 … DEV-DB6-010.
 
 ---
 
@@ -310,6 +310,43 @@ silently-missing FKs at G9/G11/G16/G17/G19 where the implied rows land.
 **Historical documents.** DB4 unchanged; DB6-C1's 129 superseded by this
 register entry, not rewritten. **Audit impact.** DB7–DB10 size FK coverage
 from 153/151, not 129/128.
+
+---
+
+## DEV-DB6-010 — One mandated FK edge absent from the REL model
+
+| Field | Value |
+|---|---|
+| Source IDs | ADR-DB4-003 (context-specific asset associations), CST-043 / IDX-051, REL-063, TBL-040 |
+| Nature | **genuinely missing edge** in the REL model — a separate deviation per DEV-DB6-009's scope guard, not a counting reinterpretation |
+| Status | **closed** (edge implemented in G9) |
+
+**Problem.** `custom_request_assets` needs two FK edges like every other
+asset-association table, but the REL model gives it only one. Every sibling
+association has an explicit ×2 (or curated) row covering both edges —
+REL-025 (product_media), REL-042 (session assets), REL-048 (version
+assets), REL-057 (template assets), REL-095 (gallery assets). TBL-040 was
+instead bundled into REL-063's five `→ custom_requests` composition edges,
+and its `→ assets` edge appears nowhere. Without it, an association row
+could reference a deleted asset — exactly the dangling-evidence failure the
+tombstone flow exists to prevent.
+
+**Evidence.** Full-text REL-063 row lists only `→ custom_requests`; no other
+REL row mentions `custom_request_assets`; ADR-DB4-003 and CST-043
+(`(request, asset, role)` unique) both presuppose the asset reference.
+
+**Selected implementation.** `fk_custom_request_assets__asset_id`
+(restrict, matching every sibling association) implemented in G9 migration
+`0012`. Checker counts it as a **documented addition** on top of the derived
+expansion: totals move **153 → 154 logical edges, 151 → 152 physical FK
+target**, and the checker fails if the addition constant and manifest ever
+disagree.
+
+**Behaviour impact.** None — the edge was always semantically mandated.
+**Historical documents.** DB4 unchanged. **Audit impact.** DB7–DB10 use
+154/152 from this point; the review-locked 153/151 is superseded by this
+register entry under the standing scope-guard clause ("a genuinely missing
+edge gets its own deviation").
 
 ---
 

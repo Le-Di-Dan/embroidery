@@ -43,7 +43,7 @@ decision).
 | Artifact | Range claimed by DB4/DB5 | IDs actually defined | Unassigned IDs | Physical objects |
 |---|---|---|---|---|
 | Tables `TBL-*` | TBL-001..078 | **78** | none | 78 tables |
-| Relationships `REL-*` | REL-001..105 | **92 rows** | **13** | **153 FK edges** (DEV-DB6-009) |
+| Relationships `REL-*` | REL-001..105 | **92 rows** | **13** | **154 FK edges** (DEV-DB6-009/010) |
 | Constraints `CST-*` | CST-001..125 | **94** (92 table rows + CST-001/060 blanket prose) | **31** | see §5 |
 | Indexes `IDX-*` | IDX-001..138 | **134** | 4 (retired, documented by DB5) | see index manifest |
 | Lifecycles | 29 lifecycles | **23 `LC-*` IDs** covering 29 state machines | none | 25 status columns |
@@ -81,8 +81,8 @@ Four relationship metrics, kept separate and never interchanged:
 |---|---|
 | Relationship ID range | REL-001..105 (105 slots) |
 | Documented REL rows | **92** |
-| Expanded logical FK/reference edges | **153** (corrected by DEV-DB6-009; was 129) |
-| Physical FK target | **151** (153 − REL-103 audit polymorphic − REL-104 outbox polymorphic, both no-FK by design) |
+| Expanded logical FK/reference edges | **154** = 153 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) |
+| Physical FK target | **152** (154 − REL-103 audit polymorphic − REL-104 outbox polymorphic, both no-FK by design) |
 | Implemented physical FK constraints | grows per group (parity gate counts these) |
 
 92 `REL-*` rows expand to **153 FK edges**. The original 129 counted only
@@ -104,7 +104,8 @@ run:
 | implied: REL-050, REL-057, REL-088, REL-102 (3 each) | 4 | 12 |
 | implied: REL-040, REL-094 (4 each) | 2 | 8 |
 | implied: REL-105 (10 — actor refs on TBL-042/045/063/072) | 1 | 10 |
-| **Total** | **92** | **153** |
+| DEV-DB6-010 addition: custom_request_assets → assets (no REL row exists) | — | 1 |
+| **Total** | **92 rows** | **154** |
 
 The 26 multi-target rows and their expansions:
 
@@ -141,7 +142,7 @@ No edge is invented for a missing ID; the 13 unassigned IDs stay unassigned.
 The parity gate counts **FK edges**, not `REL-*` rows. Two edges are logical
 only, with **no physical FK by design**: REL-104 (outbox polymorphic
 aggregate reference) and REL-103 (audit polymorphic target) — counted in the
-153 logical edges, excluded from the 151 physical target. Evidence columns
+154 logical edges, excluded from the 152 physical target. Evidence columns
 with **no REL row at all** (ledger actor refs on TBL-019,
 `design_sessions.submitted_request_id`) carry no FK and are outside both
 counts. Also updated in §2 header table: `REL-001..105 → 92 rows → 153
@@ -412,17 +413,51 @@ expiry sweep), IDX-111 (P0, the append table's only non-PK index); IDX-130
 DB8 targets: duplicate-issue race, verify-vs-expire, double-consume (smoke
 shows first conditional transition UPDATE 1, second UPDATE 0).
 
-### G9 — Request (CTX-ORD / CTX-DSN) · planned
+### G9 — Request (CTX-ORD / CTX-DSN) · **implemented**
 
 | TBL | Table | File | PK | Mut | Status |
 |---|---|---|---|---|---|
-| TBL-037 | `custom_requests` | `ordering/custom-requests.ts` | uuid7 | mutable | planned |
-| TBL-038 | `customer_owned_products` | `ordering/customer-owned-products.ts` | uuid7 | mutable | planned |
-| TBL-039 | `custom_request_quantity_breakdowns` | `ordering/custom-request-quantity-breakdowns.ts` | uuid7 | mutable-until-quoted | planned |
-| TBL-040 | `custom_request_assets` | `ordering/custom-request-assets.ts` | uuid7 | mutable | planned |
-| TBL-041 | `request_moderation_notes` | `ordering/request-moderation-notes.ts` | bigint | append | planned |
-| TBL-042 | `custom_request_transitions` | `ordering/custom-request-transitions.ts` | bigint | append | planned |
-| TBL-027 | `design_cases` | `design/design-cases.ts` | uuid7 | header | planned |
+| TBL-037 | `custom_requests` | `ordering/custom-requests.ts` | uuid7 | mutable | **implemented** |
+| TBL-038 | `customer_owned_products` | `ordering/customer-owned-products.ts` | uuid7 | mutable | **implemented** |
+| TBL-039 | `custom_request_quantity_breakdowns` | `ordering/custom-request-quantity-breakdowns.ts` | uuid7 | mutable-until-quoted | **implemented** |
+| TBL-040 | `custom_request_assets` | `ordering/custom-request-assets.ts` | uuid7 | mutable | **implemented** |
+| TBL-041 | `request_moderation_notes` | `ordering/request-moderation-notes.ts` | bigint | append | **implemented** |
+| TBL-042 | `custom_request_transitions` | `ordering/custom-request-transitions.ts` | bigint | append | **implemented** |
+| TBL-027 | `design_cases` | `design/design-cases.ts` | uuid7 | header | **implemented** |
+
+G9 traceability: **33 logical COL IDs + 7 ×N expansions (TBL037-04 ×2,
+TBL038-04 ×2, TBL042-02 ×2, TBL042-03 ×5) = 40 business + 19 convention =
+59 physical** (14/8/7/6/6/13/5; no `updated_at` on the two append tables).
+FK edges implemented: REL-060 (1), REL-061 ×2, REL-062 first edge
+(**custom SQL `0013`** — header↔child cycle, restrict, nullable pointer),
+REL-063 ×5, REL-064 (1), REL-043 (1), REL-105 TBL-042 subset (admin_id,
+customer_id — 2), plus the **DEV-DB6-010 edge** `custom_request_assets →
+assets` (mandated by ADR-DB4-003/CST-043 but absent from the REL model —
+every other asset-association table has an explicit ×2 row; TBL-040's asset
+edge was dropped when REL-063 bundled five children) = **14 physical FKs**.
+Deferred edges with owners: REL-062 second edge (`current_quotation_id`) →
+**G14**; REL-044 (`design_cases.current_version_id`) → **G11**; REL-105
+`grant_id` → **G10** (nullable columns exist now). Evidence columns with
+**no REL row and no FK**: `submitted_session_id` (mirror of the G7
+decision) and `request_moderation_notes.admin_id` (dictionary arrow only —
+DB4 FKs actor refs solely where REL-105 lists them, and TBL-041 is not
+listed; consistent with the accepted TBL-019 treatment; smoke demonstrates
+the gap honestly). Constraints: CST-026 (IDX-028), CST-027 (IDX-029 —
+**INV-13: COP has no sku/stock/price column, scanned = 0**), CST-028
+(IDX-030), CST-043 instance (IDX-051), CST-020 (IDX-022), CST-060 (LC-11,
+10 states incl. QUOTE_ACCEPTED — no ORDERED/PAID alias), LC-11 CHECKs on
+both transition columns from the same exported tuple, CST-062 (quantity >
+0), CST-066 (COP dims > 0 when set), role + kind closed sets. The
+store-vs-COP subject XOR (CST-121) is **cross-table** → TX/App as DB4
+assigns; breakdowns are mutable-until-QUOTED (app-guarded, cross-row).
+Design case is a **header**: no status column (state derives from G11
+versions), CST-020 1–1, created in the submission/design TX — never by
+trigger. Indexes with the group: IDX-073 (status + created DESC/id DESC),
+IDX-100 (timeline); IDX-117/137 (recommended) → S25. S24 targets: CST-098
+on TBL-041 and TBL-042. Submission-tx handoff: consume verification →
+resolve/create customer + contact → request + children + design case →
+outbox → commit; idempotency via CST-048 (`request.submit`, CC-18); DB8
+owns duplicate-submission and pointer races.
 
 ### G10 — Grants, holds, merge (CTX-CUS / CTX-INV) · planned
 
@@ -527,7 +562,7 @@ shows first conditional transition UPDATE 1, second UPDATE 0).
 | G6 | 2 | 23 | **implemented** |
 | G7 | 5 | 28 | **implemented** |
 | G8 | 2 | 30 | **implemented** |
-| G9 | 7 | 37 | planned |
+| G9 | 7 | 37 | **implemented** |
 | G10 | 4 | 41 | planned |
 | G11 | 3 | 44 | planned |
 | G12 | 6 | 50 | planned |
@@ -539,7 +574,7 @@ shows first conditional transition UPDATE 1, second UPDATE 0).
 | G18 | 2 | 77 | planned |
 | G19 | 1 | 78 | planned |
 
-**30 of 78 implemented.**
+**37 of 78 implemented.**
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -616,7 +651,8 @@ that register on every run.
 | G6 | 2 | 12 | 2 | 14 | 5 | 19 |
 | G7 | 5 | 27 | 6 | 33 | 14 | 47 |
 | G8 | 2 | 12 | 0 | 12 | 5 | 17 |
-| **Total** | **30** | **194** | **13** | **207** | **83** | **290** |
+| G9 | 7 | 33 | 7 | 40 | 19 | 59 |
+| **Total** | **37** | **227** | **20** | **247** | **102** | **349** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database
@@ -793,6 +829,8 @@ no guard ever reads inside a payload.
 | `0009_create_design_prerequest_tables.sql` | G7 | 5 tables, 5 PK, 5 UQ, 3 CK, 14 FK, IDX-085 | **applied** |
 | `0010_add_deferred_session_fk.sql` | G7 | REL-033 deferred edge, **custom SQL**, ON DELETE SET NULL | **applied** |
 | `0011_create_contact_verification_tables.sql` | G8 | 2 tables, 2 PK, 4 CK, 3 FK, IDX-006/111/112 | **applied** |
+| `0012_create_request_and_design_case_tables.sql` | G9 | 7 tables, 7 PK, 4 UQ, 7 CK, 13 FK, IDX-073/100 | **applied** |
+| `0013_add_request_design_case_pointer_fk.sql` | G9 | REL-062 pointer, **custom SQL**, restrict | **applied** |
 | … | G3..G19 | one migration per group | planned |
 | custom SQL | S24 | triggers + functions (immutability, append-only, outbox column-scope, actor consistency) | planned |
 | index migration(s) | S25 | explicit performance indexes | planned |

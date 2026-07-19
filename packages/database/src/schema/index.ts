@@ -53,3 +53,12 @@ export * from './design/design-session-assets';
 // G8 — Contact verification (CTX-CUS)
 export * from './customer/contact-verification-challenges';
 export * from './customer/contact-verification-attempts';
+
+// G9 — Request intake & design case (CTX-ORD / CTX-DSN)
+export * from './ordering/custom-requests';
+export * from './ordering/customer-owned-products';
+export * from './ordering/custom-request-quantity-breakdowns';
+export * from './ordering/custom-request-assets';
+export * from './ordering/request-moderation-notes';
+export * from './ordering/custom-request-transitions';
+export * from './design/design-cases';

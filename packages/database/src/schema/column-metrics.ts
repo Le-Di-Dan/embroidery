@@ -15,8 +15,10 @@
  * `column-metrics.spec.ts`, and the manifest checker cross-checks the group
  * arithmetic on every run.
  *
- * When a group is implemented, its tables are appended here — a table missing
- * from the register or present without a schema export fails the spec.
+ * Rows are compact tuples so the register stays one line per table at 78
+ * tables: `[table, group, logicalIds, expansions, convention, physical]`.
+ * A table missing from the register or present without a schema export fails
+ * the spec.
  */
 
 export interface TableColumnMetric {
@@ -34,207 +36,74 @@ export interface TableColumnMetric {
   readonly physical: number;
 }
 
-export const COLUMN_METRICS: readonly TableColumnMetric[] = [
-  // G1 — Identity
-  {
-    table: 'admin_accounts',
-    group: 'G1',
-    logicalIds: 6,
-    expansions: 0,
-    convention: 3,
-    physical: 9,
-  },
-  {
-    table: 'admin_credentials',
-    group: 'G1',
-    logicalIds: 5,
-    expansions: 0,
-    convention: 3,
-    physical: 8,
-  },
-  {
-    table: 'admin_sessions',
-    group: 'G1',
-    logicalIds: 6,
-    expansions: 0,
-    convention: 3,
-    physical: 9,
-  },
-  // G2 — Platform base
-  {
-    table: 'policy_configurations',
-    group: 'G2',
-    logicalIds: 3,
-    expansions: 0,
-    convention: 3,
-    physical: 6,
-  },
-  {
-    table: 'policy_configuration_versions',
-    group: 'G2',
-    logicalIds: 7,
-    expansions: 0,
-    convention: 2,
-    physical: 9,
-  },
-  {
-    table: 'idempotency_records',
-    group: 'G2',
-    logicalIds: 7,
-    expansions: 1,
-    convention: 3,
-    physical: 11,
-  },
-  {
-    table: 'outbox_events',
-    group: 'G2',
-    logicalIds: 10,
-    expansions: 2,
-    convention: 2,
-    physical: 14,
-  },
-  {
-    table: 'background_job_attempts',
-    group: 'G2',
-    logicalIds: 7,
-    expansions: 0,
-    convention: 2,
-    physical: 9,
-  },
-  // G3 — Customer
-  { table: 'customers', group: 'G3', logicalIds: 5, expansions: 0, convention: 3, physical: 8 },
-  {
-    table: 'business_profiles',
-    group: 'G3',
-    logicalIds: 4,
-    expansions: 0,
-    convention: 3,
-    physical: 7,
-  },
-  {
-    table: 'customer_contact_points',
-    group: 'G3',
-    logicalIds: 9,
-    expansions: 0,
-    convention: 3,
-    physical: 12,
-  },
-  // G4 — Asset
-  { table: 'assets', group: 'G4', logicalIds: 12, expansions: 0, convention: 3, physical: 15 },
-  {
-    table: 'asset_inspections',
-    group: 'G4',
-    logicalIds: 4,
-    expansions: 0,
-    convention: 2,
-    physical: 6,
-  },
-  {
-    table: 'asset_derivatives',
-    group: 'G4',
-    logicalIds: 6,
-    expansions: 0,
-    convention: 3,
-    physical: 9,
-  },
-  // G5 — Catalog
-  { table: 'categories', group: 'G5', logicalIds: 9, expansions: 0, convention: 3, physical: 12 },
-  { table: 'products', group: 'G5', logicalIds: 13, expansions: 0, convention: 3, physical: 16 },
-  {
-    table: 'product_variants',
-    group: 'G5',
-    logicalIds: 5,
-    expansions: 0,
-    convention: 3,
-    physical: 8,
-  },
-  { table: 'skus', group: 'G5', logicalIds: 5, expansions: 0, convention: 3, physical: 8 },
-  {
-    table: 'product_sides',
-    group: 'G5',
-    logicalIds: 9,
-    expansions: 0,
-    convention: 3,
-    physical: 12,
-  },
-  {
-    table: 'embroidery_areas',
-    group: 'G5',
-    logicalIds: 7,
-    expansions: 2,
-    convention: 3,
-    physical: 12,
-  },
-  { table: 'product_media', group: 'G5', logicalIds: 4, expansions: 0, convention: 3, physical: 7 },
-  // G7 — Design pre-request
-  {
-    table: 'design_templates',
-    group: 'G7',
-    logicalIds: 8,
-    expansions: 2,
-    convention: 3,
-    physical: 13,
-  },
-  {
-    table: 'design_template_versions',
-    group: 'G7',
-    logicalIds: 5,
-    expansions: 0,
-    convention: 2,
-    physical: 7,
-  },
-  {
-    table: 'design_template_assets',
-    group: 'G7',
-    logicalIds: 2,
-    expansions: 0,
-    convention: 3,
-    physical: 5,
-  },
-  {
-    table: 'design_sessions',
-    group: 'G7',
-    logicalIds: 10,
-    expansions: 4,
-    convention: 3,
-    physical: 17,
-  },
-  {
-    table: 'design_session_assets',
-    group: 'G7',
-    logicalIds: 2,
-    expansions: 0,
-    convention: 3,
-    physical: 5,
-  },
-  // G8 — Contact verification
-  {
-    table: 'contact_verification_challenges',
-    group: 'G8',
-    logicalIds: 9,
-    expansions: 0,
-    convention: 3,
-    physical: 12,
-  },
-  {
-    table: 'contact_verification_attempts',
-    group: 'G8',
-    logicalIds: 3,
-    expansions: 0,
-    convention: 2,
-    physical: 5,
-  },
-  // G6 — Inventory core
-  { table: 'sku_stocks', group: 'G6', logicalIds: 3, expansions: 0, convention: 3, physical: 6 },
-  {
-    table: 'inventory_ledger_entries',
-    group: 'G6',
-    logicalIds: 9,
-    expansions: 2,
-    convention: 2,
-    physical: 13,
-  },
+type MetricRow = readonly [
+  table: string,
+  group: string,
+  logicalIds: number,
+  expansions: number,
+  convention: number,
+  physical: number,
 ];
+
+const ROWS: readonly MetricRow[] = [
+  // G1 — Identity
+  ['admin_accounts', 'G1', 6, 0, 3, 9],
+  ['admin_credentials', 'G1', 5, 0, 3, 8],
+  ['admin_sessions', 'G1', 6, 0, 3, 9],
+  // G2 — Platform base
+  ['policy_configurations', 'G2', 3, 0, 3, 6],
+  ['policy_configuration_versions', 'G2', 7, 0, 2, 9],
+  ['idempotency_records', 'G2', 7, 1, 3, 11],
+  ['outbox_events', 'G2', 10, 2, 2, 14],
+  ['background_job_attempts', 'G2', 7, 0, 2, 9],
+  // G3 — Customer
+  ['customers', 'G3', 5, 0, 3, 8],
+  ['business_profiles', 'G3', 4, 0, 3, 7],
+  ['customer_contact_points', 'G3', 9, 0, 3, 12],
+  // G4 — Asset
+  ['assets', 'G4', 12, 0, 3, 15],
+  ['asset_inspections', 'G4', 4, 0, 2, 6],
+  ['asset_derivatives', 'G4', 6, 0, 3, 9],
+  // G5 — Catalog
+  ['categories', 'G5', 9, 0, 3, 12],
+  ['products', 'G5', 13, 0, 3, 16],
+  ['product_variants', 'G5', 5, 0, 3, 8],
+  ['skus', 'G5', 5, 0, 3, 8],
+  ['product_sides', 'G5', 9, 0, 3, 12],
+  ['embroidery_areas', 'G5', 7, 2, 3, 12],
+  ['product_media', 'G5', 4, 0, 3, 7],
+  // G6 — Inventory core
+  ['sku_stocks', 'G6', 3, 0, 3, 6],
+  ['inventory_ledger_entries', 'G6', 9, 2, 2, 13],
+  // G7 — Design pre-request
+  ['design_templates', 'G7', 8, 2, 3, 13],
+  ['design_template_versions', 'G7', 5, 0, 2, 7],
+  ['design_template_assets', 'G7', 2, 0, 3, 5],
+  ['design_sessions', 'G7', 10, 4, 3, 17],
+  ['design_session_assets', 'G7', 2, 0, 3, 5],
+  // G8 — Contact verification
+  ['contact_verification_challenges', 'G8', 9, 0, 3, 12],
+  ['contact_verification_attempts', 'G8', 3, 0, 2, 5],
+  // G9 — Request intake & design case
+  ['custom_requests', 'G9', 10, 1, 3, 14],
+  ['customer_owned_products', 'G9', 4, 1, 3, 8],
+  ['custom_request_quantity_breakdowns', 'G9', 4, 0, 3, 7],
+  ['custom_request_assets', 'G9', 3, 0, 3, 6],
+  ['request_moderation_notes', 'G9', 4, 0, 2, 6],
+  ['custom_request_transitions', 'G9', 6, 5, 2, 13],
+  ['design_cases', 'G9', 2, 0, 3, 5],
+];
+
+export const COLUMN_METRICS: readonly TableColumnMetric[] = ROWS.map(
+  ([table, group, logicalIds, expansions, convention, physical]) => ({
+    table,
+    group,
+    logicalIds,
+    expansions,
+    convention,
+    physical,
+  }),
+);
 
 /** Returns the problems with a metric row; empty when it balances. */
 export function verifyMetric(metric: TableColumnMetric): readonly string[] {
