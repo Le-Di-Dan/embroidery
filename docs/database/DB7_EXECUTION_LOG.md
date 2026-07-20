@@ -174,3 +174,74 @@ CP1 **PASS**.
 `b521e87` `feat(database): add the NestJS persistence foundation`.
 
 **Next checkpoint:** DB7-CP2 — Transaction, error mapping and test harness.
+
+---
+
+## DB7-CP2 — Transaction, error mapping and integration-test harness
+
+**Starting HEAD:** `f90ad55`
+**Scope:** central database-error mapping into a client-safe taxonomy, the named-constraint
+catalogue, and the reusable disposable-PostgreSQL integration harness the repository
+checkpoints build on. The `TransactionManager` API itself landed in CP1 (§9.1–9.2 of the
+prompt); this checkpoint adds its error behaviour and the harness.
+
+### Files changed
+
+`packages/database/src/errors/`: `persistence-error.ts`, `constraint-catalog.ts`,
+`map-database-error.ts`, `map-database-error.spec.ts`,
+`error-mapping.integration.spec.ts`.
+`packages/database/src/testing/`: `reset-database.ts`, `harness.integration.spec.ts`.
+`packages/database/src/client/transaction.ts`: added `INTEGRITY_CONSTRAINT_VIOLATION`,
+`READ_ONLY_SQL_TRANSACTION`, `QUERY_CANCELED`.
+`packages/database/src/index.ts`, `src/testing/index.ts`: re-exports.
+`packages/database/jest.config.mjs`: integration timeout.
+`docs/database/DB7_ERROR_MAPPING_CATALOG.md` (new).
+
+### Decisions
+
+| ID | Decision | Rationale |
+|---|---|---|
+| DEC-DB7-012 | `55P03` (lock not available) is **not** marked retryable, although a retry could succeed. | The lock holder may hold it for a long time, so an immediate automatic retry spins. Retry-with-backoff is a caller policy; the concurrent behaviour is DB8's. |
+| DEC-DB7-013 | `PersistenceError.diagnostics` is a **non-enumerable** property. | Making leak-safety structural rather than conventional: `JSON.stringify(error)` and `{...error}` physically cannot copy a SQLSTATE or constraint name into a response body. Asserted by test, not assumed. |
+| DEC-DB7-014 | Four arbiters are classified `replayable` (idempotency claim, provider event, notification intent, job attempt). | A duplicate on these is the *expected* success signal of an idempotent retry. Classifying them as plain conflicts would turn a correct retry into a 500. |
+| DEC-DB7-015 | The 189 CHECK constraints are covered by a family rule, not enumerated. | A CHECK rejection always means "this value is not allowed for this record"; 189 near-identical entries would produce no distinct client-visible outcome. Every *uniqueness* arbiter with a distinct business meaning **is** enumerated (50 of them). |
+| DEC-DB7-016 | Test isolation uses `TRUNCATE`, not `DELETE`. | The 30 S24 triggers are row-level `BEFORE UPDATE OR DELETE` guards and would correctly reject a `DELETE` on every append-only table. `TRUNCATE` does not fire row-level triggers, so a suite resets state without disarming the guards it is testing. Migration history is preserved. |
+
+### Defects found and corrected
+
+| ID | Defect | Correction |
+|---|---|---|
+| DEF-DB7-005 | DB6's `SQLSTATE` constant documented `RESTRICT_VIOLATION: '23001'` as "raised by the immutability triggers". Migration `0030`'s function body and `DB6_S24_TRIGGER_REPORT.md` §"Error contract" both specify `ERRCODE = '23000'`. Every S24 trigger rejection would therefore have been misclassified. | Added `INTEGRITY_CONSTRAINT_VIOLATION: '23000'` with the discrepancy documented in place; `23001` retained with its correct `restrict_violation` meaning. An integration test provokes a real trigger rejection on both UPDATE and DELETE and asserts `23000` arrives. No migration touched. |
+| DEF-DB7-006 | The CP2 read-only-transaction test initially passed a write through the *pool* handle inside a read-only transaction, where it silently succeeded rather than failing. | The probe now issues the statement on the transaction handle. Worth recording because it is precisely the mistake DEC-DB7-006's ambient executor removes for repository code, which never has two handles to choose between. |
+
+### Tests
+
+| Suite | Cases | Coverage |
+|---|---|---|
+| `map-database-error.spec.ts` | 31 | catalogue lookup incl. replayable arbiters and fallback; 16 SQLSTATE families; unrecognised SQLSTATE and non-driver error; Drizzle cause unwrapping; idempotent re-mapping; four leak-safety assertions (message, serialisation, log line, `cause` preservation); `withMappedErrors` |
+| `error-mapping.integration.spec.ts` | 12 | real `23505`/`23503`/`23514`/`23502`; **real S24 trigger `23000` on UPDATE and DELETE**; real `25006`; real `57014`; live-schema catalogue integrity (every catalogued name exists in `pg_constraint`/`pg_indexes`); replay-arbiter coverage; leak safety on a real duplicate |
+| `harness.integration.spec.ts` | 8 | deterministic injection-safe naming, identifier-length clamp, worker separation; **all six DB6 checkers + fingerprint gate reproduce `4ca56a59…`**; 31 migrations applied; reset leaves the 30 triggers armed and the migration history intact; idempotent drop verified from a second connection |
+
+### Metrics
+
+| Metric | Value |
+|---|---|
+| New tests | 51 (43 error mapping, 8 harness) |
+| `@embroidery/database` suite | 151 tests |
+| Whole-workspace suite | 220 tests, 15/15 turbo tasks green |
+| Named arbiters catalogued | 50 of 63 uniqueness arbiters; the remainder use the family rule |
+| Disposable databases left after the run | 0 (verified via `pg_database`) |
+| Persistent dev database | untouched |
+
+### Validation
+
+`pnpm format:check` PASS · `pnpm lint` 15/15 PASS · `pnpm typecheck` 15/15 PASS ·
+`pnpm test` 8/8 PASS · `pnpm check:file-size` PASS.
+
+### Result
+
+CP2 **PASS**.
+
+**Commits:** `f12d5fb` `feat(database): add transaction error mapping and the integration harness`.
+
+**Next checkpoint:** DB7-CP3 — Persistence coverage wave A.
