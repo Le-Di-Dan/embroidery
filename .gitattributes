@@ -1,0 +1,10 @@
+# Force LF on checkout for every text file, regardless of a contributor's
+# local core.autocrlf setting. Without this, a fresh clone/checkout on a
+# machine with core.autocrlf=true silently rewrites CRLF into any migration
+# file containing a multi-line dollar-quoted PL/pgSQL body (e.g.
+# packages/database/migrations/0030_add_integrity_triggers.sql) — the CRLF
+# bytes land verbatim inside the stored function definition, which is
+# byte-identical to Postgres but not to a deterministic schema fingerprint.
+# Found and fixed during DB6-S27's clean-clone rehearsal.
+* text=auto eol=lf
+*.sql text eol=lf
