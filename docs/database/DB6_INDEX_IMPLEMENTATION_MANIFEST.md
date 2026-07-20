@@ -389,37 +389,46 @@ own non-transactional migration step.
 
 ## 7. Current state
 
-**After G1..G19 (78 of 78 tables), live-catalog-derived** — G16+C5's figures
-were corrected 2026-07-19 by DB6-C5 §B3/B4 (see
-`DB6_INDEX_METRIC_RECONCILIATION.md` for that derivation); this row extends
-the same live-catalog method through G19's migration `0029`, the final
-table-group migration:
+**After S25 (211 of 211 launch indexes), live-catalog-derived** on
+disposable databases built through migration `0031` (fresh install and a
+S24-prefix upgrade):
 
 | Metric | Implemented | Selected for launch |
 |---|---|---|
 | PK backing indexes | 78 | 78 |
 | UNIQUE constraint backing | 50 | 50 |
-| Explicit partial unique | 13 (all 13 selected entries now implemented) | 13 |
-| Explicit performance | 43 | 70 |
-| **Physical indexes** | **184** | **211** |
-| Physical partial indexes | 35 (13 unique + 22 performance) | 45 (13 unique + 32 performance) |
-| `IDX-*` entries satisfied (excludes PK) | 106 (50 UNIQUE + 13 partial-unique + 43 performance) | 134 of 134 |
+| Explicit partial unique | 13 | 13 |
+| Explicit performance | 70 | 70 |
+| **Physical indexes** | **211** | **211** |
+| Physical partial indexes | 46 (13 unique + 33 performance) | 46 (13 unique + 33 performance) |
+| `IDX-*` entries satisfied (excludes PK, excludes IDX-056) | 133 (50 UNIQUE + 13 partial-unique + 70 performance) | 133 of 133 |
 
-`184`/`35`/`106` are read directly from `pg_class`/`pg_index` on disposable
-databases built through migration `0029` (fresh install and a G18-prefix
-upgrade), not accumulated by hand. G19's own delta: +1 PK-backing
-(`audit_events`), +0 UNIQUE-backing (no explicit unique constraint on this
-table), +2 explicit performance, both non-partial (IDX-095, IDX-096 — the
-target-history and global-timeline required-tier indexes), +0 physical
-partial index. `IDX-*` satisfied reaches 106/134 — the remaining 28-entry
-gap is the S25 recommended-tier backlog, which now includes IDX-097/IDX-098
-(this group's own deferral) alongside the earlier-groups' recommended-tier
-entries already tracked below. G01..G19 physical schema implementation is
-now **complete** — no further table group remains; only S24 (triggers) and
-S25 (the recommended-index backlog) are still open.
-`181`/`35`/`104` (the prior G18 row) and every earlier superseded figure in
-this section (including "After G1..G11") are retained only as history — the
-G19 row is authoritative going forward.
+**DB6-S25 correction to the pre-S25 estimate (documentation-arithmetic only,
+no schema change, same treatment as DEV-DB6-017):** the pre-S25 "selected for
+launch" row read `45 (13 unique + 32 performance)` partial / `38` non-partial
+performance. Independent re-derivation of the exact 27-entry backlog against
+`pg_index.indpred` on `embroidery_s25_fresh`/`embroidery_s25_upgrade` found
+**11** of the 27 backlog entries carry a `WHERE` predicate (IDX-119, 121,
+129, 130, 078, 088, 090, 094, 123, 131, 098), not 10 — the pre-S25 estimate
+undercounted by one partial index. The **grand total (211) and the total
+performance-index count (70) are both unaffected**; only the partial/
+non-partial split within the performance tier shifts to **33 partial / 37
+non-partial**. This section, `DB6_INDEX_METRIC_RECONCILIATION.md`, and
+`DB6_SCHEMA_IMPLEMENTATION_MANIFEST.md` are updated to read 46/33/37 instead
+of 45/32/38 wherever the split is cited.
+
+S25's own delta over the post-G19 baseline (184/35/106): +27 physical
+indexes (5 required — IDX-121, 088, 090, 093, 094 — plus 22 recommended),
++11 physical partial indexes (all performance-tier, 0 new partial unique),
+`IDX-*` satisfied reaches 133/133 (IDX-056 is a withheld conditional-exclusion
+index requiring `btree_gist` approval — it is not part of the 211-index
+launch total and is tracked separately, never counted in either 133 or 134).
+
+DB6-G01..G19 (physical schema) and DB6-S24 (triggers) were already complete
+before this slice; **DB6-S25 (recommended-index backlog) is now also
+complete** — no `IDX-*` launch target remains pending. S26–S28 remain open.
+`184`/`35`/`106` (the post-G19 row) and every earlier superseded figure in
+this section (including "After G1..G11") are retained only as history.
 
 ### 7.1. History (before this reconciliation)
 
@@ -443,24 +452,32 @@ under `LockRows`) and `inventory_ledger_entries` carries **PK + IDX-115 only**
 **Policy from G3 onward (per review directive):** each group implements its
 own **required** (P0/P1) performance indexes with the group — G3: IDX-134;
 G4: IDX-086/087/099/133; G5: IDX-065/068/069/070/071. Recommended-tier
-indexes still ship at S25 phase 4. G1/G2 predate the directive; their
-required indexes remain in the S25 queue, tracked below rather than lost:
+indexes shipped at S25. G1/G2 predate the directive; their required indexes
+were carried in the S25 queue rather than lost. **All rows below are now
+`implemented` (DB6-S25, migration `0031`)** — this table is retained as the
+historical backlog ledger. Note: this table originally omitted IDX-136
+(G13), IDX-118/125/126 (G15) despite their schema-source `S25` annotations
+and §3 register rows; those four are added here for completeness, backfilled
+from the schema JSDoc, not invented.
 
-| Group | Pending | Tier |
+| Group | Backlog (now implemented) | Tier |
 |---|---|---|
-| G1 | IDX-121 | required (S25 backlog) · IDX-120 recommended |
-| G2 | IDX-088, IDX-090, IDX-093, IDX-094 | required (S25 backlog) · IDX-131 recommended |
-| G3 | IDX-129 | recommended (S25 phase 4) |
-| G4 | IDX-119, IDX-132 | recommended (S25 phase 4) |
+| G1 | IDX-121 | required · IDX-120 recommended |
+| G2 | IDX-088, IDX-090, IDX-093, IDX-094 | required · IDX-131 recommended |
+| G3 | IDX-129 | recommended |
+| G4 | IDX-119, IDX-132 | recommended |
 | G5 | — none pending | all five selected entries were required and shipped |
 | G6 | — none pending | IDX-016/115 shipped; no recommended tier exists |
 | G7 | — none pending | IDX-085 shipped with the group; no recommended tier exists |
-| G8 | IDX-130 | recommended (S25 phase 4) |
-| G9 | IDX-117, IDX-137 | recommended (S25 phase 4) |
-| G10 | IDX-127, IDX-135 | recommended (S25 phase 4) |
-| G11 | IDX-116 | recommended (S25 phase 4) |
-| G16 | IDX-078, IDX-122, IDX-123, IDX-124 | recommended (S25 phase 4) |
-| G17 | IDX-138 | recommended (S25 phase 4) |
+| G8 | IDX-130 | recommended |
+| G9 | IDX-117, IDX-137 | recommended |
+| G10 | IDX-127, IDX-135 | recommended |
+| G11 | IDX-116 | recommended |
+| G13 | IDX-136 | recommended (backfilled, see note above) |
+| G15 | IDX-118, IDX-125, IDX-126 | recommended (backfilled, see note above) |
+| G16 | IDX-078, IDX-122, IDX-123, IDX-124 | recommended |
+| G17 | IDX-138 | recommended |
+| G19 | IDX-097, IDX-098 | recommended (this group's own S25 deferral) |
 
 Verified in the database after G5: 48 index objects across 21 tables, zero
 duplicates, zero non-conforming names (every constraint and index name carries
