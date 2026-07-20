@@ -378,3 +378,32 @@ G1–G19 physical schema implementation is complete (78/78 tables, 19/19
 groups). This does **not** close DB6 overall: S24 (triggers — immutability,
 append-only, outbox column-scope, actor consistency), S25 (explicit
 performance-index backlog, including IDX-097/098), S26–S28 remain open.
+
+## K. Addendum (DB6-S24 preflight, 2026-07-20)
+
+- **G19 commit hash**: `d81d8a81088ecbce25ed3b6af4e85edea64b00c4`,
+  `feat(database): implement DB6 schema group G19`, parent `74eae23`, tree
+  clean at that HEAD, not pushed.
+- **Final FK ceiling**: independently re-derived from structured sources
+  (canonical `REL-*` rows, deferred-edge ledger, DEV-DB6-010/012/013/014,
+  REL-105's full edge set), not group-delta arithmetic — confirmed **160/160
+  physical FK edges**, 164 logical edges unchanged. DEV-DB6-017's correction
+  stands with no further change. Full derivation in
+  `DB6_PHYSICAL_ISOLATION_AUDIT.md` §3.
+- **Isolated-table conclusion**: `redirect_rules`, `content_pages`,
+  `idempotency_records`, `background_job_attempts`, `outbox_events`,
+  `policy_configurations` are all intentional (classes A–E: aggregate root,
+  platform primitive, path/config table, generic evidence, or documented
+  polymorphic no-FK); `notification_intents` is linked internally via
+  `notification_delivery_attempts` with two intentional no-FK edges under
+  DEV-DB6-016. Zero class-F (design defect) findings. Full audit in
+  `DB6_PHYSICAL_ISOLATION_AUDIT.md` §2.
+- **Refunds mutability conclusion**: `refunds.updated_at` is correct — a
+  documentation/checker-rule defect in `tools/db-manifest-check.mjs`'s
+  convention-column check (its regex matched "immutable" inside the mixed
+  class label "state mutable + amounts immutable" and wrongly forbade the
+  column). Fixed in the checker in this preflight; no schema change. Full
+  finding in `DB6_PHYSICAL_ISOLATION_AUDIT.md` §4.
+
+These findings gated the start of DB6-S24 (trigger implementation), reported
+in full in `DB6_S24_TRIGGER_REPORT.md`.

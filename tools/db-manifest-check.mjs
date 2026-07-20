@@ -204,6 +204,10 @@ const indexManifest = stripEmphasis(read(INDEX_MANIFEST));
   // Every implemented table must use the shared primitives for its convention
   // columns, and `updated_at` presence must match the manifest's mutability
   // class — immutable/append-only/column-scoped tables must not carry it.
+  // "immutable" also appears inside mixed classes such as refunds' "state
+  // mutable + amounts immutable" (DB6-S24 preflight finding): a mixed class
+  // has both a mutable subset (which legitimately advances updated_at) and a
+  // frozen subset, so it must NOT be swept into the full-immutable ban below.
   const NO_UPDATED_AT = /immutable|append|column-scoped|snap\b|\bver\b/;
   let checked = 0;
   for (const row of schemaManifest.split('\n')) {
@@ -220,7 +224,8 @@ const indexManifest = stripEmphasis(read(INDEX_MANIFEST));
       fail(`${file}: created_at does not come from the convention register primitive`);
     }
     const hasUpdatedAt = /\bupdatedAt\(/.test(source);
-    const expectsUpdatedAt = !NO_UPDATED_AT.test(mutability);
+    const isMixedMutability = /\bmutable\b/.test(mutability) && /immutable/.test(mutability);
+    const expectsUpdatedAt = isMixedMutability || !NO_UPDATED_AT.test(mutability);
     if (hasUpdatedAt && !expectsUpdatedAt) {
       fail(`${file}: has updated_at but its mutability class "${mutability}" forbids it`);
     }
