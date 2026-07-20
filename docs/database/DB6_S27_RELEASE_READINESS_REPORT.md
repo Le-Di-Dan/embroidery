@@ -179,10 +179,11 @@ in, consistent with this engagement's standing "smallest coherent change per com
 
 1. `69b66d8` — `chore: enforce LF line endings on checkout` (`.gitattributes` — the CRLF
    fingerprint-drift fix, found mid-rehearsal, landed before the rehearsal could pass).
-2. `docs(database): add DB6 release readiness handoff` — the 4 required S27 reports.
-3. `chore(database): add DB6 reproducibility verification workflow` — the fingerprint gate,
-   migration checksum checker, the password-leak fix in `live-db.mjs`, the checksum/
-   fingerprint data files, and the `eslint.config.mjs` globals addition.
+2. `33015e4` — `docs(database): add DB6 release readiness handoff` — the 4 required S27
+   reports.
+3. `0deaf79` — `chore(database): add DB6 reproducibility verification workflow` — the
+   fingerprint gate, migration checksum checker, the password-leak fix in `live-db.mjs`,
+   the checksum/fingerprint data files, and the `eslint.config.mjs` globals addition.
 
 All on `production`, tree clean before each commit, no amend/squash, not pushed.
 

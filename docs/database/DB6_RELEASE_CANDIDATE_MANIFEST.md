@@ -3,17 +3,18 @@
 ## Release candidate ID
 
 ```
-db6-rc-69b66d8-m0031-4ca56a59
+db6-rc-0deaf79-m0031-4ca56a59
 ```
 
-Deterministic, composed from: source commit (`69b66d8`) + latest migration (`m0031`) +
+Deterministic, composed from: source commit (`0deaf79`) + latest migration (`m0031`) +
 schema fingerprint prefix (`4ca56a59`). Does not conflict with any existing repository
 versioning scheme — this repository has none yet for database releases specifically.
 
 ## Source
 
 - Branch: `production`
-- HEAD commit: `69b66d8` (`chore: enforce LF line endings on checkout`)
+- HEAD commit: `0deaf79` (`chore(database): add DB6 reproducibility verification workflow`)
+- This slice's commit chain: `69b66d8` (CRLF fix) → `33015e4` (docs) → `0deaf79` (tooling)
 - Ancestor DB6 commits: `2d184e1` (S26), `08effd0` (S25), `c0aa466`/`3ffade2`/`8774d29` (S24),
   `d81d8a8` (G19, closes G01–G19)
 - Working tree: clean at time of manifest generation, not pushed.
