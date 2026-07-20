@@ -23,6 +23,8 @@ export interface OrderFixture {
   readonly challengeId: string;
   readonly adminId: string;
   readonly skuId: string;
+  readonly assetId: string;
+  readonly productId: string;
 }
 
 const DOC_HASH = `sha256:${'1'.repeat(64)}`;
@@ -196,5 +198,7 @@ export async function seedOrderChain(
     challengeId,
     adminId: resolvedAdminId,
     skuId,
+    assetId,
+    productId,
   };
 }
