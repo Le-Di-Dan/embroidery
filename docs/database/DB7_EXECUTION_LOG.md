@@ -338,3 +338,171 @@ CP3 **PASS** for wave A.
 `3119f80` (content + agreement + gallery).
 
 **Next checkpoint:** DB7-CP4 — Persistence coverage wave B.
+
+## DB7-CP4 — Persistence coverage wave B
+
+**Starting HEAD:** `db9e858`
+**Scope:** repository contracts, Drizzle implementations and real-PostgreSQL integration
+tests for the commercial and operational contexts: Design case + Approval snapshot,
+Custom request + Quotation, Order + Shipping, Inventory (lock-anchor commitments),
+Payment (obligations, attempts, provider events, refunds), Production, Notification
+intents, and Audit events. This is the largest single wave: every aggregate that
+sits on the customer-facing order-to-production path.
+
+### Tables covered (44 of 78, cumulative 78/78 except TBL-025/026/034..036)
+
+| Context | Tables |
+|---|---|
+| CTX-DSN (case) | TBL-027..030 |
+| CTX-ORD | TBL-031..033, TBL-041..044 |
+| CTX-QUO | TBL-037..040 |
+| CTX-INV | TBL-018..021 |
+| CTX-PAY | TBL-054..058 |
+| CTX-PRD | TBL-059..063 |
+| CTX-NTF | TBL-070, TBL-071 |
+| CTX-AUD | TBL-072 |
+
+`TBL-025/026` (design sessions) and `TBL-034..036` (design templates) were
+scoped to `DesignSessionRepository`/`DesignTemplateRepository` in the CP0
+coverage matrix but not built in this wave — a gap closed in CP5 (see below),
+not a silent omission: the CP0 matrix already named the owners in advance.
+
+### Decisions
+
+| ID | Decision | Rationale |
+|---|---|---|
+| DEC-DB7-023 | `ProductionJob.createJob` freezes the specification (product/side/area names, quantities, physical dimensions) as a **copy** from the approval snapshot at creation, never a live read. | INV-03: what the machine cuts must trace to exactly the artwork the customer approved, immune to later catalog relabelling. Asserted by a test that renames the product mid-flight and confirms the frozen specification does not move. |
+| DEC-DB7-024 | `NotificationIntentRepository.createIdempotent` uses `onConflictDoNothing` on `intent_key` and returns a `{ outcome: 'created' \| 'replay' }` union rather than throwing on a duplicate. | Same idempotent-write shape as DEC-DB7-021 (idempotency claims) and for the same reason: a duplicate notification intent is the expected shape of a correct retry, not a caller error. |
+| DEC-DB7-025 | `recipient_contact_point_id` and `source_outbox_event_id` on `notification_intents` are resolved-if-present but carry no FK in the schema (G-DB7-48/49). | Intentional no-FK references per DB4/DB6: a notification may target an address that is not yet a contact point, and outbox rows are TTL-cleaned so a FK would block that cleanup. The repository resolves them at creation time instead of leaning on a constraint that cannot exist. |
+| DEC-DB7-026 | `AuditEventRepository.append` never resolves `target_id` against the table it names. | REL-103: the audit trail must outlive what it describes (an anonymized customer, a tombstoned asset), so a live FK would eventually orphan the row it is supposed to preserve. |
+
+### Tests
+
+| Suite | Cases |
+|---|---|
+| Design case + approval snapshot | 39 |
+| Custom request | 16 |
+| Order + shipping | 28 |
+| Inventory (stock, holds, reservations, ledger) | 24 |
+| Payment (obligations, attempts, provider events, refunds) | 29 |
+| Production | 16 |
+| Notification intents | 14 |
+| Audit events | 9 |
+
+Guards proven in this checkpoint: **G-DB7-02** (case→version ownership),
+**G-DB7-06** (satisfying attempt belongs to its obligation), **G-DB7-07**
+(production specification freeze), **G-DB7-09** (case↔request pointer
+agreement), **G-DB7-14/15/16/17** (quotation/design review arbitration),
+**G-DB7-20..25** (order/shipping conversion chain and lifecycle),
+**G-DB7-26/28/29/30** (inventory availability, hold conversion, ledger,
+adjustment reason), **G-DB7-31..37** (payment obligation/refund lifecycle),
+**G-DB7-46** (audit target-kind closed set), **G-DB7-48/49** (notification
+intentional no-FK references), **G-DB7-58** (notification claim/attempt/settle).
+
+### Metrics
+
+| Metric | Value |
+|---|---|
+| Repositories implemented | 9 aggregate repositories across 8 modules |
+| New modules | `order`, `inventory`, `payment`, `production`, `notification`, `audit` |
+| Disposable databases left after the run | 0 |
+| Persistent dev database | untouched |
+
+### Validation
+
+`pnpm typecheck` PASS across all touched packages · targeted `jest` runs PASS
+per module (175 cases across the 8 suites above) · `pnpm lint` PASS ·
+`pnpm format:check` PASS.
+
+### Result
+
+CP4 **PASS** for wave B, with the design-template/session gap explicitly
+carried forward to CP5 rather than silently closed out.
+
+**Commits:** `7b8b019` (design case + approval snapshot), `07a6252` (custom
+request + quotation), `9a97805` (order + shipping), `6c2713e` (inventory),
+`36eac2a` (payment), `6acdf1c` (production, notification, audit).
+
+**Next checkpoint:** DB7-CP5 — TX/App guard implementation.
+
+## DB7-CP5 — TX/App guard implementation
+
+**Starting HEAD:** `6acdf1c`
+**Scope:** close the guard/coverage gaps the CP0 matrices already named but CP4 did
+not build — `DesignSessionRepository`, `DesignTemplateRepository` (TBL-025/026,
+TBL-034..036) and `ReservationEligibilityGuard` (G-DB7-27) — then reconcile the
+guard and coverage matrices against what actually exists.
+
+### Audit that found the gap
+
+A systematic pass grepped every `G-DB7-NN` reference in the guard matrix
+against the code that was supposed to carry it. Three rows cited owner
+classes (`DesignSessionRepository`, `DesignTemplateRepository`,
+`ReservationEligibilityGuard`) that did not exist anywhere in `apps/api/src`
+— confirmed by `find`/grep returning no matches — despite the matrix marking
+them "implemented, tested". This is the exact silent-gap class CP5's exit
+condition ("zero silent gaps") exists to catch. 78/78 table ownership is an
+explicit DB7 success gate, so this was treated as required work, not
+optional cleanup.
+
+### Tables covered (78 of 78, cumulative)
+
+| Table | Repository |
+|---|---|
+| TBL-025, TBL-026 | `DesignSessionRepository` |
+| TBL-034, TBL-035, TBL-036 | `DesignTemplateRepository` |
+
+### Decisions
+
+| ID | Decision | Rationale |
+|---|---|---|
+| DEC-DB7-027 | `DesignSessionRepository.cloneFromTemplate` resolves the source template through an **injected `DesignTemplateRepository`**, not a raw read of `design_templates`. | Both repositories live in the same module (`design`), so this is an in-module collaborator call, not the cross-module coupling `BACKEND_CONVENTIONS.md` §10 forbids. It keeps `loadPublished` — the one read every clone path must share (G-DB7-18) — as a single choke point instead of a duplicated query. |
+| DEC-DB7-028 | `orders.current_approval_snapshot_id` is `NOT NULL`, so GRD-013's "approval must exist" half is a **physical guarantee**, not a runtime check. `ReservationEligibilityGuard` enforces only the other half: the order's Deposit obligation must be SATISFIED. | Re-checking a fact the schema already makes impossible to violate would be dead code with no failure path to test. Verified by reading `orders.ts` before writing the guard, not assumed. |
+| DEC-DB7-029 | Deposit satisfaction is exposed to Inventory through a new **`DepositEligibilityPort`** (owned and implemented by Payment), the same port pattern as `PlacementHierarchyPort` (catalog → design/production). | Inventory needs one fact from Payment's tables; `BACKEND_CONVENTIONS.md` §10 forbids it from calling Payment's concrete repository. `InventoryModule` imports `PaymentModule` for the port token only. |
+| DEC-DB7-030 | `InventoryCommitments` (soft holds) and the new `InventoryReservations` (reservations) are two classes, split by responsibility, both still serving the single `SkuStockRepository` contract via delegation in `DrizzleSkuStockRepository`. | Wiring `ReservationEligibilityGuard` into the reservation paths pushed `inventory-commitments.ts` to 407 lines, over the 400-line hard limit (`CLAUDE.md` §6). The existing DB7 pattern for this (DB7 §10.1, already used for holds vs. the stock/ledger repository) is delegation by responsibility, not a new abstraction. |
+
+### Tests
+
+| Suite | Cases |
+|---|---|
+| Design template (creation, publish/version-counter, `loadPublished`, S24 immutability, asset association) | 9 |
+| Design session (open + placement guard, clone + G-DB7-18, autosave + G-DB7-19, submit/expire, assets) | 10 |
+| Inventory reservation eligibility (G-DB7-27, added to the existing reservation suite) | 2 |
+
+Guards proven in this checkpoint: **G-DB7-13** (placement chain, session
+opening), **G-DB7-18** (clone requires a PUBLISHED template), **G-DB7-19**
+(session ACTIVE + unexpired, optimistic `autosaveRevision` → `STALE_WRITE`),
+**G-DB7-27** (official reservation eligibility — deposit SATISFIED).
+
+### Matrix reconciliation
+
+`DB7_TX_APP_GUARD_MATRIX.md` rows for G-DB7-18/19/27 and
+`DB7_SCOPE_AND_COVERAGE_MATRIX.md` rows for TBL-025/026/034..036 already
+named the correct final owners and status in the CP0 draft — no edit was
+needed once the code existed to back them; verified by reading both files
+after implementation, not assumed from the CP0 draft.
+
+### Metrics
+
+| Metric | Value |
+|---|---|
+| Repositories implemented | 2 (`DesignSessionRepository`, `DesignTemplateRepository`) + 1 guard + 1 port |
+| Files split to stay inside the 400-line limit | 1 (`inventory-commitments.ts` → `inventory-commitments.ts` + `inventory-reservations.ts`) |
+| Test files split to stay inside the 600-line limit | 1 (`inventory-persistence.integration.spec.ts` → stock/holds suite + `inventory-reservations.integration.spec.ts`, with shared `inventory-fixture.ts`) |
+| New test cases | 21 |
+| Disposable databases left after the run | 0 |
+| Persistent dev database | untouched |
+
+### Validation
+
+`npx tsc --noEmit` PASS (apps/api) · targeted `jest` PASS: design (19),
+inventory + payment + design combined re-run (111) · `eslint` PASS on all
+touched files · `prettier --check` PASS after one auto-format pass.
+
+### Result
+
+CP5 **PASS**. 78/78 tables now have persistence ownership; the three guards
+the CP0 matrix pre-named are implemented and tested, closing the last known
+silent gap.
+
+**Next checkpoint:** DB7-CP6 — Idempotency, Outbox and worker persistence.
