@@ -100,3 +100,86 @@ CP0 PASS. DB8 scope locked: 24 races classified by priority, 8 at P0/P1
 scheduled for executable multi-connection tests across CP2–CP6, remainder
 `DEFERRED TO DB9` or `N/A` with reasons already recorded (not deferred
 silently). Continuing to CP1 (concurrency harness).
+
+---
+
+## DB8-CP1 — Concurrency harness, barriers and retry-policy foundation
+
+**Starting HEAD:** `3775ea7` (CP0 closure).
+
+**Scope:** Build the reusable, real-PostgreSQL, multi-connection harness
+every CP2–CP6 race test runs on, and prove the harness itself before any
+race scenario depends on it (§11/§12's own requirement).
+
+### Why a new context, not the existing DB7 one
+
+`createPersistenceTestContext` (`apps/api/src/tests/integration/persistence-test-context.ts`,
+DB7) compiles exactly one NestJS module — one connection pool — per
+disposable database. Every race needs **at least two independent physical
+connections** holding open, overlapping transactions (rule 10). Reusing the
+DB7 context for two actors would mean two calls each creating (and later
+dropping) their own database, so the two actors could never see each
+other's uncommitted writes or lock the same row — not a race at all.
+
+`createConcurrencyTestContext` (`db8-concurrency-context.ts`) instead
+provisions **one** disposable database and exposes `spawnActor(label)`,
+which compiles an additional, independently-pooled Nest module against that
+same database. Two actors' transactions run on genuinely separate
+PostgreSQL backends and can block, deadlock or serialize against each other
+for real.
+
+### Files created
+
+| File | Purpose | Lines |
+|---|---|---|
+| `apps/api/src/tests/integration/db8-barrier.ts` | `Barrier` — named-signal async coordination (`waitFor`/`signal`), timeout-guarded, no `sleep` in the primary mechanism | 67 |
+| `apps/api/src/tests/integration/db8-concurrency-context.ts` | `createConcurrencyTestContext`/`spawnActor` — multi-pool actors against one disposable database | 113 |
+| `apps/api/src/tests/integration/db8-retry.ts` | `withBoundedRetry` — retries only `PersistenceError.retryable === true`, bounded attempts, rethrows everything else immediately | 61 |
+| `apps/api/src/tests/integration/db8-harness.integration.spec.ts` | Harness self-test: independent pools, uncommitted-write isolation, cross-connection rollback visibility, deterministic barrier ordering, barrier timeout, teardown, `reset()`, a real UNIQUE arbiter across two connections | 160 |
+| `apps/api/src/tests/integration/db8-harness-deadlock.integration.spec.ts` | Forces a real `40P01`, proves the mapper classifies it `RETRYABLE_TRANSACTION_FAILURE`, proves the bounded retry re-runs the whole losing transaction, proves non-retryable errors are never retried and retries are bounded, proves no torn row survives an aborted loser | 224 |
+
+All five files are under the 400/600-line hard limits (source/test); the
+two spec files together give CP1 twelve tests, all executed twice (once
+before, once after an ESLint fix pass) against the pinned disposable-Postgres
+instance.
+
+### Evidence
+
+| Requirement (§12) | Test | Result |
+|---|---|---|
+| Multiple independent pools/clients | `gives two spawned actors independent connection pools against the same database` | PASS — `a.get(DatabaseExecutor) !== b.get(DatabaseExecutor)` |
+| Deterministic barriers | `orders two actors deterministically through a barrier rather than by timing` | PASS |
+| Pause before/after lock/write/commit | every deadlock/rollback test | PASS |
+| Controlled commit/rollback | `rolls back a throwing transaction so no other connection ever observes it` | PASS |
+| Timeout detection | `times out a barrier wait that never receives its signal, rather than hanging` | PASS |
+| SQLSTATE capture | deadlock test asserts `diagnostics.sqlState === '40P01'` | PASS |
+| Row snapshot before/after | `leaves no partial row after a deadlock loser is aborted` | PASS |
+| Connection cleanup / test DB cleanup | `drops the disposable database on close and leaves no actor connection open` | PASS; `pg_database` swept for `%db8%` after the run — empty |
+| `40001`/`40P01` centralized handling | deadlock suite, real trigger | PASS (`40P01` proven; `40001` has no live producer per `DB8_LOCK_ORDER_MATRIX.md` §3 — CC-23 `N/A`) |
+| Bounded attempts, no infinite retry | `does not retry a non-retryable rejection, and does not retry forever` | PASS — `RetryExhaustedError` after `maxAttempts` |
+| Retry whole transaction, not a statement | `the bounded retry re-runs the whole losing transaction to a clean commit` | PASS |
+
+### Deviations / decisions
+
+**DEC-DB8-004 — the deadlock probe uses `redirect_rules`, not a business
+table.** `DB8_LOCK_ORDER_MATRIX.md` §5 already recorded that no shipped flow
+takes two locks in opposite order, so CP1's harness proof uses the same
+generic two-CHECK/UNIQUE probe table `transaction-manager.integration.spec.ts`
+uses (DB7-CP1/CP2 precedent) rather than inventing business-table lock
+contention that doesn't exist in the app. CP2–CP6 raise real business-flow
+races (`sku_stocks`, `orders`, etc.) on top of this same harness.
+
+**DEC-DB8-005 — raw lock statements are wrapped in `withMappedErrors`
+inside the harness, matching production.** The first deadlock test attempt
+asserted on a raw, unmapped driver error and failed — `DatabaseExecutor`
+does not auto-map; only `withMappedErrors` (called by every repository
+method) does. Fixed by wrapping the harness's `lockRow` helper the same way
+`OrderRepository`/`SkuStockRepository` wrap theirs, so the proof exercises
+the actual production error-mapping path, not a shortcut around it.
+
+### Result
+
+CP1 PASS. Harness proven: two real independent connections, deterministic
+barriers, forced rollback, forced real `40P01` deadlock correctly mapped
+and retried, no leaked databases. Continuing to CP2 (inventory hold/
+reservation races).
