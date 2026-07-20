@@ -12,7 +12,8 @@ import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { asc, eq } from 'drizzle-orm';
 
 import type { SkuId } from '../../../catalog/domain/repositories/placement-hierarchy.port';
-import { InventoryCommitments, actorColumns } from './inventory-commitments';
+import { actorColumns, InventoryCommitments } from './inventory-commitments';
+import { InventoryReservations } from './inventory-reservations';
 import { StockAnchor, toStock } from './stock-anchor';
 import type {
   InventoryActor,
@@ -35,6 +36,7 @@ export class DrizzleSkuStockRepository extends DrizzleRepository implements SkuS
     executor: DatabaseExecutor,
     private readonly anchor: StockAnchor,
     private readonly commitments: InventoryCommitments,
+    private readonly reservations: InventoryReservations,
   ) {
     super(executor);
   }
@@ -141,22 +143,22 @@ export class DrizzleSkuStockRepository extends DrizzleRepository implements SkuS
     return this.commitments.releaseSoftHold(id, reason, actor);
   }
 
-  convertHold(input: Parameters<InventoryCommitments['convertHold']>[0]): Promise<Reservation> {
-    return this.commitments.convertHold(input);
+  convertHold(input: Parameters<InventoryReservations['convertHold']>[0]): Promise<Reservation> {
+    return this.reservations.convertHold(input);
   }
 
   createReservation(
-    input: Parameters<InventoryCommitments['createReservation']>[0],
+    input: Parameters<InventoryReservations['createReservation']>[0],
   ): Promise<Reservation> {
-    return this.commitments.createReservation(input);
+    return this.reservations.createReservation(input);
   }
 
   releaseReservation(id: ReservationId, reason: string, actor: InventoryActor): Promise<void> {
-    return this.commitments.releaseReservation(id, reason, actor);
+    return this.reservations.releaseReservation(id, reason, actor);
   }
 
   consumeReservation(id: ReservationId, actor: InventoryActor): Promise<void> {
-    return this.commitments.consumeReservation(id, actor);
+    return this.reservations.consumeReservation(id, actor);
   }
 
   findHold(id: SoftHoldId): Promise<SoftHold | undefined> {
@@ -164,7 +166,7 @@ export class DrizzleSkuStockRepository extends DrizzleRepository implements SkuS
   }
 
   findReservation(id: ReservationId): Promise<Reservation | undefined> {
-    return this.commitments.findReservation(id);
+    return this.reservations.findReservation(id);
   }
 
   async findBySku(skuId: SkuId): Promise<SkuStock | undefined> {
