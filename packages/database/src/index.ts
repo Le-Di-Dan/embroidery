@@ -92,7 +92,13 @@ export * as schema from './schema/index';
 export type {
   AdminAccountState,
   AdminSessionState,
+  ContactKind,
+  GrantScopeKind,
   IdempotencyRecordState,
   JobAttemptOutcome,
   OutboxEventState,
+  SecureAccessGrantState,
+  VerificationAttemptOutcome,
+  VerificationChallengeState,
+  VerificationPurpose,
 } from './schema/index';
