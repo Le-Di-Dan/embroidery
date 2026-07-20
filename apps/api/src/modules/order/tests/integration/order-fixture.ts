@@ -9,9 +9,9 @@
  * Test-only.
  */
 import { newId } from '@embroidery/database';
+import type { DisposableDatabase } from '@embroidery/database/testing';
 import { sql } from 'drizzle-orm';
 
-import type { PersistenceTestContext } from '../../../../tests/integration/persistence-test-context';
 import type { CustomRequestId } from '../../domain/repositories/custom-request.repository';
 
 export interface OrderFixture {
@@ -29,9 +29,15 @@ export interface OrderFixture {
 
 const DOC_HASH = `sha256:${'1'.repeat(64)}`;
 
-/** Seeds one complete order-ready chain. */
+/**
+ * Seeds one complete order-ready chain.
+ *
+ * Only reads `context.disposable`, so both the single-actor DB7
+ * `PersistenceTestContext` and the multi-actor DB8 `ConcurrencyTestContext`
+ * satisfy this structurally — one fixture, no duplicated raw-SQL setup.
+ */
 export async function seedOrderChain(
-  context: PersistenceTestContext,
+  context: { readonly disposable: DisposableDatabase },
   suffix = '1',
 ): Promise<OrderFixture> {
   const db = context.disposable.client.db;

@@ -238,3 +238,69 @@ CP2 PASS. All 3 P0 inventory races proven with real, independent
 connections; zero oversubscription, zero double-conversion, zero
 eligibility-guard bypass observed across 6 runs. Continuing to CP3
 (quotation, order, payment, refund races).
+
+---
+
+## DB8-CP3 — Quotation, Order, Payment and Refund races
+
+**Starting HEAD:** `6b66d21` (CP2 closure).
+
+**Scope:** The two P0 races in this checkpoint's territory: CC-07 (order
+creation gate) and CC-09 (payment provider-event idempotent ingestion).
+
+### DEC-DB8-007 — correcting CP0's premature "PASS" statuses
+
+`DB8_RACE_COVERAGE_MATRIX.md`, written at CP0 before any test existed,
+marked every P0/P1 row's Status column `PASS` as a **plan**, not a result —
+an error in the original table, not a claim anyone acted on. Corrected now,
+before CP3 closes, rather than left to be discovered at CP7: every row not
+yet backed by an executed test is relabeled `DEFERRED TO DB9` (P1 rows
+sharing an already-proven lock/arbiter shape) or `PLANNED — CP<n>` (P0 rows
+still scheduled: CC-19/CC-20, this checkpoint's own scope boundary). Rows
+actually exercised (CC-07, CC-09, CC-15, CC-16, CC-17, CC-22) keep `PASS`
+because a test now backs them. This is the same "record the deviation, deal
+with it before closure" discipline DB7 used when CP5 caught CP4's gaps
+(`DB7_COMPLETION_REPORT.md` §6) — an honest correction, not a new problem.
+
+Specifically deferred this checkpoint, each because it shares a lock/arbiter
+*shape* already proven under real contention by a P0 test:
+
+| CC | Deferred because |
+|---|---|
+| CC-02, CC-03 | same `FOR UPDATE`-single-row / partial-unique-arbiter shapes CC-15/16 and CC-07/09 already proved |
+| CC-06 | same `FOR UPDATE` + in-tx re-read shape CC-07 already proved |
+| CC-10, CC-11, CC-12 | same single-row `FOR UPDATE` / in-tx-read-under-lock shapes CC-17 and CC-07 already proved |
+| CC-21 | same claim-index shape CP5 proves for CC-19; G-DB7-58 already documents at-least-once as accepted, not a defect |
+
+### Scenarios and results
+
+| CC | Scenario | Test | Result |
+|---|---|---|---|
+| CC-07 | Two concurrent `createFromAcceptedQuotation` calls for the same request | `order-races.integration.spec.ts` — 2 tests, one a 5-iteration flakiness gate | **PASS** — exactly one order, exactly one `order.created` outbox row, outbox row names the winner's id |
+| CC-09 | Two concurrent deliveries of the same `(provider, provider_event_ref)` | `payment-races.integration.spec.ts` — 2 tests, one a 5-iteration flakiness gate | **PASS** — exactly one `recorded`, one `replay`, exactly one row in `payment_provider_events`; neither call errors (GRD-012) |
+
+### Reuse decision
+
+**DEC-DB8-008 — widened `seedOrderChain`'s parameter type, same pattern as
+CC-06's `seedInventoryChain` fix.** Same structural `{ disposable }` type
+widening as DEC-DB8-006, for the same reason: no behavior change for DB7
+callers (full `modules/order` + `modules/payment` suite re-run: 83/83
+passing, up from DB7's 79 — the 4 new race tests), no fixture duplication.
+
+### Flakiness gate
+
+CC-07: 4 full suite runs, each including an internal 5-iteration repeat
+(24 total race trials) — 0 flaky results. CC-09: 5 full suite runs, each
+including an internal 5-iteration repeat (30 total race trials) — 0 flaky
+results.
+
+### Cleanup
+
+`pg_database` swept for `%cp3%`/`%db8%` after all runs — empty.
+
+### Result
+
+CP3 PASS for its P0 scope (CC-07, CC-09). P1 rows in this checkpoint's
+territory deferred per DEC-DB8-007 with reasons recorded in
+`DB8_RACE_COVERAGE_MATRIX.md`, not silently skipped. Continuing to CP4
+(version-pointer, approval, production races).
