@@ -374,10 +374,18 @@ timeout sweep.
 
 | Metric | Value |
 |---|---|
-| Launch partial indexes total | **45** (13 partial unique + 32 partial performance) |
+| Launch partial indexes total | **45** (13 partial unique + 32 partial performance) — *superseded, see note* |
 | Implemented through G2 | **1** (IDX-002) |
 | Volatile predicates found | 0 (engine rejects them outright — proven) |
 | Remaining owners | partial uniques with their groups; partial performance in S25 |
+
+**S28 closure note (2026-07-20):** this row's 45/32 figure was this early snapshot's launch
+*estimate*, made before the S25 backlog was implemented and exactly re-derived from
+predicates. DB6-S25's live re-derivation found the correct split to be **46/33 (37
+non-partial performance)** — total physical indexes (211) and total performance indexes
+(70) were never wrong, only this one-item partial/non-partial sub-split. See
+`DB6_INDEX_IMPLEMENTATION_MANIFEST.md` §7 for the corrected figure. This row is retained
+unedited as the historical estimate; it is not the current value.
 
 ### A08 — VND scale (partially closed)
 
