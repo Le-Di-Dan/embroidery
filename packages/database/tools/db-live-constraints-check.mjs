@@ -40,7 +40,9 @@ const { rows: partialAsConstraint } = await client.query(`
   WHERE con.contype = 'u' AND n.nspname = 'public' AND idx.indpred IS NOT NULL
 `);
 if (partialAsConstraint.length > 0) {
-  fail(`UNIQUE constraint(s) unexpectedly partial: ${partialAsConstraint.map((r) => r.conname).join(', ')}`);
+  fail(
+    `UNIQUE constraint(s) unexpectedly partial: ${partialAsConstraint.map((r) => r.conname).join(', ')}`,
+  );
 }
 
 // zero unresolved deferred FK rows — every documented deferred edge from the

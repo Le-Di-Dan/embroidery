@@ -23,11 +23,15 @@ note(`money-shaped columns (name LIKE %amount%): ${moneyCols.length}`);
 
 for (const c of moneyCols) {
   if (c.data_type !== 'numeric') {
-    fail(`${c.table_name}.${c.column_name} is ${c.data_type}, expected numeric (never float/real/double)`);
+    fail(
+      `${c.table_name}.${c.column_name} is ${c.data_type}, expected numeric (never float/real/double)`,
+    );
     continue;
   }
   if (c.numeric_precision !== 14 || c.numeric_scale !== 2) {
-    fail(`${c.table_name}.${c.column_name} is numeric(${c.numeric_precision},${c.numeric_scale}), expected numeric(14,2)`);
+    fail(
+      `${c.table_name}.${c.column_name} is numeric(${c.numeric_precision},${c.numeric_scale}), expected numeric(14,2)`,
+    );
   }
 }
 
@@ -47,15 +51,21 @@ for (const table of tablesWithMoney) {
   );
   const amountCols = moneyCols.filter((c) => c.table_name === table);
   if (checks.length < amountCols.length) {
-    fail(`${table}: ${amountCols.length} amount column(s) but only ${checks.length} currency-scale CHECK(s)`);
+    fail(
+      `${table}: ${amountCols.length} amount column(s) but only ${checks.length} currency-scale CHECK(s)`,
+    );
   }
   for (const chk of checks) {
     if (/now\(|current_date|current_timestamp/i.test(chk.def)) {
-      fail(`${table}.${chk.conname} currency-scale CHECK contains a volatile expression: ${chk.def}`);
+      fail(
+        `${table}.${chk.conname} currency-scale CHECK contains a volatile expression: ${chk.def}`,
+      );
     }
   }
 }
-note(`tables with money columns: ${tablesWithMoney.length}, all carry a matching currency-scale CHECK`);
+note(
+  `tables with money columns: ${tablesWithMoney.length}, all carry a matching currency-scale CHECK`,
+);
 
 await client.end();
 process.exitCode = finish();

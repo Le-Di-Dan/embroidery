@@ -20,7 +20,9 @@ const migrationsDir = join(here, '..', 'migrations');
 const manifestPath = join(here, 'migration-checksums.json');
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-const liveFiles = readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
+const liveFiles = readdirSync(migrationsDir)
+  .filter((f) => f.endsWith('.sql'))
+  .sort();
 
 const problems = [];
 
@@ -31,17 +33,25 @@ for (const file of Object.keys(manifest)) {
 }
 for (const file of liveFiles) {
   if (!(file in manifest)) {
-    problems.push(`${file} is not in the frozen checksum manifest — add it (a genuinely new migration) or investigate`);
+    problems.push(
+      `${file} is not in the frozen checksum manifest — add it (a genuinely new migration) or investigate`,
+    );
     continue;
   }
-  const actual = createHash('sha256').update(readFileSync(join(migrationsDir, file))).digest('hex');
+  const actual = createHash('sha256')
+    .update(readFileSync(join(migrationsDir, file)))
+    .digest('hex');
   if (actual !== manifest[file]) {
-    problems.push(`${file} content changed since it was frozen — expected sha256 ${manifest[file]}, got ${actual}`);
+    problems.push(
+      `${file} content changed since it was frozen — expected sha256 ${manifest[file]}, got ${actual}`,
+    );
   }
 }
 
 if (problems.length === 0) {
-  console.log(`[migration-checksum] all ${liveFiles.length} migration files match the frozen manifest`);
+  console.log(
+    `[migration-checksum] all ${liveFiles.length} migration files match the frozen manifest`,
+  );
   process.exit(0);
 }
 

@@ -31,10 +31,22 @@ const classify = async (label, expected, where) => {
 };
 
 await classify('PK backing', 78, `i.indisprimary`);
-await classify('UNIQUE backing (non-partial)', 50, `i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL`);
-await classify('partial unique', 13, `i.indisunique AND NOT i.indisprimary AND i.indpred IS NOT NULL`);
+await classify(
+  'UNIQUE backing (non-partial)',
+  50,
+  `i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL`,
+);
+await classify(
+  'partial unique',
+  13,
+  `i.indisunique AND NOT i.indisprimary AND i.indpred IS NOT NULL`,
+);
 await classify('partial performance', 33, `NOT i.indisunique AND i.indpred IS NOT NULL`);
-await classify('non-partial performance', 37, `NOT i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL`);
+await classify(
+  'non-partial performance',
+  37,
+  `NOT i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL`,
+);
 await classify('physical partial (total)', 46, `i.indpred IS NOT NULL`);
 
 // volatile predicate scan — no now()/current_* in any partial predicate
@@ -65,7 +77,8 @@ const { rows: dup } = await client.query(`
   HAVING count(*) > 1
 `);
 note(`duplicate index definitions: ${dup.length}`);
-if (dup.length > 0) fail(`duplicate index definition(s) on: ${dup.map((r) => r.relname).join(', ')}`);
+if (dup.length > 0)
+  fail(`duplicate index definition(s) on: ${dup.map((r) => r.relname).join(', ')}`);
 
 // unowned index scan — every non-constraint-backed index must carry the
 // approved `ix_` name prefix (constraint-backed ones carry pk_/uq_).
@@ -76,7 +89,8 @@ const { rows: unnamed } = await client.query(`
   WHERE n.nspname = 'public' AND NOT x.indisprimary AND NOT x.indisunique
     AND i.relname NOT LIKE 'ix\\_%'
 `);
-if (unnamed.length > 0) fail(`unowned/non-conforming index name(s): ${unnamed.map((r) => r.relname).join(', ')}`);
+if (unnamed.length > 0)
+  fail(`unowned/non-conforming index name(s): ${unnamed.map((r) => r.relname).join(', ')}`);
 
 await client.end();
 process.exitCode = finish();

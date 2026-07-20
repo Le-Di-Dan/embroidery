@@ -39,7 +39,8 @@ const { rows: noPk } = await client.query(`
       SELECT 1 FROM pg_constraint p WHERE p.conrelid = c.oid AND p.contype = 'p'
     )
 `);
-if (noPk.length > 0) fail(`table(s) without a primary key: ${noPk.map((r) => r.relname).join(', ')}`);
+if (noPk.length > 0)
+  fail(`table(s) without a primary key: ${noPk.map((r) => r.relname).join(', ')}`);
 
 await client.end();
 process.exitCode = finish();

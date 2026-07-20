@@ -34,11 +34,70 @@ const CANONICAL = {
   shipping_fee_acknowledgements: ['always', '', '', 'retention_exempt'],
   asset_inspections: ['always', '', '', 'retention_exempt'],
   background_job_attempts: ['always', '', '', 'retention_exempt'],
-  outbox_events: ['always', '', '', 'retention_exempt', 'status', 'attempt_count', 'next_attempt_at', 'claimed_by', 'claimed_at', 'dispatched_at', 'last_error'],
-  refunds: ['always', '', '', 'reject', 'status', 'method', 'transfer_reference', 'reason', 'customer_visible_reason', 'approved_by_admin_id', 'executed_by_admin_id', 'approved_at', 'executed_at', 'updated_at'],
-  design_versions: ['frozen_when_not', 'status', 'DRAFT', 'reject', 'status', 'sent_at', 'approved_at', 'superseded_at', 'voided_at', 'void_reason'],
-  quotation_versions: ['frozen_when_not', 'status', 'DRAFT', 'reject', 'status', 'sent_at', 'accepted_at', 'superseded_at', 'expired_at', 'void_reason'],
-  agreement_versions: ['frozen_when_not', 'status', 'DRAFT', 'reject', 'status', 'published_at', 'superseded_at', 'withdrawn_at', 'withdraw_reason'],
+  outbox_events: [
+    'always',
+    '',
+    '',
+    'retention_exempt',
+    'status',
+    'attempt_count',
+    'next_attempt_at',
+    'claimed_by',
+    'claimed_at',
+    'dispatched_at',
+    'last_error',
+  ],
+  refunds: [
+    'always',
+    '',
+    '',
+    'reject',
+    'status',
+    'method',
+    'transfer_reference',
+    'reason',
+    'customer_visible_reason',
+    'approved_by_admin_id',
+    'executed_by_admin_id',
+    'approved_at',
+    'executed_at',
+    'updated_at',
+  ],
+  design_versions: [
+    'frozen_when_not',
+    'status',
+    'DRAFT',
+    'reject',
+    'status',
+    'sent_at',
+    'approved_at',
+    'superseded_at',
+    'voided_at',
+    'void_reason',
+  ],
+  quotation_versions: [
+    'frozen_when_not',
+    'status',
+    'DRAFT',
+    'reject',
+    'status',
+    'sent_at',
+    'accepted_at',
+    'superseded_at',
+    'expired_at',
+    'void_reason',
+  ],
+  agreement_versions: [
+    'frozen_when_not',
+    'status',
+    'DRAFT',
+    'reject',
+    'status',
+    'published_at',
+    'superseded_at',
+    'withdrawn_at',
+    'withdraw_reason',
+  ],
   shipping_details: ['frozen_when', 'status', 'FROZEN', 'reject'],
   design_template_versions: ['frozen_when_not_null', 'published_at', '', 'reject'],
 };
@@ -52,8 +111,10 @@ const { rows: fns } = await client.query(`
   WHERE n.nspname = 'public' AND p.proname = 'fn_reject_mutation_conditional'
 `);
 note(`trigger functions: ${fns.length} / 1`);
-if (fns.length !== 1) fail(`expected exactly 1 fn_reject_mutation_conditional, found ${fns.length}`);
-if (fns[0] && fns[0].prosecdef) fail('fn_reject_mutation_conditional is SECURITY DEFINER, expected INVOKER');
+if (fns.length !== 1)
+  fail(`expected exactly 1 fn_reject_mutation_conditional, found ${fns.length}`);
+if (fns[0] && fns[0].prosecdef)
+  fail('fn_reject_mutation_conditional is SECURITY DEFINER, expected INVOKER');
 
 const { rows: trig } = await client.query(`
   SELECT c.relname AS table_name, t.tgname, pg_get_triggerdef(t.oid) AS def

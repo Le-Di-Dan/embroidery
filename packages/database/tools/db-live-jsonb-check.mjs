@@ -17,7 +17,9 @@ const { rows: jsonbCols } = await client.query(`
 `);
 note(`physical JSONB columns: ${jsonbCols.length} / 9`);
 if (jsonbCols.length !== 9) {
-  fail(`live JSONB column count is ${jsonbCols.length}, expected 9: ${jsonbCols.map((r) => `${r.table_name}.${r.column_name}`).join(', ')}`);
+  fail(
+    `live JSONB column count is ${jsonbCols.length}, expected 9: ${jsonbCols.map((r) => `${r.table_name}.${r.column_name}`).join(', ')}`,
+  );
 }
 
 // no GIN/GiST/BRIN index over any JSONB column (no canonical boundary calls
@@ -38,7 +40,9 @@ for (const { table_name, column_name } of jsonbCols) {
   );
   const nonBtree = idx.filter((r) => r.amname !== 'btree');
   if (nonBtree.length > 0) {
-    fail(`unexpected non-btree index over JSONB column ${table_name}.${column_name}: ${nonBtree.map((r) => `${r.relname} (${r.amname})`).join(', ')}`);
+    fail(
+      `unexpected non-btree index over JSONB column ${table_name}.${column_name}: ${nonBtree.map((r) => `${r.relname} (${r.amname})`).join(', ')}`,
+    );
   }
 }
 note(`GIN/GiST/BRIN over JSONB columns: 0 (none expected, none canonical)`);

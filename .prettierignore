@@ -14,3 +14,7 @@ docs/
 README.md
 CLAUDE.md
 manifest.json
+
+# drizzle-kit generated migration metadata — never hand-formatted (CLAUDE.md §5).
+# Reformatting these changes bytes drizzle treats as migration identity.
+packages/database/migrations/meta/
