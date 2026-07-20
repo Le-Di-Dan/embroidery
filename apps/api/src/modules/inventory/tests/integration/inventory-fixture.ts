@@ -9,9 +9,9 @@
  * Test-only.
  */
 import { newId } from '@embroidery/database';
+import type { DisposableDatabase } from '@embroidery/database/testing';
 import { sql } from 'drizzle-orm';
 
-import type { PersistenceTestContext } from '../../../../tests/integration/persistence-test-context';
 import type { SkuId } from '../../../catalog/domain/repositories/placement-hierarchy.port';
 
 export interface InventoryFixture {
@@ -20,9 +20,15 @@ export interface InventoryFixture {
   readonly orderId: string;
 }
 
-export async function seedInventoryChain(
-  context: PersistenceTestContext,
-): Promise<InventoryFixture> {
+/**
+ * Only reads `context.disposable`, so both the single-actor DB7
+ * `PersistenceTestContext` and the multi-actor DB8 `ConcurrencyTestContext`
+ * satisfy this structurally — one seed helper, no duplicated raw-SQL setup
+ * between the two harnesses.
+ */
+export async function seedInventoryChain(context: {
+  readonly disposable: DisposableDatabase;
+}): Promise<InventoryFixture> {
   const db = context.disposable.client.db;
   const categoryId = newId();
   const productId = newId();

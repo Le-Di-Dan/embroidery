@@ -183,3 +183,58 @@ CP1 PASS. Harness proven: two real independent connections, deterministic
 barriers, forced rollback, forced real `40P01` deadlock correctly mapped
 and retried, no leaked databases. Continuing to CP2 (inventory hold/
 reservation races).
+
+---
+
+## DB8-CP2 — Inventory, hold and reservation races
+
+**Starting HEAD:** `4a5daae` (CP1 closure).
+
+**Scope:** The three P0 inventory races from `DB8_RACE_COVERAGE_MATRIX.md`
+(CC-15/16/17) — the lock-anchor pattern DB7 built for exactly this and
+proved single-run only.
+
+### Reuse decision
+
+**DEC-DB8-006 — widened `seedInventoryChain`'s parameter type instead of
+duplicating the fixture.** DB7's `inventory-fixture.ts` typed its parameter
+as the single-actor `PersistenceTestContext`, but the function body only
+ever reads `context.disposable`. Widened the parameter to the structural
+type `{ disposable: DisposableDatabase }`, which both `PersistenceTestContext`
+(DB7) and `ConcurrencyTestContext` (DB8) satisfy — no behavior change for
+any existing DB7 caller (verified: `pnpm jest inventory` still 28/28 after
+the change, up from DB7's 24 — the 4 new race tests), and no ~130-line raw-
+SQL fixture duplicated between the two harnesses.
+
+### Scenarios and results
+
+| CC | Scenario | Test | Result |
+|---|---|---|---|
+| CC-15 | Two soft holds (7 + 7) against 10 on-hand — oversubscription | `two soft holds racing the same SKU never both succeed past available stock` | **PASS** — exactly one commits, one gets `INSUFFICIENT_STOCK`; ledger shows 7 held total, never 14 |
+| CC-15b | Boundary case: exact-fit hold then the next unit | `a hold that fits exactly the remaining stock succeeds; the next unit does not` | PASS |
+| CC-16 | Two concurrent `convertHold` calls on the same hold | `two concurrent conversions of the same hold never both create a reservation` | **PASS** — exactly one reservation row, one caller rejected |
+| CC-17 | Reservation attempt racing a concurrent deposit-obligation cancellation | `reservation eligibility is decided by what the in-tx read actually saw` | **PASS** — reservation count is always consistent with the caller's own outcome (1↔committed, 0↔rejected), never split |
+
+No `Barrier` was needed for CC-15/16 — `Promise.all` against the row lock
+*is* the race; a barrier would have serialized what needs to stay
+concurrent. CC-17 uses `Barrier` because it races two structurally different
+operations (a repository call vs. a direct SQL update) that need to land in
+the same window rather than two identical calls contending for one lock.
+
+### Flakiness gate
+
+Ran the full 4-test suite **5 additional times** (6 total including the
+first pass) with `--runInBand`: 4/4 pass every time, 0 flaky results.
+
+### Cleanup
+
+`pg_database` swept for `%cp2%`/`%db8%` after all runs — empty. Full
+`inventory` module suite (persistence + reservations + races) re-run: 28/28
+passing (24 DB7 + 4 new DB8).
+
+### Result
+
+CP2 PASS. All 3 P0 inventory races proven with real, independent
+connections; zero oversubscription, zero double-conversion, zero
+eligibility-guard bypass observed across 6 runs. Continuing to CP3
+(quotation, order, payment, refund races).
