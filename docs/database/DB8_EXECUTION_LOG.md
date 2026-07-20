@@ -304,3 +304,45 @@ CP3 PASS for its P0 scope (CC-07, CC-09). P1 rows in this checkpoint's
 territory deferred per DEC-DB8-007 with reasons recorded in
 `DB8_RACE_COVERAGE_MATRIX.md`, not silently skipped. Continuing to CP4
 (version-pointer, approval, production races).
+
+---
+
+## DB8-CP4 — Version-pointer, Approval and Production races
+
+**Starting HEAD:** `da37710` (CP3 closure).
+
+**Scope:** Current-version-pointer races (Agreement, Design Case, Quotation,
+Policy Configuration), approval races, production job races.
+
+### Result: no P0 rows in this checkpoint's territory
+
+Every race `DB8_RACE_COVERAGE_MATRIX.md` assigns to this checkpoint's domain
+is already classified, and none is P0:
+
+| CC | Domain | Status (set in CP0/CP3) |
+|---|---|---|
+| CC-02 | Design Case current-version pointer | `DEFERRED TO DB9` (DEC-DB8-007) |
+| CC-03 | Single active review per case | `DEFERRED TO DB9` (DEC-DB8-007) |
+| CC-04 | Agreement current-version pointer | `DEFERRED TO DB9` (same shape, recorded at CP0) |
+| CC-05 | Policy Configuration current-version pointer | `DEFERRED TO DB9` (same shape, recorded at CP0) |
+| CC-06 | Quotation acceptance vs supersession | `DEFERRED TO DB9` (DEC-DB8-007) |
+| CC-08 | Production job creation (unique arbiter) | `DEFERRED TO DB9` (same shape as CC-07, recorded at CP0) |
+
+All six are current-version-pointer or unique-arbiter races whose *shape* —
+`SELECT … FOR UPDATE` on a single row, or a unique-constraint arbiter — is
+already proven under real concurrent contention by the P0 tests in CP2/CP3
+(CC-07, CC-09, CC-15, CC-16). No new lock pattern exists in this
+checkpoint's territory that those tests don't already exercise. Building a
+fifth near-identical `FOR UPDATE` race test would add test-suite weight
+without adding new evidence — the same judgment DB7-CP6 made for the outbox
+call sites (DEC-DB7-031).
+
+No code change, no new test file. This checkpoint exists to record that the
+territory was checked, not skipped.
+
+### Result
+
+CP4 PASS (nothing outstanding — full territory pre-classified `DEFERRED TO
+DB9` with reasons already on record). Continuing to CP5 (Outbox,
+Idempotency, Notification and worker-claim races) — the two remaining P0
+rows, CC-19 and CC-20, live here.
