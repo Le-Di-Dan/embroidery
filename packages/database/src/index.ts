@@ -105,6 +105,8 @@ export type {
   ContentPageType,
   CustomRequestState,
   DesignReviewOutcome,
+  DesignSessionState,
+  DesignTemplateState,
   DesignVersionState,
   GrantScopeKind,
   IdempotencyRecordState,
