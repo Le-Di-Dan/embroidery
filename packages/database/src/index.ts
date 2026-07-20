@@ -38,6 +38,18 @@ export { executeRaw, sql } from './client/raw-sql';
 export type { DriverError } from './errors/driver-error';
 export { driverErrorCode, extractDriverError } from './errors/driver-error';
 
+export type {
+  PersistenceErrorDiagnostics,
+  PersistenceErrorKind,
+  PersistenceErrorOptions,
+} from './errors/persistence-error';
+export { isPersistenceError, PersistenceError } from './errors/persistence-error';
+
+export type { ConstraintMeaning } from './errors/constraint-catalog';
+export { CATALOGUED_CONSTRAINTS, CONSTRAINT_MEANINGS } from './errors/constraint-catalog';
+
+export { mapDatabaseError, withMappedErrors } from './errors/map-database-error';
+
 export { newId } from './primitives/identifiers';
 
 export type { SchemaStatus, SchemaStatusCode } from './migrations/schema-status';

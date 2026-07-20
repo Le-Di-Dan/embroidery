@@ -79,8 +79,19 @@ export const SQLSTATE = {
   SERIALIZATION_FAILURE: '40001',
   /** deadlock_detected */
   DEADLOCK_DETECTED: '40P01',
-  /** restrict_violation — raised by the immutability triggers. */
+  /** restrict_violation. */
   RESTRICT_VIOLATION: '23001',
+  /**
+   * integrity_constraint_violation — what the 30 S24 immutability triggers
+   * actually raise (`ERRCODE = '23000'`, migration `0030`). DB6 documented
+   * `23001` against `RESTRICT_VIOLATION` here; corrected in DB7-CP2 after
+   * reading the trigger body and `DB6_S24_TRIGGER_REPORT.md` §"Error contract".
+   */
+  INTEGRITY_CONSTRAINT_VIOLATION: '23000',
+  /** read_only_sql_transaction — a write inside a read-only transaction. */
+  READ_ONLY_SQL_TRANSACTION: '25006',
+  /** query_canceled — statement_timeout or an explicit cancel. */
+  QUERY_CANCELED: '57014',
 } as const;
 
 export type SqlState = (typeof SQLSTATE)[keyof typeof SQLSTATE];

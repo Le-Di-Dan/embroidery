@@ -7,6 +7,8 @@
 export type { DisposableDatabase } from './disposable-database';
 export { createDisposableDatabase, disposableDatabaseName } from './disposable-database';
 
+export { truncateAllTables } from './reset-database';
+
 export { verifySchemaBaseline } from './verify-schema-baseline';
 export type { SchemaBaselineResult } from './verify-schema-baseline';
 
