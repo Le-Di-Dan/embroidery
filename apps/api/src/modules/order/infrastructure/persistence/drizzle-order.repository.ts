@@ -4,7 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
 import type { OrderState } from '@embroidery/database';
-import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
+import { DatabaseExecutor, DrizzleRepository, OutboxEventStore } from '@embroidery/persistence';
 import { asc, eq } from 'drizzle-orm';
 
 import { isLegalOrderTransition } from '../../domain/lifecycle/order-transitions';
@@ -49,6 +49,7 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     executor: DatabaseExecutor,
     private readonly chain: OrderChainGuard,
     private readonly shipping: DrizzleOrderShippingRepository,
+    private readonly outbox: OutboxEventStore,
   ) {
     super(executor);
   }
@@ -162,6 +163,23 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
           })),
         );
       }
+
+      // SE-006 (DB3 side-effect catalog) / G-DB7-54: the notification the
+      // customer eventually gets rides this event, so it must commit with the
+      // order or not at all — same transaction, same `tx`. The payload holds
+      // only canonical references (ids, code), never amounts, contact details
+      // or a copy of the frozen items: a consumer resolves those itself from
+      // the ids, so the outbox row cannot go stale or leak what it does not
+      // carry. `uq_orders__request` is what makes this at-most-once: a second
+      // creation attempt for the same request fails on the `orders` insert
+      // above, before this line ever runs.
+      await this.outbox.append({
+        eventType: 'order.created',
+        aggregateKind: 'ORDER',
+        aggregateId: input.id,
+        payload: { orderId: input.id, code: input.code, customRequestId: input.customRequestId },
+        payloadSchemaVersion: 1,
+      });
 
       return toOrder(row);
     });

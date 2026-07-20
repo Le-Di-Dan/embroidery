@@ -121,6 +121,11 @@ export interface OrderRepository {
    * quotation version is actually ACCEPTED (G-DB7-21 / GRD-009). The
    * `uq_orders__request` arbiter prevents a second order for the same request.
    *
+   * Also appends the canonical `order.created` outbox event (SE-006,
+   * DB3 side-effect catalog) in the same transaction (G-DB7-54) — the
+   * notification the customer eventually gets can never observe an order
+   * that the database then rolls back, or an order with no event at all.
+   *
    * @requiresTransaction
    */
   createFromAcceptedQuotation(input: CreateOrderInput): Promise<Order>;
