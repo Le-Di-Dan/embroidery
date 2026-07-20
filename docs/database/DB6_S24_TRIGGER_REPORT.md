@@ -195,13 +195,13 @@ S25 (global index backlog: IDX-097/098, outbox partial indexes, etc.) is not sta
 
 Two commits, both on `production`, neither pushed nor amended:
 
-1. `chore(database): verify DB6 final relationship and isolation baseline` — adds
-   `DB6_PHYSICAL_ISOLATION_AUDIT.md`, the `db-manifest-check.mjs` mixed-mutability-class
-   fix, no schema/migration changes.
-2. `feat(database): implement DB6 integrity triggers` — adds migration 0030, its journal
-   entry and snapshot, and this report.
+1. `8774d29` — `chore(database): verify DB6 final relationship and isolation baseline` —
+   adds `DB6_PHYSICAL_ISOLATION_AUDIT.md`, the `db-manifest-check.mjs` mixed-mutability-class
+   fix, and the G19 report addendum; no schema/migration changes.
+2. `3ffade2` — `feat(database): implement DB6 integrity triggers` — adds migration 0030, its
+   journal entry and snapshot, and this report.
 
-Exact hashes recorded once committed (see repository log; not amended after recording).
+Both on `production`, tree clean, not pushed, not amended.
 
 ## I. Verdict
 
