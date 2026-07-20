@@ -245,3 +245,96 @@ CP2 **PASS**.
 **Commits:** `f12d5fb` `feat(database): add transaction error mapping and the integration harness`.
 
 **Next checkpoint:** DB7-CP3 — Persistence coverage wave A.
+
+---
+
+## DB7-CP3 — Persistence coverage wave A
+
+**Starting HEAD:** `65c4ed7`
+**Scope:** repository contracts, Drizzle implementations and real-PostgreSQL integration
+tests for the foundational and read-heavy contexts: Identity, Platform primitives, Customer
+/ Verification / Secure Access, Catalog, Asset, and Content / Gallery / Agreement.
+
+### Tables covered (34 of 78)
+
+| Context | Tables |
+|---|---|
+| CTX-IDN | TBL-001..003 |
+| CTX-CUS | TBL-004..010, TBL-078 (merge case/events deferred to CP4 with the workflow that uses them) |
+| CTX-CAT | TBL-011..017 |
+| CTX-AST | TBL-022..024 |
+| CTX-GAL | TBL-064, TBL-065 |
+| CTX-CNT | TBL-066..069 |
+| CTX-PLT | TBL-073..077 |
+
+### Decisions
+
+| ID | Decision | Rationale |
+|---|---|---|
+| DEC-DB7-017 | `DrizzleRepository` provides exactly three mechanics — executor resolution, transaction assertion, error funnelling — and no domain vocabulary. | Keeps the shared base from becoming the generic CRUD base DB7 §10.2 forbids: it has no `findAll`/`create`/`update`/`delete` and knows nothing about tables. |
+| DEC-DB7-018 | Lifecycle state unions are re-exported from `@embroidery/database` as **types only**, imported with `import type`. | Re-declaring them per module would create the second source DB5-A09 forbids, and a drifted copy would compile against a database that rejects the value. A type-only import erases at compile time, so no ORM value enters a domain bundle (`BACKEND_CONVENTIONS.md` §3 holds). |
+| DEC-DB7-019 | `PlacementHierarchyPort` is a **port** exported by `catalog`, not a repository other modules call. | Design, Approval and Production all need it, and `BACKEND_CONVENTIONS.md` §10 forbids them from calling catalog's concrete repository or reading its tables. |
+| DEC-DB7-020 | `BackgroundJobAttemptStore.record` writes **outside** any ambient transaction, via a dedicated `DatabaseExecutor.outsideTransaction()`. | An attempt record exists to explain why the surrounding work failed; enlisting it in that transaction rolls the evidence back with the failure it documents. Deliberately not the default — escaping the caller's transaction breaks atomicity, so every use states its reason at the call site. |
+| DEC-DB7-021 | The idempotency claim inserts with `onConflictDoNothing` rather than catching `23505`. | In PostgreSQL a caught unique violation aborts the enclosing transaction, which would take the domain work with it. Asserted by a test that continues using the transaction after a duplicate claim. |
+| DEC-DB7-022 | Test fixtures may seed another context's tables directly (e.g. `custom_requests` for the grant tests); production code may not. | The alternative is not testing the secure-grant guards until CP4. The boundary rule protects production coupling, not fixture setup. |
+
+### Defects found and corrected
+
+| ID | Defect | Correction |
+|---|---|---|
+| DEF-DB7-007 | `DatabaseExecutor.requireTransaction` threw a bare `Error`, which the mapper folded into `UNKNOWN_PERSISTENCE_FAILURE` — replacing the one message naming the actual mistake with "the operation could not be completed", leaving a forgotten transaction boundary undiagnosable from a log. | New `TransactionRequiredError` that `mapDatabaseError` rethrows untouched, because it is a programming error rather than a persistence failure. Caught by the identity suite. |
+| DEF-DB7-008 | `BackgroundJobAttemptStore.record` joined the caller's ambient transaction, so an attempt recorded to explain a failure was rolled back along with it, leaving no trace. | See DEC-DB7-020. Caught by a test that rolls back and asserts the evidence survived. |
+| DEF-DB7-009 | `ck_agreement_versions__withdraw_reason_required` enforces only NOT NULL, and `''` satisfies it — so the database accepted an agreement withdrawal with **no stated reason**, defeating the evidence the CHECK exists to capture. | The blank case is now rejected by `AgreementRepository.withdrawVersion`, with a test asserting both the rejection and that the version is left untouched. No migration: the schema is frozen and this is exactly the gap class DB7 exists to close. |
+| DEF-DB7-010 | The cursor decoder destructured the `any[]` from `JSON.parse`, letting an unvalidated value reach a `WHERE` clause through the type system. | Narrowed to `unknown[]` with explicit per-member string checks. |
+
+### Observations
+
+| ID | Observation | Handling |
+|---|---|---|
+| OBS-DB7-002 | `numeric(14,2)` returns `"150000.00"`, not `"150000"`: the text form carries the column's declared scale. The VND currency-scale CHECK is what keeps the fractional part zero. | Asserted with that stated rather than normalised away. Money stays a `string` end to end so no amount passes through a float. |
+
+### Tests
+
+| Suite | Cases |
+|---|---|
+| Identity (TBL-001..003) | 25 |
+| Platform primitives (TBL-073..077) | 37 across three suites |
+| Customer identity (TBL-004/005/078) | 13 |
+| Verification and grants (TBL-006..008) | 20 |
+| Catalog + placement guard (TBL-011..017) | 17 |
+| Asset (TBL-022..024) | 19 |
+| Content, agreement, gallery (TBL-064..069) | 24 |
+| Keyset cursors (unit) | 22 |
+
+Guards proven in this checkpoint: **G-DB7-01** (agreement current version),
+**G-DB7-08** (policy configuration current version), **G-DB7-10..13** (placement
+hierarchy), **G-DB7-38/39/40** (secure grant), **G-DB7-41/43/45** (verification),
+**G-DB7-47** (outbox aggregate kind), **G-DB7-50** (admin actor existence),
+**G-DB7-51** (job kind), **G-DB7-52/53** (idempotency claim and fingerprint),
+**G-DB7-54** (outbox atomicity, single-run), **G-DB7-56** (outbox payload immutability),
+**G-DB7-57** (append-only attempts).
+
+### Metrics
+
+| Metric | Value |
+|---|---|
+| Whole-workspace suite | 372 tests, 15/15 turbo tasks green |
+| Repositories implemented | 14 (+1 port, +4 platform stores) |
+| Files split to stay inside size limits | 3, by responsibility |
+| Disposable databases left after the run | 0 |
+| Persistent dev database | untouched |
+
+### Validation
+
+`pnpm format:check` PASS · `pnpm lint` 15/15 PASS · `pnpm typecheck` 15/15 PASS ·
+`pnpm test` 8/8 PASS · `pnpm check:file-size` PASS.
+
+### Result
+
+CP3 **PASS** for wave A.
+
+**Commits:** `b84ba84` (identity + kernel), `61cc542` (platform primitives),
+`4aed082` (customer/verification/grants), `7a08975` (catalog + asset + placement guard),
+`3119f80` (content + agreement + gallery).
+
+**Next checkpoint:** DB7-CP4 — Persistence coverage wave B.
