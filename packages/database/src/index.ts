@@ -43,12 +43,23 @@ export type {
   PersistenceErrorKind,
   PersistenceErrorOptions,
 } from './errors/persistence-error';
-export { isPersistenceError, PersistenceError } from './errors/persistence-error';
+export {
+  guardViolationError,
+  isPersistenceError,
+  notFoundError,
+  persistenceError,
+  PersistenceError,
+} from './errors/persistence-error';
 
 export type { ConstraintMeaning } from './errors/constraint-catalog';
 export { CATALOGUED_CONSTRAINTS, CONSTRAINT_MEANINGS } from './errors/constraint-catalog';
 
 export { mapDatabaseError, withMappedErrors } from './errors/map-database-error';
+
+export {
+  isTransactionRequiredError,
+  TransactionRequiredError,
+} from './errors/transaction-required-error';
 
 export { newId } from './primitives/identifiers';
 
@@ -62,3 +73,20 @@ export {
 } from './migrations/run-migrations';
 
 export * as schema from './schema/index';
+
+/**
+ * Canonical lifecycle-state unions, re-exported as **types only**.
+ *
+ * DB5-A09 requires one canonical source per state set, and each schema module
+ * already declares its states once as a `const` tuple that its CHECK
+ * constraint, partial-index predicates and TypeScript union all derive from.
+ * Re-declaring those unions in each backend module's domain layer would create
+ * the second source DB5-A09 forbids, and a drifted copy would compile happily
+ * against a database that rejects the value.
+ *
+ * Domain code imports these with `import type`, which erases at compile time —
+ * no ORM value, table object or driver type enters a domain bundle, so
+ * `BACKEND_CONVENTIONS.md` §3 ("domain must not import an ORM") holds. Domain
+ * code must not import anything else from this package.
+ */
+export type { AdminAccountState, AdminSessionState } from './schema/index';

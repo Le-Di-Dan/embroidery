@@ -8,6 +8,7 @@
  */
 import { mapDatabaseError, withMappedErrors } from './map-database-error';
 import { PersistenceError } from './persistence-error';
+import { TransactionRequiredError } from './transaction-required-error';
 
 /** Shaped like a `pg` DatabaseError, including the fields that must NOT be read. */
 function driverError(fields: Record<string, unknown>): Error {
@@ -110,6 +111,15 @@ describe('mapDatabaseError', () => {
       );
 
       expect(mapped.code).toBe('ORDER_ALREADY_EXISTS_FOR_REQUEST');
+    });
+
+    it('lets a forgotten-transaction programming error through unchanged', () => {
+      const bug = new TransactionRequiredError('OrderRepository.createFromAcceptedQuotation');
+
+      // Rethrows rather than returning: classifying it as a persistence failure
+      // would hide the one message that names the actual mistake.
+      expect(() => mapDatabaseError(bug)).toThrow(TransactionRequiredError);
+      expect(() => mapDatabaseError(bug)).toThrow(/must run inside a transaction/);
     });
 
     it('does not re-map an already-mapped error', () => {

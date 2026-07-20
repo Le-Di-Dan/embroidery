@@ -19,6 +19,19 @@ export type { TransactionRunOptions } from './transaction/transaction-manager';
 export { TransactionManager } from './transaction/transaction-manager';
 export { transactionContext } from './transaction/transaction-context';
 
+export { DrizzleRepository } from './repository/drizzle-repository';
+
+export type { KeysetCursor, Page, PageRequest } from './query/keyset-cursor';
+export {
+  buildPage,
+  decodeCursor,
+  DEFAULT_PAGE_SIZE,
+  encodeCursor,
+  InvalidCursorError,
+  MAX_PAGE_SIZE,
+  resolveLimit,
+} from './query/keyset-cursor';
+
 export type {
   DatabaseHealth,
   DatabaseHealthReason,

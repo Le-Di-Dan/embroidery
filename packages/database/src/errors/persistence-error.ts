@@ -103,3 +103,57 @@ export class PersistenceError extends Error {
 export function isPersistenceError(error: unknown): error is PersistenceError {
   return error instanceof PersistenceError;
 }
+
+/**
+ * Raises a persistence error the *application* detected, rather than one the
+ * driver reported — a guard rejecting a cross-root pointer, an UPDATE that
+ * matched no row, a no-FK reference that did not resolve.
+ *
+ * These go through the same type as driver errors on purpose: a caller
+ * catching `PersistenceError` must not have to also catch a second, parallel
+ * family for the guards that protect the same invariants. `mapDatabaseError`
+ * passes an existing `PersistenceError` through unchanged, so one of these
+ * survives the repository's error funnel intact.
+ */
+export function persistenceError(options: {
+  kind: PersistenceErrorKind;
+  code: string;
+  message: string;
+  operation?: string;
+  retryable?: boolean;
+  cause?: unknown;
+}): PersistenceError {
+  return new PersistenceError({
+    kind: options.kind,
+    code: options.code,
+    message: options.message,
+    retryable: options.retryable === true,
+    replayable: false,
+    diagnostics: {
+      sqlState: undefined,
+      constraint: undefined,
+      table: undefined,
+      operation: options.operation,
+    },
+    ...(options.cause === undefined ? {} : { cause: options.cause }),
+  });
+}
+
+/** The aggregate or row the caller named does not exist. */
+export function notFoundError(operation: string, message: string): PersistenceError {
+  return persistenceError({
+    kind: 'INVALID_REFERENCE',
+    code: 'RECORD_NOT_FOUND',
+    message,
+    operation,
+  });
+}
+
+/** An application guard rejected the write (DB7-CP5 TX/App guards). */
+export function guardViolationError(
+  operation: string,
+  code: string,
+  message: string,
+): PersistenceError {
+  return persistenceError({ kind: 'INVARIANT_VIOLATION', code, message, operation });
+}

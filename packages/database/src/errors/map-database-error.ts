@@ -13,6 +13,7 @@ import { CONSTRAINT_MEANINGS } from './constraint-catalog';
 import type { ConstraintMeaning } from './constraint-catalog';
 import { PersistenceError } from './persistence-error';
 import type { PersistenceErrorKind } from './persistence-error';
+import { TransactionRequiredError } from './transaction-required-error';
 
 /** libpq/Node connection-layer errnos, as opposed to a SQLSTATE. */
 const CONNECTION_ERRNOS: ReadonlySet<string> = new Set([
@@ -190,6 +191,12 @@ export function mapDatabaseError(error: unknown, operation?: string): Persistenc
   // Already mapped — re-mapping would lose the specific classification.
   if (error instanceof PersistenceError) {
     return error;
+  }
+  // A forgotten transaction boundary is a programming error. Classifying it as
+  // a persistence failure would replace the one message naming the actual
+  // mistake with a generic one, leaving the bug undiagnosable from a log.
+  if (error instanceof TransactionRequiredError) {
+    throw error;
   }
 
   const driver = extractDriverError(error);

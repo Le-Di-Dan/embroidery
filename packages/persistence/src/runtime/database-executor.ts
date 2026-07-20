@@ -8,6 +8,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import type { Database, Transaction } from '@embroidery/database';
+import { TransactionRequiredError } from '@embroidery/database';
 
 import { DATABASE_CONNECTION } from './database.tokens';
 import type { DatabaseConnection } from './database-connection';
@@ -32,9 +33,7 @@ export class DatabaseExecutor {
   requireTransaction(operation: string): Transaction {
     const transaction = transactionContext.current();
     if (transaction === undefined) {
-      throw new Error(
-        `${operation} must run inside a transaction: wrap the call in TransactionManager.runInTransaction.`,
-      );
+      throw new TransactionRequiredError(operation);
     }
     return transaction;
   }
