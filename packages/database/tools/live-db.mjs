@@ -6,12 +6,29 @@
  */
 import pg from 'pg';
 
+/** Mirrors `redactUrl` from `src/config/database-config.ts` — never echo a credential. */
+export function redactUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.password !== '') parsed.password = '***';
+    return parsed.toString();
+  } catch {
+    return '<unparseable database url>';
+  }
+}
+
 export async function connect(url) {
   if (!url) {
-    throw new Error('usage: node <checker>.mjs <postgres-connection-string>');
+    console.error('usage: node <checker>.mjs <postgres-connection-string>');
+    process.exit(2);
   }
   const client = new pg.Client({ connectionString: url });
-  await client.connect();
+  try {
+    await client.connect();
+  } catch (err) {
+    console.error(`connection failed for ${redactUrl(url)}: ${err.code ?? err.message}`);
+    process.exit(2);
+  }
   return client;
 }
 
