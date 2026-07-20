@@ -61,10 +61,15 @@ export function decodeCursor(encoded: string): KeysetCursor {
     throw new InvalidCursorError();
   }
 
-  if (!Array.isArray(parsed) || parsed.length !== 2) {
+  // `unknown[]` rather than destructuring the `any[]` JSON.parse returns:
+  // destructuring `any` would let an unvalidated value through the type system
+  // and straight into a WHERE clause.
+  if (!Array.isArray(parsed) || (parsed as unknown[]).length !== 2) {
     throw new InvalidCursorError();
   }
-  const [sortValue, tieBreaker] = parsed;
+  const members = parsed as unknown[];
+  const sortValue = members[0];
+  const tieBreaker = members[1];
   if (typeof sortValue !== 'string' || typeof tieBreaker !== 'string') {
     throw new InvalidCursorError();
   }

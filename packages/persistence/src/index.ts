@@ -21,6 +21,38 @@ export { transactionContext } from './transaction/transaction-context';
 
 export { DrizzleRepository } from './repository/drizzle-repository';
 
+// CTX-PLT platform primitives — narrow infrastructure ports, not CRUD APIs.
+export type {
+  IdempotencyClaim,
+  IdempotencyKey,
+  IdempotencyRecordSummary,
+} from './platform/idempotency-store';
+export { IdempotencyStore, isIdempotencyConflict } from './platform/idempotency-store';
+
+export type {
+  AppendOutboxEventInput,
+  ClaimedOutboxEvent,
+  OutboxAggregateKind,
+} from './platform/outbox-event-store';
+export { OUTBOX_AGGREGATE_KINDS, OutboxEventStore } from './platform/outbox-event-store';
+
+export type {
+  BackgroundJobKind,
+  JobAttemptRecord,
+  RecordJobAttemptInput,
+} from './platform/background-job-attempt-store';
+export {
+  BACKGROUND_JOB_KINDS,
+  BackgroundJobAttemptStore,
+} from './platform/background-job-attempt-store';
+
+export type {
+  PolicyConfiguration,
+  PolicyConfigurationVersion,
+  PublishPolicyVersionInput,
+} from './platform/policy-configuration.repository';
+export { PolicyConfigurationRepository } from './platform/policy-configuration.repository';
+
 export type { KeysetCursor, Page, PageRequest } from './query/keyset-cursor';
 export {
   buildPage,

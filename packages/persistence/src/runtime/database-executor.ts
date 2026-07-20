@@ -26,6 +26,22 @@ export class DatabaseExecutor {
   }
 
   /**
+   * The pooled handle, ignoring any ambient transaction.
+   *
+   * For the narrow case of **evidence that must survive the failure it
+   * describes** — a worker's attempt record, whose whole purpose is to explain
+   * why the surrounding work rolled back. Writing it through `current()` would
+   * enlist it in that transaction and roll the evidence back too, leaving a
+   * failure with no trace.
+   *
+   * Deliberately not the default: escaping the caller's transaction breaks
+   * atomicity, so every use needs the reason stated at the call site.
+   */
+  outsideTransaction(): DatabaseExecutorHandle {
+    return this.connection.database;
+  }
+
+  /**
    * For multi-table commands, whose atomicity is a correctness requirement
    * rather than a preference. Failing loudly here beats discovering at 3am
    * that half a command committed because a caller forgot the boundary.

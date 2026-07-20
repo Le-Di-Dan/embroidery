@@ -89,4 +89,10 @@ export * as schema from './schema/index';
  * `BACKEND_CONVENTIONS.md` §3 ("domain must not import an ORM") holds. Domain
  * code must not import anything else from this package.
  */
-export type { AdminAccountState, AdminSessionState } from './schema/index';
+export type {
+  AdminAccountState,
+  AdminSessionState,
+  IdempotencyRecordState,
+  JobAttemptOutcome,
+  OutboxEventState,
+} from './schema/index';

@@ -26,6 +26,16 @@ export abstract class DrizzleRepository {
   }
 
   /**
+   * The pooled handle, ignoring any ambient transaction.
+   *
+   * Only for evidence that must survive the failure it describes. See
+   * `DatabaseExecutor.outsideTransaction`; state the reason at the call site.
+   */
+  protected get dbOutsideTransaction(): DatabaseExecutorHandle {
+    return this.executor.outsideTransaction();
+  }
+
+  /**
    * The ambient transaction, failing loudly if there is none.
    *
    * Multi-table commands call this so a caller who forgot the boundary gets a

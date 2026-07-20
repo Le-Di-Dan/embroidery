@@ -16,6 +16,10 @@ import { DatabaseConnection } from './runtime/database-connection';
 import { DatabaseExecutor } from './runtime/database-executor';
 import { DatabaseHealthService } from './health/database-health.service';
 import { TransactionManager } from './transaction/transaction-manager';
+import { IdempotencyStore } from './platform/idempotency-store';
+import { OutboxEventStore } from './platform/outbox-event-store';
+import { BackgroundJobAttemptStore } from './platform/background-job-attempt-store';
+import { PolicyConfigurationRepository } from './platform/policy-configuration.repository';
 
 @Module({
   providers: [
@@ -33,8 +37,23 @@ import { TransactionManager } from './transaction/transaction-manager';
     DatabaseExecutor,
     TransactionManager,
     DatabaseHealthService,
+    // CTX-PLT platform primitives (DEC-DB7-003): infrastructure records with no
+    // business invariants of their own, shared by the API and the worker.
+    IdempotencyStore,
+    OutboxEventStore,
+    BackgroundJobAttemptStore,
+    PolicyConfigurationRepository,
   ],
-  exports: [DatabaseExecutor, TransactionManager, DatabaseHealthService, DATABASE_CONNECTION],
+  exports: [
+    DatabaseExecutor,
+    TransactionManager,
+    DatabaseHealthService,
+    DATABASE_CONNECTION,
+    IdempotencyStore,
+    OutboxEventStore,
+    BackgroundJobAttemptStore,
+    PolicyConfigurationRepository,
+  ],
 })
 export class DatabaseModule implements OnModuleInit, OnApplicationShutdown {
   private readonly logger = new Logger(DatabaseModule.name);
