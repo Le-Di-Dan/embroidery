@@ -614,3 +614,78 @@ Every other business-module outbox call site is explicitly deferred, not
 silently completed.
 
 **Next checkpoint:** DB7-CP7 — Global verification and closure.
+
+## DB7-CP7 — Global verification and closure
+
+**Starting HEAD:** `133dbab`
+**Scope:** static validation suite, two independent disposable-database
+integration runs, final repository/guard/test-matrix reconciliation, and the
+three closing deliverables (`DB7_TEST_MATRIX.md`, `DB7_DB8_HANDOFF.md`,
+`DB7_COMPLETION_REPORT.md`).
+
+### Static gates (workspace-wide, `pnpm`, not per-package)
+
+`pnpm format:check` PASS · `pnpm lint` (`turbo run lint`) 15/15 tasks PASS ·
+`pnpm typecheck` (`turbo run typecheck`) 15/15 tasks PASS ·
+`pnpm check:file-size` PASS (0 files over the 400/600-line hard limits; 7
+files at the softer 300/500-line review threshold — `drizzle-agreement`,
+`drizzle-custom-request`, `drizzle-order`, `order.integration.spec`,
+`drizzle-payment-obligation`, `drizzle-quotation` repositories and
+`tools/db-metric-check.mjs`, all pre-existing except `drizzle-order.repository.ts`
+which grew to 316 lines from the CP6 outbox wiring — still 84 lines under the
+hard limit).
+
+### Two independent disposable-database runs
+
+1. `pnpm test` (warm turbo cache where available): 8/8 tasks green, 585/585
+   tests, plus 25/25 `node --test` cases in `tools/*.test.mjs`.
+2. `pnpm turbo run test --force` (every cache bypassed, every suite
+   re-executed against a freshly provisioned disposable database): 8/8
+   tasks green, 585/585 tests — identical count to run 1.
+
+`select datname from pg_database where datname like '%test%' or datname
+like '%cp%' or datname like '%disposable%'` against the pinned dev container
+returned zero rows after both runs. The persistent dev database was never a
+write target of any DB7 test — inspection only, per the non-negotiable rule.
+
+### Reconciliation
+
+- `DB7_SCOPE_AND_COVERAGE_MATRIX.md` — 78/78 tables confirmed owned by a
+  repository class that exists in the tree (re-checked, not re-assumed from
+  the CP0 draft).
+- `DB7_TX_APP_GUARD_MATRIX.md` — 59/59 guards confirmed "implemented,
+  tested" with a real assertion in the suite each row names as owner; 14
+  carry an explicit DB8 race handoff, now fully itemised in
+  `DB7_DB8_HANDOFF.md` §1 rather than left as a scattered comment per row.
+- `DB7_TEST_MATRIX.md` (new) — exact per-suite test counts pulled from
+  `jest --json` output (not grep-estimated, since several suites use
+  `it.each` tables that inflate the true count past what a call-site grep
+  would show), cross-referenced against the guard matrix's own "Owner"
+  column.
+- `DB7_DB8_HANDOFF.md` (new) — the 14 concurrency races (§1), the 16
+  deferred outbox call sites from CP6 (§2), the application-layer work DB7
+  never built (§3), and the one carried-forward documentation discrepancy
+  from CP0 (§4).
+- `DB7_COMPLETION_REPORT.md` (new) — the single closing summary: checkpoint
+  table, coverage/test/gate numbers, deviations recorded rather than hidden,
+  and the full 23-commit list from the DB7 scope-lock (`e16115f`) to this
+  checkpoint.
+
+### Metrics
+
+| Metric | Value |
+|---|---|
+| Tables owned | 78/78 |
+| Guards implemented and tested | 59/59 (14 with an itemised DB8 race handoff) |
+| Test suites / tests | 35 / 585, ×2 independent runs, identical |
+| Static gates | 4/4 PASS at workspace scope |
+| New closing documents | 3 (`DB7_TEST_MATRIX.md`, `DB7_DB8_HANDOFF.md`, `DB7_COMPLETION_REPORT.md`) |
+| Disposable databases left after either run | 0 |
+| Persistent dev database | untouched throughout DB7 |
+
+### Result
+
+CP7 **PASS**. DB7 — Application Persistence Integration — is **COMPLETE**.
+
+**Commits:** this checkpoint's evidence and the three new documents land in
+one docs commit closing DB7.
