@@ -15,7 +15,7 @@ import { join } from 'node:path';
 import { sql } from 'drizzle-orm';
 
 import type { Database } from '../client/create-database-client';
-import { MIGRATIONS_FOLDER, MIGRATIONS_SCHEMA, MIGRATIONS_TABLE } from './run-migrations';
+import { MIGRATIONS_SCHEMA, MIGRATIONS_TABLE } from './run-migrations';
 
 export type SchemaStatusCode =
   'up-to-date' | 'pending' | 'uninitialised' | 'ahead-of-repository' | 'checksum-mismatch';
@@ -33,13 +33,15 @@ function hashMigration(contents: string): string {
   return createHash('sha256').update(contents).digest('hex');
 }
 
-async function readRepositoryMigrations(): Promise<{ file: string; hash: string }[]> {
-  const entries = await readdir(MIGRATIONS_FOLDER).catch(() => [] as string[]);
+async function readRepositoryMigrations(
+  migrationsFolder: string,
+): Promise<{ file: string; hash: string }[]> {
+  const entries = await readdir(migrationsFolder).catch(() => [] as string[]);
   const files = entries.filter((entry) => entry.endsWith('.sql')).sort();
   return Promise.all(
     files.map(async (file) => ({
       file,
-      hash: hashMigration(await readFile(join(MIGRATIONS_FOLDER, file), 'utf8')),
+      hash: hashMigration(await readFile(join(migrationsFolder, file), 'utf8')),
     })),
   );
 }
@@ -60,8 +62,11 @@ async function readAppliedHashes(db: Database): Promise<string[] | null> {
   return applied.rows.map((row) => row.hash);
 }
 
-export async function readSchemaStatus(db: Database): Promise<SchemaStatus> {
-  const repository = await readRepositoryMigrations();
+export async function readSchemaStatus(
+  db: Database,
+  migrationsFolder: string,
+): Promise<SchemaStatus> {
+  const repository = await readRepositoryMigrations(migrationsFolder);
   const applied = await readAppliedHashes(db);
 
   if (applied === null) {

@@ -35,10 +35,18 @@ export { isSqlState, SQLSTATE, withTransaction } from './client/transaction';
 export type { SqlExecutor } from './client/raw-sql';
 export { executeRaw, sql } from './client/raw-sql';
 
+export type { DriverError } from './errors/driver-error';
+export { driverErrorCode, extractDriverError } from './errors/driver-error';
+
 export { newId } from './primitives/identifiers';
 
 export type { SchemaStatus, SchemaStatusCode } from './migrations/schema-status';
 export { readSchemaStatus } from './migrations/schema-status';
-export { runMigrations } from './migrations/run-migrations';
+export {
+  MIGRATIONS_SCHEMA,
+  MIGRATIONS_TABLE,
+  migrationsFolderFrom,
+  runMigrations,
+} from './migrations/run-migrations';
 
 export * as schema from './schema/index';

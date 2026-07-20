@@ -81,6 +81,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@embroidery/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
       '@nestjs/common':
         specifier: ^11.1.28
         version: 11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -97,6 +100,9 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
+      '@embroidery/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@embroidery/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
@@ -197,6 +203,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@embroidery/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
       '@nestjs/common':
         specifier: ^11.1.28
         version: 11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -210,6 +219,9 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
+      '@embroidery/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@embroidery/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
@@ -435,6 +447,55 @@ importers:
       eslint:
         specifier: ^10.7.0
         version: 10.7.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/persistence:
+    dependencies:
+      '@embroidery/database':
+        specifier: workspace:*
+        version: link:../database
+      '@nestjs/common':
+        specifier: ^11.1.28
+        version: 11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@types/pg@8.20.0)(pg@8.22.0)
+      pg:
+        specifier: 8.22.0
+        version: 8.22.0
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@embroidery/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@embroidery/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@nestjs/testing':
+        specifier: ^11.1.28
+        version: 11.1.28(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(@nestjs/platform-express@11.1.28)
+      '@types/jest':
+        specifier: ^30.0.0
+        version: 30.0.0
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      '@types/pg':
+        specifier: 8.20.0
+        version: 8.20.0
+      eslint:
+        specifier: ^10.7.0
+        version: 10.7.0
+      jest:
+        specifier: ^30.4.2
+        version: 30.4.2(@types/node@26.1.1)
+      ts-jest:
+        specifier: ^29.4.11
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@26.1.1))(typescript@5.9.3)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

@@ -1,0 +1,20 @@
+{
+  "extends": "@embroidery/typescript-config/nestjs.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false,
+    "baseUrl": ".",
+    // The NestJS baseline uses CommonJS + classic Node resolution, which
+    // predates package "exports" maps, so TypeScript cannot see the
+    // `@embroidery/database/testing` subpath on its own. Jest's resolver does
+    // honour the exports map at runtime; this only teaches the type checker
+    // the same mapping the package already declares publicly. It is not a
+    // deep import into a private directory (REPOSITORY_STRUCTURE.md §16) —
+    // the target is the package's own declared entry point.
+    "paths": {
+      "@embroidery/database/testing": ["../database/src/testing/index.ts"],
+      "@embroidery/database/schema": ["../database/src/schema/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "eslint.config.mjs", "jest.config.mjs"]
+}

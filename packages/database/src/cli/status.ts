@@ -6,13 +6,19 @@
  * and local scripts cannot proceed against a database that does not match the
  * schema the code was written for.
  */
+import { fileURLToPath } from 'node:url';
+
 import { loadDatabaseConfig, redactUrl } from '../config/database-config';
+import { migrationsFolderFrom } from '../migrations/run-migrations';
 import { createDatabaseClient } from '../client/create-database-client';
 import {
   readDatabaseBaseline,
   describeBaselineMismatches,
 } from '../client/assert-database-baseline';
 import { readSchemaStatus } from '../migrations/schema-status';
+
+/** This CLI is ESM (run through `tsx`), so it resolves the path itself. */
+const PACKAGE_JSON = fileURLToPath(new URL('../../package.json', import.meta.url));
 
 const GUIDANCE: Record<string, string> = {
   'up-to-date': 'Nothing to do.',
@@ -39,7 +45,7 @@ async function main(): Promise<void> {
       `[db:status] baseline    encoding=${baseline.encoding} collate=${baseline.collate} tz=${baseline.timeZone}`,
     );
 
-    const status = await readSchemaStatus(client.db);
+    const status = await readSchemaStatus(client.db, migrationsFolderFrom(PACKAGE_JSON));
     console.log(
       `[db:status] migrations  ${status.appliedMigrations} applied / ${status.repositoryMigrations} in repository`,
     );

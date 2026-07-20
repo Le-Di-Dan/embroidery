@@ -1,7 +1,8 @@
-import { NestFactory } from '@nestjs/core';
-
 import { WorkerLifecycleService } from './worker-lifecycle.service';
-import { WorkerModule } from './worker.module';
+
+// Booting the whole `WorkerModule` moved to `worker-persistence.integration.spec.ts`
+// when DB7 added the persistence runtime: the module now needs a real database,
+// and this file stays a fast unit test of the lifecycle service alone.
 
 describe('WorkerLifecycleService', () => {
   beforeEach(() => {
@@ -51,18 +52,6 @@ describe('WorkerLifecycleService', () => {
     service.onApplicationBootstrap();
     service.onApplicationShutdown();
     expect(() => service.onApplicationShutdown()).not.toThrow();
-    expect(service.isRunning()).toBe(false);
-  });
-});
-
-describe('worker application context', () => {
-  it('boots and closes cleanly', async () => {
-    const context = await NestFactory.createApplicationContext(WorkerModule, {
-      logger: false,
-    });
-    const service = context.get(WorkerLifecycleService);
-    expect(service.isRunning()).toBe(true);
-    await context.close();
     expect(service.isRunning()).toBe(false);
   });
 });

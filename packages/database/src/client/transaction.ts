@@ -14,6 +14,7 @@ import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import type { NodePgQueryResultHKT } from 'drizzle-orm/node-postgres';
 
 import type { Database } from './create-database-client';
+import { driverErrorCode } from '../errors/driver-error';
 import type * as schema from '../schema/index';
 
 export type Transaction = PgTransaction<
@@ -84,11 +85,10 @@ export const SQLSTATE = {
 
 export type SqlState = (typeof SQLSTATE)[keyof typeof SQLSTATE];
 
+/**
+ * Unwraps the driver error first: Drizzle wraps a `pg` error and attaches the
+ * original as `cause`, so a direct `error.code` read misses every SQLSTATE.
+ */
 export function isSqlState(error: unknown, state: SqlState): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === state
-  );
+  return driverErrorCode(error) === state;
 }

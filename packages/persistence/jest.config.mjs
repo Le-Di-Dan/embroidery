@@ -8,6 +8,6 @@ export default {
   transform: {
     '^.+\\.ts$': ['ts-jest', {}],
   },
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.spec.ts', '!src/main.ts'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.spec.ts', '!src/index.ts'],
   coverageReporters: ['text', 'lcov'],
 };

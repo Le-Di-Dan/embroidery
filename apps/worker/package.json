@@ -14,12 +14,14 @@
     "clean": "rimraf dist coverage"
   },
   "dependencies": {
+    "@embroidery/persistence": "workspace:*",
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@embroidery/database": "workspace:*",
     "@embroidery/eslint-config": "workspace:*",
     "@embroidery/typescript-config": "workspace:*",
     "@nestjs/cli": "^11.0.24",

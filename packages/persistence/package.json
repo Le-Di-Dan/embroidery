@@ -1,41 +1,36 @@
 {
-  "name": "@embroidery/database",
+  "name": "@embroidery/persistence",
   "version": "0.1.0",
   "private": true,
-  "description": "Physical schema, migrations and persistence foundation (DB6)",
+  "description": "NestJS persistence runtime and platform-primitive persistence (DB7). Consumers: @embroidery/api, @embroidery/worker.",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts",
-    "./testing": "./src/testing/index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "test:coverage": "jest --coverage",
-    "db:generate": "drizzle-kit generate",
-    "db:generate:custom": "drizzle-kit generate --custom",
-    "db:migrate": "tsx ./src/cli/migrate.ts",
-    "db:status": "tsx ./src/cli/status.ts"
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@embroidery/database": "workspace:*",
+    "@nestjs/common": "^11.1.28",
     "drizzle-orm": "0.45.2",
     "pg": "8.22.0",
-    "uuidv7": "1.2.1"
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@embroidery/eslint-config": "workspace:*",
     "@embroidery/typescript-config": "workspace:*",
+    "@nestjs/testing": "^11.1.28",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.1.1",
     "@types/pg": "8.20.0",
-    "drizzle-kit": "0.31.10",
     "eslint": "^10.7.0",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
-    "tsx": "4.23.1",
     "typescript": "^5.9.3"
   }
 }

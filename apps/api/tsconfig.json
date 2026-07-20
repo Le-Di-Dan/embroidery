@@ -2,7 +2,11 @@
   "extends": "@embroidery/typescript-config/nestjs.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "baseUrl": "./"
+    "baseUrl": "./",
+    "paths": {
+      "@embroidery/database/testing": ["../../packages/database/src/testing/index.ts"],
+      "@embroidery/database/schema": ["../../packages/database/src/schema/index.ts"]
+    }
   },
   "include": ["src/**/*", "eslint.config.mjs", "jest.config.mjs"]
 }

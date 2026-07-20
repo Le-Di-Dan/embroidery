@@ -5,13 +5,18 @@
  * table showing exactly which migrations did apply, so the forward-fix
  * procedure in DB6_MIGRATION_GOVERNANCE.md starts from a known state.
  */
+import { fileURLToPath } from 'node:url';
+
 import { loadDatabaseConfig, redactUrl } from '../config/database-config';
-import { runMigrations } from '../migrations/run-migrations';
+import { migrationsFolderFrom, runMigrations } from '../migrations/run-migrations';
+
+/** This CLI is ESM (run through `tsx`), so it resolves the path itself. */
+const PACKAGE_JSON = fileURLToPath(new URL('../../package.json', import.meta.url));
 
 async function main(): Promise<void> {
   const config = loadDatabaseConfig(process.env);
   console.log(`[db:migrate] applying migrations to ${redactUrl(config.url)}`);
-  await runMigrations(config);
+  await runMigrations(config, migrationsFolderFrom(PACKAGE_JSON));
   console.log('[db:migrate] up to date');
 }
 
