@@ -506,3 +506,111 @@ the CP0 matrix pre-named are implemented and tested, closing the last known
 silent gap.
 
 **Next checkpoint:** DB7-CP6 — Idempotency, Outbox and worker persistence.
+
+## DB7-CP6 — Idempotency, Outbox and worker persistence
+
+**Starting HEAD:** `9481ea2`
+**Scope:** prove the CP3 platform primitives (`OutboxEventStore`,
+`IdempotencyStore`, `BackgroundJobAttemptStore`) end-to-end from a real
+business transaction, not only in their own isolated suites; re-exercise
+those isolated suites; record every other outbox call site the DB3 catalog
+names as an explicit, un-built handoff item rather than a silent gap.
+
+### Connectivity audit (before writing anything)
+
+A repo-wide search for `OutboxEventStore`/`IdempotencyStore` usage inside
+`apps/api/src/modules` returned zero matches outside the platform package's
+own tests. Every business module (order, payment, production, design)
+existed through CP5 with no code path that ever appended an outbox event —
+the primitives were individually correct and tested, but nothing in the
+application called them. This is the exact gap CP6 exists to close, and the
+reason CP6 could not simply mean "re-run the CP3 suites."
+
+### Decision: one representative flow, not a full event catalog
+
+| ID | Decision | Rationale |
+|---|---|---|
+| DEC-DB7-031 | CP6 wires exactly **one** real flow — `DrizzleOrderRepository.createFromAcceptedQuotation` appends the canonical `order.created` outbox event (SE-006, `DB3_SIDE_EFFECT_OUTBOX_CATALOG.md`) in the same transaction as the order and its items — rather than retrofitting outbox publishing into every business module. | Explicit scope decision (not silently resolved): wiring every SE-row in the DB3 catalog would mean designing and implementing a domain-event system for the whole application inside a database-persistence checkpoint, far outside DEC-DB7-001's "repository layer, integration & negative validation" scope and `CLAUDE.md` §9's ban on unscoped whole-feature changes. One flow, chosen for a clear transaction boundary, a canonical DB3 event name, and existing repository coverage, proves the wiring pattern works without inventing the rest of the catalog. |
+| DEC-DB7-032 | The `order.created` payload is `{ orderId, code, customRequestId }` only — no amounts, no items, no contact details. `payloadSchemaVersion: 1`, since DB3 names the event but not a literal payload shape. | DB3's own rule ("Redaction per ADR-DB2-003 — no OTP, tokens, provider payload bodies") and this checkpoint's own instruction: canonical references only, so a consumer resolves current state from the ids rather than trusting a copy that can go stale. The schema version is a new decision, recorded here rather than invented silently. |
+| DEC-DB7-033 | No new idempotency key is added for the outbox row itself. `uq_orders__request` is what makes `order.created` at-most-once: a second order-creation attempt for the same request fails on the `orders` insert, before the outbox append for it ever executes. | The order's own uniqueness constraint already is the idempotency boundary for this event; a second key would duplicate an arbiter that already exists rather than add safety. Proven by a test that attempts a duplicate order and asserts exactly one outbox row exists afterward. |
+
+### Implementation evidence
+
+All required in `apps/api/src/modules/order/tests/integration/order-outbox.integration.spec.ts`
+(6 cases) against a real disposable PostgreSQL:
+
+- order + outbox row both commit on success (`listForAggregate` returns exactly one `PENDING` `order.created` row);
+- the payload contains only the three canonical references, asserted by exact equality;
+- a domain-level rejection after the order row exists but before the outbox append (`ORDER_ITEM_SUBJECT_INVALID`) rolls back the order too — zero rows in `orders`, zero in the outbox;
+- a caller failure *after* the repository call (order + items + outbox all written) still rolls everything back, because the outbox append shares the caller's transaction rather than committing early;
+- a duplicate order for the same request leaves exactly one outbox row, not two;
+- `OutboxEventStore.append` still refuses to run outside a transaction (unchanged CP3 guarantee, re-asserted at this new call site).
+
+No provider or network call occurs anywhere in `DrizzleOrderRepository` or
+`OutboxEventStore` — both take only a `DatabaseExecutor` and other
+repositories/guards as dependencies, verified by reading the constructors
+rather than asserted at runtime (there is nothing to instrument: the classes
+have no HTTP/queue client to call).
+
+### Isolated primitive suites re-exercised (unchanged, still passing)
+
+| Suite | Cases | Covers |
+|---|---|---|
+| `idempotency-store.integration.spec.ts` | 10 | claim, in-progress replay, completed replay, fingerprint mismatch (GRD-030), rollback-with-work, complete-without-claim, complete-twice, release, outside-tx guard |
+| `outbox-event-store.integration.spec.ts` | 11 | append, rollback-with-domain-work, outside-tx guard, unknown aggregate kind (G-DB7-47), claim ordering, claim batch bound, `markDispatched`, retry-not-yet-due, retry-now-due, dead-letter exclusion, S24 payload-mutation rejection |
+| `job-attempts-and-policy.integration.spec.ts` | 16 (9 job attempts + 7 policy configuration) | append-only evidence surviving its own failed transaction, duplicate attempt rejection, unrecognised job kind (G-DB7-51), policy version lifecycle |
+| `notification-persistence.integration.spec.ts` | 14 | notification intent claim/attempt/settle (G-DB7-58), the worker-side transaction boundaries already implemented in CP4 |
+
+None of these needed a code change; CP6 re-ran them as evidence they still
+hold once a real caller (Order) exists alongside them.
+
+### Deferred outbox call sites — explicit handoff, not a silent gap
+
+`DB3_SIDE_EFFECT_OUTBOX_CATALOG.md` names 20 side effects (SE-001..SE-020).
+Only **SE-006** (`order.created`) is wired by DB7. Every other SE row remains
+an **un-built application-feature call site**, listed here so CP7's
+`DB7_DB8_HANDOFF.md` inherits an explicit list rather than reconstructing it:
+
+SE-001 (verification.requested), SE-002 (grant.issued), SE-003
+(request.submitted), SE-004 (quotation.sent / design.review-ready /
+design.revision-requested), SE-005 (design.approved), SE-007
+(payment.verified / payment.failed), SE-008 (inventory.reserved/released/
+expired), SE-009 (production.started/completed), SE-010
+(payment.final-requested), SE-011 (order.dispatched), SE-012
+(order.cancelled / request.rejected), SE-013/SE-014 (asset inspection/
+derivative/deletion worker jobs), SE-015 (scheduled sweeps), SE-016
+(admin.security-alert), SE-018 (analytics emission), SE-020 (order.on-hold /
+order.resumed). SE-017 (the outbox relay itself) and SE-019 (audit, in-tx by
+design) are mechanisms DB7 already proves, not call sites to add.
+
+None of these are claimed as implemented. Building them is business-flow
+work for whichever phase actually implements the order/payment/production
+use-case layer DB7 does not build (DB7 is repository/persistence only, per
+DEC-DB7-001) — tracked, not silently dropped.
+
+### Metrics
+
+| Metric | Value |
+|---|---|
+| New business-transaction outbox call sites wired | 1 (`order.created`) |
+| New test cases | 6 |
+| Isolated platform-primitive tests re-run | 88 (whole `packages/persistence` suite) |
+| Notification tests re-run | 14 |
+| Disposable databases left after the run | 0 |
+| Persistent dev database | untouched |
+
+### Validation
+
+`npx tsc --noEmit` PASS (apps/api) · `eslint` PASS on touched files ·
+`prettier --check` PASS · `jest` PASS: order module (50, includes the new
+6-case suite), `packages/persistence` (88), notification (14).
+
+### Result
+
+CP6 **PASS** for the one representative flow this checkpoint scoped itself
+to. Idempotency, outbox and job-attempt persistence are proven correct both
+in isolation (CP3, re-confirmed here) and from one real caller (CP6, new).
+Every other business-module outbox call site is explicitly deferred, not
+silently completed.
+
+**Next checkpoint:** DB7-CP7 — Global verification and closure.
