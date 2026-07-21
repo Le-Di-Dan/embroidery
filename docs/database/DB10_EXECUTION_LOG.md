@@ -588,3 +588,53 @@ DB10-CP6  PASS
 
 **Next checkpoint:** DB10-CP7 — global verification, persistence closure and
 final handoff.
+
+---
+
+## DB10-CP7 — Global verification, persistence closure and final handoff
+
+**Starting HEAD:** `8adc1a7` (`docs(database): add monitoring matrix and acceptance audit`).
+
+**Scope:** §44 independent durability rehearsals, §45 full regression, §46
+cleanup + persistent-DB check, §47 final artifacts.
+
+### §44 independent rehearsals
+
+- **Logical restore:** two independent restores in CP2 (identical fingerprint,
+  row counts, content checksums), plus one independent lost-volume rehearsal
+  in CP5 (backup → destroy → recover → verify).
+- **PITR (required, so mandatory):** three independent rehearsals — CP3 ×2,
+  CP7 ×1 — each recovering A and discarding B, promoting cleanly.
+
+### §45 full regression
+
+| Gate | Result |
+|---|---|
+| Migration checksums | 31/31 match the frozen manifest |
+| `db:check:manifest` | all checks passed (78 tables) |
+| Fingerprint gate (dev) | match `4ca56a59…1672f` |
+| Full-workspace `pnpm test` | **exit 0** — DB6/DB7/DB8/DB9/DB10 suites inside it; tools unit tests 33/33 (incl. 8 new backup-runtime) |
+| Independent PITR (CP7) | PASS |
+
+### §46 cleanup and persistent DB
+
+`select datname from pg_database where datname like 'embroidery%'` →
+`embroidery` only (zero leaked disposable databases). No `embroidery-pitr-*`
+container remains. Dev database fingerprint re-checked: match. All backup
+scratch files under the session scratchpad removed.
+
+### §47 final artifacts
+
+`DB10_COMPLETION_REPORT.md` (sections A–O) and
+`DB10_PERSISTENCE_FINAL_CLOSURE.md` (DB0–DB10 status, baseline, what remains
+outside persistence with owners). `DB_ROADMAP.md` marked complete.
+
+### Result
+
+```
+DB10                 COMPLETE
+OVERALL PERSISTENCE  COMPLETE
+```
+
+**Files changed:** `DB10_COMPLETION_REPORT.md`,
+`DB10_PERSISTENCE_FINAL_CLOSURE.md`, `DB_ROADMAP.md`, this log.

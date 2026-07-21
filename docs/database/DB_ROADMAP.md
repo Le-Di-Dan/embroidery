@@ -5,6 +5,14 @@
 **Audited Git HEAD:** `223e4db`
 **Scope note:** This roadmap is planning documentation. It does not create schema.
 
+> **Workstream complete (DB10-CP7).** DB0–DB10 are all COMPLETE; overall
+> persistence is COMPLETE. Closure: `DB10_PERSISTENCE_FINAL_CLOSURE.md` and
+> `DB10_COMPLETION_REPORT.md`. The DB6 physical baseline (fingerprint
+> `4ca56a59…1672f`, 31 migrations) is unchanged — DB9 and DB10 added zero
+> migrations. Application features, deployment and business-approved RPO/RTO
+> remain outside the persistence workstream, with owners named in the closure
+> document.
+
 ---
 
 ## 1. Principles
