@@ -152,6 +152,64 @@ export async function databasesMatching(prefix: string): Promise<string[]> {
   return rows === '' ? [] : rows.split('\n').map((line) => line.trim());
 }
 
+export interface RoleQueryResult {
+  readonly status: number;
+  readonly stdout: string;
+  readonly stderr: string;
+  /** The SQLSTATE the failure carried, dug out of psql's message, or null. */
+  readonly sqlState: string | null;
+}
+
+/**
+ * Runs a statement inside the container **as a specific database role** over
+ * the local trust socket, returning the exit code and any SQLSTATE.
+ *
+ * This is how the retention-bypass security matrix connects as a synthesized
+ * non-superuser application role and a dedicated retention role — the real
+ * question is what those identities can and cannot do, which the pooled
+ * `embroidery` connection (a superuser) cannot answer.
+ */
+export async function execAsRole(
+  database: string,
+  role: string,
+  statement: string,
+  container = CONTAINER,
+): Promise<RoleQueryResult> {
+  // `VERBOSITY=verbose` makes psql print the SQLSTATE inline as
+  // `ERROR:  <sqlstate>: <message>`, so the code is read directly rather than
+  // inferred from message text.
+  const args = [
+    'exec',
+    container,
+    'psql',
+    '-U',
+    role,
+    '-d',
+    database,
+    '-v',
+    'ON_ERROR_STOP=1',
+    '-v',
+    'VERBOSITY=verbose',
+    '-tAc',
+    statement,
+  ];
+  try {
+    const { stdout, stderr } = await run('docker', args, { timeout: 60_000 });
+    return { status: 0, stdout: stdout.trim(), stderr: stderr.trim(), sqlState: null };
+  } catch (error: unknown) {
+    const failure = error as { code?: unknown; stdout?: string; stderr?: string };
+    const stderr = failure.stderr ?? '';
+    const match = /ERROR:\s+(\w{5}):/.exec(stderr);
+    const code = match?.[1] ?? (/permission denied/i.test(stderr) ? '42501' : null);
+    return {
+      status: typeof failure.code === 'number' ? failure.code : 1,
+      stdout: (failure.stdout ?? '').trim(),
+      stderr: stderr.trim(),
+      sqlState: code,
+    };
+  }
+}
+
 export interface AttachedActor {
   get<T>(token: unknown): T;
   inTransaction<T>(work: () => T | Promise<T>, options?: TransactionRunOptions): Promise<T>;
