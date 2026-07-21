@@ -23,3 +23,10 @@ coverage/
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# Database backup artifacts (DB10). Dumps and their manifests are operational
+# output, never source of truth, and a dump of this schema is high-sensitivity
+# by classification — it must not reach the repository by accident.
+.backups/
+*.dump
+*.manifest.json

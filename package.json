@@ -39,7 +39,9 @@
     "db:check:manifest": "node tools/db-manifest-check.mjs",
     "quality": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:file-size && pnpm db:check:manifest",
     "clean": "turbo run clean",
-    "bench:db9": "pnpm --filter @embroidery/api bench"
+    "bench:db9": "pnpm --filter @embroidery/api bench",
+    "db:backup": "node tools/db-backup.mjs",
+    "db:restore": "node tools/db-restore.mjs"
   },
   "prettier": "@embroidery/prettier-config",
   "devDependencies": {

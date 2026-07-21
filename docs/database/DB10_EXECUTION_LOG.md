@@ -126,3 +126,94 @@ unchanged (78/833/160/78/50/189/211/46/9/1/30/31, fingerprint matched).
 `DB9_COMPLETION_REPORT.md` (tally addendum).
 
 **Next checkpoint:** DB10-CP1 — backup architecture and tooling.
+
+---
+
+## DB10-CP1 — Backup architecture, parameter registry and tooling foundation
+
+**Starting HEAD:** `6ac5600` (`docs(database): lock DB10 durability scope`).
+
+**Scope:** §18 layered strategy, §19 logical backup tooling, §20 manifest,
+§21 failure fixtures. Closes `GAP-07` (the reserved
+`infrastructure/backup/README.md` stub).
+
+### Backup/recovery mechanism
+
+`pg_dump --format=custom --no-owner --no-privileges`, streamed from inside
+the pinned `postgres:16.14-alpine` container over its local unix socket
+(DEC-DB10-006). No password is handled, stored or passed on any command
+line at any point, which is why no code path here can leak one.
+
+### Parameters
+
+`--database`, `--out`, `--label`, `--container`, `--retention-class`,
+`--url` (optional, adds the schema fingerprint to the manifest).
+Restore: `--manifest`, `--target`, `--create`, `--schema-only`,
+`--data-only`, `--verify-only`, `--keep-failed`.
+
+### Artifacts produced
+
+`<backupId>.dump` and `<backupId>.manifest.json` — the manifest carries the
+21 fields §20 requires, including the schema fingerprint, applied-migration
+count, exact per-table row counts, artifact sha256, and explicit
+`encryption: none` / `sanitization: none`.
+
+### Validation — smoke
+
+| Step | Evidence |
+|---|---|
+| Backup of the dev database (read-only operation) | `20260721T140701Z-embroidery-cp1smoke` — 0 rows across 78 tables, 299 561 bytes, sha256 `4182cc93…` |
+| Restore into a fresh target | `pg_restore` 1 950 ms; row-count parity OK; **78 public tables; 31 applied migrations recovered in the `drizzle` journal** |
+| Fingerprint of the restored database | `[fingerprint-gate] match — 4ca56a59…1672f` — a restored database reproduces the canonical DB6 baseline exactly |
+
+### Failure fixtures (§21)
+
+| Fixture | Expected | Result |
+|---|---|---|
+| F1 — database does not exist | non-zero, no artifact | exit **3**, destination directory never created |
+| F2 — container unreachable | non-zero, no artifact | exit **3**, no artifact |
+| F3 — invalid argument (`--databse`) | usage error | exit **2** with usage text |
+| F4 — unsafe identifier (`x";drop`) | rejected before any command runs | exit **2**, identifier regex refused it |
+| F5 — corrupted artifact, manifest unchanged | refuse before touching the server | exit **4**, **no database created** |
+| F6 — unwritable destination | non-zero, no artifact | exit **1** (`ENOTDIR`) |
+| F7 — corrupted artifact with a re-hashed manifest | `pg_restore` fails cleanly | exit **1**, `--exit-on-error` stopped at the first bad statement |
+
+No fixture produced a false-success artifact, and no fixture printed a
+credential — there is none to print.
+
+### Defects found and fixed
+
+1. **The first backup silently produced no manifest and exited 0.**
+   `child.stdout.pipe(sink)` auto-ends the sink; the code then called
+   `sink.end()` and attached a `finish` listener afterwards, which had
+   already fired. The promise never settled, the event loop drained, and Node
+   exited 0 with a dump and no manifest — the worst possible outcome for a
+   backup tool, because the artifact looks fine. Replaced with
+   `stream/promises.pipeline`, which owns the sink's lifetime.
+2. **F7 initially left a half-restored database behind.** `pg_restore`
+   correctly exited non-zero, but the database `db-restore.mjs` had created
+   survived, populated up to the first error. Fixed: a restore that fails
+   after creating its own target now drops it, with `--keep-failed` to opt
+   out for diagnosis. A half-restored database that looks real is precisely
+   the trap this class of tooling must not set.
+
+### Tests
+
+`node --test tools/backup-runtime.test.mjs` — **8 passed**. Deliberately
+container-free (identifier safety, argument parsing, manifest validation) so
+`pnpm test` stays meaningful without a Docker daemon; the end-to-end
+rehearsal is CP2's.
+
+### Result
+
+```
+DB10-CP1  PASS
+```
+
+**Files changed:** `tools/backup-runtime.mjs`, `tools/db-backup.mjs`,
+`tools/db-restore.mjs`, `tools/backup-runtime.test.mjs`,
+`docs/database/DB10_BACKUP_ARCHITECTURE.md`,
+`infrastructure/backup/README.md`, `package.json`, `.gitignore`.
+
+**Next checkpoint:** DB10-CP2 — logical backup and restore rehearsal against
+representative data.
