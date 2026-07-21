@@ -27,7 +27,7 @@ export interface BenchContext {
   readonly dataset: BenchDataset;
   /** Resolves a generated id by its deterministic series index. */
   idOf(series: string, index: number): Promise<string>;
-  spawnActor(label: string): Promise<ConcurrencyActor>;
+  spawnActor(label: string, env?: Readonly<Record<string, string>>): Promise<ConcurrencyActor>;
   close(): Promise<void>;
 }
 
@@ -57,7 +57,7 @@ export async function createBenchContext(
       }
       return id;
     },
-    spawnActor: (actorLabel) => context.spawnActor(actorLabel),
+    spawnActor: (actorLabel, env) => context.spawnActor(actorLabel, env),
     close: () => context.close(),
   };
 }

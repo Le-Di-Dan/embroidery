@@ -35,7 +35,14 @@ export interface ConcurrencyActor {
 
 export interface ConcurrencyTestContext {
   readonly disposable: DisposableDatabase;
-  spawnActor(label: string): Promise<ConcurrencyActor>;
+  /**
+   * Compiles another independently pooled module against the same database.
+   *
+   * `env` overrides configuration for this actor only — DB9-CP5 uses it to
+   * sweep `DATABASE_POOL_MAX` and the timeouts without touching any other
+   * actor's runtime.
+   */
+  spawnActor(label: string, env?: Readonly<Record<string, string>>): Promise<ConcurrencyActor>;
   reset(): Promise<void>;
   close(): Promise<void>;
 }
@@ -51,11 +58,18 @@ async function compileActor(
   label: string,
   databaseUrl: string,
   imports: NonNullable<ModuleMetadata['imports']>,
+  env: Readonly<Record<string, string>> = {},
 ): Promise<{ moduleRef: TestingModule; transactions: TransactionManager }> {
-  const previousUrl = process.env['DATABASE_URL'];
-  const previousEnv = process.env['NODE_ENV'];
-  process.env['DATABASE_URL'] = databaseUrl;
-  process.env['NODE_ENV'] = 'test';
+  const overrides: Record<string, string> = {
+    DATABASE_URL: databaseUrl,
+    NODE_ENV: 'test',
+    ...env,
+  };
+  const previous = new Map<string, string | undefined>();
+  for (const [name, value] of Object.entries(overrides)) {
+    previous.set(name, process.env[name]);
+    process.env[name] = value;
+  }
 
   try {
     const moduleRef = await Test.createTestingModule({ imports }).compile();
@@ -66,15 +80,12 @@ async function compileActor(
       cause: error,
     });
   } finally {
-    if (previousUrl === undefined) {
-      delete process.env['DATABASE_URL'];
-    } else {
-      process.env['DATABASE_URL'] = previousUrl;
-    }
-    if (previousEnv === undefined) {
-      delete process.env['NODE_ENV'];
-    } else {
-      process.env['NODE_ENV'] = previousEnv;
+    for (const [name, value] of previous) {
+      if (value === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = value;
+      }
     }
   }
 }
@@ -86,8 +97,16 @@ export async function createConcurrencyTestContext(
   const disposable = await createDisposableDatabase(label);
   const actors: ConcurrencyActor[] = [];
 
-  async function spawnActor(actorLabel: string): Promise<ConcurrencyActor> {
-    const { moduleRef, transactions } = await compileActor(actorLabel, disposable.url, imports);
+  async function spawnActor(
+    actorLabel: string,
+    env?: Readonly<Record<string, string>>,
+  ): Promise<ConcurrencyActor> {
+    const { moduleRef, transactions } = await compileActor(
+      actorLabel,
+      disposable.url,
+      imports,
+      env,
+    );
     const actor: ConcurrencyActor = {
       label: actorLabel,
       get: <T>(token: unknown): T => moduleRef.get<T>(token as never),
