@@ -346,3 +346,72 @@ CP4 PASS (nothing outstanding — full territory pre-classified `DEFERRED TO
 DB9` with reasons already on record). Continuing to CP5 (Outbox,
 Idempotency, Notification and worker-claim races) — the two remaining P0
 rows, CC-19 and CC-20, live here.
+
+---
+
+## DB8-CP5 — Outbox, Idempotency, Notification and worker-claim races
+
+**Starting HEAD:** `6f98e4a` (CP4 closure).
+
+**Scope:** The two remaining P0 races — CC-19 (outbox exclusive claim) and
+CC-20 (idempotency claim) — the last unproven money/at-most-once primitives
+in the matrix. CC-21 (notification claim) was deferred to DB9 at CP3
+(DEC-DB8-007): same claim-index shape as CC-19, and G-DB7-58 already
+documents at-least-once as accepted, not a defect.
+
+### File
+
+`apps/api/src/tests/integration/db8-platform-races.integration.spec.ts` —
+built directly against `DatabaseModule` (no business module needed; these
+are platform primitives), following the same pattern as CP1's deadlock
+suite. 6 tests, 206 lines.
+
+### Scenarios and results
+
+| CC | Scenario | Test | Result |
+|---|---|---|---|
+| CC-19 | Two workers `claimBatch` against the same 6 pending rows | `two workers claiming the same batch never claim the same row` | **PASS** — zero overlap, union of claims covers all 6 rows, every row's `claimed_by` is exactly one worker |
+| CC-19 | Flakiness gate | 5-iteration repeat, fresh rows each time | PASS — 0/5 overlap |
+| CC-20 | Two concurrent `claim()` calls, same key, same fingerprint | `two concurrent claims of the same idempotency key never both succeed` | **PASS** — exactly one `claimed`, one `in_progress` |
+| CC-20b | Two concurrent `claim()` calls, same key, **different** fingerprints | `the loser sees a conflict, not a silent claim` | PASS — never more than one `claimed` outcome, regardless of which side wins the row lock |
+| CC-20 | Flakiness gate | 5-iteration repeat, fresh keys each time | PASS — 0/5 double-claim |
+| CC-20 | Row-count invariant | `leaves exactly one idempotency row after a concurrent double-claim` | PASS — `count(*) = 1`, confirming `onConflictDoNothing` (not a caught `23505`) is what makes the loser's own transaction survive to observe the winner's row |
+
+### How the race actually resolves (worth recording — not obvious from the code alone)
+
+`IdempotencyStore.claim` uses `INSERT … ON CONFLICT DO NOTHING`, not a
+caught unique-violation. Under concurrency this means PostgreSQL itself
+makes the second caller's `INSERT` **wait** on the first caller's row lock
+until that transaction ends, then re-evaluates the conflict — so the loser
+never sees a driver error at all, it simply gets zero rows back and falls
+through to the existing-row read, which is why `IdempotencyStore.claim`
+never needs to catch `23505` (`idempotency-store.ts`'s own comment explains
+the *design* choice; this checkpoint is what proves the *concurrent*
+behavior the choice depends on).
+
+### Incident: transient babel/jest cache corruption (not a code defect)
+
+Mid-checkpoint, `npx jest db8-platform-races` failed with a parser error
+(`Unexpected token, expected "from"`) on a syntactically valid `import
+type` line. `@babel/parser` invoked directly against the same file parsed
+it without error, and `tsc --noEmit` had already passed clean — isolating
+the failure to a stale transform cache, not the source. Resolved by
+clearing `node_modules/.cache`; the suite then passed twice in a row.
+Recorded because a future reader hitting the same symptom should reach for
+cache invalidation, not distrust the file.
+
+### Cleanup
+
+Full `packages/persistence` platform suite re-run: 37/37 passing (unchanged
+from DB7 — `idempotency-store` 10, `outbox-event-store` 11,
+`job-attempts-and-policy` 16), confirming no regression from the new race
+suite sharing the same primitives. `pg_database` swept for
+`%cp5%`/`%db8%` — empty.
+
+### Result
+
+CP5 PASS. All P0 rows in the entire matrix are now proven: CC-07, CC-09,
+CC-15, CC-16, CC-17, CC-19, CC-20, CC-22. Continuing to CP6 (deadlock,
+serialization and retry verification) — largely already proven in CP1;
+this checkpoint reconciles that evidence against the matrix rather than
+re-deriving it.
