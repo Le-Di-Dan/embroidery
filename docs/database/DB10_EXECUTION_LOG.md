@@ -475,3 +475,76 @@ DB10-CP4  PASS  (retention + S24 exemption security + anonymization proven;
 
 **Next checkpoint:** DB10-CP5 — disaster recovery, cross-machine and failure
 rehearsals.
+
+---
+
+## DB10-CP5 — Disaster recovery, cross-machine and failure rehearsals
+
+**Starting HEAD:** `a3bd403` (`feat(database): add retention and anonymization controls`).
+
+**Scope:** §36 disaster matrix, §37 cross-machine, §38 lost-volume, §39
+bad-migration/checksum, §40 credential-compromise runbook.
+
+### Rehearsals (`db10-cp5-recovery`, 2 tests)
+
+| Scenario | Evidence |
+|---|---|
+| **Fresh setup (RB-02/PR-04)** | an empty disposable database migrated from zero passes all seven catalog checkers **and** the fingerprint gate, and reports 78 public tables |
+| **Lost volume (RB-07)** | a populated database was backed up, **dropped entirely**, then recovered from the artifact into a new database that `db-restore.mjs` verifies (row-count + journal parity) and that passes the fingerprint gate |
+
+### Bad-migration / checksum gate (§39, RB-06)
+
+Rehearsed non-destructively on a **copy** of the migrations tree, so no
+committed file was touched:
+
+```
+untampered copy → node db-migration-checksum-check.mjs → exit 0
+append one comment line to 0000_create_identity_tables.sql →
+  exit 1: "content changed since it was frozen —
+           expected sha256 8deb6b2c…, got d92f9acb…"
+```
+
+The gate catches a byte-level edit that `pnpm db:migrate` and `drizzle-kit
+check` both miss (drizzle only hashes a migration at first apply). Confirms
+DR-02's detection path.
+
+### Documentation
+
+- `DB10_DISASTER_RECOVERY_MATRIX.md` — 9 scenarios (DR-01..DR-09) with
+  detection, owner, recovery source, validation and the deferred RPO/RTO each
+  depends on; each row marked rehearsed / documented / flagged.
+- Runbooks: `DB10_BACKUP_RUNBOOK.md`, `DB10_RESTORE_RUNBOOK.md`,
+  `DB10_RETENTION_RUNBOOK.md`, `DB10_DISASTER_RECOVERY_RUNBOOK.md`,
+  `DB10_CROSS_MACHINE_SETUP.md` (RB-01..RB-10).
+- §40 credential compromise: documented as rotation/revocation/log-inspection
+  with per-machine credential differences (SC-06); **no real secret
+  provisioned**.
+
+### Honest scope
+
+DR-01 (restart), DR-07 (partial rollout), DR-08 (storage exhaustion) are
+infrastructure operations DB10 documents but does not implement — no
+deployment topology exists. Object-storage binary recovery is called out in
+every runbook as a separate, infrastructure-owned step: a clean DB restore can
+still point at missing objects.
+
+### Cleanup
+
+All disposable databases and the lost-volume target dropped; the copied
+migrations tree removed. `pg_database like 'embroidery%'` → `embroidery` only.
+
+### Result
+
+```
+DB10-CP5  PASS
+```
+
+**Files changed:** `apps/api/src/tests/durability/db10-cp5-recovery.integration.spec.ts`,
+`docs/database/DB10_DISASTER_RECOVERY_MATRIX.md`,
+`docs/database/DB10_BACKUP_RUNBOOK.md`, `docs/database/DB10_RESTORE_RUNBOOK.md`,
+`docs/database/DB10_RETENTION_RUNBOOK.md`,
+`docs/database/DB10_DISASTER_RECOVERY_RUNBOOK.md`,
+`docs/database/DB10_CROSS_MACHINE_SETUP.md`, `infrastructure/README.md`.
+
+**Next checkpoint:** DB10-CP6 — operational monitoring, runbooks and
+acceptance gates.
