@@ -548,3 +548,43 @@ DB10-CP5  PASS
 
 **Next checkpoint:** DB10-CP6 — operational monitoring, runbooks and
 acceptance gates.
+
+---
+
+## DB10-CP6 — Operational monitoring, runbooks and acceptance gates
+
+**Starting HEAD:** `5652f07` (`test(database): rehearse disaster recovery and cross-machine setup`).
+
+**Scope:** §41 monitoring matrix, §42 runbooks (completed across CP1/CP3/CP5),
+§43 acceptance audit.
+
+### Artifacts
+
+- `DB10_OPERATIONAL_MONITORING_MATRIX.md` — 16 signals (MON-01..MON-16), each
+  with a concrete query or source, an owner (role), the runbook it triggers,
+  and how the signal was tested. Two signals — migration-checksum drift
+  (MON-10) and fingerprint drift (MON-11) — are already enforced gates, proven
+  every checkpoint. Thresholds that depend on a deferred parameter are marked
+  deferred rather than invented; autovacuum/bloat (MON-14/15) are honestly
+  called not-established.
+- `DB10_ACCEPTANCE_AUDIT.md` — every gate PASS / FAIL / N/A / DEFERRED with
+  evidence. **Every critical roadmap gate PASSES**; no critical gate is
+  deferred and none FAILS. Deferrals are all business/operations/infrastructure
+  decisions with named owners.
+
+Runbooks (§42) were authored across earlier checkpoints and are complete:
+`DB10_BACKUP_RUNBOOK.md`, `DB10_RESTORE_RUNBOOK.md`, `DB10_PITR_RUNBOOK.md`,
+`DB10_RETENTION_RUNBOOK.md`, `DB10_DISASTER_RECOVERY_RUNBOOK.md`,
+`DB10_CROSS_MACHINE_SETUP.md`. None contains a plaintext secret.
+
+### Result
+
+```
+DB10-CP6  PASS
+```
+
+**Files changed:** `docs/database/DB10_OPERATIONAL_MONITORING_MATRIX.md`,
+`docs/database/DB10_ACCEPTANCE_AUDIT.md`.
+
+**Next checkpoint:** DB10-CP7 — global verification, persistence closure and
+final handoff.
