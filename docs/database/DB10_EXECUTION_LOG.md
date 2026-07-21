@@ -393,3 +393,85 @@ DB10-CP3  PASS  (PITR mechanism proven; production destination and RPO deferred)
 `docs/database/DB10_PITR_RUNBOOK.md`, `package.json`.
 
 **Next checkpoint:** DB10-CP4 — retention, cleanup and anonymization controls.
+
+---
+
+## DB10-CP4 — Retention, cleanup and anonymization controls
+
+**Starting HEAD:** `be187d7` (`feat(database): rehearse point-in-time recovery`).
+
+**Scope:** §30 retention candidates, §31 policy matrix (in the durability
+matrix), §32 retention implementation, §33 S24 exemption security, §34
+anonymization, §35 retention performance.
+
+### Mechanism (DEC-DB10-004)
+
+`tools/db-retention.mjs` — bounded, keyset-progressing, child-before-parent
+deletion under the S24 `retention_exempt` GUC, restricted to a **code-level
+family allowlist**. The cutoff is always an argument; no duration is built in.
+The allowlist — not the trigger — is the boundary: nine families are reachable
+(`outbox, idempotency, background_jobs, notification, verification, audit,
+admin_sessions, asset_inspections, inventory_holds`); every commercial-record
+family is refused outright even though its trigger carries the exemption.
+
+`tools/db-anonymize.mjs` — field scrub of `customers` + `customer_contact_points`,
+keeping the row, its id and every commercial FK, idempotent via `anonymized_at`.
+
+### §32/§33 correctness — `db10-cp4-retention` (9 tests)
+
+| Property | Evidence |
+|---|---|
+| Deletes only rows past the cutoff | audit 50 → 20 (30 old deleted); outbox 40 old-dispatched deleted, 10 recent + 15 PENDING kept |
+| Child before parent | notification: 50 attempts then 25 intents deleted; 15 live intents + their 30 attempts kept |
+| Refuses a commercial family | `--family payment_provider_events` → exit 2, "never deletable" |
+| Dry-run counts, deletes nothing | `wouldDelete: 7`, table unchanged |
+| **DELETE without the GUC is rejected** | SQLSTATE **23000** |
+| **UPDATE with the GUC still rejected** — exemption is DELETE-only | SQLSTATE **23000** |
+| `refunds` DELETE never exempted (policy `reject`, no exemption) | GUC powerless |
+| No application source sets the GUC | filesystem scan of `apps/api/src`, `apps/worker/src`, `packages/persistence/src` (tests excluded) → **0** matches |
+
+### §34 anonymization — `db10-cp4-anonymization` (5 tests)
+
+| Property | Evidence |
+|---|---|
+| Direct PII scrubbed | `display_name`/`notes` null, contact `normalized_value` replaced, `anonymized_at` set |
+| Commercial link preserved | the customer's order still resolves to the anonymized customer |
+| Frozen approval snapshot untouched | `approval_snapshots` row intact (evidence, break-glass only) |
+| Idempotent | second run reports `anonymized: 0` |
+| Survives backup → restore | restored copy passes the fingerprint gate; the real repository reads `display_name = null`, `anonymized_at` set |
+
+### §35 retention performance (local benchmark, not an SLA)
+
+5 000 old dispatched outbox rows, batch 1 000: **5 000 deleted in 5 batches,
+1 269 ms** wall-clock on the CP0 machine. Recorded as local evidence only.
+
+### Defect found and fixed
+
+The batch loop parsed the whole psql output as a number, but `set local`
+prints its own `SET` command tag ahead of the count, so `Number("SET\n0")`
+was `NaN` — and `NaN < batch` is false, so the loop never terminated (the
+first non-dry-run sweep hung to the test timeout). Fixed to read the **last**
+line of output, with a guard that throws on any non-integer rather than
+looping. The dry-run path never hit this because its count query emits no
+command tag.
+
+### Cleanup
+
+Disposable databases and the anonymization restore target all dropped;
+`select datname from pg_database where datname like 'embroidery%'` →
+`embroidery` only.
+
+### Result
+
+```
+DB10-CP4  PASS  (retention + S24 exemption security + anonymization proven;
+                 all durations remain deferred business values)
+```
+
+**Files changed:** `tools/db-retention.mjs`, `tools/db-anonymize.mjs`,
+`apps/api/src/tests/durability/db10-cp4-retention.integration.spec.ts`,
+`apps/api/src/tests/durability/db10-cp4-anonymization.integration.spec.ts`,
+`package.json`.
+
+**Next checkpoint:** DB10-CP5 — disaster recovery, cross-machine and failure
+rehearsals.

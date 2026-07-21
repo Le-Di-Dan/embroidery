@@ -42,7 +42,9 @@
     "bench:db9": "pnpm --filter @embroidery/api bench",
     "db:backup": "node tools/db-backup.mjs",
     "db:restore": "node tools/db-restore.mjs",
-    "db:pitr:rehearse": "node tools/db-pitr-rehearsal.mjs"
+    "db:pitr:rehearse": "node tools/db-pitr-rehearsal.mjs",
+    "db:retention": "node tools/db-retention.mjs",
+    "db:anonymize": "node tools/db-anonymize.mjs"
   },
   "prettier": "@embroidery/prettier-config",
   "devDependencies": {
