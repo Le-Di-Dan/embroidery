@@ -229,3 +229,31 @@ DB9                  COMPLETE
 DB10                 NOT STARTED
 OVERALL PERSISTENCE  IN PROGRESS
 ```
+
+---
+
+## P. DB10-CP0 addendum — scope-matrix tally correction
+
+Recorded by DB10's preflight reconciliation (DEC-DB10-003), after
+re-deriving the counts from `DB9_PERFORMANCE_SCOPE_MATRIX.md` rather than
+from §K.
+
+`PERF-R33` appears twice in that document — once as a scope row and once in
+the deferred/handoff table at the end — and was counted twice in the tally.
+The corrected figures are:
+
+| Figure | §K said | Actual |
+|---|---|---|
+| Scope-matrix rows | 64 | **63** unique row ids |
+| PASS | 29 | 29 |
+| TUNED | 0 | 0 |
+| DEFERRED | 34 | **33** |
+| N/A | 1 | 1 |
+| BLOCKED | 0 | 0 |
+
+No measurement, plan, status or conclusion changes; every row still ends in
+exactly one terminal state and none is silently open. The 33 deferred rows
+are classified A–F in `DB10_EXECUTION_LOG.md` (DB10-CP0 §5): **1** is DB10
+durability scope, **30** are application-feature handoffs, **2** are future
+production performance validation, **0** are blockers. No historical text is
+rewritten and no report is renamed.

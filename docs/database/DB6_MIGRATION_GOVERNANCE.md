@@ -263,3 +263,21 @@ Each migration is traceable to its checkpoint and design IDs (ADR-DB1-004):
 | `pnpm db:migrate` | apply pending migrations (asserts baseline first) |
 | `pnpm db:status` | schema/migration state and drift; exit 0 only when clean |
 | `pnpm db:reset` | destroy and recreate the local volume (destructive, local-only) |
+
+---
+
+## 12. Standing commit-history rule (DB10-CP0 addendum)
+
+The repository's standing rule across DB6–DB10 is **no amend, no squash, no
+rewrite, no force-push** on `production`. One deviation is on the record and
+is recorded here rather than left in a single phase report:
+
+| Deviation | Commit | What happened | Reconciliation |
+|---|---|---|---|
+| `DEV-GOV-001` | `623eb78` — `docs(database): lock DB9 performance scope` | The commit was created through a shell whose quoting mangled the subject line down to a single `@`. It was amended seconds later with a message file. The tree was byte-identical before and after; no later commit had been created. | Disclosed by `DB9_COMPLETION_REPORT.md` §N at the time. Verified at DB10-CP0: the current hash and subject are correct, `git rev-list --parents` shows a single-parent chain from `f7ef9ec` to HEAD, and **no committed artifact anywhere in the repository references the superseded hash**. Reconciled additively; history is not rewritten. |
+
+**The rule is now absolute, including for this failure mode.** A malformed
+commit message is repaired by a follow-up commit that states the correction,
+never by `--amend`. Compose commit messages with a message file
+(`git commit -F <file>`) rather than an inline string when the message
+contains anything a shell may interpret.
