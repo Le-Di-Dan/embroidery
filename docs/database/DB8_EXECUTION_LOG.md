@@ -503,3 +503,86 @@ by direct CP1 test evidence, two by CP0's grep-backed N/A verdicts, and the
 cross-flow no-duplication claim by explicit composition of existing P0
 tests rather than an unfounded assertion. Continuing to CP7 (global
 verification, flakiness gate, final matrices and closure).
+
+---
+
+## DB8-CP7 — Global verification, closure and DB9 handoff
+
+**Starting HEAD:** `57c9bcd` (CP6 closure).
+
+### Two independent full-workspace runs
+
+| Run | Command | Tasks | `@embroidery/api` tests | Result |
+|---|---|---|---|---|
+| 1 (cached where valid) | `pnpm test` | 8/8 | 365 (339 DB7 + 26 new DB8) | PASS |
+| 2 (fully uncached) | `pnpm turbo run test --force` | 8/8, `Cached: 0/8` | 365 | PASS, identical counts |
+
+`@embroidery/database` 152, `@embroidery/persistence` 88, `@embroidery/worker`
+6 — unchanged from DB7 in both runs, confirming DB8 added no regression to
+either package.
+
+### DB6 gates re-verified
+
+- `node packages/database/tools/db-migration-checksum-check.mjs` —
+  `all 31 migration files match the frozen manifest`.
+- Schema fingerprint recomputed against a **fresh disposable database**
+  (provisioned, migrated from scratch, dropped after — never the persistent
+  dev database): `4ca56a5967730d257edb34e72d6c40373156704cab7c87e3a684803c8321672f`,
+  matching `canonical-fingerprint.txt` exactly. Confirms DB8 made zero
+  schema changes, as required.
+
+### Flakiness gate (§29, minimum 10 iterations)
+
+Ran the full DB8 race suite (6 spec files: `db8-harness`,
+`db8-harness-deadlock`, `db8-platform-races`, `inventory-races`,
+`order-races`, `payment-races` — 26 tests) 10 times:
+
+- 9 iterations ran back-to-back to completion: 26/26 every time.
+- The 10th was cut off by the shell tool's wall-clock limit mid-run (not a
+  test failure — the process was still executing). Left one disposable
+  database behind (`embroidery_db7_db8_cp3_order_26260`), found via a
+  `pg_database` sweep, dropped manually, and the iteration re-run alone to
+  completion: 26/26.
+
+**Total: 260 individual test executions across the 10 iterations, zero
+flaky results.** The one leaked database is recorded in §5 of
+`DB8_COMPLETION_REPORT.md` rather than omitted — a tooling interruption,
+not a harness defect (the harness's own `afterAll`/`close()` path is what
+found and would have dropped it had the process not been killed
+mid-transaction).
+
+### Final matrices
+
+- `DB8_RACE_COVERAGE_MATRIX.md` — all 24 rows closed: 8 `PASS`, 13
+  `DEFERRED TO DB9`, 3 `N/A`. Zero rows without a terminal status.
+- `DB8_LOCK_ORDER_MATRIX.md` — unchanged since CP0; still accurate (no new
+  lock-taking code was added — only test harnesses and the traced business
+  flows already documented there).
+- `DB8_DB9_HANDOFF.md` (new) — the 8/13/3 breakdown with reasons, plus the
+  one flagged genuine gap (CC-01) that DB9 should not assume is
+  shape-covered by anything else in the matrix.
+
+### Post-commit verification (§34)
+
+1. HEAD re-read after the closing commit: matches this report's own commit
+   list.
+2. All four DB8 docs (`DB8_EXECUTION_LOG.md`, `DB8_RACE_COVERAGE_MATRIX.md`,
+   `DB8_LOCK_ORDER_MATRIX.md`, `DB8_DB9_HANDOFF.md`,
+   `DB8_COMPLETION_REPORT.md`) present and committed.
+3. Working tree clean.
+4. Static suite (`pnpm format:check`, `pnpm lint`, `pnpm typecheck`,
+   `pnpm check:file-size`) re-run — see completion report §6/commit
+   evidence.
+5. Migration checksum/fingerprint gates re-run — §above, both pass.
+6. `find . -iname "*DB9*"` (excluding `.git`, `node_modules`) — no DB9
+   implementation files exist; only this handoff's own references to the
+   name.
+7. Persistent dev database: read-only inspection only throughout DB8, never
+   a test target — confirmed by construction (every suite uses
+   `packages/database/src/testing`'s disposable-database harness) and by
+   the empty `pg_database` sweep after every run in this checkpoint.
+8. Not pushed: `git status` shows only "ahead of origin," no push performed.
+
+### Result
+
+CP7 PASS. DB8 is COMPLETE.
