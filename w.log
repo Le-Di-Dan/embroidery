@@ -1,0 +1,9 @@
+Error: Can't find a root directory while resolving a config file path.
+Provided path to resolve: jest.bench.config.mjs
+cwd: C:\Users\ADMIN\Desktop\workspace\embroidery
+    at resolveConfigPath (C:\Users\ADMIN\AppData\Local\npm-cache\_npx\b8d86e6551a4f492\node_modules\jest-config\build\index.js:2539:11)
+    at readInitialOptions (C:\Users\ADMIN\AppData\Local\npm-cache\_npx\b8d86e6551a4f492\node_modules\jest-config\build\index.js:1183:55)
+    at readConfig (C:\Users\ADMIN\AppData\Local\npm-cache\_npx\b8d86e6551a4f492\node_modules\jest-config\build\index.js:956:13)
+    at readConfigs (C:\Users\ADMIN\AppData\Local\npm-cache\_npx\b8d86e6551a4f492\node_modules\jest-config\build\index.js:1213:32)
+    at runCLI (C:\Users\ADMIN\AppData\Local\npm-cache\_npx\b8d86e6551a4f492\node_modules\@jest\core\build\index.js:1420:43)
+    at Object.run (C:\Users\ADMIN\AppData\Local\npm-cache\_npx\b8d86e6551a4f492\node_modules\jest-cli\build\index.js:665:34)
