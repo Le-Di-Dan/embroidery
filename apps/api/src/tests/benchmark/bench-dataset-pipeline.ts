@@ -242,9 +242,9 @@ export async function seedPipelineVolume(
            bench_uuid(${`${seed}:obligation`}, n),
            315000.00, 'VND', 'PROVIDER_REDIRECT', 'bench-provider',
            'ref-' || n,
-           case when n % 4 = 0 then 'FAILED' else 'SUCCEEDED' end,
-           case when n % 4 = 0 then null else now() - interval '10 days' end,
-           case when n % 4 = 0 then now() - interval '10 days' else null end
+           case when n % 7 = 0 then 'FAILED' else 'SUCCEEDED' end,
+           case when n % 7 = 0 then null else now() - interval '10 days' end,
+           case when n % 7 = 0 then now() - interval '10 days' else null end
     from generate_series(1, ${spec.obligations}) as n
   `);
 
@@ -254,7 +254,11 @@ export async function seedPipelineVolume(
         satisfied_at = now() - interval '10 days',
         satisfied_by_attempt_id = bench_uuid(${`${seed}:attempt`}, sub.n)
     from (select generate_series(1, ${spec.obligations}) as n) sub
-    where o.id = bench_uuid(${`${seed}:obligation`}, sub.n) and sub.n % 4 <> 0
+    -- Leave a live minority of *both* kinds: obligations pair onto orders as
+    -- (odd = DEPOSIT, even = REMAINING), so a modulus that only ever lands on
+    -- one parity would leave one kind with no PENDING rows at all and make
+    -- Q-17's partial index look unused for the wrong reason.
+    where o.id = bench_uuid(${`${seed}:obligation`}, sub.n) and sub.n % 7 <> 0
   `);
 
   await runner.execute(sql`

@@ -28,6 +28,17 @@ export interface MeasureOptions {
   readonly samples?: number;
   /** Rows the workload is expected to touch, recorded alongside the timing. */
   readonly rows?: number;
+  /**
+   * Counts failures instead of rethrowing them.
+   *
+   * Off by default, and deliberately so: `work` carries this benchmark's
+   * correctness assertion (§18), and a harness that swallowed a failed
+   * assertion into an error tally would turn "this query returns the wrong
+   * rows" into a number nobody reads. Only workloads where failure is the
+   * measured outcome — a contention benchmark counting rejected writers —
+   * should turn this on.
+   */
+  readonly tolerateErrors?: boolean;
 }
 
 function percentile(sorted: readonly number[], fraction: number): number {
@@ -69,7 +80,10 @@ export async function measure(
     const startedAt = process.hrtime.bigint();
     try {
       rows = await work();
-    } catch {
+    } catch (error: unknown) {
+      if (options.tolerateErrors !== true) {
+        throw error;
+      }
       errors += 1;
       continue;
     }
