@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "clean": "rimraf dist coverage"
+    "clean": "rimraf dist coverage",
+    "bench": "jest --config jest.bench.config.mjs --runInBand"
   },
   "dependencies": {
     "@embroidery/persistence": "workspace:*",
