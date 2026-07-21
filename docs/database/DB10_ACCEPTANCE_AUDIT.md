@@ -94,3 +94,42 @@ executable evidence."* Portability gates: `DB0_PORTABILITY_RECOVERY_REQUIREMENTS
 that have no owner in this repository yet, each recorded in the parameter
 registry with the role that must make it. No critical gate is deferred, and no
 gate FAILS.
+
+---
+
+## 7. Engineering acceptance vs production go-live (closure correction)
+
+Per `DB_ROADMAP.md` §DB10 (exit gate: *"all acceptance runbooks pass with
+executable evidence"*), DB10 completion is an **engineering** gate; production
+values (encryption, RPO/RTO, destinations, on-call) are external decisions.
+Gates are therefore split.
+
+### 7a. Engineering acceptance gates — all PASS
+
+Every gate in §1–§4 above is an engineering gate and **PASSES**, plus:
+
+| Gate | Verdict | Evidence |
+|---|---|---|
+| Retention exemption is a real DB boundary, not code-only | **PASS** | `db10-cp8` — least-privilege role separation, 2 independent disposable runs; a non-superuser app role cannot bypass even with the GUC set (42501); only the dedicated retention role deletes, under the exemption, DELETE-only, on retention-exempt tables |
+| No schema change / fingerprint intact | **PASS** | grants/roles are not in the fingerprint; `4ca56a59…` unchanged |
+
+### 7b. Production go-live gates — BLOCKED by named external decisions
+
+| Gate | Verdict | Owner |
+|---|---|---|
+| Backup encryption at rest | **DEFERRED (blocks go-live)** | operations/security (DP-BAK-05) |
+| Business RPO / RTO | **DEFERRED** | business (DP-RPO-01 / DP-RTO-01) |
+| Backup frequency / retention period | **DEFERRED** | operations (DP-BAK-01/02) |
+| Production backup / WAL destinations | **DEFERRED** | infrastructure (DP-BAK-06/07, DP-WAL-02) |
+| Alert thresholds / on-call ownership | **DEFERRED** | operations/business (DP-OPS-\*) |
+| **Application role privilege model** | **DEFERRED (blocks go-live)** | infrastructure/backend (DP-SEC-01) — app must be a non-superuser role without DELETE on append-only tables; retention runs as a dedicated role |
+
+### 7c. Bounded verdict
+
+```
+DB10 ENGINEERING IMPLEMENTATION       COMPLETE
+OVERALL PERSISTENCE FOUNDATION        COMPLETE
+PRODUCTION DURABILITY GO-LIVE         BLOCKED BY NAMED EXTERNAL DECISIONS
+```
+
+`READY` is not used: `DP-BAK-05` and `DP-SEC-01` are production-blocking.

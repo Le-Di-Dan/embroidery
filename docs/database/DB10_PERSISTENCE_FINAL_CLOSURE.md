@@ -82,3 +82,34 @@ DB0–DB10, and no committed artifact references any superseded hash.
 
 **Persistence is complete. Nothing here claims the application or a production
 deployment is complete.**
+
+---
+
+## 7. Final-closure correction (addendum)
+
+Resolved in `DB10_FINAL_CLOSURE_CORRECTION.md`:
+
+- **Bounded verdict.** Engineering implementation is COMPLETE and the
+  persistence *foundation* is COMPLETE; **production durability go-live is
+  BLOCKED by named external decisions** (backup encryption, RPO/RTO, schedule,
+  destinations, on-call, and the application role privilege model DP-SEC-01).
+- **Persistent dev DB.** At **migration 31**, read-only throughout DB10; the
+  fingerprint was checked read-only on it. No mutation.
+- **Retention bypass boundary (DP-SEC-01).** Proven by role separation: a
+  non-superuser application role lacking DELETE on append-only tables cannot
+  bypass the S24 exemption even by setting the GUC; only a dedicated
+  non-superuser retention role can delete, under the exemption, on
+  retention-exempt tables, for DELETE only. **The application must not connect
+  as a superuser.** No schema change; fingerprint unchanged.
+
+Corrected task board:
+
+```
+DB6                            COMPLETE
+DB7                            COMPLETE
+DB8                            COMPLETE
+DB9                            COMPLETE
+DB10 ENGINEERING               COMPLETE
+OVERALL PERSISTENCE FOUNDATION COMPLETE
+PRODUCTION DURABILITY GO-LIVE  BLOCKED BY NAMED EXTERNAL DECISIONS
+```

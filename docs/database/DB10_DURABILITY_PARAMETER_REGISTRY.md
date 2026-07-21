@@ -115,3 +115,21 @@ credential hashes into a single unprotected file. DB10 implements the backup
 tool with an explicit, recorded `encryption: none` field in every manifest
 precisely so that this cannot be forgotten — the artifact declares its own
 exposure rather than staying silent about it.
+
+## 8. Application role privilege model (added at final closure, Blocker D)
+
+| ID | Parameter | Business meaning | Current value | Status | Owner | Source | Validation method | Prod decision required |
+|---|---|---|---|---|---|---|---|---|
+| DP-SEC-01 | Application DB role privilege model | Whether the app identity can bypass append-only protection | dev app role is a **superuser** (`embroidery`) → can bypass | **DEFERRED — blocks go-live** | infrastructure/backend | `DB10_FINAL_CLOSURE_CORRECTION.md` Blocker D; `db10-cp8` | proven on disposables: a non-superuser role without DELETE on append-only tables cannot bypass even with the exemption GUC; only a dedicated retention role can | **yes — production-blocking** |
+| DP-SEC-02 | Dedicated retention role | Separate operational identity for retention DELETE | not provisioned (single role in dev) | **DEFERRED** | infrastructure | as above | the retention job connects as this role; the app role is not a member and cannot `SET ROLE` to it | **yes** |
+
+Required production posture (enforced by GRANT/REVOKE, not schema — the
+fingerprint is unaffected):
+
+```
+REVOKE DELETE ON <append-only tables> FROM <application_role>;   -- app cannot delete
+CREATE ROLE retention_operator NOLOGIN;                          -- or LOGIN for the job
+GRANT  SELECT, DELETE ON <retention-eligible tables> TO retention_operator;
+-- application_role is NOT granted membership in retention_operator
+-- application_role is NOT a superuser
+```

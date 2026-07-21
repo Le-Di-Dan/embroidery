@@ -59,3 +59,19 @@ feature work.
 No scheduler exists (`apps/worker` is a bootstrap shell). These tools are run
 by an operator. Wiring them to a schedule, with a maintenance window
 (DP-OPS-01), is deferred infrastructure work.
+
+## Security posture (DP-SEC-01 / DP-SEC-02)
+
+The retention DELETE exemption (`app.bypass_retention_trigger`) is **not** a
+security boundary by itself — any session that can `SET` it and holds DELETE on
+the table can bypass append-only protection. The boundary is **role
+separation** (proven in `db10-cp8-retention-role-security.integration.spec.ts`):
+
+- the **application role** must be a **non-superuser** that has **no DELETE** on
+  append-only tables and is **not a member** of the retention role — it then
+  cannot bypass even by setting the GUC (fails `42501`);
+- the **retention job** connects as a **dedicated retention role** with DELETE,
+  and sets the GUC per batch.
+
+A **superuser** connection bypasses everything; production must never run the
+application as a superuser.

@@ -111,7 +111,8 @@ critical gate deferred, none failed.
 ## J. Regression and rehearsals (CP7)
 
 - Migration checksums **31/31**; `db:check:manifest` clean (78 tables);
-  fingerprint match on the dev database.
+  fingerprint checked **read-only** on the persistent dev database (which is at
+  migration 31 — see §P) and matches `4ca56a59…1672f`.
 - Two independent logical-restore rehearsals (CP2) and one independent
   lost-volume rehearsal (CP5); three independent PITR rehearsals.
 - Full-workspace `pnpm test`: see §K.
@@ -121,11 +122,11 @@ critical gate deferred, none failed.
 ## K. Metrics
 
 ```
-Checkpoints                 CP0–CP7 (8)
-Commits (DB10)              10  (6ac5600..HEAD)
+Checkpoints                 CP0–CP7 (8) + closure-correction audit
+Commits (DB10)               8 implementation (6ac5600..daf9286) + closure-correction commits (§P)
 New tools                    5  (backup, restore, retention, anonymize, pitr) + backup-runtime
-New durability suites        4  (cp2 restore, cp4 retention, cp4 anonymization, cp5 recovery)
-Durability tests            29  (13 + 9 + 5 + 2) + 8 backup-runtime unit tests
+New durability suites        5  (cp2 restore, cp4 retention, cp4 anonymization, cp5 recovery, cp8 role-security)
+Durability tests            31  (13 + 9 + 5 + 2 + 2) + 8 backup-runtime unit tests = 39 DB10 tests
 Independent restore runs     2  (CP2) + 1 lost-volume (CP5)
 Independent PITR runs        3
 Tables classified           78 / 78
@@ -201,3 +202,45 @@ OVERALL PERSISTENCE  COMPLETE
 Application features, production deployment, external monitoring, and the
 business-approved RPO/RTO remain outside the persistence workstream, with
 owners named above. The DB6 physical baseline is untouched.
+
+---
+
+## P. Final-closure correction addendum
+
+A narrow closure audit (`DB10_FINAL_CLOSURE_CORRECTION.md`) corrected four
+items after implementation was accepted. Nothing in CP0–CP7 was redone.
+
+- **Commit count:** §K/§M's "10" was wrong — DB10 has **8** implementation
+  commits (`6ac5600..daf9286`, linear). This correction adds two further
+  additive commits; the exact final HEAD is stated in the correction doc §12.
+- **Persistent dev DB:** clarified — the persistent `embroidery` database is at
+  **migration 31** (migrated during DB6/DB7 on 2026-07-19/20, the day before
+  DB10), and DB10 **only read** from it. "Fingerprint match on the dev
+  database" was a read-only check on that migration-31 database. No mutation.
+- **Bounded verdict (Model A):** engineering is complete; **production go-live
+  is BLOCKED by named external decisions** (see §O replacement below).
+- **Retention exemption security (real finding):** the S24 exemption has no
+  role guard and the dev app role is a superuser, so the application identity
+  *could* bypass. Resolved by **least-privilege role separation** — proven
+  twice on real tables (`db10-cp8`): a non-superuser app role without DELETE
+  cannot bypass even with the GUC set; only a dedicated retention role can. No
+  schema change (grants/roles are not in the fingerprint). The residual
+  "app must not be superuser / must lack DELETE on append-only tables" is a
+  named production control (DP-SEC-01).
+- **Test totals:** durability integration **31** (was 29 pre-CP8) + 8
+  backup-runtime unit = **39** DB10 tests.
+
+### O′. Corrected final verdict
+
+```
+DB6                            COMPLETE
+DB7                            COMPLETE
+DB8                            COMPLETE
+DB9                            COMPLETE
+DB10 ENGINEERING               COMPLETE
+OVERALL PERSISTENCE FOUNDATION COMPLETE
+PRODUCTION DURABILITY GO-LIVE  BLOCKED BY NAMED EXTERNAL DECISIONS
+```
+
+The DB6 physical baseline and its fingerprint `4ca56a59…1672f` remain
+unchanged; zero migrations were added by DB9 or DB10.

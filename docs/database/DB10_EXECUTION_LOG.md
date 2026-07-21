@@ -638,3 +638,79 @@ OVERALL PERSISTENCE  COMPLETE
 
 **Files changed:** `DB10_COMPLETION_REPORT.md`,
 `DB10_PERSISTENCE_FINAL_CLOSURE.md`, `DB_ROADMAP.md`, this log.
+
+---
+
+## DB10-CP8 — Final-closure correction (retention-bypass security + reconciliation)
+
+**Starting HEAD:** `daf9286` (`docs(database): complete DB10 and close persistence`).
+Triggered by the final-closure audit (four blockers). CP0–CP7 not redone.
+
+### Blocker A — commit lineage
+DB10 has **8** implementation commits (`6ac5600..daf9286`, linear single-parent),
+not the "10" the report §K stated. Corrected in the report and
+`DB10_FINAL_CLOSURE_CORRECTION.md`. No invented hash; final HEAD stated after
+this correction's commits exist.
+
+### Blocker B — persistent dev DB
+The persistent `embroidery` DB is at **migration 31** (journal max id 31,
+applied 2026-07-19/20, before DB10; 30 triggers + function present). DB10 read
+from it only (pg_dump backup, fingerprint gate, `--dry-run` retention, refused
+family). **No mutation.** The "migration 29" note was stale. Wording corrected;
+a database/container inventory is in the correction doc.
+
+### Blocker C — engineering vs go-live
+`DB_ROADMAP.md` §DB10 exit gate is runbook-acceptance, not production values →
+**Model A**. Acceptance audit split into engineering gates (all PASS) and
+production go-live gates (blocked by named external decisions).
+
+### Blocker D — retention exemption security (REAL FINDING)
+The S24 exemption checks only the GUC (no role guard) and the dev app role
+`embroidery` is a **superuser** → the app identity could bypass. **Resolved by
+least-privilege role separation**, proven twice on real tables
+(`db10-cp8-retention-role-security.integration.spec.ts`):
+
+| Identity | Action | Result |
+|---|---|---|
+| non-superuser app role (no DELETE) | DELETE audit_events, no GUC | 42501 |
+| app role | SET GUC + DELETE audit_events | 42501 (GUC set allowed, DELETE refused) |
+| app role | DELETE order_items + GUC | 42501 |
+| app role | SET ROLE retention | refused |
+| retention role | DELETE audit_events, no GUC | 23000 (trigger) |
+| retention role | DELETE audit_events + GUC | **success** |
+| retention role | DELETE order_items (reject) + GUC | 23000 (table-scoped) |
+| retention role | UPDATE audit_events + GUC | 23000 (DELETE-only) |
+| **superuser** | DELETE audit_events + GUC | success (unconstrainable) |
+
+**No schema change** — grants/roles are not in the fingerprint (built from
+`pg_class/pg_constraint/pg_index/pg_proc/pg_trigger/columns`), so `4ca56a59…`
+is untouched and no forward migration was needed. The residual "app must be a
+non-superuser without DELETE on append-only tables" is a named production
+control (**DP-SEC-01/02**), added to the parameter registry and retention
+runbook.
+
+### Harness change
+`durability-harness.ts` gained `execAsRole(database, role, statement)` — runs a
+statement as a specific role over the local trust socket with
+`VERBOSITY=verbose` so the SQLSTATE is read inline.
+
+### Focused validation
+typecheck/lint/format PASS · checksum 31/31 · fingerprint config unchanged ·
+no historical migration diff · no secret in changed files · **2 independent
+disposable security-matrix runs PASS** · schema-only restore smoke PASS.
+Cleanup: 0 disposable DBs, 0 `db10_%` roles, 0 PITR containers, 0 scratch files.
+PITR not repeated (no PITR code changed).
+
+### Result
+```
+DB10 ENGINEERING               COMPLETE
+OVERALL PERSISTENCE FOUNDATION COMPLETE
+PRODUCTION DURABILITY GO-LIVE  BLOCKED BY NAMED EXTERNAL DECISIONS
+```
+
+**Files changed:** `apps/api/src/tests/durability/db10-cp8-retention-role-security.integration.spec.ts`,
+`apps/api/src/tests/durability/durability-harness.ts`,
+`docs/database/DB10_FINAL_CLOSURE_CORRECTION.md`, and additive updates to
+`DB10_COMPLETION_REPORT.md`, `DB10_PERSISTENCE_FINAL_CLOSURE.md`,
+`DB10_ACCEPTANCE_AUDIT.md`, `DB10_DURABILITY_PARAMETER_REGISTRY.md`,
+`DB10_RETENTION_RUNBOOK.md`, this log.
