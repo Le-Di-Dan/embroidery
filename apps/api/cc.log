@@ -1,0 +1,57 @@
+  console.log
+    [db9-cp3-contention] tier M generated in 5567ms
+    {
+      "categories": 13,
+      "products": 201,
+      "product_variants": 801,
+      "skus": 801,
+      "sku_stocks": 800,
+      "customers": 2001,
+      "customer_contact_points": 2001,
+      "custom_requests": 3001,
+      "quotations": 3001,
+      "quotation_versions": 6001,
+      "design_cases": 3001,
+      "design_versions": 6001,
+      "approval_snapshots": 1501,
+      "orders": 1500,
+      "order_items": 4500,
+      "order_transitions": 4500,
+      "payment_obligations": 3000,
+      "payment_attempts": 3000,
+      "payment_provider_events": 8000,
+      "inventory_ledger_entries": 20000,
+      "audit_events": 60000,
+      "outbox_events": 20000,
+      "notification_intents": 12000,
+      "notification_delivery_attempts": 30000,
+      "content_pages": 200,
+      "redirect_rules": 2000,
+      "gallery_entries": 300
+    }
+
+      at createBenchContext (src/tests/benchmark/bench-context.ts:42:11)
+
+  console.log
+    
+    ### DB9-CP3 category-C contention — timings
+    | PERF | source | n | median ms | p95 ms | min | max | cold | rows | err |
+    |---|---|---|---|---|---|---|---|---|---|
+    | PERF-C01 | CC-02 DesignCaseRepository.setCurrentVersion ×2 | 10 | 14.18 | 24.817 | 11.815 | 24.817 | 18.745 | 2 | 0 |
+    | PERF-C02 | CC-03 DesignCaseRepository.sendForReview ×2 | 10 | 7.283 | 9.436 | 6.222 | 9.436 | 8.272 | 2 | 0 |
+    | PERF-C03 | CC-06 QuotationRepository.accept ×2 | 8 | 7.108 | 9.602 | 6.34 | 9.602 | 12.802 | 2 | 0 |
+    | PERF-C04 | CC-10 PaymentObligationRepository.satisfy ×2 | 8 | 9.02 | 10.672 | 8.032 | 10.672 | 10.672 | 2 | 0 |
+    | PERF-C05 | CC-08 ProductionJobRepository.createJob ×2 | 8 | 9.506 | 12.606 | 8.591 | 12.606 | 12.606 | 2 | 0 |
+    | PERF-C06 | CC-12 OrderRepository.saveShippingDetails ×2 | 8 | 9.428 | 11.431 | 9.329 | 11.431 | 11.431 | 2 | 0 |
+    
+    ### DB9-CP3 category-C contention — plans
+    | PERF | plan nodes | index | act/est rows | est ratio | hit/read | filtered | sort | plan ms | exec ms |
+    |---|---|---|---|---|---|---|---|---|---|
+
+      at BenchRecorder.print (src/tests/benchmark/bench-recorder.ts:69:13)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        8.563 s, estimated 19 s
+Ran all test suites matching db9-cp3-contention.

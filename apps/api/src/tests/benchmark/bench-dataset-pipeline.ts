@@ -242,9 +242,9 @@ export async function seedPipelineVolume(
            bench_uuid(${`${seed}:obligation`}, n),
            315000.00, 'VND', 'PROVIDER_REDIRECT', 'bench-provider',
            'ref-' || n,
-           case when n % 7 = 0 then 'FAILED' else 'SUCCEEDED' end,
-           case when n % 7 = 0 then null else now() - interval '10 days' end,
-           case when n % 7 = 0 then now() - interval '10 days' else null end
+           case when n % 11 = 0 then 'FAILED' else 'SUCCEEDED' end,
+           case when n % 11 = 0 then null else now() - interval '10 days' end,
+           case when n % 11 = 0 then now() - interval '10 days' else null end
     from generate_series(1, ${spec.obligations}) as n
   `);
 
