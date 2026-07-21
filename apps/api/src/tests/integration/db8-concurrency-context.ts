@@ -54,7 +54,7 @@ export interface ConcurrencyTestContext {
  * each other (each `await`s fully before the next), so there is no window
  * where two actors could read each other's environment override.
  */
-async function compileActor(
+export async function compileActor(
   label: string,
   databaseUrl: string,
   imports: NonNullable<ModuleMetadata['imports']>,

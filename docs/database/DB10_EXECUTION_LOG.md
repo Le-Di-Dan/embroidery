@@ -217,3 +217,99 @@ DB10-CP1  PASS
 
 **Next checkpoint:** DB10-CP2 — logical backup and restore rehearsal against
 representative data.
+
+---
+
+## DB10-CP2 — Logical backup and restore rehearsal
+
+**Starting HEAD:** `2d7e588` (`feat(database): add verified backup and restore tooling`).
+
+**Scope:** §22 representative source, §23 backup + dual restore, §24 restore
+verification, §25 corruption fixture, §26 selective-restore feasibility.
+
+### Mechanism and data
+
+A disposable source database (tier S — the full pipeline in miniature, 1 001
+rows across 78 tables, every CHECK/FK/S24 trigger live) is backed up with the
+real `tools/db-backup.mjs`, then restored by the real `tools/db-restore.mjs`
+into **two independent empty databases**, `restore_a` and `restore_b`. The
+`bench_uuid` generation function is dropped before the backup so the artifact
+carries only the canonical schema.
+
+A new `apps/api/src/tests/durability/` harness runs the tools as processes
+(not a reimplementation) and — via `attachActor` — compiles a real Nest
+module against a restored database by URL, so the application's own
+repositories read the restored rows.
+
+### Validation (§24) — each restored database
+
+| Check | restore_a | restore_b |
+|---|---|---|
+| `pg_restore` wall-clock | ~3.5 s | ~3.8 s |
+| Row-count parity vs manifest | OK | OK |
+| Migration-journal parity (31) | OK | OK |
+| All 7 live-catalog checkers + fingerprint gate | PASS (`4ca56a59…1672f`) | PASS |
+| Critical-table content checksums (7 tables, order-independent md5) | identical to source | identical to source |
+| CHECK + S24 immutability still enforcing (SQLSTATE 23000) | PASS | — |
+| Repository read through `OrderRepository.findById` | PASS | — |
+| Order → outbox atomicity, commit **and** rollback halves | PASS | — |
+
+The manifest is credential-free (asserted: contains neither `password` nor
+the dev password), declares `encryption: none` / `sanitization: none`, and
+records the source fingerprint, which matches the frozen baseline.
+
+### Corruption and safety fixtures (§25)
+
+| Fixture | Result |
+|---|---|
+| Corrupted artifact, manifest hash unchanged | exit **4**, no database created, no credential printed |
+| Restore over an existing database (`--create`) | exit **1**, refused |
+| Schema-only selective restore | exit **0**, restored schema passes the fingerprint gate |
+
+### Selective restore feasibility (§26)
+
+`--schema-only` is proven (a schema-only restore reproduces the baseline).
+`--data-only` exists but is **not promised as a recovery path**: this schema
+has 160 FK edges and the S24 append-only triggers reject the out-of-order
+writes a data-only restore into a populated database would attempt, so a safe
+selective *data* recovery needs the schema-then-data ordering the full
+restore already performs. Recorded rather than overclaimed.
+
+### Defects found and fixed
+
+1. `rawExecutor` read `.db` off the injected `DatabaseConnection`; the getter
+   is `.database`. Fixed.
+2. The atomicity test reused the backbone request for both the commit and the
+   rollback half, so the second create hit `uq_orders__request` before
+   reaching the deliberate throw. Reordered: rollback first (leaves the
+   request order-free), then commit — each half now exercises what it claims.
+3. The S24 assertion expected a mapped `PersistenceError.code`; the raw
+   executor deliberately does **not** map driver errors (DEC-DB8-005), so the
+   SQLSTATE lives on the wrapped `.cause.code`. Added `sqlStateOf`, which
+   digs the 5-char SQLSTATE out of the cause chain — testing the real error
+   the raw path produces rather than one it does not.
+
+### Cleanup
+
+Every `embroidery_db10_restore_*` database is dropped in `afterAll`,
+including any a failed assertion leaves behind; the manual CP1 smoke database
+was also removed. `select datname from pg_database where datname like
+'embroidery%'` → `embroidery` only. Dev fingerprint re-checked: match.
+
+### Tests
+
+`apps/api` durability suite: **13 passed** (`npx jest --runInBand db10-cp2`).
+
+### Result
+
+```
+DB10-CP2  PASS
+```
+
+**Files changed:** `apps/api/src/tests/durability/durability-harness.ts`,
+`apps/api/src/tests/durability/db10-cp2-logical-restore.integration.spec.ts`,
+`apps/api/src/tests/integration/db8-concurrency-context.ts` (exported
+`compileActor` for reuse).
+
+**Next checkpoint:** DB10-CP3 — physical recovery / WAL / PITR feasibility
+and rehearsal.
