@@ -24,10 +24,21 @@ The completion report §K said "Commits (DB10): 10". **Git says 8.** Corrected.
 DB10 implementation commits   8  (07a06ef → daf9286, linear, single-parent)
 ```
 
-This correction adds two further additive commits (§10). **Final HEAD and
-exact count are re-stated in §12 after those commits exist** — no hash is
-invented here. Tree clean, never pushed. `DB10_COMPLETION_REPORT.md` and
-`DB10_PERSISTENCE_FINAL_CLOSURE.md` are both committed (in `daf9286`).
+This correction adds two additive commits on top of the 8 implementation
+commits:
+
+```
+4e26c74  test(database): harden retention bypass security
+bff2eb5  docs(database): reconcile DB10 final closure evidence
+```
+
+giving **10 DB10 commits total** (8 implementation + 2 correction), linear and
+single-parent from `07a06ef`. The literal final HEAD is the tip of
+`production` after this document's own commit and is reported in the final
+response (a document cannot contain the hash of the commit that introduces it).
+No hash is invented. Tree clean, never pushed. `DB10_COMPLETION_REPORT.md` and
+`DB10_PERSISTENCE_FINAL_CLOSURE.md` are committed (in `daf9286`, with additive
+correction addenda in `bff2eb5`).
 
 ## Blocker B — persistent dev database, clarified (no mutation)
 
