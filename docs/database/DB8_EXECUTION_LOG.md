@@ -415,3 +415,91 @@ CC-15, CC-16, CC-17, CC-19, CC-20, CC-22. Continuing to CP6 (deadlock,
 serialization and retry verification) — largely already proven in CP1;
 this checkpoint reconciles that evidence against the matrix rather than
 re-deriving it.
+
+---
+
+## DB8-CP6 — Deadlock, serialization and retry verification
+
+**Starting HEAD:** `cc054a5` (CP5 closure).
+
+**Scope:** §24–27 of the governing prompt: a real deadlock fixture, the
+serialization (`40001`) and `NOWAIT` (`55P03`) verdicts, and retry-
+exhaustion/no-duplication evidence. No new test file — this checkpoint
+reconciles evidence CP0/CP1 already produced against the prompt's explicit
+checklist, rather than re-deriving it.
+
+### §24 Deadlock fixture — satisfied by CP1
+
+`db8-harness-deadlock.integration.spec.ts` (`4a5daae`) forces a real
+`40P01` between two independent connections (opposite-order `FOR UPDATE` on
+two `redirect_rules` rows), proves `mapDatabaseError` classifies it
+`RETRYABLE_TRANSACTION_FAILURE`, and proves the bounded retry re-runs the
+whole losing transaction to a clean commit. `DB8_LOCK_ORDER_MATRIX.md` §5
+(DEC-DB8-003) already recorded why the fixture is synthetic: no shipped
+flow takes two locks in opposite order today, so there is no "opposite lock
+order left in production code" to find or fix — §24's "do not leave
+opposite lock order in production code" is satisfied by there being none.
+
+### §25 Serialization — N/A, evidence on record since CP0
+
+CC-23 in `DB8_RACE_COVERAGE_MATRIX.md`: zero application call sites pass
+`isolationLevel`; `SERIALIZABLE` is mechanically available on
+`TransactionManager` but no business flow opts in (`DB8_LOCK_ORDER_MATRIX.md`
+§3, grep evidence). Per the prompt's own instruction ("If none uses it,
+record N/A with evidence; do not introduce it solely for testing"), no
+`40001` fixture was built.
+
+### §26 NOWAIT — N/A, evidence on record since CP0
+
+CC-24: zero call sites use `NOWAIT` (`DB8_LOCK_ORDER_MATRIX.md` §4, grep
+evidence). No `55P03` fixture applicable.
+
+### §27 Retry exhaustion — satisfied by CP1, duplication evidence from CP2/CP3/CP5
+
+`db8-harness-deadlock.integration.spec.ts` already proves, directly:
+
+- first retry succeeds (`the bounded retry re-runs the whole losing
+  transaction to a clean commit, exactly once extra`);
+- all attempts fail → bounded exhaustion (`does not retry a non-retryable
+  rejection, and does not retry forever` — `RetryExhaustedError` after
+  `maxAttempts`, not infinite);
+- no partial rows survive an aborted loser (`leaves no partial row after a
+  deadlock loser is aborted`).
+
+**No duplicate business result under retry** — the prompt's own list names
+Order, Outbox, Payment Provider Event, Reservation and Notification Attempt
+specifically. This harness never retries a *business* flow (§24 found no
+real deadlock path to retry one on), so the evidence is compositional
+rather than a single end-to-end test, and is recorded here rather than
+asserted without a citation:
+
+1. `withBoundedRetry` (CP1) only ever re-invokes the *entire* callback,
+   never a partial statement — proven by the exhaustion test re-incrementing
+   `attempts` on every call, including the ones that immediately fail.
+2. Every one of the five side effects the prompt names is independently
+   guarded by a database-level uniqueness arbiter that a retried
+   transaction re-enters through the same path a first attempt would:
+   `uq_orders__request` (CC-07, CP3), `uq_payment_provider_events__provider_key__provider_event_ref`
+   (CC-09, CP3), the reservation/hold partial-unique indexes (CC-15/16,
+   CP2), and the outbox/idempotency claim arbiters (CC-19/20, CP5).
+3. Composing 1 and 2: a retried transaction that reaches any of these
+   inserts a second time hits the same arbiter a *concurrent* second
+   caller would — which CC-07/09/15/16/19/20 already prove rejects or
+   replays rather than duplicating. There is no code path by which "retry"
+   reaches the insert differently than "second concurrent caller" does; the
+   arbiter cannot distinguish them.
+
+Notification Attempt is the one exception this composition does not cover:
+`NotificationIntentRepository` has no live caller (`DB7_DB8_HANDOFF.md` §3),
+so there is no retry path into it yet — nothing to duplicate. Recorded as
+N/A for the same reason CC-14/CC-21 were deferred, not silently assumed
+safe.
+
+### Result
+
+CP6 PASS. Deadlock fixture (§24), serialization/NOWAIT verdicts (§25/26)
+and retry-exhaustion/no-duplication evidence (§27) all satisfied — three
+by direct CP1 test evidence, two by CP0's grep-backed N/A verdicts, and the
+cross-flow no-duplication claim by explicit composition of existing P0
+tests rather than an unfounded assertion. Continuing to CP7 (global
+verification, flakiness gate, final matrices and closure).
