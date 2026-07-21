@@ -313,3 +313,83 @@ DB10-CP2  PASS
 
 **Next checkpoint:** DB10-CP3 — physical recovery / WAL / PITR feasibility
 and rehearsal.
+
+---
+
+## DB10-CP3 — Physical recovery / WAL / PITR feasibility and rehearsal
+
+**Starting HEAD:** `f9f3427` (`test(database): rehearse logical restore end to end`).
+
+**Scope:** §27 requirement classification, §28 PITR rehearsal, §29 PITR
+correctness.
+
+### §27 requirement classification
+
+| Question | Answer |
+|---|---|
+| Is PITR required? | For **production**, yes — any RPO shorter than the backup interval needs continuous WAL archiving. For dev, no: the dev database is reproducible from migrations + seed. |
+| Is a local rehearsal required by DB10? | Yes — §28. Proven below. |
+| Is WAL-archive tooling available? | Yes — `pg_basebackup`, `pg_receivewal`, `archive_command` all present in the pinned image. |
+
+Outcome: **required and locally feasible → full disposable rehearsal run.**
+The production *destination* (DP-WAL-02) and the RPO/window (DP-RPO-01,
+DP-WAL-03) stay deferred with named owners; the mechanism is not.
+
+### Mechanism (DEC-DB10-005)
+
+A dedicated disposable `postgres:16.14-alpine` container, **never** the shared
+dev instance — `archive_mode` needs a server restart the dev instance must
+not take. Two data directories and two postmasters (primary 5432, recovered
+5433) inside the one container; the archive is a plain directory under the
+postgres home. Container and both instances are torn down at the end.
+
+### §28 rehearsal — the canonical scenario
+
+```
+wal_level=replica, archive_mode=on, archive_command copies each segment
+1. create probe table
+2. pg_basebackup -X stream            → base
+3. insert A ('A-before-target'), commit
+4. record recovery_target_time = clock_timestamp()
+5. (2 s) insert B ('B-after-target'), commit
+6. pg_switch_wal() + checkpoint       → 5 segments archived
+7. recover a fresh instance from base + archive to the target,
+   recovery_target_action = 'promote'
+8. assert
+```
+
+### §29 correctness — result
+
+| Assertion | Result |
+|---|---|
+| Transaction A (before target) present | **yes** |
+| Transaction B (after target) absent | **yes** |
+| Recovered probe row count | **1** |
+| `pg_is_in_recovery()` after promotion | **f** (promoted cleanly) |
+| Schema/constraints/journal | intact — the recovered instance is a full data directory, not a partial extract |
+
+**Run twice, independently, identical result.** Container cleanup confirmed
+after each: `docker ps -a --filter name=embroidery-pitr` → empty.
+
+### Defect found and fixed
+
+`/base` and `/recovery` were created at the container root, which is
+root-owned, so `pg_basebackup` (running as `postgres`) could not create its
+target. Moved both, and the archive, under `/var/lib/postgresql` (the
+postgres-owned home) — no `chown`, no root step.
+
+### Artifacts
+
+`tools/db-pitr-rehearsal.mjs` (reproducible, `pnpm db:pitr:rehearse`),
+`docs/database/DB10_PITR_RUNBOOK.md`.
+
+### Result
+
+```
+DB10-CP3  PASS  (PITR mechanism proven; production destination and RPO deferred)
+```
+
+**Files changed:** `tools/db-pitr-rehearsal.mjs`,
+`docs/database/DB10_PITR_RUNBOOK.md`, `package.json`.
+
+**Next checkpoint:** DB10-CP4 — retention, cleanup and anonymization controls.
