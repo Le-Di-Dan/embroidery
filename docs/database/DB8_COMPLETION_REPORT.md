@@ -148,3 +148,27 @@ DB9                  NOT STARTED
 DB10                 NOT STARTED
 OVERALL PERSISTENCE  IN PROGRESS
 ```
+
+## 10. Addendum — DB9-CP0 preflight reconciliation
+
+Added by DB9's mandatory preflight. Nothing above is rewritten; these are
+corrections to this report's own bookkeeping, recorded where a reader will
+find them.
+
+- **Commit count: 8, not 9** (DEC-DB9-004). The header's "9" and §8's list
+  of 7-plus-one were both estimates written before the closing commit
+  existed. Git is authoritative: `3775ea7..f7ef9ec` inclusive is exactly
+  **8** commits — the 7 listed in §8 plus `f7ef9ec docs(database): complete
+  DB8 and DB9 handoff`. All artifacts exist, parents are linear, the tree is
+  clean and the branch was never pushed. Report bookkeeping only.
+- **CC-15b** (DEC-DB9-003) is the name of the exact-fit boundary *test*
+  inside `inventory-races.integration.spec.ts`, rolled up under the CC-15
+  matrix row. §4's PASS list, which names CC-15 alone, was already correct;
+  §3's CP2 line reads "CC-15/15b" as a test roll-up. No P0 race was
+  untested.
+- **CC-01 is now `PASS`** (DEC-DB9-002). §4 and §7 above describe it as the
+  one deferred row not covered by shape-sharing — accurate at DB8's
+  closure. DB9-CP0 classified it category-**D** (a live repository with an
+  untested correctness path), wrote the missing test, and closed it before
+  starting measurement. Race coverage is therefore **9 PASS / 12 deferred /
+  3 N/A** as of `DB9_EXECUTION_LOG.md` CP0.

@@ -21,7 +21,7 @@ cross-reference without ambiguity.
 
 | CC | DB7 note | Guard | Bounded context | Op A | Op B | Shared rows | Arbiter | Isolation | Expected winner/loser | Retryable SQLSTATE | Idempotency requirement | Priority | Status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| CC-01 | CC-01 | G-DB7-19 session autosave revision | DSN | `saveDocument(rev=N)` | `saveDocument(rev=N)` (same session, concurrent) | `design_sessions` | `autosave_revision` compare-and-set | READ COMMITTED | one writer advances the revision, the other gets `STALE_WRITE` | none (app-level CAS, no unique) | loser must be safely retryable by re-reading | P2 | DEFERRED TO DB9 (reason: no physical lock; §3) |
+| CC-01 | CC-01 | G-DB7-19 session autosave revision | DSN | `saveDocument(rev=N)` | `saveDocument(rev=N)` (same session, concurrent) | `design_sessions` | `autosave_revision` compare-and-set | READ COMMITTED | one writer advances the revision, the other gets `STALE_WRITE` | none (app-level CAS, no unique) | loser must be safely retryable by re-reading | P2 | PASS (closed by DB9-CP0, DEC-DB9-002 — `design-races.integration.spec.ts`) |
 | CC-02 | CC-02/03 | G-DB7-02 design case current-version pointer | DSN | `setCurrentVersion(v1)` | `setCurrentVersion(v2)` (same case, concurrent) | `design_cases` | `SELECT … FOR UPDATE` on `design_cases` | READ COMMITTED | second waits for the row lock, applies against the post-commit state | none (row lock serializes) | n/a — lock ordering is the guarantee | P1 | DEFERRED TO DB9 (reason: DEC-DB8-007 — same `FOR UPDATE`-serializes-a-single-row shape already proven under real contention by CC-15/CC-16 at P0; no new lock-anchor pattern) |
 | CC-03 | CC-03 | G-DB7-15 single active review per case | DSN | `sendForReview(case)` | `sendForReview(case)` (concurrent) | `design_versions` (partial unique) | `uq_design_versions__case__sent_for_review` | READ COMMITTED | one commits, one gets `23505` → `REVIEW_ALREADY_ACTIVE` | none | loser maps to a client-safe conflict, no retry | P1 | DEFERRED TO DB9 (reason: DEC-DB8-007 — same partial-unique-arbiter shape already proven under real contention by CC-07/CC-09 at P0) |
 | CC-04 | version-publish race | G-DB7-01 agreement current-version pointer | CNT | `setCurrentVersion(v1)` | `setCurrentVersion(v2)` (same agreement, concurrent) | `agreements` | `SELECT … FOR UPDATE` on `agreements` | READ COMMITTED | second waits, applies after first commits | none | n/a — lock ordering | P3 | DEFERRED TO DB9 (reason: same shape as CC-02, proven once; §3) |
@@ -58,6 +58,24 @@ cross-reference without ambiguity.
 - **P3** — scenario does not occur in the code as written today. Recorded
   `N/A` with the exact evidence (grep / design decision), not skipped
   silently.
+
+## DB9-CP0 amendment
+
+Two corrections, both made by DB9's mandatory preflight rather than left to
+drift (`DB9_EXECUTION_LOG.md` CP0):
+
+- **CC-01 moved from `DEFERRED` to `PASS`** (DEC-DB9-002). It was the one
+  row DB8 itself flagged as a genuine untested gap rather than a
+  shape-shared deferral, and the live repository (`saveDocument`, G-DB7-19)
+  made it a category-**D** correctness gap. DB9 wrote the missing test
+  before starting any measurement instead of absorbing an open concurrency
+  question into a performance phase.
+- **"CC-15b" is a test name, not a matrix row** (DEC-DB9-003). It is the
+  exact-fit boundary case inside `inventory-races.integration.spec.ts`,
+  rolled up under CC-15. This table's 24 rows remain the complete set.
+
+Final tally after the amendment: **9 PASS**, 12 `DEFERRED`, 3 `N/A`. The 12
+deferred rows are classified A/B/C/D in `DB8_DB9_HANDOFF.md` §2.
 
 ## Reconciliation with `DB7_DB8_HANDOFF.md` §1
 

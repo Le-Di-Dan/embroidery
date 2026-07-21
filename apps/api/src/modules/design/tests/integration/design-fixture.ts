@@ -11,7 +11,8 @@
 import { newId } from '@embroidery/database';
 import { sql } from 'drizzle-orm';
 
-import type { PersistenceTestContext } from '../../../../tests/integration/persistence-test-context';
+import type { DisposableDatabase } from '@embroidery/database/testing';
+
 import type {
   EmbroideryAreaId,
   ProductId,
@@ -48,7 +49,10 @@ export const AGREEMENT_HASH = `sha256:${'d'.repeat(64)}`;
  * through their real repositories.
  */
 export async function seedDesignChain(
-  context: PersistenceTestContext,
+  // Structurally typed (DEC-DB8-006/008): the body only ever reads
+  // `disposable`, so both the DB7 single-actor context and the DB8/DB9
+  // multi-actor context satisfy it without duplicating this setup.
+  context: { readonly disposable: DisposableDatabase },
   suffix = '1',
 ): Promise<DesignFixture> {
   const db = context.disposable.client.db;

@@ -24,9 +24,12 @@ sections for exact counts.
 
 ## 2. Deferred to DB9 (or later) — same shape as a proven P0, or no live caller
 
+> **DB9-CP0 amendment.** CC-01 is no longer deferred — see the closure note
+> at the end of this section. The remaining twelve rows are classified
+> A/B/C/D per the DB9 prompt §5.3 in the second table below.
+
 | CC | Reason | Shape already proven by |
 |---|---|---|
-| CC-01 | App-level CAS (no physical lock), no unique arbiter to test against | — (genuinely different shape; not covered by any P0 test) |
 | CC-02, CC-03 | Single-row `FOR UPDATE` / partial-unique-arbiter | CC-15/16, CC-07/09 |
 | CC-04, CC-05 | Single-row `FOR UPDATE` (current-version pointers) | CC-02's shape (itself deferred on the same basis) |
 | CC-06 | `FOR UPDATE` + in-tx re-read | CC-07 |
@@ -36,13 +39,31 @@ sections for exact counts.
 | CC-18 | Same `sku_stocks` lock anchor already under contention at P0 | CC-15/16 |
 | CC-21 | Same claim-index shape as CC-19; G-DB7-58 already accepts at-least-once | CC-19 |
 
-**CC-01 is the one row genuinely not covered by shape-sharing** — it is an
+**CC-01 was the one row genuinely not covered by shape-sharing** — an
 application-level compare-and-set (`autosave_revision`) with no physical
-lock or unique arbiter backing it, so none of the P0 tests exercise its
-failure mode. If DB9 (or whichever phase builds the Design Studio autosave
-endpoint) wants concurrency proof here, it needs its own test — this row is
-flagged as the one true gap, not folded into the "same shape" bucket the
-others correctly belong to.
+lock or unique arbiter behind it, so none of the P0 tests exercised its
+failure mode. DB8 flagged it as a true gap rather than folding it into the
+"same shape" bucket.
+
+**Closed in DB9-CP0** (DEC-DB9-002). Preflight confirmed the live
+repository already ships (`DrizzleDesignSessionRepository.saveDocument`), so
+this was a category-**D** correctness gap, not unbuilt work — and DB9 wrote
+the missing test *before* any measurement rather than converting an open
+concurrency question into a performance claim. Evidence:
+`apps/api/src/modules/design/tests/integration/design-races.integration.spec.ts`
+— two independently pooled actors, released by an observed
+`pg_stat_activity` lock-wait rather than a sleep; the loser gets
+`STALE_WRITE`, `autosave_revision` lands on exactly 1, and the unbarriered
+variant repeats 10/10 with zero flaky results.
+
+### A/B/C/D classification of the remaining twelve (DB9 prompt §5.3)
+
+| Class | Rows | Meaning |
+|---|---|---|
+| **A** — proven by the exact same code path and arbiter | CC-18 | `reserve` and `adjust` both lock through the *same* `stock-anchor.ts` `SELECT … FOR UPDATE` on `sku_stocks` that CC-15/CC-16 already proved under contention. Shared implementation, not merely similar prose — stays DB8-complete. |
+| **B** — no live caller | CC-13 | `resolveActive` exists but nothing consumes the grant. Owner: the feature that builds signed-link consumption. **Not** marked validated. |
+| **C** — needs measured contention work in DB9 | CC-02, CC-03, CC-04, CC-05, CC-06, CC-08, CC-10, CC-11, CC-12, CC-21 | Each uses a *different* table, index or lock anchor from the row whose shape it echoes. Similar shape is not the same code path, so DB8's proof does not transfer. Measured under real multi-connection contention in DB9-CP3 as `PERF-C01..C10`, with the row's own winner/loser assertion — never PASS on throughput alone. |
+| **D** — genuine untested gap | *(none)* | CC-01 was the only D and is now `PASS`. |
 
 ## 3. N/A — evidence-backed, not applicable to shipped code
 
@@ -80,7 +101,11 @@ application/use-case layer either:
    not build the worker loop that would actually call them in production.
 3. **No queue/broker is chosen** (`CLAUDE.md` §8, open decision) — unaffected
    by DB8.
-4. **The DB9/DB10 documentation-numbering discrepancy** (DEC-DB7-002,
-   carried forward unresolved through DB8) — `DB_ROADMAP.md` vs.
-   `DB6_DB7_DB10_HANDOFF.md` disagree on what DB9/DB10 mean. DB8 did not
-   start either, so this is still whichever phase's to resolve, not DB8's.
+4. ~~**The DB9/DB10 documentation-numbering discrepancy**~~ (DEC-DB7-002) —
+   **resolved in DB9-CP0 by DEC-DB9-001.** DB9 = measured performance and
+   query-plan validation; DB10 = backup/retention/operational durability
+   plus the fresh-setup/upgrade/recovery acceptance audit. The two source
+   documents reconcile rather than conflict: the roadmap's DB9 exit gate
+   (deterministic reproducible seed data) is satisfied by DB9-CP1's dataset
+   generator, and its DB10 acceptance-audit scope is a superset of the
+   handoff's. No historical report was renamed.

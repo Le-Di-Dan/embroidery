@@ -175,6 +175,18 @@
 - **Exit gate:** Race, duplicate-callback, and out-of-order scenarios proven
   safe.
 
+> **DB9/DB10 scope reconciliation (DEC-DB9-001, DB9-CP0).** This section's
+> titles and [`DB6_DB7_DB10_HANDOFF.md`](./DB6_DB7_DB10_HANDOFF.md) §3–§4
+> described DB9/DB10 differently, flagged unresolved by DEC-DB7-002 and
+> carried through DB8. Locked here: **DB9 = measured performance and
+> query-plan validation**, **DB10 = backup, retention and operational
+> durability plus the fresh-setup/upgrade/recovery acceptance audit**. The
+> two readings reconcile rather than conflict — DB9's benchmark dataset
+> generator is the deterministic, reproducible seed/fixture workflow this
+> section's DB9 exit gate asks for, and this section's DB10 acceptance audit
+> is a superset of the handoff's backup/retention scope. The headings below
+> are left as originally written; no historical report is renamed.
+
 ### DB9 — Seed & Fixture Design
 
 - **Goal:** Deterministic, reproducible seed/fixture workflow.
