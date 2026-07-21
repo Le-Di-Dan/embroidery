@@ -77,6 +77,19 @@ drift (`DB9_EXECUTION_LOG.md` CP0):
 Final tally after the amendment: **9 PASS**, 12 `DEFERRED`, 3 `N/A`. The 12
 deferred rows are classified A/B/C/D in `DB8_DB9_HANDOFF.md` §2.
 
+**DB9-CP3 closed the ten category-C rows.** CC-02, CC-03, CC-04, CC-05,
+CC-06, CC-08, CC-10, CC-11, CC-12 and CC-21 were each measured under real
+two-connection contention with their own documented winner/loser outcome
+asserted — `PERF-C01..C09` and `PERF-Q03` in
+`DB9_PERFORMANCE_SCOPE_MATRIX.md`. One correction fell out of that work:
+**CC-04's race is two concurrent `publishVersion` calls**, not two
+`setCurrentVersion` calls, because an agreement's DRAFT cannot be made
+current directly and G-DB7-01 is right to refuse it.
+
+Running tally across DB8 and DB9: **19 PASS**, 2 deferred (CC-13, no live
+caller; CC-18, category A — the exact shared `stock-anchor.ts` lock CC-15/16
+already proved), 3 `N/A` with grep evidence.
+
 ## Reconciliation with `DB7_DB8_HANDOFF.md` §1
 
 Every CC row in that table maps to exactly one row here (see "DB7 note"

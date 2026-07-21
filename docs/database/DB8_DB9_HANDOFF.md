@@ -62,7 +62,7 @@ variant repeats 10/10 with zero flaky results.
 |---|---|---|
 | **A** — proven by the exact same code path and arbiter | CC-18 | `reserve` and `adjust` both lock through the *same* `stock-anchor.ts` `SELECT … FOR UPDATE` on `sku_stocks` that CC-15/CC-16 already proved under contention. Shared implementation, not merely similar prose — stays DB8-complete. |
 | **B** — no live caller | CC-13 | `resolveActive` exists but nothing consumes the grant. Owner: the feature that builds signed-link consumption. **Not** marked validated. |
-| **C** — needs measured contention work in DB9 | CC-02, CC-03, CC-04, CC-05, CC-06, CC-08, CC-10, CC-11, CC-12, CC-21 | Each uses a *different* table, index or lock anchor from the row whose shape it echoes. Similar shape is not the same code path, so DB8's proof does not transfer. Measured under real multi-connection contention in DB9-CP3 as `PERF-C01..C10`, with the row's own winner/loser assertion — never PASS on throughput alone. |
+| **C** — needs measured contention work in DB9 → **all ten now PASS**, measured in DB9-CP3 as `PERF-C01..C09` and `PERF-Q03` | CC-02, CC-03, CC-04, CC-05, CC-06, CC-08, CC-10, CC-11, CC-12, CC-21 | Each uses a *different* table, index or lock anchor from the row whose shape it echoes. Similar shape is not the same code path, so DB8's proof does not transfer. Measured under real multi-connection contention in DB9-CP3 as `PERF-C01..C10`, with the row's own winner/loser assertion — never PASS on throughput alone. |
 | **D** — genuine untested gap | *(none)* | CC-01 was the only D and is now `PASS`. |
 
 ## 3. N/A — evidence-backed, not applicable to shipped code
