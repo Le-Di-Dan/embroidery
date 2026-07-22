@@ -40,7 +40,7 @@ This map is the canonical, locked APP0 checkpoint decomposition (refined after t
 
 ### 6.1 Documentation and architecture
 
-- **APP0-C01 — Application module ownership reconciliation** *(documentation; no dependencies)*
+- **APP0-C01 — Application module ownership reconciliation** *(documentation; no dependencies)* — **DONE** (canonical owner: `../../architecture/SYSTEM_ARCHITECTURE.md` §8 + `../../architecture/REPOSITORY_STRUCTURE.md` §11/§11a; report `../reports/APP0-C01-COMPLETION-REPORT.md`).
   - Goal: reconcile bounded-context ownership, public application services, repository ownership, allowed dependency direction, and no-cycle rules against existing on-disk modules.
   - Inputs to inspect first: `docs/architecture/SYSTEM_ARCHITECTURE.md`, `docs/architecture/REPOSITORY_STRUCTURE.md`, database bounded-context/ownership handoffs, existing `apps/api/src/modules/**`, `../11-TRACEABILITY-AND-STATUS-MATRIX.md`.
   - Output rule: prefer updating an existing canonical architecture document; create a new file only if no canonical owner exists, and then only under `docs/architecture/`. `docs/implementation/` may link to it but must not duplicate its full contents. Do not create a competing module map under `docs/implementation/`.

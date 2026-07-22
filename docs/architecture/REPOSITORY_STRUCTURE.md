@@ -344,9 +344,41 @@ Only stable, cross-application domain primitives. Do not move backend entities h
 
 Components genuinely shared between storefront and admin. Feature-specific components remain inside applications.
 
+### `packages/database`
+
+Database foundation: Drizzle schema (per-context schema folders), client, config, errors, migrations, primitives, and DB CLI. Owns physical schema and derived status/enum types. Not a business-logic host.
+
+### `packages/persistence`
+
+Shared persistence/DI foundation and the **Platform (CTX-PLT) infrastructure area**: outbox event store, idempotency store, background-job-attempt/dead-letter store, policy-configuration repository, the Nest database module, and database health. Infrastructure-only, no domain rules; must not become a service locator (ADR-DB1-009). Consumed by `apps/api` and `apps/worker`.
+
+### `packages/validation`
+
+Shared validation primitives/utilities. No business rules or domain ownership.
+
+### `packages/observability`
+
+Structured logging, correlation, and telemetry foundation (currently a stub; filled by APP0-B05). No domain ownership.
+
+### `packages/test-utils`
+
+Shared testing utilities/harness support (currently a stub; the canonical database test harness is reused/adapted by APP0-T01). No production ownership.
+
 ### Configuration packages
 
 Centralized ESLint, Prettier, and TypeScript configurations.
+
+## 11a. Backend module list reconciliation (APP0-C01)
+
+The §7 module list is an "include" list, not exhaustive. The repository currently contains 14 business Nest modules plus `health`: `identity`, `customer`, `catalog`, `inventory`, `asset`, `design`, `order` (hosts Custom Request **and** Order), `quotation`, `payment`, `production`, `gallery`, `content`, `notification`, `audit`. The Platform (CTX-PLT) area is not a business module and lives in `packages/persistence/src/platform/` (see §11), consumed by the API and worker — it is not under `apps/api/src/shared/`.
+
+Current transitional state (documentation-only observations from APP0-C01; no code change):
+
+- Modules currently contain `domain/` + `infrastructure/` only; `application/` and `presentation/http` layers and feature controllers arrive in later APP phases (only `health` has a controller today).
+- No module exposes an `index.ts` public barrel yet; cross-module ports are reached by deep path into `<module>/domain/repositories/*.port.ts`. Module public barrels (or path aliases) are a future refinement; the logical boundary (port-only, no concrete-repository import) already holds.
+- Branded cross-module ID types (`SkuId`, `ProductVariantId`) are currently exported from `catalog/domain/repositories/placement-hierarchy.port`; `DB2_PACKAGE_MODULE_MAPPING §2` anticipates such primitives living in `packages/domain-types`. Reconciling their home is a future backend refinement, not an APP0-C01 code change.
+
+The canonical logical ownership map (contexts → modules → aggregate/repository/API/worker ownership, dependency direction, no-cycle rule) is owned by [`SYSTEM_ARCHITECTURE.md`](./SYSTEM_ARCHITECTURE.md) §8; this document owns physical placement and package ownership only.
 
 ## 12. Import rules
 

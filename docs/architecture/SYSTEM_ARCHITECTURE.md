@@ -279,22 +279,6 @@ Remote data must not be copied wholesale into Zustand. Persisted design changes 
 
 ## 8. Backend module boundaries
 
-Expected business modules include:
-
-- Identity.
-- Customer.
-- Catalog.
-- Inventory.
-- Asset.
-- Design.
-- Quotation.
-- Order.
-- Payment.
-- Production.
-- Gallery.
-- Notification.
-- Audit.
-
 A module owns its:
 
 - Domain model.
@@ -305,6 +289,59 @@ A module owns its:
 - Events and errors.
 
 A module must not import another module's ORM entities or concrete repositories.
+
+### 8.1. Application module ownership map (canonical)
+
+This is the canonical logical ownership map for backend bounded contexts and application modules. It was reconciled against the repository at checkpoint APP0-C01 and is traceable to the database ownership sources ([`../database/DB2_OWNERSHIP_MATRIX.md`](../database/DB2_OWNERSHIP_MATRIX.md), [`../database/DB2_PACKAGE_MODULE_MAPPING.md`](../database/DB2_PACKAGE_MODULE_MAPPING.md), [`../database/DB7_REPOSITORY_CONTRACTS.md`](../database/DB7_REPOSITORY_CONTRACTS.md)). Physical placement and shared-package ownership are owned by [`REPOSITORY_STRUCTURE.md`](./REPOSITORY_STRUCTURE.md) §7–§11; this section does not duplicate physical structure. `Status` reflects the DB-era foundation only, not feature completeness.
+
+| Context | Module (`apps/api/src/modules/`) | Aggregate owner | Repository owner | API owner | Worker consumer | Public boundary (allowed inbound) | Status |
+|---|---|---|---|---|---|---|---|
+| Identity (IDN) | `identity/` | Admin account/credential/session | same | `identity` controllers | session/security support | auth/session application service + actor port | IMPLEMENTED_FOUNDATION |
+| Customer (CUS) | `customer/` | Customer, Contact Point, Verification, Secure Grant | same | `customer` | notification/verification | customer/contact/secure-grant application ports | IMPLEMENTED_FOUNDATION |
+| Catalog (CAT) | `catalog/` | Category, Product/Variant/SKU/Side/Area/Media | same | `catalog` | asset/derivative signals | catalog read model + `PlacementHierarchyPort` (SKU/Variant IDs) | IMPLEMENTED_FOUNDATION |
+| Inventory (INV) | `inventory/` | SKU stock/ledger/hold/reservation | same | `inventory` | expiry/reservation sweeps | reservation/availability application ports | IMPLEMENTED_FOUNDATION |
+| Asset (AST) | `asset/` | Asset + children | same | `asset` | inspection/derivatives | signed-access service; asset association contracts | IMPLEMENTED_FOUNDATION |
+| Design (DSN) | `design/` | Design Session, Case/Version/Review, Approval Snapshot, Template | same | `design` | autosave/cleanup | design case/version + immutable approval snapshot contracts | IMPLEMENTED_FOUNDATION |
+| Ordering (ORD) | `order/` | Custom Request (AGG-13) **and** Order (AGG-15) + Shipping | same | `order` | order consequences | request/order application ports | IMPLEMENTED_FOUNDATION |
+| Quotation (QUO) | `quotation/` | Quotation + versions | same | `quotation` | notification | quotation application ports | IMPLEMENTED_FOUNDATION |
+| Payment (PAY) | `payment/` | Payment obligation/attempt/allocation, callback, reconciliation, refund | same | `payment` | webhook/reconciliation | payment application ports + `DepositEligibilityPort` | IMPLEMENTED_FOUNDATION |
+| Production (PRD) | `production/` | Production job/spec/note/artifact | same | `production` | worker claims/attempts | production application ports | IMPLEMENTED_FOUNDATION |
+| Gallery (GAL) | `gallery/` | Gallery entry/media | same | `gallery` | derivatives/revalidation | gallery read model | PARTIAL (no `tests/` dir yet) |
+| Content (CNT) | `content/` | Content page/redirect, Agreement/version | same | `content` | revalidation | content read model + agreement reference | IMPLEMENTED_FOUNDATION |
+| Notification (NTF) | `notification/` | Notification intent/attempt | same | `notification` | delivery worker | notification operational ports | IMPLEMENTED_FOUNDATION |
+| Audit (AUD) | `audit/` | Audit event (append-only record) | same | `audit` | — | append-only audit service (all contexts emit) | IMPLEMENTED_FOUNDATION |
+| Platform (PLT) | *not a business module* — `packages/persistence/src/platform/` | Outbox, Idempotency, Job-attempt/dead-letter, Policy configuration (infrastructure records, no domain rules) | `@embroidery/persistence` | — | worker + all modules (via service) | platform infrastructure services (outbox/idempotency/job-attempt/policy); must not become a service locator | IMPLEMENTED_FOUNDATION |
+
+Notes:
+
+- Exactly one owning context/module per concept; shared read never grants cross-module write (ADR-DB1-009). Cross-module references use IDs and public contracts, never another module's persistence.
+- `Ordering` intentionally hosts two aggregates (Custom Request + Order) in one module (DB2 context decision).
+- `Platform` is an infrastructure area, not a business module, and hosts no domain rules; it lives in the `@embroidery/persistence` package (see repository-structure reconciliation), consumed by the API modules and the worker.
+
+### 8.2. Dependency direction and cross-module mechanism
+
+Allowed layering inside a module:
+
+```text
+presentation/transport -> application -> domain -> ports
+infrastructure/persistence -> implements ports
+```
+
+Prohibited: domain importing NestJS or `drizzle-orm`; application importing a concrete persistence adapter when a port exists; a business module importing another module's controller, concrete repository, or ORM entities; a shared package importing a business module; the worker importing a controller.
+
+Cross-module collaboration uses only: a public application service, an explicit port/interface, a domain/integration event, a query/read-model contract, or a worker command/job contract. Barrel exports or deep class imports must not be used to hide illegitimate coupling.
+
+**Observed production dependency edges (APP0-C01 reconciliation), all port/ID-based and acyclic:**
+
+```text
+design     -> catalog   (PlacementHierarchyPort)
+inventory  -> catalog   (SkuId)          , inventory -> payment (DepositEligibilityPort)
+order      -> catalog   (ProductVariantId)
+```
+
+`catalog` and `payment` import no other business module (base modules); no back-edges exist, so the module graph is a DAG. No module imports another module's concrete Drizzle repository. No `drizzle-orm` runtime import exists in any `domain/` layer.
+
+**No-cycle rule:** circular dependencies between modules are prohibited and none exist today. Enforcement is currently structural/convention-based; automated boundary/cycle linting is a documented future tooling gap (owner: APP0 CI-gate work), not yet installed.
 
 ## 9. Data ownership and source of truth
 

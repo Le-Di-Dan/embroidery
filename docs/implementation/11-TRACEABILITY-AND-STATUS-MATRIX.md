@@ -4,6 +4,8 @@
 
 This matrix provides stage-level traceability. Exact requirement, lifecycle, table, query, design node, endpoint, and test IDs are added during each phase audit.
 
+The canonical backend module/bounded-context ownership map (reconciled at APP0-C01) is owned by [`../architecture/SYSTEM_ARCHITECTURE.md`](../architecture/SYSTEM_ARCHITECTURE.md) §8 (logical ownership + dependency direction) and [`../architecture/REPOSITORY_STRUCTURE.md`](../architecture/REPOSITORY_STRUCTURE.md) §11/§11a (physical placement + packages). This matrix does not duplicate that map.
+
 ## 2. Phase matrix
 
 | Phase | Backend modules/capabilities | Admin surface | Storefront/customer surface | Worker/integration | Milestone |
