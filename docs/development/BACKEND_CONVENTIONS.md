@@ -398,6 +398,16 @@ Used for business traceability:
 - Reason where required.
 - Immutable retention policy.
 
+### Actor and audit context (canonical)
+
+Locked by APP0-B04 (`apps/api/src/platform/actor-context/`, `apps/api/src/platform/audit-context/`); evidence in [`../implementation/reports/APP0-B04-COMPLETION-REPORT.md`](../implementation/reports/APP0-B04-COMPLETION-REPORT.md).
+
+- The request actor is provider-neutral. Its authenticated kinds are the canonical audit actor kinds — `ADMIN` (admin account id), `CUSTOMER` (customer id, optionally the secure-access grant id) and `SYSTEM` (job key) — plus `ANONYMOUS`, which exists only in the request view and is never persisted.
+- An unauthenticated request is anonymous, never absent. Anonymous carries no identifier, role or privilege, and is never treated as `SYSTEM`.
+- The actor is bound **once** per request, by the authentication layer, through `RequestContextService.bindActor()`. A second bind fails; there is no silent overwrite and no merge. The bound value is rebuilt through its factory and frozen, so no credential, token, claim set or contact detail can ride along and no caller can change it afterwards.
+- `requireAuthenticatedActor()` asserts that an identity exists. It is not an authorization decision.
+- Audit metadata (`AuditMetadataFactory.forCurrentRequest()`) is an immutable snapshot of the request id (the audit `correlation_id`), the current actor and the instant from an injected clock. It carries no request, response, header, body, query, token or free-form metadata, writes nothing and logs nothing. Outside a request it fails rather than inventing a correlation id or an actor.
+
 Do not use console logging as the production logging strategy.
 
 ## 19. Testing expectations
