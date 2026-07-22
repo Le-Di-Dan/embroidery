@@ -136,7 +136,7 @@ No item is marked CLOSED without evidence.
 
 ## H. Commit evidence
 
-- **Commit 1 (reconciliation baseline):** `docs(implementation): reconcile and integrate application delivery baseline` — hash: `__COMMIT_1_HASH__` (recorded by the closure-evidence commit).
+- **Commit 1 (reconciliation baseline):** `docs(implementation): reconcile and integrate application delivery baseline` — hash: `270a5ddc197c57519dfbe5f64b55bc0952ac0284`.
 - **Commit 2 (closure evidence):** `docs(implementation): record reconciliation closure evidence` — records Commit 1's hash into this section.
 - **Final working tree:** clean after Commit 2 (no code/schema/migration changes; no unrelated user changes were present).
 - **Push status:** NOT PUSHED.
