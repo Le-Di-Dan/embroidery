@@ -1,11 +1,12 @@
 # Database Phase — Overview
 
-**Phase:** Database Architecture & Persistence Foundation
-**Current checkpoint:** DB5 — Query, Access Path & Index Design — **COMPLETED** (`DB5 PASS WITH DEFERRED MEASURED TUNING`, 2026-07-18)
-**DB0:** COMPLETED (`563d986`) · **DB1:** COMPLETED (`a0e29b4` + correction `f90f78c`) · **DB2:** COMPLETED (`0563866`) · **DB3:** COMPLETED (`a79f523`) · **DB4:** COMPLETED (`456e101`)
-**DB5 audited Git HEAD:** `456e1014fd1543a7efcf3ebe1860e62f2d0e1111` (branch `production`)
-**Next allowed checkpoint:** DB6 — Physical Schema & Migration Foundation (only now that DB5 has passed)
-**Status of this document set:** discovery (DB0) + persistence ADRs (DB1) + conceptual domain model (DB2) + lifecycle/invariant specifications (DB3) + logical relational schema (DB4) + query/access-path/index architecture (DB5 — logical index definitions as documentation). **No migration, no ORM install, no physical table/constraint/index/trigger has been created.** That rule holds until DB6; DB5 remained documentation-only.
+**Phase:** Database Architecture & Persistence Foundation — **COMPLETE**
+**Status:** DB0–DB10 are all **COMPLETE**; the persistence foundation is implemented (ORM installed, physical schema and migrations exist, durability/backup/restore tooling in place).
+**Canonical status source:** [`DB_ROADMAP.md`](./DB_ROADMAP.md)
+**Final closure evidence:** [`DB10_PERSISTENCE_FINAL_CLOSURE.md`](./DB10_PERSISTENCE_FINAL_CLOSURE.md) and [`DB10_COMPLETION_REPORT.md`](./DB10_COMPLETION_REPORT.md)
+**Next stage:** Application implementation — see [`../implementation/README.md`](../implementation/README.md).
+
+> This overview is a front door only. Per-checkpoint status, migration fingerprint, and metrics are maintained in the canonical files above and are not duplicated here.
 
 ---
 
@@ -22,21 +23,21 @@ sequence of checkpoints (DB0–DB10). The goal is a database that is:
 
 ## 2. Current status
 
-DB0 is **discovery, audit, classification and documentation only**. It converts
-the locked documents into a verifiable requirement-to-data map and a register
-of open decisions. It does **not** begin DB1–DB10 work.
+The database phase is **complete**. DB0–DB10 have all passed and the persistence
+foundation is implemented, not merely designed:
 
-Existing persistence-relevant artifacts found during the DB0 audit:
+- ORM (Drizzle) is installed and physical schema, constraints, indexes, and
+  triggers exist through committed migrations.
+- Migrations are closed and immutable; any further change is a forward-only
+  migration handled as a dedicated database-change checkpoint (see
+  [`../implementation/08-DATABASE-CHANGE-CONTROL.md`](../implementation/08-DATABASE-CHANGE-CONTROL.md)).
+- Backup/restore, PITR, retention, and disaster-recovery tooling and runbooks
+  exist (DB10).
 
-- `infrastructure/compose/docker-compose.dev.yml` — a `postgres:16.6-alpine`
-  service with a named volume `embroidery_postgres_data` (development only).
-- `packages/domain-types`, `packages/design-document`, `packages/design-engine`
-  — approved package boundaries that are **empty stubs** (no entities/schema).
-- `infrastructure/backup`, `kubernetes`, `monitoring`, `scripts` — reserved
-  README stubs only.
-
-No ORM, migration tool, migration file, entity, SQL, database enum, index, or
-seed exists at the DB0 audit point.
+For exact per-checkpoint status, migration fingerprint, and metrics, use the
+canonical [`DB_ROADMAP.md`](./DB_ROADMAP.md) and the DB10 closure documents. The
+earlier DB0 audit statements ("documentation-only", "no ORM/migration/table")
+described the DB0 point in time and no longer describe the repository.
 
 ## 3. Source of truth
 

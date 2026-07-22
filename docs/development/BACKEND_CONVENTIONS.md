@@ -220,6 +220,19 @@ Controllers must not:
 
 Transport DTOs are not domain objects.
 
+### API contract and OpenAPI (canonical pointer)
+
+The API contract mechanism is governed by the implementation standards; this section only points to them:
+
+- NestJS Swagger/OpenAPI is **mandatory** for feature APIs. Controllers and DTOs must generate accurate OpenAPI with stable operation IDs.
+- The generated OpenAPI document is the contract used to generate TypeScript types and the Axios client. Frontend does not hand-write DTOs where they can be generated; TanStack Query hooks are written manually.
+- API checkpoint sizing (endpoint limit, grouping) is governed by delivery governance.
+
+Canonical documents:
+
+- [`docs/implementation/04-BACKEND-API-DELIVERY-STANDARD.md`](../implementation/04-BACKEND-API-DELIVERY-STANDARD.md)
+- [`docs/implementation/06-OPENAPI-AND-CLIENT-CONTRACT.md`](../implementation/06-OPENAPI-AND-CLIENT-CONTRACT.md)
+
 ## 8. Validation
 
 Validation occurs at multiple boundaries:

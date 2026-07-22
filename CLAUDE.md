@@ -19,11 +19,29 @@ When documents conflict, follow this order:
 7. `docs/architecture/REPOSITORY_STRUCTURE.md`
 8. `docs/development/FRONTEND_CONVENTIONS.md`
 9. `docs/development/BACKEND_CONVENTIONS.md`
-10. Relevant ADRs and task-specific documents
+10. `docs/implementation/README.md` and the canonical implementation standards it indexes (delivery governance, backend API, SCSS, OpenAPI/client, database change, phase/checkpoint model).
+11. Relevant ADRs and task-specific documents.
+
+Authority notes:
+
+- Locked product, business, database, and design decisions keep their authority; the implementation set does not reopen them.
+- The implementation set is canonical for *how* delivery and implementation happen (checkpoint sizing, review boundaries, SCSS, OpenAPI/client, database-change control).
+- Where a conventions document has delegated a topic to a canonical implementation standard (for example, styling → `docs/implementation/05-FRONTEND-AND-SCSS-STANDARD.md`), follow that canonical standard.
 
 Do not silently resolve contradictions. Report them before implementation.
 
 ## 3. Required reading by task
+
+### Application implementation (any APP phase or checkpoint)
+
+Read:
+
+- `docs/implementation/README.md`
+- `docs/implementation/10-MASTER-APPLICATION-ROADMAP.md`
+- The current phase plan in `docs/implementation/phases/`
+- The canonical standard(s) for the work type below
+
+Then follow the phase/checkpoint governance in `docs/implementation/01-DELIVERY-GOVERNANCE.md` and `docs/implementation/02-PHASE-AND-CHECKPOINT-MODEL.md`. A phase plan is planning input, not a prompt to implement a whole phase; execute one checkpoint and stop for human review.
 
 ### Product or business behavior
 
@@ -49,6 +67,8 @@ Read:
 
 - `docs/architecture/REPOSITORY_STRUCTURE.md`
 - `docs/development/FRONTEND_CONVENTIONS.md`
+- `docs/implementation/05-FRONTEND-AND-SCSS-STANDARD.md` (canonical for styling/SCSS and frontend checkpoint delivery)
+- `docs/implementation/06-OPENAPI-AND-CLIENT-CONTRACT.md` (generated types/Axios client; handwritten TanStack Query hooks)
 - Relevant product requirements
 
 ### Backend
@@ -58,6 +78,9 @@ Read:
 - `docs/architecture/SYSTEM_ARCHITECTURE.md`
 - `docs/architecture/REPOSITORY_STRUCTURE.md`
 - `docs/development/BACKEND_CONVENTIONS.md`
+- `docs/implementation/04-BACKEND-API-DELIVERY-STANDARD.md` (canonical for NestJS Swagger/OpenAPI, API checkpoint endpoint limit)
+- `docs/implementation/06-OPENAPI-AND-CLIENT-CONTRACT.md`
+- `docs/implementation/08-DATABASE-CHANGE-CONTROL.md` when a persistence change is involved (forward-only; dedicated database-change checkpoint)
 - Relevant business rules and lifecycle documents
 
 ### Infrastructure or deployment

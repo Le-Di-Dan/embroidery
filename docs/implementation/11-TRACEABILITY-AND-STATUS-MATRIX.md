@@ -1,0 +1,54 @@
+# Traceability and Status Matrix
+
+## 1. Purpose
+
+This matrix provides stage-level traceability. Exact requirement, lifecycle, table, query, design node, endpoint, and test IDs are added during each phase audit.
+
+## 2. Phase matrix
+
+| Phase | Backend modules/capabilities | Admin surface | Storefront/customer surface | Worker/integration | Milestone |
+|---|---|---|---|---|---|
+| APP0 | Cross-cutting application foundation | Shell foundation only | Shell foundation only | Harness/observability/spikes | R0 |
+| APP1 | Staff identity, sessions, roles, permissions, audit actor | Login, shell, navigation, forbidden/session states | Public shell | Session/security support | R0 |
+| APP2 | Asset, catalog, publication | Asset library, product list/form/detail/publication | Product list/detail | Asset inspection/derivatives | R1 |
+| APP3 | Template, design session/version/document | Template list/editor/publication | 2D Design Studio | Autosave/processing as required | R2 |
+| APP4 | Customer, contact verification, secure grant, notification core | Customer/contact/secure-link operational views | Verification/secure entry | Notification intent/attempt delivery | R3 prerequisite (contributes to R3; R3 closes at APP6) |
+| APP5 | Customer-owned product, request, request asset, moderation/transition | Request queue/detail/moderation | Request creation/status | Asset consequences/notifications | R3 |
+| APP6 | Design case/version/review/approval, quotation | Review workbench, quote editor/history | Secure review, approval, quote response | Notification delivery | R3 |
+| APP7 | Payment obligation/attempt/callback, order conversion | Payment/reconciliation/order view | Deposit checkout/status | Provider webhook/reconciliation/outbox | R4 |
+| APP8 | Inventory hold/reservation, production job/attempt | Inventory and production board | Bounded order status | Worker claims/retries | R4 |
+| APP9 | Remaining payment, fulfillment/shipping freeze, completion | Fulfillment/payment/completion operations | Remaining payment/order completion status | Provider/notification consequences | R4 |
+| APP10 | Profile, merge, notification operations, agreements | Customer ops, merge, delivery attempts | Profile/contact preferences where in scope | Zalo/Messenger simple handoff | R5 |
+| APP11 | Gallery, content, SEO metadata | Content/gallery management | Homepage/discovery/gallery/content | Asset derivatives/revalidation | R5 |
+| APP12 | Cross-cutting hardening | UAT and operational tooling | UAT/accessibility/performance | Monitoring, backup/restore/deployment | R6 |
+
+## 3. Status values
+
+Use:
+
+- `NOT_STARTED`
+- `DESIGN_AUDIT`
+- `DESIGN_IN_PROGRESS`
+- `READY_FOR_ENGINEERING`
+- `ENGINEERING_IN_PROGRESS`
+- `REVIEW_REQUIRED`
+- `BLOCKED`
+- `COMPLETE`
+
+Do not mark a phase `COMPLETE` based only on design, backend, or frontend completion.
+
+## 4. Required phase traceability additions
+
+Each phase completion report must map:
+
+- Product requirement IDs.
+- Business rule IDs.
+- Lifecycle/transition IDs.
+- Database tables/guards/queries used.
+- Figma sections/nodes used.
+- OpenAPI operation IDs.
+- Frontend routes/screens.
+- Worker job names.
+- Test suites/E2E journeys.
+- Commit hashes.
+- Deferred work and owning phase.

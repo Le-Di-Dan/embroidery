@@ -231,15 +231,26 @@ The concrete form library remains subject to technical selection unless already 
 
 ## 13. Styling
 
-The UI styling system is not yet locked.
+The UI styling system is **locked to global SCSS**. Canonical rules live in
+[`docs/implementation/05-FRONTEND-AND-SCSS-STANDARD.md`](../implementation/05-FRONTEND-AND-SCSS-STANDARD.md);
+this section is a summary and must not diverge from it.
 
-Regardless of the selected system:
+Core rules:
 
-- Avoid one-off magic values.
-- Use design tokens for spacing, typography, radius, breakpoints, and z-index.
+- SCSS is the only project-owned styling system.
+- Each Next.js app imports exactly one `main.scss` entry; internal composition uses `@use`/`@forward` partials/modules.
+- Shared foundations and reusable primitives live in the shared styles package; app-specific composite styles stay app-owned.
+- No inline `style` prop or inline `<style>`.
+- No React CSS Modules (`*.module.css`, `*.module.scss`).
+- No CSS-in-JS (styled-components, Emotion, or equivalent).
+- No Tailwind utility styling and no shadcn/ui styling baseline.
+- Headless behavior primitives may be used only when all visuals are implemented in project SCSS.
+
+General discipline (applies within the SCSS system):
+
+- Avoid one-off magic values; use design tokens for spacing, typography, radius, breakpoints, and z-index.
 - Do not duplicate brand values.
-- Keep feature-specific styles with the feature.
-- Avoid globally scoped selectors unless intentional.
+- Keep feature-specific styles with the feature; avoid globally scoped selectors unless intentional.
 - Responsive behavior must be mobile-first.
 - Interactive elements require visible focus and adequate touch targets.
 

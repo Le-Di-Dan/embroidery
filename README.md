@@ -1,7 +1,7 @@
 # Embroidery Commerce Platform — Product Documentation
 
 **Document set version:** 0.2.1  
-**Status:** Product baseline established  
+**Status:** Product baseline established · Database DB0–DB10 complete · Application implementation stage governed under `docs/implementation/`  
 **Primary language:** Vietnamese  
 **Purpose:** Nguồn tham chiếu chính thức cho việc phân tích, thiết kế và phát triển hệ thống bằng Claude.
 
@@ -54,6 +54,13 @@ Mọi thay đổi baseline phải được ghi vào `docs/12-DECISION-LOG.md`.
 | [FRONTEND CONVENTIONS](docs/development/FRONTEND_CONVENTIONS.md) | Quy ước Next.js, TanStack Query, Zustand và component |
 | [BACKEND CONVENTIONS](docs/development/BACKEND_CONVENTIONS.md) | Quy ước NestJS modular monolith và module boundaries |
 | [LOCAL DEVELOPMENT](docs/development/LOCAL_DEVELOPMENT.md) | Hướng dẫn cài đặt, chạy local, Docker Compose và quality gates |
+
+## 3.2. Giai đoạn triển khai ứng dụng (Application implementation stage)
+
+- Giai đoạn database (DB0–DB10) đã **hoàn tất**; trạng thái canonical tại [`docs/database/DB_ROADMAP.md`](docs/database/DB_ROADMAP.md).
+- Việc triển khai ứng dụng (backend, admin, storefront, worker, integration) được quản trị tại [`docs/implementation/README.md`](docs/implementation/README.md).
+- Lộ trình ứng dụng APP0–APP12 tại [`docs/implementation/10-MASTER-APPLICATION-ROADMAP.md`](docs/implementation/10-MASTER-APPLICATION-ROADMAP.md).
+- Đây chỉ là chỉ mục; không sao chép trạng thái phase vào README. Trạng thái phase chỉ nằm ở các canonical roadmap ở trên.
 
 ## 4. Phạm vi của phiên bản tài liệu 0.2.1
 
