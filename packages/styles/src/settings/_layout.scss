@@ -1,0 +1,24 @@
+// Layout and control-size tokens
+//
+// Source of truth: docs/design/DESIGN_SYSTEM_FOUNDATION.md §6, §10, §11, §15.
+// Container/content/reading widths, page padding, grid column counts and the
+// minimum accessible touch target are locked. Responsive breakpoint
+// thresholds (min-width values) are NOT defined by the approved sources and
+// are intentionally deferred (see README, Deferred).
+
+// Widths
+$layout-container-max: 1440px; // Desktop container width
+$layout-content-max: 1280px; // Maximum content width
+$layout-reading-max: 720px; // Maximum reading width
+
+// Page padding
+$layout-page-padding-desktop: 64px;
+$layout-page-padding-mobile: 24px;
+
+// Grid columns
+$layout-grid-columns-desktop: 12;
+$layout-grid-columns-tablet: 8;
+$layout-grid-columns-mobile: 4;
+
+// Control sizing
+$size-touch-target-min: 44px; // Minimum accessible click/touch area

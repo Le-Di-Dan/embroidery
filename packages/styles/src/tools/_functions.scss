@@ -1,0 +1,16 @@
+// Sass functions — compile-time helpers over the settings layer.
+// Functions produce no CSS on their own.
+
+@use 'sass:map';
+@use '../settings/spacing';
+
+// Return the approved spacing value for a base-4 scale step.
+// Rejects any value that is not on the approved scale so feature styles
+// cannot introduce off-scale magic numbers.
+@function spacing($step) {
+  @if not map.has-key(spacing.$spacing-scale, $step) {
+    @error "Unknown spacing step `#{$step}`. Approved steps: #{map.keys(spacing.$spacing-scale)}.";
+  }
+
+  @return map.get(spacing.$spacing-scale, $step);
+}

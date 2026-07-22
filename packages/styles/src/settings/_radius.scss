@@ -1,0 +1,17 @@
+// Radius tokens
+//
+// Source of truth: docs/design/DESIGN_SYSTEM_FOUNDATION.md §7, confirmed
+// against the approved Figma foundation `Radius/*` variables
+// (file BQwqV8GdfUIELvsQDB1UQE, node 101-13).
+
+// Scale
+$radius-xs: 8px;
+$radius-sm: 12px;
+$radius-md: 16px;
+$radius-lg: 24px;
+$radius-xl: 32px;
+
+// Approved semantic defaults (reference the scale; no duplicated values).
+$radius-card: $radius-lg; // 24px
+$radius-input: $radius-md; // 16px
+$radius-button: $radius-md; // 16px

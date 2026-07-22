@@ -1,0 +1,22 @@
+// Spacing tokens
+//
+// Source of truth: docs/design/DESIGN_SYSTEM_FOUNDATION.md §6.
+// A single base-4 scale. Consumers read values through the `spacing()` tool
+// (see ../tools/_functions.scss) so off-scale magic numbers are rejected at
+// compile time. Semantic usages from the approved doc map onto this scale,
+// e.g. card padding = spacing(24), section gap = spacing(96).
+
+$spacing-base: 4px;
+
+$spacing-scale: (
+  4: 4px,
+  8: 8px,
+  12: 12px,
+  16: 16px,
+  24: 24px,
+  32: 32px,
+  48: 48px,
+  64: 64px,
+  96: 96px,
+  128: 128px,
+);

@@ -1,0 +1,34 @@
+// Typography tokens
+//
+// Source of truth: docs/design/DESIGN_SYSTEM_FOUNDATION.md §5, confirmed
+// against the approved Figma foundation `Typography/*` variables
+// (file BQwqV8GdfUIELvsQDB1UQE, node 101-13).
+//
+// Primary font is General Sans with Inter as the design-approved fallback;
+// the Figma foundation renders the same scale with Inter where General Sans
+// is unavailable. `sans-serif` is the required CSS generic fallback, not a
+// brand token. Line-height and letter-spacing are not locked by the approved
+// sources and are intentionally not encoded here (see README, Deferred).
+
+// Font families
+$font-family-primary: 'General Sans', 'Inter', sans-serif;
+$font-family-secondary: 'Inter', sans-serif;
+
+// Type scale
+$font-size-display-xl: 72px;
+$font-size-display-l: 64px;
+$font-size-display-m: 56px;
+$font-size-heading-xl: 48px;
+$font-size-heading-l: 40px;
+$font-size-heading-m: 32px;
+$font-size-heading-s: 24px;
+$font-size-body-l: 18px;
+$font-size-body-m: 16px;
+$font-size-body-s: 14px;
+$font-size-caption: 12px;
+
+// Font weights
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;

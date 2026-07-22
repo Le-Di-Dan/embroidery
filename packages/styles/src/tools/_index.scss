@@ -1,0 +1,5 @@
+// Tools layer — shared Sass functions and mixins.
+// May depend on the settings layer; never the reverse.
+
+@forward 'functions';
+@forward 'mixins';

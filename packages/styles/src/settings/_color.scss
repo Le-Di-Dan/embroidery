@@ -1,0 +1,36 @@
+// Color tokens
+//
+// Source of truth: docs/design/DESIGN_SYSTEM_FOUNDATION.md §4, confirmed
+// verbatim against the approved Figma foundation variables
+// (file BQwqV8GdfUIELvsQDB1UQE, node 101-13 — `Color/*` semantic roles).
+//
+// Artwork is the primary source of colour; the UI palette is intentionally
+// neutral. Values are locked; do not derive alternatives from wireframes.
+
+// Background
+$color-background-primary: #faf8f5;
+$color-background-secondary: #f5f3ef;
+
+// Surface
+$color-surface-primary: #ffffff;
+$color-surface-secondary: #fcfbf8;
+
+// Text
+$color-text-primary: #171717;
+$color-text-secondary: #6b7280;
+$color-text-tertiary: #9ca3af;
+
+// Border
+$color-border-primary: #e7e5e4;
+$color-border-secondary: #d6d3d1;
+
+// Action / brand
+$color-action-primary: #e8475f;
+$color-action-hover: #d73850;
+$color-action-active: #c92e45;
+
+// Status
+$color-status-success: #16a34a;
+$color-status-warning: #d97706;
+$color-status-error: #dc2626;
+$color-status-info: #2563eb;

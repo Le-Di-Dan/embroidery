@@ -1,0 +1,31 @@
+{
+  "name": "@embroidery/styles",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Sass design-token foundation for storefront and admin",
+  "exports": {
+    ".": {
+      "sass": "./src/index.scss",
+      "style": "./src/index.scss"
+    },
+    "./settings": {
+      "sass": "./src/settings/_index.scss"
+    },
+    "./tools": {
+      "sass": "./src/tools/_index.scss"
+    }
+  },
+  "sass": "./src/index.scss",
+  "style": "./src/index.scss",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "validate": "node scripts/validate-foundation.mjs",
+    "test": "node scripts/validate-foundation.mjs"
+  },
+  "devDependencies": {
+    "sass": "^1.83.0"
+  }
+}

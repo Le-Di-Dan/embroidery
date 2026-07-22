@@ -1,0 +1,9 @@
+// Settings layer — approved design tokens only.
+// This layer holds values and never emits CSS. It must not depend on tools.
+
+@forward 'color';
+@forward 'typography';
+@forward 'spacing';
+@forward 'radius';
+@forward 'motion';
+@forward 'layout';

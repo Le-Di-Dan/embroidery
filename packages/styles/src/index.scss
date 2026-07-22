@@ -1,0 +1,13 @@
+// @embroidery/styles — public Sass entry point.
+//
+// Usage:
+//   @use "@embroidery/styles" as styles;
+//   .c-button { color: styles.$color-text-primary; padding: styles.spacing(16); }
+//
+// This entry exposes tokens (settings) and helpers (tools) only. It emits NO
+// CSS: `@use`-ing this package has no side effects. Global CSS output (resets,
+// base elements, components, utilities) is owned by later checkpoints and the
+// per-app `main.scss`, not by this foundation.
+
+@forward 'settings';
+@forward 'tools';

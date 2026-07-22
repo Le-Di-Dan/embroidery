@@ -20,6 +20,7 @@
 | IMP-D014 | Phase plans are not execution prompts; create one concise checkpoint specification at a time. | LOCKED |
 | IMP-D015 | Production readiness may be claimed only after APP12 passes and explicit production approval is given. | LOCKED |
 | IMP-D016 | Jest is the selected unit/integration test runner and already exists across `apps/*` and `packages/*`. Do not introduce a second unit/integration runner without an ADR. | LOCKED |
+| IMP-D017 | The shared Sass token/foundation package lives at `packages/styles` (workspace name `@embroidery/styles`); apps consume tokens from it and do not define their own token source. Set by APP0-S01A. | LOCKED |
 
 ## 2. Decisions owned by future phases
 

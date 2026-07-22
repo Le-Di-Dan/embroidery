@@ -1,0 +1,18 @@
+// Sass mixins — foundational, token-adjacent helpers.
+// Mixins emit CSS only when explicitly included by a consumer, so `@use`-ing
+// this package for tokens alone never produces output.
+
+// Guard motion behind the user's reduced-motion preference. Per
+// DESIGN_SYSTEM_FOUNDATION §9 and the frontend accessibility rules, motion is
+// opt-in and must respect `prefers-reduced-motion`.
+@mixin motion-safe {
+  @media (prefers-reduced-motion: no-preference) {
+    @content;
+  }
+}
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
