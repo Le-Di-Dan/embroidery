@@ -7,3 +7,6 @@ allowBuilds:
   sharp: true
   esbuild: true
   '@parcel/watcher': false
+  # Analytics postinstall pulled in transitively by @nestjs/swagger. Denied on
+  # purpose: the build needs no telemetry and must stay offline-reproducible.
+  '@scarf/scarf': false

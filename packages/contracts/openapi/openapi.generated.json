@@ -1,0 +1,195 @@
+{
+  "components": {
+    "schemas": {
+      "DatabaseHealthResponse": {
+        "properties": {
+          "latencyMs": {
+            "description": "Probe latency in milliseconds, or null when the probe failed.",
+            "nullable": true,
+            "type": "number"
+          },
+          "pool": {
+            "$ref": "#/components/schemas/DatabasePoolResponse"
+          },
+          "reason": {
+            "enum": [
+              "ok",
+              "pool_saturated",
+              "connection_failed",
+              "query_failed",
+              "configuration_failed"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "up",
+              "degraded",
+              "down"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "reason",
+          "pool",
+          "latencyMs"
+        ],
+        "type": "object"
+      },
+      "DatabasePoolResponse": {
+        "properties": {
+          "idle": {
+            "description": "Idle connections available in the pool.",
+            "type": "number"
+          },
+          "max": {
+            "description": "Configured maximum pool size.",
+            "type": "number"
+          },
+          "total": {
+            "description": "Total connections held by the pool.",
+            "type": "number"
+          },
+          "waiting": {
+            "description": "Requests waiting for a connection.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "total",
+          "idle",
+          "waiting",
+          "max"
+        ],
+        "type": "object"
+      },
+      "HealthStatusResponse": {
+        "properties": {
+          "service": {
+            "enum": [
+              "api"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ok"
+            ],
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "uptimeSeconds": {
+            "description": "Process uptime in whole seconds.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "uptimeSeconds",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "ReadinessStatusResponse": {
+        "properties": {
+          "database": {
+            "$ref": "#/components/schemas/DatabaseHealthResponse"
+          },
+          "service": {
+            "enum": [
+              "api"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "not_ready"
+            ],
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "timestamp",
+          "database"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "contact": {},
+    "description": "Internal HTTP contract for the Embroidery Commerce platform API. Generated from NestJS Swagger metadata; the committed artifact is the machine-readable source for the generated TypeScript/Axios client.",
+    "title": "Embroidery Commerce API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "health_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatusResponse"
+                }
+              }
+            },
+            "description": "The process is alive. Does not depend on any downstream dependency."
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/health/readiness": {
+      "get": {
+        "operationId": "health_readiness",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessStatusResponse"
+                }
+              }
+            },
+            "description": "The process can serve traffic; the database is reachable."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessStatusResponse"
+                }
+              }
+            },
+            "description": "The database is unreachable, so the instance withdraws from rotation."
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  },
+  "servers": [],
+  "tags": []
+}

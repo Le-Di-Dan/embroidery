@@ -22,6 +22,7 @@
 | IMP-D016 | Jest is the selected unit/integration test runner and already exists across `apps/*` and `packages/*`. Do not introduce a second unit/integration runner without an ADR. | LOCKED |
 | IMP-D017 | The shared Sass token/foundation package lives at `packages/styles` (workspace name `@embroidery/styles`); apps consume tokens from it and do not define their own token source. Set by APP0-S01A. | LOCKED |
 | IMP-D018 | Runtime-bearing workspace packages consumed by the Node backend (`@embroidery/database`, `@embroidery/persistence`) are compiled to JavaScript (`tsc` → `dist`, with declarations); their `main`/`types`/`exports` point to `dist`. The API and worker must never resolve a workspace package to `src/*.ts` at runtime, and bundlers/TS runtime loaders (webpack, esbuild, tsx, ts-node) are not used as a substitute for compilation. | LOCKED |
+| IMP-D019 | The generated OpenAPI artifact is committed at `packages/contracts/openapi/openapi.generated.json` and produced by `pnpm openapi:generate`; `pnpm check:openapi` is a non-mutating drift gate in the root `quality` chain. Operation IDs follow `<domainKey>_<methodKey>` derived from the controller class and handler method, validated for presence, format and uniqueness. Documented paths carry the real `/api` global prefix and the document declares no server URL. Runtime Swagger UI is served at `/api/docs`, gated by `API_DOCS_ENABLED`, defaulting to enabled outside production and **disabled in production**. Set by APP0-B01. | LOCKED |
 
 ## 2. Decisions owned by future phases
 

@@ -18,3 +18,7 @@ manifest.json
 # drizzle-kit generated migration metadata — never hand-formatted (CLAUDE.md §5).
 # Reformatting these changes bytes drizzle treats as migration identity.
 packages/database/migrations/meta/
+
+# Generated OpenAPI contract — byte identity is owned by `pnpm check:openapi`
+# (deterministic serializer), not by Prettier. Never hand-formatted.
+packages/contracts/openapi/

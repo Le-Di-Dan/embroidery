@@ -57,8 +57,9 @@ This map is the canonical, locked APP0 checkpoint decomposition (refined after t
 
 ### 6.3 Backend and OpenAPI foundation
 
-- **APP0-B01 — Swagger/OpenAPI server foundation** *(backend foundation; dep: C01)*
+- **APP0-B01 — Swagger/OpenAPI server foundation** *(backend foundation; dep: C01)* — **DONE** (artifact `packages/contracts/openapi/openapi.generated.json`; commands `pnpm openapi:generate` / `pnpm check:openapi`; decision `IMP-D019`; report `../reports/APP0-B01-COMPLETION-REPORT.md`).
   - Goal: configure NestJS Swagger/OpenAPI; lock the OpenAPI artifact path and generation command in the approved checkpoint spec; stable and unique operation IDs; reproducible schema generation; no feature endpoints. Excludes generated-client implementation.
+  - Delivered: shared bootstrap (`createApiApplication`) reused by the runtime and the generator; deterministic serializer; `<domain>_<method>` operation-ID policy with uniqueness validation; drift check wired into root `quality`; health liveness/readiness documented under the real `/api` prefix. Generation needs neither PostgreSQL nor a bound port.
 - **APP0-B02 — Request context and effective request-ID propagation** *(backend foundation; dep: C01)*
   - Goal: consume the gateway effective `X-Request-ID` as an input; establish application request context; validate safe fallback only when the gateway header is absent; do not create a second, incompatible request-ID policy.
 - **APP0-B03 — Global response envelope and safe exception mapping** *(backend foundation; dep: B02)*

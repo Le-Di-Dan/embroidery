@@ -12,7 +12,9 @@
     "test": "jest",
     "test:coverage": "jest --coverage",
     "clean": "rimraf dist coverage",
-    "bench": "jest --config jest.bench.config.mjs --runInBand"
+    "bench": "jest --config jest.bench.config.mjs --runInBand",
+    "openapi:generate": "nest build && node dist/openapi/cli/generate-openapi.js",
+    "openapi:check": "nest build && node dist/openapi/cli/check-openapi.js"
   },
   "dependencies": {
     "@embroidery/database": "workspace:*",
@@ -20,6 +22,7 @@
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
     "@nestjs/platform-express": "^11.1.28",
+    "@nestjs/swagger": "^11.4.6",
     "drizzle-orm": "0.45.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
