@@ -17,6 +17,7 @@
     "openapi:check": "nest build && node dist/openapi/cli/check-openapi.js"
   },
   "dependencies": {
+    "@embroidery/contracts": "workspace:*",
     "@embroidery/database": "workspace:*",
     "@embroidery/persistence": "workspace:*",
     "@nestjs/common": "^11.1.28",

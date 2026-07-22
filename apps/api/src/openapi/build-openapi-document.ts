@@ -2,6 +2,7 @@ import { type INestApplication } from '@nestjs/common';
 import { SwaggerModule, type OpenAPIObject } from '@nestjs/swagger';
 
 import { GLOBAL_ROUTE_PREFIX } from '../bootstrap/api-application';
+import { applyEnvelopeSchemas } from './envelope-schema.augmentation';
 import { buildOpenApiConfig } from './openapi-document.config';
 import { createOperationId, validateOperationIds } from './operation-id';
 import { applyRequestIdHeaderContract } from './request-id-header.augmentation';
@@ -41,6 +42,9 @@ export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
     ignoreGlobalPrefix: true,
   });
   const prefixed = applyGlobalPrefixToPaths(document, GLOBAL_ROUTE_PREFIX);
+  // Envelope schemas first: the 500 response it documents must also receive the
+  // request-ID response header the next transform adds to every response.
+  applyEnvelopeSchemas(prefixed);
   applyRequestIdHeaderContract(prefixed);
   validateOperationIds(prefixed);
   return prefixed;

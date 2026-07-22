@@ -3,6 +3,7 @@ import { ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/s
 import type { DatabaseHealth } from '@embroidery/persistence';
 import { DatabaseHealthService } from '@embroidery/persistence';
 
+import { SkipApiEnvelope } from '../../platform/http-response/api-envelope.decorators';
 import { HealthStatusResponse, ReadinessStatusResponse } from './health-response.dto';
 
 /**
@@ -38,6 +39,11 @@ interface StatusSettableResponse {
 
 @ApiTags('health')
 @Controller('health')
+// Operational contract, not an application API: infrastructure probes and the
+// Compose/Kubernetes health checks read this shape, so it stays outside the
+// standard envelope (BACKEND_CONVENTIONS §6 allowed exception, D-034). The
+// opt-out covers success bodies only — a thrown error is still safe-mapped.
+@SkipApiEnvelope()
 export class HealthController {
   constructor(private readonly databaseHealth: DatabaseHealthService) {}
 

@@ -87,6 +87,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@embroidery/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@embroidery/database':
         specifier: workspace:*
         version: link:../../packages/database

@@ -1,6 +1,160 @@
 {
   "components": {
     "schemas": {
+      "ApiErrorResponse": {
+        "description": "Canonical error envelope (D-034). Server faults always carry the generic message; internal detail is never published.",
+        "properties": {
+          "code": {
+            "description": "Stable machine-readable code; branch on this.",
+            "enum": [
+              "BAD_REQUEST",
+              "UNAUTHORIZED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "METHOD_NOT_ALLOWED",
+              "CONFLICT",
+              "UNPROCESSABLE_ENTITY",
+              "TOO_MANY_REQUESTS",
+              "INTERNAL_SERVER_ERROR"
+            ],
+            "type": "string"
+          },
+          "errors": {
+            "description": "Structured validation or domain details, when safe to publish.",
+            "items": {
+              "$ref": "#/components/schemas/ApiFieldError"
+            },
+            "type": "array"
+          },
+          "message": {
+            "description": "Human-readable text; never branch on this.",
+            "type": "string"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiResponseMeta"
+          },
+          "success": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "code",
+          "message",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "ApiFieldError": {
+        "properties": {
+          "code": {
+            "description": "Stable machine-readable code; branch on this.",
+            "type": "string"
+          },
+          "field": {
+            "description": "Empty when the detail is not field-specific.",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable text; never branch on this.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ApiPaginationMeta": {
+        "properties": {
+          "page": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "pageSize": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "totalItems": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalPages": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages"
+        ],
+        "type": "object"
+      },
+      "ApiResponseMeta": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/ApiPaginationMeta"
+          },
+          "requestId": {
+            "description": "Correlation ID for this request; matches the gateway X-Request-ID.",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._-]{1,64}$",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "ISO-8601 UTC timestamp of the response.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "ApiSuccessResponse": {
+        "description": "Canonical success envelope (D-034). Endpoint responses compose this with their own payload schema for `data`.",
+        "properties": {
+          "code": {
+            "description": "Stable machine-readable code; branch on this.",
+            "type": "string"
+          },
+          "data": {
+            "description": "Endpoint payload; null where the contract has no payload.",
+            "nullable": true
+          },
+          "message": {
+            "description": "Human-readable text; never branch on this.",
+            "type": "string"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiResponseMeta"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "code",
+          "message",
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
       "DatabaseHealthResponse": {
         "properties": {
           "latencyMs": {
@@ -175,6 +329,27 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -209,6 +384,27 @@
               }
             },
             "description": "The process can serve traffic; the database is reachable.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
             "headers": {
               "X-Request-ID": {
                 "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
