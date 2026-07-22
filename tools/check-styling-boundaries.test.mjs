@@ -138,6 +138,54 @@ test('flags a deep import of shared package internals', () => {
   });
 });
 
+test('flags a hard-coded monorepo-relative styles source load path', () => {
+  withRepo((root) => {
+    makeCleanApp(root);
+    makeFile(
+      root,
+      'apps/web/next.config.ts',
+      "import path from 'node:path';\nexport default {\n  sassOptions: { loadPaths: [path.join(__dirname, '../../packages/styles/src')] },\n};\n",
+    );
+    assert.ok(rules(checkStylingBoundaries(root)).includes('no-shared-package-internal-import'));
+  });
+});
+
+test('flags an absolute (back-slashed) path to the styles source', () => {
+  withRepo((root) => {
+    makeCleanApp(root);
+    makeFile(
+      root,
+      'apps/web/next.config.ts',
+      "export default {\n  sassOptions: { loadPaths: ['C:\\\\repo\\\\packages\\\\styles\\\\src'] },\n};\n",
+    );
+    assert.ok(rules(checkStylingBoundaries(root)).includes('no-shared-package-internal-import'));
+  });
+});
+
+test('does not flag a package-name-resolved styles load path', () => {
+  withRepo((root) => {
+    makeCleanApp(root);
+    makeFile(
+      root,
+      'apps/web/next.config.ts',
+      "import { createRequire } from 'node:module';\nimport path from 'node:path';\nconst r = createRequire(path.join(__dirname, 'next.config.ts'));\nexport default {\n  sassOptions: { loadPaths: [path.dirname(r.resolve('@embroidery/styles'))] },\n};\n",
+    );
+    assert.ok(!rules(checkStylingBoundaries(root)).includes('no-shared-package-internal-import'));
+  });
+});
+
+test('flags an app Sass import of an internal partial', () => {
+  withRepo((root) => {
+    makeCleanApp(root);
+    makeFile(
+      root,
+      'apps/web/src/styles/extra.scss',
+      "@use '@embroidery/styles/src/settings/color';\n",
+    );
+    assert.ok(rules(checkStylingBoundaries(root)).includes('no-shared-package-internal-import'));
+  });
+});
+
 test('flags a global style import outside the root layout', () => {
   withRepo((root) => {
     makeCleanApp(root);

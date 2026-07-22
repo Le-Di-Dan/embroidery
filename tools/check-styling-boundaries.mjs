@@ -38,6 +38,44 @@ const CANONICAL_MAIN_ENTRY = 'src/styles/main.scss';
 // Banned CSS-in-JS module families (prefix match for scoped packages).
 const BANNED_CSS_IN_JS = ['styled-components', '@emotion', '@stitches', 'stitches', 'styled-jsx'];
 
+// An app must reach the shared foundation only through its public package name
+// (`@use "@embroidery/styles"`), and — where the Turbopack Sass loader needs a
+// load path — resolve it from that package name (e.g.
+// `require.resolve("@embroidery/styles")`), never a hard-coded monorepo-relative
+// or machine-absolute path into the package source. These substrings mark a
+// direct reference to the package's internal source: a deep module specifier
+// (`@embroidery/styles/src/**`) or a filesystem path into `packages/styles/src`
+// (covers `../../packages/styles/src`, an absolute path, and back-slashed
+// Windows forms once normalized). A package-name-resolved load path contains
+// neither substring, so it is allowed.
+// Each pattern tolerates any separator run — `/`, `\`, or escaped `\\` — so
+// POSIX, Windows-absolute, and TS-escaped Windows paths all match. Matching on
+// the original content keeps the reported line accurate.
+const INTERNAL_STYLE_PATHS = [
+  { needle: '@embroidery/styles/src', re: /@embroidery[/\\]+styles[/\\]+src/ },
+  { needle: 'packages/styles/src', re: /packages[/\\]+styles[/\\]+src/ },
+];
+
+// First forbidden internal-source reference in `content`, or null.
+function findInternalStylePath(content) {
+  for (const { needle, re } of INTERNAL_STYLE_PATHS) {
+    const match = re.exec(content);
+    if (match) {
+      return { needle, index: match.index };
+    }
+  }
+  return null;
+}
+
+// App root config files that could smuggle in an internal-source path.
+const APP_CONFIG_FILES = [
+  'next.config.ts',
+  'next.config.js',
+  'next.config.mjs',
+  'next.config.cjs',
+  'package.json',
+];
+
 // App-local re-declaration of a foundation token is forbidden; apps consume
 // tokens through `@use "@embroidery/styles"`. Matches a Sass variable
 // *declaration* (`$color-...:`), not a namespaced usage (`styles.$color-...`).
@@ -164,12 +202,12 @@ export function checkStylingBoundaries(rootDir) {
           }
         });
 
-        if (content.includes('@embroidery/styles/src')) {
-          const idx = content.indexOf('@embroidery/styles/src');
+        const styleInternal = findInternalStylePath(content);
+        if (styleInternal) {
           add(
             RULES.internalImport,
             rel,
-            lineOf(content, idx),
+            lineOf(content, styleInternal.index),
             'Import the package entry @embroidery/styles, not its src/** internals.',
           );
         }
@@ -189,7 +227,7 @@ export function checkStylingBoundaries(rootDir) {
           if (styleImport) {
             styleImports.push({ rel, line: i + 1, target: styleImport[1] });
           }
-          if (text.includes('@embroidery/styles/src')) {
+          if (findInternalStylePath(text)) {
             add(
               RULES.internalImport,
               rel,
@@ -230,6 +268,27 @@ export function checkStylingBoundaries(rootDir) {
       const configPath = join(appRoot, `tailwind.config.${ext}`);
       if (existsSync(configPath)) {
         add(RULES.tailwind, toPosix(rootDir, configPath), 1, 'Tailwind config is prohibited.');
+      }
+    }
+
+    // App root config must reach the shared styles package only by its public
+    // name. A Sass `loadPaths` hard-coded to packages/styles/src (relative or
+    // absolute), or a deep @embroidery/styles/src specifier, couples the app to
+    // package internals; a package-name-resolved load path does not.
+    for (const candidate of APP_CONFIG_FILES) {
+      const configPath = join(appRoot, candidate);
+      if (!existsSync(configPath)) {
+        continue;
+      }
+      const configContent = readFileSync(configPath, 'utf8');
+      const configInternal = findInternalStylePath(configContent);
+      if (configInternal) {
+        add(
+          RULES.internalImport,
+          toPosix(rootDir, configPath),
+          lineOf(configContent, configInternal.index),
+          'Resolve the shared styles load path from the @embroidery/styles package name, not a hard-coded packages/styles/src path.',
+        );
       }
     }
 

@@ -7,7 +7,8 @@
   "exports": {
     ".": {
       "sass": "./src/index.scss",
-      "style": "./src/index.scss"
+      "style": "./src/index.scss",
+      "default": "./src/index.scss"
     },
     "./settings": {
       "sass": "./src/settings/_index.scss"
