@@ -25,6 +25,7 @@ COPY packages/domain-types/package.json packages/domain-types/
 COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/observability/package.json packages/observability/
 COPY packages/prettier-config/package.json packages/prettier-config/
+COPY packages/styles/package.json packages/styles/
 COPY packages/test-utils/package.json packages/test-utils/
 COPY packages/typescript-config/package.json packages/typescript-config/
 COPY packages/ui/package.json packages/ui/
@@ -64,6 +65,7 @@ COPY packages/domain-types/package.json packages/domain-types/
 COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/observability/package.json packages/observability/
 COPY packages/prettier-config/package.json packages/prettier-config/
+COPY packages/styles/package.json packages/styles/
 COPY packages/test-utils/package.json packages/test-utils/
 COPY packages/typescript-config/package.json packages/typescript-config/
 COPY packages/ui/package.json packages/ui/

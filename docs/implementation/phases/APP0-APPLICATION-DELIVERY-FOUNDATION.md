@@ -51,7 +51,7 @@ This map is the canonical, locked APP0 checkpoint decomposition (refined after t
 - **APP0-S01A — Shared SCSS package and token foundation** *(frontend foundation; dep: C01)* — **DONE** (package `@embroidery/styles` at `packages/styles`; decision `IMP-D017`; report `../reports/APP0-S01A-COMPLETION-REPORT.md`).
   - Goal: lock the reviewed shared style package path; define the shared Sass package structure; map approved tokens/scales; define `@use`/`@forward` boundaries.
   - Exclusions: no app screen styling; no app `main.scss` integration unless strictly required to validate package compilation; no component library implementation.
-- **APP0-S01B — App SCSS entry integration and styling guardrails** *(frontend foundation; dep: S01A)*
+- **APP0-S01B — App SCSS entry integration and styling guardrails** *(frontend foundation; dep: S01A)* — **DONE** (one `main.scss` per app at `src/styles/main.scss`; `check:styles` guardrail wired into root `quality`; both apps build; report `../reports/APP0-S01B-COMPLETION-REPORT.md`).
   - Goal: one imported `main.scss` per Next.js app; integrate the shared package; add static checks against prohibited patterns; verify both apps compile.
   - Exclusions: no real screen redesign; no feature component styling.
 

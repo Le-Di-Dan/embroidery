@@ -1,0 +1,24 @@
+// Storefront — single global Sass entry (APP0-S01B).
+//
+// Imports the shared token foundation and establishes a minimal, fully
+// traceable document baseline. No screen, component, theme, or utility
+// styling lives here; those belong to later frontend checkpoints.
+
+@use '@embroidery/styles' as styles;
+
+// Browser normalization: predictable box model.
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+// Document baseline: remove the default user-agent body margin (normalization)
+// and apply the approved page canvas and primary type from the design
+// foundation (DESIGN_SYSTEM_FOUNDATION §4 background/text, §5 primary font).
+body {
+  margin: 0;
+  background: styles.$color-background-primary;
+  color: styles.$color-text-primary;
+  font-family: styles.$font-family-primary;
+}
