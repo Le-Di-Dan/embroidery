@@ -37,6 +37,10 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 FROM deps AS dev
 COPY . .
+# Workspace runtime packages ship TypeScript source; compile them to JS so the
+# Node runtime resolves @embroidery/database and @embroidery/persistence to
+# dist, not raw .ts. (`...` also builds their dependencies.)
+RUN pnpm --filter "@embroidery/persistence..." build
 ENV NODE_ENV=development
 EXPOSE 4000
 CMD ["pnpm", "--filter", "@embroidery/api", "dev"]
@@ -46,7 +50,10 @@ CMD ["pnpm", "--filter", "@embroidery/api", "dev"]
 # ---------------------------------------------------------------------------
 FROM deps AS build
 COPY . .
-RUN pnpm --filter @embroidery/api build
+# `@embroidery/api...` builds the API and its workspace dependencies
+# (@embroidery/persistence, @embroidery/database) to dist first, so the API
+# compiles against their declarations and runs against their compiled JS.
+RUN pnpm --filter "@embroidery/api..." build
 
 # ---------------------------------------------------------------------------
 # prod-deps: production-only node_modules for the API workspace
@@ -83,6 +90,12 @@ COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=prod-deps --chown=node:node /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
+# Workspace runtime packages: node_modules symlinks resolve to these compiled
+# outputs (raw src/*.ts is never shipped or loaded at runtime).
+COPY --from=build --chown=node:node /app/packages/database/dist ./packages/database/dist
+COPY --from=build --chown=node:node /app/packages/database/package.json ./packages/database/package.json
+COPY --from=build --chown=node:node /app/packages/persistence/dist ./packages/persistence/dist
+COPY --from=build --chown=node:node /app/packages/persistence/package.json ./packages/persistence/package.json
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://127.0.0.1:4000/api/health || exit 1

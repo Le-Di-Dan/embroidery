@@ -37,6 +37,10 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 FROM deps AS dev
 COPY . .
+# Workspace runtime packages ship TypeScript source; compile them to JS so the
+# Node runtime resolves @embroidery/database and @embroidery/persistence to
+# dist, not raw .ts. (`...` also builds their dependencies.)
+RUN pnpm --filter "@embroidery/persistence..." build
 ENV NODE_ENV=development
 CMD ["pnpm", "--filter", "@embroidery/worker", "dev"]
 
@@ -45,7 +49,10 @@ CMD ["pnpm", "--filter", "@embroidery/worker", "dev"]
 # ---------------------------------------------------------------------------
 FROM deps AS build
 COPY . .
-RUN pnpm --filter @embroidery/worker build
+# `@embroidery/worker...` builds the worker and its workspace dependencies
+# (@embroidery/persistence, @embroidery/database) to dist first, so the worker
+# compiles against their declarations and runs against their compiled JS.
+RUN pnpm --filter "@embroidery/worker..." build
 
 # ---------------------------------------------------------------------------
 # prod-deps: production-only node_modules for the worker workspace
@@ -84,5 +91,11 @@ COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=prod-deps --chown=node:node /app/apps/worker/node_modules ./apps/worker/node_modules
 COPY --from=build --chown=node:node /app/apps/worker/dist ./apps/worker/dist
 COPY --from=build --chown=node:node /app/apps/worker/package.json ./apps/worker/package.json
+# Workspace runtime packages: node_modules symlinks resolve to these compiled
+# outputs (raw src/*.ts is never shipped or loaded at runtime).
+COPY --from=build --chown=node:node /app/packages/database/dist ./packages/database/dist
+COPY --from=build --chown=node:node /app/packages/database/package.json ./packages/database/package.json
+COPY --from=build --chown=node:node /app/packages/persistence/dist ./packages/persistence/dist
+COPY --from=build --chown=node:node /app/packages/persistence/package.json ./packages/persistence/package.json
 WORKDIR /app/apps/worker
 CMD ["node", "dist/main.js"]

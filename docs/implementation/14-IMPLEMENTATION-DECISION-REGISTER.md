@@ -21,6 +21,7 @@
 | IMP-D015 | Production readiness may be claimed only after APP12 passes and explicit production approval is given. | LOCKED |
 | IMP-D016 | Jest is the selected unit/integration test runner and already exists across `apps/*` and `packages/*`. Do not introduce a second unit/integration runner without an ADR. | LOCKED |
 | IMP-D017 | The shared Sass token/foundation package lives at `packages/styles` (workspace name `@embroidery/styles`); apps consume tokens from it and do not define their own token source. Set by APP0-S01A. | LOCKED |
+| IMP-D018 | Runtime-bearing workspace packages consumed by the Node backend (`@embroidery/database`, `@embroidery/persistence`) are compiled to JavaScript (`tsc` → `dist`, with declarations); their `main`/`types`/`exports` point to `dist`. The API and worker must never resolve a workspace package to `src/*.ts` at runtime, and bundlers/TS runtime loaders (webpack, esbuild, tsx, ts-node) are not used as a substitute for compilation. | LOCKED |
 
 ## 2. Decisions owned by future phases
 

@@ -107,8 +107,13 @@ services:
     environment:
       NODE_ENV: development
       API_PORT: '4000'
+      # Reach the database over the compose network (never the host mapping).
+      DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
       CHOKIDAR_USEPOLLING: 'true'
       TSC_WATCHFILE: DynamicPriorityPolling
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - ../../apps/api/src:/app/apps/api/src
     healthcheck:
@@ -128,8 +133,13 @@ services:
       target: dev
     environment:
       NODE_ENV: development
+      # Reach the database over the compose network (never the host mapping).
+      DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
       CHOKIDAR_USEPOLLING: 'true'
       TSC_WATCHFILE: DynamicPriorityPolling
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - ../../apps/worker/src:/app/apps/worker/src
     networks:
