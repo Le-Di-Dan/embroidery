@@ -99,13 +99,16 @@ Các quyết định sau đã được khóa (xem `docs/12-DECISION-LOG.md` D-02
 
 ## 6. Nội dung cố ý chưa quyết định
 
-Các open decision thật sự (xem `docs/12-DECISION-LOG.md` mục Open Decisions):
+Đã khóa (không còn mở): **Drizzle ORM và nền tảng migration đã được khóa và triển khai** (DB0–DB10; `docs/adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md`). **Jest đã được khóa** cho unit/integration testing.
 
-- ORM và migration framework.
+Các open decision thật sự (xem `docs/12-DECISION-LOG.md` mục Open Decisions và `docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md`):
+
 - Queue/message broker.
 - Concrete object-storage product (chỉ abstraction S3-compatible đã khóa).
 - Canvas library.
 - UI component library.
+- Frontend component testing tool (mở trong APP0).
+- Browser E2E testing tool (mở trong APP0).
 - Authentication/OTP implementation.
 - Payment provider implementation.
 - Kubernetes distribution và production topology.

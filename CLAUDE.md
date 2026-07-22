@@ -175,7 +175,6 @@ After coding:
 
 Do not invent answers for unresolved items such as:
 
-- ORM.
 - Queue/broker implementation.
 - Canvas library.
 - UI component library.
@@ -183,7 +182,11 @@ Do not invent answers for unresolved items such as:
 - Exact payment-provider integration.
 - Kubernetes distribution and topology.
 - Object-storage product.
-- Testing tools not yet selected.
+- Frontend component testing tool and browser E2E testing tool (open for APP0).
+
+Already locked (not open): ORM is Drizzle (`docs/adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md`, implemented); Jest is the unit/integration test runner (`docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md` IMP-D016).
+
+See `docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md` for the authoritative locked/open implementation decisions.
 
 Create or request an ADR before locking a consequential choice.
 

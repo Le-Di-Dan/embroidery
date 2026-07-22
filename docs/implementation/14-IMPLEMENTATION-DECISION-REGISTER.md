@@ -29,9 +29,10 @@ These remain unresolved until the owning phase audits current repository ADRs an
 |---|---|---|---|
 | IMP-O001 | Concrete staff/customer authentication/session provider or mechanism | APP1 | Before production auth backend |
 | IMP-O002 | Concrete object-storage product/adapter configuration, if not already locked | APP2 | Before asset integration |
-| IMP-O003 | Concrete queue/broker and job runtime, if not already locked | APP0/APP4 | Before production worker delivery |
-| IMP-O004 | Canvas/SVG library and rendering architecture | APP0 | Before APP3 engineering |
-| IMP-O005 | Frontend component test tool and browser E2E tool (only these remain open; Jest is already selected for unit/integration — see IMP-D016) | APP0 | Before test harness closure |
+| IMP-O003 | Concrete queue/broker and job runtime, if not already locked. Owner = earliest consuming phase: APP0 first verifies whether APP2 asset-derivative/media processing needs a real job queue; if yes → APP2, otherwise the earliest later phase that introduces real asynchronous work, and only APP4 if APP2/APP3 do not require it. APP0 does not implement a real queue unless a verified APP0 requirement appears. | Earliest consuming phase (verified in APP0; not blindly APP4) | Before production worker delivery of the owning phase |
+| IMP-O004 | Canvas/SVG library and rendering architecture — APP0-owned via the `APP0-R01` feasibility spike; decision recorded by ADR | APP0 (spike APP0-R01) | Before APP3 engineering |
+| IMP-O005 | Two separate open tool decisions kept under one parent ID: (a) frontend component test tool (`APP0-DEC-COMPONENT-TEST`); (b) browser E2E test tool (`APP0-DEC-E2E`). Each requires its own ADR. Jest is already selected for unit/integration (see IMP-D016) and is not reopened. | APP0 | Before test harness closure |
+| IMP-O011 | Generated-client codegen tool (OpenAPI → TypeScript/Axios). Must define the boundary between generated output and the existing handwritten Axios instance + error-normalization layer in `packages/api-client`, preserving the latter where compatible. Consequential → ADR (`APP0-DEC-CODEGEN`). | APP0 | Before APP0-C02 generated-client checkpoint |
 | IMP-O006 | Contact/notification providers and delivery channels | APP4 | Before production notification delivery |
 | IMP-O007 | Payment provider, checkout, webhook signature and sandbox | APP7 | Before payment implementation |
 | IMP-O008 | Cancellation/refund policy parameters | APP9 | Before cancellation/refund checkpoints |
