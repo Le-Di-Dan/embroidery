@@ -4,6 +4,7 @@ import { SwaggerModule, type OpenAPIObject } from '@nestjs/swagger';
 import { GLOBAL_ROUTE_PREFIX } from '../bootstrap/api-application';
 import { buildOpenApiConfig } from './openapi-document.config';
 import { createOperationId, validateOperationIds } from './operation-id';
+import { applyRequestIdHeaderContract } from './request-id-header.augmentation';
 
 /** HTTP method keys used when counting operations for the generation summary. */
 const HTTP_METHOD_KEYS: ReadonlySet<string> = new Set([
@@ -40,6 +41,7 @@ export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
     ignoreGlobalPrefix: true,
   });
   const prefixed = applyGlobalPrefixToPaths(document, GLOBAL_ROUTE_PREFIX);
+  applyRequestIdHeaderContract(prefixed);
   validateOperationIds(prefixed);
   return prefixed;
 }
