@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "clean": "rimraf .next coverage"
   },
@@ -26,16 +27,18 @@
   },
   "devDependencies": {
     "@embroidery/eslint-config": "workspace:*",
+    "@embroidery/frontend-testing": "workspace:*",
     "@embroidery/typescript-config": "workspace:*",
+    "@testing-library/jest-dom": "^7.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "^10.7.0",
     "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "rimraf": "^6.1.3",
     "sass": "^1.83.0",
-    "ts-jest": "^29.4.11",
     "typescript": "^5.9.3"
   }
 }

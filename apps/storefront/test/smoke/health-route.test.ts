@@ -1,4 +1,7 @@
-import { GET } from '../../app/healthz/route';
+/**
+ * @jest-environment node
+ */
+import { GET } from '../../src/app/healthz/route';
 
 describe('storefront health route', () => {
   it('responds with a healthy status payload', async () => {

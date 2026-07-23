@@ -371,7 +371,16 @@ Package-neutral integration-test helpers (APP0-T01). Holds only shared teardown 
 
 ### `packages/frontend-testing`
 
-React-aware shared component-test support (`@embroidery/frontend-testing`), locked by `APP0-DEC-COMPONENT-TEST` (IMP-D024) and implemented by APP0-T02A. Owns the shared render helper, provider wrappers (`QueryClient`), and `next/navigation` / `next/image` mocks used by both frontend apps under the Jest + `next/jest` + `jsdom` + React Testing Library stack. Kept separate from `@embroidery/test-utils` so that package stays backend-neutral. Per-app `jest.config.mjs` (`next/jest`) and app-root `jest.setup.ts` are owned by each app; component test files are colocated (`*.test.tsx` / feature `tests/`), never emitted by the production `next build`. No production runtime ownership.
+React-aware shared component-test support (`@embroidery/frontend-testing`), locked by `APP0-DEC-COMPONENT-TEST` (IMP-D024) and implemented by APP0-T02A. Owns the shared render helper (`renderWithProviders`), the deterministic `QueryClient` factory, the `next/navigation` mock factory, and the shared user-event helper used by both frontend apps under the Jest + `next/jest` + `jsdom` + React Testing Library stack. Kept separate from `@embroidery/test-utils` so that package stays backend-neutral. Because it imports no Next assets it does not (and cannot) use `next/jest`; its own unit tests use ts-jest + jsdom — the locked `next/jest` transform still governs the apps' component tests. No production runtime ownership; it is a devDependency only.
+
+**Frontend test placement (APP0-T02A, stricter than colocation).** Frontend tests and test-support live under `apps/<app>/test/**` — never under `apps/<app>/src/**`, which stays production-only:
+
+- `apps/<app>/test/smoke/**` — route-handler / server-only tests (Node environment via a `@jest-environment node` docblock);
+- `apps/<app>/test/components/**` — jsdom component/interaction tests;
+- `apps/<app>/test/fixtures/**` — small, explicitly test-only components;
+- `apps/<app>/test/support/**` — app-specific test support (if any).
+
+Each app owns its `jest.config.mjs` (`next/jest`, default `jsdom`, `roots: ['<rootDir>/test']`) and app-root `jest.setup.ts`. The production `next build` (`.next`) contains no test code, enforced by `tools/check-frontend-test-boundaries.mjs` (static) and `tools/check-frontend-build-boundary.mjs` (post-build).
 
 ### Configuration packages
 

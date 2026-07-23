@@ -1,0 +1,9 @@
+{
+  "extends": "@embroidery/typescript-config/library.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["node", "jest", "@testing-library/jest-dom"]
+  },
+  "include": ["src/**/*", "eslint.config.mjs", "jest.config.mjs", "jest.setup.ts"]
+}

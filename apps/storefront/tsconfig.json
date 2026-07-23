@@ -5,7 +5,9 @@
     "next.config.ts",
     "eslint.config.mjs",
     "jest.config.mjs",
+    "jest.setup.ts",
     "src/**/*",
+    "test/**/*",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
