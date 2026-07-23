@@ -1,0 +1,6 @@
+# Playwright artifacts — never committed.
+test-results/
+playwright-report/
+blob-report/
+.e2e-state/
+coverage/

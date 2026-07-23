@@ -1,0 +1,35 @@
+{
+  "name": "@embroidery/e2e-testing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cross-application browser end-to-end suite (Playwright) — APP0-T02B",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "check:e2e": "node scripts/check-e2e.mjs",
+    "e2e": "node scripts/run-e2e.mjs",
+    "e2e:smoke": "node scripts/run-e2e.mjs --smoke",
+    "e2e:full": "node scripts/run-e2e.mjs --full",
+    "e2e:headed": "node scripts/run-e2e.mjs --headed",
+    "e2e:debug": "node scripts/run-e2e.mjs --debug",
+    "e2e:report": "playwright show-report playwright-report",
+    "e2e:install": "playwright install",
+    "clean": "rimraf test-results playwright-report .e2e-state coverage"
+  },
+  "dependencies": {
+    "@embroidery/database": "workspace:*"
+  },
+  "devDependencies": {
+    "@embroidery/eslint-config": "workspace:*",
+    "@embroidery/typescript-config": "workspace:*",
+    "@playwright/test": "1.61.1",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.7.0",
+    "jest": "^30.4.2",
+    "rimraf": "^6.1.3",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,60 @@
+# Isolated E2E edge (APP0-T02B). Compose owns only the two services that must
+# run in containers: an ephemeral (tmpfs) PostgreSQL and the REAL Nginx gateway.
+# The API and the two Next apps run as host processes started by
+# packages/e2e-testing/scripts/run-e2e.mjs, which also owns the disposable
+# database and all teardown. Every run is namespaced by run id
+# (`-p emb-e2e-<runId>`), so concurrent runs never collide, and teardown is
+# always `down -v`. This file NEVER changes the production/dev gateway semantics.
+
+services:
+  postgres:
+    image: postgres:16.14-alpine
+    environment:
+      POSTGRES_USER: ${E2E_POSTGRES_USER:-embroidery}
+      POSTGRES_PASSWORD: ${E2E_POSTGRES_PASSWORD:-embroidery_dev_password}
+      POSTGRES_DB: ${E2E_POSTGRES_DB:-embroidery}
+      # Must match the dev/prod locale so the DB6 fingerprint baseline holds.
+      POSTGRES_INITDB_ARGS: '--locale=C --encoding=UTF8'
+    ports:
+      - '127.0.0.1:${E2E_POSTGRES_PORT:-5544}:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${E2E_POSTGRES_USER:-embroidery} -d ${E2E_POSTGRES_DB:-embroidery}',
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  gateway:
+    image: nginx:1.27.3-alpine
+    ports:
+      - '127.0.0.1:${E2E_GATEWAY_PORT:-8090}:8080'
+    environment:
+      GATEWAY_HTTP_PORT: ${E2E_GATEWAY_PORT:-8090}
+      STOREFRONT_HOST: ${STOREFRONT_HOST:-embroidery.local}
+      ADMIN_HOST: ${ADMIN_HOST:-admin.embroidery.local}
+      E2E_STOREFRONT_UPSTREAM: ${E2E_STOREFRONT_UPSTREAM:-host.docker.internal:4310}
+      E2E_ADMIN_UPSTREAM: ${E2E_ADMIN_UPSTREAM:-host.docker.internal:4311}
+      E2E_API_UPSTREAM: ${E2E_API_UPSTREAM:-host.docker.internal:4400}
+      GATEWAY_CLIENT_MAX_BODY_SIZE: ${GATEWAY_CLIENT_MAX_BODY_SIZE:-20m}
+      GATEWAY_PROXY_CONNECT_TIMEOUT: ${GATEWAY_PROXY_CONNECT_TIMEOUT:-10s}
+      GATEWAY_PROXY_READ_TIMEOUT: ${GATEWAY_PROXY_READ_TIMEOUT:-60s}
+      GATEWAY_PROXY_SEND_TIMEOUT: ${GATEWAY_PROXY_SEND_TIMEOUT:-60s}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    networks:
+      default:
+        # A Linux Playwright runner attached to this network resolves the real
+        # gateway hostnames via Docker DNS — no host published port, no
+        # hosts-file edit, and every browser engine gets real DNS.
+        aliases:
+          - ${STOREFRONT_HOST:-embroidery.local}
+          - ${ADMIN_HOST:-admin.embroidery.local}
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/e2e/templates/development.conf.template:/etc/nginx/templates/development.conf.template:ro
+      - ../nginx/templates/includes:/etc/nginx/templates/includes:ro

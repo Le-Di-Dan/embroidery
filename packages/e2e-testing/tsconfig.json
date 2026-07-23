@@ -1,0 +1,16 @@
+{
+  "extends": "@embroidery/typescript-config/library.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "playwright.config.ts",
+    "specs/**/*.ts",
+    "support/**/*.ts",
+    "scripts/**/*.mjs",
+    "eslint.config.mjs",
+    "jest.config.mjs"
+  ]
+}

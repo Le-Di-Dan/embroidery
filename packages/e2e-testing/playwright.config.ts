@@ -1,0 +1,77 @@
+/**
+ * Playwright configuration for the APP0-T02B foundation smoke.
+ *
+ * Base URLs are the real gateway hostnames (never direct app ports). The
+ * environment is owned entirely by `scripts/run-e2e.mjs`; there is deliberately
+ * no `webServer` block so cleanup ownership stays outside Playwright (its
+ * shutdown is insufficient on Windows). Direct execution (`playwright test`
+ * without the wrapper) is only meaningful for `--list` in `check:e2e`.
+ */
+import { defineConfig, devices } from '@playwright/test';
+
+const STOREFRONT_URL = process.env.E2E_BASE_STOREFRONT ?? 'http://embroidery.local:8090';
+const ADMIN_URL = process.env.E2E_BASE_ADMIN ?? 'http://admin.embroidery.local:8090';
+const IS_CI = !!process.env.CI;
+
+// On the host, Chromium resolves the gateway hostnames itself (Firefox/WebKit
+// cannot, so they run only in the container where `--add-host` provides DNS).
+const storefrontHost = new URL(STOREFRONT_URL).hostname;
+const adminHost = new URL(ADMIN_URL).hostname;
+const hostResolverArgs =
+  process.env.E2E_RUNNER === 'container'
+    ? []
+    : [`--host-resolver-rules=MAP ${storefrontHost} 127.0.0.1, MAP ${adminHost} 127.0.0.1`];
+
+const chromiumLaunch = { launchOptions: { args: hostResolverArgs } };
+
+export default defineConfig({
+  testDir: './specs',
+  testMatch: '**/*.spec.ts',
+  outputDir: 'test-results',
+  fullyParallel: false,
+  workers: 1,
+  forbidOnly: IS_CI,
+  retries: IS_CI ? 1 : 0,
+  timeout: 30_000,
+  expect: { timeout: 10_000 },
+  reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
+  use: {
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'off',
+    navigationTimeout: 20_000,
+    actionTimeout: 10_000,
+  },
+  projects: [
+    {
+      name: 'storefront-chromium',
+      testMatch: '**/storefront.smoke.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
+    {
+      name: 'admin-chromium',
+      testMatch: '**/{admin.smoke,api-readiness.smoke}.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: ADMIN_URL },
+    },
+    {
+      name: 'storefront-firefox',
+      testMatch: '**/storefront.smoke.spec.ts',
+      use: { ...devices['Desktop Firefox'], baseURL: STOREFRONT_URL },
+    },
+    {
+      name: 'admin-firefox',
+      testMatch: '**/{admin.smoke,api-readiness.smoke}.spec.ts',
+      use: { ...devices['Desktop Firefox'], baseURL: ADMIN_URL },
+    },
+    {
+      name: 'storefront-webkit',
+      testMatch: '**/storefront.smoke.spec.ts',
+      use: { ...devices['Desktop Safari'], baseURL: STOREFRONT_URL },
+    },
+    {
+      name: 'admin-webkit',
+      testMatch: '**/{admin.smoke,api-readiness.smoke}.spec.ts',
+      use: { ...devices['Desktop Safari'], baseURL: ADMIN_URL },
+    },
+  ],
+});

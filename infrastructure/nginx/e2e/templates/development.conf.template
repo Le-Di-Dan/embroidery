@@ -1,0 +1,108 @@
+# E2E gateway routing (APP0-T02B). This MIRRORS the production development
+# gateway (../../templates/development.conf.template) byte-for-byte EXCEPT the
+# three upstream targets, which point at host processes via ${*_UPSTREAM}
+# (host.docker.internal) instead of Compose service names. Routing semantics —
+# server_name matching, /api and /healthz locations, forwarded headers, the
+# effective-request-id map, the unknown-host 404 — are unchanged. The shared
+# proxy-headers include is the real production file (mounted, not copied), so it
+# cannot drift. Keep this file in sync with production if routing ever changes.
+
+map $http_x_request_id $effective_request_id {
+    default                      $request_id;
+    '~^[A-Za-z0-9._-]{1,64}$'    $http_x_request_id;
+}
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+client_max_body_size ${GATEWAY_CLIENT_MAX_BODY_SIZE};
+proxy_connect_timeout ${GATEWAY_PROXY_CONNECT_TIMEOUT};
+proxy_read_timeout ${GATEWAY_PROXY_READ_TIMEOUT};
+proxy_send_timeout ${GATEWAY_PROXY_SEND_TIMEOUT};
+
+proxy_cache off;
+
+upstream storefront_upstream {
+    server ${E2E_STOREFRONT_UPSTREAM};
+}
+
+upstream admin_upstream {
+    server ${E2E_ADMIN_UPSTREAM};
+}
+
+upstream api_upstream {
+    server ${E2E_API_UPSTREAM};
+}
+
+server {
+    listen 8080;
+    server_name ${STOREFRONT_HOST};
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header X-Request-ID $effective_request_id always;
+
+    location = /healthz {
+        add_header Cache-Control "no-store" always;
+        add_header X-Request-ID $effective_request_id always;
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://storefront_upstream;
+    }
+
+    location /api/ {
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://api_upstream;
+    }
+
+    location / {
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://storefront_upstream;
+    }
+}
+
+server {
+    listen 8080;
+    server_name ${ADMIN_HOST};
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header X-Request-ID $effective_request_id always;
+
+    location = /healthz {
+        add_header Cache-Control "no-store" always;
+        add_header X-Request-ID $effective_request_id always;
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://admin_upstream;
+    }
+
+    location /api/ {
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://api_upstream;
+    }
+
+    location / {
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        proxy_pass http://admin_upstream;
+    }
+}
+
+server {
+    listen 8080 default_server;
+    server_name _;
+
+    add_header X-Request-ID $effective_request_id always;
+
+    location = /gateway/healthz {
+        add_header Cache-Control "no-store" always;
+        add_header X-Request-ID $effective_request_id always;
+        return 200 'ok';
+    }
+
+    location / {
+        return 404 'unknown host';
+    }
+}
