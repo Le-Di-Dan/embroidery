@@ -1,7 +1,9 @@
 # APP0-T01 — Application Integration Harness Adapter — Completion Report
 
-**Checkpoint:** APP0-T01 · **Branch:** `production` · **Verdict:** `PASS`
+**Checkpoint:** APP0-T01 · **Branch:** `production` · **Verdict:** `PASS` (corrected — see below)
 **Implementation commit:** `7bc3793a6826b50c7c4eed11b2e81ed079fdffc2` — `test(app): add reusable PostgreSQL integration harness`
+
+> **Correction history — APP0-T01-C1 (commit `2f7f274`).** Human review found the harness under the production source tree (`apps/api/src/tests/**`) and no direct schema/fingerprint proof. The correction moved it to `apps/api/test/{support,integration}/**` (with a `dist`-boundary gate) and added a direct `verifySchemaBaseline` proof against an adapter-provisioned database. The path references below reflect the original delivery; the current adapter lives at `apps/api/test/support/`. See `APP0-T01-C1-CORRECTION-REPORT.md`. The evidence below is preserved as originally recorded.
 
 ---
 
