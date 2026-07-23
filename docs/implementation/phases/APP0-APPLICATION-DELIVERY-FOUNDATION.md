@@ -89,10 +89,11 @@ This map is the canonical, locked APP0 checkpoint decomposition (refined after t
 
 ### 6.5 Testing foundation
 
-- **APP0-T01 — Application integration harness adapter** *(testing foundation; dep: C01)* — **READY, NOT STARTED**.
+- **APP0-T01 — Application integration harness adapter** *(testing foundation; dep: C01)* — **DONE** (adapter at `apps/api/src/tests/support/`; shared `CleanupStack` in `@embroidery/test-utils`; report `../reports/APP0-T01-COMPLETION-REPORT.md`).
   - Goal: **reuse and adapt the existing canonical database (DB7/database-era) test harness** for application/API integration; provide a minimal API/application integration adapter or shared facade only where a real gap exists; preserve all passing DB tests; prove disposable and isolated execution.
   - Rule: do not create a parallel independent database harness, do not mass-migrate existing fixtures, and do not duplicate database lifecycle/migration/cleanup. A minimal shared implementation may be proposed only if repository evidence proves no reusable canonical harness exists.
-- **APP0-DEC-COMPONENT-TEST — Component testing tool decision** *(decision/ADR; separate ADR; IMP-O005a)*
+  - Delivered: reuses `@embroidery/database/testing` (DB7) for the whole disposable-database lifecycle; adds only a package-neutral `CleanupStack` (`@embroidery/test-utils`) and an `apps/api` test-support adapter that boots the real `AppModule` (shared `GLOBAL_ROUTE_PREFIX`) against a disposable database with the log sink captured and Supertest driving it. Proves real `GET /api/health/readiness`, envelope opt-out, structured completion logging, success/failure-path cleanup, sequential isolation, and persistent-database safety; caps Jest `maxWorkers` so the shared dev container is not oversaturated. No schema/migration/OpenAPI/generated-client change.
+- **APP0-DEC-COMPONENT-TEST — Component testing tool decision** *(decision/ADR; separate ADR; IMP-O005a)* — **READY, NOT STARTED**.
 - **APP0-T02A — Frontend component and accessibility harness** *(testing foundation; dep: DEC-COMPONENT-TEST, S01B)*
   - Goal: component harness; network-boundary mocking convention; baseline accessibility assertion. No browser E2E.
 - **APP0-DEC-E2E — Browser E2E tool decision** *(decision/ADR; separate ADR; IMP-O005b)*
