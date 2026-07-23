@@ -373,6 +373,10 @@ Package-neutral integration-test helpers (APP0-T01). Holds only shared teardown 
 
 React-aware shared component-test support (`@embroidery/frontend-testing`), locked by `APP0-DEC-COMPONENT-TEST` (IMP-D024) and implemented by APP0-T02A. Owns the shared render helper (`renderWithProviders`), the deterministic `QueryClient` factory, the `next/navigation` mock factory, and the shared user-event helper used by both frontend apps under the Jest + `next/jest` + `jsdom` + React Testing Library stack. Kept separate from `@embroidery/test-utils` so that package stays backend-neutral. Because it imports no Next assets it does not (and cannot) use `next/jest`; its own unit tests use ts-jest + jsdom — the locked `next/jest` transform still governs the apps' component tests. No production runtime ownership; it is a devDependency only.
 
+### `packages/e2e-testing`
+
+Cross-application browser end-to-end suite (`@embroidery/e2e-testing`), locked by `APP0-DEC-E2E` (IMP-D025) and implemented by APP0-T02B. Owns `playwright.config.ts`, the E2E `specs/**`, and `support/**` (fixtures, the single app/gateway/API/disposable-Postgres orchestrator, and the disposable-DB adapter that **reuses** `@embroidery/database/testing` + `@embroidery/test-utils` `CleanupStack` rather than duplicating database lifecycle). Runs the **Playwright Test** tier (separate from Jest, which stays the sole unit/component runner). It sits under `packages/` — not `apps/` — because it is shared cross-app test tooling, not a deployable application, and never lives under any app `src/`. `@playwright/test` and browser binaries are devDependencies of this package only; E2E is excluded from the fast default `pnpm quality` and runs in a separate CI tier. No production runtime ownership.
+
 **Frontend test placement (APP0-T02A, stricter than colocation).** Frontend tests and test-support live under `apps/<app>/test/**` — never under `apps/<app>/src/**`, which stays production-only:
 
 - `apps/<app>/test/smoke/**` — route-handler / server-only tests (Node environment via a `@jest-environment node` docblock);

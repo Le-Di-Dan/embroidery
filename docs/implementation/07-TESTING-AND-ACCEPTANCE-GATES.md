@@ -78,6 +78,23 @@ E2E evidence must include:
 - Database and UI outcome.
 - Negative/retry case where critical.
 
+### 5.1 Browser E2E stack (locked)
+
+Browser E2E runs on the stack locked by `APP0-DEC-E2E` (IMP-D025): **Playwright Test** (`@playwright/test`, pinned `1.61.1`, Apache-2.0). This is a **separate tier** from the unit/component runner — Jest (IMP-D016) is not reopened; Playwright drives real browsers only. Rules:
+
+- **Ownership** — a dedicated private workspace package `@embroidery/e2e-testing` (`packages/e2e-testing/`) owns `playwright.config.ts`, `specs/**`, and `support/**` (fixtures, orchestration, disposable-DB adapter). No E2E code lives under any app `src/`. `@playwright/test` and browsers are devDependencies of that package only.
+- **Browser matrix (tiered)** — local smoke: Chromium; CI-required (per PR): Chromium (admin + storefront projects); CI full/scheduled: Chromium + Firefox + WebKit. No mobile emulation in APP0-T02B; WebKit is a Safari **approximation**, not real iOS Safari.
+- **Startup** — one canonical orchestrator (Playwright `globalSetup` + repo/package script; `webServer` may own the two Next apps in production `next start` mode) composes the real Nginx gateway + admin + storefront + API + a **disposable** PostgreSQL provisioned through the canonical T01/DB7 harness (never the persistent dev database), readiness-gated with full teardown; no per-spec process starting.
+- **Data** — disposable DB with a unique per-run name and the persistent-DB refusal guard; seed only via approved API / fixture-seed adapter / canonical repository helper; no raw ad-hoc business SQL in specs; cleanup on success and failure.
+- **Auth (future-compatible)** — APP0-T02B tests public routes only; later, deterministic test users via Playwright `storageState` / API session setup, role isolation, secrets from env/CI store, no committed tokens.
+- **Network** — real app HTTP + real owned API by default; route interception only for non-owned/third-party/failure-simulation; no live payment/shipping calls; no credentials in traces/reports.
+- **Locators/flake** — `getByRole`/`getByLabel`/visible text, `data-testid` last; no arbitrary sleeps (auto-waiting); retries only in CI and bounded, trace on retry/failure; test independence.
+- **Artifacts** — screenshot only-on-failure, trace retain-on-failure/on-first-retry, HTML report + `test-results/`, all gitignored and never committed; visual regression is a **separate** concern (no broad screenshot baselines in T02B).
+- **Accessibility** — semantic-locator policy plus optional keyboard/focus smoke; a targeted `@axe-core/playwright` scan is deferred to T02B (version locked only after official-source review); no full-WCAG claim.
+- **CI/quality tier** — E2E is **not** in the fast default `pnpm quality`; it runs in a separate `quality:e2e`/CI job with browser-install caching and per-project sharding. Root commands (T02B): `e2e` / `e2e:headed` / `e2e:debug` / `e2e:report` / `e2e:install` / `e2e:smoke` / `check:e2e`.
+
+The full APP0-T02B handoff and spike evidence are in `reports/APP0-DEC-E2E-COMPLETION-REPORT.md`.
+
 ## 6. Design acceptance
 
 Design packages use visual/system review rather than coding checkpoints. See `03-DESIGN-DELIVERY-POLICY.md`.
