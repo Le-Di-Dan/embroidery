@@ -367,7 +367,11 @@ Structured logging, correlation, and telemetry foundation (currently a stub; fil
 
 ### `packages/test-utils`
 
-Package-neutral integration-test helpers (APP0-T01). Holds only shared teardown orchestration (`CleanupStack`) — no database lifecycle (owned by `@embroidery/database/testing`), no Nest bootstrap, no business rules, no credentials. Application-level integration contexts (e.g. the API's `AppModule` + Supertest adapter) live in the consuming app's test-support directory, not here, so ownership is not reversed. No production ownership.
+Package-neutral integration-test helpers (APP0-T01). Holds only shared teardown orchestration (`CleanupStack`) — no database lifecycle (owned by `@embroidery/database/testing`), no Nest bootstrap, no business rules, no credentials, **and no React/DOM**. Application-level integration contexts (e.g. the API's `AppModule` + Supertest adapter) live in the consuming app's test-support directory, not here, so ownership is not reversed. No production ownership.
+
+### `packages/frontend-testing`
+
+React-aware shared component-test support (`@embroidery/frontend-testing`), locked by `APP0-DEC-COMPONENT-TEST` (IMP-D024) and implemented by APP0-T02A. Owns the shared render helper, provider wrappers (`QueryClient`), and `next/navigation` / `next/image` mocks used by both frontend apps under the Jest + `next/jest` + `jsdom` + React Testing Library stack. Kept separate from `@embroidery/test-utils` so that package stays backend-neutral. Per-app `jest.config.mjs` (`next/jest`) and app-root `jest.setup.ts` are owned by each app; component test files are colocated (`*.test.tsx` / feature `tests/`), never emitted by the production `next build`. No production runtime ownership.
 
 ### Configuration packages
 

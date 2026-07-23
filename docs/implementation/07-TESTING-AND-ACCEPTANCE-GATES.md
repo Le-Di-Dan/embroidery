@@ -39,6 +39,20 @@ Required as applicable:
 
 A snapshot alone is not sufficient.
 
+### 3.1 Frontend component-test stack (locked)
+
+The component/interaction and accessibility gates above run on the stack locked by `APP0-DEC-COMPONENT-TEST` (IMP-D024): **Jest** (the sole unit/integration runner, IMP-D016) with the **`next/jest`** transformer, the **`jsdom`** environment, **React Testing Library** + **`@testing-library/user-event`**, and **`@testing-library/jest-dom`** matchers. Rules:
+
+- **Runner is not reopened** — no second unit/component runner (Vitest, Playwright CT) without an ADR overriding IMP-D016.
+- **Config is per app** (`jest.config.mjs` via `next/jest`, app-root `jest.setup.ts`); shared render helpers, provider wrappers and `next/navigation`/`next/image` mocks live in `@embroidery/frontend-testing`, not in the backend-neutral `@embroidery/test-utils`.
+- **Component tests are colocated** (`*.test.tsx` beside the component or a feature `tests/` folder); test-support code is never under `src`, and the production `next build` must exclude test code.
+- **Async Server Components are not rendered in `jsdom`** — assert their composition through the browser E2E harness; component tests cover synchronous Server/Client components, props, state, interaction, accessibility semantics, providers, and loading/error/empty states.
+- **No live network** — the generated Axios client is exercised through an injected mocked Axios instance or a mocked operation/feature service (no MSW without evidence).
+- **Snapshots are not the primary assertion**; role/label/behaviour queries are.
+- Coverage uses the `v8` provider from app `src` (generated/vendor/test-support excluded); no coverage threshold is imposed in APP0.
+
+Detailed tooling versions and the APP0-T02A handoff are in `reports/APP0-DEC-COMPONENT-TEST-COMPLETION-REPORT.md`.
+
 ## 4. Worker/integration gates
 
 - Job receives stable IDs rather than mutable object payloads.

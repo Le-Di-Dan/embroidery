@@ -333,6 +333,8 @@ Frontend testing must cover:
 
 A snapshot alone is not sufficient evidence for meaningful behavior.
 
+The component-test stack is locked by `APP0-DEC-COMPONENT-TEST` (IMP-D024): **Jest** with **`next/jest`**, **`jsdom`**, **React Testing Library**, **`@testing-library/user-event`** and **`@testing-library/jest-dom`**. Component tests are colocated (`*.test.tsx` or a feature `tests/` folder); shared render helpers, provider wrappers and `next/navigation`/`next/image` mocks come from `@embroidery/frontend-testing`; async Server Components are covered by E2E rather than `jsdom`; there is no live network (mock the injected Axios instance or the generated operation). Canonical gate rules live in [`docs/implementation/07-TESTING-AND-ACCEPTANCE-GATES.md`](../implementation/07-TESTING-AND-ACCEPTANCE-GATES.md) §3.1.
+
 ## 19. Prohibited patterns
 
 - Multiple production React components in one file.
