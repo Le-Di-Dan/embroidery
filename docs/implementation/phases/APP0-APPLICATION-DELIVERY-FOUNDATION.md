@@ -79,9 +79,10 @@ This map is the canonical, locked APP0 checkpoint decomposition (refined after t
 
 ### 6.4 Contract generation
 
-- **APP0-DEC-CODEGEN — Generated-client tool decision** *(decision/ADR; dep: B01)*
+- **APP0-DEC-CODEGEN — Generated-client tool decision** *(decision/ADR; dep: B01)* — **DONE** (decision `IMP-D023`, resolves `IMP-O011`; report `../reports/APP0-DEC-CODEGEN-COMPLETION-REPORT.md`).
   - Goal: compare viable OpenAPI→TypeScript/Axios tools; define generated-vs-handwritten boundaries; preserve the existing Axios instance and error-normalization layer where compatible; record ADR (IMP-O011).
-- **APP0-C02 — OpenAPI export and generated client** *(contract generation; dep: B01, DEC-CODEGEN)*
+  - Decided: **Orval `8.22.0`** (MIT), `axios-functions` mode with a `mutator` injecting the repo's existing Axios instance. Offline committed artifact input; generated types + thin per-operation functions under `packages/api-client/src/generated/` (never hand-edited); no generated TanStack/React hooks. Rejected OpenAPI Generator `typescript-axios` (Java runtime) and Hey API `@hey-api/openapi-ts` (vendored runtime fails the repo-locked `exactOptionalPropertyTypes`). Both finalists were spiked on the real artifact in an OS-temp directory (deterministic two-run, strict compile); no tool, dependency, lockfile or generated client was added to the repository. Drift-check design and the full C02 handoff are locked in the report.
+- **APP0-C02 — OpenAPI export and generated client** *(contract generation; dep: B01, DEC-CODEGEN)* — **READY, NOT STARTED**.
   - Goal: reproducible export; generated code in an isolated generated directory; no manual edits in generated output; drift check; compile against admin and storefront. No TanStack Query feature hooks.
 
 ### 6.5 Testing foundation

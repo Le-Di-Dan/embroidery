@@ -326,7 +326,12 @@ Cross-application transport contracts and schemas.
 
 ### `packages/api-client`
 
-Generated or maintained client boundary for the business API. The generation strategy is an open decision.
+Client boundary for the business API. Two layers coexist:
+
+- `src/generated/` — **tool-owned**, produced by Orval from `packages/contracts/openapi/openapi.generated.json` (IMP-D023). Types plus thin per-operation Axios functions; never hand-edited; no TanStack Query/React hooks.
+- `src/clients` · `src/config` · `src/errors` — **handwritten runtime**: the single Axios instance (base-URL/timeout/interceptor ownership), `NormalizedApiError` envelope normalization. Generated functions route through this instance via an Orval `mutator`; feature layers wrap the client and never call Axios directly.
+
+Codegen tool and generated-vs-handwritten boundary are locked (IMP-D023); the reproducible export, generation command and non-mutating drift check are delivered by APP0-C02.
 
 ### `packages/design-document`
 

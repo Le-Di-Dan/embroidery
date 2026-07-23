@@ -54,6 +54,27 @@ Generated files:
 - Are reviewed through contract diff.
 - Must not contain environment-specific URLs or secrets.
 
+### 3.1 Codegen tool (locked — IMP-D023)
+
+- **Tool:** Orval (npm `orval`, pinned `8.22.0`, MIT), `axios-functions` mode with a `mutator`.
+- **Input:** the committed offline artifact `packages/contracts/openapi/openapi.generated.json` only — never a live Swagger URL.
+- **Output:** `packages/api-client/src/generated/` — generated **types + thin per-operation Axios functions only**; no TanStack Query/SWR/React hooks are generated (hooks stay handwritten, §6).
+- **Runtime ownership:** the `mutator` routes every generated call through the existing handwritten Axios instance (`packages/api-client/src/clients`/`config`/`errors`), which keeps sole ownership of base URL, interceptors, retry policy and envelope error-normalization. The generated layer holds no base URL, secret, or instance of its own.
+- **Boundary:**
+
+  ```text
+  packages/api-client/
+  ├── src/generated/   # Orval-owned; never hand-edit
+  ├── src/clients/     # handwritten Axios instance + factories
+  ├── src/config/      # base-URL/timeout config
+  ├── src/errors/      # envelope error normalization
+  └── src/index.ts     # controlled exports
+  ```
+
+- **Rejected:** OpenAPI Generator `typescript-axios` (Java/JAR runtime — supply-chain/toolchain cost in a Node/pnpm monorepo); Hey API `@hey-api/openapi-ts` (vendors a competing runtime client into the generated tree that fails the repo-locked `exactOptionalPropertyTypes` strict flag).
+- **Version policy:** exact pin; no automatic major upgrade; on any upgrade re-review the generated diff and re-run strict compile + determinism + `quality`.
+- **Drift check:** a non-mutating gate — generate into a temp directory, apply the same formatter, compare the tracked generated tree, fail with the regenerate command, clean up in `finally`, integrate into root `quality` — delivered by APP0-C02.
+
 ## 4. Stable operation IDs
 
 Operation IDs are public internal contracts. Renaming one can break the generated client even when method/path remains unchanged.
