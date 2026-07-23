@@ -11,8 +11,10 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test": "jest && node --test \"scripts/*.test.mjs\"",
+    "test:coverage": "jest --coverage",
+    "generate": "node scripts/generate-client.mjs",
+    "check:generated": "node scripts/check-generated-client.mjs"
   },
   "dependencies": {
     "@embroidery/contracts": "workspace:*",
@@ -25,6 +27,7 @@
     "@types/node": "^26.1.1",
     "eslint": "^10.7.0",
     "jest": "^30.4.2",
+    "orval": "8.22.0",
     "ts-jest": "^29.4.11",
     "typescript": "^5.9.3"
   }

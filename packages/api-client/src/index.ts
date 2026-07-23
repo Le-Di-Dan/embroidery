@@ -5,3 +5,27 @@ export { createServerApiClient } from './clients/create-server-api-client';
 export { API_CLIENT_ERROR_CODES } from './errors/api-client-error-codes';
 export type { NormalizedApiError } from './errors/normalized-api-error';
 export { normalizeApiClientError } from './errors/normalize-api-client-error';
+
+// Per-call options that inject a repository-owned Axios instance into every
+// generated operation. Feature services pass `{ instance }` obtained from the
+// browser/server client factories above.
+export type { ApiRequestOptions } from './clients/api-request.mutator';
+
+// Generated operation functions (Orval `axios-functions` + `apiRequest`
+// mutator, IMP-D023). Generated code is never hand-edited; regenerate with
+// `pnpm --filter @embroidery/api-client generate`.
+export { healthCheck, healthReadiness } from './generated/embroidery-api';
+export type { HealthCheckResult, HealthReadinessResult } from './generated/embroidery-api';
+
+// Generated transport types derived from the committed OpenAPI artifact.
+export type {
+  ApiErrorResponse,
+  ApiFieldError,
+  ApiPaginationMeta,
+  ApiResponseMeta,
+  ApiSuccessResponse,
+  DatabaseHealthResponse,
+  DatabasePoolResponse,
+  HealthStatusResponse,
+  ReadinessStatusResponse,
+} from './generated/embroidery-api.schemas';
