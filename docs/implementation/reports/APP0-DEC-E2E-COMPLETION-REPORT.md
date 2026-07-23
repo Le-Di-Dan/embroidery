@@ -133,3 +133,7 @@ No change to `package.json`, `pnpm-lock.yaml`, `turbo.json`, `apps/**`, `package
 - Pre-Commit-B tree: clean except the staged phase-doc status update and this untracked report.
 - Push status: **NOT PUSHED**.
 - Verdict: **`PASS`** (internet available, freshness verified → not capped at PASS_WITH_FOLLOW_UPS).
+
+## K. Correction history (added by APP0-T02B)
+
+The original spike evidence above stands. One implementation detail was corrected during T02B human review and confirmed against the real image: the official `mcr.microsoft.com/playwright:v1.61.1-noble` image provides **browser binaries and system dependencies only — not the `@playwright/test` npm package** (`require('@playwright/test')` in a clean image → MODULE_NOT_FOUND). T02B therefore installs the exact npm package (`1.61.1`) separately and version-aligns it with the image's baked browsers (chromium-1228/firefox-1532/webkit-2311); browser-binary caching is not claimed as an official recommendation. See `APP0-T02B-COMPLETION-REPORT.md` §A/§F.
