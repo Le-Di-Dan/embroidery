@@ -367,7 +367,7 @@ Structured logging, correlation, and telemetry foundation (currently a stub; fil
 
 ### `packages/test-utils`
 
-Shared testing utilities/harness support (currently a stub; the canonical database test harness is reused/adapted by APP0-T01). No production ownership.
+Package-neutral integration-test helpers (APP0-T01). Holds only shared teardown orchestration (`CleanupStack`) — no database lifecycle (owned by `@embroidery/database/testing`), no Nest bootstrap, no business rules, no credentials. Application-level integration contexts (e.g. the API's `AppModule` + Supertest adapter) live in the consuming app's test-support directory, not here, so ownership is not reversed. No production ownership.
 
 ### Configuration packages
 
