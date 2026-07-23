@@ -8,5 +8,5 @@
       "@embroidery/database/schema": ["../../packages/database/src/schema/index.ts"]
     }
   },
-  "include": ["src/**/*", "eslint.config.mjs", "jest.config.mjs"]
+  "include": ["src/**/*", "test/**/*", "eslint.config.mjs", "jest.config.mjs"]
 }

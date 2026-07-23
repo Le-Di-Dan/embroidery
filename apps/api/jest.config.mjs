@@ -1,7 +1,9 @@
 /** @type {import('jest').Config} */
 export default {
   testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
+  // `test/` holds application-integration suites kept out of the production
+  // source tree (`src/`) so they can never be compiled or copied into `dist`.
+  roots: ['<rootDir>/src', '<rootDir>/test'],
   // Integration suites create a database and apply 31 migrations before the
   // first assertion; the 5s default would fail on setup, not on behaviour.
   testTimeout: 120_000,

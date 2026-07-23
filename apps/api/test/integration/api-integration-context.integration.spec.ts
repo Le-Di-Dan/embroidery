@@ -7,14 +7,21 @@
  * request context, real database readiness — never a mock.
  */
 import { sql } from 'drizzle-orm';
-import { createDisposableDatabase } from '@embroidery/database/testing';
+import { createDisposableDatabase, verifySchemaBaseline } from '@embroidery/database/testing';
 import type { DisposableDatabase } from '@embroidery/database/testing';
 
-import { PLATFORM_LOG_EVENT } from '../../platform/logging/log-record';
+import { PLATFORM_LOG_EVENT } from '../../src/platform/logging/log-record';
 import { createApiIntegrationContext } from '../support/api-integration-context';
 import type { ApiIntegrationTestContext } from '../support/api-integration-context';
 
 const PERSISTENT_DATABASE = 'embroidery';
+
+// Canonical DB6 baseline fingerprint (DEC-DB7-005); recomputing it here would
+// duplicate the verifier, so the frozen value is asserted against the verifier
+// output instead.
+const CANONICAL_FINGERPRINT = '4ca56a5967730d257edb34e72d6c40373156704cab7c87e3a684803c8321672f';
+const CANONICAL_MIGRATION_COUNT = 31;
+const CANONICAL_TABLE_COUNT = 78;
 
 // One long-lived probe connection answers all catalog questions, so existence
 // checks never create-and-migrate a throwaway database per assertion. Exact
@@ -132,5 +139,36 @@ describe('API integration harness — sequential isolation', () => {
     expect(await databaseExists(secondName)).toBe(false);
 
     expect(firstName).not.toBe(secondName);
+  }, 180_000);
+});
+
+describe('API integration harness — canonical schema/fingerprint verification', () => {
+  it('provisions a database that passes canonical schema verification, then drops it', async () => {
+    const context = await createApiIntegrationContext('t01-schema-proof');
+    const { name } = context.database;
+    try {
+      // Reuse the canonical DB6 checkers + fingerprint gate — never a
+      // reimplementation — against the exact database the adapter provisioned.
+      const baseline = await verifySchemaBaseline(context.database.url);
+      expect(baseline.stages.filter((stage) => !stage.passed)).toEqual([]);
+      expect(baseline.passed).toBe(true);
+      expect(baseline.stages).toHaveLength(7);
+      expect(baseline.stages.at(-1)?.summary).toContain(CANONICAL_FINGERPRINT);
+
+      const migrations = await context.database.client.db.execute<{ count: string }>(
+        sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
+      );
+      expect(Number(migrations.rows[0]?.count)).toBe(CANONICAL_MIGRATION_COUNT);
+
+      const tables = await context.database.client.db.execute<{ count: string }>(
+        sql`select count(*)::text as count from information_schema.tables where table_schema = 'public'`,
+      );
+      expect(Number(tables.rows[0]?.count)).toBe(CANONICAL_TABLE_COUNT);
+    } finally {
+      await context.close();
+    }
+
+    // The adapter lifecycle dropped the provisioned database.
+    expect(await databaseExists(name)).toBe(false);
   }, 180_000);
 });

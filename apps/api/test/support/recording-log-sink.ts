@@ -1,5 +1,5 @@
-import type { LogRecord } from '../../platform/logging/log-record';
-import type { LogSink } from '../../platform/logging/log-sink';
+import type { LogRecord } from '../../src/platform/logging/log-record';
+import type { LogSink } from '../../src/platform/logging/log-sink';
 
 /**
  * Test `LogSink` that captures records instead of writing to the process

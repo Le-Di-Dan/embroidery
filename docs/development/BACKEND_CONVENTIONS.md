@@ -446,7 +446,7 @@ Application/API integration tests reuse the canonical DB7 harness — never a se
 
 - `@embroidery/database/testing` owns the whole database lifecycle: unique disposable database naming, create/drop, migration execution, schema/fingerprint verification, pool cleanup, and setup-failure cleanup. Do not reimplement any of it.
 - `@embroidery/test-utils` holds only package-neutral teardown orchestration (`CleanupStack`).
-- Each app owns its own bootstrap adapter (for the API: `apps/api/src/tests/support/api-integration-context.ts`), which boots the real `AppModule` via the shared `GLOBAL_ROUTE_PREFIX` against a disposable database and exposes a Supertest client. It never imports `AppModule` into a shared package.
+- Each app owns its own bootstrap adapter (for the API: `apps/api/test/support/api-integration-context.ts`), which boots the real `AppModule` via the shared `GLOBAL_ROUTE_PREFIX` against a disposable database and exposes a Supertest client. It never imports `AppModule` into a shared package. Integration test code lives under `apps/api/test/**`, outside the compiled production source tree (`apps/api/src/**`), so it can never be emitted into `dist`.
 - A mutating integration context must run against a disposable database, refuse the persistent database name, snapshot/restore `DATABASE_URL`/`NODE_ENV` around module init, and drop the database on both success and failure. The persistent development database is read-only in tests.
 
 ## 20. Constants and hard-coding

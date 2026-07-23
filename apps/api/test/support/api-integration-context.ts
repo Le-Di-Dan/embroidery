@@ -10,9 +10,9 @@ import {
 } from '@embroidery/database/testing';
 import request from 'supertest';
 
-import { GLOBAL_ROUTE_PREFIX } from '../../bootstrap/api-application';
-import { AppModule } from '../../bootstrap/app.module';
-import { LOG_SINK } from '../../platform/logging/log-sink';
+import { GLOBAL_ROUTE_PREFIX } from '../../src/bootstrap/api-application';
+import { AppModule } from '../../src/bootstrap/app.module';
+import { LOG_SINK } from '../../src/platform/logging/log-sink';
 import { RecordingLogSink } from './recording-log-sink';
 
 /** The Supertest agent bound to the running application server. */
