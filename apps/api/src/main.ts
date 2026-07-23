@@ -3,17 +3,22 @@ import { SwaggerModule } from '@nestjs/swagger';
 
 import { createApiApplication } from './bootstrap/api-application';
 import { loadAppConfig } from './config/app-config';
+import { NestLoggerAdapter } from './platform/logging/nest-logger.adapter';
 import { buildOpenApiDocument } from './openapi/build-openapi-document';
 
 /** Swagger UI mounts under the global prefix, matching the gateway: /api/docs. */
 const DOCS_ROUTE = 'docs';
 
 async function bootstrap(): Promise<void> {
-  const logger = new Logger('Bootstrap');
   const config = loadAppConfig(process.env);
 
   const app = await createApiApplication();
+  // Route Nest's own framework and lifecycle logs through the structured logger
+  // (APP0-B05) so the process emits a single one-line JSON format everywhere.
+  app.useLogger(app.get(NestLoggerAdapter));
   app.enableShutdownHooks();
+
+  const logger = new Logger('Bootstrap');
 
   if (config.docsEnabled) {
     const document = buildOpenApiDocument(app);

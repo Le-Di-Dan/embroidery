@@ -386,6 +386,16 @@ Used for operations:
 - Redacted.
 - Severity-based.
 
+#### Structured logging (canonical)
+
+Locked by APP0-B05 (`apps/api/src/platform/logging/`); evidence in [`../implementation/reports/APP0-B05-COMPLETION-REPORT.md`](../implementation/reports/APP0-B05-COMPLETION-REPORT.md).
+
+- Logging is repository-owned and **API-local**: one line of JSON per record, on a fixed platform schema (`schemaVersion`, `timestamp`, `level`, `service`, `event`, `message`, plus request/actor correlation and optional `context`/`http`/`error`/`attributes`). Levels are `debug`/`info`/`warn`/`error`. No third-party logging framework and no remote/file transport; the sink is newline-delimited JSON on stdout/stderr.
+- The event taxonomy is platform-only (`application.log`, `http.request.completed`, `platform.error`). Business/audit event names are never emitted from the platform logger.
+- Correlation is read from the B02 request context and the B04 actor at emit time; the reserved fields (`timestamp`, `level`, `service`, `requestId`, `actor`, `schemaVersion`) cannot be overridden by a caller — caller data lives only under `attributes`, after redaction.
+- **Redaction runs before serialization**: a sensitive-key denylist plus conservative value patterns (bearer tokens, credential URLs, JWTs, PEM blocks, inline secret assignments), with bounded depth/size and circular/throwing-value safety. The query string, request/response body and raw headers/cookies are never logged; a route template is preferred over a concrete path. Stack traces are gated by `LOG_STACK_ENABLED` and default off in production.
+- A structured **log is not an audit event** (contrast the audit context above): it persists nothing and satisfies no business audit requirement. The shared `@embroidery/observability` package stays empty until it is made runtime-loadable (IMP-D018); until then the runtime lives in the API.
+
 ### Audit logs
 
 Used for business traceability:

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
+import { LoggingModule } from '../logging/logging.module';
 import { ApiExceptionFilter } from './api-exception.filter';
 import { ApiResponseInterceptor } from './api-response.interceptor';
 import { ResponseClock } from './response-clock';
@@ -19,6 +20,7 @@ import { ResponseClock } from './response-clock';
  * request ID is always established by the time an envelope is built.
  */
 @Module({
+  imports: [LoggingModule],
   providers: [
     ResponseClock,
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },
