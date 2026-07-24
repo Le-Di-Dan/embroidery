@@ -1,10 +1,12 @@
 # APP1 — Staff Access and Application Shells
 
 > **Status:** `READY_FOR_ENGINEERING`, **not started**. Pre-implementation audit
-> complete (`../audits/APP1_PRE_IMPLEMENTATION_AUDIT.md`). Only the first
-> checkpoint (`APP1-DEC-AUTH`) is `READY`; all others are `NOT_STARTED` and
-> unlock in the order of §7. Phase status is owned by
-> `../10-MASTER-APPLICATION-ROADMAP.md` §6.
+> complete (`../audits/APP1_PRE_IMPLEMENTATION_AUDIT.md`); `APP1-DEC-AUTH` is
+> **COMPLETE** (IMP-D027, ADR-APP1-001 — report
+> `../reports/APP1-DEC-AUTH-COMPLETION-REPORT.md`). The next checkpoints —
+> `APP1-B01` (backend) and `APP1-D01` (design, independent) — are `READY`,
+> `NOT_STARTED`; all others are `NOT_STARTED` and unlock in the order of §7.
+> Phase status is owned by `../10-MASTER-APPLICATION-ROADMAP.md` §6.
 
 ## 1. Outcome
 
@@ -17,8 +19,10 @@ the closure owner for milestone **R0** (`../09-RELEASE-AND-MILESTONE-POLICY.md`)
 ## 2. Dependencies
 
 - APP0 `COMPLETE` (`../reports/APP0-X01-COMPLETION-REPORT.md`).
-- **IMP-O001 / DEC-29 (auth-provider mechanism) must be resolved by ADR before
-  any backend authentication code** — resolved by `APP1-DEC-AUTH` (§7).
+- **IMP-O001 / DEC-29 (auth mechanism) — RESOLVED** by `APP1-DEC-AUTH` (IMP-D027,
+  `../../adr/backend/ADR-APP1-001-STAFF-AUTHENTICATION-AND-SESSIONS.md`): built-in
+  `crypto.scrypt`, server-side revocable opaque sessions, host-only `Strict`
+  cookie, layered CSRF, in-process rate limiting, out-of-band bootstrap CLI.
 - Identity persistence already exists (DB7): `admin_accounts` (TBL-001),
   `admin_credentials` (TBL-002), `admin_sessions` (TBL-003), `audit_events`
   (TBL-072); repositories are wired in `apps/api/src/modules/identity`. **No
@@ -60,8 +64,8 @@ complete and supplements only the global error/loading/not-found conventions.
   navigation items (added by their owning phases).
 - MFA/OTP delivery (provider is DEC-29/APP4-era; MFA is *recommended*, not
   required — `../../09-SECURITY-AND-ABUSE-PREVENTION.md` §3).
-- Password-reset/recovery flow unless `APP1-DEC-AUTH` explicitly rules it in;
-  otherwise deliberately deferred with the bootstrap/recovery procedure recorded.
+- Self-service email/OTP password reset. `APP1-DEC-AUTH` includes **operator
+  credential rotation via the bootstrap CLI recovery mode** only; no reset flow.
 
 ## 6. Database and migration position
 
@@ -70,11 +74,14 @@ complete and supplements only the global error/loading/not-found conventions.
 the domain repositories already expose every method the auth use cases need
 (`create`/`findByEmail`/`attachCredential`/`changeStatus`; session
 `issue`/`revoke`/`revokeAllForAdmin`/`findActiveByTokenHash`). `credential_kind`
-is intentionally CHECK-free until `APP1-DEC-AUTH` (DB4 COL-TBL002-02). The single
-condition that could introduce a schema gap is a **persistent brute-force/lockout
-counter**; the default is gateway/application-layer rate limiting (no schema). A
-DB checkpoint is created **only if** `APP1-DEC-AUTH` chooses persistent counters —
-never hidden inside a backend checkpoint (IMP-D013, `../08-DATABASE-CHANGE-CONTROL.md`).
+is intentionally CHECK-free and now carries the value `password_scrypt` (IMP-D027;
+still no CHECK — kept provider-abstract). `APP1-DEC-AUTH` confirmed
+**`NO_MIGRATION_REQUIRED`**: rate limiting is **in-process/transient** (no counter
+table), there is **no persistent account-lockout**, and sliding renewal reuses the
+existing `expires_at`/`updated_at` columns via one new **repository method**
+(`extendExpiry` — code, not schema). No DB checkpoint exists in APP1; any future
+counter/lockout persistence would be a separate forward-only DB checkpoint
+(IMP-D013, `../08-DATABASE-CHANGE-CONTROL.md`), never hidden in a backend checkpoint.
 
 ## 7. Checkpoint map
 
@@ -84,20 +91,25 @@ after each. Backend checkpoints never exceed five tightly related endpoints
 
 | ID | Type | Scope (summary) | Predecessors |
 |---|---|---|---|
-| **APP1-DEC-AUTH** | decision | Resolve IMP-O001/DEC-29 by ADR: credential hashing algorithm, session-token strategy (opaque hashed + revocable — constrained by `admin_sessions.token_hash`; not stateless-JWT-only), cookie security (httpOnly/Secure/SameSite), CSRF strategy, brute-force/rate-limit approach (**decides whether a DB checkpoint is needed**), first-admin bootstrap, and password-reset in/out. | APP0 |
+| **APP1-DEC-AUTH** | decision | **COMPLETE** — resolved IMP-O001/DEC-29: built-in `crypto.scrypt` hashing, server-side revocable opaque sessions (`admin_sessions.token_hash`), host-only `Strict` cookie, layered CSRF (Origin + JSON-only), in-process rate limiting, out-of-band bootstrap CLI; migration verdict `NO_MIGRATION_REQUIRED`. IMP-D027, `../../adr/backend/ADR-APP1-001-STAFF-AUTHENTICATION-AND-SESSIONS.md`. | APP0 |
 | **APP1-D01** | design | One phase-level design package: Admin login (all states), Admin authenticated shell (header/nav/account menu/forbidden/session-expired), Storefront root-shell reuse map + global error/loading/not-found. Resolves FU-A19; decides FU-A20. Design **PASS** required. | APP0 |
-| **APP1-B01** | backend | **Staff authentication** — `login` + `logout` (2 endpoints). Credential verification via the chosen provider, session issue (token hash), login-success/failure/logout audit events, timing-safe/enumeration-safe errors, `bindActor()` seam, T01 integration tests, OpenAPI + client regeneration. Resolves FU-A03; first check of FU-A08. | APP1-DEC-AUTH |
-| **APP1-B02** | backend | **Session lifecycle + current-staff** — `refresh/renew` + `current-staff` (≤3 endpoints) plus the authenticated-admin guard, revocation, and expiry-on-read; negative (401/forbidden) tests; OpenAPI + client regeneration. Re-check FU-A08. | APP1-B01 |
+| **APP1-B01** | backend | **Staff session open/close + auth primitives** — password (scrypt) + session services, authenticated-admin **guard/session-resolution**, one `extendExpiry` repo method, and the out-of-band `staff:bootstrap` CLI; endpoints `POST /api/staff/session` (login) + `DELETE /api/staff/session` (logout) = **2 endpoints**. Login-success/failure(SYSTEM)/logout audit, timing-/enumeration-safe errors, in-process rate limit, `bindActor()`. T01 integration + security tests; OpenAPI + client regeneration. Resolves FU-A03; first check of FU-A08. | APP1-DEC-AUTH |
+| **APP1-B02** | backend | **Current-staff** — `GET /api/staff/me` = **1 endpoint**, consuming the B01 guard; sliding-renewal and negative (401 unauth / expired / revoked / disabled) tests; **no explicit renew endpoint** (sliding renewal lives in the guard). OpenAPI + client regeneration. Re-check FU-A08. | APP1-B01 |
 | **APP1-A01** | frontend | **Admin login screen** — one screen; idle/pending/invalid-credential/locked/disabled/recoverable-error states; RTL component tests. Resolves FU-A14 (accessibility scan on the first interactive screen). | APP1-B01, APP1-D01 |
 | **APP1-A02** | frontend | **Admin application shell** — layout, navigation, account menu, current-user display, route protection, access-denied route, session-expiry handling, logout, responsive behavior; component tests. | APP1-B02, APP1-D01 |
 | **APP1-S01** | frontend | **Storefront application shell** — root layout, header/footer, metadata foundation, global error/loading/not-found, SCSS/token integration. Public; no auth. May land FU-A20 (stylelint hook). | APP1-D01 |
 | **APP1-E01** | integration/E2E | **Access E2E** through the real gateway on a disposable DB (T01/T02B): valid login, invalid login, session expiry/renewal, logout, protected-route denial, and audit-actor propagation; deterministic staff fixture, no committed token. | APP1-A02, APP1-S01 |
 | **APP1-X01** | closure | Phase closure audit (security/contract/UI/logs), R0 evaluation, and APP2 handoff. | APP1-E01 |
 
-Ordering: `DEC-AUTH → D01 → B01 → B02 → A01 → A02 → S01 → E01 → X01`. `APP1-D01`
-has no engineering predecessor and may begin its design cycle in parallel, but is
-left `NOT_STARTED` so a single checkpoint is `READY` at a time. Admin leads
-Storefront by one capability (IMP-D007): `S01` follows the Admin shell.
+Ordering: `DEC-AUTH ✓ → {B01, D01} → B02 → A01 → A02 → S01 → E01 → X01`. With
+`DEC-AUTH` complete, `APP1-B01` (backend) and `APP1-D01` (design, no engineering
+predecessor) are **independently `READY`** and may proceed in parallel under
+phase-level design governance (IMP-D003); neither starts implementation until
+human review. Admin leads Storefront by one capability (IMP-D007): `S01` follows
+the Admin shell. `APP1-E01` seeds a deterministic staff fixture through the
+`staff:bootstrap` CLI against the disposable T01/DB7 database and authenticates via
+the login endpoint to obtain Playwright `storageState`; no token/account is
+committed.
 
 ## 8. APP0 follow-up routing
 

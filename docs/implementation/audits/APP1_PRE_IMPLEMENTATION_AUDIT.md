@@ -110,13 +110,16 @@ unless `APP1-DEC-AUTH` selects persistent lockout counters.
 
 ## 8. API audit (minimum set)
 
-Two backend checkpoints, ≤3 endpoints each (IMP-D004): **`APP1-B01`** =
-`POST login`, `POST logout`; **`APP1-B02`** = `POST refresh/renew`,
-`GET current-staff` (+ the authenticated-admin guard). All use the standard
-envelope, timing-safe errors, `<domainKey>_<methodKey>` operation ids, drive the
-existing repositories, emit audit events, carry T01 integration tests, and force
-OpenAPI + generated-client regeneration. No speculative endpoints; no role/permission
-endpoints (REQ-IDN-001).
+Two backend checkpoints, ≤3 endpoints each (IMP-D004). **Superseded by
+`APP1-DEC-AUTH` (§2 sequencing fix): the guard must exist before logout, so the
+guard/session-resolution moves into `APP1-B01`.** Corrected split (canonical in
+the phase plan §7): **`APP1-B01`** = guard + `POST /api/staff/session` (login) +
+`DELETE /api/staff/session` (logout) = 2 endpoints; **`APP1-B02`** =
+`GET /api/staff/me` (current-staff) = 1 endpoint, no explicit renew (sliding
+renewal in the guard). All use the standard envelope, timing-safe errors,
+`<domainKey>_<methodKey>` operation ids, drive the existing repositories, emit
+audit events, carry T01 integration tests, and force OpenAPI + generated-client
+regeneration. No speculative endpoints; no role/permission endpoints (REQ-IDN-001).
 
 ## 9. Frontend and shell audit
 

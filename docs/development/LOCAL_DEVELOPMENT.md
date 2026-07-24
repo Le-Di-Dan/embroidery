@@ -223,16 +223,18 @@ pnpm clean                 # remove build outputs and caches
 Open decisions (authoritative list:
 `docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md` §2); do not install
 these without an ADR: queue/broker (owner APP2), UI component library, form
-library, auth/OTP provider, payment SDK, concrete object storage, observability
-vendor, image-processing engine, production Gateway API controller (no
-`ingress-nginx`).
+library, customer OTP/notification provider (APP4, IMP-O006), payment SDK,
+concrete object storage, observability vendor, image-processing engine, production
+Gateway API controller (no `ingress-nginx`).
 
 Already locked — installed or deliberately *not* needed, do not re-open without
 an ADR: ORM/migrations (Drizzle, DB0–DB10), unit/integration runner (Jest,
 IMP-D016), generated client (Orval, IMP-D023), component tests (`next/jest` +
 jsdom + React Testing Library, IMP-D024), browser E2E (Playwright `1.61.1`,
-IMP-D025), and **2D rendering — native SVG rendered by React, with no rendering
-engine and no interaction library** (IMP-D026). Do not install `konva`,
+IMP-D025), **2D rendering — native SVG rendered by React, with no rendering
+engine and no interaction library** (IMP-D026), and **staff auth hashing — the
+Node built-in `crypto.scrypt`, no dependency** (IMP-D027; Argon2id via
+`@node-rs/argon2` is the reviewed no-migration upgrade, not installed). Do not install `konva`,
 `react-konva`, `fabric`, `pixi.js` or `interactjs` into any app or package: the
 copies under `spikes/` are research-only and `pnpm check:spike-boundaries`
 fails the build if they leak into a production manifest.
