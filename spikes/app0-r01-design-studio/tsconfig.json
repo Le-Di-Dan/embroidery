@@ -1,0 +1,19 @@
+{
+  "extends": "@embroidery/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "types": ["node", "jest"]
+  },
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    "eslint.config.mjs",
+    "jest.config.mjs",
+    "playwright.config.ts",
+    "src/**/*",
+    "bench/**/*",
+    "tests/**/*",
+    "scripts/**/*",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

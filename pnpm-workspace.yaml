@@ -1,6 +1,9 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+  # Research-only feasibility spikes (APP0-R01). Never a production dependency:
+  # no app, package, API or worker may depend on anything under `spikes/`.
+  - 'spikes/*'
 allowBuilds:
   unrs-resolver: true
   '@swc/core': true
@@ -10,3 +13,7 @@ allowBuilds:
   # Analytics postinstall pulled in transitively by @nestjs/swagger. Denied on
   # purpose: the build needs no telemetry and must stay offline-reproducible.
   '@scarf/scarf': false
+  # Optional native node-canvas backend pulled in by konva (APP0-R01 spike).
+  # Denied: the spike renders only in real browsers, never in Node, so the
+  # native build is pure install cost and a supply-chain surface we do not need.
+  canvas: false

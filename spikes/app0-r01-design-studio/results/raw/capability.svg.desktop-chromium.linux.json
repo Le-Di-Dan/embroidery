@@ -1,0 +1,56 @@
+{
+  "platform": "linux",
+  "engine": "svg",
+  "project": "desktop-chromium",
+  "capabilities": {
+    "multilineText": true,
+    "curvedText": true,
+    "rasterTransform": true,
+    "svgLoaded": true,
+    "svgRecolor": true,
+    "multiSelect": true,
+    "zOrder": true,
+    "groupUngroup": true,
+    "lockHide": true,
+    "viewportIndependentOfDocument": true,
+    "outOfAreaWarning": true,
+    "undoRedo": true
+  },
+  "watermark": {
+    "selectAllExcludesWatermark": true,
+    "deleteAllKeepsWatermark": true,
+    "serializationExcludesWatermark": true,
+    "reloadRecreatesWatermark": true,
+    "topmostAfterZoomPan": true,
+    "markerHasNoPii": true
+  },
+  "serialization": {
+    "hashAfterLoad": "sha256:d6be2ccb689b66cfe8cbae03ca7cf8340de38f73bc6cbf63fb7e7768272586e2",
+    "hashAfterReload": "sha256:d6be2ccb689b66cfe8cbae03ca7cf8340de38f73bc6cbf63fb7e7768272586e2",
+    "stableAcrossReload": true,
+    "semanticRoundTrip": true,
+    "hashAfterTransform": "sha256:8111deade16a9c93cc948a01ec82f079791251ec11f8a2097e558eb749ceb792",
+    "hashAfterTransformReload": "sha256:8111deade16a9c93cc948a01ec82f079791251ec11f8a2097e558eb749ceb792",
+    "stableAfterTransform": true,
+    "rejectsTransientFields": true,
+    "rejectsUnknownVersion": true,
+    "crossEngineSubsetHash": "sha256:d8a4f67d07c5e27aee2de8264ae4848405339e09114b10cfe6b6fcc7137b7d81",
+    "canonicalBytes": 5160,
+    "serialize": {
+      "samples": 20,
+      "p50": 0.1,
+      "p95": 0.2,
+      "max": 0.2,
+      "mean": 0.08
+    },
+    "deserialize": {
+      "samples": 20,
+      "p50": 0.1,
+      "p95": 0.2,
+      "max": 0.5,
+      "mean": 0.09
+    },
+    "hashSource": "pure-js"
+  },
+  "svgScriptExecuted": false
+}

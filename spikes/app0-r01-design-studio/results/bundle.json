@@ -1,0 +1,48 @@
+{
+  "bundler": "esbuild 0.28.1",
+  "minifier": "esbuild (same settings for every candidate)",
+  "external": ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "next", "next/*"],
+  "baseline": {
+    "rawBytes": 21718,
+    "minifiedBytes": 11812,
+    "gzipBytes": 5293
+  },
+  "candidates": {
+    "konva": {
+      "rawBytes": 1099884,
+      "minifiedBytes": 323343,
+      "gzipBytes": 99834,
+      "incrementalMinifiedBytes": 311531,
+      "incrementalGzipBytes": 94541,
+      "incrementalGzipKb": 92.3,
+      "engineGzipKb": 92.3
+    },
+    "konva-core": {
+      "rawBytes": 349691,
+      "minifiedBytes": 183625,
+      "gzipBytes": 55702,
+      "incrementalMinifiedBytes": 171813,
+      "incrementalGzipBytes": 50409,
+      "incrementalGzipKb": 49.2,
+      "engineGzipKb": 49.2
+    },
+    "fabric": {
+      "rawBytes": 442429,
+      "minifiedBytes": 307308,
+      "gzipBytes": 97406,
+      "incrementalMinifiedBytes": 295496,
+      "incrementalGzipBytes": 92113,
+      "incrementalGzipKb": 90,
+      "engineGzipKb": 90
+    },
+    "svg": {
+      "rawBytes": 15465,
+      "minifiedBytes": 7853,
+      "gzipBytes": 3069,
+      "incrementalMinifiedBytes": -3959,
+      "incrementalGzipBytes": -2224,
+      "incrementalGzipKb": -2.2,
+      "engineGzipKb": 0
+    }
+  }
+}

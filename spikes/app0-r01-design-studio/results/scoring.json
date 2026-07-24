@@ -1,0 +1,176 @@
+{
+  "weights": {
+    "capability": 25,
+    "architecture": 20,
+    "react": 15,
+    "mobile": 15,
+    "performance": 15,
+    "accessibility": 5,
+    "supplyChain": 5
+  },
+  "budgets": {
+    "transformP95DesktopMs": 20,
+    "transformP95MobileMs": 33,
+    "longTaskMs": 100,
+    "sceneLoadDesktopMs": 500,
+    "sceneLoadMobileMs": 1000,
+    "serializeLMs": 100,
+    "deserializeLMs": 300,
+    "incrementalGzipKb": 200
+  },
+  "candidates": {
+    "konva": {
+      "breakdown": {
+        "capability": {
+          "weight": 25,
+          "points": 20
+        },
+        "architecture": {
+          "weight": 20,
+          "points": 17
+        },
+        "react": {
+          "weight": 15,
+          "points": 11
+        },
+        "mobile": {
+          "weight": 15,
+          "points": 10.1
+        },
+        "performance": {
+          "weight": 15,
+          "points": 10.1
+        },
+        "accessibility": {
+          "weight": 5,
+          "points": 2
+        },
+        "supplyChain": {
+          "weight": 5,
+          "points": 4
+        }
+      },
+      "total": 74.2,
+      "budgetVerdict": {
+        "transformDesktop": true,
+        "transformMobile": false,
+        "longTask": true,
+        "sceneLoadDesktop": true,
+        "sceneLoadMobile": true,
+        "serializeL": true,
+        "deserializeL": true,
+        "bundle": true,
+        "noHeapGrowth": true
+      },
+      "hardGatePassed": false
+    },
+    "fabric": {
+      "breakdown": {
+        "capability": {
+          "weight": 25,
+          "points": 23
+        },
+        "architecture": {
+          "weight": 20,
+          "points": 15
+        },
+        "react": {
+          "weight": 15,
+          "points": 8
+        },
+        "mobile": {
+          "weight": 15,
+          "points": 5
+        },
+        "performance": {
+          "weight": 15,
+          "points": 4.1
+        },
+        "accessibility": {
+          "weight": 5,
+          "points": 2
+        },
+        "supplyChain": {
+          "weight": 5,
+          "points": 4
+        }
+      },
+      "total": 61.1,
+      "budgetVerdict": {
+        "transformDesktop": false,
+        "transformMobile": false,
+        "longTask": false,
+        "sceneLoadDesktop": true,
+        "sceneLoadMobile": true,
+        "serializeL": true,
+        "deserializeL": true,
+        "bundle": true,
+        "noHeapGrowth": true
+      },
+      "hardGatePassed": false
+    },
+    "svg": {
+      "breakdown": {
+        "capability": {
+          "weight": 25,
+          "points": 21
+        },
+        "architecture": {
+          "weight": 20,
+          "points": 20
+        },
+        "react": {
+          "weight": 15,
+          "points": 15
+        },
+        "mobile": {
+          "weight": 15,
+          "points": 15
+        },
+        "performance": {
+          "weight": 15,
+          "points": 15
+        },
+        "accessibility": {
+          "weight": 5,
+          "points": 5
+        },
+        "supplyChain": {
+          "weight": 5,
+          "points": 5
+        }
+      },
+      "total": 96,
+      "budgetVerdict": {
+        "transformDesktop": true,
+        "transformMobile": true,
+        "longTask": true,
+        "sceneLoadDesktop": true,
+        "sceneLoadMobile": true,
+        "serializeL": true,
+        "deserializeL": true,
+        "bundle": true,
+        "noHeapGrowth": true
+      },
+      "hardGatePassed": true
+    }
+  },
+  "ranking": [
+    {
+      "engine": "svg",
+      "total": 96,
+      "hardGatePassed": true
+    },
+    {
+      "engine": "konva",
+      "total": 74.2,
+      "hardGatePassed": false
+    },
+    {
+      "engine": "fabric",
+      "total": 61.1,
+      "hardGatePassed": false
+    }
+  ],
+  "selected": "svg"
+}

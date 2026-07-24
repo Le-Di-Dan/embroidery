@@ -1,0 +1,465 @@
+{
+  "engine": "svg",
+  "runs": [
+    {
+      "platform": "linux",
+      "project": "desktop-chromium",
+      "isMobile": false,
+      "firstUsableP95": {
+        "S": 33.4,
+        "M": 33.5,
+        "L": 33.4
+      },
+      "transformP95": {
+        "S": 16.8,
+        "M": 16.8,
+        "L": 16.8
+      },
+      "viewportP95M": 16.7,
+      "droppedFramesLDrag": 0,
+      "longTaskMaxMs": 0,
+      "selectionP95M": 33.4,
+      "undoRedoP95M": 33.3,
+      "nodes": {
+        "S": {
+          "nodeCount": 11,
+          "domNodeCount": 112
+        },
+        "M": {
+          "nodeCount": 51,
+          "domNodeCount": 225
+        },
+        "L": {
+          "nodeCount": 151,
+          "domNodeCount": 508
+        }
+      },
+      "canonicalSerializeLP95": 0.9,
+      "canonicalDeserializeLP95": 0.5,
+      "sparseWatermarkDragP95M": 16.7,
+      "leak": {
+        "cycles": 20,
+        "heapStartBytes": 11200000,
+        "heapEndBytes": 11200000,
+        "growthBytes": 0,
+        "monotonic": false,
+        "domNodesAfter": 0
+      }
+    },
+    {
+      "platform": "windows",
+      "project": "desktop-chromium",
+      "isMobile": false,
+      "firstUsableP95": {
+        "S": 34.4,
+        "M": 34.6,
+        "L": 34.4
+      },
+      "transformP95": {
+        "S": 16.8,
+        "M": 16.7,
+        "L": 16.7
+      },
+      "viewportP95M": 16.7,
+      "droppedFramesLDrag": 0,
+      "longTaskMaxMs": 0,
+      "selectionP95M": 34.7,
+      "undoRedoP95M": 34.1,
+      "nodes": {
+        "S": {
+          "nodeCount": 11,
+          "domNodeCount": 112
+        },
+        "M": {
+          "nodeCount": 51,
+          "domNodeCount": 225
+        },
+        "L": {
+          "nodeCount": 151,
+          "domNodeCount": 508
+        }
+      },
+      "canonicalSerializeLP95": 0.9,
+      "canonicalDeserializeLP95": 0.5,
+      "sparseWatermarkDragP95M": 16.7,
+      "leak": {
+        "cycles": 20,
+        "heapStartBytes": 12700000,
+        "heapEndBytes": 12700000,
+        "growthBytes": 0,
+        "monotonic": false,
+        "domNodesAfter": 0
+      }
+    },
+    {
+      "platform": "linux",
+      "project": "desktop-webkit",
+      "isMobile": false,
+      "firstUsableP95": {
+        "S": 33,
+        "M": 33,
+        "L": 33
+      },
+      "transformP95": {
+        "S": 17,
+        "M": 17,
+        "L": 17
+      },
+      "viewportP95M": 41,
+      "droppedFramesLDrag": 0,
+      "longTaskMaxMs": 0,
+      "selectionP95M": 33,
+      "undoRedoP95M": 33,
+      "nodes": {
+        "S": {
+          "nodeCount": 11,
+          "domNodeCount": 112
+        },
+        "M": {
+          "nodeCount": 51,
+          "domNodeCount": 225
+        },
+        "L": {
+          "nodeCount": 151,
+          "domNodeCount": 508
+        }
+      },
+      "canonicalSerializeLP95": 1,
+      "canonicalDeserializeLP95": 1,
+      "sparseWatermarkDragP95M": 17,
+      "leak": {
+        "cycles": 20,
+        "heapStartBytes": null,
+        "heapEndBytes": null,
+        "growthBytes": null,
+        "monotonic": null,
+        "domNodesAfter": 0
+      }
+    },
+    {
+      "platform": "linux",
+      "project": "mobile-chromium",
+      "isMobile": true,
+      "firstUsableP95": {
+        "S": 33.4,
+        "M": 33.5,
+        "L": 33.4
+      },
+      "transformP95": {
+        "S": 16.8,
+        "M": 16.7,
+        "L": 16.7
+      },
+      "viewportP95M": 16.8,
+      "droppedFramesLDrag": 0,
+      "longTaskMaxMs": 0,
+      "selectionP95M": 33.8,
+      "undoRedoP95M": 33.7,
+      "nodes": {
+        "S": {
+          "nodeCount": 11,
+          "domNodeCount": 112
+        },
+        "M": {
+          "nodeCount": 51,
+          "domNodeCount": 225
+        },
+        "L": {
+          "nodeCount": 151,
+          "domNodeCount": 508
+        }
+      },
+      "canonicalSerializeLP95": 1.1,
+      "canonicalDeserializeLP95": 0.6,
+      "sparseWatermarkDragP95M": 16.8,
+      "leak": {
+        "cycles": 20,
+        "heapStartBytes": 11200000,
+        "heapEndBytes": 11200000,
+        "growthBytes": 0,
+        "monotonic": false,
+        "domNodesAfter": 0
+      }
+    },
+    {
+      "platform": "windows",
+      "project": "mobile-chromium",
+      "isMobile": true,
+      "firstUsableP95": {
+        "S": 34,
+        "M": 34.5,
+        "L": 33.8
+      },
+      "transformP95": {
+        "S": 16.8,
+        "M": 16.8,
+        "L": 16.8
+      },
+      "viewportP95M": 16.7,
+      "droppedFramesLDrag": 0,
+      "longTaskMaxMs": 0,
+      "selectionP95M": 34.3,
+      "undoRedoP95M": 33.6,
+      "nodes": {
+        "S": {
+          "nodeCount": 11,
+          "domNodeCount": 112
+        },
+        "M": {
+          "nodeCount": 51,
+          "domNodeCount": 225
+        },
+        "L": {
+          "nodeCount": 151,
+          "domNodeCount": 508
+        }
+      },
+      "canonicalSerializeLP95": 0.9,
+      "canonicalDeserializeLP95": 0.4,
+      "sparseWatermarkDragP95M": 16.8,
+      "leak": {
+        "cycles": 20,
+        "heapStartBytes": 10000000,
+        "heapEndBytes": 10000000,
+        "growthBytes": 0,
+        "monotonic": false,
+        "domNodesAfter": 0
+      }
+    }
+  ],
+  "gates": {
+    "transformDesktopM": 17,
+    "transformMobileM": 16.8,
+    "longTaskMax": 0,
+    "sceneLoadDesktopM": 34.6,
+    "sceneLoadMobileM": 34.5,
+    "serializeL": 1.1,
+    "deserializeL": 1,
+    "incrementalGzipKb": 0,
+    "heapMonotonic": false
+  },
+  "budgetVerdict": {
+    "transformDesktop": true,
+    "transformMobile": true,
+    "longTask": true,
+    "sceneLoadDesktop": true,
+    "sceneLoadMobile": true,
+    "serializeL": true,
+    "deserializeL": true,
+    "bundle": true,
+    "noHeapGrowth": true
+  },
+  "capabilities": [
+    {
+      "platform": "linux",
+      "project": "desktop-chromium",
+      "capabilities": {
+        "multilineText": true,
+        "curvedText": true,
+        "rasterTransform": true,
+        "svgLoaded": true,
+        "svgRecolor": true,
+        "multiSelect": true,
+        "zOrder": true,
+        "groupUngroup": true,
+        "lockHide": true,
+        "viewportIndependentOfDocument": true,
+        "outOfAreaWarning": true,
+        "undoRedo": true
+      },
+      "watermark": {
+        "selectAllExcludesWatermark": true,
+        "deleteAllKeepsWatermark": true,
+        "serializationExcludesWatermark": true,
+        "reloadRecreatesWatermark": true,
+        "topmostAfterZoomPan": true,
+        "markerHasNoPii": true
+      },
+      "hashAfterLoad": "sha256:d6be2ccb689b66cfe8cbae03ca7cf8340de38f73bc6cbf63fb7e7768272586e2",
+      "crossEngineSubsetHash": "sha256:d8a4f67d07c5e27aee2de8264ae4848405339e09114b10cfe6b6fcc7137b7d81",
+      "hashSource": "pure-js",
+      "svgScriptExecuted": false
+    },
+    {
+      "platform": "windows",
+      "project": "desktop-chromium",
+      "capabilities": {
+        "multilineText": true,
+        "curvedText": true,
+        "rasterTransform": true,
+        "svgLoaded": true,
+        "svgRecolor": true,
+        "multiSelect": true,
+        "zOrder": true,
+        "groupUngroup": true,
+        "lockHide": true,
+        "viewportIndependentOfDocument": true,
+        "outOfAreaWarning": true,
+        "undoRedo": true
+      },
+      "watermark": {
+        "selectAllExcludesWatermark": true,
+        "deleteAllKeepsWatermark": true,
+        "serializationExcludesWatermark": true,
+        "reloadRecreatesWatermark": true,
+        "topmostAfterZoomPan": true,
+        "markerHasNoPii": true
+      },
+      "hashAfterLoad": "sha256:d6be2ccb689b66cfe8cbae03ca7cf8340de38f73bc6cbf63fb7e7768272586e2",
+      "crossEngineSubsetHash": "sha256:d8a4f67d07c5e27aee2de8264ae4848405339e09114b10cfe6b6fcc7137b7d81",
+      "hashSource": "web-crypto",
+      "svgScriptExecuted": false
+    },
+    {
+      "platform": "linux",
+      "project": "desktop-webkit",
+      "capabilities": {
+        "multilineText": true,
+        "curvedText": true,
+        "rasterTransform": true,
+        "svgLoaded": true,
+        "svgRecolor": true,
+        "multiSelect": true,
+        "zOrder": true,
+        "groupUngroup": true,
+        "lockHide": true,
+        "viewportIndependentOfDocument": true,
+        "outOfAreaWarning": true,
+        "undoRedo": true
+      },
+      "watermark": {
+        "selectAllExcludesWatermark": true,
+        "deleteAllKeepsWatermark": true,
+        "serializationExcludesWatermark": true,
+        "reloadRecreatesWatermark": true,
+        "topmostAfterZoomPan": true,
+        "markerHasNoPii": true
+      },
+      "hashAfterLoad": "sha256:d6be2ccb689b66cfe8cbae03ca7cf8340de38f73bc6cbf63fb7e7768272586e2",
+      "crossEngineSubsetHash": "sha256:d8a4f67d07c5e27aee2de8264ae4848405339e09114b10cfe6b6fcc7137b7d81",
+      "hashSource": "pure-js",
+      "svgScriptExecuted": false
+    },
+    {
+      "platform": "linux",
+      "project": "mobile-chromium",
+      "capabilities": {
+        "multilineText": true,
+        "curvedText": true,
+        "rasterTransform": true,
+        "svgLoaded": true,
+        "svgRecolor": true,
+        "multiSelect": true,
+        "zOrder": true,
+        "groupUngroup": true,
+        "lockHide": true,
+        "viewportIndependentOfDocument": true,
+        "outOfAreaWarning": true,
+        "undoRedo": true
+      },
+      "watermark": {
+        "selectAllExcludesWatermark": true,
+        "deleteAllKeepsWatermark": true,
+        "serializationExcludesWatermark": true,
+        "reloadRecreatesWatermark": true,
+        "topmostAfterZoomPan": true,
+        "markerHasNoPii": true
+      },
+      "hashAfterLoad": "sha256:d6be2ccb689b66cfe8cbae03ca7cf8340de38f73bc6cbf63fb7e7768272586e2",
+      "crossEngineSubsetHash": "sha256:d8a4f67d07c5e27aee2de8264ae4848405339e09114b10cfe6b6fcc7137b7d81",
+      "hashSource": "pure-js",
+      "svgScriptExecuted": false
+    },
+    {
+      "platform": "windows",
+      "project": "mobile-chromium",
+      "capabilities": {
+        "multilineText": true,
+        "curvedText": true,
+        "rasterTransform": true,
+        "svgLoaded": true,
+        "svgRecolor": true,
+        "multiSelect": true,
+        "zOrder": true,
+        "groupUngroup": true,
+        "lockHide": true,
+        "viewportIndependentOfDocument": true,
+        "outOfAreaWarning": true,
+        "undoRedo": true
+      },
+      "watermark": {
+        "selectAllExcludesWatermark": true,
+        "deleteAllKeepsWatermark": true,
+        "serializationExcludesWatermark": true,
+        "reloadRecreatesWatermark": true,
+        "topmostAfterZoomPan": true,
+        "markerHasNoPii": true
+      },
+      "hashAfterLoad": "sha256:d6be2ccb689b66cfe8cbae03ca7cf8340de38f73bc6cbf63fb7e7768272586e2",
+      "crossEngineSubsetHash": "sha256:d8a4f67d07c5e27aee2de8264ae4848405339e09114b10cfe6b6fcc7137b7d81",
+      "hashSource": "web-crypto",
+      "svgScriptExecuted": false
+    }
+  ],
+  "mobile": [
+    {
+      "platform": "linux",
+      "engine": "svg",
+      "project": "mobile-chromium",
+      "cdpAvailable": true,
+      "tapLogged": true,
+      "touchActionNone": true,
+      "handleCount": 2,
+      "minHandleSizePx": 44,
+      "targetMinPx": 44,
+      "tapSelectedId": "s-image-0",
+      "dragMovedPx": 32,
+      "stateAfterDrag": {
+        "mode": "idle",
+        "selection": ["s-image-0"],
+        "handleCount": 2,
+        "activePointers": 0
+      },
+      "resizeLogged": true,
+      "rotateLogged": true,
+      "zoomAfterPinch": 3,
+      "panChanged": true,
+      "modeAfterCancel": "idle",
+      "pointersAfterCancel": 0
+    },
+    {
+      "platform": "windows",
+      "engine": "svg",
+      "project": "mobile-chromium",
+      "cdpAvailable": true,
+      "tapLogged": true,
+      "touchActionNone": true,
+      "handleCount": 2,
+      "minHandleSizePx": 44,
+      "targetMinPx": 44,
+      "tapSelectedId": "s-image-0",
+      "dragMovedPx": 32,
+      "stateAfterDrag": {
+        "mode": "idle",
+        "selection": ["s-image-0"],
+        "handleCount": 2,
+        "activePointers": 0
+      },
+      "resizeLogged": true,
+      "rotateLogged": true,
+      "zoomAfterPinch": 3,
+      "panChanged": true,
+      "modeAfterCancel": "idle",
+      "pointersAfterCancel": 0
+    }
+  ],
+  "bundle": {
+    "rawBytes": 15465,
+    "minifiedBytes": 7853,
+    "gzipBytes": 3069,
+    "incrementalMinifiedBytes": -3959,
+    "incrementalGzipBytes": -2224,
+    "incrementalGzipKb": -2.2,
+    "engineGzipKb": 0
+  }
+}

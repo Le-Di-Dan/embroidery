@@ -19,7 +19,7 @@ export const LIMITS = {
   testReview: 500,
 };
 
-const SCANNED_DIRECTORIES = ['apps', 'packages', 'tools'];
+const SCANNED_DIRECTORIES = ['apps', 'packages', 'tools', 'spikes'];
 const SCANNED_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
 
 const EXCLUDED_DIRECTORIES = new Set([

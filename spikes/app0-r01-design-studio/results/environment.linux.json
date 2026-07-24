@@ -1,0 +1,21 @@
+{
+  "capturedAt": "2026-07-24T13:25:19.323Z",
+  "runner": "container mcr.microsoft.com/playwright:v1.61.1-noble",
+  "projects": ["desktop-chromium", "mobile-chromium", "desktop-webkit"],
+  "hostOs": "Windows_NT 10.0.26100",
+  "hostPlatform": "win32",
+  "hostArch": "x64",
+  "hostNodeVersion": "v22.14.0",
+  "cpuModel": "12th Gen Intel(R) Core(TM) i7-12700K",
+  "cpuCores": 20,
+  "totalMemoryGb": 31.7,
+  "headless": true,
+  "cpuThrottling": "none",
+  "networkThrottling": "none",
+  "powerMode": "unspecified (developer workstation defaults, mains power)",
+  "guestOs": "linux — mcr.microsoft.com/playwright:v1.61.1-noble",
+  "guestImageDigest": "mcr.microsoft.com/playwright@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48",
+  "guestNodeVersion": "Node 24 (image default; printed by `node -v` in the run log)",
+  "playwrightPackage": "Version 1.61.1 (host pin; installed separately inside the image)",
+  "browserSource": "browsers baked into the pinned image at /ms-playwright"
+}

@@ -95,6 +95,24 @@ Browser E2E runs on the stack locked by `APP0-DEC-E2E` (IMP-D025): **Playwright 
 
 The full APP0-T02B handoff and spike evidence are in `reports/APP0-DEC-E2E-COMPLETION-REPORT.md`.
 
+### 5.2 Research benchmark tier (spikes)
+
+Feasibility spikes under `spikes/*` may run their own browser tier for
+measurement. It is a **research** tier, not a product gate:
+
+- it reuses the locked Playwright version and the pinned
+  `mcr.microsoft.com/playwright:v1.61.1-noble` image, so the repository has one
+  browser toolchain;
+- it never joins `pnpm quality` or `quality:e2e` — only the spike's static
+  isolation gate (`pnpm check:spike-boundaries`) runs in `quality`;
+- its orchestrator owns every process it starts and tears down in `finally`;
+- results are committed as small JSON evidence with no machine path, secret or
+  external URL, and every number is reported with its environment.
+
+APP0-R01 (`pnpm spike:editor:benchmark`, `pnpm spike:editor:benchmark:linux`) is
+the reference implementation, and its S/M/L scenes are the Design Studio
+performance-regression scenes handed to APP3 (IMP-D026).
+
 ## 6. Design acceptance
 
 Design packages use visual/system review rather than coding checkpoints. See `03-DESIGN-DELIVERY-POLICY.md`.

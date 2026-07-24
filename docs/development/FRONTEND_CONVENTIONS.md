@@ -218,7 +218,20 @@ The concrete form library remains subject to technical selection unless already 
 
 ## 12. Design Studio conventions
 
+The renderer and rendering architecture are locked by IMP-D026 /
+[`../adr/frontend/ADR-APP0-001-2D-RENDERING-ARCHITECTURE.md`](../adr/frontend/ADR-APP0-001-2D-RENDERING-ARCHITECTURE.md):
+**native SVG rendered by React**, with **no rendering-engine and no interaction
+library**, reached only through a narrow **renderer-adapter** boundary. Do not
+introduce Konva, Fabric, PixiJS or an interaction library without a new ADR.
+
 - Keep the design-document model framework-independent.
+- Rendering is reached through the renderer adapter; feature code does not touch
+  scene nodes directly.
+- Transform handles are DOM elements outside the element box, at least 44 px, and
+  focusable — never scene nodes scaled by the viewport.
+- Never persist or transport engine-native serialization.
+- Browser code must not depend on `crypto.subtle`; it is secure-context only, so
+  canonical hashing stays server-side.
 - Canvas rendering code must not become the source of truth for the scene.
 - Geometry and transformations live outside React components.
 - Commands should be deterministic and testable.

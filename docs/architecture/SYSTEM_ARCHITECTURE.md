@@ -7,7 +7,7 @@
 
 This document defines the target logical architecture and the mandatory boundaries of the Embroidery Commerce Platform.
 
-It intentionally does not lock technologies that still require an ADR, including the ORM, asynchronous-job implementation, canvas library, authentication provider, Kubernetes distribution, and concrete S3-compatible object-storage product.
+It intentionally does not lock technologies that still require an ADR, including the asynchronous-job implementation, authentication provider, Kubernetes distribution, and concrete S3-compatible object-storage product. (The ORM is locked by ADR-DB1-002; the Design Studio rendering engine and rendering architecture are locked by [ADR-APP0-001](../adr/frontend/ADR-APP0-001-2D-RENDERING-ARCHITECTURE.md) / IMP-D026.)
 
 ## 2. Architectural drivers
 
@@ -501,7 +501,7 @@ A new ADR is required before locking or changing:
 - ORM.
 - API transport and contract-generation strategy.
 - Queue/broker.
-- Canvas/rendering library.
+- Canvas/rendering library — **locked** by [ADR-APP0-001](../adr/frontend/ADR-APP0-001-2D-RENDERING-ARCHITECTURE.md): native SVG rendered by React behind an engine-neutral document and a renderer-adapter boundary. A new ADR is required to introduce any rendering or interaction library.
 - Authentication or OTP provider.
 - Payment provider implementation.
 - Object-storage product.

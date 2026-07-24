@@ -1,0 +1,20 @@
+{
+  "capturedAt": "2026-07-24T13:19:57.655Z",
+  "runner": "host",
+  "projects": ["desktop-chromium", "mobile-chromium"],
+  "hostOs": "Windows_NT 10.0.26100",
+  "hostPlatform": "win32",
+  "hostArch": "x64",
+  "hostNodeVersion": "v22.14.0",
+  "cpuModel": "12th Gen Intel(R) Core(TM) i7-12700K",
+  "cpuCores": 20,
+  "totalMemoryGb": 31.7,
+  "headless": true,
+  "cpuThrottling": "none",
+  "networkThrottling": "none",
+  "powerMode": "unspecified (developer workstation defaults, mains power)",
+  "guestOs": "win32 (same machine as host)",
+  "guestNodeVersion": "v22.14.0",
+  "playwrightPackage": "Version 1.61.1",
+  "browserSource": "host browser cache installed by @playwright/test"
+}

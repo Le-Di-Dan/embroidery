@@ -1,0 +1,25 @@
+{
+  "platform": "windows",
+  "engine": "konva",
+  "project": "mobile-chromium",
+  "cdpAvailable": true,
+  "tapLogged": true,
+  "touchActionNone": true,
+  "handleCount": 2,
+  "minHandleSizePx": 44,
+  "targetMinPx": 44,
+  "tapSelectedId": "s-image-0",
+  "dragMovedPx": 32,
+  "stateAfterDrag": {
+    "mode": "idle",
+    "selection": ["s-image-0"],
+    "handleCount": 2,
+    "activePointers": 0
+  },
+  "resizeLogged": true,
+  "rotateLogged": true,
+  "zoomAfterPinch": 3,
+  "panChanged": true,
+  "modeAfterCancel": "idle",
+  "pointersAfterCancel": 0
+}

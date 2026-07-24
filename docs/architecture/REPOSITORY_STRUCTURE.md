@@ -14,6 +14,7 @@ The structure is:
 - Product and technical documentation under `docs/`.
 - Deployment and operations assets under `infrastructure/`.
 - Repository-only tooling under `tools/`.
+- Research-only feasibility spikes under `spikes/` (never a production dependency).
 
 ## 2. Top-level structure
 
@@ -49,6 +50,7 @@ embroidery-commerce/
 │   ├── monitoring/
 │   ├── backup/
 │   └── scripts/
+├── spikes/
 ├── tools/
 ├── CLAUDE.md
 ├── package.json
@@ -337,9 +339,14 @@ Codegen tool and generated-vs-handwritten boundary are locked (IMP-D023); the re
 
 Framework-independent design-document types, validation, serialization, and migrations.
 
+Canonical serialization and hashing are locked by ADR-DB1-012; the renderer is a
+consumer of this package and never a second source of truth (IMP-D026).
+
 ### `packages/design-engine`
 
-Framework-independent geometry and transformation logic.
+Framework-independent geometry and transformation logic, including the
+document-pixel ↔ product-image-pixel ↔ physical-millimetre conversions the Studio
+must not re-implement per feature (IMP-D026).
 
 ### `packages/domain-types`
 
@@ -401,6 +408,27 @@ Current transitional state (documentation-only observations from APP0-C01; no co
 - Branded cross-module ID types (`SkuId`, `ProductVariantId`) are currently exported from `catalog/domain/repositories/placement-hierarchy.port`; `DB2_PACKAGE_MODULE_MAPPING §2` anticipates such primitives living in `packages/domain-types`. Reconciling their home is a future backend refinement, not an APP0-C01 code change.
 
 The canonical logical ownership map (contexts → modules → aggregate/repository/API/worker ownership, dependency direction, no-cycle rule) is owned by [`SYSTEM_ARCHITECTURE.md`](./SYSTEM_ARCHITECTURE.md) §8; this document owns physical placement and package ownership only.
+
+## 11b. `spikes/` — research-only workspaces
+
+`spikes/*` holds bounded technical feasibility work whose product is *evidence
+and a decision*, not shipped code. A spike:
+
+- is a private workspace member (`spikes/*` in `pnpm-workspace.yaml`) so its
+  dependencies are resolved and locked normally;
+- must never appear in the `dependencies`/`devDependencies` of any `apps/*` or
+  `packages/*` manifest, and must never be imported by application source;
+- must not add a candidate dependency to a production manifest — adopting a
+  selected technology is the owning phase's checkpoint, not the spike's;
+- keeps its heavy work (benchmarks, browser runs) out of the fast `pnpm quality`
+  chain; only its static isolation gate joins it;
+- commits small machine-readable results as evidence, with no absolute machine
+  path, secret or external URL.
+
+`node tools/check-spike-boundaries.mjs` enforces the static rules and, with
+`--build`, asserts the produced `.next`/`dist` output carries no spike or
+candidate marker. Current spikes: `spikes/app0-r01-design-studio/` (APP0-R01,
+2D rendering feasibility → IMP-D026).
 
 ## 12. Import rules
 

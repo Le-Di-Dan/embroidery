@@ -1,0 +1,6 @@
+# Benchmark scratch and Playwright output. Result JSON under results/ IS
+# committed (it is the evidence); everything below is regenerable noise.
+bench-results/
+playwright-report/
+.bench-container/
+.bundle-scratch/
