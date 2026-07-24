@@ -151,3 +151,54 @@ A minimal diagnostic route is represented in generated OpenAPI, consumed through
 ## 9. Handoff
 
 APP1 receives stable actor abstractions, request-context/request-ID conventions, API/error envelope conventions, client generation, SCSS structure, and reused/adapted test harnesses.
+
+APP0 contributes to milestone **R0 — Engineering Ready**, but does **not** close it: per `../09-RELEASE-AND-MILESTONE-POLICY.md` §2 the R0 closure owner is APP1. No release may be declared at APP0 closure, and production readiness remains APP12's (IMP-D015).
+
+## 10. Renderer decision — closure interpretation (APP0-X01)
+
+IMP-D026 / `ADR-APP0-001` is frequently at risk of being read as "the editor is free". It is not. The decision means exactly:
+
+- the production renderer architecture is **native SVG + React**; and
+- **no third-party scene-graph or rendering-engine dependency** is added; and
+- the **engine-neutral document + renderer adapter remains mandatory**, even though only one renderer exists.
+
+It does **not** mean zero editor implementation cost, zero editor bundle growth, that all editing behaviour is delegated to browser APIs, or that Konva can never be reconsidered. The "0 KB" result is *engine* bytes only — APP3's own geometry, selection, interaction and watermark code is real code with a real size.
+
+Safeguards locked at closure:
+
+1. **APP3 must budget custom code** for geometry, hit-testing, selection, transform handles, snapping and gesture handling. These come free with an engine and do not come free here; that cost was accepted knowingly in exchange for zero dependency, full accessibility control and the best measured performance.
+2. **The watermark is an independent, non-editable overlay/policy layer** — never a document element, never selectable or deletable, always topmost, regenerated on load (D-008/D-009).
+3. **Performance regression uses the R01 S/M/L scenes** (10/50/150 elements at the frozen 40/30/20/10 mix) and `pnpm spike:editor:benchmark`, against the provisional budgets in IMP-D026 until APP12 replaces them.
+4. **Konva `10.3.0` + react-konva `19.2.5` remains the measured fallback** if APP3 uncovers a hard capability that native SVG genuinely cannot deliver — with its known costs: ~92 KB gzip, no recolouring of imported SVG, opaque to assistive technology, and boundary-marginal on mobile/WebKit.
+5. **Switching to the fallback requires a new ADR and new measured evidence**, never an in-checkpoint decision.
+6. **Real-device validation is still required** before production readiness: R01 measured Pixel 7 emulation and WebKit, which are approximations, not devices. Owner APP12.
+7. **The engine-neutral document is what makes 4–6 affordable.** It is the anti-lock-in mechanism and is not negotiable for a "simpler" direct-to-SVG shortcut.
+
+## 11. APP0 follow-up register (routed at APP0-X01)
+
+Every follow-up raised by an APP0 checkpoint report, with an owner and an activation condition. **No item on this list blocks APP0 closure**; each is routed to the phase that can actually resolve it. Source reports remain authoritative for detail.
+
+| ID | Source | Summary | Owner | Activation |
+|---|---|---|---|---|
+| FU-A01 | B02 F1, B03 F2 | Move the request-ID contract into `@embroidery/contracts` once that package is Node-loadable (needs a `dist` build + Docker build-stage change under IMP-D018). | Phase that makes `@embroidery/contracts` runtime-loadable (earliest APP1) | When a runtime-loadable contracts package is built |
+| FU-A02 | B03 F1 | Restore the canonical `isApiResponseEnvelope` double-wrap guard (currently type-only import). Depends on FU-A01. | Same as FU-A01 | With FU-A01 |
+| FU-A03 | B03 F3 | Map validation failures to `errors[]` entries with real `field` values. | APP1 (first request-body validation) | When a validation pipe is introduced |
+| FU-A04 | B02 F3, T02B FU-3 | Gateway drift test covers only the development template; the E2E gateway template mirrors production routing. Extend/re-check when a production Nginx or Gateway API template is added. | Phase that adds production routing (APP12 or a deployment checkpoint) | When production routing changes |
+| FU-A05 | B05 F1 | Extract the API-local logging primitives into `@embroidery/observability` once that package is runtime-loadable (IMP-D018). | Same owner as FU-A01 | With a runtime-loadable observability package |
+| FU-A06 | B05 F2 | `safeRoute` falls back to a query-stripped pathname, which can contain an id, when no route template is available. | APP12 (log/PII hardening) | If a stricter path policy is locked |
+| FU-A07 | B05 F3, B04 §3 | The worker emits no structured logs and has no out-of-request audit/correlation story. | First phase with real worker jobs (APP2) | Before `APP2-W01` |
+| FU-A08 | C02 F-1/F-2, DEC-CODEGEN F-1/F-2 | Re-verify generated-client ergonomics (multipart, request bodies, query params, error typing, `X-Request-ID` not being a generated argument) once real feature operations exist. | APP1 (first feature endpoints) | When the artifact gains non-health operations |
+| FU-A09 | T01 F-1, T02B FU-1 | Shared-container test concurrency: api Jest is capped at `maxWorkers: 50%` and E2E runs `workers: 1`. Per-worker database isolation is the scaling path. | Test-infrastructure/CI owner (APP12) | If CI provisions per-worker databases |
+| FU-A10 | R01 §L.1 | DB10 durability suites intermittently fail on `dropdb --force` when ~10 Jest workers share one dev PostgreSQL container. Non-blocking test-infrastructure flake — **no data-integrity defect**: the suites pass in isolation (5 suites / 31 tests) and full `pnpm quality` passes. Fix by retrying the drop or giving each durability suite its own disposable database. | Database/test-infrastructure owner (APP12) | On any recurrence in CI, or when durability suites are next touched |
+| FU-A11 | T01-C1, T02A F-1 | Pre-existing DB8/DB9/DB10 suites still live under `apps/api/src/tests/**` rather than `apps/api/test/**`. Excluded from the build and gated, so cosmetic. | Whoever next restructures API tests | Opportunistic |
+| FU-A12 | T02B (§ runtime boundary) | `run-e2e.mjs` owns a small local `CleanupStack` because `@embroidery/test-utils` is JIT TypeScript and cannot be required from plain Node. Duplication disappears if that package gains a `dist` build. | Same owner as FU-A01 | With a runtime-loadable test-utils package |
+| FU-A13 | T02B FU-2 | The E2E API process runs `NODE_ENV=test`, so the tier does not prove full production configuration parity. Recorded in `../07-TESTING-AND-ACCEPTANCE-GATES.md` §5.3. | APP12 | Before production certification |
+| FU-A14 | T02B FU-4, DEC-E2E FU-2 | Automated accessibility scanning (`@axe-core/playwright`, version to be locked from official sources) and a keyboard/focus smoke, deferred because the foundation pages have no meaningful focusable control. | First phase with interactive UI (APP1) | When a real interactive screen exists |
+| FU-A15 | R01 §I | APP3 must budget and review the custom interaction/geometry code that native SVG does not provide (see §10, safeguard 1). | APP3 | At APP3 planning |
+| FU-A16 | R01 §L.5 | Real-device mobile validation (the spike used Pixel 7 emulation and WebKit approximations). | APP12 | Before production readiness |
+| FU-A17 | R01 §L.6 | Desktop WebKit re-rasterises SVG on viewport scale (41 ms p95 vs 16.7 ms Chromium). APP3 should step zoom discretely or scale a wrapper rather than the SVG itself. | APP3 | At Studio viewport implementation |
+| FU-A18 | R01 §L.2 | Regenerating spike benchmark results requires a `pnpm format` pass, and re-running the benchmark overwrites committed evidence. Documented in the spike README. | APP3/APP12 (whoever re-benchmarks) | On any re-run |
+| FU-A19 | S01A | Design documentation gap: concrete values for shadow/elevation, breakpoint thresholds, z-index, opacity and line-height/letter-spacing are still unspecified, so those token families stay deferred. | Design owner, consumed by the first real styling phase (APP1) | Before component styling needs them |
+| FU-A20 | S01A, S01B | Decide whether `@embroidery/styles` should expose a `stylelint` hook, and track upstream removal of the Turbopack Sass `loadPaths` requirement (currently resolved by package name, APP0-S01B-C1). | APP1 or a CI-gate checkpoint | When app styling grows, or on a Next/Turbopack major |
+| FU-A21 | X01 (new) | `packages/design-engine/README.md` and `packages/design-document/README.md` still describe the canvas library as an open decision. Their *rule* ("stay framework-independent, no canvas library here") remains correct under IMP-D026; only the "open decision" wording is stale. Outside the APP0-X01 allowed scope (`packages/**`). | APP3 (first phase to touch those packages) | At APP3 start |
+| FU-A22 | X01 (new) | `docs/12-DECISION-LOG.md` and the historical `docs/implementation/audits/**` still list the canvas library and the test tools as open. The decision register is the authoritative source and now records IMP-D023/D024/D025/D026. Outside the APP0-X01 allowed scope. | Documentation owner | Next baseline documentation revision |

@@ -22,3 +22,14 @@ packages/database/migrations/meta/
 # Generated OpenAPI contract — byte identity is owned by `pnpm check:openapi`
 # (deterministic serializer), not by Prettier. Never hand-formatted.
 packages/contracts/openapi/
+
+# Browser-tier (Playwright) run artifacts. These are already git-ignored, but
+# Prettier does not read .gitignore, so without these entries a `pnpm quality`
+# run that follows `pnpm quality:e2e` or `pnpm spike:editor:benchmark` fails in
+# `format:check` on a machine-written artifact. Found by APP0-X01 closure
+# validation. Committed benchmark results under `spikes/*/results/` are NOT
+# ignored — they stay Prettier-formatted.
+test-results/
+playwright-report/
+spikes/app0-r01-design-studio/bench-results/
+spikes/app0-r01-design-studio/.bench-container/

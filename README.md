@@ -9,7 +9,7 @@
 
 Bộ tài liệu này mô tả sản phẩm, phạm vi, quy trình nghiệp vụ, trải nghiệm người dùng, yêu cầu chất lượng và các ràng buộc đã được xác nhận.
 
-Tech stack nền tảng, cấu trúc repository và coding conventions đã được khóa. Các quyết định còn mở như ORM, queue/broker, canvas library, CI/CD chi tiết, production topology và quy trình delivery với Claude phải được khóa bằng ADR hoặc tài liệu chuyên biệt.
+Tech stack nền tảng, cấu trúc repository và coding conventions đã được khóa. Các quyết định còn mở như queue/broker, UI component library, CI/CD chi tiết, production topology và quy trình delivery với Claude phải được khóa bằng ADR hoặc tài liệu chuyên biệt. ORM (Drizzle) và kiến trúc render 2D (native SVG + React) đã được khóa.
 
 ## 2. Thứ tự ưu tiên khi có mâu thuẫn
 
@@ -99,16 +99,13 @@ Các quyết định sau đã được khóa (xem `docs/12-DECISION-LOG.md` D-02
 
 ## 6. Nội dung cố ý chưa quyết định
 
-Đã khóa (không còn mở): **Drizzle ORM và nền tảng migration đã được khóa và triển khai** (DB0–DB10; `docs/adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md`). **Jest đã được khóa** cho unit/integration testing.
+Đã khóa (không còn mở): **Drizzle ORM và nền tảng migration đã được khóa và triển khai** (DB0–DB10; `docs/adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md`). **Jest đã được khóa** cho unit/integration testing. **APP0 đã khóa thêm:** Orval cho generated client (IMP-D023), Jest + `next/jest` + jsdom + React Testing Library cho component test (IMP-D024), Playwright Test cho browser E2E (IMP-D025), và **kiến trúc render 2D — native SVG do React render, không phụ thuộc rendering engine**, sau ranh giới engine-neutral document + renderer adapter (IMP-D026, `docs/adr/frontend/ADR-APP0-001-2D-RENDERING-ARCHITECTURE.md`).
 
-Các open decision thật sự (xem `docs/12-DECISION-LOG.md` mục Open Decisions và `docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md`):
+Các open decision thật sự (xem `docs/12-DECISION-LOG.md` mục Open Decisions và `docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md`; register là nguồn có thẩm quyền khi hai bên lệch nhau):
 
-- Queue/message broker.
+- Queue/message broker (chủ sở hữu: APP2 — phase đầu tiên có công việc bất đồng bộ thật, IMP-O003).
 - Concrete object-storage product (chỉ abstraction S3-compatible đã khóa).
-- Canvas library.
 - UI component library.
-- Frontend component testing tool (mở trong APP0).
-- Browser E2E testing tool (mở trong APP0).
 - Authentication/OTP implementation.
 - Payment provider implementation.
 - Kubernetes distribution và production topology.

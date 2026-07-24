@@ -175,16 +175,19 @@ After coding:
 
 Do not invent answers for unresolved items such as:
 
-- Queue/broker implementation.
-- Canvas library.
+- Queue/broker implementation (owner APP2 — the earliest phase with real asynchronous work, IMP-O003).
 - UI component library.
 - Authentication and OTP provider.
 - Exact payment-provider integration.
 - Kubernetes distribution and topology.
 - Object-storage product.
-- Frontend component testing tool and browser E2E testing tool (open for APP0).
 
-Already locked (not open): ORM is Drizzle (`docs/adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md`, implemented); Jest is the unit/integration test runner (`docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md` IMP-D016).
+Already locked (not open): ORM is Drizzle (`docs/adr/database/ADR-DB1-002-ORM-QUERY-LAYER.md`, implemented); Jest is the unit/integration test runner (`docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md` IMP-D016). Closed by APP0 — do not treat these as open:
+
+- Generated-client codegen tool — Orval (IMP-D023).
+- Frontend component test stack — Jest + `next/jest` + jsdom + React Testing Library (IMP-D024).
+- Browser E2E stack — Playwright Test (IMP-D025).
+- Canvas/SVG rendering architecture — native SVG rendered by React, no rendering-engine dependency, behind an engine-neutral document + renderer adapter (IMP-D026, `docs/adr/frontend/ADR-APP0-001-2D-RENDERING-ARCHITECTURE.md`).
 
 See `docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md` for the authoritative locked/open implementation decisions.
 

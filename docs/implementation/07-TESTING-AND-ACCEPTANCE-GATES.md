@@ -113,6 +113,34 @@ APP0-R01 (`pnpm spike:editor:benchmark`, `pnpm spike:editor:benchmark:linux`) is
 the reference implementation, and its S/M/L scenes are the Design Studio
 performance-regression scenes handed to APP3 (IMP-D026).
 
+### 5.3 Tier boundaries and known limits (locked at APP0 closure)
+
+- **`pnpm quality` is browser-free.** It runs format, lint, typecheck, the Jest
+  tiers, and the static boundary/artifact gates. It launches no browser and runs
+  no benchmark, so it stays fast enough to be the per-change gate.
+- **`pnpm quality:e2e` is the browser tier** (`check:e2e` + the full Playwright
+  matrix). A release or CI workflow must run it in its own job per §5.1; a green
+  `pnpm quality` is **not** evidence that the browser tier passed, and no report
+  may claim E2E coverage without it.
+- **Post-build gates belong to the build/CI stage, not to `quality`.**
+  `tools/check-frontend-build-boundary.mjs` and
+  `node tools/check-spike-boundaries.mjs --build` inspect `.next`/`dist` output
+  and therefore require a prior build; wire them after the build step. Their
+  static counterparts (`check:frontend-boundaries`, `check:spike-boundaries`)
+  run inside `quality`.
+- **Browser-tier artifacts must stay out of the formatter.** Playwright writes
+  machine-generated JSON into `test-results/`, `playwright-report/` and the
+  spike's `bench-results/`; these are git-ignored *and* Prettier-ignored, so a
+  `pnpm quality` that follows a browser run still passes.
+- **Gateway template drift.** The E2E gateway template mirrors production
+  routing with only upstream targets parameterized. Whenever production routing
+  changes, re-check the E2E template in the same change.
+- **Known parity limit.** The E2E API process runs `NODE_ENV=test` (production
+  mode rejects the local non-TLS disposable database by design), while both Next
+  apps run `NODE_ENV=production`. The tier therefore proves routing, rendering
+  and contract behaviour end to end — **not** full production configuration
+  parity. Production certification remains APP12's (IMP-D015).
+
 ## 6. Design acceptance
 
 Design packages use visual/system review rather than coding checkpoints. See `03-DESIGN-DELIVERY-POLICY.md`.
