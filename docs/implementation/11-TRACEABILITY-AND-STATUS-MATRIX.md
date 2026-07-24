@@ -39,7 +39,7 @@ Use:
 
 Do not mark a phase `COMPLETE` based only on design, backend, or frontend completion.
 
-Current values are recorded once, in [`10-MASTER-APPLICATION-ROADMAP.md`](./10-MASTER-APPLICATION-ROADMAP.md) §6, and are not duplicated here. As of APP0 closure: **APP0 = `COMPLETE`** (evidence [`reports/APP0-X01-COMPLETION-REPORT.md`](./reports/APP0-X01-COMPLETION-REPORT.md)), **APP1 = `READY_FOR_ENGINEERING`, not started** (pre-implementation audit complete — [`reports/APP1-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md`](./reports/APP1-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md); first checkpoint `APP1-DEC-AUTH` `READY`), APP2–APP12 = `NOT_STARTED`.
+Current values are recorded once, in [`10-MASTER-APPLICATION-ROADMAP.md`](./10-MASTER-APPLICATION-ROADMAP.md) §6, and are not duplicated here. As of APP0 closure: **APP0 = `COMPLETE`** (evidence [`reports/APP0-X01-COMPLETION-REPORT.md`](./reports/APP0-X01-COMPLETION-REPORT.md)), **APP1 = `READY_FOR_ENGINEERING`, not started** (pre-implementation audit and the `APP1-DEC-AUTH` decision complete — [`APP1-DEC-AUTH-COMPLETION-REPORT.md`](./reports/APP1-DEC-AUTH-COMPLETION-REPORT.md), staff auth IMP-D027; next `APP1-B01` + `APP1-D01` `READY`), APP2–APP12 = `NOT_STARTED`.
 
 ## 4. Required phase traceability additions
 
