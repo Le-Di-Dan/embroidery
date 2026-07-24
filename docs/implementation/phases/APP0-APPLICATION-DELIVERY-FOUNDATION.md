@@ -114,8 +114,9 @@ This map is the canonical, locked APP0 checkpoint decomposition (refined after t
 
 ### 6.7 Closure
 
-- **APP0-X01 — APP0 foundation closure** *(closure; dep: all above)* — **READY, NOT STARTED** (every preceding APP0 checkpoint is COMPLETE).
-  - Requires: all APP0 checkpoint evidence; all APP0-owned decisions recorded; explicit queue/broker defer owner chosen by earliest consumer (see §8); no feature scope leakage; no database change; handoff to APP1; R0 status handled per `../09-RELEASE-AND-MILESTONE-POLICY.md`.
+- **APP0-X01 — APP0 foundation closure** *(closure; dep: all above)* — **COMPLETE** (verdict `PASS_WITH_FOLLOW_UPS`; closure commit `af4b56930b9d74bf68e7707fcfa5a90f51be6cfa`; report `../reports/APP0-X01-COMPLETION-REPORT.md`). **APP0 is CLOSED as the application delivery baseline.**
+  - Delivered: full checkpoint ledger reconciled from Git; all APP0-owned decisions locked (IMP-D017–D026) or routed; queue/broker owner (IMP-O003) assigned to **APP2** after verifying `APP2-W01` is the earliest real asynchronous work; IMP-O010 (Storybook) closed as not adopted; the 22-item follow-up register in §11 (0 blocking); the IMP-D026 closure interpretation in §10; stale open-decision references corrected across `CLAUDE.md`/`README.md`/`LOCAL_DEVELOPMENT.md`; the browser-tier boundaries locked in `../07-TESTING-AND-ACCEPTANCE-GATES.md` §5.3; and a closure-validation defect fixed (`.prettierignore` did not exclude browser/benchmark artifacts). `pnpm quality` and `pnpm quality:e2e` both pass; no database, schema, feature or next-phase change.
+  - **Next phase:** `APP1 — Staff Access and Application Shells` = `READY_FOR_ENGINEERING`, NOT STARTED (closure owner for milestone R0). Not started here.
 
 Total: 17 checkpoints (12 build, 3 decisions, 1 spike, 1 closure).
 

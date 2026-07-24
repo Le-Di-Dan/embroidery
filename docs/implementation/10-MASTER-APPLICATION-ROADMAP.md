@@ -68,3 +68,15 @@ Exact endpoints may be corrected during the phase contract audit when repository
 - Human review boundaries.
 - Existing lifecycle/database semantics.
 - Vertical delivery order.
+
+## 6. Current phase status
+
+This section is the canonical phase-status record for the application stage. Status values come from `11-TRACEABILITY-AND-STATUS-MATRIX.md` §3.
+
+| Phase | Status | Evidence |
+|---|---|---|
+| APP0 | `COMPLETE` | Closed at `APP0-X01`; all 18 preceding checkpoints complete. Report: [`reports/APP0-X01-COMPLETION-REPORT.md`](./reports/APP0-X01-COMPLETION-REPORT.md); plan: [`phases/APP0-APPLICATION-DELIVERY-FOUNDATION.md`](./phases/APP0-APPLICATION-DELIVERY-FOUNDATION.md). |
+| APP1 | `READY_FOR_ENGINEERING` — **not started** | Unblocked by APP0 closure. Plan: [`phases/APP1-STAFF-ACCESS-AND-SHELLS.md`](./phases/APP1-STAFF-ACCESS-AND-SHELLS.md). Closure owner for milestone **R0**. |
+| APP2–APP12 | `NOT_STARTED` | Dependency-ordered per §3. |
+
+APP0 closure is a **foundation** milestone, not a release: R0 closes at APP1 (`09-RELEASE-AND-MILESTONE-POLICY.md` §2) and production readiness remains APP12's (IMP-D015).

@@ -1,9 +1,11 @@
 # Application Implementation — Documentation Index
 
-**Status:** Integrated, conflict-reconciled, version-controlled baseline — **documentation/governance APP0-ready**. APP0 engineering has **not** started.  
-**Scope:** Design governance, backend, admin, storefront, worker, integration, release readiness  
-**Location:** `docs/implementation/`  
+**Status:** Integrated, conflict-reconciled, version-controlled baseline\
+**Scope:** Design governance, backend, admin, storefront, worker, integration, release readiness\
+**Location:** `docs/implementation/`\
 **Reconciliation evidence:** [`audits/DOCUMENTATION_RECONCILIATION_REPORT.md`](./audits/DOCUMENTATION_RECONCILIATION_REPORT.md)
+
+**Delivery status:** **APP0 — Application Delivery Foundation is COMPLETE** (closure evidence: [`reports/APP0-X01-COMPLETION-REPORT.md`](./reports/APP0-X01-COMPLETION-REPORT.md)). The next phase is **APP1 — Staff Access and Application Shells**, `READY, NOT STARTED`. Phase status is owned by [`10-MASTER-APPLICATION-ROADMAP.md`](./10-MASTER-APPLICATION-ROADMAP.md) §6 and the phase plans; do not duplicate it elsewhere.
 
 ## 1. Purpose
 
