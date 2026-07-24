@@ -1,62 +1,149 @@
 # APP1 — Staff Access and Application Shells
 
+> **Status:** `READY_FOR_ENGINEERING`, **not started**. Pre-implementation audit
+> complete (`../audits/APP1_PRE_IMPLEMENTATION_AUDIT.md`). Only the first
+> checkpoint (`APP1-DEC-AUTH`) is `READY`; all others are `NOT_STARTED` and
+> unlock in the order of §7. Phase status is owned by
+> `../10-MASTER-APPLICATION-ROADMAP.md` §6.
+
 ## 1. Outcome
 
-Deliver secure staff authentication and permission-aware Admin shell while establishing a production Storefront shell. This phase enables controlled operational access for all later Admin capabilities.
+Deliver secure single-operator staff authentication and an authenticated Admin
+shell, and establish a public Storefront shell. This phase turns the APP0
+identity persistence and audit/actor foundation into a working, revocable admin
+session and the two application shells every later phase renders inside. It is
+the closure owner for milestone **R0** (`../09-RELEASE-AND-MILESTONE-POLICY.md`).
 
 ## 2. Dependencies
 
-APP0 complete. Authentication provider/session mechanism must be selected by approved ADR or existing repository decision.
+- APP0 `COMPLETE` (`../reports/APP0-X01-COMPLETION-REPORT.md`).
+- **IMP-O001 / DEC-29 (auth-provider mechanism) must be resolved by ADR before
+  any backend authentication code** — resolved by `APP1-DEC-AUTH` (§7).
+- Identity persistence already exists (DB7): `admin_accounts` (TBL-001),
+  `admin_credentials` (TBL-002), `admin_sessions` (TBL-003), `audit_events`
+  (TBL-072); repositories are wired in `apps/api/src/modules/identity`. **No
+  schema change is required by APP1** (§6, audit §7).
 
 ## 3. Design policy
 
-Audit existing Figma. Expected classification is `SUPPLEMENT` or `NEW` for Admin login/shell unless already approved; Storefront shell should reuse approved navigation/foundation where complete. All missing screens/states are designed as one APP1 package.
-
-Design, when required, is delivered as one complete phase package and is not split into coding checkpoints.
+Phase classification: **`SUPPLEMENT`** — a mix of **`NEW`** Admin surfaces (login
+screen, authenticated shell) with no existing design artifact, and **`REUSE`**
+of the approved Storefront foundation for the public shell. Per IMP-D003 the
+design is produced and reviewed as **one coherent phase package** (`APP1-D01`),
+not split into coding checkpoints; admin frontend checkpoints are **blocked until
+that package passes**. Storefront reuses approved navigation/foundation where
+complete and supplements only the global error/loading/not-found conventions.
 
 ## 4. In scope
 
-- Staff login, logout, refresh/session renewal, current-staff context.
-- Role/permission resolution and backend enforcement.
-- Audit actor identity.
-- Admin login, shell, permission-aware navigation, forbidden/session-expired states.
-- Storefront root shell, global error/loading/not-found conventions.
-- Security controls for cookies/tokens, CSRF/session fixation as applicable.
+- Staff login, logout, session renewal/refresh, and current-staff context.
+- **Authenticated-admin authorization** — a binary guard (valid live session ⇒
+  the single admin actor), with an extensible authorization seam for later
+  phases. **There is no role/permission matrix**: REQ-IDN-001 locks *exactly one
+  active admin, no role matrix* (`../../04-BUSINESS-RULES.md` BR-016,
+  `../../12-DECISION-LOG.md` D-018). See §10 reconciliation.
+- Audit actor identity for admin actions via the APP0 `bindActor()` seam
+  (IMP-D021) and `audit_events`.
+- Admin login screen, authenticated shell, navigation, account menu,
+  current-user display, forbidden/access-denied and session-expired states.
+- Storefront root shell: layout, metadata, header/footer, and global
+  error/loading/not-found conventions.
+- Cookie/session security, CSRF and session-fixation controls as locked by
+  `APP1-DEC-AUTH`.
 
 ## 5. Out of scope
 
-- Customer account registration/profile.
-- Product/catalog features.
-- Complex staff/user management screens unless explicitly required for initial role seeding.
-- Feature-specific Admin navigation items before their phases.
+- Customer account registration, verification, profile, and secure grants (APP4).
+- Any role/permission matrix or multi-operator staff management (locked out by
+  REQ-IDN-001; re-openable only by a future ADR that changes the identity model).
+- Product/catalog, asset, design-studio, and all later feature surfaces and their
+  navigation items (added by their owning phases).
+- MFA/OTP delivery (provider is DEC-29/APP4-era; MFA is *recommended*, not
+  required — `../../09-SECURITY-AND-ABUSE-PREVENTION.md` §3).
+- Password-reset/recovery flow unless `APP1-DEC-AUTH` explicitly rules it in;
+  otherwise deliberately deferred with the bootstrap/recovery procedure recorded.
 
-## 6. Candidate engineering checkpoints
+## 6. Database and migration position
 
-These are planning slices. Execute and review one at a time. Any backend slice remains subject to the maximum of five tightly related HTTP endpoints.
+**No migration is required by APP1.** The three identity tables and
+`audit_events` exist since DB7 (78-table baseline, fingerprint `4ca56a59…`), and
+the domain repositories already expose every method the auth use cases need
+(`create`/`findByEmail`/`attachCredential`/`changeStatus`; session
+`issue`/`revoke`/`revokeAllForAdmin`/`findActiveByTokenHash`). `credential_kind`
+is intentionally CHECK-free until `APP1-DEC-AUTH` (DB4 COL-TBL002-02). The single
+condition that could introduce a schema gap is a **persistent brute-force/lockout
+counter**; the default is gateway/application-layer rate limiting (no schema). A
+DB checkpoint is created **only if** `APP1-DEC-AUTH` chooses persistent counters —
+never hidden inside a backend checkpoint (IMP-D013, `../08-DATABASE-CHANGE-CONTROL.md`).
 
-- **APP1-C01 — Staff session contract:** Define up to four tightly related operations: login, logout, refresh/renew, and current staff.
-- **APP1-B01 — Staff authentication use cases:** Implement credential/session validation, safe errors, audit context, and integration tests.
-- **APP1-B02 — Authorization foundation:** Implement permission resolver and endpoint policy enforcement with negative tests; no feature permissions beyond the planned matrix.
-- **APP1-A01 — Admin login screen:** Implement the approved login screen with pending, invalid credential, locked/forbidden, and recoverable error states.
-- **APP1-A02 — Admin application shell:** Implement layout, navigation, account menu, session expiry, forbidden route, and responsive behavior.
-- **APP1-S01 — Storefront application shell:** Implement approved header/footer/root boundaries, metadata foundation, and SCSS integration.
-- **APP1-E01 — Access E2E:** Prove valid login, invalid login, permission denial, session expiry/renewal, logout, and audit actor propagation.
-- **APP1-X01 — Phase closure:** Audit security, contract, UI, logs, and hand off authenticated Admin capability to APP2.
+## 7. Checkpoint map
 
-## 7. Critical end-to-end journey
+Planning slices. Execute and review exactly one at a time; stop for human review
+after each. Backend checkpoints never exceed five tightly related endpoints
+(IMP-D004); each frontend checkpoint owns one screen/capability (IMP-D005).
 
-Staff logs in through the Admin UI, reaches only permitted navigation, calls a protected API through the generated client, receives a safe forbidden response for a missing permission, and logs out cleanly.
+| ID | Type | Scope (summary) | Predecessors |
+|---|---|---|---|
+| **APP1-DEC-AUTH** | decision | Resolve IMP-O001/DEC-29 by ADR: credential hashing algorithm, session-token strategy (opaque hashed + revocable — constrained by `admin_sessions.token_hash`; not stateless-JWT-only), cookie security (httpOnly/Secure/SameSite), CSRF strategy, brute-force/rate-limit approach (**decides whether a DB checkpoint is needed**), first-admin bootstrap, and password-reset in/out. | APP0 |
+| **APP1-D01** | design | One phase-level design package: Admin login (all states), Admin authenticated shell (header/nav/account menu/forbidden/session-expired), Storefront root-shell reuse map + global error/loading/not-found. Resolves FU-A19; decides FU-A20. Design **PASS** required. | APP0 |
+| **APP1-B01** | backend | **Staff authentication** — `login` + `logout` (2 endpoints). Credential verification via the chosen provider, session issue (token hash), login-success/failure/logout audit events, timing-safe/enumeration-safe errors, `bindActor()` seam, T01 integration tests, OpenAPI + client regeneration. Resolves FU-A03; first check of FU-A08. | APP1-DEC-AUTH |
+| **APP1-B02** | backend | **Session lifecycle + current-staff** — `refresh/renew` + `current-staff` (≤3 endpoints) plus the authenticated-admin guard, revocation, and expiry-on-read; negative (401/forbidden) tests; OpenAPI + client regeneration. Re-check FU-A08. | APP1-B01 |
+| **APP1-A01** | frontend | **Admin login screen** — one screen; idle/pending/invalid-credential/locked/disabled/recoverable-error states; RTL component tests. Resolves FU-A14 (accessibility scan on the first interactive screen). | APP1-B01, APP1-D01 |
+| **APP1-A02** | frontend | **Admin application shell** — layout, navigation, account menu, current-user display, route protection, access-denied route, session-expiry handling, logout, responsive behavior; component tests. | APP1-B02, APP1-D01 |
+| **APP1-S01** | frontend | **Storefront application shell** — root layout, header/footer, metadata foundation, global error/loading/not-found, SCSS/token integration. Public; no auth. May land FU-A20 (stylelint hook). | APP1-D01 |
+| **APP1-E01** | integration/E2E | **Access E2E** through the real gateway on a disposable DB (T01/T02B): valid login, invalid login, session expiry/renewal, logout, protected-route denial, and audit-actor propagation; deterministic staff fixture, no committed token. | APP1-A02, APP1-S01 |
+| **APP1-X01** | closure | Phase closure audit (security/contract/UI/logs), R0 evaluation, and APP2 handoff. | APP1-E01 |
 
-## 8. Exit gate
+Ordering: `DEC-AUTH → D01 → B01 → B02 → A01 → A02 → S01 → E01 → X01`. `APP1-D01`
+has no engineering predecessor and may begin its design cycle in parallel, but is
+left `NOT_STARTED` so a single checkpoint is `READY` at a time. Admin leads
+Storefront by one capability (IMP-D007): `S01` follows the Admin shell.
 
-- No mock authentication.
-- Backend, not only UI, enforces permission.
-- Sensitive errors are redacted.
-- Admin and Storefront shells use global SCSS only.
-- Access E2E passes.
+## 8. APP0 follow-up routing
 
-APP1 closure is the **owner of milestone R0** (Engineering Ready): R0 is closed here only if both APP0 and APP1 have passed. This is a closure-ownership rule; it does not mark R0 complete now. See `09-RELEASE-AND-MILESTONE-POLICY.md`.
+Activated in APP1 and assigned to a checkpoint: **FU-A03** → `APP1-B01`;
+**FU-A08** → `APP1-B01` (re-checked `APP1-B02`); **FU-A14** → `APP1-A01`;
+**FU-A19** → `APP1-D01`; **FU-A20** → `APP1-D01`/`APP1-S01`. The package-boundary
+items **FU-A01/FU-A02/FU-A05/FU-A12** are *gated on a package becoming
+runtime-loadable*; APP1 does not require that, so they **remain deferred** with
+unchanged ownership. All other follow-ups keep their APP2/APP3/APP12/documentation
+owners (`APP0-…FOUNDATION.md` §11).
 
-## 9. Handoff
+## 9. Critical end-to-end journey
 
-APP2 may add Catalog/Asset permission codes and Admin routes without changing the auth foundation.
+The single admin logs in through the Admin UI, lands on a permitted shell, calls
+a protected API through the generated client, is refused a request without a live
+session (safe 401), and logs out cleanly — every step leaving a redacted audit
+event with the correct admin actor and request-id correlation.
+
+## 10. Reconciliation note (single-operator authorization)
+
+The pre-audit revision of this plan named an "Authorization foundation /
+permission resolver" and "permission-aware navigation." That contradicts the
+**locked** identity model: REQ-IDN-001 mandates *exactly one active admin and no
+role matrix* (`../../04-BUSINESS-RULES.md` BR-016, `../../12-DECISION-LOG.md`
+D-018), and no roles/permissions table exists in the DB7 baseline. Per CLAUDE.md
+§2 this contradiction is **reported, not silently resolved**: APP1 delivers a
+binary **authenticated-admin** guard plus an extensible authorization seam;
+per-feature permission codes are introduced by later phases **only** if a future
+ADR changes the identity model. Navigation is authenticated-vs-anonymous, not
+permission-filtered, in APP1.
+
+## 11. Exit gate
+
+- No mock authentication; the backend (not only the UI) enforces access.
+- Sensitive/credential errors are redacted; login is enumeration/timing-safe.
+- Admin and Storefront shells use global SCSS only (IMP-D010/D011).
+- OpenAPI artifact and generated client are current; no schema drift.
+- Login/logout/failure audit events verified with correct actor and correlation.
+- Component, T01 integration, and `APP1-E01` E2E suites pass.
+- No blocking follow-up; `APP1-X01` completion report and APP2 handoff exist.
+- **R0** is evaluated at `APP1-X01`: it closes only if both APP0 and APP1 have
+  passed. Production readiness is **not** claimed (IMP-D015, APP12).
+
+## 12. Handoff
+
+APP2 renders inside the Admin and Storefront shells and reaches protected APIs
+through the authenticated-admin guard without changing the auth foundation. When
+APP2 introduces real asynchronous work it also owns IMP-O003 (queue/broker) and
+FU-A07 (worker logging/correlation).
