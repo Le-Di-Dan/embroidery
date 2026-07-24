@@ -3,9 +3,13 @@
 > **Status:** `READY_FOR_ENGINEERING`, **not started**. Pre-implementation audit
 > complete (`../audits/APP1_PRE_IMPLEMENTATION_AUDIT.md`); `APP1-DEC-AUTH` is
 > **COMPLETE** (IMP-D027, ADR-APP1-001 — report
-> `../reports/APP1-DEC-AUTH-COMPLETION-REPORT.md`). The next checkpoints —
-> `APP1-B01` (backend) and `APP1-D01` (design, independent) — are `READY`,
-> `NOT_STARTED`; all others are `NOT_STARTED` and unlock in the order of §7.
+> `../reports/APP1-DEC-AUTH-COMPLETION-REPORT.md`); `APP1-D01` is
+> **`DELIVERED_FOR_HUMAN_REVIEW`** (report
+> `../reports/APP1-D01-COMPLETION-REPORT.md`; registry
+> `../../design/FIGMA_DESIGN_INDEX.md` — all new frames `REVIEW_REQUIRED`).
+> `APP1-B01` (backend) remains `READY, NOT_STARTED`; the frontend checkpoints
+> `APP1-A01/A02/S01` are `BLOCKED_BY_DESIGN_APPROVAL` until the APP1-D01 entries are
+> promoted to `APPROVED_FOR_IMPLEMENTATION`. All others `NOT_STARTED` per §7.
 > Phase status is owned by `../10-MASTER-APPLICATION-ROADMAP.md` §6.
 
 ## 1. Outcome
@@ -92,7 +96,7 @@ after each. Backend checkpoints never exceed five tightly related endpoints
 | ID | Type | Scope (summary) | Predecessors |
 |---|---|---|---|
 | **APP1-DEC-AUTH** | decision | **COMPLETE** — resolved IMP-O001/DEC-29: built-in `crypto.scrypt` hashing, server-side revocable opaque sessions (`admin_sessions.token_hash`), host-only `Strict` cookie, layered CSRF (Origin + JSON-only), in-process rate limiting, out-of-band bootstrap CLI; migration verdict `NO_MIGRATION_REQUIRED`. IMP-D027, `../../adr/backend/ADR-APP1-001-STAFF-AUTHENTICATION-AND-SESSIONS.md`. | APP0 |
-| **APP1-D01** | design | One phase-level design package: Admin login (all states), Admin authenticated shell (header/nav/account menu/forbidden/session-expired), Storefront root-shell reuse map + global error/loading/not-found. Resolves FU-A19; decides FU-A20. Design **PASS** required. | APP0 |
+| **APP1-D01** | design | **DELIVERED_FOR_HUMAN_REVIEW** — 16 frames in `APP_01` (`375:11`): Admin login (all states), Admin authenticated shell (header/nav/account/logout/loading/session-expired), Storefront reuse map + responsive/impl annotations. Canonical registry `FIGMA_DESIGN_INDEX.md` created + governance + `check:figma-design-index`. New frames `REVIEW_REQUIRED`; A01/A02/S01 blocked pending approval. Report `../reports/APP1-D01-COMPLETION-REPORT.md`. Resolves FU-A19; decides FU-A20. | APP0 |
 | **APP1-B01** | backend | **Staff session open/close + auth primitives** — password (scrypt) + session services, authenticated-admin **guard/session-resolution**, one `extendExpiry` repo method, and the out-of-band `staff:bootstrap` CLI; endpoints `POST /api/staff/session` (login) + `DELETE /api/staff/session` (logout) = **2 endpoints**. Login-success/failure(SYSTEM)/logout audit, timing-/enumeration-safe errors, in-process rate limit, `bindActor()`. T01 integration + security tests; OpenAPI + client regeneration. Resolves FU-A03; first check of FU-A08. | APP1-DEC-AUTH |
 | **APP1-B02** | backend | **Current-staff** — `GET /api/staff/me` = **1 endpoint**, consuming the B01 guard; sliding-renewal and negative (401 unauth / expired / revoked / disabled) tests; **no explicit renew endpoint** (sliding renewal lives in the guard). OpenAPI + client regeneration. Re-check FU-A08. | APP1-B01 |
 | **APP1-A01** | frontend | **Admin login screen** — one screen; idle/pending/invalid-credential/locked/disabled/recoverable-error states; RTL component tests. Resolves FU-A14 (accessibility scan on the first interactive screen). | APP1-B01, APP1-D01 |
