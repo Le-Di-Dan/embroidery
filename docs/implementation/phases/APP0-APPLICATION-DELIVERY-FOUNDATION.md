@@ -105,13 +105,16 @@ This map is the canonical, locked APP0 checkpoint decomposition (refined after t
 
 ### 6.6 2D editor spike
 
-- **APP0-R01 — 2D canvas/SVG feasibility spike** *(technical spike; dep: S01B optional)* — **READY, NOT STARTED**.
+- **APP0-R01 — 2D canvas/SVG feasibility spike** *(technical spike; dep: S01B optional)* — **COMPLETE** (decision `IMP-D026`, resolves `IMP-O004`; ADR `../../adr/frontend/ADR-APP0-001-2D-RENDERING-ARCHITECTURE.md`; report `../reports/APP0-R01-COMPLETION-REPORT.md`; spike commit `d7105915b725f4e0a170675835feac2f6813d7d6`).
   - Goal: test text/image layers, transforms, mobile pointer behavior, serialization, watermark behavior, and a performance budget; produce an ADR (IMP-O004) or a precise blocker. No Design Studio production implementation.
-  - Blocks APP3, and blocks APP0 closure if the exit gate still requires the selection.
+  - Decided: **native SVG rendered by React 19** — no rendering engine and no interaction library — behind an **engine-neutral document + renderer-adapter** boundary, with the watermark as preview policy (never document content), domain-owned undo/redo, DOM transform handles (outside the element box, ≥44 px, focusable), client-only lazy loading, and canonical serialization owned by `packages/design-document` (ADR-DB1-012). Provisional performance budgets are locked until APP12.
+  - Delivered: research-only workspace `spikes/app0-r01-design-studio/` (private, never a production dependency) where Konva `10.3.0` + react-konva `19.2.5`, Fabric `7.4.0` and native SVG implement **one** adapter contract over **one** document and are measured by **one** driver across five platform/browser runs (Windows desktop/mobile Chromium; pinned `v1.61.1-noble` Linux desktop/mobile Chromium + desktop WebKit). All three pass every functional, watermark and touch gate; all three produce the identical canonical hash (`sha256:d8a4f67d…` for the cross-engine subset) on both platforms and across Web Crypto and a pure-JS digest. Only native SVG passes every frozen budget in every run (transform p95 16.7–17 ms, zero dropped frames, zero long tasks, 0 KB engine bytes) — score 96.0 vs Konva 74.2 (runner-up, documented fallback, boundary-marginal on mobile/WebKit) and Fabric 61.1 (rejected: the mandatory repeated watermark on a single-canvas repaint model breaks the budgets). PixiJS `8.19.0` was reviewed and rejected pre-spike; `interactjs 1.10.27` rejected as unmaintained. New static gate `tools/check-spike-boundaries.mjs` joins root `quality`; the benchmark tier never does.
+  - Boundary: no Design Studio implementation, no editor route/component, no persistence/autosave/API, no export/download, no rendering dependency in any production manifest; OpenAPI, generated client, database and production infrastructure unchanged.
+  - Blocked APP3; now unblocks it, and closes the APP0 exit-gate requirement for the editor selection.
 
 ### 6.7 Closure
 
-- **APP0-X01 — APP0 foundation closure** *(closure; dep: all above)*
+- **APP0-X01 — APP0 foundation closure** *(closure; dep: all above)* — **READY, NOT STARTED** (every preceding APP0 checkpoint is COMPLETE).
   - Requires: all APP0 checkpoint evidence; all APP0-owned decisions recorded; explicit queue/broker defer owner chosen by earliest consumer (see §8); no feature scope leakage; no database change; handoff to APP1; R0 status handled per `../09-RELEASE-AND-MILESTONE-POLICY.md`.
 
 Total: 17 checkpoints (12 build, 3 decisions, 1 spike, 1 closure).
