@@ -119,6 +119,13 @@ Components should:
 
 Business decisions do not belong in components.
 
+Design source of truth: resolve the exact screen/state/viewport from the canonical
+registry [`docs/design/FIGMA_DESIGN_INDEX.md`](../design/FIGMA_DESIGN_INDEX.md),
+**not** manual Figma discovery. Implement only `APPROVED_FOR_IMPLEMENTATION` nodes,
+open that exact node, honour its recorded design-system references, and cite the
+registry IDs in the checkpoint report. A missing/stale/unapproved entry blocks the
+UI checkpoint (`07-TESTING-AND-ACCEPTANCE-GATES.md` §6.1).
+
 ## 8. HTTP client and API envelope
 
 Axios is the only approved HTTP client for internal application API calls.

@@ -11,6 +11,7 @@ Every phase also reads:
 - `docs/implementation/README.md`.
 - `docs/implementation/10-MASTER-APPLICATION-ROADMAP.md`.
 - Its detailed phase file in `docs/implementation/phases/`.
+- `docs/design/FIGMA_DESIGN_INDEX.md` — the canonical Figma registry (query it before classifying design work; see §4).
 - Relevant ADRs.
 - Current completion reports/handoffs from prerequisite phases.
 - `docs/database/DB_ROADMAP.md` only when confirming the database baseline or when the phase has a persistence dependency; do not require every checkpoint to read the full database corpus.
@@ -51,3 +52,10 @@ Application phases must preserve:
 ## 4. Design evidence rule
 
 A chat summary that “screens were designed” is not enough. Each phase must record exact Figma file/page/section/node references and approval status before classifying design as `REUSE`.
+
+The authoritative source for those references is `docs/design/FIGMA_DESIGN_INDEX.md`. Therefore:
+
+- Every phase design audit **queries the registry** before classifying design as `NONE / REUSE / SUPPLEMENT / NEW`.
+- Every `REUSE` classification **cites exact registry IDs / direct node links** (not file- or page-level links). A surface with no `APPROVED_FOR_IMPLEMENTATION` registry entry is not proven `REUSE`.
+- Every `NEW` / `SUPPLEMENT` design checkpoint **updates the registry** in the same checkpoint.
+- Every frontend checkpoint **records the registry IDs it implemented** in its completion report.

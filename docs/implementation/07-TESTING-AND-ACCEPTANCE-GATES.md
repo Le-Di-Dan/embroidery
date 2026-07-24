@@ -145,6 +145,25 @@ performance-regression scenes handed to APP3 (IMP-D026).
 
 Design packages use visual/system review rather than coding checkpoints. See `03-DESIGN-DELIVERY-POLICY.md`.
 
+### 6.1 Figma registry consistency gate (locked at APP1-D01)
+
+```text
+FIGMA_INDEX_CONSISTENCY = PASS
+```
+
+The canonical Figma registry `docs/design/FIGMA_DESIGN_INDEX.md` is enforced by the
+static gate `pnpm check:figma-design-index` (`tools/check-figma-design-index.mjs`),
+wired into the browser-free `pnpm quality` chain. It never calls the Figma network.
+
+For a **design** checkpoint, the gate requires that every created/moved/superseded
+frame is reflected in the index, node URLs are exact and valid (file key + node id
+match the row, no `t=` tracker/secret), and status/approval are explicit; new
+frames are `REVIEW_REQUIRED`.
+
+For a **frontend** checkpoint, the completion report records the exact registry IDs
+used; only `APPROVED_FOR_IMPLEMENTATION` nodes may be implemented, and a missing,
+stale, superseded, or unapproved design **blocks** coding.
+
 ## 7. Phase closure gates
 
 - All checkpoint-specific gates pass.

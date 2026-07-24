@@ -13,6 +13,9 @@
 
 ## 5. Admin/Storefront screens delivered
 
+Cite the `FIGMA_DESIGN_INDEX.md` registry IDs implemented and their status at
+implementation time (only `APPROVED_FOR_IMPLEMENTATION` may ship).
+
 ## 6. Worker/integration behavior delivered
 
 ## 7. Requirement/lifecycle/database/design traceability

@@ -574,3 +574,52 @@ Một màn hình chỉ được xem là hoàn thành khi:
 * Responsive đầy đủ.
 * Tuân thủ Design Vision.
 * Tuân thủ Design System Foundation.
+
+---
+
+# 21. Canonical Figma Design Index (registry)
+
+Thêm ở APP1-D01. Registry chuẩn: [`FIGMA_DESIGN_INDEX.md`](./FIGMA_DESIGN_INDEX.md).
+
+## Ownership
+
+`FIGMA_DESIGN_INDEX.md` là **nguồn duy nhất** ánh xạ route/state/viewport → node
+Figma chính xác và trạng thái phê duyệt. Không có registry cạnh tranh
+(`*_V2`, bản sao). Mọi checkpoint design/frontend đọc và cập nhật nó.
+
+## File roles
+
+* `FIG-FILE-PRODUCT` (`BQwqV8GdfUIELvsQDB1UQE`) — màn hình sản phẩm, IA, wireframe,
+  và các thiết kế staff-access ở page `APP_01` (`371:3`). Quyền: **ghi**.
+* `FIG-FILE-DS` (`hsxSjwkqQKM9vuyRgWSesU`) — thư viện Design System (token,
+  component, style). Quyền: **chỉ đọc** (chỉ sửa qua deviation được báo cáo).
+
+## Node-link requirements
+
+* Mỗi hàng không `MISSING` phải có File Key + Page + Node (dạng `page:id`) + deep
+  link `…?node-id=<dạng-gạch-nối>`; file key và node id trong URL khớp với hàng.
+* Không chứa tham số `t=`, access token, hay danh tính cá nhân trong link.
+
+## Statuses
+
+`APPROVED` · `APPROVED_FOR_IMPLEMENTATION` · `REVIEW_REQUIRED` · `DRAFT` ·
+`UNVERIFIED` · `REFERENCE_ONLY` · `SUPERSEDED` · `OBSOLETE` · `MISSING`. Chỉ
+`APPROVED_FOR_IMPLEMENTATION` mới được frontend hiện thực. Thiết kế mới vào ở
+`REVIEW_REQUIRED`; không tự phê duyệt.
+
+## Update / supersession workflow
+
+Làm Figma → trả về node ID → thêm/sửa đúng một hàng mỗi state/viewport → chạy
+`pnpm check:figma-design-index`. Bản thay thế: hàng cũ chuyển `SUPERSEDED` và trỏ
+tới hàng mới; node lịch sử không bị xoá trong checkpoint design.
+
+## DS vs product boundary
+
+Component/variable/style mới **chỉ** tạo trong `FIG-FILE-DS`. Màn hình sản phẩm
+**không** tạo component mới (mục §3 "Product Screens"). Thiếu token/component thì
+compose từ primitive, ghi gap vào registry — không tự bịa token từ wireframe.
+
+## Audit cadence
+
+Registry được kiểm lại ở mỗi phase pre-implementation audit và mỗi design
+checkpoint; cổng tĩnh `pnpm check:figma-design-index` chạy trong `pnpm quality`.

@@ -111,6 +111,38 @@ the Admin shell. `APP1-E01` seeds a deterministic staff fixture through the
 the login endpoint to obtain Playwright `storageState`; no token/account is
 committed.
 
+## 7a. APP1-D01 design references (Figma registry)
+
+The `APP1-D01` design package is delivered in Figma page `APP_01` (`371:3`), section
+`375:11`, and registered in the canonical registry
+[`../../design/FIGMA_DESIGN_INDEX.md`](../../design/FIGMA_DESIGN_INDEX.md). All new
+frames are `REVIEW_REQUIRED`. **Implementation may not use a `REVIEW_REQUIRED`
+entry** — `APP1-A01/A02/S01` are blocked until a human promotes the relevant rows to
+`APPROVED_FOR_IMPLEMENTATION`.
+
+- **NEW — Admin login** (`APP1-A01`): `FIG-ADMIN-LOGIN-DESKTOP-DEFAULT`,
+  `FIG-ADMIN-LOGIN-DESKTOP-SUBMITTING`, `FIG-ADMIN-LOGIN-DESKTOP-VALIDATION`,
+  `FIG-ADMIN-LOGIN-DESKTOP-AUTHFAILED`, `FIG-ADMIN-LOGIN-DESKTOP-RATELIMITED`,
+  `FIG-ADMIN-LOGIN-MOBILE-DEFAULT`, `FIG-ADMIN-LOGIN-MOBILE-ERROR`.
+- **NEW — Admin shell** (`APP1-A02`): `FIG-ADMIN-SHELL-DESKTOP-DEFAULT`,
+  `FIG-ADMIN-SHELL-DESKTOP-LOADING`, `FIG-ADMIN-SHELL-DESKTOP-SESSIONEXPIRED`,
+  `FIG-ADMIN-SHELL-MOBILE-DEFAULT`, `FIG-ADMIN-SHELL-MOBILE-NAVOPEN`,
+  `FIG-ADMIN-SHELL-MOBILE-SESSIONEXPIRED`.
+- **Annotations:** `FIG-APP1D01-REUSE-MAP`, `FIG-APP1D01-RESPONSIVE-NOTES`,
+  `FIG-APP1D01-IMPL-ANNOTATIONS`.
+- **REUSE — Storefront shell** (`APP1-S01`): `FIG-STOREFRONT-SHELL-DESKTOP`,
+  `FIG-STOREFRONT-SHELL-TABLET`, `FIG-STOREFRONT-SHELL-MOBILE` (all `DRAFT`), built
+  from DS `FIG-DS-HEADER`, `FIG-DS-FOOTER`, `FIG-DS-MOBILEMENU`, `FIG-DS-NAVLINK`,
+  `FIG-DS-SEARCHBAR`, `FIG-DS-BUTTON`. **`APP1-S01` is additionally blocked** until
+  the Storefront shell rows are promoted from `DRAFT` and the missing shell-level
+  boundary `FIG-STOREFRONT-NOTFOUND` is designed.
+- **Design-system gaps recorded:** `FIG-DS-INPUT` (no Input component — login inputs
+  composed from primitives), `FIG-DS-SCRIM-TOKEN` (no scrim token — overlay uses
+  `ink/900 @45%`), `FIG-STOREFRONT-NOTFOUND` (no shell-level 404/error frame).
+
+Registry integrity is enforced by `pnpm check:figma-design-index`
+(`07-TESTING-AND-ACCEPTANCE-GATES.md` §6.1).
+
 ## 8. APP0 follow-up routing
 
 Activated in APP1 and assigned to a checkpoint: **FU-A03** → `APP1-B01`;

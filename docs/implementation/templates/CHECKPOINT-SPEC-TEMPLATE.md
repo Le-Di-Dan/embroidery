@@ -18,6 +18,11 @@ For API work, list no more than five tightly related method/path operations.
 
 ## 7. Design reference
 
+For any UI checkpoint, resolve the screen from `docs/design/FIGMA_DESIGN_INDEX.md`:
+list the exact registry IDs and node deep links, confirm they are
+`APPROVED_FOR_IMPLEMENTATION`, and block the checkpoint if they are not. Design
+checkpoints instead update the registry (new frames `REVIEW_REQUIRED`).
+
 ## 8. Authorization, lifecycle and transaction rules
 
 ## 9. Allowed directories/files

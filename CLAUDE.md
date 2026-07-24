@@ -69,7 +69,27 @@ Read:
 - `docs/development/FRONTEND_CONVENTIONS.md`
 - `docs/implementation/05-FRONTEND-AND-SCSS-STANDARD.md` (canonical for styling/SCSS and frontend checkpoint delivery)
 - `docs/implementation/06-OPENAPI-AND-CLIENT-CONTRACT.md` (generated types/Axios client; handwritten TanStack Query hooks)
+- `docs/design/FIGMA_DESIGN_INDEX.md` (canonical Figma registry — see below)
 - Relevant product requirements
+
+### Figma design registry (every design or frontend UI checkpoint)
+
+`docs/design/FIGMA_DESIGN_INDEX.md` is the canonical registry of every Figma artifact and its approval status. Do not duplicate its schema here; follow it.
+
+Before any **design** checkpoint:
+
+- read `FIGMA_DESIGN_INDEX.md`; audit existing canonical/missing entries;
+- create or modify Figma in the approved page/section;
+- update the index in the **same** checkpoint with exact node IDs and deep links (new frames enter `REVIEW_REQUIRED`).
+
+Before any **frontend UI** checkpoint:
+
+- read `FIGMA_DESIGN_INDEX.md`; resolve the exact approved screen/state/viewport entry;
+- open that exact Figma node and read its design-system references;
+- **block** implementation when the entry is missing, stale, superseded, or not `APPROVED_FOR_IMPLEMENTATION`;
+- record the registry IDs used in the completion report.
+
+The gate `pnpm check:figma-design-index` (in `pnpm quality`) enforces registry integrity.
 
 ### Backend
 

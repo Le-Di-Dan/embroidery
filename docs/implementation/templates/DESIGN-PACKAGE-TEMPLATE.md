@@ -9,10 +9,17 @@
 
 ## 3. Existing approved artifacts reused
 
+Cite exact `FIGMA_DESIGN_INDEX.md` registry IDs and direct node links. A surface
+with no `APPROVED_FOR_IMPLEMENTATION` registry entry is not proven `REUSE` — mark it
+`MISSING`/`UNVERIFIED` and report the blocked downstream checkpoint.
+
 ## 4. Screen inventory
 
-| Screen | Surface | Desktop | Mobile | States | Figma reference |
-|---|---|---|---|---|---|
+Every row must map to a `FIGMA_DESIGN_INDEX.md` registry ID; new frames are added to
+the registry in this checkpoint as `REVIEW_REQUIRED` before this package is `PASS`.
+
+| Screen | Surface | Desktop | Mobile | States | Registry ID(s) | Figma node link |
+|---|---|---|---|---|---|---|
 
 ## 5. Navigation and interaction model
 
@@ -33,3 +40,5 @@
 ## 13. Review verdict
 
 Design is reviewed as one complete package; do not split this document into implementation checkpoints.
+
+`FIGMA_INDEX_CONSISTENCY = PASS` (`pnpm check:figma-design-index`) is required before this package can be `PASS`; every created/moved/superseded frame is reflected in `FIGMA_DESIGN_INDEX.md` with exact node links and explicit status.
