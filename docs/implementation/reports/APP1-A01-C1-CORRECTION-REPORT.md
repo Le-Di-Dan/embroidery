@@ -4,6 +4,16 @@
 **Status:** `APP1-A01 = COMPLETE — CORRECTED, DELIVERED_FOR_PRODUCT_OWNER_REVIEW`.
 Not pushed. Two new commits after the A01 evidence commit.
 
+> **APP1-A01-C2 correction-history note:** §H below stated the DEV missing-env
+> readiness-block as fact while §M admitted it was inferred from dependency wiring
+> + a Compose-contract test, not a real Compose startup. APP1-A01-C2 supplied the
+> previously missing real isolated Compose evidence for the development failure and
+> production skip behaviour (dev-fail non-zero + readiness blocked, create/reuse,
+> prod-skip, unknown-env fail-closed, zero residue) and fixed a genuine
+> result-line observability defect it uncovered. See
+> [`APP1-A01-C2-CORRECTION-REPORT.md`](./APP1-A01-C2-CORRECTION-REPORT.md). The
+> statements below are retained unchanged as historical evidence.
+
 ## A. Preflight and original A01 revalidation
 
 - Preflight HEAD: `930d0cd` (A01 evidence commit B). Working tree clean; branch `production`.
