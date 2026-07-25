@@ -29,13 +29,18 @@
 > zero residue) closing the A01-C1 evidence gap; report
 > `../reports/APP1-A01-C2-CORRECTION-REPORT.md`. The Product Owner completed the
 > A01 live test and accepted it, so **`APP1-A01` is
-> `COMPLETE — CORRECTED — PRODUCT_OWNER_ACCEPTED`**. **`APP1-A02` is
-> `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`** — authenticated Admin shell (protected-
+> `COMPLETE — CORRECTED — PRODUCT_OWNER_ACCEPTED`**. The Product Owner also
+> live-tested and accepted A02, so **`APP1-A02` is
+> `COMPLETE — PRODUCT_OWNER_ACCEPTED`** — authenticated Admin shell (protected-
 > layout shell, one server-hydrated current-staff query, logout, client
 > session-expiry modal, mobile drawer; no migration; live-tested through
 > `admin.embroidery.local`), report `../reports/APP1-A02-COMPLETION-REPORT.md`.
-> `APP1-S01` remains
-> `BLOCKED_BY_STOREFRONT_DESIGN_APPROVAL_AND_COVERAGE` (Storefront unapproved);
+> **`APP1-D02` is `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`** — Storefront shell &
+> not-found design SUPPLEMENT (standalone desktop/tablet/mobile shell, mobile
+> navigation-open, desktop/mobile `/404`; Figma page `APP_01` section `405:2224`;
+> all rows `REVIEW_REQUIRED`; `FIG-STOREFRONT-NOTFOUND` gap closed), report
+> `../reports/APP1-D02-COMPLETION-REPORT.md`. `APP1-S01` remains
+> `BLOCKED_BY_PRODUCT_OWNER_APP1_D02_REVIEW`;
 > `APP1-E01` is `BLOCKED_BY_APP1_A02_PRODUCT_OWNER_REVIEW_AND_APP1_S01`. All others
 > `NOT_STARTED` per §7. Phase status is owned
 > by `../10-MASTER-APPLICATION-ROADMAP.md` §6.

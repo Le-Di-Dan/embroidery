@@ -4,6 +4,10 @@
 **Verdict:** `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`
 **Date:** 2026-07-25
 
+> **Product Owner acceptance (recorded at APP1-D02, 2026-07-25):** the Product Owner
+> live-tested this checkpoint (`APP1-A02 LIVE TEST = PASSED`) and accepted it, so
+> **`APP1-A02` is now `COMPLETE — PRODUCT_OWNER_ACCEPTED`**.
+
 ## A. Preflight and accepted dependency chain
 
 - **Branch:** `production`. **Initial HEAD (before Commit A):** `9f01083c0cbc1e25b54a2899f0aa76658b99911c`. Working tree clean at start.
