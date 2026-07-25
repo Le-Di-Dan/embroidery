@@ -1,0 +1,399 @@
+// Admin staff login — feature-scoped styles (APP1-A01). Design source:
+// FIG-ADMIN-LOGIN-* (file BQwqV8GdfUIELvsQDB1UQE). Colour/type/radius/spacing
+// come from @embroidery/styles tokens; a few screen-specific dimensions have no
+// shared token and are local literals (documented inline). Mobile-first: the
+// base is the stacked layout; two columns apply from the local login breakpoint.
+
+@use '@embroidery/styles' as styles;
+
+// Local login layout breakpoint — the design system defers responsive
+// breakpoints; this is the approved login desktop↔mobile transition (1440/390).
+$login-breakpoint: 1024px;
+
+// Screen-specific composition constants (no shared token; not a token system).
+$brand-panel-width: 780px;
+$auth-card-width: 440px;
+$lede-max-width: 560px;
+$field-height: 48px;
+$mobile-inset: 20px;
+$mobile-top-inset: 56px;
+$stack-gap: 28px;
+
+.staff-login {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: styles.$color-background-primary;
+
+  @media (min-width: $login-breakpoint) {
+    flex-direction: row;
+  }
+}
+// --- Brand panel ------------------------------------------------------------
+
+.staff-login__brand {
+  display: flex;
+  flex-direction: column;
+  gap: $stack-gap;
+  width: 100%;
+  padding: $mobile-top-inset $mobile-inset 0;
+  background: transparent;
+
+  @media (min-width: $login-breakpoint) {
+    flex-shrink: 0;
+    justify-content: space-between;
+    gap: 0;
+    width: $brand-panel-width;
+    padding: styles.spacing(64) 72px;
+    background: styles.$color-background-secondary;
+  }
+}
+
+.staff-login__brand-mark {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+
+  @media (min-width: $login-breakpoint) {
+    gap: 6px;
+  }
+}
+
+.staff-login__eyebrow {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  line-height: 1.4;
+  letter-spacing: 0.12px;
+  color: styles.$color-action-primary;
+}
+
+.staff-login__brand-title {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-m;
+  font-weight: styles.$font-weight-semibold;
+  line-height: 1.2;
+  letter-spacing: -0.16px;
+  color: styles.$color-text-primary;
+}
+
+.staff-login__editorial {
+  display: none;
+
+  @media (min-width: $login-breakpoint) {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(16) + styles.spacing(4); // 20px
+  }
+}
+
+.staff-login__headline {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-l;
+  font-weight: styles.$font-weight-semibold;
+  line-height: 1.16;
+  letter-spacing: -0.2px;
+  color: styles.$color-text-primary;
+}
+
+.staff-login__lede {
+  max-width: $lede-max-width;
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-regular;
+  line-height: 1.6;
+  color: styles.$color-text-secondary;
+}
+
+.staff-login__footnote {
+  display: none;
+
+  @media (min-width: $login-breakpoint) {
+    display: block;
+    margin: 0;
+    font-family: styles.$font-family-primary;
+    font-size: styles.$font-size-body-s;
+    line-height: 1.5;
+    color: styles.$color-text-tertiary;
+  }
+}
+// --- Form panel + card ------------------------------------------------------
+
+.staff-login__form-panel {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  padding: $stack-gap $mobile-inset styles.spacing(24);
+
+  @media (min-width: $login-breakpoint) {
+    align-items: center;
+    justify-content: center;
+    padding: styles.spacing(48);
+  }
+}
+
+.staff-login__card {
+  width: 100%;
+
+  @media (min-width: $login-breakpoint) {
+    width: $auth-card-width;
+    padding: styles.spacing(48);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-lg;
+    // Elevation/Floating — no shared effect token in @embroidery/styles.
+    box-shadow: 0 4px 12px rgba(23, 23, 23, 0.08);
+  }
+}
+// --- Form -------------------------------------------------------------------
+
+.staff-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  width: 100%;
+}
+
+.staff-login-form--pending .staff-login-field {
+  opacity: 0.6;
+}
+
+.staff-login-form__title {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.staff-login-form__heading {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-medium;
+  line-height: 1.3;
+  color: styles.$color-text-primary;
+}
+
+.staff-login-form__subtitle {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-secondary;
+}
+
+.staff-login-form__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(12) styles.spacing(24);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  line-height: 1.2;
+  color: styles.$color-surface-primary; // text/inverse (white); no inverse token
+  background: styles.$color-action-primary;
+  border: none;
+  border-radius: styles.$radius-md;
+  cursor: pointer;
+
+  @include styles.motion-safe {
+    transition: background-color styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+  }
+
+  &:active:not(:disabled) {
+    background: styles.$color-action-active;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-active;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    // action/disabled (#d6d3d1) has no token; border-secondary is value-identical.
+    background: styles.$color-border-secondary;
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.staff-login-form__status {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  text-align: center;
+  color: styles.$color-text-tertiary;
+}
+
+.staff-login-form__countdown {
+  margin-left: styles.spacing(4);
+  font-variant-numeric: tabular-nums;
+}
+
+.staff-login-form__footer {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-tertiary;
+}
+// --- Field ------------------------------------------------------------------
+
+.staff-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  width: 100%;
+}
+
+.staff-login-field__label {
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-primary;
+}
+
+.staff-login-field__control {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(12);
+  min-height: $field-height;
+  padding: 0 styles.spacing(16);
+  background: styles.$color-background-secondary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+
+  &:focus-within {
+    border-color: styles.$color-action-primary;
+  }
+}
+
+.staff-login-field__control--error {
+  border-width: 1.5px;
+  border-color: styles.$color-status-error;
+
+  &:focus-within {
+    border-color: styles.$color-status-error;
+  }
+}
+
+.staff-login-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: $field-height;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  line-height: 1.6;
+  color: styles.$color-text-primary;
+  background: transparent;
+  border: none;
+  outline: none;
+
+  &::placeholder {
+    color: styles.$color-text-tertiary;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.staff-login-field__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(4);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-secondary;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+    border-radius: styles.$radius-xs;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.staff-login-field__error {
+  display: flex;
+  gap: styles.spacing(4);
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-status-error;
+}
+
+.staff-login-field__error-icon {
+  flex-shrink: 0;
+}
+// --- Alert ------------------------------------------------------------------
+
+.staff-login-alert {
+  display: flex;
+  gap: styles.spacing(12);
+  padding: styles.spacing(12) styles.spacing(16);
+  background: styles.$color-background-secondary;
+  border: 1.5px solid transparent;
+  border-radius: styles.$radius-md;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.staff-login-alert--error {
+  border-color: styles.$color-status-error;
+
+  .staff-login-alert__icon {
+    color: styles.$color-status-error;
+  }
+}
+
+.staff-login-alert--warning {
+  border-color: styles.$color-status-warning;
+
+  .staff-login-alert__icon {
+    color: styles.$color-status-warning;
+  }
+}
+
+.staff-login-alert__icon {
+  flex-shrink: 0;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+}
+
+.staff-login-alert__message {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-primary;
+}

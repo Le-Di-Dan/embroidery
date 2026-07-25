@@ -5,8 +5,9 @@ import {
   healthCheck,
   healthReadiness,
   normalizeApiClientError,
+  staffSessionCreate,
 } from './index';
-import type { HealthStatusResponse, ReadinessStatusResponse } from './index';
+import type { HealthStatusResponse, ReadinessStatusResponse, StaffLoginRequest } from './index';
 
 describe('package public API smoke', () => {
   it('re-exports the generated operations and the handwritten runtime together', () => {
@@ -14,6 +15,12 @@ describe('package public API smoke', () => {
     expect(typeof healthReadiness).toBe('function');
     expect(typeof createBrowserApiClient).toBe('function');
     expect(typeof normalizeApiClientError).toBe('function');
+    expect(typeof staffSessionCreate).toBe('function');
+  });
+
+  it('exposes the staff login request type on the public boundary', () => {
+    const body: StaffLoginRequest = { email: 'admin@example.test', password: 'secret' };
+    expect(body.email).toBe('admin@example.test');
   });
 
   it('calls a generated operation through an injected instance with no real network', async () => {

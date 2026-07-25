@@ -6,6 +6,9 @@
 
 @use '@embroidery/styles' as styles;
 
+// Feature styles (each feature owns a leaf stylesheet, composed here).
+@use '../features/staff-auth/styles/staff-login';
+
 // Browser normalization: predictable box model.
 *,
 *::before,
