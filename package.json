@@ -24,6 +24,7 @@
     "check:e2e": "pnpm --filter @embroidery/e2e-testing check:e2e",
     "check:e2e-boundaries": "node tools/check-e2e-boundaries.mjs",
     "check:spike-boundaries": "node tools/check-spike-boundaries.mjs",
+    "smoke:app1-bootstrap": "node tools/smoke-app1-bootstrap-compose.mjs",
     "e2e": "pnpm --filter @embroidery/e2e-testing e2e",
     "e2e:smoke": "pnpm --filter @embroidery/e2e-testing e2e:smoke",
     "e2e:full": "pnpm --filter @embroidery/e2e-testing e2e:full",

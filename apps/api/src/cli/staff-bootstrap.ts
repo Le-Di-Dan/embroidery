@@ -39,16 +39,21 @@ const ENSURE_OUTCOME_STATUS: Record<EnsureBootstrapOutcome, BootstrapStatus> = {
   inactive: 'FAILED_EXISTING_ADMIN_NOT_ACTIVE',
 };
 
-/** Emits the single machine-parseable result line and returns its exit code. */
+/**
+ * Emits the single machine-parseable result line and returns its exit code.
+ *
+ * Writes straight to stdout/stderr rather than the Nest `Logger`: bootstrapping
+ * the app context with `{ logger: false }` calls `Logger.overrideLogger(false)`,
+ * which globally SILENCES every `Logger` instance — so a `Logger`-emitted line
+ * would be swallowed for every post-boot outcome (CREATED / REUSED_EXISTING /
+ * mismatch / not-active), leaving no parseable result. A leading tag keeps the
+ * line greppable in Compose logs. It never contains a secret.
+ */
 function report(status: BootstrapStatus, detail: string, adminId?: string): number {
-  const logger = new Logger(LOGGER);
   const suffix = adminId === undefined ? '' : ` admin=${adminId}`;
-  const line = `result=${status} ${detail}${suffix}`.trim();
-  if (STATUS_EXIT_CODE[status] === 0) {
-    logger.log(line);
-  } else {
-    logger.error(line);
-  }
+  const line = `[${LOGGER}] result=${status} ${detail}${suffix}`.trim();
+  const stream = STATUS_EXIT_CODE[status] === 0 ? process.stdout : process.stderr;
+  stream.write(`${line}\n`);
   return STATUS_EXIT_CODE[status];
 }
 
@@ -109,7 +114,9 @@ main()
   })
   .catch((error: unknown) => {
     // A safe, secret-free message; the password is never part of any error here.
+    // Written to stderr directly for the same reason as `report()` — a booted
+    // app context may have silenced the Nest `Logger`.
     const message = error instanceof Error ? error.message : String(error);
-    new Logger(LOGGER).error(`result=FAILED_BOOTSTRAP ${message}`);
+    process.stderr.write(`[${LOGGER}] result=FAILED_BOOTSTRAP ${message}\n`);
     process.exitCode = 1;
   });

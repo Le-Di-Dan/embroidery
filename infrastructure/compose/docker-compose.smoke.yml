@@ -1,0 +1,39 @@
+# Test-only isolation override for APP1-A01-C2 Compose bootstrap-policy smokes.
+#
+# NEVER a normal stack. Layered on top of docker-compose.dev.yml ONLY by the
+# `tools/smoke-app1-bootstrap-compose.mjs` harness, which supplies a unique
+# SMOKE_PROJECT per run through a temporary ignored env file. It isolates the
+# project name, the network, and (by project prefixing) the Postgres volume from
+# the persistent `embroidery-dev` stack, and publishes no host ports so a smoke
+# run can never collide with the developer's running stack or database.
+name: ${SMOKE_PROJECT:-embroidery-a01c2-smoke}
+
+networks:
+  embroidery:
+    name: ${SMOKE_PROJECT:-embroidery-a01c2-smoke}-net
+
+services:
+  # No published host port: the isolated database is reached only over the
+  # isolated network (and via `docker exec` for assertions), never 127.0.0.1.
+  # `!reset` clears the base list (compose otherwise merges/appends ports).
+  postgres:
+    ports: !reset []
+
+  # Reuse the images the developer's `docker:dev:up` already built, so an
+  # isolated smoke never rebuilds (fast, no per-project image residue). Run the
+  # normal dev stack once first if these images are absent.
+  db-migrate:
+    image: ${SMOKE_DB_MIGRATE_IMAGE:-embroidery-dev-db-migrate:latest}
+  admin:
+    image: ${SMOKE_ADMIN_IMAGE:-embroidery-dev-admin:latest}
+
+  # The environment discriminator is parameterised so a single override can
+  # drive development, production and unknown-environment smoke cases. The live
+  # API source is bind-mounted so the container's `nest build` compiles the
+  # working tree (the reused image otherwise bakes source from the last build).
+  staff-bootstrap:
+    image: ${SMOKE_STAFF_BOOTSTRAP_IMAGE:-embroidery-dev-staff-bootstrap:latest}
+    volumes:
+      - ../../apps/api/src:/app/apps/api/src
+    environment:
+      NODE_ENV: ${SMOKE_STAFF_NODE_ENV:-development}
