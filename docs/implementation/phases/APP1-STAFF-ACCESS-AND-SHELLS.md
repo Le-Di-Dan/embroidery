@@ -172,15 +172,41 @@ entry** — `APP1-A01/A02/S01` are blocked until a human promotes the relevant r
   `FIG-ADMIN-SHELL-MOBILE-SESSIONEXPIRED`.
 - **Annotations:** `FIG-APP1D01-REUSE-MAP`, `FIG-APP1D01-RESPONSIVE-NOTES`,
   `FIG-APP1D01-IMPL-ANNOTATIONS`.
-- **REUSE — Storefront shell** (`APP1-S01`): `FIG-STOREFRONT-SHELL-DESKTOP`,
-  `FIG-STOREFRONT-SHELL-TABLET`, `FIG-STOREFRONT-SHELL-MOBILE` (all `DRAFT`), built
-  from DS `FIG-DS-HEADER`, `FIG-DS-FOOTER`, `FIG-DS-MOBILEMENU`, `FIG-DS-NAVLINK`,
-  `FIG-DS-SEARCHBAR`, `FIG-DS-BUTTON`. **`APP1-S01` is additionally blocked** until
-  the Storefront shell rows are promoted from `DRAFT` and the missing shell-level
-  boundary `FIG-STOREFRONT-NOTFOUND` is designed.
+- **SUPPLEMENT — Storefront shell & not-found** (`APP1-D02`, for `APP1-S01`):
+  delivered in Figma page `APP_01` (`371:3`), section `APP1-D02 · Storefront Shell &
+  Not-found` (`405:2224`), all rows `REVIEW_REQUIRED`. Standalone, implementation-
+  ready shared shell extracted from the approved Homepage (`183:7`/`189:266`/`191:412`)
+  and composed from DS `FIG-DS-HEADER` (Full ≥1024 / Compact <1024), `FIG-DS-FOOTER`,
+  `FIG-DS-MOBILEMENU`, `FIG-DS-BUTTON` (`FIG-DS-NAVLINK`/`FIG-DS-SEARCHBAR` embedded):
+  - `FIG-STOREFRONT-SHELL-DESKTOP-DEFAULT` (`405:2225`),
+    `FIG-STOREFRONT-SHELL-TABLET-DEFAULT` (`405:3733`),
+    `FIG-STOREFRONT-SHELL-MOBILE-DEFAULT` (`405:3786`),
+    `FIG-STOREFRONT-SHELL-MOBILE-NAVOPEN` (`410:2311`) — desktop/tablet/mobile shell
+    (header · `<main>` page-content slot · footer) + mobile navigation-open drawer.
+  - `FIG-STOREFRONT-NOTFOUND` (`411:2337`, desktop) + `FIG-STOREFRONT-NOTFOUND-MOBILE`
+    (`411:3851`) — shared-shell `/404` boundary with safe copy and home/discover
+    recovery actions; tablet `/404` documented as interpolation (no dedicated frame).
+  - `FIG-STOREFRONT-SHELL-NOTES` (`412:2396`) — ownership, responsive, interaction,
+    and accessibility annotations.
+
+  **S01 implementation handoff:** implement the shared Storefront route/layout that
+  renders every route into the `<main>` slot; the responsive header (Full ≥1024,
+  Compact <1024) with a focus-trapped, scroll-locked, Escape/backdrop-dismissible
+  mobile drawer; the compact mobile footer; the skip-link; and the `/404` not-found
+  boundary with home/discover recovery. Shell owns landmarks and no page `<h1>`;
+  each page owns its own `<h1>` and content. SCSS-only via `@embroidery/styles`
+  tokens; local breakpoint (no global breakpoint token, consistent with Admin
+  FU-A16); scrim via local composition (`ink/900 @45%`, GAP-D02). Do **not**
+  implement Homepage or any business capability. **`APP1-S01` remains blocked**
+  until the Product Owner promotes these rows from `REVIEW_REQUIRED` to
+  `APPROVED_FOR_IMPLEMENTATION`.
+- The three prior Homepage shell-reference rows (`FIG-STOREFRONT-SHELL-DESKTOP`,
+  `FIG-STOREFRONT-SHELL-TABLET`, `FIG-STOREFRONT-SHELL-MOBILE`) are `SUPERSEDED`
+  by the standalone D02 shell rows above; the Homepage frames remain valid Homepage
+  references and are **not** the shell implementation target.
 - **Design-system gaps recorded:** `FIG-DS-INPUT` (no Input component — login inputs
   composed from primitives), `FIG-DS-SCRIM-TOKEN` (no scrim token — overlay uses
-  `ink/900 @45%`), `FIG-STOREFRONT-NOTFOUND` (no shell-level 404/error frame).
+  `ink/900 @45%`). The former `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02.
 
 Registry integrity is enforced by `pnpm check:figma-design-index`
 (`07-TESTING-AND-ACCEPTANCE-GATES.md` §6.1).

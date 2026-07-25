@@ -83,18 +83,27 @@ Section **`375:11`** — [APP1-D01 · Staff Access & Application Shells](https:/
 | FIG-APP1D01-RESPONSIVE-NOTES | Admin | APP1-D01 | Responsive & Interaction Notes | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 392:15 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=392-15) | APP1-D01 | — | — | 2026-07-25 |
 | FIG-APP1D01-IMPL-ANNOTATIONS | Admin | APP1-D01 | Implementation Annotations | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 393:15 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=393-15) | APP1-D01 | — | — | 2026-07-25 |
 
-### 4.2 Storefront public shell (REUSE target for APP1-S01)
+### 4.2 APP1-D02 — Storefront shell & not-found (NEW, this checkpoint)
 
-Assembled hi-fi screens are **DRAFT** in Figma (named "Draft"); the shell is
-composed from the approved DS Header/Footer/MobileMenu (§6). APP1-S01 is blocked
-until these are promoted to `APPROVED_FOR_IMPLEMENTATION` and a shell-level
-not-found/error boundary is added (`FIG-STOREFRONT-NOTFOUND`, §7).
+Section **`405:2224`** — [APP1-D02 · Storefront Shell & Not-found](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=405-2224), page **APP_01**. Standalone, implementation-ready shared shell + `/404` not-found, extracted from the approved Homepage (`183:7`/`189:266`/`191:412`) and composed from the approved DS Header/Footer/MobileMenu/Button (§6). All rows are `REVIEW_REQUIRED` pending human design approval. This package **supersedes the shell-reference role** of the DRAFT Homepage rows below (which remain valid Homepage references).
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| FIG-STOREFRONT-SHELL-DESKTOP | Storefront | / | Public Shell (Homepage) | Default | Desktop 1440 | high-fidelity | DRAFT | BQwqV8GdfUIELvsQDB1UQE | User Interface | 183:7 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=183-7) | APP1-S01 | — | — | 2026-07-25 |
-| FIG-STOREFRONT-SHELL-TABLET | Storefront | / | Public Shell (Homepage) | Default | Tablet 1024 | high-fidelity | DRAFT | BQwqV8GdfUIELvsQDB1UQE | User Interface | 189:266 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=189-266) | APP1-S01 | — | — | 2026-07-25 |
-| FIG-STOREFRONT-SHELL-MOBILE | Storefront | / | Public Shell (Homepage) | Default | Mobile 390 | high-fidelity | DRAFT | BQwqV8GdfUIELvsQDB1UQE | User Interface | 191:412 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=191-412) | APP1-S01 | — | — | 2026-07-25 |
+| FIG-STOREFRONT-SHELL-DESKTOP-DEFAULT | Storefront | / | Storefront Shell | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 405:2225 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=405-2225) | APP1-D02 | — | — | 2026-07-25 |
+| FIG-STOREFRONT-SHELL-TABLET-DEFAULT | Storefront | / | Storefront Shell | Default | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 405:3733 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=405-3733) | APP1-D02 | — | — | 2026-07-25 |
+| FIG-STOREFRONT-SHELL-MOBILE-DEFAULT | Storefront | / | Storefront Shell | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 405:3786 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=405-3786) | APP1-D02 | — | — | 2026-07-25 |
+| FIG-STOREFRONT-SHELL-MOBILE-NAVOPEN | Storefront | / | Storefront Shell | Navigation Open | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 410:2311 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=410-2311) | APP1-D02 | — | — | 2026-07-25 |
+| FIG-STOREFRONT-NOTFOUND | Storefront | /404 | Not-found Boundary | Default | Desktop 1440 | boundary | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 411:2337 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=411-2337) | APP1-D02 | — | — | 2026-07-25 |
+| FIG-STOREFRONT-NOTFOUND-MOBILE | Storefront | /404 | Not-found Boundary | Default | Mobile 390 | boundary | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 411:3851 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=411-3851) | APP1-D02 | — | — | 2026-07-25 |
+| FIG-STOREFRONT-SHELL-NOTES | Storefront | APP1-D02 | Shell Implementation & A11y Notes | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 412:2396 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=412-2396) | APP1-D02 | — | — | 2026-07-25 |
+
+**Superseded Homepage shell-reference rows** — the assembled hi-fi Homepage screens remain in Figma as Homepage design references; their prior double-duty as the S01 *shell* reference is superseded by the standalone D02 package above. Do not implement these as the shell.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-STOREFRONT-SHELL-DESKTOP | Storefront | / | Public Shell (Homepage) | Default | Desktop 1440 | high-fidelity | SUPERSEDED | BQwqV8GdfUIELvsQDB1UQE | User Interface | 183:7 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=183-7) | APP1-S01 | → FIG-STOREFRONT-SHELL-DESKTOP-DEFAULT | Homepage reference; shell role moved to standalone D02 frame | 2026-07-25 |
+| FIG-STOREFRONT-SHELL-TABLET | Storefront | / | Public Shell (Homepage) | Default | Tablet 1024 | high-fidelity | SUPERSEDED | BQwqV8GdfUIELvsQDB1UQE | User Interface | 189:266 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=189-266) | APP1-S01 | → FIG-STOREFRONT-SHELL-TABLET-DEFAULT | Homepage reference; shell role moved to standalone D02 frame | 2026-07-25 |
+| FIG-STOREFRONT-SHELL-MOBILE | Storefront | / | Public Shell (Homepage) | Default | Mobile 390 | high-fidelity | SUPERSEDED | BQwqV8GdfUIELvsQDB1UQE | User Interface | 191:412 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=191-412) | APP1-S01 | → FIG-STOREFRONT-SHELL-MOBILE-DEFAULT | Homepage reference; shell role moved to standalone D02 frame | 2026-07-25 |
 
 ## 5. IA and user-flow registry
 
@@ -148,7 +157,6 @@ Consumed by APP1-D01 via `importVariableByKeyAsync` / `importStyleByKeyAsync`:
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| FIG-STOREFRONT-NOTFOUND | Storefront | /404 | Shell-level not-found / error boundary | Missing | — | boundary | MISSING | — | — |  | — | APP1-S01 | — | No shell-level 404/error frame exists in the product file (audit 2026-07-25) | 2026-07-25 |
 | FIG-DS-INPUT | DS | Forms | Input / TextField / Password component | Missing | — | component | MISSING | — | — |  | — | APP1-D01 | — | GAP-D01 — absent from DS (search_design_system 2026-07-25); composed from primitives per §6.3 | 2026-07-25 |
 | FIG-DS-SCRIM-TOKEN | DS | Tokens | Scrim / dark-surface semantic token | Missing | — | variable | MISSING | — | — |  | — | APP1-D01 | — | GAP-D02 — no dark/scrim semantic token; overlay uses ink/900 @45% | 2026-07-25 |
 
@@ -176,16 +184,19 @@ canonical entry exists for any APP1-D01 composite key.
 
 ## 10. Audit metadata and coverage summary
 
-- **Audit date:** 2026-07-25 (APP1-D01). **Auditor tooling:** Figma MCP plugin API.
+- **Audit date:** 2026-07-25 (APP1-D01; supplemented at APP1-D02). **Auditor
+  tooling:** Figma MCP plugin API.
 - **Files enumerated:** 2/2 — `FIG-FILE-PRODUCT` (4 pages) + `FIG-FILE-DS` (19 pages).
-- **Product pages:** Information Architecture (`0:1`), APP_01 (`371:3`), Wireframe
+- **Product pages:** Information Architecture (`0:1`), APP_01 (`371:3` — Admin
+  APP1-D01 section `375:11` + Storefront APP1-D02 section `405:2224`), Wireframe
   (`17:55`, WF01–WF09), User Interface (`166:1457`, UI01–UI05).
 - **DS catalog:** 4 variable collections (Primitives 16 / Color 19 / Spacing 10 /
   Radius 5), 11 text styles, 2 effect styles, component sets across 8 HF01 pages.
-- **Registry coverage:** 16 APP1-D01 rows (all `REVIEW_REQUIRED`), 3 Storefront
-  reuse rows (`DRAFT`), 4 IA/flow rows (`REFERENCE_ONLY`), 7 DS catalog rows
-  (`APPROVED`), 3 `MISSING`/gap rows.
-- **Gaps:** GAP-D01 (no Input component), GAP-D02 (no scrim token),
-  `FIG-STOREFRONT-NOTFOUND` (no shell-level error boundary).
+- **Registry coverage:** 16 APP1-D01 rows (all `REVIEW_REQUIRED`), 7 APP1-D02
+  Storefront shell/not-found rows (all `REVIEW_REQUIRED`), 3 Homepage shell-reference
+  rows (`SUPERSEDED` → APP1-D02), 4 IA/flow rows (`REFERENCE_ONLY`), 7 DS catalog
+  rows (`APPROVED`), 2 `MISSING`/gap rows.
+- **Gaps:** GAP-D01 (no Input component), GAP-D02 (no scrim token). The former
+  `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02 (now `REVIEW_REQUIRED`, §4.2).
 - **Consistency gate:** `pnpm check:figma-design-index` — see
   `tools/check-figma-design-index.mjs`.
