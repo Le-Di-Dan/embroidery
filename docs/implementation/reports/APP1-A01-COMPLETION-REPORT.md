@@ -4,6 +4,14 @@
 **Verdict:** `DELIVERED_FOR_HUMAN_REVIEW` (one screen; approval recorded; not pushed)
 **Date:** 2026-07-25
 
+> **APP1-A01-C1 correction (2026-07-25):** The Product Owner had not accepted this
+> original A01 delivery. A correction checkpoint fixed three runtime findings —
+> password-visibility runtime behaviour (a dev-gateway hydration failure, not the
+> component), bidirectional Admin route protection, and automatic Compose admin
+> bootstrap. This report's original claims are retained as historical evidence;
+> see [`APP1-A01-C1-CORRECTION-REPORT.md`](./APP1-A01-C1-CORRECTION-REPORT.md).
+> Status is now `COMPLETE — CORRECTED, DELIVERED_FOR_PRODUCT_OWNER_REVIEW`.
+
 ## A. Preflight and dependency chain
 
 - **Branch:** `production`. **Initial HEAD (before Commit A):** `be52c084b757b3b9dd60e34b573f139e74634e0c`. Working tree clean at start.
