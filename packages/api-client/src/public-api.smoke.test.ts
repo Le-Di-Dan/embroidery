@@ -2,12 +2,19 @@ import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 
 import {
   createBrowserApiClient,
+  createServerApiClient,
   healthCheck,
   healthReadiness,
   normalizeApiClientError,
+  staffSelfGet,
   staffSessionCreate,
 } from './index';
-import type { HealthStatusResponse, ReadinessStatusResponse, StaffLoginRequest } from './index';
+import type {
+  HealthStatusResponse,
+  ReadinessStatusResponse,
+  StaffLoginRequest,
+  StaffSelfGet200,
+} from './index';
 
 describe('package public API smoke', () => {
   it('re-exports the generated operations and the handwritten runtime together', () => {
@@ -16,11 +23,22 @@ describe('package public API smoke', () => {
     expect(typeof createBrowserApiClient).toBe('function');
     expect(typeof normalizeApiClientError).toBe('function');
     expect(typeof staffSessionCreate).toBe('function');
+    expect(typeof staffSelfGet).toBe('function');
+    expect(typeof createServerApiClient).toBe('function');
   });
 
   it('exposes the staff login request type on the public boundary', () => {
     const body: StaffLoginRequest = { email: 'admin@example.test', password: 'secret' };
     expect(body.email).toBe('admin@example.test');
+  });
+
+  it('exposes the current-staff response type on the public boundary', () => {
+    const view: StaffSelfGet200['data'] = {
+      id: '00000000-0000-0000-0000-000000000000',
+      email: 'admin@example.test',
+      displayName: 'Operator',
+    };
+    expect(view.displayName).toBe('Operator');
   });
 
   it('calls a generated operation through an injected instance with no real network', async () => {

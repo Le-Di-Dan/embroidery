@@ -15,12 +15,21 @@ import type { NextConfig } from 'next';
 const configRequire = createRequire(path.join(__dirname, 'next.config.ts'));
 const stylesLoadPath = path.dirname(configRequire.resolve('@embroidery/styles'));
 
+// The dev server serves its `/_next/*` internals (including the Turbopack HMR
+// WebSocket, which carries an `Origin` header) only to allow-listed origins. In
+// Docker the browser reaches the app through the gateway host, not `localhost`,
+// so that host must be allow-listed or the client never hydrates (APP1-A01-C1).
+// Resolved from the gateway hostname (defaults to the canonical dev host);
+// ignored by production builds.
+const devOrigin = process.env.ADMIN_HOST ?? 'admin.embroidery.local';
+
 const nextConfig: NextConfig = {
   // Standalone output keeps production containers small (infrastructure/docker).
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
   // Workspace packages are consumed as TypeScript source (just-in-time packages).
   transpilePackages: ['@embroidery/api-client', '@embroidery/contracts'],
+  allowedDevOrigins: [devOrigin],
   sassOptions: {
     loadPaths: [stylesLoadPath],
   },

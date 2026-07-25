@@ -1,10 +1,14 @@
 import { createBrowserApiClient } from '@embroidery/api-client';
 
+import { toApiOriginBase } from './api-base';
+
 /**
- * Same-origin gateway path for browser API calls (D-036). Resolved from
+ * Same-origin gateway base for browser API calls (D-036). Resolved from
  * `NEXT_PUBLIC_API_BASE_PATH`; the constant is the documented gateway default,
  * not a business value. The browser always talks to the gateway on its own
  * origin, so the session cookie is sent automatically — no CORS credentials.
+ * The generated operations already include the `/api` prefix, so the axios base
+ * is reduced to the origin (`toApiOriginBase`) to avoid a `/api/api/...` 404.
  */
 const DEFAULT_API_BASE_PATH = '/api';
 
@@ -20,7 +24,7 @@ let cachedClient: BrowserApiClient | undefined;
  */
 export function getBrowserApiClient(): BrowserApiClient {
   if (cachedClient === undefined) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_PATH ?? DEFAULT_API_BASE_PATH;
+    const baseUrl = toApiOriginBase(process.env.NEXT_PUBLIC_API_BASE_PATH ?? DEFAULT_API_BASE_PATH);
     cachedClient = createBrowserApiClient({ baseUrl });
   }
   return cachedClient;

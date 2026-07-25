@@ -84,11 +84,21 @@ services:
       NODE_ENV: development
       NEXT_PUBLIC_API_BASE_PATH: ${NEXT_PUBLIC_API_BASE_PATH:-/api}
       INTERNAL_API_BASE_URL: http://api:4000/api
+      # Browser reaches the app through this gateway host, not localhost; the dev
+      # server must allow-list it so `/_next/*` (HMR) is served and the client
+      # hydrates (APP1-A01-C1).
+      ADMIN_HOST: ${ADMIN_HOST:-admin.embroidery.local}
       WATCHPACK_POLLING: 'true'
     volumes:
       - ../../apps/admin/src:/app/apps/admin/src
       - ../../packages/contracts/src:/app/packages/contracts/src
       - ../../packages/api-client/src:/app/packages/api-client/src
+    depends_on:
+      # The public Admin must not be advertised ready until a bootstrap admin
+      # exists (or was intentionally skipped in production). A development
+      # missing-env failure fails this dependency and keeps the stack un-ready.
+      staff-bootstrap:
+        condition: service_completed_successfully
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3001/healthz']
       interval: 15s
@@ -109,11 +119,20 @@ services:
       API_PORT: '4000'
       # Reach the database over the compose network (never the host mapping).
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
+      # Browser staff-session mutations arrive with the gateway Origin; it must be
+      # allow-listed or login/logout are rejected with 403 (ADR-APP1-001 §6).
+      STAFF_ALLOWED_ORIGINS: ${STAFF_ALLOWED_ORIGINS:-http://admin.embroidery.local}
+      # Dev over plain HTTP: the session cookie cannot be Secure, so use the
+      # unprefixed cookie name (the __Host- prefix requires Secure).
+      STAFF_SESSION_COOKIE_SECURE: ${STAFF_SESSION_COOKIE_SECURE:-false}
       CHOKIDAR_USEPOLLING: 'true'
       TSC_WATCHFILE: DynamicPriorityPolling
     depends_on:
       postgres:
         condition: service_healthy
+      # Serve requests only against a migrated schema.
+      db-migrate:
+        condition: service_completed_successfully
     volumes:
       - ../../apps/api/src:/app/apps/api/src
     healthcheck:
@@ -125,6 +144,50 @@ services:
     networks:
       - embroidery
     restart: unless-stopped
+
+  # One-shot: apply the canonical forward-only migrations, then exit. Owns no
+  # port and is never routed through the gateway. Reuses the API image so it
+  # runs the same committed migration tooling (@embroidery/database).
+  db-migrate:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/api.Dockerfile
+      target: dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ['pnpm', '--filter', '@embroidery/database', 'db:migrate']
+    restart: 'no'
+    networks:
+      - embroidery
+
+  # One-shot: idempotently create OR reuse the development admin, then exit.
+  # Runs on every `up` after migrations; reuses the API image and the canonical
+  # staff-bootstrap CLI (ADR-APP1-001 §8). Development requires all three
+  # STAFF_BOOTSTRAP_* variables (a missing value fails this service and keeps the
+  # stack un-ready); production skips (exit 0) when they are absent. Owns no port
+  # and is never exposed through the gateway. Never prints the password.
+  staff-bootstrap:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/api.Dockerfile
+      target: dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
+      STAFF_BOOTSTRAP_EMAIL: ${STAFF_BOOTSTRAP_EMAIL:-}
+      STAFF_BOOTSTRAP_PASSWORD: ${STAFF_BOOTSTRAP_PASSWORD:-}
+      STAFF_BOOTSTRAP_DISPLAY_NAME: ${STAFF_BOOTSTRAP_DISPLAY_NAME:-}
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+    command: ['pnpm', '--filter', '@embroidery/api', 'staff:bootstrap']
+    restart: 'no'
+    networks:
+      - embroidery
 
   worker:
     build:

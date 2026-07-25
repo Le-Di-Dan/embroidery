@@ -17,10 +17,11 @@ export type { ApiRequestOptions } from './clients/api-request.mutator';
 export { healthCheck, healthReadiness } from './generated/embroidery-api';
 export type { HealthCheckResult, HealthReadinessResult } from './generated/embroidery-api';
 
-// Staff session operation (APP1). Exposed on the public boundary so feature
-// code (e.g. the Admin login screen) never deep-imports the generated tree.
-export { staffSessionCreate } from './generated/embroidery-api';
-export type { StaffLoginRequest } from './generated/embroidery-api.schemas';
+// Staff session operations (APP1). Exposed on the public boundary so feature
+// and server code (Admin login screen, server-side session resolution) never
+// deep-imports the generated tree.
+export { staffSessionCreate, staffSelfGet } from './generated/embroidery-api';
+export type { StaffLoginRequest, StaffSelfGet200 } from './generated/embroidery-api.schemas';
 
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {

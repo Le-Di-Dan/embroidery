@@ -64,6 +64,27 @@ They must not:
 - Own TanStack Query or Zustand architecture.
 - Access persistence directly.
 
+### 4a. Route protection (Admin, APP1-A01-C1)
+
+Admin authentication uses two layers; do not collapse them:
+
+- **`src/proxy.ts`** (Next.js `proxy`, the successor to `middleware`) performs
+  only fast cookie-**presence** routing. A protected route with no session
+  cookie redirects to `/login`; a cookie-bearing request is allowed through.
+  Cookie presence is a routing hint, never proof of authentication — the proxy
+  never reads, decodes, hashes, or logs the HttpOnly cookie value.
+- **Authoritative validation is server-side.** `src/server/*` resolves the
+  session by forwarding the incoming `Cookie` header to `GET /api/staff/me`
+  (`staffSelfGet`) via the server API client. A `(protected)` route group calls
+  `requireServerStaffSession()` in its layout; `/login` calls
+  `redirectAuthenticatedStaffFromLogin()`.
+- A dependency failure (network/timeout/5xx) resolves to **`unavailable`** and
+  surfaces to the error boundary — it is never treated as unauthenticated, so a
+  transient API outage cannot silently sign a user out or loop `/login`.
+- Never store auth state in `localStorage`, `sessionStorage`, Zustand, or a
+  client-readable cookie. The browser-owned HttpOnly session cookie is the only
+  session mechanism.
+
 ## 5. Feature structure
 
 Every feature uses responsibility-based subfolders as defined in `REPOSITORY_STRUCTURE.md`.

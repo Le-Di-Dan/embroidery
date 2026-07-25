@@ -1,83 +1,115 @@
 /**
- * Out-of-band staff bootstrap / credential-rotation command (ADR-APP1-001 §8).
+ * Staff bootstrap command (ADR-APP1-001 §8; A01-FU03 automatic Compose bootstrap).
  *
+ *   node dist/cli/staff-bootstrap.js            # idempotent create-or-reuse
+ *   node dist/cli/staff-bootstrap.js --rotate   # out-of-band credential recovery
  *   pnpm --filter @embroidery/api staff:bootstrap [--rotate]
  *
- * Reads the credentials from the environment — never argv — starts a Nest
- * application context without an HTTP listener, reuses the real identity,
- * persistence and audit services, and closes every resource in `finally`. It
- * never prints the password or the encoded credential and exits non-zero on any
- * failure. Windows / Linux / container compatible: no shell-specific behaviour.
+ * Default mode is idempotent and safe to run on every stack startup: it creates
+ * the first admin, or reuses an existing matching active admin, and never
+ * rotates a credential. It reads credentials from the environment — never argv —
+ * applies the locked development-fail / production-skip missing-env policy
+ * BEFORE touching the database, and prints one parseable `result=<STATUS>` line
+ * that never contains the password or the encoded credential. `--rotate` keeps
+ * the operator recovery path (replaces the single admin's credential and revokes
+ * its live sessions). Exits non-zero on any failure state.
  */
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from '../bootstrap/app.module';
 import {
-  BootstrapError,
   BootstrapStaffUseCase,
+  type EnsureBootstrapOutcome,
 } from '../modules/identity/application/bootstrap-staff.use-case';
+import {
+  STATUS_EXIT_CODE,
+  decideBootstrapPreflight,
+  inspectBootstrapEnv,
+  type BootstrapStatus,
+} from './staff-bootstrap-policy';
 
 const ROTATE_FLAG = '--rotate';
+const LOGGER = 'StaffBootstrap';
 
-interface BootstrapEnv {
-  readonly email: string;
-  readonly password: string;
-  readonly displayName: string;
-}
+const ENSURE_OUTCOME_STATUS: Record<EnsureBootstrapOutcome, BootstrapStatus> = {
+  created: 'CREATED',
+  reused: 'REUSED_EXISTING',
+  mismatch: 'FAILED_EXISTING_ADMIN_MISMATCH',
+  inactive: 'FAILED_EXISTING_ADMIN_NOT_ACTIVE',
+};
 
-/** Reads one required secret, collecting its name when absent. */
-function required(env: NodeJS.ProcessEnv, name: string, missing: string[]): string {
-  const value = env[name];
-  if (value === undefined || value === '') {
-    missing.push(name);
-    return '';
+/** Emits the single machine-parseable result line and returns its exit code. */
+function report(status: BootstrapStatus, detail: string, adminId?: string): number {
+  const logger = new Logger(LOGGER);
+  const suffix = adminId === undefined ? '' : ` admin=${adminId}`;
+  const line = `result=${status} ${detail}${suffix}`.trim();
+  if (STATUS_EXIT_CODE[status] === 0) {
+    logger.log(line);
+  } else {
+    logger.error(line);
   }
-  return value;
+  return STATUS_EXIT_CODE[status];
 }
 
-/** Reads the required environment secrets, failing clearly if any is missing. */
-function readEnv(env: NodeJS.ProcessEnv): BootstrapEnv {
-  const missing: string[] = [];
-  const email = required(env, 'STAFF_BOOTSTRAP_EMAIL', missing);
-  const password = required(env, 'STAFF_BOOTSTRAP_PASSWORD', missing);
-  const displayName = required(env, 'STAFF_BOOTSTRAP_DISPLAY_NAME', missing);
-  if (missing.length > 0) {
-    throw new BootstrapError(`Missing required environment variable(s): ${missing.join(', ')}.`);
+/** Idempotent create-or-reuse path (the automatic Compose bootstrap). */
+async function runEnsure(): Promise<number> {
+  const inspection = inspectBootstrapEnv(process.env);
+  const preflight = decideBootstrapPreflight(inspection);
+  if (preflight !== undefined) {
+    // Missing-env / unknown-env decisions never open a database connection.
+    return report(preflight.status, preflight.message);
   }
-  return { email, password, displayName };
-}
 
-async function main(): Promise<void> {
-  const logger = new Logger('StaffBootstrap');
-  const rotate = process.argv.includes(ROTATE_FLAG);
-  const secrets = readEnv(process.env);
-
-  // No HTTP listener: an application context wires the full module graph without
-  // binding a port.
   const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
   try {
     const useCase = app.get(BootstrapStaffUseCase);
-    const result = await useCase.bootstrap({
-      email: secrets.email,
-      password: secrets.password,
-      displayName: secrets.displayName,
-      rotate,
-    });
-    // Safe output only: the account id, never the password or credential.
-    logger.log(`staff ${result.outcome}: admin ${result.adminId}`);
+    // `credentials` is defined whenever preflight allowed us to proceed.
+    const result = await useCase.ensure(inspection.credentials!);
+    return report(ENSURE_OUTCOME_STATUS[result.outcome], `staff ${result.outcome}`, result.adminId);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return report('FAILED_BOOTSTRAP', message);
   } finally {
     await app.close();
   }
 }
 
+/** Operator credential-recovery path (rotates the single admin, revokes sessions). */
+async function runRotate(): Promise<number> {
+  const inspection = inspectBootstrapEnv(process.env);
+  if (inspection.credentials === undefined) {
+    return report(
+      'FAILED_BOOTSTRAP',
+      `Rotate requires all bootstrap variables: missing ${inspection.missing.join(', ')}.`,
+    );
+  }
+  const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
+  try {
+    const useCase = app.get(BootstrapStaffUseCase);
+    const result = await useCase.bootstrap({ ...inspection.credentials, rotate: true });
+    // Recovery path: not part of the automatic-bootstrap status contract.
+    new Logger(LOGGER).log(`staff ${result.outcome} admin=${result.adminId}`);
+    return 0;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return report('FAILED_BOOTSTRAP', message);
+  } finally {
+    await app.close();
+  }
+}
+
+async function main(): Promise<number> {
+  return process.argv.includes(ROTATE_FLAG) ? runRotate() : runEnsure();
+}
+
 main()
-  .then(() => {
-    process.exitCode = 0;
+  .then((code) => {
+    process.exitCode = code;
   })
   .catch((error: unknown) => {
     // A safe, secret-free message; the password is never part of any error here.
     const message = error instanceof Error ? error.message : String(error);
-    new Logger('StaffBootstrap').error(message);
+    new Logger(LOGGER).error(`result=FAILED_BOOTSTRAP ${message}`);
     process.exitCode = 1;
   });

@@ -158,26 +158,55 @@ pnpm dev                      # run all applications locally with hot reload
   trust-proxy configuration must be re-decided with the Gateway API/controller
   topology; the development value does not carry over automatically.**
 
-## 7a. Staff bootstrap (first admin) — APP1-B01
+## 7a. Staff bootstrap (first admin) — APP1-B01, A01-FU03
 
-Staff authentication has **no self-service registration**; the first admin (and
-credential recovery) is created out of band by an idempotent CLI
-(ADR-APP1-001 §8). Credentials come from the environment, never argv, and are
-never printed:
+Staff authentication has **no self-service registration**; the first admin is
+created out of band (ADR-APP1-001 §8). The development stack does this **for
+you**: before `docker compose up`, set the three bootstrap variables in `.env`:
+
+```dotenv
+STAFF_BOOTSTRAP_EMAIL=admin@example.test
+STAFF_BOOTSTRAP_PASSWORD=<from a secret channel — never a real reused password>
+STAFF_BOOTSTRAP_DISPLAY_NAME=Operator
+```
+
+Then start the stack the usual way:
+
+```bash
+pnpm docker:dev:up
+```
+
+A one-shot `staff-bootstrap` service runs automatically after migrations and
+**creates or reuses** the development admin (idempotent — safe to run on every
+`up`, never rotates a password). The Admin and gateway become ready only after
+it succeeds, so open:
+
+```text
+http://admin.embroidery.local/login
+```
+
+Policy:
+
+- **Development:** all three variables are **required**. A missing value fails
+  the bootstrap service and the stack stays un-ready — the login UI is never
+  available without an admin to log in as.
+- **Production:** the variables are **optional**; when absent, bootstrap is
+  skipped (exit 0) and no admin data is touched.
+- The password must be at least `STAFF_PASSWORD_MIN_LENGTH` (default 12) chars.
+- Login/logout are `POST`/`DELETE /api/staff/session`; the session travels only
+  in an `HttpOnly`, `SameSite=Strict`, host-only cookie (never a response body),
+  and staff mutations require an allowlisted `Origin` (`STAFF_ALLOWED_ORIGINS`).
+
+**Troubleshooting / recovery only** — the manual CLI is still available (e.g. to
+rotate the single admin's credential, which also revokes its live sessions).
+Credentials come from the environment, never argv, and are never printed:
 
 ```bash
 STAFF_BOOTSTRAP_EMAIL=admin@example.test \
 STAFF_BOOTSTRAP_PASSWORD='<from a secret channel>' \
 STAFF_BOOTSTRAP_DISPLAY_NAME=Operator \
-pnpm --filter @embroidery/api staff:bootstrap
+pnpm --filter @embroidery/api staff:bootstrap --rotate
 ```
-
-- Refuses to run when an `ACTIVE` admin already exists; pass `--rotate` to
-  replace the single admin's credential (this also revokes its live sessions).
-- The password must be at least `STAFF_PASSWORD_MIN_LENGTH` (default 12) chars.
-- Login/logout are `POST`/`DELETE /api/staff/session`; the session travels only
-  in an `HttpOnly`, `SameSite=Strict`, host-only cookie (never a response body),
-  and staff mutations require an allowlisted `Origin` (`STAFF_ALLOWED_ORIGINS`).
 
 ## 8. Quality gates
 

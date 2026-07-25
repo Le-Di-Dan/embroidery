@@ -43,6 +43,26 @@ export interface BootstrapStaffResult {
   readonly adminId: string;
 }
 
+export interface EnsureBootstrapCommand {
+  readonly email: string;
+  readonly password: string;
+  readonly displayName: string;
+}
+
+/**
+ * Idempotent bootstrap outcomes (A01-FU03). `created` writes a new admin;
+ * `reused` finds the matching active admin and changes nothing; `mismatch`
+ * means a different active admin already holds the single active slot; `inactive`
+ * means the matching account exists but is LOCKED/DISABLED. Only `created` and
+ * `reused` are success states — none of these ever rotates a credential.
+ */
+export type EnsureBootstrapOutcome = 'created' | 'reused' | 'mismatch' | 'inactive';
+
+export interface EnsureBootstrapResult {
+  readonly outcome: EnsureBootstrapOutcome;
+  readonly adminId: string | undefined;
+}
+
 /** A safe, secret-free operational error the CLI reports and exits non-zero on. */
 export class BootstrapError extends Error {
   constructor(message: string) {
@@ -78,27 +98,91 @@ export class BootstrapStaffUseCase {
       : this.create(email, displayName, reference);
   }
 
+  /**
+   * Idempotent create-or-reuse for the automatic Compose bootstrap (A01-FU03).
+   * Never rotates a credential and never mutates an existing admin's profile:
+   * a matching active admin is reused as-is; a LOCKED/DISABLED match or a
+   * different active admin fails safely. Safe to run on every stack startup.
+   */
+  async ensure(command: EnsureBootstrapCommand): Promise<EnsureBootstrapResult> {
+    const email = this.requireEmail(command.email);
+    const displayName = command.displayName.trim();
+    if (displayName === '') {
+      throw new BootstrapError('A display name is required.');
+    }
+    this.requirePasswordPolicy(command.password);
+
+    const existing = await this.accounts.findByEmail(email);
+    if (existing !== undefined) {
+      return existing.status === 'ACTIVE'
+        ? { outcome: 'reused', adminId: existing.id }
+        : { outcome: 'inactive', adminId: existing.id };
+    }
+
+    // No account holds this email. Hash only now (avoid wasted scrypt on reuse)
+    // and attempt the create; the one-active-admin index and the unique-email
+    // constraint classify any conflicting existing admin.
+    const reference = await this.hasher.hash(command.password);
+    return this.insertOrClassify(email, displayName, reference);
+  }
+
+  private async insertOrClassify(
+    email: string,
+    displayName: string,
+    reference: string,
+  ): Promise<EnsureBootstrapResult> {
+    try {
+      const id = await this.insertNewAdmin(email, displayName, reference);
+      return { outcome: 'created', adminId: id };
+    } catch (error: unknown) {
+      if (isPersistenceError(error)) {
+        if (error.code === 'ADMIN_ACCOUNT_ALREADY_ACTIVE') {
+          return { outcome: 'mismatch', adminId: undefined };
+        }
+        if (error.code === 'DUPLICATE_ADMIN_EMAIL') {
+          const raced = await this.accounts.findByEmail(email);
+          if (raced !== undefined) {
+            return raced.status === 'ACTIVE'
+              ? { outcome: 'reused', adminId: raced.id }
+              : { outcome: 'inactive', adminId: raced.id };
+          }
+        }
+      }
+      throw error;
+    }
+  }
+
   private async create(
     email: string,
     displayName: string,
     reference: string,
   ): Promise<BootstrapStaffResult> {
-    const id = newId() as AdminAccountId;
-    const correlationId = newId();
     try {
-      await this.transactions.runInTransaction(async () => {
-        await this.accounts.create({ id, email, displayName });
-        await this.accounts.attachCredential({
-          adminAccountId: id,
-          credentialKind: PASSWORD_CREDENTIAL_KIND,
-          credentialReference: reference,
-        });
-        await this.audit.credentialBootstrapped(id, correlationId);
-      });
+      const id = await this.insertNewAdmin(email, displayName, reference);
+      return { outcome: 'created', adminId: id };
     } catch (error: unknown) {
       throw this.translateConflict(error);
     }
-    return { outcome: 'created', adminId: id };
+  }
+
+  /** Writes the account, its active credential and the audit event in one transaction. */
+  private async insertNewAdmin(
+    email: string,
+    displayName: string,
+    reference: string,
+  ): Promise<AdminAccountId> {
+    const id = newId() as AdminAccountId;
+    const correlationId = newId();
+    await this.transactions.runInTransaction(async () => {
+      await this.accounts.create({ id, email, displayName });
+      await this.accounts.attachCredential({
+        adminAccountId: id,
+        credentialKind: PASSWORD_CREDENTIAL_KIND,
+        credentialReference: reference,
+      });
+      await this.audit.credentialBootstrapped(id, correlationId);
+    });
+    return id;
   }
 
   private async rotate(email: string, reference: string): Promise<BootstrapStaffResult> {

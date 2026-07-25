@@ -36,3 +36,6 @@ Thumbs.db
 .backups/
 *.dump
 *.manifest.json
+
+# Playwright MCP scratch artifacts (screenshots/snapshots) — never committed
+.playwright-mcp/
