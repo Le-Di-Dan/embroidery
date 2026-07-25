@@ -92,19 +92,36 @@ function extractMessages(payload: Record<string, unknown>): string[] | undefined
   return safe.length > 0 ? safe : undefined;
 }
 
+/**
+ * A stable business code is a short single-line identifier a feature attaches to
+ * its own 4xx (e.g. `STAFF_LOGIN_FAILED`). It is accepted only when it looks
+ * like a code — screaming-snake, bounded — so an arbitrary internal string can
+ * never be promoted into the public contract.
+ */
+const BUSINESS_CODE_PATTERN = /^[A-Z][A-Z0-9_]{1,63}$/;
+
+function safeBusinessCode(payload: Record<string, unknown>): string | undefined {
+  const code = payload['code'];
+  return typeof code === 'string' && BUSINESS_CODE_PATTERN.test(code) ? code : undefined;
+}
+
 function mapHttpException(exception: HttpException): MappedError {
   // Typed as the enum rather than `number` so the comparisons and the switch
   // below share its type; `getStatus()` is declared as a plain number.
   const status: HttpStatus = exception.getStatus();
-  const code = errorCodeForStatus(status);
+  const defaultCode = errorCodeForStatus(status);
 
   // A server-side HttpException is still a server fault: its message may have
   // been built from an internal failure, so it is replaced like any other 5xx.
   if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-    return { status, code, message: INTERNAL_ERROR_MESSAGE };
+    return { status, code: defaultCode, message: INTERNAL_ERROR_MESSAGE };
   }
 
   const payload: unknown = exception.getResponse();
+
+  // A feature 4xx may override the status-derived code with its own stable
+  // business code; anything else falls back to the transport-level default.
+  const code = isRecord(payload) ? (safeBusinessCode(payload) ?? defaultCode) : defaultCode;
 
   if (isSafeMessage(payload)) {
     return { status, code, message: payload };
@@ -162,6 +179,8 @@ function defaultMessageForStatus(status: HttpStatus): string {
       return 'The request conflicts with the current state of the resource.';
     case HttpStatus.UNPROCESSABLE_ENTITY:
       return 'The request could not be processed.';
+    case HttpStatus.UNSUPPORTED_MEDIA_TYPE:
+      return 'The request media type is not supported.';
     case HttpStatus.TOO_MANY_REQUESTS:
       return 'Too many requests. Please try again later.';
     default:

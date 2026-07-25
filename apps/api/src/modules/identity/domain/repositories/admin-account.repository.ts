@@ -38,6 +38,27 @@ export interface AttachCredentialInput {
   readonly credentialReference: string;
 }
 
+/**
+ * The one live credential of a given kind for an account.
+ *
+ * `credentialReference` is the opaque provider reference (for `password_scrypt`,
+ * the self-describing hash string — never a plaintext secret). Superseded or
+ * revoked credentials are never returned.
+ */
+export interface AdminCredential {
+  readonly id: string;
+  readonly adminAccountId: AdminAccountId;
+  readonly credentialKind: string;
+  readonly credentialReference: string;
+  readonly createdAt: Date;
+}
+
+export interface RotateCredentialInput {
+  readonly adminAccountId: AdminAccountId;
+  readonly credentialKind: string;
+  readonly credentialReference: string;
+}
+
 export const ADMIN_ACCOUNT_REPOSITORY = Symbol('ADMIN_ACCOUNT_REPOSITORY');
 
 export interface AdminAccountRepository {
@@ -49,6 +70,28 @@ export interface AdminAccountRepository {
 
   /** @requiresTransaction */
   attachCredential(input: AttachCredentialInput): Promise<void>;
+
+  /**
+   * The live credential of `credentialKind` for the account, or nothing.
+   *
+   * "Live" excludes superseded (rotated) and revoked credentials, so the auth
+   * layer never verifies against an old secret. Read-only; safe outside a
+   * transaction.
+   */
+  findActiveCredential(
+    adminAccountId: AdminAccountId,
+    credentialKind: string,
+  ): Promise<AdminCredential | undefined>;
+
+  /**
+   * Replaces the live credential of a kind with a new reference in one step:
+   * the current live credential is marked superseded and a fresh one is written.
+   * Used by rehash-on-verify and the bootstrap CLI recovery mode; it never
+   * creates a second active admin (ADR-APP1-001 §8).
+   *
+   * @requiresTransaction
+   */
+  rotateCredential(input: RotateCredentialInput): Promise<void>;
 
   /** @requiresTransaction — a lock/disable also stamps the corresponding instant. */
   changeStatus(id: AdminAccountId, status: AdminAccountState): Promise<AdminAccount>;

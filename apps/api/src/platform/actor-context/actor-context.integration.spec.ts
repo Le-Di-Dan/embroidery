@@ -213,14 +213,20 @@ describe('actor context over HTTP', () => {
     expect(JSON.stringify(envelope)).not.toMatch(/adm-first|adm-second|ActorAlreadyBound|at /);
   });
 
-  it('ships no production code path that binds an actor', () => {
-    // The binder above is a test fixture. Until APP1 adds a real authentication
-    // layer, nothing outside a spec may call `bindActor` — a production route
-    // that did would let a client choose who it is.
+  it('binds an actor only from the APP1 staff authentication layer', () => {
+    // APP1-B01 is the activation point for the B04 seam: exactly the staff login
+    // use case and the authenticated-admin guard may bind an actor, and only
+    // after verifying a credential/session. Any other production caller would let
+    // a client choose who it is, so the allowlist is deliberately exhaustive.
     const sourceRoot = join(__dirname, '..', '..');
-    const callers = productionFilesCalling(sourceRoot, 'bindActor(');
+    const callers = productionFilesCalling(sourceRoot, 'bindActor(').map((path) =>
+      path.replace(/\\/g, '/'),
+    );
 
-    expect(callers).toEqual([]);
+    expect(callers.sort()).toEqual([
+      expect.stringContaining('modules/identity/application/authenticate-staff.use-case.ts'),
+      expect.stringContaining('modules/identity/presentation/guards/authenticated-admin.guard.ts'),
+    ]);
   });
 });
 

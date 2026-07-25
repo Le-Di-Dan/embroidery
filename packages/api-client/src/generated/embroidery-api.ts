@@ -5,7 +5,11 @@
  * Internal HTTP contract for the Embroidery Commerce platform API. Generated from NestJS Swagger metadata; the committed artifact is the machine-readable source for the generated TypeScript/Axios client.
  * OpenAPI spec version: 0.1.0
  */
-import type { HealthStatusResponse, ReadinessStatusResponse } from './embroidery-api.schemas';
+import type {
+  HealthStatusResponse,
+  ReadinessStatusResponse,
+  StaffLoginRequest,
+} from './embroidery-api.schemas';
 
 import { apiRequest } from '../clients/api-request.mutator';
 
@@ -24,5 +28,34 @@ export const healthReadiness = (
   );
 };
 
+/**
+ * Revokes the current server-side session and clears the cookie.
+ * @summary Close the current staff session
+ */
+export const staffSessionDelete = (options?: SecondParameter<typeof apiRequest<void>>) => {
+  return apiRequest<void>({ url: `/api/staff/session`, method: 'DELETE' }, options);
+};
+
+/**
+ * Authenticates the admin by email and password and sets an HttpOnly, SameSite=Strict session cookie. The session token is never returned in the body.
+ * @summary Open a staff session
+ */
+export const staffSessionCreate = (
+  staffLoginRequest: StaffLoginRequest,
+  options?: SecondParameter<typeof apiRequest<void>>,
+) => {
+  return apiRequest<void>(
+    {
+      url: `/api/staff/session`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: staffLoginRequest,
+    },
+    options,
+  );
+};
+
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
+export type StaffSessionDeleteResult = NonNullable<Awaited<ReturnType<typeof staffSessionDelete>>>;
+export type StaffSessionCreateResult = NonNullable<Awaited<ReturnType<typeof staffSessionCreate>>>;

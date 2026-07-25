@@ -18,6 +18,7 @@ export const ApiErrorResponseCode = {
   METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
   CONFLICT: 'CONFLICT',
   UNPROCESSABLE_ENTITY: 'UNPROCESSABLE_ENTITY',
+  UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
   TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
   INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
 } as const;
@@ -167,4 +168,11 @@ export interface ReadinessStatusResponse {
   service: ReadinessStatusResponseService;
   status: ReadinessStatusResponseStatus;
   timestamp: string;
+}
+
+export interface StaffLoginRequest {
+  /** @maxLength 254 */
+  email: string;
+  /** Plain password; never stored or echoed. */
+  password: string;
 }

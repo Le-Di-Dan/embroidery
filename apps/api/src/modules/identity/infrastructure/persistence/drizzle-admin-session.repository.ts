@@ -70,6 +70,25 @@ export class DrizzleAdminSessionRepository
     });
   }
 
+  async extendExpiry(id: AdminSessionId, expiresAt: Date): Promise<AdminSession | undefined> {
+    return this.run('extendExpiry', async () => {
+      const [row] = await this.db
+        .update(adminSessions)
+        .set({ expiresAt, updatedAt: new Date() })
+        .where(
+          and(
+            eq(adminSessions.id, id),
+            // Extend a live session only: a revoked/expired row must not be
+            // revived by a renewal that raced its termination.
+            eq(adminSessions.status, 'ACTIVE'),
+          ),
+        )
+        .returning();
+
+      return row === undefined ? undefined : toDomain(row);
+    });
+  }
+
   async revokeAllForAdmin(adminAccountId: AdminAccountId): Promise<number> {
     return this.run('revokeAllForAdmin', async () => {
       const now = new Date();

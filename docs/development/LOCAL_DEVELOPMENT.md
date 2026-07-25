@@ -158,6 +158,27 @@ pnpm dev                      # run all applications locally with hot reload
   trust-proxy configuration must be re-decided with the Gateway API/controller
   topology; the development value does not carry over automatically.**
 
+## 7a. Staff bootstrap (first admin) — APP1-B01
+
+Staff authentication has **no self-service registration**; the first admin (and
+credential recovery) is created out of band by an idempotent CLI
+(ADR-APP1-001 §8). Credentials come from the environment, never argv, and are
+never printed:
+
+```bash
+STAFF_BOOTSTRAP_EMAIL=admin@example.test \
+STAFF_BOOTSTRAP_PASSWORD='<from a secret channel>' \
+STAFF_BOOTSTRAP_DISPLAY_NAME=Operator \
+pnpm --filter @embroidery/api staff:bootstrap
+```
+
+- Refuses to run when an `ACTIVE` admin already exists; pass `--rotate` to
+  replace the single admin's credential (this also revokes its live sessions).
+- The password must be at least `STAFF_PASSWORD_MIN_LENGTH` (default 12) chars.
+- Login/logout are `POST`/`DELETE /api/staff/session`; the session travels only
+  in an `HttpOnly`, `SameSite=Strict`, host-only cookie (never a response body),
+  and staff mutations require an allowlisted `Origin` (`STAFF_ALLOWED_ORIGINS`).
+
 ## 8. Quality gates
 
 ```bash

@@ -14,7 +14,8 @@
     "clean": "rimraf dist coverage",
     "bench": "jest --config jest.bench.config.mjs --runInBand",
     "openapi:generate": "nest build && node dist/openapi/cli/generate-openapi.js",
-    "openapi:check": "nest build && node dist/openapi/cli/check-openapi.js"
+    "openapi:check": "nest build && node dist/openapi/cli/check-openapi.js",
+    "staff:bootstrap": "nest build && node dist/cli/staff-bootstrap.js"
   },
   "dependencies": {
     "@embroidery/contracts": "workspace:*",

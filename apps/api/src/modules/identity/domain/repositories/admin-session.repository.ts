@@ -44,6 +44,16 @@ export interface AdminSessionRepository {
   /** @requiresTransaction */
   revoke(id: AdminSessionId): Promise<AdminSession>;
 
+  /**
+   * Slides a live session's idle expiry forward (ADR-APP1-001 §4).
+   *
+   * Only an `ACTIVE` session is extended, so a revoked or expired one can never
+   * be revived by a late renewal. Single-statement — safe on the pool without a
+   * transaction. Returns the session when it was extended, or nothing when no
+   * live row matched.
+   */
+  extendExpiry(id: AdminSessionId, expiresAt: Date): Promise<AdminSession | undefined>;
+
   /** @requiresTransaction — used when an account is locked or disabled. */
   revokeAllForAdmin(adminAccountId: AdminAccountId): Promise<number>;
 

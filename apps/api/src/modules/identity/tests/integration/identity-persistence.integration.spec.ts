@@ -8,6 +8,7 @@
 import { isPersistenceError, newId } from '@embroidery/database';
 import type { PersistenceError } from '@embroidery/database';
 
+import { RequestContextModule } from '../../../../platform/request-context/request-context.module';
 import { createPersistenceTestContext } from '../../../../tests/integration/persistence-test-context';
 import type { PersistenceTestContext } from '../../../../tests/integration/persistence-test-context';
 import { IdentityModule } from '../../identity.module';
@@ -30,7 +31,10 @@ describe('identity persistence (integration)', () => {
   let sessions: AdminSessionRepository;
 
   beforeAll(async () => {
-    context = await createPersistenceTestContext('cp3-identity', [IdentityModule]);
+    context = await createPersistenceTestContext('cp3-identity', [
+      RequestContextModule,
+      IdentityModule,
+    ]);
     accounts = context.get(ADMIN_ACCOUNT_REPOSITORY);
     sessions = context.get(ADMIN_SESSION_REPOSITORY);
   }, 120_000);

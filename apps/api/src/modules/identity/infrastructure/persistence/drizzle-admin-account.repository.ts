@@ -10,19 +10,45 @@ import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { schema } from '@embroidery/database';
 import type { AdminAccountState } from '@embroidery/database';
 import { newId, notFoundError } from '@embroidery/database';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 
 import type {
   AdminAccount,
   AdminAccountId,
   AdminAccountRepository,
+  AdminCredential,
   AttachCredentialInput,
   CreateAdminAccountInput,
+  RotateCredentialInput,
 } from '../../domain/repositories/admin-account.repository';
 
 const { adminAccounts, adminCredentials } = schema;
 
 type AdminAccountRow = typeof adminAccounts.$inferSelect;
+type AdminCredentialRow = typeof adminCredentials.$inferSelect;
+
+/**
+ * The predicate for a *live* credential: never rotated out, never revoked. A
+ * rotated or revoked reference must never back a login.
+ */
+function isLiveCredential(adminAccountId: AdminAccountId, credentialKind: string) {
+  return and(
+    eq(adminCredentials.adminAccountId, adminAccountId),
+    eq(adminCredentials.credentialKind, credentialKind),
+    isNull(adminCredentials.rotatedAt),
+    isNull(adminCredentials.revokedAt),
+  );
+}
+
+function toCredential(row: AdminCredentialRow): AdminCredential {
+  return {
+    id: row.id,
+    adminAccountId: row.adminAccountId as AdminAccountId,
+    credentialKind: row.credentialKind,
+    credentialReference: row.credentialReference,
+    createdAt: row.createdAt,
+  };
+}
 
 /** The one place a row becomes a domain object. No row crosses this boundary raw. */
 function toDomain(row: AdminAccountRow): AdminAccount {
@@ -99,6 +125,42 @@ export class DrizzleAdminAccountRepository
       // Two tables in one command: the account must exist and the credential
       // must land together, so the caller owns a transaction.
       const tx = this.requireTransaction('attachCredential');
+      await tx.insert(adminCredentials).values({
+        id: newId(),
+        adminAccountId: input.adminAccountId,
+        credentialKind: input.credentialKind,
+        credentialReference: input.credentialReference,
+      });
+    });
+  }
+
+  async findActiveCredential(
+    adminAccountId: AdminAccountId,
+    credentialKind: string,
+  ): Promise<AdminCredential | undefined> {
+    return this.run('findActiveCredential', async () => {
+      const [row] = await this.db
+        .select()
+        .from(adminCredentials)
+        .where(isLiveCredential(adminAccountId, credentialKind))
+        // Newest wins if more than one is somehow live: the freshest reference
+        // is the one a rotation intended to leave in place.
+        .orderBy(desc(adminCredentials.createdAt))
+        .limit(1);
+      return row === undefined ? undefined : toCredential(row);
+    });
+  }
+
+  async rotateCredential(input: RotateCredentialInput): Promise<void> {
+    return this.run('rotateCredential', async () => {
+      // Supersede-then-insert in one command: the caller owns the transaction so
+      // an account can never be left with two live credentials or none.
+      const tx = this.requireTransaction('rotateCredential');
+      const now = new Date();
+      await tx
+        .update(adminCredentials)
+        .set({ rotatedAt: now, updatedAt: now })
+        .where(isLiveCredential(input.adminAccountId, input.credentialKind));
       await tx.insert(adminCredentials).values({
         id: newId(),
         adminAccountId: input.adminAccountId,

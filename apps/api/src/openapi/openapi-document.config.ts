@@ -22,11 +22,26 @@ export const OPENAPI_DOCUMENT_DESCRIPTION =
  */
 export const OPENAPI_DOCUMENT_VERSION = '0.1.0';
 
+/**
+ * Security scheme name for the admin session cookie (APP1-B01). The development
+ * cookie name is documented; the token itself is never part of any schema.
+ */
+export const STAFF_SESSION_COOKIE_SCHEME = 'adminSession';
+
 /** Builds the static document configuration (everything except the scanned paths). */
 export function buildOpenApiConfig(): Omit<OpenAPIObject, 'paths'> {
-  return new DocumentBuilder()
-    .setTitle(OPENAPI_DOCUMENT_TITLE)
-    .setDescription(OPENAPI_DOCUMENT_DESCRIPTION)
-    .setVersion(OPENAPI_DOCUMENT_VERSION)
-    .build();
+  return (
+    new DocumentBuilder()
+      .setTitle(OPENAPI_DOCUMENT_TITLE)
+      .setDescription(OPENAPI_DOCUMENT_DESCRIPTION)
+      .setVersion(OPENAPI_DOCUMENT_VERSION)
+      // Cookie auth for protected staff routes. `@ApiCookieAuth()` references this
+      // by name; the cookie is HttpOnly and its value is never a response body.
+      .addCookieAuth(
+        'adm_session',
+        { type: 'apiKey', in: 'cookie', name: 'adm_session' },
+        STAFF_SESSION_COOKIE_SCHEME,
+      )
+      .build()
+  );
 }

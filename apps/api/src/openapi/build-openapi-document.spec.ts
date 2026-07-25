@@ -47,10 +47,11 @@ describe('buildOpenApiDocument', () => {
     expect(paths.every((path) => path.startsWith('/api/'))).toBe(true);
   });
 
-  it('documents no feature endpoint beyond the health routes', () => {
+  it('documents the health routes plus the APP1-B01 staff session endpoints', () => {
     const stats = describeDocument(buildOpenApiDocument(app));
-    expect(stats.pathCount).toBe(2);
-    expect(stats.operationCount).toBe(2);
+    // Health (2 ops) + staff session open/close (2 ops on one path).
+    expect(stats.pathCount).toBe(3);
+    expect(stats.operationCount).toBe(4);
     expect(stats.schemaCount).toBeGreaterThan(0);
   });
 
@@ -58,6 +59,8 @@ describe('buildOpenApiDocument', () => {
     const document = buildOpenApiDocument(app);
     expect(document.paths['/api/health']?.get?.operationId).toBe('health_check');
     expect(document.paths['/api/health/readiness']?.get?.operationId).toBe('health_readiness');
+    expect(document.paths['/api/staff/session']?.post?.operationId).toBe('staffSession_create');
+    expect(document.paths['/api/staff/session']?.delete?.operationId).toBe('staffSession_delete');
   });
 
   it('declares no environment-specific server', () => {
