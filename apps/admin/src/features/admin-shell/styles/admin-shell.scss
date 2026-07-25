@@ -1,0 +1,537 @@
+// Admin authenticated shell — feature-scoped styles (APP1-A02). Design source:
+// FIG-ADMIN-SHELL-* (file BQwqV8GdfUIELvsQDB1UQE). Colour/type/radius/spacing
+// come from @embroidery/styles tokens; a few screen-specific dimensions have no
+// shared token and are local literals (documented inline). Mobile-first: the
+// base is the stacked layout with a drawer; the sidebar layout applies from the
+// local shell breakpoint.
+
+@use '@embroidery/styles' as styles;
+
+// Local shell layout breakpoint — the design system defers responsive
+// breakpoints (FU-A16); this reuses the approved login desktop↔mobile
+// transition (1440/390) so the two Admin surfaces share one threshold.
+$shell-breakpoint: 1024px;
+
+// Screen-specific composition constants (no shared token; not a token system).
+$bar-height: 64px;
+$sidebar-width: 264px;
+$drawer-width: 320px;
+$identity-max-width: 220px;
+$expiry-card-width: 440px;
+
+// Local stacking order — @embroidery/styles defines no z-index scale.
+$z-drawer: 100;
+$z-expiry: 200;
+$z-skip-link: 300;
+
+// Local scrim compositions — no scrim token (GAP-D02 / FIG-DS-SCRIM-TOKEN);
+// derived from the approved ink text token, not arbitrary hex. The shell stays
+// recognizable beneath both (drawer heavier than the session-expired veil).
+$scrim-drawer: rgba(styles.$color-text-primary, 0.35);
+$scrim-expiry: rgba(styles.$color-text-primary, 0.2);
+
+.admin-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: styles.$color-background-primary;
+}
+
+.admin-shell__skip-link {
+  position: absolute;
+  top: styles.spacing(8);
+  left: styles.spacing(8);
+  z-index: $z-skip-link;
+  padding: styles.spacing(8) styles.spacing(16);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-surface-primary;
+  background: styles.$color-action-primary;
+  border-radius: styles.$radius-sm;
+  // Parked off-canvas (relative to its own height) until focused — no magic
+  // offset, so it reveals in place on keyboard focus.
+  transform: translateY(-200%);
+
+  @include styles.motion-safe {
+    transition: transform styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+
+  &:focus-visible {
+    transform: translateY(0);
+  }
+}
+// --- App bar ----------------------------------------------------------------
+
+.admin-shell__bar {
+  position: sticky;
+  top: 0;
+  z-index: $z-drawer - 1;
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+  min-height: $bar-height;
+  padding: styles.spacing(12) styles.spacing(16);
+  background: styles.$color-surface-primary;
+  border-bottom: 1px solid styles.$color-border-primary;
+
+  @media (min-width: $shell-breakpoint) {
+    gap: styles.spacing(24);
+    padding: styles.spacing(12) styles.spacing(32);
+  }
+}
+
+.admin-shell__bar-lead {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(12);
+}
+
+.admin-shell__nav-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  color: styles.$color-text-primary;
+  background: transparent;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+
+  // The persistent sidebar replaces the trigger on wide viewports.
+  @media (min-width: $shell-breakpoint) {
+    display: none;
+  }
+}
+
+.admin-shell__nav-trigger-glyph {
+  font-size: styles.$font-size-body-l;
+  line-height: 1;
+}
+
+.admin-shell__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-shell__brand-eyebrow {
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  letter-spacing: 0.12px;
+  color: styles.$color-action-primary;
+}
+
+.admin-shell__brand-title {
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-semibold;
+  line-height: 1.2;
+  color: styles.$color-text-primary;
+}
+// --- Status region ----------------------------------------------------------
+
+.admin-shell__status {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.admin-shell__status-text {
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.4;
+  text-align: center;
+  color: styles.$color-text-secondary;
+}
+
+.admin-shell__status-text--warn {
+  color: styles.$color-status-warning;
+}
+
+.admin-shell__status-bar {
+  position: relative;
+  display: block;
+  width: 120px;
+  max-width: 100%;
+  height: 2px;
+  overflow: hidden;
+  background: styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+
+  @include styles.motion-safe {
+    &::after {
+      position: absolute;
+      inset: 0;
+      width: 40%;
+      background: styles.$color-action-primary;
+      border-radius: inherit;
+      content: '';
+      animation: admin-shell-progress 1s styles.$motion-easing-standard infinite;
+    }
+  }
+}
+
+@keyframes admin-shell-progress {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(300%);
+  }
+}
+// --- Identity + logout ------------------------------------------------------
+
+.admin-shell__bar-trail {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(12);
+  margin-left: auto;
+}
+
+.admin-shell__identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: right;
+}
+
+.admin-shell__identity-role {
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-tertiary;
+}
+
+.admin-shell__identity-name {
+  max-width: $identity-max-width;
+  overflow: hidden;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-shell__identity-email {
+  max-width: $identity-max-width;
+  overflow: hidden;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-secondary;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-shell__logout {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  align-items: flex-end;
+}
+
+.admin-shell__logout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(8) styles.spacing(16);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  background: styles.$color-background-secondary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  cursor: pointer;
+
+  @include styles.motion-safe {
+    transition: background-color styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+
+  &:hover:not(:disabled) {
+    background: styles.$color-border-primary;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.admin-shell__logout-error {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-caption;
+  line-height: 1.4;
+  color: styles.$color-status-error;
+}
+
+.admin-shell__logout-retry {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-action-primary;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+// --- Body: sidebar + main ---------------------------------------------------
+
+.admin-shell__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+
+  @media (min-width: $shell-breakpoint) {
+    flex-direction: row;
+  }
+}
+
+.admin-shell__nav {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+}
+
+.admin-shell__nav--sidebar {
+  display: none;
+
+  @media (min-width: $shell-breakpoint) {
+    display: flex;
+    flex-shrink: 0;
+    width: $sidebar-width;
+    padding: styles.spacing(24);
+    background: styles.$color-background-secondary;
+    border-right: 1px solid styles.$color-border-primary;
+  }
+}
+
+.admin-shell__nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-shell__nav-item {
+  display: block;
+  padding: styles.spacing(12) styles.spacing(16);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  line-height: 1.4;
+  color: styles.$color-text-secondary;
+  border-radius: styles.$radius-md;
+}
+
+.admin-shell__nav-item--current {
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  background: styles.$color-surface-primary;
+}
+
+.admin-shell__nav-note {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-tertiary;
+}
+
+.admin-shell__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: styles.spacing(24) styles.spacing(16);
+
+  @media (min-width: $shell-breakpoint) {
+    padding: styles.spacing(48);
+  }
+}
+
+.admin-shell__placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  max-width: styles.$layout-reading-max;
+}
+
+.admin-shell__placeholder-heading {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: 1.3;
+  color: styles.$color-text-primary;
+}
+
+.admin-shell__placeholder-body {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  line-height: 1.6;
+  color: styles.$color-text-secondary;
+}
+// --- Mobile drawer ----------------------------------------------------------
+
+.admin-shell__drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: $z-drawer;
+  display: flex;
+
+  @media (min-width: $shell-breakpoint) {
+    display: none;
+  }
+}
+
+.admin-shell__scrim {
+  position: absolute;
+  inset: 0;
+}
+
+.admin-shell__scrim--drawer {
+  background: $scrim-drawer;
+}
+
+.admin-shell__scrim--expiry {
+  background: $scrim-expiry;
+}
+
+.admin-shell__drawer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  width: min(#{$drawer-width}, 88vw);
+  height: 100%;
+  padding: styles.spacing(24);
+  overflow-y: auto;
+  background: styles.$color-surface-primary;
+  border-right: 1px solid styles.$color-border-primary;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.admin-shell__drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: styles.spacing(16);
+}
+
+.admin-shell__drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  color: styles.$color-text-secondary;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+// --- Session-expired modal --------------------------------------------------
+
+.admin-shell__expiry-root {
+  position: fixed;
+  inset: 0;
+  z-index: $z-expiry;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(24);
+}
+
+.admin-shell__expiry {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  width: 100%;
+  max-width: $expiry-card-width;
+  padding: styles.spacing(32);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-lg;
+  // Elevation/Modal — no shared effect token in @embroidery/styles.
+  box-shadow: 0 12px 32px rgba(23, 23, 23, 0.16);
+}
+
+.admin-shell__expiry-title {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: 1.3;
+  color: styles.$color-text-primary;
+}
+
+.admin-shell__expiry-desc {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  line-height: 1.6;
+  color: styles.$color-text-secondary;
+}
+
+.admin-shell__expiry-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(12) styles.spacing(24);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-surface-primary; // text/inverse (white); no inverse token
+  background: styles.$color-action-primary;
+  border: none;
+  border-radius: styles.$radius-md;
+  cursor: pointer;
+
+  @include styles.motion-safe {
+    transition: background-color styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+
+  &:hover {
+    background: styles.$color-action-hover;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-active;
+    outline-offset: 2px;
+  }
+}

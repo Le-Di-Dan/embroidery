@@ -20,8 +20,12 @@ export type { HealthCheckResult, HealthReadinessResult } from './generated/embro
 // Staff session operations (APP1). Exposed on the public boundary so feature
 // and server code (Admin login screen, server-side session resolution) never
 // deep-imports the generated tree.
-export { staffSessionCreate, staffSelfGet } from './generated/embroidery-api';
-export type { StaffLoginRequest, StaffSelfGet200 } from './generated/embroidery-api.schemas';
+export { staffSessionCreate, staffSelfGet, staffSessionDelete } from './generated/embroidery-api';
+export type {
+  StaffLoginRequest,
+  StaffSelfGet200,
+  CurrentStaffResponse,
+} from './generated/embroidery-api.schemas';
 
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {

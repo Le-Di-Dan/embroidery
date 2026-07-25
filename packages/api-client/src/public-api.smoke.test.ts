@@ -8,8 +8,10 @@ import {
   normalizeApiClientError,
   staffSelfGet,
   staffSessionCreate,
+  staffSessionDelete,
 } from './index';
 import type {
+  CurrentStaffResponse,
   HealthStatusResponse,
   ReadinessStatusResponse,
   StaffLoginRequest,
@@ -24,6 +26,7 @@ describe('package public API smoke', () => {
     expect(typeof normalizeApiClientError).toBe('function');
     expect(typeof staffSessionCreate).toBe('function');
     expect(typeof staffSelfGet).toBe('function');
+    expect(typeof staffSessionDelete).toBe('function');
     expect(typeof createServerApiClient).toBe('function');
   });
 
@@ -39,6 +42,15 @@ describe('package public API smoke', () => {
       displayName: 'Operator',
     };
     expect(view.displayName).toBe('Operator');
+  });
+
+  it('exposes the current-staff response as a named public type', () => {
+    const view: CurrentStaffResponse = {
+      id: '00000000-0000-0000-0000-000000000000',
+      email: 'admin@example.test',
+      displayName: 'Operator',
+    };
+    expect(view.email).toBe('admin@example.test');
   });
 
   it('calls a generated operation through an injected instance with no real network', async () => {
