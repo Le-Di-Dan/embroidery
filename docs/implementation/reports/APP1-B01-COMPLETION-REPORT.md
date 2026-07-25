@@ -1,7 +1,13 @@
 # APP1-B01 — Staff Session Authentication — Completion Report
 
-**Checkpoint:** APP1-B01 (backend) · **Verdict:** `COMPLETE`,
-`DELIVERED_FOR_HUMAN_REVIEW` · **Date:** 2026-07-25 · **Not pushed.**
+**Checkpoint:** APP1-B01 (backend) · **Verdict:** `COMPLETE — CORRECTED` ·
+**Date:** 2026-07-25 · **Not pushed.**
+
+> **Correction history:** the validation deviation recorded in §K (hand-written
+> login validator instead of the required canonical Zod pipeline) was corrected
+> by **APP1-B01-C1** — the login body now validates through a global
+> `ZodValidationPipe`. The historical evidence below is unchanged; see
+> [`APP1-B01-C1-CORRECTION-REPORT.md`](./APP1-B01-C1-CORRECTION-REPORT.md).
 
 ## A. Preflight
 

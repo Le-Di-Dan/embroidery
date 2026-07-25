@@ -7,9 +7,11 @@
 > **`DELIVERED_FOR_HUMAN_REVIEW`** (report
 > `../reports/APP1-D01-COMPLETION-REPORT.md`; registry
 > `../../design/FIGMA_DESIGN_INDEX.md` — all new frames `REVIEW_REQUIRED`).
-> `APP1-B01` (backend) is **COMPLETE** (report
+> `APP1-B01` (backend) is **COMPLETE — CORRECTED** (report
 > `../reports/APP1-B01-COMPLETION-REPORT.md`; two staff-session endpoints,
-> `NO_MIGRATION_REQUIRED`). `APP1-B02` is `READY, NOT STARTED`. The frontend
+> `NO_MIGRATION_REQUIRED`; validation corrected to the canonical Zod pipeline by
+> `APP1-B01-C1`, report `../reports/APP1-B01-C1-CORRECTION-REPORT.md`).
+> `APP1-B02` is `READY, NOT STARTED`. The frontend
 > checkpoints `APP1-A01/A02/S01` remain `BLOCKED_BY_DESIGN_APPROVAL` until the
 > APP1-D01 entries are promoted to `APPROVED_FOR_IMPLEMENTATION` (`A01` also needs
 > `B01` ✓; `A02` needs `B02`; `S01` also needs the Storefront shell promoted).
