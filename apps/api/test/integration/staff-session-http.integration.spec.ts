@@ -130,8 +130,29 @@ describe('staff session HTTP flow (integration)', () => {
     expect(res.status).toBe(400);
     expect(body(res).code).toBe('BAD_REQUEST');
     const fields = (body(res).errors ?? []).map((e) => e.field);
-    expect(fields).toContain('email');
-    expect(fields).toContain('password');
+    // Deterministic, sorted: email before password; request id retained in meta.
+    expect(fields).toEqual(['email', 'password']);
+    expect((res.body as { meta?: { requestId?: string } }).meta?.requestId).toEqual(
+      expect.any(String),
+    );
+  });
+
+  it('rejects an unknown field with a canonical 400 (strict schema)', async () => {
+    const res = await login({ email: EMAIL, password: PASSWORD, role: 'superadmin' });
+    expect(res.status).toBe(400);
+    expect(body(res).code).toBe('BAD_REQUEST');
+    expect(body(res).errors).toContainEqual(
+      expect.objectContaining({ field: 'role', code: 'UNKNOWN_FIELD' }),
+    );
+    expect(res.headers['set-cookie']).toBeUndefined();
+  });
+
+  it('rejects an over-byte password with a canonical 400 (no scrypt run)', async () => {
+    const res = await login({ email: EMAIL, password: 'a'.repeat(5000) });
+    expect(res.status).toBe(400);
+    expect(body(res).errors).toContainEqual(
+      expect.objectContaining({ field: 'password', code: 'TOO_LONG' }),
+    );
   });
 
   it('rejects a non-JSON login body with 415', async () => {

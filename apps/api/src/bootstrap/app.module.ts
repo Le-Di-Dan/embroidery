@@ -6,6 +6,7 @@ import { AuditContextModule } from '../platform/audit-context/audit-context.modu
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
 import { RequestContextModule } from '../platform/request-context/request-context.module';
+import { ValidationModule } from '../platform/validation/validation.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { RequestContextModule } from '../platform/request-context/request-contex
     LoggingModule,
     AuditContextModule,
     HttpResponseModule,
+    ValidationModule,
     HealthModule,
     IdentityModule,
   ],

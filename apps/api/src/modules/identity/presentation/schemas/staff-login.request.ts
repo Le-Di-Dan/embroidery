@@ -1,88 +1,64 @@
 /**
- * Staff login request contract and validation (ADR-APP1-001 §12, FU-A03).
+ * Staff login request contract and schema (ADR-APP1-001 §12, FU-A03).
  *
- * The DTO class exists only so Swagger has a named request schema; validation is
- * a small hand-rolled check (a dedicated validation library is an open decision,
- * `app-config.ts`) that produces the canonical stable `errors[]` shape. It never
- * echoes the password and does not enforce the minimum-length policy — that
- * would leak credential rules and help enumeration; a short password simply
- * fails verification uniformly.
+ * Validation is owned by the canonical Zod pipeline (APP1-B01-C1): the feature
+ * declares the schema, the platform `ZodValidationPipe` runs it and maps issues
+ * to the canonical `errors[]`. The `StaffLoginRequest` class exists only to give
+ * Swagger a named request schema (`@ApiBody`); a contract test keeps its fields
+ * aligned with the Zod schema. The password is never normalized here — the
+ * password service owns its canonical NFKC handling — and never echoed.
  */
-import { BadRequestException } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import type { ApiFieldError } from '@embroidery/contracts';
+import { z } from 'zod';
 
-import { MAX_PASSWORD_BYTES } from '../../infrastructure/crypto/scrypt-password-hasher';
+import { createZodDto } from '../../../../platform/validation/zod-dto';
 
 /** RFC 5321 practical maximum for an email address. */
-const MAX_EMAIL_BYTES = 254;
+export const MAX_EMAIL_BYTES = 254;
+/** Reject longer passwords outright — no silent truncation (ADR §2). */
+export const MAX_PASSWORD_BYTES = 4096;
 
 /** Bounded, backtracking-safe address shape: `local@domain.tld`. */
 const EMAIL_PATTERN = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
 
+function byteLength(value: string): number {
+  return Buffer.byteLength(value, 'utf8');
+}
+
+/**
+ * The canonical staff-login schema. Email is trimmed, NFKC-normalized and
+ * lowercased to its lookup form; the password is length-guarded only. Unknown
+ * fields are rejected (`.strict()`) so a crafted body cannot smuggle extra keys.
+ */
+export const StaffLoginSchema = z
+  .object({
+    email: z
+      .string()
+      .transform((value) => value.trim().normalize('NFKC').toLowerCase())
+      .refine((value) => value.length > 0, { params: { fieldCode: 'REQUIRED' } })
+      .refine((value) => byteLength(value) <= MAX_EMAIL_BYTES, {
+        params: { fieldCode: 'TOO_LONG' },
+      })
+      .refine((value) => EMAIL_PATTERN.test(value), { params: { fieldCode: 'INVALID' } }),
+    password: z
+      .string()
+      .refine((value) => value.length > 0, { params: { fieldCode: 'REQUIRED' } })
+      .refine((value) => byteLength(value) <= MAX_PASSWORD_BYTES, {
+        params: { fieldCode: 'TOO_LONG' },
+      }),
+  })
+  .strict();
+
+export type ParsedStaffLogin = z.output<typeof StaffLoginSchema>;
+
+/** The validated DTO the global pipe produces for the controller. */
+export class StaffLoginRequestDto extends createZodDto(StaffLoginSchema) {}
+
+/** Swagger-only documentation shape for `@ApiBody`; not used for validation. */
 export class StaffLoginRequest {
   @ApiProperty({ format: 'email', maxLength: MAX_EMAIL_BYTES, example: 'admin@example.test' })
   email!: string;
 
   @ApiProperty({ writeOnly: true, description: 'Plain password; never stored or echoed.' })
   password!: string;
-}
-
-export interface ParsedStaffLogin {
-  readonly email: string;
-  readonly password: string;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function validateEmail(value: unknown, errors: ApiFieldError[]): string {
-  if (typeof value !== 'string' || value.trim() === '') {
-    errors.push({ field: 'email', code: 'REQUIRED', message: 'Email is required.' });
-    return '';
-  }
-  const trimmed = value.trim();
-  if (Buffer.byteLength(trimmed, 'utf8') > MAX_EMAIL_BYTES) {
-    errors.push({ field: 'email', code: 'TOO_LONG', message: 'Email is too long.' });
-    return '';
-  }
-  if (!EMAIL_PATTERN.test(trimmed)) {
-    errors.push({ field: 'email', code: 'INVALID', message: 'Email is not valid.' });
-    return '';
-  }
-  return trimmed;
-}
-
-function validatePassword(value: unknown, errors: ApiFieldError[]): string {
-  if (typeof value !== 'string' || value === '') {
-    errors.push({ field: 'password', code: 'REQUIRED', message: 'Password is required.' });
-    return '';
-  }
-  if (Buffer.byteLength(value, 'utf8') > MAX_PASSWORD_BYTES) {
-    errors.push({ field: 'password', code: 'TOO_LONG', message: 'Password is too long.' });
-    return '';
-  }
-  return value;
-}
-
-/**
- * Parses and validates a login body, throwing a 400 with field-level `errors[]`
- * on any problem (FU-A03). The returned password is untouched (only length- and
- * type-checked); the use case owns normalization.
- */
-export function parseStaffLoginRequest(body: unknown): ParsedStaffLogin {
-  const errors: ApiFieldError[] = [];
-  const record = isRecord(body) ? body : {};
-  const email = validateEmail(record['email'], errors);
-  const password = validatePassword(record['password'], errors);
-
-  if (errors.length > 0) {
-    throw new BadRequestException({
-      code: 'BAD_REQUEST',
-      message: 'The request is invalid.',
-      errors,
-    });
-  }
-  return { email, password };
 }

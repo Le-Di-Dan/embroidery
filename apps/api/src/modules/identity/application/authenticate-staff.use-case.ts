@@ -35,7 +35,7 @@ import { StaffAuditWriter, type LoginFailureReason } from './staff-audit.writer'
 import { StaffClock } from './ports/staff-clock';
 
 export interface AuthenticateStaffCommand {
-  /** Already validated: syntactically valid, ≤254 bytes. */
+  /** Validated and normalized by the schema: trimmed, NFKC, lowercased, ≤254 bytes. */
   readonly email: string;
   readonly password: string;
   /** Trusted client IP resolved from the proxy hop, or undefined. */
@@ -68,7 +68,9 @@ export class AuthenticateStaffUseCase {
   ) {}
 
   async authenticate(command: AuthenticateStaffCommand): Promise<AuthenticateStaffResult> {
-    const email = command.email.trim().toLowerCase().normalize('NFKC');
+    // The email arrives already trimmed, NFKC-normalized and lowercased by the
+    // validation schema (its canonical lookup form); no re-normalization here.
+    const email = command.email;
     this.enforceRateLimits(email, command.ipAddress);
 
     const account = await this.accounts.findByEmail(email);

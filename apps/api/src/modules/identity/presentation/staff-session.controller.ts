@@ -42,7 +42,7 @@ import { CookiePolicyService } from '../infrastructure/http/cookie-policy.servic
 import { AuthenticatedAdminGuard } from './guards/authenticated-admin.guard';
 import { StaffJsonBodyGuard } from './guards/staff-json-body.guard';
 import { StaffOriginGuard } from './guards/staff-origin.guard';
-import { StaffLoginRequest, parseStaffLoginRequest } from './schemas/staff-login.request';
+import { StaffLoginRequest, StaffLoginRequestDto } from './schemas/staff-login.request';
 import type { StaffAuthenticatedRequest } from './staff-request';
 
 /** Minimal response contract: avoids importing the Express type. */
@@ -82,14 +82,15 @@ export class StaffSessionController {
   })
   async create(
     @Req() request: StaffAuthenticatedRequest,
-    @Body() body: unknown,
+    @Body() body: StaffLoginRequestDto,
     @Res({ passthrough: true }) response: HeaderSettableResponse,
   ): Promise<void> {
-    const command = parseStaffLoginRequest(body);
+    // `body` is already validated and normalized by the global ZodValidationPipe;
+    // the controller performs no field validation of its own.
     try {
       const { rawToken } = await this.login.authenticate({
-        email: command.email,
-        password: command.password,
+        email: body.email,
+        password: body.password,
         ipAddress: request.ip,
       });
       response.setHeader('Set-Cookie', this.cookies.serializeSessionCookie(rawToken));

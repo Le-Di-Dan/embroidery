@@ -244,7 +244,18 @@ Validation occurs at multiple boundaries:
 
 Never rely solely on frontend validation.
 
-The schema/validation library remains an open decision unless locked by ADR.
+**Transport validation is Zod through the canonical global pipe** (APP1-B01-C1).
+The platform owns one reusable `ZodValidationPipe` and the Zod-issue → `errors[]`
+mapper at `apps/api/src/platform/validation/`, registered globally via
+`ValidationModule` (`APP_PIPE`) so every application-creation path (runtime,
+OpenAPI generation, T01 integration) shares identical behaviour. Feature modules
+own their schemas; a controller declares `@Body() dto: SomeDto` where
+`class SomeDto extends createZodDto(schema) {}` and performs **no** field
+validation itself. The pipe leaves non-Zod parameters untouched. `zod` is a
+direct dependency of `@embroidery/api`; the pipe lives in the API platform layer
+(not `@embroidery/validation`, which stays a source-only boundary) to avoid the
+IMP-D018 runtime-loadability constraint. A formal decision-register/ADR entry
+formalising the Zod lock is a documentation follow-up.
 
 ## 9. Persistence
 
