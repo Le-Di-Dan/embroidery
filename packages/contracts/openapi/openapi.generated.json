@@ -528,7 +528,11 @@
                         "data": {
                           "$ref": "#/components/schemas/CurrentStaffResponse"
                         }
-                      }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
                     }
                   ]
                 }

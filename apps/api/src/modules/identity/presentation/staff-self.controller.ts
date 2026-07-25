@@ -55,7 +55,13 @@ export class StaffSelfController {
     schema: {
       allOf: [
         { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.success}` },
-        { properties: { data: { $ref: getSchemaPath(CurrentStaffResponse) } } },
+        // A successful current-staff read always carries data — mark it required
+        // so the generated client types `data` as non-optional (not `data?`).
+        {
+          type: 'object',
+          required: ['data'],
+          properties: { data: { $ref: getSchemaPath(CurrentStaffResponse) } },
+        },
       ],
     },
   })

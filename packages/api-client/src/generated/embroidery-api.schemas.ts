@@ -187,5 +187,5 @@ export interface StaffLoginRequest {
 }
 
 export type StaffSelfGet200 = ApiSuccessResponse & {
-  data?: CurrentStaffResponse;
+  data: CurrentStaffResponse;
 };

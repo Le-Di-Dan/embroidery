@@ -1,7 +1,20 @@
 import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 
 import { staffSelfGet } from '../generated/embroidery-api';
+import type { StaffSelfGet200, CurrentStaffResponse } from '../generated/embroidery-api.schemas';
 import { normalizeApiClientError } from '../errors/normalize-api-client-error';
+
+// --- Compile-time contract (APP1-B02-C1): success `data` is required. ---
+type IsOptional<T, K extends keyof T> = Record<never, never> extends Pick<T, K> ? true : false;
+type Assert<T extends true> = T;
+// Fails to compile if `data` ever becomes optional again.
+type _StaffSelfDataIsRequired = Assert<
+  IsOptional<StaffSelfGet200, 'data'> extends false ? true : false
+>;
+// `data` is exactly the safe current-staff payload.
+type _StaffSelfDataIsCurrentStaff = Assert<
+  StaffSelfGet200['data'] extends CurrentStaffResponse ? true : false
+>;
 
 interface RecordingInstance {
   instance: AxiosInstance;
@@ -46,6 +59,28 @@ describe('generated staff self operation (FU-A08)', () => {
     void staffSelfGet({ instance });
     expect(calls[0]?.data).toBeUndefined();
     expect(JSON.stringify(calls[0] ?? {})).not.toMatch(/token|cookie|session/i);
+  });
+
+  it('requires data on a successful current-staff response (compile-time contract)', () => {
+    // The module-level `_StaffSelfDataIsRequired` alias already fails to compile
+    // if `data` becomes optional; this fixture proves it at value level too.
+    const valid: StaffSelfGet200 = {
+      success: true,
+      code: 'STAFF_SELF_READ',
+      message: 'Current staff retrieved.',
+      data: { id: 'admin-1', email: 'admin@example.test', displayName: 'Operator' },
+      meta: { requestId: 'req-1', timestamp: '2026-07-25T00:00:00.000Z' },
+    };
+    expect(valid.data.id).toBe('admin-1');
+
+    // @ts-expect-error — omitting `data` must not type-check for a 200 response.
+    const missingData: StaffSelfGet200 = {
+      success: true,
+      code: 'STAFF_SELF_READ',
+      message: 'Current staff retrieved.',
+      meta: { requestId: 'req-2', timestamp: '2026-07-25T00:00:00.000Z' },
+    };
+    expect(missingData.code).toBe('STAFF_SELF_READ');
   });
 
   it('normalizes a canonical 401 error envelope', () => {

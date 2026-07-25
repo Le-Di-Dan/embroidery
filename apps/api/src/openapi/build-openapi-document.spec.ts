@@ -64,6 +64,65 @@ describe('buildOpenApiDocument', () => {
     expect(document.paths['/api/staff/me']?.get?.operationId).toBe('staffSelf_get');
   });
 
+  it('requires data on the current-staff 200 response (APP1-B02-C1)', () => {
+    const document = buildOpenApiDocument(app);
+    const schema = (
+      document.paths['/api/staff/me']?.get?.responses?.['200'] as {
+        content?: { 'application/json'?: { schema?: { allOf?: Array<Record<string, unknown>> } } };
+      }
+    )?.content?.['application/json']?.schema;
+    const allOf = schema?.allOf ?? [];
+    // The base envelope plus an override that makes `data` required and typed.
+    expect(allOf).toContainEqual({ $ref: '#/components/schemas/ApiSuccessResponse' });
+    const override = allOf.find((member) => Array.isArray(member['required']));
+    expect(override?.['required']).toContain('data');
+    expect(override?.['properties']).toEqual({
+      data: { $ref: '#/components/schemas/CurrentStaffResponse' },
+    });
+
+    // The payload schema exposes exactly the three safe fields.
+    const currentStaff = document.components?.schemas?.['CurrentStaffResponse'] as {
+      required?: string[];
+      properties?: Record<string, unknown>;
+    };
+    expect([...(currentStaff.required ?? [])].sort()).toEqual(['displayName', 'email', 'id']);
+    expect(Object.keys(currentStaff.properties ?? {}).sort()).toEqual([
+      'displayName',
+      'email',
+      'id',
+    ]);
+    for (const forbidden of [
+      'credential',
+      'session',
+      'sessionId',
+      'token',
+      'role',
+      'permissions',
+    ]) {
+      expect(currentStaff.properties ?? {}).not.toHaveProperty(forbidden);
+    }
+  });
+
+  it('keeps the current-staff 401 as the canonical error envelope', () => {
+    const document = buildOpenApiDocument(app);
+    const schema = (
+      document.paths['/api/staff/me']?.get?.responses?.['401'] as {
+        content?: { 'application/json'?: { schema?: unknown } };
+      }
+    )?.content?.['application/json']?.schema;
+    expect(schema).toEqual({ $ref: '#/components/schemas/ApiErrorResponse' });
+  });
+
+  it('leaves login and logout as 204 no-content operations', () => {
+    const document = buildOpenApiDocument(app);
+    const post = document.paths['/api/staff/session']?.post?.responses ?? {};
+    const del = document.paths['/api/staff/session']?.delete?.responses ?? {};
+    expect(post).toHaveProperty('204');
+    expect(del).toHaveProperty('204');
+    expect(post).not.toHaveProperty('200');
+    expect(del).not.toHaveProperty('200');
+  });
+
   it('declares no environment-specific server', () => {
     expect(buildOpenApiDocument(app).servers ?? []).toHaveLength(0);
   });
