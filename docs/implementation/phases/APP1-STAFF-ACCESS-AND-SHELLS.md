@@ -4,22 +4,34 @@
 > (`../audits/APP1_PRE_IMPLEMENTATION_AUDIT.md`); `APP1-DEC-AUTH` is **COMPLETE**
 > (IMP-D027, ADR-APP1-001 — report
 > `../reports/APP1-DEC-AUTH-COMPLETION-REPORT.md`); `APP1-D01` is
-> **`DELIVERED_FOR_HUMAN_REVIEW`** (report
+> **`COMPLETE — ADMIN DESIGN APPROVED`** (report
 > `../reports/APP1-D01-COMPLETION-REPORT.md`; registry
-> `../../design/FIGMA_DESIGN_INDEX.md` — all new frames `REVIEW_REQUIRED`).
+> `../../design/FIGMA_DESIGN_INDEX.md` — 13 Admin frames `APPROVED_FOR_IMPLEMENTATION`,
+> Storefront + annotation frames still unapproved).
 > `APP1-B01` (backend) is **COMPLETE — CORRECTED** (report
 > `../reports/APP1-B01-COMPLETION-REPORT.md`; two staff-session endpoints,
 > `NO_MIGRATION_REQUIRED`; validation corrected to the canonical Zod pipeline by
 > `APP1-B01-C1`, report `../reports/APP1-B01-C1-CORRECTION-REPORT.md`).
 > `APP1-B02` is **COMPLETE — CORRECTED** (current staff `GET /api/staff/me`; report
 > `../reports/APP1-B02-COMPLETION-REPORT.md`; `NO_MIGRATION_REQUIRED`; success-data
-> requirement corrected by `APP1-B02-C1`, `../reports/APP1-B02-C1-CORRECTION-REPORT.md`). The frontend
-> checkpoints `APP1-A01/A02` remain `BLOCKED_BY_DESIGN_APPROVAL` and `APP1-S01`
-> `BLOCKED_BY_STOREFRONT_DESIGN_APPROVAL_AND_COVERAGE` until the
-> APP1-D01 entries are promoted to `APPROVED_FOR_IMPLEMENTATION` (`A01` also needs
-> `B01` ✓; `A02` needs `B02` ✓; `S01` also needs the Storefront shell promoted).
+> requirement corrected by `APP1-B02-C1`, `../reports/APP1-B02-C1-CORRECTION-REPORT.md`).
+> The Product Owner approved the APP1 Admin login + shell designs, recorded at
+> `APP1-A01` (approval `docs/design/approvals/APP1-D01-ADMIN-DESIGN-APPROVAL.md`), promoting
+> the 13 Admin registry rows to `APPROVED_FOR_IMPLEMENTATION`; `APP1-D01` is now
+> **COMPLETE — ADMIN DESIGN APPROVED**. **`APP1-A01` is COMPLETE** (Admin `/login`
+> screen; report `../reports/APP1-A01-COMPLETION-REPORT.md`). `APP1-A02` is now
+> `READY, NOT STARTED` (`B02` ✓, Admin shell designs approved). `APP1-S01` remains
+> `BLOCKED_BY_STOREFRONT_DESIGN_APPROVAL_AND_COVERAGE` (Storefront unapproved).
 > All others `NOT_STARTED` per §7. Phase status is owned by
 > `../10-MASTER-APPLICATION-ROADMAP.md` §6.
+>
+> **A01 handoff (for A02):** the mobile-error design frame
+> `FIG-ADMIN-LOGIN-MOBILE-ERROR` (383:9) shows the mobile visual language for both
+> field-validation and generic auth failure; at runtime they stay distinct
+> (`400 errors[]` → field messages; `401 STAFF_LOGIN_FAILED` → one generic
+> form-level alert). `FU-A14` (first interactive-screen accessibility scan) was
+> addressed at `APP1-A01`. Token gaps `FU-A15` (`$color-text-inverse`,
+> `$color-action-disabled`) and local breakpoint `FU-A16` are recorded in the A01 report.
 
 ## 1. Outcome
 
@@ -105,10 +117,10 @@ after each. Backend checkpoints never exceed five tightly related endpoints
 | ID | Type | Scope (summary) | Predecessors |
 |---|---|---|---|
 | **APP1-DEC-AUTH** | decision | **COMPLETE** — resolved IMP-O001/DEC-29: built-in `crypto.scrypt` hashing, server-side revocable opaque sessions (`admin_sessions.token_hash`), host-only `Strict` cookie, layered CSRF (Origin + JSON-only), in-process rate limiting, out-of-band bootstrap CLI; migration verdict `NO_MIGRATION_REQUIRED`. IMP-D027, `../../adr/backend/ADR-APP1-001-STAFF-AUTHENTICATION-AND-SESSIONS.md`. | APP0 |
-| **APP1-D01** | design | **DELIVERED_FOR_HUMAN_REVIEW** — 16 frames in `APP_01` (`375:11`): Admin login (all states), Admin authenticated shell (header/nav/account/logout/loading/session-expired), Storefront reuse map + responsive/impl annotations. Canonical registry `FIGMA_DESIGN_INDEX.md` created + governance + `check:figma-design-index`. New frames `REVIEW_REQUIRED`; A01/A02/S01 blocked pending approval. Report `../reports/APP1-D01-COMPLETION-REPORT.md`. Resolves FU-A19; decides FU-A20. | APP0 |
+| **APP1-D01** | design | **COMPLETE — ADMIN DESIGN APPROVED** — 16 frames in `APP_01` (`375:11`): Admin login (all states), Admin authenticated shell (header/nav/account/logout/loading/session-expired), Storefront reuse map + responsive/impl annotations. Canonical registry `FIGMA_DESIGN_INDEX.md` + governance + `check:figma-design-index`. Product Owner approved the 13 Admin login+shell rows (`APPROVED_FOR_IMPLEMENTATION`, recorded at `APP1-A01`); Storefront + annotation frames remain unapproved. Report `../reports/APP1-D01-COMPLETION-REPORT.md`. Resolves FU-A19; decides FU-A20. | APP0 |
 | **APP1-B01** | backend | **COMPLETE** — Staff session open/close + auth primitives: password (scrypt) + session services, authenticated-admin **guard/session-resolution**, `extendExpiry`/`findActiveCredential`/`rotateCredential` (code-only, no migration), out-of-band `staff:bootstrap` CLI; endpoints `POST /api/staff/session` + `DELETE /api/staff/session` = **2 endpoints**. Login-success/failure(SYSTEM)/logout audit, timing-/enumeration-safe errors, in-process rate limit, layered CSRF, `bindActor()`. T01 integration + security tests; OpenAPI + client regenerated. Resolved FU-A03; first check of FU-A08. Report `../reports/APP1-B01-COMPLETION-REPORT.md`. | APP1-DEC-AUTH |
 | **APP1-B02** | backend | **COMPLETE — CORRECTED** — Current-staff `GET /api/staff/me` (operation ID `staffSelf_get`) = **1 endpoint**, consuming the B01 guard; success `200` `data` made **required** in OpenAPI/client by `APP1-B02-C1` (`../reports/APP1-B02-C1-CORRECTION-REPORT.md`); `@CurrentStaff()` decorator + `GetCurrentStaffQuery` project the guard-resolved session to `{id,email,displayName}` (no second lookup); sliding-renewal and negative (401 missing/malformed/duplicate/unknown/revoked/idle/absolute/LOCKED/DISABLED) tests; no ordinary-read audit; `Cache-Control: no-store`, no `Set-Cookie`; **no explicit renew endpoint**. `NO_MIGRATION_REQUIRED`. OpenAPI + client regenerated. Re-checked FU-A08. Report `../reports/APP1-B02-COMPLETION-REPORT.md`. | APP1-B01 |
-| **APP1-A01** | frontend | **Admin login screen** — one screen; idle/pending/invalid-credential/locked/disabled/recoverable-error states; RTL component tests. Resolves FU-A14 (accessibility scan on the first interactive screen). | APP1-B01, APP1-D01 |
+| **APP1-A01** | frontend | **COMPLETE** — Admin `/login` screen; server shell + client `staff-auth` feature; default/submitting/validation/auth-failed/rate-limited/network/success states; `staffSessionCreate`; RTL component + a11y + boundary tests; no migration. Product Owner approval recorded (approvals/APP1-D01-ADMIN-DESIGN-APPROVAL.md), 13 Admin rows promoted. Resolves FU-A14. Report `../reports/APP1-A01-COMPLETION-REPORT.md`. | APP1-B01, APP1-D01 |
 | **APP1-A02** | frontend | **Admin application shell** — layout, navigation, account menu, current-user display, route protection, access-denied route, session-expiry handling, logout, responsive behavior; component tests. | APP1-B02, APP1-D01 |
 | **APP1-S01** | frontend | **Storefront application shell** — root layout, header/footer, metadata foundation, global error/loading/not-found, SCSS/token integration. Public; no auth. May land FU-A20 (stylelint hook). | APP1-D01 |
 | **APP1-E01** | integration/E2E | **Access E2E** through the real gateway on a disposable DB (T01/T02B): valid login, invalid login, session expiry/renewal, logout, protected-route denial, and audit-actor propagation; deterministic staff fixture, no committed token. | APP1-A02, APP1-S01 |
