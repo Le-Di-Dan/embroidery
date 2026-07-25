@@ -40,14 +40,17 @@
 > not-found design SUPPLEMENT; the seven D02 rows are `APPROVED_FOR_IMPLEMENTATION`
 > per the approval record `../../design/approvals/APP1-D02-STOREFRONT-DESIGN-APPROVAL.md`,
 > report `../reports/APP1-D02-COMPLETION-REPORT.md`. `APP1-S01` is split and
-> `IN_PROGRESS`: **`APP1-S01A` is `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`** — shared
-> Storefront shell + responsive navigation (server-first layout, responsive
-> Full/Compact header, focus-trapped mobile drawer, honest non-interactive nav +
-> search, `<main>` slot; SCSS-only; no not-found), report
-> `../reports/APP1-S01A-COMPLETION-REPORT.md`. `APP1-S01B` is
-> `BLOCKED_BY_APP1_S01A_PRODUCT_OWNER_REVIEW`;
-> `APP1-E01` is `BLOCKED`. All others `NOT_STARTED` per §7. Phase status is owned
-> by `../10-MASTER-APPLICATION-ROADMAP.md` §6.
+> `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`: **`APP1-S01A` is
+> `COMPLETE — PRODUCT_OWNER_ACCEPTED`** (Product Owner live-tested and accepted
+> the shared shell + responsive navigation), report
+> `../reports/APP1-S01A-COMPLETION-REPORT.md`. **`APP1-S01B` is
+> `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`** — Storefront not-found boundary
+> (canonical `app/not-found.tsx` inside the accepted shell, HTTP 404, safe
+> Vietnamese copy, `/` primary recovery, honestly-unavailable secondary; SCSS-only;
+> Commit A `f45821b`), report `../reports/APP1-S01B-COMPLETION-REPORT.md`.
+> `APP1-E01` is `BLOCKED_BY_APP1_S01_PRODUCT_OWNER_REVIEW`. All others
+> `NOT_STARTED` per §7. Phase status is owned by
+> `../10-MASTER-APPLICATION-ROADMAP.md` §6.
 >
 > **A01 handoff (for A02):** the mobile-error design frame
 > `FIG-ADMIN-LOGIN-MOBILE-ERROR` (383:9) shows the mobile visual language for both
@@ -149,8 +152,8 @@ after each. Backend checkpoints never exceed five tightly related endpoints
 | **APP1-A01-C2** | test/correction | **COMPLETE** — real isolated-Compose evidence for the bootstrap environment policy (closes the A01-C1 §H/§M evidence gap): test-only `docker-compose.smoke.yml` override + `tools/smoke-app1-bootstrap-compose.mjs` harness run 8/8 throwaway-project cases (dev missing-env `up --wait` non-zero + readiness blocked, dev partial-missing fail, create/reuse with no rotation, prod missing/partial skip, unknown-env fail-closed), zero residual resources, normal dev stack untouched. Uncovered + fixed a genuine result-line observability defect (`{ logger: false }` silenced the Nest `Logger`). No migration; no UI/auth change. Report `../reports/APP1-A01-C2-CORRECTION-REPORT.md`. | APP1-A01-C1 |
 | **APP1-A02** | frontend | **COMPLETE — PRODUCT_OWNER_ACCEPTED** — authenticated Admin shell in the protected route-group layout: app bar (brand, current-staff identity, logout), desktop sidebar nav, mobile navigation drawer, main content slot, loading/reconnect status, client session-expiry modal. One server-hydrated `staffSelfGet` per navigation (no mount duplicate); `staffSessionDelete` logout; SCSS-only via `@embroidery/styles`; RTL component + a11y + drawer + boundary tests; live-tested through `admin.embroidery.local`; no migration. Report `../reports/APP1-A02-COMPLETION-REPORT.md`. | APP1-B02, APP1-D01, APP1-A01-C1 |
 | **APP1-S01** | frontend | **Storefront application shell** — root layout, header/footer, metadata foundation, global not-found boundary, SCSS/token integration. Public; no auth. **Split (frontend checkpoint-size rule) into two reviewable slices:** `APP1-S01A` (shared shell + responsive navigation) and `APP1-S01B` (not-found boundary). May land FU-A20 (stylelint hook). | APP1-D01, APP1-D02 |
-| **APP1-S01A** | frontend | **DELIVERED_FOR_PRODUCT_OWNER_REVIEW** (Commit A `0b11fbb`, report `../reports/APP1-S01A-COMPLETION-REPORT.md`) — shared Storefront shell + responsive navigation: server-first root layout owning `StorefrontShell` (header · `<main id="main-content">` slot · footer), responsive Full/Compact header, presentational primary nav (routes unbuilt → non-interactive), presentational non-submitting search affordance, focus-trapped/scroll-locked mobile drawer (`410:2311`), skip link. Consumes the five approved D02 shell rows `FIG-STOREFRONT-SHELL-DESKTOP-DEFAULT`, `FIG-STOREFRONT-SHELL-TABLET-DEFAULT`, `FIG-STOREFRONT-SHELL-MOBILE-DEFAULT`, `FIG-STOREFRONT-SHELL-MOBILE-NAVOPEN`, `FIG-STOREFRONT-SHELL-NOTES` (approval `approvals/APP1-D02-STOREFRONT-DESIGN-APPROVAL.md`). SCSS-only via `@embroidery/styles`; local breakpoint (FU-A16); local scrim (GAP-D02). No not-found, no business capability, no API/schema change. | APP1-A02, APP1-D02 |
-| **APP1-S01B** | frontend | **BLOCKED_BY_APP1_S01A_PRODUCT_OWNER_REVIEW** — Storefront not-found boundary: `not-found.tsx` rendered inside the S01A shell, home/discover recovery, from the two approved D02 not-found rows (`FIG-STOREFRONT-NOTFOUND` and its mobile row). Not started. | APP1-S01A |
+| **APP1-S01A** | frontend | **COMPLETE — PRODUCT_OWNER_ACCEPTED** (Commit A `0b11fbb`, report `../reports/APP1-S01A-COMPLETION-REPORT.md`) — shared Storefront shell + responsive navigation: server-first root layout owning `StorefrontShell` (header · `<main id="main-content">` slot · footer), responsive Full/Compact header, presentational primary nav (routes unbuilt → non-interactive), presentational non-submitting search affordance, focus-trapped/scroll-locked mobile drawer (`410:2311`), skip link. Consumes the five approved D02 shell rows `FIG-STOREFRONT-SHELL-DESKTOP-DEFAULT`, `FIG-STOREFRONT-SHELL-TABLET-DEFAULT`, `FIG-STOREFRONT-SHELL-MOBILE-DEFAULT`, `FIG-STOREFRONT-SHELL-MOBILE-NAVOPEN`, `FIG-STOREFRONT-SHELL-NOTES` (approval `approvals/APP1-D02-STOREFRONT-DESIGN-APPROVAL.md`). SCSS-only via `@embroidery/styles`; local breakpoint (FU-A16); local scrim (GAP-D02). No not-found, no business capability, no API/schema change. | APP1-A02, APP1-D02 |
+| **APP1-S01B** | frontend | **DELIVERED_FOR_PRODUCT_OWNER_REVIEW** (Commit A `f45821b`, report `../reports/APP1-S01B-COMPLETION-REPORT.md`) — Storefront not-found boundary: canonical `app/not-found.tsx` delegating to a bounded `storefront-not-found` Server-Component feature, rendered inside the accepted S01A shell (`<main id="main-content">` slot, single `<h1>`). Unmatched URL → HTTP 404 (Next-owned); safe Vietnamese copy (404 · "Không tìm thấy trang" · safe explanation, no path echo); primary recovery `Về trang chủ` → `/`; secondary `Khám phá tác phẩm` rendered as honestly-unavailable non-interactive affordance (discovery route unbuilt — no dead anchor/invented route). Consumes `FIG-STOREFRONT-NOTFOUND` (`411:2337`), `FIG-STOREFRONT-NOTFOUND-MOBILE` (`411:3851`), `FIG-STOREFRONT-SHELL-NOTES` (`412:2396`) (approval `../../design/approvals/APP1-D02-STOREFRONT-DESIGN-APPROVAL.md`). SCSS-only via `@embroidery/styles`; no API/schema/dependency change. | APP1-S01A |
 | **APP1-E01** | integration/E2E | **Access E2E** through the real gateway on a disposable DB (T01/T02B): valid login, invalid login, session expiry/renewal, logout, protected-route denial, and audit-actor propagation; deterministic staff fixture, no committed token. | APP1-A02, APP1-S01 |
 | **APP1-X01** | closure | Phase closure audit (security/contract/UI/logs), R0 evaluation, and APP2 handoff. | APP1-E01 |
 

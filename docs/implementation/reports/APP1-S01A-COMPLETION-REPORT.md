@@ -2,9 +2,14 @@
 
 **Checkpoint:** APP1-S01A — Implement the Storefront shared shell and responsive navigation
 **Parent:** APP1-S01 — Storefront shell and not-found boundary (split S01A/S01B)
-**Status:** `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`
+**Status:** `COMPLETE — PRODUCT_OWNER_ACCEPTED`
 **Date:** 2026-07-25
 **Design classification consumed:** APP1-D02 `SUPPLEMENT`
+
+> **Product Owner acceptance (recorded at APP1-S01B):** the Product Owner
+> live-tested APP1-S01A and confirmed `APP1-S01A LIVE TEST = PASSED`, so
+> **`APP1-S01A` = `COMPLETE — PRODUCT_OWNER_ACCEPTED`**. This unblocked and was
+> followed by `APP1-S01B` (Storefront not-found boundary).
 
 ---
 
