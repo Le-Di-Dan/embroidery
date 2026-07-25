@@ -1,0 +1,398 @@
+// Storefront shared shell — feature-scoped styles (APP1-S01A). Design source:
+// FIG-STOREFRONT-SHELL-* (file BQwqV8GdfUIELvsQDB1UQE, section 405:2224).
+// Colour/type/radius/spacing/motion/control-size come from @embroidery/styles
+// tokens; a few shell-specific dimensions have no shared token and are local
+// literals (documented inline). Mobile-first: the base is the Compact header with
+// a drawer; the Full inline layout applies from the local nav breakpoint.
+
+@use '@embroidery/styles' as styles;
+
+// Local layout breakpoints — the design system defers a shared breakpoint scale
+// (FU-A16), so these are shell-local decisions, not tokens. `$bp-nav` is the
+// Full↔Compact header threshold: the Full inline header applies above 1024px
+// (the approved desktop 1440 frame), while the Compact header + drawer covers
+// ≤1024px — matching BOTH approved Compact frames (mobile 390 and tablet 1024,
+// FIG-STOREFRONT-SHELL-{MOBILE,TABLET}-DEFAULT). The D02 audit found the Full
+// header clips at 1024, so 1024 is deliberately Compact, not Full. `$bp-footer`
+// switches the footer between the desktop/tablet and compact-mobile compositions.
+$bp-nav: 1025px;
+$bp-footer: 768px;
+
+// Shell-specific composition constants (no shared token; approved shell values).
+$content-max: 1200px; // approved max content width (~1200, FIG-STOREFRONT-SHELL-NOTES)
+$bar-height: 72px;
+$drawer-width: 320px;
+
+// Local stacking order — @embroidery/styles defines no z-index scale.
+$z-drawer: 100;
+$z-skip-link: 300;
+
+// Local scrim composition — no scrim token (GAP-D02 / FIG-DS-SCRIM-TOKEN);
+// derived from the approved ink text token at 45%, not an arbitrary hex.
+$scrim-drawer: rgba(styles.$color-text-primary, 0.45);
+
+.storefront-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: styles.$color-background-primary;
+}
+
+// Visually-hidden helper for accessible-only text (skip-nav announcements etc.).
+.storefront-shell__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.storefront-shell__skip-link {
+  position: absolute;
+  top: styles.spacing(8);
+  left: styles.spacing(8);
+  z-index: $z-skip-link;
+  padding: styles.spacing(8) styles.spacing(16);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-surface-primary;
+  background: styles.$color-action-primary;
+  border-radius: styles.$radius-sm;
+  transform: translateY(-200%);
+
+  @include styles.motion-safe {
+    transition: transform styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+
+  &:focus-visible {
+    transform: translateY(0);
+  }
+}
+// --- Header bar -------------------------------------------------------------
+
+.storefront-shell__bar {
+  position: sticky;
+  top: 0;
+  z-index: $z-drawer - 1;
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+  width: 100%;
+  min-height: $bar-height;
+  padding: styles.spacing(12) styles.spacing(16);
+  background: styles.$color-surface-primary;
+  border-bottom: 1px solid styles.$color-border-primary;
+
+  @media (min-width: $bp-footer) {
+    padding: styles.spacing(16) styles.spacing(24);
+  }
+
+  @media (min-width: $bp-nav) {
+    gap: styles.spacing(32);
+    padding: styles.spacing(16) styles.spacing(24);
+  }
+}
+
+.storefront-shell__bar-lead {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(12);
+}
+
+.storefront-shell__bar-nav {
+  display: none; // Compact header hides the inline nav.
+
+  @media (min-width: $bp-nav) {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.storefront-shell__bar-trail {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+  margin-left: auto;
+}
+
+.storefront-shell__nav-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  color: styles.$color-text-primary;
+  background: transparent;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+
+  // The inline header nav replaces the trigger on wide viewports.
+  @media (min-width: $bp-nav) {
+    display: none;
+  }
+}
+
+.storefront-shell__nav-trigger-glyph {
+  font-size: styles.$font-size-body-l;
+  line-height: 1;
+}
+
+.storefront-shell__brand {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 4px;
+    border-radius: styles.$radius-xs;
+  }
+}
+
+.storefront-shell__brand-wordmark {
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: 1.1;
+  color: styles.$color-text-primary;
+}
+// --- Primary navigation -----------------------------------------------------
+
+.storefront-shell__nav-list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.storefront-shell__nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: styles.spacing(8);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  line-height: 1.4;
+  color: styles.$color-text-secondary;
+  cursor: default; // non-interactive: routes not built yet (APP1-S01A §9).
+}
+
+.storefront-shell__nav-tag {
+  padding: 2px styles.spacing(8);
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-tertiary;
+  background: styles.$color-background-secondary;
+  border-radius: styles.$radius-xs;
+}
+
+// Header (bar) variant — horizontal, dimmed unavailable items, note hidden.
+.storefront-shell__nav--bar {
+  .storefront-shell__nav-list {
+    flex-direction: row;
+    gap: styles.spacing(24);
+  }
+
+  .storefront-shell__nav-item {
+    opacity: 0.6;
+  }
+
+  .storefront-shell__nav-tag,
+  .storefront-shell__nav-note {
+    display: none;
+  }
+}
+
+// Drawer variant — vertical, generous touch targets, tag + note visible.
+.storefront-shell__nav--drawer {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+
+  .storefront-shell__nav-list {
+    flex-direction: column;
+    gap: styles.spacing(4);
+  }
+
+  .storefront-shell__nav-row {
+    display: flex;
+  }
+
+  .storefront-shell__nav-item {
+    flex: 1 1 auto;
+    justify-content: space-between;
+    min-height: styles.$size-touch-target-min;
+    padding: styles.spacing(12) styles.spacing(16);
+    font-size: styles.$font-size-body-l;
+    color: styles.$color-text-primary;
+    border-radius: styles.$radius-md;
+  }
+}
+
+.storefront-shell__nav-note {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-tertiary;
+}
+// --- Search affordance (presentational, non-functional) ---------------------
+
+.storefront-shell__search {
+  display: none; // hidden in the Compact header; shown in the Full header.
+  align-items: center;
+  gap: styles.spacing(8);
+  min-width: 220px;
+  padding: styles.spacing(8) styles.spacing(16);
+  color: styles.$color-text-tertiary;
+  background: styles.$color-background-secondary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+
+  @media (min-width: $bp-nav) {
+    display: inline-flex;
+  }
+}
+
+.storefront-shell__search-glyph {
+  font-size: styles.$font-size-body-l;
+  line-height: 1;
+}
+
+.storefront-shell__search-hint {
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+}
+// --- Main content slot ------------------------------------------------------
+
+.storefront-shell__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.storefront-shell__main-inner {
+  width: 100%;
+  max-width: $content-max;
+  margin: 0 auto;
+  padding: styles.spacing(24) styles.spacing(16);
+
+  @media (min-width: $bp-footer) {
+    padding: styles.spacing(32) styles.spacing(24);
+  }
+}
+// --- Mobile drawer ----------------------------------------------------------
+
+.storefront-shell__drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: $z-drawer;
+  display: flex;
+
+  @media (min-width: $bp-nav) {
+    display: none;
+  }
+}
+
+.storefront-shell__scrim {
+  position: absolute;
+  inset: 0;
+  background: $scrim-drawer;
+}
+
+.storefront-shell__drawer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  width: min(#{$drawer-width}, 88vw);
+  height: 100%;
+  padding: styles.spacing(24);
+  overflow-y: auto;
+  background: styles.$color-surface-primary;
+  border-right: 1px solid styles.$color-border-primary;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.storefront-shell__drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(16);
+}
+
+.storefront-shell__drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  color: styles.$color-text-secondary;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+// --- Footer -----------------------------------------------------------------
+
+.storefront-shell__footer {
+  margin-top: auto;
+  background: styles.$color-background-secondary;
+  border-top: 1px solid styles.$color-border-primary;
+}
+
+.storefront-shell__footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  width: 100%;
+  max-width: $content-max;
+  margin: 0 auto;
+  padding: styles.spacing(24) styles.spacing(16);
+
+  // Desktop/tablet footer: brand and rights on one row (approved DS Footer).
+  @media (min-width: $bp-footer) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: styles.spacing(32) styles.spacing(24);
+  }
+}
+
+.storefront-shell__footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.storefront-shell__footer-tagline {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-secondary;
+}
+
+.storefront-shell__footer-rights {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.5;
+  color: styles.$color-text-tertiary;
+}

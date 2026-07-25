@@ -144,11 +144,13 @@ after each. Backend checkpoints never exceed five tightly related endpoints
 | **APP1-A01-C1** | frontend/correction | **COMPLETE** — login readiness correction closing the Product-Owner runtime findings: password-toggle hydration through the dev gateway (`allowedDevOrigins`), bidirectional Admin route protection (`proxy.ts` + server session resolver + `(protected)` group), automatic one-shot Compose `db-migrate` + `staff-bootstrap` with idempotent create/reuse and dev-fail/prod-skip env policy. Also fixed the double-`/api` base and API origin/cookie env. No migration; live-tested through `admin.embroidery.local` (204 login, `adm_session`). Opens follow-up FU-A17 (repo-wide `/api` base reconciliation). Report `../reports/APP1-A01-C1-CORRECTION-REPORT.md`. | APP1-A01 |
 | **APP1-A01-C2** | test/correction | **COMPLETE** — real isolated-Compose evidence for the bootstrap environment policy (closes the A01-C1 §H/§M evidence gap): test-only `docker-compose.smoke.yml` override + `tools/smoke-app1-bootstrap-compose.mjs` harness run 8/8 throwaway-project cases (dev missing-env `up --wait` non-zero + readiness blocked, dev partial-missing fail, create/reuse with no rotation, prod missing/partial skip, unknown-env fail-closed), zero residual resources, normal dev stack untouched. Uncovered + fixed a genuine result-line observability defect (`{ logger: false }` silenced the Nest `Logger`). No migration; no UI/auth change. Report `../reports/APP1-A01-C2-CORRECTION-REPORT.md`. | APP1-A01-C1 |
 | **APP1-A02** | frontend | **DELIVERED_FOR_PRODUCT_OWNER_REVIEW** — authenticated Admin shell in the protected route-group layout: app bar (brand, current-staff identity, logout), desktop sidebar nav, mobile navigation drawer, main content slot, loading/reconnect status, client session-expiry modal. One server-hydrated `staffSelfGet` per navigation (no mount duplicate); `staffSessionDelete` logout; SCSS-only via `@embroidery/styles`; RTL component + a11y + drawer + boundary tests; live-tested through `admin.embroidery.local`; no migration. Report `../reports/APP1-A02-COMPLETION-REPORT.md`. | APP1-B02, APP1-D01, APP1-A01-C1 |
-| **APP1-S01** | frontend | **Storefront application shell** — root layout, header/footer, metadata foundation, global error/loading/not-found, SCSS/token integration. Public; no auth. May land FU-A20 (stylelint hook). | APP1-D01 |
+| **APP1-S01** | frontend | **Storefront application shell** — root layout, header/footer, metadata foundation, global not-found boundary, SCSS/token integration. Public; no auth. **Split (frontend checkpoint-size rule) into two reviewable slices:** `APP1-S01A` (shared shell + responsive navigation) and `APP1-S01B` (not-found boundary). May land FU-A20 (stylelint hook). | APP1-D01, APP1-D02 |
+| **APP1-S01A** | frontend | **Shared Storefront shell + responsive navigation** — server-first root layout owning `StorefrontShell` (header · `<main id="main-content">` slot · footer), responsive Full/Compact header, presentational primary nav (routes unbuilt → non-interactive), presentational non-submitting search affordance, focus-trapped/scroll-locked mobile drawer (`410:2311`), skip link. Consumes the five approved D02 shell rows `FIG-STOREFRONT-SHELL-DESKTOP-DEFAULT`, `FIG-STOREFRONT-SHELL-TABLET-DEFAULT`, `FIG-STOREFRONT-SHELL-MOBILE-DEFAULT`, `FIG-STOREFRONT-SHELL-MOBILE-NAVOPEN`, `FIG-STOREFRONT-SHELL-NOTES` (approval `approvals/APP1-D02-STOREFRONT-DESIGN-APPROVAL.md`). SCSS-only via `@embroidery/styles`; local breakpoint (FU-A16); local scrim (GAP-D02). No not-found, no business capability, no API/schema change. | APP1-A02, APP1-D02 |
+| **APP1-S01B** | frontend | **Storefront not-found boundary** — `not-found.tsx` rendered inside the S01A shell, home/discover recovery, from the two approved D02 not-found rows (`FIG-STOREFRONT-NOTFOUND`, `-MOBILE`). Not started; blocked by the S01A Product Owner review. | APP1-S01A |
 | **APP1-E01** | integration/E2E | **Access E2E** through the real gateway on a disposable DB (T01/T02B): valid login, invalid login, session expiry/renewal, logout, protected-route denial, and audit-actor propagation; deterministic staff fixture, no committed token. | APP1-A02, APP1-S01 |
 | **APP1-X01** | closure | Phase closure audit (security/contract/UI/logs), R0 evaluation, and APP2 handoff. | APP1-E01 |
 
-Ordering: `DEC-AUTH ✓ → {B01, D01} → B02 → A01 → A02 → S01 → E01 → X01`. With
+Ordering: `DEC-AUTH ✓ → {B01, D01} → B02 → A01 → A02 → S01(A→B) → E01 → X01`. With
 `DEC-AUTH` complete, `APP1-B01` (backend) and `APP1-D01` (design, no engineering
 predecessor) are **independently `READY`** and may proceed in parallel under
 phase-level design governance (IMP-D003); neither starts implementation until
@@ -202,9 +204,13 @@ entry** — `APP1-A01/A02/S01` are blocked until a human promotes the relevant r
   each page owns its own `<h1>` and content. SCSS-only via `@embroidery/styles`
   tokens; local breakpoint (no global breakpoint token, consistent with Admin
   FU-A16); scrim via local composition (`ink/900 @45%`, GAP-D02). Do **not**
-  implement Homepage or any business capability. **`APP1-S01` remains blocked**
-  until the Product Owner promotes these rows from `REVIEW_REQUIRED` to
-  `APPROVED_FOR_IMPLEMENTATION`.
+  implement Homepage or any business capability. **The Product Owner reviewed the
+  D02 package in Figma and PASSED it** (approval record
+  `approvals/APP1-D02-STOREFRONT-DESIGN-APPROVAL.md`); the seven D02 rows are
+  `APPROVED_FOR_IMPLEMENTATION`. `APP1-S01` is split into `APP1-S01A` (shared shell +
+  responsive navigation — consumes the five shell rows in registry §4.2) and
+  `APP1-S01B` (not-found boundary — consumes `FIG-STOREFRONT-NOTFOUND` and its
+  mobile row); S01A is implemented first and S01B is blocked by the S01A review.
 - The three prior Homepage shell-reference rows (`FIG-STOREFRONT-SHELL-DESKTOP`,
   `FIG-STOREFRONT-SHELL-TABLET`, `FIG-STOREFRONT-SHELL-MOBILE`) are `SUPERSEDED`
   by the standalone D02 shell rows above; the Homepage frames remain valid Homepage
