@@ -9,6 +9,7 @@ import type {
   HealthStatusResponse,
   ReadinessStatusResponse,
   StaffLoginRequest,
+  StaffSelfGet200,
 } from './embroidery-api.schemas';
 
 import { apiRequest } from '../clients/api-request.mutator';
@@ -26,6 +27,14 @@ export const healthReadiness = (
     { url: `/api/health/readiness`, method: 'GET' },
     options,
   );
+};
+
+/**
+ * Returns the minimum safe identity for the authenticated admin: id, email and display name. No credential, session or role data is exposed.
+ * @summary Get the current staff identity
+ */
+export const staffSelfGet = (options?: SecondParameter<typeof apiRequest<StaffSelfGet200>>) => {
+  return apiRequest<StaffSelfGet200>({ url: `/api/staff/me`, method: 'GET' }, options);
 };
 
 /**
@@ -57,5 +66,6 @@ export const staffSessionCreate = (
 
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
+export type StaffSelfGetResult = NonNullable<Awaited<ReturnType<typeof staffSelfGet>>>;
 export type StaffSessionDeleteResult = NonNullable<Awaited<ReturnType<typeof staffSessionDelete>>>;
 export type StaffSessionCreateResult = NonNullable<Awaited<ReturnType<typeof staffSessionCreate>>>;

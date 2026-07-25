@@ -19,10 +19,12 @@ import { RevokeStaffSessionUseCase } from './application/revoke-staff-session.us
 import { ResolveStaffSessionService } from './application/resolve-staff-session.service';
 import { StaffAccountStatusService } from './application/staff-account-status.service';
 import { BootstrapStaffUseCase } from './application/bootstrap-staff.use-case';
+import { GetCurrentStaffQuery } from './application/get-current-staff.query';
 import { AuthenticatedAdminGuard } from './presentation/guards/authenticated-admin.guard';
 import { StaffOriginGuard } from './presentation/guards/staff-origin.guard';
 import { StaffJsonBodyGuard } from './presentation/guards/staff-json-body.guard';
 import { StaffSessionController } from './presentation/staff-session.controller';
+import { StaffSelfController } from './presentation/staff-self.controller';
 
 /**
  * CTX-IDN — admin identity, staff authentication and revocable sessions
@@ -34,7 +36,7 @@ import { StaffSessionController } from './presentation/staff-session.controller'
  */
 @Module({
   imports: [DatabaseModule, AuditModule],
-  controllers: [StaffSessionController],
+  controllers: [StaffSessionController, StaffSelfController],
   providers: [
     { provide: ADMIN_ACCOUNT_REPOSITORY, useClass: DrizzleAdminAccountRepository },
     { provide: ADMIN_SESSION_REPOSITORY, useClass: DrizzleAdminSessionRepository },
@@ -51,6 +53,7 @@ import { StaffSessionController } from './presentation/staff-session.controller'
     ResolveStaffSessionService,
     StaffAccountStatusService,
     BootstrapStaffUseCase,
+    GetCurrentStaffQuery,
     AuthenticatedAdminGuard,
     StaffOriginGuard,
     StaffJsonBodyGuard,

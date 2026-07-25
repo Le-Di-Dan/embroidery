@@ -84,6 +84,15 @@ export interface ApiSuccessResponse {
   success: true;
 }
 
+export interface CurrentStaffResponse {
+  /** The admin display name, shown in the Admin shell. */
+  displayName: string;
+  /** The stored normalized admin email. */
+  email: string;
+  /** The canonical admin account ID. */
+  id: string;
+}
+
 export type DatabaseHealthResponseReason =
   (typeof DatabaseHealthResponseReason)[keyof typeof DatabaseHealthResponseReason];
 
@@ -176,3 +185,7 @@ export interface StaffLoginRequest {
   /** Plain password; never stored or echoed. */
   password: string;
 }
+
+export type StaffSelfGet200 = ApiSuccessResponse & {
+  data?: CurrentStaffResponse;
+};
