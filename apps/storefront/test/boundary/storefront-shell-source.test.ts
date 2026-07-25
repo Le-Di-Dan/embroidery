@@ -5,14 +5,14 @@
  * Storefront app-router tree. These guard the architectural rules the shell must
  * never break: no raw fetch or API client, no client-side cookie/token/storage
  * handling, no second QueryClient or global store, no inline styles / CSS Modules,
- * and — the S01A scope boundary — no not-found implementation (that belongs to
- * APP1-S01B).
+ * and no second QueryClient or global store. The shell itself renders no
+ * not-found node (that boundary is a sibling feature, `storefront-not-found`,
+ * owned by APP1-S01B — the shell must not grow its own 404).
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const FEATURE_DIR = join(__dirname, '..', '..', 'src', 'features', 'storefront-shell');
-const APP_DIR = join(__dirname, '..', '..', 'src', 'app');
 
 function collectSources(dir: string): string[] {
   const files: string[] = [];
@@ -89,14 +89,8 @@ describe('storefront-shell production source boundaries', () => {
   });
 });
 
-describe('APP1-S01A scope boundary — no not-found implementation', () => {
-  it('adds no not-found route file (owned by APP1-S01B)', () => {
-    expect(existsSync(join(APP_DIR, 'not-found.tsx'))).toBe(false);
-    expect(existsSync(join(APP_DIR, 'not-found.ts'))).toBe(false);
-    expect(existsSync(join(APP_DIR, 'global-not-found.tsx'))).toBe(false);
-  });
-
-  it('references no not-found node in the shell source', () => {
+describe('shell boundary — the shell grows no not-found of its own', () => {
+  it('references no not-found node in the shell source (that is a sibling feature)', () => {
     for (const { path, text } of sources) {
       expect({ path, hit: /not-?found|notFound\s*\(/i.test(text) }).toEqual({ path, hit: false });
     }

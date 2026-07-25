@@ -8,6 +8,7 @@
 
 // Feature styles (each feature owns a leaf stylesheet, composed here).
 @use '../features/storefront-shell/styles/storefront-shell';
+@use '../features/storefront-not-found/styles/storefront-not-found';
 
 // Browser normalization: predictable box model.
 *,

@@ -1,0 +1,170 @@
+// Storefront not-found boundary — feature-scoped styles (APP1-S01B). Design
+// source: FIG-STOREFRONT-NOTFOUND (411:2337), FIG-STOREFRONT-NOTFOUND-MOBILE
+// (411:3851), FIG-STOREFRONT-SHELL-NOTES (412:2396), all under
+// FIG-APPROVAL-APP1-D02-STOREFRONT-001. Colour/type/radius/spacing/control-size
+// come from @embroidery/styles tokens. The boundary renders inside the shared
+// shell's `<main>` slot, so it owns no page landmark — only the centered recovery
+// composition. Mobile-first: the base is the stacked mobile state; the desktop/
+// tablet type scale and horizontal actions apply from the footer breakpoint up.
+
+@use '@embroidery/styles' as styles;
+
+// The not-found breakpoint reuses the shell footer threshold (FU-A16 shared
+// scale): below it is the compact mobile composition, at/above it the wider
+// desktop/tablet composition. No new breakpoint token is introduced.
+$bp-wide: 768px;
+
+// Centered content measure (~560, FIG-STOREFRONT-SHELL-NOTES); no shared token
+// for this reading width in the boundary, so it is a documented local literal.
+$content-measure: 560px;
+
+.storefront-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: styles.spacing(16);
+  width: 100%;
+  max-width: $content-measure;
+  margin: 0 auto;
+  padding: styles.spacing(48) 0;
+  text-align: center;
+
+  @media (min-width: $bp-wide) {
+    gap: styles.spacing(24);
+    padding: styles.spacing(96) 0;
+  }
+}
+
+.storefront-not-found__code {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-display-m; // 56px mobile decorative code
+  font-weight: styles.$font-weight-bold;
+  line-height: 1;
+  color: styles.$color-action-primary;
+
+  @media (min-width: $bp-wide) {
+    font-size: styles.$font-size-display-xl; // 72px desktop/tablet type scale
+  }
+}
+
+.storefront-not-found__title {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-m; // 32px mobile
+  font-weight: styles.$font-weight-semibold;
+  line-height: 1.2;
+  color: styles.$color-text-primary;
+
+  @media (min-width: $bp-wide) {
+    font-size: styles.$font-size-heading-l; // 40px desktop/tablet
+  }
+}
+
+.storefront-not-found__lead {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  line-height: 1.6;
+  color: styles.$color-text-secondary;
+
+  @media (min-width: $bp-wide) {
+    font-size: styles.$font-size-body-l;
+  }
+}
+
+// --- Recovery actions -------------------------------------------------------
+// Mobile: stacked, full-width. Desktop/tablet: centered horizontal row.
+.storefront-not-found__actions {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  width: 100%;
+  margin-top: styles.spacing(8);
+
+  @media (min-width: $bp-wide) {
+    flex-direction: row;
+    justify-content: center;
+    width: auto;
+    gap: styles.spacing(16);
+  }
+}
+
+.storefront-not-found__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: styles.spacing(8);
+  width: 100%;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(12) styles.spacing(24);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  line-height: 1.2;
+  text-decoration: none;
+  border-radius: styles.$radius-button;
+
+  @media (min-width: $bp-wide) {
+    width: auto;
+  }
+}
+
+// Primary recovery — dominant, links to the home route.
+.storefront-not-found__action--primary {
+  color: styles.$color-surface-primary;
+  background: styles.$color-action-primary;
+  border: 1px solid styles.$color-action-primary;
+
+  @include styles.motion-safe {
+    transition: background-color styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+
+  &:hover {
+    background: styles.$color-action-hover;
+    border-color: styles.$color-action-hover;
+  }
+
+  &:active {
+    background: styles.$color-action-active;
+    border-color: styles.$color-action-active;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+// Secondary recovery — approved label, but the discovery area is not built yet,
+// so it is a clearly unavailable, non-interactive affordance (APP1-S01B §9): a
+// muted outline, a "Sắp ra mắt" tag, and an sr-only unavailable note. Never a
+// link and never a dead anchor.
+.storefront-not-found__action--secondary {
+  color: styles.$color-text-tertiary;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  cursor: default;
+}
+
+.storefront-not-found__action-tag {
+  padding: 2px styles.spacing(8);
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-tertiary;
+  background: styles.$color-background-secondary;
+  border-radius: styles.$radius-xs;
+}
+
+// Visually-hidden text (feature-local; no cross-feature CSS coupling).
+.storefront-not-found__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
