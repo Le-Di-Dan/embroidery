@@ -1,8 +1,15 @@
 # APP1-B02 — Current Authenticated Staff Endpoint — Completion Report
 
-**Checkpoint:** APP1-B02 (backend) · **Verdict:** COMPLETE — DELIVERED_FOR_HUMAN_REVIEW
+**Checkpoint:** APP1-B02 (backend) · **Verdict:** COMPLETE — CORRECTED
 **Scope:** exactly one endpoint — `GET /api/staff/me` (`staffSelf_get`).
 **Migration verdict:** `NO_MIGRATION_REQUIRED`. **New dependency:** none.
+
+> **Correction history:** APP1-B02-C1 (2026-07-25) made the `200` `data`
+> property **required** in OpenAPI and the generated client
+> (`StaffSelfGet200.data` no longer optional). Root cause: the `@ApiOkResponse`
+> `allOf` override omitted `required: ['data']`. Runtime behavior is unchanged.
+> Evidence: [`APP1-B02-C1-CORRECTION-REPORT.md`](./APP1-B02-C1-CORRECTION-REPORT.md).
+> Post-correction hashes: OpenAPI `ae015dd6…`, client tree `89c1aace…`.
 
 ---
 
