@@ -242,6 +242,42 @@ services:
       - embroidery
     restart: unless-stopped
 
+  # S3-compatible object storage for development (ADR-APP2-001, APP2-I01).
+  # Exact reviewed release, never a floating `:latest`: an S3-compatible store
+  # changes behaviour between releases, and the contract suite pins this same
+  # image so development and tests agree.
+  #
+  # Deliberately publishes NO host port. Nothing on the host needs it: the API
+  # and worker reach it as `minio:9000` over the compose network, and the
+  # contract suite starts its own disposable container on a random loopback
+  # port. Not publishing keeps the store unreachable from outside Docker.
+  #
+  # `server /data` is the image's own required subcommand, not a project
+  # startup step — `pnpm docker:dev:up` remains the only command a developer
+  # runs. Buckets are created by the application through
+  # `@embroidery/object-storage` bootstrap; there is no `mc` sidecar.
+  minio:
+    image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+    command: ['server', '/data']
+    environment:
+      # Development-only credentials from .env; MinIO serves nothing
+      # anonymously, and no bucket policy is ever applied (ADR-APP2-001 §4.3).
+      MINIO_ROOT_USER: ${OBJECT_STORAGE_ACCESS_KEY_ID:-embroidery_minio_dev}
+      MINIO_ROOT_PASSWORD: ${OBJECT_STORAGE_SECRET_ACCESS_KEY:-embroidery_minio_dev_password}
+    volumes:
+      - embroidery_minio_data:/data
+    healthcheck:
+      # Official readiness probe. It is unauthenticated by design and reports
+      # only liveness — it exposes no bucket or object data.
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:9000/minio/health/live']
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    networks:
+      - embroidery
+    restart: unless-stopped
+
   sonarqube:
     image: sonarqube:10.7.0-community
     profiles: ['quality']
@@ -289,6 +325,7 @@ networks:
 
 volumes:
   embroidery_postgres_data:
+  embroidery_minio_data:
   sonarqube_data:
   sonarqube_extensions:
   sonarqube_logs:

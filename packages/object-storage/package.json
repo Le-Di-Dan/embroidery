@@ -1,0 +1,38 @@
+{
+  "name": "@embroidery/object-storage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "S3-compatible object-storage port and adapter (APP2-I01, ADR-APP2-001)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rimraf dist",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:contract": "jest --config jest.contract.config.mjs --runInBand"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1095.0",
+    "@aws-sdk/lib-storage": "3.1095.0"
+  },
+  "devDependencies": {
+    "@embroidery/eslint-config": "workspace:*",
+    "@embroidery/typescript-config": "workspace:*",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.7.0",
+    "jest": "^30.4.2",
+    "rimraf": "^6.1.3",
+    "ts-jest": "^29.4.11",
+    "typescript": "^5.9.3"
+  }
+}

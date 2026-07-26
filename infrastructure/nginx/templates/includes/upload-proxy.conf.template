@@ -1,0 +1,59 @@
+# Route-scoped upload proxy seam (APP2-I01 §12). ADR-APP2-001.
+#
+# ============================== INACTIVE ==============================
+# Nothing includes this file yet, and including it is APP2-B01's job.
+#
+# It renders to /etc/nginx/conf.d/includes/upload-proxy.conf, which nginx.conf
+# never loads: its only include glob is `/etc/nginx/conf.d/*.conf`, one level
+# up. So this file is inert until a `location` block explicitly includes it —
+# the same mechanism that keeps proxy-headers.conf opt-in.
+#
+# It exists now, unused, so the streaming decision lives with the storage
+# foundation that requires it rather than being rediscovered under B01.
+# `tools/nginx-upload-seam.test.mjs` fails if it ever becomes active early.
+# ======================================================================
+#
+# Usage in APP2-B01 (illustrative — do NOT uncomment here):
+#
+#   location = /api/admin/assets/upload {
+#       include /etc/nginx/conf.d/includes/proxy-headers.conf;
+#       include /etc/nginx/conf.d/includes/upload-proxy.conf;
+#       proxy_pass http://api_upstream;
+#   }
+
+# The single directive this seam exists to carry.
+#
+# Nginx buffers a whole request body to disk before contacting the upstream by
+# default. That would defeat the streaming intake in ADR-APP2-001: the API
+# would receive the body only after the gateway had already spooled all of it,
+# so the server-side SHA-256 and the size guard could not run against a live
+# stream, and a rejected upload would already have been written to gateway
+# disk. Turning buffering off makes the client's stream the API's stream.
+#
+# Consequence B01 must handle: with buffering off, the upstream sees a body
+# that can stall or abort mid-flight, so the API owns its own read timeout and
+# incremental size enforcement. The gateway is not the size authority.
+proxy_request_buffering off;
+
+# ---------------------------------------------------------------------------
+# Ownership hooks — deliberately UNSET (APP2-I01 §4, §12)
+# ---------------------------------------------------------------------------
+# The directives below are the route-scoped knobs this seam owns. They carry no
+# value here because the values are not ours to choose yet:
+#
+#   client_max_body_size   blocked on the open Product Owner parameter
+#                          "maximum image bytes" (STORAGE upload-size gate).
+#                          Inventing a number here would silently become the
+#                          product limit and contradict the API's own limit.
+#
+#   proxy_read_timeout     an upload holds the upstream connection open for as
+#   proxy_send_timeout     long as the client streams; the gateway defaults
+#                          (60s, set http-wide) are tuned for normal requests,
+#                          not for a large body over a slow link. B01 sets
+#                          these per route once the size limit is known —
+#                          timeout and size are one decision, not two.
+#
+# Until then the http-level defaults from development.conf.template apply.
+# B01 must add these three directives to this file (or to the including
+# location) as part of the upload route, sourcing every value from the
+# gateway's environment using the existing ${GATEWAY_*} pattern.

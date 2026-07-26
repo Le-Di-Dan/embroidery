@@ -22,6 +22,7 @@
     "check:frontend-boundaries": "node tools/check-frontend-test-boundaries.mjs",
     "check:frontend-build-boundary": "node tools/check-frontend-build-boundary.mjs",
     "check:e2e": "pnpm --filter @embroidery/e2e-testing check:e2e",
+    "test:object-storage:contract": "pnpm --filter @embroidery/object-storage test:contract",
     "check:e2e-boundaries": "node tools/check-e2e-boundaries.mjs",
     "check:spike-boundaries": "node tools/check-spike-boundaries.mjs",
     "smoke:app1-bootstrap": "node tools/smoke-app1-bootstrap-compose.mjs",

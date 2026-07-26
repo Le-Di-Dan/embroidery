@@ -1,0 +1,55 @@
+/**
+ * The object-storage contract consumed by `apps/api` and `apps/worker`
+ * (ADR-APP2-001 §4.10).
+ *
+ * Exactly six operations. The surface is closed on purpose:
+ *
+ * - there is **no** presign operation — APP2 has no browser-credential or
+ *   stable-public-URL flow (ADR §4.7/§4.8), so exposing one would create a
+ *   delivery path that bypasses the publication check;
+ * - there is **no** unrestricted list-all — every listing is prefix-scoped;
+ * - buckets are addressed by alias, so no call site can name a bucket.
+ *
+ * Every method rejects with `ObjectStorageError`; nothing here throws a raw
+ * SDK exception, and this package never logs.
+ */
+import type {
+  ListObjectsInput,
+  ListedObject,
+  ObjectMetadata,
+  ObjectReference,
+  ObjectStreamResult,
+  PutObjectStreamInput,
+  StoredObjectResult,
+} from './object-storage.types';
+
+export interface ObjectStoragePort {
+  /**
+   * Streams a body to storage using managed multipart. The stream is never
+   * buffered whole; on abort or stream error the multipart upload is aborted so
+   * no completed object and no dangling parts remain.
+   */
+  putObjectStream(input: PutObjectStreamInput): Promise<StoredObjectResult>;
+
+  /** Opens a read stream. The caller owns consuming or destroying the body. */
+  getObjectStream(reference: ObjectReference, signal?: AbortSignal): Promise<ObjectStreamResult>;
+
+  /** Metadata without the body. Throws `OBJECT_NOT_FOUND` when absent. */
+  headObject(reference: ObjectReference, signal?: AbortSignal): Promise<ObjectMetadata>;
+
+  /**
+   * Removes an object. Idempotent: deleting a key that does not exist is a
+   * success, so a retried cleanup never fails on its own earlier progress.
+   */
+  deleteObject(reference: ObjectReference, signal?: AbortSignal): Promise<void>;
+
+  /** Paginates a validated APP2-owned prefix to completion. */
+  listObjectsByPrefix(input: ListObjectsInput): Promise<readonly ListedObject[]>;
+
+  /**
+   * Creates the configured originals and derivatives buckets if missing.
+   * Idempotent, private-only: no public-read and no anonymous-list policy is
+   * ever applied.
+   */
+  ensurePrivateBuckets(signal?: AbortSignal): Promise<void>;
+}
