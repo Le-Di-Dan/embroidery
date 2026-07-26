@@ -174,6 +174,49 @@
 > **The production handler registry is empty.** That is correct, not a gap:
 > `APP2-W01` owns the Asset inspection and derivative handlers.
 >
+> **`APP2-I02-C1` = `COMPLETE`** — the single allowed correction. Review
+> returned `CORRECTION_REQUIRED` on two counts, both now fixed, so
+> **`APP2-I02` = `COMPLETE — CORRECTED — DELIVERED_FOR_REVIEW`**.
+>
+> **1. Overlapping timed-out attempts.** A handler that ignored its
+> `AbortSignal` was abandoned while the runtime recorded a retryable timeout and
+> **released the lease** — so the still-running handler could overlap a retry of
+> the same job with the same `effectKey`. Node cannot cancel a running promise;
+> the I02 report was wrong to record this as a limitation rather than a defect.
+> The handler promise is now never detached. After the abort the runtime waits
+> on it until a hard stop of
+> `min(timeoutInstant + leaseSafetyMarginMs, leaseExpiresAt − fatalExitSafetyMs)`,
+> where `fatalExitSafetyMs = 250` is an internal constant — not an environment
+> variable — enforced at policy startup by requiring `leaseSafetyMarginMs` to
+> exceed it. A **cooperative** handler settles inside the deadline and completes
+> through the existing atomic transaction as `JOB_HANDLER_TIMEOUT`; a late
+> success can never be recorded as `SUCCEEDED`. An **uncooperative** handler
+> gets **no completion at all**: the row keeps `PENDING`, `claimed_by`,
+> `attempt_count` and `next_attempt_at` exactly as claimed, the runtime enters
+> `FATAL_HANDLER_UNRESPONSIVE`, stops claiming, reports unready, emits one
+> allow-list fatal log, closes context and pool once, and exits `1` before the
+> lease expires. A later worker reclaims after expiry and writes the single
+> `WORKER_LEASE_EXPIRED` attempt. The process boundary is the only cancellation
+> a JavaScript handler cannot ignore.
+>
+> **2. Signal evidence.** `process.emit('SIGTERM')` proves a listener is
+> attached and nothing more. A **real Linux SIGTERM** is now delivered with
+> `docker kill --signal=TERM` to the shipped `runner` image, which exits **0 in
+> 362 ms**; `process.emit` is demoted to a fast unit check. That smoke also
+> exposed a pre-existing defect in the production image, which had never been
+> executed because the development stack uses the `dev` target: the
+> `deps`/`prod-deps` stages never copied the `packages/database` and
+> `packages/persistence` manifests, so their `node_modules` were never installed
+> and the container died on `@nestjs/common`. Fixed in `worker.Dockerfile`.
+>
+> No dependency, no migration, no schema/status/outcome change, and no
+> persistence change (`leaseExpiresAt` was already projected). Evidence: 130
+> worker + 107 persistence unit tests, 29 queue-integration cases, 3 timeout
+> cases, 5 real-signal cases, zero Docker and database residue, frozen baselines
+> unchanged. Report:
+> [`reports/APP2-I02-C1-CORRECTION-REPORT.md`](../reports/APP2-I02-C1-CORRECTION-REPORT.md).
+> **`APP2-I02-C2` must not be created.**
+>
 > **No upload, processing, publication or public product functionality exists.**
 > `APP2-B01` remains blocked by `STORAGE-BLK-01..03` and the upload-size
 > parameter; `APP2-W01` is now blocked by `B01` alone.
@@ -252,7 +295,7 @@ endpoints.
 | 1 | APP2-PRE-AUDIT | audit | this audit | APP1-X01 |
 | 2 | APP2-DEC-STORAGE | decision | object-storage ADR (IMP-O002) | PRE-AUDIT |
 | 3 | APP2-DEC-JOBS | decision | job-runtime ADR (IMP-D029/`ADR-APP2-002`): PostgreSQL claim queue on existing persistence, visibility-timeout lease, `NO_APP2_MIGRATION` (IMP-O003) — **`DELIVERED_FOR_REVIEW`** | PRE-AUDIT |
-| 3b | APP2-I02 | foundation | Worker job-runtime foundation — poll loop + claim/lease driver, `event_type` handler registry, attempt-recording seam, **`FU-A07`** worker structured logging + out-of-request correlation (`{job_kind}:{job_key}:{attempt_no}` `AsyncLocalStorage` over IMP-D022), SIGTERM/SIGINT graceful shutdown replacing the no-op keep-alive; no asset job family (IMP-D029) — **`COMPLETE — DELIVERED_FOR_REVIEW`**. *Delivered divergence:* the claim/lease driver is a **new** `WorkerJobQueueRepository` rather than an extension of `OutboxEventStore.claimBatch`, because that DB7-era primitive claims `['PENDING','FAILED']` and its `scheduleRetry` writes `FAILED` — both contradict `APP2-DEC-JOBS-C1`, and widening it would have put two contradictory lifecycles in one class. The old store is untouched. | DEC-JOBS |
+| 3b | APP2-I02 | foundation | Worker job-runtime foundation — poll loop + claim/lease driver, `event_type` handler registry, attempt-recording seam, **`FU-A07`** worker structured logging + out-of-request correlation (`{job_kind}:{job_key}:{attempt_no}` `AsyncLocalStorage` over IMP-D022), SIGTERM/SIGINT graceful shutdown replacing the no-op keep-alive; no asset job family (IMP-D029) — **`COMPLETE — CORRECTED — DELIVERED_FOR_REVIEW`** (corrected by `APP2-I02-C1`: a timed-out handler is no longer abandoned with its lease released, and acceptance now uses a real Linux SIGTERM). *Delivered divergence:* the claim/lease driver is a **new** `WorkerJobQueueRepository` rather than an extension of `OutboxEventStore.claimBatch`, because that DB7-era primitive claims `['PENDING','FAILED']` and its `scheduleRetry` writes `FAILED` — both contradict `APP2-DEC-JOBS-C1`, and widening it would have put two contradictory lifecycles in one class. The old store is untouched. | DEC-JOBS |
 | 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) — **`DELIVERED_FOR_PRODUCT_OWNER_REVIEW`**, section `423:3` on page APP_02, 30 `REVIEW_REQUIRED` rows (§6.2) | PRE-AUDIT |
 | 4b | APP2-I01 | foundation | Object-storage foundation — `packages/object-storage` (port + S3 adapter over `client-s3`/`lib-storage` **only, no presigner** + key helpers + contract tests), pinned MinIO Compose service + bucket bootstrap, config contract + `.env.example` keys, route-scoped nginx upload support (`client_max_body_size` + `proxy_request_buffering off`), `lib-storage` memory-bound policy (IMP-D028 / C1 / C2) | DEC-STORAGE |
 | 5 | APP2-B01 | backend | Asset intake API — T1 streaming multipart upload, I1 pre-stream durable idempotency allocation + pre-stream fingerprint (claim-with-allocation repo extension), post-object `UPLOADED` insert + guarded `→INSPECTING`, one-transition outbox `append`, CW-01…CW-07 tests, + OpenAPI/client (≤5). **Entry gate resolves `STORAGE-BLK-01..03`** (upload fingerprint / idempotency result JSON shape / expired-allocation cleanup ordering). | I01 |
