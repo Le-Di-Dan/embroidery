@@ -2,9 +2,14 @@
 
 **Checkpoint:** APP1-S01B — Implement the Storefront not-found boundary
 **Parent:** APP1-S01 — Storefront shell and not-found boundary (split S01A/S01B)
-**Status:** `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`
+**Status:** `COMPLETE — PRODUCT_OWNER_ACCEPTED`
 **Date:** 2026-07-25
 **Design classification consumed:** APP1-D02 `SUPPLEMENT`
+
+> **Product Owner acceptance (recorded at APP1-E01):** `APP1-S01B LIVE TEST = PASSED`
+> → `APP1-S01B = COMPLETE — PRODUCT_OWNER_ACCEPTED`; with S01A accepted, the parent
+> `APP1-S01 = COMPLETE — PRODUCT_OWNER_ACCEPTED`. The not-found boundary is
+> additionally re-verified end-to-end by the APP1-E01 cross-layer suite (J09).
 
 ---
 
