@@ -24,8 +24,18 @@
 > `proxy_request_buffering off`; server-authoritative SHA-256 (no client
 > checksum); and `OBJECT_STORAGE_PUBLIC_BASE_URL` removed from APP2 scope. It
 > adds a narrow **`APP2-I01`** object-storage foundation checkpoint before
-> `APP2-B01` (map now **18 checkpoints**, §6.1). `APP2-DEC-JOBS` and `APP2-D01`
-> remain blocked pending required-decision review.
+> `APP2-B01` (map now **18 checkpoints**, §6.1).
+> **Also corrected by `APP2-DEC-STORAGE-C2`** (report
+> [`reports/APP2-DEC-STORAGE-C2-CORRECTION-REPORT.md`](../reports/APP2-DEC-STORAGE-C2-CORRECTION-REPORT.md)):
+> upload idempotency locked to **model I1 — pre-stream durable allocation**
+> (UUIDv7 `assetId`+key persisted in the `IN_PROGRESS` `idempotency_records.result`
+> so a crash-retry recovers the same identity); **pre-stream fingerprint** (no
+> content hash); full CW-01…CW-07 crash matrix; **`@aws-sdk/s3-request-presigner`
+> removed** from the APP2 package set; `lib-storage` memory-bound policy + C1
+> heap-claim corrected. Persisting the allocation is a **repository implementation
+> gap** (owner `APP2-B01`), **not** a schema gap — `NO_APP2_MIGRATION` re-confirmed
+> against the real 31-migration schema. `APP2-DEC-JOBS` and `APP2-D01` remain
+> blocked pending required-decision review.
 
 ## 1. Outcome
 
@@ -98,8 +108,8 @@ endpoints.
 | 2 | APP2-DEC-STORAGE | decision | object-storage ADR (IMP-O002) | PRE-AUDIT |
 | 3 | APP2-DEC-JOBS | decision | job-runtime ADR + worker correlation seam (IMP-O003) | PRE-AUDIT |
 | 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) | PRE-AUDIT |
-| 4b | APP2-I01 | foundation | Object-storage foundation — `packages/object-storage` (port + S3 adapter over `client-s3`/`lib-storage`/presigner + key helpers + contract tests), pinned MinIO Compose service + bucket bootstrap, config contract + `.env.example` keys, route-scoped nginx upload support (`client_max_body_size` + `proxy_request_buffering off`) (IMP-D028 / C1) | DEC-STORAGE |
-| 5 | APP2-B01 | backend | Asset intake API — T1 streaming multipart upload, post-object `UPLOADED` insert + guarded `→INSPECTING`, + OpenAPI/client (≤5) | I01 |
+| 4b | APP2-I01 | foundation | Object-storage foundation — `packages/object-storage` (port + S3 adapter over `client-s3`/`lib-storage` **only, no presigner** + key helpers + contract tests), pinned MinIO Compose service + bucket bootstrap, config contract + `.env.example` keys, route-scoped nginx upload support (`client_max_body_size` + `proxy_request_buffering off`), `lib-storage` memory-bound policy (IMP-D028 / C1 / C2) | DEC-STORAGE |
+| 5 | APP2-B01 | backend | Asset intake API — T1 streaming multipart upload, I1 pre-stream durable idempotency allocation + pre-stream fingerprint (claim-with-allocation repo extension), post-object `UPLOADED` insert + guarded `→INSPECTING`, CW-01…CW-07 tests, + OpenAPI/client (≤5) | I01 |
 | 6 | APP2-W01 | worker | Asset inspection/derivatives job | B01, DEC-JOBS |
 | 7 | APP2-A01 | frontend | Admin asset library | B01, W01, D01 |
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) | B01 |
