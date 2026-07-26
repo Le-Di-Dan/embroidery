@@ -8,6 +8,15 @@
 > `APP2-DEC-JOBS`), one design package (`APP2-D01`, Admin `NEW` + Storefront
 > list/detail `SUPPLEMENT`). First checkpoint: **`APP2-DEC-STORAGE`**. The
 > corrected 17-checkpoint map in §6.1 supersedes the §6 candidate slices.
+>
+> **`APP2-DEC-STORAGE` = `DELIVERED_FOR_REVIEW`** — object-storage + asset-intake
+> architecture locked by **IMP-D028 / [`ADR-APP2-001`](../../adr/backend/ADR-APP2-001-OBJECT-STORAGE-AND-ASSET-INTAKE.md)**
+> (S3-compatible / MinIO dev, AWS SDK v3, API-proxied streaming upload, two
+> private buckets, server SHA-256, SVG rejected, proxied publication-gated
+> delivery, `NO_APP2_MIGRATION`), verdict `PASS_WITH_PRODUCT_PARAMETERS`. It
+> adds a narrow **`APP2-I01`** object-storage foundation checkpoint before
+> `APP2-B01` (map now **18 checkpoints**, §6.1). `APP2-DEC-JOBS` and `APP2-D01`
+> remain blocked pending required-decision review.
 
 ## 1. Outcome
 
@@ -80,7 +89,8 @@ endpoints.
 | 2 | APP2-DEC-STORAGE | decision | object-storage ADR (IMP-O002) | PRE-AUDIT |
 | 3 | APP2-DEC-JOBS | decision | job-runtime ADR + worker correlation seam (IMP-O003) | PRE-AUDIT |
 | 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) | PRE-AUDIT |
-| 5 | APP2-B01 | backend | Asset intake API + OpenAPI/client (≤5) | DEC-STORAGE |
+| 4b | APP2-I01 | foundation | Object-storage foundation — `packages/object-storage` (port + S3 adapter + key helpers + contract tests), pinned MinIO Compose service + bucket bootstrap, config contract + `.env.example` keys (added by IMP-D028) | DEC-STORAGE |
+| 5 | APP2-B01 | backend | Asset intake API + OpenAPI/client (≤5) | I01 |
 | 6 | APP2-W01 | worker | Asset inspection/derivatives job | B01, DEC-JOBS |
 | 7 | APP2-A01 | frontend | Admin asset library | B01, W01, D01 |
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) | B01 |
