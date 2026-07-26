@@ -41,14 +41,20 @@ describe('worker runtime — execution (integration)', () => {
     context = undefined;
   });
 
-  it('case 19 — a handler timeout writes safe retry evidence', async () => {
+  it('case 19 — a cooperative handler timeout writes safe retry evidence', async () => {
     context = await startWorkerRuntime({
       label: 'i02-timeout',
       handlers: [
         handler({
-          // Never resolves and ignores its signal: the runtime must stop
-          // waiting on its own rather than hang.
-          execute: () => new Promise<void>(() => undefined),
+          // Observes its signal and unwinds promptly. A handler that ignores
+          // the signal is a different case entirely and is covered by the
+          // uncooperative suite — it must never reach this completion path.
+          execute: (_payload, _ctx, signal) =>
+            new Promise<void>((resolve) => {
+              signal.addEventListener('abort', () => {
+                resolve();
+              });
+            }),
         }),
       ],
     });

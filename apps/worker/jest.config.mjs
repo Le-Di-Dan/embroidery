@@ -10,7 +10,17 @@ export default {
   // test, so leaving it here would make it pass or fail depending on whether a
   // stale `dist` happened to exist. It runs from `pnpm test:worker-runtime:smoke`
   // instead, which builds first.
-  testPathIgnorePatterns: ['\\\\node_modules\\\\', '/node_modules/', 'worker-smoke'],
+  // `worker-smoke` needs the built `dist/`, and `worker-signal-smoke` builds a
+  // Docker image. `turbo run test` builds dependencies but not the package
+  // under test, so leaving either here would make it pass or fail depending on
+  // what happened to be on disk. Both run from their own scripts, which set up
+  // what they need first.
+  testPathIgnorePatterns: [
+    '\\\\node_modules\\\\',
+    '/node_modules/',
+    'worker-smoke',
+    'worker-signal-smoke',
+  ],
   transform: {
     '^.+\\.ts$': ['ts-jest', {}],
   },

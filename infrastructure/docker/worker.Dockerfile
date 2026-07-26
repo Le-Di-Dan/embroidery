@@ -18,6 +18,10 @@ COPY apps/admin/package.json apps/admin/
 COPY apps/api/package.json apps/api/
 COPY apps/worker/package.json apps/worker/
 COPY packages/api-client/package.json packages/api-client/
+# The worker loads these two at runtime; omitting them from the workspace here
+# leaves their own node_modules uninstalled.
+COPY packages/database/package.json packages/database/
+COPY packages/persistence/package.json packages/persistence/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/design-document/package.json packages/design-document/
 COPY packages/design-engine/package.json packages/design-engine/
@@ -64,6 +68,10 @@ COPY apps/admin/package.json apps/admin/
 COPY apps/api/package.json apps/api/
 COPY apps/worker/package.json apps/worker/
 COPY packages/api-client/package.json packages/api-client/
+# The worker loads these two at runtime; omitting them from the workspace here
+# leaves their own node_modules uninstalled.
+COPY packages/database/package.json packages/database/
+COPY packages/persistence/package.json packages/persistence/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/design-document/package.json packages/design-document/
 COPY packages/design-engine/package.json packages/design-engine/
@@ -76,7 +84,12 @@ COPY packages/test-utils/package.json packages/test-utils/
 COPY packages/typescript-config/package.json packages/typescript-config/
 COPY packages/ui/package.json packages/ui/
 COPY packages/validation/package.json packages/validation/
-RUN pnpm install --frozen-lockfile --prod --filter @embroidery/worker
+# `...` includes the worker's workspace dependencies. Without it only
+# `apps/worker/node_modules` is populated, and `packages/persistence/dist`
+# cannot resolve its own `@nestjs/common` at runtime — the image starts and
+# dies immediately. (Found by the APP2-I02-C1 signal smoke, the first thing to
+# actually run this stage; the development stack uses the `dev` target.)
+RUN pnpm install --frozen-lockfile --prod --filter "@embroidery/worker..."
 
 # ---------------------------------------------------------------------------
 # runner: minimal production image, non-root
@@ -95,7 +108,12 @@ COPY --from=build --chown=node:node /app/apps/worker/package.json ./apps/worker/
 # outputs (raw src/*.ts is never shipped or loaded at runtime).
 COPY --from=build --chown=node:node /app/packages/database/dist ./packages/database/dist
 COPY --from=build --chown=node:node /app/packages/database/package.json ./packages/database/package.json
+COPY --from=prod-deps --chown=node:node /app/packages/database/node_modules ./packages/database/node_modules
 COPY --from=build --chown=node:node /app/packages/persistence/dist ./packages/persistence/dist
 COPY --from=build --chown=node:node /app/packages/persistence/package.json ./packages/persistence/package.json
+# Each workspace package resolves its own dependencies through its own
+# `node_modules` (pnpm does not hoist), so shipping `dist` without it produces
+# an image that cannot start.
+COPY --from=prod-deps --chown=node:node /app/packages/persistence/node_modules ./packages/persistence/node_modules
 WORKDIR /app/apps/worker
 CMD ["node", "dist/main.js"]

@@ -13,6 +13,8 @@
  * is how a fleet ends up with two different definitions of "expired".
  */
 
+import { FATAL_EXIT_SAFETY_MS } from '../lifecycle/worker-process';
+
 /** The canonical policy key this runtime reads. */
 export const WORKER_RUNTIME_POLICY_KEY = 'worker.runtime';
 
@@ -137,6 +139,15 @@ export function parseWorkerRuntimePolicy(value: unknown): WorkerPolicyResult {
   }
   if (policy.pollIntervalMs >= policy.leaseDurationMs) {
     reasons.push('pollIntervalMs must be shorter than leaseDurationMs');
+  }
+  if (policy.leaseSafetyMarginMs <= FATAL_EXIT_SAFETY_MS) {
+    // The margin bounds how long a timed-out handler may take to unwind;
+    // `fatalExitSafetyMs` is the budget for closing and exiting once it will
+    // not. A margin at or below it would leave no room to unwind at all, so
+    // every timeout would go straight to a fatal exit.
+    reasons.push(
+      `leaseSafetyMarginMs must exceed the ${String(FATAL_EXIT_SAFETY_MS)}ms fatal-exit reserve`,
+    );
   }
 
   if (reasons.length > 0) {

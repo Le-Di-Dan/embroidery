@@ -7,19 +7,26 @@ import { systemWorkerClock } from '../clock/worker-clock';
 import {
   FakeQueue,
   FakeTransactions,
+  FakeWorkerProcess,
   TEST_POLICY,
   claimedJob,
+  fatalServiceWith,
   testHandler,
 } from '../tests/runtime-doubles';
 import { JobExecutionService } from './job-execution.service';
 
 const WORKER_ID = 'worker:test:1:uuid';
 
-function serviceWith(registry: JobHandlerRegistry, queue: FakeQueue): JobExecutionService {
+function serviceWith(
+  registry: JobHandlerRegistry,
+  queue: FakeQueue,
+  worker: FakeWorkerProcess = new FakeWorkerProcess(),
+): JobExecutionService {
   return new JobExecutionService(
     registry,
     queue as unknown as WorkerJobQueueRepository,
     new FakeTransactions() as unknown as TransactionManager,
+    fatalServiceWith(worker).fatal,
     systemWorkerClock,
   );
 }

@@ -19,6 +19,8 @@ import type {
 } from '@embroidery/persistence';
 
 import type { WorkerClock } from '../clock/worker-clock';
+import { WorkerFatalService } from '../lifecycle/worker-fatal.service';
+import type { WorkerProcess } from '../lifecycle/worker-process';
 import type { JobHandler, PayloadValidationResult } from '../registry/job-handler';
 import type { WorkerRuntimePolicy } from '../policy/worker-runtime-policy';
 
@@ -28,6 +30,8 @@ export const TEST_POLICY: WorkerRuntimePolicy = {
   pollIntervalMs: 50,
   leaseDurationMs: 10_000,
   handlerTimeoutMs: 1_000,
+  // Comfortably above the 250 ms fatal-exit reserve, so a cooperative handler
+  // has real room to unwind after its abort.
   leaseSafetyMarginMs: 1_000,
   shutdownGraceMs: 500,
   maxAttempts: 3,
@@ -96,6 +100,40 @@ export class FakeTransactions {
 }
 
 /**
+ * Records exit codes instead of ending the Jest worker.
+ *
+ * The real `WorkerFatalService` is used against this seam rather than being
+ * faked, so the tests exercise the actual idempotence, ordering and log
+ * projection of the fatal path.
+ */
+export class FakeWorkerProcess implements WorkerProcess {
+  readonly exits: number[] = [];
+
+  exit(code: number): void {
+    this.exits.push(code);
+  }
+}
+
+/** A fatal service wired to a recording process seam and a recording closer. */
+export function fatalServiceWith(process: FakeWorkerProcess): {
+  fatal: WorkerFatalService;
+  closes: number;
+} {
+  const state = { closes: 0 };
+  const fatal = new WorkerFatalService(process);
+  fatal.registerCloser(() => {
+    state.closes += 1;
+    return Promise.resolve();
+  });
+  return {
+    fatal,
+    get closes(): number {
+      return state.closes;
+    },
+  };
+}
+
+/**
  * A clock whose sleeps resolve immediately but yield to the microtask queue.
  *
  * Immediate rather than manually advanced: the loop under test is driven by
@@ -104,11 +142,16 @@ export class FakeTransactions {
  */
 export class ImmediateClock implements WorkerClock {
   readonly sleeps: number[] = [];
-  private current = 0;
 
+  /**
+   * Real wall-clock milliseconds, not a counter.
+   *
+   * The hard-stop deadline is computed against `leaseExpiresAt`, a real
+   * instant, so a monotonically-incrementing fake would make that arithmetic
+   * meaningless. Only `sleep` is virtualised here.
+   */
   now(): number {
-    this.current += 1;
-    return this.current;
+    return Date.now();
   }
 
   sleep(ms: number, signal?: AbortSignal): Promise<void> {

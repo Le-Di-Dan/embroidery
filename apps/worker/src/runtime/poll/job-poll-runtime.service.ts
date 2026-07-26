@@ -21,6 +21,7 @@ import type { WorkerClock } from '../clock/worker-clock';
 import { WORKER_CLOCK } from '../clock/worker-clock';
 import { JobExecutionService } from '../execution/job-execution.service';
 import { createWorkerInstanceId } from '../identity/worker-identity';
+import { WorkerFatalService } from '../lifecycle/worker-fatal.service';
 import { JobHandlerRegistry } from '../registry/job-handler.registry';
 import { WorkerPolicyService } from '../policy/worker-policy.service';
 import type { WorkerRuntimePolicy } from '../policy/worker-runtime-policy';
@@ -34,7 +35,8 @@ export interface WorkerReadiness {
     | 'WORKER_POLICY_INVALID'
     | 'DATABASE_UNAVAILABLE'
     | 'NOT_STARTED'
-    | 'SHUTTING_DOWN';
+    | 'SHUTTING_DOWN'
+    | 'FATAL_HANDLER_UNRESPONSIVE';
 }
 
 /**
@@ -65,6 +67,7 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
     private readonly queue: WorkerJobQueueRepository,
     private readonly transactions: TransactionManager,
     private readonly execution: JobExecutionService,
+    private readonly fatal: WorkerFatalService,
     @Inject(WORKER_CLOCK) private readonly clock: WorkerClock,
   ) {}
 
@@ -91,21 +94,28 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
     await this.loop;
 
     // Step 2: let work that still owns a valid lease finish normally. Aborting
-    // it here would turn a job that was about to succeed into a retry.
+    // it here would turn a job that was about to succeed into a retry. In the
+    // fatal state there is nothing to wait for — the runaway handler will never
+    // settle, and waiting would only spend the lease's remaining head start.
     const policy = this.policies.current();
-    const graceMs = policy?.shutdownGraceMs ?? 0;
+    const graceMs = this.fatal.isFatal ? 0 : (policy?.shutdownGraceMs ?? 0);
     const finished = await this.awaitInFlight(graceMs);
 
-    if (!finished) {
-      // Step 3: past the grace period, stop waiting. The unfinished leases are
-      // left to expire, and the next worker to reclaim them writes the
-      // `WORKER_LEASE_EXPIRED` evidence — so no attempt disappears silently.
+    this.logger.log(`Worker runtime stopped${signal === undefined ? '' : ` (${signal})`}.`);
+
+    if (!finished && !this.fatal.isFatal) {
+      // Step 3: past the grace period with work still unsettled. Its lease is
+      // deliberately **not** released — the next worker reclaims it after
+      // expiry and writes the `WORKER_LEASE_EXPIRED` evidence, so no attempt
+      // disappears silently. The process still has to end, and it must not
+      // report success: work was forcibly abandoned, and an orchestrator
+      // reading exit 0 would believe the drain completed.
       this.logger.warn(
         `${String(this.inFlight.size)} job(s) did not finish within the shutdown grace period; ` +
           'their leases will expire and be reclaimed.',
       );
+      this.fatal.exitAfterForcedShutdown();
     }
-    this.logger.log(`Worker runtime stopped${signal === undefined ? '' : ` (${signal})`}.`);
   }
 
   /**
@@ -115,6 +125,11 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
    * is correctly configured and correctly idle.
    */
   async readiness(): Promise<WorkerReadiness> {
+    // Checked first: a worker holding a lease it cannot release is unready for
+    // any purpose, whatever the rest of its state says.
+    if (this.fatal.isFatal) {
+      return { ready: false, reason: 'FATAL_HANDLER_UNRESPONSIVE' };
+    }
     if (this.shutdown.signal.aborted) {
       return { ready: false, reason: 'SHUTTING_DOWN' };
     }
@@ -141,6 +156,13 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
     const { signal } = this.shutdown;
 
     while (!signal.aborted) {
+      if (this.fatal.isFatal) {
+        // The fatal state is set synchronously before anything is awaited, so
+        // the loop observes it on its next turn and no further claim can be
+        // issued while the process is closing down.
+        this.logger.warn('Fatal runtime state: claiming stopped.');
+        break;
+      }
       const policy = this.policies.current();
       if (policy === undefined) {
         await this.clock.sleep(UNCONFIGURED_RECHECK_MS, signal);

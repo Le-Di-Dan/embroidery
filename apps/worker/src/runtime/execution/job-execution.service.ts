@@ -20,6 +20,8 @@ import { jobCorrelation } from '../context/job-correlation';
 import type { WorkerErrorClass } from '../errors/worker-job-error';
 import { WorkerJobError, classifyHandlerError, dispositionOf } from '../errors/worker-job-error';
 import { buildCorrelationId } from '../identity/worker-identity';
+import { WorkerFatalService } from '../lifecycle/worker-fatal.service';
+import { FATAL_EXIT_SAFETY_MS } from '../lifecycle/worker-process';
 import { formatJobLogLine, projectJobLogFields } from '../logging/job-log-fields';
 import type { JobHandler } from '../registry/job-handler';
 import { MAX_EFFECT_KEY_LENGTH } from '../registry/job-handler';
@@ -30,10 +32,22 @@ import type { WorkerRuntimePolicy } from '../policy/worker-runtime-policy';
 export interface AttemptSummary {
   readonly outboxEventId: bigint;
   readonly attemptNo: number;
-  readonly outcome: 'SUCCEEDED' | 'FAILED_RETRYABLE' | 'FAILED_TERMINAL' | 'ABANDONED';
+  readonly outcome:
+    | 'SUCCEEDED'
+    | 'FAILED_RETRYABLE'
+    | 'FAILED_TERMINAL'
+    | 'ABANDONED'
+    | 'FATAL_HANDLER_UNRESPONSIVE';
   readonly errorClass?: WorkerErrorClass;
   readonly stale: boolean;
 }
+
+/** The handler is still running past the hard-stop deadline. */
+const UNRESPONSIVE = Symbol('UNRESPONSIVE');
+const ABORTED = Symbol('ABORTED');
+const HARD_STOP = Symbol('HARD_STOP');
+
+type Settled = { readonly ok: true } | { readonly ok: false; readonly error: unknown };
 
 @Injectable()
 export class JobExecutionService {
@@ -43,6 +57,7 @@ export class JobExecutionService {
     private readonly registry: JobHandlerRegistry,
     private readonly queue: WorkerJobQueueRepository,
     private readonly transactions: TransactionManager,
+    private readonly fatal: WorkerFatalService,
     @Inject(WORKER_CLOCK) private readonly clock: WorkerClock,
   ) {}
 
@@ -84,6 +99,21 @@ export class JobExecutionService {
       const failure = await this.attempt(job, handler, policy, workerInstanceId);
       const durationMs = this.clock.now() - startedAt;
 
+      if (failure === UNRESPONSIVE) {
+        // No completion of any kind. The row stays exactly as claimed —
+        // `PENDING`, owned by this worker, same attempt, same lease deadline —
+        // so nothing can pick it up until the lease expires, by which time this
+        // process (and the runaway handler inside it) no longer exists.
+        await this.fatal.triggerUnresponsiveHandler(projectJobLogFields(context, { durationMs }));
+        return {
+          outboxEventId: job.outboxEventId,
+          attemptNo: job.attemptNo,
+          outcome: 'FATAL_HANDLER_UNRESPONSIVE' as const,
+          errorClass: 'JOB_HANDLER_TIMEOUT' as const,
+          stale: false,
+        };
+      }
+
       const summary =
         failure === undefined
           ? await this.completeSuccess(job, handler, policy, workerInstanceId)
@@ -102,13 +132,26 @@ export class JobExecutionService {
     });
   }
 
-  /** Runs validation and the handler. Returns the error class, or undefined on success. */
+  /**
+   * Runs validation and the handler under the timeout state machine
+   * (APP2-I02-C1 §5).
+   *
+   * Returns the error class, `undefined` on success, or `UNRESPONSIVE` when the
+   * handler is still running past the hard-stop deadline.
+   *
+   * The handler promise is **never detached**. An earlier version raced it
+   * against the abort and walked away, which released the lease while the
+   * handler was still executing — so a retry of the same job, with the same
+   * effect key, could run concurrently with it. Node cannot cancel a running
+   * promise, so the only two safe endings are "the handler settled" and "this
+   * process dies".
+   */
   private async attempt(
     job: ClaimedWorkerJob,
     handler: JobHandler,
     policy: WorkerRuntimePolicy,
     workerInstanceId: string,
-  ): Promise<WorkerErrorClass | undefined> {
+  ): Promise<WorkerErrorClass | typeof UNRESPONSIVE | undefined> {
     if (job.payloadSchemaVersion !== handler.payloadSchemaVersion) {
       return 'JOB_SCHEMA_UNSUPPORTED';
     }
@@ -126,13 +169,18 @@ export class JobExecutionService {
     }
 
     const controller = new AbortController();
+    let abortRequestedAt: number | undefined;
     const cancelTimer = this.clock.timer(policy.handlerTimeoutMs, () => {
+      abortRequestedAt = this.clock.now();
       controller.abort(new WorkerJobError('JOB_HANDLER_TIMEOUT', 'Handler timed out.'));
     });
 
-    try {
-      await Promise.race([
-        handler.execute(
+    // Settled once, reflected forever. Attaching both branches here also means
+    // the promise can never surface as an unhandled rejection while the runtime
+    // is waiting on the abort.
+    const execution: Promise<Settled> = (async (): Promise<Settled> => {
+      try {
+        await handler.execute(
           validation.payload,
           {
             outboxEventId: job.outboxEventId,
@@ -142,12 +190,40 @@ export class JobExecutionService {
             effectKey,
           },
           controller.signal,
-        ),
-        abortRejection(controller.signal),
+        );
+        return { ok: true };
+      } catch (error: unknown) {
+        return { ok: false, error };
+      }
+    })();
+
+    try {
+      const first = await Promise.race([execution, aborted(controller.signal)]);
+      if (first !== ABORTED) {
+        return first.ok ? undefined : classifyHandlerError(first.error);
+      }
+
+      // Timed out: abort requested, now wait — bounded — for the handler to
+      // notice. `abortRequestedAt` is set by the timer that just fired.
+      const waitMs = hardStopWaitMs(
+        abortRequestedAt ?? this.clock.now(),
+        this.clock.now(),
+        job.leaseExpiresAt,
+        policy.leaseSafetyMarginMs,
+      );
+      const settled = await Promise.race([
+        execution,
+        this.clock.sleep(waitMs).then(() => HARD_STOP),
       ]);
-      return undefined;
-    } catch (error: unknown) {
-      return classifyHandlerError(error);
+
+      if (settled === HARD_STOP) {
+        return UNRESPONSIVE;
+      }
+      // Cooperative, but still a timeout. A handler that finishes *after* its
+      // abort must not be recorded as `SUCCEEDED`: the runtime already decided
+      // the attempt was over, and calling it a success would hide a handler
+      // that routinely overruns its budget.
+      return 'JOB_HANDLER_TIMEOUT';
     } finally {
       // Always cleared, including on success: a live timer per attempt would
       // hold the event loop open and delay shutdown by the timeout.
@@ -213,27 +289,42 @@ export class JobExecutionService {
   }
 }
 
-/**
- * A promise that rejects when the attempt's signal aborts.
- *
- * Racing against the handler rather than waiting for it: a handler that ignores
- * its `AbortSignal` is abandoned at the timeout, not killed — Node cannot kill
- * it — so the runtime must stop waiting on its own.
- */
-function abortRejection(signal: AbortSignal): Promise<never> {
-  return new Promise<never>((_resolve, reject) => {
-    const fail = (): void => {
-      const reason: unknown = signal.reason;
-      reject(
-        reason instanceof WorkerJobError
-          ? reason
-          : new WorkerJobError('JOB_HANDLER_TIMEOUT', 'Handler timed out.'),
-      );
-    };
-    if (signal.aborted) {
-      fail();
-      return;
-    }
-    signal.addEventListener('abort', fail, { once: true });
+/** Resolves when the attempt's abort signal fires. Never rejects. */
+function aborted(signal: AbortSignal): Promise<typeof ABORTED> {
+  if (signal.aborted) {
+    return Promise.resolve(ABORTED);
+  }
+  return new Promise<typeof ABORTED>((resolve) => {
+    signal.addEventListener(
+      'abort',
+      () => {
+        resolve(ABORTED);
+      },
+      { once: true },
+    );
   });
+}
+
+/**
+ * How long to keep waiting for a timed-out handler (APP2-I02-C1 §5.3):
+ *
+ *     min(timeoutInstant + leaseSafetyMarginMs, leaseExpiresAt − fatalExitSafetyMs)
+ *
+ * The margin term bounds how long a cooperative handler may take to unwind. The
+ * lease term is the hard one: whatever happens, this process must have decided
+ * and exited before another worker can legally reclaim the row. `leaseExpiresAt`
+ * is the database's instant compared against this process's clock, so
+ * `fatalExitSafetyMs` also absorbs the small skew between them; policy
+ * validation keeps `leaseSafetyMarginMs` larger, so the lease term only ever
+ * wins when the lease really is about to expire.
+ */
+export function hardStopWaitMs(
+  abortRequestedAt: number,
+  now: number,
+  leaseExpiresAt: Date,
+  leaseSafetyMarginMs: number,
+): number {
+  const byMargin = abortRequestedAt + leaseSafetyMarginMs;
+  const byLease = leaseExpiresAt.getTime() - FATAL_EXIT_SAFETY_MS;
+  return Math.max(0, Math.min(byMargin, byLease) - now);
 }

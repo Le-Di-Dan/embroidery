@@ -24,6 +24,8 @@ import {
 
 import { WorkerModule } from '../../bootstrap/worker.module';
 import { JobHandlerRegistry } from '../registry/job-handler.registry';
+import { WorkerFatalService } from '../lifecycle/worker-fatal.service';
+import { WORKER_PROCESS } from '../lifecycle/worker-process';
 import type { JobHandler } from '../registry/job-handler';
 import type { WorkerRuntimePolicy } from '../policy/worker-runtime-policy';
 import {
@@ -41,7 +43,9 @@ export const FAST_POLICY: WorkerRuntimePolicy = {
   pollIntervalMs: 25,
   leaseDurationMs: 5_000,
   handlerTimeoutMs: 300,
-  leaseSafetyMarginMs: 100,
+  // Must exceed the 250 ms fatal-exit reserve; 1 s also keeps the hard-stop
+  // deadline (timeout + margin) comfortably inside the 5 s lease.
+  leaseSafetyMarginMs: 1_000,
   shutdownGraceMs: 300,
   maxAttempts: 2,
   backoffBaseMs: 10,
@@ -51,6 +55,14 @@ export const FAST_POLICY: WorkerRuntimePolicy = {
 export interface WorkerRuntimeContext {
   readonly moduleRef: TestingModule;
   readonly disposable: DisposableDatabase;
+  /**
+   * Exit codes the runtime asked the process seam for.
+   *
+   * The seam is overridden here so a fatal exit is *observable* instead of
+   * killing the Jest worker mid-suite. The production wiring is the real
+   * `process.exit`, and the Docker signal smoke exercises that one.
+   */
+  readonly exits: number[];
   get<T>(token: unknown): T;
   close(): Promise<void>;
 }
@@ -61,22 +73,41 @@ export interface StartWorkerOptions {
   /** Omit the policy entirely to exercise the unconfigured-worker path. */
   readonly policy?: WorkerRuntimePolicy | undefined;
   readonly withPolicy?: boolean;
+  /**
+   * Attach a second worker to a database another context already owns.
+   *
+   * Needed to prove a reclaim: two runtimes with distinct instance ids must
+   * contend for the *same* rows, and the owner of the database keeps
+   * responsibility for dropping it.
+   */
+  readonly existing?: DisposableDatabase | undefined;
 }
 
 export async function startWorkerRuntime(
   options: StartWorkerOptions,
 ): Promise<WorkerRuntimeContext> {
-  const disposable = await createDisposableDatabase(options.label);
+  const attached = options.existing !== undefined;
+  const disposable = options.existing ?? (await createDisposableDatabase(options.label));
   const previousUrl = process.env['DATABASE_URL'];
   const previousEnv = process.env['NODE_ENV'];
   process.env['DATABASE_URL'] = disposable.url;
   process.env['NODE_ENV'] = 'test';
 
+  const exits: number[] = [];
   let moduleRef: TestingModule;
   try {
-    moduleRef = await Test.createTestingModule({ imports: [WorkerModule] }).compile();
+    moduleRef = await Test.createTestingModule({ imports: [WorkerModule] })
+      .overrideProvider(WORKER_PROCESS)
+      .useValue({
+        exit: (code: number) => {
+          exits.push(code);
+        },
+      })
+      .compile();
 
-    if (options.withPolicy !== false) {
+    // An attached worker reuses the policy the database already carries;
+    // publishing a second version would test the wrong thing.
+    if (options.withPolicy !== false && !attached) {
       await publishWorkerPolicy(moduleRef, disposable, options.policy ?? FAST_POLICY);
     }
     // Registration happens before `init()`, exactly as a production module
@@ -85,14 +116,20 @@ export async function startWorkerRuntime(
 
     await moduleRef.init();
   } catch (error: unknown) {
-    await disposable.drop();
+    if (!attached) {
+      await disposable.drop();
+    }
     throw error;
   }
+
+  // The fatal path closes the context itself, exactly as `main.ts` wires it.
+  moduleRef.get(WorkerFatalService).registerCloser(() => moduleRef.close());
 
   let closed = false;
   return {
     moduleRef,
     disposable,
+    exits,
     get: <T>(token: unknown): T => moduleRef.get<T>(token as never),
     close: async (): Promise<void> => {
       if (closed) {
@@ -110,7 +147,10 @@ export async function startWorkerRuntime(
       } else {
         process.env['NODE_ENV'] = previousEnv;
       }
-      await disposable.drop();
+      // An attached worker never drops a database it does not own.
+      if (!attached) {
+        await disposable.drop();
+      }
     },
   };
 }

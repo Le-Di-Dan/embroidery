@@ -4,12 +4,15 @@ import { type JobExecutionService } from '../execution/job-execution.service';
 import { JobHandlerRegistry } from '../registry/job-handler.registry';
 import { type WorkerPolicyService } from '../policy/worker-policy.service';
 import type { WorkerRuntimePolicy } from '../policy/worker-runtime-policy';
+import { type WorkerFatalService } from '../lifecycle/worker-fatal.service';
 import {
   FakeQueue,
   FakeTransactions,
+  FakeWorkerProcess,
   ImmediateClock,
   TEST_POLICY,
   claimedJob,
+  fatalServiceWith,
   testHandler,
 } from '../tests/runtime-doubles';
 import { JobPollRuntimeService } from './job-poll-runtime.service';
@@ -30,6 +33,8 @@ interface Harness {
   readonly clock: ImmediateClock;
   readonly started: number[];
   readonly finished: number[];
+  readonly worker: FakeWorkerProcess;
+  readonly fatal: WorkerFatalService;
 }
 
 function harness(
@@ -51,16 +56,20 @@ function harness(
     },
   } as unknown as JobExecutionService;
 
+  const worker = new FakeWorkerProcess();
+  const { fatal } = fatalServiceWith(worker);
+
   const runtime = new JobPollRuntimeService(
     registry,
     policyService(policy),
     queue as unknown as WorkerJobQueueRepository,
     new FakeTransactions() as unknown as TransactionManager,
     execution,
+    fatal,
     clock,
   );
 
-  return { runtime, queue, registry, clock, started, finished };
+  return { runtime, queue, registry, clock, started, finished, worker, fatal };
 }
 
 /** Lets the loop run a few turns without depending on real elapsed time. */
