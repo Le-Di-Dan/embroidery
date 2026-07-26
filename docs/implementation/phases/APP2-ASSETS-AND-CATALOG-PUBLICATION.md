@@ -1,5 +1,14 @@
 # APP2 — Assets and Catalog Publication
 
+> **Status:** `AUDITED — PASS_WITH_REQUIRED_DECISIONS` (engineering `NOT_STARTED`).
+> `APP2-PRE-AUDIT` complete — audit [`audits/APP2_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP2_PRE_IMPLEMENTATION_AUDIT.md),
+> report [`reports/APP2-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md`](../reports/APP2-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md).
+> Verdict `NO_APP2_MIGRATION`; two required decisions before any code
+> (`IMP-O002` object storage → `APP2-DEC-STORAGE`; `IMP-O003` job runtime →
+> `APP2-DEC-JOBS`), one design package (`APP2-D01`, Admin `NEW` + Storefront
+> list/detail `SUPPLEMENT`). First checkpoint: **`APP2-DEC-STORAGE`**. The
+> corrected 17-checkpoint map in §6.1 supersedes the §6 candidate slices.
+
 ## 1. Outcome
 
 Deliver the first full business vertical slice: Admin uploads/processes assets, creates and publishes catalog products, and Storefront server-renders only published products.
@@ -52,6 +61,38 @@ These are planning slices. Execute and review one at a time. Any backend slice r
 - **APP2-S02 — Storefront product detail:** Implement server-rendered product detail, gallery, metadata and not-found behavior.
 - **APP2-E01 — Publication E2E:** Upload asset → process → create draft → publish → public list/detail visible → unpublish → public visibility removed.
 - **APP2-X01 — Phase closure:** Close R1 Catalog Alpha and hand off catalog/template compatibility to APP3.
+
+## 6.1 Corrected checkpoint map (APP2-PRE-AUDIT)
+
+The §6 candidate slices are corrected here from repository truth (see the audit
+§O). Contract-only `C0x` slices are **merged into their backend checkpoint** —
+`IMP-D019` generates OpenAPI from decorated NestJS controllers, so a
+contract-only checkpoint that writes no controller cannot produce the committed
+artifact. Prerequisites (decisions + design) are added. `NO_APP2_MIGRATION`
+(no `APP2-DB01` unless a later spec proves a concrete schema gap). Order is
+dependency-correct and acyclic; Admin leads Storefront; worker follows the
+decisions; no frontend before `APP2-D01` approval; no backend checkpoint >5
+endpoints.
+
+| # | ID | Type | Scope | Predecessors |
+|---|---|---|---|---|
+| 1 | APP2-PRE-AUDIT | audit | this audit | APP1-X01 |
+| 2 | APP2-DEC-STORAGE | decision | object-storage ADR (IMP-O002) | PRE-AUDIT |
+| 3 | APP2-DEC-JOBS | decision | job-runtime ADR + worker correlation seam (IMP-O003) | PRE-AUDIT |
+| 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) | PRE-AUDIT |
+| 5 | APP2-B01 | backend | Asset intake API + OpenAPI/client (≤5) | DEC-STORAGE |
+| 6 | APP2-W01 | worker | Asset inspection/derivatives job | B01, DEC-JOBS |
+| 7 | APP2-A01 | frontend | Admin asset library | B01, W01, D01 |
+| 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) | B01 |
+| 9 | APP2-A02 | frontend | Admin product list | B02, D01 |
+| 10 | APP2-A03 | frontend | Admin product form/detail | B02, D01 |
+| 11 | APP2-B03 | backend | Publication backend + OpenAPI/client (≤3) | B02 |
+| 12 | APP2-A04 | frontend | Admin publication interaction | B03, D01 |
+| 13 | APP2-B04 | backend | Public catalog queries + OpenAPI/client (≤2) | B03 |
+| 14 | APP2-S01 | frontend | Storefront product list | B04, D01 |
+| 15 | APP2-S02 | frontend | Storefront product detail | B04, D01 |
+| 16 | APP2-E01 | E2E | publication cross-layer journey | S01, S02 |
+| 17 | APP2-X01 | closure | close R1 Catalog Alpha; APP3 handoff | E01 |
 
 ## 7. Critical end-to-end journey
 
