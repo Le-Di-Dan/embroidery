@@ -28,8 +28,18 @@ describe('net helpers', () => {
   });
 
   it('reports an unused high port as free', async () => {
-    // Port 0 bind then close leaves it free; use a very unlikely fixed port.
-    expect(await isPortFree(59_999)).toBe(true);
+    // Obtain a genuinely-free port by binding ephemeral port 0 and releasing it,
+    // then assert isPortFree reports it free. A hard-coded high port is not
+    // reliable: the OS may reserve it (e.g. Hyper-V/WSL/Docker dynamic-port
+    // exclusion ranges), making listen() fail even with nothing listening.
+    const port = await new Promise((resolve) => {
+      const probe = net.createServer();
+      probe.listen(0, '127.0.0.1', () => {
+        const assigned = probe.address().port;
+        probe.close(() => resolve(assigned));
+      });
+    });
+    expect(await isPortFree(port)).toBe(true);
   });
 
   it('assertPortsFree throws listing the taken port', async () => {

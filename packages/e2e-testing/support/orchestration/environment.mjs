@@ -15,6 +15,8 @@ import { composeEnv } from './config.mjs';
 import { assertDockerAvailable, composeDown, composeUp, waitForHealthy } from './docker.mjs';
 import { provisionDisposableDatabase, proveSchemaBaseline } from './database.mjs';
 import { startProcess } from './processes.mjs';
+import { createApiService } from './api-service.mjs';
+import { startApiControlServer } from './api-control-server.mjs';
 import { redactUrl } from './redact.mjs';
 import { assertPortsFree, httpGetWithHost, waitForHttp, waitForPort } from './net.mjs';
 
@@ -32,18 +34,6 @@ function resolveNextBin(appDir) {
 function maybeFault(stage) {
   if (process.env['E2E_FAULT'] === stage) {
     throw new Error(`Injected fault at stage "${stage}" (E2E_FAULT).`);
-  }
-}
-
-async function readyPredicate(res) {
-  if (res.status !== 200) {
-    return false;
-  }
-  try {
-    const body = await res.clone().json();
-    return body?.status === 'ready';
-  } catch {
-    return false;
   }
 }
 
@@ -156,42 +146,28 @@ export async function startEnvironment({ runId, config, log, withAdmin }) {
     }
 
     // 4. API host process (built dist; NODE_ENV=test so the local, non-TLS
-    //    disposable database with the dev password is permitted).
+    //    disposable database with the dev password is permitted), owned by a
+    //    lifecycle service so exactly this one process can be stopped/restarted
+    //    for the initial server-side dependency-failure journey (E01-C1-J02).
     log('starting api');
-    const api = startProcess({
-      name: 'api',
-      command: process.execPath,
-      args: ['dist/main.js'],
-      cwd: join(config.repoRoot, 'apps', 'api'),
-      env: {
-        NODE_ENV: 'test',
-        API_PORT: String(config.ports.api),
-        DATABASE_URL: database.url,
-        DATABASE_SSL_MODE: 'disable',
-        API_DOCS_ENABLED: 'false',
-        // Staff-auth wiring so real browser login works through the gateway
-        // (ADR-APP1-001 §5–§6). Non-secure dev cookie (`adm_session`) over plain
-        // HTTP; the browser origin(s) allowlisted for the login/logout mutations.
-        STAFF_SESSION_COOKIE_SECURE: 'false',
-        STAFF_ALLOWED_ORIGINS: adminOrigins,
-        // The IDENTIFIER limit (the E01-J04 boundary under test) stays at the
-        // locked default (5 / 15 min). The IP and global ceilings are raised so
-        // the single-host harness — where every browser request shares one source
-        // IP — does not couple otherwise-independent journeys; those ceilings are
-        // orthogonal abuse guards, not the policy verified here.
-        STAFF_LOGIN_RATE_LIMIT_IP_MAX: '1000',
-        STAFF_LOGIN_RATE_LIMIT_GLOBAL_MAX: '1000',
-      },
+    const apiService = createApiService({
+      config,
+      databaseUrl: database.url,
+      adminOrigins,
     });
-    cleanup.push('stop api', () => api.stop());
-    await waitForHttp(`http://localhost:${config.ports.api}/api/health/readiness`, {
-      predicate: readyPredicate,
-      label: 'api readiness',
-      timeoutMs: 60_000,
-    }).catch((error) => {
-      throw new Error(`${error.message}\napi log tail:\n${api.tail()}`);
-    });
+    await apiService.start();
+    cleanup.push('stop api', () => apiService.stop());
     maybeFault('after-api');
+
+    // 4b. Loopback control seam for the API-unavailability journey — started
+    //     only for the E01 cross-layer suite (`withAdmin`), so ordinary smoke
+    //     runs expose no control surface. Torn down with everything else.
+    let apiControlUrl;
+    if (withAdmin !== undefined) {
+      const control = await startApiControlServer({ apiService, log });
+      apiControlUrl = control.url;
+      cleanup.push('close api control server', () => control.close());
+    }
 
     // 5. Next apps (production build via next start).
     const apps = [];
@@ -250,7 +226,17 @@ export async function startEnvironment({ runId, config, log, withAdmin }) {
       );
     }
 
-    return { runId, projectName, database, schema, baseUrls: config.baseUrls, api, apps, cleanup };
+    return {
+      runId,
+      projectName,
+      database,
+      schema,
+      baseUrls: config.baseUrls,
+      api: apiService,
+      apiControlUrl,
+      apps,
+      cleanup,
+    };
   } catch (error) {
     await cleanup.run({ logger: log });
     throw error;

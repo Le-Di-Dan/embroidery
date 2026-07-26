@@ -21,6 +21,10 @@ const ALWAYS_IGNORED = [/favicon\.ico/i, /Failed to load resource.*favicon/i];
 /** A real 404 document logs its own failed-resource status; benign, not app code. */
 const STATUS_404 = /Failed to load resource.*status of 404/i;
 
+/** An intentional 401 probe (e.g. current-staff with an invalid cookie) logs its
+ * own failed-resource status; benign, not app code. */
+const STATUS_401 = /Failed to load resource.*status of 401/i;
+
 export interface AdminCredentials {
   readonly email: string;
   readonly password: string;
@@ -66,13 +70,21 @@ export const test = base.extend<App1Fixtures>({
 /**
  * Asserts no app-code/hydration error slipped through, ignoring benign non-owned
  * noise. `allowStatus404` additionally tolerates the document's own 404 status
- * line, which any real 404 page emits.
+ * line, which any real 404 page emits; `allowStatus401` tolerates the failed-
+ * resource line of an intentional 401 probe (e.g. a current-staff call with an
+ * invalid cookie) — an expected authoritative rejection, not app-code error.
  */
 export function assertNoAppErrors(
   errors: readonly string[],
-  options: { allowStatus404?: boolean } = {},
+  options: { allowStatus404?: boolean; allowStatus401?: boolean } = {},
 ): void {
-  const ignored = options.allowStatus404 ? [...ALWAYS_IGNORED, STATUS_404] : ALWAYS_IGNORED;
+  const ignored = [...ALWAYS_IGNORED];
+  if (options.allowStatus404) {
+    ignored.push(STATUS_404);
+  }
+  if (options.allowStatus401) {
+    ignored.push(STATUS_401);
+  }
   const severe = errors.filter((entry) => !ignored.some((pattern) => pattern.test(entry)));
   expect(severe, `unexpected app/console errors:\n${severe.join('\n')}`).toEqual([]);
 }

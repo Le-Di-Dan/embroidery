@@ -113,6 +113,8 @@ async function main() {
           E2E_ADMIN_PASSWORD: adminCredentials.password,
           E2E_ADMIN_DISPLAY_NAME: adminCredentials.displayName,
           E2E_DATABASE_URL: env.database.url,
+          // Loopback control seam for the API-unavailability journey (J02).
+          E2E_API_CONTROL_URL: env.apiControlUrl,
         }
       : {};
     exitCode =
