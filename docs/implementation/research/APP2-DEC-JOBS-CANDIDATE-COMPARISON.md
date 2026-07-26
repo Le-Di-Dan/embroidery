@@ -57,7 +57,7 @@ records the outbox as the transactional handoff regardless of any broker.
 | terminal dead-letter excluded permanently | ✅ |
 | append-only attempt survives rolled-back domain tx | ✅ |
 | `(job_kind,job_key,attempt_no)` uniqueness (CST-049) | ✅ |
-| duplicate relay → one `DISPATCHED` (idempotent effect) | ✅ |
+| one worker delivery → one `DISPATCHED` event (idempotent, no second queue entity) | ✅ |
 | shutdown stops new claims, resumes when not draining | ✅ |
 
 ### Notable finding
@@ -68,8 +68,30 @@ permitting only the CST-099 dispatch columns. This confirms both that the D4
 lease write is legal and that worker cleanup must never delete outbox rows
 (ADR §D9) — `DISPATCHED` cleanup is a retention-sweep concern outside APP2.
 
+## 3a. Correction spike (`APP2-DEC-JOBS-C1`)
+
+A second disposable-Postgres spike (real 31 migrations, mirrored SQL, zero
+residue) proved the corrected **PENDING-only** state machine — **25 / 25 PASS**:
+
+| Check | Result |
+|---|---|
+| IDX-088 is partial `WHERE status='PENDING'` | ✅ |
+| fresh PENDING claimable (attempt=1) / leased not claimable | ✅ |
+| success → `DISPATCHED`, one `SUCCEEDED` attempt, atomic; never re-claimed | ✅ |
+| retryable failure → **`PENDING`** + backoff `next_attempt_at`, claimable after backoff | ✅ |
+| **no row ever set to `FAILED`** in the automatic path | ✅ |
+| terminal → `DEAD_LETTER` + `FAILED_TERMINAL`/`is_dead_letter`, never claimed | ✅ |
+| expired lease records old attempt `FAILED_RETRYABLE`/`WORKER_LEASE_EXPIRED`, reclaims next attempt no. | ✅ |
+| two concurrent reclaimers → one attempt row (CST-049 conflict-safe), one winner | ✅ |
+| completion ownership guard rejects wrong `claimed_by` and wrong `attempt_count` | ✅ |
+| handler-effect-commit + lost-completion replays safely to `DISPATCHED` | ✅ |
+| attempt evidence + outbox mutation share one guarded completion tx | ✅ |
+| shutdown stops claims then resumes | ✅ |
+
 ## 4. Deferred / configuration (not decided here)
 
-Backoff curve, max attempts, lease duration, poll interval, batch size `n` →
-`policy_configurations` (owner `APP2-I02`/`APP2-W01`). Image-processing library
-→ `APP2-W01`. Priority and heartbeat → out of scope, re-openable by ADR.
+Backoff curve, max attempts, lease duration, poll interval, batch size `n`,
+handler timeout, lease safety margin, shutdown grace → `policy_configurations`
+(owner `APP2-I02`/`APP2-W01`; ADR §D15, startup-validated §D12).
+Image-processing library → `APP2-W01`. Priority and heartbeat → out of scope,
+re-openable by ADR.

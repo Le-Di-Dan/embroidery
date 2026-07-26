@@ -1,12 +1,30 @@
 # ADR-APP2-002 — Asynchronous Job Runtime
 
-- Status: Accepted (delivered for review)
-- Date: 2026-07-26
-- Phase / checkpoint: APP2 / `APP2-DEC-JOBS`
+- Status: Accepted — corrected by `APP2-DEC-JOBS-C1` (delivered for review)
+- Date: 2026-07-26 (corrected 2026-07-26)
+- Phase / checkpoint: APP2 / `APP2-DEC-JOBS` (correction `APP2-DEC-JOBS-C1`)
 - Decision ID: IMP-D029 (resolves IMP-O003)
 - Supersedes: none
 - Depends on (not reopened): `ADR-DB5-003` (worker claim/index access paths),
   `ADR-APP2-001` / IMP-D028 (object storage & asset intake)
+
+> **Correction note (`APP2-DEC-JOBS-C1`).** The original §D3/§D6 were internally
+> inconsistent: they claimed `status IN ('PENDING','FAILED')` and set retryable
+> failures to `status='FAILED'`, but the canonical launch index **IDX-088**
+> (`ix_outbox_events__next_attempt_id__pending`) is **partial `WHERE
+> status='PENDING'`** — a `FAILED` row is therefore **not on the automatic claim
+> path**. C1 locks the exact state machine (no new ADR/decision id, no schema
+> change): the **only** automatic claim/retry state is **`PENDING`** (with three
+> column-distinguished sub-states); a retryable failure returns the row to
+> **`PENDING`** with a backoff `next_attempt_at`; `DISPATCHED` and `DEAD_LETTER`
+> are the terminal states; **`FAILED` is schema-valid but the APP2 automatic
+> runtime never emits or claims it** (reserved for a future/manual recovery
+> policy). C1 also locks the exact claim query (§D3), lease/ownership-guarded
+> success/retry/terminal completion transactions (§D6), lease-expiry attempt
+> evidence with a conflict-safe insert (§D5), the no-heartbeat timeout invariant
+> (§D12), attempt timing/transaction order (§D13), the handler idempotency
+> contract (§D14), and the policy-key set (§D15). `NO_APP2_MIGRATION` holds; no
+> new dependency; corrected spike **25/25** against the real 31-migration schema.
 
 ## Context
 
@@ -135,54 +153,109 @@ Creation idempotency is a property of the **domain transition**, not of a broker
 dedupe. The Asset lifecycle transition that appends the event is itself guarded
 (one `UPLOADED→INSPECTING` transition per asset; intake idempotency via
 `idempotency_records`, IMP-D028/C2). A replayed transition does not append a
-second event. At-least-once **relay** of one event is tolerated because
-execution is idempotent (D6).
+second event.
 
-### D3 — Claim and FIFO ordering
+**Terminology (C1).** Because `outbox_events` **is** the PostgreSQL job queue,
+there is **no separate relay-created job row and no second queue entity**. The
+worker **directly claims the outbox event**, executes a typed handler, and marks
+the same event `DISPATCHED` / `PENDING`-backoff / `DEAD_LETTER`. There is no
+"relay converts an event into a job" step. **Duplicate worker delivery of one
+event is handled by handler idempotency** (§D14), not by a dedupe entity.
 
-Claim is the `CONTENDED_CLAIM` path (`ADR-DB5-003` R1): partial-index →
-`LIMIT n` → `FOR UPDATE SKIP LOCKED` → mutate out of the claimable set. Query
-predicate `status IN ('PENDING','FAILED') AND (next_attempt_at IS NULL OR
-next_attempt_at <= now())`, order `(next_attempt_at NULLS FIRST, id)` — FIFO by
-insert order (R3/R4). `SKIP LOCKED` gives non-blocking fairness; a bounded batch
-plus backoff prevents head-of-line blocking.
+### D3 — Claim query (PENDING-only) and FIFO ordering
 
-### D4 — Lease = visibility timeout on `next_attempt_at`
+`PENDING` is the **only** automatic claim/retry state; the claim path is exactly
+IDX-088 (`ADR-DB5-003` R1 `CONTENDED_CLAIM`):
 
-`outbox_events` has **no** `lease_expires_at` column and its state set has no
-in-flight status. The lease is therefore a **visibility timeout carried on
-`next_attempt_at`**: the claiming transaction sets `claimed_by`, `claimed_at`,
-`attempt_count := attempt_count + 1`, and `next_attempt_at := now() + leaseDuration`.
-This satisfies `ADR-DB5-003` **R6** — the claim exits the claimable set in the
-same transaction — using only the CST-099 mutable column set (verified by the
-S24 trigger in the spike), and touches neither `payload` nor identity (INV-23).
+```sql
+SELECT id, event_type, payload_schema_version, payload, attempt_count
+  FROM outbox_events
+ WHERE status = 'PENDING'
+   AND (next_attempt_at IS NULL OR next_attempt_at <= now())
+ ORDER BY next_attempt_at NULLS FIRST, id
+ LIMIT :batch_size
+ FOR UPDATE SKIP LOCKED
+```
 
-### D5 — Reclaim after crash is automatic; heartbeat is out of scope
+In the **same transaction**, for every selected row: `claimed_by := <worker
+instance id>`, `claimed_at := now()`, `attempt_count := attempt_count + 1`,
+`next_attempt_at := now() + lease_duration`. The row **stays `status='PENDING'`**;
+this mutation exits it from the *claimable time window* while retaining IDX-088
+(R6, CST-099 mutable set only, `payload`/identity untouched — INV-23). The claim
+returns event identity, `event_type`, `payload_schema_version`, `payload`, the
+**incremented** attempt number, and the lease deadline. FIFO by
+`(next_attempt_at NULLS FIRST, id)`; `SKIP LOCKED` gives non-blocking fairness;
+bounded batch + backoff prevents head-of-line blocking. **`FAILED` is never in
+the predicate**, no `FAILED` index is added, and no scheduler converts `FAILED`
+→ `PENDING`.
 
-If a worker crashes after claiming and before completing, the row is **not**
-lost: when the lease elapses (`next_attempt_at <= now()`) it re-enters the
-claimable set and another worker reclaims it, `attempt_count` incrementing again.
-No separate reclaim method or stuck-job scanner is required. **Heartbeat /
-mid-job lease extension is OUT_OF_SCOPE for APP2** (single-node, bounded
-inspection/derivative durations covered by a generous lease); deferred to the
+### D4 — PENDING sub-states (columns, not new state values)
+
+`outbox_events` has **no** `lease_expires_at` column and no in-flight status.
+The three sub-states are read from the existing columns; `next_attempt_at` is
+deliberately **dual-purpose** (`claimed_by IS NULL` → scheduling/backoff
+deadline; `claimed_by IS NOT NULL` → visibility/lease deadline):
+
+| Sub-state | `status` | `claimed_by` | `claimed_at` | `next_attempt_at` |
+|---|---|---|---|---|
+| Fresh queued | `PENDING` | `NULL` | `NULL` | `NULL` |
+| Waiting for retry backoff | `PENDING` | `NULL` | `NULL` | `retry_due_at` |
+| Actively leased | `PENDING` | `worker_id` | `claim_time` | `lease_expires_at` |
+
+No `lease_expires_at` column is added.
+
+### D5 — Lease-expiry recovery records the crashed attempt
+
+A crashed worker leaves `status='PENDING'`, `claimed_by IS NOT NULL`,
+`next_attempt_at <= now()`. The **next claim transaction** (no separate reclaim
+scanner, no delete) recognises the expired lease and, before re-claiming:
+appends the **missing prior attempt** as `outcome=FAILED_RETRYABLE`,
+`is_dead_letter=false`, `error_class='WORKER_LEASE_EXPIRED'` (safe detail only),
+using a **conflict-safe insert on `unique(job_kind, job_key, attempt_no)`
+(CST-049)** so two concurrent reclaimers cannot duplicate the evidence row; the
+crashed attempt number is the row's existing `attempt_count`. It then increments
+`attempt_count` and claims the same outbox row for the new attempt (§D3).
+**Heartbeat / mid-job lease extension is OUT_OF_SCOPE for APP2**; deferred to the
 first phase with genuinely long-running jobs.
 
-### D6 — Attempts, retry, terminal failure
+### D6 — Execution identity and the three completion transactions
 
-- **Success:** `markDispatched` sets `status='DISPATCHED'` (structurally leaves
-  the claim index), clears `claimed_*`; record a `SUCCEEDED` attempt.
-- **Retryable failure:** `scheduleRetry` sets `status='FAILED'`,
-  `next_attempt_at := now() + backoff`, `last_error := <errorClass>`; record a
-  `FAILED_RETRYABLE` attempt. The row is claimable again only after backoff.
-- **Terminal failure (bounded retries exhausted):** `markDeadLetter` sets
-  `status='DEAD_LETTER'`, `next_attempt_at := NULL` (permanently out of the
-  claimable set, R5); record a `FAILED_TERMINAL` attempt (`is_dead_letter=true`,
-  the operator's manual-review row).
-- Attempt records are **append-only** and written **outside** the domain
-  transaction (`BackgroundJobAttemptStore.record`, `dbOutsideTransaction`) so
-  the evidence survives a rolled-back domain tx. `job_kind` is the closed set
-  (`ASSET_PROCESSING`, `OUTBOX_DISPATCH`, …); `job_key` is the aggregate id;
-  `attempt_no` mirrors the outbox `attempt_count`.
+**Execution identity** for a claimed event: `job_kind` = the canonical handler
+kind mapped from `event_type` (closed set — `ASSET_PROCESSING`, …); **`job_key` =
+`outbox_events.id`** (not the aggregate id); `attempt_no` = the incremented
+`attempt_count`; `correlation_id = "{job_kind}:{job_key}:{attempt_no}"` (no
+request id fabricated; consumed by FU-A07 via `AsyncLocalStorage`).
+
+**Transaction order (D13):** claim tx → handler durable-effect tx → one
+completion tx. Attempt evidence is **never** written inside the handler's
+effect transaction (which may roll back). Each completion transaction writes
+**exactly one** `background_job_attempts` row **and** the outbox mutation
+**atomically**, guarded by ownership — `WHERE id = :id AND status='PENDING' AND
+claimed_by = :thisWorker AND attempt_count = :thisAttempt` — so a stale worker
+whose lease already expired cannot complete.
+
+- **Success** (handler effect committed first): attempt `outcome=SUCCEEDED`,
+  `is_dead_letter=false`, safe error fields `NULL`; outbox → `status='DISPATCHED'`,
+  `dispatched_at=now()`, `next_attempt_at=NULL`, `claimed_by=NULL`,
+  `claimed_at=NULL`, `last_error=NULL`, `error_class=NULL`.
+- **Retryable failure** (retryable error + attempts remaining): attempt
+  `outcome=FAILED_RETRYABLE`, `is_dead_letter=false`, redacted `error_class` +
+  bounded safe detail; outbox → **`status='PENDING'`**, `next_attempt_at=now() +
+  backoff`, `claimed_by=NULL`, `claimed_at=NULL`, `last_error=<bounded redacted>`,
+  `error_class=<safe closed class>`. **Never `status='FAILED'`.** Automatic
+  retry therefore stays on IDX-088.
+- **Terminal failure** (non-retryable error **or** `attempt_no >= max_attempts`):
+  attempt `outcome=FAILED_TERMINAL`, `is_dead_letter=true`, redacted class/detail;
+  outbox → `status='DEAD_LETTER'`, `next_attempt_at=NULL` (permanently
+  unclaimable, R5), `claimed_by=NULL`, `claimed_at=NULL`, `last_error`,
+  `error_class`. Manual replay is outside APP2 unless a later approved checkpoint
+  adds it.
+
+If the handler effect commits but the completion tx fails, the lease eventually
+expires, the job is reclaimed (§D5), the handler runs idempotently (§D14), and
+the completion tx is retried on the new attempt number — safe, not exactly-once.
+`(job_kind, job_key, attempt_no)` uniqueness (CST-049) prevents duplicate
+evidence for any attempt.
 
 ### D7 — Backoff / limits are configuration, not literals
 
@@ -235,6 +308,59 @@ IMP-D020, different entry point) and emitted through the IMP-D022 structured
 logger. **`FU-A07` is owned by `APP2-I02`** (below). No business/audit event
 names in logs; `error_class` only, never provider payloads or PII.
 
+### D12 — No-heartbeat timeout/shutdown invariant
+
+Because heartbeat is out of scope, the runtime enforces at startup (rejecting
+unsafe relationships):
+
+```text
+handler_timeout_ms + lease_safety_margin_ms <= lease_duration_ms
+shutdown_grace_ms                            <= handler_timeout_ms
+poll_interval_ms                             <  lease_duration_ms
+```
+
+Each handler receives an `AbortSignal`. On handler timeout: abort the work,
+classify as a **retryable timeout**, and apply the retryable-failure completion
+transaction (§D6). A handler must not intentionally continue past its lease;
+W01 handlers must be idempotent even if an infrastructure failure still causes
+overlap.
+
+### D13 — Attempt timing and transaction order
+
+Order is **claim tx → handler effect tx → completion tx**. A normally completed
+attempt writes **exactly one** attempt row (in the completion tx). A worker
+**crash writes no row at crash time**; the next lease-reclaim transaction
+records the expired prior attempt (§D5). Attempt evidence is never inside a
+handler transaction that may roll back, and success/retry/terminal evidence is
+always in the **same** completion transaction as the outbox mutation.
+`(job_kind, job_key, attempt_no)` prevents duplicate evidence. Attempt timing is
+**locked here**, not left to `APP2-I02`.
+
+### D14 — Handler idempotency contract
+
+`APP2-I02` owns the generic runtime seam. Every `APP2-W01` handler exposes: a
+**job kind**, a **payload schema validator**, an **idempotency/effect-key
+derivation**, and `execute(payload, context, abortSignal)`. The generic runtime
+guarantees only: one active DB lease per outbox row under normal operation,
+at-least-once execution, bounded retry, and attempt evidence. **Each handler
+guarantees its own durable-effect idempotency.** Later APP2 asset handlers
+derive the effect key from the outbox event id / asset id / derivative kind plus
+existing database arbiters and deterministic object keys — not solved here.
+
+### D15 — Policy keys (configuration, values not in this ADR)
+
+Names (or canonical equivalents), all versioned policy configuration:
+
+```text
+worker.concurrency          worker.lease_duration_ms      worker.max_attempts
+worker.batch_size           worker.handler_timeout_ms     worker.backoff_base_ms
+worker.poll_interval_ms     worker.lease_safety_margin_ms worker.backoff_max_ms
+worker.shutdown_grace_ms
+```
+
+Startup validation rejects the unsafe relationships in §D12. No production
+values are hard-coded in this ADR.
+
 ## Repository gaps (owner `APP2-I02`/`APP2-W01`) — not schema gaps
 
 Per the audit discipline: a missing repository behaviour is a repository
@@ -243,19 +369,29 @@ implementation gap, not a schema gap.
 1. `OutboxEventStore.claimBatch` currently sets `claimed_by`/`claimed_at`/
    `attempt_count` but **does not set the `next_attempt_at` lease** — so a
    claimed row is re-selectable on the next poll (repeated delivery bounded only
-   by luck). D4 requires the lease write. **Repository implementation gap**
-   (owner `APP2-I02`), representable with the existing mutable column set —
-   **no migration**.
-2. `apps/worker` has **no poll loop, handler registry, attempt-recording seam,
+   by luck). §D3 requires the lease write (row stays `PENDING`). **Repository
+   implementation gap** (owner `APP2-I02`), existing mutable column set — **no
+   migration**.
+2. The store's `scheduleRetry` currently sets `status='FAILED'` (its DB-era
+   behaviour) — the APP2 automatic runtime must **not** use it; retryable
+   failures use the §D6 completion transaction that keeps `status='PENDING'`
+   with a backoff `next_attempt_at`. **Repository implementation gap** (owner
+   `APP2-I02`): the runtime needs ownership-guarded completion methods
+   (success/retry-PENDING/dead-letter) and a lease-expiry evidence insert
+   (conflict-safe on CST-049) — all within existing columns, **no migration**.
+   `FAILED` stays a valid state value, reserved for a future/manual recovery
+   policy.
+3. `apps/worker` has **no poll loop, handler registry, attempt-recording seam,
    correlation, or graceful shutdown** beyond the keep-alive. **Application
    gap** (owner `APP2-I02`).
-3. Reclaim needs **no** new method — it is lease-driven (D5).
+4. Reclaim needs **no** new scanner — it is lease-driven (§D5).
 
 ## Migration and dependency verdict
 
 - **Migration:** `NO_APP2_MIGRATION`. Every required behaviour maps to existing
-  columns, indexes, triggers and repositories. Proven by the controlled spike
-  (23/23) against the real 31-migration / 78-table schema.
+  columns, indexes, triggers and repositories. Proven by the controlled spikes
+  (decision 23/23, C1 correction 25/25) against the real 31-migration / 78-table
+  schema.
 - **Dependency:** **none.** No new runtime package or service. (Had an external
   broker won, future packages would have been named here and not installed.)
 
@@ -263,7 +399,7 @@ implementation gap, not a schema gap.
 
 | Capability | Support | Class |
 |---|---|---|
-| Job table + status tuple | `outbox_events.status` (4-state); no separate jobs table (per-event fan-out) | READY |
+| Job table + status tuple | `outbox_events.status`; APP2 automatic runtime uses `PENDING`/`DISPATCHED`/`DEAD_LETTER` (C1 — `FAILED` reserved, never emitted/claimed); no separate jobs table (per-event fan-out) | READY |
 | Job family/type + payload | `event_type` + `payload` + `payload_schema_version`; `job_kind` enum | READY |
 | Idempotency key | `idempotency_records` + one-event-per-transition | READY |
 | Priority | none | OUT_OF_SCOPE (FIFO, single-node) |
@@ -293,11 +429,12 @@ implement any asset job family. Predecessor: `APP2-DEC-JOBS`.
 ### `APP2-W01` — asset inspection / derivatives
 
 Allowed assumptions: a **job-creation port** (append-in-domain-tx), a
-**claim/lease API** (D3/D4), an **attempt API** (D6), a **retry policy** (D7),
-**handler idempotency** (D8), **logging/correlation** (D11), and **shutdown**
-(D10) — all supplied by `APP2-I02`. W01 adds the asset job family handler and
-selects the **image-processing library** (deferred to W01, not decided here).
-Predecessors: `APP2-B01`, `APP2-I02`.
+**claim/lease API** (§D3/§D4), an **attempt API** (§D6), a **retry policy** (§D7),
+the **handler idempotency contract** (§D14), **logging/correlation** (§D11), the
+**timeout/`AbortSignal`** contract (§D12), and **shutdown** (§D10) — all supplied
+by `APP2-I02`. W01 adds the asset job family handler and selects the
+**image-processing library** (deferred to W01, not decided here). Predecessors:
+`APP2-B01`, `APP2-I02`.
 
 ### `APP2-B01` — asset intake
 
@@ -333,15 +470,31 @@ Independent and unaffected; may implement the storage foundation only.
 
 ## Controlled spike (evidence)
 
-Disposable Postgres 16 + the **real 31 migrations** (78 tables) + mirrored store
-SQL (no repository import), then fully torn down (zero residue). **23/23 PASS**:
-migrations/table-count; claim/cleanup/dead-letter indexes present; CST-099 lease
-columns permitted + `payload` frozen (INV-23) + row `DELETE` rejected (D9);
-exclusive `SKIP LOCKED` claim (no overlap); FIFO ordering; lease blocks reclaim;
-crash → reclaim-after-lease (attempt incremented); retry deferred-then-claimable
-after backoff; terminal dead-letter excluded permanently; append-only attempt
-survives rolled-back domain tx; `(kind,key,attempt_no)` uniqueness; duplicate
-relay → one `DISPATCHED`; shutdown stops claims then resumes. Detail:
+Two spikes on disposable Postgres 16 + the **real 31 migrations** (78 tables) +
+mirrored store SQL (no repository import/modification), each fully torn down
+(zero residue).
+
+- **Decision spike (23/23):** migrations/table-count; claim/cleanup/dead-letter
+  indexes present; CST-099 lease columns permitted + `payload` frozen (INV-23) +
+  row `DELETE` rejected (§D9); exclusive `SKIP LOCKED` claim; FIFO ordering;
+  lease blocks reclaim; crash → reclaim-after-lease; terminal dead-letter
+  excluded; append-only attempt survives rolled-back domain tx;
+  `(kind,key,attempt_no)` uniqueness; **one worker delivery → one `DISPATCHED`
+  event** (idempotent, no second queue entity); shutdown stops then resumes.
+- **C1 correction spike (25/25):** IDX-088 is partial `WHERE status='PENDING'`;
+  fresh PENDING claimable (attempt=1); leased PENDING not claimable before
+  expiry; **retryable failure returns the row to `PENDING`** with future
+  `next_attempt_at`, claimable after backoff, **no `FAILED` ever emitted**;
+  terminal → `DEAD_LETTER`, never claimed; success → `DISPATCHED`, never claimed
+  (one `SUCCEEDED` attempt, atomic with the outbox update); expired lease records
+  the crashed attempt as `FAILED_RETRYABLE`/`WORKER_LEASE_EXPIRED` and reclaims
+  with the next attempt number; two concurrent reclaimers do not duplicate the
+  evidence row (CST-049 conflict-safe); the completion **ownership guard rejects
+  a stale worker** (wrong `claimed_by` or `attempt_count`); handler-effect-commit
+  + lost-completion replays safely to `DISPATCHED` on the next attempt; shutdown
+  stops then resumes.
+
+Detail:
 [`../../implementation/research/APP2-DEC-JOBS-CANDIDATE-COMPARISON.md`](../../implementation/research/APP2-DEC-JOBS-CANDIDATE-COMPARISON.md).
 
 ## References

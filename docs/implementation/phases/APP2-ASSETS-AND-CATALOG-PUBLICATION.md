@@ -61,6 +61,20 @@
 > keep-alive) between `APP2-DEC-JOBS`/`APP2-B01` and `APP2-W01` (map now
 > **19 checkpoints**, §6.1). Report:
 > [`reports/APP2-DEC-JOBS-COMPLETION-REPORT.md`](../reports/APP2-DEC-JOBS-COMPLETION-REPORT.md).
+> **Corrected by `APP2-DEC-JOBS-C1`** (report
+> [`reports/APP2-DEC-JOBS-C1-CORRECTION-REPORT.md`](../reports/APP2-DEC-JOBS-C1-CORRECTION-REPORT.md)):
+> the original claim predicate/retry state contradicted IDX-088 (partial `WHERE
+> status='PENDING'`). Locked state machine — **`PENDING` is the only automatic
+> claim/retry state** (three column-distinguished sub-states); retryable failure
+> returns the row to **`PENDING`** with a backoff `next_attempt_at` (never
+> `FAILED`); `DISPATCHED`/`DEAD_LETTER` terminal; **`FAILED` reserved, never
+> emitted/claimed** by the APP2 runtime. Ownership-guarded success/retry/terminal
+> completion transactions (attempt + outbox mutation atomic, after the handler
+> effect commits); `job_key=outbox_events.id`; expired-lease recovery records the
+> crashed attempt (`WORKER_LEASE_EXPIRED`, CST-049 conflict-safe) then reclaims;
+> no-heartbeat timeout invariant + `AbortSignal`; handler idempotency contract;
+> policy-key set. `NO_APP2_MIGRATION`, no dependency; correction spike **25/25**.
+> This is the **only** correction for `APP2-DEC-JOBS` (one-correction rule).
 >
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
