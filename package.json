@@ -28,6 +28,7 @@
     "e2e": "pnpm --filter @embroidery/e2e-testing e2e",
     "e2e:smoke": "pnpm --filter @embroidery/e2e-testing e2e:smoke",
     "e2e:full": "pnpm --filter @embroidery/e2e-testing e2e:full",
+    "e2e:app1": "pnpm --filter @embroidery/e2e-testing e2e:app1",
     "e2e:headed": "pnpm --filter @embroidery/e2e-testing e2e:headed",
     "e2e:debug": "pnpm --filter @embroidery/e2e-testing e2e:debug",
     "e2e:report": "pnpm --filter @embroidery/e2e-testing e2e:report",

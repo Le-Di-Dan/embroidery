@@ -73,5 +73,16 @@ export default defineConfig({
       testMatch: '**/{admin.smoke,api-readiness.smoke}.spec.ts',
       use: { ...devices['Desktop Safari'], baseURL: ADMIN_URL },
     },
+    // APP1-E01 cross-layer acceptance (host/Chromium only — see run-e2e.mjs).
+    {
+      name: 'app1-admin-chromium',
+      testMatch: '**/app1/admin-*.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: ADMIN_URL },
+    },
+    {
+      name: 'app1-storefront-chromium',
+      testMatch: '**/app1/storefront-*.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
   ],
 });

@@ -17,6 +17,22 @@ export function createRunId() {
   return `${process.pid}${randomBytes(3).toString('hex')}`;
 }
 
+/**
+ * Per-run bootstrap Admin credentials for the APP1 cross-layer acceptance suite
+ * (E01). The email is under `*.example.test` (a reserved test domain — never a
+ * real inbox) and unique per run so concurrent runs and the identifier
+ * rate-limit dimension never collide. The password is a fresh random secret that
+ * comfortably exceeds the locked minimum length; it exists only in memory and is
+ * passed to the bootstrap CLI and the browser login — never logged or committed.
+ */
+export function createAdminCredentials(runId) {
+  return {
+    email: `app1-e01-admin-${runId}@e2e.example.test`,
+    password: `E01-${randomBytes(18).toString('base64url')}`,
+    displayName: 'APP1 E01 Acceptance Admin',
+  };
+}
+
 function port(env, key, fallback) {
   const raw = env[key];
   return raw === undefined || raw === '' ? fallback : Number(raw);

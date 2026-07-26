@@ -37,8 +37,13 @@ function spawnAwait(command, args, options) {
   });
 }
 
-/** Runs on the host (Chromium projects). Returns the process exit code. */
-export function runHost({ packageRoot, projects, baseUrls, extraArgs = [] }) {
+/**
+ * Runs on the host (Chromium projects). Returns the process exit code. `env`
+ * carries any extra variables the specs need — e.g. the E01 bootstrap Admin
+ * credentials and disposable database URL for the session-mutation seam — merged
+ * over the inherited environment.
+ */
+export function runHost({ packageRoot, projects, baseUrls, extraArgs = [], env = {} }) {
   const cli = resolveCli(packageRoot);
   const args = ['test', ...projects.flatMap((p) => ['--project', p]), ...extraArgs];
   return spawnAwait(process.execPath, [cli, ...args], {
@@ -48,6 +53,7 @@ export function runHost({ packageRoot, projects, baseUrls, extraArgs = [] }) {
       E2E_RUNNER: 'host',
       E2E_BASE_STOREFRONT: baseUrls.storefront,
       E2E_BASE_ADMIN: baseUrls.admin,
+      ...env,
     },
   });
 }

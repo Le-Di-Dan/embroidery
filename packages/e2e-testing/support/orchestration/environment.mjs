@@ -6,6 +6,7 @@
  * registers every teardown on one LIFO `CleanupStack` so failures at any stage
  * unwind cleanly.
  */
+import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 
@@ -47,15 +48,72 @@ async function readyPredicate(res) {
 }
 
 /**
+ * Runs the canonical staff-bootstrap CLI (ADR-APP1-001 §8) once against the
+ * disposable database to seed the single Admin the cross-layer suite logs in as.
+ * It uses the accepted create-or-reuse mechanism exactly as Compose does — no
+ * test-only seeding path — under `NODE_ENV=test` (the strict development policy),
+ * and asserts the machine-parseable `result=CREATED` line. Credentials come from
+ * the caller and are passed only through the child's environment; nothing is
+ * logged (only the status and admin id).
+ * @param {{ config: object, databaseUrl: string, credentials: { email: string, password: string, displayName: string }, log: (msg: string) => void }} params
+ */
+export async function bootstrapAdmin({ config, databaseUrl, credentials, log }) {
+  const cliPath = join(config.repoRoot, 'apps', 'api', 'dist', 'cli', 'staff-bootstrap.js');
+  return await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [cliPath], {
+      cwd: join(config.repoRoot, 'apps', 'api'),
+      env: {
+        ...process.env,
+        NODE_ENV: 'test',
+        DATABASE_URL: databaseUrl,
+        DATABASE_SSL_MODE: 'disable',
+        API_DOCS_ENABLED: 'false',
+        STAFF_BOOTSTRAP_EMAIL: credentials.email,
+        STAFF_BOOTSTRAP_PASSWORD: credentials.password,
+        STAFF_BOOTSTRAP_DISPLAY_NAME: credentials.displayName,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let out = '';
+    child.stdout.on('data', (chunk) => (out += chunk.toString()));
+    child.stderr.on('data', (chunk) => (out += chunk.toString()));
+    child.once('error', reject);
+    child.once('exit', (code) => {
+      const match = out.match(/result=([A-Z_]+)/);
+      const status = match?.[1] ?? 'UNKNOWN';
+      if (code === 0 && (status === 'CREATED' || status === 'REUSED_EXISTING')) {
+        log(`admin bootstrap ${status}`);
+        resolve(status);
+      } else {
+        reject(new Error(`Admin bootstrap failed (exit ${code}, status ${status}).`));
+      }
+    });
+  });
+}
+
+/**
  * Starts the full environment. On success returns handles plus the populated
  * `cleanup` stack for the caller to run in its own `finally`. On any failure it
  * unwinds everything started so far and rethrows.
- * @param {{ runId: string, config: object, log: (msg: string) => void }} params
+ *
+ * When `withAdmin` credentials are supplied (the APP1-E01 cross-layer suite),
+ * the disposable database is seeded with one bootstrap Admin and the API is
+ * configured with the staff-auth environment (allowed browser origins, non-secure
+ * dev cookie) and the Admin app with its internal API base URL, so real staff
+ * login, session and logout journeys run end-to-end through the gateway.
+ * @param {{ runId: string, config: object, log: (msg: string) => void, withAdmin?: { email: string, password: string, displayName: string } }} params
  */
-export async function startEnvironment({ runId, config, log }) {
+export async function startEnvironment({ runId, config, log, withAdmin }) {
   const cleanup = new CleanupStack();
   const projectName = `emb-e2e-${runId}`;
   const cEnv = composeEnv(config);
+  // Browser origins the API must accept for state-changing staff requests
+  // (ADR-APP1-001 §6): the gateway hostname on both the host-published and the
+  // Compose-internal gateway ports, so login works from either runner.
+  const adminOrigins = [
+    `http://${config.hosts.admin}:${config.ports.gateway}`,
+    `http://${config.hosts.admin}:8080`,
+  ].join(',');
 
   try {
     await assertDockerAvailable();
@@ -91,6 +149,12 @@ export async function startEnvironment({ runId, config, log }) {
     }
     maybeFault('after-db');
 
+    // 3b. Seed the single bootstrap Admin (E01 only) via the accepted CLI.
+    if (withAdmin !== undefined) {
+      log('bootstrapping admin');
+      await bootstrapAdmin({ config, databaseUrl: database.url, credentials: withAdmin, log });
+    }
+
     // 4. API host process (built dist; NODE_ENV=test so the local, non-TLS
     //    disposable database with the dev password is permitted).
     log('starting api');
@@ -105,6 +169,18 @@ export async function startEnvironment({ runId, config, log }) {
         DATABASE_URL: database.url,
         DATABASE_SSL_MODE: 'disable',
         API_DOCS_ENABLED: 'false',
+        // Staff-auth wiring so real browser login works through the gateway
+        // (ADR-APP1-001 §5–§6). Non-secure dev cookie (`adm_session`) over plain
+        // HTTP; the browser origin(s) allowlisted for the login/logout mutations.
+        STAFF_SESSION_COOKIE_SECURE: 'false',
+        STAFF_ALLOWED_ORIGINS: adminOrigins,
+        // The IDENTIFIER limit (the E01-J04 boundary under test) stays at the
+        // locked default (5 / 15 min). The IP and global ceilings are raised so
+        // the single-host harness — where every browser request shares one source
+        // IP — does not couple otherwise-independent journeys; those ceilings are
+        // orthogonal abuse guards, not the policy verified here.
+        STAFF_LOGIN_RATE_LIMIT_IP_MAX: '1000',
+        STAFF_LOGIN_RATE_LIMIT_GLOBAL_MAX: '1000',
       },
     });
     cleanup.push('stop api', () => api.stop());
@@ -125,7 +201,14 @@ export async function startEnvironment({ runId, config, log }) {
         dir: join(config.repoRoot, 'apps', 'storefront'),
         port: config.ports.storefront,
       },
-      { name: 'admin', dir: join(config.repoRoot, 'apps', 'admin'), port: config.ports.admin },
+      {
+        name: 'admin',
+        dir: join(config.repoRoot, 'apps', 'admin'),
+        port: config.ports.admin,
+        // Server-to-server API base for the Admin's protected-route session
+        // resolver (D-036); it reaches the host API process directly.
+        env: { INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api` },
+      },
     ]) {
       log(`starting ${app.name}`);
       const proc = startProcess({
@@ -140,7 +223,7 @@ export async function startEnvironment({ runId, config, log }) {
           String(app.port),
         ],
         cwd: app.dir,
-        env: { NODE_ENV: 'production' },
+        env: { NODE_ENV: 'production', ...(app.env ?? {}) },
       });
       cleanup.push(`stop ${app.name}`, () => proc.stop());
       await waitForHttp(`http://localhost:${app.port}/healthz`, {
