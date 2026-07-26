@@ -59,6 +59,20 @@ COPY . .
 RUN pnpm --filter "@embroidery/worker..." build
 
 # ---------------------------------------------------------------------------
+# process-test: APP2-I02-FD1 real-process fixtures (test-only)
+#
+# Runs the genuine worker runtime as PID 1 so an uncooperative handler's fatal
+# `process.exit(1)` terminates a real Linux process. Built only by
+# `pnpm test:worker-runtime:fatal-process`; the `runner` stage below copies
+# nothing from here, so no fixture reaches the production image, and normal
+# Compose never references this target.
+# ---------------------------------------------------------------------------
+FROM build AS process-test
+RUN pnpm --filter @embroidery/worker exec tsc -p test/process/tsconfig.fixtures.json
+WORKDIR /app/apps/worker
+CMD ["node", "dist-process-test/test/process/fixtures/uncooperative-worker.fixture.js"]
+
+# ---------------------------------------------------------------------------
 # prod-deps: production-only node_modules for the worker workspace
 # ---------------------------------------------------------------------------
 FROM base AS prod-deps

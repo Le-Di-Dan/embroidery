@@ -27,6 +27,7 @@
     "test:worker-runtime:smoke": "pnpm --filter @embroidery/worker build && pnpm --filter @embroidery/worker exec jest --testPathPatterns=worker-smoke --testPathIgnorePatterns=/node_modules/",
     "test:worker-runtime:signal-smoke": "pnpm --filter @embroidery/worker exec jest --testPathPatterns=worker-signal-smoke --testPathIgnorePatterns=/node_modules/",
     "test:worker-runtime:uncooperative-timeout": "pnpm --filter @embroidery/worker exec jest --testPathPatterns=worker-(un)?cooperative-timeout",
+    "test:worker-runtime:fatal-process": "pnpm --filter @embroidery/worker exec jest --testPathPatterns=worker-fatal-timeout.process --testPathIgnorePatterns=/node_modules/",
     "check:e2e-boundaries": "node tools/check-e2e-boundaries.mjs",
     "check:spike-boundaries": "node tools/check-spike-boundaries.mjs",
     "smoke:app1-bootstrap": "node tools/smoke-app1-bootstrap-compose.mjs",

@@ -1,0 +1,17 @@
+{
+  // Compiles the FD1 process fixtures (and the runtime source they import) into
+  // a directory the `process-test` Docker target owns. Deliberately separate
+  // from `tsconfig.build.json`: that one feeds the production `runner` image,
+  // and fixture code must never reach it.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "../../dist-process-test",
+    "rootDir": "../..",
+    "incremental": false,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["./fixtures/**/*.ts", "../../src/**/*.ts"],
+  "exclude": ["../../src/**/*.spec.ts", "../../src/**/tests/**"]
+}
