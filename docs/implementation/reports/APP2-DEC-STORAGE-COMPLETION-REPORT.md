@@ -260,3 +260,23 @@ phase-plan/roadmap/traceability status. This Commit B adds only this report.
 `PASS_WITH_PRODUCT_PARAMETERS`. `APP2-DEC-JOBS` = `BLOCKED_BY_APP2_DEC_STORAGE_
 REVIEW`; `APP2-D01` = `BLOCKED_BY_REQUIRED_DECISIONS`; APP2 product engineering
 `NOT_STARTED`. Working tree clean after Commit A; not pushed.
+
+## T. Correction history
+
+This report is preserved as original evidence. `APP2-DEC-STORAGE` was
+subsequently **corrected by `APP2-DEC-STORAGE-C1`** (2026-07-26), which fixed
+three implementation-readiness defects in ADR-APP2-001 without reopening the
+accepted direction: **(C1-01)** the original §G/ADR §4.2 *reserve-then-upload*
+flow (create the `assets` row `UPLOADED` **before** the object) was invalid —
+`assets.size_bytes` is `NOT NULL > 0`, so the row is now created **only after**
+the object is stored/measured (storage-first / two idempotent transactions;
+`UPLOADED` is post-upload, IDX-086 recovery-only); **(C1-02)** the HTTP transport
+is locked to the **T1 single streaming multipart request** (`busboy 1.6.0` →
+`@aws-sdk/lib-storage 3.1095.0` `Upload`), with route-scoped nginx
+`client_max_body_size` + `proxy_request_buffering off`, JSON-body guard excluded
+from the stream, and server-authoritative SHA-256; **(C1-03)**
+`OBJECT_STORAGE_PUBLIC_BASE_URL` removed from APP2 scope. Corrected status:
+**`APP2-DEC-STORAGE` = `COMPLETE — CORRECTED, DELIVERED_FOR_REVIEW`**;
+`APP2-DEC-JOBS` = `BLOCKED_BY_APP2_DEC_STORAGE_REVIEW`. See
+[`APP2-DEC-STORAGE-C1-CORRECTION-REPORT.md`](./APP2-DEC-STORAGE-C1-CORRECTION-REPORT.md)
+(Correction Commit C `0c8afd51b513e9a8f9c7945dfae77616f8a57d16`).
