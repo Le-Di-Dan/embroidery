@@ -36,6 +36,35 @@
 > gap** (owner `APP2-B01`), **not** a schema gap — `NO_APP2_MIGRATION` re-confirmed
 > against the real 31-migration schema. `APP2-DEC-JOBS` and `APP2-D01` remain
 > blocked pending required-decision review.
+>
+> **`APP2-DEC-STORAGE` accepted** by the Product Owner as
+> `ACCEPTED_WITH_BLOCKED_IMPLEMENTATION_GAPS` (no `APP2-DEC-STORAGE-C3`; the
+> one-correction governance rule below applies). Three storage issues are
+> **routed** to the `APP2-B01` entry gate — `STORAGE-BLK-01` content-complete
+> upload idempotency fingerprint, `STORAGE-BLK-02` versioned/discriminated
+> idempotency result JSON shape, `STORAGE-BLK-03` expired-allocation reclaim /
+> old-object cleanup ordering — they block `APP2-B01` and downstream asset
+> intake but **not** `APP2-DEC-JOBS`, `APP2-D01`, or `APP2-I01`.
+>
+> **`APP2-DEC-JOBS` = `DELIVERED_FOR_REVIEW`** — the asynchronous job runtime is
+> locked by **IMP-D029 /
+> [`ADR-APP2-002`](../../adr/backend/ADR-APP2-002-ASYNCHRONOUS-JOB-RUNTIME.md)**:
+> a **PostgreSQL-backed claim queue on the existing persistence** (`outbox_events`
+> durable work signal + `background_job_attempts` + `FOR UPDATE SKIP LOCKED`
+> claim + **visibility-timeout lease on `next_attempt_at`**; J2 Redis/BullMQ and
+> J3 RabbitMQ rejected — second datastore, transactional-outbox invariant lost).
+> **No new runtime dependency, `NO_APP2_MIGRATION`** (spike 23/23 vs the real
+> 31-migration schema). At-least-once + idempotent creation/execution (not
+> exactly-once). It inserts a narrow **`APP2-I02`** worker-runtime foundation
+> checkpoint (poll/claim-lease driver, `event_type` handler registry, attempt
+> seam, `FU-A07` worker logging/correlation, graceful shutdown replacing the
+> keep-alive) between `APP2-DEC-JOBS`/`APP2-B01` and `APP2-W01` (map now
+> **19 checkpoints**, §6.1). Report:
+> [`reports/APP2-DEC-JOBS-COMPLETION-REPORT.md`](../reports/APP2-DEC-JOBS-COMPLETION-REPORT.md).
+>
+> **Governance rule (locked here):** a checkpoint may receive **at most one
+> correction**; after that, remaining defects become **named blockers** with an
+> owner and an activation gate rather than a further correction chain.
 
 ## 1. Outcome
 
@@ -106,11 +135,12 @@ endpoints.
 |---|---|---|---|---|
 | 1 | APP2-PRE-AUDIT | audit | this audit | APP1-X01 |
 | 2 | APP2-DEC-STORAGE | decision | object-storage ADR (IMP-O002) | PRE-AUDIT |
-| 3 | APP2-DEC-JOBS | decision | job-runtime ADR + worker correlation seam (IMP-O003) | PRE-AUDIT |
+| 3 | APP2-DEC-JOBS | decision | job-runtime ADR (IMP-D029/`ADR-APP2-002`): PostgreSQL claim queue on existing persistence, visibility-timeout lease, `NO_APP2_MIGRATION` (IMP-O003) — **`DELIVERED_FOR_REVIEW`** | PRE-AUDIT |
+| 3b | APP2-I02 | foundation | Worker job-runtime foundation — poll loop + claim/lease **driver** (`OutboxEventStore.claimBatch` `next_attempt_at` lease extension), `event_type` handler registry, attempt-recording seam, **`FU-A07`** worker structured logging + out-of-request correlation (`{job_kind}:{job_key}:{attempt_no}` `AsyncLocalStorage` over IMP-D022), SIGTERM/SIGINT graceful shutdown replacing the no-op keep-alive; no asset job family (IMP-D029) | DEC-JOBS |
 | 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) | PRE-AUDIT |
 | 4b | APP2-I01 | foundation | Object-storage foundation — `packages/object-storage` (port + S3 adapter over `client-s3`/`lib-storage` **only, no presigner** + key helpers + contract tests), pinned MinIO Compose service + bucket bootstrap, config contract + `.env.example` keys, route-scoped nginx upload support (`client_max_body_size` + `proxy_request_buffering off`), `lib-storage` memory-bound policy (IMP-D028 / C1 / C2) | DEC-STORAGE |
-| 5 | APP2-B01 | backend | Asset intake API — T1 streaming multipart upload, I1 pre-stream durable idempotency allocation + pre-stream fingerprint (claim-with-allocation repo extension), post-object `UPLOADED` insert + guarded `→INSPECTING`, CW-01…CW-07 tests, + OpenAPI/client (≤5) | I01 |
-| 6 | APP2-W01 | worker | Asset inspection/derivatives job | B01, DEC-JOBS |
+| 5 | APP2-B01 | backend | Asset intake API — T1 streaming multipart upload, I1 pre-stream durable idempotency allocation + pre-stream fingerprint (claim-with-allocation repo extension), post-object `UPLOADED` insert + guarded `→INSPECTING`, one-transition outbox `append`, CW-01…CW-07 tests, + OpenAPI/client (≤5). **Entry gate resolves `STORAGE-BLK-01..03`** (upload fingerprint / idempotency result JSON shape / expired-allocation cleanup ordering). | I01 |
+| 6 | APP2-W01 | worker | Asset inspection/derivatives job family handler + image-processing library decision (uses I02 runtime) | B01, I02 |
 | 7 | APP2-A01 | frontend | Admin asset library | B01, W01, D01 |
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) | B01 |
 | 9 | APP2-A02 | frontend | Admin product list | B02, D01 |
