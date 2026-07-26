@@ -1,10 +1,23 @@
 # ADR-APP2-001 — Object Storage and Asset Intake Architecture
 
-- Status: Accepted
-- Date: 2026-07-26
-- Phase / checkpoint: APP2 / `APP2-DEC-STORAGE`
+- Status: Accepted — corrected by `APP2-DEC-STORAGE-C1` (2026-07-26)
+- Date: 2026-07-26 (corrected 2026-07-26)
+- Phase / checkpoint: APP2 / `APP2-DEC-STORAGE` (correction `APP2-DEC-STORAGE-C1`)
 - Decision ID: IMP-D028 (resolves IMP-O002)
 - Supersedes: none
+
+> **Correction note (`APP2-DEC-STORAGE-C1`).** The original §4.2 described a
+> *reserve-then-upload* flow that created the `assets` row in state `UPLOADED`
+> **before** the binary existed. That is invalid: `assets.size_bytes` is
+> `NOT NULL` with a `> 0` check and `storage_key` is unique/`NOT NULL`, so no
+> honest row can exist before the object is streamed and measured, and
+> `UPLOADED` is a real post-upload state (not a pending-upload reservation).
+> §4.2/§4.2a/§4.2b below replace that flow: the row is created **only after**
+> object storage confirms the binary and the server knows all durable metadata.
+> The C1 correction also locks the HTTP transport (single streaming multipart,
+> §4.2b), names the exact streaming package set (§3.2), locks the nginx upload
+> contract (§4.2c), clarifies the client-checksum trust level (§4.6), and
+> removes `OBJECT_STORAGE_PUBLIC_BASE_URL` from APP2 scope (§4.9).
 - Related: `SYSTEM_ARCHITECTURE.md` §9–10 (Object-Storage Port), IMP-D018
   (runtime-loadable packages), ADR-DB4-003 (asset association), ADR-DB1-011
   (delete/archive/retention), ADR-DB1-017 (idempotency), IMP-D027 (staff auth /
@@ -80,9 +93,23 @@ is low and concurrency is bounded.
 | MinIO JS client (`minio`) | Rejected | Couples the adapter to MinIO's client flavour; weaker portability to AWS/other S3 and a second addressing model. Kept only as a spike comparison. |
 | Repository-owned HTTP/SigV4 implementation | Rejected | Re-implements SigV4/multipart/presign — unjustified security and maintenance surface when a vetted official SDK exists. |
 
-Exact package set future implementation may add (and only these):
-`@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`. No broad `aws-sdk`
-aggregate. Versions at research time (2026-07-26): both `3.1095.0`.
+Exact package set future implementation may add (and only these). No broad
+`aws-sdk` aggregate. Versions at research time (2026-07-26, npm registry):
+
+| Package | Version | Role | Scope |
+|---|---|---|---|
+| `@aws-sdk/client-s3` | `3.1095.0` | S3 client (put/get/head/delete/list/multipart) | runtime |
+| `@aws-sdk/s3-request-presigner` | `3.1095.0` | signed URLs (portability seam / authorized read) | runtime |
+| `@aws-sdk/lib-storage` | `3.1095.0` | managed multipart `Upload` for an **unknown-length** stream (the multipart-parsed file part); auto-aborts the S3 multipart upload on stream error | runtime |
+| `busboy` | `1.6.0` | streaming multipart parser (T1, §4.2b); Nest is on `@nestjs/platform-express`; **not** Multer (no memory/disk buffering) | runtime |
+| `@types/busboy` | `1.5.4` | type-only | dev |
+
+`@aws-sdk/lib-storage` and `busboy`/`@types/busboy` are added by the C1
+correction because the selected transport (§4.2b) streams a file part of unknown
+length. `PutObjectCommand` needs a known `ContentLength`; the parsed part has
+none, so the AWS upload primitive is **`lib-storage` `Upload`** (multipart,
+bounded part buffering, not full-object memory buffering). Nothing is installed
+by this checkpoint.
 
 ### 3.3 Upload strategy
 
@@ -105,32 +132,125 @@ single SDK family is **AWS SDK v3 S3** (`@aws-sdk/client-s3` +
 `@aws-sdk/s3-request-presigner`) with `forcePathStyle: true` and a custom
 `endpoint`. Business modules never import the SDK or a vendor admin API.
 
-### 4.2 Admin upload and finalization flow (crash-tolerant)
+### 4.2 Admin upload flow — row created only after the object exists
 
-1. **Authorize** — staff-guarded `initiate` use case (ADMIN actor,
-   Origin-allowlist, JSON-only).
-2. **Reserve** — in one DB transaction, create the `assets` row in state
-   `UPLOADED` with a reserved deterministic `storage_key` (§4.4), declared MIME,
-   and declared size; commit. The row is the pending-upload marker.
-3. **Upload** — browser PUTs the binary to the API through the gateway; the API
-   streams it to `putObject` while computing SHA-256 and enforcing synchronous
-   validation (§4.6). No full-object buffering.
-4. **Finalize** — a separate idempotent `complete` use case verifies the stream
-   result, persists `size_bytes` + `checksum` (`sha256:…`), and transitions the
-   asset to `INSPECTING` (handing off to `APP2-W01`). Finalization is guarded by
-   the existing idempotency arbiter (ADR-DB1-017) so a retried finalize is a
-   no-op, not a second effect.
-5. **Inspect / derive** — worker (`APP2-W01`) reads the private original,
-   records an `asset_inspections` outcome, transitions to `ACCEPTED`/`REJECTED`,
-   and writes derivatives; job runtime is `APP2-DEC-JOBS`.
+The `assets` row is **never** created before the binary is accepted by object
+storage. `UPLOADED` means "a real binary has been stored and measured", not "an
+upload may happen later". There is no `PENDING_UPLOAD`/`RESERVED`/`UPLOADING`
+state, and IDX-086 (`status in ('UPLOADED','INSPECTING')`) is a
+processing/recovery access path for *real* uploaded assets — never a
+pending-upload store. Conceptual sequence for one intake request:
 
-Failure handling: DB row but no upload → pending asset swept after a TTL
-(existing IDX-086 processing sweep) and its object prefix deleted; object
-uploaded but finalize fails → finalize is idempotent and retryable, checksum
-re-verified; checksum/validation mismatch → object deleted, asset `REJECTED`
-with a bounded reason; worker failure → `REJECTED` + inspection record; client
-re-initiate → new asset id + key (old pending swept); duplicate finalize →
-idempotent no-op.
+1. **Authenticate/authorize** — `AuthenticatedAdminGuard` (ADMIN actor,
+   host-only HttpOnly session cookie, Origin allowlist, §4.2d). Applies to the
+   multipart request; the JSON-body guard is **not** applied to the binary
+   stream.
+2. **Claim idempotency** — claim `(operation_namespace, scope_key)` in
+   `idempotency_records` (`IN_PROGRESS`, CST-048 arbiter, ADR-DB1-017) from a
+   client idempotency key. No `assets` row is created to represent the claim.
+3. **Generate the asset id** — application-owned UUIDv7 (ADR-DB1-007) in memory,
+   **before** any DB insert.
+4. **Derive the object key** — the final private originals key (§4.4) from that
+   id and the validated content type.
+5. **Stream to storage** — parse the multipart request and stream the file part
+   (§4.2b) to the originals bucket via `lib-storage` `Upload`, computing SHA-256
+   in-flight and enforcing synchronous intake validation (§4.6). No full-object
+   buffering. On any pre-completion failure nothing is inserted (§4.2a).
+6. **Confirm object completion** — the managed upload resolves; the server now
+   holds the real `storage_key`, detected MIME, positive `size_bytes`, and
+   `checksum`.
+7. **Transaction A** (idempotent) — insert the `assets` row with **real**
+   `storage_key`/`mime_type`/`size_bytes`/`checksum`/`classification` and status
+   `UPLOADED`; complete/bind the idempotency result to the created asset id;
+   write the canonical audit fact. Commit.
+8. **Transaction B** (idempotent) — transition `UPLOADED → INSPECTING` through
+   the canonical lifecycle guard **and** enqueue the inspection `outbox_events`
+   row in the same transaction (transactional-outbox invariant). Commit.
+9. **Dispatch** — the outbox relay publishes the inspection intent; the worker
+   (`APP2-W01`) reads the private original, records `asset_inspections`,
+   transitions `ACCEPTED`/`REJECTED`, and writes derivatives. Job runtime is
+   `APP2-DEC-JOBS`.
+
+**Two transactions, not one, and not a distributed transaction with storage.**
+Object storage and PostgreSQL cannot share a transaction, so the object write
+(step 5–6) precedes all DB work. Steps 7 and 8 are **two explicit idempotent
+transactions** so that `UPLOADED` is a durably observable state for recovery:
+if step 8 never runs, the asset truthfully remains `UPLOADED` and IDX-086 finds
+it for reconciliation (§4.2a) — collapsing them into one transaction would erase
+that recovery window. Each transaction is guarded so re-execution is a no-op.
+
+### 4.2a Failure-window and idempotency model
+
+| Window | Guaranteed outcome |
+|---|---|
+| **Before object completion** (auth/validation fails, stream aborted, client disconnects, S3 PUT fails, max-size exceeded, MIME/signature rejected) | **No `assets` row**; **no `UPLOADED` state**; the partial/multipart upload is aborted (`lib-storage` auto-aborts on stream error; incomplete-multipart lifecycle rule as defense-in-depth); the `IN_PROGRESS` idempotency claim may safely fail/expire/retry. |
+| **Object succeeds, Transaction A fails/crashes** | The object may exist with **no `assets` row** — an **orphan**, discoverable through the APP2-owned `{env}/originals/{assetId}/` key prefix, deleted only after a bounded retention window. A retry with the **same idempotency key** must not create a second asset identity (CST-048); the first orphan is prefix-swept. |
+| **Row exists, INSPECTING dispatch fails** (Transaction B not committed) | The asset remains truthfully `UPLOADED` (real metadata); IDX-086 finds it for retry/reconciliation; the dispatch retry is idempotent (guarded transition + outbox insert). Never a fake `INSPECTING`. |
+| **INSPECTING transition commits, worker does not run** | The `outbox_events` row makes the intent durable; outbox/job reconciliation redelivers it; the worker is idempotent, so **no second asset** and no duplicate derivative identity. |
+
+IDX-086 is never used to mean "upload never happened". Idempotency is carried by
+`idempotency_records`, never by a placeholder `assets` row and never by a new
+upload-reservation table.
+
+### 4.2b HTTP transport (locked) — single streaming multipart request (T1)
+
+Two transports were compared; the choice is **not** left to `APP2-B01`.
+
+| | **T1 — single streaming multipart (SELECTED)** | T2 — JSON initiation + raw binary stream |
+|---|---|---|
+| Shape | one `POST` `multipart/form-data`: metadata fields **then** one file part | JSON `initiate` → separate raw `PUT` binary with `Content-Length`+`Content-Type` |
+| Initiation state | none needed — row created post-object in the same request | must persist init state **without a false `assets` row** → `idempotency_records` `IN_PROGRESS` (no new table) |
+| Endpoints | **1** upload endpoint (collapses initiate+upload+complete) | ≥2 (initiate + upload/complete) + token/expiry/cleanup |
+| Idempotency | one claim for the whole request | claim spans two calls; upload-token safety/expiry |
+| Verdict | fewer moving parts, one atomic request, smaller surface; fits single-operator scale | more endpoints, upload-token lifecycle, cleanup of abandoned initiations for no APP2 benefit |
+
+**Selected: T1.** Locked contract:
+
+- **Parser:** `busboy` streaming parser (Express platform), `limits: { files: 1,
+  fileSize: <max> }`. **Not** Multer (memory or disk buffering both rejected),
+  not full-body buffering in Nest or nginx.
+- **Content type:** `multipart/form-data` only. Metadata fields **must precede**
+  the file part (so validation/limits are known before bytes stream); a file
+  arriving before required metadata, a second file part, or unexpected fields is
+  rejected with the canonical safe envelope before/without completing an object.
+- **Size enforcement:** `busboy` `fileSize` limit (application) paired with the
+  gateway `client_max_body_size` (§4.2c); exceeding either aborts the upload
+  → 413, no row.
+- **AWS primitive:** `@aws-sdk/lib-storage` `Upload` (the file part is an
+  unknown-length `Readable`; managed multipart, bounded part buffering). On
+  abort/stream error it issues `AbortMultipartUpload`; an incomplete-multipart
+  lifecycle rule is defense-in-depth.
+- **Checksum:** SHA-256 computed while the same bytes stream to storage (§4.6).
+- **Endpoint budget:** `APP2-B01` becomes upload(1) + detail(1) + list(1) +
+  retry(1) ≤ 5 (was initiate+complete separate).
+
+### 4.2c Nginx upload contract (gateway ownership; no config change here)
+
+Locked for the upload route only (owned by the gateway templates, applied at
+`APP2-I01`; **no nginx change in this correction**):
+
+- **Route-scoped `client_max_body_size`** on the upload `location` only — never
+  a global change (the exact ceiling is a Product Owner parameter, §7).
+- **`proxy_request_buffering off`** on the upload route so nginx streams the
+  request body to the API instead of buffering the whole request to disk first —
+  required for the end-to-end streaming claim. Not disabled globally (unrelated
+  routes keep default buffering).
+- Response `proxy_buffering` unaffected; upload-sized `proxy_read_timeout` /
+  `send_timeout` on the route; client disconnect propagates to the upstream so
+  the API aborts the `Upload` (§4.2a).
+
+### 4.2d Upload request security boundary
+
+- `AuthenticatedAdminGuard` (ADMIN actor) — no anonymous upload.
+- Reuses the IMP-D027 host-only HttpOnly staff session cookie + exact Origin
+  allowlist for credentialed browser requests (CSRF); no browser storage
+  credential, no object-store credential ever in the browser.
+- The JSON-only body guard is **excluded** from the binary upload stream; the
+  upload endpoint validates `Content-Type: multipart/form-data`, rejects a
+  missing/unsupported content type, multiple files, unexpected fields, and (for
+  T2 only, not selected) missing length. Validation failures use the canonical
+  safe error envelope whenever a response can still be sent (a mid-stream client
+  abort may leave no response channel — §4.2a still guarantees no row/object).
 
 ### 4.3 Bucket topology
 
@@ -183,8 +303,14 @@ No field has two mutable authorities.
 
 - **Checksum:** SHA-256, computed by the **API** while streaming intake (and by
   the **worker** for derivatives), persisted as `sha256:<64hex>` — exactly the
-  existing column format. ETag is never assumed to equal MD5 or a content hash
-  (multipart ETags are not MD5; the spike confirmed ETag ≠ SHA-256).
+  existing column format. **Option A (selected): the server-computed SHA-256 is
+  the only authoritative checksum; the client is not required to supply one.**
+  (Option B — client may send an *expected* `sha256:…` that the server
+  recomputes and rejects on mismatch — is rejected for APP2: it adds a
+  client-trust surface with no benefit at single-operator scale; a client value,
+  if ever accepted later, is an advisory integrity hint, never authoritative.)
+  ETag is never assumed to equal MD5 or a content hash (multipart ETags are not
+  MD5; both spikes confirmed ETag ≠ SHA-256).
 - **Synchronous intake validation** (API, `APP2-B01`): declared-MIME allowlist,
   magic-byte/signature sniff, extension↔content consistency, maximum bytes
   (gateway + application), reject on mismatch. Raster product media only:
@@ -245,9 +371,15 @@ allow client-selected arbitrary bucket/key.
 | `OBJECT_STORAGE_FORCE_PATH_STYLE` | yes | no | `true` for MinIO |
 | `OBJECT_STORAGE_ORIGINALS_BUCKET` | yes | no | private originals bucket |
 | `OBJECT_STORAGE_DERIVATIVES_BUCKET` | yes | no | derivatives bucket |
-| `OBJECT_STORAGE_PUBLIC_BASE_URL` | prod optional | no | future CDN/proxy base for derivatives |
 | `OBJECT_STORAGE_PRESIGN_TTL_SECONDS` | optional | no | default short TTL |
 | `OBJECT_STORAGE_MAX_UPLOAD_BYTES` | optional | no | application max; pairs with `GATEWAY_CLIENT_MAX_BODY_SIZE`; default is a product parameter (§7) |
+
+**Correction (`APP2-DEC-STORAGE-C1`): `OBJECT_STORAGE_PUBLIC_BASE_URL` is removed
+from APP2 scope.** APP2 public asset URLs are **application/gateway routes**
+(publication-gated, §4.7); the object-store `OBJECT_STORAGE_ENDPOINT` is
+internal adapter configuration only. No application response derives a public URL
+from a bucket endpoint. A CDN/public-origin base is a future *deployment*
+decision (APP12), not an APP2 implementation variable — reintroduced only then.
 
 All are read through the app config layer (validated at startup, fail-fast in
 production for missing secrets / insecure combinations), never `process.env`
@@ -256,11 +388,14 @@ directly in business code. No values in documentation.
 ### 4.10 Package / module ownership (acyclic)
 
 - **`packages/object-storage/`** (new, future) — owns the `ObjectStoragePort`
-  interface, DTO types, the S3 adapter (config-injected), key helpers, and a
-  test-support fake/contract-suite. Runtime-loadable to `dist` (IMP-D018) since
-  both API and worker consume it. Depends on nothing business.
-- **`apps/api`** — owns the `initiate`/`complete` use cases, synchronous
-  validation, and adapter wiring.
+  interface, DTO types, the S3 adapter (config-injected, wrapping
+  `@aws-sdk/client-s3` + `@aws-sdk/lib-storage` `Upload` + presigner), key
+  helpers, and a test-support fake/contract-suite. Runtime-loadable to `dist`
+  (IMP-D018) since both API and worker consume it. Depends on nothing business.
+- **`apps/api`** — owns the HTTP transport (the `busboy` streaming multipart
+  parse, §4.2b), the single upload use case (auth → idempotency claim → stream →
+  two idempotent transactions), and synchronous intake validation. The multipart
+  parser lives at the API HTTP boundary, not in the storage package.
 - **`apps/worker`** — owns inspection/derivative adapter wiring.
 - The storage package must **not** own asset lifecycle, catalog publication,
   Nest controllers, worker job semantics, UI, or database repositories.
@@ -269,10 +404,13 @@ directly in business code. No values in documentation.
 
 ### 4.11 Consistency, cleanup, retention
 
-Object storage and PostgreSQL cannot share a transaction; the design is
-**DB-first, storage-second, idempotent-finalize** (§4.2). Orphan objects are
-found by listing an asset's `{env}/…/{assetId}/` prefix and comparing to DB
-state; stale pending assets are found by the existing processing-state sweep.
+Object storage and PostgreSQL cannot share a transaction; the corrected design
+is **storage-first, DB-second, two idempotent transactions** (§4.2/§4.2a) — the
+binary is confirmed before any row exists, so a crash yields at worst an orphan
+*object*, never a phantom `UPLOADED` *row*. Orphan objects are found by listing
+an asset's `{env}/…/{assetId}/` prefix and comparing to DB state; `UPLOADED`
+rows whose INSPECTING dispatch was lost are found by the existing IDX-086
+processing sweep.
 Cleanup policy: abandoned authorization / unfinalized object → deleted after a
 retention TTL; failed inspection → object may be retained per ADR-DB1-011
 tombstone/retention (not auto-hard-deleted); **product unpublish never deletes
@@ -346,18 +484,24 @@ None blocks locking the architecture; (1) blocks `APP2-B01` execution only.
 ## 8. Implementation handoff
 
 - **New checkpoint `APP2-I01 — Object-storage foundation`** (inserted before
-  `APP2-B01`): create `packages/object-storage` (port + S3 adapter + key helpers
-  + contract tests), the pinned MinIO Compose service + bucket bootstrap, the
-  config contract + startup validation, and `.env.example` keys. Rationale for
-  adding a checkpoint (transparent map change, §9): folding the whole storage
-  package + Compose + adapter into `APP2-B01` would push B01 past a single
-  reviewable slice; a narrow foundation keeps B01 focused on the intake API.
-- **`APP2-B01 — Asset intake API`** may assume: API-proxied streaming upload,
-  the `ObjectStoragePort`, synchronous validation + config, UUIDv7 key scheme,
-  idempotent finalize; ≤5 endpoints (initiate, upload/complete, detail, list,
-  retry).
-- **`APP2-W01`** may assume: private-original read, derivative write, inspection
-  metadata recording, cleanup interface — **not** its job runtime.
+  `APP2-B01`): create `packages/object-storage` (port + S3 adapter over
+  `client-s3` + `lib-storage` + presigner + key helpers + contract tests), the
+  pinned MinIO Compose service + bucket bootstrap, the config contract + startup
+  validation, `.env.example` keys, and the **route-scoped nginx upload support**
+  (§4.2c: route `client_max_body_size` + `proxy_request_buffering off`). No
+  Asset lifecycle use case. Rationale (transparent map change, §9): folding the
+  storage package + Compose + adapter + gateway support into `APP2-B01` would
+  push B01 past a single reviewable slice.
+- **`APP2-B01 — Asset intake API`** may assume, with **no transport/library
+  decision left open**: the T1 single streaming multipart transport (§4.2b) with
+  `busboy`; staff auth/origin/content-type guards (§4.2d); synchronous stream
+  validation; idempotency claim; object write via `lib-storage` `Upload`; the
+  post-object `assets` insert as `UPLOADED` then the guarded
+  `UPLOADED → INSPECTING` handoff (two idempotent transactions, §4.2); status/
+  read APIs — ≤5 endpoints (upload, detail, list, retry).
+- **`APP2-W01`** may assume: private-original read, derivative write, server-owned
+  SHA-256, truthful `UPLOADED`/`INSPECTING` lifecycle, outbox/job intent emitted
+  by B01, cleanup interface — **not** its job runtime (`APP2-DEC-JOBS`).
 - **Frontends:** Admin (`APP2-A01`) consumes the initiate→upload→finalize
   contract with progress/status; Storefront (`APP2-S01/S02`) consumes proxied
   published-derivative URLs governed by publication. No UI is designed here.
@@ -396,3 +540,22 @@ round-trip), get streamed + independent SHA-256 re-hash match, presigned PUT
 delete, typed `NotFound`/HTTP 404 error classification. Observed
 single-part ETag ≠ server SHA-256 — confirms §4.6 (compute our own checksum).
 Container stopped/removed; workspace deleted; dev stack untouched; zero residue.
+
+**Correction spike (`APP2-DEC-STORAGE-C1`, retrieved/executed 2026-07-26; OS-temp
+workspace outside repo, deleted before the correction commit; no artifacts
+committed; no real credentials):** researched current npm versions
+(`@aws-sdk/lib-storage` `3.1095.0`, `busboy` `1.6.0`, `@types/busboy` `1.5.4`).
+Node 22.14 + TypeScript 5.9.3 (`strict` + `exactOptionalPropertyTypes` +
+`noUncheckedIndexedAccess`) compile **PASS**. A Node HTTP server ran the T1
+transport (`busboy` streaming parse → tee to `crypto` SHA-256 + `lib-storage`
+`Upload`) against disposable MinIO `RELEASE.2025-04-08T15-41-24Z`. **16/16
+checks PASS:** create-bucket; happy path — 6 MB PNG streamed, HTTP 201, stored
+object independently re-hashed == server SHA-256, ETag ≠ SHA-256; **memory
+evidence — peak heap Δ ≈ 2.17 MB for the 6 MB file (< 4 MB threshold), proving
+no full-object buffering**; oversize (12 MB > 8 MB limit) → 413 with **zero
+completed objects**; signature reject (PNG mime, non-PNG magic bytes) → 422 with
+**zero objects**; metadata-after-file ordering → 400; **client disconnect
+mid-stream → no completed object and zero dangling multipart uploads**
+(`lib-storage` auto-aborts on stream error; `AbortMultipartUpload` proven
+available); prefix cleanup empties. Container stopped, port 9400 down, workspace
+`rm -rf`, `embroidery-dev` 6 containers intact, repo tree clean.
