@@ -47,6 +47,18 @@ export {
 } from './platform/background-job-attempt-store';
 
 export type {
+  ClaimRegisteredBatchInput,
+  ClaimedWorkerJob,
+  CompletionGuard,
+  RegisteredJobType,
+  RetryableCompletionInput,
+  TerminalCompletionInput,
+  WorkerJobCompletion,
+} from './platform/worker-job-queue.types';
+export { WORKER_LEASE_EXPIRED } from './platform/worker-job-queue.types';
+export { WorkerJobQueueRepository } from './platform/worker-job-queue.repository';
+
+export type {
   PolicyConfiguration,
   PolicyConfigurationVersion,
   PublishPolicyVersionInput,

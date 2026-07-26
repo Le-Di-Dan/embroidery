@@ -157,8 +157,14 @@ function toDomain(row: JobAttemptRow): JobAttemptRecord {
   };
 }
 
-/** G-DB7-51 — the job key is free-form, but the kind is a closed set. */
-function assertKnownJobKind(kind: string): void {
+/**
+ * G-DB7-51 — the job key is free-form, but the kind is a closed set.
+ *
+ * Exported because the worker queue seam writes attempt rows on the same
+ * closed set and must reject an unknown kind identically; two copies of this
+ * check would be one refactor away from disagreeing.
+ */
+export function assertKnownJobKind(kind: string): void {
   if (!(BACKGROUND_JOB_KINDS as readonly string[]).includes(kind)) {
     throw guardViolationError(
       'BackgroundJobAttemptStore.record',

@@ -8,7 +8,7 @@ import { DatabaseHealthService, TransactionManager } from '@embroidery/persisten
 import type { DisposableDatabase } from '@embroidery/database/testing';
 import { createDisposableDatabase } from '@embroidery/database/testing';
 
-import { WorkerLifecycleService } from './worker-lifecycle.service';
+import { JobPollRuntimeService } from '../runtime/poll/job-poll-runtime.service';
 import { WorkerModule } from './worker.module';
 
 describe('worker persistence bootstrap (integration)', () => {
@@ -42,7 +42,7 @@ describe('worker persistence bootstrap (integration)', () => {
   });
 
   it('boots the worker application context alongside the persistence runtime', () => {
-    expect(moduleRef.get(WorkerLifecycleService)).toBeInstanceOf(WorkerLifecycleService);
+    expect(moduleRef.get(JobPollRuntimeService)).toBeInstanceOf(JobPollRuntimeService);
   });
 
   it('can open a transaction from the worker process', async () => {

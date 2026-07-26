@@ -20,6 +20,7 @@ import { IdempotencyStore } from './platform/idempotency-store';
 import { OutboxEventStore } from './platform/outbox-event-store';
 import { BackgroundJobAttemptStore } from './platform/background-job-attempt-store';
 import { PolicyConfigurationRepository } from './platform/policy-configuration.repository';
+import { WorkerJobQueueRepository } from './platform/worker-job-queue.repository';
 
 @Module({
   providers: [
@@ -43,6 +44,8 @@ import { PolicyConfigurationRepository } from './platform/policy-configuration.r
     OutboxEventStore,
     BackgroundJobAttemptStore,
     PolicyConfigurationRepository,
+    // APP2-I02 — the atomic claim/completion seam the worker runtime drives.
+    WorkerJobQueueRepository,
   ],
   exports: [
     DatabaseExecutor,
@@ -53,6 +56,7 @@ import { PolicyConfigurationRepository } from './platform/policy-configuration.r
     OutboxEventStore,
     BackgroundJobAttemptStore,
     PolicyConfigurationRepository,
+    WorkerJobQueueRepository,
   ],
 })
 export class DatabaseModule implements OnModuleInit, OnApplicationShutdown {
