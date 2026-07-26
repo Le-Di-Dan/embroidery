@@ -1,10 +1,23 @@
 # ADR-APP2-001 — Object Storage and Asset Intake Architecture
 
-- Status: Accepted — corrected by `APP2-DEC-STORAGE-C1` and `APP2-DEC-STORAGE-C2` (2026-07-26)
-- Date: 2026-07-26 (corrected 2026-07-26)
-- Phase / checkpoint: APP2 / `APP2-DEC-STORAGE` (corrections `APP2-DEC-STORAGE-C1`, `APP2-DEC-STORAGE-C2`)
+- Status: Accepted — corrected by `APP2-DEC-STORAGE-C1` / `APP2-DEC-STORAGE-C2`; entry-gate closure `APP2-B01-G01` (2026-07-27)
+- Date: 2026-07-26 (corrected 2026-07-26; entry gate closed 2026-07-27)
+- Phase / checkpoint: APP2 / `APP2-DEC-STORAGE` (corrections `APP2-DEC-STORAGE-C1`, `APP2-DEC-STORAGE-C2`; entry gate `APP2-B01-G01` under `APP2-B01` ownership)
 - Decision ID: IMP-D028 (resolves IMP-O002)
 - Supersedes: none
+
+> **Entry-gate note (`APP2-B01-G01`, 2026-07-27).** This is **not** a third
+> correction — `APP2-DEC-STORAGE-C3` must not be created. Under `APP2-B01`
+> ownership, §4.2f closes the four gate blockers: `STORAGE-BLK-01`, `-02`, `-03`
+> = `RESOLVED_BY_APP2-B01-G01` and `UPLOAD-POLICY-BLK-01` =
+> `RESOLVED_BY_PRODUCT_OWNER` (§7 — 25 MiB, PNG/JPEG/WebP, SVG rejected,
+> non-image source files excluded, originals retained while the asset exists).
+> §4.2f locks the two-stage request+content fingerprint, the versioned
+> discriminated result union, the `claimToken` ownership model, the expired-
+> reclaim/cleanup ordering, the Tx A/Tx B boundaries and a **three-operation**
+> `APP2-B01`. `NO_APP2_MIGRATION` re-confirmed against the real 31-migration
+> schema (§5). Report:
+> [`APP2-B01-G01-COMPLETION-REPORT.md`](../../implementation/reports/APP2-B01-G01-COMPLETION-REPORT.md).
 
 > **Correction note (`APP2-DEC-STORAGE-C2`).** C1 left the idempotency contract
 > underspecified. C2 locks it (no new ADR/decision id): the selected model is
@@ -362,6 +375,255 @@ resumes from truthful `UPLOADED`; **CW-07** lost HTTP response never duplicates
 asset or object. Expired `IN_PROGRESS` claims are reclaimed by the existing sweep
 (IDX-093/094); a reclaimed allocation's object is prefix-swept (§4.11).
 
+### 4.2f Asset-intake entry-gate closure (`APP2-B01-G01`)
+
+`APP2-B01-G01` is the **entry gate of `APP2-B01`**, executed under B01 ownership.
+It is **not** a third correction to this decision: `APP2-DEC-STORAGE` stays
+`ACCEPTED_WITH_BLOCKED_IMPLEMENTATION_GAPS` and **`APP2-DEC-STORAGE-C3` must not
+be created**. The gate closes the three routed storage blockers plus the upload
+policy, and refines §4.2e where it was ambiguous. Where this section and §4.2e
+differ, **this section governs**.
+
+| Blocker | Resolution |
+|---|---|
+| `STORAGE-BLK-01` content-complete upload idempotency | `RESOLVED_BY_APP2-B01-G01` — two-stage fingerprint, below |
+| `STORAGE-BLK-02` versioned/discriminated result JSON | `RESOLVED_BY_APP2-B01-G01` — closed union, below |
+| `STORAGE-BLK-03` expired reclaim / cleanup ordering | `RESOLVED_BY_APP2-B01-G01` — claim token + ordering, below |
+| `UPLOAD-POLICY-BLK-01` maximum bytes / accepted types | `RESOLVED_BY_PRODUCT_OWNER` — §7 |
+
+#### 4.2f-1 Two-stage idempotency identity (`STORAGE-BLK-01`)
+
+§4.2e locked a **pre-stream** fingerprint but never said what makes a *completed*
+replay content-complete. It is now two fingerprints with different lifetimes.
+
+**Request fingerprint V1** — the immutable value in the
+`idempotency_records.fingerprint` column. SHA-256, lowercase hex, `sha256:`
+prefix, over canonical UTF-8 JSON with **lexicographically sorted keys** and no
+whitespace dependence:
+
+```json
+{
+  "version": 1,
+  "operationNamespace": "admin.asset.upload",
+  "scopeKey": "<authenticated staff/account scope + idempotency key>",
+  "assetKind": "<canonical ASSET_KINDS value>",
+  "classification": "<canonical ASSET_CLASSIFICATIONS value>",
+  "declaredMediaType": "image/png | image/jpeg | image/webp",
+  "normalizedFilename": "<bounded normalized filename>"
+}
+```
+
+Excluded by contract: raw file bytes, the content SHA-256, cookies, request id,
+multipart boundary, ETag. The idempotency key participates **inside** `scopeKey`
+and is never surfaced separately in a log or a result.
+
+**Content fingerprint V1** — computed only from server-observed facts, only after
+the entire file has been consumed and validated, canonicalised by the same
+sorted-key rule, and stored **inside the completed result**, never in the column:
+
+```json
+{ "version": 1, "mediaType": "…", "byteSize": 26214400, "checksum": "sha256:<64 hex>" }
+```
+
+The server-computed SHA-256 stays the only authority (§4.6 Option A); no client
+checksum is required, and none is accepted as authoritative.
+
+**Complete replay decision.** A stored `COMPLETED` result may be returned only
+when the request fingerprint **and** the content fingerprint both match.
+Because no client checksum exists, a retry of a completed upload **must resend
+the multipart body**. The API therefore: parses metadata first → matches the
+request fingerprint → consumes the whole file through a **hash-and-validate-only
+path** → performs **no object-store write** → recomputes byte size, signature/
+media type, SHA-256 and content fingerprint → returns the stored safe result on
+match, `IDEMPOTENCY_CONFLICT` on mismatch. A metadata-only replay is **not**
+content-complete and must not be described as one.
+
+**Active duplicate.** Same request fingerprint while the allocation is unexpired
+→ `ASSET_UPLOAD_IN_PROGRESS` (409-class), no second object upload; the body is
+stopped/drained per the canonical HTTP-abort convention and a second file stream
+is never processed.
+
+**Media-type consequence (recorded).** The object key is allocated pre-stream
+from `declaredMediaType` (§4.4 derives the extension from the content type), so
+an accepted asset's validated media type must **equal** its declared media type;
+a signature that contradicts the declaration is a rejection, never a key rewrite.
+
+**Naming reconciliation (recorded, not silently resolved).** The gate input used
+the product term `PRODUCT_IMAGE` for `assetKind`. No such value exists in the
+repository: `ASSET_KINDS` (TBL-022, `ck_assets__kind_allowed`) is
+`CUSTOMER_UPLOAD | TEMPLATE_SOURCE | PRODUCTION_FILE | CATALOG_MEDIA |
+GALLERY_MEDIA`, and APP2 product media is **`CATALOG_MEDIA`**. The locked
+database enum wins (source-of-truth order); `PRODUCT_IMAGE` is product language,
+never a persisted or fingerprinted value. Intake likewise must never set
+classification `PUBLIC` (INV-09) — `PUBLIC` is reached only through publication;
+the concrete non-public intake value is chosen in `APP2-B01` from the locked set.
+
+#### 4.2f-2 Versioned, discriminated result union (`STORAGE-BLK-02`)
+
+`idempotency_records.result` carries exactly one closed union. It is **internal
+persistence data**, never the public API response body.
+
+```json
+{ "schemaVersion": 1, "kind": "ASSET_UPLOAD_ALLOCATION",
+  "assetId": "<UUIDv7>", "bucketAlias": "ORIGINALS",
+  "objectKey": "<deterministic PII-free key>", "claimToken": "<random UUID>",
+  "requestFingerprintVersion": 1 }
+```
+
+```json
+{ "schemaVersion": 1, "kind": "ASSET_UPLOAD_COMPLETED",
+  "assetId": "<UUIDv7>", "bucketAlias": "ORIGINALS", "objectKey": "<same key>",
+  "mediaType": "image/png | image/jpeg | image/webp", "byteSize": 26214400,
+  "checksum": "sha256:<64 hex>", "contentFingerprint": "sha256:<64 hex>",
+  "assetStatus": "INSPECTING", "inspectionEventId": "<outbox event id>" }
+```
+
+The allocation variant is written in the **same transaction** as the first
+`IN_PROGRESS` claim. Decoding is strict: exact `schemaVersion`, exact `kind`
+discriminant, exact required fields, no unknown-field trust, UUID/checksum format
+validation, `byteSize` an integer within the approved maximum, a `bucketAlias`
+that must be `ORIGINALS`, and an object key that matches the asset id and the
+MIME-derived extension. No public URL, no credential, no raw filename, no actor
+email ever appears in a result.
+
+State/result invariant: `IN_PROGRESS` ⇒ `ASSET_UPLOAD_ALLOCATION`; `COMPLETED` ⇒
+`ASSET_UPLOAD_COMPLETED`. A malformed, unsupported or contradictory stored result
+is `IDEMPOTENCY_RESULT_INVALID` — a safe 5xx category with **no** object write and
+**no** lifecycle transition. Older/unversioned JSON is never silently coerced;
+there is no APP2 legacy production data, so no compatibility fallback exists.
+
+**Storage note (measured, §K of the gate report).** PostgreSQL `jsonb` normalises
+object key order, so a stored result must be decoded **field-by-field** and must
+never be re-serialised to reproduce a hash. Both fingerprints are canonicalised
+and hashed in application code *before* storage — never read back out of `jsonb`.
+
+#### 4.2f-3 Claim-token ownership (`STORAGE-BLK-03`, part 1)
+
+`claimToken` exists so a stale request cannot finalize after its expired
+allocation has been reclaimed by someone else. Rules: a new claim generates one;
+an active retry does **not** rotate it; an expired reclaim rotates it
+**atomically** while preserving `assetId` and `objectKey` and renewing
+`claimed_at`/`expires_at`. Both Tx A and Tx B verify the current token **inside**
+their own transaction. A stale token yields `STALE_UPLOAD_CLAIM` — a safe
+conflict/retry category with no asset mutation, no outbox mutation and no
+idempotency completion. The token is never placed in a browser-visible response
+or in a log. This uses the mutable `result` jsonb and existing row locking; **no
+schema change**.
+
+This **supersedes** the §4.2e concurrency-matrix row "same key after failed/
+expired claim → expired `IN_PROGRESS` reclaimed (**delete**), re-claimed". Delete-
+and-re-claim would mint a *new* `assetId` and a new object key, orphaning the
+first object and losing the one-identity guarantee the allocation exists to give.
+Reclaim now rotates in place instead.
+
+#### 4.2f-4 Expired-reclaim and cleanup ordering (`STORAGE-BLK-03`, part 2)
+
+**Step 1 — lock and classify**, in one transaction: lock the idempotency row;
+verify `IN_PROGRESS`; verify expiry **using database time**; verify the request
+fingerprint; strictly decode the allocation result; rotate `claimToken`; renew the
+claim and the 15-minute expiry; commit. Only one concurrent reclaimer wins.
+
+**Step 2 — inspect durable asset truth** by the allocated `assetId`, *after* the
+renewed claim commits.
+
+*Asset exists* — never delete the original object, never delete derivative
+prefixes; resume from the truthful lifecycle: `UPLOADED` → validate the resent
+body through the hash-only path and, on a match with persisted metadata, execute
+Tx B; `INSPECTING` → verify the matching outbox intent and complete/reconstruct
+the result safely; a later valid lifecycle → return or reconstruct the authorized
+safe result **only** when the stored facts prove the upload had already
+finalized; `REJECTED` or contradictory → the canonical safe lifecycle conflict.
+A durable asset is never blindly overwritten.
+
+*Asset does not exist* — the renewed claimant owns cleanup, strictly ordered:
+verify the current claim token → delete the exact allocated original object key if
+present → delete **only** the APP2-owned derivative prefix for that asset id →
+verify the controlled prefixes are empty → verify the claim token is still current
+→ **only then** accept and stream the new file to the same allocated original key.
+Replacement streaming never starts before cleanup completes, and a delete never
+happens after replacement streaming has started.
+
+*Cleanup failure* — accept no new object, insert no asset, do not release or
+delete the allocation record; return a retryable safe storage error and leave the
+renewed allocation to expire for another reclaim attempt.
+
+*Active-request safety* — the approved timing relation (API hard upload duration
+5 min < allocation TTL 15 min) guarantees a normal request is aborted well before
+its own allocation can expire; the pre-Tx-A/Tx-B token checks cover the rest. No
+staging-copy promotion and no second object-key model is introduced.
+
+#### 4.2f-5 Transaction boundaries and replay windows
+
+**Pre-stream claim tx:** claim `IN_PROGRESS`, persist `ASSET_UPLOAD_ALLOCATION`,
+commit **before** streaming.
+
+**Object stream:** `busboy` parser, one file, metadata before file, incremental
+25 MiB hard counter, MIME allowlist, signature validation, server SHA-256,
+`ObjectStoragePort.putObjectStream`, `AbortController` on limit / parser failure /
+disconnect / timeout.
+
+**Tx A (post-object durable asset):** verify the current claim token and request
+fingerprint, then atomically insert-or-recover the **same** `assetId` with status
+`UPLOADED` and the persisted object key, media type, byte size and server SHA-256.
+**No outbox event in Tx A.**
+
+**Tx B (inspection handoff):** verify the current claim token and a truthful
+`UPLOADED` asset, then atomically transition `UPLOADED → INSPECTING`, insert
+**one** outbox event for asset inspection, replace the result with
+`ASSET_UPLOAD_COMPLETED` (storing the created outbox event id) and mark the
+record `COMPLETED`.
+
+Replay after Tx A but before Tx B resumes Tx B. Replay after Tx B but before the
+HTTP response verifies the resent content through the hash-only path and returns
+the stored result. This remains **at-least-once attempt / idempotent durable
+effect / one accepted asset identity** — exactly-once is **not** claimed.
+
+#### 4.2f-6 Locked transport, gateway and endpoint boundary
+
+Transport (unchanged from §4.2b, restated as B01's contract):
+`multipart/form-data`, `busboy` `1.6.0` with `@types/busboy` `1.5.4` as a
+dev/type dependency, one file, metadata fields before the file. Synchronous
+guards: authenticated staff, exact admin Origin policy, multipart content type,
+required and bounded idempotency key, metadata schema, single file, approved
+MIME, magic/signature compatibility, the 25 MiB incremental file counter, the
+5-minute hard request duration, and client-disconnect propagation.
+
+Gateway, **route-scoped only** on the upload location (owner `APP2-B01`; the
+`upload-proxy.conf.template` seam stays inactive until then):
+`client_max_body_size 27m`, `proxy_request_buffering off`, and
+`proxy_read_timeout`/`proxy_send_timeout` strictly greater than 5 minutes, each
+sourced from the environment through the existing `${GATEWAY_*}` pattern and unit
+convention. The current http-level `client_max_body_size` is `20m`; the upload
+location overrides it **upward** to `27m` for that route only — no global change.
+The API remains authoritative for the 25 MiB file limit. MinIO is never exposed
+through Nginx and no browser/object-store credential is ever introduced.
+
+**`APP2-B01` endpoint boundary — exactly three operations** (not five; the
+historical budget allowed five, which is not a reason to invent two):
+
+1. `POST` Admin asset upload — multipart streaming, idempotent intake.
+2. `GET` Admin asset by id — truthful intake/inspection status and safe metadata.
+3. `GET` Admin asset list — bounded cursor pagination and allowed intake filters.
+
+No manual inspection trigger, no delete endpoint, no public derivative delivery,
+no product/catalog mutation. This **supersedes** the §4.2b/§8 "upload + detail +
+list + retry ≤ 5" sketch: the retry operation is dropped.
+
+#### 4.2f-7 Repository gaps (owner `APP2-B01`; still not schema gaps)
+
+Audited against real source. Every gap is an implementation extension of an
+existing contract — no column, constraint, index or migration is required, so
+**`NO_APP2_MIGRATION` holds**.
+
+| Seam | Gap |
+|---|---|
+| `IdempotencyStore.claim` | does not write `result` at claim time → needs claim-with-allocation |
+| `IdempotencyStore` | no expiry-aware reclaim: an **expired** `IN_PROGRESS` still reports `in_progress`; no row lock; no `result`-only update for token rotation |
+| `IdempotencyStore.release` | delete-based release conflicts with rotate-in-place reclaim (§4.2f-3); not used on the reclaim path |
+| `AssetRepository.register` | plain insert — needs insert-or-recover on the same `assetId` for Tx A |
+| `AssetRepository` | no guarded `UPLOADED → INSPECTING` transition for Tx B |
+| `AssetRepository` | no bounded cursor-paginated list for operation 3 (`ADR-DB5-001` keyset; `packages/persistence` already ships `query/keyset-cursor`) |
+
 ### 4.3 Bucket topology
 
 **Two private buckets**, environment-named by configuration: an **originals**
@@ -578,6 +840,18 @@ allocation at claim time is a **repository implementation gap** (owner `APP2-B01
 **not** a schema gap — no missing durable fact, no new column/constraint, so no
 `APP2-DB01` is raised and `APP2-DEC-STORAGE-C2` is **not** `BLOCKED_BY_SCHEMA_GAP`.
 
+**`APP2-B01-G01` re-confirms `NO_APP2_MIGRATION` a third time.** The entry-gate
+model (§4.2f) adds a versioned discriminated result union, a rotating
+`claimToken` and an expiry-aware reclaim — all of which live in the existing
+mutable `result` jsonb, `expires_at` and `claimed_at` (DB5-A10). Proven against
+the real 31-migration / 78-table schema: `idempotency_records` carries **zero**
+non-internal triggers, both result variants round-trip field-for-field, the
+token rotates in place on a held `IN_PROGRESS` row while `assetId`/`objectKey`
+survive, `FOR UPDATE` serialises two live reclaimers to exactly one winner, and
+a finalization predicated on a rotated-away token matches zero rows (9/9,
+§K of the gate report). The remaining shortfalls are the §4.2f-7 **repository
+implementation gaps**, owner `APP2-B01`.
+
 ## 6. Consequences
 
 Positive: one S3-compatible contract dev→prod; no browser credentials; private
@@ -589,21 +863,36 @@ than CDN-served in APP2 (portability seam reserved for APP12); malware scanning
 deferred with explicit compensating controls; MinIO is a production
 *approximation* — the production S3-compatible store is validated in APP12.
 
-## 7. Product parameters requiring Product Owner review
+## 7. Product parameters — **RESOLVED** by the Product Owner (`APP2-B01-G01`)
 
-Technical architecture is complete; these business values remain (verdict
-`PASS_WITH_PRODUCT_PARAMETERS`):
+All four parameters that carried the `PASS_WITH_PRODUCT_PARAMETERS` verdict are
+now approved and binding. `UPLOAD-POLICY-BLK-01` = `RESOLVED_BY_PRODUCT_OWNER`.
 
-1. **Maximum product-image upload size** — safe configurable default proposed
-   (`OBJECT_STORAGE_MAX_UPLOAD_BYTES`, pair with gateway limit); the exact
-   ceiling is a PO value, required before `APP2-B01`.
-2. **Whether non-image embroidery source formats** (e.g. `.dst`/`.emb`) are
-   APP2 intake scope — assumed **out** (APP2 = raster product media); confirm.
-3. **Original-asset retention** — indefinite retention of originals assumed;
-   confirm any retention window.
-4. **Uploaded SVG** — assumed **not needed** in APP2 (rejected); confirm.
+| # | Parameter | Approved value |
+|---|---|---|
+| 1 | Maximum raster product-image file size | **25 MiB = 26 214 400 bytes**, enforced by the API as the authoritative incremental file counter |
+| 2 | Non-image embroidery source files (`.dst`/`.emb`) | **excluded from APP2** |
+| 3 | Original-asset retention | **retained while the asset exists**; unpublish never deletes the original; **no** automatic age-based original deletion in APP2 |
+| 4 | Uploaded SVG | **rejected** (accepted media is exactly `image/png`, `image/jpeg`, `image/webp`) |
 
-None blocks locking the architecture; (1) blocks `APP2-B01` execution only.
+Transport and timing values approved with them:
+
+| Value | Approved |
+|---|---|
+| API authoritative file counter | 26 214 400 bytes |
+| Coarse Nginx multipart request ceiling | **27 MiB = 28 311 552 bytes**, route-scoped, includes multipart envelope headroom; **not** the authoritative file validator |
+| API hard upload duration | **5 minutes** |
+| Gateway upload timeouts | strictly greater than the API hard duration, in the existing `${GATEWAY_*}` template units |
+| Idempotency `IN_PROGRESS` allocation TTL | **15 minutes** |
+
+Required relation, satisfied: allocation TTL (15 min) > API hard upload duration
+(5 min) + cleanup/finalization safety margin. These are **locked defaults**, not
+"configurable later"; `APP2-B01` may expose them through the repository's
+canonical config mechanism (`OBJECT_STORAGE_MAX_UPLOAD_BYTES`,
+`GATEWAY_CLIENT_MAX_BODY_SIZE`, `GATEWAY_PROXY_READ_TIMEOUT`,
+`GATEWAY_PROXY_SEND_TIMEOUT`), but the values above are the contract.
+
+Nothing in this ADR now blocks `APP2-B01` execution.
 
 ## 8. Implementation handoff
 
@@ -629,7 +918,12 @@ None blocks locking the architecture; (1) blocks `APP2-B01` execution only.
   crash recovery, the canonical pre-stream fingerprint, same-key mismatch
   (`IDEMPOTENCY_CONFLICT` → named 409-class error), replay-after-response-loss,
   and Tx A/Tx B resume — with tests covering every §4.2e concurrency/crash row
-  (CW-01…CW-07).
+  (CW-01…CW-07). **Superseded in part by `APP2-B01-G01` (§4.2f):** the endpoint
+  set is **exactly three** operations (upload, detail, list — the retry operation
+  is dropped); the idempotency model is the two-stage request+content
+  fingerprint with the versioned discriminated result union, the rotating
+  `claimToken` and the rotate-in-place expired reclaim; and the §4.2f-7
+  repository gaps are the full list B01 must close.
 - **`APP2-W01`** may assume: private-original read, derivative write, server-owned
   SHA-256, truthful `UPLOADED`/`INSPECTING` lifecycle, outbox/job intent emitted
   by B01, cleanup interface — **not** its job runtime (`APP2-DEC-JOBS`).

@@ -46,6 +46,9 @@
 > idempotency result JSON shape, `STORAGE-BLK-03` expired-allocation reclaim /
 > old-object cleanup ordering — they block `APP2-B01` and downstream asset
 > intake but **not** `APP2-DEC-JOBS`, `APP2-D01`, or `APP2-I01`.
+> **All three are `RESOLVED_BY_APP2-B01-G01` (2026-07-27)**, together with
+> `UPLOAD-POLICY-BLK-01` = `RESOLVED_BY_PRODUCT_OWNER`; see the `APP2-B01-G01`
+> block below and `ADR-APP2-001` §4.2f.
 >
 > **`APP2-DEC-JOBS` = `DELIVERED_FOR_REVIEW`** — the asynchronous job runtime is
 > locked by **IMP-D029 /
@@ -257,9 +260,54 @@
 > migration, no schema change, no Asset handler. Report:
 > [`reports/APP2-I02-FD1-FINAL-VERIFICATION-REPORT.md`](../reports/APP2-I02-FD1-FINAL-VERIFICATION-REPORT.md).
 >
+> **`APP2-B01-G01` = `COMPLETE — ENTRY_GATE_CLOSED`** (2026-07-27) — the asset-
+> intake entry gate, executed **under `APP2-B01` ownership**, not as a third
+> storage correction (`APP2-DEC-STORAGE-C3` must not be created). It closes all
+> four gate blockers: **`STORAGE-BLK-01/02/03` = `RESOLVED_BY_APP2-B01-G01`** and
+> **`UPLOAD-POLICY-BLK-01` = `RESOLVED_BY_PRODUCT_OWNER`**.
+>
+> Product Owner values are now binding: **25 MiB (26 214 400 bytes)** maximum
+> raster product image enforced by the API as the authoritative incremental
+> counter; accepted media exactly `image/png`/`image/jpeg`/`image/webp`; **SVG
+> rejected**; non-image embroidery source files **excluded from APP2**; originals
+> **retained while the asset exists** (unpublish never deletes an original, no
+> age-based deletion in APP2); a **coarse route-scoped 27 MiB (28 311 552 bytes)**
+> gateway multipart ceiling that is explicitly *not* the file-size validator;
+> **5-minute** API hard upload duration with strictly longer gateway timeouts;
+> **15-minute** allocation TTL (TTL > hard duration + cleanup margin).
+>
+> The contract is locked in [`ADR-APP2-001`](../../adr/backend/ADR-APP2-001-OBJECT-STORAGE-AND-ASSET-INTAKE.md)
+> §4.2f: a **two-stage identity** — an immutable pre-stream *request* fingerprint
+> in the `fingerprint` column plus a post-stream *content* fingerprint stored in
+> the result, so a completed replay is content-complete only when it **resends
+> and re-verifies the whole body** with **zero** object writes; a **versioned,
+> discriminated** `ASSET_UPLOAD_ALLOCATION` / `ASSET_UPLOAD_COMPLETED` result
+> union with strict decoding and a state/result invariant (malformed →
+> `IDEMPOTENCY_RESULT_INVALID`, safe 5xx, no object write, no transition); a
+> **`claimToken`** that rotates only on expired reclaim — preserving `assetId`
+> and `objectKey` — and is verified inside both Tx A and Tx B, so a stale request
+> gets `STALE_UPLOAD_CLAIM` and mutates nothing; and a strictly ordered reclaim
+> that **never deletes an existing durable asset** and, when no asset exists,
+> completes cleanup and re-verifies the token **before** replacement streaming
+> begins (cleanup failure accepts no object at all).
+>
+> `APP2-B01` is scoped to **exactly three operations** — Admin asset upload,
+> asset detail, asset list — dropping the historical "retry" endpoint rather than
+> inventing operations to fill a five-endpoint budget.
+>
+> Two reconciliations recorded rather than silently resolved: the gate input's
+> `PRODUCT_IMAGE` asset kind **does not exist** in the repository, so the locked
+> `ASSET_KINDS` value **`CATALOG_MEDIA`** governs; and the http-level
+> `client_max_body_size 20m` stays, with the upload location overriding it
+> **upward** to `27m` for that route only. `NO_APP2_MIGRATION` re-confirmed —
+> **9/9** disposable-PostgreSQL checks against the real 31-migration / 78-table
+> schema, zero residue. Every remaining shortfall is a **repository
+> implementation gap** (ADR §4.2f-7), owner `APP2-B01`. Report:
+> [`reports/APP2-B01-G01-COMPLETION-REPORT.md`](../reports/APP2-B01-G01-COMPLETION-REPORT.md).
+>
 > **No upload, processing, publication or public product functionality exists.**
-> `APP2-B01` remains blocked by `STORAGE-BLK-01..03` and the upload-size
-> parameter; `APP2-W01` is now blocked by `B01` alone.
+> `APP2-B01` is now **`READY — NOT STARTED`**; `APP2-W01` remains blocked by
+> `B01` alone.
 >
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
@@ -338,7 +386,8 @@ endpoints.
 | 3b | APP2-I02 | foundation | Worker job-runtime foundation — poll loop + claim/lease driver, `event_type` handler registry, attempt-recording seam, **`FU-A07`** worker structured logging + out-of-request correlation (`{job_kind}:{job_key}:{attempt_no}` `AsyncLocalStorage` over IMP-D022), SIGTERM/SIGINT graceful shutdown replacing the no-op keep-alive; no asset job family (IMP-D029) — **`COMPLETE — CORRECTED — REVIEW_ACCEPTED`** (corrected by `APP2-I02-C1`: a timed-out handler is no longer abandoned with its lease released, and acceptance uses a real Linux SIGTERM; accepted after `APP2-I02-FD1` proved the uncooperative path across a real Linux process boundary). *Delivered divergence:* the claim/lease driver is a **new** `WorkerJobQueueRepository` rather than an extension of `OutboxEventStore.claimBatch`, because that DB7-era primitive claims `['PENDING','FAILED']` and its `scheduleRetry` writes `FAILED` — both contradict `APP2-DEC-JOBS-C1`, and widening it would have put two contradictory lifecycles in one class. The old store is untouched. | DEC-JOBS |
 | 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) — **`DELIVERED_FOR_PRODUCT_OWNER_REVIEW`**, section `423:3` on page APP_02, 30 `REVIEW_REQUIRED` rows (§6.2) | PRE-AUDIT |
 | 4b | APP2-I01 | foundation | Object-storage foundation — `packages/object-storage` (port + S3 adapter over `client-s3`/`lib-storage` **only, no presigner** + key helpers + contract tests), pinned MinIO Compose service + bucket bootstrap, config contract + `.env.example` keys, route-scoped nginx upload support (`client_max_body_size` + `proxy_request_buffering off`), `lib-storage` memory-bound policy (IMP-D028 / C1 / C2) | DEC-STORAGE |
-| 5 | APP2-B01 | backend | Asset intake API — T1 streaming multipart upload, I1 pre-stream durable idempotency allocation + pre-stream fingerprint (claim-with-allocation repo extension), post-object `UPLOADED` insert + guarded `→INSPECTING`, one-transition outbox `append`, CW-01…CW-07 tests, + OpenAPI/client (≤5). **Entry gate resolves `STORAGE-BLK-01..03`** (upload fingerprint / idempotency result JSON shape / expired-allocation cleanup ordering). | I01 |
+| 4c | APP2-B01-G01 | gate | Asset-intake entry-gate closure (docs/evidence only, under `APP2-B01` ownership) — Product Owner upload policy, two-stage request+content fingerprint, versioned discriminated result union, `claimToken` ownership, expired-reclaim/cleanup ordering, Tx A/Tx B boundaries, three-operation B01 handoff (`ADR-APP2-001` §4.2f) — **`COMPLETE — ENTRY_GATE_CLOSED`**; `STORAGE-BLK-01..03` `RESOLVED_BY_APP2-B01-G01`, `UPLOAD-POLICY-BLK-01` `RESOLVED_BY_PRODUCT_OWNER`; `NO_APP2_MIGRATION` re-confirmed (9/9 disposable checks) | I01, I02 |
+| 5 | APP2-B01 | backend | Asset intake API — **exactly three operations** (Admin asset upload / detail / list; the historical "retry" endpoint is dropped): T1 streaming multipart upload with the 25 MiB incremental counter and 5-minute hard duration, pre-stream durable allocation + **request** fingerprint and post-stream **content** fingerprint, versioned `ASSET_UPLOAD_ALLOCATION`/`ASSET_UPLOAD_COMPLETED` result union with strict decoding, `claimToken` rotation on expired reclaim verified inside Tx A and Tx B, ordered reclaim/cleanup-before-replacement, post-object `UPLOADED` insert + guarded `→INSPECTING`, one-transition outbox `append`, route-scoped nginx upload location (27 MiB, `proxy_request_buffering off`, >5-minute timeouts), CW-01…CW-07 tests, + OpenAPI/client. Closes the `ADR-APP2-001` §4.2f-7 repository gaps. **Entry gate `APP2-B01-G01` closed** → **`READY — NOT STARTED`**. | I01, B01-G01 |
 | 6 | APP2-W01 | worker | Asset inspection/derivatives job family handler + image-processing library decision (uses I02 runtime) | B01, I02 |
 | 7 | APP2-A01 | frontend | Admin asset library | B01, W01, D01 |
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) | B01 |

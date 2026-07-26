@@ -68,6 +68,10 @@ downstream asset-intake, and do **not** block `APP2-DEC-JOBS`, `APP2-D01`,
 - `STORAGE-BLK-02` — versioned/discriminated idempotency result JSON shape.
 - `STORAGE-BLK-03` — expired allocation reclaim / old-object cleanup ordering.
 
+**Update (2026-07-27):** all three, plus `UPLOAD-POLICY-BLK-01`, were closed by
+the entry gate **`APP2-B01-G01`** (`ADR-APP2-001` §4.2f) without reopening this
+ADR or creating `APP2-DEC-STORAGE-C3`.
+
 ### Governance — one-correction limit
 
 A checkpoint may receive **at most one** correction. After that, any remaining
@@ -440,8 +444,11 @@ by `APP2-I02`. W01 adds the asset job family handler and selects the
 
 Only recorded here: `B01` writes durable **outbox intent** (one
 `OutboxEventStore.append` inside the domain transaction) after truthful Asset
-lifecycle transitions. `B01` **remains blocked by `STORAGE-BLK-01..03`** (owner
-`B01` entry gate) — not solved by this ADR.
+lifecycle transitions. `B01` was blocked by `STORAGE-BLK-01..03` (owner `B01`
+entry gate) — not solved by this ADR; **closed on 2026-07-27 by `APP2-B01-G01`**,
+so `APP2-B01` is now `READY`. The single outbox event `B01` appends in Tx B is
+the asset-inspection intent whose id is recorded in the completed idempotency
+result (`ADR-APP2-001` §4.2f-5).
 
 ### `APP2-I01` — object-storage foundation
 
