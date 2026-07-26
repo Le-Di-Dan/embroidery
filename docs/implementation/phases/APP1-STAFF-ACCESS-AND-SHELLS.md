@@ -1,6 +1,9 @@
 # APP1 — Staff Access and Application Shells
 
-> **Status:** `ENGINEERING_IN_PROGRESS`. Pre-implementation audit complete
+> **Status:** `COMPLETE — PASS_WITH_FOLLOW_UPS` — **closed at `APP1-X01`** (zero blocking
+> follow-ups; milestone **R0 achieved**; closure report
+> `../reports/APP1-COMPLETION-REPORT.md`, evidence
+> `../reports/APP1-CLOSURE-EVIDENCE.md`). Pre-implementation audit complete
 > (`../audits/APP1_PRE_IMPLEMENTATION_AUDIT.md`); `APP1-DEC-AUTH` is **COMPLETE**
 > (IMP-D027, ADR-APP1-001 — report
 > `../reports/APP1-DEC-AUTH-COMPLETION-REPORT.md`); `APP1-D01` is
@@ -46,20 +49,17 @@
 > `../reports/APP1-S01A-COMPLETION-REPORT.md` and
 > `../reports/APP1-S01B-COMPLETION-REPORT.md`; the parent **`APP1-S01` is
 > `COMPLETE — PRODUCT_OWNER_ACCEPTED`**. **`APP1-E01` is
-> `COMPLETE — CORRECTED, DELIVERED_FOR_REVIEW`** — staff access & shared-shell
-> cross-layer acceptance (deterministic host/Chromium E2E over the real
-> gateway/Next/Nest/PostgreSQL/session-cookie/bootstrap/contracts; 17 tests green
-> twice; bootstrap smoke 8/8; zero residue; baselines unchanged; Commit A
-> `3b4f31e`), report `../reports/APP1-E01-COMPLETION-REPORT.md`. **`APP1-E01-C1`
-> is `COMPLETE`** — the two missing cross-layer failure journeys (invalid/stale
-> cookie route matrix reaching authoritative 401; initial protected-page API
-> unavailability surfacing the safe framework 5xx boundary, not `/login` or the
-> expiry modal, via a real isolated API stop/restart); test/harness only, no
-> product change, Commit C `8d247b4`; report
-> `../reports/APP1-E01-C1-CORRECTION-REPORT.md`.
-> `APP1-X01` is `BLOCKED_BY_APP1_E01_REVIEW`. All others
-> `NOT_STARTED` per §7. Phase status is owned by
-> `../10-MASTER-APPLICATION-ROADMAP.md` §6.
+> `COMPLETE — CORRECTED — REVIEW_ACCEPTED`** — staff access & shared-shell
+> cross-layer acceptance (17 tests; Commit A `3b4f31e`), report
+> `../reports/APP1-E01-COMPLETION-REPORT.md`; **`APP1-E01-C1` is `COMPLETE`** —
+> the two missing cross-layer failure journeys (invalid/stale cookie matrix
+> reaching authoritative 401; initial protected-page API unavailability surfacing
+> the safe framework 5xx boundary; test/harness only, Commit C `8d247b4`), report
+> `../reports/APP1-E01-C1-CORRECTION-REPORT.md`. **`APP1-X01` is `COMPLETE`** —
+> phase closure `PASS_WITH_FOLLOW_UPS` (zero blocking follow-ups; R0 achieved;
+> closure `../reports/APP1-COMPLETION-REPORT.md`, evidence
+> `../reports/APP1-CLOSURE-EVIDENCE.md`). APP2–APP12 `NOT_STARTED` per §7. Phase
+> status is owned by `../10-MASTER-APPLICATION-ROADMAP.md` §6.
 >
 > **A01 handoff (for A02):** the mobile-error design frame
 > `FIG-ADMIN-LOGIN-MOBILE-ERROR` (383:9) shows the mobile visual language for both
@@ -163,8 +163,8 @@ after each. Backend checkpoints never exceed five tightly related endpoints
 | **APP1-S01** | frontend | **Storefront application shell** — root layout, header/footer, metadata foundation, global not-found boundary, SCSS/token integration. Public; no auth. **Split (frontend checkpoint-size rule) into two reviewable slices:** `APP1-S01A` (shared shell + responsive navigation) and `APP1-S01B` (not-found boundary). May land FU-A20 (stylelint hook). | APP1-D01, APP1-D02 |
 | **APP1-S01A** | frontend | **COMPLETE — PRODUCT_OWNER_ACCEPTED** (Commit A `0b11fbb`, report `../reports/APP1-S01A-COMPLETION-REPORT.md`) — shared Storefront shell + responsive navigation: server-first root layout owning `StorefrontShell` (header · `<main id="main-content">` slot · footer), responsive Full/Compact header, presentational primary nav (routes unbuilt → non-interactive), presentational non-submitting search affordance, focus-trapped/scroll-locked mobile drawer (`410:2311`), skip link. Consumes the five approved D02 shell rows `FIG-STOREFRONT-SHELL-DESKTOP-DEFAULT`, `FIG-STOREFRONT-SHELL-TABLET-DEFAULT`, `FIG-STOREFRONT-SHELL-MOBILE-DEFAULT`, `FIG-STOREFRONT-SHELL-MOBILE-NAVOPEN`, `FIG-STOREFRONT-SHELL-NOTES` (approval `approvals/APP1-D02-STOREFRONT-DESIGN-APPROVAL.md`). SCSS-only via `@embroidery/styles`; local breakpoint (FU-A16); local scrim (GAP-D02). No not-found, no business capability, no API/schema change. | APP1-A02, APP1-D02 |
 | **APP1-S01B** | frontend | **COMPLETE — PRODUCT_OWNER_ACCEPTED** (Commit A `f45821b`, report `../reports/APP1-S01B-COMPLETION-REPORT.md`; re-verified by the APP1-E01 J09 journey) — Storefront not-found boundary: canonical `app/not-found.tsx` delegating to a bounded `storefront-not-found` Server-Component feature, rendered inside the accepted S01A shell (`<main id="main-content">` slot, single `<h1>`). Unmatched URL → HTTP 404 (Next-owned); safe Vietnamese copy (404 · "Không tìm thấy trang" · safe explanation, no path echo); primary recovery `Về trang chủ` → `/`; secondary `Khám phá tác phẩm` rendered as honestly-unavailable non-interactive affordance (discovery route unbuilt — no dead anchor/invented route). Consumes `FIG-STOREFRONT-NOTFOUND` (`411:2337`), `FIG-STOREFRONT-NOTFOUND-MOBILE` (`411:3851`), `FIG-STOREFRONT-SHELL-NOTES` (`412:2396`) (approval `../../design/approvals/APP1-D02-STOREFRONT-DESIGN-APPROVAL.md`). SCSS-only via `@embroidery/styles`; no API/schema/dependency change. | APP1-S01A |
-| **APP1-E01** | integration/E2E | **DELIVERED_FOR_REVIEW** (Commit A `3b4f31e`, report `../reports/APP1-E01-COMPLETION-REPORT.md`) — staff access & shared-shell cross-layer acceptance through the real gateway on a disposable DB (T01/T02B): anonymous/authenticated/invalid-cookie route matrix, valid login (204) + current-staff identity + cookie contract, invalid login + identifier rate limit (429/Retry-After), logout, forced session expiry/revocation (session-expired modal, non-dismissable) + initial-expired redirect, 401/429/network/5xx classification, storefront responsive shell (1440/1024/390) + not-found 404. Bootstrap Admin via the accepted CLI; safe disposable-DB session seam; 15 tests green twice; bootstrap smoke 8/8; zero residue; OpenAPI/client/DB baselines unchanged; two minimal harness corrections; no committed secret. | APP1-A02, APP1-S01 |
-| **APP1-X01** | closure | Phase closure audit (security/contract/UI/logs), R0 evaluation, and APP2 handoff. | APP1-E01 |
+| **APP1-E01** | integration/E2E | **COMPLETE — CORRECTED — REVIEW_ACCEPTED** (Commit A `3b4f31e`, report `../reports/APP1-E01-COMPLETION-REPORT.md`; corrected by `APP1-E01-C1` `COMPLETE`, Commit C `8d247b4`, `../reports/APP1-E01-C1-CORRECTION-REPORT.md` — invalid/stale-cookie matrix + initial API-unavailability journeys; suite now **7 specs / 17 tests**) — staff access & shared-shell cross-layer acceptance through the real gateway on a disposable DB (T01/T02B): anonymous/authenticated/invalid-cookie route matrix, valid login (204) + current-staff identity + cookie contract, invalid login + identifier rate limit (429/Retry-After), logout, forced session expiry/revocation (session-expired modal, non-dismissable) + initial-expired redirect, 401/429/network/5xx classification, storefront responsive shell (1440/1024/390) + not-found 404. Bootstrap Admin via the accepted CLI; safe disposable-DB session seam; 15 tests green twice; bootstrap smoke 8/8; zero residue; OpenAPI/client/DB baselines unchanged; two minimal harness corrections; no committed secret. | APP1-A02, APP1-S01 |
+| **APP1-X01** | closure | **COMPLETE — PASS_WITH_FOLLOW_UPS** — phase closure (chain/security/contract/UI/logs reconciliation), R0 evaluation (**R0 achieved** with APP0), and APP2 handoff; **zero blocking follow-ups**; all deviations routed with owners. Closure report `../reports/APP1-COMPLETION-REPORT.md`, evidence `../reports/APP1-CLOSURE-EVIDENCE.md`. | APP1-E01 |
 
 Ordering: `DEC-AUTH ✓ → {B01, D01} → B02 → A01 → A02 → S01(A→B) → E01 → X01`. With
 `DEC-AUTH` complete, `APP1-B01` (backend) and `APP1-D01` (design, no engineering
