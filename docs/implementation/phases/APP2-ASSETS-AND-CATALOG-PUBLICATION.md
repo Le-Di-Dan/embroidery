@@ -76,6 +76,21 @@
 > policy-key set. `NO_APP2_MIGRATION`, no dependency; correction spike **25/25**.
 > This is the **only** correction for `APP2-DEC-JOBS` (one-correction rule).
 >
+> **`APP2-D01` = `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`** — the Assets and Catalog
+> Publication design package is delivered as **one** package on the new Figma page
+> **APP_02 (`419:3`)**, section **`APP2-D01 · Assets & Catalog Publication`
+> (`423:3`)**: 27 screen/state frames + 2 annotation frames + 1 design-system
+> supplement. Admin asset intake / product draft / catalog / publication are `NEW`;
+> Storefront product list and detail are `SUPPLEMENT` (cloned from the **approved**
+> APP1-D02 shells, which are unmodified). `GAP-D01` is supplemented in the product
+> file as `FIG-DS-INPUT-APP2`; `GAP-D02` remains a local `ink/900 @45%` composition.
+> All 30 new registry rows are `REVIEW_REQUIRED` and **no APP1 row is superseded**.
+> Registry: [`FIGMA_DESIGN_INDEX.md`](../../design/FIGMA_DESIGN_INDEX.md) §4.3/§6.1b
+> (69 registry IDs). Report:
+> [`reports/APP2-D01-COMPLETION-REPORT.md`](../reports/APP2-D01-COMPLETION-REPORT.md).
+> **No frontend checkpoint may implement from these rows until the Product Owner
+> promotes them to `APPROVED_FOR_IMPLEMENTATION`.** See the §6.2 handoff.
+>
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
 > owner and an activation gate rather than a further correction chain.
@@ -151,7 +166,7 @@ endpoints.
 | 2 | APP2-DEC-STORAGE | decision | object-storage ADR (IMP-O002) | PRE-AUDIT |
 | 3 | APP2-DEC-JOBS | decision | job-runtime ADR (IMP-D029/`ADR-APP2-002`): PostgreSQL claim queue on existing persistence, visibility-timeout lease, `NO_APP2_MIGRATION` (IMP-O003) — **`DELIVERED_FOR_REVIEW`** | PRE-AUDIT |
 | 3b | APP2-I02 | foundation | Worker job-runtime foundation — poll loop + claim/lease **driver** (`OutboxEventStore.claimBatch` `next_attempt_at` lease extension), `event_type` handler registry, attempt-recording seam, **`FU-A07`** worker structured logging + out-of-request correlation (`{job_kind}:{job_key}:{attempt_no}` `AsyncLocalStorage` over IMP-D022), SIGTERM/SIGINT graceful shutdown replacing the no-op keep-alive; no asset job family (IMP-D029) | DEC-JOBS |
-| 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) | PRE-AUDIT |
+| 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) — **`DELIVERED_FOR_PRODUCT_OWNER_REVIEW`**, section `423:3` on page APP_02, 30 `REVIEW_REQUIRED` rows (§6.2) | PRE-AUDIT |
 | 4b | APP2-I01 | foundation | Object-storage foundation — `packages/object-storage` (port + S3 adapter over `client-s3`/`lib-storage` **only, no presigner** + key helpers + contract tests), pinned MinIO Compose service + bucket bootstrap, config contract + `.env.example` keys, route-scoped nginx upload support (`client_max_body_size` + `proxy_request_buffering off`), `lib-storage` memory-bound policy (IMP-D028 / C1 / C2) | DEC-STORAGE |
 | 5 | APP2-B01 | backend | Asset intake API — T1 streaming multipart upload, I1 pre-stream durable idempotency allocation + pre-stream fingerprint (claim-with-allocation repo extension), post-object `UPLOADED` insert + guarded `→INSPECTING`, one-transition outbox `append`, CW-01…CW-07 tests, + OpenAPI/client (≤5). **Entry gate resolves `STORAGE-BLK-01..03`** (upload fingerprint / idempotency result JSON shape / expired-allocation cleanup ordering). | I01 |
 | 6 | APP2-W01 | worker | Asset inspection/derivatives job family handler + image-processing library decision (uses I02 runtime) | B01, I02 |
@@ -166,6 +181,57 @@ endpoints.
 | 15 | APP2-S02 | frontend | Storefront product detail | B04, D01 |
 | 16 | APP2-E01 | E2E | publication cross-layer journey | S01, S02 |
 | 17 | APP2-X01 | closure | close R1 Catalog Alpha; APP3 handoff | E01 |
+
+## 6.2 `APP2-D01` design handoff (per consuming checkpoint)
+
+Source of truth: [`FIGMA_DESIGN_INDEX.md`](../../design/FIGMA_DESIGN_INDEX.md) §4.3
+(Figma file `BQwqV8GdfUIELvsQDB1UQE`, page **APP_02** `419:3`, section `423:3`).
+Cross-cutting behaviour is annotated in `FIG-APP2-ASSET-CATALOG-NOTES` (`450:404`)
+and `FIG-APP2-REUSE-MAP` (`451:404`).
+
+**Gate for every row below — `BLOCKED_BY_APP2_D01_PRODUCT_OWNER_APPROVAL`.** Each row
+is `REVIEW_REQUIRED`; a frontend checkpoint must block until it is promoted to
+`APPROVED_FOR_IMPLEMENTATION` with an approval evidence ID, and must record the
+registry IDs it used in its completion report.
+
+| Checkpoint | Registry IDs (states delivered) | Responsive evidence |
+|---|---|---|
+| **A01** Admin asset library | `FIG-ADMIN-ASSETS-DESKTOP-{DEFAULT,EMPTY,UPLOADING,PROCESSING,REJECTED}`, `FIG-ADMIN-ASSETS-MOBILE-{DEFAULT,UPLOAD}` | 1440 desktop (5 states) + 390 mobile (2 states); 1024 by annotation |
+| **A02** Admin product form/detail | `FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-{DEFAULT,VALIDATION,SAVING}`, `FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT`, `FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP` | 1440 desktop (3 states + dialog) + 390 mobile |
+| **A03** Admin product list | `FIG-ADMIN-CATALOG-DESKTOP-{DEFAULT,EMPTY}`, `FIG-ADMIN-CATALOG-MOBILE-DEFAULT` | 1440 desktop table + 390 mobile card list |
+| **A04** Admin publication interaction | `FIG-ADMIN-PUBLICATION-DESKTOP-{READY,BLOCKED,CONFIRM-UNPUBLISH}`, `FIG-ADMIN-PUBLICATION-MOBILE` | 1440 desktop (3 states) + 390 mobile |
+| **S01** Storefront product list | `FIG-STOREFRONT-PRODUCT-LIST-{DESKTOP,TABLET,MOBILE,EMPTY}` | 1440 / 1024 / 390 + empty |
+| **S02** Storefront product detail | `FIG-STOREFRONT-PRODUCT-DETAIL-{DESKTOP,TABLET,MOBILE,MEDIA-STATE}` | 1440 / 1024 / 390 + media fallback |
+
+**Interaction and accessibility obligations (all six):** single `<h1>` per page; DS
+`Input` supplement carries `<label for>` + `aria-describedby` help/error wiring;
+validation summaries use `role="alert"` and per-field errors; progress/saving use
+`role="status"` + `aria-live="polite"`; **upload progress is determinate (%)** while
+**inspection progress is indeterminate — never a fabricated percentage**; dialogs use
+`role="dialog"`/`alertdialog` with `aria-modal`, focus enter → trap → return, and
+Escape/backdrop close; touch targets ≥44px; status is never conveyed by colour alone
+(dot + text label); no 390px horizontal overflow.
+
+**Domain semantics carried by the design:** asset states map `UPLOADED` → *Đã tải lên /
+Đang chờ xử lý*, `INSPECTING` → *Đang xử lý*, `ACCEPTED` → *Sẵn sàng*, `REJECTED` →
+*Không thể sử dụng*; only `ACCEPTED` media is selectable for a product; **Save Draft and
+Publish are distinct actions**; drafts are never publicly visible; **unpublish removes
+public visibility and is never deletion**; Storefront renders published products only,
+using approved derivatives, never a private original.
+
+**Exclusions (must not be implemented from this package):** customer account/auth,
+wishlist/cart/checkout/payment, orders/shipping, reviews, inventory reservation,
+working search, recommendations, Design Studio/3D, download/export, bulk import,
+roles/permissions, analytics/worker dashboards. The reused Storefront shell contains a
+search field and later-phase nav items — these stay **inert** in APP2. Unpublished or
+missing products reuse the approved APP1-D02 `FIG-STOREFRONT-NOTFOUND`; APP2 adds no
+not-found of its own.
+
+**Open items to resolve before the dependent checkpoint ships:** maximum image bytes,
+original retention, non-image source inclusion, uploaded-SVG handling (all four are
+deliberately absent from the frames — supported formats are shown with **no numeric size
+limit**), and the **public product URL pattern** (`/san-pham/<slug>` is drawn as a
+proposal only; only the API path `/api/public/products/{slug}` is locked).
 
 ## 7. Critical end-to-end journey
 

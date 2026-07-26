@@ -56,7 +56,8 @@ Authority:
 | FIG-FILE-PRODUCT | embroidery | BQwqV8GdfUIELvsQDB1UQE | Product screens, IA, wireframes, and the `APP_01` staff-access designs | https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery | Write | Product screens / IA / wireframes |
 | FIG-FILE-DS | DS – Core Components (WF06) | hsxSjwkqQKM9vuyRgWSesU | Design system: variable collections, component sets, text/effect styles | https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06 | Read-only (repair only via reported deviation) | Design-system library |
 
-`APP_01` write target: page **`371:3`** in `FIG-FILE-PRODUCT`.
+`APP_01` write target: page **`371:3`** in `FIG-FILE-PRODUCT` (APP1 design packages).
+`APP_02` write target: page **`419:3`** in `FIG-FILE-PRODUCT` (APP2 design packages).
 
 ## 4. Screen and state registry
 
@@ -105,6 +106,50 @@ Section **`405:2224`** — [APP1-D02 · Storefront Shell & Not-found](https://ww
 | FIG-STOREFRONT-SHELL-TABLET | Storefront | / | Public Shell (Homepage) | Default | Tablet 1024 | high-fidelity | SUPERSEDED | BQwqV8GdfUIELvsQDB1UQE | User Interface | 189:266 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=189-266) | APP1-S01 | → FIG-STOREFRONT-SHELL-TABLET-DEFAULT | Homepage reference; shell role moved to standalone D02 frame | 2026-07-25 |
 | FIG-STOREFRONT-SHELL-MOBILE | Storefront | / | Public Shell (Homepage) | Default | Mobile 390 | high-fidelity | SUPERSEDED | BQwqV8GdfUIELvsQDB1UQE | User Interface | 191:412 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=191-412) | APP1-S01 | → FIG-STOREFRONT-SHELL-MOBILE-DEFAULT | Homepage reference; shell role moved to standalone D02 frame | 2026-07-25 |
 
+### 4.3 APP2-D01 — Assets & Catalog Publication (NEW + SUPPLEMENT, this checkpoint)
+
+Section **`423:3`** — [APP2-D01 · Assets & Catalog Publication](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=423-3), page **APP_02** (`419:3`). Admin asset intake / product draft / catalog / publication are `NEW`; Storefront product list and detail are `SUPPLEMENT` over the existing Storefront visual language. The Storefront frames are **clones of the approved APP1-D02 shells** (`405:2225` / `405:3733` / `405:3786`) — the approved APP1 frames themselves are unmodified, and **no APP1 row is superseded by this package**. All rows are `REVIEW_REQUIRED` pending Product Owner design approval; none may be implemented yet.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-ADMIN-ASSETS-DESKTOP-DEFAULT | Admin | Asset library | Asset Library | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 426:13 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=426-13) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-ASSETS-DESKTOP-EMPTY | Admin | Asset library | Asset Library | Empty | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 429:6 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=429-6) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-ASSETS-DESKTOP-UPLOADING | Admin | Asset library | Asset Library | Uploading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 429:89 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=429-89) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-ASSETS-DESKTOP-PROCESSING | Admin | Asset library | Asset Library | Processing | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 430:12 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=430-12) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-ASSETS-DESKTOP-REJECTED | Admin | Asset library | Asset Library | Rejected | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 430:98 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=430-98) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-ASSETS-MOBILE-DEFAULT | Admin | Asset library | Asset Library | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 432:18 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=432-18) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-ASSETS-MOBILE-UPLOAD | Admin | Asset library | Asset Library | Upload | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 433:19 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=433-19) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-DEFAULT | Admin | Product draft | Product Draft | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 434:20 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=434-20) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-VALIDATION | Admin | Product draft | Product Draft | Validation Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 436:37 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=436-37) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-SAVING | Admin | Product draft | Product Draft | Saving | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 436:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=436-140) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT | Admin | Product draft | Product Draft | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 438:90 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=438-90) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP | Admin | Product draft | Media Select Dialog | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 437:73 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=437-73) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-CATALOG-DESKTOP-DEFAULT | Admin | Product catalog | Product Catalog | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 439:100 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=439-100) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-CATALOG-DESKTOP-EMPTY | Admin | Product catalog | Product Catalog | Empty | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 440:102 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=440-102) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-CATALOG-MOBILE-DEFAULT | Admin | Product catalog | Product Catalog | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 440:191 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=440-191) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-PUBLICATION-DESKTOP-READY | Admin | Product publication | Publication | Ready | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 441:106 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=441-106) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-PUBLICATION-DESKTOP-BLOCKED | Admin | Product publication | Publication | Blocked | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 442:110 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=442-110) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-PUBLICATION-DESKTOP-CONFIRM-UNPUBLISH | Admin | Product publication | Publication | Confirm Unpublish | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 442:205 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=442-205) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-PUBLICATION-MOBILE | Admin | Product publication | Publication | Ready | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 443:121 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=443-121) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-STOREFRONT-PRODUCT-LIST-DESKTOP | Storefront | Public product list | Product List | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 444:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=444-204) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-STOREFRONT-PRODUCT-LIST-TABLET | Storefront | Public product list | Product List | Default | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 445:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=445-204) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-STOREFRONT-PRODUCT-LIST-MOBILE | Storefront | Public product list | Product List | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 445:210 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=445-210) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-STOREFRONT-PRODUCT-LIST-EMPTY | Storefront | Public product list | Product List | Empty | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 446:223 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=446-223) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-STOREFRONT-PRODUCT-DETAIL-DESKTOP | Storefront | Public product detail | Product Detail | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 447:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=447-204) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-STOREFRONT-PRODUCT-DETAIL-TABLET | Storefront | Public product detail | Product Detail | Default | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 448:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=448-204) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-STOREFRONT-PRODUCT-DETAIL-MOBILE | Storefront | Public product detail | Product Detail | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 448:210 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=448-210) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-STOREFRONT-PRODUCT-DETAIL-MEDIA-STATE | Storefront | Public product detail | Product Detail | Media Fallback | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 449:357 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=449-357) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-APP2-ASSET-CATALOG-NOTES | Shared | APP2-D01 | Assets & Catalog Notes / Handoff | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 450:404 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=450-404) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-APP2-REUSE-MAP | Shared | APP2-D01 | Reuse & Supersession Map | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 451:404 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=451-404) | APP2-D01 | — | — | 2026-07-26 |
+
+**Open product parameters affecting these frames** — deliberately *not* invented by this
+package: maximum image bytes, original-file retention, non-image source inclusion, and
+uploaded-SVG handling. The frames therefore show **supported formats only (PNG/JPEG/WebP)
+and no numeric size limit**. Additionally the public product **URL pattern**
+(`/san-pham/<slug>` as drawn) is a **proposal only** — the repository locks the API path
+(`/api/public/products/{slug}`) but no page route; Product Owner confirmation is required
+before `APP2-S02` implements it.
+
 ## 5. IA and user-flow registry
 
 Flow/IA/wireframe nodes are indexed as `REFERENCE_ONLY` — they inform, but do not
@@ -137,6 +182,28 @@ matrices, plus published-library status confirmed via `search_design_system`.
 | FIG-DS-SEARCHBAR | DS | Navigation | SearchBar | Catalog | All | component | APPROVED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Components · Actions | 40:16 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=40-16) | — | — | Approved Foundation + WF08 validation matrix; published library; login Input pattern source | 2026-07-25 |
 | FIG-DS-FOUNDATIONS | DS | Tokens & Styles | Foundations board (Color, Type, Spacing, Radius) | Catalog | All | foundation | APPROVED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Foundations | 37:3 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=37-3) | — | — | Approved Foundation (DESIGN_SYSTEM_FOUNDATION.md §4–7); WF07 token matrix | 2026-07-25 |
 
+### 6.1b APP2 design-system supplements (product file, not the DS library)
+
+`FIG-FILE-DS` is **read-only** for this project, so a genuinely missing DS primitive is
+supplemented inside `FIG-FILE-PRODUCT` and flagged for DS adoption rather than written
+into the library. One supplement was activated by `APP2-D01` (`GAP-D01`); it is
+`REVIEW_REQUIRED` and is **not** an adopted DS library component.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-DS-INPUT-APP2 | DS Supplement | Forms | Input (Default/Focus/Filled/Error/Disabled) | Catalog | All | component-set | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 424:35 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=424-35) | APP2-D01 | — | — | 2026-07-26 |
+
+Bound to approved DS tokens only (`background/{surface,secondary}`, `text/{primary,secondary,tertiary}`,
+`border/{primary,secondary}`, `action/primary`, `status/error`, `radius/md`; text styles
+`Body/S`, `Body/M`, `Caption`). Label→field and field→help/error relationships are
+expressed structurally by named layers (`Label`, `Field`, `Value`, `Help text` /
+`Error message`) for the frontend to wire as `<label for>` / `aria-describedby`.
+
+**Not adopted from the DS by APP2** (audited, semantically wrong for asset status):
+`Chip` (`f9aab114…`), `StudioWorkCard` (`1b85776d…`), `EditorialMediaBlock` (`c3bbf6ec…`).
+Asset/product status badges are local compositions; a semantic status-badge component is
+recorded as a future DS gap candidate, **not** activated here.
+
 ### 6.2 Variable collections, styles (panel-level, no canvas node)
 
 Consumed by APP1-D01 via `importVariableByKeyAsync` / `importStyleByKeyAsync`:
@@ -157,8 +224,8 @@ Consumed by APP1-D01 via `importVariableByKeyAsync` / `importStyleByKeyAsync`:
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| FIG-DS-INPUT | DS | Forms | Input / TextField / Password component | Missing | — | component | MISSING | — | — |  | — | APP1-D01 | — | GAP-D01 — absent from DS (search_design_system 2026-07-25); composed from primitives per §6.3 | 2026-07-25 |
-| FIG-DS-SCRIM-TOKEN | DS | Tokens | Scrim / dark-surface semantic token | Missing | — | variable | MISSING | — | — |  | — | APP1-D01 | — | GAP-D02 — no dark/scrim semantic token; overlay uses ink/900 @45% | 2026-07-25 |
+| FIG-DS-INPUT | DS | Forms | Input / TextField / Password component | Missing | — | component | MISSING | — | — |  | — | APP1-D01 | — | GAP-D01 — still absent from the DS library (re-confirmed via search_design_system 2026-07-26). APP2-D01 supplements it in the product file as FIG-DS-INPUT-APP2 (§6.1b); the library gap itself remains open until DS owners adopt it | 2026-07-26 |
+| FIG-DS-SCRIM-TOKEN | DS | Tokens | Scrim / dark-surface semantic token | Missing | — | variable | MISSING | — | — |  | — | APP1-D01 | — | GAP-D02 — still no dark/scrim semantic token (re-confirmed 2026-07-26); APP2 dialogs reuse the APP1-D02 local composition ink/900 @45% | 2026-07-26 |
 
 **Duplicate/stale findings:** UI01–UI05 (`User Interface`) and WF01–WF09 (`Wireframe`)
 are parallel hi-fi (DRAFT) and wireframe (REFERENCE_ONLY) renditions of the public
@@ -184,21 +251,25 @@ canonical entry exists for any APP1-D01 composite key.
 
 ## 10. Audit metadata and coverage summary
 
-- **Audit date:** 2026-07-25 (APP1-D01; supplemented at APP1-D02). **Auditor
-  tooling:** Figma MCP plugin API.
-- **Files enumerated:** 2/2 — `FIG-FILE-PRODUCT` (4 pages) + `FIG-FILE-DS` (19 pages).
+- **Audit date:** 2026-07-25 (APP1-D01; supplemented at APP1-D02), re-audited
+  **2026-07-26** (APP2-D01). **Auditor tooling:** Figma MCP plugin API.
+- **Files enumerated:** 2/2 — `FIG-FILE-PRODUCT` (**5 pages**) + `FIG-FILE-DS` (19 pages).
 - **Product pages:** Information Architecture (`0:1`), APP_01 (`371:3` — Admin
-  APP1-D01 section `375:11` + Storefront APP1-D02 section `405:2224`), Wireframe
-  (`17:55`, WF01–WF09), User Interface (`166:1457`, UI01–UI05).
+  APP1-D01 section `375:11` + Storefront APP1-D02 section `405:2224`), **APP_02
+  (`419:3` — APP2-D01 section `423:3`)**, Wireframe (`17:55`, WF01–WF09), User
+  Interface (`166:1457`, UI01–UI05).
 - **DS catalog:** 4 variable collections (Primitives 16 / Color 19 / Spacing 10 /
   Radius 5), 11 text styles, 2 effect styles, component sets across 8 HF01 pages.
-- **Registry coverage:** 16 APP1-D01 rows (all `REVIEW_REQUIRED`), 7 APP1-D02
-  Storefront shell/not-found rows (all `APPROVED_FOR_IMPLEMENTATION` under
-  `FIG-APPROVAL-APP1-D02-STOREFRONT-001`), 3 Homepage shell-reference rows
-  (`SUPERSEDED` → APP1-D02), 4 IA/flow rows (`REFERENCE_ONLY`), 7 DS catalog
-  rows (`APPROVED`), 2 `MISSING`/gap rows.
-- **Gaps:** GAP-D01 (no Input component), GAP-D02 (no scrim token). The former
-  `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02 (now
-  `APPROVED_FOR_IMPLEMENTATION`, §4.2).
+- **Registry coverage:** 16 APP1-D01 rows (12 `APPROVED_FOR_IMPLEMENTATION` +
+  3 annotation `REVIEW_REQUIRED`), 7 APP1-D02 Storefront shell/not-found rows (all
+  `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP1-D02-STOREFRONT-001`),
+  **29 APP2-D01 rows (all `REVIEW_REQUIRED`)**, **1 APP2 DS-supplement row
+  (`REVIEW_REQUIRED`)**, 3 Homepage shell-reference rows (`SUPERSEDED` → APP1-D02),
+  4 IA/flow rows (`REFERENCE_ONLY`), 7 DS catalog rows (`APPROVED`), 2
+  `MISSING`/gap rows. **Total 69 registry IDs.**
+- **Gaps:** GAP-D01 (no DS Input — supplemented for APP2 as `FIG-DS-INPUT-APP2`, DS
+  library gap still open), GAP-D02 (no scrim token — still local `ink/900 @45%`).
+  The former `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02 (now
+  `APPROVED_FOR_IMPLEMENTATION`, §4.2). APP2-D01 supersedes **no** APP1 row.
 - **Consistency gate:** `pnpm check:figma-design-index` — see
   `tools/check-figma-design-index.mjs`.
