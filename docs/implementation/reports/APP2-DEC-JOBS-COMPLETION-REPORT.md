@@ -237,3 +237,22 @@ Two docs-only commits: Commit A `8211214…` (decision) and Commit B (this
 report). Not squashed; Commit A not amended after this report. Not pushed. STOP
 at the review boundary — no `APP2-D01`/`APP2-I01`/`APP2-I02`/`APP2-W01`/
 `APP2-B01` implementation, no migrations, no Figma, no next prompt.
+
+## Q. Subsequent correction (`APP2-DEC-JOBS-C1`)
+
+This report describes the decision as delivered. It was subsequently corrected
+by **`APP2-DEC-JOBS-C1`** (Commit C `a9ef895bf78d9abcd66f52a44d153f52aadccb44`;
+report [`APP2-DEC-JOBS-C1-CORRECTION-REPORT.md`](./APP2-DEC-JOBS-C1-CORRECTION-REPORT.md)),
+the **only** correction permitted for this checkpoint. The §C/§G claim predicate
+`status IN ('PENDING','FAILED')` and the retryable-failure `status='FAILED'`
+mutation contradicted the canonical launch index **IDX-088** (partial `WHERE
+status='PENDING'`). The corrected state machine: **`PENDING` is the only
+automatic claim/retry state**; retryable failure returns the row to `PENDING`
+with a backoff `next_attempt_at` (never `FAILED`); `DISPATCHED`/`DEAD_LETTER`
+terminal; **`FAILED` reserved, never emitted or claimed** by the APP2 runtime.
+C1 also locks ownership-guarded atomic completion transactions, `job_key =
+outbox_events.id`, expired-lease attempt evidence (CST-049 conflict-safe), the
+no-heartbeat timeout invariant, the handler idempotency contract, and the
+policy-key set. `NO_APP2_MIGRATION`, no dependency; correction spike **25/25**.
+Read `ADR-APP2-002` and the C1 report as authoritative where they differ from
+§C/§G/§H above.
