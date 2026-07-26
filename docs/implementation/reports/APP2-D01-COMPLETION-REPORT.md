@@ -4,6 +4,23 @@
 **Classification:** Admin `NEW` + Storefront list/detail `SUPPLEMENT` · **Status:** `DELIVERED_FOR_PRODUCT_OWNER_REVIEW`
 **Date:** 2026-07-26 · **Design Commit A:** `6f6a33e5e5b48abed507b04b6bdb9c109734d37a`
 
+> ## ⚠️ Historical record — partially superseded by `APP2-D01-C1`
+>
+> This report is preserved unedited as evidence of what was delivered on 2026-07-26.
+> The Product Owner review returned **`PARTIAL_PRODUCT_OWNER_APPROVAL`**:
+>
+> - **Admin (§E, §F) — approved and frozen.** Still current.
+> - **Storefront Product List (§G) — REJECTED.** Nodes `444:204`, `445:204`, `445:210`
+>   and `446:223` were **deleted** and their registry rows removed by `APP2-D01-C1`.
+>   The node IDs, links and handoff described below for the product list are **void**
+>   and are **not implementation authority**. `APP2-S01` authority is now
+>   **UI02 – Discover Feed** (`208:538`).
+> - **Storefront Product Detail (§G) — NOT APPROVED**, withheld pending UI03
+>   reconciliation. Unmodified, but **not implementation authority**.
+>
+> Current authority: `docs/design/FIGMA_DESIGN_INDEX.md` §4.3.1 and §4.4, and
+> `APP2-D01-C1-STOREFRONT-SOURCE-CORRECTION-COMPLETION-REPORT.md`.
+
 ---
 
 ## A. Preflight and decision chain

@@ -91,6 +91,25 @@
 > **No frontend checkpoint may implement from these rows until the Product Owner
 > promotes them to `APPROVED_FOR_IMPLEMENTATION`.** See the §6.2 handoff.
 >
+> **Product Owner review outcome + `APP2-D01-C1` correction (2026-07-26):**
+>
+> ```text
+> APP2-D01-ADMIN                       = COMPLETE — PRODUCT_OWNER_APPROVED — FROZEN
+> APP2-D01-STOREFRONT-PRODUCT-LIST     = REJECTED_NODE_SET_REMOVED
+>                                        SOURCE_AUTHORITY_CORRECTED_TO_UI02
+> APP2-D01-STOREFRONT-PRODUCT-DETAIL   = NOT_APPROVED
+>                                        WITHHELD_PENDING_UI03_RECONCILIATION
+> APP2-D01                             = PARTIAL_PRODUCT_OWNER_APPROVAL
+>                                        CORRECTION_COMPLETE (APP2-D01-C1)
+> ```
+>
+> `APP2-D01-C1` deleted the four rejected card-grid frames, removed their registry
+> authority, and made **UI02 – Discover Feed** the mandatory source of truth for
+> `APP2-S01` (§6.2.1). Admin was verified unchanged (31/31 frozen nodes identical).
+> Report:
+> [`reports/APP2-D01-C1-STOREFRONT-SOURCE-CORRECTION-COMPLETION-REPORT.md`](../reports/APP2-D01-C1-STOREFRONT-SOURCE-CORRECTION-COMPLETION-REPORT.md).
+> **APP2 engineering implementation has not started.**
+>
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
 > owner and an activation gate rather than a further correction chain.
@@ -200,8 +219,8 @@ registry IDs it used in its completion report.
 | **A02** Admin product form/detail | `FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-{DEFAULT,VALIDATION,SAVING}`, `FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT`, `FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP` | 1440 desktop (3 states + dialog) + 390 mobile |
 | **A03** Admin product list | `FIG-ADMIN-CATALOG-DESKTOP-{DEFAULT,EMPTY}`, `FIG-ADMIN-CATALOG-MOBILE-DEFAULT` | 1440 desktop table + 390 mobile card list |
 | **A04** Admin publication interaction | `FIG-ADMIN-PUBLICATION-DESKTOP-{READY,BLOCKED,CONFIRM-UNPUBLISH}`, `FIG-ADMIN-PUBLICATION-MOBILE` | 1440 desktop (3 states) + 390 mobile |
-| **S01** Storefront product list | `FIG-STOREFRONT-PRODUCT-LIST-{DESKTOP,TABLET,MOBILE,EMPTY}` | 1440 / 1024 / 390 + empty |
-| **S02** Storefront product detail | `FIG-STOREFRONT-PRODUCT-DETAIL-{DESKTOP,TABLET,MOBILE,MEDIA-STATE}` | 1440 / 1024 / 390 + media fallback |
+| **S01** Storefront product list / discover | **UI02 authority** — `FIG-UI02-DISCOVER-{SECTION,DESKTOP,TABLET,MOBILE}` (`208:538`, `208:2002`, `224:871`, `226:1038`) | 5-column / 3-column / 2-column **masonry** from UI02 |
+| **S02** Storefront product detail | **Withheld** — `FIG-STOREFRONT-PRODUCT-DETAIL-{DESKTOP,TABLET,MOBILE,MEDIA-STATE}` are `NOT_APPROVED` / `NOT_IMPLEMENTATION_AUTHORITY` | pending UI03 reconciliation |
 
 **Interaction and accessibility obligations (all six):** single `<h1>` per page; DS
 `Input` supplement carries `<label for>` + `aria-describedby` help/error wiring;
@@ -226,6 +245,34 @@ roles/permissions, analytics/worker dashboards. The reused Storefront shell cont
 search field and later-phase nav items — these stay **inert** in APP2. Unpublished or
 missing products reuse the approved APP1-D02 `FIG-STOREFRONT-NOTFOUND`; APP2 adds no
 not-found of its own.
+
+### 6.2.1 `APP2-D01-C1` — Storefront discovery authority correction
+
+The Product Owner **approved and froze Admin**, **rejected** the APP2 Storefront Product
+List, and **withheld** Product Detail. `APP2-D01-C1` applied that ruling.
+
+- **`APP2-S01` reads UI02 directly.** Primary authority: `FIG-UI02-DISCOVER-*`
+  (`208:538` / `208:2002` / `224:871` / `226:1038`). Supporting: UI01 `183:7`,
+  `189:266`, `191:412`, plus the approved APP1-D02 shell. Reuse policy
+  **`REUSE_AND_SUPPLEMENT_ONLY`** — supplements may add published-only data, product
+  title and detail link, approved-derivative image rules, and product-specific
+  empty/loading/media-fallback data, but must **preserve UI02's masonry architecture**.
+- **Locked invariants:** image-led Pinterest-inspired discovery; masonry **5 columns
+  desktop / 3 tablet / 2 mobile**; varying card heights and editorial rhythm; artwork
+  dominant with minimal catalog chrome; masonry is presentation only — **DOM reading
+  order stays linear**.
+- **Forbidden for `APP2-S01`:** equal-height ecommerce card grid; uniform 3-column
+  desktop / 2-column tablet / single-column mobile retail cards; generic marketplace
+  treatment; redesigning a covered capability because a registry title lacks the words
+  "Product List"; treating `DRAFT` content maturity as absence of visual authority.
+- **The four rejected card-grid nodes were deleted** (`444:204`, `445:204`, `445:210`,
+  `446:223`) and their registry rows removed — there is **no active handoff path** to
+  them. See `FIGMA_DESIGN_INDEX.md` §4.3.1 and §4.4.
+- **`APP2-S02` is blocked beyond backend.** Its four frames remain in Figma unmodified
+  but are `NOT_APPROVED` / `NOT_IMPLEMENTATION_AUTHORITY`. A **separate reconciliation
+  checkpoint against UI03** (`261:1290` — `262:1291` / `273:1409` / `279:1504`) is
+  required before S02 may be designed or implemented. UI02 is **not** the Product Detail
+  authority.
 
 **Open items to resolve before the dependent checkpoint ships:** maximum image bytes,
 original retention, non-image source inclusion, uploaded-SVG handling (all four are
