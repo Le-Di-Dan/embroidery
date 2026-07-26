@@ -183,3 +183,21 @@ note (§T) in the original completion report.
 `PASS_WITH_PRODUCT_PARAMETERS`, still not accepted); **`APP2-DEC-STORAGE-C1` =
 `COMPLETE`**; `APP2-DEC-JOBS` = `BLOCKED_BY_APP2_DEC_STORAGE_REVIEW`; APP2 product
 engineering `NOT_STARTED`. Working tree clean after Commit C; not pushed.
+
+## O. Subsequent correction (`APP2-DEC-STORAGE-C2`)
+
+This report is preserved as C1 evidence. A follow-up correction
+**`APP2-DEC-STORAGE-C2`** (2026-07-26) closed three residual gaps C1 left open,
+without reopening C1's accepted direction: **(1)** the idempotency claim was
+underspecified — C2 locks **model I1 (pre-stream durable allocation)**: the UUIDv7
+`assetId`+object key are persisted in the `IN_PROGRESS` `idempotency_records.result`
+and the claim is committed before streaming, so a crash-retry recovers the same
+identity (repository implementation gap on `claim`, not a schema gap); **(2)** the
+immutable request **fingerprint** is defined as the pre-stream normalized request
+identity (no file content hash — so C1 §F Checksum Option A stands); **(3)**
+`@aws-sdk/s3-request-presigner` is **removed** from the APP2 package set (no
+presigned browser flow), and C1's heap-only "no full-object buffering" phrasing is
+corrected to "no explicit whole-file application buffer" with RSS/external
+verification deferred to `APP2-I01`/`B01`. See
+[`APP2-DEC-STORAGE-C2-CORRECTION-REPORT.md`](./APP2-DEC-STORAGE-C2-CORRECTION-REPORT.md)
+(Correction Commit E `86d3b91f7df592344c2175cb0840a6084941873e`).
