@@ -132,10 +132,51 @@
 > enforcement and its own read timeout, and the gateway is **not** the size
 > authority. **`busboy` belongs to `APP2-B01`**, not here.
 >
+> **`APP2-I02` = `COMPLETE — DELIVERED_FOR_REVIEW`** — the PostgreSQL
+> worker-runtime foundation, implementing IMP-D029 / `ADR-APP2-002` as corrected
+> by `APP2-DEC-JOBS-C1`, and closing **`FU-A07`**.
+>
+> `packages/persistence` gains `WorkerJobQueueRepository`, a narrow typed seam:
+> `claimRegisteredBatch`, `completeSucceededAttempt`, `completeRetryableAttempt`,
+> `completeTerminalAttempt`, `probeWorkerDatabase`. The claim is a **single
+> statement**, so one database instant governs due-ness, `claimed_at` and the
+> lease deadline; it filters to the registry's event types (an empty registry
+> claims **nothing**, never everything), takes rows with `FOR UPDATE SKIP
+> LOCKED`, appends conflict-safe `WORKER_LEASE_EXPIRED` evidence for an abandoned
+> lease through a data-modifying CTE, leases via `next_attempt_at`, and keeps
+> `status = 'PENDING'`. Completions are ownership-guarded on
+> `(id, PENDING, worker, attempt)` and return typed `STALE_JOB_LEASE` without
+> writing evidence when the guard fails. **`FAILED` is never emitted.**
+>
+> `apps/worker` gains the handler registry (one handler per event type, duplicate
+> registration fails startup), the closed error taxonomy, the exact capped
+> backoff `min(base × 2^(n−1), max)` with no jitter, worker identity plus
+> `AsyncLocalStorage` correlation behind an allow-list log projection (no
+> fabricated `X-Request-ID`, no payload/secret/stack), a bounded poll loop with a
+> per-attempt `AbortController` timeout, graceful shutdown and readiness. The
+> no-op keep-alive service is removed. **No new dependency**;
+> `NO_APP2_MIGRATION` holds; every frozen baseline is unchanged.
+>
+> Runtime policy is read from the canonical `policy_configurations` /
+> `policy_configuration_versions` path under key `worker.runtime`. **No
+> environment variable duplicates it, there is no production default, and no
+> development bootstrap was added** — the prompt permits one only when a
+> canonical platform-bootstrap mechanism already owns such defaults, and none
+> exists. Consequence, stated rather than hidden: the development Compose worker
+> reports `WORKER_POLICY_MISSING`, stays up and claims nothing until an operator
+> publishes `worker.runtime`.
+>
+> Evidence: 115 worker + 107 persistence unit tests, all 27 required
+> disposable-PostgreSQL cases (29 total, with real parallel-transaction
+> concurrency evidence), and a 6-assertion real-process smoke. Report:
+> [`reports/APP2-I02-COMPLETION-REPORT.md`](../reports/APP2-I02-COMPLETION-REPORT.md).
+>
+> **The production handler registry is empty.** That is correct, not a gap:
+> `APP2-W01` owns the Asset inspection and derivative handlers.
+>
 > **No upload, processing, publication or public product functionality exists.**
-> `APP2-I02` is ready and not started; `APP2-B01` remains blocked by
-> `STORAGE-BLK-01..03` and the upload-size parameter; `APP2-W01` is blocked by
-> `I02` + `B01`.
+> `APP2-B01` remains blocked by `STORAGE-BLK-01..03` and the upload-size
+> parameter; `APP2-W01` is now blocked by `B01` alone.
 >
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
@@ -211,7 +252,7 @@ endpoints.
 | 1 | APP2-PRE-AUDIT | audit | this audit | APP1-X01 |
 | 2 | APP2-DEC-STORAGE | decision | object-storage ADR (IMP-O002) | PRE-AUDIT |
 | 3 | APP2-DEC-JOBS | decision | job-runtime ADR (IMP-D029/`ADR-APP2-002`): PostgreSQL claim queue on existing persistence, visibility-timeout lease, `NO_APP2_MIGRATION` (IMP-O003) — **`DELIVERED_FOR_REVIEW`** | PRE-AUDIT |
-| 3b | APP2-I02 | foundation | Worker job-runtime foundation — poll loop + claim/lease **driver** (`OutboxEventStore.claimBatch` `next_attempt_at` lease extension), `event_type` handler registry, attempt-recording seam, **`FU-A07`** worker structured logging + out-of-request correlation (`{job_kind}:{job_key}:{attempt_no}` `AsyncLocalStorage` over IMP-D022), SIGTERM/SIGINT graceful shutdown replacing the no-op keep-alive; no asset job family (IMP-D029) | DEC-JOBS |
+| 3b | APP2-I02 | foundation | Worker job-runtime foundation — poll loop + claim/lease driver, `event_type` handler registry, attempt-recording seam, **`FU-A07`** worker structured logging + out-of-request correlation (`{job_kind}:{job_key}:{attempt_no}` `AsyncLocalStorage` over IMP-D022), SIGTERM/SIGINT graceful shutdown replacing the no-op keep-alive; no asset job family (IMP-D029) — **`COMPLETE — DELIVERED_FOR_REVIEW`**. *Delivered divergence:* the claim/lease driver is a **new** `WorkerJobQueueRepository` rather than an extension of `OutboxEventStore.claimBatch`, because that DB7-era primitive claims `['PENDING','FAILED']` and its `scheduleRetry` writes `FAILED` — both contradict `APP2-DEC-JOBS-C1`, and widening it would have put two contradictory lifecycles in one class. The old store is untouched. | DEC-JOBS |
 | 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) — **`DELIVERED_FOR_PRODUCT_OWNER_REVIEW`**, section `423:3` on page APP_02, 30 `REVIEW_REQUIRED` rows (§6.2) | PRE-AUDIT |
 | 4b | APP2-I01 | foundation | Object-storage foundation — `packages/object-storage` (port + S3 adapter over `client-s3`/`lib-storage` **only, no presigner** + key helpers + contract tests), pinned MinIO Compose service + bucket bootstrap, config contract + `.env.example` keys, route-scoped nginx upload support (`client_max_body_size` + `proxy_request_buffering off`), `lib-storage` memory-bound policy (IMP-D028 / C1 / C2) | DEC-STORAGE |
 | 5 | APP2-B01 | backend | Asset intake API — T1 streaming multipart upload, I1 pre-stream durable idempotency allocation + pre-stream fingerprint (claim-with-allocation repo extension), post-object `UPLOADED` insert + guarded `→INSPECTING`, one-transition outbox `append`, CW-01…CW-07 tests, + OpenAPI/client (≤5). **Entry gate resolves `STORAGE-BLK-01..03`** (upload fingerprint / idempotency result JSON shape / expired-allocation cleanup ordering). | I01 |
