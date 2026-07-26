@@ -3,6 +3,8 @@
 **Checkpoint:** APP1-E01 (integration / cross-layer acceptance) · **Status:** `DELIVERED_FOR_REVIEW`
 **Scope:** deterministic browser evidence for the implemented APP1 journeys across gateway → Admin/Storefront (Next) → API (Nest) → PostgreSQL → session cookie → automatic bootstrap → generated contracts. No new product capability, no redesign.
 
+> **Correction history — APP1-E01-C1 (`COMPLETE`):** `APP1-E01-C1` supplied **real-gateway evidence for the invalid/stale-cookie route matrix** (`specs/app1/admin-invalid-cookie.spec.ts`) and **real server-to-server evidence for an initial protected-page API-unavailability failure** (`specs/app1/admin-api-unavailable.spec.ts` — the isolated API is stopped and restarted through an orchestrator control seam; `staffSelfGet` is never mocked). This **supersedes** the deviations in §H and §N.5 below that had limited the initial server-side dependency-failure case to the A02 component/integration tests. Updated suite: **7 specs / 17 tests**, green twice; OpenAPI/client/DB baselines unchanged. Evidence: [`APP1-E01-C1-CORRECTION-REPORT.md`](./APP1-E01-C1-CORRECTION-REPORT.md). With C1, **`APP1-E01` = `COMPLETE — CORRECTED, DELIVERED_FOR_REVIEW`**.
+
 ## A. Preflight and accepted phase chain
 
 Initial `HEAD` (before Commit A): `063b0dbca23a24047f238cca5846172b6161b796` (S01B evidence). Branch `production`, clean tree.
@@ -82,7 +84,7 @@ Deterministic browser-side interception (shared services never stopped):
 - **Later current-staff 5xx:** `/api/staff/me` fulfilled `500` on the stale re-validation → shell stays with the reconnecting status `Mất kết nối tạm thời…`; the **expiry modal never appears** (dependency failure ≠ expiry).
 - **Logout network failure:** the logout DELETE is aborted → shell stays (still on `/`), safe logout error + retry available (not signed out on a transient failure).
 
-The three classes are visibly distinct: `401` → expiry/redirect, `429` → rate-limit UI, network/5xx → reconnect/safe-error. The initial *server-side* current-staff dependency failure (server-to-server, not browser-interceptable, and the shared API is never stopped mid-suite) remains covered by the A02 component/integration tests and the resolver's redirect-vs-throw design; E01 proves the observable outcomes above (§N).
+The three classes are visibly distinct: `401` → expiry/redirect, `429` → rate-limit UI, network/5xx → reconnect/safe-error. The initial *server-side* current-staff dependency failure (server-to-server, not browser-interceptable, and the shared API is never stopped mid-suite) remains covered by the A02 component/integration tests and the resolver's redirect-vs-throw design; E01 proves the observable outcomes above (§N). **[Superseded by APP1-E01-C1]** — a real cross-layer journey now stops the isolated API and proves the initial server-side failure surfaces the safe framework 5xx boundary (not `/login`, no expiry modal, no raw detail); see the correction note above.
 
 ## I. Storefront shell journey (E01-J08)
 
@@ -142,7 +144,7 @@ E01 Playwright: 2 host/Chromium projects, 5 specs, **15 tests**; both full runs 
 2. **Suite location:** §23 lists `tests/e2e/**` illustratively; the actual E2E foundation is `packages/e2e-testing/` (§16 "extend the existing foundation"), which is where the suite lives.
 3. **Rate-limit dimension isolation:** the E2E API keeps the **identifier** limit at the locked default (5/15 min — the boundary under test) but raises the **IP/global** ceilings, because a single-host harness shares one source IP and those orthogonal abuse ceilings would otherwise couple independent journeys. The tested policy is unchanged.
 4. **Client re-validation timing:** the current-staff query is server-seeded with a 30 s freshness window, so J06/J07 wait for genuine staleness then dispatch real reconnect/visibility events — no app-internal test hook was added.
-5. **Initial server-side dependency failure (J07):** the server-to-server current-staff-unavailable path is not browser-interceptable and the shared API is never stopped mid-suite; it stays covered by the A02 component/integration tests. All other J07 classes are injected in-browser.
+5. **Initial server-side dependency failure (J07):** the server-to-server current-staff-unavailable path is not browser-interceptable and the shared API is never stopped mid-suite; it stays covered by the A02 component/integration tests. All other J07 classes are injected in-browser. **[Closed by APP1-E01-C1]** — the follow-up correction adds a real cross-layer journey that stops the isolated API (orchestrator control seam) and proves the initial server-side failure surfaces the safe framework 5xx response; this A02-only limitation no longer applies.
 6. Runner scope: the E01 auth/session/responsive journeys are host/Chromium (they need disposable-DB access); the container 3-engine matrix continues to cover the cross-browser smoke.
 
 No production source, schema, migration, contract, Figma, or dependency change.

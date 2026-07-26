@@ -45,11 +45,18 @@
 > and the not-found boundary), reports
 > `../reports/APP1-S01A-COMPLETION-REPORT.md` and
 > `../reports/APP1-S01B-COMPLETION-REPORT.md`; the parent **`APP1-S01` is
-> `COMPLETE — PRODUCT_OWNER_ACCEPTED`**. **`APP1-E01` is `DELIVERED_FOR_REVIEW`**
-> — staff access & shared-shell cross-layer acceptance (deterministic host/Chromium
-> E2E over the real gateway/Next/Nest/PostgreSQL/session-cookie/bootstrap/contracts;
-> 15 tests green twice; bootstrap smoke 8/8; zero residue; baselines unchanged;
-> Commit A `3b4f31e`), report `../reports/APP1-E01-COMPLETION-REPORT.md`.
+> `COMPLETE — PRODUCT_OWNER_ACCEPTED`**. **`APP1-E01` is
+> `COMPLETE — CORRECTED, DELIVERED_FOR_REVIEW`** — staff access & shared-shell
+> cross-layer acceptance (deterministic host/Chromium E2E over the real
+> gateway/Next/Nest/PostgreSQL/session-cookie/bootstrap/contracts; 17 tests green
+> twice; bootstrap smoke 8/8; zero residue; baselines unchanged; Commit A
+> `3b4f31e`), report `../reports/APP1-E01-COMPLETION-REPORT.md`. **`APP1-E01-C1`
+> is `COMPLETE`** — the two missing cross-layer failure journeys (invalid/stale
+> cookie route matrix reaching authoritative 401; initial protected-page API
+> unavailability surfacing the safe framework 5xx boundary, not `/login` or the
+> expiry modal, via a real isolated API stop/restart); test/harness only, no
+> product change, Commit C `8d247b4`; report
+> `../reports/APP1-E01-C1-CORRECTION-REPORT.md`.
 > `APP1-X01` is `BLOCKED_BY_APP1_E01_REVIEW`. All others
 > `NOT_STARTED` per §7. Phase status is owned by
 > `../10-MASTER-APPLICATION-ROADMAP.md` §6.
