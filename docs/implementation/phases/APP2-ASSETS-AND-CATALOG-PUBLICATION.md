@@ -1,6 +1,7 @@
 # APP2 — Assets and Catalog Publication
 
-> **Status:** `AUDITED — PASS_WITH_REQUIRED_DECISIONS` (engineering `NOT_STARTED`).
+> **Status:** `AUDITED — PASS_WITH_REQUIRED_DECISIONS` (engineering
+> `STARTED_WITH_FOUNDATION_ONLY` — see the `APP2-I01` block below).
 > `APP2-PRE-AUDIT` complete — audit [`audits/APP2_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP2_PRE_IMPLEMENTATION_AUDIT.md),
 > report [`reports/APP2-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md`](../reports/APP2-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md).
 > Verdict `NO_APP2_MIGRATION`; two required decisions before any code
@@ -108,7 +109,33 @@
 > `APP2-S01` (§6.2.1). Admin was verified unchanged (31/31 frozen nodes identical).
 > Report:
 > [`reports/APP2-D01-C1-STOREFRONT-SOURCE-CORRECTION-COMPLETION-REPORT.md`](../reports/APP2-D01-C1-STOREFRONT-SOURCE-CORRECTION-COMPLETION-REPORT.md).
-> **APP2 engineering implementation has not started.**
+>
+> **`APP2-I01` = `COMPLETE — DELIVERED_FOR_REVIEW`** — the object-storage
+> foundation, the first APP2 engineering checkpoint. `@embroidery/object-storage`
+> ships the six-operation port (bucket **alias** only, no presign, no
+> unrestricted list-all), the S3 adapter with streaming `lib-storage` multipart
+> (5 MiB × 2, `leavePartsOnError: false`), PII-free UUIDv7 keys from validated
+> MIME (SVG rejected), strict fail-fast config with paired credentials and secret
+> redaction, and a closed provider-error taxonomy. Also: the pinned
+> `minio/minio:RELEASE.2025-04-08T15-41-24Z` development Compose service with
+> in-package private-bucket bootstrap, and an **inactive** route-scoped nginx
+> upload seam. Direct dependencies are exactly `@aws-sdk/client-s3` +
+> `@aws-sdk/lib-storage` `3.1095.0`; `NO_APP2_MIGRATION` holds and every frozen
+> baseline is unchanged. 150 unit tests + 20/20 disposable-MinIO contract cases.
+> Report:
+> [`reports/APP2-I01-COMPLETION-REPORT.md`](../reports/APP2-I01-COMPLETION-REPORT.md).
+>
+> Two consequences carried forward. **`APP2-B01` owns the seam's unset hooks:**
+> `client_max_body_size`, `proxy_read_timeout` and `proxy_send_timeout` were left
+> unset on purpose because the maximum-image-bytes Product Owner parameter is
+> still open — with request buffering off, the API owns incremental size
+> enforcement and its own read timeout, and the gateway is **not** the size
+> authority. **`busboy` belongs to `APP2-B01`**, not here.
+>
+> **No upload, processing, publication or public product functionality exists.**
+> `APP2-I02` is ready and not started; `APP2-B01` remains blocked by
+> `STORAGE-BLK-01..03` and the upload-size parameter; `APP2-W01` is blocked by
+> `I02` + `B01`.
 >
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
