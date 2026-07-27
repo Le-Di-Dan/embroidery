@@ -431,6 +431,19 @@
 > the Rejected-state action `Xoá khỏi danh sách` has no delete or hide operation
 > in the contract, and this checkpoint may not add one.
 >
+> **`APP2-A01-C1` (2026-07-28) — secure-context idempotency key.** A live test
+> through the development gateway showed every upload failing with the generic
+> safe error and **no network request at all**:
+> `http://admin.embroidery.local` is plain HTTP on a named host, so it is not a
+> secure context and the `[SecureContext]`-only `crypto.randomUUID()` is absent
+> there, making the intent throw before the transport was reached. The key now
+> falls back to 16 `crypto.getRandomValues()` bytes formatted as a v4 UUID —
+> still cryptographically strong, still inside B01's length window and
+> allowlist, still no `Math.random()` path. Two regression tests reproduce the
+> insecure context. Commit `77691abcadae042646416f1f6171f107112fceee`;
+> `pnpm quality` `EXIT=0`; all baselines unchanged. **`APP2-A01` =
+> `COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`.**
+>
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
 > owner and an activation gate rather than a further correction chain.

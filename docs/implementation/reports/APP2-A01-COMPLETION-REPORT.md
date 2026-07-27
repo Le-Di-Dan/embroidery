@@ -563,10 +563,63 @@ delete APIs, retention, backend or worker changes, migrations, Figma changes.
    placeholder. A real preview needs an authenticated derivative-delivery
    operation, which A01 must not invent.
 
+---
+
+## S. Post-delivery correction C1 — secure-context idempotency key
+
+**Reported by live test, 2026-07-28.** Uploading a valid 37 KB JPEG through the
+development gateway (`http://admin.embroidery.local/assets`) failed immediately
+with the generic `Đã xảy ra lỗi ngoài dự kiến`, and — the diagnostic clue —
+**nothing appeared in the browser console or the network panel**.
+
+**Cause.** That origin is plain HTTP on a named host, so it is not a secure
+context. `crypto.randomUUID()` is specified `[SecureContext]` and is simply
+absent there, so `createIdempotencyKey()` threw a `TypeError` while staging the
+intent — before the transport was ever reached, which is exactly why no request
+was logged. The state machine caught it, and because the throw was not an
+`AssetApiError` it collapsed into the safe generic message with no retry action.
+The unit tests could not have caught this: jsdom exposes `randomUUID`
+unconditionally, and the earlier production visual review ran on
+`http://localhost`, which *is* a trustworthy origin.
+
+**Verified in the reported origin** before changing anything:
+
+```text
+origin           http://admin.embroidery.local
+isSecureContext  false
+crypto           object
+crypto.randomUUID       undefined   → TypeError: c.randomUUID is not a function
+crypto.getRandomValues  function    → b24cfae7-19dc-408c-9eec-5d24ba98fd13 (valid)
+```
+
+**Fix.** `crypto.randomUUID()` is still preferred; when it is absent, 16
+`crypto.getRandomValues()` bytes are formatted as an RFC 4122 v4 UUID.
+`getRandomValues` carries no secure-context restriction, so the key remains
+cryptographically strong and still satisfies B01's 8–128 length window and
+`[A-Za-z0-9._:-]` allowlist. There is still **no** `Math.random()` path — a
+runtime without Web Crypto at all continues to fail loudly, because a weak key
+would silently break the upload arbiter.
+
+Two regression tests shadow the `Crypto.prototype` methods on the instance
+(deleting them does not work — they are not own properties) to reproduce an
+insecure context and to pin the loud-failure boundary.
+
+**Evidence.** Commit `77691abcadae042646416f1f6171f107112fceee` — 2 files,
++92/−10. Admin suite 222 passed / 30 suites; targeted asset suite 79 passed;
+`pnpm quality` `EXIT=0`; OpenAPI, API-client, database and Figma-registry
+baselines unchanged. The Admin container bind-mounts `apps/admin/src` and runs
+`next dev`, so the running stack recompiled the change cleanly with no restart.
+
+**Not verified by me:** the authenticated end-to-end upload in the reviewer's
+own session. I hold no staff credentials and did not create any, so the final
+confirmation that the JPEG now uploads is the reviewer's to make.
+
+---
+
 **Final state**
 
 ```text
-APP2-A01 = COMPLETE — DELIVERED_FOR_REVIEW
+APP2-A01 = COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW
 APP2-B02 = READY — NOT STARTED
 APP2-A02 = BLOCKED_BY_APP2-B02
 APP2-S01 = DESIGN_AUTHORITY_UI02 — BLOCKED_BY_PUBLIC_BACKEND
