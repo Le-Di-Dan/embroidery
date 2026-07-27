@@ -26,6 +26,8 @@
     "test:asset-intake:integration": "pnpm --filter @embroidery/api exec jest --config jest.asset-intake.config.mjs --testPathPatterns=asset-intake(-lifecycle)?[.]integration",
     "test:asset-intake:api": "pnpm --filter @embroidery/api exec jest --config jest.asset-intake.config.mjs --testPathPatterns=asset-intake-api",
     "test:asset-intake:gateway": "node --test tools/nginx-upload-seam.test.mjs tools/nginx-upload-render.test.mjs",
+    "test:asset-processing:integration": "pnpm --filter @embroidery/worker exec jest --testPathPatterns=asset-inspection-.*[.]integration --testPathIgnorePatterns=/node_modules/",
+    "test:asset-processing:worker-smoke": "pnpm --filter @embroidery/worker build && pnpm --filter @embroidery/worker exec jest --testPathPatterns=asset-processing-worker.smoke --testPathIgnorePatterns=/node_modules/",
     "test:worker-runtime:integration": "pnpm --filter @embroidery/persistence exec jest --testPathPatterns=worker-job-queue && pnpm --filter @embroidery/worker exec jest --testPathPatterns=worker-runtime-.*integration",
     "test:worker-runtime:smoke": "pnpm --filter @embroidery/worker build && pnpm --filter @embroidery/worker exec jest --testPathPatterns=worker-smoke --testPathIgnorePatterns=/node_modules/",
     "test:worker-runtime:signal-smoke": "pnpm --filter @embroidery/worker exec jest --testPathPatterns=worker-signal-smoke --testPathIgnorePatterns=/node_modules/",

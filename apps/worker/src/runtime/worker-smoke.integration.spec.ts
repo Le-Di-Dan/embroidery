@@ -109,9 +109,11 @@ describe('worker smoke (real process)', () => {
     expect(result.stderr).not.toContain('ERROR');
   });
 
-  it('is idle with the empty production registry', () => {
-    // I02 registers no handler, so the runtime must say so rather than claim.
-    expect(result.stdout).toContain('0 handler(s) registered');
+  it('registers exactly the production Asset handler', () => {
+    // I02 registered none; APP2-W01 registers exactly one. The synthetic event
+    // this suite seeds is still a type nothing handles, which is what the next
+    // case proves.
+    expect(result.stdout).toContain('1 handler(s) registered');
   });
 
   it('steals no event it cannot handle', async () => {

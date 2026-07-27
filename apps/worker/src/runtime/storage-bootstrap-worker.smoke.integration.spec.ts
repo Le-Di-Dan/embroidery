@@ -141,9 +141,12 @@ describe('worker private-bucket bootstrap (real process)', () => {
     expect(output).toContain('Worker readiness: ready (ok)');
   });
 
-  it('stays idle with an empty production registry', () => {
+  it('registers exactly the production Asset handler', () => {
+    // Was `0 handler(s)` until APP2-W01 shipped the one production capability.
+    // The number is asserted rather than ignored precisely because it is the
+    // cheapest place a second, unintended registration would show up.
     const output = `${result.stdout}${result.stderr}`;
-    expect(output).toContain('0 handler(s) registered');
+    expect(output).toContain('1 handler(s) registered');
   });
 
   it('exits 0 on shutdown', () => {

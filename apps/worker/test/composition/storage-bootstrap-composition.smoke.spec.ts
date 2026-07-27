@@ -251,8 +251,10 @@ describe('API and worker private-bucket bootstrap (cross-process)', () => {
     expect(listening).toBeGreaterThan(verified);
   });
 
-  it('claims nothing while idle', () => {
-    expect(worker.output()).toContain('0 handler(s) registered');
+  it('starts with exactly the production Asset handler registered', () => {
+    // `0` until APP2-W01. This composition smoke seeds no event, so the worker
+    // is still idle — it now simply has something it *could* handle.
+    expect(worker.output()).toContain('1 handler(s) registered');
   });
 
   it('shuts both processes down cleanly', () => {

@@ -171,10 +171,11 @@ describe('worker signal smoke (real Linux SIGTERM)', () => {
 
   it('boots the shipped image and reports itself ready', () => {
     expect(logs).toContain('Worker readiness: ready (ok)');
-    expect(logs).toContain('0 handler(s) registered');
+    // `0` until APP2-W01 shipped the production Asset handler.
+    expect(logs).toContain('1 handler(s) registered');
   });
 
-  it('steals no event while its registry is empty', async () => {
+  it('steals no event whose type it does not handle', async () => {
     const state = await outboxState(disposable, eventId);
 
     expect(state.status).toBe('PENDING');

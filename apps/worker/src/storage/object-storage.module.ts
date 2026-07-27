@@ -9,7 +9,11 @@ import { Global, Module } from '@nestjs/common';
 
 import { WORKER_STARTUP_GATE } from '../runtime/startup/startup-gate';
 import { ObjectStorageBootstrapService } from './object-storage-bootstrap.service';
-import { objectStorageProviders } from './object-storage.provider';
+import {
+  OBJECT_STORAGE,
+  OBJECT_STORAGE_ENVIRONMENT,
+  objectStorageProviders,
+} from './object-storage.provider';
 
 @Global()
 @Module({
@@ -18,6 +22,14 @@ import { objectStorageProviders } from './object-storage.provider';
     ObjectStorageBootstrapService,
     { provide: WORKER_STARTUP_GATE, useExisting: ObjectStorageBootstrapService },
   ],
-  exports: [ObjectStorageBootstrapService, WORKER_STARTUP_GATE],
+  // The port and its environment namespace are exported for job modules
+  // (APP2-W01). The configuration object itself is not: it carries the
+  // credentials, and no handler has a reason to hold them.
+  exports: [
+    ObjectStorageBootstrapService,
+    WORKER_STARTUP_GATE,
+    OBJECT_STORAGE,
+    OBJECT_STORAGE_ENVIRONMENT,
+  ],
 })
 export class WorkerObjectStorageModule {}

@@ -15,6 +15,11 @@ export default {
   // they start a MinIO container and a built process, so they run from their
   // own scripts (`test:storage-bootstrap:worker`, `:composition`), never from
   // the Docker-free `pnpm test`.
+  // The APP2-W01 asset-processing integration suites join for the same reason:
+  // each one starts a MinIO container and a disposable PostgreSQL, so they run
+  // from `test:asset-processing:integration`, never from the Docker-free
+  // `pnpm test`. Their Docker-free unit siblings sit next to the code and do
+  // run here.
   testPathIgnorePatterns: [
     '\\\\node_modules\\\\',
     '/node_modules/',
@@ -22,6 +27,8 @@ export default {
     'worker-signal-smoke',
     'storage-bootstrap-worker',
     'storage-bootstrap-composition',
+    'asset-inspection-.*\\.integration',
+    'asset-processing-worker\\.smoke',
     '\\.process\\.spec\\.ts$',
   ],
   transform: {

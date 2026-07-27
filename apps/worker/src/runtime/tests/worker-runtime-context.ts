@@ -119,11 +119,20 @@ export async function startWorkerRuntime(
     if (options.withPolicy !== false && !attached) {
       await publishWorkerPolicy(moduleRef, disposable, options.policy ?? FAST_POLICY);
     }
-    // Registration happens before `init()`, exactly as a production module
-    // would register its handlers during construction.
-    moduleRef.get(JobHandlerRegistry).registerAll(options.handlers ?? []);
-
     await moduleRef.init();
+
+    // The registry is reset to exactly what the suite asked for.
+    //
+    // Since APP2-W01 the production `AssetInspectionModule` registers the real
+    // Asset handler in its own `onModuleInit`, which runs inside `init()`.
+    // These suites are about the *runtime* — claiming, leasing, retrying — with
+    // synthetic handlers, so leaving a production capability in the registry
+    // would make their assertions depend on a module they are not testing. The
+    // production registration ordering is proven by its own specs and by the
+    // process smokes, not here.
+    const registry = moduleRef.get(JobHandlerRegistry);
+    registry.clear();
+    registry.registerAll(options.handlers ?? []);
   } catch (error: unknown) {
     restoreStorageEnv();
     if (!attached) {

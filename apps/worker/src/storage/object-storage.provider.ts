@@ -29,6 +29,16 @@ import {
 
 export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
 
+/**
+ * The runtime environment the deterministic object keys are namespaced by
+ * (APP2-W01).
+ *
+ * Exposed as its own token, exactly as the API does it, so a job handler can
+ * build a key without being handed the whole configuration object — which also
+ * carries the credentials.
+ */
+export const OBJECT_STORAGE_ENVIRONMENT = Symbol('OBJECT_STORAGE_ENVIRONMENT');
+
 const OBJECT_STORAGE_CONFIG = Symbol('OBJECT_STORAGE_CONFIG');
 
 export const objectStorageProviders: Provider[] = [
@@ -46,5 +56,10 @@ export const objectStorageProviders: Provider[] = [
     provide: OBJECT_STORAGE,
     inject: [OBJECT_STORAGE_CONFIG],
     useFactory: (config: ObjectStorageConfig): ObjectStoragePort => createS3ObjectStorage(config),
+  },
+  {
+    provide: OBJECT_STORAGE_ENVIRONMENT,
+    inject: [OBJECT_STORAGE_CONFIG],
+    useFactory: (config: ObjectStorageConfig): string => config.environment,
   },
 ];

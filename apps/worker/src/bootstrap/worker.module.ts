@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
+import { AssetInspectionModule } from '../jobs/asset-inspection/asset-inspection.module';
 import { WorkerRuntimeModule } from '../runtime/worker-runtime.module';
 import { WorkerObjectStorageModule } from '../storage/object-storage.module';
 
@@ -19,6 +20,10 @@ import { WorkerObjectStorageModule } from '../storage/object-storage.module';
   // `WORKER_STARTUP_GATE`, which the poll runtime injects, and it is the reason
   // the worker verifies its private buckets before claiming anything
   // (APP2-I03).
-  imports: [DatabaseModule, WorkerObjectStorageModule, WorkerRuntimeModule],
+  // `AssetInspectionModule` is last: it is a capability, and it registers its
+  // handler in `onModuleInit` — before any `onApplicationBootstrap`, so the
+  // registry is populated before the poll loop issues its first claim
+  // (APP2-W01 §19).
+  imports: [DatabaseModule, WorkerObjectStorageModule, WorkerRuntimeModule, AssetInspectionModule],
 })
 export class WorkerModule {}
