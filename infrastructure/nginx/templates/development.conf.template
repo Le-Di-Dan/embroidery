@@ -93,6 +93,16 @@ server {
         proxy_pass http://admin_upstream;
     }
 
+    # APP2-B01 asset intake. An exact-match location so it cannot widen: only
+    # this one path streams its request body and carries the larger envelope
+    # ceiling and the longer timeouts. Every other /api/ route below keeps the
+    # http-level defaults (20m, 60s, buffering on).
+    location = /api/admin/assets/upload {
+        include /etc/nginx/conf.d/includes/proxy-headers.conf;
+        include /etc/nginx/conf.d/includes/upload-proxy.conf;
+        proxy_pass http://api_upstream;
+    }
+
     location /api/ {
         include /etc/nginx/conf.d/includes/proxy-headers.conf;
         proxy_pass http://api_upstream;

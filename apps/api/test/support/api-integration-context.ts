@@ -12,6 +12,7 @@ import request from 'supertest';
 
 import { GLOBAL_ROUTE_PREFIX } from '../../src/bootstrap/api-application';
 import { AppModule } from '../../src/bootstrap/app.module';
+import { applyOfflineObjectStorageEnv } from '../../src/openapi/generation-environment';
 import { LOG_SINK } from '../../src/platform/logging/log-sink';
 import { RecordingLogSink } from './recording-log-sink';
 
@@ -73,6 +74,9 @@ export async function createApiIntegrationContext(
   const previousNodeEnv = process.env['NODE_ENV'];
   process.env['DATABASE_URL'] = database.url;
   process.env['NODE_ENV'] = 'test';
+  // Non-connecting object-storage placeholders unless the caller already set
+  // real ones — an upload suite points them at a live disposable MinIO.
+  const restoreStorageEnv = applyOfflineObjectStorageEnv();
 
   const logs = new RecordingLogSink();
 
@@ -98,6 +102,7 @@ export async function createApiIntegrationContext(
     await cleanup.run();
     throw error;
   } finally {
+    restoreStorageEnv();
     if (previousUrl === undefined) {
       delete process.env['DATABASE_URL'];
     } else {

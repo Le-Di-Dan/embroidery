@@ -5,6 +5,88 @@
  * Internal HTTP contract for the Embroidery Commerce platform API. Generated from NestJS Swagger metadata; the committed artifact is the machine-readable source for the generated TypeScript/Axios client.
  * OpenAPI spec version: 0.1.0
  */
+export type AdminAssetDetailResponseClassification =
+  (typeof AdminAssetDetailResponseClassification)[keyof typeof AdminAssetDetailResponseClassification];
+
+export const AdminAssetDetailResponseClassification = {
+  PRODUCTION_SENSITIVE: 'PRODUCTION_SENSITIVE',
+} as const;
+
+export type AdminAssetDetailResponseKind =
+  (typeof AdminAssetDetailResponseKind)[keyof typeof AdminAssetDetailResponseKind];
+
+export const AdminAssetDetailResponseKind = {
+  CATALOG_MEDIA: 'CATALOG_MEDIA',
+} as const;
+
+export type AdminAssetDetailResponseMediaType =
+  (typeof AdminAssetDetailResponseMediaType)[keyof typeof AdminAssetDetailResponseMediaType];
+
+export const AdminAssetDetailResponseMediaType = {
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface AdminAssetDetailResponse {
+  assetId: string;
+  /** Server-measured size in bytes. */
+  byteSize: number;
+  /** Server-computed SHA-256. No client-supplied checksum is accepted. */
+  checksum: string;
+  classification: AdminAssetDetailResponseClassification;
+  createdAt: string;
+  kind: AdminAssetDetailResponseKind;
+  mediaType: AdminAssetDetailResponseMediaType;
+  /** The asset lifecycle state after the inspection handoff. */
+  status: string;
+  updatedAt: string;
+}
+
+export interface AdminAssetListResponse {
+  /** True when a further page exists. */
+  hasNext: boolean;
+  items: AdminAssetDetailResponse[];
+  /** Opaque keyset cursor for the next page. Absent on the last page. */
+  nextCursor?: string;
+}
+
+export type AdminAssetUploadReceiptResponseClassification =
+  (typeof AdminAssetUploadReceiptResponseClassification)[keyof typeof AdminAssetUploadReceiptResponseClassification];
+
+export const AdminAssetUploadReceiptResponseClassification = {
+  PRODUCTION_SENSITIVE: 'PRODUCTION_SENSITIVE',
+} as const;
+
+export type AdminAssetUploadReceiptResponseKind =
+  (typeof AdminAssetUploadReceiptResponseKind)[keyof typeof AdminAssetUploadReceiptResponseKind];
+
+export const AdminAssetUploadReceiptResponseKind = {
+  CATALOG_MEDIA: 'CATALOG_MEDIA',
+} as const;
+
+export type AdminAssetUploadReceiptResponseMediaType =
+  (typeof AdminAssetUploadReceiptResponseMediaType)[keyof typeof AdminAssetUploadReceiptResponseMediaType];
+
+export const AdminAssetUploadReceiptResponseMediaType = {
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface AdminAssetUploadReceiptResponse {
+  assetId: string;
+  /** Server-measured size in bytes. */
+  byteSize: number;
+  /** Server-computed SHA-256. No client-supplied checksum is accepted. */
+  checksum: string;
+  classification: AdminAssetUploadReceiptResponseClassification;
+  kind: AdminAssetUploadReceiptResponseKind;
+  mediaType: AdminAssetUploadReceiptResponseMediaType;
+  /** The asset lifecycle state after the inspection handoff. */
+  status: string;
+}
+
 /**
  * Stable machine-readable code; branch on this.
  */
@@ -185,6 +267,61 @@ export interface StaffLoginRequest {
   /** Plain password; never stored or echoed. */
   password: string;
 }
+
+export type AdminAssetListParams = {
+  mediaType?: unknown;
+  status?: unknown;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from a previous page.
+   */
+  cursor?: unknown;
+};
+
+export type AdminAssetList200 = ApiSuccessResponse & {
+  data: AdminAssetListResponse;
+};
+
+/**
+ * Fixed. Must arrive before the file part.
+ */
+export type AdminAssetUploadBodyAssetKind =
+  (typeof AdminAssetUploadBodyAssetKind)[keyof typeof AdminAssetUploadBodyAssetKind];
+
+export const AdminAssetUploadBodyAssetKind = {
+  CATALOG_MEDIA: 'CATALOG_MEDIA',
+} as const;
+
+/**
+ * Fixed by policy and not client-selectable. Must arrive before the file part.
+ */
+export type AdminAssetUploadBodyClassification =
+  (typeof AdminAssetUploadBodyClassification)[keyof typeof AdminAssetUploadBodyClassification];
+
+export const AdminAssetUploadBodyClassification = {
+  PRODUCTION_SENSITIVE: 'PRODUCTION_SENSITIVE',
+} as const;
+
+export type AdminAssetUploadBody = {
+  /** Fixed. Must arrive before the file part. */
+  assetKind: AdminAssetUploadBodyAssetKind;
+  /** Fixed by policy and not client-selectable. Must arrive before the file part. */
+  classification: AdminAssetUploadBodyClassification;
+  /** Exactly one PNG, JPEG or WebP image of at most 26214400 bytes. */
+  file: Blob;
+};
+
+export type AdminAssetUpload202 = ApiSuccessResponse & {
+  data: AdminAssetUploadReceiptResponse;
+};
+
+export type AdminAssetDetail200 = ApiSuccessResponse & {
+  data: AdminAssetDetailResponse;
+};
 
 export type StaffSelfGet200 = ApiSuccessResponse & {
   data: CurrentStaffResponse;

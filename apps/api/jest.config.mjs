@@ -13,6 +13,10 @@ export default {
   // Disposable databases are pid-scoped, so bounded parallel workers stay
   // isolated; this enforces a concurrency policy, it does not serialise.
   maxWorkers: '50%',
+  // The asset-intake suites need a Docker daemon (disposable MinIO), and
+  // `pnpm test` / `pnpm quality` must stay Docker-free. They have their own
+  // config and their own explicit scripts.
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/test/integration/asset-intake'],
   transform: {
     '^.+\\.ts$': ['ts-jest', {}],
   },

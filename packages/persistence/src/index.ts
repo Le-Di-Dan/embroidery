@@ -28,6 +28,12 @@ export type {
   IdempotencyRecordSummary,
 } from './platform/idempotency-store';
 export { IdempotencyStore, isIdempotencyConflict } from './platform/idempotency-store';
+export type {
+  AllocationClaim,
+  AllocationClaimInput,
+  LockedIdempotencyRecord,
+} from './platform/idempotency-allocation';
+export { IdempotencyAllocationStore } from './platform/idempotency-allocation';
 
 export type {
   AppendOutboxEventInput,

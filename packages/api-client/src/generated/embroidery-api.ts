@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  AdminAssetDetail200,
+  AdminAssetList200,
+  AdminAssetListParams,
+  AdminAssetUpload202,
+  AdminAssetUploadBody,
   HealthStatusResponse,
   ReadinessStatusResponse,
   StaffLoginRequest,
@@ -15,6 +20,58 @@ import type {
 import { apiRequest } from '../clients/api-request.mutator';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * Keyset-paginated, newest first. Scoped to product media; there is no offset paging.
+ * @summary List product-image assets
+ */
+export const adminAssetList = (
+  params?: AdminAssetListParams,
+  options?: SecondParameter<typeof apiRequest<AdminAssetList200>>,
+) => {
+  return apiRequest<AdminAssetList200>(
+    { url: `/api/admin/assets`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Streams a single PNG, JPEG or WebP image of at most 26214400 bytes into private storage and hands it to inspection. Idempotent: repeating the request with the same Idempotency-Key and the same file returns the original receipt and writes no second object.
+ * @summary Upload one product image
+ */
+export const adminAssetUpload = (
+  adminAssetUploadBody: AdminAssetUploadBody,
+  options?: SecondParameter<typeof apiRequest<AdminAssetUpload202>>,
+) => {
+  const formData = new FormData();
+  formData.append(`assetKind`, adminAssetUploadBody.assetKind);
+  formData.append(`classification`, adminAssetUploadBody.classification);
+  formData.append(`file`, adminAssetUploadBody.file);
+
+  return apiRequest<AdminAssetUpload202>(
+    {
+      url: `/api/admin/assets/upload`,
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      data: formData,
+    },
+    options,
+  );
+};
+
+/**
+ * Returns the safe intake view. Assets outside product media are reported as not found.
+ * @summary Get one product-image asset
+ */
+export const adminAssetDetail = (
+  assetId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminAssetDetail200>>,
+) => {
+  return apiRequest<AdminAssetDetail200>(
+    { url: `/api/admin/assets/${assetId}`, method: 'GET' },
+    options,
+  );
+};
 
 export const healthCheck = (options?: SecondParameter<typeof apiRequest<HealthStatusResponse>>) => {
   return apiRequest<HealthStatusResponse>({ url: `/api/health`, method: 'GET' }, options);
@@ -64,6 +121,9 @@ export const staffSessionCreate = (
   );
 };
 
+export type AdminAssetListResult = NonNullable<Awaited<ReturnType<typeof adminAssetList>>>;
+export type AdminAssetUploadResult = NonNullable<Awaited<ReturnType<typeof adminAssetUpload>>>;
+export type AdminAssetDetailResult = NonNullable<Awaited<ReturnType<typeof adminAssetDetail>>>;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
 export type StaffSelfGetResult = NonNullable<Awaited<ReturnType<typeof staffSelfGet>>>;

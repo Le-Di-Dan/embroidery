@@ -13,11 +13,15 @@ import type {
   AssetDerivativeId,
   AssetId,
   AssetInspection,
+  AssetListFilter,
+  AssetListQuery,
   AssetRepository,
+  RecoveredAsset,
   RegisterAssetInput,
   RegisterDerivativeInput,
 } from '../../domain/repositories/asset.repository';
 import { toAsset, toDerivative, toInspection } from './asset-row.mapper';
+import { listOrder, listPredicate, scopePredicate } from './asset-scope.filters';
 
 const { assets, assetDerivatives, assetInspections } = schema;
 
@@ -54,6 +58,87 @@ export class DrizzleAssetRepository extends DrizzleRepository implements AssetRe
         );
       }
       return toAsset(row);
+    });
+  }
+
+  async registerOrRecover(input: RegisterAssetInput): Promise<RecoveredAsset> {
+    return this.run('registerOrRecover', async () => {
+      const tx = this.requireTransaction('registerOrRecover');
+
+      // Conflict on the primary key rather than a read-then-insert: two
+      // attempts recovered from the same durable allocation race here, and one
+      // of them must find the other's row instead of failing on a duplicate.
+      const [inserted] = await tx
+        .insert(assets)
+        .values({
+          id: input.id,
+          kind: input.kind,
+          classification: input.classification,
+          storageKey: input.storageKey,
+          mimeType: input.mimeType,
+          sizeBytes: input.sizeBytes,
+          checksum: input.checksum ?? null,
+          status: 'UPLOADED',
+          uploadedByCustomerId: input.uploadedByCustomerId ?? null,
+        })
+        .onConflictDoNothing({ target: assets.id })
+        .returning();
+
+      if (inserted !== undefined) {
+        return { asset: toAsset(inserted), recovered: false };
+      }
+
+      const [existing] = await tx.select().from(assets).where(eq(assets.id, input.id)).limit(1);
+      if (existing === undefined) {
+        throw guardViolationError(
+          'AssetRepository.registerOrRecover',
+          'ASSET_NOT_REGISTERED',
+          'Could not register the asset.',
+        );
+      }
+      return { asset: toAsset(existing), recovered: true };
+    });
+  }
+
+  async beginInspection(id: AssetId, at: Date): Promise<Asset | undefined> {
+    return this.run('beginInspection', async () => {
+      const tx = this.requireTransaction('beginInspection');
+      // The from-state is in the predicate, not an earlier read: a check-then-
+      // update would let a concurrent transition slip between the two.
+      const [row] = await tx
+        .update(assets)
+        .set({ status: 'INSPECTING', updatedAt: at })
+        .where(and(eq(assets.id, id), eq(assets.status, 'UPLOADED')))
+        .returning();
+      return row === undefined ? undefined : toAsset(row);
+    });
+  }
+
+  async findScoped(
+    id: AssetId,
+    filter: Pick<AssetListFilter, 'kind' | 'classification'>,
+  ): Promise<Asset | undefined> {
+    return this.run('findScoped', async () => {
+      const [row] = await this.db
+        .select()
+        .from(assets)
+        .where(and(eq(assets.id, id), scopePredicate(filter)))
+        .limit(1);
+      return row === undefined ? undefined : toAsset(row);
+    });
+  }
+
+  async listScoped(query: AssetListQuery): Promise<Asset[]> {
+    return this.run('listScoped', async () => {
+      const rows = await this.db
+        .select()
+        .from(assets)
+        .where(listPredicate(query))
+        .orderBy(...listOrder())
+        // One more than asked for: the extra row answers "is there a next page"
+        // without a second COUNT, and is discarded by `buildPage`.
+        .limit(query.limit + 1);
+      return rows.map(toAsset);
     });
   }
 

@@ -99,6 +99,9 @@ importers:
       '@embroidery/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@embroidery/object-storage':
+        specifier: workspace:*
+        version: link:../../packages/object-storage
       '@embroidery/persistence':
         specifier: workspace:*
         version: link:../../packages/persistence
@@ -114,6 +117,9 @@ importers:
       '@nestjs/swagger':
         specifier: ^11.4.6
         version: 11.4.6(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2)
+      busboy:
+        specifier: 1.6.0
+        version: 1.6.0
       drizzle-orm:
         specifier: 0.45.2
         version: 0.45.2(@types/pg@8.20.0)(pg@8.22.0)
@@ -145,6 +151,9 @@ importers:
       '@nestjs/testing':
         specifier: ^11.1.28
         version: 11.1.28(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(@nestjs/platform-express@11.1.28)
+      '@types/busboy':
+        specifier: 1.5.4
+        version: 1.5.4
       '@types/jest':
         specifier: ^30.0.0
         version: 30.0.0
@@ -2593,6 +2602,9 @@ packages:
 
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
+
+  '@types/busboy@1.5.4':
+    resolution: {integrity: sha512-kG7WrUuAKK0NoyxfQHsVE6j1m01s6kMma64E+OZenQABMQyTJop1DumUWcLwAQ2JzpefU7PDYoRDKl8uZosFjw==}
 
   '@types/cookiejar@2.1.5':
     resolution: {integrity: sha512-he+DHOWReW0nghN24E1WUqM0efK4kI9oTqDm6XmK8ZPe2djZ90BSNdGnIyCLzCPw7/pogPlGbzI2wHGGmi4O/Q==}
@@ -7401,6 +7413,10 @@ snapshots:
   '@types/babel__traverse@7.28.0':
     dependencies:
       '@babel/types': 7.29.7
+
+  '@types/busboy@1.5.4':
+    dependencies:
+      '@types/node': 26.1.1
 
   '@types/cookiejar@2.1.5': {}
 

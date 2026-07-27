@@ -69,6 +69,9 @@ import { StaffSelfController } from './presentation/staff-self.controller';
     StaffAuditWriter,
     CookiePolicyService,
     AuthenticatedAdminGuard,
+    // APP2-B01 reuses the exact Origin allowlist on the Admin upload route.
+    StaffOriginGuard,
+    RequestOriginPolicy,
   ],
 })
 export class IdentityModule {}

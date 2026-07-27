@@ -31,6 +31,8 @@ export interface Asset {
   readonly checksum: string | undefined;
   readonly status: AssetState;
   readonly deletedAt: Date | undefined;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 export interface AssetDerivative {
@@ -68,11 +70,65 @@ export interface RegisterDerivativeInput {
   readonly isWatermarked: boolean;
 }
 
+/** The outcome of the idempotent Tx A insert (`ADR-APP2-001` §4.2f-5). */
+export interface RecoveredAsset {
+  readonly asset: Asset;
+  /** True when the row already existed — a crash-retry, not a first write. */
+  readonly recovered: boolean;
+}
+
+/** The bounded, intake-scoped listing filter for the Admin asset list. */
+export interface AssetListFilter {
+  readonly kind: AssetKind;
+  readonly classification: AssetClassification;
+  readonly status?: AssetState | undefined;
+  readonly mimeType?: string | undefined;
+}
+
+export interface AssetListQuery {
+  readonly filter: AssetListFilter;
+  /** Decoded keyset position; absent for the first page. */
+  readonly after?: { readonly createdAt: Date; readonly id: string } | undefined;
+  /** Already clamped by the caller; the repository fetches `limit + 1`. */
+  readonly limit: number;
+}
+
 export const ASSET_REPOSITORY = Symbol('ASSET_REPOSITORY');
 
 export interface AssetRepository {
   /** @requiresTransaction */
   register(input: RegisterAssetInput): Promise<Asset>;
+
+  /**
+   * The Tx A write: inserts the allocated asset id, or returns the row a
+   * previous attempt already committed under the same id.
+   *
+   * Idempotent by the primary key rather than by a read-then-write check, so
+   * two attempts racing after the same allocation converge on one row instead
+   * of one of them failing with a duplicate-key error.
+   *
+   * @requiresTransaction
+   */
+  registerOrRecover(input: RegisterAssetInput): Promise<RecoveredAsset>;
+
+  /**
+   * The Tx B transition, guarded on the from-state.
+   *
+   * Returns `undefined` when no `UPLOADED` row matched, so the caller can tell
+   * "already transitioned" from "does not exist" without a second read.
+   *
+   * @requiresTransaction
+   */
+  beginInspection(id: AssetId, at: Date): Promise<Asset | undefined>;
+
+  /** Scoped read for the Admin detail endpoint; kind/classification must match. */
+  findScoped(
+    id: AssetId,
+    filter: Pick<AssetListFilter, 'kind' | 'classification'>,
+  ): Promise<Asset | undefined>;
+
+  /** Scoped keyset page, ordered `created_at DESC, id DESC`. Fetches `limit + 1`. */
+  listScoped(query: AssetListQuery): Promise<Asset[]>;
 
   /**
    * Appends an inspection outcome and moves the asset to the matching state.

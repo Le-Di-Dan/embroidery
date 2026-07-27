@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AssetIntakeModule } from '../modules/asset/asset-intake.module';
 import { HealthModule } from '../modules/health/health.module';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
@@ -17,6 +18,7 @@ import { ValidationModule } from '../platform/validation/validation.module';
     ValidationModule,
     HealthModule,
     IdentityModule,
+    AssetIntakeModule,
   ],
 })
 export class AppModule {}

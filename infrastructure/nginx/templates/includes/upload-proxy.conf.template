@@ -1,28 +1,18 @@
-# Route-scoped upload proxy seam (APP2-I01 §12). ADR-APP2-001.
+# Route-scoped upload proxy seam (APP2-I01 §12, activated by APP2-B01 §21).
+# ADR-APP2-001 §4.2c / §4.2f-6.
 #
-# ============================== INACTIVE ==============================
-# Nothing includes this file yet, and including it is APP2-B01's job.
+# ============================== ACTIVE ================================
+# Included by exactly one location — `= /api/admin/assets/upload` on the
+# Admin host — and by nothing else. It renders to
+# /etc/nginx/conf.d/includes/upload-proxy.conf, which nginx.conf never loads
+# on its own: its only include glob is `/etc/nginx/conf.d/*.conf`, one level
+# up. So these directives apply to that one route and nowhere else.
 #
-# It renders to /etc/nginx/conf.d/includes/upload-proxy.conf, which nginx.conf
-# never loads: its only include glob is `/etc/nginx/conf.d/*.conf`, one level
-# up. So this file is inert until a `location` block explicitly includes it —
-# the same mechanism that keeps proxy-headers.conf opt-in.
-#
-# It exists now, unused, so the streaming decision lives with the storage
-# foundation that requires it rather than being rediscovered under B01.
-# `tools/nginx-upload-seam.test.mjs` fails if it ever becomes active early.
+# `tools/nginx-upload-seam.test.mjs` fails if that stops being true — if the
+# seam becomes global, attaches to a second route, disables buffering
+# anywhere else, or drifts from the approved values.
 # ======================================================================
-#
-# Usage in APP2-B01 (illustrative — do NOT uncomment here):
-#
-#   location = /api/admin/assets/upload {
-#       include /etc/nginx/conf.d/includes/proxy-headers.conf;
-#       include /etc/nginx/conf.d/includes/upload-proxy.conf;
-#       proxy_pass http://api_upstream;
-#   }
 
-# The single directive this seam exists to carry.
-#
 # Nginx buffers a whole request body to disk before contacting the upstream by
 # default. That would defeat the streaming intake in ADR-APP2-001: the API
 # would receive the body only after the gateway had already spooled all of it,
@@ -30,30 +20,24 @@
 # stream, and a rejected upload would already have been written to gateway
 # disk. Turning buffering off makes the client's stream the API's stream.
 #
-# Consequence B01 must handle: with buffering off, the upstream sees a body
-# that can stall or abort mid-flight, so the API owns its own read timeout and
+# Consequence B01 handles: with buffering off, the upstream sees a body that
+# can stall or abort mid-flight, so the API owns its own read timeout and
 # incremental size enforcement. The gateway is not the size authority.
 proxy_request_buffering off;
 
 # ---------------------------------------------------------------------------
-# Ownership hooks — deliberately UNSET (APP2-I01 §4, §12)
+# Approved route-scoped values (APP2-B01-G01 §C — Product Owner)
 # ---------------------------------------------------------------------------
-# The directives below are the route-scoped knobs this seam owns. They carry no
-# value here because the values are not ours to choose yet:
-#
-#   client_max_body_size   blocked on the open Product Owner parameter
-#                          "maximum image bytes" (STORAGE upload-size gate).
-#                          Inventing a number here would silently become the
-#                          product limit and contradict the API's own limit.
-#
-#   proxy_read_timeout     an upload holds the upstream connection open for as
-#   proxy_send_timeout     long as the client streams; the gateway defaults
-#                          (60s, set http-wide) are tuned for normal requests,
-#                          not for a large body over a slow link. B01 sets
-#                          these per route once the size limit is known —
-#                          timeout and size are one decision, not two.
-#
-# Until then the http-level defaults from development.conf.template apply.
-# B01 must add these three directives to this file (or to the including
-# location) as part of the upload route, sourcing every value from the
-# gateway's environment using the existing ${GATEWAY_*} pattern.
+# 27 MiB / 28,311,552 bytes. This is a COARSE ENVELOPE ceiling, deliberately
+# larger than the 25 MiB file limit so that multipart headers and boundaries
+# cannot push a legitimate maximum-size image over the gateway's edge. It is
+# NOT the file-size validator: the API counts the file part's bytes
+# incrementally and rejects at exactly 26,214,400 with a 413 the client can
+# act on. Raising this value does not raise the accepted image size.
+client_max_body_size ${GATEWAY_UPLOAD_MAX_BODY_SIZE};
+
+# 360s, strictly greater than the API's 300s hard upload duration, so the API
+# always wins the race and returns its own timeout error instead of the client
+# seeing a bare gateway 504 with nothing recorded.
+proxy_read_timeout ${GATEWAY_UPLOAD_PROXY_TIMEOUT};
+proxy_send_timeout ${GATEWAY_UPLOAD_PROXY_TIMEOUT};

@@ -17,6 +17,7 @@ import { DatabaseExecutor } from './runtime/database-executor';
 import { DatabaseHealthService } from './health/database-health.service';
 import { TransactionManager } from './transaction/transaction-manager';
 import { IdempotencyStore } from './platform/idempotency-store';
+import { IdempotencyAllocationStore } from './platform/idempotency-allocation';
 import { OutboxEventStore } from './platform/outbox-event-store';
 import { BackgroundJobAttemptStore } from './platform/background-job-attempt-store';
 import { PolicyConfigurationRepository } from './platform/policy-configuration.repository';
@@ -41,6 +42,8 @@ import { WorkerJobQueueRepository } from './platform/worker-job-queue.repository
     // CTX-PLT platform primitives (DEC-DB7-003): infrastructure records with no
     // business invariants of their own, shared by the API and the worker.
     IdempotencyStore,
+    // APP2-B01 — allocation-aware claim/reclaim/completion on the same table.
+    IdempotencyAllocationStore,
     OutboxEventStore,
     BackgroundJobAttemptStore,
     PolicyConfigurationRepository,
@@ -53,6 +56,7 @@ import { WorkerJobQueueRepository } from './platform/worker-job-queue.repository
     DatabaseHealthService,
     DATABASE_CONNECTION,
     IdempotencyStore,
+    IdempotencyAllocationStore,
     OutboxEventStore,
     BackgroundJobAttemptStore,
     PolicyConfigurationRepository,

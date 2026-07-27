@@ -47,11 +47,12 @@ describe('buildOpenApiDocument', () => {
     expect(paths.every((path) => path.startsWith('/api/'))).toBe(true);
   });
 
-  it('documents the health routes plus the APP1 staff endpoints', () => {
+  it('documents the health routes plus the APP1 staff and APP2 asset endpoints', () => {
     const stats = describeDocument(buildOpenApiDocument(app));
-    // Health (2 ops) + staff session open/close (2 ops on one path) + staff/me (1 op).
-    expect(stats.pathCount).toBe(4);
-    expect(stats.operationCount).toBe(5);
+    // Health (2 ops) + staff session open/close (2 ops on one path) + staff/me
+    // (1 op) + APP2-B01 Admin asset upload/detail/list (3 ops on 3 paths).
+    expect(stats.pathCount).toBe(7);
+    expect(stats.operationCount).toBe(8);
     expect(stats.schemaCount).toBeGreaterThan(0);
   });
 
