@@ -377,6 +377,48 @@
 > `THUMBNAIL` + `CATALOG_PREVIEW` both unwatermarked, all 40 required live cases
 > plus a shipped-image Linux smoke ([`reports/APP2-W01-COMPLETION-REPORT.md`](../reports/APP2-W01-COMPLETION-REPORT.md)).
 > **`APP2-A01` = `READY — NOT STARTED`.**
+
+> **`APP2-A01` entry gate (2026-07-27) — `BLOCKED`, then cured by `APP2-D02`.**
+> A01's design/contract audit stopped the checkpoint **before any source change**
+> (no commit, no file changed) with
+> **`BLOCKED_BY_MISSING_ASSET_LIST_CONTINUATION_DESIGN`**: `adminAsset_list`
+> returns `hasNext` + `nextCursor` (`limit` ≤ 100, no delete API, so the list
+> outgrows one page), yet none of the seven approved frames, the handoff-notes
+> node `450:404`, the registry, the D01 reports or this plan defined any
+> continuation interaction — proven from node metadata, because the Uploading /
+> Processing / Rejected frames clip their grid at the 1024 px frame bottom.
+> Rendering page 1 alone would silently discard pages; inventing a control would
+> be self-approved design. The same audit reproduced a second gap: every approved
+> card and row displayed a **source filename**, which B01 neither persists nor
+> exposes. Two candidate blockers were **checked and cleared** — thumbnails are
+> honest placeholder glyphs, so no media-delivery contract is required, and the
+> side navigation locks a dedicated Assets destination, so `/assets` is not an
+> invented route.
+>
+> **`APP2-D02` = `COMPLETE — DELIVERED_FOR_REVIEW`** (2026-07-27) — the narrow
+> design-reconciliation checkpoint that cures both gaps, design and documentation
+> only. Product Owner decisions, applied in place to the eight existing nodes:
+> an explicit user-triggered **`Tải thêm tài sản`** control shown only when
+> `hasNext = true` (append, never replace; loading keeps existing items and
+> announces politely once; a continuation failure keeps existing items and offers
+> `Thử lại` on the **same** cursor; no control when `hasNext = false`; no
+> total-count copy, because the API exposes no total; never infinite scroll,
+> viewport-triggered loading, offset or page-number paging, or silent
+> truncation), and a **server-backed identity** of `image/png → Ảnh PNG`,
+> `image/jpeg → Ảnh JPEG`, `image/webp → Ảnh WebP`, unknown →
+> `Tài sản hình ảnh`, with a `{size} · {createdAt}` secondary line in `vi-VN`
+> (`dd/MM/yyyy, HH:mm`). **No backend field is added and no filename is
+> fabricated**; `File.name` stays transient local upload state and the view
+> switches to server identity once it reconciles from B01. The seven Admin Assets
+> registry rows are promoted to `APPROVED_FOR_IMPLEMENTATION` under
+> **`FIG-APPROVAL-APP2-D01-ADMIN-001`**, closing the divergence between the
+> frozen ruling and the rows, and one annotation node
+> `FIG-ADMIN-ASSETS-CONTINUATION-IDENTITY` (`484:272`) is registered (registry
+> 69 → 70). Design authority is now
+> **`PRODUCT_OWNER_APPROVED — FROZEN — D02_RECONCILED`**. No application source,
+> dependency, OpenAPI, client or database change — map now **22 checkpoints**
+> ([`reports/APP2-D02-COMPLETION-REPORT.md`](../reports/APP2-D02-COMPLETION-REPORT.md)).
+> **`APP2-A01` = `READY — NOT STARTED`** (unblocked).
 >
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
@@ -460,7 +502,8 @@ endpoints.
 | 5b | APP2-DB01 | database | Catalog derivative schema & lifecycle alignment — adds the `CATALOG_PREVIEW` derivative kind and the first physical half of INV-22 (`ck_asset_derivatives__watermark_by_kind`, CST-126) in migration `0032`; aligns DB3 LC-06 into a catalog lane (derivatives prepared at `PENDING`, generated while the asset is `INSPECTING`, terminal tuple written in one transaction) and an unchanged design/artwork lane; locks the `APP2-W01` job kind to `ASSET_PROCESSING`. 78 tables / 833 columns unchanged; OpenAPI, client and Figma unchanged — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B01 |
 | 5c | APP2-I03 | foundation | Wire idempotent private-bucket bootstrap into the API and worker composition roots. `ensurePrivateBuckets` exists in `packages/object-storage` but has **no production caller** — only tests — so nothing creates the buckets in a real deployment and the first real upload/derivative write would fail. No new SDK, no MinIO exposure — **`COMPLETE — DELIVERED_FOR_REVIEW`**: the API awaits the bootstrap before `listen`, the worker gates its poll loop behind an abstract `WORKER_STARTUP_GATE` bound to the same bootstrap, both memoize one attempt per process, and a concurrent two-process race against an empty MinIO yields exactly two private buckets. Also fixed the shipped worker image, which never shipped the object-storage package | I01, B01 |
 | 6 | APP2-W01 | worker | Asset inspection/derivatives job family handler + image-processing library decision (uses I02 runtime). Produces exactly `THUMBNAIL` + `CATALOG_PREVIEW`, both unwatermarked, per `APP2-DB01`; `sharp@0.35.3` locked as the image library (worker-only); no migration, no HTTP operation — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B01, I02, DB01, I03 |
-| 7 | APP2-A01 | frontend | Admin asset library | B01, W01, D01 |
+| 6b | APP2-D02 | design | Admin Assets continuation & identity reconciliation — cures `APP2-A01`'s `BLOCKED_BY_MISSING_ASSET_LIST_CONTINUATION_DESIGN`: explicit cursor-driven `Tải thêm tài sản`, server-backed identity (media format + size + `createdAt`), original filename transient-local only; seven `FIG-ADMIN-ASSETS-*` rows promoted under `FIG-APPROVAL-APP2-D01-ADMIN-001`; one annotation node added (registry 69 → 70). Design/documentation only — no source, dependency, OpenAPI, client or database change — **`COMPLETE — DELIVERED_FOR_REVIEW`** | D01, B01, W01 |
+| 7 | APP2-A01 | frontend | Admin asset library | B01, W01, D01, D02 |
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) | B01 |
 | 9 | APP2-A02 | frontend | Admin product list | B02, D01 |
 | 10 | APP2-A03 | frontend | Admin product form/detail | B02, D01 |
@@ -479,6 +522,15 @@ Source of truth: [`FIGMA_DESIGN_INDEX.md`](../../design/FIGMA_DESIGN_INDEX.md) �
 Cross-cutting behaviour is annotated in `FIG-APP2-ASSET-CATALOG-NOTES` (`450:404`)
 and `FIG-APP2-REUSE-MAP` (`451:404`).
 
+> **SUPERSEDED (2026-07-27).** The gate paragraph below was written before the Product
+> Owner ruling of 2026-07-26 and is kept for chronology only. It is superseded for
+> **A01** by `APP2-D02`: the seven `FIG-ADMIN-ASSETS-*` rows are
+> `APPROVED_FOR_IMPLEMENTATION` under **`FIG-APPROVAL-APP2-D01-ADMIN-001`**
+> ([`../../design/approvals/APP2-D01-ADMIN-ASSETS-DESIGN-APPROVAL.md`](../../design/approvals/APP2-D01-ADMIN-ASSETS-DESIGN-APPROVAL.md)),
+> and Admin Assets design authority is `PRODUCT_OWNER_APPROVED — FROZEN —
+> D02_RECONCILED`. It still applies verbatim to **A02–A04**, whose rows remain
+> `REVIEW_REQUIRED` with no approval evidence, and to every Storefront row.
+
 **Gate for every row below — `BLOCKED_BY_APP2_D01_PRODUCT_OWNER_APPROVAL`.** Each row
 is `REVIEW_REQUIRED`; a frontend checkpoint must block until it is promoted to
 `APPROVED_FOR_IMPLEMENTATION` with an approval evidence ID, and must record the
@@ -486,7 +538,7 @@ registry IDs it used in its completion report.
 
 | Checkpoint | Registry IDs (states delivered) | Responsive evidence |
 |---|---|---|
-| **A01** Admin asset library | `FIG-ADMIN-ASSETS-DESKTOP-{DEFAULT,EMPTY,UPLOADING,PROCESSING,REJECTED}`, `FIG-ADMIN-ASSETS-MOBILE-{DEFAULT,UPLOAD}` | 1440 desktop (5 states) + 390 mobile (2 states); 1024 by annotation |
+| **A01** Admin asset library | `FIG-ADMIN-ASSETS-DESKTOP-{DEFAULT,EMPTY,UPLOADING,PROCESSING,REJECTED}`, `FIG-ADMIN-ASSETS-MOBILE-{DEFAULT,UPLOAD}` (all `APPROVED_FOR_IMPLEMENTATION`), plus `FIG-ADMIN-ASSETS-CONTINUATION-IDENTITY` (`484:272`, annotation) and `FIG-APP2-ASSET-CATALOG-NOTES` (`450:404`) | 1440 desktop (5 states) + 390 mobile (2 states); 1024 by annotation. Desktop Default is **1440×1092** since `APP2-D02` so the continuation control is visible, not clipped |
 | **A02** Admin product form/detail | `FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-{DEFAULT,VALIDATION,SAVING}`, `FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT`, `FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP` | 1440 desktop (3 states + dialog) + 390 mobile |
 | **A03** Admin product list | `FIG-ADMIN-CATALOG-DESKTOP-{DEFAULT,EMPTY}`, `FIG-ADMIN-CATALOG-MOBILE-DEFAULT` | 1440 desktop table + 390 mobile card list |
 | **A04** Admin publication interaction | `FIG-ADMIN-PUBLICATION-DESKTOP-{READY,BLOCKED,CONFIRM-UNPUBLISH}`, `FIG-ADMIN-PUBLICATION-MOBILE` | 1440 desktop (3 states) + 390 mobile |

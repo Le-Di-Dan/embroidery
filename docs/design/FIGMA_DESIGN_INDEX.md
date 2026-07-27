@@ -119,6 +119,24 @@ Section **`423:3`** — [APP2-D01 · Assets & Catalog Publication](https://www.f
 > **Storefront Product Detail = `NOT_APPROVED — WITHHELD_PENDING_UI03_RECONCILIATION`.**
 > Those four frames are untouched but are **not implementation authority** (§4.4).
 
+> **`APP2-D02` reconciliation (2026-07-27) — Admin Assets =
+> `PRODUCT_OWNER_APPROVED — FROZEN — D02_RECONCILED`.**
+> Until `APP2-D02` the seven Admin Assets rows still read `REVIEW_REQUIRED` with an empty
+> evidence cell while the ruling above said they were approved and frozen; the `APP2-A01`
+> implementation audit surfaced that divergence. The rows now carry
+> `APPROVED_FOR_IMPLEMENTATION` under **`FIG-APPROVAL-APP2-D01-ADMIN-001`**
+> ([`approvals/APP2-D01-ADMIN-ASSETS-DESIGN-APPROVAL.md`](./approvals/APP2-D01-ADMIN-ASSETS-DESIGN-APPROVAL.md)).
+> The same checkpoint closed the two gaps that blocked `APP2-A01` — cursor continuation
+> (`Tải thêm tài sản`, never infinite scroll, never silent truncation, no total-count copy)
+> and server-backed identity (media-format label + `{size} · {createdAt}`; the original
+> filename stays transient local upload state and no backend field is added) — as in-place
+> amendments to the same approved nodes, plus one new annotation node
+> `FIG-ADMIN-ASSETS-CONTINUATION-IDENTITY` (`484:272`). §6.2 of the APP2 phase plan carried
+> a stale `BLOCKED_BY_APP2_D01_PRODUCT_OWNER_APPROVAL` gate line; it is superseded there.
+> The Admin Product Draft / Catalog / Publication rows keep the ruling's `FROZEN` status
+> but stay `REVIEW_REQUIRED` here — `APP2-D02` reconciled Assets only, and A02–A04 must
+> record their own approval evidence before implementing.
+
 Admin asset intake / product draft / catalog / publication are `NEW`. The remaining
 Storefront Product Detail frames are clones of the approved APP1-D02 shells
 (`405:2225` / `405:3733` / `405:3786`) — the approved APP1 frames themselves are
@@ -127,13 +145,14 @@ implementable.
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| FIG-ADMIN-ASSETS-DESKTOP-DEFAULT | Admin | Asset library | Asset Library | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 426:13 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=426-13) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-ADMIN-ASSETS-DESKTOP-EMPTY | Admin | Asset library | Asset Library | Empty | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 429:6 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=429-6) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-ADMIN-ASSETS-DESKTOP-UPLOADING | Admin | Asset library | Asset Library | Uploading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 429:89 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=429-89) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-ADMIN-ASSETS-DESKTOP-PROCESSING | Admin | Asset library | Asset Library | Processing | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 430:12 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=430-12) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-ADMIN-ASSETS-DESKTOP-REJECTED | Admin | Asset library | Asset Library | Rejected | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 430:98 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=430-98) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-ADMIN-ASSETS-MOBILE-DEFAULT | Admin | Asset library | Asset Library | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 432:18 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=432-18) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-ADMIN-ASSETS-MOBILE-UPLOAD | Admin | Asset library | Asset Library | Upload | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 433:19 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=433-19) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-ASSETS-DESKTOP-DEFAULT | Admin | Asset library | Asset Library | Default | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 426:13 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=426-13) | APP2-D01 | — | FIG-APPROVAL-APP2-D01-ADMIN-001 | 2026-07-27 |
+| FIG-ADMIN-ASSETS-DESKTOP-EMPTY | Admin | Asset library | Asset Library | Empty | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 429:6 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=429-6) | APP2-D01 | — | FIG-APPROVAL-APP2-D01-ADMIN-001 | 2026-07-27 |
+| FIG-ADMIN-ASSETS-DESKTOP-UPLOADING | Admin | Asset library | Asset Library | Uploading | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 429:89 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=429-89) | APP2-D01 | — | FIG-APPROVAL-APP2-D01-ADMIN-001 | 2026-07-27 |
+| FIG-ADMIN-ASSETS-DESKTOP-PROCESSING | Admin | Asset library | Asset Library | Processing | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 430:12 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=430-12) | APP2-D01 | — | FIG-APPROVAL-APP2-D01-ADMIN-001 | 2026-07-27 |
+| FIG-ADMIN-ASSETS-DESKTOP-REJECTED | Admin | Asset library | Asset Library | Rejected | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 430:98 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=430-98) | APP2-D01 | — | FIG-APPROVAL-APP2-D01-ADMIN-001 | 2026-07-27 |
+| FIG-ADMIN-ASSETS-MOBILE-DEFAULT | Admin | Asset library | Asset Library | Default | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 432:18 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=432-18) | APP2-D01 | — | FIG-APPROVAL-APP2-D01-ADMIN-001 | 2026-07-27 |
+| FIG-ADMIN-ASSETS-MOBILE-UPLOAD | Admin | Asset library | Asset Library | Upload | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 433:19 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=433-19) | APP2-D01 | — | FIG-APPROVAL-APP2-D01-ADMIN-001 | 2026-07-27 |
+| FIG-ADMIN-ASSETS-CONTINUATION-IDENTITY | Admin | Asset library | Asset Library Continuation & Identity | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 484:272 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=484-272) | APP2-D02 | — | — | 2026-07-27 |
 | FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-DEFAULT | Admin | Product draft | Product Draft | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 434:20 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=434-20) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-VALIDATION | Admin | Product draft | Product Draft | Validation Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 436:37 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=436-37) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-SAVING | Admin | Product draft | Product Draft | Saving | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 436:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=436-140) | APP2-D01 | — | — | 2026-07-26 |
@@ -376,13 +395,16 @@ canonical entry exists for any APP1-D01 composite key.
 - **Registry coverage:** 16 APP1-D01 rows (12 `APPROVED_FOR_IMPLEMENTATION` +
   3 annotation `REVIEW_REQUIRED`), 7 APP1-D02 Storefront shell/not-found rows (all
   `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP1-D02-STOREFRONT-001`),
-  **25 APP2-D01 rows** (19 Admin `PRODUCT_OWNER_APPROVED — FROZEN`, 4 Product Detail
-  withheld, 2 annotation), **1 APP2 DS-supplement row**, **4 UI02 authority rows
+  **25 APP2-D01 rows** (19 Admin `PRODUCT_OWNER_APPROVED — FROZEN`, of which the
+  **7 Admin Assets rows are `APPROVED_FOR_IMPLEMENTATION`** under
+  `FIG-APPROVAL-APP2-D01-ADMIN-001` since `APP2-D02`; 4 Product Detail withheld,
+  2 annotation), **1 APP2-D02 annotation row** (`FIG-ADMIN-ASSETS-CONTINUATION-IDENTITY`,
+  `REVIEW_REQUIRED`), **1 APP2 DS-supplement row**, **4 UI02 authority rows
   (`DRAFT` content maturity, REQUIRED visual/structural authority — §4.4.1)**,
   3 Homepage shell-reference rows (`SUPERSEDED` → APP1-D02), 4 IA/flow rows
   (`REFERENCE_ONLY`), 7 DS catalog rows (`APPROVED`), 2 `MISSING`/gap rows.
-  **Total 69 registry IDs** (4 rejected Product List rows removed by `APP2-D01-C1`,
-  4 UI02 authority rows added — see §4.3.1 and §4.4.1).
+  **Total 70 registry IDs** (4 rejected Product List rows removed by `APP2-D01-C1`,
+  4 UI02 authority rows added, 1 `APP2-D02` annotation added — see §4.3.1 and §4.4.1).
 - **Gaps:** GAP-D01 (no DS Input — supplemented for APP2 as `FIG-DS-INPUT-APP2`, DS
   library gap still open), GAP-D02 (no scrim token — still local `ink/900 @45%`).
   The former `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02 (now
@@ -390,5 +412,11 @@ canonical entry exists for any APP1-D01 composite key.
 - **`APP2-D01-C1` (2026-07-26):** Storefront discovery authority corrected to UI02;
   four rejected card-grid nodes deleted from Figma; Admin frozen and verified unchanged
   (31/31 frozen nodes byte-identical); Product Detail withheld pending UI03 reconciliation.
+- **`APP2-D02` (2026-07-27):** Admin Assets = `PRODUCT_OWNER_APPROVED — FROZEN —
+  D02_RECONCILED`. Seven rows promoted to `APPROVED_FOR_IMPLEMENTATION` under
+  `FIG-APPROVAL-APP2-D01-ADMIN-001`; the eight existing Admin Assets nodes amended in
+  place for cursor continuation (`Tải thêm tài sản`) and server-backed identity
+  (media-format label + `{size} · {createdAt}`); one annotation node added
+  (`484:272`). No Product Draft / Catalog / Publication / Storefront row changed.
 - **Consistency gate:** `pnpm check:figma-design-index` — see
   `tools/check-figma-design-index.mjs`.
