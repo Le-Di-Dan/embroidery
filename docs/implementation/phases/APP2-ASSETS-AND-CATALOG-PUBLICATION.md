@@ -305,9 +305,59 @@
 > implementation gap** (ADR §4.2f-7), owner `APP2-B01`. Report:
 > [`reports/APP2-B01-G01-COMPLETION-REPORT.md`](../reports/APP2-B01-G01-COMPLETION-REPORT.md).
 >
-> **No upload, processing, publication or public product functionality exists.**
-> `APP2-B01` is now **`READY — NOT STARTED`**; `APP2-W01` remains blocked by
-> `B01` alone.
+> **`APP2-B01` = `COMPLETE — DELIVERED_FOR_REVIEW`** (2026-07-27) — the three
+> Admin asset operations: `POST /api/admin/assets/upload` (`adminAsset_upload`),
+> `GET /api/admin/assets/:assetId` (`adminAsset_detail`) and
+> `GET /api/admin/assets` (`adminAsset_list`).
+>
+> Upload streams one PNG/JPEG/WebP through `busboy` into the private
+> `ORIGINALS` bucket in a **single pass**: a bounded 12-byte prefix settles the
+> signature before any byte reaches storage, the 25 MiB counter is incremental
+> and authoritative, and the SHA-256 is computed on the same bytes — nothing
+> buffers the whole file anywhere. The pre-stream claim commits the allocation
+> (UUIDv7 asset id, deterministic key, claim token) **before** a single file byte
+> is read, so a crash-retry recovers the same identity. A completed replay
+> re-reads and re-verifies the entire resent body through a hash-only path and
+> writes **zero** objects; an expired allocation is reclaimed by rotating the
+> claim token in place and then resuming from durable asset truth, never
+> deleting an existing asset and always finishing cleanup before a replacement
+> byte is streamed. Tx A inserts-or-recovers the asset as `UPLOADED` with no
+> event; Tx B performs the guarded `UPLOADED → INSPECTING` transition, appends
+> **exactly one** `asset.inspection.requested` event and completes the record
+> with that event's id. Both verify the claim token inside their own
+> transaction. Exactly-once is not claimed.
+>
+> Persistence gains `IdempotencyAllocationStore` (claim-with-allocation, locked
+> read, expired-claim renewal, guarded completion — expiry always by database
+> time) and `AssetRepository` gains insert-or-recover, the guarded transition,
+> and scoped detail/keyset list. **No schema change, no migration**; the only
+> dependencies added are `busboy` `1.6.0` and `@types/busboy` `1.5.4`.
+>
+> The Nginx upload seam is **activated** for exactly one exact-match location
+> with `27m` / `360s` / `proxy_request_buffering off`, every value from the
+> environment; global gateway limits are unchanged and MinIO stays unexposed.
+>
+> **Three real streaming defects were found by the live suite and fixed:** an
+> errored sink destroyed without a listener crashed the process; `pipe` does not
+> forward source errors, so a disconnecting client emitted an unhandled `error`;
+> and a stalled client hung past its own deadline because the reader only
+> checked the abort signal when a chunk arrived. A fourth finding was structural
+> — wiring the controller into `AssetModule` broke the DB7 persistence suite, so
+> the module was **split** into `AssetModule` (persistence) and
+> `AssetIntakeModule` (HTTP + storage + state machine).
+>
+> Evidence: 194 asset unit tests; **25 live PostgreSQL + MinIO cases covering all
+> 30 required scenarios**; 27 API cases; 20 gateway cases including a **real
+> `nginx:1.27.3-alpine` render + `nginx -t`**. `pnpm quality` `EXIT=0`
+> (90/90 API suites, 1112 tests). OpenAPI `ae015dd6…` → `e19c2f76…` and client
+> `89c1aace…` → `55de1cc1…` (+197 lines, 0 deletions); DB 78/833/31 and Figma 69
+> unchanged. Report:
+> [`reports/APP2-B01-COMPLETION-REPORT.md`](../reports/APP2-B01-COMPLETION-REPORT.md).
+>
+> **No processing, publication or public product functionality exists yet.**
+> `APP2-W01` is now **`READY — NOT STARTED`**; `APP2-A01` stays
+> `DESIGN_APPROVED — BLOCKED_BY_APP2-W01` and `APP2-S01`
+> `DESIGN_AUTHORITY_UI02 — BLOCKED_BY_PUBLIC_BACKEND`.
 >
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an

@@ -37,10 +37,13 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 FROM deps AS dev
 COPY . .
-# Workspace runtime packages ship TypeScript source; compile them to JS so the
-# Node runtime resolves @embroidery/database and @embroidery/persistence to
-# dist, not raw .ts. (`...` also builds their dependencies.)
-RUN pnpm --filter "@embroidery/persistence..." build
+# Workspace runtime packages ship TypeScript source; compile them to JS so both
+# `tsc` and the Node runtime resolve @embroidery/database, @embroidery/persistence
+# and @embroidery/object-storage to dist, not raw .ts. `@embroidery/api^...`
+# selects every workspace dependency of the API *except* the API itself (which
+# the dev server compiles from source), so a newly added workspace dependency is
+# built here automatically instead of failing `nest build` with TS2307.
+RUN pnpm --filter "@embroidery/api^..." build
 ENV NODE_ENV=development
 EXPOSE 4000
 CMD ["pnpm", "--filter", "@embroidery/api", "dev"]
@@ -96,6 +99,8 @@ COPY --from=build --chown=node:node /app/packages/database/dist ./packages/datab
 COPY --from=build --chown=node:node /app/packages/database/package.json ./packages/database/package.json
 COPY --from=build --chown=node:node /app/packages/persistence/dist ./packages/persistence/dist
 COPY --from=build --chown=node:node /app/packages/persistence/package.json ./packages/persistence/package.json
+COPY --from=build --chown=node:node /app/packages/object-storage/dist ./packages/object-storage/dist
+COPY --from=build --chown=node:node /app/packages/object-storage/package.json ./packages/object-storage/package.json
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://127.0.0.1:4000/api/health || exit 1

@@ -11,6 +11,21 @@
 
 name: embroidery-dev
 
+# Object-storage configuration for every service that builds the Nest AppModule
+# (ADR-APP2-001, APP2-I01). The asset providers read `process.env` once at
+# provider construction, so a container that boots AppModule without these
+# fails at startup rather than on the first upload. Defaults mirror
+# `.env.example`; the endpoint is the compose-network MinIO, never a host port.
+x-object-storage-env: &object-storage-env
+  OBJECT_STORAGE_PROVIDER: ${OBJECT_STORAGE_PROVIDER:-s3}
+  OBJECT_STORAGE_ENDPOINT: ${OBJECT_STORAGE_ENDPOINT:-http://minio:9000}
+  OBJECT_STORAGE_REGION: ${OBJECT_STORAGE_REGION:-us-east-1}
+  OBJECT_STORAGE_FORCE_PATH_STYLE: ${OBJECT_STORAGE_FORCE_PATH_STYLE:-true}
+  OBJECT_STORAGE_ACCESS_KEY_ID: ${OBJECT_STORAGE_ACCESS_KEY_ID:-embroidery_minio_dev}
+  OBJECT_STORAGE_SECRET_ACCESS_KEY: ${OBJECT_STORAGE_SECRET_ACCESS_KEY:-embroidery_minio_dev_password}
+  OBJECT_STORAGE_ORIGINALS_BUCKET: ${OBJECT_STORAGE_ORIGINALS_BUCKET:-embroidery-dev-originals}
+  OBJECT_STORAGE_DERIVATIVES_BUCKET: ${OBJECT_STORAGE_DERIVATIVES_BUCKET:-embroidery-dev-derivatives}
+
 services:
   # Edge gateway — the only public browser entrypoint in normal mode (D-036).
   # Direct application ports are exposed only via docker-compose.debug.yml.
@@ -117,6 +132,7 @@ services:
       dockerfile: infrastructure/docker/api.Dockerfile
       target: dev
     environment:
+      <<: *object-storage-env
       NODE_ENV: development
       API_PORT: '4000'
       # Reach the database over the compose network (never the host mapping).
@@ -178,6 +194,9 @@ services:
       dockerfile: infrastructure/docker/api.Dockerfile
       target: dev
     environment:
+      # This CLI creates a full Nest application context from AppModule, so it
+      # instantiates the asset providers and needs the same storage config.
+      <<: *object-storage-env
       NODE_ENV: development
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
       STAFF_BOOTSTRAP_EMAIL: ${STAFF_BOOTSTRAP_EMAIL:-}
