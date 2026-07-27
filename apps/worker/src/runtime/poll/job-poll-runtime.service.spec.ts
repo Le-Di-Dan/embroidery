@@ -15,6 +15,8 @@ import {
   fatalServiceWith,
   testHandler,
 } from '../tests/runtime-doubles';
+import type { WorkerStartupGate } from '../startup/startup-gate';
+import { openStartupGate } from '../startup/startup-gate';
 import { JobPollRuntimeService } from './job-poll-runtime.service';
 
 /** A policy service stubbed to a fixed answer; loading is covered separately. */
@@ -40,6 +42,7 @@ interface Harness {
 function harness(
   policy: WorkerRuntimePolicy | undefined,
   execute: (job: unknown) => Promise<void>,
+  gate?: WorkerStartupGate,
 ): Harness {
   const queue = new FakeQueue();
   const registry = new JobHandlerRegistry();
@@ -67,6 +70,7 @@ function harness(
     execution,
     fatal,
     clock,
+    gate ?? openStartupGate,
   );
 
   return { runtime, queue, registry, clock, started, finished, worker, fatal };
@@ -256,5 +260,104 @@ describe('job poll runtime', () => {
 
     expect(first).toMatch(/^worker:[a-z0-9-]+:\d+:[0-9a-f-]{36}$/);
     expect(test.runtime.workerInstanceId).toBe(first);
+  });
+});
+
+/** APP2-I03 §7/§13 — the startup gate the poll loop must pass first. */
+describe('worker startup gate', () => {
+  const closedGate: WorkerStartupGate = {
+    ensureReady: () => Promise.resolve({ ok: false, errorClass: 'OBJECT_STORAGE_UNAVAILABLE' }),
+  };
+
+  it('claims nothing when the gate is closed', async () => {
+    const test = harness(TEST_POLICY, () => Promise.resolve(), closedGate);
+    test.registry.register(testHandler());
+    test.queue.batches = [[claimedJob()]];
+
+    await test.runtime.onApplicationBootstrap();
+    await settle(20);
+
+    // Not "claimed and discarded" — the claim query is never issued at all.
+    expect(test.queue.claims).toHaveLength(0);
+    expect(test.started).toHaveLength(0);
+  });
+
+  it('reports unready with a gate reason', async () => {
+    const test = harness(TEST_POLICY, () => Promise.resolve(), closedGate);
+
+    await test.runtime.onApplicationBootstrap();
+
+    await expect(test.runtime.readiness()).resolves.toEqual({
+      ready: false,
+      reason: 'STARTUP_GATE_CLOSED',
+    });
+  });
+
+  it('is not ready while the gate is still pending', async () => {
+    let open: (() => void) | undefined;
+    const pendingGate: WorkerStartupGate = {
+      ensureReady: () =>
+        new Promise((resolve) => {
+          open = () => {
+            resolve({ ok: true });
+          };
+        }),
+    };
+    const test = harness(TEST_POLICY, () => Promise.resolve(), pendingGate);
+
+    const bootstrap = test.runtime.onApplicationBootstrap();
+    await settle(5);
+    const during = await test.runtime.readiness();
+
+    open?.();
+    await bootstrap;
+    const after = await test.runtime.readiness();
+    await test.runtime.onApplicationShutdown('TEST');
+
+    expect(during.ready).toBe(false);
+    expect(after).toEqual({ ready: true, reason: 'ok' });
+  });
+
+  it('waits for the gate before the first claim', async () => {
+    const order: string[] = [];
+    let open: (() => void) | undefined;
+    const orderedGate: WorkerStartupGate = {
+      ensureReady: () =>
+        new Promise((resolve) => {
+          order.push('gate');
+          open = () => {
+            resolve({ ok: true });
+          };
+        }),
+    };
+    const test = harness(TEST_POLICY, () => Promise.resolve(), orderedGate);
+    test.registry.register(testHandler());
+    test.queue.batches = [[claimedJob()]];
+
+    const bootstrap = test.runtime.onApplicationBootstrap();
+    await settle(10);
+    expect(test.queue.claims).toHaveLength(0);
+
+    open?.();
+    await bootstrap;
+    await settle(10);
+    order.push('claim');
+    await test.runtime.onApplicationShutdown('TEST');
+
+    expect(test.queue.claims.length).toBeGreaterThan(0);
+    expect(order[0]).toBe('gate');
+  });
+
+  it('is ready with an empty registry once every gate is open', async () => {
+    // An idle worker is a valid worker: W01 registers the only handler, and it
+    // is not a readiness precondition.
+    const test = harness(TEST_POLICY, () => Promise.resolve());
+
+    await test.runtime.onApplicationBootstrap();
+    const readiness = await test.runtime.readiness();
+    await test.runtime.onApplicationShutdown('TEST');
+
+    expect(test.registry.size).toBe(0);
+    expect(readiness).toEqual({ ready: true, reason: 'ok' });
   });
 });

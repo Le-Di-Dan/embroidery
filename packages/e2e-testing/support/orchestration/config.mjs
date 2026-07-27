@@ -45,6 +45,7 @@ export function loadE2EConfig(env = process.env) {
     storefront: port(env, 'E2E_STOREFRONT_PORT', 4310),
     admin: port(env, 'E2E_ADMIN_PORT', 4311),
     gateway: port(env, 'E2E_GATEWAY_PORT', 8090),
+    minio: port(env, 'E2E_MINIO_PORT', 9500),
   };
   const hosts = {
     storefront: env['STOREFRONT_HOST'] ?? 'embroidery.local',
@@ -55,6 +56,13 @@ export function loadE2EConfig(env = process.env) {
     password: env['E2E_POSTGRES_PASSWORD'] ?? 'embroidery_dev_password',
     name: env['E2E_POSTGRES_DB'] ?? 'embroidery',
   };
+  const storage = {
+    endpoint: `http://localhost:${ports.minio}`,
+    accessKeyId: env['E2E_OBJECT_STORAGE_ACCESS_KEY_ID'] ?? 'e2eminiokey',
+    secretAccessKey: env['E2E_OBJECT_STORAGE_SECRET_ACCESS_KEY'] ?? 'e2e-minio-local-secret',
+    originalsBucket: 'e2e-originals',
+    derivativesBucket: 'e2e-derivatives',
+  };
   db.baseDatabaseUrl = `postgres://${db.user}:${db.password}@localhost:${ports.postgres}/${db.name}`;
 
   return {
@@ -64,6 +72,7 @@ export function loadE2EConfig(env = process.env) {
     ports,
     hosts,
     db,
+    storage,
     baseUrls: {
       storefront: `http://${hosts.storefront}:${ports.gateway}`,
       admin: `http://${hosts.admin}:${ports.gateway}`,
@@ -84,5 +93,8 @@ export function composeEnv(config) {
     E2E_STOREFRONT_UPSTREAM: `host.docker.internal:${config.ports.storefront}`,
     E2E_ADMIN_UPSTREAM: `host.docker.internal:${config.ports.admin}`,
     E2E_API_UPSTREAM: `host.docker.internal:${config.ports.api}`,
+    E2E_MINIO_PORT: String(config.ports.minio),
+    E2E_OBJECT_STORAGE_ACCESS_KEY_ID: config.storage.accessKeyId,
+    E2E_OBJECT_STORAGE_SECRET_ACCESS_KEY: config.storage.secretAccessKey,
   };
 }

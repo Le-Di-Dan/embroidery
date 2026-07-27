@@ -22,6 +22,7 @@ COPY packages/api-client/package.json packages/api-client/
 # leaves their own node_modules uninstalled.
 COPY packages/database/package.json packages/database/
 COPY packages/persistence/package.json packages/persistence/
+COPY packages/object-storage/package.json packages/object-storage/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/design-document/package.json packages/design-document/
 COPY packages/design-engine/package.json packages/design-engine/
@@ -41,10 +42,13 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 FROM deps AS dev
 COPY . .
-# Workspace runtime packages ship TypeScript source; compile them to JS so the
-# Node runtime resolves @embroidery/database and @embroidery/persistence to
-# dist, not raw .ts. (`...` also builds their dependencies.)
-RUN pnpm --filter "@embroidery/persistence..." build
+# Workspace runtime packages ship TypeScript source; compile them to JS so both
+# `tsc` and the Node runtime resolve @embroidery/database, @embroidery/persistence
+# and @embroidery/object-storage to dist, not raw .ts. `@embroidery/worker^...`
+# selects every workspace dependency of the worker *except* the worker itself
+# (which the dev server compiles from source), so a newly added workspace
+# dependency is built here automatically instead of failing at startup.
+RUN pnpm --filter "@embroidery/worker^..." build
 ENV NODE_ENV=development
 CMD ["pnpm", "--filter", "@embroidery/worker", "dev"]
 
@@ -86,6 +90,7 @@ COPY packages/api-client/package.json packages/api-client/
 # leaves their own node_modules uninstalled.
 COPY packages/database/package.json packages/database/
 COPY packages/persistence/package.json packages/persistence/
+COPY packages/object-storage/package.json packages/object-storage/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/design-document/package.json packages/design-document/
 COPY packages/design-engine/package.json packages/design-engine/
@@ -129,5 +134,11 @@ COPY --from=build --chown=node:node /app/packages/persistence/package.json ./pac
 # `node_modules` (pnpm does not hoist), so shipping `dist` without it produces
 # an image that cannot start.
 COPY --from=prod-deps --chown=node:node /app/packages/persistence/node_modules ./packages/persistence/node_modules
+# APP2-I03: the worker verifies its private buckets at startup, so the shipped
+# image needs the object-storage package's compiled output and its own AWS SDK
+# dependencies. Omitting them produces an image that fails at its first import.
+COPY --from=build --chown=node:node /app/packages/object-storage/dist ./packages/object-storage/dist
+COPY --from=build --chown=node:node /app/packages/object-storage/package.json ./packages/object-storage/package.json
+COPY --from=prod-deps --chown=node:node /app/packages/object-storage/node_modules ./packages/object-storage/node_modules
 WORKDIR /app/apps/worker
 CMD ["node", "dist/main.js"]

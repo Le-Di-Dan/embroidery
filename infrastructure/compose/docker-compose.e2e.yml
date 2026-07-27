@@ -29,6 +29,33 @@ services:
       timeout: 3s
       retries: 30
 
+  # Ephemeral object storage for the E2E edge (APP2-I03). The API verifies its
+  # private buckets before it listens, so a run without a reachable store would
+  # fail at API start rather than in a journey — with a message about buckets,
+  # not about the thing under test.
+  #
+  # Published on loopback like this file's PostgreSQL, and for the same reason:
+  # every application in this stack is a *host* process started by
+  # `run-e2e.mjs`, so a Compose-internal-only endpoint would be unreachable.
+  # This is the isolated, run-namespaced E2E edge; the development stack's MinIO
+  # still publishes no port and is still never routed through Nginx.
+  minio:
+    image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+    command: ['server', '/data']
+    environment:
+      MINIO_ROOT_USER: ${E2E_OBJECT_STORAGE_ACCESS_KEY_ID:-e2eminiokey}
+      MINIO_ROOT_PASSWORD: ${E2E_OBJECT_STORAGE_SECRET_ACCESS_KEY:-e2e-minio-local-secret}
+    ports:
+      - '127.0.0.1:${E2E_MINIO_PORT:-9500}:9000'
+    # Every object dies with the container, exactly like the tmpfs database.
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:9000/minio/health/live']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
   gateway:
     image: nginx:1.27.3-alpine
     ports:

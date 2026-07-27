@@ -24,6 +24,8 @@ import { createWorkerInstanceId } from '../identity/worker-identity';
 import { WorkerFatalService } from '../lifecycle/worker-fatal.service';
 import { JobHandlerRegistry } from '../registry/job-handler.registry';
 import { WorkerPolicyService } from '../policy/worker-policy.service';
+import type { WorkerStartupGate } from '../startup/startup-gate';
+import { WORKER_STARTUP_GATE } from '../startup/startup-gate';
 import type { WorkerRuntimePolicy } from '../policy/worker-runtime-policy';
 import { retryDelayMs } from '../retry/retry-schedule';
 
@@ -34,6 +36,7 @@ export interface WorkerReadiness {
     | 'WORKER_POLICY_MISSING'
     | 'WORKER_POLICY_INVALID'
     | 'DATABASE_UNAVAILABLE'
+    | 'STARTUP_GATE_CLOSED'
     | 'NOT_STARTED'
     | 'SHUTTING_DOWN'
     | 'FATAL_HANDLER_UNRESPONSIVE';
@@ -60,6 +63,7 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
   private started = false;
   private databaseReady = false;
   private claimFailures = 0;
+  private gateFailure: string | undefined;
 
   constructor(
     private readonly registry: JobHandlerRegistry,
@@ -69,11 +73,27 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
     private readonly execution: JobExecutionService,
     private readonly fatal: WorkerFatalService,
     @Inject(WORKER_CLOCK) private readonly clock: WorkerClock,
+    @Inject(WORKER_STARTUP_GATE) private readonly startupGate: WorkerStartupGate,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     await this.policies.load();
     this.databaseReady = await this.queue.probeWorkerDatabase();
+
+    // The gate is awaited **before** `started`, so there is no window in which
+    // the loop exists and the gate does not hold (APP2-I03 §7). A closed gate
+    // leaves the process up, unready and claiming nothing — the same shape as
+    // a missing policy — rather than throwing out of Nest initialization and
+    // stranding the database pool with no handle to close it.
+    const gate = await this.startupGate.ensureReady();
+    if (!gate.ok) {
+      this.gateFailure = gate.errorClass;
+      this.logger.error(
+        `Worker startup gate closed (${gate.errorClass}); the worker will claim no job.`,
+      );
+      return;
+    }
+
     this.started = true;
     this.loop = this.pollForever();
 
@@ -119,10 +139,12 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
   }
 
   /**
-   * Readiness (§15): valid policy, a reachable database, a started runtime and
-   * no shutdown in progress. Deliberately independent of handlers, object
-   * storage and any APP2 feature checkpoint — a worker with an empty registry
-   * is correctly configured and correctly idle.
+   * Readiness (I02 §15, extended by APP2-I03 §8): valid policy, a reachable
+   * database, every startup gate open, a started runtime and no shutdown in
+   * progress. Still independent of *handlers* — a worker with an empty registry
+   * is correctly configured and correctly idle — but no longer independent of
+   * the gates, because a worker that cannot reach its object store cannot do
+   * the work it would claim.
    */
   async readiness(): Promise<WorkerReadiness> {
     // Checked first: a worker holding a lease it cannot release is unready for
@@ -132,6 +154,12 @@ export class JobPollRuntimeService implements OnApplicationBootstrap, OnApplicat
     }
     if (this.shutdown.signal.aborted) {
       return { ready: false, reason: 'SHUTTING_DOWN' };
+    }
+    // Reported before `NOT_STARTED` so a closed gate is named as such: both are
+    // "not started", but only one of them tells an operator what to fix. The
+    // safe class itself is in the line the gate's owner logged.
+    if (this.gateFailure !== undefined) {
+      return { ready: false, reason: 'STARTUP_GATE_CLOSED' };
     }
     if (!this.started) {
       return { ready: false, reason: 'NOT_STARTED' };

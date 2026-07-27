@@ -19,6 +19,12 @@ import { executeRaw, newId, sql } from '@embroidery/database';
 import type { DisposableDatabase } from '@embroidery/database/testing';
 import { createDisposableDatabase } from '@embroidery/database/testing';
 
+import {
+  containerEnvArgs,
+  startDisposableMinio,
+  type DisposableMinio,
+} from '../support/disposable-minio';
+
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const IMAGE_TAG = 'embroidery-fd1-worker:test';
 const PROCESS_TEST_EVENT = 'test.worker.uncooperative-timeout';
@@ -146,6 +152,7 @@ describe('worker fatal timeout — real Linux process isolation', () => {
   const workerBName = `embroidery-fd1-b-${runId}`;
 
   let disposable: DisposableDatabase;
+  let minio: DisposableMinio;
   let containerUrl: string;
   let eventId: bigint;
 
@@ -263,6 +270,10 @@ describe('worker fatal timeout — real Linux process isolation', () => {
     ]);
 
     disposable = await createDisposableDatabase('fd1-fatal-process');
+    // Both containers run the shipped worker, which verifies its private
+    // buckets before claiming anything (APP2-I03). Reached over
+    // `host.docker.internal`, exactly like the disposable database.
+    minio = await startDisposableMinio();
 
     // The probe table is test setup inside the disposable database only — not a
     // migration, and never part of the 31-migration canonical schema.
@@ -333,6 +344,7 @@ describe('worker fatal timeout — real Linux process isolation', () => {
       'DATABASE_SSL_MODE=disable',
       '--env',
       'NODE_ENV=development',
+      ...containerEnvArgs(minio),
       IMAGE_TAG,
     ]);
 
@@ -377,6 +389,7 @@ describe('worker fatal timeout — real Linux process isolation', () => {
       'DATABASE_SSL_MODE=disable',
       '--env',
       'NODE_ENV=development',
+      ...containerEnvArgs(minio),
       IMAGE_TAG,
       'node',
       WORKER_B_COMMAND,
@@ -416,6 +429,7 @@ describe('worker fatal timeout — real Linux process isolation', () => {
       await run('docker', ['rm', '--force', '--volumes', name], 60_000);
     }
     await run('docker', ['image', 'rm', '--force', IMAGE_TAG], 180_000);
+    await minio?.stop();
     await disposable?.drop();
   });
 

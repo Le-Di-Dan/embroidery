@@ -16,6 +16,11 @@ import path from 'node:path';
 import type { DisposableDatabase } from '@embroidery/database/testing';
 import { createDisposableDatabase } from '@embroidery/database/testing';
 
+import {
+  minioEnv,
+  startDisposableMinio,
+  type DisposableMinio,
+} from '../../test/support/disposable-minio';
 import { outboxState, seedDueEvent, seedWorkerPolicy } from './tests/worker-runtime-context';
 
 const WORKER_ROOT = path.resolve(__dirname, '..', '..');
@@ -31,7 +36,7 @@ interface ChildResult {
   readonly elapsedMs: number;
 }
 
-function runWorker(databaseUrl: string): Promise<ChildResult> {
+function runWorker(databaseUrl: string, storage: Record<string, string>): Promise<ChildResult> {
   return new Promise((resolve, reject) => {
     const startedAt = Date.now();
     const child = spawn(process.execPath, [CHILD_PATH, MAIN_PATH, '2500'], {
@@ -41,6 +46,7 @@ function runWorker(databaseUrl: string): Promise<ChildResult> {
         NODE_ENV: 'test',
         DATABASE_URL: databaseUrl,
         DATABASE_SSL_MODE: 'disable',
+        ...storage,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -69,6 +75,7 @@ function runWorker(databaseUrl: string): Promise<ChildResult> {
 
 describe('worker smoke (real process)', () => {
   let disposable: DisposableDatabase;
+  let minio: DisposableMinio;
   let result: ChildResult;
   let eventId: bigint;
 
@@ -84,10 +91,15 @@ describe('worker smoke (real process)', () => {
     // leave it exactly as it found it.
     eventId = await seedDueEvent(disposable);
 
-    result = await runWorker(disposable.url);
-  }, 180_000);
+    // The worker verifies its private buckets before it claims anything
+    // (APP2-I03), so the smoke needs a real store to boot at all.
+    minio = await startDisposableMinio();
+
+    result = await runWorker(disposable.url, minioEnv(minio));
+  }, 300_000);
 
   afterAll(async () => {
+    await minio?.stop();
     await disposable?.drop();
   });
 

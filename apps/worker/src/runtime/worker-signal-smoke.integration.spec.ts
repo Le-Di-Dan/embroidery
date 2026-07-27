@@ -19,6 +19,11 @@ import path from 'node:path';
 import type { DisposableDatabase } from '@embroidery/database/testing';
 import { createDisposableDatabase } from '@embroidery/database/testing';
 
+import {
+  containerEnvArgs,
+  startDisposableMinio,
+  type DisposableMinio,
+} from '../../test/support/disposable-minio';
 import { outboxState, seedDueEvent, seedWorkerPolicy } from './tests/worker-runtime-context';
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
@@ -72,6 +77,7 @@ function delay(ms: number): Promise<void> {
 
 describe('worker signal smoke (real Linux SIGTERM)', () => {
   let disposable: DisposableDatabase;
+  let minio: DisposableMinio;
   const containerName = `embroidery-i02c1-${randomUUID().slice(0, 8)}`;
   let logs = '';
   let exitCode = Number.NaN;
@@ -106,6 +112,12 @@ describe('worker signal smoke (real Linux SIGTERM)', () => {
     const containerUrl = new URL(disposable.url);
     containerUrl.hostname = 'host.docker.internal';
 
+    // The shipped worker verifies its private buckets before it claims anything
+    // (APP2-I03), so the container needs a reachable store. Same shape as the
+    // database above: a disposable instance on the host, reached through
+    // `host.docker.internal`, torn down with everything else.
+    minio = await startDisposableMinio();
+
     await docker([
       'run',
       '--detach',
@@ -124,6 +136,7 @@ describe('worker signal smoke (real Linux SIGTERM)', () => {
       // than weakening that guard.
       '--env',
       'NODE_ENV=development',
+      ...containerEnvArgs(minio),
       IMAGE_TAG,
     ]);
 
@@ -152,6 +165,7 @@ describe('worker signal smoke (real Linux SIGTERM)', () => {
   afterAll(async () => {
     await run('docker', ['rm', '--force', '--volumes', containerName], 60_000);
     await run('docker', ['image', 'rm', '--force', IMAGE_TAG], 120_000);
+    await minio?.stop();
     await disposable?.drop();
   });
 

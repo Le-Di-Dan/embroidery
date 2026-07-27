@@ -11,11 +11,17 @@ export default {
   // under test, so leaving any of them here would make them pass or fail
   // depending on what happened to be on disk. Each runs from its own script,
   // which sets up what it needs first.
+  // The APP2-I03 storage-bootstrap suites join the list for the same reason:
+  // they start a MinIO container and a built process, so they run from their
+  // own scripts (`test:storage-bootstrap:worker`, `:composition`), never from
+  // the Docker-free `pnpm test`.
   testPathIgnorePatterns: [
     '\\\\node_modules\\\\',
     '/node_modules/',
     'worker-smoke',
     'worker-signal-smoke',
+    'storage-bootstrap-worker',
+    'storage-bootstrap-composition',
     '\\.process\\.spec\\.ts$',
   ],
   transform: {

@@ -9,6 +9,7 @@
 import { type INestApplication } from '@nestjs/common';
 
 import { createApiApplication } from '../bootstrap/api-application';
+import { ObjectStorageBootstrapService } from '../modules/asset/infrastructure/storage/object-storage-bootstrap.service';
 import { buildOpenApiDocument, describeDocument } from './build-openapi-document';
 import { ensureGenerationEnvironment } from './generation-environment';
 import { OPENAPI_DOCUMENT_TITLE, OPENAPI_DOCUMENT_VERSION } from './openapi-document.config';
@@ -148,5 +149,15 @@ describe('buildOpenApiDocument', () => {
     expect(compareArtifact(readCommittedArtifact(artifactPath), candidate)).toEqual({
       matches: true,
     });
+  });
+
+  it('reaches no object store while generating (APP2-I03)', () => {
+    // The generator builds the real `AppModule` against an `.invalid` endpoint
+    // that can never resolve. If bucket bootstrap had been attached to module
+    // construction or a lifecycle hook, this graph would try to reach it and
+    // `isReady()` would be the only place that showed it. Bootstrap belongs to
+    // the production startup sequence in `main.ts`, and this is the assertion
+    // that keeps it there.
+    expect(app.get(ObjectStorageBootstrapService).isReady()).toBe(false);
   });
 });

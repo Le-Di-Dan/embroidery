@@ -9,25 +9,36 @@ import type { DisposableDatabase } from '@embroidery/database/testing';
 import { createDisposableDatabase } from '@embroidery/database/testing';
 
 import { JobPollRuntimeService } from '../runtime/poll/job-poll-runtime.service';
+import { applyOfflineObjectStorageEnv } from '../runtime/tests/offline-object-storage-env';
+import { WORKER_STARTUP_GATE, openStartupGate } from '../runtime/startup/startup-gate';
 import { WorkerModule } from './worker.module';
 
 describe('worker persistence bootstrap (integration)', () => {
   let disposable: DisposableDatabase;
   let moduleRef: TestingModule;
   let previousUrl: string | undefined;
+  let restoreStorageEnv: () => void;
 
   beforeAll(async () => {
     disposable = await createDisposableDatabase('worker-bootstrap');
     previousUrl = process.env['DATABASE_URL'];
     process.env['DATABASE_URL'] = disposable.url;
     process.env['NODE_ENV'] = 'test';
+    // This suite proves the persistence foundation, not object storage: the
+    // configuration is a non-connecting placeholder and the gate is opened, so
+    // no storage call is made (APP2-I03).
+    restoreStorageEnv = applyOfflineObjectStorageEnv();
 
-    moduleRef = await Test.createTestingModule({ imports: [WorkerModule] }).compile();
+    moduleRef = await Test.createTestingModule({ imports: [WorkerModule] })
+      .overrideProvider(WORKER_STARTUP_GATE)
+      .useValue(openStartupGate)
+      .compile();
     await moduleRef.init();
   });
 
   afterAll(async () => {
     await moduleRef?.close();
+    restoreStorageEnv?.();
     if (previousUrl === undefined) {
       delete process.env['DATABASE_URL'];
     } else {

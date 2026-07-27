@@ -26,6 +26,8 @@ import { WorkerModule } from '../../bootstrap/worker.module';
 import { JobHandlerRegistry } from '../registry/job-handler.registry';
 import { WorkerFatalService } from '../lifecycle/worker-fatal.service';
 import { WORKER_PROCESS } from '../lifecycle/worker-process';
+import { WORKER_STARTUP_GATE, openStartupGate } from '../startup/startup-gate';
+import { applyOfflineObjectStorageEnv } from './offline-object-storage-env';
 import type { JobHandler } from '../registry/job-handler';
 import type { WorkerRuntimePolicy } from '../policy/worker-runtime-policy';
 import {
@@ -92,6 +94,7 @@ export async function startWorkerRuntime(
   const previousEnv = process.env['NODE_ENV'];
   process.env['DATABASE_URL'] = disposable.url;
   process.env['NODE_ENV'] = 'test';
+  const restoreStorageEnv = applyOfflineObjectStorageEnv();
 
   const exits: number[] = [];
   let moduleRef: TestingModule;
@@ -103,6 +106,12 @@ export async function startWorkerRuntime(
           exits.push(code);
         },
       })
+      // These suites prove queue behaviour against a disposable database and no
+      // object store, so the gate is opened explicitly rather than silently:
+      // the real gate is the object-storage bootstrap, and it is proven by the
+      // APP2-I03 startup and composition smokes against a real MinIO.
+      .overrideProvider(WORKER_STARTUP_GATE)
+      .useValue(openStartupGate)
       .compile();
 
     // An attached worker reuses the policy the database already carries;
@@ -116,6 +125,7 @@ export async function startWorkerRuntime(
 
     await moduleRef.init();
   } catch (error: unknown) {
+    restoreStorageEnv();
     if (!attached) {
       await disposable.drop();
     }
@@ -137,6 +147,7 @@ export async function startWorkerRuntime(
       }
       closed = true;
       await moduleRef.close();
+      restoreStorageEnv();
       if (previousUrl === undefined) {
         delete process.env['DATABASE_URL'];
       } else {

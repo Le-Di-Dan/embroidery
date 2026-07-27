@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
 import { WorkerRuntimeModule } from '../runtime/worker-runtime.module';
+import { WorkerObjectStorageModule } from '../storage/object-storage.module';
 
 /**
  * The worker uses the same persistence runtime as the API (DEC-DB7-003), with
@@ -14,6 +15,10 @@ import { WorkerRuntimeModule } from '../runtime/worker-runtime.module';
  * plus the connection pool now hold the event loop open for a real reason.
  */
 @Module({
-  imports: [DatabaseModule, WorkerRuntimeModule],
+  // The storage module is listed **before** the runtime: it binds
+  // `WORKER_STARTUP_GATE`, which the poll runtime injects, and it is the reason
+  // the worker verifies its private buckets before claiming anything
+  // (APP2-I03).
+  imports: [DatabaseModule, WorkerObjectStorageModule, WorkerRuntimeModule],
 })
 export class WorkerModule {}

@@ -4,6 +4,7 @@ import { DatabaseModule } from '@embroidery/persistence';
 import { IdentityModule } from '../identity/identity.module';
 import { AssetModule } from './asset.module';
 import { objectStorageProviders } from './infrastructure/storage/object-storage.provider';
+import { ObjectStorageBootstrapService } from './infrastructure/storage/object-storage-bootstrap.service';
 import { AssetIntakeService } from './application/asset-intake.service';
 import { AssetCatalogQuery } from './application/asset-catalog.query';
 import { UploadReclaimService } from './application/upload-reclaim.service';
@@ -29,11 +30,15 @@ import { AdminAssetController } from './presentation/admin-asset.controller';
   controllers: [AdminAssetController],
   providers: [
     ...objectStorageProviders,
+    ObjectStorageBootstrapService,
     UploadTimer,
     UploadReclaimService,
     UploadTransactionsService,
     AssetIntakeService,
     AssetCatalogQuery,
   ],
+  // Exported for the production startup sequence in `main.ts`, which must
+  // verify the private buckets before the port opens (APP2-I03).
+  exports: [ObjectStorageBootstrapService],
 })
 export class AssetIntakeModule {}

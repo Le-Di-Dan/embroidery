@@ -5,6 +5,12 @@
  * the Asset handlers. An empty production registry is a valid, safe state: the
  * worker boots, reports ready, claims nothing and touches no event — including
  * events a future deployment will own.
+ *
+ * `WORKER_STARTUP_GATE` is injected but deliberately **not** provided here
+ * (APP2-I03): the gate is a composition decision, and binding a permissive
+ * default in the generic runtime is exactly how an unguarded worker would reach
+ * production unnoticed. A graph that forgets to bind one fails to resolve, out
+ * loud, at construction.
  */
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';

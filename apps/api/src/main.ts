@@ -2,7 +2,9 @@ import { Logger } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
 
 import { createApiApplication } from './bootstrap/api-application';
+import { startApi } from './bootstrap/start-api';
 import { loadAppConfig } from './config/app-config';
+import { ObjectStorageBootstrapService } from './modules/asset/infrastructure/storage/object-storage-bootstrap.service';
 import { NestLoggerAdapter } from './platform/logging/nest-logger.adapter';
 import { buildOpenApiDocument } from './openapi/build-openapi-document';
 
@@ -26,7 +28,27 @@ async function bootstrap(): Promise<void> {
     logger.log(`OpenAPI docs enabled at /api/${DOCS_ROUTE}`);
   }
 
-  await app.listen(config.port);
+  // Private buckets are verified before the port opens (APP2-I03): an API that
+  // accepts an upload it cannot store fails in front of a customer instead of
+  // at startup, where an orchestrator can act on it.
+  const listening = await startApi({
+    bootstrapStorage: () => app.get(ObjectStorageBootstrapService).initialize(),
+    listen: async () => {
+      await app.listen(config.port);
+    },
+    close: () => app.close(),
+    onError: (error: unknown) => {
+      // Class only — the failure's own message names the class and nothing
+      // else, and its `cause` is never formatted.
+      logger.error(error instanceof Error ? error.message : String(error));
+    },
+  });
+
+  if (!listening) {
+    process.exitCode = 1;
+    return;
+  }
+
   logger.log(`API listening on port ${config.port} (${config.environment})`);
 }
 

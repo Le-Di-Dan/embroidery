@@ -29,6 +29,7 @@ async function readyPredicate(res) {
  * @returns {{ start: () => Promise<void>, stop: () => Promise<void>, restart: () => Promise<void>, isRunning: () => boolean, tail: () => string, readinessUrl: string }}
  */
 export function createApiService({ config, databaseUrl, adminOrigins }) {
+  const storage = config.storage;
   const spec = {
     name: 'api',
     command: process.execPath,
@@ -52,6 +53,18 @@ export function createApiService({ config, databaseUrl, adminOrigins }) {
       // orthogonal abuse guards, not the policy verified here.
       STAFF_LOGIN_RATE_LIMIT_IP_MAX: '1000',
       STAFF_LOGIN_RATE_LIMIT_GLOBAL_MAX: '1000',
+      // The API verifies its private buckets before it listens (APP2-I03), so
+      // the E2E edge points it at this run's ephemeral MinIO. Passed
+      // explicitly rather than inherited: a developer's ambient
+      // `OBJECT_STORAGE_*` must never send an E2E run at a real store.
+      OBJECT_STORAGE_PROVIDER: 's3',
+      OBJECT_STORAGE_ENDPOINT: storage.endpoint,
+      OBJECT_STORAGE_REGION: 'us-east-1',
+      OBJECT_STORAGE_FORCE_PATH_STYLE: 'true',
+      OBJECT_STORAGE_ACCESS_KEY_ID: storage.accessKeyId,
+      OBJECT_STORAGE_SECRET_ACCESS_KEY: storage.secretAccessKey,
+      OBJECT_STORAGE_ORIGINALS_BUCKET: storage.originalsBucket,
+      OBJECT_STORAGE_DERIVATIVES_BUCKET: storage.derivativesBucket,
     },
   };
   const readinessUrl = `http://localhost:${config.ports.api}/api/health/readiness`;

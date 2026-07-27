@@ -29,6 +29,18 @@ async function bootstrap(): Promise<void> {
   new Logger('WorkerBootstrap').log(
     `Worker readiness: ${readiness.ready ? 'ready' : 'not ready'} (${readiness.reason}).`,
   );
+
+  // A closed startup gate is a failed start, not a degraded one (APP2-I03 §7):
+  // the object store is a hard precondition for the work this worker exists to
+  // do. The context is closed exactly once here — nothing else holds it — so
+  // the database pool cannot keep a failed process alive, and the non-zero exit
+  // is what an orchestrator restarts on. A missing *policy* deliberately keeps
+  // the old behaviour: the process stays up and idle, because an operator
+  // publishes that policy into the same database the worker is already reading.
+  if (readiness.reason === 'STARTUP_GATE_CLOSED') {
+    await app.close();
+    process.exitCode = 1;
+  }
 }
 
 bootstrap().catch((error: unknown) => {

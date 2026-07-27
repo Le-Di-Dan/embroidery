@@ -113,16 +113,27 @@ export async function startEnvironment({ runId, config, log, withAdmin }) {
       { port: config.ports.storefront, label: 'storefront' },
       { port: config.ports.admin, label: 'admin' },
       { port: config.ports.gateway, label: 'gateway' },
+      { port: config.ports.minio, label: 'minio' },
     ]);
 
-    // 1. Ephemeral PostgreSQL (tmpfs) — cleanup drops the whole compose project.
-    log('starting ephemeral postgres');
-    await composeUp({ projectName, file: config.composeFile, services: ['postgres'], env: cEnv });
+    // 1. Ephemeral PostgreSQL and MinIO (both tmpfs) — cleanup drops the whole
+    //    compose project. MinIO is started here because the API verifies its
+    //    private buckets before it listens (APP2-I03); the API's own bootstrap
+    //    still owns whether those buckets exist.
+    log('starting ephemeral postgres and minio');
+    await composeUp({
+      projectName,
+      file: config.composeFile,
+      services: ['postgres', 'minio'],
+      env: cEnv,
+    });
     cleanup.push('compose down', () =>
       composeDown({ projectName, file: config.composeFile, env: cEnv }),
     );
     await waitForPort(config.ports.postgres, { label: 'postgres', timeoutMs: 60_000 });
     await waitForHealthy({ projectName, file: config.composeFile, service: 'postgres', env: cEnv });
+    await waitForPort(config.ports.minio, { label: 'minio', timeoutMs: 60_000 });
+    await waitForHealthy({ projectName, file: config.composeFile, service: 'minio', env: cEnv });
 
     // 2. Disposable database via the canonical DB7/T01 harness.
     log('provisioning disposable database');

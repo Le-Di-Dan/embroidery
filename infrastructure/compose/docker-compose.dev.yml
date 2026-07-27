@@ -151,6 +151,10 @@ services:
       # Serve requests only against a migrated schema.
       db-migrate:
         condition: service_completed_successfully
+      # Ordering only — the API's own startup bootstrap is the authority for
+      # whether the private buckets exist (APP2-I03).
+      minio:
+        condition: service_healthy
     volumes:
       - ../../apps/api/src:/app/apps/api/src
     healthcheck:
@@ -216,6 +220,9 @@ services:
       dockerfile: infrastructure/docker/worker.Dockerfile
       target: dev
     environment:
+      # The worker verifies the private buckets before it claims anything
+      # (APP2-I03), so it needs the same storage configuration as the API.
+      <<: *object-storage-env
       NODE_ENV: development
       # Reach the database over the compose network (never the host mapping).
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
@@ -223,6 +230,11 @@ services:
       TSC_WATCHFILE: DynamicPriorityPolling
     depends_on:
       postgres:
+        condition: service_healthy
+      # Ordering only. The application's own bootstrap stays authoritative: a
+      # healthy container is not a verified bucket, and Compose ordering does
+      # not exist in Kubernetes at all.
+      minio:
         condition: service_healthy
     volumes:
       - ../../apps/worker/src:/app/apps/worker/src

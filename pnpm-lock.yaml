@@ -260,6 +260,9 @@ importers:
       '@embroidery/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@embroidery/object-storage':
+        specifier: workspace:*
+        version: link:../../packages/object-storage
       '@embroidery/persistence':
         specifier: workspace:*
         version: link:../../packages/persistence
