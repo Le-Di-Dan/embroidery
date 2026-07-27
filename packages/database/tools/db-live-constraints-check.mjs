@@ -9,7 +9,10 @@
  */
 import { connect, report } from './live-db.mjs';
 
-const EXPECTED = { p: 78, f: 160, u: 50, c: 189 };
+// CHECK moved 189 -> 190 in APP2-DB01: `ck_asset_derivatives__watermark_by_kind`
+// gives INV-22 its first physical half. The kind CHECK was replaced in place,
+// so it is one added constraint, not a renumbered inventory.
+const EXPECTED = { p: 78, f: 160, u: 50, c: 190 };
 const NAMES = { p: 'PK', f: 'FK', u: 'UNIQUE', c: 'CHECK' };
 
 const client = await connect(process.argv[2]);

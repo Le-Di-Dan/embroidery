@@ -1,7 +1,7 @@
 /**
  * APP2-I02 §17 cases 1–9 — claim behaviour against a real PostgreSQL.
  *
- * Every case runs on a disposable database with all 31 migrations applied, so
+ * Every case runs on a disposable database with all 32 migrations applied, so
  * the check constraints, the `background_job_attempts` uniqueness and the
  * CST-099 column-scoped outbox trigger are all live. Nothing here can pass by
  * agreeing with an in-memory fake.

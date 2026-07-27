@@ -82,7 +82,7 @@ DB0 trace/status: [`DB2_COMPLETENESS_MATRIX.md`](./DB2_COMPLETENESS_MATRIX.md).
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | CON-040 | Asset | Asset, Template Asset, Production Asset | root | AST | AGG-08 | LC-06 | REQ-ASSET-001..007, INV-09/10 | mixed (cpriv/prod/pub by kind) | mutable | per category | scoped | Metadata only; binary in object storage; private-by-default; semantic association owned by consuming modules. |
 | CON-041 | Asset Inspection Result | Asset Inspection Result | append | AST | AGG-08 | LC-06 | REQ-ASSET-002 | sec | append | oper | internal | Validation pipeline outcomes; idempotent callbacks. |
-| CON-042 | Asset Derivative | Asset Derivative, Preview | entity | AST | AGG-08 | LC-06 | REQ-ASSET-003, INV-22 | mixed | mutable | per parent | scoped | Watermarked previews, mockups, normalized copies. CON-061 Preview merged here. |
+| CON-042 | Asset Derivative | Asset Derivative, Preview | entity | AST | AGG-08 | LC-06 | REQ-ASSET-003, INV-22 | mixed | mutable | per parent | scoped | Watermarked previews, mockups, normalized copies, thumbnails, **catalog previews**. CON-061 Preview merged here — that merge covers the **customer/design** preview (`PREVIEW_WATERMARKED`) only; the catalog display derivative (`CATALOG_PREVIEW`, APP2-DB01) is a separate, never-watermarked kind and is not a Preview in the CON-061 sense. |
 | CON-043 | Object Storage Reference | Signed Access target | vo | AST | — | — | REQ-ASSET-001, INV-10 | int | immutable | n-a | internal | Stable internal ref; never public URL as authority. |
 | CON-044 | Asset Access Scope | Access Scope | vo | AST | — | — | REQ-ASSET-004, INV-21 | sec | immutable | n-a | internal | Drives signed-URL authorization. |
 

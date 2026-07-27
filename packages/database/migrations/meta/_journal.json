@@ -218,6 +218,13 @@
       "when": 1784537649743,
       "tag": "0031_add_remaining_launch_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1785152843646,
+      "tag": "0032_add_catalog_preview_derivative_kind",
+      "breakpoints": true
     }
   ]
 }

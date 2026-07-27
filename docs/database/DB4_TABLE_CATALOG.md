@@ -76,7 +76,7 @@ relationships: [`DB4_RELATIONSHIP_AND_FK_MODEL.md`](./DB4_RELATIONSHIP_AND_FK_MO
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | TBL-022 | `assets` | AGG-08 | metadata + internal object-storage reference of one uploaded/authored binary | root | uuid7 | storage key (unique) | LC-06 asset | mutable | tombstone | mixed/per-kind | REQ-ASSET-001..007, INV-09/10 |
 | TBL-023 | `asset_inspections` | AGG-08 | one validation-pipeline outcome for an asset | append | bigint | — | — | append | hard-ttl (oper) | sec/oper | REQ-ASSET-002 |
-| TBL-024 | `asset_derivatives` | AGG-08 | one generated derivative (watermarked preview, mockup, normalized copy) | entity | uuid7 | (asset, kind) unique-active | LC-06 derivative | mutable | tombstone w/ parent | mixed/per-parent | REQ-ASSET-003, INV-22 |
+| TBL-024 | `asset_derivatives` | AGG-08 | one generated derivative (watermarked preview, mockup, normalized copy, thumbnail, catalog preview) | entity | uuid7 | (asset, kind) unique-active | LC-06 derivative | mutable | tombstone w/ parent | mixed/per-parent | REQ-ASSET-003, INV-22 |
 
 ### Design (CTX-DSN)
 

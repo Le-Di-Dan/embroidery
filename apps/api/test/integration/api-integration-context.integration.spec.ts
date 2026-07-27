@@ -18,9 +18,11 @@ const PERSISTENT_DATABASE = 'embroidery';
 
 // Canonical DB6 baseline fingerprint (DEC-DB7-005); recomputing it here would
 // duplicate the verifier, so the frozen value is asserted against the verifier
-// output instead.
-const CANONICAL_FINGERPRINT = '4ca56a5967730d257edb34e72d6c40373156704cab7c87e3a684803c8321672f';
-const CANONICAL_MIGRATION_COUNT = 31;
+// output instead. Moved by APP2-DB01 (migration 0032 adds the CATALOG_PREVIEW
+// derivative kind and the INV-22 watermark CHECK): 31 → 32 migrations,
+// `4ca56a59…` → `82864268…`. Table count is unchanged, which is the point.
+const CANONICAL_FINGERPRINT = '82864268c990990e4597c74cfc69b7b5a91b1bc5a2adbde098ab9ad43aed58cf';
+const CANONICAL_MIGRATION_COUNT = 32;
 const CANONICAL_TABLE_COUNT = 78;
 
 // One long-lived probe connection answers all catalog questions, so existence

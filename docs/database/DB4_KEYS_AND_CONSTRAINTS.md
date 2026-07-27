@@ -104,6 +104,7 @@ operational records, per the PK column in
 | CST-072 | CK | audit_events | actor_kind ↔ matching actor ref set (ADMIN→admin_id …) | audit spec | orphan actor | dir (trigger candidate) | D7-10 |
 | CST-073 | CK | refunds | status=EXECUTED → transfer_reference NOT NULL | LC-20 | unevidenced refund execution | dir | D7-10 |
 | CST-074 | CK | design_versions | status ∉ {DRAFT} → document_hash NOT NULL · agreement_versions status=PUBLISHED → content_hash & effective_from NOT NULL | GRD-007/008 | unhashed sent/published artifact | dir | D7-07 |
+| CST-126 | CK | asset_derivatives | kind=PREVIEW_WATERMARKED → is_watermarked=true · kind=CATALOG_PREVIEW → is_watermarked=false (`ck_asset_derivatives__watermark_by_kind`; MOCKUP/NORMALIZED/THUMBNAIL unconstrained) | **INV-22 / BR-012** | a customer preview claiming no watermark, or a catalog display copy claiming one | **yes** (APP2-DB01, migration 0032) | D7 (`catalog-preview-derivative.integration.spec.ts`) |
 
 ## 5. Nullability (required references — D7-07 family)
 

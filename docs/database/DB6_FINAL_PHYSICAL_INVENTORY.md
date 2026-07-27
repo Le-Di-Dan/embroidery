@@ -4,6 +4,16 @@ Live-catalog-derived on two independent fresh disposable installs and four upgra
 disposable installs (all six identical — see `DB6_MIGRATION_MATRIX_REPORT.md` §3 for the
 fingerprint proof). No hand-accumulated figure in this document.
 
+> **Superseded in part by APP2-DB01** (migration `0032`, application era). Two
+> figures below moved and are no longer the live baseline: **CHECK constraints
+> 189 → 190** (`ck_asset_derivatives__watermark_by_kind`, CST-126) and the
+> schema **fingerprint → `82864268c990990e4597c74cfc69b7b5a91b1bc5a2adbde098ab9ad43aed58cf`**
+> (31 → 32 migrations). Tables (78), columns (833), FKs (160), PKs (78),
+> UNIQUEs (50), indexes and triggers are unchanged. The executable baseline is
+> `packages/database/tools/db-live-constraints-check.mjs` and
+> `packages/database/tools/canonical-fingerprint.txt`; this document keeps its
+> DB6-era figures as the historical record.
+
 ## 1. Tables (78/78)
 
 - 78 unique `TBL-*` IDs, 78 unique physical tables, one owner group each (19 groups,

@@ -1,10 +1,23 @@
 # ADR-APP2-001 — Object Storage and Asset Intake Architecture
 
-- Status: Accepted — corrected by `APP2-DEC-STORAGE-C1` / `APP2-DEC-STORAGE-C2`; entry-gate closure `APP2-B01-G01` (2026-07-27)
-- Date: 2026-07-26 (corrected 2026-07-26; entry gate closed 2026-07-27)
+- Status: Accepted — corrected by `APP2-DEC-STORAGE-C1` / `APP2-DEC-STORAGE-C2`; entry-gate closure `APP2-B01-G01`; derivative-kind schema change `APP2-DB01` (2026-07-27)
+- Date: 2026-07-26 (corrected 2026-07-26; entry gate closed 2026-07-27; `APP2-DB01` 2026-07-27)
 - Phase / checkpoint: APP2 / `APP2-DEC-STORAGE` (corrections `APP2-DEC-STORAGE-C1`, `APP2-DEC-STORAGE-C2`; entry gate `APP2-B01-G01` under `APP2-B01` ownership)
 - Decision ID: IMP-D028 (resolves IMP-O002)
 - Supersedes: none
+
+> **Schema-change note (`APP2-DB01`, 2026-07-27).** `NO_APP2_MIGRATION` held for
+> intake (`APP2-B01`) and is **not** reopened by it; it is superseded on exactly
+> one point, by the route §5 itself named. The `APP2-W01` entry gate proved that
+> `asset_derivatives.kind` could not represent a **non-watermarked catalog
+> display derivative**: `PREVIEW_WATERMARKED` is the watermarked customer/design
+> preview (INV-22, BR-012, §4.7), and `NORMALIZED`/`MOCKUP` mean other things.
+> `APP2-DB01` adds the kind **`CATALOG_PREVIEW`** and the first physical half of
+> INV-22 (`ck_asset_derivatives__watermark_by_kind`, CST-126) in migration
+> `0032` — 32 migrations, 78 tables and 833 columns unchanged, fingerprint
+> `82864268…`. `APP2-W01` produces exactly `THUMBNAIL` + `CATALOG_PREVIEW`, both
+> `is_watermarked = false`. Report:
+> [`APP2-DB01-COMPLETION-REPORT.md`](../../implementation/reports/APP2-DB01-COMPLETION-REPORT.md).
 
 > **Entry-gate note (`APP2-B01-G01`, 2026-07-27).** This is **not** a third
 > correction — `APP2-DEC-STORAGE-C3` must not be created. Under `APP2-B01`
@@ -711,7 +724,10 @@ Public delivery of an approved derivative is **gateway/API-proxied with a
 publication check** — never object-store public-read and never a presigned GET
 handed out as a stable public URL (security §5–6: "no stable public preview
 URL", "direct object storage listing is prohibited"). For a `PUBLISHED` product,
-the public read path resolves the `PREVIEW_WATERMARKED`/approved derivative key
+the public read path resolves the approved derivative key — for **catalog media**
+that is `CATALOG_PREVIEW`/`THUMBNAIL` (APP2-DB01: catalog display derivatives,
+never watermarked), while `PREVIEW_WATERMARKED` remains the customer/design
+preview and keeps its watermark (INV-22 / BR-012 / CST-126) —
 and streams it with cache headers and immutable per-derivative versioning
 (key includes derivative identity). Unpublished/DRAFT product → not served
 (404-class), regardless of key knowledge. Private originals and
@@ -832,6 +848,15 @@ dimensions are validated and recorded as bounded inspection findings, not a new
 column. No schema gap found; if a later spec proves one, it becomes a dedicated
 forward-only `APP2-DB01` checkpoint — never an edited migration here.
 
+**That contingency fired.** The `APP2-W01` entry gate proved a genuine gap in
+the derivative **kind** vocabulary (no non-watermarked catalog display kind), and
+it was closed exactly as this paragraph prescribes: the dedicated forward-only
+`APP2-DB01` checkpoint, migration `0032`, no existing migration edited. Scope of
+the supersession is narrow and explicit — one added `kind` value plus one added
+CHECK; **no table, column, state, uniqueness or READY/storage-key change**, and
+every other `NO_APP2_MIGRATION` finding below still stands, including the
+idempotency model and the intake fields.
+
 **`APP2-DEC-STORAGE-C2` re-confirms `NO_APP2_MIGRATION`.** The upload-idempotency
 model (§4.2e) is fully representable on the existing `idempotency_records`
 (`result` jsonb holds the `{assetId, objectKey}` allocation; mutable per DB5-A10),
@@ -927,6 +952,16 @@ Nothing in this ADR now blocks `APP2-B01` execution.
 - **`APP2-W01`** may assume: private-original read, derivative write, server-owned
   SHA-256, truthful `UPLOADED`/`INSPECTING` lifecycle, outbox/job intent emitted
   by B01, cleanup interface — **not** its job runtime (`APP2-DEC-JOBS`).
+  **Locked by `APP2-DB01`:** the two outputs are `THUMBNAIL` and
+  `CATALOG_PREVIEW`, both `is_watermarked = false`; each row is inserted at
+  `PENDING` and moved to `PROCESSING` by a guarded transition before any
+  object-store work (never inserted as `PROCESSING`); the asset reaches
+  `ACCEPTED` only in the same transaction that makes both rows `READY`
+  (DB3 LC-06 catalog lane); and the handler's attempt evidence is filed under
+  background job kind **`ASSET_PROCESSING`**, not the transport kind
+  `OUTBOX_DISPATCH`. `APP2-W01` is additionally blocked on `APP2-I03`
+  (private-bucket bootstrap wiring), so the order is
+  `APP2-DB01 → APP2-I03 → APP2-W01`.
 - **Frontends:** Admin (`APP2-A01`) consumes the initiate→upload→finalize
   contract with progress/status; Storefront (`APP2-S01/S02`) consumes proxied
   published-derivative URLs governed by publication. No UI is designed here.
@@ -938,6 +973,13 @@ The pre-audit's 17-checkpoint map gains one narrow prerequisite →
 …`. `APP2-I01` depends on `APP2-DEC-STORAGE` (this ADR); `APP2-B01` now depends
 on `APP2-I01`. All other ordering, endpoint counts, and the acyclic/Admin-leads
 properties are unchanged.
+
+**Updated by `APP2-DB01`.** `APP2-DEC-JOBS` already took the map to 19 by adding
+`APP2-I02`. Two further prerequisites now sit between `B01` and `W01`, both
+raised by the `W01` entry gate → **21 checkpoints**:
+`… → B01 → APP2-DB01 (catalog derivative schema) → APP2-I03 (private-bucket
+bootstrap wiring) → W01 → …`. Neither adds an endpoint, and the acyclic /
+Admin-leads properties still hold.
 
 ## Appendix — research and spike evidence
 

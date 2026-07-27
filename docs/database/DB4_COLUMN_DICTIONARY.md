@@ -326,11 +326,11 @@ boolean/no/yes; listed once per table below by ID only.
 | COL | Column | Type | N? | M? | Notes |
 |---|---|---|---|---|---|
 | COL-TBL024-01 | asset_id | uuid | no | no | →assets (parent) |
-| COL-TBL024-02 | kind | text | no | no | PREVIEW_WATERMARKED/MOCKUP/NORMALIZED/THUMBNAIL (CK); partial UQ active per (asset, kind) |
+| COL-TBL024-02 | kind | text | no | no | PREVIEW_WATERMARKED/MOCKUP/NORMALIZED/THUMBNAIL/**CATALOG_PREVIEW** (CK); partial UQ active per (asset, kind). `CATALOG_PREVIEW` added by APP2-DB01: the catalog display derivative of a CATALOG_MEDIA asset, never watermarked — a different concept from the customer/design `PREVIEW_WATERMARKED` |
 | COL-TBL024-03 | status | text | no | yes | PENDING/PROCESSING/READY/FAILED |
 | COL-TBL024-04 | storage_key | text | yes | yes | UQ when set; set at READY |
 | COL-TBL024-05 | checksum | text | yes | yes | `sha256:<hex>` of derivative binary (preview_hash source) |
-| COL-TBL024-06 | is_watermarked | boolean | no | no | INV-22: customer-visible previews true; internal artifacts false |
+| COL-TBL024-06 | is_watermarked | boolean | no | no | INV-22: customer-visible previews true; internal artifacts false. Physically bound to `kind` for the two kinds whose identity is the watermark decision (CST-126, APP2-DB01); the other three stay application-governed |
 
 ## 7. Design (CTX-DSN)
 

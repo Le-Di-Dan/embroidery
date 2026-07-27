@@ -23,7 +23,10 @@
  *
  * `is_watermarked` is INV-22: customer-visible previews are watermarked;
  * internal production artifacts are not. A public derivative never exposes
- * the private original — resolution goes through this row's own key.
+ * the private original — resolution goes through this row's own key. APP2-DB01
+ * gives that invariant its first physical half
+ * (`ck_asset_derivatives__watermark_by_kind`) for the two kinds whose identity
+ * is the watermark decision.
  */
 import { sql } from 'drizzle-orm';
 import {
@@ -46,12 +49,25 @@ import { assets } from './assets';
 export const ASSET_DERIVATIVE_STATES = ['PENDING', 'PROCESSING', 'READY', 'FAILED'] as const;
 export type AssetDerivativeState = (typeof ASSET_DERIVATIVE_STATES)[number];
 
-/** COL-TBL024-02 closed kind set (DB4). */
+/**
+ * COL-TBL024-02 closed kind set (DB4; `CATALOG_PREVIEW` added by APP2-DB01).
+ *
+ * `PREVIEW_WATERMARKED` is the **customer/design** preview and is watermarked
+ * by definition (INV-22, BR-012). `CATALOG_PREVIEW` is the **catalog display**
+ * derivative generated from a `CATALOG_MEDIA` asset for Admin/Storefront
+ * presentation: store-owned marketing media, never watermarked. They are two
+ * different domain concepts, which is why the second one is its own kind rather
+ * than the first one with `is_watermarked = false` — that pairing would make
+ * `ck_asset_derivatives__watermark_by_kind` (and the public preview contract in
+ * ADR-APP2-001 §4.7) self-contradictory. `NORMALIZED` keeps its artwork-pipeline
+ * meaning and is not a display preview.
+ */
 export const ASSET_DERIVATIVE_KINDS = [
   'PREVIEW_WATERMARKED',
   'MOCKUP',
   'NORMALIZED',
   'THUMBNAIL',
+  'CATALOG_PREVIEW',
 ] as const;
 export type AssetDerivativeKind = (typeof ASSET_DERIVATIVE_KINDS)[number];
 
@@ -86,6 +102,16 @@ export const assetDerivatives = pgTable(
       .where(sql`${t.storageKey} is not null`),
     check('ck_asset_derivatives__status_allowed', stateCheck(t.status, ASSET_DERIVATIVE_STATES)),
     check('ck_asset_derivatives__kind_allowed', stateCheck(t.kind, ASSET_DERIVATIVE_KINDS)),
+    // INV-22 / BR-012, physical half (APP2-DB01). Until now the watermark rule
+    // was application-enforced only (DB3_INVARIANT_ENFORCEMENT_PLAN "APP"), so
+    // nothing stopped a watermarked-preview row claiming it carries no
+    // watermark. The rule is stated only for the two kinds whose identity *is*
+    // the watermark decision; MOCKUP, NORMALIZED and THUMBNAIL keep their
+    // existing freedom, because no invariant constrains them.
+    check(
+      'ck_asset_derivatives__watermark_by_kind',
+      sql`(${t.kind} <> 'PREVIEW_WATERMARKED' or ${t.isWatermarked} = true) and (${t.kind} <> 'CATALOG_PREVIEW' or ${t.isWatermarked} = false)`,
+    ),
     // CST-070 instance — checksum format when set.
     check('ck_asset_derivatives__checksum_format', sql`${t.checksum} ~ '^sha256:[0-9a-f]{64}$'`),
     // READY means the binary exists — a READY row without a key would be an

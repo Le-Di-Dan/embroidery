@@ -133,13 +133,49 @@ products invisible to new cases but historical snapshots intact.
 |---|---|---|---|---|---|---|---|
 | TR-LC06-01 | (upload)→UPLOADED | system | size/MIME pre-checks | asset row | SE-013 inspection job | security-relevant | `asset.upload` per upload token |
 | TR-LC06-02 | UPLOADED→INSPECTING | worker | claim | mark | — | no | job id |
-| TR-LC06-03 | INSPECTING→ACCEPTED | worker | full validation `09 §4` | mark + inspection record | SE-013 derivative jobs | yes | `asset.inspect` per asset+attempt |
+| TR-LC06-03 | INSPECTING→ACCEPTED | worker | full validation `09 §4`; **catalog lane:** both required derivatives already READY in this same transaction | mark + inspection record (+ catalog derivatives READY) | SE-013 derivative jobs (**artwork lane only**) | yes | `asset.inspect` per asset+attempt |
 | TR-LC06-04 | INSPECTING→REJECTED | worker | validation failure | mark + record | notify owner flow | yes | idem |
 | TR-LC06-05 | ACCEPTED→DELETION_PENDING | retention/cleanup or admin R | not referenced by commercial history OR category allows | tombstone decision | SE-014 binary delete job | yes | `asset.delete` per asset |
 | TR-LC06-06 | DELETION_PENDING→DELETED | worker | binary deleted confirmed | tombstone final | — | yes | idem |
 
 Quarantine: `REJECTED` is the quarantine terminal; re-submission = new
 asset. **DB8:** idempotent processing callbacks (CC-19).
+
+### LC-06 lanes (APP2-DB01)
+
+The single "derivatives are generated after ACCEPTED" reading above was
+over-broad. Two lanes exist; the derivative *state* machine
+(`PENDING → PROCESSING → READY | FAILED`) is identical in both, only the
+timing relative to the parent asset differs.
+
+**Catalog-media lane** (`kind = CATALOG_MEDIA`, owner `APP2-W01`): derivative
+generation is the inspection. The worker prepares both required rows while the
+asset is still `INSPECTING`, generates the binaries, and writes the terminal
+tuple in one transaction:
+
+| Step | Effect |
+|---|---|
+| prepare (short tx, before any object-store work) | insert-or-recover `THUMBNAIL` and `CATALOG_PREVIEW` at **`PENDING`**, then a guarded `PENDING → PROCESSING` transition for each |
+| generate | private derivative binaries; no database write |
+| accept (one tx) | both rows `PROCESSING → READY` · exactly one `ACCEPTED` inspection · asset `INSPECTING → ACCEPTED` |
+| reject (one tx) | both rows `PROCESSING → FAILED` · exactly one `REJECTED` inspection · asset `INSPECTING → REJECTED` · original retained |
+
+Rules this lane is bound by:
+
+- a derivative row is **never inserted directly as `PROCESSING`** — `PENDING`
+  stays the entry state, and the transition is a guarded update whose predicate
+  names the expected current state (a recovered `PROCESSING` row is a
+  retry/replay and does not move backwards through `PENDING`);
+- the asset does **not** reach `ACCEPTED` until both required derivatives are
+  `READY` **in the same transaction**;
+- a derivative must **never** become `READY` for an asset that has already
+  reached `REJECTED`.
+
+**Design/artwork lane** (`PREVIEW_WATERMARKED` / `NORMALIZED` / `MOCKUP`):
+unchanged. Those derivatives keep their existing after-`ACCEPTED` SE-013 job
+timing and their publication/design rules. `CATALOG_PREVIEW` does not alter
+customer-design preview semantics, and `PREVIEW_WATERMARKED` remains watermarked
+(INV-22, BR-012, CST-126).
 
 ---
 

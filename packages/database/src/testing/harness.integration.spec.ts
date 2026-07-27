@@ -52,16 +52,20 @@ describe('integration harness', () => {
       expect(failures).toEqual([]);
       expect(result.passed).toBe(true);
       expect(result.stages).toHaveLength(7);
+      // Moved by APP2-DB01 (migration 0032, `CATALOG_PREVIEW` + the watermark
+      // CHECK). The literal is repeated here rather than read from the canonical
+      // file on purpose: a test that reads the same file it verifies would keep
+      // passing through an unreviewed baseline edit.
       expect(result.stages.at(-1)?.summary).toContain(
-        '4ca56a5967730d257edb34e72d6c40373156704cab7c87e3a684803c8321672f',
+        '82864268c990990e4597c74cfc69b7b5a91b1bc5a2adbde098ab9ad43aed58cf',
       );
     }, 120_000);
 
-    it('applied all 31 migrations', async () => {
+    it('applied all 32 migrations', async () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(31);
+      expect(Number(result.rows[0]?.count)).toBe(32);
     });
 
     it('resets state between tests without disabling the S24 triggers', async () => {
@@ -92,7 +96,7 @@ describe('integration harness', () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(31);
+      expect(Number(result.rows[0]?.count)).toBe(32);
     });
   });
 

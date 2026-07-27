@@ -355,9 +355,22 @@
 > [`reports/APP2-B01-COMPLETION-REPORT.md`](../reports/APP2-B01-COMPLETION-REPORT.md).
 >
 > **No processing, publication or public product functionality exists yet.**
-> `APP2-W01` is now **`READY — NOT STARTED`**; `APP2-A01` stays
-> `DESIGN_APPROVED — BLOCKED_BY_APP2-W01` and `APP2-S01`
+> `APP2-A01` stays `DESIGN_APPROVED — BLOCKED_BY_APP2-W01` and `APP2-S01`
 > `DESIGN_AUTHORITY_UI02 — BLOCKED_BY_PUBLIC_BACKEND`.
+
+> **`APP2-W01` entry gate (2026-07-27) — `BLOCKED`, then routed.** W01's
+> mandatory schema-representability gate failed and the checkpoint stopped
+> before any code: `asset_derivatives.kind` had no non-watermarked catalog
+> display kind, and neither candidate was usable (`PREVIEW_WATERMARKED` is bound
+> to INV-22/BR-012 and the public preview contract; `NORMALIZED` would redefine
+> the artwork concept CON-042/CON-061 merged). The same audit found two DB3
+> LC-06 contradictions (derivatives start at `PENDING`, and LC-06 read as
+> "derivatives only after `ACCEPTED`") and one runtime-foundation gap
+> (`ensurePrivateBuckets` has no production caller). Routed to two new
+> checkpoints — **`APP2-DB01`** (schema/lifecycle, delivered) and **`APP2-I03`**
+> (bucket bootstrap wiring) — so the order is
+> **`APP2-DB01 → APP2-I03 → APP2-W01`** and the map is now **21 checkpoints**
+> (§6.1). `APP2-W01` is **`BLOCKED_BY_APP2-I03`**, not `READY`.
 >
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
@@ -437,8 +450,10 @@ endpoints.
 | 4 | APP2-D01 | design | Admin asset/catalog `NEW` + Storefront list/detail `SUPPLEMENT` (one package) — **`DELIVERED_FOR_PRODUCT_OWNER_REVIEW`**, section `423:3` on page APP_02, 30 `REVIEW_REQUIRED` rows (§6.2) | PRE-AUDIT |
 | 4b | APP2-I01 | foundation | Object-storage foundation — `packages/object-storage` (port + S3 adapter over `client-s3`/`lib-storage` **only, no presigner** + key helpers + contract tests), pinned MinIO Compose service + bucket bootstrap, config contract + `.env.example` keys, route-scoped nginx upload support (`client_max_body_size` + `proxy_request_buffering off`), `lib-storage` memory-bound policy (IMP-D028 / C1 / C2) | DEC-STORAGE |
 | 4c | APP2-B01-G01 | gate | Asset-intake entry-gate closure (docs/evidence only, under `APP2-B01` ownership) — Product Owner upload policy, two-stage request+content fingerprint, versioned discriminated result union, `claimToken` ownership, expired-reclaim/cleanup ordering, Tx A/Tx B boundaries, three-operation B01 handoff (`ADR-APP2-001` §4.2f) — **`COMPLETE — ENTRY_GATE_CLOSED`**; `STORAGE-BLK-01..03` `RESOLVED_BY_APP2-B01-G01`, `UPLOAD-POLICY-BLK-01` `RESOLVED_BY_PRODUCT_OWNER`; `NO_APP2_MIGRATION` re-confirmed (9/9 disposable checks) | I01, I02 |
-| 5 | APP2-B01 | backend | Asset intake API — **exactly three operations** (Admin asset upload / detail / list; the historical "retry" endpoint is dropped): T1 streaming multipart upload with the 25 MiB incremental counter and 5-minute hard duration, pre-stream durable allocation + **request** fingerprint and post-stream **content** fingerprint, versioned `ASSET_UPLOAD_ALLOCATION`/`ASSET_UPLOAD_COMPLETED` result union with strict decoding, `claimToken` rotation on expired reclaim verified inside Tx A and Tx B, ordered reclaim/cleanup-before-replacement, post-object `UPLOADED` insert + guarded `→INSPECTING`, one-transition outbox `append`, route-scoped nginx upload location (27 MiB, `proxy_request_buffering off`, >5-minute timeouts), CW-01…CW-07 tests, + OpenAPI/client. Closes the `ADR-APP2-001` §4.2f-7 repository gaps. **Entry gate `APP2-B01-G01` closed** → **`READY — NOT STARTED`**. | I01, B01-G01 |
-| 6 | APP2-W01 | worker | Asset inspection/derivatives job family handler + image-processing library decision (uses I02 runtime) | B01, I02 |
+| 5 | APP2-B01 | backend | Asset intake API — **exactly three operations** (Admin asset upload / detail / list; the historical "retry" endpoint is dropped): T1 streaming multipart upload with the 25 MiB incremental counter and 5-minute hard duration, pre-stream durable allocation + **request** fingerprint and post-stream **content** fingerprint, versioned `ASSET_UPLOAD_ALLOCATION`/`ASSET_UPLOAD_COMPLETED` result union with strict decoding, `claimToken` rotation on expired reclaim verified inside Tx A and Tx B, ordered reclaim/cleanup-before-replacement, post-object `UPLOADED` insert + guarded `→INSPECTING`, one-transition outbox `append`, route-scoped nginx upload location (27 MiB, `proxy_request_buffering off`, >5-minute timeouts), CW-01…CW-07 tests, + OpenAPI/client. Closes the `ADR-APP2-001` §4.2f-7 repository gaps. **Entry gate `APP2-B01-G01` closed** → **`COMPLETE — REVIEW_ACCEPTED`**. | I01, B01-G01 |
+| 5b | APP2-DB01 | database | Catalog derivative schema & lifecycle alignment — adds the `CATALOG_PREVIEW` derivative kind and the first physical half of INV-22 (`ck_asset_derivatives__watermark_by_kind`, CST-126) in migration `0032`; aligns DB3 LC-06 into a catalog lane (derivatives prepared at `PENDING`, generated while the asset is `INSPECTING`, terminal tuple written in one transaction) and an unchanged design/artwork lane; locks the `APP2-W01` job kind to `ASSET_PROCESSING`. 78 tables / 833 columns unchanged; OpenAPI, client and Figma unchanged — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B01 |
+| 5c | APP2-I03 | foundation | Wire idempotent private-bucket bootstrap into the API and worker composition roots. `ensurePrivateBuckets` exists in `packages/object-storage` but has **no production caller** — only tests — so nothing creates the buckets in a real deployment and the first real upload/derivative write would fail. No new SDK, no MinIO exposure — **`READY — NOT STARTED`** | I01, B01 |
+| 6 | APP2-W01 | worker | Asset inspection/derivatives job family handler + image-processing library decision (uses I02 runtime). Produces exactly `THUMBNAIL` + `CATALOG_PREVIEW`, both unwatermarked, per `APP2-DB01` — **`BLOCKED_BY_APP2-I03`** | B01, I02, DB01, I03 |
 | 7 | APP2-A01 | frontend | Admin asset library | B01, W01, D01 |
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) | B01 |
 | 9 | APP2-A02 | frontend | Admin product list | B02, D01 |

@@ -41,7 +41,7 @@ listed first. Final enforcement mapping is designed at **DB3/DB4/DB7/DB8**.
 | INV-19 | No duplicate order creation; no duplicate payment application; no lost design version. | `10 §4` | TX + DB (unique) | DB8 | Idempotency + uniqueness. |
 | INV-20 | Approval is authoritative only through the secure flow; messaging apps are not the record. | `04 BR-008`, `12 D-012` | APP | DB3 | Process invariant; no external source of truth. |
 | INV-21 | Customer cannot export/download scene document, high-res preview, store-owned artwork, production or digitized files. | `04 BR-011`, `01 §3`, `05 §11`, `00 §8` | APP + EXT | DB8 | No export surface; asset authorization. E2E-09. |
-| INV-22 | Customer-facing previews contain watermark; internal production artifacts do not. | `04 BR-012`, `05 §10` | APP | DB4 | Derivative generation rule. |
+| INV-22 | Customer-facing previews contain watermark; internal production artifacts do not. | `04 BR-012`, `05 §10` | APP + DB (partial) | DB4 | Derivative generation rule. APP2-DB01 gave it a physical half (CST-126) for `PREVIEW_WATERMARKED` and the new `CATALOG_PREVIEW`. |
 | INV-23 | External side effects are not part of a DB transaction; committed transactions trigger async work via outbox/equivalent. | `SYSTEM_ARCHITECTURE §11`, `BACKEND_CONVENTIONS §11` | TX + APP | DB8 | Outbox pattern. |
 | INV-24 | Idempotency keys/results are scoped and expired intentionally. | `BACKEND_CONVENTIONS §12` | DB + APP | DB4 | Expiry policy DEC-15. |
 | INV-25 | Referential integrity is enforced across related records. | `10 §5`, `BACKEND_CONVENTIONS §9` | DB (FK) | DB7 | |

@@ -33,7 +33,7 @@ theo guard; ngoại lệ ghi rõ.
 | INV-19 no dup order/payment/lost version | ORD/PAY/DSN | **DB** (uniques) + TX | APP (GRD-009/012) | TR-LC14-01, TR-LC16-03, LC-08 | request→order unique; provider event unique; version chain | unique tests | CC-11/07 | — | |
 | INV-20 approval only via secure flow | DSN/CUS | **APP** (GRD-002/003/025) | PROC (BR-008) | TR-LC08-04 | — | — | CC-16 | — | messaging apps never authoritative |
 | INV-21 no customer export | AST/DSN | **APP** (no surface) + EXT (authz) | PROC | asset access | — | — | E2E-09 | — | |
-| INV-22 watermark on customer previews | AST | **APP** (derivative rules) | PROC | derivative jobs | derivative kind field | — | — | — | internal artifacts unwatermarked |
+| INV-22 watermark on customer previews | AST | **APP** (derivative rules) + **DB** partial CK (CST-126, APP2-DB01) | PROC | derivative jobs | derivative kind field | D7 catalog-preview suite | — | — | internal artifacts unwatermarked; CATALOG_PREVIEW is catalog display media, never watermarked |
 | INV-23 outbox for external effects | PLT + owners | **TX** (same-tx enqueue) | APP, DB (append) | TR-LC22-01 | outbox shape + dispatch-status exception | — | **CC-25** | processed retention | |
 | INV-24 idempotency scoped/expired | PLT | **DB** (unique) + APP | TX | LC-23 | unique (namespace,key); expiry field | unique test | fingerprint races | TTL classes values | |
 | INV-25 referential integrity | all | **DB** (FKs at DB4) | APP | relationship model rows `ref` | FK candidates per DB2 relationships | FK tests | — | — | |

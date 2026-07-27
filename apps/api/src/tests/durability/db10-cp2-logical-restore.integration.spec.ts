@@ -171,7 +171,7 @@ describe('DB10-CP2 logical backup and restore rehearsal', () => {
     manifest = await readBackupManifest(manifestPath);
 
     expect(manifest.tableCount).toBe(78);
-    expect(manifest.appliedMigrations).toBe(31);
+    expect(manifest.appliedMigrations).toBe(32);
     expect(manifest.postgresVersion).toMatch(/^16\./);
     expect(manifest.artifactSha256).toMatch(/^[0-9a-f]{64}$/);
     expect(manifest.artifactBytes).toBeGreaterThan(0);
@@ -179,7 +179,7 @@ describe('DB10-CP2 logical backup and restore rehearsal', () => {
 
     // The source still matches the frozen baseline, so the artifact does too.
     expect(manifest.schemaFingerprint).toBe(
-      '4ca56a5967730d257edb34e72d6c40373156704cab7c87e3a684803c8321672f',
+      '82864268c990990e4597c74cfc69b7b5a91b1bc5a2adbde098ab9ad43aed58cf',
     );
 
     // Exposure is declared, never inferred (DP-BAK-05).
