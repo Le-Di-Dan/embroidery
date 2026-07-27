@@ -347,6 +347,18 @@ $scrim-expiry: rgba(styles.$color-text-primary, 0.2);
   line-height: 1.4;
   color: styles.$color-text-secondary;
   border-radius: styles.$radius-md;
+
+  // A navigation entry is a link from APP2-A01 onward; it reads as a nav item,
+  // not as inline prose, so the user-agent underline is removed and only the
+  // hover/focus affordances distinguish it.
+  &:any-link {
+    text-decoration: none;
+
+    &:hover {
+      color: styles.$color-text-primary;
+      background: styles.$color-surface-primary;
+    }
+  }
 }
 
 .admin-shell__nav-item--current {

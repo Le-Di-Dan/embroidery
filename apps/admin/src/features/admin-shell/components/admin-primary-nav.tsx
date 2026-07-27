@@ -1,4 +1,9 @@
-import { ADMIN_PRIMARY_NAV } from '../model/admin-shell-nav';
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+import { ADMIN_PRIMARY_NAV, isCurrentNavItem } from '../model/admin-shell-nav';
 import { ADMIN_SHELL_COPY } from '../model/admin-shell-copy';
 
 interface AdminPrimaryNavProps {
@@ -7,29 +12,40 @@ interface AdminPrimaryNavProps {
 }
 
 /**
- * Primary navigation. APP1-A02 has no business routes, so the current location
- * is rendered as static text with `aria-current="page"` — never a link to an
- * unbuilt route (no dead anchors). A note explains that operational areas arrive
- * in later phases. The two variants carry distinct accessible names so the
- * desktop rail and the drawer copy do not collide for assistive tech.
+ * Primary navigation. The current location is rendered as static text with
+ * `aria-current="page"` — never a link to itself — and every other entry links
+ * to an implemented route, so there are still no dead anchors. A note explains
+ * that further operational areas arrive in later phases. The two variants carry
+ * distinct accessible names so the desktop rail and the drawer copy do not
+ * collide for assistive tech.
  */
 export function AdminPrimaryNav({ variant }: AdminPrimaryNavProps) {
+  const pathname = usePathname();
   const label =
     variant === 'drawer' ? ADMIN_SHELL_COPY.nav.drawerLabel : ADMIN_SHELL_COPY.nav.sidebarLabel;
 
   return (
     <nav className={`admin-shell__nav admin-shell__nav--${variant}`} aria-label={label}>
       <ul className="admin-shell__nav-list">
-        {ADMIN_PRIMARY_NAV.map((item) => (
-          <li key={item.id} className="admin-shell__nav-row">
-            <span
-              className="admin-shell__nav-item admin-shell__nav-item--current"
-              aria-current={item.current ? 'page' : undefined}
-            >
-              {item.label}
-            </span>
-          </li>
-        ))}
+        {ADMIN_PRIMARY_NAV.map((item) => {
+          const current = isCurrentNavItem(item, pathname);
+          return (
+            <li key={item.id} className="admin-shell__nav-row">
+              {current ? (
+                <span
+                  className="admin-shell__nav-item admin-shell__nav-item--current"
+                  aria-current="page"
+                >
+                  {item.label}
+                </span>
+              ) : (
+                <Link className="admin-shell__nav-item" href={item.href}>
+                  {item.label}
+                </Link>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <p className="admin-shell__nav-note">{ADMIN_SHELL_COPY.nav.future}</p>
     </nav>

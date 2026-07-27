@@ -1,20 +1,37 @@
+import { AUTHENTICATED_HOME_ROUTE } from '../../../config/routes';
+import { ADMIN_ASSETS_ROUTE, ASSET_COPY } from '../../assets';
+
 /**
- * A primary-navigation entry. APP1-A02 ships no business routes, so the shell
- * renders only the current location as a non-link item (`current: true`).
- * Future phases add real routes here; until then there are no dead anchors
- * (CLAUDE.md §16 — no links to unimplemented routes).
+ * A primary-navigation entry. Every item points at a route that exists — the
+ * shell never renders an anchor to an unbuilt screen (CLAUDE.md §16). Later
+ * phases add their destinations here as they ship.
  */
 export interface AdminNavItem {
   readonly id: string;
   readonly label: string;
-  readonly current: boolean;
+  /** An implemented Admin route. */
+  readonly href: string;
 }
 
 /**
- * The authenticated shell's primary navigation. Only the current location
- * exists in APP1-A02; it is rendered as static text with `aria-current="page"`,
- * never as a link to an unbuilt route.
+ * The authenticated shell's primary navigation. `APP2-A01` adds the asset
+ * library as the first real business destination; the label and the route both
+ * come from the owning capability, so there is one spelling of each.
  */
 export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
-  { id: 'overview', label: 'Tổng quan', current: true },
+  { id: 'overview', label: 'Tổng quan', href: AUTHENTICATED_HOME_ROUTE },
+  { id: 'assets', label: ASSET_COPY.page.title, href: ADMIN_ASSETS_ROUTE },
 ];
+
+/**
+ * Whether an entry is the current location. Home matches exactly — every route
+ * starts with `/`, so a prefix test would mark it current everywhere — while a
+ * section also matches its own subtree, so a future detail route still
+ * highlights the section it belongs to.
+ */
+export function isCurrentNavItem(item: AdminNavItem, pathname: string): boolean {
+  if (item.href === AUTHENTICATED_HOME_ROUTE) {
+    return pathname === AUTHENTICATED_HOME_ROUTE;
+  }
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}

@@ -9,6 +9,7 @@
 // Feature styles (each feature owns a leaf stylesheet, composed here).
 @use '../features/staff-auth/styles/staff-login';
 @use '../features/admin-shell/styles/admin-shell';
+@use '../features/assets/styles/assets';
 
 // Browser normalization: predictable box model.
 *,

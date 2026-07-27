@@ -1,0 +1,587 @@
+// Admin asset library — feature-scoped styles (APP2-A01).
+//
+// Design source: FIG-ADMIN-ASSETS-* (file BQwqV8GdfUIELvsQDB1UQE, nodes 426:13,
+// 429:6, 429:89, 430:12, 430:98, 432:18, 433:19) plus the normative handoff
+// nodes 450:404 and 484:272. Colour, type, radius and spacing come from
+// @embroidery/styles; the few screen-specific dimensions with no shared token
+// are local literals and are documented inline.
+//
+// Mobile-first: the base is the single-column layout the 390 frames show, and
+// the desktop grid and drop target apply from the shell breakpoint upward.
+
+@use 'sass:math';
+@use '@embroidery/styles' as styles;
+
+// Shared with the shell (admin-shell.scss) so the Admin surfaces switch layout
+// at one threshold; the design system defers breakpoints (FU-A16).
+$assets-breakpoint: 1024px;
+
+// Screen-specific composition constants (no shared token; not a token system).
+$thumb-height: 148px;
+// Sized so the approved four-column desktop grid actually resolves to four
+// tracks inside the shell's main region at 1440 (the rail and the page padding
+// leave ~1015px), and degrades to three and two as the viewport narrows.
+$grid-min-column: 220px;
+$progress-height: 8px;
+$spinner-size: 16px;
+
+.assets {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+
+  @media (min-width: $assets-breakpoint) {
+    gap: styles.spacing(32);
+    padding: styles.spacing(32);
+  }
+}
+
+.assets__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+
+  @media (min-width: $assets-breakpoint) {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: styles.spacing(24);
+  }
+}
+
+.assets__heading {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.assets__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+
+  @media (min-width: $assets-breakpoint) {
+    font-size: styles.$font-size-heading-m;
+  }
+}
+
+.assets__subtitle {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// Shared control shapes -------------------------------------------------------
+
+%assets-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: styles.spacing(8);
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(8) styles.spacing(24);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  border-radius: styles.$radius-button;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+%assets-control-primary {
+  @extend %assets-control;
+
+  color: styles.$color-surface-primary;
+  background: styles.$color-action-primary;
+  border: 1px solid transparent;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+  }
+
+  &:active:not(:disabled) {
+    background: styles.$color-action-active;
+  }
+}
+
+%assets-control-secondary {
+  @extend %assets-control;
+
+  color: styles.$color-text-primary;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-secondary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-background-secondary;
+  }
+}
+
+%assets-control-ghost {
+  @extend %assets-control;
+
+  color: styles.$color-text-secondary;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+%assets-surface {
+  padding: styles.spacing(24);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+}
+
+.assets__primary-action {
+  @extend %assets-control-primary;
+}
+
+// Visually hidden but still exposed to assistive tech and keyboard focus.
+.assets__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+// Upload panel ----------------------------------------------------------------
+
+.assets-upload {
+  @extend %assets-surface;
+
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+}
+
+// The native input stays in the accessibility tree and in the tab order — it is
+// only removed from view, never from the keyboard.
+.assets-upload__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.assets-upload__drop {
+  display: none;
+
+  @media (min-width: $assets-breakpoint) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: styles.spacing(8);
+    padding: styles.spacing(48) styles.spacing(24);
+    text-align: center;
+    background: styles.$color-surface-secondary;
+    border: 1px dashed styles.$color-border-secondary;
+    border-radius: styles.$radius-md;
+  }
+}
+
+.assets-upload__drop--active {
+  @media (min-width: $assets-breakpoint) {
+    border-color: styles.$color-action-primary;
+    background: styles.$color-background-secondary;
+  }
+}
+
+.assets-upload__drop-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.assets-upload__drop-hint {
+  margin: 0 0 styles.spacing(8);
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.assets-upload__browse {
+  @extend %assets-control-secondary;
+}
+
+// Drag and drop is never the only way in: below the breakpoint the hint
+// replaces the drop target and the input alone is sufficient.
+.assets-upload__mobile-hint {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+
+  @media (min-width: $assets-breakpoint) {
+    display: none;
+  }
+}
+
+.assets-upload__formats {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.assets-upload__selected {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  background: styles.$color-background-secondary;
+  border-radius: styles.$radius-md;
+}
+
+.assets-upload__selected-title {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+.assets-upload__selected-body {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-secondary;
+}
+
+.assets-upload__selected-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.assets-upload__submit {
+  @extend %assets-control-primary;
+}
+
+.assets-upload__replace {
+  @extend %assets-control-secondary;
+}
+
+// Upload / processing banner --------------------------------------------------
+
+.asset-banner {
+  @extend %assets-surface;
+
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  border-left: 4px solid styles.$color-border-secondary;
+}
+
+.asset-banner--uploading,
+.asset-banner--processing {
+  border-left-color: styles.$color-status-info;
+}
+
+.asset-banner--accepted {
+  border-left-color: styles.$color-status-success;
+}
+
+.asset-banner--rejected,
+.asset-banner--failed {
+  border-left-color: styles.$color-status-error;
+}
+
+.asset-banner--cancelled,
+.asset-banner--unknown {
+  border-left-color: styles.$color-status-warning;
+}
+
+.asset-banner__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+.asset-banner__body {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.asset-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.asset-banner__action {
+  @extend %assets-control-secondary;
+
+  align-self: flex-start;
+}
+
+.asset-banner__action-ghost {
+  @extend %assets-control-ghost;
+
+  align-self: flex-start;
+}
+
+.asset-banner__spinner,
+.asset-continuation__spinner {
+  width: $spinner-size;
+  height: $spinner-size;
+  border: 2px solid styles.$color-border-secondary;
+  border-top-color: styles.$color-action-primary;
+  border-radius: 50%;
+
+  @include styles.motion-safe {
+    animation: asset-spin 900ms linear infinite;
+  }
+}
+
+@keyframes asset-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Upload progress -------------------------------------------------------------
+
+.asset-progress {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.asset-progress__track {
+  width: 100%;
+  height: $progress-height;
+  overflow: hidden;
+  background: styles.$color-background-secondary;
+  border-radius: styles.$radius-xs;
+}
+
+.asset-progress__fill {
+  height: 100%;
+  width: 0;
+  background: styles.$color-action-primary;
+
+  @include styles.motion-safe {
+    transition: width styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+}
+
+// One width class per 5% step. Inline style props are forbidden, so the width
+// is a stylesheet concern; the component floors the real percentage into a step
+// and reports the exact figure in the label and in `aria-valuenow`.
+@for $step from 0 through 20 {
+  .asset-progress__fill--#{$step * 5} {
+    width: math.percentage(math.div($step * 5, 100));
+  }
+}
+
+// No measurable total: a moving stripe, never a fabricated position.
+.asset-progress__track--indeterminate {
+  background: repeating-linear-gradient(
+    90deg,
+    styles.$color-background-secondary 0 12px,
+    styles.$color-border-primary 12px 24px
+  );
+}
+
+.asset-progress__fill--pending {
+  width: 0;
+}
+
+.asset-progress__text {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// Collection ------------------------------------------------------------------
+
+.assets__list-status {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.assets__empty,
+.assets__list-unavailable {
+  @extend %assets-surface;
+
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  text-align: center;
+}
+
+.assets__empty-title,
+.assets__list-unavailable-title {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.assets__empty-body,
+.assets__list-unavailable-body {
+  margin: 0 auto;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.assets__list-unavailable-action {
+  @extend %assets-control-secondary;
+
+  align-self: center;
+}
+
+.asset-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: styles.spacing(16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: $assets-breakpoint) {
+    grid-template-columns: repeat(auto-fill, minmax($grid-min-column, 1fr));
+    gap: styles.spacing(24);
+  }
+}
+
+.asset-card {
+  display: flex;
+  flex-direction: row;
+  gap: styles.spacing(16);
+  padding: styles.spacing(12);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+
+  @media (min-width: $assets-breakpoint) {
+    flex-direction: column;
+    gap: styles.spacing(12);
+    border-radius: styles.$radius-card;
+  }
+}
+
+// A neutral placeholder, never an image: APP2 exposes no media-delivery
+// operation, and a private original must never be addressed from a browser.
+.asset-card__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: styles.spacing(64);
+  height: styles.spacing(64);
+  color: styles.$color-text-tertiary;
+  background: styles.$color-background-secondary;
+  border-radius: styles.$radius-sm;
+
+  @media (min-width: $assets-breakpoint) {
+    width: 100%;
+    height: $thumb-height;
+  }
+}
+
+.asset-card__glyph {
+  font-size: styles.$font-size-heading-s;
+  line-height: 1;
+}
+
+.asset-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.asset-card__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.asset-card__meta {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-secondary;
+  overflow-wrap: anywhere;
+}
+
+// Status ----------------------------------------------------------------------
+
+.asset-status {
+  display: inline-flex;
+  align-items: center;
+  gap: styles.spacing(8);
+  margin-top: styles.spacing(4);
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-secondary;
+}
+
+.asset-status__dot {
+  width: styles.spacing(8);
+  height: styles.spacing(8);
+  border-radius: 50%;
+  background: styles.$color-text-tertiary;
+}
+
+.asset-status--ready .asset-status__dot {
+  background: styles.$color-status-success;
+}
+
+.asset-status--processing .asset-status__dot {
+  background: styles.$color-status-info;
+}
+
+.asset-status--pending .asset-status__dot {
+  background: styles.$color-status-warning;
+}
+
+.asset-status--rejected .asset-status__dot {
+  background: styles.$color-status-error;
+}
+
+// Continuation ----------------------------------------------------------------
+
+.asset-continuation {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  align-items: stretch;
+
+  @media (min-width: $assets-breakpoint) {
+    align-items: flex-start;
+  }
+}
+
+.asset-continuation__error {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-status-error;
+  overflow-wrap: anywhere;
+}
+
+// Full content width on mobile (approved handoff 450:404 — Responsive).
+.asset-continuation__action {
+  @extend %assets-control-secondary;
+
+  width: 100%;
+
+  @media (min-width: $assets-breakpoint) {
+    width: auto;
+  }
+}

@@ -27,6 +27,24 @@ export type {
   CurrentStaffResponse,
 } from './generated/embroidery-api.schemas';
 
+// Admin asset intake operations (APP2-B01). Exposed on the public boundary so
+// the Admin Assets capability never deep-imports the generated tree. The
+// generated `assetKind`/`classification` enums are re-exported as values so a
+// caller supplies the fixed multipart metadata from the contract instead of
+// hard-coding a literal.
+export { adminAssetUpload, adminAssetDetail, adminAssetList } from './generated/embroidery-api';
+export {
+  AdminAssetUploadBodyAssetKind,
+  AdminAssetUploadBodyClassification,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminAssetDetailResponse,
+  AdminAssetListResponse,
+  AdminAssetListParams,
+  AdminAssetUploadBody,
+  AdminAssetUploadReceiptResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

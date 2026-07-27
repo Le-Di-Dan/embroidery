@@ -6,9 +6,18 @@ import {
   STAFF_SELF_QUERY_KEY,
   STAFF_SELF_STALE_TIME_MS,
 } from '../../src/features/admin-shell/model/session-expiry';
-import { ADMIN_PRIMARY_NAV } from '../../src/features/admin-shell/model/admin-shell-nav';
+import {
+  ADMIN_PRIMARY_NAV,
+  isCurrentNavItem,
+  type AdminNavItem,
+} from '../../src/features/admin-shell/model/admin-shell-nav';
 import { ADMIN_SHELL_COPY } from '../../src/features/admin-shell/model/admin-shell-copy';
+import { ADMIN_ASSETS_ROUTE } from '../../src/features/assets/model/asset-route';
+import { AUTHENTICATED_HOME_ROUTE } from '../../src/config/routes';
 import { makeApiClientError, makeNetworkError } from '../support/api-error';
+
+/** Every Admin route that exists today; the nav may not point anywhere else. */
+const IMPLEMENTED_ADMIN_ROUTES = [AUTHENTICATED_HOME_ROUTE, ADMIN_ASSETS_ROUTE];
 
 describe('session-expiry model', () => {
   it('keys the current-staff query stably and seeds a bounded, non-zero staleTime', () => {
@@ -53,12 +62,26 @@ describe('session-expiry model', () => {
 });
 
 describe('admin-shell nav + copy', () => {
-  it('exposes only a current, non-link location (no dead routes)', () => {
+  it('points every entry at an implemented route (no dead anchors)', () => {
     expect(ADMIN_PRIMARY_NAV.length).toBeGreaterThan(0);
     for (const item of ADMIN_PRIMARY_NAV) {
-      expect(item.current).toBe(true);
-      expect(item).not.toHaveProperty('href');
+      expect(item.href.startsWith('/')).toBe(true);
+      expect(IMPLEMENTED_ADMIN_ROUTES).toContain(item.href);
     }
+  });
+
+  it('derives the current location from the pathname, marking exactly one entry', () => {
+    for (const pathname of IMPLEMENTED_ADMIN_ROUTES) {
+      const current = ADMIN_PRIMARY_NAV.filter((item) => isCurrentNavItem(item, pathname));
+      expect(current).toHaveLength(1);
+      expect(current[0]?.href).toBe(pathname);
+    }
+  });
+
+  it('never marks the authenticated home current on a nested route', () => {
+    const home = ADMIN_PRIMARY_NAV.find((item) => item.href === '/');
+    expect(home).toBeDefined();
+    expect(isCurrentNavItem(home as AdminNavItem, ADMIN_ASSETS_ROUTE)).toBe(false);
   });
 
   it('uses a static Admin actor label, not an API role', () => {
