@@ -25,7 +25,11 @@ import {
   MAX_UPLOAD_BYTES,
   validateSelectedFiles,
 } from '../../src/features/assets/model/asset-upload-policy';
-import { createUploadIntent } from '../../src/features/assets/model/upload-intent';
+import {
+  createIdempotencyKey,
+  createUploadIntent,
+  IdempotencyKeyUnavailableError,
+} from '../../src/features/assets/model/upload-intent';
 import { makeAsset, makeFile, makePage } from '../support/asset-fixture';
 
 describe('asset status interpretation', () => {
@@ -133,6 +137,14 @@ describe('local file policy', () => {
 });
 
 describe('idempotency intent', () => {
+  /** Shadow a Crypto.prototype method on the instance to simulate its absence. */
+  function hide(method: 'randomUUID' | 'getRandomValues') {
+    Object.defineProperty(globalThis.crypto, method, { value: undefined, configurable: true });
+  }
+  function restore(method: 'randomUUID' | 'getRandomValues') {
+    delete (globalThis.crypto as Partial<Crypto>)[method];
+  }
+
   it('mints a distinct key per intent that satisfies the B01 allowlist', () => {
     const pattern = /^[A-Za-z0-9._:-]+$/;
     const first = createUploadIntent(makeFile('a.png', 'image/png', 10));
@@ -144,6 +156,46 @@ describe('idempotency intent', () => {
       expect(key.length).toBeLessThanOrEqual(128);
     }
     expect(first.idempotencyKey).not.toBe(second.idempotencyKey);
+  });
+
+  /**
+   * Regression: the development gateway serves the Admin over plain HTTP on a
+   * named host, which is NOT a secure context, so `crypto.randomUUID` — which
+   * is specified `[SecureContext]` — is absent there. Throwing at that point
+   * killed every upload before a request was ever made.
+   */
+  it('still mints a strong key when randomUUID is absent (insecure context)', () => {
+    // The methods live on Crypto.prototype, so an insecure context is simulated
+    // by shadowing them on the instance; deleting the shadow restores the real
+    // implementation exactly.
+    hide('randomUUID');
+    try {
+      expect(typeof globalThis.crypto.randomUUID).toBe('undefined');
+
+      const keys = [createIdempotencyKey(), createIdempotencyKey()];
+      for (const key of keys) {
+        expect(key).toMatch(/^[A-Za-z0-9._:-]+$/);
+        // A v4 UUID: correct version nibble and variant, from getRandomValues.
+        expect(key).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        );
+        expect(key).toHaveLength(36);
+      }
+      expect(keys[0]).not.toBe(keys[1]);
+    } finally {
+      restore('randomUUID');
+    }
+  });
+
+  it('fails loudly only when Web Crypto is unavailable altogether', () => {
+    hide('randomUUID');
+    hide('getRandomValues');
+    try {
+      expect(() => createIdempotencyKey()).toThrow(IdempotencyKeyUnavailableError);
+    } finally {
+      restore('randomUUID');
+      restore('getRandomValues');
+    }
   });
 });
 
