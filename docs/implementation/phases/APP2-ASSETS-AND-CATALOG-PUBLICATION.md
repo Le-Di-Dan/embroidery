@@ -420,6 +420,17 @@
 > ([`reports/APP2-D02-COMPLETION-REPORT.md`](../reports/APP2-D02-COMPLETION-REPORT.md)).
 > **`APP2-A01` = `READY — NOT STARTED`** (unblocked).
 >
+> **`APP2-A01` delivered (2026-07-28).** The Admin asset library ships at
+> `/assets` against the three accepted `APP2-B01` operations, implementing
+> `IMP-D031` continuation and identity exactly. Baselines unchanged (OpenAPI
+> `e19c2f76…`, client `55de1cc1…`, DB 32 migrations / 78 tables / `82864268…`,
+> Figma registry 70 IDs); no dependency added. **`APP2-A01` =
+> `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-B02` = `READY — NOT STARTED`**
+> ([`reports/APP2-A01-COMPLETION-REPORT.md`](../reports/APP2-A01-COMPLETION-REPORT.md)).
+> One approved affordance is **not** implemented and needs a reviewer decision:
+> the Rejected-state action `Xoá khỏi danh sách` has no delete or hide operation
+> in the contract, and this checkpoint may not add one.
+>
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
 > owner and an activation gate rather than a further correction chain.
@@ -503,7 +514,7 @@ endpoints.
 | 5c | APP2-I03 | foundation | Wire idempotent private-bucket bootstrap into the API and worker composition roots. `ensurePrivateBuckets` exists in `packages/object-storage` but has **no production caller** — only tests — so nothing creates the buckets in a real deployment and the first real upload/derivative write would fail. No new SDK, no MinIO exposure — **`COMPLETE — DELIVERED_FOR_REVIEW`**: the API awaits the bootstrap before `listen`, the worker gates its poll loop behind an abstract `WORKER_STARTUP_GATE` bound to the same bootstrap, both memoize one attempt per process, and a concurrent two-process race against an empty MinIO yields exactly two private buckets. Also fixed the shipped worker image, which never shipped the object-storage package | I01, B01 |
 | 6 | APP2-W01 | worker | Asset inspection/derivatives job family handler + image-processing library decision (uses I02 runtime). Produces exactly `THUMBNAIL` + `CATALOG_PREVIEW`, both unwatermarked, per `APP2-DB01`; `sharp@0.35.3` locked as the image library (worker-only); no migration, no HTTP operation — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B01, I02, DB01, I03 |
 | 6b | APP2-D02 | design | Admin Assets continuation & identity reconciliation — cures `APP2-A01`'s `BLOCKED_BY_MISSING_ASSET_LIST_CONTINUATION_DESIGN`: explicit cursor-driven `Tải thêm tài sản`, server-backed identity (media format + size + `createdAt`), original filename transient-local only; seven `FIG-ADMIN-ASSETS-*` rows promoted under `FIG-APPROVAL-APP2-D01-ADMIN-001`; one annotation node added (registry 69 → 70). Design/documentation only — no source, dependency, OpenAPI, client or database change — **`COMPLETE — DELIVERED_FOR_REVIEW`** | D01, B01, W01 |
-| 7 | APP2-A01 | frontend | Admin asset library | B01, W01, D01, D02 |
+| 7 | APP2-A01 | frontend | Admin asset library — `/assets` inside the accepted APP1 shell: catalog-media upload with real transferred-byte progress and honest ambiguous cancellation, explicit cursor continuation (`Tải thêm tài sản`, same-cursor retry, no total-count copy), server-backed identity from `mediaType` + `{size} · {createdAt}` (no filename anywhere), and detail-only processing reconciliation on one `3000 ms` constant. Consumes only the three accepted B01 operations; honest thumbnail placeholder (no media-delivery contract exists). No API operation, generated-client, schema, worker or Figma change; no new dependency — **`COMPLETE — DELIVERED_FOR_REVIEW`** ([`reports/APP2-A01-COMPLETION-REPORT.md`](../reports/APP2-A01-COMPLETION-REPORT.md)). Open for the reviewer: the approved Rejected-state action `Xoá khỏi danh sách` has **no backend capability** and is deliberately not implemented | B01, W01, D01, D02 |
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) | B01 |
 | 9 | APP2-A02 | frontend | Admin product list | B02, D01 |
 | 10 | APP2-A03 | frontend | Admin product form/detail | B02, D01 |
