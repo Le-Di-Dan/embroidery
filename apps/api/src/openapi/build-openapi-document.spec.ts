@@ -48,12 +48,14 @@ describe('buildOpenApiDocument', () => {
     expect(paths.every((path) => path.startsWith('/api/'))).toBe(true);
   });
 
-  it('documents the health routes plus the APP1 staff and APP2 asset endpoints', () => {
+  it('documents the health routes plus the APP1 staff and APP2 asset/product endpoints', () => {
     const stats = describeDocument(buildOpenApiDocument(app));
     // Health (2 ops) + staff session open/close (2 ops on one path) + staff/me
-    // (1 op) + APP2-B01 Admin asset upload/detail/list (3 ops on 3 paths).
-    expect(stats.pathCount).toBe(7);
-    expect(stats.operationCount).toBe(8);
+    // (1 op) + APP2-B01 Admin asset upload/detail/list (3 ops on 3 paths)
+    // + APP2-B02 Admin product list/create (2 ops on one path), detail/update
+    // (2 ops on one path) and archive (1 op on its own path).
+    expect(stats.pathCount).toBe(10);
+    expect(stats.operationCount).toBe(13);
     expect(stats.schemaCount).toBeGreaterThan(0);
   });
 
@@ -64,6 +66,17 @@ describe('buildOpenApiDocument', () => {
     expect(document.paths['/api/staff/session']?.post?.operationId).toBe('staffSession_create');
     expect(document.paths['/api/staff/session']?.delete?.operationId).toBe('staffSession_delete');
     expect(document.paths['/api/staff/me']?.get?.operationId).toBe('staffSelf_get');
+    expect(document.paths['/api/admin/products']?.get?.operationId).toBe('adminProduct_list');
+    expect(document.paths['/api/admin/products']?.post?.operationId).toBe('adminProduct_create');
+    expect(document.paths['/api/admin/products/{productId}']?.get?.operationId).toBe(
+      'adminProduct_detail',
+    );
+    expect(document.paths['/api/admin/products/{productId}']?.patch?.operationId).toBe(
+      'adminProduct_update',
+    );
+    expect(document.paths['/api/admin/products/{productId}/archive']?.post?.operationId).toBe(
+      'adminProduct_archive',
+    );
   });
 
   it('requires data on the current-staff 200 response (APP1-B02-C1)', () => {

@@ -11,10 +11,19 @@ import type {
   AdminAssetListParams,
   AdminAssetUpload202,
   AdminAssetUploadBody,
+  AdminProductArchive200,
+  AdminProductCreate201,
+  AdminProductDetail200,
+  AdminProductList200,
+  AdminProductListParams,
+  AdminProductUpdate200,
+  ArchiveProductBody,
+  CreateProductBody,
   HealthStatusResponse,
   ReadinessStatusResponse,
   StaffLoginRequest,
   StaffSelfGet200,
+  UpdateProductBody,
 } from './embroidery-api.schemas';
 
 import { apiRequest } from '../clients/api-request.mutator';
@@ -73,6 +82,93 @@ export const adminAssetDetail = (
   );
 };
 
+/**
+ * Keyset-paginated, newest first. There is no offset paging and no total count. With no status filter the page carries drafts, published and archived products alike.
+ * @summary List Admin products
+ */
+export const adminProductList = (
+  params?: AdminProductListParams,
+  options?: SecondParameter<typeof apiRequest<AdminProductList200>>,
+) => {
+  return apiRequest<AdminProductList200>(
+    { url: `/api/admin/products`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Creates a DRAFT in the chosen category. The slug is derived from the name by the server and is immutable; price and display order start at their draft sentinels, and the draft has no media until a later update.
+ * @summary Create a product draft
+ */
+export const adminProductCreate = (
+  createProductBody: CreateProductBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductCreate201>>,
+) => {
+  return apiRequest<AdminProductCreate201>(
+    {
+      url: `/api/admin/products`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createProductBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Returns the editable draft fields, the ordered media selection and the `updatedAt` concurrency token.
+ * @summary Get one Admin product
+ */
+export const adminProductDetail = (
+  productId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminProductDetail200>>,
+) => {
+  return apiRequest<AdminProductDetail200>(
+    { url: `/api/admin/products/${productId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Patches editable DRAFT fields and, when `mediaAssetIds` is present, replaces the whole ordered media selection. Requires `expectedUpdatedAt`; a stale value is rejected as a conflict rather than overwriting a concurrent change. Renaming never changes the slug.
+ * @summary Update a product draft
+ */
+export const adminProductUpdate = (
+  productId: unknown,
+  updateProductBody: UpdateProductBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductUpdate200>>,
+) => {
+  return apiRequest<AdminProductUpdate200>(
+    {
+      url: `/api/admin/products/${productId}`,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      data: updateProductBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Moves a DRAFT to ARCHIVED. This is not a delete: the product, its media links, the referenced images and their derivatives all remain. Publication is not touched.
+ * @summary Archive a product
+ */
+export const adminProductArchive = (
+  productId: unknown,
+  archiveProductBody: ArchiveProductBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductArchive200>>,
+) => {
+  return apiRequest<AdminProductArchive200>(
+    {
+      url: `/api/admin/products/${productId}/archive`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: archiveProductBody,
+    },
+    options,
+  );
+};
+
 export const healthCheck = (options?: SecondParameter<typeof apiRequest<HealthStatusResponse>>) => {
   return apiRequest<HealthStatusResponse>({ url: `/api/health`, method: 'GET' }, options);
 };
@@ -124,6 +220,13 @@ export const staffSessionCreate = (
 export type AdminAssetListResult = NonNullable<Awaited<ReturnType<typeof adminAssetList>>>;
 export type AdminAssetUploadResult = NonNullable<Awaited<ReturnType<typeof adminAssetUpload>>>;
 export type AdminAssetDetailResult = NonNullable<Awaited<ReturnType<typeof adminAssetDetail>>>;
+export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
+export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;
+export type AdminProductDetailResult = NonNullable<Awaited<ReturnType<typeof adminProductDetail>>>;
+export type AdminProductUpdateResult = NonNullable<Awaited<ReturnType<typeof adminProductUpdate>>>;
+export type AdminProductArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductArchive>>
+>;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
 export type StaffSelfGetResult = NonNullable<Awaited<ReturnType<typeof staffSelfGet>>>;

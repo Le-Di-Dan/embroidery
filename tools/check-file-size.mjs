@@ -32,6 +32,11 @@ const EXCLUDED_DIRECTORIES = new Set([
   '__snapshots__',
   'migrations',
   'fixtures',
+  // Orval's output (`packages/api-client/src/generated`). It is regenerated
+  // from the OpenAPI artifact and guarded by a tree-hash drift gate, so it is
+  // never hand-edited and cannot be split by responsibility — the same reason
+  // `migrations` and `__snapshots__` are excluded (CLAUDE.md §6).
+  'generated',
 ]);
 
 // Generated files and explicitly configured pure-data files.

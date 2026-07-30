@@ -75,6 +75,37 @@ export {
 export * as schema from './schema/index';
 
 /**
+ * Canonical catalog **reference data and locked draft defaults** (IMP-D032),
+ * re-exported as values.
+ *
+ * These are the narrow exception to the types-only rule below, and deliberately
+ * so. `APP2-B02-G01` provisioned the four categories in migration `0033` from
+ * exactly this list, and `APP2-B02` must resolve a `categorySlug`, label it and
+ * document it as a closed OpenAPI enum from the same list. Re-declaring the
+ * taxonomy in the backend module would create the second source IMP-D032 warns
+ * about — a fork between what the database holds and what the API accepts.
+ *
+ * They are plain frozen data: no table object, ORM value or driver type is
+ * reachable through them, so a domain module may import them without pulling
+ * the schema namespace in (`BACKEND_CONVENTIONS.md` §3).
+ */
+export {
+  APP2_CATEGORY_SLUGS,
+  APP2_CATEGORY_STATUS,
+  APP2_CATEGORY_TAXONOMY,
+} from './schema/catalog/categories';
+export type { App2CategoryDefinition, App2CategorySlug } from './schema/catalog/categories';
+export {
+  PRODUCT_DRAFT_BASE_PRICE_AMOUNT,
+  PRODUCT_DRAFT_DISPLAY_ORDER,
+} from './schema/catalog/products';
+export {
+  APP2_PRODUCT_MEDIA_ROLES,
+  PRODUCT_MEDIA_PRIMARY_ROLE,
+  PRODUCT_MEDIA_SECONDARY_ROLE,
+} from './schema/catalog/product-media';
+
+/**
  * Canonical lifecycle-state unions, re-exported as **types only**.
  *
  * DB5-A09 requires one canonical source per state set, and each schema module

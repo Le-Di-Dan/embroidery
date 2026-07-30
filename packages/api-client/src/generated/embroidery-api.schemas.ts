@@ -87,6 +87,127 @@ export interface AdminAssetUploadReceiptResponse {
   status: string;
 }
 
+export type AdminProductCategoryResponseSlug =
+  (typeof AdminProductCategoryResponseSlug)[keyof typeof AdminProductCategoryResponseSlug];
+
+export const AdminProductCategoryResponseSlug = {
+  'thu-bong': 'thu-bong',
+  khan: 'khan',
+  'quan-ao': 'quan-ao',
+  khac: 'khac',
+} as const;
+
+export interface AdminProductCategoryResponse {
+  /** Canonical Vietnamese label. */
+  name: string;
+  slug: AdminProductCategoryResponseSlug;
+}
+
+export type AdminProductDetailResponseCurrencyCode =
+  (typeof AdminProductDetailResponseCurrencyCode)[keyof typeof AdminProductDetailResponseCurrencyCode];
+
+export const AdminProductDetailResponseCurrencyCode = {
+  VND: 'VND',
+} as const;
+
+export type AdminProductDetailResponseStatus =
+  (typeof AdminProductDetailResponseStatus)[keyof typeof AdminProductDetailResponseStatus];
+
+export const AdminProductDetailResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+/**
+ * Derived from position: the first selected image is the THUMBNAIL.
+ */
+export type AdminProductMediaResponseRole =
+  (typeof AdminProductMediaResponseRole)[keyof typeof AdminProductMediaResponseRole];
+
+export const AdminProductMediaResponseRole = {
+  THUMBNAIL: 'THUMBNAIL',
+  GALLERY: 'GALLERY',
+} as const;
+
+export interface AdminProductMediaResponse {
+  assetId: string;
+  /** Server-measured size in bytes. */
+  byteSize: number;
+  createdAt: string;
+  mediaType: string;
+  /** Zero-based display position. */
+  position: number;
+  /** Derived from position: the first selected image is the THUMBNAIL. */
+  role: AdminProductMediaResponseRole;
+  /** The asset lifecycle state. */
+  status: string;
+}
+
+export interface AdminProductDetailResponse {
+  /** Set only for an archived product. */
+  archivedAt?: string;
+  /** Whole đồng as a decimal string; never a JSON number. `0` on a DRAFT means the price has not been set yet. */
+  basePriceAmount: string;
+  category: AdminProductCategoryResponse;
+  createdAt: string;
+  currencyCode: AdminProductDetailResponseCurrencyCode;
+  /** Absent when the draft has no description yet. */
+  description?: string;
+  /** Ordered media selection. */
+  media: AdminProductMediaResponse[];
+  name: string;
+  /** The first selected image, when one exists. Identity only — there is no URL. */
+  primaryMedia?: AdminProductMediaResponse;
+  productId: string;
+  /** Server-owned public address. Immutable in APP2-B02. */
+  slug: string;
+  status: AdminProductDetailResponseStatus;
+  /** Optimistic-concurrency token; send it back as `expectedUpdatedAt`. */
+  updatedAt: string;
+}
+
+export type AdminProductSummaryResponseCurrencyCode =
+  (typeof AdminProductSummaryResponseCurrencyCode)[keyof typeof AdminProductSummaryResponseCurrencyCode];
+
+export const AdminProductSummaryResponseCurrencyCode = {
+  VND: 'VND',
+} as const;
+
+export type AdminProductSummaryResponseStatus =
+  (typeof AdminProductSummaryResponseStatus)[keyof typeof AdminProductSummaryResponseStatus];
+
+export const AdminProductSummaryResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export interface AdminProductSummaryResponse {
+  /** Whole đồng as a decimal string; never a JSON number. `0` on a DRAFT means the price has not been set yet. */
+  basePriceAmount: string;
+  category: AdminProductCategoryResponse;
+  createdAt: string;
+  currencyCode: AdminProductSummaryResponseCurrencyCode;
+  name: string;
+  /** The first selected image, when one exists. Identity only — there is no URL. */
+  primaryMedia?: AdminProductMediaResponse;
+  productId: string;
+  /** Server-owned public address. Immutable in APP2-B02. */
+  slug: string;
+  status: AdminProductSummaryResponseStatus;
+  /** Optimistic-concurrency token; send it back as `expectedUpdatedAt`. */
+  updatedAt: string;
+}
+
+export interface AdminProductListResponse {
+  /** True when a further page exists. */
+  hasNext: boolean;
+  items: AdminProductSummaryResponse[];
+  /** Opaque keyset cursor for the next page. Absent on the last page. */
+  nextCursor?: string;
+}
+
 /**
  * Stable machine-readable code; branch on this.
  */
@@ -164,6 +285,14 @@ export interface ApiSuccessResponse {
   message: string;
   meta: ApiResponseMeta;
   success: true;
+}
+
+export interface ArchiveProductBody {
+  [key: string]: unknown;
+}
+
+export interface CreateProductBody {
+  [key: string]: unknown;
 }
 
 export interface CurrentStaffResponse {
@@ -268,6 +397,10 @@ export interface StaffLoginRequest {
   password: string;
 }
 
+export interface UpdateProductBody {
+  [key: string]: unknown;
+}
+
 export type AdminAssetListParams = {
   mediaType?: unknown;
   status?: unknown;
@@ -321,6 +454,59 @@ export type AdminAssetUpload202 = ApiSuccessResponse & {
 
 export type AdminAssetDetail200 = ApiSuccessResponse & {
   data: AdminAssetDetailResponse;
+};
+
+export type AdminProductListParams = {
+  categorySlug?: AdminProductListCategorySlug;
+  status?: AdminProductListStatus;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from a previous page.
+   */
+  cursor?: unknown;
+};
+
+export type AdminProductListCategorySlug =
+  (typeof AdminProductListCategorySlug)[keyof typeof AdminProductListCategorySlug];
+
+export const AdminProductListCategorySlug = {
+  'thu-bong': 'thu-bong',
+  khan: 'khan',
+  'quan-ao': 'quan-ao',
+  khac: 'khac',
+} as const;
+
+export type AdminProductListStatus =
+  (typeof AdminProductListStatus)[keyof typeof AdminProductListStatus];
+
+export const AdminProductListStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export type AdminProductList200 = ApiSuccessResponse & {
+  data: AdminProductListResponse;
+};
+
+export type AdminProductCreate201 = ApiSuccessResponse & {
+  data: AdminProductDetailResponse;
+};
+
+export type AdminProductDetail200 = ApiSuccessResponse & {
+  data: AdminProductDetailResponse;
+};
+
+export type AdminProductUpdate200 = ApiSuccessResponse & {
+  data: AdminProductDetailResponse;
+};
+
+export type AdminProductArchive200 = ApiSuccessResponse & {
+  data: AdminProductDetailResponse;
 };
 
 export type StaffSelfGet200 = ApiSuccessResponse & {
