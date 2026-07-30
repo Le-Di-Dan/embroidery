@@ -475,6 +475,20 @@
 > **`APP2-B02` = `READY — NOT STARTED`** (unblocked), with its canonical
 > five-operation scope unchanged.
 >
+> **`APP2-B02` delivered (2026-07-31).** Five Admin operations, no sixth and no
+> category endpoint. Every IMP-D032 decision is implemented as locked, and the
+> two facts the schema forced are recorded rather than hidden: there is **no
+> ownership column** on `products` (one Admin actor, so authentication is the
+> scope and no audit actor can be stored), and `updated_at` is compared
+> **truncated to milliseconds**, because that is the precision of the ISO token
+> a client can echo back — the raw microsecond comparison failed every guarded
+> write. Archive is not delete. OpenAPI 7 → 10 paths and 8 → 13 operations
+> (`e19c2f76…` → `b789cc99…`); client `55de1cc1…` → `66d1c991…`; DB baseline,
+> Figma (70) and dependencies unchanged. **`APP2-B02` =
+> `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-A02` and `APP2-A03` are
+> `READY — NOT STARTED`** and `APP2-B03` is `BLOCKED_BY_APP2-B02`
+> ([`reports/APP2-B02-COMPLETION-REPORT.md`](../reports/APP2-B02-COMPLETION-REPORT.md)).
+>
 > **`FU-APP2-CATEGORY-MANAGEMENT-01` = `DEFERRED_BEYOND_CATALOG_ALPHA`** —
 > mutable category management (create/rename/reorder/archive, Admin UI and API)
 > is deliberately out of APP2 and **nonblocking** for `B02`/`A02`/`A03`.
@@ -566,7 +580,7 @@ endpoints.
 | 6b | APP2-D02 | design | Admin Assets continuation & identity reconciliation — cures `APP2-A01`'s `BLOCKED_BY_MISSING_ASSET_LIST_CONTINUATION_DESIGN`: explicit cursor-driven `Tải thêm tài sản`, server-backed identity (media format + size + `createdAt`), original filename transient-local only; seven `FIG-ADMIN-ASSETS-*` rows promoted under `FIG-APPROVAL-APP2-D01-ADMIN-001`; one annotation node added (registry 69 → 70). Design/documentation only — no source, dependency, OpenAPI, client or database change — **`COMPLETE — DELIVERED_FOR_REVIEW`** | D01, B01, W01 |
 | 7 | APP2-A01 | frontend | Admin asset library — `/assets` inside the accepted APP1 shell: catalog-media upload with real transferred-byte progress and honest ambiguous cancellation, explicit cursor continuation (`Tải thêm tài sản`, same-cursor retry, no total-count copy), server-backed identity from `mediaType` + `{size} · {createdAt}` (no filename anywhere), and detail-only processing reconciliation on one `3000 ms` constant. Consumes only the three accepted B01 operations; honest thumbnail placeholder (no media-delivery contract exists). No API operation, generated-client, schema, worker or Figma change; no new dependency — **`COMPLETE — DELIVERED_FOR_REVIEW`** ([`reports/APP2-A01-COMPLETION-REPORT.md`](../reports/APP2-A01-COMPLETION-REPORT.md)). Open for the reviewer: the approved Rejected-state action `Xoá khỏi danh sách` has **no backend capability** and is deliberately not implemented | B01, W01, D01, D02 |
 | 7b | APP2-B02-G01 | gate | Product-draft required-field entry gate (data/authority only, under `APP2-B02` ownership) — closes `BLOCKED_BY_PRODUCT_DRAFT_FIELD_DECISION` by locking IMP-D032: fixed four-category taxonomy provisioned by data migration `0033` and addressed by `categorySlug` (never a category UUID), server-owned immutable product slug with a `{base}-{8 hex}` collision fallback, `DRAFT` price sentinel `0` VND, draft `display_order = 0`, and first-media `THUMBNAIL` / rest `GALLERY` with `DETAIL` excluded. 32 → 33 migrations; **78 tables / 833 columns / 190 CHECKs and fingerprint `82864268…` unchanged**; no schema, OpenAPI, client, application-source, Figma or dependency change — **`COMPLETE — ENTRY_GATE_CLOSED`** | DB7 catalog schema |
-| 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) — **entry gate `APP2-B02-G01` closed**, canonical five-operation scope unchanged | B01, B02-G01 |
+| 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) — **entry gate `APP2-B02-G01` closed**; exactly five Admin operations (`adminProduct_list/detail/create/update/archive`) implementing IMP-D032 as locked: `categorySlug` on the wire and never a category UUID, server-owned immutable slug, `DRAFT` price sentinel `0` VND rendered as whole đồng, `display_order 0`, first-media `THUMBNAIL` / rest `GALLERY` with `DETAIL` never written, complete all-or-nothing ordered media replacement, and `updated_at` optimistic concurrency compared at the millisecond precision the client token carries. Archive is a guarded `DRAFT → ARCHIVED` that deletes nothing. OpenAPI `e19c2f76…` → `b789cc99…`, client `55de1cc1…` → `66d1c991…` (additions only); **no migration, no schema/Figma/frontend/worker/object-storage change, no dependency** — **`COMPLETE — DELIVERED_FOR_REVIEW`** ([`reports/APP2-B02-COMPLETION-REPORT.md`](../reports/APP2-B02-COMPLETION-REPORT.md)) | B01, B02-G01 |
 | 9 | APP2-A02 | frontend | Admin product list | B02, D01 |
 | 10 | APP2-A03 | frontend | Admin product form/detail | B02, D01 |
 | 11 | APP2-B03 | backend | Publication backend + OpenAPI/client (≤3) | B02 |
