@@ -21,8 +21,11 @@ const PERSISTENT_DATABASE = 'embroidery';
 // output instead. Moved by APP2-DB01 (migration 0032 adds the CATALOG_PREVIEW
 // derivative kind and the INV-22 watermark CHECK): 31 → 32 migrations,
 // `4ca56a59…` → `82864268…`. Table count is unchanged, which is the point.
+// Moved again by APP2-B02-G01 (migration 0033 provisions the fixed catalog
+// categories): 32 → 33 migrations, and because that migration is **data only**
+// the fingerprint and table count both stay exactly where they are.
 const CANONICAL_FINGERPRINT = '82864268c990990e4597c74cfc69b7b5a91b1bc5a2adbde098ab9ad43aed58cf';
-const CANONICAL_MIGRATION_COUNT = 32;
+const CANONICAL_MIGRATION_COUNT = 33;
 const CANONICAL_TABLE_COUNT = 78;
 
 // One long-lived probe connection answers all catalog questions, so existence

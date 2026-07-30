@@ -52,6 +52,22 @@ import { categories } from './categories';
 export const PRODUCT_STATES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const;
 export type ProductState = (typeof PRODUCT_STATES)[number];
 
+/**
+ * Draft creation sentinels (IMP-D032).
+ *
+ * Every mandatory product column is NOT NULL with no database default, which
+ * collides with "a draft may be incomplete". These two values are the locked
+ * resolution: they are explicit *unset* markers, not real commercial data.
+ *
+ * `base_price_amount = 0` means "price not completed yet" while the product is
+ * `DRAFT` — publication (`APP2-B03`) must therefore require `> 0`, and no Admin
+ * surface may render it as a finished price. `display_order = 0` means "no
+ * curated public order yet"; public ordering belongs to `APP2-B03`/`B04`, so
+ * `APP2-B02` deliberately computes no `max+1`.
+ */
+export const PRODUCT_DRAFT_BASE_PRICE_AMOUNT = '0' as const;
+export const PRODUCT_DRAFT_DISPLAY_ORDER = 0 as const;
+
 export const products = pgTable(
   'products',
   {

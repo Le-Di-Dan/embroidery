@@ -88,7 +88,7 @@ describe('catalog preview derivative (integration)', () => {
   }
 
   describe('schema baseline', () => {
-    it('applied all 32 migrations onto the 78-table schema', async () => {
+    it('applied all 33 migrations onto the 78-table schema', async () => {
       const applied = await db().execute(
         sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
       );
@@ -96,7 +96,7 @@ describe('catalog preview derivative (integration)', () => {
         select count(*)::int as n from information_schema.tables
          where table_schema = 'public' and table_type = 'BASE TABLE'
       `);
-      expect((applied.rows[0] as { n: number }).n).toBe(32);
+      expect((applied.rows[0] as { n: number }).n).toBe(33);
       expect((tables.rows[0] as { n: number }).n).toBe(78);
     });
 

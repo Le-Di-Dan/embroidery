@@ -11,7 +11,7 @@
  * temporary folder with a trimmed journal, so the SQL under test is byte-identical
  * to what is committed: a re-authored baseline would prove only that the copy is
  * self-consistent. Because the bytes match, the migrator's own hashes match too,
- * and the second run applies exactly one new migration.
+ * and the second run applies only the migrations the baseline withheld.
  */
 import { execFile } from 'node:child_process';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -34,7 +34,20 @@ const run = promisify(execFile);
 
 /** The migration this checkpoint adds; everything before it is the baseline. */
 const NEW_MIGRATION_TAG = '0032_add_catalog_preview_derivative_kind';
-const BASELINE_MIGRATION_COUNT = 32;
+
+/**
+ * Migrations stripped to rebuild the pre-APP2-DB01 baseline.
+ *
+ * Every migration from 0032 onward must go, not just 0032 itself: this suite's
+ * baseline is "the chain as it stood before APP2-DB01", and a later migration
+ * left in the folder would be applied by the baseline run and silently change
+ * what is being upgraded from.
+ */
+const POST_BASELINE_TAGS = [NEW_MIGRATION_TAG, '0033_provision_catalog_draft_categories'] as const;
+
+/** Chain length before 0032, and after the full committed chain. */
+const BASELINE_MIGRATION_COUNT = 31;
+const FULL_MIGRATION_COUNT = 33;
 
 /** One row per kind that existed before APP2-DB01, with its watermark reality. */
 const LEGACY_ROWS = [
@@ -77,18 +90,22 @@ describe('catalog preview upgrade path (integration)', () => {
     }
   }
 
-  /** Copies the committed migrations, minus 0032, into a temporary folder. */
+  /** Copies the committed migrations, minus 0032 onward, to a temp folder. */
   async function buildBaselineFolder(): Promise<string> {
     const source = migrationsFolder();
     const folder = await mkdtemp(join(tmpdir(), 'app2db01-baseline-'));
     await cp(source, folder, { recursive: true });
-    await rm(join(folder, `${NEW_MIGRATION_TAG}.sql`));
+    for (const tag of POST_BASELINE_TAGS) {
+      await rm(join(folder, `${tag}.sql`));
+    }
 
     const journalPath = join(folder, 'meta', '_journal.json');
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as {
       entries: { tag: string }[];
     };
-    journal.entries = journal.entries.filter((entry) => entry.tag !== NEW_MIGRATION_TAG);
+    journal.entries = journal.entries.filter(
+      (entry) => !POST_BASELINE_TAGS.includes(entry.tag as (typeof POST_BASELINE_TAGS)[number]),
+    );
     await writeFile(journalPath, JSON.stringify(journal, null, 2));
     return folder;
   }
@@ -142,7 +159,7 @@ describe('catalog preview upgrade path (integration)', () => {
     const { rows } = await db().execute(
       sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
     );
-    expect((rows[0] as { n: number }).n).toBe(BASELINE_MIGRATION_COUNT - 1);
+    expect((rows[0] as { n: number }).n).toBe(BASELINE_MIGRATION_COUNT);
 
     const { rows: constraints } = await db().execute(sql`
       select conname from pg_constraint
@@ -178,12 +195,12 @@ describe('catalog preview upgrade path (integration)', () => {
     ]);
   });
 
-  it('applies exactly one new migration', async () => {
+  it('applies the remaining committed migrations', async () => {
     await runMigrations(configFor(url), migrationsFolder());
     const { rows } = await db().execute(
       sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
     );
-    expect((rows[0] as { n: number }).n).toBe(BASELINE_MIGRATION_COUNT);
+    expect((rows[0] as { n: number }).n).toBe(FULL_MIGRATION_COUNT);
   });
 
   it('preserves every existing row byte for byte', async () => {

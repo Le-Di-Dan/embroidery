@@ -427,6 +427,11 @@
 > Figma registry 70 IDs); no dependency added. **`APP2-A01` =
 > `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-B02` = `READY — NOT STARTED`**
 > ([`reports/APP2-A01-COMPLETION-REPORT.md`](../reports/APP2-A01-COMPLETION-REPORT.md)).
+>
+> > **SUPERSEDED (2026-07-28).** `APP2-B02` was **not** in fact executable at
+> > that point: its pre-code audit blocked as
+> > `BLOCKED_BY_PRODUCT_DRAFT_FIELD_DECISION`. The entry gate `APP2-B02-G01`
+> > closes it — see the `APP2-B02-G01` record below for the current status.
 > One approved affordance is **not** implemented and needs a reviewer decision:
 > the Rejected-state action `Xoá khỏi danh sách` has no delete or hide operation
 > in the contract, and this checkpoint may not add one.
@@ -443,6 +448,38 @@
 > insecure context. Commit `77691abcadae042646416f1f6171f107112fceee`;
 > `pnpm quality` `EXIT=0`; all baselines unchanged. **`APP2-A01` =
 > `COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`.**
+>
+> **`APP2-B02` entry gate (2026-07-28) — `BLOCKED`, then closed by
+> `APP2-B02-G01`.** The `APP2-B02` pre-code audit blocked as
+> **`BLOCKED_BY_PRODUCT_DRAFT_FIELD_DECISION`** with **no commit and no tracked
+> file changed**. The schema was *not* the problem — draft create/list/detail/
+> update, ordered media, archive and `updated_at` concurrency are all
+> representable on the existing 32 migrations. The blocker was that `products`
+> carries **10 NOT NULL columns with no default**, and after the four rules DB7
+> already locks in `drizzle-product.repository.ts` (`status='DRAFT'`,
+> `currency='VND'`, `is_display_out_of_stock=false`, `is_indexable=true`) five
+> mandatory values still had no locked rule: `category_id`, `slug`,
+> `base_price_amount`, `display_order` and `product_media.role`. `category_id`
+> was the severe one — it is NOT NULL with a `restrict` FK, **zero category rows
+> existed**, there is **no category operation in the API**, and `APP2-B02` may
+> not add a sixth operation, so a draft could never have been created.
+>
+> **`APP2-B02-G01` = `COMPLETE — ENTRY_GATE_CLOSED`.** IMP-D032 locks all five
+> decisions and migration `0033` provisions the fixed four-category taxonomy
+> (`thu-bong`, `khan`, `quan-ao`, `khac`) as reference data. **Data only:** 32 →
+> 33 migrations, while **78 tables / 833 columns / 190 CHECKs and fingerprint
+> `82864268…` are unchanged**, proven on a fresh 33-migration database. B02
+> accepts `categorySlug` (closed enum) and never exposes a category UUID. No
+> OpenAPI, generated-client, application-source, Figma or dependency change
+> ([`reports/APP2-B02-G01-COMPLETION-REPORT.md`](../reports/APP2-B02-G01-COMPLETION-REPORT.md)).
+> **`APP2-B02` = `READY — NOT STARTED`** (unblocked), with its canonical
+> five-operation scope unchanged.
+>
+> **`FU-APP2-CATEGORY-MANAGEMENT-01` = `DEFERRED_BEYOND_CATALOG_ALPHA`** —
+> mutable category management (create/rename/reorder/archive, Admin UI and API)
+> is deliberately out of APP2 and **nonblocking** for `B02`/`A02`/`A03`.
+>
+> **`FU-APP2-THUMBNAIL-01` = `ROUTED_TO_APP2-T01`**, `NONBLOCKING_FOR_APP2-B02/A02/A03`.
 >
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
@@ -528,7 +565,8 @@ endpoints.
 | 6 | APP2-W01 | worker | Asset inspection/derivatives job family handler + image-processing library decision (uses I02 runtime). Produces exactly `THUMBNAIL` + `CATALOG_PREVIEW`, both unwatermarked, per `APP2-DB01`; `sharp@0.35.3` locked as the image library (worker-only); no migration, no HTTP operation — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B01, I02, DB01, I03 |
 | 6b | APP2-D02 | design | Admin Assets continuation & identity reconciliation — cures `APP2-A01`'s `BLOCKED_BY_MISSING_ASSET_LIST_CONTINUATION_DESIGN`: explicit cursor-driven `Tải thêm tài sản`, server-backed identity (media format + size + `createdAt`), original filename transient-local only; seven `FIG-ADMIN-ASSETS-*` rows promoted under `FIG-APPROVAL-APP2-D01-ADMIN-001`; one annotation node added (registry 69 → 70). Design/documentation only — no source, dependency, OpenAPI, client or database change — **`COMPLETE — DELIVERED_FOR_REVIEW`** | D01, B01, W01 |
 | 7 | APP2-A01 | frontend | Admin asset library — `/assets` inside the accepted APP1 shell: catalog-media upload with real transferred-byte progress and honest ambiguous cancellation, explicit cursor continuation (`Tải thêm tài sản`, same-cursor retry, no total-count copy), server-backed identity from `mediaType` + `{size} · {createdAt}` (no filename anywhere), and detail-only processing reconciliation on one `3000 ms` constant. Consumes only the three accepted B01 operations; honest thumbnail placeholder (no media-delivery contract exists). No API operation, generated-client, schema, worker or Figma change; no new dependency — **`COMPLETE — DELIVERED_FOR_REVIEW`** ([`reports/APP2-A01-COMPLETION-REPORT.md`](../reports/APP2-A01-COMPLETION-REPORT.md)). Open for the reviewer: the approved Rejected-state action `Xoá khỏi danh sách` has **no backend capability** and is deliberately not implemented | B01, W01, D01, D02 |
-| 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) | B01 |
+| 7b | APP2-B02-G01 | gate | Product-draft required-field entry gate (data/authority only, under `APP2-B02` ownership) — closes `BLOCKED_BY_PRODUCT_DRAFT_FIELD_DECISION` by locking IMP-D032: fixed four-category taxonomy provisioned by data migration `0033` and addressed by `categorySlug` (never a category UUID), server-owned immutable product slug with a `{base}-{8 hex}` collision fallback, `DRAFT` price sentinel `0` VND, draft `display_order = 0`, and first-media `THUMBNAIL` / rest `GALLERY` with `DETAIL` excluded. 32 → 33 migrations; **78 tables / 833 columns / 190 CHECKs and fingerprint `82864268…` unchanged**; no schema, OpenAPI, client, application-source, Figma or dependency change — **`COMPLETE — ENTRY_GATE_CLOSED`** | DB7 catalog schema |
+| 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) — **entry gate `APP2-B02-G01` closed**, canonical five-operation scope unchanged | B01, B02-G01 |
 | 9 | APP2-A02 | frontend | Admin product list | B02, D01 |
 | 10 | APP2-A03 | frontend | Admin product form/detail | B02, D01 |
 | 11 | APP2-B03 | backend | Publication backend + OpenAPI/client (≤3) | B02 |

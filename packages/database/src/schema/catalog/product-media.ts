@@ -27,6 +27,25 @@ import { products } from './products';
 export const PRODUCT_MEDIA_ROLES = ['GALLERY', 'THUMBNAIL', 'DETAIL'] as const;
 export type ProductMediaRole = (typeof PRODUCT_MEDIA_ROLES)[number];
 
+/**
+ * How `APP2-B02` assigns roles to an ordered Admin media selection (IMP-D032).
+ *
+ * `role` is NOT NULL with no default and is part of the row's uniqueness key,
+ * so a selection cannot be stored without deciding it. The locked rule keeps
+ * the operator's ordering as the only input: the first Asset becomes the single
+ * `THUMBNAIL`, every following Asset is `GALLERY` at its zero-based request
+ * position. `DETAIL` is out of APP2-B02 scope — nothing selects it, so nothing
+ * writes it.
+ */
+export const PRODUCT_MEDIA_PRIMARY_ROLE = 'THUMBNAIL' as const satisfies ProductMediaRole;
+export const PRODUCT_MEDIA_SECONDARY_ROLE = 'GALLERY' as const satisfies ProductMediaRole;
+
+/** Roles `APP2-B02` may write; `DETAIL` is deliberately excluded. */
+export const APP2_PRODUCT_MEDIA_ROLES = [
+  PRODUCT_MEDIA_PRIMARY_ROLE,
+  PRODUCT_MEDIA_SECONDARY_ROLE,
+] as const;
+
 export const productMedia = pgTable(
   'product_media',
   {

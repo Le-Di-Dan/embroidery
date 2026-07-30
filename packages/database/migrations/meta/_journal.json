@@ -225,6 +225,13 @@
       "when": 1785152843646,
       "tag": "0032_add_catalog_preview_derivative_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1785426727628,
+      "tag": "0033_provision_catalog_draft_categories",
+      "breakpoints": true
     }
   ]
 }

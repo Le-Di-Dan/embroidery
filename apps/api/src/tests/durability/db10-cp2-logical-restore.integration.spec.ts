@@ -171,7 +171,7 @@ describe('DB10-CP2 logical backup and restore rehearsal', () => {
     manifest = await readBackupManifest(manifestPath);
 
     expect(manifest.tableCount).toBe(78);
-    expect(manifest.appliedMigrations).toBe(32);
+    expect(manifest.appliedMigrations).toBe(33);
     expect(manifest.postgresVersion).toMatch(/^16\./);
     expect(manifest.artifactSha256).toMatch(/^[0-9a-f]{64}$/);
     expect(manifest.artifactBytes).toBeGreaterThan(0);

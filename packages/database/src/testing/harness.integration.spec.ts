@@ -61,11 +61,11 @@ describe('integration harness', () => {
       );
     }, 120_000);
 
-    it('applied all 32 migrations', async () => {
+    it('applied all 33 migrations', async () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(32);
+      expect(Number(result.rows[0]?.count)).toBe(33);
     });
 
     it('resets state between tests without disabling the S24 triggers', async () => {
@@ -96,7 +96,7 @@ describe('integration harness', () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(32);
+      expect(Number(result.rows[0]?.count)).toBe(33);
     });
   });
 

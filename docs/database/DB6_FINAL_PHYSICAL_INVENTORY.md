@@ -14,6 +14,17 @@ fingerprint proof). No hand-accumulated figure in this document.
 > `packages/database/tools/canonical-fingerprint.txt`; this document keeps its
 > DB6-era figures as the historical record.
 
+> **Amended by APP2-B02-G01** (migration `0033`, application era). The migration
+> count moves **32 → 33** and nothing else does: `0033` provisions the four
+> fixed APP2 catalog categories as **data only**, so tables (78), columns (833),
+> CHECKs (190), FKs (160), PKs (78), UNIQUEs (50), indexes, triggers and the
+> fingerprint `82864268c990990e4597c74cfc69b7b5a91b1bc5a2adbde098ab9ad43aed58cf`
+> are all unchanged — verified by running
+> `packages/database/tools/db-schema-fingerprint.mjs` against a fresh
+> 33-migration database and comparing it with `canonical-fingerprint.txt`. The
+> fingerprint hashes the normalized catalog, never row contents, so a data
+> migration cannot move it.
+
 ## 1. Tables (78/78)
 
 - 78 unique `TBL-*` IDs, 78 unique physical tables, one owner group each (19 groups,

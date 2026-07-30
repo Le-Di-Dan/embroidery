@@ -30,5 +30,6 @@
   "0029_create_audit_events_table.sql": "152d5d701b4174995937bf9a37fc2e8e7f67c6ee7535afac46d0c007264e48d8",
   "0030_add_integrity_triggers.sql": "b706b7bd273e98968c4b5eafc3b217867992a945f634de8312a64ddb985cb2c4",
   "0031_add_remaining_launch_indexes.sql": "302ec0838a15ea1ba57f4abcf3d835ee7344edb1139f8859d6e155106953b746",
-  "0032_add_catalog_preview_derivative_kind.sql": "1ea3dc3e01479e362f574b2b751685720ac93ebcfb472d871ee7ef814111a495"
+  "0032_add_catalog_preview_derivative_kind.sql": "1ea3dc3e01479e362f574b2b751685720ac93ebcfb472d871ee7ef814111a495",
+  "0033_provision_catalog_draft_categories.sql": "a53236e91faed984499b58625730db3e27f8023df93d3647de3abbba3f5670f9"
 }
