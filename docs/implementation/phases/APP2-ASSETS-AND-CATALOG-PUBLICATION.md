@@ -549,6 +549,32 @@
 > `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-A03` = `READY — NOT STARTED`**
 > ([`reports/APP2-A02-COMPLETION-REPORT.md`](../reports/APP2-A02-COMPLETION-REPORT.md)).
 >
+> **`APP2-A03` blocked, then cured by `APP2-A03-G01` (2026-07-31).** The mandatory A03
+> pre-code design/contract audit stopped **before any source file, commit or Figma edit**
+> with **`BLOCKED_BY_PRODUCT_FORM_DESIGN_CONTRACT_CONTRADICTION`**. All five approved
+> Product Draft nodes were one `Sản phẩm mới` create screen with a single atomic
+> `Lưu bản nháp`, while `adminProduct_create` is `.strict()` and accepts only
+> `categorySlug`, `name` and `description`: the screen's media selection therefore required
+> a second PATCH, `Phiên bản & SKU` had **no field in any B02 operation**, there was **no
+> edit/detail design at all**, and `basePriceAmount` had no approved surface.
+> **`APP2-A03-G01`** is a narrow entry gate **under A03 ownership** — **`APP2-D04` was not
+> created and must not be** — that reconciles the five existing nodes in place into an
+> explicit two-mode capability: minimal create at `/products/new` (three POST fields,
+> `Tạo bản nháp`, redirect to detail) and edit/detail at `/products/{productId}`
+> (`Lưu thay đổi`, `Giá cơ bản`, read-only slug/status, ordered media via PATCH). Variants
+> and SKU are removed and deferred as `FU-APP2-PRODUCT-VARIANTS-SKU-01`; the
+> publication-readiness rail and `Tới bước xuất bản` are removed (A04/B03); fabricated
+> filenames give way to B01/D02 server identity; keyboard media ordering replaces
+> drag-only. Five rows promoted under `FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001`,
+> registry 71 → 72, IMP-D034 locked. OpenAPI, generated client, database and application
+> source unchanged. **`APP2-A03-G01` = `COMPLETE — DELIVERED_FOR_REVIEW`**, so
+> **`APP2-A03` = `READY — NOT STARTED`**
+> ([`reports/APP2-A03-G01-COMPLETION-REPORT.md`](../reports/APP2-A03-G01-COMPLETION-REPORT.md)).
+>
+> **`FU-APP2-PRODUCT-VARIANTS-SKU-01` = `DEFERRED_BEYOND_APP2_CATALOG_ALPHA`** — product
+> variants and SKU are not exposed or persisted by the delivered `APP2-B02` contract and are
+> **nonblocking** for `A03`/`B03`/`A04`.
+>
 > **`FU-APP2-CATEGORY-MANAGEMENT-01` = `DEFERRED_BEYOND_CATALOG_ALPHA`** —
 > mutable category management (create/rename/reorder/archive, Admin UI and API)
 > is deliberately out of APP2 and **nonblocking** for `B02`/`A02`/`A03`.
@@ -643,7 +669,8 @@ endpoints.
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) — **entry gate `APP2-B02-G01` closed**; exactly five Admin operations (`adminProduct_list/detail/create/update/archive`) implementing IMP-D032 as locked: `categorySlug` on the wire and never a category UUID, server-owned immutable slug, `DRAFT` price sentinel `0` VND rendered as whole đồng, `display_order 0`, first-media `THUMBNAIL` / rest `GALLERY` with `DETAIL` never written, complete all-or-nothing ordered media replacement, and `updated_at` optimistic concurrency compared at the millisecond precision the client token carries. Archive is a guarded `DRAFT → ARCHIVED` that deletes nothing. OpenAPI `e19c2f76…` → `b789cc99…`, client `55de1cc1…` → `66d1c991…` (additions only); **no migration, no schema/Figma/frontend/worker/object-storage change, no dependency** — **`COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`**; **`APP2-B02-C1`** closed the mutation-guard, monotonic-token and invented-media-limit gaps and proved the asset-eligibility race is serialized ([`reports/APP2-B02-COMPLETION-REPORT.md`](../reports/APP2-B02-COMPLETION-REPORT.md), [`reports/APP2-B02-C1-CORRECTION-REPORT.md`](../reports/APP2-B02-C1-CORRECTION-REPORT.md)) | B01, B02-G01 |
 | 8b | APP2-D03 | design | Admin Product List design reconciliation — cures `APP2-A02`'s `BLOCKED_BY_CATALOG_LIST_DESIGN_CONTRADICTION`: adds the `Trạng thái`/`Danh mục` filters and the `Tải thêm sản phẩm` continuation control to the three frozen Catalog nodes, removes every `APP2-A03`/`APP2-A04` control so A02 is a truthful read-only list, replaces the empty state's dead CTA, and corrects the A02/A03 label inversion (IMP-D033). Three `FIG-ADMIN-CATALOG-*` rows promoted under `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`; one annotation node added (registry 70 → 71). Design/documentation only — no source, dependency, OpenAPI, client or database change — **`COMPLETE — DELIVERED_FOR_REVIEW`** | D01, B02 |
 | 9 | APP2-A02 | frontend | Admin product list — read-only list at `/products`, status/category filters, cursor continuation (entry gate `APP2-D03` closed). Consumes `adminProduct_list` only — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B02, D01, D03 |
-| 10 | APP2-A03 | frontend | Admin product form/detail | B02, D01 |
+| 9b | APP2-A03-G01 | design | **Entry gate under `APP2-A03` ownership** (not a phase checkpoint, and **not `APP2-D04`**) — reconciles the five Product Draft nodes with the delivered B02 contract after the mandatory A03 pre-code audit blocked. Splits the capability into minimal create (`/products/new`, three POST fields) and edit/detail (`/products/{productId}`, PATCH), adds `Giá cơ bản` and read-only slug/status, removes `Phiên bản & SKU` and the publication-readiness rail, replaces fabricated filenames with B01/D02 server identity, and adds keyboard media ordering (IMP-D034). Five `FIG-ADMIN-PRODUCT-*` rows promoted under `FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001`; one annotation node added (registry 71 → 72). Design/documentation only — **`COMPLETE — DELIVERED_FOR_REVIEW`** | A02, B02, D01 |
+| 10 | APP2-A03 | frontend | Admin product form/detail — create/edit/detail with Asset selection and server conflict handling (entry gate `APP2-A03-G01` closed) | B02, D01, A03-G01 |
 | 11 | APP2-B03 | backend | Publication backend + OpenAPI/client (≤3) | B02 |
 | 12 | APP2-A04 | frontend | Admin publication interaction | B03, D01 |
 | 13 | APP2-B04 | backend | Public catalog queries + OpenAPI/client (≤2) | B03 |
@@ -688,7 +715,7 @@ registry IDs it used in its completion report.
 |---|---|---|
 | **A01** Admin asset library | `FIG-ADMIN-ASSETS-DESKTOP-{DEFAULT,EMPTY,UPLOADING,PROCESSING,REJECTED}`, `FIG-ADMIN-ASSETS-MOBILE-{DEFAULT,UPLOAD}` (all `APPROVED_FOR_IMPLEMENTATION`), plus `FIG-ADMIN-ASSETS-CONTINUATION-IDENTITY` (`484:272`, annotation) and `FIG-APP2-ASSET-CATALOG-NOTES` (`450:404`) | 1440 desktop (5 states) + 390 mobile (2 states); 1024 by annotation. Desktop Default is **1440×1092** since `APP2-D02` so the continuation control is visible, not clipped |
 | **A02** Admin product list | `FIG-ADMIN-CATALOG-DESKTOP-{DEFAULT,EMPTY}`, `FIG-ADMIN-CATALOG-MOBILE-DEFAULT` (all `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`), plus `FIG-ADMIN-CATALOG-FILTERS-ACTIONS-HANDOFF` (`498:272`, annotation) | 1440 desktop table + 390 mobile card list; read-only list with `Trạng thái`/`Danh mục` filters and `Tải thêm sản phẩm` |
-| **A03** Admin product form/detail | `FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-{DEFAULT,VALIDATION,SAVING}`, `FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT`, `FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP` | 1440 desktop (3 states + dialog) + 390 mobile |
+| **A03** Admin product form/detail | `FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-{DEFAULT,VALIDATION,SAVING}`, `FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT`, `FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP` (all `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001`), plus `FIG-ADMIN-PRODUCT-FORM-CONTRACT-HANDOFF` (`521:284`, annotation) | 1440 desktop edit/detail (3 states + media dialog) + 390 mobile; minimal create mode specified on the handoff annotation |
 | **A04** Admin publication interaction | `FIG-ADMIN-PUBLICATION-DESKTOP-{READY,BLOCKED,CONFIRM-UNPUBLISH}`, `FIG-ADMIN-PUBLICATION-MOBILE` | 1440 desktop (3 states) + 390 mobile |
 | **S01** Storefront product list / discover | **UI02 authority** — `FIG-UI02-DISCOVER-{SECTION,DESKTOP,TABLET,MOBILE}` (`208:538`, `208:2002`, `224:871`, `226:1038`) | 5-column / 3-column / 2-column **masonry** from UI02 |
 | **S02** Storefront product detail | **Withheld** — `FIG-STOREFRONT-PRODUCT-DETAIL-{DESKTOP,TABLET,MOBILE,MEDIA-STATE}` are `NOT_APPROVED` / `NOT_IMPLEMENTATION_AUTHORITY` | pending UI03 reconciliation |

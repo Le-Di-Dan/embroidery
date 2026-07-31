@@ -1,4 +1,4 @@
-# FIGMA_DESIGN_INDEX.md
+| FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP | Admin | Product form | Media Select Dialog | Default | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 437:73 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=437-73) | APP2-D01 | Reconciled by APP2-A03-G01 | FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001 | 2026-07-31 || FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT | Admin | Product form | Product Form | Edit/Detail — Default | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 438:90 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=438-90) | APP2-D01 | Reconciled by APP2-A03-G01 | FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001 | 2026-07-31 || FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-SAVING | Admin | Product form | Product Form | Edit/Detail — Saving | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 436:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=436-140) | APP2-D01 | Reconciled by APP2-A03-G01 | FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001 | 2026-07-31 || FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-VALIDATION | Admin | Product form | Product Form | Edit/Detail — Validation Error | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 436:37 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=436-37) | APP2-D01 | Reconciled by APP2-A03-G01 | FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001 | 2026-07-31 || FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-DEFAULT | Admin | Product form | Product Form | Edit/Detail — Default | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 434:20 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=434-20) | APP2-D01 | Reconciled by APP2-A03-G01 | FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001 | 2026-07-31 |# FIGMA_DESIGN_INDEX.md
 
 **Status:** Canonical Figma registry — authoritative
 **Owner:** Design governance (created at `APP1-D01`, 2026-07-25)
@@ -160,6 +160,25 @@ Section **`423:3`** — [APP2-D01 · Assets & Catalog Publication](https://www.f
 > ownership is **A02 = Admin Product List (Catalog nodes)**, **A03 = Admin Product
 > Form/Detail (Product Draft nodes)**, **A04 = Publication Interaction**.
 
+> **`APP2-A03-G01` — Product Form reconciled to the delivered B02 contract (2026-07-31).**
+> The mandatory `APP2-A03` pre-code audit proved the five Product Draft nodes could not be
+> implemented truthfully: all five were a single **`Sản phẩm mới`** create screen with one
+> atomic `Lưu bản nháp`, yet `adminProduct_create` is `.strict()` and accepts only
+> `categorySlug`, `name` and `description` — so the screen's media selection required a
+> second PATCH, and `Phiên bản & SKU` had **no field in any B02 operation**. There was also
+> **no edit/detail design at all**, leaving `adminProduct_detail`, `adminProduct_update`
+> and `basePriceAmount` without an approved surface. `APP2-A03-G01` reconciles the five
+> existing nodes in place into an explicit **two-mode capability**: a minimal create
+> (`/products/new`, three POST fields, `Tạo bản nháp`, redirect to detail) and an
+> edit/detail screen (`/products/{productId}`, `Lưu thay đổi`, adding `Giá cơ bản` and
+> read-only slug/status, keeping ordered media). Variants/SKU and the publication-readiness
+> rail are removed; media identity switches from fabricated filenames to the B01/D02 server
+> identity; keyboard media ordering replaces drag-only. The five rows are now
+> `APPROVED_FOR_IMPLEMENTATION` under **`FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001`**
+> ([`approvals/APP2-A03-G01-PRODUCT-FORM-CONTRACT-APPROVAL.md`](./approvals/APP2-A03-G01-PRODUCT-FORM-CONTRACT-APPROVAL.md)),
+> and one annotation node was added (`521:284`). **No `APP2-D04` exists or may be created**,
+> and the Publication and Storefront rows are deliberately not promoted.
+
 Admin asset intake / product draft / catalog / publication are `NEW`. The remaining
 Storefront Product Detail frames are clones of the approved APP1-D02 shells
 (`405:2225` / `405:3733` / `405:3786`) — the approved APP1 frames themselves are
@@ -185,6 +204,7 @@ implementable.
 | FIG-ADMIN-CATALOG-DESKTOP-EMPTY | Admin | Admin product list | Product List | Empty | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 440:102 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=440-102) | APP2-D01 | Reconciled by APP2-D03 | FIG-APPROVAL-APP2-D03-CATALOG-LIST-001 | 2026-07-31 |
 | FIG-ADMIN-CATALOG-MOBILE-DEFAULT | Admin | Admin product list | Product List | Default | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 440:191 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=440-191) | APP2-D01 | Reconciled by APP2-D03 | FIG-APPROVAL-APP2-D03-CATALOG-LIST-001 | 2026-07-31 |
 | FIG-ADMIN-CATALOG-FILTERS-ACTIONS-HANDOFF | Admin | Admin product list | Product List Filters, Staged Actions & Handoff | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 498:272 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=498-272) | APP2-D03 | — | — | 2026-07-31 |
+| FIG-ADMIN-PRODUCT-FORM-CONTRACT-HANDOFF | Admin | Product form | Product Form Create/Edit Contract Handoff | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 521:284 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=521-284) | APP2-A03-G01 | — | — | 2026-07-31 |
 | FIG-ADMIN-PUBLICATION-DESKTOP-READY | Admin | Product publication | Publication | Ready | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 441:106 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=441-106) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PUBLICATION-DESKTOP-BLOCKED | Admin | Product publication | Publication | Blocked | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 442:110 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=442-110) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PUBLICATION-DESKTOP-CONFIRM-UNPUBLISH | Admin | Product publication | Publication | Confirm Unpublish | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 442:205 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=442-205) | APP2-D01 | — | — | 2026-07-26 |
@@ -423,15 +443,19 @@ canonical entry exists for any APP1-D01 composite key.
   **7 Admin Assets rows are `APPROVED_FOR_IMPLEMENTATION`** under
   `FIG-APPROVAL-APP2-D01-ADMIN-001` since `APP2-D02` and the **3 Admin Product List
   (Catalog) rows are `APPROVED_FOR_IMPLEMENTATION`** under
-  `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001` since `APP2-D03`; 4 Product Detail withheld,
+  `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001` since `APP2-D03` and the **5 Admin Product
+  Form rows are `APPROVED_FOR_IMPLEMENTATION`** under
+  `FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001` since `APP2-A03-G01`; 4 Product Detail withheld,
   2 annotation), **1 APP2-D02 annotation row** (`FIG-ADMIN-ASSETS-CONTINUATION-IDENTITY`,
   `REVIEW_REQUIRED`), **1 APP2-D03 annotation row**
   (`FIG-ADMIN-CATALOG-FILTERS-ACTIONS-HANDOFF`, `REVIEW_REQUIRED`),
+  **1 APP2-A03-G01 annotation row**
+  (`FIG-ADMIN-PRODUCT-FORM-CONTRACT-HANDOFF`, `REVIEW_REQUIRED`),
   **1 APP2 DS-supplement row**, **4 UI02 authority rows
   (`DRAFT` content maturity, REQUIRED visual/structural authority — §4.4.1)**,
   3 Homepage shell-reference rows (`SUPERSEDED` → APP1-D02), 4 IA/flow rows
   (`REFERENCE_ONLY`), 7 DS catalog rows (`APPROVED`), 2 `MISSING`/gap rows.
-  **Total 71 registry IDs** (4 rejected Product List rows removed by `APP2-D01-C1`,
+  **Total 72 registry IDs** (4 rejected Product List rows removed by `APP2-D01-C1`,
   4 UI02 authority rows added, 1 `APP2-D02` annotation added, 1 `APP2-D03` annotation
   added — see §4.3.1 and §4.4.1).
 - **Gaps:** GAP-D01 (no DS Input — supplemented for APP2 as `FIG-DS-INPUT-APP2`, DS
