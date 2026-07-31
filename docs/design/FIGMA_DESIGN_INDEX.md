@@ -137,6 +137,29 @@ Section **`423:3`** — [APP2-D01 · Assets & Catalog Publication](https://www.f
 > but stay `REVIEW_REQUIRED` here — `APP2-D02` reconciled Assets only, and A02–A04 must
 > record their own approval evidence before implementing.
 
+> **`APP2-D03` reconciliation (2026-07-31) — Admin Product List =
+> `PRODUCT_OWNER_APPROVED — D03_RECONCILED`.**
+> `APP2-A02` blocked as `BLOCKED_BY_CATALOG_LIST_DESIGN_CONTRADICTION`: the canonical A02
+> scope locks **filters** and pagination, but the three frozen Catalog nodes contained no
+> filter control, and their row actions (`Chỉnh sửa`, `Xuất bản`, `Gỡ xuất bản`) plus the
+> `Tạo sản phẩm` CTA belong to `APP2-A03`/`APP2-A04`, whose routes do not exist yet.
+> `APP2-D03` reconciles the three nodes in place: it **adds** the `Trạng thái` and
+> `Danh mục` filters (desktop side-by-side, mobile stacked full-width) and the
+> `Tải thêm sản phẩm` continuation control reusing the `APP2-D02` cursor pattern, and
+> **removes** every create/edit/publication control so A02 ships a truthful read-only list.
+> `APP2-A03` restores create/edit and `APP2-A04` adds publish/unpublish as supplements that
+> never redefine the base layout. **Price and search are excluded from A02** — no price
+> column is added, and no search control exists. The three rows are now
+> `APPROVED_FOR_IMPLEMENTATION` under **`FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`**
+> ([`approvals/APP2-D03-ADMIN-PRODUCT-LIST-DESIGN-APPROVAL.md`](./approvals/APP2-D03-ADMIN-PRODUCT-LIST-DESIGN-APPROVAL.md)),
+> and one annotation node was added (`498:272`). **The Product Draft and Publication rows
+> are deliberately not promoted** — `APP2-A03` and `APP2-A04` must still record their own
+> approval evidence. This checkpoint also corrects the **A02/A03 label inversion**: the
+> handoff annotation `450:404` previously read A02 → Product Draft and A03 → Catalog, which
+> contradicted the canonical checkpoint map (§6.1 of the APP2 phase plan). Canonical
+> ownership is **A02 = Admin Product List (Catalog nodes)**, **A03 = Admin Product
+> Form/Detail (Product Draft nodes)**, **A04 = Publication Interaction**.
+
 Admin asset intake / product draft / catalog / publication are `NEW`. The remaining
 Storefront Product Detail frames are clones of the approved APP1-D02 shells
 (`405:2225` / `405:3733` / `405:3786`) — the approved APP1 frames themselves are
@@ -158,9 +181,10 @@ implementable.
 | FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-SAVING | Admin | Product draft | Product Draft | Saving | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 436:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=436-140) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT | Admin | Product draft | Product Draft | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 438:90 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=438-90) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP | Admin | Product draft | Media Select Dialog | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 437:73 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=437-73) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-ADMIN-CATALOG-DESKTOP-DEFAULT | Admin | Product catalog | Product Catalog | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 439:100 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=439-100) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-ADMIN-CATALOG-DESKTOP-EMPTY | Admin | Product catalog | Product Catalog | Empty | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 440:102 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=440-102) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-ADMIN-CATALOG-MOBILE-DEFAULT | Admin | Product catalog | Product Catalog | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 440:191 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=440-191) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-ADMIN-CATALOG-DESKTOP-DEFAULT | Admin | Admin product list | Product List | Default | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 439:100 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=439-100) | APP2-D01 | Reconciled by APP2-D03 | FIG-APPROVAL-APP2-D03-CATALOG-LIST-001 | 2026-07-31 |
+| FIG-ADMIN-CATALOG-DESKTOP-EMPTY | Admin | Admin product list | Product List | Empty | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 440:102 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=440-102) | APP2-D01 | Reconciled by APP2-D03 | FIG-APPROVAL-APP2-D03-CATALOG-LIST-001 | 2026-07-31 |
+| FIG-ADMIN-CATALOG-MOBILE-DEFAULT | Admin | Admin product list | Product List | Default | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 440:191 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=440-191) | APP2-D01 | Reconciled by APP2-D03 | FIG-APPROVAL-APP2-D03-CATALOG-LIST-001 | 2026-07-31 |
+| FIG-ADMIN-CATALOG-FILTERS-ACTIONS-HANDOFF | Admin | Admin product list | Product List Filters, Staged Actions & Handoff | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 498:272 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=498-272) | APP2-D03 | — | — | 2026-07-31 |
 | FIG-ADMIN-PUBLICATION-DESKTOP-READY | Admin | Product publication | Publication | Ready | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 441:106 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=441-106) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PUBLICATION-DESKTOP-BLOCKED | Admin | Product publication | Publication | Blocked | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 442:110 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=442-110) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PUBLICATION-DESKTOP-CONFIRM-UNPUBLISH | Admin | Product publication | Publication | Confirm Unpublish | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 442:205 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=442-205) | APP2-D01 | — | — | 2026-07-26 |
@@ -397,14 +421,19 @@ canonical entry exists for any APP1-D01 composite key.
   `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP1-D02-STOREFRONT-001`),
   **25 APP2-D01 rows** (19 Admin `PRODUCT_OWNER_APPROVED — FROZEN`, of which the
   **7 Admin Assets rows are `APPROVED_FOR_IMPLEMENTATION`** under
-  `FIG-APPROVAL-APP2-D01-ADMIN-001` since `APP2-D02`; 4 Product Detail withheld,
+  `FIG-APPROVAL-APP2-D01-ADMIN-001` since `APP2-D02` and the **3 Admin Product List
+  (Catalog) rows are `APPROVED_FOR_IMPLEMENTATION`** under
+  `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001` since `APP2-D03`; 4 Product Detail withheld,
   2 annotation), **1 APP2-D02 annotation row** (`FIG-ADMIN-ASSETS-CONTINUATION-IDENTITY`,
-  `REVIEW_REQUIRED`), **1 APP2 DS-supplement row**, **4 UI02 authority rows
+  `REVIEW_REQUIRED`), **1 APP2-D03 annotation row**
+  (`FIG-ADMIN-CATALOG-FILTERS-ACTIONS-HANDOFF`, `REVIEW_REQUIRED`),
+  **1 APP2 DS-supplement row**, **4 UI02 authority rows
   (`DRAFT` content maturity, REQUIRED visual/structural authority — §4.4.1)**,
   3 Homepage shell-reference rows (`SUPERSEDED` → APP1-D02), 4 IA/flow rows
   (`REFERENCE_ONLY`), 7 DS catalog rows (`APPROVED`), 2 `MISSING`/gap rows.
-  **Total 70 registry IDs** (4 rejected Product List rows removed by `APP2-D01-C1`,
-  4 UI02 authority rows added, 1 `APP2-D02` annotation added — see §4.3.1 and §4.4.1).
+  **Total 71 registry IDs** (4 rejected Product List rows removed by `APP2-D01-C1`,
+  4 UI02 authority rows added, 1 `APP2-D02` annotation added, 1 `APP2-D03` annotation
+  added — see §4.3.1 and §4.4.1).
 - **Gaps:** GAP-D01 (no DS Input — supplemented for APP2 as `FIG-DS-INPUT-APP2`, DS
   library gap still open), GAP-D02 (no scrim token — still local `ink/900 @45%`).
   The former `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02 (now
@@ -418,5 +447,14 @@ canonical entry exists for any APP1-D01 composite key.
   place for cursor continuation (`Tải thêm tài sản`) and server-backed identity
   (media-format label + `{size} · {createdAt}`); one annotation node added
   (`484:272`). No Product Draft / Catalog / Publication / Storefront row changed.
+- **`APP2-D03` (2026-07-31):** Admin Product List = `PRODUCT_OWNER_APPROVED —
+  D03_RECONCILED`. Three Catalog rows promoted to `APPROVED_FOR_IMPLEMENTATION` under
+  `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`; the three existing nodes amended in place —
+  `Trạng thái`/`Danh mục` filters and the `Tải thêm sản phẩm` continuation control added,
+  every `APP2-A03`/`APP2-A04` control (`Tạo sản phẩm`, `Chỉnh sửa`, `Xuất bản`,
+  `Gỡ xuất bản`) removed, and the empty state given copy with no dead CTA; one annotation
+  node added (`498:272`); the A02/A03 ownership lines in `450:404` corrected. No Product
+  Draft, Publication or Storefront frame changed, and no row other than the three Catalog
+  rows promoted.
 - **Consistency gate:** `pnpm check:figma-design-index` — see
   `tools/check-figma-design-index.mjs`.

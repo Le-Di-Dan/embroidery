@@ -516,6 +516,25 @@
 > **`APP2-B02-C2` = `MUST_NOT_BE_CREATED`.** `APP2-A02` and `APP2-A03` are
 > **`BLOCKED_BY_PRODUCT_OWNER_DESIGN_APPROVAL`**.
 >
+> **`APP2-A02` blocked, then cured by `APP2-D03` (2026-07-31).** The A02 implementation
+> gate stopped before any code was written — **no commit, no tracked file change** — with
+> **`BLOCKED_BY_CATALOG_LIST_DESIGN_CONTRADICTION`**. Two contradictions were proved
+> against the live nodes: the canonical A02 scope locks **filters** and pagination, but
+> none of the three frozen Catalog nodes contained a status or category filter; and the
+> nodes carried `Tạo sản phẩm`, `Chỉnh sửa`, `Xuất bản` and `Gỡ xuất bản`, which belong to
+> `APP2-A03` and `APP2-A04` and whose routes do not exist at A02 delivery time. A third
+> defect was documentary: §6.2 and annotation `450:404` inverted the A02/A03 labels.
+> **`APP2-D03`** reconciles the three nodes in place (IMP-D033): it adds the `Trạng thái`
+> and `Danh mục` filters and the `Tải thêm sản phẩm` continuation control reusing the
+> `APP2-D02` cursor pattern, removes every create/edit/publication control so A02 ships a
+> truthful **read-only** list, replaces the empty state's dead CTA with approved copy, and
+> records `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`. Price and search stay out of A02;
+> `APP2-A03` restores create/edit and `APP2-A04` adds publish/unpublish as supplements.
+> Registry 70 → 71; OpenAPI, generated client and database unchanged; design and
+> documentation only. **`APP2-D03` = `COMPLETE — DELIVERED_FOR_REVIEW`**, so
+> **`APP2-A02` = `READY — NOT STARTED`**
+> ([`reports/APP2-D03-COMPLETION-REPORT.md`](../reports/APP2-D03-COMPLETION-REPORT.md)).
+>
 > **`FU-APP2-CATEGORY-MANAGEMENT-01` = `DEFERRED_BEYOND_CATALOG_ALPHA`** —
 > mutable category management (create/rename/reorder/archive, Admin UI and API)
 > is deliberately out of APP2 and **nonblocking** for `B02`/`A02`/`A03`.
@@ -608,7 +627,8 @@ endpoints.
 | 7 | APP2-A01 | frontend | Admin asset library — `/assets` inside the accepted APP1 shell: catalog-media upload with real transferred-byte progress and honest ambiguous cancellation, explicit cursor continuation (`Tải thêm tài sản`, same-cursor retry, no total-count copy), server-backed identity from `mediaType` + `{size} · {createdAt}` (no filename anywhere), and detail-only processing reconciliation on one `3000 ms` constant. Consumes only the three accepted B01 operations; honest thumbnail placeholder (no media-delivery contract exists). No API operation, generated-client, schema, worker or Figma change; no new dependency — **`COMPLETE — DELIVERED_FOR_REVIEW`** ([`reports/APP2-A01-COMPLETION-REPORT.md`](../reports/APP2-A01-COMPLETION-REPORT.md)). Open for the reviewer: the approved Rejected-state action `Xoá khỏi danh sách` has **no backend capability** and is deliberately not implemented | B01, W01, D01, D02 |
 | 7b | APP2-B02-G01 | gate | Product-draft required-field entry gate (data/authority only, under `APP2-B02` ownership) — closes `BLOCKED_BY_PRODUCT_DRAFT_FIELD_DECISION` by locking IMP-D032: fixed four-category taxonomy provisioned by data migration `0033` and addressed by `categorySlug` (never a category UUID), server-owned immutable product slug with a `{base}-{8 hex}` collision fallback, `DRAFT` price sentinel `0` VND, draft `display_order = 0`, and first-media `THUMBNAIL` / rest `GALLERY` with `DETAIL` excluded. 32 → 33 migrations; **78 tables / 833 columns / 190 CHECKs and fingerprint `82864268…` unchanged**; no schema, OpenAPI, client, application-source, Figma or dependency change — **`COMPLETE — ENTRY_GATE_CLOSED`** | DB7 catalog schema |
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) — **entry gate `APP2-B02-G01` closed**; exactly five Admin operations (`adminProduct_list/detail/create/update/archive`) implementing IMP-D032 as locked: `categorySlug` on the wire and never a category UUID, server-owned immutable slug, `DRAFT` price sentinel `0` VND rendered as whole đồng, `display_order 0`, first-media `THUMBNAIL` / rest `GALLERY` with `DETAIL` never written, complete all-or-nothing ordered media replacement, and `updated_at` optimistic concurrency compared at the millisecond precision the client token carries. Archive is a guarded `DRAFT → ARCHIVED` that deletes nothing. OpenAPI `e19c2f76…` → `b789cc99…`, client `55de1cc1…` → `66d1c991…` (additions only); **no migration, no schema/Figma/frontend/worker/object-storage change, no dependency** — **`COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`**; **`APP2-B02-C1`** closed the mutation-guard, monotonic-token and invented-media-limit gaps and proved the asset-eligibility race is serialized ([`reports/APP2-B02-COMPLETION-REPORT.md`](../reports/APP2-B02-COMPLETION-REPORT.md), [`reports/APP2-B02-C1-CORRECTION-REPORT.md`](../reports/APP2-B02-C1-CORRECTION-REPORT.md)) | B01, B02-G01 |
-| 9 | APP2-A02 | frontend | Admin product list | B02, D01 |
+| 8b | APP2-D03 | design | Admin Product List design reconciliation — cures `APP2-A02`'s `BLOCKED_BY_CATALOG_LIST_DESIGN_CONTRADICTION`: adds the `Trạng thái`/`Danh mục` filters and the `Tải thêm sản phẩm` continuation control to the three frozen Catalog nodes, removes every `APP2-A03`/`APP2-A04` control so A02 is a truthful read-only list, replaces the empty state's dead CTA, and corrects the A02/A03 label inversion (IMP-D033). Three `FIG-ADMIN-CATALOG-*` rows promoted under `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`; one annotation node added (registry 70 → 71). Design/documentation only — no source, dependency, OpenAPI, client or database change — **`COMPLETE — DELIVERED_FOR_REVIEW`** | D01, B02 |
+| 9 | APP2-A02 | frontend | Admin product list — read-only list, status/category filters, cursor continuation (entry gate `APP2-D03` closed) | B02, D01, D03 |
 | 10 | APP2-A03 | frontend | Admin product form/detail | B02, D01 |
 | 11 | APP2-B03 | backend | Publication backend + OpenAPI/client (≤3) | B02 |
 | 12 | APP2-A04 | frontend | Admin publication interaction | B03, D01 |
@@ -631,8 +651,19 @@ and `FIG-APP2-REUSE-MAP` (`451:404`).
 > `APPROVED_FOR_IMPLEMENTATION` under **`FIG-APPROVAL-APP2-D01-ADMIN-001`**
 > ([`../../design/approvals/APP2-D01-ADMIN-ASSETS-DESIGN-APPROVAL.md`](../../design/approvals/APP2-D01-ADMIN-ASSETS-DESIGN-APPROVAL.md)),
 > and Admin Assets design authority is `PRODUCT_OWNER_APPROVED — FROZEN —
-> D02_RECONCILED`. It still applies verbatim to **A02–A04**, whose rows remain
-> `REVIEW_REQUIRED` with no approval evidence, and to every Storefront row.
+> D02_RECONCILED`. It is superseded for **A02** by `APP2-D03`: the three
+> `FIG-ADMIN-CATALOG-*` rows are `APPROVED_FOR_IMPLEMENTATION` under
+> **`FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`**
+> ([`../../design/approvals/APP2-D03-ADMIN-PRODUCT-LIST-DESIGN-APPROVAL.md`](../../design/approvals/APP2-D03-ADMIN-PRODUCT-LIST-DESIGN-APPROVAL.md)),
+> and Admin Product List authority is `PRODUCT_OWNER_APPROVED — D03_RECONCILED`. It still
+> applies verbatim to **A03–A04**, whose rows remain `REVIEW_REQUIRED` with no approval
+> evidence, and to every Storefront row.
+>
+> **Checkpoint-label correction (`APP2-D03`, 2026-07-31).** The A02/A03 rows in the table
+> below previously read A02 → Product Draft and A03 → Catalog, contradicting the canonical
+> checkpoint map in §6.1. Canonical ownership is **A02 = Admin Product List**,
+> **A03 = Admin Product Form/Detail**, **A04 = Publication Interaction**; the table is
+> corrected accordingly and the checkpoint order is unchanged.
 
 **Gate for every row below — `BLOCKED_BY_APP2_D01_PRODUCT_OWNER_APPROVAL`.** Each row
 is `REVIEW_REQUIRED`; a frontend checkpoint must block until it is promoted to
@@ -642,8 +673,8 @@ registry IDs it used in its completion report.
 | Checkpoint | Registry IDs (states delivered) | Responsive evidence |
 |---|---|---|
 | **A01** Admin asset library | `FIG-ADMIN-ASSETS-DESKTOP-{DEFAULT,EMPTY,UPLOADING,PROCESSING,REJECTED}`, `FIG-ADMIN-ASSETS-MOBILE-{DEFAULT,UPLOAD}` (all `APPROVED_FOR_IMPLEMENTATION`), plus `FIG-ADMIN-ASSETS-CONTINUATION-IDENTITY` (`484:272`, annotation) and `FIG-APP2-ASSET-CATALOG-NOTES` (`450:404`) | 1440 desktop (5 states) + 390 mobile (2 states); 1024 by annotation. Desktop Default is **1440×1092** since `APP2-D02` so the continuation control is visible, not clipped |
-| **A02** Admin product form/detail | `FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-{DEFAULT,VALIDATION,SAVING}`, `FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT`, `FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP` | 1440 desktop (3 states + dialog) + 390 mobile |
-| **A03** Admin product list | `FIG-ADMIN-CATALOG-DESKTOP-{DEFAULT,EMPTY}`, `FIG-ADMIN-CATALOG-MOBILE-DEFAULT` | 1440 desktop table + 390 mobile card list |
+| **A02** Admin product list | `FIG-ADMIN-CATALOG-DESKTOP-{DEFAULT,EMPTY}`, `FIG-ADMIN-CATALOG-MOBILE-DEFAULT` (all `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`), plus `FIG-ADMIN-CATALOG-FILTERS-ACTIONS-HANDOFF` (`498:272`, annotation) | 1440 desktop table + 390 mobile card list; read-only list with `Trạng thái`/`Danh mục` filters and `Tải thêm sản phẩm` |
+| **A03** Admin product form/detail | `FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-{DEFAULT,VALIDATION,SAVING}`, `FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT`, `FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP` | 1440 desktop (3 states + dialog) + 390 mobile |
 | **A04** Admin publication interaction | `FIG-ADMIN-PUBLICATION-DESKTOP-{READY,BLOCKED,CONFIRM-UNPUBLISH}`, `FIG-ADMIN-PUBLICATION-MOBILE` | 1440 desktop (3 states) + 390 mobile |
 | **S01** Storefront product list / discover | **UI02 authority** — `FIG-UI02-DISCOVER-{SECTION,DESKTOP,TABLET,MOBILE}` (`208:538`, `208:2002`, `224:871`, `226:1038`) | 5-column / 3-column / 2-column **masonry** from UI02 |
 | **S02** Storefront product detail | **Withheld** — `FIG-STOREFRONT-PRODUCT-DETAIL-{DESKTOP,TABLET,MOBILE,MEDIA-STATE}` are `NOT_APPROVED` / `NOT_IMPLEMENTATION_AUTHORITY` | pending UI03 reconciliation |
