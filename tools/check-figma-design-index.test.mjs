@@ -8,6 +8,11 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { checkFigmaDesignIndex, INDEX_PATH, PHASE_PLAN_PATH } from './check-figma-design-index.mjs';
+import {
+  CANONICAL_TITLE,
+  A03_APPROVAL_EVIDENCE,
+  A03_REQUIRED_ROWS,
+} from './check-figma-design-index.structure.mjs';
 
 const PRODUCT = 'BQwqV8GdfUIELvsQDB1UQE';
 const DS = 'hsxSjwkqQKM9vuyRgWSesU';
@@ -47,8 +52,8 @@ function nodeRow(over = {}) {
   return `| ${r.id} | ${r.app} | ${r.route} | ${r.screen} | ${r.state} | ${r.vp} | ${r.cls} | ${r.status} | ${r.key} | ${r.page} | ${r.node} | ${r.url} | ${r.phase} | ${r.supersede} | ${r.evidence} | ${r.verified} |`;
 }
 
-function buildIndex(rows) {
-  return `# Figma Design Index\n\n## Catalog\n\n${CATALOG}\n\n## Registry\n\n${NODE_HEADER}\n${rows.join('\n')}\n`;
+function buildIndex(rows, { title = CANONICAL_TITLE, preamble = '' } = {}) {
+  return `${title}\n${preamble}\n## Catalog\n\n${CATALOG}\n\n## Registry\n\n${NODE_HEADER}\n${rows.join('\n')}\n`;
 }
 
 function withFixture(body, plan) {
@@ -219,10 +224,8 @@ test('temporary t= tracker parameter is rejected', () => {
 });
 
 test('a personal email in the index is rejected', () => {
-  const body = buildIndex([nodeRow()]).replace(
-    '# Figma Design Index',
-    '# Figma Design Index\n\nContact someone@example.com',
-  );
+  const body = buildIndex([nodeRow()], { preamble: '\nContact someone@example.com\n' });
+  assert.ok(body.includes('someone@example.com'));
   const res = run(body);
   assert.ok(has(res, 'no-secret'));
 });
@@ -239,7 +242,7 @@ test('missing canonical file key in catalog is rejected', () => {
 test('missing required column is rejected', () => {
   const brokenHeader =
     '| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Last Verified |';
-  const body = `# Figma Design Index\n\n## Catalog\n\n${CATALOG}\n\n## Registry\n\n${brokenHeader}\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n${nodeRow()}\n`;
+  const body = `${CANONICAL_TITLE}\n\n## Catalog\n\n${CATALOG}\n\n## Registry\n\n${brokenHeader}\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n${nodeRow()}\n`;
   const res = run(body);
   assert.ok(has(res, 'required-columns'));
 });
@@ -254,4 +257,121 @@ test('unknown APP1 phase reference is rejected', () => {
   const plan = 'APP1-D01 references FIG-DOES-NOT-EXIST.';
   const res = run(buildIndex([nodeRow()]), plan);
   assert.ok(has(res, 'phase-ref'));
+});
+
+// --- APP2-A03-G01-C1: document-structure and named-authority regressions ---
+
+const PRODUCT_FORM_URL = (node) =>
+  `[open](https://www.figma.com/design/${PRODUCT}/embroidery?node-id=${node.replace(':', '-')})`;
+
+/** A canonical, promoted A03 authority row. */
+function a03Row(spec, over = {}) {
+  return nodeRow({
+    id: spec.id,
+    route: 'Product form',
+    screen: 'Product Form',
+    state: 'Edit/Detail — Default',
+    node: spec.node,
+    url: PRODUCT_FORM_URL(spec.node),
+    status: 'APPROVED_FOR_IMPLEMENTATION',
+    phase: 'APP2-D01',
+    evidence: A03_APPROVAL_EVIDENCE,
+    ...over,
+  });
+}
+
+/** All five A03 rows, each distinct on the canonical composite key. */
+function a03Rows(overById = {}) {
+  return A03_REQUIRED_ROWS.map((spec, i) =>
+    a03Row(spec, { state: `Edit/Detail — S${i}`, ...(overById[spec.id] ?? {}) }),
+  );
+}
+
+test('canonical title is required as the first nonblank line', () => {
+  const res = run(buildIndex([nodeRow()], { title: '# Some Other Title' }));
+  assert.ok(has(res, 'document-title'), JSON.stringify(res.violations));
+});
+
+test('a UTF-8 BOM before the canonical title is tolerated', () => {
+  const res = run(`\uFEFF${buildIndex([nodeRow()])}`);
+  assert.ok(!has(res, 'document-title'), JSON.stringify(res.violations));
+});
+
+test('the actual APP2-A03-G01 corruption is rejected', () => {
+  // Reproduces the committed defect exactly: five promoted rows concatenated with
+  // "||" and spliced onto the title, while the canonical rows stay REVIEW_REQUIRED.
+  // Each row already ends with "|" and the next begins with "|", so joining with ''
+  // yields the exact "… 2026-07-31 || FIG-…" shape that was committed.
+  const promoted = a03Rows()
+    .map((r) => r.trim())
+    .join('');
+  const canonical = a03Rows(
+    Object.fromEntries(
+      A03_REQUIRED_ROWS.map((s) => [s.id, { status: 'REVIEW_REQUIRED', evidence: '—' }]),
+    ),
+  );
+  const body = buildIndex(canonical, { title: `${promoted}${CANONICAL_TITLE}` });
+
+  const res = run(body);
+  assert.ok(has(res, 'document-title'), 'spliced title must be rejected');
+  assert.ok(has(res, 'row-placement'), 'rows outside a table must be rejected');
+  assert.ok(has(res, 'a03-approval'), 'unapproved A03 authority must be rejected');
+  const spliced = res.violations.find((v) => v.rule === 'document-title');
+  assert.match(spliced.message, /spliced onto the title line/);
+});
+
+test('a registry row before the title is rejected even with a valid title line', () => {
+  const body = `${nodeRow()}\n${buildIndex([nodeRow({ id: 'FIG-ADMIN-OTHER' })])}`;
+  const res = run(body);
+  assert.ok(has(res, 'row-placement'), JSON.stringify(res.violations));
+});
+
+test('a registry row after the title but outside any table is rejected', () => {
+  const body = buildIndex([nodeRow()], { preamble: `\n${nodeRow({ id: 'FIG-STRAY-ROW' })}\n` });
+  const res = run(body);
+  assert.ok(has(res, 'row-placement'), JSON.stringify(res.violations));
+});
+
+test('prose mentioning a registry ID in backticks is allowed', () => {
+  const body = buildIndex(a03Rows(), {
+    preamble: '\nThe row `FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-DEFAULT` is approved; see | notes.\n',
+  });
+  const res = run(body);
+  assert.ok(!has(res, 'row-placement'), JSON.stringify(res.violations));
+});
+
+test('a clean promoted A03 registry passes', () => {
+  const res = run(buildIndex(a03Rows()));
+  assert.equal(res.violations.length, 0, JSON.stringify(res.violations));
+});
+
+test('reverting one A03 row to REVIEW_REQUIRED is rejected', () => {
+  const target = A03_REQUIRED_ROWS[2].id;
+  const res = run(buildIndex(a03Rows({ [target]: { status: 'REVIEW_REQUIRED' } })));
+  assert.ok(has(res, 'a03-approval'), JSON.stringify(res.violations));
+  assert.match(res.violations.find((v) => v.rule === 'a03-approval').message, /APPROVED_FOR_IMPL/);
+});
+
+test('an A03 row with the wrong approval evidence is rejected', () => {
+  const target = A03_REQUIRED_ROWS[0].id;
+  const res = run(buildIndex(a03Rows({ [target]: { evidence: 'FIG-APPROVAL-SOMETHING-ELSE' } })));
+  assert.ok(has(res, 'a03-approval'), JSON.stringify(res.violations));
+});
+
+test('an A03 row pointing at the wrong node is rejected', () => {
+  const target = A03_REQUIRED_ROWS[1].id;
+  const res = run(buildIndex(a03Rows({ [target]: { node: '999:999' } })));
+  assert.ok(has(res, 'a03-approval'), JSON.stringify(res.violations));
+});
+
+test('a missing A03 authority row is rejected', () => {
+  const rows = a03Rows().slice(1);
+  const res = run(buildIndex(rows));
+  assert.ok(has(res, 'a03-approval'), JSON.stringify(res.violations));
+  assert.match(res.violations.find((v) => v.rule === 'a03-approval').message, /is missing/);
+});
+
+test('registries with no A03 authority are unaffected', () => {
+  const res = run(buildIndex([nodeRow()]));
+  assert.ok(!has(res, 'a03-approval'), JSON.stringify(res.violations));
 });

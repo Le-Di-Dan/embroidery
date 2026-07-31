@@ -26,6 +26,7 @@ import {
   fileKeyFromUrl,
   nodeIdFromUrl,
 } from './check-figma-design-index.parse.mjs';
+import { checkDocumentStructure, checkA03Approval } from './check-figma-design-index.structure.mjs';
 
 export const INDEX_PATH = 'docs/design/FIGMA_DESIGN_INDEX.md';
 export const PHASE_PLAN_PATH = 'docs/implementation/phases/APP1-STAFF-ACCESS-AND-SHELLS.md';
@@ -104,6 +105,10 @@ export function checkFigmaDesignIndex(rootDir) {
   const lines = content.split('\n');
   const tables = parseTables(lines);
 
+  // --- Rule 1/2: document title + registry rows only inside registry tables ---
+  // Rows written outside a table are invisible to every rule below, so this runs first.
+  violations.push(...checkDocumentStructure(lines, tables));
+
   // --- Rule 16/17: no secrets, personal email, or tracker params ---
   for (const needle of FORBIDDEN_SUBSTRINGS) {
     const idx = content.indexOf(needle);
@@ -161,6 +166,8 @@ export function checkFigmaDesignIndex(rootDir) {
   const allRegistryIds = new Set();
   const seenIds = new Set();
   const canonicalComposites = new Map();
+  // Every row keyed by registry ID, so named-authority assertions can see duplicates.
+  const rowsById = new Map();
   let nodeRowCount = 0;
 
   // First pass: collect every registry ID across all node tables (for supersession refs).
@@ -196,6 +203,9 @@ export function checkFigmaDesignIndex(rootDir) {
 
       if (!id) continue; // spacer/comment row
       nodeRowCount += 1;
+
+      if (!rowsById.has(id)) rowsById.set(id, []);
+      rowsById.get(id).push({ node, status, evidence, lineNo: row.lineNo });
 
       // Rule 3: registry IDs unique + well-formed.
       if (!REGISTRY_ID_RE.test(id)) {
@@ -328,6 +338,9 @@ export function checkFigmaDesignIndex(rootDir) {
       }
     }
   }
+
+  // --- Rule 15: the named APP2-A03 Product Form authority stays promoted ---
+  violations.push(...checkA03Approval(rowsById, content));
 
   return {
     violations,
