@@ -1,7 +1,10 @@
+import Link from 'next/link';
+
 import type { AdminProductSummaryResponse } from '@embroidery/api-client';
 
 import { PRODUCT_COPY } from '../model/product-copy';
 import { parseProductCategory, productCategoryLabel } from '../model/product-category';
+import { adminProductDetailRoute } from '../model/product-route';
 import { ProductMediaPlaceholder } from './product-media-placeholder';
 import { ProductStatusBadge } from './product-status-badge';
 
@@ -13,9 +16,10 @@ interface ProductCardListProps {
  * The mobile presentation (`440:191`): a single-column list of informational
  * cards carrying the same three facts as the desktop table.
  *
- * Informational, not interactive — no card link, no action menu, no overflow
- * button. The stylesheet hides this element at and above the shell breakpoint,
- * where `ProductTable` presents the same data.
+ * One explicit `Chỉnh sửa` action per card, sized for touch — not a tappable
+ * card surface, which would swallow text selection and give no target hint. The
+ * stylesheet hides this element at and above the shell breakpoint, where
+ * `ProductTable` presents the same data.
  */
 export function ProductCardList({ items }: ProductCardListProps) {
   return (
@@ -33,6 +37,13 @@ export function ProductCardList({ items }: ProductCardListProps) {
           </div>
           <div className="product-card__bottom">
             <ProductStatusBadge status={product.status} />
+            <Link
+              className="product-card__edit"
+              href={adminProductDetailRoute(product.productId)}
+              aria-label={`${PRODUCT_COPY.actions.edit}: ${product.name}`}
+            >
+              {PRODUCT_COPY.actions.edit}
+            </Link>
           </div>
         </li>
       ))}

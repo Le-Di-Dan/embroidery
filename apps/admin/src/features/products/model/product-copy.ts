@@ -81,6 +81,18 @@ export const PRODUCT_COPY = {
     filteredEmptyDescription: 'Hãy thử chọn trạng thái hoặc danh mục khác.',
   },
 
+  /**
+   * The two entry points `APP2-A03` restores (`521:284` — Phạm vi & bàn giao).
+   * Exactly these: no publish, unpublish, archive or delete joins them, because
+   * no checkpoint has shipped the capability behind those words.
+   */
+  actions: {
+    create: 'Tạo sản phẩm',
+    edit: 'Chỉnh sửa',
+    /** Column heading for the desktop action cell. */
+    columnLabel: 'Hành động',
+  },
+
   continuation: {
     action: 'Tải thêm sản phẩm',
     loading: 'Đang tải thêm…',

@@ -205,7 +205,7 @@ describe('truthful projection', () => {
 });
 
 describe('desktop and mobile presentations', () => {
-  it('renders a semantic table with the three approved column headers', async () => {
+  it('renders a semantic table with the approved columns plus the A03 action', async () => {
     listMock.mockResolvedValue(productEnvelope(makeProductPage([PUBLISHED])));
     renderCollection();
 
@@ -214,6 +214,7 @@ describe('desktop and mobile presentations', () => {
       PRODUCT_COPY.columns.product,
       PRODUCT_COPY.columns.category,
       PRODUCT_COPY.columns.status,
+      PRODUCT_COPY.actions.columnLabel,
     ]);
   });
 
@@ -245,19 +246,12 @@ describe('desktop and mobile presentations', () => {
   });
 });
 
-describe('read-only ownership', () => {
-  const FORBIDDEN = [
-    'Tạo sản phẩm',
-    'Chỉnh sửa',
-    'Xuất bản',
-    'Gỡ xuất bản',
-    'Lưu trữ',
-    'Xoá',
-    'Xóa',
-    'Tìm kiếm',
-  ];
+describe('staged action ownership', () => {
+  // `APP2-A03` restored exactly two entry points. Everything else stays absent:
+  // the capability behind each of these words still does not exist.
+  const FORBIDDEN = ['Xuất bản', 'Gỡ xuất bản', 'Lưu trữ', 'Xoá', 'Xóa', 'Tìm kiếm'];
 
-  it('renders no create, edit, publication, archive, delete or search control', async () => {
+  it('renders no publication, archive, delete or search control', async () => {
     listMock.mockResolvedValue(productEnvelope(makeProductPage([DRAFT, PUBLISHED, ARCHIVED])));
     const { container } = renderCollection();
     await screen.findByRole('table');
@@ -265,20 +259,50 @@ describe('read-only ownership', () => {
     for (const label of FORBIDDEN) {
       expect(container.textContent).not.toContain(label);
     }
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
     expect(screen.queryAllByRole('searchbox')).toHaveLength(0);
     expect(container.querySelector('input')).toBeNull();
-    // The only control on a populated, single-page list is none at all.
+    // The collection itself carries no button; the only controls are the
+    // per-row edit links, and continuation when the server offers a cursor.
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 
-  it('offers no action in the empty state either', async () => {
+  it('offers one edit link per product, in both presentations', async () => {
+    listMock.mockResolvedValue(productEnvelope(makeProductPage([DRAFT, PUBLISHED])));
+    renderCollection();
+    await screen.findByRole('table');
+
+    const rows = [DRAFT, PUBLISHED];
+    for (const product of rows) {
+      // One in the table, one in the card list — both are always in the DOM and
+      // the stylesheet shows exactly one.
+      const links = screen.getAllByRole('link', {
+        name: `${PRODUCT_COPY.actions.edit}: ${product.name}`,
+      });
+      expect(links).toHaveLength(2);
+      for (const link of links) {
+        expect(link).toHaveAttribute('href', `/products/${product.productId}`);
+      }
+    }
+  });
+
+  it('offers the create action from the genuinely empty state', async () => {
     listMock.mockResolvedValue(productEnvelope(makeProductPage([])));
     renderCollection();
     await screen.findByText(PRODUCT_COPY.list.emptyTitle);
 
     expect(screen.queryAllByRole('button')).toHaveLength(0);
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    const create = screen.getByRole('link', { name: PRODUCT_COPY.actions.create });
+    expect(create).toHaveAttribute('href', '/products/new');
+  });
+
+  it('does not suggest creating a product when a filter hid them all', async () => {
+    listMock.mockResolvedValue(productEnvelope(makeProductPage([])));
+    renderCollection({ status: 'DRAFT', category: 'all' });
+    await screen.findByText(PRODUCT_COPY.list.filteredEmptyTitle);
+
+    expect(
+      screen.queryByRole('link', { name: PRODUCT_COPY.actions.create }),
+    ).not.toBeInTheDocument();
   });
 
   it('retries the first page from the unavailable state without changing the request', async () => {

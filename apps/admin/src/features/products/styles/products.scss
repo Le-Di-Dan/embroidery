@@ -460,3 +460,77 @@ $spinner-size: 16px;
     transform: rotate(360deg);
   }
 }
+
+// --------------------------------- APP2-A03 staged entry points (521:284) ----
+//
+// Exactly two controls are restored now that the routes behind them exist:
+// `Tạo sản phẩm` in the header (and in the genuinely-empty state) and a
+// per-row `Chỉnh sửa`. No publication, archive or delete control joins them.
+
+.products__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}
+
+// One shape for both entry points. `min-height` keeps the approved 48px touch
+// target at every width, so the mobile action is never harder to hit than the
+// desktop one.
+%products-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(12) styles.spacing(24);
+  border-radius: styles.$radius-button;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.products__create,
+.products__empty-create {
+  @extend %products-action;
+
+  border: 1px solid styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+
+  &:hover {
+    background: styles.$color-action-hover;
+    border-color: styles.$color-action-hover;
+  }
+}
+
+.product-table__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.product-table__edit,
+.product-card__edit {
+  @extend %products-action;
+
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+
+  &:hover {
+    border-color: styles.$color-action-primary;
+    color: styles.$color-action-primary;
+  }
+}
+
+// The status badge keeps the left edge; the action sits opposite it.
+.product-card__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}

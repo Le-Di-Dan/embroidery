@@ -8,3 +8,15 @@
  * links to them until they exist.
  */
 export const ADMIN_PRODUCTS_ROUTE = '/products';
+
+/** Create mode (`521:284` — Tạo: /products/new). */
+export const ADMIN_PRODUCT_NEW_ROUTE = `${ADMIN_PRODUCTS_ROUTE}/new`;
+
+/**
+ * Edit/detail for one product. The segment is the B02 product **UUID**, never
+ * the public slug: the slug is a storefront address, and using it as the Admin
+ * identity would break the moment slugs are ever allowed to change.
+ */
+export function adminProductDetailRoute(productId: string): string {
+  return `${ADMIN_PRODUCTS_ROUTE}/${encodeURIComponent(productId)}`;
+}

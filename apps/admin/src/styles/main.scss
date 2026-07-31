@@ -11,6 +11,7 @@
 @use '../features/admin-shell/styles/admin-shell';
 @use '../features/assets/styles/assets';
 @use '../features/products/styles/products';
+@use '../features/products/styles/product-form';
 
 // Browser normalization: predictable box model.
 *,

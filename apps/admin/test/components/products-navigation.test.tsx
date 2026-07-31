@@ -69,7 +69,7 @@ describe('Admin products route and navigation', () => {
     expect(await screen.findByRole('table')).toBeInTheDocument();
   });
 
-  it('never renders an alias route, nor a link to an unbuilt product screen', async () => {
+  it('never renders an alias route, and addresses products by id rather than slug', async () => {
     const { container } = renderProductsRoute();
     await screen.findByRole('table');
 
@@ -77,8 +77,19 @@ describe('Admin products route and navigation', () => {
     expect(hrefs).not.toContain('/admin/products');
     expect(hrefs).not.toContain('/catalog');
     expect(hrefs).not.toContain('/san-pham');
-    // `APP2-A03` owns the detail and create routes; nothing points at them yet.
-    expect(hrefs.filter((href) => href?.startsWith('/products/'))).toHaveLength(0);
-    expect(hrefs).not.toContain('/products/new');
+
+    // `APP2-A03` owns these two routes and they now exist.
+    expect(hrefs).toContain('/products/new');
+
+    // Every product link is the B02 UUID, never the public slug: the slug is a
+    // storefront address and would break as an Admin identity the moment slugs
+    // were ever allowed to change.
+    const productLinks = hrefs.filter(
+      (href) => href?.startsWith('/products/') && href !== '/products/new',
+    );
+    expect(productLinks.length).toBeGreaterThan(0);
+    for (const href of productLinks) {
+      expect(href).toMatch(/^\/products\/[0-9a-fA-F-]{36}$/);
+    }
   });
 });

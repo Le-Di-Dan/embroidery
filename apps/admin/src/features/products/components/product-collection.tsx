@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import { PRODUCT_COPY } from '../model/product-copy';
+import { ADMIN_PRODUCT_NEW_ROUTE } from '../model/product-route';
 import { flattenProductPages } from '../model/product-pages';
 import { isAnyFilterActive, type ProductFilters } from '../model/product-filters';
 import { useProductListQuery } from '../hooks/use-product-list-query';
@@ -88,6 +90,16 @@ export function ProductCollection({ filters }: ProductCollectionProps) {
             ? PRODUCT_COPY.list.filteredEmptyDescription
             : PRODUCT_COPY.list.emptyDescription}
         </p>
+        {/*
+          The empty-state CTA is offered only for a genuinely empty catalogue.
+          Under an active filter the products may well exist, so "create one"
+          would be the wrong suggestion — widening the filter is.
+        */}
+        {filtered ? null : (
+          <Link className="products__empty-create" href={ADMIN_PRODUCT_NEW_ROUTE}>
+            {PRODUCT_COPY.actions.create}
+          </Link>
+        )}
       </div>
     );
   }

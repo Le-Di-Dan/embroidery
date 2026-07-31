@@ -2,8 +2,15 @@
 // navigation import from here only; components, hooks, services and model stay
 // encapsulated.
 export { ProductListScreen } from './components/product-list-screen';
-export { ADMIN_PRODUCTS_ROUTE } from './model/product-route';
+export { ProductCreateScreen } from './components/product-create-screen';
+export { ProductDetailScreen } from './components/product-detail-screen';
+export {
+  ADMIN_PRODUCTS_ROUTE,
+  ADMIN_PRODUCT_NEW_ROUTE,
+  adminProductDetailRoute,
+} from './model/product-route';
 export { PRODUCT_COPY } from './model/product-copy';
+export { PRODUCT_FORM_COPY } from './model/product-form-copy';
 export { productQueryKeys, PRODUCT_LIST_PAGE_SIZE } from './model/product-query-keys';
 export { normalizeProductFilters, type ProductFilters } from './model/product-filters';
 

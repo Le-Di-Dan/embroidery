@@ -1,0 +1,753 @@
+// Admin product form/detail — feature-scoped styles (APP2-A03).
+//
+// Design source: FIG-ADMIN-PRODUCT-DRAFT-DESKTOP-{DEFAULT,VALIDATION,SAVING}
+// (434:20, 436:37, 436:140), FIG-ADMIN-PRODUCT-MEDIA-SELECT-DESKTOP (437:73)
+// and FIG-ADMIN-PRODUCT-DRAFT-MOBILE-DEFAULT (438:90), approved under
+// FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001, plus the normative handoff
+// 521:284. Colour, type, radius and spacing come from @embroidery/styles.
+//
+// Mobile-first: the base is the single-column 390 frame, and the two-column
+// composition (form + read-only metadata rail, no publication rail) applies
+// from the shell breakpoint upward.
+
+@use '@embroidery/styles' as styles;
+
+// Shared with the shell, the asset library and the product list so the Admin
+// surfaces switch layout at one threshold; the design system defers breakpoints
+// (FU-A16).
+$form-breakpoint: 1024px;
+
+// Screen-specific composition constants (no shared token; not a token system).
+$rail-width: 320px;
+$media-tile: 48px;
+$media-tile-wide: 64px;
+$control-height: 48px;
+$picker-column: 190px;
+$picker-thumb: 120px;
+$dialog-max: 880px;
+$dialog-narrow: 480px;
+
+.product-form {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24) styles.spacing(16);
+
+  @media (min-width: $form-breakpoint) {
+    gap: styles.spacing(24);
+    padding: styles.spacing(32);
+  }
+}
+
+.product-form__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+
+  @media (min-width: $form-breakpoint) {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: styles.spacing(24);
+  }
+}
+
+.product-form__heading {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  min-width: 0;
+}
+
+.product-form__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+
+  @media (min-width: $form-breakpoint) {
+    font-size: styles.$font-size-display-m;
+    font-weight: styles.$font-weight-semibold;
+  }
+}
+
+.product-form__subtitle {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// Exactly one subtitle is ever rendered; `display: none` also removes the other
+// from the accessibility tree, so neither is announced twice.
+.product-form__subtitle--wide {
+  display: none;
+
+  @media (min-width: $form-breakpoint) {
+    display: block;
+  }
+}
+
+.product-form__subtitle--narrow {
+  display: block;
+
+  @media (min-width: $form-breakpoint) {
+    display: none;
+  }
+}
+
+.product-form__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.product-form__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+
+  @media (min-width: $form-breakpoint) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: styles.spacing(24);
+  }
+}
+
+.product-form__column {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+  flex: 1 1 auto;
+
+  @media (min-width: $form-breakpoint) {
+    gap: styles.spacing(24);
+  }
+}
+
+.product-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+
+  @media (min-width: $form-breakpoint) {
+    gap: styles.spacing(16);
+    padding: styles.spacing(24);
+  }
+}
+
+.product-form__group-title {
+  margin: 0;
+  padding: 0;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+
+  @media (min-width: $form-breakpoint) {
+    font-size: styles.$font-size-heading-s;
+  }
+}
+
+.product-form__actions {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+
+  @media (min-width: $form-breakpoint) {
+    flex-direction: row;
+  }
+}
+
+.product-form__note {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-form__status {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// Shared button shapes. `min-height` is the approved 48px touch target on
+// mobile; both keep it at every width so pointer targets never shrink.
+%product-form-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(12) styles.spacing(24);
+  border-radius: styles.$radius-button;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.product-form__primary {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+    border-color: styles.$color-action-hover;
+  }
+}
+
+.product-form__secondary {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+
+  &:hover:not(:disabled) {
+    border-color: styles.$color-action-primary;
+    color: styles.$color-action-primary;
+  }
+}
+
+// ---------------------------------------------------------------- fields ----
+
+.product-field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  min-width: 0;
+}
+
+.product-field__label {
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-regular;
+  color: styles.$color-text-primary;
+}
+
+.product-field__control {
+  width: 100%;
+  min-height: $control-height;
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: styles.$color-status-error;
+  }
+}
+
+.product-field__control--textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.product-field__help {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+// Error text replaces help text rather than joining it; both at once buries the
+// reason the field is invalid.
+.product-field__error {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-status-error;
+}
+
+// ------------------------------------------------- validation and status ----
+
+.product-validation {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-secondary;
+}
+
+.product-validation__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-status-error;
+}
+
+.product-validation__list {
+  margin: 0;
+  padding-left: styles.spacing(24);
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.product-validation__item {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.product-saving {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-info;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-secondary;
+}
+
+.product-saving__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-saving__help {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-secondary;
+}
+
+.product-form__failure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-secondary;
+}
+
+.product-form__failure-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-form__failure-body {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// Visually hidden but announced — the polite save/create confirmations.
+.product-form__sr-status,
+.product-media-editor__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ------------------------------------------------------- metadata rail ------
+
+.product-rail {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+
+  @media (min-width: $form-breakpoint) {
+    flex: 0 0 $rail-width;
+    width: $rail-width;
+    gap: styles.spacing(24);
+  }
+}
+
+.product-rail__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+
+  @media (min-width: $form-breakpoint) {
+    gap: styles.spacing(16);
+    padding: styles.spacing(24);
+  }
+}
+
+.product-rail__title {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+
+  @media (min-width: $form-breakpoint) {
+    font-size: styles.$font-size-heading-s;
+  }
+}
+
+.product-rail__value {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+.product-rail__note {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+// --------------------------------------------------------------- media ------
+
+.product-media-editor__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}
+
+.product-media-editor__pick {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+
+  @media (max-width: #{$form-breakpoint - 1px}) {
+    width: 100%;
+  }
+}
+
+.product-media-editor__help {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-media-editor__empty {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.product-media-editor__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.product-media-row {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-secondary;
+  min-width: 0;
+}
+
+.product-media-row__top {
+  display: flex;
+  align-items: flex-start;
+  gap: styles.spacing(12);
+  min-width: 0;
+}
+
+// An honest placeholder: there is no media-delivery contract, so no tile ever
+// renders real pixels and none is announced as an image.
+.product-media-row__placeholder {
+  flex: 0 0 auto;
+  width: $media-tile;
+  height: $media-tile;
+  border: 1px dashed styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+
+  @media (min-width: $form-breakpoint) {
+    width: $media-tile-wide;
+    height: $media-tile-wide;
+  }
+}
+
+.product-media-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.product-media-row__title {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.product-media-row__meta,
+.product-media-row__placeholder-note {
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-media-row__role {
+  flex: 0 0 auto;
+  padding: styles.spacing(4) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+  white-space: nowrap;
+}
+
+.product-media-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.product-media-row__action {
+  @extend %product-form-button;
+
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+// -------------------------------------------------------------- dialog ------
+
+.product-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(16);
+  background: rgba(0, 0, 0, 0.45);
+  overflow-y: auto;
+}
+
+.product-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  width: 100%;
+  max-width: $dialog-narrow;
+  max-height: 100%;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  overflow-y: auto;
+}
+
+.product-dialog--wide {
+  max-width: $dialog-max;
+}
+
+.product-dialog__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  min-height: 0;
+}
+
+.product-dialog__body-text {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.product-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}
+
+.product-dialog__actions,
+.product-picker__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  margin-left: auto;
+}
+
+.product-dialog__primary {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+}
+
+.product-dialog__secondary {
+  @extend %product-form-button;
+
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+// -------------------------------------------------------------- picker ------
+
+.product-picker__help,
+.product-picker__status,
+.product-picker__count {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-picker__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: styles.spacing(12);
+
+  @media (min-width: $form-breakpoint) {
+    grid-template-columns: repeat(auto-fill, minmax($picker-column, 1fr));
+  }
+}
+
+.product-picker__option {
+  min-width: 0;
+}
+
+.product-picker__label {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  height: 100%;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-secondary;
+  cursor: pointer;
+
+  &:focus-within {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+}
+
+.product-picker__thumb {
+  width: 100%;
+  height: $picker-thumb;
+  border: 1px dashed styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.product-picker__info {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.product-picker__title {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.product-picker__meta,
+.product-picker__state,
+.product-picker__placeholder-note {
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.product-picker__empty,
+.product-picker__unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+}
+
+.product-picker__empty-title,
+.product-picker__unavailable-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.product-picker__empty-body,
+.product-picker__unavailable-body {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.product-picker__continuation {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+}
+
+.product-picker__continuation-error {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-status-error;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-form *,
+  .product-dialog * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

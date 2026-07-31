@@ -51,16 +51,35 @@ export type {
 // deliberately not re-exported, so no screen can reach a mutation before the
 // checkpoint that owns it ships. The two query enums are re-exported as values
 // so the filter options are derived from the contract rather than hard-coded.
-export { adminProductList } from './generated/embroidery-api';
+// Admin product read + draft-authoring operations (APP2-B02). `adminProductList`
+// serves the read-only list (`APP2-A02`); create, detail and update serve the
+// product form/detail capability (`APP2-A03`). `adminProductArchive` is still
+// deliberately withheld: archive has no approved surface
+// (`FU-APP2-PRODUCT-ARCHIVE-UI-01`), and publication belongs to
+// `APP2-B03`/`APP2-A04` — so neither can be reached from a screen by mistake.
+// The query enums are re-exported as values so filter and category options are
+// derived from the contract rather than hard-coded.
+export {
+  adminProductList,
+  adminProductCreate,
+  adminProductDetail,
+  adminProductUpdate,
+} from './generated/embroidery-api';
 export {
   AdminProductListStatus,
   AdminProductListCategorySlug,
+  AdminProductDetailResponseStatus,
+  AdminProductMediaResponseRole,
 } from './generated/embroidery-api.schemas';
 export type {
   AdminProductListParams,
   AdminProductListResponse,
   AdminProductSummaryResponse,
   AdminProductCategoryResponse,
+  AdminProductDetailResponse,
+  AdminProductMediaResponse,
+  CreateProductBody,
+  UpdateProductBody,
 } from './generated/embroidery-api.schemas';
 
 // Generated transport types derived from the committed OpenAPI artifact.
