@@ -14,7 +14,6 @@ import { createZodDto } from '../../../../platform/validation';
 import {
   APP2_CATEGORY_SLUGS,
   MAX_BASE_PRICE_AMOUNT,
-  MAX_PRODUCT_MEDIA_ITEMS,
   PRODUCT_DESCRIPTION_MAX_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
 } from '../../domain/product-draft.policy';
@@ -73,7 +72,7 @@ const productNameSchema = z.string().trim().min(1).max(PRODUCT_NAME_MAX_LENGTH);
  * never reordered or de-duplicated silently; a repeat is rejected in the
  * service as `PRODUCT_MEDIA_DUPLICATE`.
  */
-const mediaAssetIdsSchema = z.array(z.string().uuid()).max(MAX_PRODUCT_MEDIA_ITEMS);
+const mediaAssetIdsSchema = z.array(z.string().uuid());
 
 export const listProductsQuerySchema = z
   .object({
@@ -90,8 +89,8 @@ export const createProductBodySchema = z
   .object({
     categorySlug: z.enum(APP2_CATEGORY_SLUGS),
     name: productNameSchema,
-    // Absent and empty are both "no description"; an empty string is normalised
-    // away so the column never holds a value that renders as nothing.
+    // Absent and blank are both "no description"; blank is normalised away so
+    // the column never holds a value that renders as nothing.
     description: z.string().max(PRODUCT_DESCRIPTION_MAX_LENGTH).optional(),
   })
   .strict();
@@ -103,7 +102,11 @@ export class CreateProductBody extends createZodDto(createProductBodySchema) {}
  *
  * `expectedUpdatedAt` is mandatory: it is the concurrency token, and an update
  * without one is exactly the unguarded read-then-write §10 forbids.
- * `description: null` explicitly clears; omitting it leaves the stored value.
+ *
+ * Description has exactly one contract (APP2-B02-C1 §9): **absent** leaves the
+ * stored value unchanged, **null or blank** clears it to NULL, anything else is
+ * stored. There is no state in which a product holds a description that renders
+ * as nothing.
  */
 export const updateProductBodySchema = z
   .object({

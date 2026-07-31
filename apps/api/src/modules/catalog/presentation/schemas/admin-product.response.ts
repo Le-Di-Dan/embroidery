@@ -104,7 +104,10 @@ export class AdminProductSummaryResponse {
 }
 
 export class AdminProductDetailResponse extends AdminProductSummaryResponse {
-  @ApiPropertyOptional({ description: 'Absent when the draft has no description yet.' })
+  @ApiPropertyOptional({
+    description:
+      'Absent when the draft has no description. On PATCH, sending null or a blank string clears it; omitting the field leaves it unchanged.',
+  })
   description?: string;
 
   @ApiPropertyOptional({ format: 'date-time', description: 'Set only for an archived product.' })

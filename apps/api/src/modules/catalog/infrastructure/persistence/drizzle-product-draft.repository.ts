@@ -53,6 +53,28 @@ function updatedAtMatches(expected: Date) {
   return eq(sql`date_trunc('milliseconds', ${products.updatedAt})`, expected);
 }
 
+/**
+ * The next concurrency token — **strictly greater** than the current one.
+ *
+ * Truncating to milliseconds made the token comparable, but not yet safe: two
+ * mutations landing inside the same millisecond would publish the *same* token,
+ * and the second caller's "stale" value would then still match. A token that
+ * can repeat is not a concurrency token.
+ *
+ * So the new value is the later of the current clock and one millisecond past
+ * the row's own token. It is computed by the database inside the same statement
+ * — `clock_timestamp()` rather than `now()`, because `now()` is fixed for the
+ * whole transaction and two writes in one transaction would tie again — and
+ * application time is never the authority: a skewed API host must not be able
+ * to issue a token that moves backwards.
+ */
+function nextUpdatedAt() {
+  return sql`greatest(
+    date_trunc('milliseconds', clock_timestamp()),
+    date_trunc('milliseconds', ${products.updatedAt}) + interval '1 millisecond'
+  )`;
+}
+
 @Injectable()
 export class DrizzleProductDraftRepository
   extends DrizzleRepository
@@ -97,10 +119,11 @@ export class DrizzleProductDraftRepository
           isDisplayOutOfStock: false,
           displayOrder: input.displayOrder,
           isIndexable: true,
-          // Explicit rather than the column default: the default carries
-          // microseconds, which no client can echo back in an ISO token.
-          createdAt: input.at,
-          updatedAt: input.at,
+          // Database time, truncated to the precision the public token carries.
+          // The column default is microsecond, which no client can echo back;
+          // application time is never the authority for a concurrency token.
+          createdAt: sql`date_trunc('milliseconds', clock_timestamp())`,
+          updatedAt: sql`date_trunc('milliseconds', clock_timestamp())`,
         })
         .returning({ id: products.id });
 
@@ -126,7 +149,7 @@ export class DrizzleProductDraftRepository
 
   async updateGuarded(input: UpdateProductDraftInput): Promise<GuardedWriteResult> {
     return this.run('updateGuarded', async () => {
-      const patch: Record<string, unknown> = { updatedAt: input.at };
+      const patch: Record<string, unknown> = { updatedAt: nextUpdatedAt() };
       if (input.fields.name !== undefined) patch['name'] = input.fields.name;
       if (input.fields.basePriceAmount !== undefined) {
         patch['basePriceAmount'] = input.fields.basePriceAmount;
@@ -147,7 +170,9 @@ export class DrizzleProductDraftRepository
             updatedAtMatches(input.expectedUpdatedAt),
           ),
         )
-        .returning({ id: products.id });
+        // The committed token comes back from the write itself, so the caller
+        // publishes the value the database actually stored.
+        .returning({ id: products.id, updatedAt: products.updatedAt });
 
       if (row === undefined) {
         return {
@@ -166,9 +191,11 @@ export class DrizzleProductDraftRepository
         .update(products)
         .set({
           status: PRODUCT_ARCHIVED_STATE,
-          // Archiving stamps the instant, matching the DB7 convention.
-          archivedAt: input.at,
-          updatedAt: input.at,
+          // Archiving stamps the instant, matching the DB7 convention. Both
+          // columns take the same strictly-advancing database value, so an
+          // archive can never publish a token a previous write already used.
+          archivedAt: nextUpdatedAt(),
+          updatedAt: nextUpdatedAt(),
         })
         .where(
           and(
@@ -177,7 +204,7 @@ export class DrizzleProductDraftRepository
             updatedAtMatches(input.expectedUpdatedAt),
           ),
         )
-        .returning({ id: products.id });
+        .returning({ id: products.id, updatedAt: products.updatedAt });
 
       if (row === undefined) {
         return {

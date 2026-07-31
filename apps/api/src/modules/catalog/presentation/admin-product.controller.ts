@@ -39,6 +39,7 @@ import {
 import { ApiSuccessCode } from '../../../platform/http-response/api-envelope.decorators';
 import { ENVELOPE_SCHEMA_NAMES } from '../../../openapi/envelope-schema.augmentation';
 import { AuthenticatedAdminGuard } from '../../identity/presentation/guards/authenticated-admin.guard';
+import { StaffJsonBodyGuard } from '../../identity/presentation/guards/staff-json-body.guard';
 import { StaffOriginGuard } from '../../identity/presentation/guards/staff-origin.guard';
 import { ProductDraftQuery } from '../application/product-draft.query';
 import { ProductDraftService } from '../application/product-draft.service';
@@ -129,7 +130,7 @@ export class AdminProductController {
   }
 
   @Post()
-  @UseGuards(StaffOriginGuard)
+  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiSuccessCode('PRODUCT_DRAFT_CREATED', 'Product draft created.')
   @ApiOperation({
@@ -153,12 +154,22 @@ export class AdminProductController {
     description: 'No product address could be reserved.',
     schema: ERROR_SCHEMA,
   })
+  @ApiResponse({
+    status: 403,
+    description: 'The request states an origin outside the Admin allowlist.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 415,
+    description: 'The body is not application/json.',
+    schema: ERROR_SCHEMA,
+  })
   async create(@Body() body: CreateProductBody): Promise<ProductDetailView> {
     return this.guarded(() =>
       this.drafts.create({
         categorySlug: body.categorySlug,
         name: body.name,
-        // An empty description is no description; the column keeps NULL.
+        // Absent or blank both mean "no description"; the column keeps NULL.
         description:
           body.description === undefined || body.description.trim() === ''
             ? undefined
@@ -168,7 +179,7 @@ export class AdminProductController {
   }
 
   @Patch(':productId')
-  @UseGuards(StaffOriginGuard)
+  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)
   @ApiSuccessCode('PRODUCT_DRAFT_UPDATED', 'Product draft updated.')
   @ApiOperation({
     summary: 'Update a product draft',
@@ -197,6 +208,16 @@ export class AdminProductController {
     description: 'Stale `expectedUpdatedAt`, a non-editable state, or an unusable image.',
     schema: ERROR_SCHEMA,
   })
+  @ApiResponse({
+    status: 403,
+    description: 'The request states an origin outside the Admin allowlist.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 415,
+    description: 'The body is not application/json.',
+    schema: ERROR_SCHEMA,
+  })
   async update(
     @Param() params: ProductIdParam,
     @Body() body: UpdateProductBody,
@@ -206,6 +227,10 @@ export class AdminProductController {
         productId: params.productId,
         expectedUpdatedAt: new Date(body.expectedUpdatedAt),
         ...(body.name === undefined ? {} : { name: body.name }),
+        // Description contract (APP2-B02-C1 §9), stated once here:
+        //   absent            -> leave the stored value unchanged
+        //   null or blank     -> clear it to NULL
+        //   any other text    -> store it
         ...(body.description === undefined
           ? {}
           : {
@@ -222,7 +247,7 @@ export class AdminProductController {
   }
 
   @Post(':productId/archive')
-  @UseGuards(StaffOriginGuard)
+  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)
   @HttpCode(HttpStatus.OK)
   @ApiSuccessCode('PRODUCT_ARCHIVED', 'Product archived.')
   @ApiOperation({
@@ -245,6 +270,16 @@ export class AdminProductController {
   @ApiResponse({
     status: 409,
     description: 'Stale `expectedUpdatedAt` or a state that cannot be archived.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'The request states an origin outside the Admin allowlist.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 415,
+    description: 'The body is not application/json.',
     schema: ERROR_SCHEMA,
   })
   async archive(

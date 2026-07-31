@@ -92,7 +92,6 @@ export class ProductDraftService {
         // Locked sentinels: "no price yet" and "no curated order yet".
         basePriceAmount: PRODUCT_DRAFT_BASE_PRICE_AMOUNT,
         displayOrder: PRODUCT_DRAFT_DISPLAY_ORDER,
-        at: new Date(),
       });
 
       // No media, so no second read: a new draft's selection is empty.
@@ -128,7 +127,6 @@ export class ProductDraftService {
         expectedUpdatedAt: command.expectedUpdatedAt,
         editableStates: PRODUCT_EDITABLE_STATES,
         fields,
-        at: new Date(),
       });
       const product = this.requireWritten(result);
 
@@ -152,7 +150,6 @@ export class ProductDraftService {
         id: command.productId as ProductDraftId,
         expectedUpdatedAt: command.expectedUpdatedAt,
         archivableStates: PRODUCT_ARCHIVABLE_STATES,
-        at: new Date(),
       });
       const product = this.requireWritten(result, 'PRODUCT_ARCHIVE_NOT_ALLOWED');
       const media = await this.products.findMedia(product.id);

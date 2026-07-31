@@ -152,7 +152,7 @@ export interface AdminProductDetailResponse {
   category: AdminProductCategoryResponse;
   createdAt: string;
   currencyCode: AdminProductDetailResponseCurrencyCode;
-  /** Absent when the draft has no description yet. */
+  /** Absent when the draft has no description. On PATCH, sending null or a blank string clears it; omitting the field leaves it unchanged. */
   description?: string;
   /** Ordered media selection. */
   media: AdminProductMediaResponse[];

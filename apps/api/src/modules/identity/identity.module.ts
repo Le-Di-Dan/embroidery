@@ -69,8 +69,11 @@ import { StaffSelfController } from './presentation/staff-self.controller';
     StaffAuditWriter,
     CookiePolicyService,
     AuthenticatedAdminGuard,
-    // APP2-B01 reuses the exact Origin allowlist on the Admin upload route.
+    // APP2-B01 reuses the exact Origin allowlist on the Admin upload route;
+    // APP2-B02-C1 reuses both it and the JSON-only guard on every Admin
+    // product mutation, rather than re-implementing either.
     StaffOriginGuard,
+    StaffJsonBodyGuard,
     RequestOriginPolicy,
   ],
 })

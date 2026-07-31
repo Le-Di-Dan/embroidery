@@ -5,11 +5,22 @@
  * port, never by querying its tables from here — the association is Catalog's,
  * the asset metadata stays Asset's (ADR-DB4-003).
  *
- * Validation is all-or-nothing and happens before a single link is written, so
- * one bad item leaves the previous selection exactly as it was rather than
- * half-replaced. The caller runs this inside the same transaction as the write,
- * so a concurrently rejected Asset cannot slip in between the check and the
- * insert.
+ * Two properties this must have, and one it must not:
+ *
+ * - **One query, not one per item.** The whole distinct selection is resolved
+ *   in a single round trip, so a large gallery costs the same as a small one.
+ * - **Eligibility that still holds at commit.** The read takes a `FOR SHARE`
+ *   lock inside the caller's transaction, so an Asset cannot leave `ACCEPTED`
+ *   between validation and the media write. A plain read at `READ COMMITTED`
+ *   would let exactly that happen and commit a link to an asset the store had
+ *   already rejected.
+ * - **No item-count limit of its own.** An earlier version capped the selection
+ *   at twelve purely to bound a per-item loop; that was an invented product
+ *   rule with no authority behind it. The batch query removes the reason, and
+ *   the platform's JSON body limit remains the real transport bound.
+ *
+ * Validation is all-or-nothing and completes before a single link is written,
+ * so one bad item leaves the previous selection exactly as it was.
  */
 import { Inject, Injectable } from '@nestjs/common';
 
@@ -20,7 +31,6 @@ import {
 } from '../../asset/domain/repositories/asset.repository';
 import { productDraftError } from '../domain/product-draft.errors';
 import {
-  MAX_PRODUCT_MEDIA_ITEMS,
   PRODUCT_MEDIA_ASSET_CLASSIFICATION,
   PRODUCT_MEDIA_ASSET_KIND,
   PRODUCT_MEDIA_ASSET_STATUS,
@@ -44,36 +54,43 @@ export class ProductMediaSelection {
    * Roles come from position, never from the client: the first Asset is the one
    * `THUMBNAIL`, the rest are `GALLERY` at their zero-based request position.
    * `DETAIL` is never written by APP2-B02.
+   *
+   * Must run inside the caller's transaction — the repository asserts it.
    */
   async resolve(assetIds: readonly string[]): Promise<ProductDraftMediaLink[]> {
-    if (assetIds.length > MAX_PRODUCT_MEDIA_ITEMS) {
-      throw productDraftError('PRODUCT_DRAFT_INVALID');
-    }
     if (new Set(assetIds).size !== assetIds.length) {
       throw productDraftError('PRODUCT_MEDIA_DUPLICATE');
     }
+    if (assetIds.length === 0) {
+      return [];
+    }
 
-    const links: ProductDraftMediaLink[] = [];
-    for (const [position, assetId] of assetIds.entries()) {
-      // A scoped read: an Asset outside the catalog-media lane is reported as
-      // missing, exactly as B01 does, so this endpoint cannot be used to probe
-      // whether a customer's private artwork exists.
-      const asset = await this.assets.findScoped(assetId as AssetId, SCOPE);
+    // One locking read for the whole selection.
+    const locked = await this.assets.lockScopedByIds(assetIds as readonly AssetId[], SCOPE);
+    const byId = new Map(locked.map((asset) => [asset.id as string, asset]));
+
+    // Checked against the complete requested set, not against the result size:
+    // a duplicate-free request of N ids must resolve N distinct rows, and
+    // comparing counts alone would miss which one was wrong.
+    for (const assetId of assetIds) {
+      const asset = byId.get(assetId);
       if (asset === undefined) {
+        // Absent from the scoped read: either no such asset, or one outside the
+        // catalog-media lane. Reported identically — as B01 does — so this
+        // endpoint cannot confirm that a customer's private artwork exists.
         throw productDraftError('PRODUCT_MEDIA_ASSET_NOT_FOUND');
       }
       if (asset.status !== PRODUCT_MEDIA_ASSET_STATUS) {
-        // It exists and is ours, but inspection has not accepted it — a
-        // different, retryable situation from "no such image".
+        // Ours, but inspection has not accepted it — a different, retryable
+        // situation from "no such image".
         throw productDraftError('PRODUCT_MEDIA_ASSET_UNAVAILABLE');
       }
-
-      links.push({
-        assetId,
-        role: position === 0 ? PRODUCT_MEDIA_PRIMARY_ROLE : PRODUCT_MEDIA_SECONDARY_ROLE,
-        displayOrder: position,
-      });
     }
-    return links;
+
+    return assetIds.map((assetId, position) => ({
+      assetId,
+      role: position === 0 ? PRODUCT_MEDIA_PRIMARY_ROLE : PRODUCT_MEDIA_SECONDARY_ROLE,
+      displayOrder: position,
+    }));
   }
 }

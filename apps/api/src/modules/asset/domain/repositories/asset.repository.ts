@@ -131,6 +131,29 @@ export interface AssetRepository {
   listScoped(query: AssetListQuery): Promise<Asset[]>;
 
   /**
+   * Batch scoped read that **locks** the matched rows for the rest of the
+   * transaction (`FOR SHARE`).
+   *
+   * One statement for the whole selection, so a caller validating N assets
+   * makes one round trip rather than N. The share lock is the point: a consumer
+   * that associates these assets with something else must be able to rely on
+   * their eligibility still holding at commit, and a plain read at
+   * `READ COMMITTED` cannot promise that — a concurrent transition out of
+   * `ACCEPTED` could commit in between. `FOR SHARE` blocks that transition
+   * until this transaction ends, while leaving other readers unblocked.
+   *
+   * Returns only rows inside the requested kind/classification scope; an id
+   * outside it is simply absent, exactly as `findScoped` reports it, so the
+   * caller cannot use this to discover that a private asset exists.
+   *
+   * @requiresTransaction
+   */
+  lockScopedByIds(
+    ids: readonly AssetId[],
+    filter: Pick<AssetListFilter, 'kind' | 'classification'>,
+  ): Promise<Asset[]>;
+
+  /**
    * Appends an inspection outcome and moves the asset to the matching state.
    *
    * @requiresTransaction — the evidence and the state it justifies must land

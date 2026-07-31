@@ -71,15 +71,6 @@ export const PRODUCT_MEDIA_ASSET_KIND = 'CATALOG_MEDIA' as const;
 export const PRODUCT_MEDIA_ASSET_CLASSIFICATION = 'PRODUCTION_SENSITIVE' as const;
 export const PRODUCT_MEDIA_ASSET_STATUS = 'ACCEPTED' as const;
 
-/**
- * Upper bound on one media selection.
- *
- * Each selected Asset is validated with its own scoped read, so the list has to
- * be bounded for the request to be bounded. It is generous for a product
- * gallery and small enough that the validation loop can never become a scan.
- */
-export const MAX_PRODUCT_MEDIA_ITEMS = 12;
-
 /** Bounds on the free-text draft fields, mirroring nothing but sane input. */
 export const PRODUCT_NAME_MAX_LENGTH = 200;
 export const PRODUCT_DESCRIPTION_MAX_LENGTH = 5000;

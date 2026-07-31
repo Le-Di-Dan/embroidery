@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
 import type { AssetInspectionOutcome } from '@embroidery/database';
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 
 import type {
   Asset,
@@ -125,6 +125,26 @@ export class DrizzleAssetRepository extends DrizzleRepository implements AssetRe
         .where(and(eq(assets.id, id), scopePredicate(filter)))
         .limit(1);
       return row === undefined ? undefined : toAsset(row);
+    });
+  }
+
+  async lockScopedByIds(
+    ids: readonly AssetId[],
+    filter: Pick<AssetListFilter, 'kind' | 'classification'>,
+  ): Promise<Asset[]> {
+    return this.run('lockScopedByIds', async () => {
+      if (ids.length === 0) {
+        return [];
+      }
+      // Asserts the caller opened a transaction: a `FOR SHARE` outside one is
+      // released immediately and would promise a guarantee it cannot keep.
+      const tx = this.requireTransaction('lockScopedByIds');
+      const rows = await tx
+        .select()
+        .from(assets)
+        .where(and(inArray(assets.id, [...ids]), scopePredicate(filter)))
+        .for('share');
+      return rows.map(toAsset);
     });
   }
 

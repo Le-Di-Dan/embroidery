@@ -64,7 +64,11 @@ describe('Admin product HTTP flow (integration)', () => {
     } else {
       process.env['STAFF_ALLOWED_ORIGINS'] = previousOrigins;
     }
-  }, 120_000);
+    // The same explicit budget as the setup: under the full `pnpm quality` run
+    // every package competes for one PostgreSQL server, and a teardown that
+    // outran the default hook timeout would fail a suite whose assertions all
+    // passed.
+  }, 240_000);
 
   async function login(): Promise<string> {
     const res = await ctx.http
@@ -345,6 +349,167 @@ describe('Admin product HTTP flow (integration)', () => {
       const product = await createProduct('Thú bông thiếu token');
       const res = await authed.post(`/api/admin/products/${product.productId}/archive`).send({});
       expect(res.status).toBe(400);
+    });
+  });
+
+  /**
+   * `APP2-B02-C1` — the canonical mutation guards.
+   *
+   * B02 shipped `StaffOriginGuard` but not `StaffJsonBodyGuard`, so a
+   * cross-site HTML form post was not rejected on content type. Both are the
+   * existing APP1 implementations; nothing about Origin parsing, the allowlist
+   * or content-type handling is re-implemented in the Catalog module.
+   */
+  describe('mutation protection', () => {
+    /** One builder per mutation, so each case is exercised on all three. */
+    function mutations(product: ProductPayload) {
+      return [
+        {
+          name: 'create',
+          send: () => ctx.http.post('/api/admin/products'),
+          body: { categorySlug: 'khan', name: 'Bảo vệ' },
+        },
+        {
+          name: 'update',
+          send: () => ctx.http.patch(`/api/admin/products/${product.productId}`),
+          body: { expectedUpdatedAt: product.updatedAt, name: 'Bảo vệ' },
+        },
+        {
+          name: 'archive',
+          send: () => ctx.http.post(`/api/admin/products/${product.productId}/archive`),
+          body: { expectedUpdatedAt: product.updatedAt },
+        },
+      ];
+    }
+
+    it('accepts an authenticated same-origin JSON request', async () => {
+      const product = await createProduct('Bảo vệ hợp lệ');
+      const res = await ctx.http
+        .patch(`/api/admin/products/${product.productId}`)
+        .set('Cookie', cookie)
+        .set('Origin', ADMIN_ORIGIN)
+        .set('Content-Type', 'application/json')
+        .send({ expectedUpdatedAt: product.updatedAt, name: 'Bảo vệ hợp lệ 2' });
+      expect(res.status).toBe(200);
+    });
+
+    it('rejects a foreign or null Origin on every mutation with 403', async () => {
+      const product = await createProduct('Bảo vệ nguồn lạ');
+      for (const mutation of mutations(product)) {
+        for (const origin of [
+          'http://evil.example',
+          'null',
+          'http://admin.embroidery.local.evil',
+        ]) {
+          const res = await mutation
+            .send()
+            .set('Cookie', cookie)
+            .set('Origin', origin)
+            .send(mutation.body);
+          expect({ mutation: mutation.name, origin, status: res.status }).toEqual({
+            mutation: mutation.name,
+            origin,
+            status: 403,
+          });
+          expect(res.body).toMatchObject({ success: false, code: 'FORBIDDEN' });
+        }
+      }
+    });
+
+    it('rejects a wrong content type on every mutation with 415', async () => {
+      const product = await createProduct('Bảo vệ kiểu nội dung');
+      for (const mutation of mutations(product)) {
+        const res = await mutation
+          .send()
+          .set('Cookie', cookie)
+          .set('Origin', ADMIN_ORIGIN)
+          .set('Content-Type', 'text/plain')
+          .send(JSON.stringify(mutation.body));
+        expect({ mutation: mutation.name, status: res.status }).toEqual({
+          mutation: mutation.name,
+          status: 415,
+        });
+        expect(res.body).toMatchObject({ success: false, code: 'UNSUPPORTED_MEDIA_TYPE' });
+      }
+    });
+
+    /**
+     * Recorded exactly as the canonical policy behaves, not as one might wish:
+     * a request carrying **neither** `Origin` nor `Referer` is treated as
+     * non-browser (server-to-server, CLI, test) and allowed — the SameSite
+     * cookie plus the session are the control there. A browser cross-site
+     * request always carries one and is refused above.
+     */
+    it('allows an absent Origin, which is the canonical non-browser case', async () => {
+      const product = await createProduct('Bảo vệ không nguồn');
+      const res = await ctx.http
+        .patch(`/api/admin/products/${product.productId}`)
+        .set('Cookie', cookie)
+        .set('Content-Type', 'application/json')
+        .send({ expectedUpdatedAt: product.updatedAt, name: 'Không nguồn' });
+      expect(res.status).toBe(200);
+    });
+
+    it('still answers 401 before any origin or content-type decision', async () => {
+      const product = await createProduct('Bảo vệ chưa đăng nhập');
+      for (const mutation of mutations(product)) {
+        const res = await mutation
+          .send()
+          .set('Origin', 'http://evil.example')
+          .set('Content-Type', 'text/plain')
+          // A string, not an object: with a non-JSON content type superagent
+          // measures the body itself and throws on anything else.
+          .send(JSON.stringify(mutation.body));
+        expect({ mutation: mutation.name, status: res.status }).toEqual({
+          mutation: mutation.name,
+          status: 401,
+        });
+      }
+    });
+
+    it('leaves the safe reads free of any mutation-only requirement', async () => {
+      const product = await createProduct('Đọc an toàn');
+      const list = await ctx.http.get('/api/admin/products?limit=1').set('Cookie', cookie);
+      expect(list.status).toBe(200);
+      const detail = await ctx.http
+        .get(`/api/admin/products/${product.productId}`)
+        .set('Cookie', cookie);
+      expect(detail.status).toBe(200);
+    });
+  });
+
+  describe('description contract', () => {
+    it('clears on null or blank and leaves the value alone when omitted', async () => {
+      const product = await createProduct('Mô tả hợp đồng');
+      const withText = await authed
+        .patch(`/api/admin/products/${product.productId}`)
+        .send({ expectedUpdatedAt: product.updatedAt, description: 'Có mô tả' });
+      expect(withText.status).toBe(200);
+      let payload = (withText.body as Envelope<{ description?: string; updatedAt: string }>).data;
+      expect(payload.description).toBe('Có mô tả');
+
+      // Omitted: unchanged.
+      const renamed = await authed
+        .patch(`/api/admin/products/${product.productId}`)
+        .send({ expectedUpdatedAt: payload.updatedAt, name: 'Đổi tên thôi' });
+      payload = (renamed.body as Envelope<{ description?: string; updatedAt: string }>).data;
+      expect(payload.description).toBe('Có mô tả');
+
+      // Blank: cleared, exactly as null would.
+      const blanked = await authed
+        .patch(`/api/admin/products/${product.productId}`)
+        .send({ expectedUpdatedAt: payload.updatedAt, description: '   ' });
+      payload = (blanked.body as Envelope<{ description?: string; updatedAt: string }>).data;
+      expect(payload.description).toBeUndefined();
+
+      const restored = await authed
+        .patch(`/api/admin/products/${product.productId}`)
+        .send({ expectedUpdatedAt: payload.updatedAt, description: 'Lại có' });
+      payload = (restored.body as Envelope<{ description?: string; updatedAt: string }>).data;
+      const cleared = await authed
+        .patch(`/api/admin/products/${product.productId}`)
+        .send({ expectedUpdatedAt: payload.updatedAt, description: null });
+      expect((cleared.body as Envelope<{ description?: string }>).data.description).toBeUndefined();
     });
   });
 

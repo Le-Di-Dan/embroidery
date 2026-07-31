@@ -68,8 +68,6 @@ export interface CreateProductDraftInput {
   readonly description: string | undefined;
   readonly basePriceAmount: string;
   readonly displayOrder: number;
-  /** Written explicitly so the concurrency token round-trips at ms precision. */
-  readonly at: Date;
 }
 
 /** Only the fields a DRAFT may change; `undefined` means "not in this patch". */
@@ -82,18 +80,20 @@ export interface UpdateProductDraftFields {
 
 export interface UpdateProductDraftInput {
   readonly id: ProductDraftId;
-  /** Database truth this write is allowed to overwrite. */
+  /**
+   * Database truth this write is allowed to overwrite. The *new* token is
+   * never supplied by the caller — the database computes a strictly greater
+   * one, so a skewed host cannot publish a token that moves backwards.
+   */
   readonly expectedUpdatedAt: Date;
   readonly editableStates: readonly ProductState[];
   readonly fields: UpdateProductDraftFields;
-  readonly at: Date;
 }
 
 export interface ArchiveProductDraftInput {
   readonly id: ProductDraftId;
   readonly expectedUpdatedAt: Date;
   readonly archivableStates: readonly ProductState[];
-  readonly at: Date;
 }
 
 /** One media link to write, already ordered and role-assigned by the service. */

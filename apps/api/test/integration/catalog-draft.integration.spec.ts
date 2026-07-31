@@ -495,7 +495,6 @@ describe('catalog draft management (integration)', () => {
       expectedUpdatedAt: new Date('2020-01-01T00:00:00.000Z'),
       editableStates: ['DRAFT'],
       fields: { name: 'Không được ghi' },
-      at: new Date(),
     });
     expect(stale).toEqual({ ok: false, reason: 'STALE' });
 
@@ -504,7 +503,6 @@ describe('catalog draft management (integration)', () => {
       expectedUpdatedAt: new Date(),
       editableStates: ['DRAFT'],
       fields: { name: 'X' },
-      at: new Date(),
     });
     expect(missing).toEqual({ ok: false, reason: 'NOT_FOUND' });
 
@@ -513,7 +511,6 @@ describe('catalog draft management (integration)', () => {
       expectedUpdatedAt: new Date(created.updatedAt),
       editableStates: ['PUBLISHED'],
       fields: { name: 'X' },
-      at: new Date(),
     });
     expect(wrongState).toEqual({ ok: false, reason: 'STATE' });
 
