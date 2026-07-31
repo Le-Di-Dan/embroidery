@@ -45,6 +45,24 @@ export type {
   AdminAssetUploadReceiptResponse,
 } from './generated/embroidery-api.schemas';
 
+// Admin product read operation (APP2-B02), exposed for the read-only Admin
+// Product List (`APP2-A02`). Only the list operation crosses this boundary:
+// create, detail, update and archive belong to `APP2-A03`/`APP2-A04` and are
+// deliberately not re-exported, so no screen can reach a mutation before the
+// checkpoint that owns it ships. The two query enums are re-exported as values
+// so the filter options are derived from the contract rather than hard-coded.
+export { adminProductList } from './generated/embroidery-api';
+export {
+  AdminProductListStatus,
+  AdminProductListCategorySlug,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminProductListParams,
+  AdminProductListResponse,
+  AdminProductSummaryResponse,
+  AdminProductCategoryResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

@@ -1,5 +1,6 @@
 import { AUTHENTICATED_HOME_ROUTE } from '../../../config/routes';
 import { ADMIN_ASSETS_ROUTE, ASSET_COPY } from '../../assets';
+import { ADMIN_PRODUCTS_ROUTE, PRODUCT_COPY } from '../../products';
 
 /**
  * A primary-navigation entry. Every item points at a route that exists — the
@@ -15,12 +16,14 @@ export interface AdminNavItem {
 
 /**
  * The authenticated shell's primary navigation. `APP2-A01` adds the asset
- * library as the first real business destination; the label and the route both
- * come from the owning capability, so there is one spelling of each.
+ * library as the first real business destination and `APP2-A02` adds the
+ * product list; the label and the route both come from the owning capability,
+ * so there is one spelling of each. Order follows the approved Admin frames.
  */
 export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
   { id: 'overview', label: 'Tổng quan', href: AUTHENTICATED_HOME_ROUTE },
   { id: 'assets', label: ASSET_COPY.page.title, href: ADMIN_ASSETS_ROUTE },
+  { id: 'products', label: PRODUCT_COPY.page.title, href: ADMIN_PRODUCTS_ROUTE },
 ];
 
 /**

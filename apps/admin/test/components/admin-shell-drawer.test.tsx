@@ -62,10 +62,13 @@ describe('AdminShell — mobile navigation drawer', () => {
     // The drawer now also carries the real navigation destinations, so the
     // trap cycles through the links between the two buttons.
     const assets = within(dialog).getByRole('link', { name: 'Tài sản hình ảnh' });
+    const products = within(dialog).getByRole('link', { name: 'Sản phẩm' });
 
     expect(close).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(assets).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(products).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(logout).toHaveFocus();
     await user.keyboard('{Tab}');
