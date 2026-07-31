@@ -583,8 +583,27 @@
 > and `a03-approval` rules plus a fixture reproducing the committed corruption. The
 > historical G01 report is left unedited; this pointer supersedes its registry claim
 > ([`reports/APP2-A03-G01-C1-CORRECTION-REPORT.md`](../reports/APP2-A03-G01-C1-CORRECTION-REPORT.md)).
-> **`APP2-A03-G01` = `COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`**, so
-> **`APP2-A03` = `READY — NOT STARTED`**.
+> **`APP2-A03-G01` = `COMPLETE — CORRECTED (C1) — REVIEW_ACCEPTED`**.
+>
+> **`APP2-A03` delivered against that authority (2026-08-01).** One capability, two modes per
+> IMP-D034: create `/products/new` sends exactly the three fields `adminProduct_create`
+> accepts in a single POST and redirects to the authoritative `productId`; edit/detail
+> `/products/{productId}` loads with `adminProduct_detail` and saves with
+> `adminProduct_update`, carrying `expectedUpdatedAt` and only the fields that changed. The
+> description diff distinguishes untouched (absent) from cleared (`null`); price is a
+> whole-VND string whose `"0"` sentinel renders as an empty field and never as `0 ₫`; slug and
+> status are read-only text. Ordered media is a complete `mediaAssetIds` replacement sent only
+> when the selection or its order changed, with first = `THUMBNAIL`, keyboard
+> `Di chuyển trước/sau` as the primary ordering mechanism, and a cursor-paginated picker over
+> `adminAsset_list` restricted to `ACCEPTED` `CATALOG_MEDIA`. `PRODUCT_VERSION_CONFLICT` (409)
+> opens the approved reload dialog — no force-save, no retry with the stale token, no
+> timestamp or request id in the copy. The A02 list regains exactly `Tạo sản phẩm` and
+> `Chỉnh sửa`; publication, archive and delete remain absent and `adminProductArchive` stays
+> off the client boundary. Verified live behind the gateway at 1440 and 390 (0px overflow),
+> including a real two-tab concurrency conflict. OpenAPI, generated client, database and Figma
+> unchanged. **`APP2-A03` = `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-B03` = `READY —
+> NOT STARTED`**
+> ([`reports/APP2-A03-COMPLETION-REPORT.md`](../reports/APP2-A03-COMPLETION-REPORT.md)).
 >
 > **`FU-APP2-PRODUCT-VARIANTS-SKU-01` = `DEFERRED_BEYOND_APP2_CATALOG_ALPHA`** — product
 > variants and SKU are not exposed or persisted by the delivered `APP2-B02` contract and are
@@ -685,7 +704,7 @@ endpoints.
 | 8b | APP2-D03 | design | Admin Product List design reconciliation — cures `APP2-A02`'s `BLOCKED_BY_CATALOG_LIST_DESIGN_CONTRADICTION`: adds the `Trạng thái`/`Danh mục` filters and the `Tải thêm sản phẩm` continuation control to the three frozen Catalog nodes, removes every `APP2-A03`/`APP2-A04` control so A02 is a truthful read-only list, replaces the empty state's dead CTA, and corrects the A02/A03 label inversion (IMP-D033). Three `FIG-ADMIN-CATALOG-*` rows promoted under `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`; one annotation node added (registry 70 → 71). Design/documentation only — no source, dependency, OpenAPI, client or database change — **`COMPLETE — DELIVERED_FOR_REVIEW`** | D01, B02 |
 | 9 | APP2-A02 | frontend | Admin product list — read-only list at `/products`, status/category filters, cursor continuation (entry gate `APP2-D03` closed). Consumes `adminProduct_list` only — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B02, D01, D03 |
 | 9b | APP2-A03-G01 | design | **Entry gate under `APP2-A03` ownership** (not a phase checkpoint, and **not `APP2-D04`**) — reconciles the five Product Draft nodes with the delivered B02 contract after the mandatory A03 pre-code audit blocked. Splits the capability into minimal create (`/products/new`, three POST fields) and edit/detail (`/products/{productId}`, PATCH), adds `Giá cơ bản` and read-only slug/status, removes `Phiên bản & SKU` and the publication-readiness rail, replaces fabricated filenames with B01/D02 server identity, and adds keyboard media ordering (IMP-D034). Five `FIG-ADMIN-PRODUCT-*` rows promoted under `FIG-APPROVAL-APP2-A03-G01-PRODUCT-FORM-001`; one annotation node added (registry 71 → 72). Design/documentation only. **Corrected by `APP2-A03-G01-C1`** — the promotion was spliced onto the document title instead of the canonical rows, leaving them `REVIEW_REQUIRED` behind a gate blind to rows outside a table; C1 repairs the registry and adds `document-title` / `row-placement` / `a03-approval` invariants — **`COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`** | A02, B02, D01 |
-| 10 | APP2-A03 | frontend | Admin product form/detail — create/edit/detail with Asset selection and server conflict handling (entry gate `APP2-A03-G01` closed) | B02, D01, A03-G01 |
+| 10 | APP2-A03 | frontend | Admin product form/detail — create/edit/detail with Asset selection and server conflict handling (entry gate `APP2-A03-G01` closed, repaired by `APP2-A03-G01-C1`). Delivers IMP-D034's two modes: create `/products/new` (exactly the three POST fields, one request, redirect to the authoritative `productId`) and edit/detail `/products/{productId}` (`adminProduct_detail` + `adminProduct_update`, `expectedUpdatedAt`, only changed fields, description absent-vs-null, whole-VND string price with the `"0"` sentinel, read-only slug/status, ordered `mediaAssetIds` with keyboard reordering and cursor-paginated asset picker, `PRODUCT_VERSION_CONFLICT` reload dialog, unsaved-change protection). Restores exactly `Tạo sản phẩm` and `Chỉnh sửa` on the A02 list. `adminProductArchive` stays off the client boundary — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B02, D01, A03-G01 |
 | 11 | APP2-B03 | backend | Publication backend + OpenAPI/client (≤3) | B02 |
 | 12 | APP2-A04 | frontend | Admin publication interaction | B03, D01 |
 | 13 | APP2-B04 | backend | Public catalog queries + OpenAPI/client (≤2) | B03 |
