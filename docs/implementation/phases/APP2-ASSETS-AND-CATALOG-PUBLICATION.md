@@ -535,6 +535,20 @@
 > **`APP2-A02` = `READY — NOT STARTED`**
 > ([`reports/APP2-D03-COMPLETION-REPORT.md`](../reports/APP2-D03-COMPLETION-REPORT.md)).
 >
+> **`APP2-A02` delivered (2026-07-31).** The read-only Admin Product List ships at
+> `/products` inside the authenticated Admin shell: the `Trạng thái`/`Danh mục` filters
+> with URL-owned state, the `Tải thêm sản phẩm` cursor continuation, a semantic desktop
+> table and a mobile card collection, and the four truthful list states (loading,
+> unavailable, unfiltered-empty, filtered-empty). It consumes `adminProduct_list` only —
+> create, detail, update and archive are deliberately **not** re-exported from
+> `@embroidery/api-client`, so no mutation is reachable before the checkpoint that owns
+> it. No price, no search, no action control, and an honest media placeholder pending
+> `APP2-T01`. 50 new component tests; production Admin reviewed behind the real gateway at
+> 1440 and 390 against 27 real seeded drafts. OpenAPI, generated client, database and
+> Figma registry unchanged; no dependency added. **`APP2-A02` =
+> `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-A03` = `READY — NOT STARTED`**
+> ([`reports/APP2-A02-COMPLETION-REPORT.md`](../reports/APP2-A02-COMPLETION-REPORT.md)).
+>
 > **`FU-APP2-CATEGORY-MANAGEMENT-01` = `DEFERRED_BEYOND_CATALOG_ALPHA`** —
 > mutable category management (create/rename/reorder/archive, Admin UI and API)
 > is deliberately out of APP2 and **nonblocking** for `B02`/`A02`/`A03`.
@@ -628,7 +642,7 @@ endpoints.
 | 7b | APP2-B02-G01 | gate | Product-draft required-field entry gate (data/authority only, under `APP2-B02` ownership) — closes `BLOCKED_BY_PRODUCT_DRAFT_FIELD_DECISION` by locking IMP-D032: fixed four-category taxonomy provisioned by data migration `0033` and addressed by `categorySlug` (never a category UUID), server-owned immutable product slug with a `{base}-{8 hex}` collision fallback, `DRAFT` price sentinel `0` VND, draft `display_order = 0`, and first-media `THUMBNAIL` / rest `GALLERY` with `DETAIL` excluded. 32 → 33 migrations; **78 tables / 833 columns / 190 CHECKs and fingerprint `82864268…` unchanged**; no schema, OpenAPI, client, application-source, Figma or dependency change — **`COMPLETE — ENTRY_GATE_CLOSED`** | DB7 catalog schema |
 | 8 | APP2-B02 | backend | Catalog draft backend + OpenAPI/client (≤5) — **entry gate `APP2-B02-G01` closed**; exactly five Admin operations (`adminProduct_list/detail/create/update/archive`) implementing IMP-D032 as locked: `categorySlug` on the wire and never a category UUID, server-owned immutable slug, `DRAFT` price sentinel `0` VND rendered as whole đồng, `display_order 0`, first-media `THUMBNAIL` / rest `GALLERY` with `DETAIL` never written, complete all-or-nothing ordered media replacement, and `updated_at` optimistic concurrency compared at the millisecond precision the client token carries. Archive is a guarded `DRAFT → ARCHIVED` that deletes nothing. OpenAPI `e19c2f76…` → `b789cc99…`, client `55de1cc1…` → `66d1c991…` (additions only); **no migration, no schema/Figma/frontend/worker/object-storage change, no dependency** — **`COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`**; **`APP2-B02-C1`** closed the mutation-guard, monotonic-token and invented-media-limit gaps and proved the asset-eligibility race is serialized ([`reports/APP2-B02-COMPLETION-REPORT.md`](../reports/APP2-B02-COMPLETION-REPORT.md), [`reports/APP2-B02-C1-CORRECTION-REPORT.md`](../reports/APP2-B02-C1-CORRECTION-REPORT.md)) | B01, B02-G01 |
 | 8b | APP2-D03 | design | Admin Product List design reconciliation — cures `APP2-A02`'s `BLOCKED_BY_CATALOG_LIST_DESIGN_CONTRADICTION`: adds the `Trạng thái`/`Danh mục` filters and the `Tải thêm sản phẩm` continuation control to the three frozen Catalog nodes, removes every `APP2-A03`/`APP2-A04` control so A02 is a truthful read-only list, replaces the empty state's dead CTA, and corrects the A02/A03 label inversion (IMP-D033). Three `FIG-ADMIN-CATALOG-*` rows promoted under `FIG-APPROVAL-APP2-D03-CATALOG-LIST-001`; one annotation node added (registry 70 → 71). Design/documentation only — no source, dependency, OpenAPI, client or database change — **`COMPLETE — DELIVERED_FOR_REVIEW`** | D01, B02 |
-| 9 | APP2-A02 | frontend | Admin product list — read-only list, status/category filters, cursor continuation (entry gate `APP2-D03` closed) | B02, D01, D03 |
+| 9 | APP2-A02 | frontend | Admin product list — read-only list at `/products`, status/category filters, cursor continuation (entry gate `APP2-D03` closed). Consumes `adminProduct_list` only — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B02, D01, D03 |
 | 10 | APP2-A03 | frontend | Admin product form/detail | B02, D01 |
 | 11 | APP2-B03 | backend | Publication backend + OpenAPI/client (≤3) | B02 |
 | 12 | APP2-A04 | frontend | Admin publication interaction | B03, D01 |
