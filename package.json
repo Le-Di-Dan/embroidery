@@ -95,7 +95,8 @@
     "db:anonymize": "node tools/db-anonymize.mjs",
     "check:secrets": "node tools/check-report-secrets.mjs",
     "check:lifecycle": "node tools/check-lifecycle-consistency.mjs",
-    "smoke:app2-t01-public-media": "node tools/smoke-app2-t01-public-media.mjs"
+    "smoke:app2-t01-public-media": "node tools/smoke-app2-t01-public-media.mjs",
+    "smoke:app2-t01-public-media:production": "node tools/smoke-app2-t01-public-media-production.mjs"
   },
   "prettier": "@embroidery/prettier-config",
   "devDependencies": {

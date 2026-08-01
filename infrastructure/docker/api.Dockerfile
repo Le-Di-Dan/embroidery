@@ -80,7 +80,17 @@ COPY packages/test-utils/package.json packages/test-utils/
 COPY packages/typescript-config/package.json packages/typescript-config/
 COPY packages/ui/package.json packages/ui/
 COPY packages/validation/package.json packages/validation/
-RUN pnpm install --frozen-lockfile --prod --filter @embroidery/api
+# The three workspace packages the API loads at RUNTIME must be importers of
+# this install, or pnpm never creates their own `node_modules` (APP2-T01-C1).
+# pnpm links in isolated mode: `@nestjs/common` for `@embroidery/persistence`
+# lives at `packages/persistence/node_modules/@nestjs/common`, not at the root.
+# `@embroidery/api...` (note the ellipsis) extends the filter to the API's
+# workspace dependencies; without it only `apps/api/node_modules` is populated
+# and `dist/main.js` dies on the first `require` out of a workspace package.
+COPY packages/database/package.json packages/database/
+COPY packages/object-storage/package.json packages/object-storage/
+COPY packages/persistence/package.json packages/persistence/
+RUN pnpm install --frozen-lockfile --prod --filter "@embroidery/api..."
 
 # ---------------------------------------------------------------------------
 # runner: minimal production image, non-root
@@ -95,12 +105,23 @@ COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 # Workspace runtime packages: node_modules symlinks resolve to these compiled
 # outputs (raw src/*.ts is never shipped or loaded at runtime).
+#
+# Each also brings its OWN `node_modules`. Under pnpm's isolated linking a
+# package resolves its dependencies from its own directory, so shipping
+# `packages/persistence/dist` without `packages/persistence/node_modules` gives
+# a container that builds green and then exits on the first require with
+# `Cannot find module '@nestjs/common'` — invisible to the development image,
+# which serves TypeScript sources over a bind mount and never loads `dist`
+# (APP2-T01-C1).
 COPY --from=build --chown=node:node /app/packages/database/dist ./packages/database/dist
 COPY --from=build --chown=node:node /app/packages/database/package.json ./packages/database/package.json
+COPY --from=prod-deps --chown=node:node /app/packages/database/node_modules ./packages/database/node_modules
 COPY --from=build --chown=node:node /app/packages/persistence/dist ./packages/persistence/dist
 COPY --from=build --chown=node:node /app/packages/persistence/package.json ./packages/persistence/package.json
+COPY --from=prod-deps --chown=node:node /app/packages/persistence/node_modules ./packages/persistence/node_modules
 COPY --from=build --chown=node:node /app/packages/object-storage/dist ./packages/object-storage/dist
 COPY --from=build --chown=node:node /app/packages/object-storage/package.json ./packages/object-storage/package.json
+COPY --from=prod-deps --chown=node:node /app/packages/object-storage/node_modules ./packages/object-storage/node_modules
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://127.0.0.1:4000/api/health || exit 1
