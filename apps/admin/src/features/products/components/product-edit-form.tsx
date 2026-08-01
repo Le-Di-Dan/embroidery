@@ -6,8 +6,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { AdminProductDetailResponseStatus } from '@embroidery/api-client';
 import type { AdminProductDetailResponse } from '@embroidery/api-client';
 
-import { isVersionConflict } from '../model/product-conflict';
-import { PRODUCT_FORM_COPY } from '../model/product-form-copy';
+import { classifySaveFailure, isVersionConflict } from '../model/product-conflict';
+import { PRODUCT_FORM_COPY, PRODUCT_SAVE_FAILURE_COPY } from '../model/product-form-copy';
 import {
   buildUpdateBody,
   formValuesFromDetail,
@@ -130,7 +130,11 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
     );
   };
 
+  // The banner speaks for every failure the dialog does not: while the conflict
+  // dialog is open it owns the outcome, and what it leaves behind is the
+  // generic message. The operator's edits are never touched by any of them.
   const saveFailed = mutation.isError && !conflict;
+  const failureCopy = PRODUCT_SAVE_FAILURE_COPY[classifySaveFailure(mutation.error)];
 
   return (
     <section className="product-form">
@@ -184,8 +188,8 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
 
       {saveFailed ? (
         <div className="product-form__failure" role="alert">
-          <p className="product-form__failure-title">{PRODUCT_FORM_COPY.edit.saveFailedTitle}</p>
-          <p className="product-form__failure-body">{PRODUCT_FORM_COPY.edit.saveFailedBody}</p>
+          <p className="product-form__failure-title">{failureCopy.title}</p>
+          <p className="product-form__failure-body">{failureCopy.body}</p>
         </div>
       ) : null}
 

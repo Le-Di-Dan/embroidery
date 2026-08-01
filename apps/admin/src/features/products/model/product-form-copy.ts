@@ -16,6 +16,8 @@
  * bản`, `Xuất bản`, `Gỡ xuất bản`, `Lưu trữ`, `Xoá`. Those capabilities do not
  * exist in `APP2-B02`, so the words for them must not exist here either.
  */
+import type { ProductSaveFailure } from './product-conflict';
+
 export const PRODUCT_FORM_COPY = {
   create: {
     title: 'Sản phẩm mới',
@@ -161,5 +163,39 @@ export const PRODUCT_FORM_COPY = {
     metaUnavailable: 'Chưa có thông tin chi tiết',
     /** There is no media-delivery contract, so no tile ever shows real pixels. */
     placeholder: 'Chưa có ảnh xem trước',
+  },
+} as const;
+
+/**
+ * What a failed save is allowed to say, per classified outcome.
+ *
+ * The screen never renders a server message, so anything it cannot name falls
+ * back to the generic pair rather than to whatever the backend happened to
+ * return. Two outcomes get their own words because the operator's next step
+ * genuinely differs: a product that left the draft state cannot be saved from
+ * here at all, and an ineligible image is fixed by changing the selection.
+ *
+ * `version-conflict` maps to the generic pair on purpose — that outcome is
+ * carried by the approved dialog, and the banner is only what remains after the
+ * operator dismisses it.
+ */
+export const PRODUCT_SAVE_FAILURE_COPY: Readonly<
+  Record<ProductSaveFailure, { readonly title: string; readonly body: string }>
+> = {
+  'version-conflict': {
+    title: PRODUCT_FORM_COPY.edit.saveFailedTitle,
+    body: PRODUCT_FORM_COPY.edit.saveFailedBody,
+  },
+  'not-editable': {
+    title: PRODUCT_FORM_COPY.detail.notEditableTitle,
+    body: PRODUCT_FORM_COPY.detail.notEditableBody,
+  },
+  'media-unavailable': {
+    title: 'Chưa thể lưu ảnh đã chọn',
+    body: 'Một ảnh trong lựa chọn không còn ở trạng thái “Sẵn sàng”. Hãy chọn lại ảnh rồi lưu thay đổi.',
+  },
+  generic: {
+    title: PRODUCT_FORM_COPY.edit.saveFailedTitle,
+    body: PRODUCT_FORM_COPY.edit.saveFailedBody,
   },
 } as const;
