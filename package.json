@@ -29,6 +29,8 @@
     "test:catalog-draft:integration": "pnpm --filter @embroidery/api exec jest --testPathPatterns=catalog-draft[.]integration",
     "test:catalog-draft:api": "pnpm --filter @embroidery/api exec jest --testPathPatterns=catalog-draft-api",
     "test:catalog-draft:gateway": "node --test tools/nginx-catalog-draft-seam.test.mjs",
+    "test:public-media:integration": "pnpm --filter @embroidery/api exec jest --config jest.public-media.config.mjs",
+    "test:public-media:gateway": "node --test tools/nginx-public-media-seam.test.mjs",
     "test:asset-processing:integration": "pnpm --filter @embroidery/worker exec jest --testPathPatterns=asset-inspection-.*[.]integration --testPathIgnorePatterns=/node_modules/",
     "test:asset-processing:worker-smoke": "pnpm --filter @embroidery/worker build && pnpm --filter @embroidery/worker exec jest --testPathPatterns=asset-processing-worker.smoke --testPathIgnorePatterns=/node_modules/",
     "test:worker-runtime:integration": "pnpm --filter @embroidery/persistence exec jest --testPathPatterns=worker-job-queue && pnpm --filter @embroidery/worker exec jest --testPathPatterns=worker-runtime-.*integration",
@@ -92,7 +94,8 @@
     "db:retention": "node tools/db-retention.mjs",
     "db:anonymize": "node tools/db-anonymize.mjs",
     "check:secrets": "node tools/check-report-secrets.mjs",
-    "check:lifecycle": "node tools/check-lifecycle-consistency.mjs"
+    "check:lifecycle": "node tools/check-lifecycle-consistency.mjs",
+    "smoke:app2-t01-public-media": "node tools/smoke-app2-t01-public-media.mjs"
   },
   "prettier": "@embroidery/prettier-config",
   "devDependencies": {

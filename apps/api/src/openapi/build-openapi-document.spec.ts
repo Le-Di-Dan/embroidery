@@ -56,8 +56,9 @@ describe('buildOpenApiDocument', () => {
     // (2 ops on one path) and archive (1 op on its own path).
     // + APP2-B03 publication readiness, publish and unpublish — three ops on
     // three new paths.
-    expect(stats.pathCount).toBe(13);
-    expect(stats.operationCount).toBe(16);
+    // + APP2-T01 public catalog media delivery — one binary op on one new path.
+    expect(stats.pathCount).toBe(14);
+    expect(stats.operationCount).toBe(17);
     expect(stats.schemaCount).toBeGreaterThan(0);
   });
 

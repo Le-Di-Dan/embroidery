@@ -3,7 +3,7 @@ import { DatabaseModule } from '@embroidery/persistence';
 
 import { IdentityModule } from '../identity/identity.module';
 import { AssetModule } from './asset.module';
-import { objectStorageProviders } from './infrastructure/storage/object-storage.provider';
+import { ObjectStorageModule } from './infrastructure/storage/object-storage.module';
 import { ObjectStorageBootstrapService } from './infrastructure/storage/object-storage-bootstrap.service';
 import { AssetIntakeService } from './application/asset-intake.service';
 import { AssetCatalogQuery } from './application/asset-catalog.query';
@@ -26,10 +26,9 @@ import { AdminAssetController } from './presentation/admin-asset.controller';
  * Origin allowlist for every route here.
  */
 @Module({
-  imports: [DatabaseModule, AssetModule, IdentityModule],
+  imports: [DatabaseModule, AssetModule, IdentityModule, ObjectStorageModule],
   controllers: [AdminAssetController],
   providers: [
-    ...objectStorageProviders,
     ObjectStorageBootstrapService,
     UploadTimer,
     UploadReclaimService,

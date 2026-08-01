@@ -242,6 +242,26 @@ export const healthReadiness = (
 };
 
 /**
+ * Streams the requested rendition of one image attached to a PUBLISHED product. Anonymous: no session, cookie or storage credential is involved. Publication is re-checked on every request, so unpublishing a product stops delivery immediately even for a caller that already knows the address. Responses are never cached.
+ * @summary Get one published product image
+ */
+export const publicProductMediaGet = (
+  slug: unknown,
+  productMediaId: unknown,
+  rendition: 'thumbnail' | 'catalog-preview',
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/public/products/${slug}/media/${productMediaId}/${rendition}`,
+      method: 'GET',
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Returns the minimum safe identity for the authenticated admin: id, email and display name. No credential, session or role data is exposed.
  * @summary Get the current staff identity
  */
@@ -297,6 +317,9 @@ export type AdminProductUnpublishResult = NonNullable<
 >;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
+export type PublicProductMediaGetResult = NonNullable<
+  Awaited<ReturnType<typeof publicProductMediaGet>>
+>;
 export type StaffSelfGetResult = NonNullable<Awaited<ReturnType<typeof staffSelfGet>>>;
 export type StaffSessionDeleteResult = NonNullable<Awaited<ReturnType<typeof staffSessionDelete>>>;
 export type StaffSessionCreateResult = NonNullable<Awaited<ReturnType<typeof staffSessionCreate>>>;

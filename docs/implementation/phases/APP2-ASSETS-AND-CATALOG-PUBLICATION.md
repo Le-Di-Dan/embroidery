@@ -25,7 +25,8 @@
 > `proxy_request_buffering off`; server-authoritative SHA-256 (no client
 > checksum); and `OBJECT_STORAGE_PUBLIC_BASE_URL` removed from APP2 scope. It
 > adds a narrow **`APP2-I01`** object-storage foundation checkpoint before
-> `APP2-B01` (map now **18 checkpoints**, §6.1).
+> `APP2-B01` (map now **18 checkpoints**, §6.1; **19 from 2026-08-01**, when
+> `APP2-T01` was activated ahead of `APP2-B04` — IMP-D036).
 > **Also corrected by `APP2-DEC-STORAGE-C2`** (report
 > [`reports/APP2-DEC-STORAGE-C2-CORRECTION-REPORT.md`](../reports/APP2-DEC-STORAGE-C2-CORRECTION-REPORT.md)):
 > upload idempotency locked to **model I1 — pre-stream durable allocation**
@@ -746,6 +747,27 @@
 >
 > **`FU-APP2-THUMBNAIL-01` = `ROUTED_TO_APP2-T01`**, `NONBLOCKING_FOR_APP2-B02/A02/A03`.
 >
+> **SUPERSEDED (2026-08-01) — `APP2-T01` activated before `APP2-B04`.** The mandatory `APP2-B04`
+> entry audit returned **`PUBLIC_MEDIA_DELIVERY_GATE = BLOCKED`**: `Q-01` requires an image on
+> every public product card and `Q-02` requires ordered media, but **no route in the repository
+> served image bytes to anyone** — 16 operations, none public and none binary; `apps/api` never
+> called `getObjectStream`; the gateway had no media location; and `admin-product.response.ts`
+> already recorded the reason ("APP2 has no authenticated media-delivery contract, so an address
+> here would be fabricated"). `ADR-APP2-001` §4.7 *designs* proxied publication-gated delivery,
+> but a design paragraph is not a route. `PUBLIC_CATALOG_SCHEMA_GATE` passed — only the transport
+> was missing. The Product Owner chose the smallest option: **activate the already-routed
+> `APP2-T01` as a mandatory predecessor of `B04`**, so `B04` stays exactly two JSON operations and
+> consumes a safe route helper. The earlier T01 wording ("authenticated Admin thumbnail delivery
+> and placeholder replacement") named the first visible consumer, not the capability; T01's
+> canonical scope is now the **application-owned catalog derivative delivery foundation**, and
+> this activation implements only the blocking public lane.
+>
+> **`FU-APP2-ADMIN-MEDIA-PLACEHOLDER-01` = `DEFERRED — NONBLOCKING_FOR_APP2-B04`** — replacing the
+> honest Admin placeholders in `A01`/`A02`/`A03`/`A04` with real images is *not* implemented by
+> this activation. The delivered route is anonymous and serves `PUBLISHED` products only, so it
+> cannot render a DRAFT product's images in Admin; an Admin lane needs its own authenticated
+> contract and its own checkpoint.
+>
 > **Governance rule (locked here):** a checkpoint may receive **at most one
 > correction**; after that, remaining defects become **named blockers** with an
 > owner and an activation gate rather than a further correction chain.
@@ -838,7 +860,8 @@ endpoints.
 | 10 | APP2-A03 | frontend | Admin product form/detail — create/edit/detail with Asset selection and server conflict handling (entry gate `APP2-A03-G01` closed, repaired by `APP2-A03-G01-C1`). Delivers IMP-D034's two modes: create `/products/new` (exactly the three POST fields, one request, redirect to the authoritative `productId`) and edit/detail `/products/{productId}` (`adminProduct_detail` + `adminProduct_update`, `expectedUpdatedAt`, only changed fields, description absent-vs-null, whole-VND string price with the `"0"` sentinel, read-only slug/status, ordered `mediaAssetIds` with keyboard reordering and cursor-paginated asset picker, `PRODUCT_VERSION_CONFLICT` reload dialog, unsaved-change protection). Restores exactly `Tạo sản phẩm` and `Chỉnh sửa` on the A02 list. `adminProductArchive` stays off the client boundary — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B02, D01, A03-G01 |
 | 11 | APP2-B03 | backend | Publication backend + OpenAPI/client (≤3) — publish is `TR-LC04-01` `DRAFT → PUBLISHED`; **unpublish is `TR-LC04-05` `PUBLISHED → DRAFT`** (IMP-D035, added by the entry gate `APP2-B03-G01`), removing public visibility without archiving or deleting; archive stays the distinct `PUBLISHED → ARCHIVED` | B02, B03-G01 |
 | 12 | APP2-A04 | frontend | Admin publication interaction | B03, D01 |
-| 13 | APP2-B04 | backend | Public catalog queries + OpenAPI/client (≤2) | B03 |
+| 12b | APP2-T01 | backend | **Public catalog media delivery foundation** — activated ahead of `B04` on 2026-08-01 to cure `APP2-B04 = BLOCKED_BY_PUBLIC_MEDIA_DELIVERY_CONTRACT_GAP` (IMP-D036). Exactly one anonymous binary operation, `publicProductMedia_get` — `GET /api/public/products/{slug}/media/{productMediaId}/{rendition}` with `thumbnail` → `THUMBNAIL` and `catalog-preview` → `CATALOG_PREVIEW`. Publication, category, attachment, Asset lane and derivative readiness are re-proved in **one bounded query on every request**, and every miss collapses to one safe 404; `product_media.id` is authorised as an **opaque association identity only**. Streams through `getObjectStream` with client-disconnect teardown, `image/webp` + `nosniff` + `inline` (no filename) + **`no-store`** until an invalidation consumer exists. Adds the shared relative route helper `buildPublicProductMediaPath` in `@embroidery/contracts` for `B04`/`S01`/`S02`. OpenAPI 13→14 paths / 16→17 operations, schemas 27 unchanged; **no migration, no Figma, no Admin/Storefront/worker change, no tracked Nginx/Compose change, no dependency** — **`COMPLETE — DELIVERED_FOR_REVIEW`** | B03, W01, I03 |
+| 13 | APP2-B04 | backend | Public catalog queries + OpenAPI/client (≤2) — consumes the T01 route helper; **entry gate cured by `APP2-T01`** | B03, T01 |
 | 14 | APP2-S01 | frontend | Storefront product list | B04, D01 |
 | 15 | APP2-S02 | frontend | Storefront product detail | B04, D01 |
 | 16 | APP2-E01 | E2E | publication cross-layer journey | S01, S02 |
