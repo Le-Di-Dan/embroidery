@@ -618,8 +618,29 @@
 > `PRODUCT_VERSION_CONFLICT` code opens it now, and every other outcome keeps the edits and
 > shows a safe message. No production authentication code, OpenAPI, generated client, database
 > or Figma change. **`APP2-A03` = `COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`**, so
-> **`APP2-B03` = `READY — NOT STARTED`** and **`APP2-A03-C2` = `MUST_NOT_BE_CREATED`**
+> **`APP2-A03-C2` = `MUST_NOT_BE_CREATED`**
 > ([`reports/APP2-A03-C1-CORRECTION-REPORT.md`](../reports/APP2-A03-C1-CORRECTION-REPORT.md)).
+>
+> **`APP2-B03` blocked at its representability gate, then cured by `APP2-B03-G01` (2026-08-01).**
+> The mandatory B03 audit proved the phase requires unpublish while accepted LC-04 authority had
+> **no exit from `PUBLISHED` except archive** — four transitions, none of them
+> `PUBLISHED → DRAFT`. B03 stopped before any source change
+> (`BLOCKED_BY_PRODUCT_UNPUBLISH_LIFECYCLE_CONTRADICTION`, no commit, no file). The entry gate
+> `APP2-B03-G01` — under B03's ownership, **not** a phase checkpoint and **not** `APP2-D04` —
+> adds the single canonical transition **`TR-LC04-05` `PUBLISHED → DRAFT` (Unpublish Product)**
+> under **IMP-D035**: it removes public visibility without archiving or deleting, preserving
+> slug, category, name, description, price, ordered media, Assets and derivatives, and returns
+> the product to the existing editable `DRAFT` state with no new `UNPUBLISHED` status. Archive
+> stays the distinct `PUBLISHED → ARCHIVED`. LC-04 **4 TR → 5 TR**; DB0/DB2/DB3, `07 §3`,
+> REQ-CAT-003, the APP2 pre-implementation audit (whose "schema sufficient" verdict confused
+> physical representability with lifecycle authority) and this phase plan are reconciled; audit,
+> outbox and lifecycle-error vocabulary are locked as authority for B03 to implement. A new gate
+> `pnpm check:lifecycle` (10 tests) fails any future document that claims a Product transition
+> LC-04 does not define. Documentation and one checker only — no migration, schema, application
+> source, OpenAPI, generated-client, Figma or dependency change. **`APP2-B03-G01` =
+> `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-B03` = `READY — NOT STARTED`** and
+> **`APP2-A04` = `BLOCKED_BY_APP2-B03`**
+> ([`reports/APP2-B03-G01-COMPLETION-REPORT.md`](../reports/APP2-B03-G01-COMPLETION-REPORT.md)).
 >
 > **`FU-APP2-PRODUCT-VARIANTS-SKU-01` = `DEFERRED_BEYOND_APP2_CATALOG_ALPHA`** — product
 > variants and SKU are not exposed or persisted by the delivered `APP2-B02` contract and are
