@@ -662,10 +662,33 @@
 > **`APP2-B04` = `BLOCKED_BY_APP2-A04`**
 > ([`reports/APP2-B03-COMPLETION-REPORT.md`](../reports/APP2-B03-COMPLETION-REPORT.md)).
 >
-> **`FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` = `ROUTED — NONBLOCKING_FOR_B03`** — `APP2-B02`
+> **`APP2-A04` delivered (2026-08-01).** The Admin publication interaction at the canonical child
+> route `/products/[productId]/publication`, consuming exactly the three B03 operations through
+> three new hand-written `@embroidery/api-client` exports (archive still withheld). The screen
+> reads detail and readiness independently and offers a lifecycle action **only when both agree
+> on status and token**, sending `{ expectedUpdatedAt }` from that one coherent snapshot; a mixed
+> pair renders a reload prompt instead of a command. Nothing is optimistic. All seven requirement
+> codes render in server order from an exhaustive map keyed by the generated enum, with an
+> unknown code shown visibly and never counted as satisfied. Refusals are classified by exact
+> domain code — only `PRODUCT_VERSION_CONFLICT` opens the approved A03 reload dialog. Unpublish
+> is deliberately independent of current readiness and uses a `role="alertdialog"` confirmation
+> with no reason field and no archive call. Following the normative handoff `450:404`, which marks
+> `/san-pham/<slug>` as `CHƯA CHỐT`, the screen shows the **bare server slug as read-only
+> metadata** and constructs no public URL; media stays an honest placeholder. No API, OpenAPI,
+> generated-client, worker, Storefront, object-storage, database, Figma, Nginx, Compose or
+> dependency change; no Product List publication action. **`APP2-A04` =
+> `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-B04` = `READY — NOT STARTED`** and
+> **`APP2-S01` / `APP2-S02` = `BLOCKED_BY_APP2-B04`**
+> ([`reports/APP2-A04-COMPLETION-REPORT.md`](../reports/APP2-A04-COMPLETION-REPORT.md)).
+>
+> **`FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` = `ROUTED — NONBLOCKING_FOR_A04`** — `APP2-B02`
 > implements archive with `PRODUCT_ARCHIVABLE_STATES = [DRAFT]` while LC-04 defines archive
-> only as `PUBLISHED → ARCHIVED`. Discovered by `APP2-B03-G01` and deliberately left unresolved:
-> B03 neither calls nor modifies archive, and `APP2-A04` owns publish/unpublish only.
+> only as `PUBLISHED → ARCHIVED`. Discovered by `APP2-B03-G01` and still deliberately unresolved:
+> neither B03 nor A04 calls or modifies archive, and A04 owns publish/unpublish only.
+>
+> **`FU-APP2-PRODUCT-ARCHIVE-UI-01` = `DEFERRED_PENDING_PRODUCT_OWNER_SURFACE_DECISION`** —
+> `adminProduct_archive` remains withheld from the `@embroidery/api-client` boundary, so no
+> Admin screen can reach it.
 >
 > **`FU-APP2-PRODUCT-VARIANTS-SKU-01` = `DEFERRED_BEYOND_APP2_CATALOG_ALPHA`** — product
 > variants and SKU are not exposed or persisted by the delivered `APP2-B02` contract and are
