@@ -681,6 +681,52 @@
 > **`APP2-S01` / `APP2-S02` = `BLOCKED_BY_APP2-B04`**
 > ([`reports/APP2-A04-COMPLETION-REPORT.md`](../reports/APP2-A04-COMPLETION-REPORT.md)).
 >
+> **`APP2-A04-C1` delivered (2026-08-01) — `COMPLETE — DELIVERED_FOR_REVIEW`.** A04's browser review ran against the
+> dev-mode Admin, so nothing proved production startup, production route serving, asset
+> delivery, hard refresh or gateway-to-production behaviour. C1 adds a repeatable isolated
+> smoke (`pnpm smoke:app2-publication`): an ephemeral `runner`-stage image becomes the real
+> gateway's `admin` upstream — verified by **zero bind mounts**, `NODE_ENV=production` and
+> `node apps/admin/server.js` — while `.dockerignore`'s `**/.next` keeps the production build
+> inside the image and away from the active dev output, and the service swap is a **temp-dir
+> Compose override**, so A04's stated reason for reviewing in dev mode ("would require a
+> Compose change this checkpoint may not make") turns out not to hold. Teardown is planned
+> from what the run changed, not from whether it passed, so a failed scenario cannot leave the
+> developer's Admin swapped; 18 Docker-free regressions run in the ordinary `tools/*.test.mjs`
+> aggregation. Desktop scenarios, direct load, hard refresh, assets, console cleanliness and a
+> real `PRODUCT_VERSION_CONFLICT` (no code, request id or token in the DOM) all pass; the dev
+> stack and mutable Product state were restored exactly (26 DRAFT / 3 ARCHIVED).
+>
+> **C1 retracts A04's `.next`-collision root cause.** `apps/admin/.next` is *not* bind-mounted
+> (the Admin service mounts three `src` directories only) and `.dockerignore` excludes
+> `**/.next`; a host production build was run against the live dev stack and every route kept
+> answering. The route-wide 404 A04 attributed to that collision is unexplained by it.
+>
+> **The smoke found a real defect on its first run.** At 390 px
+> `a.product-publication__back` was a **16 px** touch target — colour and font-size only, so its
+> box was just the line box of its own label — failing the 44 px minimum and WCAG 2.5.8, on a
+> criterion A04 had recorded as passing. It is pure CSS and identical in development, so the
+> first delivery reported it as a blocker rather than patch outside its stated scope. The
+> reviewer ruled it a genuine A04 defect that the requirement covers and extended C1 once to
+> repair it.
+>
+> **Fix:** `display: inline-flex; align-items: center; min-height: styles.$size-touch-target-min`
+> — the **existing approved token**, already used by the Admin shell, product list, product
+> form, assets screen and staff login. The label, the `<Link>` semantics, the
+> `ADMIN_PRODUCTS_ROUTE` destination, the focus treatment and the desktop composition are all
+> unchanged. The mobile assertion that missed it measured one screen; it now sweeps **blocked
+> DRAFT, ready DRAFT, PUBLISHED and the open confirmation dialog**, measures computed
+> `getBoundingClientRect()` geometry and reports selector, accessible name and size on failure.
+> Its single exclusion — the off-canvas keyboard skip link — is a **frozen named list, not a
+> predicate**, and harness tests assert the publication selectors are absent from it, so the
+> assertion cannot later be widened until a real failure disappears.
+>
+> **`APP2-A04-C1` = `COMPLETE — DELIVERED_FOR_REVIEW`** — final smoke **11/11 harness, 20/20
+> browser**, run twice (once after the fix, once after the measurement module was split out
+> when the scenario file crossed the 400-line hard limit); 25 Docker-free regressions; Admin
+> 519/519 unchanged. **`APP2-A04-C2` = `MUST_NOT_BE_CREATED`**, so **`APP2-B04` = `READY — NOT
+> STARTED`**
+> ([`reports/APP2-A04-C1-CORRECTION-REPORT.md`](../reports/APP2-A04-C1-CORRECTION-REPORT.md)).
+>
 > **`FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` = `ROUTED — NONBLOCKING_FOR_A04`** — `APP2-B02`
 > implements archive with `PRODUCT_ARCHIVABLE_STATES = [DRAFT]` while LC-04 defines archive
 > only as `PUBLISHED → ARCHIVED`. Discovered by `APP2-B03-G01` and still deliberately unresolved:
