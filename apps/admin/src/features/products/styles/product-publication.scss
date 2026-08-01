@@ -44,6 +44,14 @@ $marker-width: 20px;
 }
 
 .product-publication__back {
+  // A real touch target, not just a line of text. Styled with colour and
+  // font-size alone this resolved to the 16px line box of its own label — a
+  // tappable navigation control well under the accessible minimum, which the
+  // APP2-A04-C1 production smoke measured at 390px. The box is what grows; the
+  // label, the route and the link semantics are unchanged.
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
   color: styles.$color-action-primary;
   font-size: styles.$font-size-body-s;
   text-decoration: none;
