@@ -30,6 +30,9 @@
     "test:catalog-draft:api": "pnpm --filter @embroidery/api exec jest --testPathPatterns=catalog-draft-api",
     "test:catalog-draft:gateway": "node --test tools/nginx-catalog-draft-seam.test.mjs",
     "test:public-media:integration": "pnpm --filter @embroidery/api exec jest --config jest.public-media.config.mjs",
+    "test:public-catalog:integration": "pnpm --filter @embroidery/api exec jest --testPathPatterns=public-catalog[.]integration",
+    "test:public-catalog:api": "pnpm --filter @embroidery/api exec jest --testPathPatterns=public-catalog-api",
+    "test:public-catalog:gateway": "node --test tools/nginx-public-catalog-seam.test.mjs",
     "test:public-media:gateway": "node --test tools/nginx-public-media-seam.test.mjs",
     "test:asset-processing:integration": "pnpm --filter @embroidery/worker exec jest --testPathPatterns=asset-inspection-.*[.]integration --testPathIgnorePatterns=/node_modules/",
     "test:asset-processing:worker-smoke": "pnpm --filter @embroidery/worker build && pnpm --filter @embroidery/worker exec jest --testPathPatterns=asset-processing-worker.smoke --testPathIgnorePatterns=/node_modules/",
@@ -96,7 +99,9 @@
     "check:secrets": "node tools/check-report-secrets.mjs",
     "check:lifecycle": "node tools/check-lifecycle-consistency.mjs",
     "smoke:app2-t01-public-media": "node tools/smoke-app2-t01-public-media.mjs",
-    "smoke:app2-t01-public-media:production": "node tools/smoke-app2-t01-public-media-production.mjs"
+    "smoke:app2-t01-public-media:production": "node tools/smoke-app2-t01-public-media-production.mjs",
+    "smoke:app2-b04-public-catalog": "node tools/smoke-app2-b04-public-catalog.mjs",
+    "smoke:app2-b04-public-catalog:production": "node tools/smoke-app2-b04-public-catalog-production.mjs"
   },
   "prettier": "@embroidery/prettier-config",
   "devDependencies": {

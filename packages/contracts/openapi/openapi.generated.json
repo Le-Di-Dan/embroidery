@@ -795,6 +795,209 @@
         ],
         "type": "object"
       },
+      "PublicCategoryResponse": {
+        "properties": {
+          "name": {
+            "description": "Canonical Vietnamese label.",
+            "example": "Khăn",
+            "type": "string"
+          },
+          "slug": {
+            "enum": [
+              "thu-bong",
+              "khan",
+              "quan-ao",
+              "khac"
+            ],
+            "example": "khan",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name"
+        ],
+        "type": "object"
+      },
+      "PublicMediaReferenceResponse": {
+        "properties": {
+          "role": {
+            "enum": [
+              "THUMBNAIL",
+              "GALLERY"
+            ],
+            "example": "THUMBNAIL",
+            "type": "string"
+          },
+          "url": {
+            "description": "Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication on every request.",
+            "example": "/api/public/products/khan-theu-hoa-sen/media/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/thumbnail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "role"
+        ],
+        "type": "object"
+      },
+      "PublicPriceResponse": {
+        "properties": {
+          "amount": {
+            "description": "Whole đồng as a decimal string. A string, not a number: VND amounts are exact decimals and JSON numbers are IEEE-754 doubles.",
+            "example": "250000",
+            "type": "string"
+          },
+          "currency": {
+            "example": "VND",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "type": "object"
+      },
+      "PublicProductDetailResponse": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/PublicCategoryResponse"
+          },
+          "description": {
+            "example": "Khăn bông cao cấp, thêu tay hoa sen.",
+            "type": "string"
+          },
+          "isDisplayOutOfStock": {
+            "example": false,
+            "type": "boolean"
+          },
+          "media": {
+            "description": "Deliverable images in persisted display order. An image whose rendition is not servable is omitted rather than advertised with an address that would 404.",
+            "items": {
+              "$ref": "#/components/schemas/PublicMediaReferenceResponse"
+            },
+            "type": "array"
+          },
+          "name": {
+            "example": "Khăn thêu hoa sen",
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/PublicPriceResponse"
+          },
+          "seo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicProductSeoResponse"
+              }
+            ],
+            "description": "Only SEO facts that physically exist on the product. No canonical browser URL: the Storefront route is not decided, and inventing one here would lock it."
+          },
+          "slug": {
+            "example": "khan-theu-hoa-sen",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "category",
+          "price",
+          "isDisplayOutOfStock",
+          "media",
+          "seo"
+        ],
+        "type": "object"
+      },
+      "PublicProductListResponse": {
+        "properties": {
+          "hasNext": {
+            "description": "True when another page follows.",
+            "example": false,
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicProductSummaryResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "description": "Opaque forward cursor, or null on the last page. It is bound to the filter it was issued under: replaying it with a different `categorySlug` is rejected.",
+            "example": null,
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "hasNext",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "PublicProductSeoResponse": {
+        "properties": {
+          "description": {
+            "example": "Khăn bông thêu tay hoa sen, đặt riêng theo yêu cầu.",
+            "type": "string"
+          },
+          "isIndexable": {
+            "description": "Whether the product may be indexed by search engines.",
+            "example": true,
+            "type": "boolean"
+          },
+          "title": {
+            "example": "Khăn thêu hoa sen thủ công",
+            "type": "string"
+          }
+        },
+        "required": [
+          "isIndexable"
+        ],
+        "type": "object"
+      },
+      "PublicProductSummaryResponse": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/PublicCategoryResponse"
+          },
+          "isDisplayOutOfStock": {
+            "description": "Operator-controlled display flag. Not a computed stock level.",
+            "example": false,
+            "type": "boolean"
+          },
+          "name": {
+            "example": "Khăn thêu hoa sen",
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/PublicPriceResponse"
+          },
+          "slug": {
+            "description": "Immutable server-owned identity.",
+            "example": "khan-theu-hoa-sen",
+            "type": "string"
+          },
+          "thumbnail": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicMediaReferenceResponse"
+              }
+            ],
+            "description": "Absent when this product has no deliverable thumbnail."
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "category",
+          "price",
+          "isDisplayOutOfStock"
+        ],
+        "type": "object"
+      },
       "PublishProductBody": {
         "properties": {},
         "type": "object"
@@ -3118,6 +3321,273 @@
         },
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/public/products": {
+      "get": {
+        "description": "Returns published products in editorial order, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts and archived products are excluded by the query itself. Pagination is keyset: `nextCursor` is opaque, bound to the filter it was issued under, and null on the last page. Responses are never stored. Publication is re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished product visible.",
+        "operationId": "publicProduct_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "categorySlug",
+            "required": false,
+            "schema": {
+              "enum": [
+                "thu-bong",
+                "khan",
+                "quan-ao",
+                "khac"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a prior page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicProductListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "A page of published products.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unknown query parameter, an out-of-range page size, or a cursor that is malformed or was issued for a different filter.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List published products",
+        "tags": [
+          "publicProduct"
+        ]
+      }
+    },
+    "/api/public/products/{slug}": {
+      "get": {
+        "description": "Resolves a published product by its immutable server-owned slug. An unknown slug, a draft, an archived product and a product without a public category all return the same 404: a public caller must not be able to tell unreleased work from work that never existed. Responses are never stored. Publication is re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished product visible.",
+        "operationId": "publicProduct_detail",
+        "parameters": [
+          {
+            "description": "The immutable server-owned product slug.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicProductDetailResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The published product.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The slug is not well formed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No published product is available at that slug.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get one published product by slug",
+        "tags": [
+          "publicProduct"
         ]
       }
     },

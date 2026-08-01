@@ -429,6 +429,85 @@ export interface HealthStatusResponse {
   uptimeSeconds: number;
 }
 
+export type PublicCategoryResponseSlug =
+  (typeof PublicCategoryResponseSlug)[keyof typeof PublicCategoryResponseSlug];
+
+export const PublicCategoryResponseSlug = {
+  'thu-bong': 'thu-bong',
+  khan: 'khan',
+  'quan-ao': 'quan-ao',
+  khac: 'khac',
+} as const;
+
+export interface PublicCategoryResponse {
+  /** Canonical Vietnamese label. */
+  name: string;
+  slug: PublicCategoryResponseSlug;
+}
+
+export type PublicMediaReferenceResponseRole =
+  (typeof PublicMediaReferenceResponseRole)[keyof typeof PublicMediaReferenceResponseRole];
+
+export const PublicMediaReferenceResponseRole = {
+  THUMBNAIL: 'THUMBNAIL',
+  GALLERY: 'GALLERY',
+} as const;
+
+export interface PublicMediaReferenceResponse {
+  role: PublicMediaReferenceResponseRole;
+  /** Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication on every request. */
+  url: string;
+}
+
+export interface PublicPriceResponse {
+  /** Whole đồng as a decimal string. A string, not a number: VND amounts are exact decimals and JSON numbers are IEEE-754 doubles. */
+  amount: string;
+  currency: string;
+}
+
+export interface PublicProductSeoResponse {
+  description?: string;
+  /** Whether the product may be indexed by search engines. */
+  isIndexable: boolean;
+  title?: string;
+}
+
+export interface PublicProductDetailResponse {
+  category: PublicCategoryResponse;
+  description?: string;
+  isDisplayOutOfStock: boolean;
+  /** Deliverable images in persisted display order. An image whose rendition is not servable is omitted rather than advertised with an address that would 404. */
+  media: PublicMediaReferenceResponse[];
+  name: string;
+  price: PublicPriceResponse;
+  /** Only SEO facts that physically exist on the product. No canonical browser URL: the Storefront route is not decided, and inventing one here would lock it. */
+  seo: PublicProductSeoResponse;
+  slug: string;
+}
+
+export interface PublicProductSummaryResponse {
+  category: PublicCategoryResponse;
+  /** Operator-controlled display flag. Not a computed stock level. */
+  isDisplayOutOfStock: boolean;
+  name: string;
+  price: PublicPriceResponse;
+  /** Immutable server-owned identity. */
+  slug: string;
+  /** Absent when this product has no deliverable thumbnail. */
+  thumbnail?: PublicMediaReferenceResponse;
+}
+
+export interface PublicProductListResponse {
+  /** True when another page follows. */
+  hasNext: boolean;
+  items: PublicProductSummaryResponse[];
+  /**
+   * Opaque forward cursor, or null on the last page. It is bound to the filter it was issued under: replaying it with a different `categorySlug` is rejected.
+   * @nullable
+   */
+  nextCursor: string | null;
+}
+
 export interface PublishProductBody {
   [key: string]: unknown;
 }
@@ -588,6 +667,37 @@ export type AdminProductPublish200 = ApiSuccessResponse & {
 
 export type AdminProductUnpublish200 = ApiSuccessResponse & {
   data: AdminProductPublicationResponse;
+};
+
+export type PublicProductListParams = {
+  categorySlug?: PublicProductListCategorySlug;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from a prior page.
+   */
+  cursor?: unknown;
+};
+
+export type PublicProductListCategorySlug =
+  (typeof PublicProductListCategorySlug)[keyof typeof PublicProductListCategorySlug];
+
+export const PublicProductListCategorySlug = {
+  'thu-bong': 'thu-bong',
+  khan: 'khan',
+  'quan-ao': 'quan-ao',
+  khac: 'khac',
+} as const;
+
+export type PublicProductList200 = ApiSuccessResponse & {
+  data: PublicProductListResponse;
+};
+
+export type PublicProductDetail200 = ApiSuccessResponse & {
+  data: PublicProductDetailResponse;
 };
 
 export type StaffSelfGet200 = ApiSuccessResponse & {

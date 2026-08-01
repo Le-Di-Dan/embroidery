@@ -514,11 +514,32 @@ describe('Admin product HTTP flow (integration)', () => {
   });
 
   describe('boundary', () => {
-    it('exposes no public or Storefront product route', async () => {
-      for (const path of ['/api/products', '/api/public/products', '/api/admin/categories']) {
+    it('exposes no unsanctioned product or category route', async () => {
+      // `/api/public/products` was in this list until `APP2-B04` delivered it.
+      // It is deliberately no longer here: the assertion that mattered was
+      // "the Admin surface invents no public route", not "no public route may
+      // ever exist". These two remain unrouted.
+      for (const path of ['/api/products', '/api/admin/categories']) {
         const res = await ctx.http.get(path);
         expect({ path, status: res.status }).toEqual({ path, status: 404 });
       }
     });
+
+    it('serves the sanctioned public catalog anonymously, with no Admin session', async () => {
+      // No `authed` agent: this is the anonymous client. It proves the Admin
+      // suite's own boundary — the public catalog is reachable without a staff
+      // cookie, and it is the B04 operation rather than anything this module
+      // exposes.
+      const res = await ctx.http.get('/api/public/products');
+      expect(res.status).toBe(200);
+      expect((res.body as Envelope<unknown>).code).toBe('PUBLIC_PRODUCT_LIST_READ');
+    });
   });
+
+  // The Storefront browser route (`/san-pham/<slug>`, still an unresolved
+  // proposal) is asserted absent at the layer that would actually serve it:
+  // `tools/nginx-public-catalog-seam.test.mjs` proves no gateway template binds
+  // it, and the development gateway smoke proves it does not answer. Asserting
+  // it here would only exercise how this harness handles a path outside the
+  // API's global prefix, which is unrelated platform behaviour.
 });

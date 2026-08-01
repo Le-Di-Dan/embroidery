@@ -57,8 +57,9 @@ describe('buildOpenApiDocument', () => {
     // + APP2-B03 publication readiness, publish and unpublish — three ops on
     // three new paths.
     // + APP2-T01 public catalog media delivery — one binary op on one new path.
-    expect(stats.pathCount).toBe(14);
-    expect(stats.operationCount).toBe(17);
+    // + APP2-B04 public catalog list and detail — two JSON ops on two new paths.
+    expect(stats.pathCount).toBe(16);
+    expect(stats.operationCount).toBe(19);
     expect(stats.schemaCount).toBeGreaterThan(0);
   });
 
@@ -94,6 +95,19 @@ describe('buildOpenApiDocument', () => {
     expect(document.paths['/api/admin/products/{productId}/unpublish']?.post?.operationId).toBe(
       'adminProduct_unpublish',
     );
+    // APP2-B04. Stated explicitly on `@ApiOperation` for the same reason as
+    // B03: the factory would derive them from the controller class name, and
+    // the public contract is `publicProduct_*` regardless of how the
+    // implementation is split.
+    expect(document.paths['/api/public/products']?.get?.operationId).toBe('publicProduct_list');
+    expect(document.paths['/api/public/products/{slug}']?.get?.operationId).toBe(
+      'publicProduct_detail',
+    );
+    // APP2-T01's binary route keeps its own id and is not absorbed into B04.
+    expect(
+      document.paths['/api/public/products/{slug}/media/{productMediaId}/{rendition}']?.get
+        ?.operationId,
+    ).toBe('publicProductMedia_get');
   });
 
   it('requires data on the current-staff 200 response (APP1-B02-C1)', () => {

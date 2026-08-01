@@ -23,6 +23,9 @@ import type {
   ArchiveProductBody,
   CreateProductBody,
   HealthStatusResponse,
+  PublicProductDetail200,
+  PublicProductList200,
+  PublicProductListParams,
   PublishProductBody,
   ReadinessStatusResponse,
   StaffLoginRequest,
@@ -242,6 +245,34 @@ export const healthReadiness = (
 };
 
 /**
+ * Returns published products in editorial order, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts and archived products are excluded by the query itself. Pagination is keyset: `nextCursor` is opaque, bound to the filter it was issued under, and null on the last page. Responses are never stored. Publication is re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished product visible.
+ * @summary List published products
+ */
+export const publicProductList = (
+  params?: PublicProductListParams,
+  options?: SecondParameter<typeof apiRequest<PublicProductList200>>,
+) => {
+  return apiRequest<PublicProductList200>(
+    { url: `/api/public/products`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Resolves a published product by its immutable server-owned slug. An unknown slug, a draft, an archived product and a product without a public category all return the same 404: a public caller must not be able to tell unreleased work from work that never existed. Responses are never stored. Publication is re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished product visible.
+ * @summary Get one published product by slug
+ */
+export const publicProductDetail = (
+  slug: unknown,
+  options?: SecondParameter<typeof apiRequest<PublicProductDetail200>>,
+) => {
+  return apiRequest<PublicProductDetail200>(
+    { url: `/api/public/products/${slug}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
  * Streams the requested rendition of one image attached to a PUBLISHED product. Anonymous: no session, cookie or storage credential is involved. Publication is re-checked on every request, so unpublishing a product stops delivery immediately even for a caller that already knows the address. Responses are never cached.
  * @summary Get one published product image
  */
@@ -317,6 +348,10 @@ export type AdminProductUnpublishResult = NonNullable<
 >;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
+export type PublicProductListResult = NonNullable<Awaited<ReturnType<typeof publicProductList>>>;
+export type PublicProductDetailResult = NonNullable<
+  Awaited<ReturnType<typeof publicProductDetail>>
+>;
 export type PublicProductMediaGetResult = NonNullable<
   Awaited<ReturnType<typeof publicProductMediaGet>>
 >;
