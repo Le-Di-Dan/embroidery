@@ -117,6 +117,24 @@ the table is empty.
 Dataset refs D-A..D-G are defined in
 [`DB5_EXPLAIN_VALIDATION_PLAN.md`](./DB5_EXPLAIN_VALIDATION_PLAN.md) §2.
 
+### 3.1.1 Q-01 pagination assertions (added 2026-08-02)
+
+ADR-DB5-001 R10 reclassified Q-01 as `KEYSET`, so the listing now has cursor
+assertions an offset listing did not need:
+
+| Assert | Why |
+|---|---|
+| Order is `(display_order ASC, id ASC)` | a keyset cursor is only correct over a total order (R2) |
+| A continuation eliminates rows **at the scan**, not after it | otherwise it is offset paging wearing a cursor |
+| A cursor issued under one `categorySlug` is rejected under another | replaying it across filters would skip or repeat rows |
+| Duplicated `display_order` values are traversed exactly once | the tie-breaker is what makes that true; seed at least one duplicate pair |
+| The per-card thumbnail subquery runs at most once per returned row | the no-N+1 property of the delivered projection |
+
+The measured baseline for all five is
+[`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md), captured
+by `pnpm explain:q01`. Document consistency is gated separately by
+`pnpm check:pagination-authority`.
+
 ### 3.2 After seeding
 
 Run **`ANALYZE`**, then capture the 43 EXPLAIN scenarios + 7 locking

@@ -11,7 +11,7 @@ rationale) · `unresolved`.
 
 | Q | Prio | Index or rationale | Status |
 |---|---|---|---|
-| Q-01 | P1 | IDX-065 | complete |
+| Q-01 | P1 | IDX-065 — pagination amended to `KEYSET` 2026-08-02 (ADR-DB5-001 R10); access path measured, see [`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md) | complete |
 | Q-02 | P1 | IDX-011, 068–071, 015 | complete |
 | Q-03 | P1 | IDX-016, 113, 114, 069 | complete |
 | Q-04 | P1 | IDX-066, 050 | complete |

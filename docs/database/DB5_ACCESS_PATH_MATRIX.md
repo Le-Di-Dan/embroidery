@@ -11,11 +11,17 @@ fallback, EXPLAIN scenario, status. IDs are DB4 IDs.
 Fallback = plan if the index is absent/unused.
 Status: `complete` · `complete-deferred-syntax` · `no-index-required`.
 
+**Amendment 2026-08-02 (ADR-DB5-001 R10, IMP-D037):** Q-01's pagination class is
+`KEYSET`. Its fallback and EXPLAIN cells now record what was actually measured
+for both the category-filtered and the unfiltered form —
+[`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md). No other
+row changes.
+
 ## 1. Q-01 … Q-33
 
 | Q | Entry table | Join order (REL) | Filter COL | Sort COL | Scope COL | Sel | IDX | Pag | Lock/Cons | Fallback | EXPLAIN scenario | Status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Q-01 | TBL-012 | →TBL-011 (REL-020) | 012-01, 012-07, 012-09 | 012-10, id | 012-07 | med | IDX-065 | OFFSET | —/E | seq scan 100 rows | E1 catalog, category-filtered | complete |
+| Q-01 | TBL-012 | →TBL-011 (REL-020) | 012-01, 012-07, 012-09 | 012-10, id | 012-07 | med | IDX-065 | **KEYSET** | —/E | seq scan + sort, ≤100 rows (measured) | E1 catalog, both forms | complete |
 | Q-02 | TBL-012 | →013 (REL-021)→014 (REL-022); →015/016 (REL-023); →017→022 (REL-025) | 012-03, 012-07 | child display_order | 012-07 | unique | IDX-011, 068–071, 015 | none | —/E | seq scan | E2 slug probe + nested loops | complete |
 | Q-03 | TBL-014 | →018 (REL-026); →020 (REL-029); →021 (REL-031) | 018-01, 020-04, 021-04 | — | public | high | IDX-016, 113, 114, 069 | none | —/S | seq scan small | E3 active-set partial scans | complete |
 | Q-04 | TBL-064 | →065→022 (REL-095) | 064-04, 064-06 | 064-05, id | 064-04 | med | IDX-066, 050 | OFFSET | —/E | seq scan | E4 published partial | complete |

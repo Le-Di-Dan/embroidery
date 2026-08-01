@@ -39,14 +39,14 @@ No query ID is renumbered.
 | Join path | entry `products`, optional join `categories` via REL-020 (`products.category_id`) for the category label |
 | Predicates | `status='PUBLISHED'` · optional `category_id = ?` · optional availability filter reading `is_display_out_of_stock` (COL-TBL012-09) |
 | Sort | `display_order` (COL-TBL012-10), `id` |
-| Pagination | `OFFSET` |
+| Pagination | `KEYSET` — cursor `(display_order, id)` bound to the `categorySlug` filter identity (ADR-DB5-001 R10, amended 2026-08-02) |
 | Projection | name, slug, base_price_amount, currency_code, display_order, is_display_out_of_stock, category label, thumbnail via TBL-017 |
 | Locking | — |
 | Archive | ARCHIVED excluded by the status predicate; `archived_at` is evidence, not the filter |
 | Indexes | **IDX-065** `products (category_id, display_order, id) WHERE status='PUBLISHED'` |
 | Constraint assumptions | CST-011 slug unique |
 | JSONB | none |
-| DB6 validation | EXPLAIN shows index scan on IDX-065 for the category-filtered form; unfiltered form may legitimately seq-scan 100 rows |
+| DB6 validation | **Measured 2026-08-02** ([`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md)): both forms legitimately seq-scan and sort at MVP cardinality. IDX-065's ordering is reachable only when `category_id` is an equality constant, which the delivered `categories.slug` join does not supply |
 
 Note: availability is **computed** (TBL-018 balance − active holds/reservations),
 never stored (DB4 §3). The listing shows the manual override flag only; true

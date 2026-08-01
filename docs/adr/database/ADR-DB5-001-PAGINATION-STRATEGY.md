@@ -1,12 +1,14 @@
 # ADR-DB5-001 — Pagination and Ordering Strategy
 
-- Status: Accepted
+- Status: Accepted — **amended 2026-08-02 (R10: Q-01 → `KEYSET`)**
 - Date: 2026-07-18
 - Git HEAD: `456e101` (DB4 baseline)
-- Decision IDs: DEC-DB5-01
+- Decision IDs: DEC-DB5-01, IMP-D037 (R10 amendment)
 - Query IDs: Q-01, Q-04, Q-06, Q-10, Q-12, Q-16, Q-17..Q-29, QX-01..QX-11
 - Invariant IDs: INV-14 (history integrity), INV-23 (outbox payload)
 - Supersedes: —
+- Amended by: §R10, which changes the Q-01 classification only. Every other
+  classification in R5 stands exactly as accepted on 2026-07-18.
 
 ## Context
 
@@ -109,7 +111,7 @@ page, not in application post-filtering, which would make page sizes ragged.
 
 | Query | Class | Sort | Rationale |
 |---|---|---|---|
-| Q-01 product listing | `OFFSET` | `(display_order, id)` | ≤100 rows total, editorially ordered, jump-to-page expected |
+| Q-01 product listing | `KEYSET` | `(display_order, id)` | **Amended by R10 (2026-08-02).** The public listing is a cursor-continuation feed, not a jump-to-page admin table; the cursor carries `(display_order, id)` plus the `categorySlug` filter identity |
 | Q-02 product detail | n/a | — | single graph, not a listing |
 | Q-04 gallery listing | `OFFSET` | `(display_order, id)` | small curated set |
 | Q-06 sitemap set | `BATCH_SCAN` | `(id)` | full enumeration by a generator, not a UI page |
@@ -205,6 +207,63 @@ Reclassify an `OFFSET` query to `KEYSET` when **any** holds:
 
 `custom_requests` (Q-21) is the most likely future candidate. Until one of
 these is observed, converting it would be speculative optimization.
+
+R8 was written before any public listing existed. It is a rule about
+*converting a query that already works*; it does not govern the classification
+of a contract being designed for the first time. See R10.
+
+### R9 — Reserved
+
+Unused. R10 was added by a later amendment and the numbering is not reused.
+
+### R10 — Q-01 is `KEYSET` (amendment, 2026-08-02)
+
+**Decision.** The public catalog listing Q-01 uses **keyset** pagination.
+
+| Aspect | Value |
+|---|---|
+| Order | `products.display_order ASC, products.id ASC` |
+| Cursor | `display_order` + `id` + the `categorySlug` filter identity |
+| Page size | unchanged — the existing `DEFAULT_PAGE_SIZE` / `MAX_PAGE_SIZE` policy (R6) |
+| Continuation | `hasNext` + `nextCursor` |
+
+**Activation event.** `APP2-B04` delivered the public catalog contract
+(`publicProduct_list`, `publicProduct_detail`). The two public operations
+exist, are anonymous, and are cursor-based. This is no longer a hypothetical
+future optimization of a working query; it is the classification of the query
+this system actually serves.
+
+**Scope.** This supersedes the Q-01 classification only — recorded here as
+history: Q-01 was classified `OFFSET` from 2026-07-18 until this amendment. No
+other row of R5 changes, no schema or index changes, and R8's thresholds still
+govern every remaining `OFFSET` query, `custom_requests` (Q-21) foremost.
+
+**Why the ordering tuple did not change.** `(display_order, id)` was already
+the locked total order under R2, and IDX-065 is built on it. Keyset needs
+exactly a unique, index-aligned total order, so the tuple that made offset
+deterministic is the tuple that makes the cursor correct. The mechanism
+changed; the order did not.
+
+**Why the cursor carries the filter.** A cursor encodes a position in *one*
+ordered set. `categorySlug` selects which set that is, so a cursor issued under
+one filter and replayed under another would silently skip or repeat rows —
+the exact failure keyset exists to prevent. Binding the filter into cursor
+identity makes that replay a rejected cursor rather than a wrong page.
+
+**Behavior under concurrent writes.** A cursor at `(display_order, id)` is
+unaffected by rows inserted or reordered elsewhere in the key space, so a
+continuation neither duplicates nor omits a row because a boundary shifted.
+This is a statement about the cursor, not a snapshot claim: successive requests
+are separate read-committed transactions, and a product published, unpublished
+or reordered between two requests will legitimately appear or disappear.
+
+**Access path.** Measured, not assumed:
+[`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](../../database/DB5_Q01_ACCESS_PATH_EVIDENCE.md).
+The current plan is accepted at MVP cardinality. Note the finding recorded
+there — the delivered contract filters on `categories.slug` across a join, so
+IDX-065's leading key is not a constant and neither form gets its ordering from
+the index. That is acceptable over ≤100 rows and is routed to DB10, not fixed
+here.
 
 ## Deferred
 

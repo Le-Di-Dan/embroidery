@@ -32,6 +32,24 @@ Composite justification:
 The unfiltered "all published products" form may legitimately sequential-scan
 100 rows; that is not a failure (ADR-DB5-004 R8, EXPLAIN scenario E1).
 
+**Measured 2026-08-02** ([`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md)),
+after `APP2-B04` delivered the real Q-01 query and ADR-DB5-001 R10 reclassified
+it as `KEYSET`:
+
+- **Category-filtered:** IDX-065 supplies the partial predicate and row
+  selection. It does **not** supply the ordering, because the delivered
+  contract filters on `categories.slug` across the join and leaves
+  `category_id` — the leading key — unconstrained. A sort node appears.
+- **`category_id` as a constant:** sort-free `Limit → Index Scan` on IDX-065.
+  This is what the composite was designed for, and it is reachable only from a
+  form the public contract does not currently issue.
+- **Unfiltered:** no `category_id` equality exists, so this index is **not** an
+  ordered leading-prefix match for it under any planner setting.
+
+At ≤100 published rows the resulting sort is free and adding an index to remove
+it would be the speculative optimization ADR-DB5-004 R4/R5 refuses. Whether
+Q-01 should resolve the category to an id first is routed to DB10.
+
 `archived_at` (COL-TBL012-08) is **evidence, not a filter** — archival is
 expressed by `status='ARCHIVED'`, and no index uses the timestamp.
 

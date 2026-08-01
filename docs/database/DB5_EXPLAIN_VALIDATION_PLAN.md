@@ -64,7 +64,7 @@ reasoning behind IDX-099 as wrong if the planner *did* match IDX-020.
 
 | Ref | Query | Data | Expected plan | Assert |
 |---|---|---|---|---|
-| **E1** | Q-01 listing | D-A, **D-B** | category-filtered: Index Scan IDX-065, **no sort node**; unfiltered: seq scan acceptable | sort alignment; D-B confirms skew does not change the shape |
+| **E1** | Q-01 listing | D-A, **D-B** | **both forms:** seq scan + top-N sort at MVP cardinality; IDX-065 ordering only from a `category_id`-constant form. **Measured 2026-08-02** — see below | keyset boundary eliminates rows at the scan; thumbnail subquery bounded by the page (no N+1) |
 | **E2** | Q-02 detail | D-A | IDX-011 probe + nested loops on IDX-068..071 | no seq scan on child tables |
 | **E3** | Q-03 availability | D-A | IDX-069 + IDX-113/114 | partials used |
 | **E4** | Q-04 gallery | D-A | Index Scan IDX-066, no sort | published-only |
@@ -83,6 +83,21 @@ reasoning behind IDX-099 as wrong if the planner *did* match IDX-020.
 | **E26** | Q-26 asset queues | D-E | IDX-086 / IDX-087 | drained states excluded |
 | **E36** | QX-03 notification retry | D-A | Index Scan IDX-091 | no join to outbox |
 | **E42** | QX-10 expiry sweeps | **D-E** | IDX-109 / **IDX-110** | IDX-110 excludes NULL `expires_at` rows |
+
+**E1 has run.** `APP2-B04` delivered the real Q-01 statement and `APP2-B04-C1`
+measured it against a disposable PostgreSQL 16.14 with all 33 migrations
+applied — four cases (unfiltered and category-filtered × first and continuation
+page), plus a `enable_seqscan = off` structural probe and a `category_id`
+-constant reference form. Plans, buffers, timings and fixture cardinality:
+[`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md). Harness:
+`pnpm explain:q01`.
+
+E1's original expectation — "category-filtered: Index Scan IDX-065, no sort
+node" — is **superseded by that measurement**: the delivered contract filters on
+`categories.slug` across a join, so IDX-065's leading key is not a constant and
+both forms sort. The plan is accepted at MVP cardinality; §8's "sort node where
+the index was claimed aligned" failure does not apply, because the alignment
+claim itself was the thing found imprecise.
 
 ## 5. P2 scenarios
 

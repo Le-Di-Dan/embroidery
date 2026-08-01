@@ -19,15 +19,29 @@ This is the per-query expansion of that ADR's R5 classification.
 
 | Q | Class | Sort keys | Dir | Tie-break | Cursor | Nulls | Archive/status predicate | Index | Aligned? | Concurrent writes | Page size |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Q-01 products | OFFSET | `display_order` | ASC | `id` | — | n/a (NOT NULL) | `status='PUBLISHED'` in index | IDX-065 | yes | boundary may shift by one; accepted (≤100 rows, editorial order) | `[cfg]` |
-| Q-04 gallery | OFFSET | `display_order` | ASC | `id` | — | n/a | `status='PUBLISHED'` in index | IDX-066 | yes | as Q-01 | `[cfg]` |
+| Q-01 products | **KEYSET** | `display_order` | ASC | `id` | `(display_order, id)` + `categorySlug` filter identity | n/a (NOT NULL) | `status='PUBLISHED'` in index | IDX-065 | **no** — see note | **exact** — a continuation neither repeats nor omits a row when a boundary shifts | `[cfg]` |
+| Q-04 gallery | OFFSET | `display_order` | ASC | `id` | — | n/a | `status='PUBLISHED'` in index | IDX-066 | yes | boundary may shift by one; accepted (small curated set) | `[cfg]` |
 | Q-10 design versions | OFFSET | `version` | DESC | `id` DESC | — | n/a | none (all versions shown) | IDX-023 backward | yes | new version appears at page 1; harmless | `[cfg]` |
 | Q-12 quotation versions | OFFSET | `version` | DESC | `id` DESC | — | n/a | none | IDX-039 backward | yes | as Q-10 | `[cfg]` |
 | Q-21 requests by status | OFFSET | `created_at` | DESC | `id` DESC | — | n/a | `status = ?` as leading key | IDX-073 | yes | boundary shift possible; **most likely future KEYSET candidate** (ADR R8) | `[cfg]` |
 | Q-23 failed payments | OFFSET | `created_at` | DESC | `id` DESC | — | n/a | `status IN (...)` in index | IDX-076 | yes | tiny set | `[cfg]` |
 | **Q-16 reconciliation** | **KEYSET** | `received_at` | DESC | `id` DESC | `(received_at, id)` | n/a | none | IDX-079 | yes | **exact** — callbacks arriving mid-review cannot repeat or skip evidence rows | `[cfg]` |
 
-Q-16 is the only admin listing using `KEYSET`, and the reason is specific:
+**Q-01 was amended to `KEYSET` on 2026-08-02** (ADR-DB5-001 R10, IMP-D037), when
+`APP2-B04` delivered the public catalog contract. Order, tie-breaker and page-size
+policy are unchanged; only the mechanism and the cursor are new. The cursor binds
+`categorySlug` because a cursor encodes a position in one ordered set, and replaying
+it under a different filter would skip or repeat rows.
+
+**Q-01's `Aligned?` cell reads `no`, and that is measured.** The delivered contract
+filters by `categories.slug` across the join, so `products.category_id` — IDX-065's
+leading key — is not a constant at plan time, and the page is ordered by a sort node
+in both the filtered and unfiltered form. Over ≤100 rows that sort is free and the
+plan is accepted; the same statement with a constant `category_id` does get a
+sort-free `Limit → Index Scan`. Full plans:
+[`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md).
+
+Q-16 was the only admin listing using `KEYSET`, and the reason is specific:
 `payment_provider_events` is append-heavy **and** written concurrently by
 provider callbacks while an admin reviews. Offset paging would repeat or
 skip financial evidence during exactly the workflow where completeness
@@ -128,17 +142,21 @@ additional retained access paths in
 
 | Class | Count |
 |---|---|
-| `OFFSET` | 7 |
-| `KEYSET` | 1 |
+| `OFFSET` | 6 |
+| `KEYSET` | 2 |
 | `TOP_N` | 8 (+12 dashboard buckets) |
 | `IMMUTABLE_CURSOR` | 6 |
 | `BATCH_SCAN` | 13 |
 | No pagination | 16 + 30 retained paths |
 
-**Alignment: every paginated query's serving index matches its sort order
-and direction**, so no catalogued listing requires a sort node. The two
-exceptions are the deliberate no-index cases (Q-20, QX-08), where the sets
-are small enough that sorting is free.
+**Alignment: every paginated query's serving index matches its sort order and
+direction** — as a design property of the index keys. Three catalogued
+listings nonetheless sort at runtime: the deliberate no-index cases (Q-20,
+QX-08), and **Q-01**, whose delivered statement supplies its category filter as
+a joined `categories.slug` rather than a constant `products.category_id`, so
+the index's leading key is unconstrained (§2 note, measured in
+[`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md)). In all
+three the sets are small enough that sorting is free.
 
 ## 9. Deferred
 

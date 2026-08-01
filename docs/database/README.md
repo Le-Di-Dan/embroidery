@@ -194,6 +194,7 @@ DB4 ADRs:
 | [`DB5_SECURITY_SCOPE_REVIEW.md`](./DB5_SECURITY_SCOPE_REVIEW.md) | Owner/grant predicates, token lookups, IDOR risk, PII search restrictions. |
 | [`DB5_LOCKING_ACCESS_PATHS.md`](./DB5_LOCKING_ACCESS_PATHS.md) | CC-01..CC-28: lock anchors, lookup indexes, lock order, deadlock risk. |
 | [`DB5_EXPLAIN_VALIDATION_PLAN.md`](./DB5_EXPLAIN_VALIDATION_PLAN.md) | 43 EXPLAIN + 7 locking scenarios; datasets D-A..D-G; failure criteria. |
+| [`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md) | Measured Q-01 plans (E1) after the keyset amendment: four cases, structural probe, IDX-065's precise utility. |
 | [`DB5_INDEX_COST_REDUNDANCY_REPORT.md`](./DB5_INDEX_COST_REDUNDANCY_REPORT.md) | Per-table census, write amplification, overlaps, budget exceptions, bloat. |
 | [`DB5_INDEX_NAMING_AND_HANDOFF.md`](./DB5_INDEX_NAMING_AND_HANDOFF.md) | `IDX-*` → physical names, all within the 63-byte limit. |
 | [`DB5_SCHEMA_CHANGE_REQUESTS.md`](./DB5_SCHEMA_CHANGE_REQUESTS.md) | Zero requests; four observations resolved without schema change. |

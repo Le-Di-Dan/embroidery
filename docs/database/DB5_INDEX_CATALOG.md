@@ -131,6 +131,18 @@ R2). The partial predicate keeps DRAFT/ARCHIVED rows out entirely, which is
 also the security scope for Q-01. The leading prefix `(category_id)` serves
 category-scoped counts, so no separate FK index is needed.
 
+**Precise statement of what IDX-065 serves (measured 2026-08-02,
+[`DB5_Q01_ACCESS_PATH_EVIDENCE.md`](./DB5_Q01_ACCESS_PATH_EVIDENCE.md)):** the
+ordering `(display_order, id)` is reachable from this index **only when
+`category_id` is an equality constant** — proven by a sort-free
+`Limit → Index Scan` for exactly that form. The delivered `APP2-B04` contract
+filters by category *slug* across the join to `categories`, so it supplies no
+such constant and both its forms sort. The unfiltered listing has no
+`category_id` equality at all and therefore cannot take its order from this
+index under any planner setting. The partial predicate and row selection are
+still served in every case; at ≤100 published rows the sort is free and no
+additional index is warranted.
+
 ### 3.2 Inventory / Asset
 
 | IDX | Table | Keys | Predicate | Queries | Sel. / rows | Write cost | Status |
