@@ -53,10 +53,17 @@ export type {
 // so the filter options are derived from the contract rather than hard-coded.
 // Admin product read + draft-authoring operations (APP2-B02). `adminProductList`
 // serves the read-only list (`APP2-A02`); create, detail and update serve the
-// product form/detail capability (`APP2-A03`). `adminProductArchive` is still
-// deliberately withheld: archive has no approved surface
-// (`FU-APP2-PRODUCT-ARCHIVE-UI-01`), and publication belongs to
-// `APP2-B03`/`APP2-A04` — so neither can be reached from a screen by mistake.
+// product form/detail capability (`APP2-A03`).
+//
+// Still deliberately withheld: `adminProductArchive`, which has no approved
+// surface (`FU-APP2-PRODUCT-ARCHIVE-UI-01`), and the three publication
+// operations `adminProductPublicationReadiness`/`adminProductPublish`/
+// `adminProductUnpublish` delivered by `APP2-B03`. The publication operations
+// exist in the generated tree and are covered by the contract; the screen that
+// uses them is `APP2-A04`, and that checkpoint exposes them here. Withholding
+// them keeps a mutation unreachable from any screen before the checkpoint that
+// owns its interaction, confirmation and error states has shipped.
+//
 // The query enums are re-exported as values so filter and category options are
 // derived from the contract rather than hard-coded.
 export {

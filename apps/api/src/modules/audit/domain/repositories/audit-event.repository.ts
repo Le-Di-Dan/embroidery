@@ -32,6 +32,11 @@ export const AUDIT_TARGET_KINDS = [
   'INVENTORY_RESERVATION',
   'SKU_STOCK',
   'ASSET',
+  // `APP2-B03` — the target of `product.published` / `product.unpublished`
+  // (LC-04 `TR-LC04-01`/`TR-LC04-05`, IMP-D035). `target_kind` is open text with
+  // no CHECK by DB4 design, so this list is the application's own G-DB7-46
+  // guard, not a schema constraint — adding a kind here needs no migration.
+  'PRODUCT',
   'GALLERY_ENTRY',
   'CONTENT_PAGE',
   'AGREEMENT_VERSION',

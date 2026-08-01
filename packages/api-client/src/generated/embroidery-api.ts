@@ -16,13 +16,18 @@ import type {
   AdminProductDetail200,
   AdminProductList200,
   AdminProductListParams,
+  AdminProductPublicationReadiness200,
+  AdminProductPublish200,
+  AdminProductUnpublish200,
   AdminProductUpdate200,
   ArchiveProductBody,
   CreateProductBody,
   HealthStatusResponse,
+  PublishProductBody,
   ReadinessStatusResponse,
   StaffLoginRequest,
   StaffSelfGet200,
+  UnpublishProductBody,
   UpdateProductBody,
 } from './embroidery-api.schemas';
 
@@ -169,6 +174,60 @@ export const adminProductArchive = (
   );
 };
 
+/**
+ * Reports the complete, closed requirement set in a stable order, whether each is satisfied, and the current lifecycle status and concurrency token. Read-only: it writes nothing, records no audit or event, and makes no storage call. The result is a report about this moment — publish re-evaluates every requirement inside its own transaction and may still refuse.
+ * @summary Evaluate product publication readiness
+ */
+export const adminProductPublicationReadiness = (
+  productId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminProductPublicationReadiness200>>,
+) => {
+  return apiRequest<AdminProductPublicationReadiness200>(
+    { url: `/api/admin/products/${productId}/publication-readiness`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Moves a DRAFT to PUBLISHED (`TR-LC04-01`). Every publication requirement is re-evaluated inside the transaction against locked rows, so a readiness check that passed a moment ago is never trusted. Requires `expectedUpdatedAt`, the `updatedAt` token last read for this product. A stale value is rejected as `PRODUCT_VERSION_CONFLICT` rather than overwriting a concurrent change, and a successful write advances the token.
+ * @summary Publish a product
+ */
+export const adminProductPublish = (
+  productId: unknown,
+  publishProductBody: PublishProductBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductPublish200>>,
+) => {
+  return apiRequest<AdminProductPublish200>(
+    {
+      url: `/api/admin/products/${productId}/publish`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: publishProductBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Moves a PUBLISHED product back to DRAFT (`TR-LC04-05`), removing public visibility by lifecycle state alone. This is not archive and not a delete: the slug, category, price, media links, images and their derivatives all remain, `archivedAt` is never written, and the product becomes editable again. Requires `expectedUpdatedAt`, the `updatedAt` token last read for this product. A stale value is rejected as `PRODUCT_VERSION_CONFLICT` rather than overwriting a concurrent change, and a successful write advances the token.
+ * @summary Unpublish a product
+ */
+export const adminProductUnpublish = (
+  productId: unknown,
+  unpublishProductBody: UnpublishProductBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductUnpublish200>>,
+) => {
+  return apiRequest<AdminProductUnpublish200>(
+    {
+      url: `/api/admin/products/${productId}/unpublish`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: unpublishProductBody,
+    },
+    options,
+  );
+};
+
 export const healthCheck = (options?: SecondParameter<typeof apiRequest<HealthStatusResponse>>) => {
   return apiRequest<HealthStatusResponse>({ url: `/api/health`, method: 'GET' }, options);
 };
@@ -226,6 +285,15 @@ export type AdminProductDetailResult = NonNullable<Awaited<ReturnType<typeof adm
 export type AdminProductUpdateResult = NonNullable<Awaited<ReturnType<typeof adminProductUpdate>>>;
 export type AdminProductArchiveResult = NonNullable<
   Awaited<ReturnType<typeof adminProductArchive>>
+>;
+export type AdminProductPublicationReadinessResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductPublicationReadiness>>
+>;
+export type AdminProductPublishResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductPublish>>
+>;
+export type AdminProductUnpublishResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductUnpublish>>
 >;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;

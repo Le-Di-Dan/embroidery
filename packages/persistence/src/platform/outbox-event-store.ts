@@ -42,6 +42,11 @@ export const OUTBOX_AGGREGATE_KINDS = [
   'INVENTORY_RESERVATION',
   'CUSTOMER',
   'ASSET',
+  // `APP2-B03` — the aggregate of `product.published` / `product.unpublished`
+  // (LC-04 `TR-LC04-01`/`TR-LC04-05`, IMP-D035). `aggregate_kind` is open text
+  // with no CHECK by design (REL-104 is polymorphic), so this list is the
+  // G-DB7-47 write-time guard, not a schema constraint — no migration.
+  'PRODUCT',
 ] as const;
 
 export type OutboxAggregateKind = (typeof OUTBOX_AGGREGATE_KINDS)[number];

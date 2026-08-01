@@ -29,6 +29,12 @@ const EXPECTED_STATUS: Record<ProductDraftErrorCode, number> = {
   PRODUCT_MEDIA_ASSET_UNAVAILABLE: 409,
   PRODUCT_ARCHIVE_NOT_ALLOWED: 409,
   PRODUCT_CURSOR_INVALID: 400,
+  // `APP2-B03` — each publication refusal keeps its own code; they share the
+  // 409 status with the other lifecycle conflicts but are never collapsed
+  // into one another or into `PRODUCT_NOT_EDITABLE`.
+  PRODUCT_PUBLICATION_NOT_READY: 409,
+  PRODUCT_PUBLISH_NOT_ALLOWED: 409,
+  PRODUCT_UNPUBLISH_NOT_ALLOWED: 409,
 };
 
 describe('product draft error taxonomy', () => {

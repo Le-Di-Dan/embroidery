@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AssetIntakeModule } from '../modules/asset/asset-intake.module';
 import { CatalogDraftModule } from '../modules/catalog/catalog-draft.module';
+import { CatalogPublicationModule } from '../modules/catalog/catalog-publication.module';
 import { HealthModule } from '../modules/health/health.module';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
@@ -21,6 +22,7 @@ import { ValidationModule } from '../platform/validation/validation.module';
     IdentityModule,
     AssetIntakeModule,
     CatalogDraftModule,
+    CatalogPublicationModule,
   ],
 })
 export class AppModule {}

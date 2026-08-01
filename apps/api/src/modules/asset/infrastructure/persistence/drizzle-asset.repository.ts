@@ -311,6 +311,53 @@ export class DrizzleAssetRepository extends DrizzleRepository implements AssetRe
     });
   }
 
+  async findScopedByIds(
+    ids: readonly AssetId[],
+    filter: Pick<AssetListFilter, 'kind' | 'classification'>,
+  ): Promise<Asset[]> {
+    return this.run('findScopedByIds', async () => {
+      if (ids.length === 0) {
+        return [];
+      }
+      const rows = await this.db
+        .select()
+        .from(assets)
+        .where(and(inArray(assets.id, [...ids]), scopePredicate(filter)));
+      return rows.map(toAsset);
+    });
+  }
+
+  async listDerivativesFor(assetIds: readonly AssetId[]): Promise<AssetDerivative[]> {
+    return this.run('listDerivativesFor', async () => {
+      if (assetIds.length === 0) {
+        return [];
+      }
+      const rows = await this.db
+        .select()
+        .from(assetDerivatives)
+        .where(inArray(assetDerivatives.assetId, [...assetIds]));
+      return rows.map(toDerivative);
+    });
+  }
+
+  async lockDerivativesFor(assetIds: readonly AssetId[]): Promise<AssetDerivative[]> {
+    return this.run('lockDerivativesFor', async () => {
+      if (assetIds.length === 0) {
+        return [];
+      }
+      // Same assertion as `lockScopedByIds`: a `FOR SHARE` taken outside a
+      // transaction is released immediately and would promise a guarantee it
+      // cannot keep.
+      const tx = this.requireTransaction('lockDerivativesFor');
+      const rows = await tx
+        .select()
+        .from(assetDerivatives)
+        .where(inArray(assetDerivatives.assetId, [...assetIds]))
+        .for('share');
+      return rows.map(toDerivative);
+    });
+  }
+
   async listInspections(assetId: AssetId): Promise<AssetInspection[]> {
     return this.run('listInspections', async () => {
       const rows = await this.db

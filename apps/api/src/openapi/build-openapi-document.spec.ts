@@ -54,8 +54,10 @@ describe('buildOpenApiDocument', () => {
     // (1 op) + APP2-B01 Admin asset upload/detail/list (3 ops on 3 paths)
     // + APP2-B02 Admin product list/create (2 ops on one path), detail/update
     // (2 ops on one path) and archive (1 op on its own path).
-    expect(stats.pathCount).toBe(10);
-    expect(stats.operationCount).toBe(13);
+    // + APP2-B03 publication readiness, publish and unpublish — three ops on
+    // three new paths.
+    expect(stats.pathCount).toBe(13);
+    expect(stats.operationCount).toBe(16);
     expect(stats.schemaCount).toBeGreaterThan(0);
   });
 
@@ -76,6 +78,20 @@ describe('buildOpenApiDocument', () => {
     );
     expect(document.paths['/api/admin/products/{productId}/archive']?.post?.operationId).toBe(
       'adminProduct_archive',
+    );
+    // APP2-B03. These three are stated explicitly on `@ApiOperation` rather than
+    // derived from the controller class name, so that splitting the
+    // implementation across a second controller did not fork the public
+    // `adminProduct_*` family. Asserted here because this is where the contract
+    // is real — the factory alone would have produced different ids.
+    expect(
+      document.paths['/api/admin/products/{productId}/publication-readiness']?.get?.operationId,
+    ).toBe('adminProduct_publicationReadiness');
+    expect(document.paths['/api/admin/products/{productId}/publish']?.post?.operationId).toBe(
+      'adminProduct_publish',
+    );
+    expect(document.paths['/api/admin/products/{productId}/unpublish']?.post?.operationId).toBe(
+      'adminProduct_unpublish',
     );
   });
 

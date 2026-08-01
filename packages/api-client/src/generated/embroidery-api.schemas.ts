@@ -208,6 +208,67 @@ export interface AdminProductListResponse {
   nextCursor?: string;
 }
 
+export type AdminProductPublicationReadinessResponseStatus =
+  (typeof AdminProductPublicationReadinessResponseStatus)[keyof typeof AdminProductPublicationReadinessResponseStatus];
+
+export const AdminProductPublicationReadinessResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+/**
+ * A stable publication requirement code. Never contains an identifier.
+ */
+export type AdminProductRequirementResponseCode =
+  (typeof AdminProductRequirementResponseCode)[keyof typeof AdminProductRequirementResponseCode];
+
+export const AdminProductRequirementResponseCode = {
+  PRODUCT_NAME_READY: 'PRODUCT_NAME_READY',
+  PRODUCT_DESCRIPTION_READY: 'PRODUCT_DESCRIPTION_READY',
+  PRODUCT_CATEGORY_READY: 'PRODUCT_CATEGORY_READY',
+  PRODUCT_PRICE_READY: 'PRODUCT_PRICE_READY',
+  PRODUCT_MEDIA_READY: 'PRODUCT_MEDIA_READY',
+  PRODUCT_MEDIA_ASSETS_READY: 'PRODUCT_MEDIA_ASSETS_READY',
+  PRODUCT_MEDIA_DERIVATIVES_READY: 'PRODUCT_MEDIA_DERIVATIVES_READY',
+} as const;
+
+export interface AdminProductRequirementResponse {
+  /** A stable publication requirement code. Never contains an identifier. */
+  code: AdminProductRequirementResponseCode;
+  /** Whether this requirement is currently met. */
+  satisfied: boolean;
+}
+
+export interface AdminProductPublicationReadinessResponse {
+  /** True only when every requirement is satisfied. It does not by itself mean the product may be published — the lifecycle state must also allow it. */
+  eligible: boolean;
+  productId: string;
+  /** The complete, closed requirement set in a stable order. Every code is always present, whether satisfied or not. */
+  requirements: AdminProductRequirementResponse[];
+  status: AdminProductPublicationReadinessResponseStatus;
+  /** The optimistic-concurrency token to echo back on a publish or unpublish. */
+  updatedAt: string;
+}
+
+export type AdminProductPublicationResponseStatus =
+  (typeof AdminProductPublicationResponseStatus)[keyof typeof AdminProductPublicationResponseStatus];
+
+export const AdminProductPublicationResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export interface AdminProductPublicationResponse {
+  productId: string;
+  /** Server-owned and immutable. */
+  slug: string;
+  status: AdminProductPublicationResponseStatus;
+  /** The advanced concurrency token the database stored for this write. */
+  updatedAt: string;
+}
+
 /**
  * Stable machine-readable code; branch on this.
  */
@@ -368,6 +429,10 @@ export interface HealthStatusResponse {
   uptimeSeconds: number;
 }
 
+export interface PublishProductBody {
+  [key: string]: unknown;
+}
+
 export type ReadinessStatusResponseService =
   (typeof ReadinessStatusResponseService)[keyof typeof ReadinessStatusResponseService];
 
@@ -395,6 +460,10 @@ export interface StaffLoginRequest {
   email: string;
   /** Plain password; never stored or echoed. */
   password: string;
+}
+
+export interface UnpublishProductBody {
+  [key: string]: unknown;
 }
 
 export interface UpdateProductBody {
@@ -507,6 +576,18 @@ export type AdminProductUpdate200 = ApiSuccessResponse & {
 
 export type AdminProductArchive200 = ApiSuccessResponse & {
   data: AdminProductDetailResponse;
+};
+
+export type AdminProductPublicationReadiness200 = ApiSuccessResponse & {
+  data: AdminProductPublicationReadinessResponse;
+};
+
+export type AdminProductPublish200 = ApiSuccessResponse & {
+  data: AdminProductPublicationResponse;
+};
+
+export type AdminProductUnpublish200 = ApiSuccessResponse & {
+  data: AdminProductPublicationResponse;
 };
 
 export type StaffSelfGet200 = ApiSuccessResponse & {

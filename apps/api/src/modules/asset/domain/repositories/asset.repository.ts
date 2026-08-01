@@ -190,7 +190,44 @@ export interface AssetRepository {
   findById(id: AssetId): Promise<Asset | undefined>;
   findByStorageKey(storageKey: string): Promise<Asset | undefined>;
 
+  /**
+   * Batch scoped read, without locking.
+   *
+   * The read-only sibling of `lockScopedByIds`, for callers that are reporting
+   * on assets rather than acting on them. It exists so a read path does not have
+   * to choose between one query per asset and taking share locks a plain report
+   * has no business holding.
+   *
+   * Scoped identically: an id outside the requested kind/classification is
+   * simply absent, so this cannot be used to discover that a private asset
+   * exists.
+   */
+  findScopedByIds(
+    ids: readonly AssetId[],
+    filter: Pick<AssetListFilter, 'kind' | 'classification'>,
+  ): Promise<Asset[]>;
+
   /** Live derivatives only — a tombstoned asset's derivatives are not serveable. */
   listDerivatives(assetId: AssetId): Promise<AssetDerivative[]>;
+
+  /** The batch, non-locking sibling of `lockDerivativesFor`. */
+  listDerivativesFor(assetIds: readonly AssetId[]): Promise<AssetDerivative[]>;
+
+  /**
+   * Batch derivative read that **locks** the matched rows (`FOR SHARE`).
+   *
+   * The batch sibling of `lockScopedByIds`, and it exists for the same two
+   * reasons. One statement for the whole set, so a consumer checking the
+   * derivatives of twenty assets makes one round trip rather than twenty; and a
+   * share lock, so a consumer that publishes something depending on those
+   * derivatives being `READY` can rely on that still holding at commit — a plain
+   * read at `READ COMMITTED` would let a concurrent failure or regeneration
+   * commit in between.
+   *
+   * Live derivatives only, matching `listDerivatives`.
+   *
+   * @requiresTransaction
+   */
+  lockDerivativesFor(assetIds: readonly AssetId[]): Promise<AssetDerivative[]>;
   listInspections(assetId: AssetId): Promise<AssetInspection[]>;
 }
