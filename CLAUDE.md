@@ -213,6 +213,32 @@ See `docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md` for the authori
 
 Create or request an ADR before locking a consequential choice.
 
+## 8a. Credentials and environment files (absolute)
+
+Read `docs/09-SECURITY-AND-ABUSE-PREVENTION.md` §9a. In short, and without
+exception:
+
+- **Never write to `.env`** — every variable, no exception. Not to add, correct,
+  generate, reformat or restore a value. It is git-ignored, so an edit has no
+  diff, no history and no review; the original value is simply gone.
+- **Ask before using a secret-bearing variable.** Read `.env-ignore` to find out
+  which those are — never a list memorised from this file. A variable is
+  protected when it is (1) named in `.env-ignore`, **or** (2) its name contains
+  `PASSWORD`/`PASSWD`/`SECRET`/`TOKEN`/`KEY`/`CREDENTIAL`/`PRIVATE`, **or**
+  (3) `.env-ignore` is absent — in which case treat *every* variable as
+  protected. When the task needs such a value *in hand* — typing a login,
+  authenticating as the operator — request it through the prompt for that run.
+  Presence on disk is not permission.
+- **Everything else in `.env` is ordinary config** — hosts, ports, timeouts,
+  `NODE_ENV`, `POSTGRES_DB`, `POSTGRES_USER`, base paths — read it freely.
+- **Passing the file to tooling stays normal.** `docker compose --env-file .env`,
+  package scripts and container `environment:` blocks are fine: the secret goes
+  file → process without ever being read out or echoed.
+- **Never rotate or re-seed a credential** to make a test pass. Rotation is the
+  operator's decision and the operator runs it.
+- Never echo, log, cache, commit, or pass a credential as a command-line
+  argument. Tests use synthetic values only.
+
 ## 9. Prohibited shortcuts
 
 - No broad “implement the whole feature” change without task decomposition.
@@ -220,6 +246,8 @@ Create or request an ADR before locking a consequential choice.
 - No disabled tests to make a gate pass.
 - No `any` used to bypass type design.
 - No inline secrets.
+- No write of any kind to `.env`; no using a secret-bearing variable without
+  asking for it; no credential rotation to unblock work (§8a).
 - No public access to production files or private originals.
 - No mutation of an approved design snapshot.
 - No payment success based only on browser redirect.

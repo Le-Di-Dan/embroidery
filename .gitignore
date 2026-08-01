@@ -2,8 +2,12 @@
 node_modules/
 
 # Environment files (examples are kept)
+# `.env-ignore` lists the names of secret-bearing variables (never their values)
+# and is ignored for the same reason `.env` is: it is per-developer state. Its
+# example IS committed, so the mechanism is discoverable on a fresh clone.
 .env*
 !.env.example
+!.env-ignore.example
 
 # Build outputs
 .next/

@@ -119,6 +119,87 @@ Baseline controls:
 - Input validation.
 - Output encoding.
 
+## 9a. Local credential and environment-file handling
+
+These rules bind every contributor, human or automated, and apply to all local
+environment files (`.env` and any variant), all developer and operator accounts,
+and every form of testing including live, smoke, browser and end-to-end runs.
+
+**A local environment file is read-only to tooling and to automation.**
+
+- Never write, overwrite, append to, rewrite, reformat or "fix" `.env`. It is the
+  developer's own file and the only place a local credential exists; a silent
+  edit destroys a value that has no other copy and no version history.
+- Never generate a credential into `.env`, and never persist a generated test
+  credential anywhere on the developer's machine.
+- A tool that needs generated credentials must pass them through a child
+  process's environment or write to a disposable file it owns (for example a
+  temporary `smoke.env`), never to the repository-root `.env`.
+
+**Secret-bearing variables are requested, never taken.**
+
+The ask-first rule applies **only to variables whose value is itself a secret**,
+not to environment configuration generally. Which variables those are is
+resolved at read time, never from a list hard-coded in this document — a fixed
+table is correct only on the day it is written.
+
+**Resolution order.** A variable is protected if *any* of these holds:
+
+1. **It is named in `.env-ignore`.** One variable name per line, `#` for
+   comments, values never appear. The file is git-ignored for the same reason
+   `.env` is; `.env-ignore.example` is committed so the mechanism is
+   discoverable on a fresh clone.
+2. **Its name matches a secret-bearing pattern** — contains `PASSWORD`,
+   `PASSWD`, `SECRET`, `TOKEN`, `KEY`, `CREDENTIAL` or `PRIVATE`. This applies
+   independently of the file, so a newly added secret is protected on the day it
+   appears rather than on the day someone remembers to list it.
+3. **`.env-ignore` does not exist** — then *every* variable is protected until it
+   does. A missing configuration file must mean maximum caution; a protection
+   list that fails open is worse than none, because it fails silently.
+
+The three combine by union and can only ever widen protection. The file exists
+to name secrets the pattern cannot guess — `DATABASE_URL` is the standing
+example: nothing in its name suggests a secret, yet it embeds
+`POSTGRES_PASSWORD` — and to let a team protect anything else deliberately.
+
+Everything not caught by the three — hosts, ports, timeouts, pool sizes,
+`NODE_ENV`, `POSTGRES_DB`, `POSTGRES_USER`, base paths, display names — is
+ordinary configuration and may be read freely without asking.
+
+For a protected variable:
+
+- When a task needs one **as a value it will handle itself** — typing a password
+  into a login form, authenticating as the operator, constructing a request —
+  ask the human operator to supply it through the prompt for that run. A value
+  being present on disk is not permission to use it.
+- Use the supplied value only for the run it was given for. Do not cache it,
+  echo it, log it, write it to a report or fixture, or pass it as a command-line
+  argument, where it would enter shell history and process listings.
+- Automated tests use a synthetic, clearly non-production value. A real
+  credential never appears in a fixture.
+
+**What remains allowed, deliberately.** Handing the whole file to tooling that
+consumes it itself — `docker compose --env-file .env …`, a package script, a
+container's `environment:` block — is fine and stays the normal path. The secret
+travels from file to process without ever becoming a value that was read out,
+printed, or passed along. The line this rule draws is not "the file is
+untouchable"; it is **a secret must never become a value held or echoed outside
+the process that consumes it.**
+
+**Rotation is a human decision.**
+
+- Never rotate, reset or re-seed an account credential to make a test pass. The
+  bootstrap CLI's default mode is idempotent by design and must stay that way;
+  `--rotate` is an operator recovery path and is run by the operator.
+- If a change to a credential ever becomes genuinely unavoidable, restoring the
+  original value is part of the same task, not a follow-up.
+
+**Why this is stated so strictly.** A credential edited in place is
+unrecoverable: `.env` is git-ignored, so there is no diff, no history and no
+review step that would catch it. The damage is silent, it is discovered later by
+an unrelated login failure, and by then the original value is gone. That is why
+the rule is "ask", not "read carefully".
+
 ## 10. Data retention
 
 Retention periods remain to be finalized.
