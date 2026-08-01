@@ -642,6 +642,31 @@
 > **`APP2-A04` = `BLOCKED_BY_APP2-B03`**
 > ([`reports/APP2-B03-G01-COMPLETION-REPORT.md`](../reports/APP2-B03-G01-COMPLETION-REPORT.md)).
 >
+> **`APP2-B03` delivered (2026-08-01).** Three Admin operations —
+> `adminProduct_publicationReadiness` (`GET .../publication-readiness`, side-effect-free),
+> `adminProduct_publish` (`TR-LC04-01` `DRAFT → PUBLISHED`) and `adminProduct_unpublish`
+> (`TR-LC04-05` `PUBLISHED → DRAFT`, IMP-D035). Readiness is a **closed, ordered seven-code
+> set** — `PRODUCT_NAME_READY`, `PRODUCT_DESCRIPTION_READY`, `PRODUCT_CATEGORY_READY`,
+> `PRODUCT_PRICE_READY`, `PRODUCT_MEDIA_READY`, `PRODUCT_MEDIA_ASSETS_READY`,
+> `PRODUCT_MEDIA_DERIVATIVES_READY` — every one source-grounded, with variants, SKU,
+> inventory, SEO fields, display order and any media maximum deliberately excluded. Publish
+> **never trusts a previous readiness read**: one transaction locks the product root
+> `FOR UPDATE`, share-locks the category, media, Assets and derivatives, recomputes the same
+> pure evaluator over the locked rows, and only then performs the guarded transition, advancing
+> the B02-C1 monotonic `updated_at` token and appending one `product.published` audit row and
+> one `product.published` outbox event atomically. Unpublish deletes nothing, never writes
+> `archived_at`, and does **not** re-run readiness. No migration, and no schema, Figma, Admin,
+> Storefront, worker, object-storage, Nginx, Compose or dependency change. OpenAPI 10 → 13 paths
+> and 13 → 16 operations; generated client additions only. **`APP2-B03` =
+> `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-A04` = `READY — NOT STARTED`** and
+> **`APP2-B04` = `BLOCKED_BY_APP2-A04`**
+> ([`reports/APP2-B03-COMPLETION-REPORT.md`](../reports/APP2-B03-COMPLETION-REPORT.md)).
+>
+> **`FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` = `ROUTED — NONBLOCKING_FOR_B03`** — `APP2-B02`
+> implements archive with `PRODUCT_ARCHIVABLE_STATES = [DRAFT]` while LC-04 defines archive
+> only as `PUBLISHED → ARCHIVED`. Discovered by `APP2-B03-G01` and deliberately left unresolved:
+> B03 neither calls nor modifies archive, and `APP2-A04` owns publish/unpublish only.
+>
 > **`FU-APP2-PRODUCT-VARIANTS-SKU-01` = `DEFERRED_BEYOND_APP2_CATALOG_ALPHA`** — product
 > variants and SKU are not exposed or persisted by the delivered `APP2-B02` contract and are
 > **nonblocking** for `A03`/`B03`/`A04`.
