@@ -195,11 +195,25 @@ describe('save request', () => {
     expect(updateMock.mock.calls[0]?.[0]).toBe(PRODUCT_ID);
   });
 
-  it('makes no request when nothing changed', async () => {
+  it('offers no save or cancel control until something has changed', async () => {
     await renderLoadedDraft();
-    await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.edit.save }));
 
-    await waitFor(() => expect(screen.queryByText(PRODUCT_FORM_COPY.edit.savingTitle)).toBeNull());
+    expect(screen.queryByRole('button', { name: PRODUCT_FORM_COPY.edit.save })).toBeNull();
+    expect(screen.queryByRole('button', { name: PRODUCT_FORM_COPY.edit.cancel })).toBeNull();
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('reveals both controls on the first edit and withdraws them when it is undone', async () => {
+    await renderLoadedDraft();
+    const name = screen.getByLabelText(PRODUCT_FORM_COPY.fields.nameLabel);
+
+    await user.type(name, '!');
+    expect(screen.getByRole('button', { name: PRODUCT_FORM_COPY.edit.save })).toBeEnabled();
+    expect(screen.getByRole('button', { name: PRODUCT_FORM_COPY.edit.cancel })).toBeEnabled();
+
+    // Typing back to the loaded value is not a change, so there is nothing to save.
+    await user.type(name, '{backspace}');
+    expect(screen.queryByRole('button', { name: PRODUCT_FORM_COPY.edit.save })).toBeNull();
     expect(updateMock).not.toHaveBeenCalled();
   });
 

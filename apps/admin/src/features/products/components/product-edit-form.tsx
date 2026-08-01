@@ -144,25 +144,33 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
             {PRODUCT_FORM_COPY.edit.subtitleNarrow}
           </p>
         </div>
-        <div className="product-form__header-actions">
-          <button
-            type="button"
-            className="product-form__secondary"
-            disabled={saving}
-            onClick={() => guard.requestNavigation(() => router.push(ADMIN_PRODUCTS_ROUTE))}
-          >
-            {PRODUCT_FORM_COPY.edit.cancel}
-          </button>
-          <button
-            type="submit"
-            form="product-edit-form"
-            className="product-form__primary"
-            disabled={saving || !editable}
-            aria-busy={saving}
-          >
-            {saving ? PRODUCT_FORM_COPY.edit.saving : PRODUCT_FORM_COPY.edit.save}
-          </button>
-        </div>
+        {/*
+          Both actions exist only once there is something to act on. On an
+          untouched record `Lưu thay đổi` would save nothing and `Huỷ thay đổi`
+          would discard nothing, so offering them states a change is pending
+          when none is. Leaving the screen without editing is the shell's job.
+        */}
+        {dirty ? (
+          <div className="product-form__header-actions">
+            <button
+              type="button"
+              className="product-form__secondary"
+              disabled={saving}
+              onClick={() => guard.requestNavigation(() => router.push(ADMIN_PRODUCTS_ROUTE))}
+            >
+              {PRODUCT_FORM_COPY.edit.cancel}
+            </button>
+            <button
+              type="submit"
+              form="product-edit-form"
+              className="product-form__primary"
+              disabled={saving || !editable}
+              aria-busy={saving}
+            >
+              {saving ? PRODUCT_FORM_COPY.edit.saving : PRODUCT_FORM_COPY.edit.save}
+            </button>
+          </div>
+        ) : null}
       </header>
 
       {submitted ? (
