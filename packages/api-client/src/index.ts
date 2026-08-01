@@ -45,24 +45,15 @@ export type {
   AdminAssetUploadReceiptResponse,
 } from './generated/embroidery-api.schemas';
 
-// Admin product read operation (APP2-B02), exposed for the read-only Admin
-// Product List (`APP2-A02`). Only the list operation crosses this boundary:
-// create, detail, update and archive belong to `APP2-A03`/`APP2-A04` and are
-// deliberately not re-exported, so no screen can reach a mutation before the
-// checkpoint that owns it ships. The two query enums are re-exported as values
-// so the filter options are derived from the contract rather than hard-coded.
 // Admin product read + draft-authoring operations (APP2-B02). `adminProductList`
 // serves the read-only list (`APP2-A02`); create, detail and update serve the
 // product form/detail capability (`APP2-A03`).
 //
 // Still deliberately withheld: `adminProductArchive`, which has no approved
-// surface (`FU-APP2-PRODUCT-ARCHIVE-UI-01`), and the three publication
-// operations `adminProductPublicationReadiness`/`adminProductPublish`/
-// `adminProductUnpublish` delivered by `APP2-B03`. The publication operations
-// exist in the generated tree and are covered by the contract; the screen that
-// uses them is `APP2-A04`, and that checkpoint exposes them here. Withholding
-// them keeps a mutation unreachable from any screen before the checkpoint that
-// owns its interaction, confirmation and error states has shipped.
+// surface (`FU-APP2-PRODUCT-ARCHIVE-UI-01`). Archive is not unpublish — it is a
+// separate lifecycle transition with its own reason requirement — so keeping it
+// off this boundary is what stops a publication screen from reaching it by
+// mistake while `FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` is still open.
 //
 // The query enums are re-exported as values so filter and category options are
 // derived from the contract rather than hard-coded.
@@ -87,6 +78,34 @@ export type {
   AdminProductMediaResponse,
   CreateProductBody,
   UpdateProductBody,
+} from './generated/embroidery-api.schemas';
+
+// Admin product publication operations (APP2-B03), exposed for the Admin
+// publication interaction (`APP2-A04`). All three cross the boundary together:
+// the readiness report is only meaningful next to the command it describes, and
+// publish and unpublish are the two directions of one transition.
+//
+// `AdminProductRequirementResponseCode` is re-exported as a value on purpose.
+// The screen renders the complete requirement set in the server's order, so the
+// codes have to come from the contract — deriving them from a hand-kept list
+// would let the two drift, and the drift would show up as a silently missing
+// requirement row rather than as a build failure.
+export {
+  adminProductPublicationReadiness,
+  adminProductPublish,
+  adminProductUnpublish,
+} from './generated/embroidery-api';
+export {
+  AdminProductRequirementResponseCode,
+  AdminProductPublicationReadinessResponseStatus,
+  AdminProductPublicationResponseStatus,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminProductPublicationReadinessResponse,
+  AdminProductPublicationResponse,
+  AdminProductRequirementResponse,
+  PublishProductBody,
+  UnpublishProductBody,
 } from './generated/embroidery-api.schemas';
 
 // Generated transport types derived from the committed OpenAPI artifact.

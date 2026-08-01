@@ -380,17 +380,28 @@ describe('excluded capabilities', () => {
     }
   });
 
-  it('offers no publication, archive or delete control', async () => {
+  it('offers no archive or delete control', async () => {
     await renderLoadedDraft();
 
-    // "Xuất bản" does appear, but only inside the approved note explaining that
-    // saving and publishing are separate steps. What must not exist is anything
-    // interactive that claims to perform one.
-    for (const name of ['Xuất bản', 'Gỡ xuất bản', 'Lưu trữ', 'Xoá', 'Xóa']) {
+    // `APP2-A04` added a publication *entry point* here — a link to the screen
+    // that owns the interaction — so "Xuất bản" is now legitimately present as
+    // navigation. Archive and delete still have no approved surface
+    // (`FU-APP2-PRODUCT-ARCHIVE-UI-01`) and must not appear in any form.
+    for (const name of ['Gỡ xuất bản', 'Lưu trữ', 'Xoá', 'Xóa']) {
       expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
     }
     expect(screen.getByText(PRODUCT_FORM_COPY.edit.savePublishNote).closest('button')).toBeNull();
+  });
+
+  it('performs no lifecycle mutation itself — the entry point only navigates', async () => {
+    await renderLoadedDraft();
+
+    const entry = screen.getByTestId('publication-entry');
+    expect(entry.tagName).toBe('A');
+    expect(entry).toHaveAttribute('href', `/products/${PRODUCT_ID}/publication`);
+    // Still a link, not a button: this screen never publishes anything.
+    expect(screen.queryByRole('button', { name: 'Xuất bản' })).not.toBeInTheDocument();
   });
 
   it('cannot even import the archive operation from the client boundary', async () => {

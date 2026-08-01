@@ -7,8 +7,10 @@ import { AdminProductDetailResponseStatus } from '@embroidery/api-client';
 import { isNotFound } from '../model/product-conflict';
 import { PRODUCT_FORM_COPY } from '../model/product-form-copy';
 import { ADMIN_PRODUCTS_ROUTE } from '../model/product-route';
+import { parseProductStatus } from '../model/product-status';
 import { useProductDetailQuery } from '../hooks/use-product-detail-query';
 import { ProductEditForm } from './product-edit-form';
+import { ProductPublicationEntry } from './product-publication-entry';
 
 interface ProductDetailScreenProps {
   readonly productId: string;
@@ -91,18 +93,37 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
           <Link className="product-form__secondary" href={ADMIN_PRODUCTS_ROUTE}>
             {PRODUCT_FORM_COPY.detail.backToList}
           </Link>
+          {/*
+            A PUBLISHED product is not editable here, but its publication is
+            still manageable — that is the one action this screen can honestly
+            offer for it. ARCHIVED renders nothing.
+          */}
+          <ProductPublicationEntry
+            productId={product.productId}
+            status={parseProductStatus(product.status)}
+          />
         </div>
       </section>
     );
   }
 
   return (
-    <ProductEditForm
-      key={product.updatedAt}
-      product={product}
-      onReload={() => {
-        void query.refetch();
-      }}
-    />
+    <>
+      {/*
+        The DRAFT entry point. It sits outside the form so the form keeps
+        ownership of its own dirty state, and it routes its departure through
+        the shared navigation guard so unsaved edits are still protected.
+      */}
+      <div className="product-form__publication-entry">
+        <ProductPublicationEntry productId={product.productId} status="DRAFT" />
+      </div>
+      <ProductEditForm
+        key={product.updatedAt}
+        product={product}
+        onReload={() => {
+          void query.refetch();
+        }}
+      />
+    </>
   );
 }

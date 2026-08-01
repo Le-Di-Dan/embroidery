@@ -20,3 +20,15 @@ export const ADMIN_PRODUCT_NEW_ROUTE = `${ADMIN_PRODUCTS_ROUTE}/new`;
 export function adminProductDetailRoute(productId: string): string {
   return `${ADMIN_PRODUCTS_ROUTE}/${encodeURIComponent(productId)}`;
 }
+
+/**
+ * The publication interaction for one product (`APP2-A04`).
+ *
+ * A child of the detail route, not a sibling `/publish/*` or `/catalog/*`
+ * branch: publication is one more thing you do to a product you are already
+ * looking at, and nesting it keeps the product UUID the single identity in the
+ * path. As with detail, the segment is the UUID and never the public slug.
+ */
+export function adminProductPublicationRoute(productId: string): string {
+  return `${adminProductDetailRoute(productId)}/publication`;
+}

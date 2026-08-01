@@ -1,8 +1,11 @@
-import type {
-  AdminProductDetailResponse,
-  AdminProductListResponse,
-  AdminProductMediaResponse,
-  AdminProductSummaryResponse,
+import {
+  AdminProductRequirementResponseCode,
+  type AdminProductDetailResponse,
+  type AdminProductListResponse,
+  type AdminProductMediaResponse,
+  type AdminProductPublicationReadinessResponse,
+  type AdminProductPublicationResponse,
+  type AdminProductSummaryResponse,
 } from '@embroidery/api-client';
 
 /**
@@ -96,6 +99,76 @@ export function productDetailEnvelope(product: AdminProductDetailResponse) {
     code: 'PRODUCT_READ',
     message: 'ok',
     data: product,
+    meta: { requestId: 'req-1', timestamp: '2026-07-31T00:00:00.000Z' },
+  } as never;
+}
+
+/**
+ * The seven publication requirement codes in the order `APP2-B03` returns them.
+ *
+ * Read from the generated enum rather than written out, so a contract change
+ * reaches the fixtures instead of leaving them asserting a stale set. The
+ * order the enum declares is the order the server documents.
+ */
+export const REQUIREMENT_CODES = Object.values(AdminProductRequirementResponseCode);
+
+/**
+ * A readiness report. `satisfied` defaults to true for every code; pass
+ * `unsatisfied` to fail a subset, which is how the blocked states are built.
+ */
+export function makeReadiness(
+  overrides: {
+    readonly status?: AdminProductPublicationReadinessResponse['status'];
+    readonly updatedAt?: string;
+    readonly productId?: string;
+    readonly unsatisfied?: readonly string[];
+    /** Replaces the whole list — for unknown-code and ordering tests. */
+    readonly requirements?: AdminProductPublicationReadinessResponse['requirements'];
+  } = {},
+): AdminProductPublicationReadinessResponse {
+  const unsatisfied = new Set(overrides.unsatisfied ?? []);
+  const requirements =
+    overrides.requirements ??
+    REQUIREMENT_CODES.map((code) => ({ code, satisfied: !unsatisfied.has(code) }));
+
+  return {
+    eligible: requirements.every((requirement) => requirement.satisfied),
+    productId: overrides.productId ?? '01920000-0000-7000-8000-000000000001',
+    requirements,
+    status: overrides.status ?? 'DRAFT',
+    updatedAt: overrides.updatedAt ?? '2026-07-28T09:16:00.000Z',
+  };
+}
+
+export function readinessEnvelope(readiness: AdminProductPublicationReadinessResponse) {
+  return {
+    success: true,
+    code: 'PRODUCT_PUBLICATION_READINESS_READ',
+    message: 'ok',
+    data: readiness,
+    meta: { requestId: 'req-1', timestamp: '2026-07-31T00:00:00.000Z' },
+  } as never;
+}
+
+/** The narrow command response: id, slug, status and the advanced token. */
+export function makePublicationResult(
+  overrides: Partial<AdminProductPublicationResponse> = {},
+): AdminProductPublicationResponse {
+  return {
+    productId: '01920000-0000-7000-8000-000000000001',
+    slug: 'khan-tay-theu-sen-do',
+    status: 'PUBLISHED',
+    updatedAt: '2026-07-28T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function publicationEnvelope(result: AdminProductPublicationResponse) {
+  return {
+    success: true,
+    code: 'PRODUCT_PUBLISHED',
+    message: 'ok',
+    data: result,
     meta: { requestId: 'req-1', timestamp: '2026-07-31T00:00:00.000Z' },
   } as never;
 }

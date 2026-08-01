@@ -8,6 +8,21 @@ interface ProductDialogProps {
   readonly onClose: () => void;
   /** Wider layout for the media picker; the confirmations stay compact. */
   readonly wide?: boolean;
+  /**
+   * `alertdialog` for a confirmation that interrupts to prevent a consequential
+   * change — the unpublish confirmation is the one such case in this feature.
+   * Assistive technology announces an alert dialog more insistently, which is
+   * warranted when the operator is about to remove a product from public view
+   * and not warranted for the media picker.
+   */
+  readonly role?: 'dialog' | 'alertdialog';
+  /**
+   * Blocks Escape and backdrop dismissal while a command is in flight. The
+   * dialog owns the only cancel affordance for a request that has already left
+   * the browser, so letting it vanish mid-flight would leave the operator with
+   * no indication of what happened to it.
+   */
+  readonly dismissible?: boolean;
   readonly children: ReactNode;
   readonly footer: ReactNode;
 }
@@ -34,6 +49,8 @@ export function ProductDialog({
   describedBy,
   onClose,
   wide = false,
+  role = 'dialog',
+  dismissible = true,
   children,
   footer,
 }: ProductDialogProps) {
@@ -59,7 +76,9 @@ export function ProductDialog({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose();
+        if (dismissible) {
+          onClose();
+        }
         return;
       }
       if (event.key !== 'Tab') {
@@ -89,13 +108,13 @@ export function ProductDialog({
     return () => {
       document.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [onClose]);
+  }, [onClose, dismissible]);
 
   return (
     <div
       className="product-dialog__backdrop"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
+        if (event.target === event.currentTarget && dismissible) {
           onClose();
         }
       }}
@@ -103,7 +122,7 @@ export function ProductDialog({
       <div
         ref={panelRef}
         className={wide ? 'product-dialog product-dialog--wide' : 'product-dialog'}
-        role="dialog"
+        role={role}
         aria-modal="true"
         aria-labelledby={titleId}
         {...(describedBy === undefined ? {} : { 'aria-describedby': describedBy })}

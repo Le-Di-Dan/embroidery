@@ -33,6 +33,18 @@ export const productQueryKeys = {
    * so none of them belongs in the key.
    */
   detail: (productId: string) => [...ROOT, 'detail', productId] as const,
+  /**
+   * The publication readiness report for one product.
+   *
+   * Deliberately a separate entry from `detail` rather than a field on it. The
+   * report is a moment-in-time evaluation the server may answer differently on
+   * the very next call, while the detail record is the authoritative product;
+   * folding one into the other would make a stale readiness verdict look like a
+   * stale product, and the screen has to be able to refetch just the report
+   * after a command that refused.
+   */
+  publicationReadiness: (productId: string) =>
+    [...ROOT, 'detail', productId, 'publication-readiness'] as const,
   /** Selectable catalog media for the picker dialog. */
   selectableAssets: (pageSize: number = PRODUCT_ASSET_PAGE_SIZE) =>
     [...ROOT, 'selectable-assets', { pageSize }] as const,

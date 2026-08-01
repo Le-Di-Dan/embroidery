@@ -4,10 +4,12 @@
 export { ProductListScreen } from './components/product-list-screen';
 export { ProductCreateScreen } from './components/product-create-screen';
 export { ProductDetailScreen } from './components/product-detail-screen';
+export { ProductPublicationScreen } from './components/product-publication-screen';
 export {
   ADMIN_PRODUCTS_ROUTE,
   ADMIN_PRODUCT_NEW_ROUTE,
   adminProductDetailRoute,
+  adminProductPublicationRoute,
 } from './model/product-route';
 export { PRODUCT_COPY } from './model/product-copy';
 export { PRODUCT_FORM_COPY } from './model/product-form-copy';
