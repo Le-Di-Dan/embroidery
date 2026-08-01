@@ -16,7 +16,7 @@ Redaction: cột cuối. Before/after = summary refs/values, không dump payload
 | Admin login/security | LC-01 all; login events | admin/system | R (recovery/replace/lock-override) | account/session state | không log credential/OTP material |
 | Customer verification | TR-LC02-02/03; link/create customer | customer/system | — | contact (masked) + link outcome | contact values masked; code never logged |
 | Secure grant issue/revoke/reissue | TR-LC03-01/02; step-up success/failure | system/admin | R (admin revoke) | grant scope/state | token never logged (hashed ref only) |
-| Product/catalog changes | TR-LC04-*; product/variant/SKU/side/area edits | admin | R (archive/unarchive) | changed-field summary | — |
+| Product/catalog changes | TR-LC04-*; product/variant/SKU/side/area edits | admin | R (archive/unarchive **only**) | changed-field summary; publication transitions carry before/after status | — |
 | Stock adjustment & override | inventory adjustments; GRD-023 override | admin | **R always** (`07 §10`) | qty before/after + reason | — |
 | Design version create/send/decision/void | TR-LC08-01/02/03/07 | admin/customer | R (void) | version refs/state | document content never in audit (hash ref only) |
 | Approval (critical) | TR-LC08-04 + snapshot creation | customer | — | version id + hashes + terms refs | contact snapshot masked in views |
@@ -36,6 +36,37 @@ Redaction: cột cuối. Before/after = summary refs/values, không dump payload
 | Policy configuration changes | CON-144 version bump | admin | **R** | key + old/new value | secrets never in config values |
 | Template publish/archive | template transitions | admin | R (archive) | template + version | — |
 | Content/gallery publish/archive; redirect changes | publication transitions | admin | — | page/entry refs | — |
+
+## Product publication actions (APP2-B03-G01, IMP-D035)
+
+The Product/catalog row above covers `TR-LC04-*` as a group. The two publication
+transitions need named actions because a reader must be able to tell "went
+public" from "came back off public" without reconstructing it from a field diff.
+
+Repository naming convention, taken from the implemented writers
+(`staff.login.succeeded`, `staff.credential.rotated`): the `action` column holds
+a **lowercase dot-namespaced** name, `target_kind` holds a **SCREAMING_SNAKE**
+kind, and `actor.kind` is `ADMIN`.
+
+| Transition | `action` | `target_kind` | `target_id` | before → after | `reason` |
+|---|---|---|---|---|---|
+| TR-LC04-01 publish | `product.published` | `PRODUCT` | productId | `DRAFT` → `PUBLISHED` | not required |
+| TR-LC04-05 unpublish | `product.unpublished` | `PRODUCT` | productId | `PUBLISHED` → `DRAFT` | not required |
+
+**Reason is deliberately not required for publish or unpublish.** The `R` on this
+row applies to archive and unarchive only. A required reason has to be collected
+from the operator, and the approved publication command carries a concurrency
+token and nothing else — a mandatory reason would either be fabricated by the
+server or force an unapproved field into the request.
+
+`summary` stays bounded and safe: the before/after status and the correlation id
+are enough. It must never carry the description, price, media, Asset ids,
+storage facts, the full product record, credentials, cookies, authorization
+headers, a raw error or SQL. Archive is **not** an unpublish action and must
+never be recorded as one.
+
+Code-level constants belong to `APP2-B03`; this section is the authority they
+must match.
 
 ## Rules (locked)
 

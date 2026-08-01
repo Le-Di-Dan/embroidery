@@ -34,6 +34,9 @@ Admin dashboard should surface:
 Admin can:
 
 - Create/edit/archive product.
+- Publish/unpublish product. Unpublish removes the product from public
+  visibility and returns it to the editable draft state; it does not archive or
+  delete anything (LC-04 TR-LC04-05).
 - Create variants.
 - Manage SKU.
 - Manage images.

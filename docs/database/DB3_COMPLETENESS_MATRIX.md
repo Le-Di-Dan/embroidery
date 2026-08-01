@@ -12,7 +12,7 @@ chỉ config values: TTL/retention/retry counts/provider mappings) ·
 | LC-01 (+session) | IDN/AGG-01 | master §LC-01 | 5 TR | 025/026-analog | REQ-IDN | yes | yes | low | §1/§2 | D7-01/13 | complete-DP (lockout values) |
 | LC-02 | CUS/AGG-03 | §LC-02 | 5 TR | 001/026 | INV-19 | yes | yes | CC-17 | §2/§3 | D8-21 | complete-DP (limits) |
 | LC-03 | CUS/AGG-04 | §LC-03 + ADR-DB3-004 | 3 TR | 002/003 | INV-08 | yes | yes | CC-16 | §2/§3 | D8-20 | complete-DP (expiry values) |
-| LC-04 | CAT/AGG-06 | §LC-04 | 4 TR | 025 | INV-12 | yes | — | low | §1 | D7-01 | complete |
+| LC-04 | CAT/AGG-06 | §LC-04 | 5 TR | 025 | INV-12 | yes | — | low | §1 | D7-01 | complete |
 | LC-05 | derived | §LC-05 + derived catalog | n/a | 014 reads | INV-18 | n/a | n/a | n/a | projection note | — | complete |
 | LC-06 | AST/AGG-08 | §LC-06 | 6 TR | 024 | INV-09/10/22 | yes | yes | CC-19 | §2/§3 | D8-23 | complete-DP (retry counts) |
 | LC-07 | DSN/AGG-09 | §LC-07 | 5 TR | 027 | REQ-SESS | cleanup | yes | CC-01 | §3 | D8-22 | complete-DP (TTL O-008) |

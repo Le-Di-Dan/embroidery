@@ -94,7 +94,7 @@ Per-behavior readiness (default **`NO_APP2_MIGRATION`**):
 | Record inspection outcome | ✓ | ✓ `recordInspection` | to build | — | schema sufficient |
 | Derivative create/complete/fail | ✓ | ✓ | to build | — | schema sufficient |
 | Product draft create/edit | ✓ | ✓ `create` | to build | — | schema sufficient |
-| Publish / unpublish | ✓ `products.status` | ✓ `changeStatus` | to build | — | schema sufficient |
+| Publish / unpublish | ✓ `products.status` | ✓ `changeStatus` | to build | — | physical representation sufficient; **lifecycle authority was incomplete** — see the correction note below |
 | Attach media | ✓ `product_media` | ✓ `attachMedia` | to build | — | schema sufficient |
 | Public published-only list/detail | ✓ IDX-065 (`status='PUBLISHED'`) | partial `findBySlug` | to build | list query missing | repo query missing (code) |
 | Two-phase asset tombstone | ✓ IDX-133 | ✓ `tombstone` | to build | — | schema sufficient |
@@ -173,7 +173,7 @@ one review boundary (the APP1-B01 precedent). All ≤5 endpoints (IMP-D004).
 | B01 | `POST /api/assets` intent · `POST /api/assets/{id}/complete` · `GET /api/assets/{id}` · `GET /api/assets` · `POST /api/assets/{id}/retry` | Authorized upload + metadata + list/detail + retry (≤5) | ADMIN | UPLOADED→(INSPECTING) | DEC-STORAGE | assets | storage | A01 |
 | W01 | (no HTTP) worker job | Inspect + derive; attempts/retry/dead-letter | SYSTEM | ACCEPTED/REJECTED, derivative READY/FAILED | B01, DEC-JOBS | assets, asset_derivatives, asset_inspections, outbox, attempts | storage + claim | A01 status |
 | B02 | `POST /api/products` · `GET /api/products` · `GET /api/products/{id}` · `PATCH /api/products/{id}` · `POST /api/products/{id}/archive` | Draft management (≤5) | ADMIN | DRAFT edits, →ARCHIVED | B01 (media) | products, categories, product_media | — | A02/A03 |
-| B03 | `POST /api/products/{id}/publish` · `POST /api/products/{id}/unpublish` · `GET /api/products/{id}/publish-readiness` | Publication lifecycle + readiness | ADMIN | DRAFT↔PUBLISHED | B02 | products | revalidation | A04 |
+| B03 | `POST /api/products/{id}/publish` · `POST /api/products/{id}/unpublish` · `GET /api/products/{id}/publish-readiness` | Publication lifecycle + readiness | ADMIN | DRAFT↔PUBLISHED (`TR-LC04-01` / `TR-LC04-05`) | B02 | products | revalidation | A04 |
 | B04 | `GET /api/public/products` · `GET /api/public/products/{slug}` | Published-only public read models + SEO | ANON | Q on `status='PUBLISHED'` | B03 | products, categories, product_media, assets | public derivative access | S01/S02 |
 
 Capability-oriented, not CRUD-exhaustive; no endpoint multiplication.
@@ -358,3 +358,32 @@ orphan cleanup, audit logging, authorization, rate limits) as
 **must-lock-before-asset-API** and routes every unresolved limit to
 `APP2-DEC-STORAGE` — none invented here, no hidden limits in implementation.
 Verdict **`PASS_WITH_REQUIRED_DECISIONS`**; APP2 engineering not started.
+
+---
+
+## Correction — Product publication lifecycle basis (`APP2-B03-G01`, 2026-08-01)
+
+This audit's publication rows above rested on a **physical** judgement. It read
+`products.status`, saw a plain CHECK over `DRAFT | PUBLISHED | ARCHIVED` with no
+transition guard, concluded "schema sufficient", and recorded the B03 transition
+as `DRAFT↔PUBLISHED` — without cross-checking LC-04, which at that time defined
+**no exit from `PUBLISHED` except archive**.
+
+The distinction the audit missed:
+
+| | Question | Answer at audit time |
+|---|---|---|
+| Physical representability | can the column hold `DRAFT` after `PUBLISHED`? | **yes** — no transition guard exists in the schema |
+| Lifecycle authority | is `PUBLISHED → DRAFT` a defined transition? | **no** — LC-04 had four transitions and none was this |
+
+Physical representability alone is never sufficient: it says a state can be
+stored, not that reaching it is authorized. The mandatory `APP2-B03`
+representability gate caught this before any source change and blocked as
+`BLOCKED_BY_PRODUCT_UNPUBLISH_LIFECYCLE_CONTRADICTION`.
+
+`APP2-B03-G01` closed it by adding the missing canonical transition
+**`TR-LC04-05` `PUBLISHED → DRAFT` (Unpublish Product)** under IMP-D035, taking
+LC-04 from four transitions to five. The rows above stand as corrected: the
+transition is now real authority rather than an assumption. `pnpm check:lifecycle`
+now fails any future APP2 document that claims a Product transition LC-04 does
+not define.

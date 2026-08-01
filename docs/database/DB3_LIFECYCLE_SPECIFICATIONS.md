@@ -91,9 +91,10 @@ concurrent verify (CC-17).
 
 ## LC-04 — Product Publication
 
-- **Owner:** CTX-CAT / AGG-06. **States:** `DRAFT` (initial) → `PUBLISHED` ↔
-  (edit in place, audited) → `ARCHIVED` (terminal-ish; unarchive =
-  TR-LC04-04 allowed, audited).
+- **Owner:** CTX-CAT / AGG-06. **States:** `DRAFT` (initial) ↔ `PUBLISHED`
+  (publish TR-LC04-01 / unpublish TR-LC04-05; edit in place while `DRAFT`,
+  audited) → `ARCHIVED` (terminal-ish; unarchive = TR-LC04-04 allowed,
+  audited).
 
 | TR | From→To | Actor | Guards | Effects | Audit |
 |---|---|---|---|---|---|
@@ -101,6 +102,46 @@ concurrent verify (CC-17).
 | TR-LC04-02 | PUBLISHED→ARCHIVED | admin | — (open cases keep their snapshots; INV-12) | delist event | yes R |
 | TR-LC04-03 | DRAFT→(hard delete) | admin | never published & unreferenced (ADR-DB1-011) | — | yes |
 | TR-LC04-04 | ARCHIVED→PUBLISHED | admin | fields still valid | relist | yes R |
+| TR-LC04-05 | PUBLISHED→DRAFT | admin | current status is `PUBLISHED`; concurrency token matches | delist event; returns to the editable draft state | yes |
+
+### TR-LC04-05 — Unpublish Product (IMP-D035, APP2-B03-G01)
+
+**Unpublish removes a product from public visibility without archiving or
+deleting it.** It is the reverse of TR-LC04-01 and it is *not* archive: archive
+is a durable catalog-retirement fact (TR-LC04-02), while unpublish returns the
+product to the same editable `DRAFT` state it was authored in.
+
+Before this transition existed, the only exit from `PUBLISHED` was archive, so
+"withdraw this product from the storefront and keep editing it" had no canonical
+representation at all — the gap `APP2-B03` blocked on.
+
+**Postconditions.** `status = DRAFT` · public eligibility false (the product
+leaves the `status='PUBLISHED'` predicate that scopes every public read) · the
+row persists · `slug`, `category_id`, `name`, `description`,
+`base_price_amount`, `currency_code`, `display_order`, `seo_*` and
+`is_indexable` unchanged · ordered `product_media` unchanged · referenced Assets
+and their derivatives unchanged · `updated_at` advances under the accepted
+monotonic mechanism.
+
+**Forbidden side effects.** It must never set `status = ARCHIVED`, write
+`archived_at`, hard-delete anything, remove media links, delete Assets,
+derivatives or stored objects, change the slug, clear the price or reset the
+category.
+
+**Editability.** Afterwards the product is editable again under the existing
+`DRAFT` rules. **No `UNPUBLISHED` state exists** — introducing one would split
+the editable state in two and every editing rule would have to name both.
+
+**Readiness.** Unpublish destroys no readiness fact, so a product returned to
+`DRAFT` may still satisfy every publication requirement. That is not permission
+to re-publish automatically: **every later publish re-evaluates readiness inside
+its own transaction** (TR-LC04-01's guard), because the facts it depends on —
+category state, Asset eligibility, derivative readiness — are owned elsewhere
+and can change while the product sits in `DRAFT`.
+
+**Audit and event vocabulary** for TR-LC04-01 and TR-LC04-05 are specified in
+`DB3_AUDIT_SPECIFICATION.md` (Product/catalog changes) and, for the durable
+consequence, in the Outbox convention recorded by IMP-D035.
 
 Category mirrors (DRAFT/PUBLISHED/ARCHIVED) with the same rules. Gallery
 Entry and Content Page use the same publication machine (owner GAL/CNT) —

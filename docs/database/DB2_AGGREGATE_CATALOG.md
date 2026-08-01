@@ -112,8 +112,8 @@ flowchart TB
 - **VOs:** SEO Metadata, Physical Dimension (CON-028), Coordinate Mapping (CON-029), Money (base price).
 - **External refs:** CategoryId, AssetId (media/backgrounds).
 - **Invariants owned:** structural integrity of sides/areas/variants/SKUs used by the designer; publication state (LC-04); manual out-of-stock display override.
-- **Commands:** create/edit/archive, configure sides/areas, manage variants/SKUs, set base price.
-- **Events:** product-published/archived/changed (→ audit, cache/SEO revalidation).
+- **Commands:** create/edit/publish/unpublish/archive, configure sides/areas, manage variants/SKUs, set base price.
+- **Events:** product-published/**unpublished**/archived/changed (→ audit, cache/SEO revalidation). Unpublished announces that public visibility was removed without archiving (TR-LC04-05, IMP-D035).
 - **DB3:** LC-04/LC-05 display semantics. **DB4:** geometry VO shapes; price history NOT kept here — commercial history lives in quotation/order snapshots (INV-12).
 - **Class:** public (+financial base price). **Retention:** archive; hard delete only never-published.
 - **Why this boundary:** the designer and storefront need one consistent product-geometry unit; excluded: stock (Inventory truth), templates (Design-owned), asset binaries.

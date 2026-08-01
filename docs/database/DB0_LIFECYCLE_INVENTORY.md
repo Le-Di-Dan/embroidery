@@ -55,9 +55,11 @@ decided in technical design (→ resolved at DB3, not DB0).
 ## LC-04 — Product publication
 
 - **Source:** `07 §3`, REQ-CAT-003.
-- **Known states:** draft/created → published → archived; out-of-stock is an
+- **Known states:** draft/created ↔ published → archived; out-of-stock is an
   inventory-availability overlay, not a publication state.
-- **Transitions:** create → publish → archive; edit in place.
+- **Transitions:** create → publish → **unpublish (back to draft)** → archive;
+  edit in place while draft. Unpublish was added as TR-LC04-05 by
+  `APP2-B03-G01` (IMP-D035); it removes public visibility without archiving.
 - **Missing/ambiguous:** explicit draft vs published distinction not named.
 - **Preconditions:** required fields present for public display.
 - **Side effects:** SEO index/noindex; storefront visibility.
