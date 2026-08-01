@@ -601,9 +601,25 @@
 > `Chỉnh sửa`; publication, archive and delete remain absent and `adminProductArchive` stays
 > off the client boundary. Verified live behind the gateway at 1440 and 390 (0px overflow),
 > including a real two-tab concurrency conflict. OpenAPI, generated client, database and Figma
-> unchanged. **`APP2-A03` = `COMPLETE — DELIVERED_FOR_REVIEW`**, so **`APP2-B03` = `READY —
-> NOT STARTED`**
+> unchanged
 > ([`reports/APP2-A03-COMPLETION-REPORT.md`](../reports/APP2-A03-COMPLETION-REPORT.md)).
+>
+> **`APP2-A03` corrected by `APP2-A03-C1` (2026-08-01).** Review found two blocking defects.
+> A03 evidence had recorded a development credential in plaintext: the disclosure lived in a
+> superseded revision of the evidence commit, that commit was rewritten so the value is
+> withheld, its absence from every reachable ref was proven, the credential was rotated through
+> the sanctioned bootstrap path, and the account was reconciled to exactly one authenticating
+> credential. A new canonical gate `pnpm check:secrets` now rejects plaintext credential
+> disclosure in any tracked document — and tracked `.env`/private-key files — while leaving
+> ordinary security prose and explicit redaction writable. Separately, the save classifier
+> treated **every** HTTP `409` as a stale-version conflict, so a lifecycle refusal
+> (`PRODUCT_NOT_EDITABLE`) or an ineligible image (`PRODUCT_MEDIA_ASSET_UNAVAILABLE`) opened a
+> dialog whose reload discards the operator's unsaved edits; only the exact
+> `PRODUCT_VERSION_CONFLICT` code opens it now, and every other outcome keeps the edits and
+> shows a safe message. No production authentication code, OpenAPI, generated client, database
+> or Figma change. **`APP2-A03` = `COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`**, so
+> **`APP2-B03` = `READY — NOT STARTED`** and **`APP2-A03-C2` = `MUST_NOT_BE_CREATED`**
+> ([`reports/APP2-A03-C1-CORRECTION-REPORT.md`](../reports/APP2-A03-C1-CORRECTION-REPORT.md)).
 >
 > **`FU-APP2-PRODUCT-VARIANTS-SKU-01` = `DEFERRED_BEYOND_APP2_CATALOG_ALPHA`** — product
 > variants and SKU are not exposed or persisted by the delivered `APP2-B02` contract and are
