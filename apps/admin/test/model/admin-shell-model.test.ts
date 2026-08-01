@@ -9,6 +9,7 @@ import {
 import {
   ADMIN_PRIMARY_NAV,
   isCurrentNavItem,
+  resolveNavItemState,
   type AdminNavItem,
 } from '../../src/features/admin-shell/model/admin-shell-nav';
 import { ADMIN_SHELL_COPY } from '../../src/features/admin-shell/model/admin-shell-copy';
@@ -87,6 +88,28 @@ describe('admin-shell nav + copy', () => {
     const home = ADMIN_PRIMARY_NAV.find((item) => item.href === '/');
     expect(home).toBeDefined();
     expect(isCurrentNavItem(home as AdminNavItem, ADMIN_ASSETS_ROUTE)).toBe(false);
+  });
+
+  it('treats a nested route as the section, not as the section’s own page', () => {
+    const products = ADMIN_PRIMARY_NAV.find((item) => item.href === ADMIN_PRODUCTS_ROUTE);
+    const detail = `${ADMIN_PRODUCTS_ROUTE}/01920000-0000-7000-8000-000000000001`;
+
+    expect(resolveNavItemState(products as AdminNavItem, detail)).toBe('section');
+    // The list is still somewhere to go, so it is never rendered as static text.
+    expect(isCurrentNavItem(products as AdminNavItem, detail)).toBe(false);
+    expect(resolveNavItemState(products as AdminNavItem, ADMIN_PRODUCTS_ROUTE)).toBe('page');
+  });
+
+  it('never treats home as a containing section', () => {
+    const home = ADMIN_PRIMARY_NAV.find((item) => item.href === AUTHENTICATED_HOME_ROUTE);
+    expect(resolveNavItemState(home as AdminNavItem, ADMIN_ASSETS_ROUTE)).toBe('none');
+  });
+
+  it('does not match a sibling route that merely shares a prefix', () => {
+    const products = ADMIN_PRIMARY_NAV.find((item) => item.href === ADMIN_PRODUCTS_ROUTE);
+    expect(resolveNavItemState(products as AdminNavItem, `${ADMIN_PRODUCTS_ROUTE}-archive`)).toBe(
+      'none',
+    );
   });
 
   it('uses a static Admin actor label, not an API role', () => {

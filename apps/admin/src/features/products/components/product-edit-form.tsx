@@ -54,7 +54,6 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
   const [values, setValues] = useState<ProductFormValues>(initial);
   const [submitted, setSubmitted] = useState(false);
   const [conflict, setConflict] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   // Identity for every media id the screen can render: the product's own media
   // plus whatever the picker has loaded this session.
@@ -105,7 +104,6 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
   const onSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitted(true);
-    setSaved(false);
     if (hasValidationErrors(errors)) {
       return;
     }
@@ -117,9 +115,11 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
       { productId: product.productId, body },
       {
         onSuccess: (updated) => {
+          // Reconcile from the authoritative response first: it clears the dirty
+          // state, so the departure below is a save, not an abandonment.
           setValues(formValuesFromDetail(updated));
           setSubmitted(false);
-          setSaved(true);
+          router.push(ADMIN_PRODUCTS_ROUTE);
         },
         onError: (error) => {
           if (isVersionConflict(error)) {
@@ -180,10 +180,6 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
           <p className="product-form__failure-body">{PRODUCT_FORM_COPY.edit.saveFailedBody}</p>
         </div>
       ) : null}
-
-      <p className="product-form__sr-status" role="status" aria-live="polite">
-        {saved ? PRODUCT_FORM_COPY.edit.saved : ''}
-      </p>
 
       <form id="product-edit-form" className="product-form__body" onSubmit={onSubmit} noValidate>
         <div className="product-form__column">

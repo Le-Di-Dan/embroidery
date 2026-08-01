@@ -27,14 +27,32 @@ export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
 ];
 
 /**
- * Whether an entry is the current location. Home matches exactly — every route
- * starts with `/`, so a prefix test would mark it current everywhere — while a
- * section also matches its own subtree, so a future detail route still
- * highlights the section it belongs to.
+ * How an entry relates to the current location.
+ *
+ * - `page`: the entry *is* the current page.
+ * - `section`: the current page lives inside the entry's subtree — the entry is
+ *   still a destination the operator can go back to.
+ * - `none`: unrelated.
+ *
+ * The distinction matters: a nested route such as `/products/{productId}`
+ * belongs to the product section but is not the product list, so the list stays
+ * reachable. Collapsing the two states is what makes a section unreachable from
+ * its own detail screen.
  */
-export function isCurrentNavItem(item: AdminNavItem, pathname: string): boolean {
-  if (item.href === AUTHENTICATED_HOME_ROUTE) {
-    return pathname === AUTHENTICATED_HOME_ROUTE;
+export type AdminNavItemState = 'page' | 'section' | 'none';
+
+export function resolveNavItemState(item: AdminNavItem, pathname: string): AdminNavItemState {
+  if (pathname === item.href) {
+    return 'page';
   }
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  // Home is a prefix of every route, so it is never a containing section.
+  if (item.href === AUTHENTICATED_HOME_ROUTE) {
+    return 'none';
+  }
+  return pathname.startsWith(`${item.href}/`) ? 'section' : 'none';
+}
+
+/** Whether an entry is the current page itself — never merely its section. */
+export function isCurrentNavItem(item: AdminNavItem, pathname: string): boolean {
+  return resolveNavItemState(item, pathname) === 'page';
 }

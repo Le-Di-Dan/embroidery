@@ -37,7 +37,6 @@ export const PRODUCT_FORM_COPY = {
     saving: 'Đang lưu…',
     savingTitle: 'Đang lưu thay đổi…',
     savingHelp: 'Vui lòng không đóng trang cho tới khi lưu xong.',
-    saved: 'Đã lưu thay đổi.',
     saveFailedTitle: 'Chưa thể lưu thay đổi',
     saveFailedBody: 'Thay đổi chưa được lưu. Hãy thử lại sau giây lát.',
     /** The mobile frame's closing note; a boundary statement, not a control. */

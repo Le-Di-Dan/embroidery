@@ -12,8 +12,15 @@
  * No global router framework is introduced for this. The screen routes its own
  * departures through `requestNavigation`, which is the smallest thing that can
  * hold the intent while the dialog is open. A pristine form never intercepts.
+ *
+ * Departures the screen does not own — a shell navigation entry, which lives
+ * outside this subtree — reach the same `requestNavigation` through the shared
+ * navigation guard, so there is one dialog and one decision regardless of which
+ * control the operator used.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { useRegisterNavigationInterceptor } from '../../../shared/navigation/navigation-guard';
 
 export interface UnsavedChangesGuard {
   /** True while the confirmation dialog should be rendered. */
@@ -64,6 +71,8 @@ export function useUnsavedChanges(dirty: boolean): UnsavedChangesGuard {
     setPrompting(false);
     proceed?.();
   }, []);
+
+  useRegisterNavigationInterceptor(requestNavigation);
 
   const cancelLeave = useCallback(() => {
     pending.current = null;
