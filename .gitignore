@@ -39,3 +39,4 @@ Thumbs.db
 
 # Playwright MCP scratch artifacts (screenshots/snapshots) — never committed
 .playwright-mcp/
+evidences/
