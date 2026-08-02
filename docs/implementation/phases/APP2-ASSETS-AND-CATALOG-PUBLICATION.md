@@ -1213,6 +1213,30 @@ Admin staff uploads a valid product image, sees processing complete, creates a p
 - Storefront is SSR/SEO-valid.
 - E2E passes with real persistence/object-storage test adapters.
 
+**Closed at `APP2-X01`.** Every clause above is satisfied and reconciled in
+[`reports/APP2-CLOSURE-MATRIX.md`](../reports/APP2-CLOSURE-MATRIX.md), which is
+the current authority for checkpoint status, commit chain, frozen artifacts and
+routed follow-ups. Verdict `PASS_WITH_FOLLOW_UPS`: 30 canonical checkpoints, all
+final; 0 blocking checkpoints; 10 routed follow-ups, all nonblocking and owned.
+The exit gate's E2E clause is met by `pnpm smoke:app2-e01-publication:production`
+(`APP2-E01`, corrected by `APP2-E01-C1` to build its disposable database from the
+canonical migrations), plus `pnpm quality:e2e`. Gate:
+`pnpm check:app2-closure`.
+
 ## 9. Handoff
 
 APP3 receives published products, validated assets, and publication/read-model patterns for templates and studio bootstrapping.
+
+Two boundaries travel with that handoff and are **not** closed by `APP2-X01`:
+
+- publication Outbox events (`product.published` / `product.unpublished`) remain
+  `PENDING` — no APP2 consumer owns them, and the checkpoint that introduces one
+  owns the assertion change;
+- `DRAFT → ARCHIVED` is storable but still unauthorized
+  (`FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01`).
+
+```text
+APP2-X01 = COMPLETE — DELIVERED_FOR_REVIEW
+APP2     = COMPLETE — PASS_WITH_FOLLOW_UPS — DELIVERED_FOR_REVIEW
+APP3     = READY — NOT STARTED
+```
