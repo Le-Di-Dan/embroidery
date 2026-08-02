@@ -1,0 +1,286 @@
+// Discover feed — feature-scoped styles (APP2-S01). Design source:
+// FIG-UI02-DISCOVER-{DESKTOP,TABLET,MOBILE} (file BQwqV8GdfUIELvsQDB1UQE,
+// 208:2002 / 224:871 / 226:1038), reuse policy REUSE_AND_SUPPLEMENT_ONLY.
+// Colour, type, radius, spacing and control size come from @embroidery/styles;
+// the few values with no shared token are local literals, documented inline.
+//
+// Measured live from the audited frames:
+//   desktop 1440 — page padding 80, content 1280, 5 × 236.8 columns, gap 24
+//   tablet  1024 — page padding 48, content  928, 3 × 293.3 columns, gap 24
+//   mobile   390 — page padding 24, content  342, 2 × 163   columns, gap 16
+//   card         — artwork image, 12px gap, title, 4px gap, category
+//
+// The approved shell owns the page container (max 1200px with its own padding),
+// so rendered column widths are proportionally narrower than the 1440-frame
+// numbers above. What UI02 locks is the column COUNT, the variable card heights
+// and the editorial rhythm — all preserved.
+
+@use '@embroidery/styles' as styles;
+
+// Local layout breakpoints. The design system defers a shared breakpoint scale
+// (FU-A16), so these are feature-local decisions aligned with the shell's own
+// threshold: the audited tablet frame IS 1024, so 1024 stays the 3-column tier
+// and 1025+ is the 5-column tier — the same boundary the shell uses for its
+// Full header. No frame exists between 390 and 1024, so the 2→3 switch at 640
+// is a local decision, not a measured value.
+$bp-masonry-tablet: 640px;
+$bp-masonry-desktop: 1025px;
+
+// Column counts, straight from the audited frames.
+$columns-mobile: 2;
+$columns-tablet: 3;
+$columns-desktop: 5;
+
+// Measured gaps: 16 on mobile, 24 from tablet up.
+$gap-mobile: 16px;
+$gap-wide: 24px;
+
+// Local composition constants (no shared token).
+$chip-radius: 999px; // pill; the foundation defines no pill radius
+$line-height-tight: 1.15;
+$line-height-snug: 1.35;
+$line-height-relaxed: 1.6;
+
+.discover {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+// --- Intro ------------------------------------------------------------------
+
+.discover__intro {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.discover__title {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-l;
+  font-weight: styles.$font-weight-semibold;
+  line-height: $line-height-tight;
+  color: styles.$color-text-primary;
+}
+
+.discover__intro-text {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-m;
+  line-height: $line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+// --- Category chips ---------------------------------------------------------
+
+.discover__categories {
+  // UI02 names both the tablet and mobile chip frames "scrolls horizontally";
+  // scrolling the row rather than wrapping it is what keeps a 390px viewport
+  // free of horizontal PAGE overflow.
+  overflow-x: auto;
+  margin-inline: calc(-1 * #{styles.spacing(4)});
+  padding-inline: styles.spacing(4);
+}
+
+.discover__category-list {
+  display: flex;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.discover__chip {
+  display: inline-flex;
+  align-items: center;
+  // UI02 draws a 33px chip; the locked minimum touch target is 44px, so the
+  // control is grown to meet it. Accessibility wins over the drawn height.
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: $chip-radius;
+  background: styles.$color-background-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-regular;
+  white-space: nowrap;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.discover__chip--active {
+  // Never colour alone: the active chip is filled AND its label is heavier, and
+  // it carries aria-current="page" for assistive technology.
+  background: styles.$color-text-primary;
+  border-color: styles.$color-text-primary;
+  color: styles.$color-background-primary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// --- Masonry ----------------------------------------------------------------
+
+.discover__masonry {
+  // CSS multi-column, not a JavaScript column split: the DOM keeps ONE list in
+  // server order and the browser distributes it visually, so source order stays
+  // linear for assistive technology while the layout reads as masonry.
+  columns: $columns-mobile;
+  column-gap: $gap-mobile;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: $bp-masonry-tablet) {
+    columns: $columns-tablet;
+    column-gap: $gap-wide;
+  }
+
+  @media (min-width: $bp-masonry-desktop) {
+    columns: $columns-desktop;
+  }
+}
+
+.discover__masonry-item {
+  // A card must never be split across a column boundary.
+  break-inside: avoid;
+  margin-bottom: $gap-mobile;
+
+  @media (min-width: $bp-masonry-tablet) {
+    margin-bottom: $gap-wide;
+  }
+}
+
+// --- Card -------------------------------------------------------------------
+
+.discover__card {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  // No hover, no pointer, no focus ring: the card is deliberately
+  // non-interactive (IMP-D038) and must not suggest otherwise.
+}
+
+.discover__card-media {
+  overflow: hidden;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.discover__card-image {
+  display: block;
+  width: 100%;
+  // Natural ratio. APP2-B04 publishes no derivative dimensions, so a fixed
+  // aspect-ratio here would mean inventing one and cropping every artwork into
+  // an equal box — precisely the ecommerce grid UI02 forbids.
+  height: auto;
+}
+
+.discover__card-placeholder {
+  // The honest stand-in for a product with no deliverable thumbnail. This 4:5
+  // ratio belongs to the placeholder itself, not to any artwork, so it asserts
+  // nothing about the product.
+  aspect-ratio: 4 / 5;
+  background: styles.$color-background-secondary;
+}
+
+.discover__card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.discover__card-title {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-medium;
+  line-height: $line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.discover__card-category {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  line-height: $line-height-snug;
+  color: styles.$color-text-secondary;
+}
+
+// --- States and continuation ------------------------------------------------
+
+.discover__notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+  padding-block: styles.spacing(32);
+  color: styles.$color-text-secondary;
+}
+
+.discover__notice-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-medium;
+  line-height: $line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.discover__notice-body {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  line-height: $line-height-relaxed;
+}
+
+.discover__action {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: $chip-radius;
+  background: styles.$color-background-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-s;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.discover__continuation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: styles.spacing(12);
+  padding-block: styles.spacing(24);
+  text-align: center;
+}
+
+.discover__sentinel {
+  // A zero-height probe, not a spacer: it marks the end of the rendered feed for
+  // the IntersectionObserver and contributes nothing visually.
+  width: 100%;
+  height: 1px;
+}
+
+.discover__continuation-status,
+.discover__continuation-end,
+.discover__continuation-message {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  line-height: $line-height-snug;
+  color: styles.$color-text-secondary;
+}
+
+.discover__continuation-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: styles.spacing(8);
+}

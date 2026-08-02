@@ -46,13 +46,19 @@ describe('StorefrontShell — mobile navigation drawer', () => {
     const brand = within(dialog).getByRole('link', { name: 'Xưởng Thêu — về trang chủ' });
     const close = within(dialog).getByRole('button', { name: 'Đóng menu điều hướng' });
 
+    // The drawer's third focusable is the Discover link — the one primary nav
+    // area that is built (APP2-S01). The unrouted items stay non-focusable.
+    const discover = within(dialog).getByRole('link', { name: 'Khám phá' });
+
     expect(brand).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(close).toHaveFocus();
     await user.keyboard('{Tab}');
+    expect(discover).toHaveFocus();
+    await user.keyboard('{Tab}');
     expect(brand).toHaveFocus(); // wraps forward
     await user.keyboard('{Shift>}{Tab}{/Shift}');
-    expect(close).toHaveFocus(); // wraps backward
+    expect(discover).toHaveFocus(); // wraps backward
   });
 
   it('closes on the explicit close button and restores focus to the trigger', async () => {

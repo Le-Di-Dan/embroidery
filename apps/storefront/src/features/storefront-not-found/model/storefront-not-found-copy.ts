@@ -26,10 +26,11 @@ export const STOREFRONT_NOT_FOUND_COPY = {
     'Trang bạn tìm có thể đã được di chuyển, đổi đường dẫn hoặc không tồn tại. Hãy quay về trang chủ để tiếp tục khám phá.',
   /** Primary recovery — links to the canonical home route. */
   primaryLabel: 'Về trang chủ',
-  /** Secondary recovery label (approved) — discovery area is not built yet. */
+  /**
+   * Secondary recovery label (approved). It links to `/kham-pha` since
+   * `APP2-S01` built the Discover area; the `Sắp ra mắt` tag and its
+   * screen-reader "chưa khả dụng" suffix were retired with the same change,
+   * because an available action must not describe itself as unavailable.
+   */
   secondaryLabel: 'Khám phá tác phẩm',
-  /** Small visible tag marking the secondary action as not yet available. */
-  secondaryTag: 'Sắp ra mắt',
-  /** Screen-reader suffix announcing the secondary action as unavailable. */
-  secondaryUnavailable: 'Khám phá tác phẩm — chưa khả dụng.',
 } as const;

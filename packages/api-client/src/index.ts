@@ -108,6 +108,31 @@ export type {
   UnpublishProductBody,
 } from './generated/embroidery-api.schemas';
 
+// Anonymous public catalog listing (APP2-B04), exposed for the Storefront
+// Discover feed (`APP2-S01`).
+//
+// `publicProductDetail` is deliberately withheld. The Product Detail browser
+// route is unresolved (IMP-D038 keeps `/san-pham/<slug>` a proposal and leaves
+// `APP2-S02` blocked by the UI03 reconciliation), so nothing may consume it yet;
+// keeping it off this boundary is what stops a discovery screen from linking to
+// a page that does not exist. `publicProductMediaGet` is withheld for a
+// different reason: it serves image bytes, which the browser fetches by
+// rendering the relative `thumbnail.url` the list already returns — application
+// code must never stream those bytes itself.
+//
+// The category enum is re-exported as a value so the Storefront's category chips
+// are derived from the contract rather than a hand-kept list that could drift
+// out of step with the four categories the database actually provisions.
+export { publicProductList } from './generated/embroidery-api';
+export { PublicProductListCategorySlug } from './generated/embroidery-api.schemas';
+export type {
+  PublicProductListParams,
+  PublicProductListResponse,
+  PublicProductSummaryResponse,
+  PublicCategoryResponse,
+  PublicMediaReferenceResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

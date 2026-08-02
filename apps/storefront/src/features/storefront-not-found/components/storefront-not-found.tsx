@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { STOREFRONT_HOME_ROUTE } from '../../storefront-shell';
+import { STOREFRONT_DISCOVER_ROUTE, STOREFRONT_HOME_ROUTE } from '../../storefront-shell';
 import { STOREFRONT_NOT_FOUND_COPY } from '../model/storefront-not-found-copy';
 
 /**
@@ -9,11 +9,11 @@ import { STOREFRONT_NOT_FOUND_COPY } from '../model/storefront-not-found-copy';
  * header, footer, drawer, `<main>`, or shell wrapper of its own, and owns the
  * page's single `<h1>` (APP1-S01B §5, §11).
  *
- * It is a Server Component: the boundary needs no client interactivity. Recovery
- * is honest — the primary action links to the canonical home route; the secondary
- * "Khám phá tác phẩm" area is not built yet, so it renders as a clearly
- * unavailable, non-interactive affordance rather than a dead anchor or an invented
- * route (APP1-S01B §9, mirroring the accepted S01A nav treatment).
+ * It is a Server Component: the boundary needs no client interactivity. Both
+ * recovery actions are now real links — the primary to the canonical home route,
+ * the secondary to `/kham-pha`, which `APP2-S01` built (IMP-D038). Until then the
+ * secondary rendered as an explicitly unavailable affordance rather than a dead
+ * anchor; its `Sắp ra mắt` tag is retired because the area exists.
  *
  * Design source: FIG-STOREFRONT-NOTFOUND (411:2337) / FIG-STOREFRONT-NOTFOUND-
  * MOBILE (411:3851), FIG-APPROVAL-APP1-D02-STOREFRONT-001.
@@ -36,14 +36,12 @@ export function StorefrontNotFound() {
         >
           {copy.primaryLabel}
         </Link>
-        <span
+        <Link
+          href={STOREFRONT_DISCOVER_ROUTE}
           className="storefront-not-found__action storefront-not-found__action--secondary"
-          aria-disabled="true"
         >
           <span className="storefront-not-found__action-label">{copy.secondaryLabel}</span>
-          <span className="storefront-not-found__action-tag">{copy.secondaryTag}</span>
-          <span className="storefront-not-found__sr-only">{copy.secondaryUnavailable}</span>
-        </span>
+        </Link>
       </div>
     </section>
   );

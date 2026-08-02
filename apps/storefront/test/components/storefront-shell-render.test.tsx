@@ -57,17 +57,30 @@ describe('StorefrontShell — navigation & search boundaries', () => {
     }
   });
 
-  it('renders primary nav items as non-interactive, never as links or dead anchors', () => {
+  it('links only the area that is built and leaves the rest non-interactive', () => {
     const { container } = renderShell();
-    // No nav item is a link (routes are unbuilt) and there are no dead anchors.
     const nav = screen.getByRole('navigation', { name: 'Điều hướng chính' });
-    expect(within(nav).queryAllByRole('link')).toHaveLength(0);
-    for (const anchor of container.querySelectorAll('a')) {
-      expect(anchor.getAttribute('href')).not.toBe('#');
+
+    // Discover is the one built area (APP2-S01, IMP-D038), so it — and only it —
+    // is a real link, pointing at the canonical route.
+    const links = within(nav).queryAllByRole('link');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName('Khám phá');
+    expect(links[0]).toHaveAttribute('href', '/kham-pha');
+
+    // Every other IA label is still flagged unavailable to assistive tech.
+    for (const label of ['Bộ sưu tập', 'Studio', 'Đặt thêu', 'Nhật ký']) {
+      expect(within(nav).getByText(label).closest('[aria-disabled="true"]')).not.toBeNull();
     }
-    // Approved IA labels are present but flagged unavailable to assistive tech.
-    const item = within(nav).getByText('Khám phá').closest('[aria-disabled="true"]');
-    expect(item).not.toBeNull();
+
+    // Still no dead anchors and no invented routes anywhere in the shell.
+    for (const anchor of container.querySelectorAll('a')) {
+      const href = anchor.getAttribute('href');
+      expect(href).not.toBe('#');
+      expect(href).not.toBe('');
+      // `#main-content` is the skip link's in-page target, not a route.
+      expect(['/', '/kham-pha', '#main-content']).toContain(href);
+    }
   });
 
   it('renders a non-submitting, non-focusable search affordance (no fake control)', () => {

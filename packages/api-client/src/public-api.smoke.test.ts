@@ -1,11 +1,14 @@
 import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 
+import * as index from './index';
 import {
   createBrowserApiClient,
   createServerApiClient,
   healthCheck,
   healthReadiness,
   normalizeApiClientError,
+  publicProductList,
+  PublicProductListCategorySlug,
   staffSelfGet,
   staffSessionCreate,
   staffSessionDelete,
@@ -13,6 +16,7 @@ import {
 import type {
   CurrentStaffResponse,
   HealthStatusResponse,
+  PublicProductSummaryResponse,
   ReadinessStatusResponse,
   StaffLoginRequest,
   StaffSelfGet200,
@@ -77,5 +81,38 @@ describe('package public API smoke', () => {
   it('exposes generated response types usable at strict compile time', () => {
     const readiness: ReadinessStatusResponse['status'] = 'ready';
     expect(readiness).toBe('ready');
+  });
+
+  it('exposes the anonymous public catalog listing for the Storefront feed', () => {
+    expect(typeof publicProductList).toBe('function');
+  });
+
+  it('derives the public category slugs from the contract, not a hand-kept list', () => {
+    expect(Object.values(PublicProductListCategorySlug)).toEqual([
+      'thu-bong',
+      'khan',
+      'quan-ao',
+      'khac',
+    ]);
+  });
+
+  it('exposes the public list item shape on the public boundary', () => {
+    const item: PublicProductSummaryResponse = {
+      slug: 'gau-bong-thu-cong',
+      name: 'Gấu bông thủ công',
+      category: { slug: 'thu-bong', name: 'Thú bông' },
+      price: { amount: '450000', currency: 'VND' },
+      isDisplayOutOfStock: false,
+    };
+    expect(item.thumbnail).toBeUndefined();
+  });
+
+  it('withholds the operations whose browser destination does not exist yet', () => {
+    // `publicProductDetail` stays off the boundary while the Product Detail
+    // route is unresolved (IMP-D038), and `publicProductMediaGet` stays off it
+    // because image bytes are loaded by the browser, never by application code.
+    const surface = index as Record<string, unknown>;
+    expect(surface.publicProductDetail).toBeUndefined();
+    expect(surface.publicProductMediaGet).toBeUndefined();
   });
 });

@@ -29,17 +29,20 @@ describe('StorefrontNotFound — content & recovery', () => {
     expect(primary).toHaveAttribute('href', '/');
   });
 
-  it('renders the secondary action as clearly unavailable, never a link or dead anchor', () => {
+  it('recovers to the Discover route now that the area exists', () => {
     const { container } = renderWithProviders(<StorefrontNotFound />);
-    // The discovery area is not built: no second link, no dead anchor, no invented route.
-    expect(screen.queryByRole('link', { name: /Khám phá tác phẩm/ })).not.toBeInTheDocument();
-    const secondary = screen.getByText('Khám phá tác phẩm').closest('[aria-disabled="true"]');
-    expect(secondary).not.toBeNull();
+    // APP2-S01 built `/kham-pha` (IMP-D038), so the secondary recovery is a real
+    // link — and the "unavailable" affordance that stood in for it is gone.
+    const secondary = screen.getByRole('link', { name: /Khám phá tác phẩm/ });
+    expect(secondary).toHaveAttribute('href', '/kham-pha');
+    expect(screen.queryByText(/chưa khả dụng/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Sắp ra mắt')).not.toBeInTheDocument();
+    expect(container.querySelector('[aria-disabled="true"]')).toBeNull();
+
+    // Still no dead anchors and no invented routes.
     for (const anchor of container.querySelectorAll('a')) {
-      expect(anchor.getAttribute('href')).not.toBe('#');
+      expect(['/', '/kham-pha']).toContain(anchor.getAttribute('href'));
     }
-    // The unavailable state is announced to assistive tech.
-    expect(screen.getByText('Khám phá tác phẩm — chưa khả dụng.')).toBeInTheDocument();
   });
 
   it('recovery focus order is heading → primary → secondary', () => {

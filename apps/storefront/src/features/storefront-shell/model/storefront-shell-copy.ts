@@ -23,7 +23,8 @@ export const STOREFRONT_SHELL_COPY = {
     unavailableTag: 'Sắp ra mắt',
     /** Screen-reader suffix marking a nav item as not yet available. */
     unavailableAria: 'chưa khả dụng',
-    future: 'Các khu vực khám phá sẽ sớm ra mắt.',
+    /** Truthful once Discover shipped: it names the areas still to come. */
+    future: 'Các khu vực còn lại sẽ sớm ra mắt.',
   },
   search: {
     label: 'Tìm kiếm',

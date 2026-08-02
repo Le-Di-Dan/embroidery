@@ -140,20 +140,13 @@ $content-measure: 560px;
 // so it is a clearly unavailable, non-interactive affordance (APP1-S01B §9): a
 // muted outline, a "Sắp ra mắt" tag, and an sr-only unavailable note. Never a
 // link and never a dead anchor.
+// Secondary recovery. It became a real link to `/kham-pha` when APP2-S01 built
+// the Discover area, so the muted "unavailable" treatment and its tag were
+// retired with the markup that carried them.
 .storefront-not-found__action--secondary {
-  color: styles.$color-text-tertiary;
+  color: styles.$color-text-primary;
   background: styles.$color-surface-primary;
   border: 1px solid styles.$color-border-primary;
-  cursor: default;
-}
-
-.storefront-not-found__action-tag {
-  padding: 2px styles.spacing(8);
-  font-size: styles.$font-size-caption;
-  font-weight: styles.$font-weight-medium;
-  color: styles.$color-text-tertiary;
-  background: styles.$color-background-secondary;
-  border-radius: styles.$radius-xs;
 }
 
 // Visually-hidden text (feature-local; no cross-feature CSS coupling).

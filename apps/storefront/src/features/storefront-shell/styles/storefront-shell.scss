@@ -187,6 +187,27 @@ $scrim-drawer: rgba(styles.$color-text-primary, 0.45);
   cursor: default; // non-interactive: routes not built yet (APP1-S01A §9).
 }
 
+// A nav item whose route exists (APP2-S01 routed Discover). It reads as a real
+// link rather than as the dimmed "coming soon" treatment its siblings still use.
+.storefront-shell__nav-item--link {
+  color: styles.$color-text-primary;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 4px;
+  }
+}
+
+// The current area. Not colour alone: the label is also heavier and underlined,
+// and the link carries aria-current="page".
+.storefront-shell__nav-item--active {
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
 .storefront-shell__nav-tag {
   padding: 2px styles.spacing(8);
   font-size: styles.$font-size-caption;
@@ -205,6 +226,12 @@ $scrim-drawer: rgba(styles.$color-text-primary, 0.45);
 
   .storefront-shell__nav-item {
     opacity: 0.6;
+  }
+
+  // A routed item is available, so it must not wear the dimmed treatment that
+  // marks the areas which are not built yet.
+  .storefront-shell__nav-item--link {
+    opacity: 1;
   }
 
   .storefront-shell__nav-tag,
