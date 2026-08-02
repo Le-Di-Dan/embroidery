@@ -355,9 +355,16 @@ function checkSurface(matrix, phase, roadmap, fail) {
   }
 }
 
+/**
+ * The one `APP3-` report that is not APP3 engineering: a docs-only audit of the
+ * closed baseline post-dates closure. Exact filename, never a prefix or label
+ * escape — every other `APP3-` report still fails. Closure verdict unchanged.
+ */
+const NEXT_PHASE_AUDIT_REPORT = 'APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md';
+
 function checkNextPhase(rootDir, matrix, roadmap, fail) {
-  const started = readdirSync(join(rootDir, REPORT_DIR)).filter((file) =>
-    file.startsWith(`${EXPECTED.nextPhase}-`),
+  const started = readdirSync(join(rootDir, REPORT_DIR)).filter(
+    (file) => file.startsWith(`${EXPECTED.nextPhase}-`) && file !== NEXT_PHASE_AUDIT_REPORT,
   );
   for (const report of started) {
     fail(`${REPORT_DIR}/${report}: ${EXPECTED.nextPhase} must not be started before closure`);

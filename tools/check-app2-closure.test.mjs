@@ -341,6 +341,28 @@ describe('APP2 closure — the next phase starts early', () => {
     assert.ok(failures.some((line) => line.includes('must not be started before closure')));
   });
 
+  it('permits the APP3 pre-implementation audit report, which post-dates closure', async () => {
+    const dir = rootWith();
+    writeFileSync(
+      join(dir, 'docs/implementation/reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md'),
+      '# audit\n',
+      'utf8',
+    );
+    const failures = await checkApp2Closure(dir);
+    assert.ok(!failures.some((line) => line.includes('must not be started before closure')));
+  });
+
+  it('still rejects an APP3 report whose name only resembles the audit report', async () => {
+    const dir = rootWith();
+    writeFileSync(
+      join(dir, 'docs/implementation/reports/APP3-PRE-IMPLEMENTATION-AUDIT-C1-REPORT.md'),
+      '# not the audit\n',
+      'utf8',
+    );
+    const failures = await checkApp2Closure(dir);
+    assert.ok(failures.some((line) => line.includes('must not be started before closure')));
+  });
+
   it('rejects a matrix that no longer records APP3 as not started', async () => {
     const failures = await failuresAfter('READY — NOT STARTED', 'IN PROGRESS');
     assert.ok(failures.some((line) => line.includes('READY — NOT STARTED')));
