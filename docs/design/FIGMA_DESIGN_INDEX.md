@@ -31,7 +31,7 @@ Authority:
 1. Read this index; audit existing canonical/missing entries for the surface.
 2. Create or modify Figma inside the approved page/section.
 3. Update this index in the **same** checkpoint with exact node IDs and deep links.
-4. New frames enter as `REVIEW_REQUIRED`; never self-approve.
+4. New frames enter as `REFERENCE_ONLY`; never self-approve.
 
 **Before any frontend UI checkpoint**
 
@@ -63,7 +63,7 @@ Authority:
 
 ### 4.1 APP1-D01 — Staff access & application shells (NEW, this checkpoint)
 
-Section **`375:11`** — [APP1-D01 · Staff Access & Application Shells](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=375-11). All rows are `REVIEW_REQUIRED` pending human design approval.
+Section **`375:11`** — [APP1-D01 · Staff Access & Application Shells](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=375-11). All rows are `REFERENCE_ONLY` pending human design approval.
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -80,8 +80,8 @@ Section **`375:11`** — [APP1-D01 · Staff Access & Application Shells](https:/
 | FIG-ADMIN-SHELL-MOBILE-DEFAULT | Admin | / | Shell | Default | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 389:14 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=389-14) | APP1-D01 | — | FIG-APPROVAL-APP1-D01-ADMIN-001 | 2026-07-25 |
 | FIG-ADMIN-SHELL-MOBILE-NAVOPEN | Admin | / | Shell | Navigation Open | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 390:14 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=390-14) | APP1-D01 | — | FIG-APPROVAL-APP1-D01-ADMIN-001 | 2026-07-25 |
 | FIG-ADMIN-SHELL-MOBILE-SESSIONEXPIRED | Admin | / | Shell | Session Expired | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 396:15 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=396-15) | APP1-D01 | — | FIG-APPROVAL-APP1-D01-ADMIN-001 | 2026-07-25 |
-| FIG-APP1D01-REUSE-MAP | Admin | APP1-D01 | Storefront Reuse Map | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 391:15 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=391-15) | APP1-D01 | — | — | 2026-07-25 |
-| FIG-APP1D01-RESPONSIVE-NOTES | Admin | APP1-D01 | Responsive & Interaction Notes | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 392:15 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=392-15) | APP1-D01 | — | — | 2026-07-25 |
+| FIG-APP1D01-REUSE-MAP | Admin | APP1-D01 | Storefront Reuse Map | Annotation | Desktop | annotation | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 391:15 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=391-15) | APP1-D01 | — | — | 2026-07-25 |
+| FIG-APP1D01-RESPONSIVE-NOTES | Admin | APP1-D01 | Responsive & Interaction Notes | Annotation | Desktop | annotation | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 392:15 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=392-15) | APP1-D01 | — | — | 2026-07-25 |
 | FIG-APP1D01-IMPL-ANNOTATIONS | Admin | APP1-D01 | Implementation Annotations | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_01 | 393:15 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=393-15) | APP1-D01 | — | — | 2026-07-25 |
 
 ### 4.2 APP1-D02 — Storefront shell & not-found (NEW, this checkpoint)
@@ -209,10 +209,10 @@ implementable.
 | FIG-ADMIN-PUBLICATION-DESKTOP-BLOCKED | Admin | Product publication | Publication | Blocked | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 442:110 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=442-110) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PUBLICATION-DESKTOP-CONFIRM-UNPUBLISH | Admin | Product publication | Publication | Confirm Unpublish | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 442:205 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=442-205) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-ADMIN-PUBLICATION-MOBILE | Admin | Product publication | Publication | Ready | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 443:121 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=443-121) | APP2-D01 | — | — | 2026-07-26 |
-| FIG-STOREFRONT-PRODUCT-DETAIL-DESKTOP | Storefront | Public product detail | Product Detail | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 447:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=447-204) | APP2-D01 | — | **NOT_APPROVED — WITHHELD_PENDING_UI03_RECONCILIATION — NOT_IMPLEMENTATION_AUTHORITY** (APP2-D01-C1) | 2026-07-26 |
-| FIG-STOREFRONT-PRODUCT-DETAIL-TABLET | Storefront | Public product detail | Product Detail | Default | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 448:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=448-204) | APP2-D01 | — | **NOT_APPROVED — WITHHELD_PENDING_UI03_RECONCILIATION — NOT_IMPLEMENTATION_AUTHORITY** (APP2-D01-C1) | 2026-07-26 |
-| FIG-STOREFRONT-PRODUCT-DETAIL-MOBILE | Storefront | Public product detail | Product Detail | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 448:210 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=448-210) | APP2-D01 | — | **NOT_APPROVED — WITHHELD_PENDING_UI03_RECONCILIATION — NOT_IMPLEMENTATION_AUTHORITY** (APP2-D01-C1) | 2026-07-26 |
-| FIG-STOREFRONT-PRODUCT-DETAIL-MEDIA-STATE | Storefront | Public product detail | Product Detail | Media Fallback | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 449:357 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=449-357) | APP2-D01 | — | **NOT_APPROVED — WITHHELD_PENDING_UI03_RECONCILIATION — NOT_IMPLEMENTATION_AUTHORITY** (APP2-D01-C1) | 2026-07-26 |
+| FIG-STOREFRONT-PRODUCT-DETAIL-DESKTOP | Storefront | Public product detail | Product Detail | Default | Desktop 1440 | high-fidelity | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 447:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=447-204) | APP2-D01 | — | **HISTORICAL_DRAFT_SOURCE — NOT_IMPLEMENTATION_AUTHORITY** (retired by APP2-S02-G01; authority is §4.5) | 2026-08-02 |
+| FIG-STOREFRONT-PRODUCT-DETAIL-TABLET | Storefront | Public product detail | Product Detail | Default | Tablet 1024 | high-fidelity | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 448:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=448-204) | APP2-D01 | — | **HISTORICAL_DRAFT_SOURCE — NOT_IMPLEMENTATION_AUTHORITY** (retired by APP2-S02-G01; authority is §4.5) | 2026-08-02 |
+| FIG-STOREFRONT-PRODUCT-DETAIL-MOBILE | Storefront | Public product detail | Product Detail | Default | Mobile 390 | high-fidelity | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 448:210 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=448-210) | APP2-D01 | — | **HISTORICAL_DRAFT_SOURCE — NOT_IMPLEMENTATION_AUTHORITY** (retired by APP2-S02-G01; authority is §4.5) | 2026-08-02 |
+| FIG-STOREFRONT-PRODUCT-DETAIL-MEDIA-STATE | Storefront | Public product detail | Product Detail | Media Fallback | Desktop 1440 | high-fidelity | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 449:357 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=449-357) | APP2-D01 | — | **HISTORICAL_DRAFT_SOURCE — NOT_IMPLEMENTATION_AUTHORITY** (retired by APP2-S02-G01; authority is §4.5) | 2026-08-02 |
 | FIG-APP2-ASSET-CATALOG-NOTES | Shared | APP2-D01 | Assets & Catalog Notes / Handoff | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 450:404 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=450-404) | APP2-D01 | — | — | 2026-07-26 |
 | FIG-APP2-REUSE-MAP | Shared | APP2-D01 | Reuse & Supersession Map | Annotation | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 451:404 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=451-404) | APP2-D01 | — | — | 2026-07-26 |
 
@@ -228,9 +228,16 @@ before `APP2-S02` implements it.
 (`APP2-S01-G01`, IMP-D038, 2026-08-02).** The Product Owner has since locked the
 Storefront **Discover** route as **`/kham-pha`** (`/` stays Homepage-owned) with category
 state `?category=<slug>`; that decision came from the repository governance set and
-changed nothing in Figma. The **Product Detail** route is untouched by it —
-`/san-pham/<slug>` remains a proposal, and `APP2-S02` remains blocked pending the UI03
-reconciliation.
+changed nothing in Figma.
+
+> **Superseded by `APP2-S02-G01` (IMP-D039, 2026-08-02) — Product Detail route resolved.**
+> The paragraph above previously closed by recording `/san-pham/<slug>` as a proposal and
+> `APP2-S02` as blocked. The Product Owner has since locked the Product Detail route as
+> **`/san-pham/[slug]`**, rendered `/san-pham/<server-owned-product-slug>`. The four
+> `APP2-D01` Product Detail rows below are **not** promoted by that decision: they are
+> retired to `REFERENCE_ONLY` — `HISTORICAL_DRAFT_SOURCE`, and implementation authority
+> moves to the reconciled section in §4.5. The route itself still did not come from a
+> Figma label; it came from the Product Owner.
 
 ### 4.3.1 Removed by APP2-D01-C1 — rejected Storefront Product List (historical record)
 
@@ -267,7 +274,13 @@ frontend checkpoint reads.
 | Capability | Primary authority | Supporting authority | Reuse policy | Implementation status |
 |---|---|---|---|---|
 | **APP2-S01** Storefront Product List / Discover | **UI02 – Discover Feed** `208:538` — desktop `208:2002`, tablet `224:871`, mobile `226:1038` | UI01 Homepage `183:7`, `189:266`, `191:412`; APP1-D02 approved shell (§4.2) | `REUSE_AND_SUPPLEMENT_ONLY` | Blocked on backend prerequisites; rejected APP2 card-grid nodes removed (§4.3.1) |
-| **APP2-S02** Storefront Product Detail | **UI03 – Studio Work Detail** `261:1290` — desktop `262:1291`, tablet `273:1409`, mobile `279:1504` | UI01/UI02 visual language where documented | `SEPARATE_RECONCILIATION_REQUIRED` | `NOT_APPROVED` / `NOT_IMPLEMENTATION_AUTHORITY` — the APP2 frames `447:204`, `448:204`, `448:210`, `449:357` are withheld pending UI03 reconciliation |
+| **APP2-S02** Storefront Product Detail | **APP2-S02-G01 / Reconciled** `529:2224` — desktop `529:2225`, tablet `529:2431`, mobile `529:2575` (§4.5) | UI03 draft `261:1290` as `HISTORICAL_DRAFT_SOURCE`; UI01/UI02 visual language where documented; APP1-D02 approved shell (§4.2) | `REUSE_AND_SUPPLEMENT_ONLY` | `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001` (IMP-D039) |
+
+**Reconciliation history for this row.** Until `APP2-S02-G01` this row read
+`SEPARATE_RECONCILIATION_REQUIRED` / `NOT_APPROVED`, with UI03 as primary authority and the
+four `APP2-D01` frames `447:204`, `448:204`, `448:210`, `449:357` withheld. Those four are
+now `REFERENCE_ONLY` — `HISTORICAL_DRAFT_SOURCE`, and the UI03 draft roots keep their
+historical status in §4.5.2. Neither set may be implemented.
 
 ### 4.4.1 UI02 authority registry rows
 
@@ -342,6 +355,82 @@ articles (no `href`, click handler, button role, pointer cursor or hover afforda
 is a truthful interim state, not an unmet supplement. `APP2-S02` may convert that card
 wrapper into a link once UI03 reconciliation approves a detail route — without changing
 the masonry architecture.
+
+## 4.5 APP2-S02-G01 — Storefront Product Detail, reconciled (NEW, this checkpoint)
+
+Section **`529:2224`** — [APP2-S02-G01 / Storefront Product Detail / Reconciled](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=529-2224),
+page **User Interface** (`166:1457`), a **sibling** of UI01–UI05 at `x = 26180, y = 0`.
+
+> **What this gate did.** `APP2-S02` was `BLOCKED_BY_UI03_RECONCILIATION`. The UI03 draft is
+> a rich studio-work narrative; the delivered `APP2-B04` `publicProductDetail` contract
+> returns only `slug`, `name`, `description?`, `category`, `price`, `isDisplayOutOfStock`,
+> `media[]` and `seo`. Most of what UI03 drew — year, technique, dimensions, collection,
+> three separate story fields, materials, craft taxonomy, a four-step process, related
+> works, save/favourite and the commission CTA/sticky bar — **has no field and no operation
+> behind it**. This gate reconciles the two by *removing* what the contract cannot feed
+> rather than by inventing backend requirements, and locks the route the Product Owner
+> supplied. Price and `isDisplayOutOfStock` **are** returned and are still **not displayed**:
+> `APP2-S02` is a studio Work Detail, not an ecommerce PDP.
+
+**Route (IMP-D039).** `/san-pham/[slug]`, rendered `/san-pham/<server-owned-product-slug>`.
+The slug comes only from `APP2-B04`, is immutable and server-owned; no Product UUID, no
+query-mode detail route, no trailing-slash authority. `/product/*`, `/products/*`,
+`/catalog/*`, `/tac-pham/*` and `/kham-pha/*` are **rejected** as detail aliases, and
+`/kham-pha` remains Discover.
+
+**Contract handoff** is recorded on-canvas at `537:3`, state authority at `537:38`.
+
+### 4.5.1 Reconciled authority registry rows
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-S02-PRODUCT-DETAIL-SECTION | Storefront | /san-pham/[slug] | Product Detail (Reconciled) | Section | All | section | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 529:2224 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=529-2224) | APP2-S02-G01 | Reconciles UI03 261:1290 | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+| FIG-S02-PRODUCT-DETAIL-DESKTOP | Storefront | /san-pham/[slug] | Product Detail (Reconciled) | Default | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 529:2225 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=529-2225) | APP2-S02-G01 | Reconciles UI03 262:1291 | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+| FIG-S02-PRODUCT-DETAIL-TABLET | Storefront | /san-pham/[slug] | Product Detail (Reconciled) | Default | Tablet 1024 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 529:2431 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=529-2431) | APP2-S02-G01 | Reconciles UI03 273:1409 | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+| FIG-S02-PRODUCT-DETAIL-MOBILE | Storefront | /san-pham/[slug] | Product Detail (Reconciled) | Default | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 529:2575 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=529-2575) | APP2-S02-G01 | Reconciles UI03 279:1504 | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+| FIG-S02-PRODUCT-DETAIL-MEDIA-EMPTY | Storefront | /san-pham/[slug] | Product Detail (Reconciled) | Media Empty | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 532:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=532-3) | APP2-S02-G01 | — | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+| FIG-S02-PRODUCT-DETAIL-MEDIA-ERROR | Storefront | /san-pham/[slug] | Product Detail (Reconciled) | Media Error | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 532:105 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=532-105) | APP2-S02-G01 | — | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+| FIG-S02-PRODUCT-DETAIL-LIGHTBOX-DESKTOP | Storefront | /san-pham/[slug] | Product Detail Lightbox | Open | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 533:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=533-3) | APP2-S02-G01 | — | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+| FIG-S02-PRODUCT-DETAIL-LIGHTBOX-MOBILE | Storefront | /san-pham/[slug] | Product Detail Lightbox | Open | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 533:26 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=533-26) | APP2-S02-G01 | — | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+| FIG-S02-PRODUCT-DETAIL-CONTRACT-HANDOFF | Storefront | /san-pham/[slug] | Product Detail Contract Handoff | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 537:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=537-3) | APP2-S02-G01 | — | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+| FIG-S02-PRODUCT-DETAIL-STATE-AUTHORITY | Storefront | /san-pham/[slug] | Product Detail State Authority | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | User Interface | 537:38 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=537-38) | APP2-S02-G01 | — | FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001 | 2026-08-02 |
+
+### 4.5.2 UI03 draft roots — historical draft source
+
+`HISTORICAL_DRAFT_SOURCE` / `NOT_IMPLEMENTATION_AUTHORITY`. The draft section keeps all
+sixteen of its children unmodified — three viewport frames plus boards `00`, `04`–`11`
+(hero/gallery `283:1528`, related `290:1533`, loading/empty/error `291:1567`, responsive
+`292:1568`, accessibility `292:1582`, DS audit `293:1568`, content/asset audit `294:1568`,
+placement audit `294:1588`), each audited live by this gate. They record the original
+design intent and the deferred sections; **none of them may be implemented.** They are
+recorded here, never deleted (§9).
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-UI03-WORK-DETAIL-SECTION | Storefront | Product Detail draft source | UI03 Studio Work Detail | Section | All | section | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | User Interface | 261:1290 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=261-1290) | APP2-D01 | Reconciled by APP2-S02-G01 → FIG-S02-PRODUCT-DETAIL-SECTION | **HISTORICAL_DRAFT_SOURCE — NOT_IMPLEMENTATION_AUTHORITY** | 2026-08-02 |
+| FIG-UI03-WORK-DETAIL-DESKTOP | Storefront | Product Detail draft source | UI03 Studio Work Detail | Draft | Desktop 1440 | high-fidelity | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | User Interface | 262:1291 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=262-1291) | APP2-D01 | Reconciled by APP2-S02-G01 → FIG-S02-PRODUCT-DETAIL-DESKTOP | **HISTORICAL_DRAFT_SOURCE — NOT_IMPLEMENTATION_AUTHORITY** | 2026-08-02 |
+| FIG-UI03-WORK-DETAIL-TABLET | Storefront | Product Detail draft source | UI03 Studio Work Detail | Draft | Tablet 1024 | high-fidelity | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | User Interface | 273:1409 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=273-1409) | APP2-D01 | Reconciled by APP2-S02-G01 → FIG-S02-PRODUCT-DETAIL-TABLET | **HISTORICAL_DRAFT_SOURCE — NOT_IMPLEMENTATION_AUTHORITY** | 2026-08-02 |
+| FIG-UI03-WORK-DETAIL-MOBILE | Storefront | Product Detail draft source | UI03 Studio Work Detail | Draft | Mobile 390 | high-fidelity | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | User Interface | 279:1504 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=279-1504) | APP2-D01 | Reconciled by APP2-S02-G01 → FIG-S02-PRODUCT-DETAIL-MOBILE | **HISTORICAL_DRAFT_SOURCE — NOT_IMPLEMENTATION_AUTHORITY** | 2026-08-02 |
+
+### 4.5.3 Supported vs deferred (the reconciliation itself)
+
+**Supported by the delivered contract, and drawn:** APP1 shell; breadcrumb (desktop/tablet)
+and `← Quay lại Khám phá` (mobile) back to `/kham-pha`; image-led hero with an ordered
+gallery and thumbnail controls; keyboard-accessible selection; accessible lightbox; Product
+name as H1; category identity; **one** description section `Câu chuyện về tác phẩm`; media
+loading/empty/error states; browser-local `Chia sẻ`; `Tiếp tục khám phá` links into Discover.
+
+**Deferred — no field and no operation behind them, so removed from approved scope:** year;
+technique label; dimensions; collection membership; separate `Cảm hứng` / `Ý tưởng` /
+`Ý nghĩa` fields; materials and techniques; craft macro taxonomy; the Product-specific
+four-step process; related tabs/cards/recommendations; save/favourite; commission actions;
+soft-commission CTA; the mobile commission sticky bar; price/stock/buy-box/cart/rating/SKU;
+and a working global search. The UI03 draft retains them as historical content.
+
+**Natural ratio, not a locked crop.** `publicProductDetail` returns no image dimensions, so
+the artwork sits in a neutral bounded stage with `contain`/natural-ratio behaviour. The
+existing 3:4 `TEMP_ASSET` is annotated on-canvas as an example only
+(`FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01`, routed and non-blocking).
 
 ## 5. IA and user-flow registry
 
@@ -472,9 +561,15 @@ canonical entry exists for any APP1-D01 composite key.
   (`DRAFT` content maturity, REQUIRED visual/structural authority — §4.4.1)**,
   3 Homepage shell-reference rows (`SUPERSEDED` → APP1-D02), 4 IA/flow rows
   (`REFERENCE_ONLY`), 7 DS catalog rows (`APPROVED`), 2 `MISSING`/gap rows.
-  **Total 72 registry IDs** (4 rejected Product List rows removed by `APP2-D01-C1`,
+  **10 `APP2-S02-G01` reconciled Product Detail rows** (all
+  `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001` —
+  §4.5.1) and **4 UI03 draft rows** (`REFERENCE_ONLY` —
+  `HISTORICAL_DRAFT_SOURCE`, §4.5.2).
+  **Total 86 registry IDs** (4 rejected Product List rows removed by `APP2-D01-C1`,
   4 UI02 authority rows added, 1 `APP2-D02` annotation added, 1 `APP2-D03` annotation
-  added — see §4.3.1 and §4.4.1).
+  added, **10 `APP2-S02-G01` rows + 4 UI03 draft rows added** — see §4.3.1, §4.4.1 and
+  §4.5). The four `APP2-D01` Product Detail rows moved `REVIEW_REQUIRED` →
+  `REFERENCE_ONLY`; the total is unchanged by that move.
 - **Gaps:** GAP-D01 (no DS Input — supplemented for APP2 as `FIG-DS-INPUT-APP2`, DS
   library gap still open), GAP-D02 (no scrim token — still local `ink/900 @45%`).
   The former `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02 (now
@@ -497,5 +592,14 @@ canonical entry exists for any APP1-D01 composite key.
   node added (`498:272`); the A02/A03 ownership lines in `450:404` corrected. No Product
   Draft, Publication or Storefront frame changed, and no row other than the three Catalog
   rows promoted.
+- **`APP2-S02-G01` (2026-08-02):** Storefront Product Detail reconciled. All twelve UI03
+  draft roots audited live and left byte-unchanged; a new sibling section `529:2224` holds
+  nine reconciled roots (three viewport defaults, `Desktop / Media Empty`,
+  `Mobile / Media Error`, two lightboxes, contract handoff `537:3`, state authority
+  `537:38`) plus a scope board `538:3`. Route locked to `/san-pham/[slug]` (IMP-D039); the
+  four `APP2-D01` Product Detail rows retired to `REFERENCE_ONLY`. No UI01/UI02/UI04/UI05
+  node and no DS source was modified; 0 detached instances, 0 new component masters, 0 new
+  tokens or text styles.
 - **Consistency gate:** `pnpm check:figma-design-index` — see
-  `tools/check-figma-design-index.mjs`.
+  `tools/check-figma-design-index.mjs`. Product Detail route/scope authority is separately
+  gated by `pnpm check:storefront-product-detail-authority`.

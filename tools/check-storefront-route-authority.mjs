@@ -11,9 +11,19 @@
  *
  * This gate holds that line. `/kham-pha` must remain the single canonical Discover
  * route across the governance set (IMP-D038), the Homepage must keep `/`, the category
- * query contract must not drift, and — the half that protects the *next* checkpoint —
- * no document may quietly promote an alias, mark `/san-pham/<slug>` approved, declare
- * `APP2-S02` ready, or require an S01 card to link before a detail route exists.
+ * query contract must not drift, no document may quietly promote a Discover alias, and
+ * no document may require an S01 card to link before that link is implemented.
+ *
+ * **Superseded on two facts by `APP2-S02-G01` (IMP-D039).** Until that gate this checker
+ * also asserted `Product detail browser route` = `UNRESOLVED` and `APP2-S02 status` =
+ * `BLOCKED_BY_UI03_RECONCILIATION`, and treated `/san-pham` as a permanently rejected
+ * path. Those assertions existed to hold the line *until a real ruling arrived*, and it
+ * has: the Product Owner locked `/san-pham/[slug]`. The expectations move with the
+ * ruling rather than being deleted, so the fact table stays machine-checked in exactly
+ * one place; ownership of every Product-Detail-specific fact — the operation, the media
+ * rendition, the single description section, hidden price/stock, the deferred scope, and
+ * the rule that S02 may only be `READY` once its approval exists — passes to
+ * `check-storefront-product-detail-authority.mjs`.
  *
  * Deliberately narrow. It reads one fact table, one register row and a bounded ruling
  * block in named files — it is not a Markdown parser and must never become one.
@@ -41,12 +51,17 @@ export const EXPECTED = Object.freeze({
   categoryQueryKey: 'category',
   categorySlugs: ['thu-bong', 'khan', 'quan-ao', 'khac'],
   cardInteraction: 'NON_INTERACTIVE',
-  detailRoute: 'UNRESOLVED',
-  s02Status: 'BLOCKED_BY_UI03_RECONCILIATION',
+  /** Resolved by IMP-D039; `check-storefront-product-detail-authority.mjs` owns its detail. */
+  detailRoute: '/san-pham/[slug]',
+  s02Status: 'READY',
 });
 
-/** Paths that must never become the canonical Discover route or an approved alias. */
-export const REJECTED_PATHS = Object.freeze(['/discover', '/catalog', '/products', '/san-pham']);
+/**
+ * Paths that must never become the canonical Discover route or an approved Discover alias.
+ * `/san-pham` left this list when IMP-D039 made it the Product Detail base — it is not
+ * unguarded, it is guarded by the Product Detail gate instead.
+ */
+export const REJECTED_PATHS = Object.freeze(['/discover', '/catalog', '/products']);
 
 /** The heading that opens the bounded ruling block inside the phase plan. */
 const RULING_HEADING = '### 6.2.2 ';
@@ -141,6 +156,10 @@ export function cardLinkRequirements(text) {
  * Any claim that `APP2-S02` is ready or approved. Matched on the identifier plus a
  * short copula rather than per line, because the roadmap keeps every APP2 status in
  * one very long table row alongside `APP2-S01` = `READY — NOT STARTED`.
+ *
+ * Still exported, but no longer *failed on* here: since IMP-D039 a readiness claim is
+ * legitimate, and whether it is **earned** is a Product-Detail question. The detail gate
+ * imports this and pairs each claim with the approval evidence it requires.
  */
 export function s02ReadinessClaims(text) {
   return [...text.matchAll(/APP2-S02`?\**\s*(?:=|is)\s*\**`?(READY|APPROVED[A-Z_]*)/g)].map(
@@ -188,9 +207,10 @@ function checkDecisionRow(row, fail) {
   if (!/non-interactive/i.test(row)) {
     fail(`${EXPECTED.decisionId} does not authorize non-interactive S01 product cards`);
   }
-  if (!row.includes(EXPECTED.s02Status)) {
-    fail(`${EXPECTED.decisionId} does not keep APP2-S02 ${EXPECTED.s02Status}`);
-  }
+  // The `APP2-S02` status is deliberately *not* asserted against this row. IMP-D038 is a
+  // dated ruling that correctly records S02 as blocked at the time it was made; that
+  // sentence is history and must not be rewritten. The live status is the fact table's,
+  // and whether S02 has earned it is `check-storefront-product-detail-authority.mjs`'s.
 }
 
 export function checkStorefrontRouteAuthority(root = REPO_ROOT) {
@@ -241,12 +261,6 @@ export function checkStorefrontRouteAuthority(root = REPO_ROOT) {
     }
   }
 
-  for (const key of Object.keys(CANONICAL_FILES)) {
-    for (const claim of s02ReadinessClaims(sources[key])) {
-      fail(`${CANONICAL_FILES[key]}: declares APP2-S02 ready — "${claim}"`);
-    }
-  }
-
   return failures;
 }
 
@@ -259,7 +273,7 @@ function main() {
     return;
   }
   console.log(
-    'check:storefront-route-authority — Discover is /kham-pha with ?category=<slug> and staged non-interactive cards across 5 canonical documents; no alias is approved, no Product Detail route is canonical, S02 stays blocked',
+    'check:storefront-route-authority — Discover is /kham-pha with ?category=<slug> and staged non-interactive cards across 5 canonical documents; no Discover alias is approved (Product Detail authority is gated separately by check:storefront-product-detail-authority)',
   );
 }
 

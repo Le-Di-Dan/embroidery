@@ -864,7 +864,8 @@ endpoints.
 | 13 | APP2-B04 | backend | **Public catalog queries** — exactly two anonymous JSON operations, `publicProduct_list` (`GET /api/public/products`) and `publicProduct_detail` (`GET /api/public/products/{slug}`). Visibility is `products.status = PUBLISHED` plus a coherent public Category, reusing the same constants `APP2-T01` applies to media delivery; DRAFT, ARCHIVED, unknown slug and a non-public Category all collapse to one safe 404. Keyset pagination on the canonical Q-01 tuple `(display_order, id)` over **IDX-065**, with the cursor bound to the filter it was issued under — **the pagination authority was reconciled by `APP2-B04-C1`: the Product Owner ruled keyset, `ADR-DB5-001` gained **R10** and the DB5 matrices agree (IMP-D037)**. Media addresses are composed locally and locked to `buildPublicProductMediaPath` by a contract test (IMP-D018); list cards use `thumbnail`, detail uses `catalog-preview` in persisted `display_order`, and an image whose rendition is not servable is omitted rather than advertised. `Cache-Control: no-store` on both, because no cache-invalidation consumer exists. SEO exposes only the columns that physically exist (`seo_title`, `seo_description`, `is_indexable`) and **no canonical browser URL** — `/san-pham/<slug>` stays unresolved for S02. OpenAPI 14→16 paths / 17→19 operations / 27→34 schemas; generated-client additions only; **no migration, no Figma, no Admin/Storefront/worker change, no tracked Nginx/Compose change, no dependency**. `APP2-B04-C1` then closed the two authority defects that blocked review acceptance: the Product Owner ruled **keyset** (IMP-D037), `ADR-DB5-001` gained **R10** and the DB5 documents were reconciled with the prior offset classification kept as dated history; the access path was **measured** on a disposable PostgreSQL 16.14 (`pnpm explain:q01`) rather than asserted — both delivered forms seq-scan and sort at MVP cardinality and are accepted, and **IDX-065 orders the page only from a `category_id`-constant form the contract does not issue**, recorded precisely and routed to DB10. It also corrected the S02 handoff, which B04 had wrongly called ready. New gate `pnpm check:pagination-authority`; no index, migration, application, OpenAPI, generated-client or Figma change. `APP2-B04-C2` = `MUST_NOT_BE_CREATED` — **`COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW`** ([`APP2-B04-C1-CORRECTION-REPORT.md`](../reports/APP2-B04-C1-CORRECTION-REPORT.md)) | B03, T01 |
 | 13b | APP2-S01-G01 | gate | **Storefront Discover route authority** — activated on 2026-08-02 to cure `APP2-S01 = BLOCKED_BY_STOREFRONT_DISCOVER_ROUTE_DECISION`, which the first S01 attempt raised at its route gate after changing no file. Documentation, authority-consistency and evidence only. The Product Owner locked the Discover route **`/kham-pha`** (`/` stays Homepage-owned; `/discover`, `/catalog`, `/products`, `/san-pham` rejected, no alias and no redirect), the category query state `?category=<slug>` over the four fixed slugs, the narrow S01 shell/not-found activation, and — explicitly — **staged non-interactive Product cards** for S01, so the unresolved Product Detail route can no longer block the feed. `/san-pham/<slug>` stays `CHƯA CHỐT`/`NOT_CANONICAL` and S02 stays blocked by the UI03 reconciliation (IMP-D038, §6.2.2). New gate `pnpm check:storefront-route-authority`; **no application source, OpenAPI, generated-client, database, Figma, infrastructure or dependency change** — **`COMPLETE — DELIVERED_FOR_REVIEW`** ([`APP2-S01-G01-COMPLETION-REPORT.md`](../reports/APP2-S01-G01-COMPLETION-REPORT.md)) | B04 |
 | 14 | APP2-S01 | frontend | Storefront product list — design authority is **UI02 Discover Feed** (`REUSE_AND_SUPPLEMENT_ONLY`): 5-column desktop / 3-column tablet / 2-column mobile masonry with linear DOM reading order (§6.2.1). Route authority is `/kham-pha` with `?category=<slug>` and staged non-interactive cards (IMP-D038, §6.2.2). Delivered server-first: the route segment resolves the category, seeds the first keyset page and renders the products into the HTML, with `force-dynamic` because nothing invalidates a cache here; masonry is CSS multi-column so one list in server order is distributed visually while **DOM reading order stays linear** — measured live in a production browser at 5 / 3 / 2 columns with identical DOM order at every viewport. Consumes `publicProductList` only (`publicProductDetail` stays off the client boundary while the detail route is unresolved); price and the stock flag are dropped at the projection boundary. Continuation is gated on `hasNext` **and** a usable cursor with the in-flight cursor held in a ref — render state alone let three synchronous sentinel callbacks each start the same request. Isolated production evidence: canonical Storefront `runner` image, zero bind mounts, behind the real gateway with a production API and disposable TLS PostgreSQL, 24 synthetic published products against **real** THUMBNAIL bytes, 24/24 orchestration + 43/43 browser scenarios twice, including DRAFT removal (product gone, media 404, no route cache). **No backend, OpenAPI, generated-client, database, Figma, infrastructure or dependency change** — **`COMPLETE — DELIVERED_FOR_REVIEW`** ([`APP2-S01-COMPLETION-REPORT.md`](../reports/APP2-S01-COMPLETION-REPORT.md)) | B04, D01, S01-G01 |
-| 15 | APP2-S02 | frontend | Storefront product detail — **`BLOCKED_BY_UI03_RECONCILIATION`**. `APP2-D01-STOREFRONT-PRODUCT-DETAIL` is `NOT_APPROVED — WITHHELD_PENDING_UI03_RECONCILIATION`, reuse policy `SEPARATE_RECONCILIATION_REQUIRED`; the required UI03 roots are `261:1290` — `262:1291` / `273:1409` / `279:1504`. Backend completion does not lift a design blocker | B04, D01, UI03 reconciliation |
+| 14b | APP2-S02-G01 | gate | **Storefront Product Detail reconciliation** — activated on 2026-08-02 to cure `APP2-S02 = BLOCKED_BY_UI03_RECONCILIATION`. Design, authority-consistency and evidence only. All twelve UI03 draft roots audited live and left unmodified as `HISTORICAL_DRAFT_SOURCE`; a new sibling section `529:2224` carries nine reconciled roots plus a scope board. The Product Owner locked the detail route **`/san-pham/[slug]`** (server-owned immutable slug; no UUID, no query-mode route, no trailing-slash authority; `/product/*`, `/products/*`, `/catalog/*`, `/tac-pham/*`, `/kham-pha/*` rejected) and the studio-Work-Detail scope: one description section, browser-local share, Discover continuation, **no price/stock display**, and materials/process/related/save/commission deferred because the delivered contract does not represent them (IMP-D039, §6.2.3). New gate `pnpm check:storefront-product-detail-authority`; **no application source, OpenAPI, generated-client, database, infrastructure or dependency change** — **`COMPLETE — DELIVERED_FOR_REVIEW`** ([`APP2-S02-G01-COMPLETION-REPORT.md`](../reports/APP2-S02-G01-COMPLETION-REPORT.md)) | B04, T01, D01 |
+| 15 | APP2-S02 | frontend | Storefront product detail — **`READY — NOT STARTED`** since `APP2-S02-G01`. Design authority is the reconciled section `529:2224` (desktop `529:2225`, tablet `529:2431`, mobile `529:2575`, media-empty `532:3`, media-error `532:105`, lightboxes `533:3`/`533:26`, contract handoff `537:3`, state authority `537:38`) under `FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001`; route `/san-pham/[slug]` and scope are locked by IMP-D039 (§6.2.3). Consumes **only** `publicProductDetail` and `APP2-T01` catalog-preview media; renders gallery + lightbox, name as H1, category identity, exactly one description section, browser-local share and Discover continuation; **no price, stock or buying control**, and no materials/process/related/save/commission. UI03 `261:1290`/`262:1291`/`273:1409`/`279:1504` are `HISTORICAL_DRAFT_SOURCE` only | B04, T01, S02-G01 |
 | 16 | APP2-E01 | E2E | publication cross-layer journey — **`BLOCKED_BY_APP2-S02`** after `APP2-S01` completed | S01, S02 |
 | 17 | APP2-X01 | closure | close R1 Catalog Alpha; APP3 handoff | E01 |
 
@@ -996,8 +997,17 @@ this table against the `IMP-D038` register row and the surrounding authority set
 | `Category query key` | `category` |
 | `Category slugs` | `thu-bong, khan, quan-ao, khac` |
 | `S01 product card interaction` | `NON_INTERACTIVE` |
-| `Product detail browser route` | `UNRESOLVED` |
-| `APP2-S02 status` | `BLOCKED_BY_UI03_RECONCILIATION` |
+| `Product detail browser route` | `/san-pham/[slug]` |
+| `APP2-S02 status` | `READY` |
+
+> **Two facts in this table were resolved by `APP2-S02-G01` (IMP-D039, 2026-08-02).** They
+> read `UNRESOLVED` and `BLOCKED_BY_UI03_RECONCILIATION` from `APP2-S01-G01` until this
+> gate, because that gate deliberately held the line until the Product Owner supplied a
+> detail route. It now has: the route is `/san-pham/[slug]` (§6.2.3). The table is updated
+> in place rather than duplicated, so the checker keeps enforcing exactly one live route
+> ruling; **the rest of the S01 ruling below is unchanged and still binding** — in
+> particular `APP2-S01` cards stay non-interactive, since converting them is `APP2-S02`
+> work that has not been done.
 
 **Route.** The APP2 Storefront Discover / Product List route is **`/kham-pha`**, with
 no trailing slash. The product is positioned as a Pinterest-inspired creative
@@ -1033,13 +1043,99 @@ product-detail link") listed *examples* of permissible supplements; it was never
 mandate to fabricate a route. S01 therefore uses the Product title and withholds the
 detail link.
 
-**Product Detail deferral.** The Product Detail browser route stays **unresolved** and
-belongs to the UI03 reconciliation / `APP2-S02` authority. `/san-pham/<slug>` remains
-`CHƯA CHỐT` / `NOT_CANONICAL` / `NOT_IMPLEMENTATION_AUTHORITY` — a proposal only.
-`APP2-S02` = `BLOCKED_BY_UI03_RECONCILIATION` against UI03 `261:1290` / `262:1291` /
-`273:1409` / `279:1504`. Once S02's design and route authority are approved, S02 may
-convert the existing S01 semantic card wrapper into a link **without** changing the
-masonry architecture.
+**Product Detail deferral (superseded by §6.2.3).** At the time of `APP2-S01-G01` the
+Product Detail browser route was **unresolved** and belonged to the UI03 reconciliation /
+`APP2-S02` authority: `/san-pham/<slug>` was `CHƯA CHỐT` / `NOT_CANONICAL` /
+`NOT_IMPLEMENTATION_AUTHORITY`, a proposal only, and `APP2-S02` was
+`BLOCKED_BY_UI03_RECONCILIATION` against UI03 `261:1290` / `262:1291` / `273:1409` /
+`279:1504`. **`APP2-S02-G01` resolved it** — see §6.2.3. The forward-looking clause still
+holds: S02 may convert the existing S01 semantic card wrapper into a link **without**
+changing the masonry architecture, and until S02 ships that conversion the S01 cards remain
+non-interactive.
+
+### 6.2.3 `APP2-S02-G01` — Storefront Product Detail reconciliation (IMP-D039)
+
+`APP2-S02` was blocked by two separate absences, and an implementation checkpoint could
+invent neither: there was **no approved design authority** (UI03 was Draft; the four
+`APP2-D01` Product Detail frames were `NOT_APPROVED — WITHHELD_PENDING_UI03_RECONCILIATION`)
+and **no Product Detail browser route**. This gate supplies both. It changed no application
+source, no OpenAPI artifact, no generated client, no database object and no dependency.
+
+**Machine-checked Product Detail facts** — `pnpm check:storefront-product-detail-authority`
+compares this table against the `IMP-D039` register row and the surrounding authority set.
+
+| Fact | Value |
+|---|---|
+| `Product detail route` | `/san-pham/[slug]` |
+| `Product detail operation` | `publicProductDetail` |
+| `Product detail media rendition` | `catalog-preview` |
+| `Description sections` | `1` |
+| `Price and stock display` | `HIDDEN` |
+| `Deferred scope` | `materials, process, related, save, commission` |
+| `S01 card link upgrade owner` | `APP2-S02` |
+| `APP2-S02 design authority` | `529:2224` |
+| `APP2-S02 status` | `READY` |
+
+**The contradiction.** All twelve UI03 draft roots were audited live before any edit. The
+draft carries a year, a technique label, dimensions, collection membership, three separate
+story fields, materials and techniques, a craft macro taxonomy, a Product-specific four-step
+process, eight related works with tabs, a save/favourite action, a soft-commission CTA and a
+mobile commission sticky bar. The delivered `publicProductDetail` contract returns `slug`,
+`name`, `description?`, `category`, `price`, `isDisplayOutOfStock`, `media[]` and `seo` —
+**and nothing else**. There is no related-Product operation anywhere in the API. The
+reconciliation therefore removes what the contract cannot feed rather than creating backend
+requirements to preserve fictional content.
+
+**Route.** `/san-pham/[slug]`, rendered `/san-pham/<server-owned-product-slug>`. The slug
+comes only from `APP2-B04`, is immutable and server-owned; no Product UUID, no query-mode
+detail route, no trailing-slash authority. `/product/*`, `/products/*`, `/catalog/*`,
+`/tac-pham/*` and `/kham-pha/*` are **rejected** as detail aliases — no alias and no
+redirect is approved — and `/kham-pha` remains Discover. This supersedes the old
+`CHƯA CHỐT` proposal status.
+
+**Studio Work Detail, not a PDP.** `publicProductDetail` returns `price` and
+`isDisplayOutOfStock`; `APP2-S02` displays **no** price, stock, buy-box, cart, rating or SKU.
+
+**One description.** `description` present → exactly one section *Câu chuyện về tác phẩm*;
+absent → the section is omitted cleanly. One description is never split into invented
+semantic fields, and no copy is generated to fill it.
+
+**Continue discovery** replaces the unsupported related feed: *Khám phá tất cả* →
+`/kham-pha` and *Khám phá {category.name}* → `/kham-pha?category={category.slug}`. No
+related Product cards and no extra list request.
+
+**Share.** One browser-local action — Web Share when available, otherwise copy the canonical
+Product URL and announce success. No auth, persistence, SDK or analytics; no favourite/save.
+
+**Media and lightbox.** Ordered `media[]` by persisted `display_order`, catalog-preview
+only, never a private original and never a storage-provider URL. `media = []` renders an
+honest placeholder with **no** lightbox affordance; an individual failure preserves the
+Product text and controls. The contract publishes no dimensions, so the artwork uses a
+neutral bounded stage with `contain`/natural-ratio behaviour — universal 3:4 cropping is not
+locked and width/height are not fabricated. The lightbox is `role=dialog` with an accessible
+title, focus enter/trap/return, Escape to close, previous/next in media order, the selected
+position exposed textually, ≥44px controls, immediate transitions under reduced motion, and
+no previous/next when there is only one image.
+
+**SEO.** Canonical `/san-pham/{slug}`; `title = seo.title ?? name`;
+`description = seo.description ?? description ?? approved generic description`;
+`robots.index = seo.isIndexable`, `robots.follow = true`. No invented published date,
+author, technique, dimensions, collection, rating, availability schema or price rich-result
+schema; Product media is not used as an OG image until a social-image policy exists; and no
+Product structured data is promised here. `APP2-S02` must remain dynamic/`no-store` so an
+unpublish cannot leave a stale detail page.
+
+**Design authority.** The reconciled section `529:2224` (desktop `529:2225`, tablet
+`529:2431`, mobile `529:2575`, media-empty `532:3`, media-error `532:105`, lightboxes
+`533:3` / `533:26`, contract handoff `537:3`, state authority `537:38`) is
+`APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001`. UI03
+`261:1290` / `262:1291` / `273:1409` / `279:1504` become `HISTORICAL_DRAFT_SOURCE` /
+`NOT_IMPLEMENTATION_AUTHORITY` and are preserved unmodified, never deleted.
+
+**Follow-ups routed, neither blocking:** `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` (B04 publishes
+no width/height; S02 uses natural-ratio/contain) and `FU-APP2-STOREFRONT-CONTENT-BAND-01`
+(the APP1 shell keeps its 1200px content band although the source frames draw 1280px; the
+APP1 shell is not altered by this gate).
 
 ## 7. Critical end-to-end journey
 

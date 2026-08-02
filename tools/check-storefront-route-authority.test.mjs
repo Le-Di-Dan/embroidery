@@ -83,8 +83,8 @@ describe('check-storefront-route-authority', () => {
   it('rejects promoting a rejected path to a canonical alias', () => {
     const failures = failuresFor('phase', (text) =>
       text.replace(
-        'and `/san-pham` are **rejected** as current Discover paths',
-        'and `/san-pham` are approved as canonical Discover aliases',
+        '`/`, `/discover`, `/catalog`, `/products`',
+        '`/discover` and `/catalog` are approved as canonical Discover aliases; `/products`',
       ),
     );
     assert.match(failures, /promotes a rejected path to canonical\/approved/);
@@ -120,21 +120,18 @@ describe('check-storefront-route-authority', () => {
     assert.match(failures, /requires an S01 card link before S02 route authority/);
   });
 
-  it('rejects declaring APP2-S02 ready', () => {
-    const failures = failuresFor('roadmap', (text) =>
-      text.replace(
-        '**`APP2-S02` = `BLOCKED_BY_UI03_RECONCILIATION`**',
-        '**`APP2-S02` = `READY — NOT STARTED`**',
-      ),
-    );
-    assert.match(failures, /declares APP2-S02 ready/);
-  });
-
-  it('rejects marking /san-pham/<slug> approved', () => {
+  /**
+   * Two cases retired here and re-armed in `check-storefront-product-detail-authority`:
+   * "declares APP2-S02 ready" and "marks /san-pham/<slug> approved". Both were correct
+   * only while the Product Detail route was unresolved. Since IMP-D039 a readiness claim
+   * is legitimate *if earned*, and `/san-pham` is the approved detail base — so asserting
+   * the old text here would test a superseded ruling, not a live one.
+   */
+  it('still rejects a second rejected Discover path being promoted', () => {
     const failures = failuresFor('phase', (text) =>
       text.replace(
-        '`/san-pham/<slug>` remains\n`CHƯA CHỐT` / `NOT_CANONICAL` / `NOT_IMPLEMENTATION_AUTHORITY` — a proposal only.',
-        '`/san-pham/<slug>` is the approved canonical Product Detail route.',
+        '`/products`\nand `/san-pham` are **rejected**',
+        '`/products` is a canonical alias\nand `/san-pham` are **rejected**',
       ),
     );
     assert.match(failures, /promotes a rejected path to canonical\/approved/);
@@ -150,14 +147,14 @@ describe('check-storefront-route-authority', () => {
     assert.match(failures, /`S01 product card interaction` is "LINKED"/);
   });
 
-  it('rejects resolving the Product Detail route in this decision', () => {
+  it('rejects drifting the Product Detail route away from the locked value', () => {
     const failures = failuresFor('phase', (text) =>
       text.replace(
-        '| `Product detail browser route` | `UNRESOLVED` |',
-        '| `Product detail browser route` | `/san-pham/<slug>` |',
+        '| `Product detail browser route` | `/san-pham/[slug]` |',
+        '| `Product detail browser route` | `/products/[id]` |',
       ),
     );
-    assert.match(failures, /`Product detail browser route` is "\/san-pham\/<slug>"/);
+    assert.match(failures, /`Product detail browser route` is "\/products\/\[id\]"/);
   });
 
   it('rejects unlocking or removing the decision row', () => {
