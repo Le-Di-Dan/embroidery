@@ -131,6 +131,32 @@ describe('server-rendered Product Detail', () => {
   });
 });
 
+describe('SAFE_STREAMED_NOT_FOUND surface (IMP-D040)', () => {
+  // The transport is the framework's: a streamed data-driven notFound() answers
+  // HTTP 200 with a noindex signal, which the Product Owner accepts only while
+  // the response stays safe. The HTTP status belongs to the production run and
+  // is deliberately NOT asserted here as 404 — it is not one.
+  it('emits no Product metadata, canonical, title or description for a hidden Product', async () => {
+    detailMock.mockRejectedValue(safeNotFoundError());
+
+    await expect(generateMetadata(params('gau-bong-theu-tay'))).rejects.toThrow('NEXT_NOT_FOUND');
+    // Nothing was produced that could describe the Product: the call never
+    // returns a Metadata object at all.
+  });
+
+  it.each([
+    ['unknown slug', 'gau-bong-theu-tay'],
+    ['DRAFT', 'gau-bong-theu-tay'],
+    ['ARCHIVED', 'gau-bong-theu-tay'],
+    ['non-public category', 'gau-bong-theu-tay'],
+  ])('renders no Product data at all for %s', async (_reason, slug) => {
+    detailMock.mockRejectedValue(safeNotFoundError());
+    await expect(renderPage(slug)).rejects.toThrow('NEXT_NOT_FOUND');
+    // The page threw before producing markup, so no name, price, media address
+    // or category can appear in the response body.
+  });
+});
+
 describe('safe not-found matrix', () => {
   // The API collapses unknown / DRAFT / ARCHIVED / non-public category into one
   // 404 on purpose. The page must not widen that back out.

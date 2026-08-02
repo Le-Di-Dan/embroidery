@@ -1150,6 +1150,57 @@ no width/height; S02 uses natural-ratio/contain) and `FU-APP2-STOREFRONT-CONTENT
 (the APP1 shell keeps its 1200px content band although the source frames draw 1280px; the
 APP1 shell is not altered by this gate).
 
+### 6.2.4 `APP2-S02-C1` — streamed not-found transport and the mobile band (IMP-D040)
+
+`APP2-S02` was returned `CORRECTION_REQUIRED` because its own report recorded two unmet
+acceptance criteria. Both are settled here. This correction changed no application contract:
+the route, the API boundary, the gallery, the lightbox, share, the S01 card link and the
+request-scoped loader are exactly as delivered.
+
+**Machine-checked correction facts** — `pnpm check:storefront-product-detail-authority`
+compares this table against the `IMP-D040` register row and the surrounding authority set.
+
+| Fact | Value |
+|---|---|
+| `Product detail mobile gutter` | `24px` |
+| `Product detail mobile content width` | `342px` |
+| `Streamed not-found classification` | `SAFE_STREAMED_NOT_FOUND` |
+| `Streamed not-found measured status` | `200` |
+| `Streamed not-found noindex` | `REQUIRED` |
+| `Streamed not-found product canonical` | `FORBIDDEN` |
+| `Streamed not-found duplicate lookup` | `FORBIDDEN` |
+| `Exact 404 transport follow-up` | `ROUTED — FRAMEWORK_TRACKING — NONBLOCKING_AFTER_C1` |
+
+**Mobile content band.** At 390 the Product Detail content sits in a **342px** band with a
+**24px** gutter on each side, as the approved frame `529:2575` locks. The APP1 shell's own
+mobile gutter is **16px**, which had left the page 358px wide. The shell is **not** widened —
+it also owns the Homepage, Discover and every other route, and moving it to satisfy one
+screen's authority would be the wrong trade — so Product Detail applies a feature-local 8px
+inset below the shell's own 768px threshold. Tablet and desktop keep the shell's band
+untouched and the story keeps its 640px maximum. The lightbox is unaffected: its scrim is
+viewport-owned. Measured live at 390: gutters 24/24, content 342, story 342, media stage 342,
+thumbnail viewport 342, zero document overflow.
+
+**`SAFE_STREAMED_NOT_FOUND`.** A data-driven `notFound()` on this streamed route answers
+**HTTP 200** with a `noindex` signal. That is the framework's transport, not a choice made
+here, and it is **not** called a 404 anywhere in this repository. It is accepted only while
+every safety condition holds, each measured per case in the production run: the approved
+surface renders; `noindex` is present; no Product canonical, title, description, JSON or
+hidden Product data is emitted; unknown, `DRAFT`, `ARCHIVED` and non-public-category stay
+indistinguishable; no raw cause appears; nothing is stored durably; a new request
+re-evaluates visibility; and the old media path still returns a **real** HTTP 404 after
+unpublish. A malformed slug takes the same surface with no Product API call.
+
+**No fabricated 404.** A proxy, middleware or custom-server preflight could force the status,
+and each would duplicate the Product-detail read, add a second authorization path or bypass
+the request-scoped loader. None is approved. Exact transport stays
+`FU-APP2-DETAIL-NOT-FOUND-STATUS-01` = `ROUTED — FRAMEWORK_TRACKING — NONBLOCKING_AFTER_C1`.
+
+**Shell ownership.** `FU-APP1-SHELL-BRAND-TOUCH-TARGET-01` =
+`ROUTED — NONBLOCKING_FOR_APP2-S02` records the shell brand link that misses 44px; the
+off-canvas skip link is a keyboard affordance and is outside the touch-target measurement.
+Every control owned by `.product-detail` meets 44px.
+
 ## 7. Critical end-to-end journey
 
 Admin staff uploads a valid product image, sees processing complete, creates a product draft, publishes it, verifies it on Storefront HTML and UI, unpublishes it, and verifies public access is removed. Invalid/private assets never become public.

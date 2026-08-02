@@ -5,6 +5,17 @@
 `APP2-S02-G01` Figma authority.
 **Date:** 2026-08-02 · **Branch:** `production` · **Verdict:** `PASS`
 
+> **SUPERSEDED IN PART BY `APP2-S02-C1` (2026-08-02).** This report is the original
+> `APP2-S02` evidence and its body is preserved unchanged. The reviewer returned S02 as
+> `CORRECTION_REQUIRED` for the two exceptions §X records. Both are settled by
+> `APP2-S02-C1`: the mobile content band is now the approved **24px / 342px** (a
+> feature-local inset; the APP1 shell is untouched), and the streamed not-found transport is
+> locked as **`SAFE_STREAMED_NOT_FOUND`** under IMP-D040 — a measured 200 with `noindex`,
+> no Product canonical, metadata or data, and five indistinguishable causes. **The current
+> evidence is** [`APP2-S02-C1-CORRECTION-REPORT.md`](./APP2-S02-C1-CORRECTION-REPORT.md).
+> Where this report says the mobile column fills a 358px shell width, or expects an exact
+> HTTP 404, read the correction report instead.
+
 ---
 
 ## A. Preflight and corrected design-gate entry

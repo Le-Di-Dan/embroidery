@@ -277,6 +277,41 @@ export function undersizedControls(page) {
   );
 }
 
+/**
+ * The Product Detail content band as laid out: its gutters relative to the
+ * viewport, its usable width, and the width of each element the approved frame
+ * places inside it.
+ *
+ * Read from real boxes, never from the stylesheet that produced them — the whole
+ * point of `APP2-S02-C1` is that a documented 24px/342px band and a rendered one
+ * had drifted apart.
+ */
+export function measureContentBand(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('.product-detail');
+    if (root === null) return null;
+    const style = getComputedStyle(root);
+    const rect = root.getBoundingClientRect();
+    const padLeft = parseFloat(style.paddingLeft);
+    const padRight = parseFloat(style.paddingRight);
+    const width = (selector) => {
+      const element = document.querySelector(selector);
+      return element === null ? null : Math.round(element.getBoundingClientRect().width);
+    };
+    return {
+      left: Math.round(rect.left + padLeft),
+      right: Math.round(window.innerWidth - (rect.right - padRight)),
+      content: Math.round(rect.width - padLeft - padRight),
+      story: width('.product-detail__story-body'),
+      stage: width('.product-detail__stage'),
+      thumbnails: width('.product-detail__thumbnails'),
+      breadcrumb: width('.product-detail__breadcrumb'),
+      identity: width('.product-detail__identity'),
+      continueSection: width('.product-detail__continue'),
+    };
+  });
+}
+
 /** The shell's own content width at the current viewport. */
 export function contentWidth(page) {
   return page.evaluate(() => {

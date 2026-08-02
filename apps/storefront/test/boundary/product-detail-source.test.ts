@@ -225,8 +225,15 @@ describe('style contract', () => {
   });
 
   it('scrolls the thumbnail strip instead of widening the page', () => {
-    const strip = scssCode.slice(scssCode.indexOf('.product-detail__thumbnails'));
-    expect(strip.slice(0, strip.indexOf('}'))).toContain('overflow-x: auto');
+    // The selector appears twice since `APP2-S02-C1` — the base rule and the
+    // mobile override that gives the scroll viewport the whole content band —
+    // so every block is checked rather than whichever happens to come first.
+    const blocks = [...scssCode.matchAll(/\.product-detail__thumbnails\s*\{([^}]*)\}/g)].map(
+      (match) => match[1] ?? '',
+    );
+    expect(blocks.length).toBeGreaterThanOrEqual(2);
+    expect(blocks.some((block) => block.includes('overflow-x: auto'))).toBe(true);
+    expect(blocks.some((block) => block.includes('width: 100%'))).toBe(true);
   });
 
   it('honours reduced motion', () => {

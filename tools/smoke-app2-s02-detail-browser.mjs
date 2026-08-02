@@ -34,6 +34,7 @@ import {
   cleanupDetailFixtures,
   deliverableMediaCount,
   horizontalOverflow,
+  measureContentBand,
   measureStory,
   mediaPaths,
   seedDetailFixtures,
@@ -50,11 +51,15 @@ const { chromium } = requireFromE2e('@playwright/test');
 
 const BASE_URL = process.env.SMOKE_BASE_URL ?? 'http://embroidery.local';
 
+/**
+ * Viewport, the story's maximum measure, and — for mobile only — the approved
+ * content band the frame locks (`APP2-S02-C1`: 24px gutters, 342px content).
+ * Desktop and tablet take their band from the shell and cap the story at 640.
+ */
 const VIEWPORTS = [
-  ['desktop', { width: 1440, height: 900 }, 640],
-  ['tablet', { width: 1024, height: 900 }, 640],
-  // null = no cap; the mobile column fills the shell's own content width.
-  ['mobile', { width: 390, height: 844 }, null],
+  ['desktop', { width: 1440, height: 900 }, 640, null],
+  ['tablet', { width: 1024, height: 900 }, 640, null],
+  ['mobile', { width: 390, height: 844 }, 342, { gutter: 24, content: 342 }],
 ];
 
 const results = [];
@@ -133,7 +138,7 @@ async function main() {
     );
 
     // ---- the interactive scenarios, per viewport ---------------------------
-    for (const [label, viewport, expectedMeasure] of VIEWPORTS) {
+    for (const [label, viewport, expectedMeasure, band] of VIEWPORTS) {
       const context = await browser.newContext({ viewport });
       const page = await context.newPage();
 
@@ -164,17 +169,63 @@ async function main() {
 
       const story = await measureStory(measured);
       const available = await contentWidth(measured);
-      // Desktop and tablet cap at the approved 640px measure. Mobile has no cap:
-      // the shell's own content width is already narrower, so the column simply
-      // fills it — and that width is the shell's (16px gutter → 358px at 390),
-      // not the 24px/342px the source frame drew. Asserted against the measured
-      // container rather than the frame number, and disclosed in the report.
-      const limit = expectedMeasure === null ? available : expectedMeasure;
       record(
         `${label}: story measure is the approved readable width`,
-        story !== null && story.width <= limit && story.width > 0 && !story.clamped,
-        { width: story?.width, limit, available, clamped: story?.clamped },
+        story !== null && story.width <= expectedMeasure && story.width > 0 && !story.clamped,
+        {
+          width: story?.width,
+          max: expectedMeasure,
+          shellContent: available,
+          clamped: story?.clamped,
+        },
       );
+
+      // The approved mobile band (APP2-S02-C1). Measured from real boxes at 390:
+      // Product Detail insets itself by 8px inside the shell's 16px gutter, so
+      // the gutter reads 24 and the content reads 342 — without the global shell
+      // moving for the Homepage, Discover or any other route.
+      if (band !== null) {
+        const measuredBand = await measureContentBand(measured);
+        record(
+          `${label}: Product Detail content band is ${band.gutter}px / ${band.content}px`,
+          measuredBand !== null &&
+            measuredBand.left === band.gutter &&
+            measuredBand.right === band.gutter &&
+            measuredBand.content === band.content,
+          measuredBand ?? { measured: null },
+        );
+        record(
+          `${label}: every banded section fits the ${band.content}px content width`,
+          measuredBand !== null &&
+            measuredBand.thumbnails === band.content &&
+            [
+              measuredBand.story,
+              measuredBand.stage,
+              measuredBand.breadcrumb,
+              measuredBand.identity,
+              measuredBand.continueSection,
+            ].every((value) => value !== null && value <= band.content),
+          measuredBand ?? { measured: null },
+        );
+
+        // The route-local loading and error surfaces share the same band; they
+        // replace the page, so they are measured on their own visits.
+        for (const [state, path] of [
+          ['media empty', `/san-pham/${bySlug('noMedia').slug}`],
+          ['description absent', `/san-pham/${bySlug('bare').slug}`],
+        ]) {
+          await measured.goto(`${BASE_URL}${path}`, { waitUntil: 'networkidle' });
+          const stateBand = await measureContentBand(measured);
+          record(
+            `${label}: the "${state}" surface uses the same content band`,
+            stateBand !== null &&
+              stateBand.left === band.gutter &&
+              stateBand.content === band.content,
+            stateBand ?? { measured: null },
+          );
+        }
+        await measured.goto(`${BASE_URL}/san-pham/${rich.slug}`, { waitUntil: 'networkidle' });
+      }
       const undersized = await undersizedControls(measured);
       record(`${label}: every Product Detail control meets 44px`, undersized.length === 0, {
         undersized,
@@ -199,32 +250,70 @@ async function main() {
       ['non-public category', bySlug('hiddenCategory').slug],
       ['malformed slug', MALFORMED_SLUG],
     ];
+    /**
+     * `SAFE_STREAMED_NOT_FOUND` (IMP-D040).
+     *
+     * The framework answers a streamed data-driven `notFound()` with HTTP 200
+     * plus a `noindex` signal. The Product Owner accepts that transport only
+     * when every safety condition below holds, so each is measured per case
+     * rather than summarised — and the status is reported as what it is. This
+     * response is deliberately NOT called an HTTP 404.
+     */
     const surfaces = new Set();
     const statuses = new Set();
+    const fingerprints = new Set();
     for (const [reason, slug] of notFoundCases) {
       const visit = await fetchWithoutJavaScript(browser, `/san-pham/${encodeURIComponent(slug)}`);
-      const leaks = /DRAFT|ARCHIVED|requestId|stack|postgres|SQLSTATE/i.test(visit.html);
-      const approved = visit.html.includes('Không tìm thấy');
-      surfaces.add(approved ? 'approved-not-found' : 'other');
-      statuses.add(visit.status);
-      // The SURFACE is what this asserts. The STATUS is recorded, not asserted:
-      // Next 16.2.10 answers 200 for a notFound() raised from a dynamic segment
-      // (FU-APP2-DETAIL-NOT-FOUND-STATUS-01). Asserting 404 here would fail for a
-      // framework reason; asserting nothing would hide it. So it is measured and
-      // reported on its own line below.
-      record(`safe not-found surface for ${reason}`, approved && !leaks, {
+      const html = visit.html;
+      const evidence = {
         status: visit.status,
-        leaks,
-      });
+        approvedSurface: html.includes('Không tìm thấy'),
+        noindex: /<meta[^>]+name="robots"[^>]+content="[^"]*noindex/i.test(html),
+        productCanonical: /<link[^>]+rel="canonical"/i.test(html),
+        productMetadata: FIXTURES.some((fixture) => html.includes(fixture.name)),
+        productData: /"slug"\s*:|"isDisplayOutOfStock"|catalog-preview/.test(html),
+        rawCause: /DRAFT|ARCHIVED|requestId|stack|postgres|SQLSTATE|ECONNREFUSED/i.test(html),
+      };
+      surfaces.add(evidence.approvedSurface ? 'approved-not-found' : 'other');
+      statuses.add(visit.status);
+      // Everything a public caller could use to tell the five causes apart.
+      fingerprints.add(
+        JSON.stringify([
+          evidence.approvedSurface,
+          evidence.noindex,
+          evidence.productCanonical,
+          evidence.productMetadata,
+          evidence.productData,
+          evidence.rawCause,
+          visit.status,
+        ]),
+      );
+      record(
+        `SAFE_STREAMED_NOT_FOUND for ${reason}`,
+        evidence.approvedSurface &&
+          evidence.noindex &&
+          !evidence.productCanonical &&
+          !evidence.productMetadata &&
+          !evidence.productData &&
+          !evidence.rawCause,
+        evidence,
+      );
     }
     record('every not-found reason renders the same public surface', surfaces.size === 1, {
       surfaces: [...surfaces],
     });
-    record('MEASURED: the not-found HTTP status (see FU-APP2-DETAIL-NOT-FOUND-STATUS-01)', true, {
-      statuses: [...statuses],
-      expected: 404,
-      framework: 'next@16.2.10 dynamic segment',
+    record('the five causes are indistinguishable to a public caller', fingerprints.size === 1, {
+      distinctFingerprints: fingerprints.size,
     });
+    record(
+      'MEASURED transport: streamed not-found status (FU-APP2-DETAIL-NOT-FOUND-STATUS-01)',
+      true,
+      {
+        measuredStatus: [...statuses],
+        classification: 'SAFE_STREAMED_NOT_FOUND',
+        note: 'not an HTTP 404; framework-defined streamed transport (next@16.2.10)',
+      },
+    );
 
     // ---- durable visibility --------------------------------------------------
     const live = await fetchWithoutJavaScript(browser, `/san-pham/${rich.slug}`);
@@ -248,7 +337,7 @@ async function main() {
     // asserted. The API's own status, checked on the media address below, is
     // unaffected and really is 404.
     record(
-      'the very next request no longer serves the Product — nothing was cached',
+      'the very next request is SAFE_STREAMED_NOT_FOUND — nothing was cached',
       gone.html.includes('Không tìm thấy') && !gone.html.includes(rich.name),
       { status: gone.status, surface: 'approved-not-found' },
     );

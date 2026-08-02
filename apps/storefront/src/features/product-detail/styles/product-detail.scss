@@ -20,6 +20,16 @@
 // own threshold: the audited tablet frame IS 1024, so 1025+ is the desktop tier.
 $bp-detail-desktop: 1025px;
 
+// The shell widens its own content gutter at this width (storefront-shell.scss
+// `$bp-footer`). Mirrored rather than imported because it is another feature's
+// internal constant; the value is asserted by a boundary test so the two cannot
+// drift apart silently.
+$bp-shell-wide: 768px;
+
+// The approved mobile content band (APP2-S02-G01-C1, frame 529:2575): a 24px
+// gutter and a 342px content width at 390.
+$detail-mobile-gutter: styles.spacing(24);
+
 // The approved readable measure (APP2-S02-G01-C1, UI03 08 – Accessibility:
 // "cột chữ ≤ 640px (~75 ký tự)"). Deliberately NOT `styles.$layout-reading-max`,
 // which is 720px: the foundation's general reading width and this page's
@@ -44,6 +54,33 @@ $scrim-foreground-muted: rgba(255, 255, 255, 0.8);
   flex-direction: column;
   gap: styles.spacing(32);
   padding-block: styles.spacing(24);
+}
+
+// Feature-local mobile content band (APP2-S02-C1).
+//
+// The approved mobile frame places Product Detail content in a 342px band at a
+// 24px gutter; the APP1 shell's own mobile gutter is 16px, which left the page
+// 358px wide. Widening the shell would move the Homepage, Discover and every
+// other route to satisfy one screen's authority, so Product Detail insets
+// *itself* by the missing 8px instead — the narrowest mechanism that makes the
+// measured gutter 24 and the measured content 342.
+//
+// Scoped below the shell's own threshold, so the tablet and desktop bands stay
+// exactly as the shell defines them. The lightbox is unaffected: its scrim is
+// `position: fixed` and belongs to the viewport, not to this band.
+@media (max-width: #{$bp-shell-wide - 1px}) {
+  .product-detail {
+    padding-inline: $detail-mobile-gutter - styles.spacing(16);
+  }
+
+  // The swipe strip's scroll viewport is the content band itself, anchored to
+  // the gutter as the approved mobile frame draws it. Without this the strip
+  // hugs its thumbnails, so a short gallery sits centred and a long one decides
+  // its own left edge — and the "viewport" would be whatever the content
+  // happened to measure rather than the band.
+  .product-detail__thumbnails {
+    width: 100%;
+  }
 }
 
 // --- Breadcrumb / back ------------------------------------------------------
