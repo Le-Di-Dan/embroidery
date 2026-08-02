@@ -108,7 +108,8 @@
     "smoke:app2-b04-public-catalog": "node tools/smoke-app2-b04-public-catalog.mjs",
     "smoke:app2-b04-public-catalog:production": "node tools/smoke-app2-b04-public-catalog-production.mjs",
     "smoke:app2-s01-discover:production": "node tools/smoke-app2-s01-discover-production.mjs",
-    "smoke:app2-s02-detail:production": "node tools/smoke-app2-s02-detail-production.mjs"
+    "smoke:app2-s02-detail:production": "node tools/smoke-app2-s02-detail-production.mjs",
+    "smoke:app2-e01-publication:production": "node tools/smoke-app2-e01-publication-production.mjs"
   },
   "prettier": "@embroidery/prettier-config",
   "devDependencies": {
