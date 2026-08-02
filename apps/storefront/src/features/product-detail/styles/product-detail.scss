@@ -1,0 +1,518 @@
+// Product Detail — feature-scoped styles (APP2-S02). Design source:
+// FIG-S02-PRODUCT-DETAIL-{DESKTOP,TABLET,MOBILE,MEDIA-EMPTY,MEDIA-ERROR,
+// LIGHTBOX-*} (file BQwqV8GdfUIELvsQDB1UQE, 529:2225 / 529:2431 / 529:2575 /
+// 532:3 / 532:105 / 533:3 / 533:26), approved under
+// FIG-APPROVAL-APP2-S02-G01-PRODUCT-DETAIL-001, corrected by APP2-S02-G01-C1.
+// Colour, type, radius, spacing and control size come from @embroidery/styles;
+// the few values with no shared token are local literals, documented inline.
+//
+// Measured live from the approved frames:
+//   desktop 1440 — gutter 80, story measure 640
+//   tablet  1024 — gutter 48, story measure 640
+//   mobile   390 — gutter 24, content 342 (the story measure IS the content)
+//
+// The approved shell owns the page container (max 1200px with its own padding),
+// so the page renders inside that band rather than the 1440-frame's 1280.
+
+@use '@embroidery/styles' as styles;
+
+// Local layout breakpoint, aligned with the discovery feature and the shell's
+// own threshold: the audited tablet frame IS 1024, so 1025+ is the desktop tier.
+$bp-detail-desktop: 1025px;
+
+// The approved readable measure (APP2-S02-G01-C1, UI03 08 – Accessibility:
+// "cột chữ ≤ 640px (~75 ký tự)"). Deliberately NOT `styles.$layout-reading-max`,
+// which is 720px: the foundation's general reading width and this page's
+// approved story measure are different numbers, and silently using the token
+// would widen the column past the value the correction locked.
+$story-measure-max: 640px;
+
+// Local composition constants (no shared token).
+$line-height-snug: 1.35;
+$line-height-body: 1.6;
+$stage-min-height: 320px;
+// The lightbox scrim and its on-scrim control surface. GAP-D02: the design
+// system defines no scrim token, so these mirror the values the approved
+// UI03/S02 frames themselves use rather than inventing a new palette entry.
+$scrim-color: rgba(20, 18, 18, 0.92);
+$scrim-control-surface: rgba(255, 255, 255, 0.14);
+$scrim-foreground: #ffffff;
+$scrim-foreground-muted: rgba(255, 255, 255, 0.8);
+
+.product-detail {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(32);
+  padding-block: styles.spacing(24);
+}
+
+// --- Breadcrumb / back ------------------------------------------------------
+
+.product-detail__breadcrumb {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.product-detail__crumbs {
+  display: none;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-detail__crumb {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(8);
+
+  // The separator is decorative, so it is drawn rather than written: a literal
+  // "/" in the DOM would be announced between every crumb.
+  & + &::before {
+    content: '';
+    width: 1px;
+    height: 12px;
+    background: styles.$color-border-primary;
+  }
+
+  a {
+    // The crumbs are real navigation, so they carry the locked touch target
+    // rather than being inline text you have to aim at.
+    display: inline-flex;
+    align-items: center;
+    min-height: styles.$size-touch-target-min;
+    color: styles.$color-text-secondary;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      text-decoration: underline;
+    }
+  }
+
+  &[aria-current='page'] {
+    color: styles.$color-text-primary;
+  }
+}
+
+.product-detail__back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  color: styles.$color-text-secondary;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+// Desktop and tablet show the trail; mobile shows the single back link.
+// `display: none` removes the other from the accessibility tree too, so
+// assistive technology hears exactly one route back rather than two.
+@media (min-width: $bp-detail-desktop) {
+  .product-detail__crumbs {
+    display: flex;
+  }
+
+  .product-detail__back-link {
+    display: none;
+  }
+}
+
+// --- Gallery ----------------------------------------------------------------
+
+.product-detail__gallery {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  align-items: center;
+}
+
+.product-detail__stage-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 4px;
+  }
+}
+
+.product-detail__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: $stage-min-height;
+  padding: styles.spacing(16);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.product-detail__stage-image {
+  display: block;
+  max-width: 100%;
+  // Natural ratio, never a fixed crop. APP2-B04 publishes no image dimensions,
+  // so any aspect-ratio here would be fabricated — and would crop artwork the
+  // approved authority requires to be shown whole (`contain`, 541:3).
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.product-detail__stage-message {
+  margin: 0;
+  max-width: $story-measure-max;
+  text-align: center;
+  font-size: styles.$font-size-body-m;
+  line-height: $line-height-body;
+  color: styles.$color-text-secondary;
+}
+
+.product-detail__zoom-hint {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// --- Thumbnails -------------------------------------------------------------
+
+.product-detail__thumbnails {
+  display: flex;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  // Mobile scrolls the strip horizontally rather than wrapping it or letting it
+  // widen the page. The overflow lives here, so the document never gains a
+  // horizontal scrollbar.
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.product-detail__thumbnail-item {
+  flex: 0 0 auto;
+}
+
+.product-detail__thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  width: styles.spacing(64);
+  height: styles.spacing(64);
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+
+  // Selection is a border plus `aria-current`, never colour alone.
+  &[aria-current='true'] {
+    border-color: styles.$color-text-primary;
+  }
+}
+
+.product-detail__thumbnail-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-detail__thumbnail-fallback {
+  padding: styles.spacing(4);
+  font-size: styles.$font-size-body-s;
+  text-align: center;
+  color: styles.$color-text-secondary;
+}
+
+// --- Identity ---------------------------------------------------------------
+
+.product-detail__identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: styles.spacing(8);
+  text-align: center;
+}
+
+.product-detail__category {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+  // Identity, not a control: no pointer, no hover, no focus ring. Navigation by
+  // category lives in the breadcrumb and the continuation section.
+}
+
+.product-detail__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-l;
+  font-weight: styles.$font-weight-semibold;
+  line-height: $line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+// --- Share ------------------------------------------------------------------
+
+.product-detail__share {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: styles.spacing(4);
+}
+
+.product-detail__share-button {
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-background-primary;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.product-detail__share-status {
+  margin: 0;
+  min-height: styles.spacing(16);
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// --- Story ------------------------------------------------------------------
+
+.product-detail__story {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.product-detail__story-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: $line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.product-detail__story-body {
+  margin: 0;
+  // The corrected readable measure (APP2-S02-G01-C1). Mobile has no cap because
+  // the 342px content width is already narrower than 640; the column stays on
+  // the page gutter rather than being centred as a marketing card, and the text
+  // wraps naturally with no clamp and no fixed height.
+  max-width: $story-measure-max;
+  font-size: styles.$font-size-body-m;
+  line-height: $line-height-body;
+  color: styles.$color-text-primary;
+}
+
+// --- Continue discovering ---------------------------------------------------
+
+.product-detail__continue {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.product-detail__continue-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: $line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.product-detail__continue-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.product-detail__continue-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+// --- Lightbox ---------------------------------------------------------------
+
+.product-detail__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(24);
+  background: $scrim-color;
+}
+
+.product-detail__dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  align-items: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.product-detail__dialog-header {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+}
+
+.product-detail__dialog-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  color: $scrim-foreground;
+}
+
+.product-detail__dialog-control {
+  min-height: styles.$size-touch-target-min;
+  min-width: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(16);
+  border: 0;
+  border-radius: styles.$radius-button;
+  background: $scrim-control-surface;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  color: $scrim-foreground;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid $scrim-foreground;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.product-detail__dialog-stage-row {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+  max-width: 100%;
+}
+
+.product-detail__dialog-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.product-detail__dialog-image {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  height: auto;
+  object-fit: contain;
+}
+
+.product-detail__dialog-position {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: $scrim-foreground-muted;
+}
+
+// Mobile stacks the previous/next controls under the image rather than pinching
+// the stage between them on a 390px screen.
+@media (max-width: #{$bp-detail-desktop - 1px}) {
+  .product-detail__dialog-stage-row {
+    flex-direction: column;
+  }
+}
+
+// --- Loading and error ------------------------------------------------------
+
+.product-detail__error-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.product-detail__error-body {
+  margin: 0;
+  max-width: $story-measure-max;
+  font-size: styles.$font-size-body-m;
+  line-height: $line-height-body;
+  color: styles.$color-text-secondary;
+}
+
+.product-detail__error-retry {
+  align-self: flex-start;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-background-primary;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+// --- Reduced motion ---------------------------------------------------------
+
+@media (prefers-reduced-motion: reduce) {
+  .product-detail *,
+  .product-detail__scrim * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+// --- Discover card link (APP2-S02 handoff) ----------------------------------
+
+// The S01 card became a single link to this page. Its layout, spacing and
+// content are unchanged; only the affordances a real link must carry are added.
+.discover__card {
+  color: inherit;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 4px;
+  }
+}

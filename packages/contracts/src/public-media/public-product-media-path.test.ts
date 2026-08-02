@@ -3,6 +3,7 @@ import {
   PUBLIC_PRODUCT_MEDIA_PATH_PREFIX,
   PUBLIC_PRODUCT_MEDIA_RENDITIONS,
   PublicProductMediaPathError,
+  isPublicProductSlug,
 } from './public-product-media-path';
 
 const SLUG = 'thu-bong-gau-nau';
@@ -79,5 +80,50 @@ describe('buildPublicProductMediaPath', () => {
         rendition: 'original' as never,
       }),
     ).toThrow(PublicProductMediaPathError);
+  });
+});
+
+describe('isPublicProductSlug', () => {
+  it('accepts the shape the server derives', () => {
+    expect(isPublicProductSlug(SLUG)).toBe(true);
+    expect(isPublicProductSlug('abc123')).toBe(true);
+  });
+
+  it.each([
+    ['empty', ''],
+    ['uppercase', 'Thu-Bong'],
+    ['a space', 'thu bong'],
+    ['a leading dash', '-thu-bong'],
+    ['a trailing dash', 'thu-bong-'],
+    ['a double dash', 'thu--bong'],
+    ['traversal', '../etc/passwd'],
+    ['a path', 'a/b'],
+  ])('rejects %s', (_label, value) => {
+    expect(isPublicProductSlug(value)).toBe(false);
+  });
+
+  // The predicate and the builder must agree: a browser route that accepted a
+  // slug the media path rejects would render a page whose every image 404s.
+  it('agrees with the path builder on what a slug is', () => {
+    for (const value of [SLUG, 'abc123']) {
+      expect(isPublicProductSlug(value)).toBe(true);
+      expect(() =>
+        buildPublicProductMediaPath({
+          slug: value,
+          productMediaId: MEDIA_ID,
+          rendition: 'thumbnail',
+        }),
+      ).not.toThrow();
+    }
+    for (const value of ['Thu-Bong', 'thu bong', '../etc']) {
+      expect(isPublicProductSlug(value)).toBe(false);
+      expect(() =>
+        buildPublicProductMediaPath({
+          slug: value,
+          productMediaId: MEDIA_ID,
+          rendition: 'thumbnail',
+        }),
+      ).toThrow(PublicProductMediaPathError);
+    }
   });
 });

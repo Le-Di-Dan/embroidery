@@ -107,16 +107,26 @@ describe('Discover feed — products', () => {
     expect(screen.getByText('Thú bông')).toBeInTheDocument();
   });
 
-  it('renders cards as non-interactive articles (IMP-D038)', async () => {
+  /**
+   * Superseded by `APP2-S02` (IMP-D039). Under IMP-D038 this asserted the cards
+   * carried no destination at all, which was correct while none existed. The
+   * detail route exists now, so the live rule is: exactly one link per card, to
+   * the canonical route, with nothing else interactive inside it.
+   */
+  it('renders each card as one link to the detail route (IMP-D039)', async () => {
     listMock.mockResolvedValue(publicEnvelope(makePublicPage(PAGE_ONE)));
-    const { container } = renderFeed();
+    renderFeed();
 
     await waitFor(() => expect(feedItemNames()).toHaveLength(2));
     const list = screen.getByRole('list', { name: DISCOVER_COPY.feedLabel });
-    // No destination, no control, no "Xem chi tiết" — and no dead anchor either.
-    expect(within(list).queryAllByRole('link')).toHaveLength(0);
+    const links = within(list).queryAllByRole('link');
+
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link.getAttribute('href')).toMatch(/^\/san-pham\/[a-z0-9-]+$/);
+    }
+    // Still no nested control and still no "Xem chi tiết" affordance.
     expect(within(list).queryAllByRole('button')).toHaveLength(0);
-    expect(container.querySelectorAll('article')).toHaveLength(2);
     expect(screen.queryByText(/Xem chi tiết/)).not.toBeInTheDocument();
   });
 });

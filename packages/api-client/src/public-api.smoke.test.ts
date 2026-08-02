@@ -8,6 +8,7 @@ import {
   healthReadiness,
   normalizeApiClientError,
   publicProductList,
+  publicProductDetail,
   PublicProductListCategorySlug,
   staffSelfGet,
   staffSessionCreate,
@@ -17,6 +18,7 @@ import type {
   CurrentStaffResponse,
   HealthStatusResponse,
   PublicProductSummaryResponse,
+  PublicProductDetailResponse,
   ReadinessStatusResponse,
   StaffLoginRequest,
   StaffSelfGet200,
@@ -107,12 +109,31 @@ describe('package public API smoke', () => {
     expect(item.thumbnail).toBeUndefined();
   });
 
-  it('withholds the operations whose browser destination does not exist yet', () => {
-    // `publicProductDetail` stays off the boundary while the Product Detail
-    // route is unresolved (IMP-D038), and `publicProductMediaGet` stays off it
-    // because image bytes are loaded by the browser, never by application code.
+  it('exposes the anonymous detail resolver for the Product Detail page', () => {
+    // Crossed the boundary in `APP2-S02`, once IMP-D039 locked `/san-pham/[slug]`.
+    // It was withheld under IMP-D038 precisely because no route existed: an
+    // operation on this boundary is an invitation to render a page for it.
+    expect(typeof publicProductDetail).toBe('function');
+  });
+
+  it('exposes the public detail shape on the public boundary', () => {
+    const detail: PublicProductDetailResponse = {
+      slug: 'gau-bong-thu-cong',
+      name: 'Gấu bông thủ công',
+      category: { slug: 'thu-bong', name: 'Thú bông' },
+      price: { amount: '450000', currency: 'VND' },
+      isDisplayOutOfStock: false,
+      media: [],
+      seo: { isIndexable: true },
+    };
+    expect(detail.description).toBeUndefined();
+    expect(detail.media).toEqual([]);
+  });
+
+  it('still withholds the binary media operation', () => {
+    // Image bytes are loaded by the browser rendering a relative `media[].url`,
+    // never streamed by application code. Nothing about `APP2-S02` changes that.
     const surface = index as Record<string, unknown>;
-    expect(surface.publicProductDetail).toBeUndefined();
     expect(surface.publicProductMediaGet).toBeUndefined();
   });
 });

@@ -1,3 +1,6 @@
+import Link from 'next/link';
+
+import { buildStorefrontProductDetailPath } from '../../storefront-shell';
 import { DISCOVER_COPY, thumbnailAlt } from '../model/discover-copy';
 import type { DiscoverCard } from '../model/discover-feed';
 
@@ -5,21 +8,26 @@ import type { DiscoverCard } from '../model/discover-feed';
  * One artwork in the Discover feed (UI02 `StudioWorkCard`: artwork image, then
  * title, then category).
  *
- * **Deliberately non-interactive** (IMP-D038). No `href`, no click handler, no
- * button role, no pointer cursor and no hover affordance: the Product Detail
- * browser route is unresolved, so a card that looked clickable would either lead
- * nowhere or invent a route the Product Owner has not approved. This is accepted
- * authority, not an unfinished card — `APP2-S02` may wrap this same markup in a
- * link once the UI03 reconciliation supplies a destination, without touching the
- * masonry.
+ * **The whole card is one link** (`APP2-S02`, IMP-D039). It was a deliberately
+ * non-interactive `<article>` under IMP-D038 because no Product Detail route
+ * existed; `/san-pham/[slug]` now does, so the link the design always implied is
+ * real. Exactly one anchor wraps image, name and category — a generous hit area
+ * with no second control nested inside it, and one Tab stop per artwork rather
+ * than three.
  *
- * The card renders name, category and image only. Price and the out-of-stock
- * flag never reach it: `toDiscoverCard` drops them at the boundary, because UI02
- * is image-led discovery rather than a shop listing.
+ * The path comes from the shell's builder, the same one the detail page uses for
+ * its canonical and share URLs, so a card can never point at an address the page
+ * itself would not claim.
+ *
+ * Everything else is untouched: masonry classes, variable heights, source order
+ * and visible content are exactly as `APP2-S01` delivered them. The card renders
+ * name, category and image only — `toDiscoverCard` drops price and the
+ * out-of-stock flag at the boundary, because UI02 is image-led discovery rather
+ * than a shop listing.
  */
 export function ProductCard({ card }: { card: DiscoverCard }) {
   return (
-    <article className="discover__card">
+    <Link className="discover__card" href={buildStorefrontProductDetailPath(card.slug)}>
       <div className="discover__card-media">
         {card.thumbnailUrl === undefined ? (
           <div
@@ -48,6 +56,6 @@ export function ProductCard({ card }: { card: DiscoverCard }) {
         <h2 className="discover__card-title">{card.name}</h2>
         <p className="discover__card-category">{card.categoryName}</p>
       </div>
-    </article>
+    </Link>
   );
 }

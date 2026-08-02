@@ -108,27 +108,31 @@ export type {
   UnpublishProductBody,
 } from './generated/embroidery-api.schemas';
 
-// Anonymous public catalog listing (APP2-B04), exposed for the Storefront
-// Discover feed (`APP2-S01`).
+// Anonymous public catalog reads (APP2-B04): the listing for the Storefront
+// Discover feed (`APP2-S01`) and the detail resolver for Product Detail
+// (`APP2-S02`).
 //
-// `publicProductDetail` is deliberately withheld. The Product Detail browser
-// route is unresolved (IMP-D038 keeps `/san-pham/<slug>` a proposal and leaves
-// `APP2-S02` blocked by the UI03 reconciliation), so nothing may consume it yet;
-// keeping it off this boundary is what stops a discovery screen from linking to
-// a page that does not exist. `publicProductMediaGet` is withheld for a
-// different reason: it serves image bytes, which the browser fetches by
-// rendering the relative `thumbnail.url` the list already returns — application
-// code must never stream those bytes itself.
+// `publicProductDetail` crossed this boundary in `APP2-S02`, once IMP-D039
+// locked `/san-pham/[slug]`. It was withheld until then precisely because a
+// route did not exist, and the two facts belong together: an operation on the
+// public boundary is an invitation to render a page for it.
+//
+// `publicProductMediaGet` stays withheld, for a different reason that has not
+// changed: it serves image bytes, which the browser fetches by rendering the
+// relative `media[].url` the list and detail responses already return —
+// application code must never stream those bytes itself.
 //
 // The category enum is re-exported as a value so the Storefront's category chips
 // are derived from the contract rather than a hand-kept list that could drift
 // out of step with the four categories the database actually provisions.
-export { publicProductList } from './generated/embroidery-api';
+export { publicProductList, publicProductDetail } from './generated/embroidery-api';
 export { PublicProductListCategorySlug } from './generated/embroidery-api.schemas';
 export type {
   PublicProductListParams,
   PublicProductListResponse,
   PublicProductSummaryResponse,
+  PublicProductDetailResponse,
+  PublicProductSeoResponse,
   PublicCategoryResponse,
   PublicMediaReferenceResponse,
 } from './generated/embroidery-api.schemas';

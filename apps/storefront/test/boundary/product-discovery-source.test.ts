@@ -122,12 +122,24 @@ describe('product-discovery rendering boundary', () => {
     expect((allCode.match(/<h1[\s>]/g) ?? []).length).toBe(1);
   });
 
-  it('builds no card destination', () => {
+  /**
+   * Superseded by `APP2-S02`. Until IMP-D039 this asserted the card built **no**
+   * destination at all, which was correct while no detail route existed. The
+   * route exists now, so the rule becomes the narrower one that still matters:
+   * exactly one link, built by the shared helper, with no second control nested
+   * inside it and no hand-written path.
+   */
+  it('gives the card exactly one destination, from the shared helper', () => {
     const card = codeOnly(
       readFileSync(join(FEATURE_DIR, 'components', 'product-card.tsx'), 'utf8'),
     );
-    expect(card).not.toMatch(/href=|onClick=|role="button"|<Link|<a[\s>]/);
-    expect(card).not.toMatch(/cursor:\s*pointer/);
+    expect((card.match(/<Link\b/g) ?? []).length).toBe(1);
+    expect((card.match(/href=/g) ?? []).length).toBe(1);
+    expect(card).toContain('buildStorefrontProductDetailPath');
+    // The path is never spelled here — one literal, in the shell's route model.
+    expect(card).not.toContain('/san-pham');
+    // No nested control, and no click handler competing with the link.
+    expect(card).not.toMatch(/onClick=|role="button"|<button\b/);
   });
 
   it('uses no inline visual styles, CSS Modules or CSS-in-JS', () => {

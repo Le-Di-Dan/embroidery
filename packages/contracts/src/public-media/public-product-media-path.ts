@@ -59,6 +59,21 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 /** Slug charset as produced by the server's own derivation (`product-slug.ts`). */
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/**
+ * Whether a value can be a public Product slug at all.
+ *
+ * Exported so the Storefront's Product Detail route (`APP2-S02`) rejects a
+ * malformed address against **this** pattern rather than a second copy of it.
+ * A browser route and a media path that disagreed about what a slug is would
+ * produce a page that renders with images that 404, or the reverse.
+ *
+ * It is a syntax gate, not an existence check: a well-formed slug that names
+ * nothing still resolves to the same safe not-found the API returns.
+ */
+export function isPublicProductSlug(value: string): boolean {
+  return SLUG_PATTERN.test(value);
+}
+
 export class PublicProductMediaPathError extends Error {
   constructor(message: string) {
     super(message);

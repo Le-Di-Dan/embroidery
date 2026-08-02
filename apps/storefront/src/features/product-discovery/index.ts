@@ -6,7 +6,14 @@ export { DiscoverCategoryNav } from './components/discover-category-nav';
 export { DiscoverFeedScreen } from './components/discover-feed-screen';
 export { DiscoverQueryProvider } from './components/discover-query-provider';
 
-export { DISCOVER_ROUTE, DISCOVER_CATEGORY_QUERY_KEY } from './model/discover-route';
+// `buildDiscoverHref` is on the public surface because Product Detail links back
+// into Discover (breadcrumb + continuation). One builder means the detail page
+// and the Discover chips can never disagree about how a category is addressed.
+export {
+  DISCOVER_ROUTE,
+  DISCOVER_CATEGORY_QUERY_KEY,
+  buildDiscoverHref,
+} from './model/discover-route';
 export { DISCOVER_COPY } from './model/discover-copy';
 export { discoverQueryKeys } from './model/discover-query-keys';
 export { nextCursorOf } from './model/discover-feed';

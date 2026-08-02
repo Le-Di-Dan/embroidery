@@ -24,6 +24,30 @@ export const STOREFRONT_HOME_ROUTE = '/';
  */
 export const STOREFRONT_DISCOVER_ROUTE = '/kham-pha';
 
+/**
+ * The canonical Product Detail route base (IMP-D039, `APP2-S02-G01`).
+ *
+ * `/product/*`, `/products/*`, `/catalog/*`, `/tac-pham/*` and `/kham-pha/*` are
+ * rejected as detail aliases and no redirect is approved. IMP-D038 had left this
+ * path a Figma proposal; the Product Owner locked it only after the UI03
+ * reconciliation, which is why it appears here and not in `APP2-S01`.
+ */
+export const STOREFRONT_PRODUCT_DETAIL_ROUTE_BASE = '/san-pham';
+
+/**
+ * The one place a Product Detail URL is built.
+ *
+ * Both the Discover card link and the detail page's own canonical/share URL go
+ * through this, so a change to the address cannot land in one and be missed in
+ * the other. The slug is server-owned and already restricted to `[a-z0-9-]` by
+ * `isPublicProductSlug`; encoding it anyway is a second barrier rather than the
+ * only one, and it keeps a caller that skipped validation from writing a raw
+ * `?`, `#` or `/` into the path.
+ */
+export function buildStorefrontProductDetailPath(slug: string): string {
+  return `${STOREFRONT_PRODUCT_DETAIL_ROUTE_BASE}/${encodeURIComponent(slug)}`;
+}
+
 /** A primary-navigation entry. `route` stays `null` until the area ships. */
 export interface StorefrontNavItem {
   readonly id: string;

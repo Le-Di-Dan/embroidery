@@ -13,6 +13,7 @@ export {
 } from './api-envelope/api-envelope.guards';
 export {
   buildPublicProductMediaPath,
+  isPublicProductSlug,
   PUBLIC_PRODUCT_MEDIA_PATH_PREFIX,
   PUBLIC_PRODUCT_MEDIA_PATH_SEGMENT,
   PUBLIC_PRODUCT_MEDIA_RENDITIONS,
