@@ -31,6 +31,7 @@ import {
   rulingBlock,
   storyFieldRequirements,
   ui03AuthorityClaims,
+  unlabelledMeasureClaims,
 } from './check-storefront-product-detail-authority.mjs';
 
 const scratchRoots = [];
@@ -196,6 +197,60 @@ describe('check-storefront-product-detail-authority', () => {
     assert.match(failures, /`S01 card link upgrade owner` is "APP2-S01"/);
   });
 
+  /**
+   * `APP2-S02-G01-C1`. The gate as first delivered claimed a readable story measure while
+   * the nodes rendered the description full-band, so the number itself is now checked.
+   */
+  it('rejects widening the story measure back to the desktop content band', () => {
+    const failures = failuresFor('phase', (text) =>
+      text.replace(
+        '| `Description measure (desktop/tablet)` | `640px` |',
+        '| `Description measure (desktop/tablet)` | `1280px` |',
+      ),
+    );
+    assert.match(failures, /`Description measure \(desktop\/tablet\)` is "1280px"/);
+  });
+
+  it('rejects widening the story measure back to the tablet content band', () => {
+    const failures = failuresFor('phase', (text) =>
+      text.replace(
+        '| `Description measure (desktop/tablet)` | `640px` |',
+        '| `Description measure (desktop/tablet)` | `928px` |',
+      ),
+    );
+    assert.match(failures, /`Description measure \(desktop\/tablet\)` is "928px"/);
+  });
+
+  it('rejects widening the mobile description beyond its content gutter', () => {
+    const failures = failuresFor('phase', (text) =>
+      text.replace(
+        '| `Description measure (mobile)` | `342px content width` |',
+        '| `Description measure (mobile)` | `390px full bleed` |',
+      ),
+    );
+    assert.match(failures, /`Description measure \(mobile\)` is "390px full bleed"/);
+  });
+
+  it('rejects losing the readable-measure rule from the approval', () => {
+    const failures = failuresFor('approval', (text) =>
+      text.replace(
+        'maximum readable measure of 640px on Desktop and Tablet; Mobile uses its 342px content\nwidth',
+        'whatever width the content band allows',
+      ),
+    );
+    assert.match(failures, /does not state the readable measure rule/);
+  });
+
+  it('rejects describing the story column as full-band in the ruling', () => {
+    const failures = failuresFor('phase', (text) =>
+      text.replace(
+        '**Readable measure (`APP2-S02-G01-C1`).** Product description uses a maximum readable',
+        'The description column spans the full 1280px content-band width. Product description uses a maximum readable',
+      ),
+    );
+    assert.match(failures, /describes the description at a rejected full-band width/);
+  });
+
   it('rejects unlocking or removing the decision row', () => {
     const failures = failuresFor('register', (text) =>
       text.replace(`| ${EXPECTED.decisionId} |`, '| IMP-D099 |'),
@@ -279,7 +334,7 @@ describe('product-detail authority helpers', () => {
   });
 
   it('reads every machine-checked fact', () => {
-    assert.equal(detailFacts(rulingBlock(phaseText)).size, 9);
+    assert.equal(detailFacts(rulingBlock(phaseText)).size, 11);
   });
 
   it('finds exactly one decision row', () => {
@@ -314,9 +369,19 @@ describe('product-detail authority helpers', () => {
       ui03AuthorityClaims('UI03 `261:1290` is historical and is not implementation authority.'),
       [],
     );
+    assert.deepEqual(
+      unlabelledMeasureClaims('The description was historically 1280px wide; it no longer is.'),
+      [],
+    );
+    // The APP1 shell legitimately discusses a 1280px source band; that is not this rule.
+    assert.deepEqual(
+      unlabelledMeasureClaims('The APP1 shell max width stays 1200px although frames draw 1280px.'),
+      [],
+    );
   });
 
   it('flags the same sentences without their labels', () => {
+    assert.equal(unlabelledMeasureClaims('The description column measure is 1280px.').length, 1);
     assert.equal(deferredScopeRequirements('Related works must be rendered.').length, 1);
     assert.equal(commerceRequirements('The page must show a price.').length, 1);
     assert.equal(storyFieldRequirements('Ý nghĩa must be its own field.').length, 1);

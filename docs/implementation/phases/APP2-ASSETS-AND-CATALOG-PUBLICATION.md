@@ -1072,6 +1072,8 @@ compares this table against the `IMP-D039` register row and the surrounding auth
 | `Description sections` | `1` |
 | `Price and stock display` | `HIDDEN` |
 | `Deferred scope` | `materials, process, related, save, commission` |
+| `Description measure (desktop/tablet)` | `640px` |
+| `Description measure (mobile)` | `342px content width` |
 | `S01 card link upgrade owner` | `APP2-S02` |
 | `APP2-S02 design authority` | `529:2224` |
 | `APP2-S02 status` | `READY` |
@@ -1099,6 +1101,17 @@ redirect is approved — and `/kham-pha` remains Discover. This supersedes the o
 **One description.** `description` present → exactly one section *Câu chuyện về tác phẩm*;
 absent → the section is omitted cleanly. One description is never split into invented
 semantic fields, and no copy is generated to fill it.
+
+**Readable measure (`APP2-S02-G01-C1`).** Product description uses a maximum readable
+measure of 640px on Desktop and Tablet; Mobile uses its 342px content width. The paragraph
+stays aligned to the approved content gutter — Desktop `x = 80`, Tablet `x = 48`, Mobile
+`x = 24` — and is never centred as a narrow marketing block. Text wraps naturally and its
+frame height follows the rendered copy; no fixed text height is forced. This restates the
+original UI03 accessibility authority (board `292:1582`, *Story & Craft*: "cột chữ ≤ 640px
+(~75 ký tự)"). The gate as first delivered claimed a readable single-column measure while
+the reconciled nodes still rendered the description across the full content band — 1280px
+on Desktop and Media Empty, 928px on Tablet — because removing the draft's `StoryMedia`
+column let the remaining text `FILL` the row. `APP2-S02-G01-C1` constrains it.
 
 **Continue discovery** replaces the unsupported related feed: *Khám phá tất cả* →
 `/kham-pha` and *Khám phá {category.name}* → `/kham-pha?category={category.slug}`. No

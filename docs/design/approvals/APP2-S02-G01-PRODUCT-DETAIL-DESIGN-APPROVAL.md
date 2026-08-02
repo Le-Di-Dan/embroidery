@@ -88,6 +88,17 @@ not PDP.
 Absent → the section is omitted cleanly. One description is never split into invented
 semantic fields, and no copy is generated to fill it.
 
+**Readable measure (amended by `APP2-S02-G01-C1`, 2026-08-02).** Product description uses a
+maximum readable measure of 640px on Desktop and Tablet; Mobile uses its 342px content
+width. The paragraph keeps the approved content gutter (Desktop `x = 80`, Tablet `x = 48`,
+Mobile `x = 24`) and is never centred as a narrow marketing block; text wraps naturally and
+its frame height follows the copy. This restates the original UI03 accessibility authority
+(`292:1582`, *Story & Craft*: "cột chữ ≤ 640px (~75 ký tự)"). As first delivered the
+reconciled nodes rendered the description across the full content band, because removing
+the draft's `StoryMedia` column let the remaining text `FILL` the row; those historical
+widths are **no longer** the description measure — 1280px Desktop/Media Empty, 928px
+Tablet. Corrected in place on the same node IDs; no approval or decision ID changed.
+
 **Continue discovery** replaces the unsupported related feed:
 
 ```text

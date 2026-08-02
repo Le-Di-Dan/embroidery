@@ -27,7 +27,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { s02ReadinessClaims } from './check-storefront-route-authority.mjs';
+import { isLabelled, s02ReadinessClaims } from './check-storefront-route-authority.mjs';
 // Pure line scanners live beside this file so the gate itself stays about the ruling.
 import {
   REJECTED_DETAIL_PATHS,
@@ -76,7 +76,23 @@ export const EXPECTED = Object.freeze({
   cardUpgradeOwner: 'APP2-S02',
   designAuthorityNode: '529:2224',
   s02Status: 'READY',
+  /**
+   * `APP2-S02-G01-C1`. The gate as first delivered *claimed* a readable single-column story
+   * measure while the reconciled nodes rendered `description` across the full content band
+   * (1280px desktop, 928px tablet) — removing the draft's `StoryMedia` column had let the
+   * remaining text `FILL` the row. The written measure is now machine-checked so the claim
+   * and the number cannot drift apart again.
+   */
+  descriptionMeasure: '640px',
+  descriptionMeasureMobile: '342px content width',
 });
+
+/** Widths the description must never be described as occupying on desktop/tablet. */
+export const REJECTED_MEASURES = Object.freeze(['1280px', '928px']);
+
+/** The sentence the canonical authority must carry verbatim. */
+export const MEASURE_RULE =
+  'maximum readable measure of 640px on Desktop and Tablet; Mobile uses its 342px content width';
 
 /** The reconciled roots that carry S02 implementation authority. */
 export const RECONCILED_ROOTS = Object.freeze([
@@ -140,6 +156,8 @@ function checkFacts(facts, fail) {
     ['S01 card link upgrade owner', EXPECTED.cardUpgradeOwner],
     ['APP2-S02 design authority', EXPECTED.designAuthorityNode],
     ['APP2-S02 status', EXPECTED.s02Status],
+    ['Description measure (desktop/tablet)', EXPECTED.descriptionMeasure],
+    ['Description measure (mobile)', EXPECTED.descriptionMeasureMobile],
   ];
   for (const [key, expected] of expectations) {
     const actual = facts.get(key);
@@ -199,6 +217,41 @@ function checkApproval(text, fail) {
   if (!/deferred/i.test(text)) {
     fail(`${CANONICAL_FILES.approval}: does not state that draft sections are outside S02`);
   }
+}
+
+/**
+ * `APP2-S02-G01-C1`: the readable-measure rule must be stated verbatim in the approval and
+ * the phase ruling, and neither may describe the description as full-band.
+ */
+function checkMeasureRule(sources, block, fail) {
+  for (const key of ['approval', 'phase']) {
+    const text = key === 'phase' ? (block ?? '') : (sources[key] ?? '');
+    // Prose is hard-wrapped, so the rule is compared on collapsed whitespace.
+    if (!text.replace(/\s+/g, ' ').includes(MEASURE_RULE)) {
+      fail(`${CANONICAL_FILES[key]}: does not state the readable measure rule — "${MEASURE_RULE}"`);
+    }
+    for (const line of unlabelledMeasureClaims(text)) {
+      fail(
+        `${CANONICAL_FILES[key]}: describes the description at a rejected full-band width:\n    ${line.trim().slice(0, 200)}`,
+      );
+    }
+  }
+}
+
+/**
+ * A rejected width presented as the live *description* measure. Two narrowings matter:
+ * the line must be about the description/story column — the APP1 shell legitimately
+ * discusses a 1280px source band and is none of this rule's business — and historical
+ * prose naming what the gate used to render stays legal via the shared label test.
+ */
+export function unlabelledMeasureClaims(text) {
+  return text.split('\n').filter((line) => {
+    const lower = line.toLowerCase();
+    if (!REJECTED_MEASURES.some((width) => lower.includes(width))) return false;
+    if (!/description|story|câu chuyện|paragraph/.test(lower)) return false;
+    if (!/measure|width|column|full[- ]band|full[- ]width/.test(lower)) return false;
+    return !isLabelled(line);
+  });
 }
 
 function checkRegistry(text, fail) {
@@ -262,6 +315,7 @@ export function checkStorefrontProductDetailAuthority(root = REPO_ROOT) {
     fail,
   );
   checkApproval(sources.approval, fail);
+  checkMeasureRule(sources, block, fail);
   if (sources.designIndex !== undefined) checkRegistry(sources.designIndex, fail);
 
   for (const key of ['roadmap', 'traceability', 'designIndex']) {
