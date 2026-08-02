@@ -100,15 +100,22 @@ export async function assertDiscoverable(browser, { baseUrl, product, record }) 
           order: cards.map((card) => card.querySelector('h2')?.textContent ?? ''),
         };
       });
-      // With one Product the feed cannot show more columns than it has items;
-      // the invariant asserted is that it never exceeds the approved count and
-      // that DOM order stays linear.
+      // E01 creates exactly one Product, so it cannot observe an occupied
+      // 5/3/2 grid and does not pretend to: what it proves is that the Product
+      // renders inside the accepted masonry and never exceeds the viewport's
+      // column contract. The populated 5/3/2 proof is the accepted `APP2-S01`
+      // evidence and stays there.
       record(
-        `${label}: masonry never exceeds the approved ${columns} columns`,
+        `${label}: the Product renders inside the masonry within the approved ${columns}-column contract`,
         {
           ok: measured.columns <= columns && measured.columns >= 1,
         }.ok,
-        { measured: measured.columns, approved: columns },
+        {
+          measured: measured.columns,
+          contract: columns,
+          products: measured.order.length,
+          populatedProofOwner: 'APP2-S01',
+        },
       );
     }
     await page.setViewportSize({ width: 1440, height: 900 });

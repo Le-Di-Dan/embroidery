@@ -10,7 +10,7 @@
  * that public visibility is asserted before anything is published.
  */
 import { strict as assert } from 'node:assert';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
@@ -41,15 +41,47 @@ import {
   gatewayUpArgs,
   tlsTemplate,
 } from './smoke-app2-e01-tls.mjs';
+import {
+  CANONICAL_CHECK_COUNT,
+  CANONICAL_CHECKERS,
+  CANONICAL_COLUMN_COUNT,
+  CANONICAL_FINGERPRINT,
+  CANONICAL_MIGRATION_COUNT,
+  CANONICAL_TABLE_COUNT,
+  MIGRATE_SERVICE,
+  MUTABLE_BASELINE_TABLES,
+  WORKER_RUNTIME_POLICY,
+  checkerRunArgs,
+  checksumRunArgs,
+  migrateOverrideYaml,
+  migrateRunArgs,
+  statusRunArgs,
+  workerPolicyStatements,
+} from './smoke-app2-e01-schema.mjs';
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
 const source = (name) => readFileSync(join(TOOLS, name), 'utf8');
 
 const orchestrator = source('smoke-app2-e01-publication-production.mjs');
+const schema = source('smoke-app2-e01-schema.mjs');
+const bootstrap = source('smoke-app2-e01-bootstrap.mjs');
 const journey = source('smoke-app2-e01-journey.mjs');
 const admin = source('smoke-app2-e01-admin-browser.mjs');
 const storefront = source('smoke-app2-e01-storefront-browser.mjs');
 const fixtures = source('smoke-app2-e01-fixtures.mjs');
+
+/**
+ * Source with comments removed.
+ *
+ * The forbidden-token scans below have to distinguish "this harness runs
+ * `pg_dump`" from "this comment explains why it must not", and prose that names
+ * the mistake is exactly what keeps the mistake from coming back.
+ */
+const stripComments = (text) =>
+  text
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '')
+    .replace(/^\s*\*.*$/gm, '');
 
 /** Position of a marker in the journey, so ordering can be asserted. */
 const at = (marker) => {
@@ -131,13 +163,119 @@ describe('E01 production topology', () => {
     assert.ok(!orchestrator.includes('embroidery_dev_password'));
   });
 
-  it('never restores development data into the disposable copy', () => {
-    // Schema only, plus the two migration-owned prerequisites. A full dump would
-    // carry the developer's admin, assets and products.
-    assert.ok(orchestrator.includes('--schema-only'));
-    assert.ok(orchestrator.includes('--table=categories'));
-    assert.ok(orchestrator.includes('--table=policy_configurations'));
-    assert.ok(!/--data-only'[^]*--table=products/.test(orchestrator));
+  it('never copies anything out of the development database', () => {
+    // `APP2-E01-C1`: the disposable copy is migrated, never dumped. A snapshot
+    // of the developer's database inherits local drift, can never fail when the
+    // migration runner is broken, and depends on a machine nobody else has.
+    const harness = [orchestrator, schema, bootstrap, journey, fixtures].join('\n');
+    for (const forbidden of ['pg_dump', 'pg_restore', '--schema-only', '--data-only']) {
+      assert.ok(
+        !new RegExp(`['"\`]?${forbidden.replace(/[-]/g, '\\-')}`).test(stripComments(harness)),
+        `the harness must not use ${forbidden}`,
+      );
+    }
+    assert.ok(!/--table=(categories|policy_configurations|products)/.test(harness));
+    assert.ok(!orchestrator.includes('dumpArgs'));
+    assert.ok(!orchestrator.includes('restoreDumpArgs'));
+  });
+
+  it('never points the migration runner or a checker at the development database', () => {
+    const harness = stripComments([orchestrator, schema, bootstrap, fixtures].join('\n'));
+    // The development containers and hostnames the dev Compose file owns.
+    for (const host of ['POSTGRES_CONTAINER', '@postgres:5432', 'minio:9000']) {
+      assert.ok(!harness.includes(host), `the harness must not address development ${host}`);
+    }
+    // Every disposable statement goes to the disposable container.
+    assert.ok(fixtures.includes('PROD_DB_CONTAINER'));
+    assert.ok(
+      migrateOverrideYaml({ databaseUrl: 'postgres://x@api-db-t01c1:5432/y' }).includes(
+        'api-db-t01c1',
+      ),
+    );
+  });
+});
+
+describe('E01 canonical migration path', () => {
+  it('applies the committed migrations with the repository runner', () => {
+    const args = migrateRunArgs(['f'], 'e');
+    assert.ok(args.includes(MIGRATE_SERVICE));
+    assert.ok(args.at(-1).includes('pnpm --filter @embroidery/database db:migrate'));
+    assert.ok(args.includes('--no-deps'), 'must not wake the development database');
+    assert.ok(args.includes('--rm'));
+    assert.ok(orchestrator.includes('applyCanonicalMigrations'));
+  });
+
+  it('refuses to accept a partial or drifted migration set', () => {
+    assert.equal(CANONICAL_MIGRATION_COUNT, 33);
+    // `db:status` exits 0 only for an exact match; the count is asserted too.
+    assert.ok(statusRunArgs(['f'], 'e').at(-1).includes('db:status'));
+    assert.ok(bootstrap.includes('in repository'), 'the applied/repository counts are parsed');
+    assert.ok(bootstrap.includes('CANONICAL_MIGRATION_COUNT'));
+    assert.ok(checksumRunArgs(['f'], 'e').at(-1).includes('db-migration-checksum-check.mjs'));
+  });
+
+  it('verifies the frozen fingerprint and physical counts', () => {
+    assert.ok(CANONICAL_CHECKERS.includes('db-fingerprint-gate.mjs'));
+    assert.equal(CANONICAL_CHECKERS.length, 7, 'the canonical DB6 checker set');
+    assert.equal(CANONICAL_TABLE_COUNT, 78);
+    assert.equal(CANONICAL_COLUMN_COUNT, 833);
+    assert.equal(CANONICAL_CHECK_COUNT, 190);
+    assert.match(CANONICAL_FINGERPRINT, /^[0-9a-f]{64}$/);
+    assert.ok(bootstrap.includes('reproduces the frozen physical baseline'));
+  });
+
+  it('reuses the committed checkers instead of reimplementing them', () => {
+    for (const checker of CANONICAL_CHECKERS) {
+      assert.ok(
+        existsSync(join(TOOLS, '..', 'packages', 'database', 'tools', checker)),
+        `${checker} must be the committed script`,
+      );
+      assert.ok(checkerRunArgs(['f'], 'e', checker).at(-1).includes(checker));
+    }
+    // The URL is expanded by the container's own shell, never by this harness.
+    assert.ok(checkerRunArgs(['f'], 'e', CANONICAL_CHECKERS[0]).at(-1).includes('"$DATABASE_URL"'));
+  });
+
+  it('runs no journey stage before the schema is verified', () => {
+    const migrate = orchestrator.indexOf('applyCanonicalMigrations');
+    const verify = orchestrator.indexOf('verifyCanonicalSchema');
+    const api = orchestrator.indexOf("'production API'");
+    const journeyStart = orchestrator.indexOf('runJourney(');
+    assert.ok(migrate < verify, 'migrate before verify');
+    assert.ok(verify < api, 'verify before any application starts');
+    assert.ok(api < journeyStart, 'applications before the journey');
+  });
+
+  it('demands a zero mutable baseline it did not create by deleting', () => {
+    for (const table of ['assets', 'products', 'audit_events', 'outbox_events', 'admin_accounts']) {
+      assert.ok(MUTABLE_BASELINE_TABLES.includes(table));
+    }
+    const harness = [orchestrator, schema, bootstrap, journey, fixtures].join('\n');
+    assert.ok(!/delete from|truncate /i.test(harness), 'evidence is never deleted');
+    assert.ok(journey.includes('zero mutable baseline'));
+  });
+});
+
+describe('E01 independent prerequisites', () => {
+  it('publishes the worker policy itself, with values the validator accepts', () => {
+    const p = WORKER_RUNTIME_POLICY;
+    assert.ok(p.backoffBaseMs <= p.backoffMaxMs);
+    assert.ok(p.handlerTimeoutMs + p.leaseSafetyMarginMs <= p.leaseDurationMs);
+    assert.ok(p.shutdownGraceMs <= p.handlerTimeoutMs);
+    assert.ok(p.pollIntervalMs < p.leaseDurationMs);
+    assert.ok(Object.values(p).every((v) => Number.isInteger(v) && v > 0));
+  });
+
+  it('authors the policy after the staff identity, because the column demands it', () => {
+    assert.ok(bootstrap.indexOf('bootstrapStaff(') < bootstrap.indexOf('workerPolicyStatements('));
+    assert.ok(
+      workerPolicyStatements('11111111-1111-7111-8111-111111111111').statements.length === 3,
+    );
+  });
+
+  it('expects the four categories from migration 0033, not from a copy', () => {
+    assert.ok(bootstrap.includes('migration 0033 provisioned the four fixed categories'));
+    assert.ok(!/insert into categories/i.test([schema, bootstrap, fixtures].join('\n')));
   });
 });
 

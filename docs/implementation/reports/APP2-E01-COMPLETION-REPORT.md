@@ -1,5 +1,20 @@
 # APP2-E01 — Publication Cross-Layer Journey — Completion Report
 
+> **SUPERSEDED IN PART BY `APP2-E01-C1`.**
+> The reviewer returned this checkpoint as `CORRECTION_REQUIRED`: §B and §J of
+> this report describe a disposable database built from a `pg_dump --schema-only`
+> snapshot of the developer's database, with two prerequisite tables copied out
+> of it. That path can inherit local drift, can never fail when the migration
+> runner is broken, and depends on developer state, so it cannot close a
+> reproducible production journey. `APP2-E01-C1` replaces it with the canonical
+> migration path — an empty disposable database migrated by
+> `pnpm --filter @embroidery/database db:migrate` and verified against the
+> committed DB6 checkers and the frozen fingerprint — and re-runs the whole
+> journey. §M-1's masonry wording is also restated there.
+> Everything else below still stands and was re-proved.
+> Read [`APP2-E01-C1-CORRECTION-REPORT.md`](./APP2-E01-C1-CORRECTION-REPORT.md)
+> for the current evidence.
+
 - Checkpoint: `APP2-E01`
 - Phase: APP2 — Assets and Catalog Publication
 - Status: **COMPLETE**

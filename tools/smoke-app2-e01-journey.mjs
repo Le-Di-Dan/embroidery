@@ -13,7 +13,6 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  bootstrapStaff,
   captureBaseline,
   evidence,
   sql,
@@ -62,17 +61,19 @@ export async function runJourney({
   adminBaseUrl,
   storefrontBaseUrl,
   staff,
+  prerequisites,
   fixtureDir,
   runId,
 }) {
-  // --- prerequisites, and only prerequisites --------------------------------
+  // --- the state the journey starts from ------------------------------------
   //
-  // Nothing is deleted. The disposable copy inherits the development schema
-  // snapshot, and its evidence tables are protected by real immutability
-  // triggers — a DELETE on a frozen inspection row is refused outright, which is
-  // exactly the guard append-only evidence should have. So the journey measures
-  // its own contribution as a DELTA from a baseline rather than pretending to
-  // start from empty tables, and identifies its own Asset by difference.
+  // Since `APP2-E01-C1` the database was created by the canonical migration
+  // runner from empty, so every mutable count below is zero and the journey owns
+  // everything that appears after this point. It is still measured as a delta
+  // and its own Asset is still identified by set difference: an assertion that
+  // reads "the newest row" passes just as happily on somebody else's data, and
+  // the evidence tables carry real immutability triggers that would refuse to be
+  // cleared anyway.
   const baseline = captureBaseline();
   record(
     'nothing is published before the journey starts',
@@ -80,23 +81,28 @@ export async function runJourney({
     baseline,
   );
   record(
-    'migration-owned prerequisites are present',
+    'the journey starts from a zero mutable baseline',
+    baseline.products === 0 &&
+      baseline.assets === 0 &&
+      baseline.derivatives === 0 &&
+      baseline.productMedia === 0 &&
+      baseline.jobAttempts === 0 &&
+      baseline.publishedAudit === 0 &&
+      baseline.unpublishedAudit === 0 &&
+      baseline.publishedOutbox === 0 &&
+      baseline.unpublishedOutbox === 0 &&
+      baseline.inspectionOutbox === 0,
+    baseline,
+  );
+  record(
+    'prerequisites are present: migration-owned categories and the published worker policy',
     baseline.categories === 4 && baseline.workerPolicy === 1,
     { categories: baseline.categories, workerPolicy: baseline.workerPolicy },
   );
-
-  const bootstrap = bootstrapStaff({
-    container: API_CONTAINER,
-    email: staff.email,
-    password: staff.password,
-    displayName: staff.displayName,
-  });
   record(
     'one synthetic staff identity was created through the API bootstrap CLI',
-    {
-      ok: bootstrap.accounts === 1,
-    }.ok,
-    { status: bootstrap.status, accounts: bootstrap.accounts },
+    prerequisites.staff.accounts === 1,
+    { status: prerequisites.staff.status, accounts: prerequisites.staff.accounts },
   );
 
   const fixture = writeFixtureImage(fixtureDir);

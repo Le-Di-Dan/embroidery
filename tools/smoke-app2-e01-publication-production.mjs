@@ -35,7 +35,6 @@
  *
  *   pnpm smoke:app2-e01-publication:production
  */
-import { spawnSync } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -51,10 +50,7 @@ import {
   argsAreCredentialFree,
   buildArgs,
   buildPgArgs,
-  POSTGRES_CONTAINER,
   databaseUpArgs,
-  dumpArgs,
-  restoreDumpArgs,
   pgDockerfile,
   pgImageTag,
   productionDatabaseUrl,
@@ -93,6 +89,18 @@ import {
   generateCertificate,
   writeTlsTemplate,
 } from './smoke-app2-e01-tls.mjs';
+import {
+  CANONICAL_CHECKERS,
+  checkerRunArgs,
+  migrateOverrideYaml,
+  migrateRunArgs,
+  statusRunArgs,
+} from './smoke-app2-e01-schema.mjs';
+import {
+  applyCanonicalMigrations,
+  bootstrapPrerequisites,
+  verifyCanonicalSchema,
+} from './smoke-app2-e01-bootstrap.mjs';
 import { runJourney } from './smoke-app2-e01-journey.mjs';
 
 const SECRETS = [];
@@ -104,6 +112,16 @@ function record(label, ok, detail = {}) {
   console.log(
     redactSecrets(`[${ok ? 'PASS' : 'FAIL'}] ${label} :: ${JSON.stringify(detail)}`, SECRETS),
   );
+}
+
+/** Bring one service up, or fail loudly enough to diagnose. */
+function startService(label, args) {
+  const up = docker.run(args);
+  record(`${label} started`, up.status === 0, { exit: up.status });
+  if (up.status !== 0) {
+    console.error(up.stderr.slice(-6000));
+    throw new Error(`${label} failed to start`);
+  }
 }
 
 function buildImages(tags, pgContextDir) {
@@ -194,6 +212,7 @@ async function main() {
           storageAccessKey,
           storageSecretKey,
         }) +
+        migrateOverrideYaml({ databaseUrl: productionDatabaseUrl(databasePassword) }) +
         gatewayTlsOverrideYaml({ certDir, templatePath }),
       'utf8',
     );
@@ -209,6 +228,9 @@ async function main() {
           ...databaseUpArgs(files, envFile),
           ...storageUpArgs(files, envFile),
           ...gatewayUpArgs(files, envFile),
+          ...migrateRunArgs(files, envFile),
+          ...statusRunArgs(files, envFile),
+          ...checkerRunArgs(files, envFile, CANONICAL_CHECKERS[0]),
         ],
         SECRETS,
       ),
@@ -228,63 +250,34 @@ async function main() {
       }
     }
 
-    // The disposable copy takes its **structure** from a read-only `pg_dump
-    // --schema-only` of the development database — all 33 migrations, and not a
-    // single row. Then exactly two migration-owned prerequisites are copied in:
-    // the fixed categories and the `worker.runtime` policy.
+    // --- the canonical schema, and nothing borrowed ---------------------------
     //
-    // Schema-only rather than a full dump because a full one carries the
-    // developer's own admin account, assets and products. Those cannot simply be
-    // removed afterwards — `audit_events` holds a foreign key to that admin and
-    // frozen evidence rows refuse `DELETE` outright — and more to the point, a
-    // journey that must prove it *creates* an Asset and a Product should not
-    // begin with somebody else's.
-    const loadStep = (label, dumpFlags) => {
-      const dumped = spawnSync('docker', [...dumpArgs(POSTGRES_CONTAINER), ...dumpFlags], {
-        cwd: REPO_ROOT,
-        maxBuffer: 512 * 1024 * 1024,
-      });
-      if (dumped.status !== 0) {
-        console.error(String(dumped.stderr).slice(-2000));
-        throw new Error(`${label}: pg_dump failed`);
-      }
-      const loaded = spawnSync('docker', restoreDumpArgs(), {
-        cwd: REPO_ROOT,
-        input: dumped.stdout,
-        encoding: 'buffer',
-        maxBuffer: 512 * 1024 * 1024,
-      });
-      if (loaded.status !== 0) {
-        console.error(String(loaded.stderr).slice(-3000));
-        throw new Error(`${label}: restore failed`);
-      }
-      record(label, true, { bytes: dumped.stdout.length });
-    };
+    // The disposable database is empty at this point. It gets its structure from
+    // the committed migrations, applied by the repository's own runner, and is
+    // then verified by the committed DB6 checkers. Nothing is dumped from the
+    // developer's database, so nothing local can leak in and a broken migration
+    // runner fails here instead of hiding behind a snapshot that already worked.
+    applyCanonicalMigrations({ record, docker, files, envFile });
+    verifyCanonicalSchema(record, { docker, files, envFile });
 
-    loadStep('development schema read (never written) and loaded', ['--schema-only']);
-    loadStep('migration-owned prerequisites copied (categories + worker policy)', [
-      '--data-only',
-      '--disable-triggers',
-      '--table=categories',
-      '--table=policy_configurations',
-      '--table=policy_configuration_versions',
-    ]);
+    // --- API first: the staff identity and the policy both need it ------------
+    swapped.api = true;
+    startService('production API', swapArgs(files, envFile));
 
-    // --- production runtimes --------------------------------------------------
+    const prerequisites = bootstrapPrerequisites({
+      record,
+      staff: { email: staffEmail, password: staffPassword, displayName: 'E01 Operator' },
+    });
+
+    // --- the remaining production runtimes ------------------------------------
     for (const [key, label, args] of [
-      ['api', 'production API', swapArgs(files, envFile)],
       ['worker', 'production worker', swapWorkerArgs(files, envFile)],
       ['admin', 'production Admin', swapAdminArgs(files, envFile)],
       ['storefront', 'production Storefront', swapStorefrontArgs(files, envFile)],
       ['gateway', 'gateway with the temporary TLS listener', gatewayUpArgs(files, envFile)],
     ]) {
       swapped[key] = true;
-      const up = docker.run(args);
-      record(`${label} started`, up.status === 0, { exit: up.status });
-      if (up.status !== 0) {
-        console.error(up.stderr.slice(-6000));
-        throw new Error(`${label} failed to start`);
-      }
+      startService(label, args);
     }
 
     await runJourney({
@@ -293,6 +286,7 @@ async function main() {
       adminBaseUrl: ADMIN_HTTPS_BASE,
       storefrontBaseUrl: `http://${GATEWAY_STOREFRONT_HOST}`,
       staff: { email: staffEmail, password: staffPassword, displayName: 'E01 Operator' },
+      prerequisites,
       fixtureDir: dir,
       runId: randomUUID(),
     });

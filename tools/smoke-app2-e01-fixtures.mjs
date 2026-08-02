@@ -44,17 +44,15 @@ export function sql(statement) {
 }
 
 /**
- * Remove every mutable catalog fact the development dump carried in.
+ * The counts the journey measures its own contribution against.
  *
- * The disposable copy is restored from a `pg_dump` of the development database,
- * which is how the accepted topology gets all 33 migrations, the fixed
- * categories and the `worker.runtime` policy without inventing a second
- * migration path. That dump also carries the developer's own draft products and
- * their assets — and `APP2-E01` must prove the *journey* creates these, not that
- * they were lying around. So they go.
- *
- * Categories and policy configuration stay: they are migration-owned
- * infrastructure, explicitly allowed as prerequisites.
+ * Since `APP2-E01-C1` the disposable database is built by the canonical
+ * migration runner from empty, so every mutable count here is expected to be
+ * zero and the two prerequisites are the fixed categories (migration 0033) and
+ * the worker runtime policy this run publishes. Nothing is deleted to get
+ * there: the evidence tables carry real append-only immutability triggers, and
+ * a harness that needs to delete frozen rows is a harness that has started from
+ * the wrong place.
  */
 export function captureBaseline() {
   return {
@@ -207,7 +205,21 @@ export function bootstrapStaff({ container, email, password, displayName }) {
     // The CLI reports a status word only; no credential is echoed.
     status: /result=([A-Z_]+)/.exec(output)?.[1] ?? 'UNKNOWN',
     accounts: Number(sql('select count(*) from admin_accounts')),
+    // Needed by the worker-policy prerequisite: a policy version records the
+    // admin who authored it, and that column is NOT NULL.
+    adminId: sql('select id from admin_accounts order by created_at limit 1'),
   };
+}
+
+/** Rows as trimmed strings; `[]` for an empty result rather than `['']`. */
+export function sqlRows(statement) {
+  const rows = sql(statement);
+  return rows === '' ? [] : rows.split('\n').map((line) => line.trim());
+}
+
+/** One scalar, as a number. */
+export function sqlCount(statement) {
+  return Number(sql(statement));
 }
 
 /** Cross-layer evidence, read straight from the disposable database. */
