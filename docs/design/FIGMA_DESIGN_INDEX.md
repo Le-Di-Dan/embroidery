@@ -224,6 +224,14 @@ and no numeric size limit**. Additionally the public product **URL pattern**
 (`/api/public/products/{slug}`) but no page route; Product Owner confirmation is required
 before `APP2-S02` implements it.
 
+**Route authority is repository/Product Owner authority, never a Figma label
+(`APP2-S01-G01`, IMP-D038, 2026-08-02).** The Product Owner has since locked the
+Storefront **Discover** route as **`/kham-pha`** (`/` stays Homepage-owned) with category
+state `?category=<slug>`; that decision came from the repository governance set and
+changed nothing in Figma. The **Product Detail** route is untouched by it —
+`/san-pham/<slug>` remains a proposal, and `APP2-S02` remains blocked pending the UI03
+reconciliation.
+
 ### 4.3.1 Removed by APP2-D01-C1 — rejected Storefront Product List (historical record)
 
 `APP2-D01` originally created a **uniform, equal-height ecommerce card grid** for the
@@ -325,6 +333,15 @@ treating DRAFT content status as absence of visual authority.
 generic catalog): published-only data, product title and product-detail link, approved
 derivative image rules, product-specific empty/loading/media-fallback data, and exclusion
 of modules outside APP2 implementation scope.
+
+**Clarification (`APP2-S01-G01`, IMP-D038).** "Product title and product-detail link"
+above lists *permissible* supplements — it was never a mandate to fabricate a route. No
+Product Detail browser route exists, so `APP2-S01` uses the Product **title** and
+**withholds** the detail link: its cards are staged, explicitly non-interactive semantic
+articles (no `href`, click handler, button role, pointer cursor or hover affordance). This
+is a truthful interim state, not an unmet supplement. `APP2-S02` may convert that card
+wrapper into a link once UI03 reconciliation approves a detail route — without changing
+the masonry architecture.
 
 ## 5. IA and user-flow registry
 

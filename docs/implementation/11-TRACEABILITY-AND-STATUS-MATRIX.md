@@ -12,7 +12,7 @@ The canonical backend module/bounded-context ownership map (reconciled at APP0-C
 |---|---|---|---|---|---|
 | APP0 | Cross-cutting application foundation | Shell foundation only | Shell foundation only | Harness/observability/spikes | R0 |
 | APP1 | Staff identity, sessions, roles, permissions, audit actor | Login, shell, navigation, forbidden/session states | Public shell | Session/security support | R0 |
-| APP2 | Asset, catalog, publication | Asset library, product list/form/detail/publication | Product list/detail | Asset inspection/derivatives | R1 |
+| APP2 | Asset, catalog, publication | Asset library, product list/form/detail/publication | Product list at `/kham-pha` (IMP-D038; `?category=<slug>`, staged non-interactive cards); product detail route unresolved | Asset inspection/derivatives | R1 |
 | APP3 | Template, design session/version/document | Template list/editor/publication | 2D Design Studio | Autosave/processing as required | R2 |
 | APP4 | Customer, contact verification, secure grant, notification core | Customer/contact/secure-link operational views | Verification/secure entry | Notification intent/attempt delivery | R3 prerequisite (contributes to R3; R3 closes at APP6) |
 | APP5 | Customer-owned product, request, request asset, moderation/transition | Request queue/detail/moderation | Request creation/status | Asset consequences/notifications | R3 |
