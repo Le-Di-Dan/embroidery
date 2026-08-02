@@ -162,9 +162,13 @@ export function cardLinkRequirements(text) {
  * imports this and pairs each claim with the approval evidence it requires.
  */
 export function s02ReadinessClaims(text) {
-  return [...text.matchAll(/APP2-S02`?\**\s*(?:=|is)\s*\**`?(READY|APPROVED[A-Z_]*)/g)].map(
-    (match) => match[0],
-  );
+  // `COMPLETE` counts too, and for the same reason: claiming S02 is finished
+  // without the approval that authorised it is a stronger version of claiming it
+  // is ready. Added when `APP2-S02` shipped and the `READY`-only scan silently
+  // stopped matching anything.
+  return [
+    ...text.matchAll(/APP2-S02`?\**\s*(?:=|is)\s*\**`?(READY|COMPLETE|APPROVED[A-Z_]*)/g),
+  ].map((match) => match[0]);
 }
 
 function checkFacts(facts, fail) {
