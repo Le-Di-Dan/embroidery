@@ -25,8 +25,8 @@
  *   APP2 freezes its *owned* records, not global totals (`APP2-X01-C1`).
  * - **The public surface has not drifted** — routes, and the fact that
  *   `SAFE_STREAMED_NOT_FOUND` is still what the not-found authority is called.
- * - **Publication events are still `PENDING`** and the next phase is still not
- *   started.
+ * - **Publication events are still `PENDING`**, and the next phase never
+ *   *predated* closure — proven from the graph, not filenames (`APP2-X01-C2`).
  *
  * Historical and superseded prose stays legal throughout: a line that labels
  * itself as history is evidence, and criminalising it would push the phase's
@@ -36,7 +36,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { checkFrozenArtifacts } from './check-app2-closure-artifacts.mjs';
+import { checkFrozenArtifacts, checkNextPhaseChronology } from './check-app2-closure-artifacts.mjs';
 import { isLabelled } from './check-storefront-route-authority.mjs';
 
 export { measureFrozenArtifacts } from './check-app2-closure-artifacts.mjs';
@@ -57,6 +57,7 @@ export const EXPECTED = Object.freeze({
   closureCheckpoint: 'APP2-X01',
   e01Status: 'COMPLETE — CORRECTED (C1) — DELIVERED_FOR_REVIEW',
   nextPhase: 'APP3',
+  closureCommit: '8b5f3b0279b1920babd05b52014af3b853f526c0',
   notFoundAuthority: 'SAFE_STREAMED_NOT_FOUND',
   routes: Object.freeze(['/kham-pha', '/san-pham/[slug]']),
   operations: Object.freeze([
@@ -356,18 +357,17 @@ function checkSurface(matrix, phase, roadmap, fail) {
 }
 
 /**
- * The one `APP3-` report that is not APP3 engineering: a docs-only audit of the
- * closed baseline post-dates closure. Exact filename, never a prefix or label
- * escape — every other `APP3-` report still fails. Closure verdict unchanged.
+ * The next phase must not *predate* the closure it depends on (`APP2-X01-C2`).
+ *
+ * Chronology is answered from the commit graph by `checkNextPhaseChronology`;
+ * this function keeps only the status assertions that read documents.
  */
-const NEXT_PHASE_AUDIT_REPORT = 'APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md';
-
 function checkNextPhase(rootDir, matrix, roadmap, fail) {
-  const started = readdirSync(join(rootDir, REPORT_DIR)).filter(
-    (file) => file.startsWith(`${EXPECTED.nextPhase}-`) && file !== NEXT_PHASE_AUDIT_REPORT,
-  );
-  for (const report of started) {
-    fail(`${REPORT_DIR}/${report}: ${EXPECTED.nextPhase} must not be started before closure`);
+  for (const violation of checkNextPhaseChronology({
+    repoRoot: rootDir,
+    closureCommit: EXPECTED.closureCommit,
+  }).violations) {
+    fail(violation);
   }
   if (!matrix.includes(`${EXPECTED.nextPhase} `) || !matrix.includes('NOT STARTED')) {
     fail(`${CANONICAL_FILES.matrix}: does not record ${EXPECTED.nextPhase} as READY — NOT STARTED`);
@@ -393,7 +393,7 @@ async function main() {
       `${String(EXPECTED.openapiOperations)}/${String(EXPECTED.openapiSchemas)}, ` +
       `${String(EXPECTED.migrations)} migrations, Figma owned ` +
       `${String(EXPECTED.figmaOwnedRows)} rows/${String(EXPECTED.figmaOwnedTables)} tables intact, ` +
-      `${EXPECTED.notFoundAuthority} current, ${EXPECTED.nextPhase} NOT STARTED)`,
+      `${EXPECTED.notFoundAuthority} current, ${EXPECTED.nextPhase} chronology valid)`,
   );
 }
 

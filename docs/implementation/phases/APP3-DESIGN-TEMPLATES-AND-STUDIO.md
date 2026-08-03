@@ -270,6 +270,13 @@ substantive finding was upheld; the evidence/governance classification was
 corrected because **Commit A was not docs-only** — see audit §R for the approved
 `APPROVED_NARROW_GOVERNANCE_DEVIATION` disposition.
 
+> **`FU-APP2-CLOSURE-NEXTPHASE-GUARD-01` = `COMPLETE — CLOSED_BY_APP2-X01-C2`.**
+> The closure gate used to reject any `reports/APP3-*.md` by filename prefix,
+> which blocked two mandated post-closure governance reports. `APP2-X01-C2`
+> replaced it with a commit-graph chronology check: an APP3 report added **after**
+> the accepted closure commit `8b5f3b0` passes whatever it is called, one added
+> before it still fails. **Future APP3 reports use canonical `APP3-*` names.**
+>
 > **`FU-APP3-CLOSURE-FIGMA-BASELINE-01` = `COMPLETE — CLOSED_BY_APP2-X01-C1`.**
 > The unrelated BRD0 commit `2a5d3bf` grew the Figma registry from 86/86/11 to
 > **96/96/13**, drifting an APP2 frozen artifact and taking `pnpm quality` to

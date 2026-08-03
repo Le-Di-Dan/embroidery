@@ -252,7 +252,7 @@ may grow additively when later authority is valid and internally consistent.
 
 ```text
 APP2                              = COMPLETE — PASS_WITH_FOLLOW_UPS — REVIEW_ACCEPTED
-APP2-X01-C1                       = COMPLETE — REVIEW_DELIVERED
+APP2-X01-C1                       = COMPLETE — REVIEW_ACCEPTED
 FU-APP3-CLOSURE-FIGMA-BASELINE-01 = COMPLETE — CLOSED_BY_APP2-X01-C1
 APP3-PRE-IMPLEMENTATION-AUDIT     = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP3                              = AUDITED — READY_FOR_FIRST_GATE

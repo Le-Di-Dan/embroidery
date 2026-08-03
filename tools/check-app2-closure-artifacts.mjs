@@ -1,19 +1,15 @@
 #!/usr/bin/env node
 /**
- * The frozen-artifact half of the `APP2-X01` closure check.
+ * The evidence half of the `APP2-X01` closure check: frozen artifacts, the
+ * APP2-owned Figma subset, and next-phase chronology. A sibling of
+ * `check-app2-closure.mjs` — the split is by responsibility, not line count.
  *
- * A sibling of `check-app2-closure.mjs`; the split is by responsibility, not by
- * line count. This file owns exactly one question — *do the artifacts still hash
- * and count to what the phase froze?* — and it answers it by reading the
- * artifacts themselves. A hash copied into prose stops matching the moment
- * somebody regenerates the thing it describes, and prose has no way to notice.
- *
- * Every measurement reuses the canonical implementation rather than a second
- * copy of it: `hashGeneratedTree` is the same function `pnpm check:api-client`
- * uses, and `checkFigmaDesignIndex` is the registry gate itself. A private
- * re-implementation could drift from the real gate and would then be attesting
- * to its own arithmetic.
+ * Everything is read from the repository or the commit graph rather than from
+ * prose, and every measurement reuses the canonical implementation
+ * (`hashGeneratedTree`, `checkFigmaDesignIndex`) instead of a second copy that
+ * could drift and then attest to its own arithmetic.
  */
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -28,6 +24,10 @@ export const MIGRATIONS_DIR = 'packages/database/migrations';
 export const FINGERPRINT_PATH = 'packages/database/tools/canonical-fingerprint.txt';
 export const FIGMA_INDEX_PATH = 'docs/design/FIGMA_DESIGN_INDEX.md';
 export const FIGMA_BASELINE_PATH = 'docs/implementation/reports/APP2-CLOSURE-FIGMA-BASELINE.json';
+export const REPORTS_DIR = 'docs/implementation/reports';
+
+/** A next-phase (APP3) report, by filename. */
+export const NEXT_PHASE_REPORT_RE = /^APP3-.*\.md$/;
 
 /** HTTP methods that count as an operation for the frozen OpenAPI shape. */
 const OPERATION_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
@@ -46,11 +46,9 @@ export function countOpenapi(document) {
 }
 
 /**
- * Every frozen artifact, measured from the repository.
- *
- * Missing artifacts come back `undefined` rather than throwing, so the caller
- * reports "drifted: measured undefined" — a deleted OpenAPI document is a
- * closure failure to describe, not a crash to debug.
+ * Every frozen artifact, measured from the repository. A missing one comes back
+ * `undefined` rather than throwing: a deleted OpenAPI document is a closure
+ * failure to describe, not a crash to debug.
  */
 export async function measureFrozenArtifacts(root) {
   const measured = {
@@ -90,12 +88,9 @@ export async function measureFrozenArtifacts(root) {
 }
 
 /**
- * Compares the measured artifacts with the frozen baseline, and checks that the
- * closure matrix actually writes each value down.
- *
- * Both halves matter. A matrix that records the right numbers while the
- * artifacts moved is stale; a matrix that omits them cannot be audited by
- * anyone reading it.
+ * Measured artifacts versus the frozen baseline, plus the matrix actually
+ * writing each value down. A matrix recording right numbers while the artifacts
+ * moved is stale; one omitting them cannot be audited by a reader.
  */
 export async function checkFrozenArtifacts(root, matrixText, expected, fail) {
   const measured = await measureFrozenArtifacts(root);
@@ -136,10 +131,8 @@ export async function checkFrozenArtifacts(root, matrixText, expected, fail) {
 }
 
 /**
- * The section heading a registry table sits under — the nearest `##`..`######`
- * above it. Section is part of a row's frozen identity because moving an
- * APP2-owned row into an unrelated section changes what the closure attested,
- * even when every other field survives.
+ * The nearest heading above a registry table. Section is part of a frozen row
+ * identity: moving an owned row elsewhere changes what the closure attested.
  */
 function sectionFor(lines, headerLineNo) {
   for (let i = headerLineNo - 2; i >= 0; i -= 1) {
@@ -161,11 +154,8 @@ function rowDigest(id, section, fields) {
 }
 
 /**
- * Every node-registry row in a registry markdown, keyed by registry ID.
- *
- * `duplicates` is tracked separately rather than letting a later row overwrite
- * an earlier one: a duplicated APP2-owned ID is precisely the shape of attack
- * an overwrite would hide.
+ * Every node-registry row, keyed by registry ID. `duplicates` is tracked apart
+ * so a later row cannot overwrite an earlier one and hide a duplicated ID.
  */
 export function parseFigmaRegistryRows(markdown, authorityFields) {
   const lines = markdown.split('\n');
@@ -195,18 +185,12 @@ export function parseFigmaRegistryRows(markdown, authorityFields) {
 }
 
 /**
- * Verifies the APP2-owned Figma subset rather than the registry's global totals.
- *
- * Freezing `86 registry IDs / 86 node rows / 11 tables` was structurally wrong:
- * the registry is one shared, appendable document that every later phase writes
- * into, so a global total makes *any* unrelated valid addition a closure
- * failure — while still failing to notice the thing that actually matters, an
- * APP2 row being deleted and replaced by an unrelated one at the same total.
- *
- * The baseline is instead the exact set of records APP2 closure owned,
- * transcribed from its own commit (`FIGMA_BASELINE_PATH`). Each must still be
- * present, unique, in its original section and unchanged across the authority
- * fields the closure attested. Anything else in the registry is free to grow.
+ * Verifies the APP2-*owned* Figma subset, never the global totals
+ * (`APP2-X01-C1`). A total made any unrelated addition a closure failure while
+ * still missing an owned row deleted and replaced at the same count. The
+ * baseline is the exact record set APP2 closed over (`FIGMA_BASELINE_PATH`):
+ * each must stay present, unique, in its section and unchanged across the
+ * authority fields. Everything else in the registry is free to grow.
  */
 export function checkOwnedFigmaBaseline(root, fail) {
   const baselineAbs = join(root, FIGMA_BASELINE_PATH);
@@ -277,4 +261,138 @@ export function checkOwnedFigmaBaseline(root, fail) {
       );
     }
   }
+}
+
+/** One git call that never throws: here an exit code is an answer, not a crash. */
+function git(repoRoot, args) {
+  const run = spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8', maxBuffer: 33554432 });
+  const why = run.error ? String(run.error.message) : (run.stderr ?? '').trim();
+  return { ok: !run.error, status: run.error ? null : run.status, out: run.stdout ?? '', why };
+}
+
+/** Is `ancestor` reachable from `descendant`? `resolved:false` = git could not say. */
+function isAncestor(repoRoot, ancestor, descendant) {
+  const run = git(repoRoot, ['merge-base', '--is-ancestor', ancestor, descendant]);
+  const usable = run.ok && (run.status === 0 || run.status === 1);
+  const why = run.why || `git exited ${String(run.status)}`;
+  return { resolved: usable, value: usable && run.status === 0, why };
+}
+
+/** Non-empty trimmed lines of git output. */
+function lines(out) {
+  return out.split('\n').flatMap((line) => (line.trim() ? [line.trim()] : []));
+}
+
+/** Current APP3 report basenames on disk, lexicographically sorted. */
+function nextPhaseReportsOnDisk(repoRoot) {
+  const dir = join(repoRoot, REPORTS_DIR);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && NEXT_PHASE_REPORT_RE.test(entry.name))
+    .map((entry) => entry.name)
+    .sort();
+}
+
+/**
+ * The next phase must not have *predated* the closure it depends on.
+ *
+ * What this replaces banned every `reports/APP3-*.md` outright, then carved out
+ * one exact filename. That was never the invariant — APP2 is closed, so an APP3
+ * report written *after* the closure commit is ordinary, correct work. The
+ * prefix ban blocked two mandated post-closure governance reports, and an
+ * exact-filename allowlist does not scale; the second one had to be worked
+ * around by renaming a file.
+ *
+ * The invariant is chronological, so it is answered from the commit graph — not
+ * from filenames, counts, report prose, or commit timestamps, which are
+ * rebase-controlled while ancestry is what "after" actually means in Git:
+ *
+ *   A. `HEAD` must descend from the accepted APP2 closure commit;
+ *   B. the closure commit's own tree must carry no APP3 report;
+ *   C. every APP3 report on disk must have been *first added* after closure —
+ *      or not be committed yet, which A already places after closure.
+ */
+export function checkNextPhaseChronology({ repoRoot, closureCommit }) {
+  const violations = [];
+  const tracked = [];
+  const pending = [];
+  const trackedPostClosureReports = tracked;
+  const pendingPostClosureReports = pending;
+  const evidence = {
+    closureCommit,
+    trackedPostClosureReports,
+    pendingPostClosureReports,
+    violations,
+  };
+
+  // Step A — HEAD descends from the accepted closure.
+  const descends = isAncestor(repoRoot, closureCommit, 'HEAD');
+  if (!descends.resolved) {
+    violations.push(
+      `chronology unresolved: cannot order HEAD against ${closureCommit} (${descends.why})`,
+    );
+    return evidence;
+  }
+  if (!descends.value) {
+    violations.push(`HEAD does not descend from the accepted APP2 closure commit ${closureCommit}`);
+    return evidence;
+  }
+
+  // Step B — the closure snapshot itself carried no APP3 report.
+  const tree = git(repoRoot, ['ls-tree', '-r', '--name-only', closureCommit, '--', REPORTS_DIR]);
+  if (!tree.ok || tree.status !== 0) {
+    violations.push(
+      `chronology unresolved: cannot read ${REPORTS_DIR} at ${closureCommit} (${tree.why})`,
+    );
+    return evidence;
+  }
+  for (const path of lines(tree.out).sort()) {
+    if (NEXT_PHASE_REPORT_RE.test(path.slice(path.lastIndexOf('/') + 1))) {
+      violations.push(
+        `${path}: present in the APP2 closure commit ${closureCommit}, so it predates closure`,
+      );
+    }
+  }
+
+  // Step C — every APP3 report on disk was first added after closure.
+  const ADD = ['log', '--follow', '--diff-filter=A', '--format=%H', '--reverse', '--'];
+  for (const name of nextPhaseReportsOnDisk(repoRoot)) {
+    const path = `${REPORTS_DIR}/${name}`;
+    const log = git(repoRoot, [...ADD, path]);
+    if (!log.ok || log.status !== 0) {
+      violations.push(
+        `${path}: chronology unresolved — cannot read its first-add commit (${log.why})`,
+      );
+      continue;
+    }
+    const firstAdd = lines(log.out)[0];
+    if (firstAdd === undefined) {
+      // Staged or untracked: no commit yet, and Step A already placed the commit
+      // it will land on after closure.
+      pending.push(path);
+      continue;
+    }
+    if (firstAdd === closureCommit) {
+      violations.push(`${path}: first added by the APP2 closure commit ${closureCommit} itself`);
+      continue;
+    }
+    const after = isAncestor(repoRoot, closureCommit, firstAdd);
+    if (!after.resolved) {
+      violations.push(
+        `${path}: chronology unresolved — cannot order first-add ${firstAdd} (${after.why})`,
+      );
+      continue;
+    }
+    if (!after.value) {
+      violations.push(
+        `${path}: first added by ${firstAdd}, which predates closure ${closureCommit}`,
+      );
+      continue;
+    }
+    tracked.push(path);
+  }
+
+  tracked.sort();
+  pending.sort();
+  return evidence;
 }

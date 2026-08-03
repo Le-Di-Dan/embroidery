@@ -196,13 +196,22 @@ does not scale.
 FU-APP2-CLOSURE-NEXTPHASE-GUARD-01
 The APP3 report-name guard in check-app2-closure.mjs is scoped by filename
 prefix and has now blocked two mandated post-closure governance reports.
-Status: OPEN — NONBLOCKING (worked around by naming, twice)
-Owner:  APP2 closure gate owner
+Status: COMPLETE — CLOSED_BY_APP2-X01-C2
+Owner:  APP2-X01-C2
 ```
 
-It is nonblocking: nothing is stuck, and `pnpm quality` is green. It should be
-retired or re-scoped — for example keyed to APP3 *checkpoint* reports rather than
-any `APP3-` prefix — by whoever next has authority over that gate.
+**Closed by `APP2-X01-C2`.** The filename prefix ban and the exact-filename
+allowlist are gone. The gate now answers the real invariant — *no APP3 report may
+enter history before the accepted APP2 closure commit* — from the commit graph
+(`checkNextPhaseChronology`), so a post-closure APP3 report passes on its merits
+whatever it is called, and one added before closure still fails.
+
+**The rename recorded in §F.1 above was therefore a temporary workaround, and it
+is over.** Future APP3 reports use their canonical `APP3-*` filenames. This
+report keeps its current name only because renaming a committed evidence
+document would rewrite history for no gain; it is the last artifact that carries
+the workaround. Evidence:
+[`APP2-X01-C2-COMPLETION-REPORT.md`](./APP2-X01-C2-COMPLETION-REPORT.md).
 
 ## G. Changed documentation files
 
