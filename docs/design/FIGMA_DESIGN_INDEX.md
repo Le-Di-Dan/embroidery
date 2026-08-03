@@ -432,6 +432,74 @@ the artwork sits in a neutral bounded stage with `contain`/natural-ratio behavio
 existing 3:4 `TEMP_ASSET` is annotated on-canvas as an example only
 (`FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01`, routed and non-blocking).
 
+## 4.6 BRD0 — Logo System Exploration (NEW, this checkpoint)
+
+Page **`544:2409`** (`LOGO_SYSTEM`) in `FIG-FILE-PRODUCT` — a **brand-exploration**
+page, not a product surface. It holds four parallel logo-system concepts drawn as
+real Figma vectors, each with symbol, lockups, wordmark direction, monochrome and
+colour versions, 16/24/32/48 px favicon tests, avatar, desktop and mobile headers,
+watermark and packaging previews, plus a pros/cons/fit assessment.
+
+**Authority: none.** Every row is `REFERENCE_ONLY`. This package selects **no**
+winning concept, proposes **no** brand name (the wordmark is the literal placeholder
+`TÊN THƯƠNG HIỆU` / `Tên Thương Hiệu`), and creates **no** design token — it consumes
+the approved foundation only (`$color-text-primary`, `$color-action-primary`,
+`$color-background-primary`, `$color-surface-primary`, `$color-text-secondary`,
+`$color-text-tertiary`, `$color-border-primary`; base-4 spacing; radius scale).
+No frontend checkpoint may implement from these rows. Brand-name and concept selection
+were **open at `BRD0-F01`** and are **closed at `BRD0-F02`** — see §4.6.1.
+
+`Route/Capability` is `BRD0` throughout because a logo system is not route-bound.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-BRD0-LOGO-SYSTEM-PAGE | Brand | BRD0 | Logo System Exploration | Container | All | brand-exploration | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 544:2409 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=544-2409) | BRD0-F01 | — | — | 2026-08-03 |
+| FIG-BRD0-PREFLIGHT-TOKEN-LEGEND | Brand | BRD0 | Preflight & Token Legend | Annotation | Desktop | annotation | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 546:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=546-3) | BRD0-F01 | — | — | 2026-08-03 |
+| FIG-BRD0-C1-CONTINUOUS-THREAD | Brand | BRD0 | Concept 1 — Continuous Thread Mark | Exploration | All | brand-exploration | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 546:4 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=546-4) | BRD0-F01 | — | — | 2026-08-03 |
+| FIG-BRD0-C2-ABSTRACT-STITCH | Brand | BRD0 | Concept 2 — Abstract Stitch Geometry | Exploration | All | brand-exploration | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 546:5 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=546-5) | BRD0-F01 | — | — | 2026-08-03 |
+| FIG-BRD0-C3-SIGNATURE-MOTIF | Brand | BRD0 | Concept 3 — Personal Mark / Signature Motif | Exploration | All | brand-exploration | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 546:6 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=546-6) | BRD0-F01 | — | — | 2026-08-03 |
+| FIG-BRD0-C4-WORDMARK-LED | Brand | BRD0 | Concept 4 — Wordmark-led Flexible Identity | Exploration | All | brand-exploration | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 546:7 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=546-7) | BRD0-F01 | — | — | 2026-08-03 |
+| FIG-BRD0-COMPARISON-MATRIX | Brand | BRD0 | Comparison Matrix (9 criteria × 4 concepts) | Annotation | Desktop | annotation | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 546:8 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=546-8) | BRD0-F01 | — | — | 2026-08-03 |
+
+### 4.6.1 BRD0-F02 — Concept 03 selected and productionized (NEW, this checkpoint)
+
+The Product Owner selected **Concept 03 — Personal Mark / Signature Motif**. Section
+`546:6` is relabelled `SELECTED · LOCKED FOR REFINEMENT`; `546:4`, `546:5`, `546:7`
+and `546:8` are relabelled `ARCHIVED · NOT SELECTED` / `HISTORICAL EVIDENCE` and kept
+as audit evidence (never deleted). The brand name **`Nét Thêu`**, descriptor
+**`Xưởng thêu cá nhân hóa`** and slogan **`Thêu nên dấu riêng.`** are locked and now
+replace the placeholder wordmark.
+
+**Symbol source of truth is node `554:13`** (seal ring + signature gesture, inside the
+Concept 03 section). Every mark in `09B` is a **clone** of that node — the symbol was
+not redrawn. Two production-only refinements are applied and shown side by side against
+the untouched original: ring `strokeWeight` 4 → 6, and a micro-size variant (ring
+removed, gesture `strokeWeight` 16.9 → 21) for use below 32 px. **No `vectorPaths` data
+was altered.**
+
+**`09A` records a rejected direction.** A first pass wrongly reinterpreted "select
+Concept 03" as licence to derive a *new* `N` monogram from the brand name. That section
+is retained for audit under an on-canvas `REJECTED — Incorrect reinterpretation into N
+monogram · DO NOT USE` banner and is **not** authority for anything.
+
+Both sections remain `REFERENCE_ONLY`: the logo system still needs human approval, and
+no production asset (SVG/PNG/ICO) has been exported.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-BRD0-C3-PRODUCTIONIZATION | Brand | BRD0 | Concept 03 Productionization (Nét Thêu) | Logo system | All | brand-exploration | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 582:18 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=582-18) | BRD0-F02 | Productionizes FIG-BRD0-C3-SIGNATURE-MOTIF (symbol node 554:13) | — | 2026-08-03 |
+| FIG-BRD0-C3-SYMBOL-MASTER | Brand | BRD0 | Approved symbol master artwork (original / production / micro) | Master | All | brand-exploration | REFERENCE_ONLY | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 582:9 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=582-9) | BRD0-F02 | Exact clone of 554:13 | — | 2026-08-03 |
+| FIG-BRD0-WRONG-DIRECTION-ARCHIVE | Brand | BRD0 | Archived wrong direction (N monogram) | Rejected | All | brand-exploration | OBSOLETE | BQwqV8GdfUIELvsQDB1UQE | LOGO_SYSTEM | 570:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=570-3) | BRD0-F02 | Rejected — incorrect reinterpretation; replaced by FIG-BRD0-C3-PRODUCTIONIZATION | — | 2026-08-03 |
+
+**Typography deviation, disclosed.** The approved primary font `General Sans` is not
+installed in `FIG-FILE-PRODUCT` (`listAvailableFontsAsync` returned zero `General
+Sans` styles). Every wordmark on this page is set in **Inter**, which
+`DESIGN_SYSTEM_FOUNDATION.md` §5 already designates as the design-approved Figma
+fallback for the same scale. This is a rendering fallback, not a new token. The
+`Nét Thêu` wordmark must be rebuilt and re-judged in General Sans before any production
+asset is exported; `BRD0-F02` deliberately cut **no** custom glyphs for this reason,
+since customization done on the fallback face would be discarded.
+
 ## 5. IA and user-flow registry
 
 Flow/IA/wireframe nodes are indexed as `REFERENCE_ONLY` — they inform, but do not
@@ -535,11 +603,13 @@ canonical entry exists for any APP1-D01 composite key.
 
 - **Audit date:** 2026-07-25 (APP1-D01; supplemented at APP1-D02), re-audited
   **2026-07-26** (APP2-D01). **Auditor tooling:** Figma MCP plugin API.
-- **Files enumerated:** 2/2 — `FIG-FILE-PRODUCT` (**5 pages**) + `FIG-FILE-DS` (19 pages).
+- **Files enumerated:** 2/2 — `FIG-FILE-PRODUCT` (**6 pages** since `BRD0-F01`
+  added `LOGO_SYSTEM`) + `FIG-FILE-DS` (19 pages).
 - **Product pages:** Information Architecture (`0:1`), APP_01 (`371:3` — Admin
   APP1-D01 section `375:11` + Storefront APP1-D02 section `405:2224`), **APP_02
   (`419:3` — APP2-D01 section `423:3`)**, Wireframe (`17:55`, WF01–WF09), User
-  Interface (`166:1457`, UI01–UI05).
+  Interface (`166:1457`, UI01–UI05), **LOGO_SYSTEM (`544:2409` — BRD0-F01
+  sections `546:3`–`546:8`, all `REFERENCE_ONLY`, no implementation authority)**.
 - **DS catalog:** 4 variable collections (Primitives 16 / Color 19 / Spacing 10 /
   Radius 5), 11 text styles, 2 effect styles, component sets across 8 HF01 pages.
 - **Registry coverage:** 16 APP1-D01 rows (12 `APPROVED_FOR_IMPLEMENTATION` +
