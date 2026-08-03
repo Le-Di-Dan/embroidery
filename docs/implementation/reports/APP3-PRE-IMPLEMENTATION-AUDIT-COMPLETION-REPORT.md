@@ -335,8 +335,9 @@ APP3 — note `design_sessions.product_variant_id` is nullable.
 database checkpoint, 1 design package, 8 backend, 4 Admin, 13 Studio, 1 E2E,
 1 closure. Validated: acyclic (every predecessor precedes its dependent), every
 backend row ≤3 operations, every frontend row one screen or bounded capability,
-`APP3-D01` before every frontend row, `APP3-DB01` before `B01`/`B03`/`W01`, and
-no APP4 identity or APP5/APP6 submission, review or quotation anywhere.
+`APP3-D01` before every frontend row, `DB-DISPOSITION-RESOLVED` before
+`B01`/`B03`/`W01` (§U.5 — satisfied by either `APP3-DB01` terminal), and no APP4
+identity or APP5/APP6 submission, review or quotation anywhere.
 
 **[Corrected by `APP3-PRE-AUDIT-C1`] — the conditional database checkpoint can
 now terminate without running.** A conditional row that dependents wait on must
@@ -711,10 +712,13 @@ frozen artifact. That belongs to a human, not to this checkpoint.
 
 | Follow-up | Status | Owner |
 |---|---|---|
-| `FU-APP3-CLOSURE-FIGMA-BASELINE-01` — BRD0 Figma registry growth (86/86/11 → 96/96/13) breaks `check:app2-closure` and two of its tests | **OPEN — BLOCKING `pnpm quality`** | APP2 closure owner + BRD0 owner |
+| `FU-APP3-CLOSURE-FIGMA-BASELINE-01` — BRD0 Figma registry growth (86/86/11 → 96/96/13) broke `check:app2-closure` and two of its tests | **COMPLETE — CLOSED_BY_APP2-X01-C1** | `APP2-X01-C1` |
 
-It must be resolved before any APP3 checkpoint that requires a green
-`pnpm quality` — including `APP3-G01`.
+**Closed by `APP2-X01-C1`** ([`APP2-X01-C1-COMPLETION-REPORT.md`](./APP2-X01-C1-COMPLETION-REPORT.md)):
+the closure gate now verifies the 86-record APP2-owned Figma subset transcribed
+from `8b5f3b0` instead of the shared registry's global totals, so unrelated
+additive rows pass while removal, mutation, duplication, section moves and
+same-count substitution of an owned record still fail. `pnpm quality` is green.
 
 Manual documentation validation:
 
@@ -754,12 +758,14 @@ implementation, small backend and frontend checkpoints, and `APP3-G01` as the
 first recommended gate. No background removal, 3D, stitch simulation, digitizing
 or APP4–APP6 scope was added.
 
-**One blocking condition carried forward.**
+**The blocking condition has been closed.**
 `FU-APP3-CLOSURE-FIGMA-BASELINE-01` (§U.9.1) — unrelated BRD0 Figma registry
 growth drifted an APP2 frozen artifact, so `check:app2-closure`, two of its
-tests and therefore `pnpm quality` fail at `HEAD`. It is pre-existing, proven by
-stashing this correction and reproducing at `HEAD`, and deliberately not fixed
-here. It must be closed before any APP3 checkpoint that requires a green
-`pnpm quality`, `APP3-G01` included.
+tests and therefore `pnpm quality` failed at the time this report was written.
+It was pre-existing, proven by stashing the C1 correction and reproducing at
+`HEAD`, and correctly left unfixed by a documentation-only checkpoint.
+**`APP2-X01-C1` closed it** by scoping the frozen Figma baseline to the records
+APP2 actually owned. `pnpm quality` is green and `APP3-G01` is
+`READY — NOT STARTED`.
 
 `APP3-G01` is **not** executed and its execution prompt is **not** written.

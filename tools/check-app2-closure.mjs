@@ -19,10 +19,10 @@
  * - **Every follow-up is nonblocking and owned.** `PASS_WITH_FOLLOW_UPS` is a
  *   real verdict only while that is true; an ownerless or blocking follow-up
  *   turns it into a blocker wearing a different word.
- * - **The frozen artifacts are recomputed, never trusted.** OpenAPI hash and
- *   shape, generated-client tree hash, migration count, fingerprint and Figma
- *   counts are read from the artifacts themselves and compared with what the
- *   matrix claims.
+ * - **The frozen artifacts are recomputed, never trusted.** OpenAPI, client tree
+ *   hash, migration count and fingerprint are read from the artifacts and
+ *   compared with the matrix. The Figma registry is shared and appendable, so
+ *   APP2 freezes its *owned* records, not global totals (`APP2-X01-C1`).
  * - **The public surface has not drifted** — routes, and the fact that
  *   `SAFE_STREAMED_NOT_FOUND` is still what the not-found authority is called.
  * - **Publication events are still `PENDING`** and the next phase is still not
@@ -74,9 +74,9 @@ export const EXPECTED = Object.freeze({
   columns: 833,
   checks: 190,
   fingerprint: '82864268c990990e4597c74cfc69b7b5a91b1bc5a2adbde098ab9ad43aed58cf',
-  figmaIds: 86,
-  figmaNodeRows: 86,
-  figmaTables: 11,
+  // APP2-X01-C1: owned records are frozen, never the shared registry's totals.
+  figmaOwnedRows: 86,
+  figmaOwnedTables: 11,
 });
 
 /**
@@ -391,8 +391,8 @@ async function main() {
     `check:app2-closure — APP2 ${EXPECTED.phaseVerdict} (${rows.length} checkpoint rows, ` +
       `${followUps.length} routed follow-ups, 0 blocking; OpenAPI ${String(EXPECTED.openapiPaths)}/` +
       `${String(EXPECTED.openapiOperations)}/${String(EXPECTED.openapiSchemas)}, ` +
-      `${String(EXPECTED.migrations)} migrations, Figma ${String(EXPECTED.figmaIds)}/` +
-      `${String(EXPECTED.figmaNodeRows)}/${String(EXPECTED.figmaTables)}, ` +
+      `${String(EXPECTED.migrations)} migrations, Figma owned ` +
+      `${String(EXPECTED.figmaOwnedRows)} rows/${String(EXPECTED.figmaOwnedTables)} tables intact, ` +
       `${EXPECTED.notFoundAuthority} current, ${EXPECTED.nextPhase} NOT STARTED)`,
   );
 }

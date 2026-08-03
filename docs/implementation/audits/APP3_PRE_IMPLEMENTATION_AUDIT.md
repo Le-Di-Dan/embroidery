@@ -652,16 +652,19 @@ archive/catalog/content work.
 
 | Follow-up | Status | Owner |
 |---|---|---|
-| `FU-APP3-CLOSURE-FIGMA-BASELINE-01` — the Figma registry grew from 86 rows / 11 tables to **96 / 13** in the unrelated BRD0 commit `2a5d3bf`, so `check:app2-closure` now reports three frozen-artifact drift findings and two of its tests fail, taking `pnpm quality` to `EXIT=1` | **OPEN — BLOCKING `pnpm quality`** | APP2 closure owner + BRD0 owner |
+| `FU-APP3-CLOSURE-FIGMA-BASELINE-01` — the Figma registry grew from 86 rows / 11 tables to **96 / 13** in the unrelated BRD0 commit `2a5d3bf`, so `check:app2-closure` reported three frozen-artifact drift findings and two of its tests failed, taking `pnpm quality` to `EXIT=1` | **COMPLETE — CLOSED_BY_APP2-X01-C1** | `APP2-X01-C1` |
 
-The gate is behaving correctly: it **recomputes** the frozen baseline instead of
-trusting prose, which is precisely why it caught a closed phase's artifact
-moving underneath it. Resolving it means deciding whether unrelated brand work
-may move an APP2 frozen artifact and, if so, re-freezing the baseline — a human
-governance decision, not a bookkeeping fix. It is **not** resolved here: this
-reconciliation is documentation-only and no further tool-gate change is
-authorized. It must be closed before any APP3 checkpoint that requires a green
-`pnpm quality`, `APP3-G01` included.
+**Closed by `APP2-X01-C1`.** The human ruling was that a closed phase may freeze
+and verify the Figma baseline it *owned*, but must not freeze the **global
+total** of a shared appendable registry in a way that rejects unrelated, valid,
+later additions. The gate now verifies the exact 86-record APP2-owned subset,
+transcribed from the closure commit `8b5f3b0` into
+`reports/APP2-CLOSURE-FIGMA-BASELINE.json`: every owned record must remain
+present, unique, in its original section and unchanged across the authority
+fields the closure attested, while unrelated rows may be appended freely.
+Removal, mutation, duplication, section moves, same-count substitution and
+registry inconsistency all still fail. `pnpm quality` is green again and
+`APP3-G01` is unblocked.
 
 ---
 
@@ -1090,15 +1093,15 @@ APP3-G01                      = READY — NOT STARTED
 every other APP3 checkpoint   = NOT STARTED
 ```
 
-**One blocking condition discovered while validating [C1].**
-`pnpm check:app2-closure` and two of its tests now fail — and therefore
-`pnpm quality` exits 1 — because the unrelated BRD0 commit `2a5d3bf` grew the
+**One blocking condition was discovered while validating [C1], and has since
+been closed.** `pnpm check:app2-closure` and two of its tests failed — taking
+`pnpm quality` to exit 1 — because the unrelated BRD0 commit `2a5d3bf` grew the
 Figma registry from 86/86/11 to 96/96/13, drifting an APP2 frozen artifact.
-Proven pre-existing: with every file of this correction stashed, the same three
-findings reproduce at `HEAD`. Tracked as `FU-APP3-CLOSURE-FIGMA-BASELINE-01`
-(§N), deliberately **not** fixed here, and blocking any APP3 checkpoint that
-requires a green `pnpm quality` — including `APP3-G01`. `APP3-G01` therefore
-stays `READY — NOT STARTED` rather than executable today.
+Proven pre-existing: with every file of the C1 correction stashed, the same three
+findings reproduced at `HEAD`. It was tracked as
+`FU-APP3-CLOSURE-FIGMA-BASELINE-01` (§N) and **closed by `APP2-X01-C1`**, which
+replaced the global-total freeze with owned-record verification. `pnpm quality`
+is green and `APP3-G01` is `READY — NOT STARTED`.
 
 `APP3-PRE-AUDIT-C1` changed documentation only. It started no APP3
 engineering, executed nothing, wrote no execution prompt, and touched no Figma

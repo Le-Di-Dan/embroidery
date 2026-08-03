@@ -20,11 +20,14 @@ import { join } from 'node:path';
 
 import { hashGeneratedTree } from '../packages/api-client/scripts/generated-tree.mjs';
 import { checkFigmaDesignIndex } from './check-figma-design-index.mjs';
+import { cell, parseTables } from './check-figma-design-index.parse.mjs';
 
 export const OPENAPI_PATH = 'packages/contracts/openapi/openapi.generated.json';
 export const GENERATED_CLIENT_DIR = 'packages/api-client/src/generated';
 export const MIGRATIONS_DIR = 'packages/database/migrations';
 export const FINGERPRINT_PATH = 'packages/database/tools/canonical-fingerprint.txt';
+export const FIGMA_INDEX_PATH = 'docs/design/FIGMA_DESIGN_INDEX.md';
+export const FIGMA_BASELINE_PATH = 'docs/implementation/reports/APP2-CLOSURE-FIGMA-BASELINE.json';
 
 /** HTTP methods that count as an operation for the frozen OpenAPI shape. */
 const OPERATION_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
@@ -105,9 +108,6 @@ export async function checkFrozenArtifacts(root, matrixText, expected, fail) {
     ['generated client hash', measured.client, expected.clientHash],
     ['migration count', measured.migrations, expected.migrations],
     ['database fingerprint', measured.fingerprint, expected.fingerprint],
-    ['Figma registry IDs', measured.figma?.registryIds, expected.figmaIds],
-    ['Figma node rows', measured.figma?.nodeRows, expected.figmaNodeRows],
-    ['Figma registry tables', measured.figma?.tables, expected.figmaTables],
   ];
 
   for (const [label, actual, value] of claims) {
@@ -131,5 +131,150 @@ export async function checkFrozenArtifacts(root, matrixText, expected, fail) {
     }
   }
 
+  checkOwnedFigmaBaseline(root, fail);
   return measured;
+}
+
+/**
+ * The section heading a registry table sits under — the nearest `##`..`######`
+ * above it. Section is part of a row's frozen identity because moving an
+ * APP2-owned row into an unrelated section changes what the closure attested,
+ * even when every other field survives.
+ */
+function sectionFor(lines, headerLineNo) {
+  for (let i = headerLineNo - 2; i >= 0; i -= 1) {
+    const match = /^(#{2,6})\s+(.*)$/.exec(lines[i] ?? '');
+    if (match) return match[2].trim();
+  }
+  return '(document root)';
+}
+
+/** ASCII unit separator: cannot appear inside a markdown table cell. */
+const FIELD_SEPARATOR = String.fromCharCode(31);
+
+/** First 16 hex of sha256 over the row's frozen identity. */
+function rowDigest(id, section, fields) {
+  return createHash('sha256')
+    .update([id, section, ...fields].join(FIELD_SEPARATOR))
+    .digest('hex')
+    .slice(0, 16);
+}
+
+/**
+ * Every node-registry row in a registry markdown, keyed by registry ID.
+ *
+ * `duplicates` is tracked separately rather than letting a later row overwrite
+ * an earlier one: a duplicated APP2-owned ID is precisely the shape of attack
+ * an overwrite would hide.
+ */
+export function parseFigmaRegistryRows(markdown, authorityFields) {
+  const lines = markdown.split('\n');
+  const tables = parseTables(lines).filter(
+    (t) => t.colIndex['Registry ID'] !== undefined && t.colIndex['Direct URL'] !== undefined,
+  );
+
+  const rows = new Map();
+  const duplicates = new Set();
+  const sections = [];
+
+  for (const table of tables) {
+    const section = sectionFor(lines, table.headerLineNo);
+    if (!sections.includes(section)) sections.push(section);
+    for (const row of table.rows) {
+      const id = cell(row, table.colIndex, 'Registry ID').replace(/`/g, '');
+      if (!id) continue;
+      if (rows.has(id)) duplicates.add(id);
+      const fields = authorityFields.map((name) =>
+        cell(row, table.colIndex, name).replace(/`/g, ''),
+      );
+      rows.set(id, { section, digest: rowDigest(id, section, fields), fields });
+    }
+  }
+
+  return { rows, duplicates, sections, tableCount: tables.length };
+}
+
+/**
+ * Verifies the APP2-owned Figma subset rather than the registry's global totals.
+ *
+ * Freezing `86 registry IDs / 86 node rows / 11 tables` was structurally wrong:
+ * the registry is one shared, appendable document that every later phase writes
+ * into, so a global total makes *any* unrelated valid addition a closure
+ * failure — while still failing to notice the thing that actually matters, an
+ * APP2 row being deleted and replaced by an unrelated one at the same total.
+ *
+ * The baseline is instead the exact set of records APP2 closure owned,
+ * transcribed from its own commit (`FIGMA_BASELINE_PATH`). Each must still be
+ * present, unique, in its original section and unchanged across the authority
+ * fields the closure attested. Anything else in the registry is free to grow.
+ */
+export function checkOwnedFigmaBaseline(root, fail) {
+  const baselineAbs = join(root, FIGMA_BASELINE_PATH);
+  if (!existsSync(baselineAbs)) {
+    fail(`${FIGMA_BASELINE_PATH}: frozen APP2 Figma baseline is missing`);
+    return;
+  }
+  const baseline = JSON.parse(readFileSync(baselineAbs, 'utf8'));
+
+  const indexAbs = join(root, FIGMA_INDEX_PATH);
+  if (!existsSync(indexAbs)) {
+    fail(`${FIGMA_INDEX_PATH}: canonical Figma registry is missing`);
+    return;
+  }
+
+  // A closure cannot attest over a broken registry. Dropping the global totals
+  // removed the only thing that used to notice structural corruption, so the
+  // registry gate itself is the replacement — reused, never re-implemented.
+  const violations = checkFigmaDesignIndex(root).violations;
+  if (violations.length > 0) {
+    fail(
+      `Figma registry is internally inconsistent (${String(violations.length)} violation(s); ` +
+        `first: ${violations[0].rule} line ${String(violations[0].line)} — ${violations[0].message})`,
+    );
+  }
+
+  const current = parseFigmaRegistryRows(
+    readFileSync(indexAbs, 'utf8'),
+    baseline.authorityFields ?? [],
+  );
+
+  const ownedIds = Object.keys(baseline.ownedRows ?? {});
+  if (ownedIds.length !== baseline.ownedRowCount) {
+    fail(
+      `${FIGMA_BASELINE_PATH}: declares ${String(baseline.ownedRowCount)} owned rows but lists ${String(ownedIds.length)}`,
+    );
+  }
+
+  for (const section of baseline.ownedSections ?? []) {
+    if (!current.sections.includes(section)) {
+      fail(`APP2-owned Figma section disappeared: "${section}"`);
+    }
+  }
+
+  for (const id of ownedIds) {
+    const [sectionIndex, digest] = String(baseline.ownedRows[id]).split(':');
+    const expectedSection = (baseline.ownedSections ?? [])[Number(sectionIndex)];
+    const row = current.rows.get(id);
+
+    if (row === undefined) {
+      fail(`APP2-owned Figma record removed: ${id}`);
+      continue;
+    }
+    if (current.duplicates.has(id)) {
+      fail(`APP2-owned Figma record duplicated: ${id}`);
+      continue;
+    }
+    if (row.section !== expectedSection) {
+      fail(
+        `APP2-owned Figma record moved section: ${id} ("${expectedSection}" → "${row.section}")`,
+      );
+      continue;
+    }
+    if (row.digest !== digest) {
+      fail(
+        `APP2-owned Figma record changed an authority field: ${id} ` +
+          `(frozen ${digest}, measured ${row.digest}; fields ${(baseline.authorityFields ?? []).join('/')} = ${row.fields.join(' | ')})`,
+      );
+    }
+  }
 }

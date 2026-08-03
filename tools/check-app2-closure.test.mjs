@@ -10,6 +10,7 @@
  * here writes into the repository.
  */
 import { strict as assert } from 'node:assert';
+import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -29,6 +30,7 @@ import {
   measureFrozenArtifacts,
   tableRows,
 } from './check-app2-closure.mjs';
+import { parseFigmaRegistryRows } from './check-app2-closure-artifacts.mjs';
 
 const MATRIX = join(REPO_ROOT, CANONICAL_FILES.matrix);
 const matrixText = readFileSync(MATRIX, 'utf8');
@@ -124,9 +126,10 @@ describe('APP2 closure — the repository as it stands', () => {
     assert.equal(measured.client, EXPECTED.clientHash);
     assert.equal(measured.migrations, EXPECTED.migrations);
     assert.equal(measured.fingerprint, EXPECTED.fingerprint);
-    assert.equal(measured.figma.registryIds, EXPECTED.figmaIds);
-    assert.equal(measured.figma.nodeRows, EXPECTED.figmaNodeRows);
-    assert.equal(measured.figma.tables, EXPECTED.figmaTables);
+    // Figma totals are measured but deliberately not frozen (`APP2-X01-C1`):
+    // the registry is shared and appendable, so it may only grow.
+    assert.ok(measured.figma.registryIds >= EXPECTED.figmaOwnedRows);
+    assert.ok(measured.figma.tables >= EXPECTED.figmaOwnedTables);
   });
 });
 
@@ -380,5 +383,161 @@ describe('APP2 closure — table parsing', () => {
   it('ignores the header and separator rows', () => {
     assert.ok(!checkpointRows(matrixText).some((row) => row.id === 'Checkpoint'));
     assert.ok(!followUpRows(matrixText).some((row) => row.id === 'ID'));
+  });
+});
+
+/**
+ * `APP2-X01-C1` — the Figma closure baseline is a set of owned records, not a
+ * global total.
+ *
+ * The gate used to freeze `86 registry IDs / 86 node rows / 11 tables`. That was
+ * structurally wrong twice over: the registry is one shared, appendable document
+ * every later phase writes into, so any unrelated valid addition failed the
+ * closure — while a total is also blind to the attack that matters, an APP2 row
+ * deleted and replaced by an unrelated one at the same count. These cases pin
+ * both halves: additive growth passes, tampering with an owned record does not.
+ */
+const FIGMA_INDEX = 'docs/design/FIGMA_DESIGN_INDEX.md';
+const BASELINE_JSON = 'docs/implementation/reports/APP2-CLOSURE-FIGMA-BASELINE.json';
+
+const figmaText = readFileSync(join(REPO_ROOT, FIGMA_INDEX), 'utf8');
+const baseline = JSON.parse(readFileSync(join(REPO_ROOT, BASELINE_JSON), 'utf8'));
+
+/** One APP2-owned row that exists at closure and today; any owned id would do. */
+const OWNED_ID = 'FIG-ADMIN-LOGIN-DESKTOP-DEFAULT';
+
+/** The whole line carrying an owned registry row. */
+function rowLineFor(text, id) {
+  const line = text.split('\n').find((l) => l.trim().startsWith(`| ${id} `));
+  assert.ok(line, `registry no longer contains a row for ${id}`);
+  return line;
+}
+
+/** Failures produced by a single edit to the Figma registry. */
+async function figmaFailures(mutate) {
+  const dir = rootWith({ [FIGMA_INDEX]: mutate(figmaText) });
+  return checkApp2Closure(dir);
+}
+
+const ownedFailures = (failures) =>
+  failures.filter((line) => line.includes('APP2-owned Figma') || line.includes('Figma registry'));
+
+describe('APP2 closure — the owned Figma baseline', () => {
+  it('freezes exactly the records the closure commit owned, transcribed from it', () => {
+    const source = execFileSync(
+      'git',
+      ['show', `${baseline.sourceCommit}:${baseline.sourcePath}`],
+      {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      },
+    );
+    const atClosure = parseFigmaRegistryRows(source, baseline.authorityFields);
+
+    assert.equal(atClosure.rows.size, baseline.ownedRowCount);
+    assert.equal(atClosure.tableCount, baseline.ownedTableCount);
+    assert.deepEqual(atClosure.sections, baseline.ownedSections);
+    assert.equal(atClosure.duplicates.size, 0);
+
+    for (const [id, frozen] of Object.entries(baseline.ownedRows)) {
+      const row = atClosure.rows.get(id);
+      assert.ok(row, `${id} is frozen but absent from the closure commit`);
+      assert.equal(`${baseline.ownedSections.indexOf(row.section)}:${row.digest}`, frozen);
+    }
+  });
+
+  it('passes against the exact closure-commit registry', async () => {
+    const source = execFileSync(
+      'git',
+      ['show', `${baseline.sourceCommit}:${baseline.sourcePath}`],
+      {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      },
+    );
+    assert.deepEqual(ownedFailures(await figmaFailures(() => source)), []);
+  });
+
+  it('passes against the current registry, which carries additive BRD0 rows', async () => {
+    const current = parseFigmaRegistryRows(figmaText, baseline.authorityFields);
+    assert.ok(
+      current.rows.size > baseline.ownedRowCount,
+      'this case is only meaningful while unrelated rows have been appended',
+    );
+    assert.deepEqual(ownedFailures(await checkApp2Closure(rootWith())), []);
+  });
+
+  it('rejects removal of one frozen APP2 record', async () => {
+    const line = rowLineFor(figmaText, OWNED_ID);
+    const failures = await figmaFailures((text) => text.replace(`${line}\n`, ''));
+    assert.ok(failures.some((f) => f.includes(`APP2-owned Figma record removed: ${OWNED_ID}`)));
+  });
+
+  it('rejects mutation of a frozen APP2 authority field', async () => {
+    const line = rowLineFor(figmaText, OWNED_ID);
+    const demoted = line.replace('APPROVED_FOR_IMPLEMENTATION', 'REFERENCE_ONLY');
+    assert.notEqual(demoted, line, 'expected the row to carry an approval status to demote');
+    const failures = await figmaFailures((text) => text.replace(line, demoted));
+    assert.ok(
+      failures.some((f) =>
+        f.includes(`APP2-owned Figma record changed an authority field: ${OWNED_ID}`),
+      ),
+    );
+  });
+
+  it('rejects a duplicated APP2 registry ID', async () => {
+    const line = rowLineFor(figmaText, OWNED_ID);
+    const failures = await figmaFailures((text) => text.replace(line, `${line}\n${line}`));
+    assert.ok(failures.some((f) => f.includes(`APP2-owned Figma record duplicated: ${OWNED_ID}`)));
+  });
+
+  it('rejects replacing an APP2 record with an unrelated one at the same total count', async () => {
+    const line = rowLineFor(figmaText, OWNED_ID);
+    const impostor = line.replace(OWNED_ID, 'FIG-BRD0-IMPOSTOR-ROW');
+    const failures = await figmaFailures((text) => text.replace(line, impostor));
+    assert.ok(
+      failures.some((f) => f.includes(`APP2-owned Figma record removed: ${OWNED_ID}`)),
+      'a same-count substitution must still fail — this is what a global total could never see',
+    );
+  });
+
+  it('rejects moving an APP2 record into a different section', async () => {
+    const line = rowLineFor(figmaText, OWNED_ID);
+    const failures = await figmaFailures((text) => {
+      const stripped = text.replace(`${line}\n`, '');
+      return `${stripped}\n\n## Relocated\n\n${figmaText.split('\n').find((l) => l.trim().startsWith('| Registry ID'))}\n| --- |\n${line}\n`;
+    });
+    assert.ok(
+      failures.some(
+        (f) =>
+          f.includes(`APP2-owned Figma record moved section: ${OWNED_ID}`) ||
+          f.includes(`APP2-owned Figma record removed: ${OWNED_ID}`),
+      ),
+    );
+  });
+
+  it('rejects a registry the ordinary Figma gate considers inconsistent', async () => {
+    const line = rowLineFor(figmaText, OWNED_ID);
+    const broken = line.replace(/375-12/g, '999-999');
+    assert.notEqual(broken, line, 'expected the row to carry a deep link to corrupt');
+    const failures = await figmaFailures((text) => text.replace(line, broken));
+    assert.ok(failures.some((f) => f.includes('Figma registry is internally inconsistent')));
+  });
+
+  it('rejects a missing frozen baseline outright', async () => {
+    const dir = rootWith();
+    rmSync(join(dir, BASELINE_JSON), { force: true });
+    const failures = await checkApp2Closure(dir);
+    assert.ok(failures.some((f) => f.includes('frozen APP2 Figma baseline is missing')));
+  });
+
+  it('keeps the printed closure verdict independent of unrelated registry growth', () => {
+    assert.equal(EXPECTED.figmaOwnedRows, baseline.ownedRowCount);
+    assert.equal(EXPECTED.figmaOwnedTables, baseline.ownedTableCount);
+    assert.equal(EXPECTED.figmaIds, undefined, 'global registry totals must no longer be frozen');
+    assert.equal(EXPECTED.figmaNodeRows, undefined);
+    assert.equal(EXPECTED.figmaTables, undefined);
   });
 });

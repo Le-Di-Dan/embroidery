@@ -264,13 +264,14 @@ substantive finding was upheld; the evidence/governance classification was
 corrected because **Commit A was not docs-only** — see audit §R for the approved
 `APPROVED_NARROW_GOVERNANCE_DEVIATION` disposition.
 
-> **Blocking follow-up — `FU-APP3-CLOSURE-FIGMA-BASELINE-01`.** The unrelated
-> BRD0 commit `2a5d3bf` grew the Figma registry from 86/86/11 to **96/96/13**,
-> drifting an APP2 frozen artifact. `pnpm check:app2-closure` reports three
-> findings, two of its tests fail, and **`pnpm quality` exits 1**. Pre-existing
-> and proven by stashing; not fixed by `APP3-PRE-AUDIT-C1`, which is
-> documentation-only. **No APP3 checkpoint requiring a green `pnpm quality` —
-> `APP3-G01` included — may execute until this is closed.**
+> **`FU-APP3-CLOSURE-FIGMA-BASELINE-01` = `COMPLETE — CLOSED_BY_APP2-X01-C1`.**
+> The unrelated BRD0 commit `2a5d3bf` grew the Figma registry from 86/86/11 to
+> **96/96/13**, drifting an APP2 frozen artifact and taking `pnpm quality` to
+> exit 1. `APP2-X01-C1` replaced the global-total freeze with verification of the
+> **86-record APP2-owned subset** transcribed from the closure commit `8b5f3b0`:
+> unrelated rows may be appended, but removal, mutation, duplication, section
+> moves, same-count substitution or registry inconsistency of an owned record
+> still fail. `pnpm quality` is green; `APP3-G01` = `READY — NOT STARTED`.
 
 Audit: [`audits/APP3_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP3_PRE_IMPLEMENTATION_AUDIT.md).
 Report: [`reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md`](../reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md).

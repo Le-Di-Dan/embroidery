@@ -539,3 +539,31 @@ the two open boundaries in §L, which it must not assume closed.
 
 No APP3 work was started, no APP3 report exists, no follow-up was implemented,
 nothing was pushed, and no next-phase prompt was written.
+
+---
+
+## Addendum — `APP2-X01-C1` (2026-08-03): the Figma baseline is scoped, not counted
+
+This report recorded the frozen Figma artifact as **86 registry IDs / 86 node
+rows / 11 tables**. Those numbers were measured correctly and remain the true
+size of what APP2 closure owned — but freezing them as *global totals* of
+`docs/design/FIGMA_DESIGN_INDEX.md` was structurally wrong, and the dated record
+above is left intact rather than rewritten.
+
+The registry is **one shared, appendable document** that every later phase writes
+into. A global total therefore made any unrelated, valid later addition a closure
+failure — which is exactly what happened when the BRD0 logo work
+(`2a5d3bf`) took the registry to 96/96/13 and broke `pnpm quality`. Worse, a
+total was simultaneously *too weak*: deleting an APP2-owned row and inserting an
+unrelated one in its place keeps the count identical and would have passed.
+
+`APP2-X01-C1` replaced the total with the thing closure actually owns: the exact
+**86-record APP2-owned subset**, transcribed mechanically from this commit
+(`8b5f3b0279b1920babd05b52014af3b853f526c0`) into
+[`APP2-CLOSURE-FIGMA-BASELINE.json`](./APP2-CLOSURE-FIGMA-BASELINE.json). Every
+owned record must still be present, unique, in its original section and unchanged
+across eleven authority fields, and the registry must stay internally consistent;
+unrelated rows may be appended freely. Nothing about the APP2 closure verdict,
+its checkpoints, its follow-ups or any other frozen artifact changed.
+
+Evidence: [`APP2-X01-C1-COMPLETION-REPORT.md`](./APP2-X01-C1-COMPLETION-REPORT.md).
