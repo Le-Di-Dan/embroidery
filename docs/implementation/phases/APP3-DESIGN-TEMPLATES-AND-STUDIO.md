@@ -249,11 +249,17 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = AUDITED — NOT STARTED
+APP3 = AUDITED — READY_FOR_FIRST_GATE
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
+APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
+FU-APP3-CLOSURE-FIGMA-BASELINE-01 = COMPLETE — CLOSED_BY_APP2-X01-C1
 APP3-G01 = READY — NOT STARTED
 every other APP3 checkpoint = NOT STARTED
 ```
+
+The accepted governance baseline is on the canonical `production` branch as of
+`APP3-ENTRY-BRANCH-RECONCILIATION` (fast-forward `5c0ba1f` → `82ed3f3`), and
+`pnpm quality` passes there. `APP3-G01` is executable.
 
 Human review (2026-08-03) returned `ACCEPTED_WITH_REQUIRED_CORRECTIONS`. The
 five required corrections were applied by `APP3-PRE-AUDIT-C1` and are visible in

@@ -1,14 +1,17 @@
 # APP2-X01-C1 — Completion report
 
 **Checkpoint:** `APP2-X01-C1` — Scope the APP2 Figma closure baseline
-**Verdict:** `COMPLETE — REVIEW_DELIVERED` · **Date:** 2026-08-03
-**Branch:** `docs/brd0-logo-system-concept03` · **Entry HEAD:** `1216e981329f2cad86be6369c2ecc84c2a34a3e6`
+**Verdict:** `COMPLETE — REVIEW_ACCEPTED` (human review 2026-08-03) · **Date:** 2026-08-03
+**Delivered on:** `docs/brd0-logo-system-concept03` · **Entry HEAD:** `1216e981329f2cad86be6369c2ecc84c2a34a3e6`
+**Integrated to `production`** by `APP3-ENTRY-BRANCH-RECONCILIATION` (§M)
 
 ---
 
 ## A. Verdict
 
-`COMPLETE — REVIEW_DELIVERED`.
+`COMPLETE — REVIEW_ACCEPTED`. Human review 2026-08-03 passed the technical
+mechanism and accepted the `check-app2-closure-artifacts.mjs` scope departure as
+an `APPROVED_NARROW_SCOPE_DEVIATION` (§E).
 
 The APP2 closure gate froze the **global total** of a shared, appendable
 document. That is now replaced by verification of the **records APP2 actually
@@ -28,8 +31,10 @@ and `APP3-G01` is unblocked.
 | Registry at entry | 96 registry IDs / 96 node rows / **13 node tables** |
 | Owned-record drift at entry | **0** — all 86 present, unique, same section, identical authority fields |
 
-`production` remains at `5c0ba1f`; this branch carries the APP3 audit commits,
-the BRD0 commit and this correction. Nothing was pushed.
+At the time this checkpoint ran, `production` was at `5c0ba1f` and this branch
+carried the APP3 audit commits, the BRD0 commit and this correction. That was
+resolved by `APP3-ENTRY-BRANCH-RECONCILIATION`, which fast-forwarded `production`
+to `82ed3f3` (§M). Nothing was pushed.
 
 ### The ten added IDs are BRD0 brand authority, not APP2 application authority
 
@@ -276,8 +281,20 @@ hash written here would be stale on creation. Resolve it with
 Working tree clean after Commit B. `evidences/` is git-ignored and untouched.
 **Nothing was pushed.**
 
-One unrelated pre-existing item, untouched and reported: the branch
-`docs/brd0-logo-system-concept03` carries the BRD0 commit `2a5d3bf`, and
-`production` still points at `5c0ba1f`. The APP3 audit commits, the
-`APP3-PRE-AUDIT-C1` reconciliation and this checkpoint all live on this branch.
-Moving them to `production` is a human decision.
+At delivery time this work sat only on `docs/brd0-logo-system-concept03`, with
+`production` at `5c0ba1f`, and moving it was flagged as a human decision.
+
+## M. Addendum — canonical integration (`APP3-ENTRY-BRANCH-RECONCILIATION`, 2026-08-03)
+
+The human decision was taken. `production` was fast-forwarded — no merge commit,
+no rebase, no cherry-pick — from `5c0ba1f` to **`82ed3f3`**, the exact HEAD of
+the reviewed branch. The graph was strictly linear and both `production` and
+`origin/production` were already ancestors of that HEAD, so a single
+`git merge --ff-only` was sufficient and no commit was reordered or omitted.
+
+Every gate was then re-run **on `production` itself** rather than trusting the
+feature-branch run: `pnpm quality` = `EXIT=0`. `docs/brd0-logo-system-concept03`
+is preserved and unmodified, and nothing was pushed —
+`origin/production` remains at `8b5f3b0`, six commits behind.
+
+Evidence: [`ENTRY-BRANCH-RECONCILIATION-REPORT.md`](./ENTRY-BRANCH-RECONCILIATION-REPORT.md).
