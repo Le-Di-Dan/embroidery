@@ -37,13 +37,27 @@ test('the corrected repository passes', () => {
   assert.deepEqual(checkLifecycleConsistency(readRepository()), []);
 });
 
-test('LC-04 has exactly five transitions, one of them the unpublish', () => {
+test('LC-04 has exactly six transitions, one unpublish and one archive-from-draft', () => {
   const transitions = parseLc04Transitions(readFileSync(LIFECYCLE_SPEC, 'utf8'));
-  assert.equal(transitions.length, 5);
+  assert.equal(transitions.length, 6);
   const unpublish = transitions.filter((t) => t.from === 'PUBLISHED' && t.to === 'DRAFT');
   assert.equal(unpublish.length, 1);
   assert.equal(unpublish[0].id, 'TR-LC04-05');
-  assert.equal(parseDeclaredCount(readFileSync(COMPLETENESS_MATRIX, 'utf8')), 5);
+  // TR-LC04-06 (IMP-D042) authorises what APP2-B02 already shipped.
+  const archiveDraft = transitions.filter((t) => t.from === 'DRAFT' && t.to === 'ARCHIVED');
+  assert.equal(archiveDraft.length, 1);
+  assert.equal(archiveDraft[0].id, 'TR-LC04-06');
+  assert.notEqual(unpublish[0].id, archiveDraft[0].id);
+  assert.equal(parseDeclaredCount(readFileSync(COMPLETENESS_MATRIX, 'utf8')), 6);
+});
+
+test('removing DRAFT → ARCHIVED from LC-04 fails', () => {
+  const files = readRepository();
+  files[LIFECYCLE_SPEC] = files[LIFECYCLE_SPEC].split(/\r?\n/)
+    .filter((line) => !line.startsWith('| TR-LC04-06 |'))
+    .join('\n');
+  const violations = checkLifecycleConsistency(files);
+  assert.ok(violations.some((v) => v.includes('DRAFT → ARCHIVED')));
 });
 
 test('removing PUBLISHED → DRAFT from LC-04 fails', () => {
@@ -58,15 +72,15 @@ test('removing PUBLISHED → DRAFT from LC-04 fails', () => {
   assert.ok(violations.some((v) => v.includes(APP2_AUDIT)));
 });
 
-test('reverting the declared count to 4 fails', () => {
+test('reverting the declared count to 5 fails', () => {
   const files = readRepository();
   files[COMPLETENESS_MATRIX] = files[COMPLETENESS_MATRIX].replace(
+    '| LC-04 | CAT/AGG-06 | §LC-04 | 6 TR |',
     '| LC-04 | CAT/AGG-06 | §LC-04 | 5 TR |',
-    '| LC-04 | CAT/AGG-06 | §LC-04 | 4 TR |',
   );
   const violations = checkLifecycleConsistency(files);
   assert.equal(violations.length, 1);
-  assert.ok(violations[0].includes('declares LC-04 = 4 TR but'));
+  assert.ok(violations[0].includes('declares LC-04 = 5 TR but'));
 });
 
 test('documenting the APP2 unpublish target as ARCHIVED fails', () => {
@@ -81,11 +95,11 @@ test('duplicating the unpublish transition fails', () => {
   const files = readRepository();
   files[LIFECYCLE_SPEC] = files[LIFECYCLE_SPEC].replace(
     UNPUBLISH_ROW,
-    `${UNPUBLISH_ROW}\n| TR-LC04-06 | PUBLISHED→DRAFT | admin | duplicate | — | yes |`,
+    `${UNPUBLISH_ROW}\n| TR-LC04-07 | PUBLISHED→DRAFT | admin | duplicate | — | yes |`,
   );
   const violations = checkLifecycleConsistency(files);
   assert.ok(violations.some((v) => v.includes('defines 2 PUBLISHED → DRAFT')));
-  assert.ok(violations.some((v) => v.includes('declares LC-04 = 5 TR but')));
+  assert.ok(violations.some((v) => v.includes('declares LC-04 = 6 TR but')));
 });
 
 test('deleting the archive transition fails', () => {

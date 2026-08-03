@@ -122,6 +122,23 @@ decided in technical design (→ resolved at DB3, not DB0).
 - **Audit:** Yes (version creation, approval).
 - **Tx/concurrency:** High — single active-review invariant; approval tx.
 
+## LC-24 — Design Template (publication)
+
+- **Source:** `05 §9`, DB2 GAP-08, `docs/database/DB3_LIFECYCLE_SPECIFICATIONS.md`
+  §LC-24. Formalised by `APP3-G02` (IMP-D042).
+- **Known states:** `DRAFT`, `PUBLISHED`, `ARCHIVED`.
+- **Transitions:** `TR-LC24-01` create → DRAFT; `-02` publish DRAFT →
+  PUBLISHED; `-03` unpublish PUBLISHED → DRAFT; `-04` archive DRAFT →
+  ARCHIVED; `-05` archive PUBLISHED → ARCHIVED; `-06` restore ARCHIVED →
+  DRAFT. No direct ARCHIVED → PUBLISHED; no hard delete in APP3.
+- **Missing/ambiguous:** none remaining — the pre-APP3 record named the states
+  but assigned no transition identifiers, guards or concurrency rule.
+- **Preconditions:** publish requires the full GRD-T01 guard set (§LC-24).
+- **Side effects:** version `published_at` set once at first publish; no
+  cascade to cloned Design Sessions.
+- **Audit:** yes; archive and restore additionally require a reason.
+- **Tx/concurrency:** header optimistic token on every transition.
+
 ## LC-09 — Customer review
 
 - **Source:** `03 J5`, `07 §6`, REQ-REVIEW-001.

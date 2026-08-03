@@ -103,6 +103,7 @@ concurrent verify (CC-17).
 | TR-LC04-03 | DRAFT→(hard delete) | admin | never published & unreferenced (ADR-DB1-011) | — | yes |
 | TR-LC04-04 | ARCHIVED→PUBLISHED | admin | fields still valid | relist | yes R |
 | TR-LC04-05 | PUBLISHED→DRAFT | admin | current status is `PUBLISHED`; concurrency token matches | delist event; returns to the editable draft state | yes |
+| TR-LC04-06 | DRAFT→ARCHIVED | admin | current status is `DRAFT`; concurrency token matches | durable catalog retirement; no public read model existed to delist | yes R |
 
 ### TR-LC04-05 — Unpublish Product (IMP-D035, APP2-B03-G01)
 
@@ -149,6 +150,33 @@ declared here once; per-aggregate diagrams unnecessary. **DB7:** archived
 products invisible to new cases but historical snapshots intact.
 
 ---
+
+### TR-LC04-06 — Archive Draft Product (IMP-D042, APP3-G02)
+
+**Archive is durable catalog retirement, and it was already happening from
+`DRAFT`.** `APP2-B02` delivered `adminProduct_archive` with
+`PRODUCT_ARCHIVABLE_STATES = [PRODUCT_DRAFT_STATE]`
+(`apps/api/src/modules/catalog/domain/product-draft.policy.ts`), while LC-04
+authorised archive only from `PUBLISHED` (TR-LC04-02). That gap is
+`FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01`: a state was storable and a command
+shipped, but no transition authorised it. This transition closes it by adding
+the authority, not by changing the delivered behaviour.
+
+**Distinct from unpublish.** TR-LC04-05 returns a *published* product to the
+editable `DRAFT` state; TR-LC04-06 retires a *draft* product that was never
+public. A draft has no public read model to delist, which is the only reason the
+two rows differ in effect.
+
+**Postconditions.** `status = ARCHIVED` · `archived_at` set · the row and all
+of `product_media`, Assets, derivatives, placement rows, Design Templates,
+Design Sessions and historical records persist — archive **never** hard-deletes
+(TR-LC04-03 remains the only delete path, and only for a never-published,
+unreferenced draft). An archived Product is never public.
+
+**Consequence for scoped Templates.** A published Design Template scoped to an
+archived Product becomes **derived-ineligible** — its own `status` is not
+mutated and no cascade runs (LC-24 has no such transition). Relist
+(TR-LC04-04) re-evaluates current Product publication readiness.
 
 ## LC-05 — SKU Availability (derived)
 
@@ -528,6 +556,105 @@ Processed rows cleaned per transient retention. **DB8:** CC-25.
 
 ---
 
+## LC-24 — Design Template (publication)
+
+- **Owner:** CTX-DSN / AGG-12. **Authority:** authoritative (formalised by
+  `APP3-G02`, IMP-D042; supersedes the informal "Additional lifecycles → Design
+  Template" paragraph below, which had states but no transition identifiers).
+- **States:** `DRAFT` (initial, **the only editable state**) ↔ `PUBLISHED`
+  (publish TR-LC24-02 / unpublish TR-LC24-03) → `ARCHIVED` (retained,
+  non-public, non-editable; restore TR-LC24-06 returns to `DRAFT`, never
+  straight to `PUBLISHED`).
+
+The header is mutable; a **Design Template Version is immutable from creation**.
+`DRAFT` is the only state in which an editing command may run, and every
+successful save while `DRAFT` creates a *new* version with the next monotonic
+number rather than rewriting one.
+
+| TR | From→To | Actor | Guards | In-tx | Reason | Audit | Conc |
+|---|---|---|---|---|---|---|---|
+| TR-LC24-01 | (nonexistent)→DRAFT | admin | slug unique | header insert | no | yes | — |
+| TR-LC24-02 | DRAFT→PUBLISHED | admin | GRD-T01 (full publish guard set) | header + version `published_at` in one tx | no | yes | token |
+| TR-LC24-03 | PUBLISHED→DRAFT | admin | status is `PUBLISHED` | header only | no | yes | token |
+| TR-LC24-04 | DRAFT→ARCHIVED | admin | status is `DRAFT` | header + `archived_at` | **yes** | yes R | token |
+| TR-LC24-05 | PUBLISHED→ARCHIVED | admin | status is `PUBLISHED` | header + `archived_at` | **yes** | yes R | token |
+| TR-LC24-06 | ARCHIVED→DRAFT | admin | status is `ARCHIVED` | header, clears `archived_at` | **yes** | yes R | token |
+
+**Invalid transitions.** `ARCHIVED → PUBLISHED` is **not** a transition: restore
+always lands in `DRAFT`, and republication is the separate guarded TR-LC24-02.
+There is no `DRAFT → DRAFT` status transition (a save is a version write, not a
+status change), no self-transition on `PUBLISHED`, and **no hard delete in
+APP3** — `ARCHIVED` is retention, not removal. Archive (TR-LC24-04/05) and
+unpublish (TR-LC24-03) are distinct facts and must never be implemented as one
+command.
+
+**Concurrency.** Every transition is Admin-only and compares an expected
+optimistic token against the header before mutating; a mismatch fails without
+mutation, and an invalid source state fails without mutation. Status mutation,
+its Audit evidence and any future Outbox consequence are one atomic unit.
+
+**Reason.** Archive (TR-LC24-04/05) and restore (TR-LC24-06) require an audit
+reason. Publish and unpublish do not require free-text reason.
+
+**Version implications (PO-04).** Versions are immutable from creation.
+`published_at` is `null` until that exact version is first published, is set
+**once** by TR-LC24-02, and is **never cleared or rewritten** — TR-LC24-03
+changes the header only and preserves every version and every `published_at`.
+The *current draft version* is the highest version number belonging to the
+Template; publish selects it, validates it, sets `published_at` if still null and
+flips the header atomically. Editing after unpublish creates a new immutable
+version and never overwrites a published one.
+
+**Public-read implications.** While the header is `PUBLISHED`, a public read
+selects the **highest version number whose `published_at` is not null**. A
+`DRAFT` or `ARCHIVED` header is not publicly readable at all.
+
+**Clone implications (PO-05).** A customer never receives a live mutable
+reference to a Template Version. Cloning copies a published version into a deep,
+independent working Design Session document and persists the source Template and
+source Template Version only as lineage/audit. Later unpublish, archive, restore
+or new versions never mutate an existing clone (GRD-028, DB7 clone-independence).
+No customer export or download is created.
+
+**Publication guard set (GRD-T01, PO-07).** Publish and republish require *all*
+of: header status `DRAFT`; at least one immutable version exists; the current
+highest version is valid under `packages/design-document`; the scope chain is
+complete and active under IMP-D041; the document is in bounds for the exact
+Embroidery Area under `packages/design-engine`; all Template assets are eligible
+under `APP3-G04` authority; the actor is an authenticated Admin; and the expected
+concurrency token matches. No backend checkpoint may implement a reduced subset.
+
+**Scope and compatibility (PO-06).** APP3 publishes only **area-scoped**
+Templates: a publishable header carries `product_id`, a `product_side_id`
+belonging to it and an `embroidery_area_id` belonging to that side, all three
+active under IMP-D041. Drafts may hold an incomplete scope while being authored
+but cannot publish until the chain is complete. Public compatibility in APP3 is
+**exact triple equality** with the published header scope. Global, product-wide,
+side-wide, wildcard, tag-based and many-to-many compatibility are **not** APP3
+scope; the nullable single-scope columns stay future-ready and unchanged, so
+**`G02_DB_CONTRIBUTION = NONE`**.
+
+**DB4/DB7/DB8 handoff.** DB4 — the existing `design_templates` header
+(`status`, `current_version`, `archived_at`, nullable scope FKs) and
+`design_template_versions` (`version`, `published_at` nullable) already carry
+this shape; LC-24 adds no column. DB7 — repository contracts must expose
+publish, unpublish, archive and restore as *separate* guarded methods rather than
+fusing publication into version creation, and must keep clone-independence. DB8 —
+concurrent publish/unpublish/archive on one header serialise on the header token;
+the loser fails without mutation.
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT: TR-LC24-01 create
+    DRAFT --> PUBLISHED: TR-LC24-02 publish
+    PUBLISHED --> DRAFT: TR-LC24-03 unpublish
+    DRAFT --> ARCHIVED: TR-LC24-04 archive draft
+    PUBLISHED --> ARCHIVED: TR-LC24-05 archive published
+    ARCHIVED --> DRAFT: TR-LC24-06 restore
+```
+
+---
+
 ## Additional lifecycles from DB2
 
 ### Notification Intent & Delivery Attempt
@@ -552,6 +679,12 @@ Processed rows cleaned per transient retention. **DB8:** CC-25.
   Guards/acceptance: [`DB3_AGREEMENT_ACCEPTANCE_SPEC.md`](./DB3_AGREEMENT_ACCEPTANCE_SPEC.md).
 
 ### Design Template
+
+> **Superseded by [`## LC-24`](#lc-24--design-template-publication) (IMP-D042,
+> `APP3-G02`).** This paragraph named the states but assigned no transition
+> identifiers, no guards and no concurrency rule, so nothing could be
+> implemented or tested against it. LC-24 formalises the same states with six
+> stable `TR-LC24-nn` transitions. The dated text is kept below as history.
 
 - **States:** `DRAFT` (initial) → `PUBLISHED` (version++ per publish) →
   `ARCHIVED` (terminal-ish, unarchive allowed audited). Clone requires

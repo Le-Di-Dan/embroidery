@@ -306,6 +306,16 @@ which `pnpm check:lifecycle` now enforces. The delivered repository:
 that produced `APP2-B03-G01`. A Template backend checkpoint must not start
 before this is ruled.
 
+> **Ruled by `APP3-G02` (IMP-D042, 2026-08-03).** The lifecycle is formalised as
+> **LC-24** with six stable transitions: `TR-LC24-01` create, `-02` publish,
+> `-03` unpublish, `-04` archive draft, `-05` archive published, `-06`
+> restore → `DRAFT`. There is **no** direct `ARCHIVED → PUBLISHED` and **no**
+> hard delete in APP3. Every gap listed above is answered: publication is
+> separated from version creation (versions are immutable from creation and every
+> `DRAFT` save writes a new monotonic version), unpublish exists and touches the
+> header only, restore exists and lands in `DRAFT`, and archive is guarded on an
+> exact source state. `published_at` is set once and never cleared.
+
 ### G4 — "Compatibility" has two incompatible readings
 
 DB2 GAP-08 decided **optional scoping**: a template is global or scoped to one
@@ -646,7 +656,7 @@ and the seven committed DB6 checkers are reused.
 | Follow-up | Disposition | Owner in APP3 |
 |---|---|---|
 | `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | **ACTIVATE_IN_APP3** — the Studio cannot place an element without intrinsic dimensions | `APP3-G04` (decision) → `APP3-B01`/`B06` |
-| `FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` (`DRAFT → ARCHIVED` unauthorized) | **ACTIVATE_IN_APP3** — the identical hole exists on templates (§G3); ruling both in one lifecycle gate is cheaper and safer than ruling them apart | `APP3-G02` |
+| `FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` (`DRAFT → ARCHIVED` unauthorized) | **COMPLETE — CLOSED_BY_APP3-G02** — LC-04 gains `TR-LC04-06` `DRAFT → ARCHIVED`, authorising the archive-from-draft `APP2-B02` already shipped; LC-04 is now 6 transitions and archive stays distinct from unpublish (IMP-D042) | `APP3-G02` |
 | publication Outbox `PENDING` (no consumer) | **KEEP_ROUTED_LATER** — APP3 adds no consumer; if template publication emits events, `APP3-G02` must say whether they also stay `PENDING` and `APP3-E01` owns the assertion | later |
 | `FU-APP2-STOREFRONT-CONTENT-BAND-01` | **KEEP_ROUTED_LATER** — APP1 shell owner; the Studio is a full-bleed surface and is not blocked by it | later |
 | `FU-APP1-SHELL-BRAND-TOUCH-TARGET-01` | **KEEP_ROUTED_LATER** | later |

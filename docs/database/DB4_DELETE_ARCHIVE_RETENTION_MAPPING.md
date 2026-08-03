@@ -49,3 +49,19 @@ the business activates holds).
 above = policy configuration value (CON-144) with business owner;
 acceptance = configured (or explicitly waived) before the owning feature
 ships — unchanged from the DB1/DB3 deferred-parameter register.
+
+---
+
+## Forward note — `APP3-G02` (IMP-D042, 2026-08-03)
+
+**Design Template retention (LC-24).** `ARCHIVED` is retention, not
+removal: **APP3 has no Template hard-delete operation**, and restore
+(`TR-LC24-06`) returns an archived Template to `DRAFT` rather than to
+`PUBLISHED`. Template Versions are never deleted — they remain addressable as
+clone lineage for Design Sessions that copied them.
+
+**Product archive (`TR-LC04-06`).** Archive from `DRAFT` is durable catalog
+retirement and hard-deletes nothing: Product, `product_media`, Assets,
+derivatives, placement rows, Templates, Design Sessions and historical records
+all persist. `TR-LC04-03` remains the only Product delete path, and only for a
+never-published, unreferenced draft.

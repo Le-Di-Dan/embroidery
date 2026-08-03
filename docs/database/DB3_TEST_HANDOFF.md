@@ -64,3 +64,26 @@ Mọi CC-01..CC-28 đều có row (một số gộp có chủ đích: CC-02+04, 
 CC-17+18, CC-23+24); mọi guard critical (GRD-004/006/007/009/011..017/020/
 022/029/030) xuất hiện ≥1 scenario. E2E mapping: D8-01→E2E-10; D7-03→E2E-03/
 04; GRD-015 chain→E2E-05/06.
+
+---
+
+## Forward note — `APP3-G02` (IMP-D042, 2026-08-03)
+
+**LC-24 test obligations** (owner: `APP3-B04`, not this gate):
+
+- each of the six `TR-LC24-nn` transitions from its exact source state, and
+  each rejected from every other source state **without mutation**;
+- `ARCHIVED → PUBLISHED` is not reachable in one step;
+- a save while `DRAFT` creates a new version rather than mutating one;
+- `published_at` is set once by publish and still set after unpublish;
+- public read returns the highest version whose `published_at` is not null,
+  and returns nothing while the header is `DRAFT` or `ARCHIVED`;
+- clone independence: unpublish, archive, restore and new versions do not
+  mutate an existing Design Session document (extends the DB7 GRD-028 test);
+- concurrent publish/unpublish/archive on one header serialise on the token and
+  the loser fails without mutation;
+- publish is refused when any GRD-T01 element is missing, including an
+  incomplete or inactive scope chain.
+
+**LC-04 `TR-LC04-06`**: archive from `DRAFT` succeeds and is distinct from
+unpublish; archive hard-deletes nothing; an archived Product is never public.

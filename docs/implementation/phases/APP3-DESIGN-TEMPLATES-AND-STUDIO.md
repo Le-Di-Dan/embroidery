@@ -370,6 +370,11 @@ explicitly superseded by later human authority.
 
 ### 6.4.4 Dependency reconciliation
 
+> **Dated record — superseded by §6.5.4.** This table states the map *as it stood
+> when `APP3-G01` delivered*, and `pnpm check:app3-g01` asserts these exact
+> values, so it is not rewritten. Human review has since accepted G01 and
+> `APP3-G02` has delivered; §6.5.4 carries the current statuses.
+
 | Checkpoint | Status after `APP3-G01` |
 |---|---|
 | `APP3-G01` | `COMPLETE — REVIEW_DELIVERED` |
@@ -382,6 +387,156 @@ explicitly superseded by later human authority.
 | `APP3-A01` | `PLANNED — BLOCKED_BY_APP3_D01_AND_APP3_B01` |
 | `APP3-D01` placement portion | `UNBLOCKED_BY_G01`, phase design checkpoint still not started |
 | `APP3-DB01` | `CONDITIONAL — AWAITING_G02_AND_G04_CONTRIBUTIONS` |
+
+No implementation checkpoint is complete.
+
+## 6.5 `APP3-G02` — Design Template lifecycle and Product archive authority (IMP-D042)
+
+The second APP3 execution checkpoint. Authority, lifecycle formalisation,
+dependency reconciliation and a mechanical gate only — **no application source,
+schema, migration, OpenAPI operation, generated client, Figma node or Admin/
+Storefront UI change**.
+
+Two lifecycle contradictions are closed. Design Template had canonical *states*
+but **no transition identifiers**, and the delivered repository fused version
+creation with publication (`publishVersion` writes a version *and* flips the
+header to `PUBLISHED`), offered no unpublish and no restore, and archived from
+any source state. Separately, `APP2-B02` shipped Product archive from `DRAFT`
+(`PRODUCT_ARCHIVABLE_STATES = [PRODUCT_DRAFT_STATE]`) while LC-04 authorised only
+`PUBLISHED → ARCHIVED` — the inherited `FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01`.
+
+### 6.5.1 Machine-checked lifecycle facts
+
+`pnpm check:app3-g02` recomputes each of these against the repository.
+
+| Fact | Value |
+|---|---|
+| `Template lifecycle id` | `LC-24` |
+| `Template aggregate module` | `DESIGN` |
+| `Template states` | `DRAFT PUBLISHED ARCHIVED` |
+| `Template editable state` | `DRAFT` |
+| `Template transition count` | `6` |
+| `Template create transition` | `TR-LC24-01` |
+| `Template publish transition` | `TR-LC24-02` |
+| `Template unpublish transition` | `TR-LC24-03` |
+| `Template archive draft transition` | `TR-LC24-04` |
+| `Template archive published transition` | `TR-LC24-05` |
+| `Template restore transition` | `TR-LC24-06` |
+| `Template restore target` | `DRAFT` |
+| `Template direct archived to published` | `FORBIDDEN` |
+| `Template hard delete in APP3` | `NONE` |
+| `Template version mutability` | `IMMUTABLE_FROM_CREATION` |
+| `Template draft save behaviour` | `NEW_MONOTONIC_VERSION` |
+| `Template published_at write` | `SET_ONCE_NEVER_CLEARED` |
+| `Template unpublish scope` | `HEADER_ONLY` |
+| `Template public read selection` | `HIGHEST_PUBLISHED_VERSION` |
+| `Template clone result` | `INDEPENDENT_DOCUMENT_LINEAGE_ONLY` |
+| `APP3 template compatibility` | `EXACT_PRODUCT_SIDE_AREA` |
+| `APP3 template many to many` | `NOT_AUTHORIZED` |
+| `G02_DB_CONTRIBUTION` | `NONE` |
+| `Product lifecycle id` | `LC-04` |
+| `Product transition count` | `6` |
+| `Product archive draft transition` | `TR-LC04-06` |
+| `Product archive published transition` | `TR-LC04-02` |
+| `Product unpublish transition` | `TR-LC04-05` |
+| `Product archive hard delete` | `NONE` |
+| `Product archive cascades to template status` | `NO` |
+
+### 6.5.2 The eight rulings
+
+**PO-01 — aggregate and state owner.** Design Template is a **Design-module**
+aggregate; ownership does not move to Catalog. The mutable header owns title and
+public metadata, placement scope, lifecycle status, the optimistic-concurrency
+token and version ordering. A **Design Template Version is an immutable
+store-authored design-document snapshot**. Asset owns binary metadata and
+storage; Template owns only the semantic association.
+
+**PO-02 — states.** Exactly `DRAFT | PUBLISHED | ARCHIVED`. No `UNPUBLISHED`,
+`EDITING`, `DISABLED` or `DELETED`. `DRAFT` is the only editable state;
+`PUBLISHED` is public and immutable through normal editing commands; `ARCHIVED`
+is retained, non-public and non-editable.
+
+**PO-03 — transition set.** Formalised as **LC-24** with six stable ids
+(`DB3_LIFECYCLE_SPECIFICATIONS.md` §LC-24). No direct `ARCHIVED → PUBLISHED`;
+restore always lands in `DRAFT` and republication is separate and guarded. No
+hard delete in APP3. Archive and unpublish are distinct. Every transition is
+Admin-only, audited and concurrency-protected; an invalid source state fails
+**without mutation**; archive and restore require an audit reason, publish and
+unpublish do not; status mutation, Audit evidence and any future Outbox
+consequence are atomic. This gate implements no Audit or Outbox source.
+
+**PO-04 — versions and publication.** Versions are immutable from creation.
+Every save while `DRAFT` writes a new version with the next monotonic number;
+`published_at` stays `null` until that exact version is first published, is set
+**once** by publish, and is **never cleared or rewritten**. Unpublish changes the
+header only. Editing after unpublish creates a new immutable version. Public read
+while `PUBLISHED` selects the highest version whose `published_at` is not null. A
+Template update never mutates an already-cloned Design Session.
+
+**PO-05 — clone authority.** A customer never receives a live mutable reference
+to a Template Version. Clone copies a published version into a deep independent
+working Design Session document and persists the source Template and Version
+**only** as lineage/audit. Later unpublish, archive, restore or new versions never
+mutate the clone. No customer export or download is created.
+
+**PO-06 — APP3 scope and compatibility.** APP3 publishes **area-scoped Templates
+only**, requiring the exact `product_id → product_side_id → embroidery_area_id`
+chain, all three active under IMP-D041. Drafts may hold an incomplete scope while
+being authored but cannot publish until it is complete. Public compatibility is
+**exact triple equality**. Global, product-wide, side-wide, wildcard, tag-based
+and many-to-many compatibility are **not** APP3 scope, so
+**`G02_DB_CONTRIBUTION = NONE`**.
+
+**PO-07 — publication guards (GRD-T01).** Publish and republish require all of:
+header `DRAFT`; at least one immutable version; the current highest version valid
+under `design-document`; a complete and active scope chain; the document in
+bounds for the exact Embroidery Area under `design-engine`; all Template assets
+eligible under `APP3-G04`; an authenticated Admin actor; a matching concurrency
+token. **No backend checkpoint may implement a reduced publish guard.**
+
+**PO-08 — Product archive reconciliation.** LC-04 gains exactly one transition,
+**`TR-LC04-06` `DRAFT → ARCHIVED`**, authorising what `APP2-B02` already ships.
+LC-04 is now 6 transitions with `TR-LC04-01/02/03/04/05` unchanged and not
+renumbered. Archive is durable catalog retirement, distinct from unpublish; an
+archived Product is never public; archive hard-deletes nothing. A published
+Template scoped to an archived Product becomes **derived-ineligible without any
+cascading Template status mutation**; relist re-evaluates Product publication
+readiness. Product archive UI stays outside this gate, and no Product application
+code is modified.
+
+### 6.5.3 Database contribution
+
+```text
+G02_DB_CONTRIBUTION = NONE
+```
+
+Measured: `design_templates` already carries `status` (CHECK
+`DRAFT|PUBLISHED|ARCHIVED`), `current_version`, `archived_at` and the nullable
+scope FKs; `design_template_versions` already carries `version` and a **nullable**
+`published_at` — exactly the shape `TR-LC24-02` sets once and `TR-LC24-03` must
+never clear. Exact-triple compatibility needs no relation. `TR-LC04-06` needs no
+column either.
+
+`APP3-DB01` still runs, but **only** because `APP3-G01` requires it
+(`G01_DB_DISPOSITION = REQUIRES_APP3_DB01`, placement retirement authority).
+
+### 6.5.4 Dependency reconciliation
+
+| Checkpoint | Status after `APP3-G02` |
+|---|---|
+| `APP3-G01` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G02` | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-G03` | `READY — NOT STARTED` |
+| `APP3-G04` | `NOT STARTED` |
+| `APP3-P01` | `READY — NOT STARTED` |
+| `APP3-P02` | `READY — NOT STARTED` |
+| `APP3-DB01` | `REQUIRED — AWAITING_G04_CONTRIBUTION` |
+| `APP3-B03` | `BLOCKED_BY_APP3_P01_AND_DB_DISPOSITION` |
+| `APP3-B04` | `BLOCKED_BY_APP3_P01_APP3_P02_APP3_G04_AND_DB_DISPOSITION` |
+| `APP3-B05` | `BLOCKED_BY_APP3_B04` |
+| `APP3-D01` template lifecycle portion | `UNBLOCKED_BY_G02`, checkpoint not started |
+| `FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` | `COMPLETE — CLOSED_BY_APP3-G02` |
+| `FU-APP2-PRODUCT-ARCHIVE-UI-01` | `DEFERRED_PENDING_PRODUCT_OWNER_SURFACE_DECISION` |
 
 No implementation checkpoint is complete.
 
@@ -405,14 +560,16 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — FIRST GATE DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — SECOND GATE DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
 FU-APP3-CLOSURE-FIGMA-BASELINE-01 = COMPLETE — CLOSED_BY_APP2-X01-C1
 FU-APP2-CLOSURE-NEXTPHASE-GUARD-01 = COMPLETE — CLOSED_BY_APP2-X01-C2
-APP3-G01 = COMPLETE — REVIEW_DELIVERED
-APP3-G02 = READY — NOT STARTED
+APP3-G01 = COMPLETE — REVIEW_ACCEPTED
+APP3-G02 = COMPLETE — REVIEW_DELIVERED
+APP3-G03 = READY — NOT STARTED
+FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01 = COMPLETE — CLOSED_BY_APP3-G02
 every other APP3 checkpoint = NOT STARTED
 ```
 

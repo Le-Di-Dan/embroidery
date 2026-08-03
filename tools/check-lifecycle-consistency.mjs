@@ -32,6 +32,8 @@ export const UNPUBLISH_TO = 'DRAFT';
 /** Archive must stay a different transition with a different target. */
 export const ARCHIVE_FROM = 'PUBLISHED';
 export const ARCHIVE_TO = 'ARCHIVED';
+/** Archive-from-draft, authorised by TR-LC04-06 (IMP-D042, APP3-G02). */
+export const ARCHIVE_DRAFT_FROM = 'DRAFT';
 
 const TRANSITION_ID_RE = /^TR-LC04-\d{2}$/;
 /** `DRAFT→PUBLISHED`, with or without spaces around the arrow. */
@@ -136,6 +138,19 @@ export function checkLifecycleConsistency(files) {
     );
   }
 
+  // TR-LC04-06. `APP2-B02` shipped archive from DRAFT before any transition
+  // authorised it; once that authority exists it must not silently disappear.
+  const archiveDraft = transitions.filter(
+    (t) => t.from === ARCHIVE_DRAFT_FROM && t.to === ARCHIVE_TO,
+  );
+  if (archiveDraft.length !== 1) {
+    violations.push(
+      `${LIFECYCLE_SPEC}: LC-04 defines ${archiveDraft.length} ${ARCHIVE_DRAFT_FROM} → ` +
+        `${ARCHIVE_TO} transitions; exactly one is required ` +
+        '(IMP-D042 closes FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01).',
+    );
+  }
+
   const declared = parseDeclaredCount(files[COMPLETENESS_MATRIX] ?? '');
   if (declared === null) {
     violations.push(`${COMPLETENESS_MATRIX}: no LC-04 row with a transition count.`);
@@ -187,7 +202,8 @@ function main() {
   const transitions = parseLc04Transitions(files[LIFECYCLE_SPEC]);
   console.log(
     `Lifecycle-consistency check passed (LC-04: ${transitions.length} transitions, ` +
-      'exactly one PUBLISHED → DRAFT unpublish, archive distinct, APP2 documents agree).',
+      'exactly one PUBLISHED → DRAFT unpublish, archive distinct from both DRAFT and ' +
+      'PUBLISHED, APP2 documents agree).',
   );
 }
 

@@ -344,3 +344,29 @@ stateDiagram-v2
     S_EXPIRED --> [*]
   }
 ```
+
+---
+
+## Forward note — `APP3-G02` (IMP-D042, 2026-08-03)
+
+**LC-24 — Design Template (publication).** Formalised by `APP3-G02`; the
+canonical table lives in `DB3_LIFECYCLE_SPECIFICATIONS.md` §LC-24.
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT: TR-LC24-01 create
+    DRAFT --> PUBLISHED: TR-LC24-02 publish
+    PUBLISHED --> DRAFT: TR-LC24-03 unpublish
+    DRAFT --> ARCHIVED: TR-LC24-04 archive draft
+    PUBLISHED --> ARCHIVED: TR-LC24-05 archive published
+    ARCHIVED --> DRAFT: TR-LC24-06 restore
+```
+
+There is deliberately **no** `ARCHIVED --> PUBLISHED` edge: restore lands in
+`DRAFT` and republication is the separate guarded `TR-LC24-02`. There is no
+delete edge — `ARCHIVED` is retention, not removal.
+
+**LC-04 — Product Publication** gains one edge, `TR-LC04-06`
+`DRAFT --> ARCHIVED`, authorising the archive-from-draft that `APP2-B02`
+already shipped. It is distinct from `TR-LC04-05` `PUBLISHED --> DRAFT`
+(unpublish).

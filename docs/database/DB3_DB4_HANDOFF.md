@@ -93,3 +93,23 @@ record state; notification intent status.
 Không encode transition matrices vào DB; không FK từ COP sang SKU/stock
 (INV-13); không analytics tables (GAP-11); không notification body storage;
 saga-state table optional (spec không yêu cầu).
+
+---
+
+## Forward note — `APP3-G02` (IMP-D042, 2026-08-03)
+
+**LC-24 needs no new column.** The delivered `design_templates` header
+already carries `status` (CHECK `DRAFT|PUBLISHED|ARCHIVED`),
+`current_version`, `archived_at` and the nullable scope FKs, and
+`design_template_versions` already carries `version` plus a **nullable**
+`published_at` — exactly the shape `TR-LC24-02` sets once and
+`TR-LC24-03` must never clear. **`G02_DB_CONTRIBUTION = NONE`**: no
+many-to-many template↔product relation is added, because APP3 publishes
+area-scoped Templates only and compares scope by exact triple equality.
+
+**LC-04 `TR-LC04-06`** likewise needs no column — `status` and
+`archived_at` already exist and `APP2-B02` already writes them from
+`DRAFT`.
+
+`APP3-DB01` still runs, but only because `APP3-G01` requires it
+(`G01_DB_DISPOSITION = REQUIRES_APP3_DB01`, placement retirement authority).

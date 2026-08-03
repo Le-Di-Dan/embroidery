@@ -274,3 +274,10 @@ owners, per ownership matrix): Audit Event (CON-150, Audit), Outbox Event
 (CON-140), Idempotency Record (CON-141), Job Attempt/Dead Letter (CON-143)
 (Platform). These are not business aggregates by design (§8.6/§8.7): no
 business invariants beyond append/claim semantics.
+
+## Forward note — `APP3-G02` (IMP-D042)
+
+AGG-12 Design Template lifecycle is formalised as **LC-24**: six stable
+`TR-LC24-nn` transitions, versions immutable from creation, `published_at` set
+once at first publish, no direct `ARCHIVED → PUBLISHED`, and no hard delete in
+APP3.

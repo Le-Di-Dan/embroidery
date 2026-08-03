@@ -49,3 +49,16 @@ Every version/snapshot stores its creation instant (`created_at`,
 actor evidence (admin id via audit; customer via grant + step-up refs
 embedded in acceptance/approval/review rows). Immutable rows never carry
 `updated_at` (ADR-DB1-006).
+
+---
+
+## Forward note — `APP3-G02` (IMP-D042, 2026-08-03)
+
+**Design Template Version is immutable from creation** (LC-24, PO-04). The
+earlier "lightweight versioning" reading — bump a counter per publish — is
+superseded: every save while the header is `DRAFT` writes a **new** row with
+the next monotonic `version`, and no existing version is ever rewritten.
+`published_at` is `null` until that exact version is first published, is set
+**once** by `TR-LC24-02`, and is never cleared or rewritten — `TR-LC24-03`
+(unpublish) changes the header only. Public read while `PUBLISHED` selects the
+highest `version` whose `published_at` is not null.
