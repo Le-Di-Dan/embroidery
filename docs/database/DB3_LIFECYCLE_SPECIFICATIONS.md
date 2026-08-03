@@ -265,6 +265,39 @@ customer-design preview semantics, and `PREVIEW_WATERMARKED` remains watermarked
 **DB4:** revision marker + expiry timestamp shapes. **DB8:** CC-01 stale
 autosave.
 
+> **`APP3-G03` — anonymous ownership, TTL and purge authority (IMP-D043,
+> 2026-08-04).** The five transition ids and the four states above are
+> **unchanged**; `ABANDONED` stays eliminated. What this adds is the authority
+> the ids were missing:
+>
+> - **Ownership.** A session is owned by the pair *(public id, high-entropy
+>   secret)*. `design_sessions.id` is the public handle and
+>   `session_secret_hash` is the verifier — the digest is
+>   `HMAC-SHA-256(runtime pepper, raw secret)` over 32 CSPRNG bytes encoded
+>   unpadded base64url, compared in constant time. **Neither half authorizes
+>   alone**, and the raw secret exists only in the per-session cookie
+>   `__Host-nettheu_ds_<session-id>`.
+> - **`TR-LC07-01` (create)** sets `expires_at = created_at + 30 days`. That is
+>   `SESSION_TTL`, closing `O-008`.
+> - **`TR-LC07-02` (autosave)** is unchanged in shape and now explicitly does
+>   **not** slide expiry and does **not** rotate the secret. A successful
+>   *authenticated resume* rotates the secret atomically under compare-and-swap,
+>   with no previous-secret grace and **no TTL extension**.
+> - **`TR-LC07-03` (submit)** stays **APP5-owned**: APP3 never collects contact
+>   details, never creates Customer identity and never transfers ownership.
+>   `SUBMITTED` retention is APP5's and is not purged by APP3.
+> - **`TR-LC07-04` (expire)** fires from an **hourly** sweep once
+>   `expires_at` has passed. `last_activity_at` and `IDX-085` still order that
+>   sweep, but they no longer *determine* expiry.
+> - **`TR-LC07-05` (purge)** hard-deletes after a **24-hour** `EXPIRED` grace,
+>   and only the session family owned exclusively by that session; shared
+>   Product, Template, Catalog Asset and historical authority are never deleted.
+>   **No restore after expiry.**
+>
+> `G03_DB_CONTRIBUTION = NONE` — every field and constraint this needs already
+> exists (`session_secret_hash` unique/NOT NULL, `expires_at`, `created_at`,
+> `status`, `autosave_revision`).
+
 ---
 
 ## LC-08 — Design Version

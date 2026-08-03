@@ -241,6 +241,10 @@ but after the MVP spine. `DEFERRED` = beyond APP3, needs authority.
   `last_activity_at` are `NOT NULL`, `IDX-085` indexes the ACTIVE sweep, and
   `expire()` is implemented. The **duration is O-008 / `DP-RET-01`, explicitly
   `DEFERRED — business`** with *no value set anywhere in the repository*.
+  **Ruled by `APP3-G03` (IMP-D043 PO-06, 2026-08-04):** `SESSION_TTL = 30 days`
+  **absolute from `created_at`**, never slid; `TR-LC07-04` on an hourly sweep;
+  hard delete under `TR-LC07-05` after a 24-hour `EXPIRED` grace. This closes
+  `O-008` and supersedes the sliding `last_activity_at + TTL` direction.
 - **Ownership transfer/merge is out of bounds.** `submitted_request_id` is
   handover evidence with no FK; the transfer itself is APP5's submission
   transaction (`TR-LC07-03`, GRD-001). APP3 stops at `ACTIVE` and must not
@@ -350,6 +354,15 @@ one, and both packages must land before the first Template or Session write API.
 Covered in §F. `O-008` is open **business** authority; `DP-RET-01` records
 "*none set* — DEFERRED — business (O-008)". Inventing a number here would be
 exactly the prohibited shortcut.
+
+> **Closed by `APP3-G03` (IMP-D043, 2026-08-04).** The Product Owner set the
+> value rather than the audit: `SESSION_TTL = 30 days` absolute from
+> `created_at`, with a 24-hour purge grace after `EXPIRED`. The transport gap
+> named in §F is closed with it — ownership is the pair *(public id,
+> high-entropy secret)*, the secret is an `HMAC-SHA-256` verifier over 32 CSPRNG
+> bytes carried only in `__Host-nettheu_ds_<session-id>`, resume rotates it
+> atomically without extending TTL, and the `09 §7` quotas are the exact limits
+> in IMP-D043 PO-07. `G03_DB_CONTRIBUTION = NONE`.
 
 ### G7 — Storefront route authority for the Studio is undecided
 

@@ -89,6 +89,24 @@ Protect editor and upload services with:
 - Expiration of abandoned sessions.
 - Admin blocklist or denylist capability.
 
+**Anonymous Design Session limits are locked** (`APP3-G03` / IMP-D043 PO-07,
+2026-08-04):
+
+| Control | Limit | Key |
+|---|---|---|
+| Session creation | 5 / hour (burst 2 / minute) | ephemeral network key |
+| Bootstrap, resume, read | 60 / minute | ephemeral network key |
+| Authorization failures | 10 / 15 minutes | ephemeral network key **and** session id |
+| Authorized mutations | 30 / minute | session id |
+| Concurrent mutations | 1 in flight | session id |
+
+The network key is an **ephemeral HMAC of normalized source network data under a
+rotating runtime salt** — raw IP is never persisted in Design Session tables, and
+the key is not ownership or customer identity. APP3 creates **no durable browser
+identity** and **no "N active sessions per browser" quota**. Rate-limit responses
+reveal no session existence, and rate limiting never replaces the credential or
+revision check.
+
 ## 8. Payment security
 
 - Server-side amount verification.
@@ -117,6 +135,22 @@ Baseline controls:
 - Secret management.
 - Secure cookie configuration.
 - Input validation.
+
+**Anonymous Design Session credential transport** (`APP3-G03` / IMP-D043
+PO-01…PO-05). The raw session secret — 32 CSPRNG bytes, unpadded base64url,
+persisted only as `HMAC-SHA-256(runtime pepper, secret)` and compared in
+constant time — travels **only** in the per-session cookie
+`__Host-nettheu_ds_<session-id>` with `Secure`, `HttpOnly`,
+`SameSite=Lax`, `Path=/`, no `Domain`, and `Max-Age` never beyond
+`expires_at`. It is never placed in a URL, query, fragment, JSON body,
+`Authorization` header, log, Audit payload, telemetry, exception or browser
+storage, and it is never carried by the APP1 staff cookie. Ownership needs the
+public id **and** the secret. Every state-changing request additionally requires
+an exact allowed `Origin`, an allowed `Sec-Fetch-Site` and the expected
+concurrency revision; credentialed cross-origin CORS is disabled and
+`SameSite` alone is not a sufficient defence. Unauthorized, missing, expired
+and wrong-chain requests share **one** safe external status, code and message so
+no response reveals whether a session id exists.
 - Output encoding.
 
 ## 9a. Local credential and environment-file handling
@@ -202,7 +236,13 @@ the rule is "ask", not "read carefully".
 
 ## 10. Data retention
 
-Retention periods remain to be finalized.
+Retention periods remain to be finalized, **except the temporary editor
+session**, which is locked by `APP3-G03` / IMP-D043 PO-06 (2026-08-04):
+`SESSION_TTL = 30 days` **absolute from `created_at`**, never slid by reads,
+resume, rotation or autosave; `ACTIVE → EXPIRED` on an hourly sweep
+(`TR-LC07-04`); hard delete after a **24-hour** `EXPIRED` grace
+(`TR-LC07-05`), scoped to the session family owned exclusively by that session.
+`SUBMITTED` session retention belongs to APP5.
 
 Policy must distinguish:
 

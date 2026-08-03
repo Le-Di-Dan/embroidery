@@ -221,10 +221,12 @@ or be collapsed into the other or into the API.
 
 | Item | Source | Owning gate |
 |---|---|---|
-| Design-session TTL (`O-008` / `DP-RET-01`) | `12-DECISION-LOG.md`, ADR-DB1-011 | `APP3-G03` |
-| Anonymous session transport, issuance, rotation, enumeration controls | `09 §2`/`§7`, ADR-DB2-001 | `APP3-G03` |
-| Autosave cadence and conflict policy | `ADR-APP0-001` deferred details | `APP3-G03` |
-| Document complexity / layer / image limits and anonymous quotas | `09 §7` | `APP3-G03` |
+| Design-session TTL (`O-008` / `DP-RET-01`) | `12-DECISION-LOG.md`, ADR-DB1-011 | **CLOSED by `APP3-G03` (IMP-D043 PO-06)** — 30 days absolute from `created_at` |
+| Anonymous session transport, issuance, rotation, enumeration controls | `09 §2`/`§7`, ADR-DB2-001 | **CLOSED by `APP3-G03` (IMP-D043 PO-01…PO-05)** |
+| Autosave **conflict** policy | `ADR-APP0-001` deferred details | **CLOSED by `APP3-G03` (IMP-D043 PO-08)** |
+| Autosave **cadence** | `ADR-APP0-001` deferred details | **STILL OPEN** — not ruled by IMP-D043; no owner assigned here |
+| Anonymous rate and concurrency quotas | `09 §7` | **CLOSED by `APP3-G03` (IMP-D043 PO-07)** |
+| Document complexity / layer / image limits | `09 §7` | **STILL OPEN** — not ruled by IMP-D043; no owner assigned here |
 | Template transition identifiers and guards (publish/unpublish/archive/unarchive) | DB3 "Additional lifecycles" — states without `TR-` ids | `APP3-G02` |
 | Template↔product compatibility: scope filter or many-to-many | DB2 GAP-08 versus §6 wording | `APP3-G02` |
 | Font whitelist and thread-colour mechanics | `05 §4.1`, `ADR-APP0-001` deferred | `APP3-G02` |
@@ -522,6 +524,11 @@ column either.
 
 ### 6.5.4 Dependency reconciliation
 
+> **Dated record — superseded by §6.6.4.** This table states the map *as it stood
+> when `APP3-G02` delivered*, and `pnpm check:app3-g02` asserts these exact
+> values, so it is not rewritten. Human review has since accepted G02 and
+> `APP3-G03` has delivered; §6.6.4 carries the current statuses.
+
 | Checkpoint | Status after `APP3-G02` |
 |---|---|
 | `APP3-G01` | `COMPLETE — REVIEW_ACCEPTED` |
@@ -539,6 +546,275 @@ column either.
 | `FU-APP2-PRODUCT-ARCHIVE-UI-01` | `DEFERRED_PENDING_PRODUCT_OWNER_SURFACE_DECISION` |
 
 No implementation checkpoint is complete.
+
+## 6.6 `APP3-G03` — Anonymous Design Session ownership, transport and retention authority (IMP-D043)
+
+The third APP3 execution checkpoint. Authority, retention reconciliation,
+dependency reconciliation and a mechanical gate only — **no Session API, cookie,
+middleware, worker job, migration, generated contract, Figma node or UI change**.
+
+The Design Session repository and LC-07 already existed, but nothing said *how an
+anonymous visitor proves ownership*. `session_secret_hash` was `NOT NULL` and
+`UNIQUE` with no rule for what fills it, `findActiveBySecretHash` could be read as
+authorising on the secret alone, `expires_at` was `NOT NULL` with a deferred
+duration (`O-008` / `DP-RET-01`), and the retention documents modelled a
+**sliding** `last_activity_at + TTL` window. A backend checkpoint starting from
+that state would have had to invent an identity model.
+
+### 6.6.1 Machine-checked session facts
+
+`pnpm check:app3-g03` recomputes each of these against the repository.
+
+| Fact | Value |
+|---|---|
+| `Session ownership requirement` | `SESSION_ID_AND_SECRET` |
+| `Session public handle` | `design_sessions.id` |
+| `Session persisted verifier` | `session_secret_hash` |
+| `Session id alone authorizes` | `NO` |
+| `Session secret alone authorizes` | `NO` |
+| `Session secret bytes` | `32` |
+| `Session secret source` | `SERVER_CSPRNG` |
+| `Session secret encoding` | `BASE64URL_UNPADDED` |
+| `Session secret digest` | `HMAC_SHA256_RUNTIME_PEPPER` |
+| `Session secret comparison` | `CONSTANT_TIME` |
+| `Session secret persistence` | `DIGEST_ONLY` |
+| `Session secret browser storage` | `FORBIDDEN` |
+| `Session secret url transport` | `FORBIDDEN` |
+| `Session secret json transport` | `FORBIDDEN` |
+| `Session secret log transport` | `FORBIDDEN` |
+| `Session pepper absent behaviour` | `FAIL_LOUDLY_NO_FALLBACK` |
+| `Session cookie name` | `__Host-nettheu_ds_<session-id>` |
+| `Session cookie value` | `RAW_SECRET_ONLY` |
+| `Session cookie same site` | `Lax` |
+| `Session cookie path` | `/` |
+| `Session cookie domain` | `NONE` |
+| `Session cookie http only` | `REQUIRED` |
+| `Session cookie secure production` | `REQUIRED` |
+| `Session cookie scope` | `ONE_COOKIE_PER_SESSION` |
+| `Session cookie max age bound` | `NOT_BEYOND_EXPIRES_AT` |
+| `Session cookie removal` | `EXPIRY_INVALIDATION_AND_FAILED_AUTHORIZATION` |
+| `Session bootstrap response` | `PUBLIC_ID_ONLY` |
+| `Session client persisted handle` | `NON_SECRET_ID_ONLY` |
+| `Session bearer transport` | `FORBIDDEN` |
+| `Session staff cookie reuse` | `FORBIDDEN` |
+| `Studio route` | `/san-pham/[slug]/thiet-ke` |
+| `Session rotation trigger` | `AUTHENTICATED_RESUME` |
+| `Session rotation write` | `COMPARE_AND_SWAP` |
+| `Session rotation winners` | `1` |
+| `Session rotation ttl effect` | `NONE` |
+| `Session previous secret grace` | `NONE` |
+| `Session autosave rotation` | `NONE` |
+| `Session recovery credential in APP3` | `NONE` |
+| `Session origin policy` | `EXACT_ALLOWLIST` |
+| `Session fetch metadata policy` | `SEC_FETCH_SITE_ALLOWLIST` |
+| `Session credentialed cors` | `DISABLED` |
+| `Session absent origin on mutation` | `REJECTED` |
+| `Session same site sole defence` | `FORBIDDEN` |
+| `Session error disclosure` | `SINGLE_SAFE_SHAPE` |
+| `Session existence disclosure` | `NONE` |
+| `SESSION_TTL_DAYS` | `30` |
+| `Session ttl basis` | `ABSOLUTE_FROM_CREATED_AT` |
+| `Session ttl sliding` | `NONE` |
+| `Session expires_at write` | `SET_AT_CREATION_NEVER_EXTENDED` |
+| `Session expiry transition` | `TR-LC07-04` |
+| `Session expiry sweep interval` | `HOURLY` |
+| `Session purge transition` | `TR-LC07-05` |
+| `Session purge grace hours` | `24` |
+| `Session purge scope` | `EXCLUSIVELY_OWNED_SESSION_FAMILY` |
+| `Session purge shared authority` | `NEVER_DELETED` |
+| `Session restore after expiry` | `NONE` |
+| `Session submitted retention owner` | `APP5` |
+| `Session creation rate per hour` | `5` |
+| `Session creation burst per minute` | `2` |
+| `Session read rate per minute` | `60` |
+| `Session authorization failure rate` | `10` |
+| `Session authorization failure window minutes` | `15` |
+| `Session mutation rate per minute` | `30` |
+| `Session concurrent mutations` | `1` |
+| `Session rate limit key` | `EPHEMERAL_NETWORK_HMAC_ROTATING_SALT` |
+| `Session rate limit key is identity` | `NO` |
+| `Session durable browser identity` | `NONE` |
+| `Session browser session quota` | `NONE` |
+| `Session raw ip persistence` | `NONE` |
+| `Session mutation revision requirement` | `EXPECTED_REVISION` |
+| `Session revision column` | `autosave_revision` |
+| `Session stale write result` | `STALE_WRITE` |
+| `Session stale write mutation` | `NONE` |
+| `Session retry policy` | `REFETCH_BEFORE_RETRY` |
+| `Session blind replay loop` | `FORBIDDEN` |
+| `Session idempotency table` | `NONE` |
+| `Session customer identity in APP3` | `NONE` |
+| `Session contact collection in APP3` | `NONE` |
+| `Session ownership transfer owner` | `APP5` |
+| `Session submit transition owner` | `APP5` |
+| `G03_DB_CONTRIBUTION` | `NONE` |
+
+### 6.6.2 The ten rulings
+
+**PO-01 — anonymous ownership.** Ownership requires **both** a public session id
+and a high-entropy session secret. `design_sessions.id` is the public opaque
+handle and `session_secret_hash` is the persisted verifier; **neither authorizes
+alone**. The raw secret is never persisted, logged, placed in a URL, query string
+or fragment, returned in JSON, stored in `localStorage`/`sessionStorage` or
+serialized into the document. No Customer, email, phone, name, device fingerprint
+or anonymous-user aggregate is created. Every authorized read and write requires
+the exact id **plus** a valid secret. Missing, expired and unauthorized sessions
+share **one** safe external error shape.
+
+> **Reconciliation.** `DesignSessionRepository.findActiveBySecretHash` is a
+> persistence lookup, **not** an authorization decision. `APP3-B07` must resolve
+> the session by exact id and then verify the secret; it may not authorize on a
+> hash lookup alone.
+
+**PO-02 — secret generation and verification.** At creation the server generates
+**32 cryptographically secure random bytes**, encodes them as unpadded
+base64url, and persists only `HMAC-SHA-256(server pepper, raw secret)`. The
+pepper comes from runtime secret configuration. Browser `crypto.subtle` is not
+used. No password hash is required for a uniformly random 256-bit secret. Digests
+are compared in **constant time**. Secret and digest never enter logs, Audit
+payloads, telemetry or exceptions. A missing pepper **fails loudly**; there is no
+fallback and no generated default.
+
+**PO-03 — browser transport.** The raw secret is transported **only** in a
+per-session cookie named `__Host-nettheu_ds_<session-id>`, with production
+attributes `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, **no** `Domain`, and
+`Max-Age` never beyond `expires_at`. Local development may omit `Secure` only
+under the explicit dev transport policy. The cookie contains **only** the raw
+secret. Bootstrap returns the **non-secret** session id, and the client may
+persist only that id as a namespaced resume handle. The Studio route stays
+`/san-pham/[slug]/thiet-ke`. Session APIs address the public id and the server
+selects the matching cookie; multiple sessions use separate cookies. Cookie
+removal is **required** on expiry, invalidation and failed authorization for that
+exact session. Forbidden: `Authorization: Bearer <raw secret>`, the secret in a
+path, query or fragment, one shared cookie for every session, the APP1 staff
+cookie, and any browser storage of the raw secret.
+
+**PO-04 — issuance and rotation.** Creation issues one secret and one cookie. A
+**successful authenticated** resume/bootstrap rotates the secret **atomically**:
+verify the current id and secret, generate a new 32-byte secret, replace
+`session_secret_hash` under **compare-and-swap**, return `Set-Cookie` for the new
+secret, and invalidate the old secret **immediately**. Ordinary autosave does not
+rotate. Exactly **one** concurrent resume rotation succeeds. Rotation **never**
+extends TTL. There is **no previous-secret grace window** and no recovery email,
+code or account link in APP3.
+
+**PO-05 — CSRF, origin and enumeration controls.** Every state-changing request
+requires an exact allowed `Origin`, an allowed `Sec-Fetch-Site`, a matching
+host-only session cookie and the expected optimistic-concurrency revision.
+Credentialed cross-origin CORS is **disabled**. A missing or disallowed `Origin`
+on a mutation fails. `SameSite` alone is **not** a sufficient defence. Session
+ids follow the existing high-entropy identifier authority. Unauthorized, missing,
+expired and wrong-chain requests share **one** safe external status, code and
+message; no response reveals whether a session id exists; no secret, digest or
+raw document appears in an authorization error; repeated failures are
+rate-limited.
+
+**PO-06 — retention and expiry.** `SESSION_TTL = 30 days`, **absolute from
+`created_at`**. Reads, resume, rotation and autosave do **not** slide or extend
+it; `expires_at` is fixed at creation and cookie expiry never exceeds it. At
+expiry the session moves `ACTIVE → EXPIRED` under **`TR-LC07-04`**, and an
+expired session rejects all access. An **hourly** worker claims eligible rows
+safely. An `EXPIRED` session is hard-deleted under **`TR-LC07-05`** after a
+**24-hour purge grace**. Purge deletes only the Session family owned exclusively
+by that session, including the private associations and derivatives later defined
+by `APP3-G04`; shared Product, Template, Catalog Asset and historical authority
+are **never** deleted. `SUBMITTED` retention belongs to **APP5** and is not
+purged by APP3. There is **no restore after expiry**.
+
+> This closes `O-008` and the `design_sessions` half of `DP-RET-01`, and
+> **supersedes** the earlier sliding `last_activity_at + TTL` direction recorded
+> in `DB4_DELETE_ARCHIVE_RETENTION_MAPPING.md` and
+> `DB10_DATA_DURABILITY_MATRIX.md`. `last_activity_at` and `IDX-085` remain — the
+> sweep still orders by activity — but they no longer determine expiry.
+
+**PO-07 — rate and concurrency controls.** APP3 creates **no durable browser
+identity** and **no cross-session browser quota**. Locked limits: session creation
+**5/hour** per ephemeral network key with a burst of **2/minute**;
+bootstrap/resume/read **60/minute** per ephemeral network key; authorization
+failures **10 per 15 minutes** per ephemeral network key **and** session id;
+authorized mutations **30/minute** per session id; and a maximum of **one
+in-flight mutation per session**. The network key is an **ephemeral HMAC of
+normalized source network data with a rotating runtime salt**; raw IP is **not**
+persisted in Design Session tables. The rate-limit key is **not** ownership or
+customer identity. There is no "N active sessions per browser" rule.
+Rate-limit responses reveal no session existence, and rate limiting **never**
+replaces credential or revision checks.
+
+**PO-08 — autosave conflict policy.** Every mutation carries the expected current
+revision (`autosave_revision`). A matching revision applies **one atomic update
+and increments once**. A stale revision returns **`STALE_WRITE`** with current
+revision metadata only and **does not mutate**. Under network ambiguity the
+client **refetches before retrying**; there is no blind replay loop. No
+idempotency-key table and no write log is added — a duplicate retry carrying the
+old revision fails `STALE_WRITE` and therefore cannot increment twice.
+Conflict/reload UX is owned by `APP3-S11`.
+
+**PO-09 — APP5 boundary.** APP3 anonymous sessions do not create Customer
+identity, collect email or phone, attach to staff auth, submit a custom request or
+transfer ownership. **APP5 exclusively owns `TR-LC07-03`**, contact collection,
+Customer association and anonymous-to-customer transfer.
+
+**PO-10 — database contribution.** The existing schema already provides every
+field this authority needs. **Measured** on `design_sessions`:
+`session_secret_hash` (`text NOT NULL`, `uq_design_sessions__session_secret_hash`),
+`expires_at` (`timestamptz NOT NULL`), `created_at` (`timestamptz NOT NULL`),
+`status` (`text NOT NULL` with `ck_design_sessions__status_allowed` over LC-07)
+and `autosave_revision` (`integer NOT NULL`, `>= 0`). No durable browser id,
+previous-secret column, sliding-expiry field, idempotency table or recovery
+credential is required, and no customer, email, phone, IP or fingerprint column
+exists. Therefore **`G03_DB_CONTRIBUTION = NONE`**.
+
+### 6.6.3 Database contribution
+
+```text
+G03_DB_CONTRIBUTION = NONE
+```
+
+`APP3-DB01` still runs, but **only** because `APP3-G01` requires it
+(`G01_DB_DISPOSITION = REQUIRES_APP3_DB01`, placement retirement authority).
+Neither `APP3-G02` nor `APP3-G03` contributes a column.
+
+### 6.6.4 Dependency reconciliation
+
+> **Why this table has a portion column.** `APP3-B07`, `APP3-B08` and
+> `APP3-W01` are each *partly* unblocked: this gate settles their identity,
+> concurrency and expiry authority while other predecessors still block the
+> checkpoint as a whole. One status per checkpoint could only be recorded by
+> losing one of those two facts.
+
+| Checkpoint | Portion | Status after `APP3-G03` |
+|---|---|---|
+| `APP3-G01` | whole checkpoint | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G02` | whole checkpoint | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G03` | whole checkpoint | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-G04` | whole checkpoint | `READY — NOT STARTED` |
+| `APP3-P01` | whole checkpoint | `READY — NOT STARTED` |
+| `APP3-P02` | whole checkpoint | `READY — NOT STARTED` |
+| `APP3-DB01` | whole checkpoint | `REQUIRED — AWAITING_G04_CONTRIBUTION` |
+| `APP3-B07` | identity and transport | `UNBLOCKED_BY_G03` |
+| `APP3-B07` | overall | `BLOCKED_BY_APP3_P01_APP3_P02_AND_DB_DISPOSITION` |
+| `APP3-B08` | session concurrency | `UNBLOCKED_BY_G03` |
+| `APP3-B08` | overall | `BLOCKED_BY_APP3_P01_APP3_P02_AND_DB_DISPOSITION` |
+| `APP3-W01` | expiry authority | `UNBLOCKED_BY_G03` |
+| `APP3-W01` | overall | `BLOCKED_BY_DB_DISPOSITION` |
+| `APP3-S11` | conflict/reload UX authority | `UNBLOCKED_BY_G03` — checkpoint not started |
+| `O-008` | session TTL | `CLOSED_BY_IMP-D043` |
+| `DP-RET-01` | design_sessions | `CLOSED_BY_IMP-D043` |
+
+> **Disclosed tooling defect — `FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01`.**
+> `check-app3-g02.mjs` reads §6.5.4 with the literal end marker `## 7. `
+> rather than "the next heading", which was correct only while §6.5.4 was the
+> last subsection before §7. It is not weakened or edited here — `tools/` outside
+> `check-app3-g03*` is outside this checkpoint's allowed files — and the
+> three-column table above is not a workaround for it: G02 still reads its own
+> frozen §6.5.4 rows correctly. The next checkpoint authorized to touch that file
+> should bound it by the next heading, as `check-app3-g01.mjs` already does.
+
+No implementation checkpoint is complete.
+
+**Remaining open scope this gate did not rule.** `IMP-D043` covers rate and
+concurrency quotas, not **autosave cadence** and not **document complexity, layer
+or image limits**. Both stay open in §6.3 with no new owner invented here.
 
 ## 7. Critical end-to-end journey
 
@@ -560,15 +836,22 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — SECOND GATE DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — THIRD GATE DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
 FU-APP3-CLOSURE-FIGMA-BASELINE-01 = COMPLETE — CLOSED_BY_APP2-X01-C1
 FU-APP2-CLOSURE-NEXTPHASE-GUARD-01 = COMPLETE — CLOSED_BY_APP2-X01-C2
 APP3-G01 = COMPLETE — REVIEW_ACCEPTED
-APP3-G02 = COMPLETE — REVIEW_DELIVERED
-APP3-G03 = READY — NOT STARTED
+APP3-G02 = COMPLETE — REVIEW_ACCEPTED
+APP3-G03 = COMPLETE — REVIEW_DELIVERED
+APP3-G04 = READY — NOT STARTED
+G01_DB_DISPOSITION = REQUIRES_APP3_DB01
+G02_DB_CONTRIBUTION = NONE
+G03_DB_CONTRIBUTION = NONE
+APP3-DB01 = REQUIRED — AWAITING_G04_CONTRIBUTION
+O-008 = CLOSED_BY_IMP-D043
+DP-RET-01 design_sessions = CLOSED_BY_IMP-D043
 FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01 = COMPLETE — CLOSED_BY_APP3-G02
 every other APP3 checkpoint = NOT STARTED
 ```
@@ -607,6 +890,19 @@ corrected because **Commit A was not docs-only** — see audit §R for the appro
 > unrelated rows may be appended, but removal, mutation, duplication, section
 > moves, same-count substitution or registry inconsistency of an owned record
 > still fail. `pnpm quality` is green; `APP3-G01` = `READY — NOT STARTED`.
+
+`APP3-G03` locked the ten Product Owner anonymous-session rulings as
+**IMP-D043** (§6.6): ownership needs **both** the public id and a 32-byte
+server-generated secret carried **only** in `__Host-nettheu_ds_<session-id>`,
+verified against an HMAC-SHA-256 digest under a runtime pepper; resume rotates
+that secret atomically **without extending TTL**; `SESSION_TTL` is **30 days
+absolute from `created_at`** with no sliding, expiry via `TR-LC07-04` and hard
+delete via `TR-LC07-05` after a 24-hour grace. It closed `O-008` and the
+`design_sessions` half of `DP-RET-01`, superseded the earlier sliding
+`last_activity_at + TTL` direction, and contributed **no** schema change
+(`G03_DB_CONTRIBUTION = NONE`) — every required field and constraint was
+measured to already exist. The gate `pnpm check:app3-g03` asserts the absence of
+any Session operation as hard as it asserts the authority.
 
 Audit: [`audits/APP3_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP3_PRE_IMPLEMENTATION_AUDIT.md).
 Report: [`reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md`](../reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md).

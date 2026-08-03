@@ -98,8 +98,12 @@ decided in technical design (→ resolved at DB3, not DB0).
 - **Known states:** `ACTIVE`, `EXPIRED`, `SUBMITTED`, `ABANDONED`, `DELETED`.
 - **Transitions:** ACTIVE → SUBMITTED (on request) / EXPIRED (timeout) /
   ABANDONED → DELETED (retention).
-- **Missing/ambiguous:** exact expiry period (O-008); ABANDONED vs EXPIRED
-  distinction criteria; anonymize-vs-delete choice.
+- **Missing/ambiguous:** ~~exact expiry period (O-008)~~ — **closed**:
+  `created_at + 30 days`, absolute (`APP3-G03` / IMP-D043 PO-06);
+  ~~ABANDONED vs EXPIRED~~ — **closed** by DB3 (`ABANDONED` eliminated, merged
+  into `EXPIRED`); anonymize-vs-delete — **closed for `design_sessions`**:
+  hard delete 24 h after `EXPIRED`, scoped to the exclusively-owned session
+  family.
 - **Preconditions:** none to start (guest allowed).
 - **Side effects:** autosave writes; cleanup job on expiry.
 - **Audit:** low (temporary data), but deletion/anonymization tracked for

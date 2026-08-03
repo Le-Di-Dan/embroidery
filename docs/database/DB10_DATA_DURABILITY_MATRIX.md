@@ -92,7 +92,7 @@ rules and FK constraints apply.
 
 | Table | Durability | Restore | Retention class | Delete/anonymize behaviour | S24 DELETE | PII/sensitivity | Recovery validation | Owner |
 |---|---|---|---|---|---|---|---|---|
-| `design_sessions` | transient | P3 | trans — **hard-TTL** | anonymize-then-delete after `last_activity_at` + TTL (O-008) | — | cpriv (med) — customer IP in the document | may be empty after restore | design |
+| `design_sessions` | transient | P3 | trans — **hard-TTL** | anonymize-then-delete after ~~`last_activity_at` + TTL (O-008)~~ → **`created_at` + 30 days, absolute**, then hard delete 24 h after `EXPIRED` (`APP3-G03` / IMP-D043 PO-06) | — | cpriv (med) — customer IP in the document; IMP-D043 PO-07 forbids persisting raw IP in Design Session tables | may be empty after restore | design |
 | `design_session_assets` | transient | P3 | trans — hard-TTL | deleted with the session; referenced uploads survive via `assets` | — | cpriv | — | design |
 | `design_cases` | critical | P1 | comm — retain | retain | — | cpriv (high) | row count | design |
 | `design_versions` | **critical** | P1 | comm — retain (immutable history) | **never deleted** (REQ-DVER-005) | `reject` | cpriv (high) | count + frozen-column integrity | design |

@@ -24,7 +24,7 @@ the business activates holds).
 | inventory_reservations | retain | — | comm | — | |
 | assets / asset_derivatives | **tombstone two-phase**: deletion decision → worker deletes binary → `deleted_at`; metadata row never deleted before binary | retention per kind [cfg] or admin decision [R]; blocked while referenced by commercial history | per kind | derivatives tombstone with parent | ADR-DB1-011; consumer FKs restrict |
 | asset_inspections | hard-ttl | window [cfg] | oper | — | |
-| design_sessions + design_session_assets | **hard-ttl** (anonymize-then-delete direction) | last_activity_at + TTL (O-008) | trans | association rows cascade-temp | never a library (D-006); uploads referenced by requests survive via asset refs |
+| design_sessions + design_session_assets | **hard-ttl** (anonymize-then-delete direction) | ~~last_activity_at + TTL (O-008)~~ → **`created_at` + 30 days, absolute** (`APP3-G03` / IMP-D043 PO-06 closes O-008); hard delete 24 h after `EXPIRED` | trans | association rows cascade-temp | never a library (D-006); uploads referenced by requests survive via asset refs. **Superseded basis:** expiry is absolute from creation and never slides; `last_activity_at` only orders the sweep (IDX-085). `SUBMITTED` sessions are APP5-retained and not purged by APP3 |
 | design_cases / versions / reviews / version assets | retain (immutable history) | — | comm | — | versions never deleted (REQ-DVER-005) |
 | approval_snapshots + children | retain | — | comm | — | never deleted while commercial record exists; break-glass privacy redaction only |
 | design_templates / versions / assets | archive | admin | comm(archive) | versions retained (clone provenance) | |

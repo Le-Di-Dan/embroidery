@@ -396,6 +396,17 @@ Hardware, reverse proxy, public connectivity, backup, monitoring and external de
 
 Exact expiration period.
 
+> **CLOSED (2026-08-04) by `APP3-G03` / IMP-D043 PO-06.**
+> `SESSION_TTL = 30 days`, **absolute from `created_at`**. `expires_at` is
+> fixed at creation and is never slid or extended by reads, resume, secret
+> rotation or autosave. An `ACTIVE` session past `expires_at` moves to
+> `EXPIRED` (`TR-LC07-04`) on an hourly sweep, and an `EXPIRED` session is
+> hard-deleted (`TR-LC07-05`) after a **24-hour purge grace**. There is no
+> restore after expiry. `SUBMITTED` session retention is **not** covered here —
+> it belongs to APP5. This supersedes the earlier sliding
+> `last_activity_at + TTL` direction. `O-012` (all other retention periods)
+> stays open.
+
 ## O-009 — Cancellation and refund policy
 
 Detailed business rules before and after deposit or production.
