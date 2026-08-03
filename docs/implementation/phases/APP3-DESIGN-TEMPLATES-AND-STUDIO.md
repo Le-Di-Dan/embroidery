@@ -93,35 +93,82 @@ Four corrections drive the difference:
 4. **One phase-level design package precedes every frontend checkpoint.** Figma
    carries zero Studio or Admin-Template rows.
 
-Migration verdict: **`NO_APP3_MIGRATION_UNLESS_G02_OR_G04_PROVES_ONE`**. Two
-candidate gaps exist and both are downstream of a ruling — a template↔product
-many-to-many compatibility relation, and a new `asset_derivatives.kind`. If
-either fires it is one dedicated forward-only `APP3-DB01` before dependent code.
+Migration verdict (corrected by `APP3-PRE-AUDIT-C1`):
+**`NO_APP3_MIGRATION_UNLESS_G01_OR_G02_OR_G04_PROVES_ONE`**. Four candidate gaps
+exist and every one is downstream of a ruling:
+
+- **`G01`** — a side background delivered under a new `product_media.role`
+  (closed CHECK set), a dedicated background derivative kind (closed CHECK set),
+  a *granted* background (`secure_access_grants.scope_kind` is the single closed
+  value `REQUEST_ACCESS` with `NOT NULL` customer and request FKs, so an
+  anonymous session can hold no grant), or side/area immutability-after-use
+  (no `locked_at` or version column exists);
+- **`G02`** — a template↔product many-to-many compatibility relation;
+- **`G04`** — a new `asset_derivatives.kind` for the editor-safe *customer*
+  derivative.
+
+If any fires it is one dedicated forward-only `APP3-DB01` before dependent code.
+
+### Conditional `APP3-DB01` — terminal semantics
+
+```text
+1. COMPLETE
+   A required forward-only migration was implemented and accepted.
+
+2. NOT_REQUIRED — GATE_RESOLVED
+   G01/G02/G04 collectively proved the current schema sufficient.
+```
+
+Dependents wait on the **disposition**, never on a migration having run:
+
+```text
+DB-DISPOSITION-RESOLVED
+```
+
+is satisfied by **either** terminal outcome, so a `NOT_REQUIRED` result cannot
+deadlock `APP3-B01`, `APP3-B03`, `APP3-W01` or anything behind them.
+
+### Package dependency rule
+
+`packages/design-document` (`APP3-P01`) owns document schema, validation,
+canonicalization, quantization, unsupported-version failure, JCS/hash support
+and document migrations. It is **mandatory before every API that accepts or
+persists a design document** — `B03`, `B04`, `B05`, `B07`, `B08`.
+
+`packages/design-engine` (`APP3-P02`) owns geometry, transforms and px↔mm
+conversion. It **does not block backend writes generically**. It blocks only a
+write carrying a named server-side geometry or placement invariant — the exit
+gate's out-of-bounds/tampered-document rejection (§7/§8) — which is `B04`
+(publish must be in-bounds for its scope), `B07` (bootstrap/clone) and `B08`
+(autosave). Elsewhere it is routed before the exact Studio and placement
+checkpoints that consume it (`A01`, `A03`, `S02`, `S07`). The two packages are
+independent and may proceed in parallel; neither may take a rendering dependency
+or be collapsed into the other or into the API.
 
 | # | ID | Type | Scope | API / screens | Predecessors | Migration? | Figma? | Perf gate? |
 |---|---|---|---|---|---|---|---|---|
 | 1 | `APP3-PRE-AUDIT` | audit | this audit | — | `APP2-X01` | no | no | no |
-| 2 | **`APP3-G01`** | gate | product placement + side-media authority; Studio route authority — **`READY — NOT STARTED`** | 0 | PRE-AUDIT | no | no | no |
+| 2 | **`APP3-G01`** | gate | product placement + side-media authority; Studio route authority; existing-data/invariant rollout evidence — **`READY — NOT STARTED`** | 0 | PRE-AUDIT | **decides DB01** | no | no |
 | 3 | `APP3-G02` | gate | Design Template authority — `TR-` ids for publish/unpublish/archive/unarchive, scope-vs-M:N compatibility, allowed tools/fonts/colours | 0 | G01 | decides DB01 | no | no |
 | 4 | `APP3-G03` | gate | Design Session authority — O-008 TTL, anonymous transport/issuance/rotation, `09 §7` quotas, autosave cadence + conflict policy, document limits | 0 | G01 | no | no | no |
 | 5 | `APP3-G04` | gate | editor media authority — editor-safe derivative kind, customer/template intake lanes, SVG acceptance + sanitizer, dimensions metadata | 0 | G01 | decides DB01 | no | no |
 | 6 | `APP3-P01` | package | `packages/design-document` — canonical form, JCS + SHA-256, fail-loud `schemaVersion`, document migrations, validation | — | G02, G03 | no | no | `spike:editor:test` |
-| 7 | `APP3-P02` | package | `packages/design-engine` — geometry, px↔mm, bounds and safe-area math | — | G01, P01 | no | no | `spike:editor:test` |
-| 8 | `APP3-DB01` | database | **conditional** — only if G02 rules M:N or G04 rules a new derivative kind | — | G02, G04 | yes, if fired | no | no |
-| 9 | `APP3-B01` | backend | placement authoring + public placement read | 3 | G01, (DB01) | no | no | no |
+| 7 | `APP3-P02` | package | `packages/design-engine` — geometry, px↔mm, bounds and safe-area math | — | G01 | no | no | `spike:editor:test` |
+| 8 | `APP3-DB01` | database | **conditional** — only if G01 rules a role/kind/grant/immutability change, G02 rules M:N or G04 rules a new derivative kind. Terminals: `COMPLETE` or `NOT_REQUIRED — GATE_RESOLVED` | — | G01, G02, G04 | yes, if fired | no | no |
+| 9 | `APP3-B01` | backend | placement authoring + public placement read | 3 | G01, `DB-DISPOSITION-RESOLVED` | no | no | no |
 | 10 | `APP3-B02` | backend | side-background delivery | 1 | B01 | no | no | no |
 | 11 | `APP3-D01` | design | **one** phase-level package — Admin Template screens + full Studio (states, mobile, watermark, safe area) into a new `APP_03` page | — | G01–G04 | no | yes | no |
 | 12 | `APP3-A01` | frontend | Admin placement authoring | 1 screen | B01, D01 | no | yes | no |
-| 13 | `APP3-B03` | backend | template draft authoring | 3 | G02, P01 | no | no | no |
-| 14 | `APP3-B04` | backend | template lifecycle (publish / unpublish / archive) | 3 | B03 | no | no | no |
+| 13 | `APP3-B03` | backend | template draft authoring | 3 | G02, P01, `DB-DISPOSITION-RESOLVED` | no | no | no |
+| 14 | `APP3-B04` | backend | template lifecycle (publish / unpublish / archive) | 3 | B03, **P02** (in-bounds invariant) | no | no | no |
 | 15 | `APP3-B05` | backend | public published-template read for a product scope | 2 | B04, B01 | no | no | no |
 | 16 | `APP3-A02` | frontend | Admin template list | 1 screen | B03, D01 | no | yes | no |
 | 17 | `APP3-A03` | frontend | Admin template editor | 1 screen | B03, D01, P01, P02 | no | yes | `spike:editor:test` |
 | 18 | `APP3-A04` | frontend | Admin template publication interaction | 1 screen | B04, D01 | no | yes | no |
-| 19 | `APP3-W01` | worker | editor-safe derivative + customer-upload inspection lane | 0 HTTP | G04, (DB01) | no | no | no |
+| 19 | `APP3-W01` | worker | editor-safe derivative + customer-upload inspection lane | 0 HTTP | G04, `DB-DISPOSITION-RESOLVED` | no | no | no |
 | 20 | `APP3-B06` | backend | session-scoped customer asset intake + granted delivery | 2 | G04, W01 | no | no | no |
-| 21 | `APP3-B07` | backend | session bootstrap (blank + clone) and resume | 2 | G03, P01, B01 | no | no | no |
-| 22 | `APP3-B08` | backend | session autosave with `autosave_revision` CAS | 1 | B07 | no | no | no |
+| 21 | `APP3-B07` | backend | session bootstrap (blank + clone) and resume | 2 | G03, P01, **P02**, B01 | no | no | no |
+| 22 | `APP3-B08` | backend | session autosave with `autosave_revision` CAS | 1 | B07, **P02** (out-of-bounds rejection) | no | no | no |
 | 23 | `APP3-S01` | frontend | Studio bootstrap shell + product/template selection | 1 capability | B07, B05, D01 | no | yes | no |
 | 24 | `APP3-S02` | frontend | SVG stage, renderer adapter, selection | 1 capability | S01, P01, P02 | no | yes | **benchmark** |
 | 25 | `APP3-S03` | frontend | transforms and DOM handles (≥44 px, outside the element box) | 1 capability | S02 | no | yes | **benchmark** |
@@ -203,10 +250,27 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 
 ```text
 APP3 = AUDITED — NOT STARTED
-APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — DELIVERED_FOR_REVIEW
+APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP3-G01 = READY — NOT STARTED
 every other APP3 checkpoint = NOT STARTED
 ```
+
+Human review (2026-08-03) returned `ACCEPTED_WITH_REQUIRED_CORRECTIONS`. The
+five required corrections were applied by `APP3-PRE-AUDIT-C1` and are visible in
+§6.1 (migration verdict now includes `G01`; `APP3-DB01` terminal semantics and
+the `DB-DISPOSITION-RESOLVED` predecessor; the `design-document` /
+`design-engine` dependency split) and in audit §H/§O/§P/§Q/§R/§S. Every
+substantive finding was upheld; the evidence/governance classification was
+corrected because **Commit A was not docs-only** — see audit §R for the approved
+`APPROVED_NARROW_GOVERNANCE_DEVIATION` disposition.
+
+> **Blocking follow-up — `FU-APP3-CLOSURE-FIGMA-BASELINE-01`.** The unrelated
+> BRD0 commit `2a5d3bf` grew the Figma registry from 86/86/11 to **96/96/13**,
+> drifting an APP2 frozen artifact. `pnpm check:app2-closure` reports three
+> findings, two of its tests fail, and **`pnpm quality` exits 1**. Pre-existing
+> and proven by stashing; not fixed by `APP3-PRE-AUDIT-C1`, which is
+> documentation-only. **No APP3 checkpoint requiring a green `pnpm quality` —
+> `APP3-G01` included — may execute until this is closed.**
 
 Audit: [`audits/APP3_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP3_PRE_IMPLEMENTATION_AUDIT.md).
 Report: [`reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md`](../reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md).

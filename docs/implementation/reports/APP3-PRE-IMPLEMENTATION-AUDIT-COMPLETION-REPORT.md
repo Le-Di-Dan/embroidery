@@ -1,7 +1,8 @@
 # APP3-PRE-IMPLEMENTATION-AUDIT — Completion report
 
 **Checkpoint:** `APP3-PRE-IMPLEMENTATION-AUDIT`
-**Status:** `COMPLETE — DELIVERED_FOR_REVIEW` · **Date:** 2026-08-02
+**Status:** `COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION` · **Date:** 2026-08-02,
+reconciled after human review 2026-08-03 (`APP3-PRE-AUDIT-C1`, §U)
 **Audit:** [`audits/APP3_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP3_PRE_IMPLEMENTATION_AUDIT.md)
 **Phase plan:** [`phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md`](../phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md)
 
@@ -105,20 +106,46 @@ Figma row.
 
 ## F. Database readiness and migration classification
 
-Verdict: **`NO_APP3_MIGRATION_UNLESS_G02_OR_G04_PROVES_ONE`** — deliberately
-conditional rather than the flat `NO_APP3_MIGRATION` the prompt allows by
-default, because two concrete candidate gaps exist and both are downstream of a
-ruling this audit is not permitted to make:
+Verdict **[corrected by `APP3-PRE-AUDIT-C1`]**:
+**`NO_APP3_MIGRATION_UNLESS_G01_OR_G02_OR_G04_PROVES_ONE`** — conditional rather
+than the flat `NO_APP3_MIGRATION` the prompt allows by default, because concrete
+candidate gaps exist and every one is downstream of a ruling this audit is not
+permitted to make.
 
-1. a template↔product **many-to-many** compatibility relation, if `APP3-G02`
+The first issue named only `G02` and `G04`. Human review challenged that
+omission and was right: **`APP3-G01` owns side-background delivery and placement
+authority, and three closed CHECK sets sit in the path of what it may rule.**
+
+1. **`G01`** — if a side background is delivered as a `product_media` row under a
+   new role, `ck_product_media__role_allowed` closes the set at
+   `GALLERY / THUMBNAIL / DETAIL` and `role` is part of
+   `uq_product_media__product_asset_role`; if it needs its own display
+   derivative, `ck_asset_derivatives__kind_allowed` closes that set too; if it is
+   *granted* rather than public, `secure_access_grants` cannot express it at all
+   (`scope_kind` is the single closed value `REQUEST_ACCESS`, and `customer_id`
+   plus `custom_request_id` are `NOT NULL` FKs, so an anonymous design session
+   can hold no grant); and if side/area identity becomes immutable or versioned
+   once referenced, neither table carries a `locked_at`, version or supersession
+   column.
+2. **`G02`** — a template↔product **many-to-many** compatibility relation, if it
    rules that "compatibility" means more than the optional single scope DB2
-   GAP-08 decided and the schema implements;
-2. a new `asset_derivatives.kind` for the editor-safe derivative, if `APP3-G04`
-   rules that `NORMALIZED` cannot carry that meaning.
+   GAP-08 decided and the schema implements.
+3. **`G04`** — a new `asset_derivatives.kind` for the editor-safe *customer*
+   derivative, if it rules that `NORMALIZED` cannot carry that meaning.
 
-If either fires it is one dedicated forward-only `APP3-DB01` before dependent
-code — the data-only kind-set + CHECK shape `APP2-DB01` already proved. This
-audit created and modified no migration. Engine-native JSON is never persisted.
+Option B (asserting `G01` schema-sufficient) is **not available**: the contract
+has not been ruled, so no proof exists that it avoids all four. What *is* proven
+sufficient is the placement **read** path — `product_sides` already carries
+`background_asset_id`, `image_width_px`, `image_height_px`,
+`physical_width_mm`, `physical_height_mm` and `px_per_mm`, and
+`embroidery_areas` already carries origin, extent and optional physical maxima.
+A `G01` ruling that keeps the background on the existing FK, reuses an existing
+derivative kind and treats it as public needs no migration.
+
+If any of the three gates fires it is one dedicated forward-only `APP3-DB01`
+before dependent code — the data-only kind-set + CHECK shape `APP2-DB01` already
+proved. This audit created and modified no migration. Engine-native JSON is
+never persisted.
 
 Everything else classifies as *schema sufficient* with an application-layer gap:
 template publication (application guard missing), safe-area dimensions (query
@@ -182,8 +209,26 @@ pre-hash quantization. Neither table carries a hash column **by design** —
 hashing begins at the formal design version — and APP3 must not invent one.
 
 Server-side document validation is therefore a backend dependency as much as a
-Studio one: `APP3-P01` and `APP3-P02` precede the first Template or Session
-write API.
+Studio one. **[Corrected by `APP3-PRE-AUDIT-C1`]** the two packages do not
+block equally:
+
+- **`APP3-P01` (`design-document`)** — document schema, validation,
+  canonicalization, quantization, unsupported-version failure, JCS/hash support
+  and document migrations — is **mandatory before every API that accepts or
+  persists a design document** (`B03`, `B04`, `B05`, `B07`, `B08`). It is not
+  required by `B01`, `B02` or `B06`, which move placement geometry and media
+  bytes, never a document.
+- **`APP3-P02` (`design-engine`)** — geometry, transforms and px↔mm conversion —
+  **does not block backend writes generically**. It blocks only a write carrying
+  a named server-side geometry or placement invariant. Exactly one such
+  invariant exists in locked authority: the exit gate requires the server to
+  reject an out-of-bounds or tampered document, which lands on `B04` (a
+  published template must be in-bounds for its scope), `B07` (bootstrap/clone)
+  and `B08` (autosave). Elsewhere it is routed before the exact Studio and
+  placement checkpoints that consume it (`A01`, `A03`, `S02`, `S07`).
+
+The packages are independent — `P02` no longer waits on `P01` — and neither may
+take a rendering dependency or be collapsed into the other or into the API.
 
 ## J. Editor-safe media
 
@@ -293,6 +338,26 @@ backend row ≤3 operations, every frontend row one screen or bounded capability
 `APP3-D01` before every frontend row, `APP3-DB01` before `B01`/`B03`/`W01`, and
 no APP4 identity or APP5/APP6 submission, review or quotation anywhere.
 
+**[Corrected by `APP3-PRE-AUDIT-C1`] — the conditional database checkpoint can
+now terminate without running.** A conditional row that dependents wait on must
+be able to finish *without* a migration, or it deadlocks everything behind it.
+`APP3-DB01` therefore has exactly two valid terminal outcomes:
+
+```text
+1. COMPLETE
+   A required forward-only migration was implemented and accepted.
+
+2. NOT_REQUIRED — GATE_RESOLVED
+   G01/G02/G04 collectively proved the current schema sufficient.
+```
+
+Dependents wait on the **disposition**, never on a migration having run. The
+predecessor token is `DB-DISPOSITION-RESOLVED`, satisfied by either outcome, and
+it is what `APP3-B01`, `APP3-B03` and `APP3-W01` now carry in place of
+"`APP3-DB01` executed". The token is reached as soon as `G01`, `G02` and `G04`
+have all ruled; if none proves a gap, the `NOT_REQUIRED — GATE_RESOLVED`
+disposition is recorded in the same evidence and no database checkpoint runs.
+
 ## P. First checkpoint recommendation
 
 **`APP3-G01` — Product placement and side-media authority.** `READY — NOT
@@ -325,7 +390,36 @@ the phase file updated in the same checkpoint; a gate that **recomputes** the
 ruled facts rather than trusting prose, with its own tests; a completion report
 naming exact commits.
 
-Six Product Owner questions are stated verbatim in the audit §P.
+**[Added by `APP3-PRE-AUDIT-C1`] — existing-data and invariant rollout.**
+"Must a published product carry a side and an area?" is an *invariant
+activation* question, not a preference, so `APP3-G01` may not rule it without
+knowing what the existing rows look like. Measured on the running dev database
+(`embroidery-dev-postgres-1`, PostgreSQL 16.14, 33 migrations — the frozen
+baseline):
+
+| Query | Value |
+|---|---|
+| `products` total | 29 (`DRAFT` 26, `ARCHIVED` 3, **`PUBLISHED` 0**) |
+| `PUBLISHED` products with zero `product_sides` | 0 |
+| `product_sides` total | **0** |
+| `product_sides` with zero `embroidery_areas` | 0 |
+| `embroidery_areas` total | **0** |
+| `design_templates` / `design_sessions` | 0 / 0 |
+
+This corroborates the hard blocker from a second direction: **not one placement
+row has ever been created**, because no code path can create one. But the
+measurement has an honest limit that `APP3-G01` must respect — this is a
+*development* database holding **zero published products**, so it cannot show
+whether a real published catalog would need remediation; a dataset with no
+published rows trivially satisfies any published-row invariant. `APP3-G01` must
+re-run the same queries (recorded verbatim in audit §P) against whatever
+environment holds the authoritative published catalog at ruling time, then
+choose between immediate activation, backfill and grandfathering — and must also
+rule on referenced-side/area editability and on whether side/area identity is
+immutable or versioned after first use.
+
+**Seven** Product Owner questions are now stated verbatim in the audit §P — the
+original six plus the referenced-side/area mutability question.
 
 **The execution prompt for `APP3-G01` was not written.**
 
@@ -373,8 +467,9 @@ tools/check-app2-closure.mjs                                   (+11/−4)
 tools/check-app2-closure.test.mjs                              (+22)
 ```
 
-**The two `tools/` files are a disclosed departure from "documentation only",
-and the reason is stated rather than buried.** `check-app2-closure.mjs` failed
+**Commit A was not docs-only — it contained two `tools/` files.** Human review
+classified this on 2026-08-03 as `APPROVED_NARROW_GOVERNANCE_DEVIATION` and did
+not require a revert (§U). The technical record follows. `check-app2-closure.mjs` failed
 any file in `docs/implementation/reports/` whose name starts with `APP3-`, with
 the message *"APP3 must not be started before closure"*. That assertion exists
 to stop APP3 work **predating** closure. APP2 is now closed and accepted, and
@@ -411,14 +506,16 @@ package-manifest or lockfile change exists in Commit A.
 | Acyclic map, one first gate | met (§O, §P) |
 | No implementation prompt written | met |
 | Quality and artifact gates pass | met (§Q) |
-| Two docs-only commits | met — one disclosed `tools/` departure (§R) |
+| Exactly two commits | met |
+| Commit B evidence-only | met |
+| Original *two docs-only commits* requirement | **`NOT_MET_AS_WRITTEN`** — Commit A also changed two `tools/` files; disposition `APPROVED_NARROW_GOVERNANCE_DEVIATION` (§U) |
 | Clean tree, `evidences/` untouched, nothing pushed | met |
 
 ## T. Final state and stop confirmation
 
 ```text
 APP2 = COMPLETE — PASS_WITH_FOLLOW_UPS — REVIEW_ACCEPTED
-APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — DELIVERED_FOR_REVIEW
+APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP3 = AUDITED — NOT STARTED
 APP3-G01 = READY — NOT STARTED
 ```
@@ -426,3 +523,243 @@ APP3-G01 = READY — NOT STARTED
 Every other APP3 checkpoint is `NOT STARTED`. No APP3 implementation was
 started, no Figma node was touched, no execution prompt was written, and nothing
 was pushed. **Stopping here for human review.**
+
+> Superseded on 2026-08-03 by the human-review reconciliation in §U. The status
+> line above carries the post-correction value; the rest of this section stands
+> as originally written.
+
+---
+
+## U. Human-review reconciliation — `APP3-PRE-AUDIT-C1`
+
+### U.1 Human verdict
+
+```text
+APP3-PRE-IMPLEMENTATION-AUDIT = ACCEPTED_WITH_REQUIRED_CORRECTIONS
+APP3                          = AUDITED — NOT STARTED
+APP3-G01                      = READY_IN_PRINCIPLE — DO_NOT_EXECUTE_YET
+```
+
+### U.2 Correction commit
+
+```text
+docs(app3): reconcile pre-implementation audit review
+```
+
+The correction commit's own hash is **deliberately not recorded here** — this
+section ships *inside* that commit, so any hash written here would be stale the
+moment it is created. This follows the same rule the APP2 and APP3 evidence
+commits used ("no Commit B self-hash"). Resolve it with
+`git log -1 --format=%H` on the commit whose subject is above.
+
+Corrected files (documentation only):
+
+```text
+docs/implementation/audits/APP3_PRE_IMPLEMENTATION_AUDIT.md
+docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md
+docs/implementation/reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md
+docs/implementation/10-MASTER-APPLICATION-ROADMAP.md
+docs/implementation/11-TRACEABILITY-AND-STATUS-MATRIX.md
+docs/implementation/13-PHASE-SOURCE-MAP.md
+```
+
+No `tools/`, `apps/`, `packages/`, `spikes/`, `infrastructure/`, `package.json`,
+lockfile, schema, migration, OpenAPI, generated-client or Figma change. The
+decision register was deliberately **not** edited — see §U.8.
+
+### U.3 Approved tools deviation
+
+```text
+Exactly two commits:            MET
+Commit B evidence-only:         MET
+Original two-docs-only-commits
+requirement:                    NOT_MET_AS_WRITTEN
+
+Disposition:
+APPROVED_NARROW_GOVERNANCE_DEVIATION
+
+Reason:
+the existing closure gate mechanically rejected the exact completion-report
+filename mandated by the checkpoint after APP2 had already closed.
+
+Scope:
+one exact filename allowlist plus tests; no prefix bypass, no disabled gate,
+no application/package/schema/Figma/manifest/lockfile change.
+```
+
+The deviation is **not reverted**. What changed is the *claim*: the earlier
+acceptance row `Two docs-only commits | met` was factually wrong — a commit
+containing `tools/check-app2-closure.mjs` and `tools/check-app2-closure.test.mjs`
+is not docs-only, and a requirement is not "met" because its violation was
+disclosed. That row is now split into the three rows above in both §S here and
+audit §Q, and audit §R carries the approved disposition. **No further tool-gate
+change was made by this correction.**
+
+### U.4 Migration-classification correction
+
+`NO_APP3_MIGRATION_UNLESS_G02_OR_G04_PROVES_ONE`
+→ **`NO_APP3_MIGRATION_UNLESS_G01_OR_G02_OR_G04_PROVES_ONE`** (Option A).
+
+Option B was considered and **rejected on evidence**: proving `G01`
+schema-sufficient is impossible while its contract is unruled, and four concrete
+paths from a `G01` ruling to a schema change were found by inspecting the schema
+(§F) — a closed `product_media.role` CHECK set, a closed
+`asset_derivatives.kind` CHECK set, a `secure_access_grants` table that cannot
+express an anonymous-session grant (`scope_kind` closed at `REQUEST_ACCESS`;
+`customer_id` and `custom_request_id` both `NOT NULL` FKs), and the absence of
+any `locked_at`/version column if side/area identity must freeze after use.
+
+The placement **read** path is separately confirmed schema-sufficient:
+`product_sides.background_asset_id`, `image_width_px`, `image_height_px`,
+`physical_width_mm`, `physical_height_mm`, `px_per_mm` and the
+`embroidery_areas` origin/extent/maxima columns all exist, `NOT NULL` and
+CHECK-guarded `> 0`. A conservative `G01` ruling needs no migration at all.
+
+### U.5 Conditional `APP3-DB01` semantics
+
+Two terminal outcomes are now defined — `COMPLETE`, and
+`NOT_REQUIRED — GATE_RESOLVED` — and dependents wait on the token
+`DB-DISPOSITION-RESOLVED`, which **either** outcome satisfies. `APP3-B01`,
+`APP3-B03` and `APP3-W01` carry that token instead of "`APP3-DB01` executed", so
+a no-migration ruling cannot deadlock the map. Recorded in audit §O.1, phase
+§6.1 and §O above; the graph remains acyclic.
+
+### U.6 `P01` / `P02` dependency correction
+
+`design-document` (`APP3-P01`) is **mandatory before every API that accepts or
+persists a design document** — `B03`, `B04`, `B05`, `B07`, `B08` — and is not
+required by `B01`, `B02` or `B06`.
+
+`design-engine` (`APP3-P02`) **no longer blocks backend writes generically**. It
+blocks only writes with a named server-side geometry or placement invariant, of
+which locked authority contains exactly one — the exit gate's out-of-bounds and
+tampered-document rejection — landing on `B04`, `B07` and `B08`. Elsewhere it is
+routed before the Studio and placement checkpoints that consume it (`A01`,
+`A03`, `S02`, `S07`).
+
+`APP3-P02` no longer depends on `APP3-P01`; geometry and canonical document form
+are independent under ADR-APP0-001 §2.4/§2.5, so both packages may proceed in
+parallel once `APP3-G01` has ruled. Neither package is collapsed, and no
+rendering dependency enters the API.
+
+### U.7 `APP3-G01` existing-data and invariant rollout
+
+Added as mandatory `G01` evidence (audit §P, summarized in §P above): the
+measured dev-database counts, the three verbatim SQL queries to re-run against
+the authoritative environment, the explicit caveat that a zero-published-product
+dev dataset cannot answer a production rollout question, and the new questions
+on referenced-side/area editability and on immutability-versus-versioning after
+first use. Product Owner questions grew from six to seven.
+
+This authorizes no implementation, no backfill and no migration.
+
+### U.8 Decision register — deliberately unchanged
+
+`docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md` was read and left
+untouched. Nothing in this reconciliation locks an implementation decision: the
+corrections are classification, dependency and evidence fixes, and the approved
+tools deviation is a **review disposition**, not an `IMP-D###` decision.
+Minting a register id for it would invent authority the human review did not
+grant. The `IMP-D0xx` row `APP3-G01` must create remains that gate's to write.
+
+### U.9 Validation
+
+Every command below was actually run. **Two fail, for one pre-existing cause that
+this correction did not create and is not authorized to fix** (§U.9.1).
+
+| Gate | Result |
+|---|---|
+| `pnpm check:app2-closure` | **FAIL (3 findings)** — frozen Figma baseline drifted: expected 86/86/11, measured 96/96/13 |
+| `node --test tools/check-app2-closure.test.mjs` | **30/32 pass, 2 fail** — same drift, surfaced by the two frozen-artifact assertions |
+| `pnpm test` (workspace) | **384/386 pass, 2 fail** — the same two cases; every other suite passes |
+| `pnpm check:secrets` | pass — 369 documents, 1819 tracked files |
+| `pnpm check:lifecycle` | pass — LC-04 5 transitions, one `PUBLISHED → DRAFT`, archive distinct |
+| `pnpm check:openapi` | pass — artifact up to date |
+| `pnpm check:api-client` | pass — tree hash `7524fc91…8ecf5a2` |
+| `pnpm check:figma-design-index` | pass — **96 registry IDs / 96 node rows / 13 tables** (registry is internally consistent at its new size) |
+| `node --test tools/check-figma-design-index.test.mjs` | 31/31 pass |
+| `pnpm db:check:manifest` | pass — 78 tables / 833 columns / 211 indexes |
+| `pnpm check:spike-boundaries` | pass |
+| `pnpm spike:editor:check` | pass |
+| `node tools/check-file-size.mjs` | pass — 0 hard-limit violations, 38 above review threshold |
+| `pnpm format:check` / `pnpm lint` / `pnpm typecheck` | pass |
+| `pnpm check:pagination-authority` / `check:storefront-route-authority` / `check:storefront-product-detail-authority` / `check:storefront-product-detail-correction` / `check:styles` / `check:frontend-boundaries` / `check:e2e` | pass |
+| `pnpm quality` | **`EXIT=1`** — solely because `check:app2-closure` and `test` are in its chain |
+| `git diff --check` | clean |
+
+#### U.9.1 The failure is pre-existing and unrelated
+
+`check:app2-closure` freezes the APP2 closure baseline and **recomputes** it
+rather than trusting prose — which is exactly why it caught this. The Figma
+registry grew from 86 rows / 11 tables to **96 rows / 13 tables** in commit
+`2a5d3bf` — `docs(brd0): register logo system exploration and Concept 03
+productionization` — a single-file change to `docs/design/FIGMA_DESIGN_INDEX.md`
+(+72/−2) that landed **after** the APP3 audit commits and is unrelated BRD0 brand
+work.
+
+Proven, not assumed: with every file of this correction stashed, the same three
+findings reproduce at `HEAD`. This correction touches no Figma file, no
+`tools/` file and no frozen artifact.
+
+**Not fixed here, deliberately.** Re-freezing the APP2 baseline from 86/86/11 to
+96/96/13 would be a `tools/` change — which the correction prompt forbids
+("no further tool-gate change is authorized") — and, more importantly, it is a
+governance decision about whether unrelated brand work may move a closed phase's
+frozen artifact. That belongs to a human, not to this checkpoint.
+
+**Routed as a new follow-up:**
+
+| Follow-up | Status | Owner |
+|---|---|---|
+| `FU-APP3-CLOSURE-FIGMA-BASELINE-01` — BRD0 Figma registry growth (86/86/11 → 96/96/13) breaks `check:app2-closure` and two of its tests | **OPEN — BLOCKING `pnpm quality`** | APP2 closure owner + BRD0 owner |
+
+It must be resolved before any APP3 checkpoint that requires a green
+`pnpm quality` — including `APP3-G01`.
+
+Manual documentation validation:
+
+```text
+all links resolve                                          yes
+checkpoint IDs unique                                      yes (37 rows)
+dependency graph acyclic                                   yes
+conditional DB01 has COMPLETE and NOT_REQUIRED terminals   yes (U.5)
+dependent checkpoints accept either resolved outcome       yes (DB-DISPOSITION-RESOLVED)
+design-document mandatory for document writes              yes (B03/B04/B05/B07/B08)
+design-engine dependency capability-specific               yes (B04/B07/B08 + A01/A03/S02/S07)
+G01 included in migration disposition                      yes (Option A)
+existing Product placement rollout owned by G01            yes (U.7)
+no APP3 implementation started                             confirmed
+no execution prompt written                                confirmed
+pnpm quality green                                         NO — see U.9.1
+```
+
+### U.10 Final statuses
+
+```text
+APP2                          = COMPLETE — PASS_WITH_FOLLOW_UPS — REVIEW_ACCEPTED
+APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
+APP3                          = AUDITED — NOT STARTED
+APP3-G01                      = READY — NOT STARTED
+every other APP3 checkpoint   = NOT STARTED
+```
+
+Preserved unchanged by this correction: IMP-D026 / `ADR-APP0-001`, React 19
+native SVG, the engine-neutral document, the renderer-adapter boundary, the
+runtime-only watermark, no export/download, no private original in the browser,
+anonymous session is not customer identity, email/phone prohibited on a Design
+Session, APP5 ownership of submission and transfer, the canonical Design Session
+states, `G02` ownership of the Template lifecycle, `G04` ownership of the
+editor-safe derivative, a phase-level Figma package before frontend
+implementation, small backend and frontend checkpoints, and `APP3-G01` as the
+first recommended gate. No background removal, 3D, stitch simulation, digitizing
+or APP4–APP6 scope was added.
+
+**One blocking condition carried forward.**
+`FU-APP3-CLOSURE-FIGMA-BASELINE-01` (§U.9.1) — unrelated BRD0 Figma registry
+growth drifted an APP2 frozen artifact, so `check:app2-closure`, two of its
+tests and therefore `pnpm quality` fail at `HEAD`. It is pre-existing, proven by
+stashing this correction and reproducing at `HEAD`, and deliberately not fixed
+here. It must be closed before any APP3 checkpoint that requires a green
+`pnpm quality`, `APP3-G01` included.
+
+`APP3-G01` is **not** executed and its execution prompt is **not** written.
