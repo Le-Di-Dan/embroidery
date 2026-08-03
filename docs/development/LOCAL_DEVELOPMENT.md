@@ -210,15 +210,26 @@ pnpm --filter @embroidery/api staff:bootstrap --rotate
 
 ## 8. Quality gates
 
+There is **no repository-wide aggregate**. The three global quality controls are
+Prettier, ESLint and SonarQube; everything else is scoped validation run from its
+owner. See `docs/implementation/VALIDATION_GOVERNANCE.md` and
+`docs/implementation/SCOPED_COMMAND_INDEX.md`.
+
 ```bash
-pnpm quality            # format:check + lint + typecheck + test + check:file-size
-pnpm format             # write formatting
+# global controls
+pnpm format:check
+pnpm format                                  # write formatting
 pnpm lint
-pnpm typecheck
-pnpm test
-pnpm test:coverage
-pnpm check:file-size    # 400-line source / 600-line test hard limits
+
+# repository-wide orchestration
 pnpm build
+
+# scoped — run what your change justifies
+pnpm --filter <workspace> typecheck
+pnpm --filter <workspace> test
+pnpm --filter <workspace> test:coverage      # lcov inputs for SonarQube
+node tools/check-file-size.mjs               # 400-line source / 600-line test hard limits
+node --test "tools/<the checker you touched>.test.mjs"
 ```
 
 ## 9. SonarQube
@@ -244,7 +255,7 @@ First-time setup:
 4. Produce coverage, then scan (scanner CLI via Docker on the same network):
 
 ```bash
-pnpm test:coverage
+pnpm --filter <workspace> test:coverage
 docker run --rm --network embroidery-quality \
   -e SONAR_HOST_URL=http://sonarqube:9000 \
   -e SONAR_TOKEN="<your token>" \
@@ -286,7 +297,7 @@ engine and no interaction library** (IMP-D026), and **staff auth hashing — the
 Node built-in `crypto.scrypt`, no dependency** (IMP-D027; Argon2id via
 `@node-rs/argon2` is the reviewed no-migration upgrade, not installed). Do not install `konva`,
 `react-konva`, `fabric`, `pixi.js` or `interactjs` into any app or package: the
-copies under `spikes/` are research-only and `pnpm check:spike-boundaries`
+copies under `spikes/` are research-only and `node tools/check-spike-boundaries.mjs`
 fails the build if they leak into a production manifest.
 
 ## 13. Troubleshooting

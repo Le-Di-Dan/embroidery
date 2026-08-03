@@ -98,8 +98,10 @@ A checkpoint is complete only when:
 - UI uses the real contract before closure.
 - No unrelated work is included.
 - The scoped validations the change justifies pass — selected per
-  [`VALIDATION_GOVERNANCE.md`](./VALIDATION_GOVERNANCE.md), including file-size
-  for touched production/test files. There is no repository-wide aggregate.
+  [`VALIDATION_GOVERNANCE.md`](./VALIDATION_GOVERNANCE.md) and invoked per
+  [`SCOPED_COMMAND_INDEX.md`](./SCOPED_COMMAND_INDEX.md), including
+  `node tools/check-file-size.mjs` for touched production/test files. There is
+  no repository-wide aggregate and no root alias for a scoped command.
 - Changed files and evidence are reported.
 - The working tree contains no next-checkpoint work.
 - Human review accepts the result.

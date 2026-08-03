@@ -382,7 +382,7 @@ React-aware shared component-test support (`@embroidery/frontend-testing`), lock
 
 ### `packages/e2e-testing`
 
-Cross-application browser end-to-end suite (`@embroidery/e2e-testing`), locked by `APP0-DEC-E2E` (IMP-D025) and implemented by APP0-T02B. Owns `playwright.config.ts`, the E2E `specs/**`, and `support/**` (fixtures, the single app/gateway/API/disposable-Postgres orchestrator, and the disposable-DB adapter that **reuses** `@embroidery/database/testing` + `@embroidery/test-utils` `CleanupStack` rather than duplicating database lifecycle). Runs the **Playwright Test** tier (separate from Jest, which stays the sole unit/component runner). It sits under `packages/` — not `apps/` — because it is shared cross-app test tooling, not a deployable application, and never lives under any app `src/`. `@playwright/test` and browser binaries are devDependencies of this package only; E2E is excluded from the fast default `pnpm quality` and runs in a separate CI tier. No production runtime ownership.
+Cross-application browser end-to-end suite (`@embroidery/e2e-testing`), locked by `APP0-DEC-E2E` (IMP-D025) and implemented by APP0-T02B. Owns `playwright.config.ts`, the E2E `specs/**`, and `support/**` (fixtures, the single app/gateway/API/disposable-Postgres orchestrator, and the disposable-DB adapter that **reuses** `@embroidery/database/testing` + `@embroidery/test-utils` `CleanupStack` rather than duplicating database lifecycle). Runs the **Playwright Test** tier (separate from Jest, which stays the sole unit/component runner). It sits under `packages/` — not `apps/` — because it is shared cross-app test tooling, not a deployable application, and never lives under any app `src/`. `@playwright/test` and browser binaries are devDependencies of this package only; E2E is excluded from the browser-free scoped validation a change ordinarily runs and has its own CI tier; its commands are owned by this package and invoked with `pnpm --filter @embroidery/e2e-testing …` (`docs/implementation/SCOPED_COMMAND_INDEX.md`). No production runtime ownership.
 
 **Frontend test placement (APP0-T02A, stricter than colocation).** Frontend tests and test-support live under `apps/<app>/test/**` — never under `apps/<app>/src/**`, which stays production-only:
 
@@ -420,8 +420,9 @@ and a decision*, not shipped code. A spike:
   `packages/*` manifest, and must never be imported by application source;
 - must not add a candidate dependency to a production manifest — adopting a
   selected technology is the owning phase's checkpoint, not the spike's;
-- keeps its heavy work (benchmarks, browser runs) out of the fast `pnpm quality`
-  chain; only its static isolation gate joins it;
+- keeps its heavy work (benchmarks, browser runs) out of the browser-free scoped
+  validation a change ordinarily runs; only its static isolation gate
+  (`node tools/check-spike-boundaries.mjs`) belongs there;
 - commits small machine-readable results as evidence, with no absolute machine
   path, secret or external URL.
 

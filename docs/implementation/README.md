@@ -50,6 +50,7 @@ Do not use a wireframe to override product behavior, database semantics, lifecyc
 | [`06-OPENAPI-AND-CLIENT-CONTRACT.md`](./06-OPENAPI-AND-CLIENT-CONTRACT.md) | Contract lifecycle and generated Axios client policy. |
 | [`07-TESTING-AND-ACCEPTANCE-GATES.md`](./07-TESTING-AND-ACCEPTANCE-GATES.md) | Required evidence by checkpoint and phase. |
 | [`VALIDATION_GOVERNANCE.md`](./VALIDATION_GOVERNANCE.md) | **Canonical:** which validations run, when and why. Three global controls; everything else is scoped. |
+| [`SCOPED_COMMAND_INDEX.md`](./SCOPED_COMMAND_INDEX.md) | **Canonical:** where every non-global command lives and how to invoke it directly. Root `package.json` is not a command registry. |
 | [`08-DATABASE-CHANGE-CONTROL.md`](./08-DATABASE-CHANGE-CONTROL.md) | Forward-only application-era schema change process. |
 | [`09-RELEASE-AND-MILESTONE-POLICY.md`](./09-RELEASE-AND-MILESTONE-POLICY.md) | Release increments, release gates, production candidate rules. |
 | [`10-MASTER-APPLICATION-ROADMAP.md`](./10-MASTER-APPLICATION-ROADMAP.md) | Ordered APP0–APP12 plan and dependencies. |

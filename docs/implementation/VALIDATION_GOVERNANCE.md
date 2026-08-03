@@ -1,7 +1,11 @@
 # Validation Governance
 
 Canonical authority for **which validations run, when, and why**. Locked by
-`GOV-Q01` (2026-08-04).
+`GOV-Q01` and corrected by `GOV-Q01-C1` (2026-08-04).
+
+Its companion is [`SCOPED_COMMAND_INDEX.md`](./SCOPED_COMMAND_INDEX.md), which
+records **where each command lives and how to invoke it** now that root
+`package.json` is no longer a command registry.
 
 Where an older document still describes a repository-wide `pnpm quality` chain as
 the per-change gate, **this document supersedes it**. Historical completion
@@ -27,9 +31,52 @@ purpose is to prove the whole repository, and none may be created — not as
 `verify:all`, `gate`, `gate:all`, `regression`, `regression:all`, or any
 equivalent.
 
-`pnpm quality:e2e` is **not** an exception: it is a deliberately targeted browser
-tier (`check:e2e` plus the Playwright matrix), not a repository-wide aggregate.
-It is never a default acceptance criterion.
+`quality:e2e` was itself removed by `GOV-Q01-C1`: an alias that chained a
+boundary check to a full browser matrix is an aggregate, however narrow. The
+browser tier is now
+`pnpm --filter @embroidery/e2e-testing check:e2e` followed by
+`pnpm --filter @embroidery/e2e-testing e2e:full`, run only under an authorized
+release/regression plan (`CMD-QUALITY-E2E`). It is never a default acceptance
+criterion.
+
+### 1.1 The root-script boundary
+
+Root `package.json` is **not** a command registry. It may contain only:
+
+```text
+repository-wide development/build orchestration
+global Prettier
+global ESLint
+global SonarQube when canonically configured
+shared Docker/infrastructure lifecycle
+shared database lifecycle and operations
+```
+
+Exactly **30 scripts**, enumerated in
+[`SCOPED_COMMAND_INDEX.md`](./SCOPED_COMMAND_INDEX.md) §2 (31 only once a valid
+`sonar` exists). Three ownership levels:
+
+| Level | Owner | Examples |
+|---|---|---|
+| 1 | root `package.json` | `dev`, `build`, `clean`, `format:check`, `lint`, `docker:*`, `db:*` |
+| 2 | the owning workspace `package.json` | API/worker tests, E2E modes, OpenAPI and generated-client generation/checking, spike operations, package-scoped typecheck/build/test |
+| 3 | the owning file, run directly | checkpoint, phase, capability, smoke, benchmark, explain and one-off validation commands |
+
+**Root aliases for Level 2 and Level 3 commands are prohibited**, including
+renamed ones.
+
+> **Superseded rule.** `GOV-Q01` allowed a root script for "a stable
+> product-development operation expected to outlive the checkpoint". That test
+> was too permissive — it left 101 package-, module-, phase-, checkpoint-,
+> smoke-, E2E-, spike-, benchmark- and diagnostic-specific commands in the root
+> file. It is replaced by the three levels above.
+
+### 1.2 Root aliases are not documentation
+
+```text
+Do not add a root script merely to make a command discoverable.
+Add or update SCOPED_COMMAND_INDEX.md instead.
+```
 
 ---
 
@@ -68,9 +115,12 @@ build is scoped validation, not global quality;
 tests are scoped evidence, not global quality.
 ```
 
-Root commands for deliberate full runs still exist (`pnpm typecheck`,
-`pnpm build`, `pnpm test`). A checkpoint prompt must not invoke them without a
-written impact reason.
+Their **direct commands remain available** — `pnpm --filter <workspace> test`,
+`pnpm --filter <workspace> typecheck` — but the repository-wide `typecheck`,
+`test` and `test:coverage` aliases were removed by `GOV-Q01-C1` and are
+indexed as `RETIRED_AGGREGATE`. `pnpm build` remains, as repository-wide build
+orchestration. A checkpoint prompt must not invoke a full run without a written
+impact reason.
 
 ---
 
@@ -125,24 +175,25 @@ node tools/check-app3-g03.mjs
 node --test tools/check-app3-g03.test.mjs
 ```
 
-A package-level script is allowed only when it is a **stable product-development
-operation expected to outlive the checkpoint itself** — `dev`, `build`,
-`format:check`, `lint`, an explicit test suite, an E2E command, OpenAPI or
-generated-client generation/checking, a database or Docker operation, a
-backup/restore, a benchmark, a smoke command, or a stable cross-cutting tool.
+Root scripts are allowed only for repository-global orchestration, the three
+global quality controls, and shared infrastructure/database lifecycle (§1.1).
+Stable package-owned operations remain in the owning workspace
+`package.json`. Checkpoint-, phase-, capability- and tool-owned operations are
+indexed in [`SCOPED_COMMAND_INDEX.md`](./SCOPED_COMMAND_INDEX.md) and run
+directly.
 
 Root registrations removed by `GOV-Q01`: `quality`, `check:app2-closure`,
-`check:app3-g01`, `check:app3-g02`, `check:app3-g03`. Their checker and test
-files are unchanged and remain directly runnable.
+`check:app3-g01`, `check:app3-g02`, `check:app3-g03`. `GOV-Q01-C1` then
+removed the remaining **71** aliases, taking the root file from 101 scripts to
+30. **No checker, test, tool, Playwright project, workspace script or source
+file was deleted** — only the aliases.
 
-> **Legacy names retained, reclassified.** `check:pagination-authority`,
-> `check:storefront-route-authority`,
+> **The four capability-named APP2 gates are gone from root too.**
+> `check:pagination-authority`, `check:storefront-route-authority`,
 > `check:storefront-product-detail-authority` and
-> `check:storefront-product-detail-correction` are capability-named APP2
-> authority gates registered before this rule existed. They were **kept** rather
-> than mass-deleted, but they are scoped validations under §2, not global
-> controls, and they are the pattern **not** to repeat. A later governance
-> checkpoint may retire them.
+> `check:storefront-product-detail-correction` were kept by `GOV-Q01` and
+> removed by `GOV-Q01-C1`. They are indexed as `HISTORICAL_SCOPED` and run
+> directly from `tools/`.
 
 ---
 

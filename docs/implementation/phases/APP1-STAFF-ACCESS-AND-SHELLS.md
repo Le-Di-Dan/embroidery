@@ -235,7 +235,7 @@ entry** — `APP1-A01/A02/S01` are blocked until a human promotes the relevant r
   composed from primitives), `FIG-DS-SCRIM-TOKEN` (no scrim token — overlay uses
   `ink/900 @45%`). The former `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02.
 
-Registry integrity is enforced by `pnpm check:figma-design-index`
+Registry integrity is enforced by `node tools/check-figma-design-index.mjs`
 (`07-TESTING-AND-ACCEPTANCE-GATES.md` §6.1).
 
 ## 8. APP0 follow-up routing

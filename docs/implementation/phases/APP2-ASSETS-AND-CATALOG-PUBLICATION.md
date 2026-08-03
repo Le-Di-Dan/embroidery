@@ -774,6 +774,14 @@
 
 ## 1. Outcome
 
+> **Command forms below are historical.** `GOV-Q01` and `GOV-Q01-C1` removed
+> every non-global root `package.json` alias, so a `pnpm quality`,
+> `pnpm check:*`, `pnpm smoke:*`, `pnpm test:*`, `pnpm e2e*`,
+> `pnpm spike:*` or `pnpm bench:*` appearing in a dated record below names the
+> alias that existed **when that evidence was recorded**. It is preserved, not
+> rewritten. For the current invocation of any of them see
+> [`../SCOPED_COMMAND_INDEX.md`](../SCOPED_COMMAND_INDEX.md).
+
 Deliver the first full business vertical slice: Admin uploads/processes assets, creates and publishes catalog products, and Storefront server-renders only published products.
 
 ## 2. Dependencies
@@ -987,7 +995,7 @@ come from Figma, and it changes nothing in Figma: the UI02 masonry authority
 (`208:538`, `208:2002`, `224:871`, `226:1038`, `REUSE_AND_SUPPLEMENT_ONLY`) and the
 72/72 registry are untouched.
 
-**Machine-checked route facts** — `pnpm check:storefront-route-authority` compares
+**Machine-checked route facts** — `node tools/check-storefront-route-authority.mjs` compares
 this table against the `IMP-D038` register row and the surrounding authority set.
 
 | Fact | Value |
@@ -1061,7 +1069,7 @@ invent neither: there was **no approved design authority** (UI03 was Draft; the 
 and **no Product Detail browser route**. This gate supplies both. It changed no application
 source, no OpenAPI artifact, no generated client, no database object and no dependency.
 
-**Machine-checked Product Detail facts** — `pnpm check:storefront-product-detail-authority`
+**Machine-checked Product Detail facts** — `node tools/check-storefront-product-detail-authority.mjs`
 compares this table against the `IMP-D039` register row and the surrounding authority set.
 
 | Fact | Value |
@@ -1157,7 +1165,7 @@ acceptance criteria. Both are settled here. This correction changed no applicati
 the route, the API boundary, the gallery, the lightbox, share, the S01 card link and the
 request-scoped loader are exactly as delivered.
 
-**Machine-checked correction facts** — `pnpm check:storefront-product-detail-authority`
+**Machine-checked correction facts** — `node tools/check-storefront-product-detail-correction.mjs`
 compares this table against the `IMP-D040` register row and the surrounding authority set.
 
 | Fact | Value |
@@ -1218,10 +1226,10 @@ Admin staff uploads a valid product image, sees processing complete, creates a p
 the current authority for checkpoint status, commit chain, frozen artifacts and
 routed follow-ups. Verdict `PASS_WITH_FOLLOW_UPS`: 30 canonical checkpoints, all
 final; 0 blocking checkpoints; 10 routed follow-ups, all nonblocking and owned.
-The exit gate's E2E clause is met by `pnpm smoke:app2-e01-publication:production`
+The exit gate's E2E clause is met by `node tools/smoke-app2-e01-publication-production.mjs`
 (`APP2-E01`, corrected by `APP2-E01-C1` to build its disposable database from the
-canonical migrations), plus `pnpm quality:e2e`. Gate:
-`pnpm check:app2-closure`.
+canonical migrations), plus the browser tier (`pnpm --filter @embroidery/e2e-testing check:e2e` and
+`e2e:full`). Gate: `node tools/check-app2-closure.mjs`.
 
 ## 9. Handoff
 

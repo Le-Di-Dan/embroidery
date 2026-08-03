@@ -2,6 +2,14 @@
 
 ## 1. Outcome
 
+> **Command forms below are historical.** `GOV-Q01` and `GOV-Q01-C1` removed
+> every non-global root `package.json` alias, so a `pnpm quality`,
+> `pnpm check:*`, `pnpm smoke:*`, `pnpm test:*`, `pnpm e2e*`,
+> `pnpm spike:*` or `pnpm bench:*` appearing in a dated record below names the
+> alias that existed **when that evidence was recorded**. It is preserved, not
+> rewritten. For the current invocation of any of them see
+> [`../SCOPED_COMMAND_INDEX.md`](../SCOPED_COMMAND_INDEX.md).
+
 Deliver the product differentiation core: Admin defines versioned product-compatible embroidery templates and customers create a validated, watermark-protected 2D customization session.
 
 ## 2. Dependencies
@@ -201,12 +209,13 @@ or be collapsed into the other or into the API.
   selection/handles/viewport/watermark, no mutable runtime object in Zustand,
   geometry outside components, undo/redo as a domain concern, client-only lazy
   Studio behind a server-rendered shell. Konva, Fabric and interact.js must never
-  enter a production manifest; `pnpm check:spike-boundaries` enforces it.
+  enter a production manifest; `node tools/check-spike-boundaries.mjs` enforces it.
 - **Performance authority** is `ADR-APP0-001` §6 with the APP0-R01 S/M/L scenes.
-  `pnpm spike:editor:check` runs at any checkpoint touching the spike boundary;
-  `pnpm spike:editor:test`
+  `pnpm --filter @embroidery-spike/design-studio spike:check` runs at any
+  checkpoint touching the spike boundary;
+  `pnpm --filter @embroidery-spike/design-studio spike:test`
   runs at any checkpoint touching `design-document`, `design-engine` or an
-  adapter; **`pnpm spike:editor:benchmark` stays outside the browser-free tier** and is
+  adapter; **the spike benchmark stays outside the browser-free tier** and is
   rerun at `S02`, `S03`, `S07`, `S11` and `E01`. The measured WebKit
   continuous-scale risk (41 ms p95 versus 16.7 ms Chromium) is `APP3-S07`'s to
   mitigate and re-measure.
@@ -224,8 +233,9 @@ or be collapsed into the other or into the API.
     §3 decision table, and names them in its report;
   - **invokes its checker and tests directly** —
     `node tools/check-app3-g0N.mjs`, `node --test tools/check-app3-g0N.test.mjs`
-    — and **must not** register a `check:app3-*` script in root
-    `package.json`;
+    — and **must not** register **any** script in root `package.json`, whose
+    30-script boundary is locked by `GOV-Q01-C1`; a reusable command gets a row
+    in [`../SCOPED_COMMAND_INDEX.md`](../SCOPED_COMMAND_INDEX.md) instead;
   - **must not** append its checker to any aggregate command; none exists, and
     none may be created;
   - uses the three global controls (`pnpm format:check`, `pnpm lint`, SonarQube)
@@ -271,7 +281,7 @@ rulings close that gap.
 
 ### 6.4.1 Machine-checked placement facts
 
-`pnpm check:app3-g01` recomputes each of these against the repository. Do not
+`node tools/check-app3-g01.mjs` recomputes each of these against the repository. Do not
 edit a value here without changing the ruling it encodes.
 
 | Fact | Value |
@@ -391,7 +401,7 @@ explicitly superseded by later human authority.
 ### 6.4.4 Dependency reconciliation
 
 > **Dated record — superseded by §6.5.4.** This table states the map *as it stood
-> when `APP3-G01` delivered*, and `pnpm check:app3-g01` asserts these exact
+> when `APP3-G01` delivered*, and `node tools/check-app3-g01.mjs` asserts these exact
 > values, so it is not rewritten. Human review has since accepted G01 and
 > `APP3-G02` has delivered; §6.5.4 carries the current statuses.
 
@@ -427,7 +437,7 @@ any source state. Separately, `APP2-B02` shipped Product archive from `DRAFT`
 
 ### 6.5.1 Machine-checked lifecycle facts
 
-`pnpm check:app3-g02` recomputes each of these against the repository.
+`node tools/check-app3-g02.mjs` recomputes each of these against the repository.
 
 | Fact | Value |
 |---|---|
@@ -543,7 +553,7 @@ column either.
 ### 6.5.4 Dependency reconciliation
 
 > **Dated record — superseded by §6.6.4.** This table states the map *as it stood
-> when `APP3-G02` delivered*, and `pnpm check:app3-g02` asserts these exact
+> when `APP3-G02` delivered*, and `node tools/check-app3-g02.mjs` asserts these exact
 > values, so it is not rewritten. Human review has since accepted G02 and
 > `APP3-G03` has delivered; §6.6.4 carries the current statuses.
 
@@ -581,7 +591,7 @@ that state would have had to invent an identity model.
 
 ### 6.6.1 Machine-checked session facts
 
-`pnpm check:app3-g03` recomputes each of these against the repository.
+`node tools/check-app3-g03.mjs` recomputes each of these against the repository.
 
 | Fact | Value |
 |---|---|
@@ -919,7 +929,7 @@ delete via `TR-LC07-05` after a 24-hour grace. It closed `O-008` and the
 `design_sessions` half of `DP-RET-01`, superseded the earlier sliding
 `last_activity_at + TTL` direction, and contributed **no** schema change
 (`G03_DB_CONTRIBUTION = NONE`) — every required field and constraint was
-measured to already exist. The gate `pnpm check:app3-g03` asserts the absence of
+measured to already exist. The gate `node tools/check-app3-g03.mjs` asserts the absence of
 any Session operation as hard as it asserts the authority.
 
 Audit: [`audits/APP3_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP3_PRE_IMPLEMENTATION_AUDIT.md).

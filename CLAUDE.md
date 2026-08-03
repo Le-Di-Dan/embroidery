@@ -19,7 +19,7 @@ When documents conflict, follow this order:
 7. `docs/architecture/REPOSITORY_STRUCTURE.md`
 8. `docs/development/FRONTEND_CONVENTIONS.md`
 9. `docs/development/BACKEND_CONVENTIONS.md`
-10. `docs/implementation/README.md` and the canonical implementation standards it indexes (delivery governance, backend API, SCSS, OpenAPI/client, database change, phase/checkpoint model, **validation governance**).
+10. `docs/implementation/README.md` and the canonical implementation standards it indexes (delivery governance, backend API, SCSS, OpenAPI/client, database change, phase/checkpoint model, **validation governance**, **scoped command index**).
 11. Relevant ADRs and task-specific documents.
 
 Authority notes:
@@ -89,9 +89,10 @@ Before any **frontend UI** checkpoint:
 - **block** implementation when the entry is missing, stale, superseded, or not `APPROVED_FOR_IMPLEMENTATION`;
 - record the registry IDs used in the completion report.
 
-The gate `pnpm check:figma-design-index` enforces registry integrity. Run it on any
-design or frontend UI checkpoint; it is scoped validation, not a global control
-(`docs/implementation/VALIDATION_GOVERNANCE.md`).
+The gate `node tools/check-figma-design-index.mjs` enforces registry integrity. Run
+it on any design or frontend UI checkpoint; it is scoped validation, not a global
+control (`docs/implementation/VALIDATION_GOVERNANCE.md`,
+`docs/implementation/SCOPED_COMMAND_INDEX.md` `CMD-CHECK-FIGMA-DESIGN-INDEX`).
 
 ### Backend
 
@@ -256,9 +257,12 @@ exception:
 - No mutation of an approved design snapshot.
 - No payment success based only on browser redirect.
 - No direct coupling to vendor-specific object-storage administration APIs.
-- No repository-wide aggregate validation command, and no checkpoint-specific
-  script registered in root `package.json`; a checkpoint's checker is run
-  directly (`docs/implementation/VALIDATION_GOVERNANCE.md` §1 and §5).
+- No repository-wide aggregate validation command. Root `package.json` carries
+  only repository-global orchestration, the three global quality controls and
+  shared infrastructure/database lifecycle; package-owned commands stay in the
+  owning workspace and checkpoint/tool commands are run directly and indexed in
+  `docs/implementation/SCOPED_COMMAND_INDEX.md`
+  (`docs/implementation/VALIDATION_GOVERNANCE.md` §1.1 and §5).
 
 ## 10. Completion standard
 
