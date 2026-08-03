@@ -91,7 +91,7 @@ Browser E2E runs on the stack locked by `APP0-DEC-E2E` (IMP-D025): **Playwright 
 - **Locators/flake** — `getByRole`/`getByLabel`/visible text, `data-testid` last; no arbitrary sleeps (auto-waiting); retries only in CI and bounded, trace on retry/failure; test independence.
 - **Artifacts** — screenshot only-on-failure, trace retain-on-failure/on-first-retry, HTML report + `test-results/`, all gitignored and never committed; visual regression is a **separate** concern (no broad screenshot baselines in T02B).
 - **Accessibility** — semantic-locator policy plus optional keyboard/focus smoke; a targeted `@axe-core/playwright` scan is deferred to T02B (version locked only after official-source review); no full-WCAG claim.
-- **CI/quality tier** — E2E is **not** in the fast default `pnpm quality`; it runs in a separate `quality:e2e`/CI job with browser-install caching and per-project sharding. Root commands (T02B): `e2e` / `e2e:headed` / `e2e:debug` / `e2e:report` / `e2e:install` / `e2e:smoke` / `check:e2e`.
+- **CI/quality tier** — E2E is **not** part of the browser-free scoped validation a change ordinarily runs; it runs in a separate `quality:e2e`/CI job with browser-install caching and per-project sharding. Root commands (T02B): `e2e` / `e2e:headed` / `e2e:debug` / `e2e:report` / `e2e:install` / `e2e:smoke` / `check:e2e`.
 
 The full APP0-T02B handoff and spike evidence are in `reports/APP0-DEC-E2E-COMPLETION-REPORT.md`.
 
@@ -103,8 +103,9 @@ measurement. It is a **research** tier, not a product gate:
 - it reuses the locked Playwright version and the pinned
   `mcr.microsoft.com/playwright:v1.61.1-noble` image, so the repository has one
   browser toolchain;
-- it never joins `pnpm quality` or `quality:e2e` — only the spike's static
-  isolation gate (`pnpm check:spike-boundaries`) runs in `quality`;
+- it never joins the browser-free tier or `quality:e2e` — only the spike's static
+  isolation gate (`pnpm check:spike-boundaries`) runs there, and only when the
+  change touches the spike boundary;
 - its orchestrator owns every process it starts and tears down in `finally`;
 - results are committed as small JSON evidence with no machine path, secret or
   external URL, and every number is reported with its environment.
@@ -115,9 +116,18 @@ performance-regression scenes handed to APP3 (IMP-D026).
 
 ### 5.3 Tier boundaries and known limits (locked at APP0 closure)
 
-- **`pnpm quality` is browser-free.** It runs format, lint, typecheck, the Jest
-  tiers, and the static boundary/artifact gates. It launches no browser and runs
-  no benchmark, so it stays fast enough to be the per-change gate.
+> **Superseded in part by `GOV-Q01` (2026-08-04) —
+> [`VALIDATION_GOVERNANCE.md`](./VALIDATION_GOVERNANCE.md).** The
+> `pnpm quality` aggregate **no longer exists**. Its premise — one browser-free
+> chain cheap enough to be the per-change gate — stopped holding once every
+> checkpoint appended its own gate to it. The tier *boundaries* below remain
+> correct and are still authority; read every "`pnpm quality`" in this section as
+> "the browser-free scoped validations a change justifies". Only Prettier,
+> ESLint and SonarQube are global controls.
+
+- **The browser-free tier** is format, lint, typecheck, the Jest tiers, and the
+  static boundary/artifact gates. It launches no browser and runs no benchmark.
+  It is selected per change, not run wholesale.
 - **`pnpm quality:e2e` is the browser tier** (`check:e2e` + the full Playwright
   matrix). A release or CI workflow must run it in its own job per §5.1; a green
   `pnpm quality` is **not** evidence that the browser tier passed, and no report
@@ -127,7 +137,7 @@ performance-regression scenes handed to APP3 (IMP-D026).
   `node tools/check-spike-boundaries.mjs --build` inspect `.next`/`dist` output
   and therefore require a prior build; wire them after the build step. Their
   static counterparts (`check:frontend-boundaries`, `check:spike-boundaries`)
-  run inside `quality`.
+  are the browser-free ones, run when the change touches their inputs.
 - **Browser-tier artifacts must stay out of the formatter.** Playwright writes
   machine-generated JSON into `test-results/`, `playwright-report/` and the
   spike's `bench-results/`; these are git-ignored *and* Prettier-ignored, so a
@@ -152,8 +162,9 @@ FIGMA_INDEX_CONSISTENCY = PASS
 ```
 
 The canonical Figma registry `docs/design/FIGMA_DESIGN_INDEX.md` is enforced by the
-static gate `pnpm check:figma-design-index` (`tools/check-figma-design-index.mjs`),
-wired into the browser-free `pnpm quality` chain. It never calls the Figma network.
+static gate `pnpm check:figma-design-index` (`tools/check-figma-design-index.mjs`).
+It never calls the Figma network. It is scoped validation: run it on any design or
+frontend UI checkpoint, and on any change that touches the registry.
 
 For a **design** checkpoint, the gate requires that every created/moved/superseded
 frame is reflected in the index, node URLs are exact and valid (file key + node id
@@ -187,6 +198,13 @@ Maintain layered suites:
 - Production-candidate regression suite at APP12.
 
 Do not run only the new tests and ignore the required regression subset.
+
+**The required subset is derived, not fixed** (`GOV-Q01`). It is the set of
+suites whose owned inputs or invariants the current change touches — see
+[`VALIDATION_GOVERNANCE.md`](./VALIDATION_GOVERNANCE.md) §3 and §4. A closed
+checkpoint's gate is not part of that subset merely because it exists. A **full**
+regression needs one of the explicit triggers in §7 of that document and is a
+separate checkpoint or release activity.
 
 ## 9. Evidence language
 

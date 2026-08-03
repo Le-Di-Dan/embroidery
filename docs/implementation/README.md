@@ -49,6 +49,7 @@ Do not use a wireframe to override product behavior, database semantics, lifecyc
 | [`05-FRONTEND-AND-SCSS-STANDARD.md`](./05-FRONTEND-AND-SCSS-STANDARD.md) | Next.js delivery, global SCSS architecture, naming, prohibited styling patterns. |
 | [`06-OPENAPI-AND-CLIENT-CONTRACT.md`](./06-OPENAPI-AND-CLIENT-CONTRACT.md) | Contract lifecycle and generated Axios client policy. |
 | [`07-TESTING-AND-ACCEPTANCE-GATES.md`](./07-TESTING-AND-ACCEPTANCE-GATES.md) | Required evidence by checkpoint and phase. |
+| [`VALIDATION_GOVERNANCE.md`](./VALIDATION_GOVERNANCE.md) | **Canonical:** which validations run, when and why. Three global controls; everything else is scoped. |
 | [`08-DATABASE-CHANGE-CONTROL.md`](./08-DATABASE-CHANGE-CONTROL.md) | Forward-only application-era schema change process. |
 | [`09-RELEASE-AND-MILESTONE-POLICY.md`](./09-RELEASE-AND-MILESTONE-POLICY.md) | Release increments, release gates, production candidate rules. |
 | [`10-MASTER-APPLICATION-ROADMAP.md`](./10-MASTER-APPLICATION-ROADMAP.md) | Ordered APP0–APP12 plan and dependencies. |

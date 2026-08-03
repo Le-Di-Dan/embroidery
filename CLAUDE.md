@@ -19,7 +19,7 @@ When documents conflict, follow this order:
 7. `docs/architecture/REPOSITORY_STRUCTURE.md`
 8. `docs/development/FRONTEND_CONVENTIONS.md`
 9. `docs/development/BACKEND_CONVENTIONS.md`
-10. `docs/implementation/README.md` and the canonical implementation standards it indexes (delivery governance, backend API, SCSS, OpenAPI/client, database change, phase/checkpoint model).
+10. `docs/implementation/README.md` and the canonical implementation standards it indexes (delivery governance, backend API, SCSS, OpenAPI/client, database change, phase/checkpoint model, **validation governance**).
 11. Relevant ADRs and task-specific documents.
 
 Authority notes:
@@ -89,7 +89,9 @@ Before any **frontend UI** checkpoint:
 - **block** implementation when the entry is missing, stale, superseded, or not `APPROVED_FOR_IMPLEMENTATION`;
 - record the registry IDs used in the completion report.
 
-The gate `pnpm check:figma-design-index` (in `pnpm quality`) enforces registry integrity.
+The gate `pnpm check:figma-design-index` enforces registry integrity. Run it on any
+design or frontend UI checkpoint; it is scoped validation, not a global control
+(`docs/implementation/VALIDATION_GOVERNANCE.md`).
 
 ### Backend
 
@@ -187,7 +189,9 @@ During coding:
 
 After coding:
 
-- Run formatting, linting, type checking, relevant tests, and file-size checks.
+- Run the validations your change actually justifies, selected from the decision
+  table in `docs/implementation/VALIDATION_GOVERNANCE.md` §3 — not a fixed list
+  and never a repository-wide aggregate.
 - Report changed files, evidence, risks, and remaining limitations.
 - Never claim success without executable evidence.
 
@@ -252,13 +256,17 @@ exception:
 - No mutation of an approved design snapshot.
 - No payment success based only on browser redirect.
 - No direct coupling to vendor-specific object-storage administration APIs.
+- No repository-wide aggregate validation command, and no checkpoint-specific
+  script registered in root `package.json`; a checkpoint's checker is run
+  directly (`docs/implementation/VALIDATION_GOVERNANCE.md` §1 and §5).
 
 ## 10. Completion standard
 
 A change is complete only when:
 
 - Requirements are satisfied.
-- Tests and quality gates pass.
+- The scoped validations the change justifies pass, and the report names the
+  commands actually run (`docs/implementation/VALIDATION_GOVERNANCE.md`).
 - Error and edge cases are handled.
 - Security and authorization remain intact.
 - Documentation is current.

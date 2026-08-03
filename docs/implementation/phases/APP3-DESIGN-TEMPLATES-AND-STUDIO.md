@@ -203,9 +203,10 @@ or be collapsed into the other or into the API.
   Studio behind a server-rendered shell. Konva, Fabric and interact.js must never
   enter a production manifest; `pnpm check:spike-boundaries` enforces it.
 - **Performance authority** is `ADR-APP0-001` §6 with the APP0-R01 S/M/L scenes.
-  `pnpm spike:editor:check` stays in `pnpm quality`; `pnpm spike:editor:test`
+  `pnpm spike:editor:check` runs at any checkpoint touching the spike boundary;
+  `pnpm spike:editor:test`
   runs at any checkpoint touching `design-document`, `design-engine` or an
-  adapter; **`pnpm spike:editor:benchmark` stays outside fast quality** and is
+  adapter; **`pnpm spike:editor:benchmark` stays outside the browser-free tier** and is
   rerun at `S02`, `S03`, `S07`, `S11` and `E01`. The measured WebKit
   continuous-scale risk (41 ms p95 versus 16.7 ms Chromium) is `APP3-S07`'s to
   mitigate and re-measure.
@@ -216,6 +217,23 @@ or be collapsed into the other or into the API.
 - **Security**: no export surface of any kind, no private original in the
   browser, asset id + approved derivative only, sanitized SVG before rendering,
   watermark regenerated on load with an opaque token carrying no raw PII.
+- **Validation is scoped** (`GOV-Q01`,
+  [`../VALIDATION_GOVERNANCE.md`](../VALIDATION_GOVERNANCE.md)). Every remaining
+  APP3 checkpoint:
+  - runs only the validations its own changed files justify, selected from the
+    §3 decision table, and names them in its report;
+  - **invokes its checker and tests directly** —
+    `node tools/check-app3-g0N.mjs`, `node --test tools/check-app3-g0N.test.mjs`
+    — and **must not** register a `check:app3-*` script in root
+    `package.json`;
+  - **must not** append its checker to any aggregate command; none exists, and
+    none may be created;
+  - uses the three global controls (`pnpm format:check`, `pnpm lint`, SonarQube)
+    separately when appropriate;
+  - re-runs a closed checkpoint's gate only when the change touches that
+    checkpoint's owned inputs, and says why.
+  The delivered `G01`/`G02`/`G03` evidence is historical and is not rewritten;
+  the checkers themselves are unchanged and still runnable.
 
 ## 6.3 Open decisions APP3 owns
 
