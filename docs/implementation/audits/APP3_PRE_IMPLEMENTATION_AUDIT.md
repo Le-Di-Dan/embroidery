@@ -373,6 +373,18 @@ Per behaviour, using the required vocabulary:
 **Migration verdict [C1]:**
 `NO_APP3_MIGRATION_UNLESS_G01_OR_G02_OR_G04_PROVES_ONE`.
 
+> **`G01` has now ruled and proved one (IMP-D041, 2026-08-03).** Three of the
+> four candidate paths below were **not** taken — the association stays on
+> `product_sides.background_asset_id` rather than a new `product_media.role`,
+> the derivative kind is deferred to `APP3-G04`, and the placement manifest is a
+> public read so `secure_access_grants` is untouched. The fourth is binding:
+> PO-02 needs *active* rows and a *stable code*, PO-07 needs
+> retirement-without-deletion, and neither placement table carries an
+> active/retired flag, a supersession pointer, a stable code or a lock column.
+> **`G01_DB_DISPOSITION = REQUIRES_APP3_DB01`**, so the collective disposition
+> can no longer terminate `NOT_REQUIRED — GATE_RESOLVED` without superseding
+> that ruling.
+
 **Correction.** The first issue of this audit named only `G02` and `G04`. Human
 review challenged that omission, and the challenge was correct: `APP3-G01` owns
 side-background delivery and placement authority, and **three closed CHECK sets
@@ -939,6 +951,19 @@ The gate must additionally answer:
 
 None of this authorizes implementation, a backfill, or a migration. It is the
 evidence `APP3-G01` must gather before it rules.
+
+> **Answered by `APP3-G01` (IMP-D041), 2026-08-03.** All seven questions below
+> were ruled and are recorded in the phase plan §6.4, machine-checked by
+> `pnpm check:app3-g01`. In summary: placement is **Admin-only Product**
+> authority authored at `APP3-A01`; the public read is a **read-only manifest**
+> with a `studioEligible` flag; the canonical background association stays
+> **`product_sides.background_asset_id`** with delivery at `APP3-B02` and the
+> derivative kind still owned by `APP3-G04`; the customer selects a side/area
+> only when more than one is active; the Studio route is
+> **`/san-pham/[slug]/thiet-ke`**; **publication does not require placement**
+> (Studio eligibility is separately derived); and referenced placement becomes
+> **immutable with no hard delete**, which is why
+> **`G01_DB_DISPOSITION = REQUIRES_APP3_DB01`**.
 
 ### Product Owner questions this gate must put
 

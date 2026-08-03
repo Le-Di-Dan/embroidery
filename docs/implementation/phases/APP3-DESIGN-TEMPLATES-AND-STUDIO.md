@@ -93,21 +93,29 @@ Four corrections drive the difference:
 4. **One phase-level design package precedes every frontend checkpoint.** Figma
    carries zero Studio or Admin-Template rows.
 
-Migration verdict (corrected by `APP3-PRE-AUDIT-C1`):
-**`NO_APP3_MIGRATION_UNLESS_G01_OR_G02_OR_G04_PROVES_ONE`**. Four candidate gaps
-exist and every one is downstream of a ruling:
+Migration verdict (corrected by `APP3-PRE-AUDIT-C1`, **`G01` resolved by
+`APP3-G01`**): **`NO_APP3_MIGRATION_UNLESS_G01_OR_G02_OR_G04_PROVES_ONE`** — and
+`G01` has now proved one, so a migration **is** required (§6.4.3).
 
-- **`G01`** — a side background delivered under a new `product_media.role`
-  (closed CHECK set), a dedicated background derivative kind (closed CHECK set),
-  a *granted* background (`secure_access_grants.scope_kind` is the single closed
-  value `REQUEST_ACCESS` with `NOT NULL` customer and request FKs, so an
-  anonymous session can hold no grant), or side/area immutability-after-use
-  (no `locked_at` or version column exists);
-- **`G02`** — a template↔product many-to-many compatibility relation;
+- **`G01` — RULED, `REQUIRES_APP3_DB01` (IMP-D041).** Of the four candidate
+  paths the pre-audit listed, three were **not taken**: PO-03 keeps the canonical
+  association on `product_sides.background_asset_id` rather than a new
+  `product_media.role`; it leaves the background derivative kind to `APP3-G04`;
+  and PO-02 makes the placement manifest a **public** read for a publicly visible
+  Product, so no anonymous-session grant is needed and
+  `secure_access_grants` is untouched. What remains is the fourth path, now
+  binding: PO-02 requires *active* rows and a *stable code*, and PO-07 requires
+  retirement-without-deletion and immutability after first reference — and
+  `product_sides`/`embroidery_areas` carry **no** active/retired flag, no
+  supersession pointer, no stable code and no lock column.
+- **`G02`** — a template↔product many-to-many compatibility relation.
 - **`G04`** — a new `asset_derivatives.kind` for the editor-safe *customer*
-  derivative.
+  derivative, and the side-background derivative kind PO-03 deferred to it.
 
-If any fires it is one dedicated forward-only `APP3-DB01` before dependent code.
+`G01` alone already fires the checkpoint. `APP3-DB01` therefore stays
+**conditional only in scope**, not in existence: it will run as one combined
+forward-only migration once `G02` and `G04` have added or withheld their own
+contributions.
 
 ### Conditional `APP3-DB01` — terminal semantics
 
@@ -229,6 +237,154 @@ or be collapsed into the other or into the API.
 | Snapping/guide rules, marquee multi-select, crop UX, freehand smoothing | `ADR-APP0-001` deferred | `APP3-S12`/`S13` |
 | Whether `design-engine` or the Studio owns each geometry helper | `ADR-APP0-001` deferred → `APP3-S02` | `APP3-P02`/`S02` |
 
+## 6.4 `APP3-G01` — Product placement and side-media authority (IMP-D041)
+
+The first APP3 execution checkpoint. Authority, dependency reconciliation and a
+mechanical gate only — **no application source, schema, migration, OpenAPI,
+generated-client, Figma or dependency change**.
+
+The pre-audit proved the hard blocker: `product_sides` and `embroidery_areas`
+exist and are written by `DrizzleProductRepository`, yet no operation authors or
+returns them, while `design_sessions.product_side_id` and
+`design_sessions.embroidery_area_id` are both `NOT NULL`. Seven Product Owner
+rulings close that gap.
+
+### 6.4.1 Machine-checked placement facts
+
+`pnpm check:app3-g01` recomputes each of these against the repository. Do not
+edit a value here without changing the ruling it encodes.
+
+| Fact | Value |
+|---|---|
+| `Placement authoring actor` | `ADMIN_ONLY` |
+| `Placement authoring checkpoint` | `APP3-A01` |
+| `Placement owning module` | `PRODUCT` |
+| `Public placement contract` | `READ_ONLY_MANIFEST` |
+| `Public placement checkpoint` | `APP3-B01` |
+| `Studio eligibility flag` | `studioEligible` |
+| `Side background association` | `product_sides.background_asset_id` |
+| `Side background delivery checkpoint` | `APP3-B02` |
+| `Side background derivative kind owner` | `APP3-G04` |
+| `Customer side selection` | `AUTO_WHEN_SINGLE_ELSE_CUSTOMER` |
+| `Customer area selection` | `AUTO_WHEN_SINGLE_ELSE_CUSTOMER` |
+| `Deterministic initial choice` | `FIRST_ACTIVE_BY_DISPLAY_ORDER` |
+| `Canonical Studio route` | `/san-pham/[slug]/thiet-ke` |
+| `Studio route base` | `/san-pham/[slug]` |
+| `Publication requires placement` | `NO` |
+| `Studio eligibility requires placement` | `YES` |
+| `Referenced placement mutability` | `IMMUTABLE_AFTER_FIRST_REFERENCE` |
+| `Referenced placement deletion` | `NO_HARD_DELETE` |
+| `Placement change representation` | `REPLACEMENT_ROW_WITH_RETIREMENT` |
+| `G01_DB_DISPOSITION` | `REQUIRES_APP3_DB01` |
+
+Rejected as canonical Studio routes: `/studio`, `/editor`, `/thiet-ke/[id]`.
+
+### 6.4.2 The seven rulings
+
+**PO-01 — Placement authoring owner.** Product Side and Embroidery Area are
+**Product aggregate** placement authority. Only authenticated **Admin** users may
+author them, through **`APP3-A01`**. Placement application operations belong to
+the **Product/Catalog module**, not the Design module. Design Template, Design
+Session and Storefront code may reference placement authority but may never
+create or mutate it — no customer-authored side or area, and no Template-owned
+duplicate placement geometry.
+
+**PO-02 — Public placement read contract.** A published Product may expose one
+**read-only placement manifest**: product id/slug, `studioEligible`, and ordered
+active sides (id, stable code/name, display order, image width/height px,
+physical width/height mm, `px_per_mm`, a dedicated background-delivery
+reference), each with ordered active embroidery areas (id, stable code/name,
+display order, x/y origin, width/height, physical maxima when present). Public
+read only while the Product is publicly visible. No private original URL, no
+storage key, no customer-private data, no mutation field. Deterministic ordering;
+IDs are opaque identifiers, never authorization tokens. Incomplete placement
+returns **`studioEligible = false`**, never fabricated geometry. Owner:
+**`APP3-B01`**.
+
+**PO-03 — Side-background association and delivery.** Canonical association is
+**`product_sides.background_asset_id`**. Side backgrounds are **not** duplicated
+into `product_media`. Delivery is one dedicated public operation owned by
+**`APP3-B02`** — published Product + active Side + `background_asset_id` →
+approved browser-safe derivative. Originals are never delivered; the operation
+must verify the side belongs to the addressed Product; archived/unpublished
+Products and retired sides are not deliverable; delivery derives from
+`background_asset_id`, never a second association row. **The derivative kind and
+processing lane remain owned by `APP3-G04`**, so `APP3-G01` approves no kind and
+`APP3-B02` is blocked by **both** gates.
+
+**PO-04 — Customer side and area selection.** One active side selects
+automatically; multiple active sides are customer-selected. Same rule for areas
+on the selected side. The deterministic initial choice is the first active row by
+`display_order` with a stable tie-breaker. The chosen `product_side_id` and
+`embroidery_area_id` persist on the Design Session, and a customer may never
+submit identifiers outside the validated Product → Side → Area chain.
+
+**PO-05 — Canonical Studio route.** **`/san-pham/[slug]/thiet-ke`**, extending
+the accepted detail route `/san-pham/[slug]` (IMP-D039). Side and area
+identifiers are not path authority; selection lives in bootstrap/session state.
+Server shell + lazy client-only Studio. `/studio`, `/editor` and `/thiet-ke/[id]`
+are rejected. The existing route-authority mechanism is extended, not duplicated.
+
+**PO-06 — Publication versus Studio eligibility.** Global Product publication
+**does not** require placement, and **no global publication guard requiring
+placement may be added**. Studio eligibility is separately derived: published
+Product + ≥1 active Side + that side has ≥1 active Area + an eligible approved
+side background. Product detail stays public while the Studio CTA is absent or
+disabled; the public read reports `studioEligible = false`; existing published
+catalogs need **no forced grandfathering**; Admin publication and placement
+authoring stay separate workflows.
+
+**PO-07 — Referenced placement mutability.** Placement identity and geometry are
+mutable **only before first reference**. Once referenced by a Design Template
+version or a non-terminal Design Session, the parent relationship, stable code,
+background asset, pixel dimensions, physical dimensions, `px_per_mm`, area
+origin, area extent and physical maxima become **immutable**, and the row can
+**never be hard-deleted**. A change is a **new replacement row**; the old row is
+retired from future selection and retained for historical references. Display-only
+text and ordering may change only where identity, geometry and historical
+rendering are unaffected.
+
+> **Schema fact refining PO-07.** In the delivered schema the Template *header*
+> (`design_templates.product_side_id` / `embroidery_area_id`, nullable) carries
+> template scope — `design_template_versions` holds only the document. A
+> template reference is therefore a header reference. `approval_snapshots`
+> additionally references both ids `NOT NULL`, so an APP6 approval is a third
+> reason a referenced row can never be hard-deleted.
+
+### 6.4.3 Database disposition
+
+```text
+G01_DB_DISPOSITION = REQUIRES_APP3_DB01
+```
+
+Measured, not assumed: `product_sides` and `embroidery_areas` carry **no**
+active/retired flag, no supersession pointer, no stable code column and no lock
+column. PO-02 needs "active" rows and a stable code; PO-07 needs retirement
+without deletion. Neither is representable today.
+
+`APP3-G01` implements no migration. `APP3-DB01` stays **conditional** at phase
+level until `APP3-G02` and `APP3-G04` also rule, after which one combined
+forward-only migration checkpoint runs. Because G01 requires it, the collective
+disposition **cannot** be `NOT_REQUIRED — GATE_RESOLVED` unless this ruling is
+explicitly superseded by later human authority.
+
+### 6.4.4 Dependency reconciliation
+
+| Checkpoint | Status after `APP3-G01` |
+|---|---|
+| `APP3-G01` | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-G02` | `READY — NOT STARTED` |
+| `APP3-G03` | `NOT STARTED` |
+| `APP3-G04` | `NOT STARTED` |
+| `APP3-P02` | `READY` for geometry foundation work that does not require `APP3-G04` |
+| `APP3-B01` | `READY — NOT STARTED` |
+| `APP3-B02` | `BLOCKED_BY_APP3_G04` |
+| `APP3-A01` | `PLANNED — BLOCKED_BY_APP3_D01_AND_APP3_B01` |
+| `APP3-D01` placement portion | `UNBLOCKED_BY_G01`, phase design checkpoint still not started |
+| `APP3-DB01` | `CONDITIONAL — AWAITING_G02_AND_G04_CONTRIBUTIONS` |
+
+No implementation checkpoint is complete.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -249,13 +405,22 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = AUDITED — READY_FOR_FIRST_GATE
+APP3 = IN PROGRESS — FIRST GATE DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
+APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
 FU-APP3-CLOSURE-FIGMA-BASELINE-01 = COMPLETE — CLOSED_BY_APP2-X01-C1
-APP3-G01 = READY — NOT STARTED
+FU-APP2-CLOSURE-NEXTPHASE-GUARD-01 = COMPLETE — CLOSED_BY_APP2-X01-C2
+APP3-G01 = COMPLETE — REVIEW_DELIVERED
+APP3-G02 = READY — NOT STARTED
 every other APP3 checkpoint = NOT STARTED
 ```
+
+`APP3-G01` locked the seven Product Owner placement rulings as **IMP-D041**
+(§6.4), reconciled the dependency map (§6.4.4) and added the mechanical gate
+`pnpm check:app3-g01`. It implemented **no** application source, schema,
+migration, OpenAPI operation, generated client or Figma node — the gate asserts
+that absence rather than assuming it.
 
 The accepted governance baseline is on the canonical `production` branch as of
 `APP3-ENTRY-BRANCH-RECONCILIATION` (fast-forward `5c0ba1f` → `82ed3f3`), and
