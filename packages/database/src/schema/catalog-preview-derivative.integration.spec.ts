@@ -88,7 +88,7 @@ describe('catalog preview derivative (integration)', () => {
   }
 
   describe('schema baseline', () => {
-    it('applied all 33 migrations onto the 78-table schema', async () => {
+    it('applied all 34 migrations onto the 78-table schema', async () => {
       const applied = await db().execute(
         sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
       );
@@ -96,11 +96,11 @@ describe('catalog preview derivative (integration)', () => {
         select count(*)::int as n from information_schema.tables
          where table_schema = 'public' and table_type = 'BASE TABLE'
       `);
-      expect((applied.rows[0] as { n: number }).n).toBe(33);
+      expect((applied.rows[0] as { n: number }).n).toBe(34);
       expect((tables.rows[0] as { n: number }).n).toBe(78);
     });
 
-    it('carries both derivative CHECK constraints under their canonical names', async () => {
+    it('carries every derivative CHECK constraint under its canonical name', async () => {
       const { rows } = await db().execute(sql`
         select conname from pg_constraint
          where conrelid = 'asset_derivatives'::regclass and contype = 'c'
@@ -109,7 +109,11 @@ describe('catalog preview derivative (integration)', () => {
       expect(rows.map((row) => (row as { conname: string }).conname)).toEqual([
         'ck_asset_derivatives__checksum_format',
         'ck_asset_derivatives__kind_allowed',
+        // APP3-DB01 / IMP-D044 added the canonical metadata quartet's three.
+        'ck_asset_derivatives__metadata_all_or_none',
+        'ck_asset_derivatives__metadata_positive',
         'ck_asset_derivatives__ready_has_storage_key',
+        'ck_asset_derivatives__ready_normalized_metadata',
         'ck_asset_derivatives__status_allowed',
         'ck_asset_derivatives__watermark_by_kind',
       ]);

@@ -1166,8 +1166,15 @@ for APP3 entry.
 > asserts. The suffix keeps the two tables' keys disjoint.
 > `tools/` outside the G02 and G04 gates is outside this checkpoint's allowed
 > files, so the defect is disclosed rather than edited:
-> `FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01` = `OPEN`, same repair as §9 applied
-> to G03, owned by the next checkpoint authorized to touch that file.
+> `FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01` = `COMPLETE — CLOSED_BY_APP3-DB01`
+> (§6.8.5); `check-app3-g03.mjs` now bounds §6.6.4 at the next heading of equal
+> or higher level, so the `post-G04` suffix is belt and braces rather than the
+> only thing keeping the two tables apart.
+>
+> **The `APP3-DB01` row above moved from `REQUIRED — READY_FOR_EXECUTION` to
+> `COMPLETE — REVIEW_DELIVERED` when migration 0034 landed.** It is the one row
+> in this table that is *supposed* to change: `check-app3-g04.mjs` reads it
+> against the real schema and refuses either half without the other.
 
 | Checkpoint | Portion | Status after `APP3-G04` |
 |---|---|---|
@@ -1177,7 +1184,7 @@ for APP3 entry.
 | `APP3-G04` | whole checkpoint, post-G04 | `COMPLETE — REVIEW_DELIVERED` |
 | `APP3-P01` | whole checkpoint, post-G04 | `READY — NOT STARTED` |
 | `APP3-P02` | whole checkpoint, post-G04 | `READY — NOT STARTED` |
-| `APP3-DB01` | whole checkpoint, post-G04 | `REQUIRED — READY_FOR_EXECUTION` |
+| `APP3-DB01` | whole checkpoint, post-G04 | `COMPLETE — REVIEW_DELIVERED` |
 | `APP3-B02` | G04 portion | `UNBLOCKED_BY_G04` |
 | `APP3-B04` | asset-eligibility portion | `UNBLOCKED_BY_G04` |
 | `APP3-B06` | asset-policy portion | `UNBLOCKED_BY_G04` |
@@ -1225,6 +1232,180 @@ catalog kinds; and a per-write decoded-pixel budget check cannot be served from
 unindexed append-only text without first deciding which row is authoritative —
 which is itself the decision this gate was forbidden to invent.
 
+## 6.8 `APP3-DB01` — placement lifecycle and derivative metadata migration
+
+The APP3 database checkpoint, and the only one. It implements the two
+contribution groups the gates resolved, in **one** forward-only migration
+(`0034_add_app3_placement_and_derivative_authority.sql`), and nothing else — **no
+Product, Template, Session or media API, no worker processing, no generated
+contract, no Figma, no Admin or Storefront UI**.
+
+Both groups exist because a gate measured an absence rather than assuming a
+presence. `APP3-G01` found that a referenced placement had no stable identity to
+be referenced *by*; `APP3-G04` found that no derivative row could say how large
+its own output was.
+
+### 6.8.1 Machine-checked migration facts
+
+`node tools/check-app3-db01.mjs` recomputes each of these against the repository
+and the committed migration.
+
+| Fact | Value |
+|---|---|
+| `Migration tag` | `0034_add_app3_placement_and_derivative_authority` |
+| `Migration count` | `1` |
+| `Migration direction` | `FORWARD_ONLY` |
+| `Contribution groups` | `2` |
+| `Placement code column` | `code` |
+| `Placement code format` | `^[a-z0-9][a-z0-9_-]{0,63}$` |
+| `Placement code backfill` | `LEGACY_UUID_WITHOUT_HYPHENS` |
+| `Placement code nullability` | `NOT_NULL_AFTER_BACKFILL` |
+| `Placement code uniqueness` | `PER_PARENT` |
+| `Placement code global uniqueness` | `NO` |
+| `Placement retirement column` | `retired_at` |
+| `Placement replacement column` | `superseded_by_id` |
+| `Placement replacement requires retirement` | `YES` |
+| `Placement self replacement` | `REJECTED` |
+| `Placement cross parent replacement` | `REJECTED` |
+| `Placement direct replacement cycle` | `REJECTED` |
+| `Placement replacement graph framework` | `NONE` |
+| `Protection sources` | `TEMPLATE_HEADER NON_TERMINAL_SESSION APPROVAL_SNAPSHOT` |
+| `Protected session states excluded` | `EXPIRED DELETED` |
+| `Protected update result` | `REJECTED` |
+| `Protected delete result` | `REJECTED` |
+| `Protected display change result` | `ALLOWED` |
+| `Protection enforcement` | `DATABASE_TRIGGER` |
+| `Protection cascade delete` | `NONE` |
+| `Derivative metadata columns` | `width_px height_px media_type byte_size` |
+| `Derivative metadata nullability` | `NULLABLE_ALL_OR_NONE` |
+| `Derivative metadata positive check` | `REQUIRED` |
+| `Derivative media type blank check` | `REQUIRED` |
+| `Derivative ready normalized requires metadata` | `YES` |
+| `Derivative historical rows may stay null` | `YES` |
+| `Derivative metadata backfill` | `NONE` |
+| `Migration object storage call` | `NONE` |
+| `Migration network call` | `NONE` |
+| `New tables` | `0` |
+| `New derivative kinds` | `0` |
+| `Forbidden columns added` | `0` |
+| `G01_DB_CONTRIBUTION_STATE` | `IMPLEMENTED_BY_APP3_DB01` |
+| `G04_DB_CONTRIBUTION_STATE` | `IMPLEMENTED_BY_APP3_DB01` |
+
+### 6.8.2 Contribution group A — placement stable identity and retirement
+
+`product_sides` and `embroidery_areas` each gain `code`, `retired_at` and
+`superseded_by_id`.
+
+`code` is the stable machine identity inside one parent — `(product_id, code)`
+for a Side, `(product_side_id, code)` for an Area — never globally unique,
+because two Products may both have a `front`. It is deliberately **not** derived
+from `name`: names are display copy, localized, edited and duplicated, and an
+identity derived from one would change meaning when the copy changed.
+
+The migration adds `code` nullable, backfills every existing row from its own
+immutable id as `legacy-<uuid without hyphens>`, **proves** no null, duplicate or
+malformed value survives, and only then sets `NOT NULL` and adds the uniqueness
+and format constraints. The proof step is not ceremony: without it a stale row
+surfaces as a bare `23502`/`23505`/`23514` naming no row, on a statement that is
+not the one that caused it.
+
+Retirement and replacement are constrained in four places, split by what each can
+see. A CHECK reads one row, so `superseded_by_id <> id` and "a replacement
+pointer requires `retired_at`" are CHECKs. Same-parent and direct-cycle are facts
+about the *other* row, so they are a trigger. Only the **direct two-row** cycle
+is rejected, as ruled — `a → b → c` is exactly what two successive replacements
+look like, and a general graph walk here would reject a legitimate history.
+
+### 6.8.3 Referenced-row protection
+
+A placement becomes protected the moment a Template header scopes to it, a Design
+Session whose status is **not** `EXPIRED` or `DELETED` sits on it, or an approval
+snapshot froze it. From then on its identity and geometry are what those rows
+*mean*.
+
+| Table | Frozen once protected |
+|---|---|
+| `product_sides` | `product_id`, `code`, `background_asset_id`, `image_width_px`, `image_height_px`, `physical_width_mm`, `physical_height_mm`, `px_per_mm` |
+| `embroidery_areas` | `product_side_id`, `code`, `bound_x_px`, `bound_y_px`, `bound_width_px`, `bound_height_px`, `max_width_mm`, `max_height_mm` |
+
+Display copy, display order, the retirement timestamp and the replacement pointer
+stay editable, because none of them changes what was referenced. A protected row
+cannot be hard-deleted; an unprotected one still can, under the existing FK and
+ownership rules. Nothing cascades: no Template, Session, snapshot or placement
+history is deleted by this migration or its triggers.
+
+Enforcement is a database trigger, in the same class as the DB6-S24 guards and
+for the same reason — an application-only guard is bypassed by every path that is
+not that application. `APP3-DB01` changes no API or persistence repository.
+
+> **Disclosed: `design_versions` also references both tables and is *not* a
+> protection source.** The ruled set is exactly three. `design_versions` sits
+> behind `approval_snapshots` in the APP5 flow, and an approved snapshot — which
+> *is* a protection source — is the record the customer agreed to. Widening the
+> set would be a fourth contribution this checkpoint is not authorized to make;
+> the owner of the formal design flow should confirm it, and this note is here so
+> that decision is made rather than inherited.
+
+### 6.8.4 Contribution group B — canonical derivative metadata
+
+`asset_derivatives` gains `width_px`, `height_px`, `media_type` and `byte_size`:
+integer, integer, text, bigint, all nullable, with three CHECKs.
+
+`ck_asset_derivatives__metadata_all_or_none` keeps the quartet moving as a unit —
+a row with a width and no media type is not "partly measured", it is a row no
+eligibility rule can evaluate. `ck_asset_derivatives__metadata_positive` requires
+positive dimensions and byte size and a non-blank media type; it trims tabs and
+newlines as well as spaces, because the bare `btrim` would let a tab-only media
+type satisfy a rule that exists to reject it.
+`ck_asset_derivatives__ready_normalized_metadata` is the eligibility half: a
+`READY` `NORMALIZED` derivative **must** carry all four. Other kinds keep their
+historical freedom, so the existing `READY` `THUMBNAIL` and `CATALOG_PREVIEW`
+rows stay valid and unmeasured forever.
+
+The columns are not globally `NOT NULL` for the five reasons IMP-D044 records,
+and the migration performs **no** backfill: it never contacts object storage and
+never fabricates a value. A row is created before processing with the quartet
+null and becomes eligible only when the transition to `READY` writes all four
+atomically.
+
+### 6.8.5 Dependency reconciliation
+
+> Portion labels carry a `post-DB01` suffix for the same reason §6.7.4's carry
+> `post-G04`: they keep this table's `id :: portion` keys disjoint from the ones
+> the earlier gates assert. Both earlier bounds are now repaired, so this is
+> defence in depth rather than the only thing separating them.
+
+| Checkpoint | Portion | Status after `APP3-DB01` |
+|---|---|---|
+| `APP3-G01` | whole checkpoint, post-DB01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G02` | whole checkpoint, post-DB01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G03` | whole checkpoint, post-DB01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G04` | whole checkpoint, post-DB01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-DB01` | whole checkpoint, post-DB01 | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-P01` | whole checkpoint, post-DB01 | `READY — NOT STARTED` |
+| `APP3-P02` | whole checkpoint, post-DB01 | `READY — NOT STARTED` |
+| `APP3-B01` | whole checkpoint, post-DB01 | `READY — NOT STARTED` |
+| `APP3-B02` | whole checkpoint, post-DB01 | `BLOCKED_BY_APP3_B01_AND_APP3_B06` |
+| `APP3-B03` | whole checkpoint, post-DB01 | `BLOCKED_BY_APP3_P01` |
+| `APP3-B04` | whole checkpoint, post-DB01 | `BLOCKED_BY_APP3_P01_APP3_P02_AND_APP3_B06` |
+| `APP3-B06` | whole checkpoint, post-DB01 | `BLOCKED_BY_APP3_P01` |
+| `APP3-B07` | whole checkpoint, post-DB01 | `BLOCKED_BY_APP3_P01_AND_APP3_P02` |
+| `APP3-B08` | whole checkpoint, post-DB01 | `BLOCKED_BY_APP3_P01_AND_APP3_P02` |
+| `APP3-W01` | whole checkpoint, post-DB01 | `READY_BY_DB_DISPOSITION — NOT STARTED` |
+| `G01 contribution` | implementation state | `IMPLEMENTED_BY_APP3_DB01` |
+| `G04 contribution` | implementation state | `IMPLEMENTED_BY_APP3_DB01` |
+| `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | authority, post-DB01 | `OPEN — AUTHORITY_LOCKED_BY_APP3-G04` |
+| `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | blocked by, post-DB01 | `APP3-B06` |
+| `FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01` | whole follow-up, post-DB01 | `COMPLETE — CLOSED_BY_APP3-DB01` |
+
+The dimensions follow-up loses `APP3-DB01` from its blocker list and **stays
+open**: the schema now exists, but nothing writes canonical metadata yet
+(`APP3-B06` and the worker) and nothing publishes it yet (`APP3-B02`, which
+closes it).
+
+No implementation checkpoint is complete. `APP3-DB01` is a database checkpoint;
+it delivers no API, worker, package or UI.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -1245,7 +1426,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — FOURTH GATE DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — DATABASE DISPOSITION DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -1254,16 +1435,22 @@ FU-APP2-CLOSURE-NEXTPHASE-GUARD-01 = COMPLETE — CLOSED_BY_APP2-X01-C2
 APP3-G01 = COMPLETE — REVIEW_ACCEPTED
 APP3-G02 = COMPLETE — REVIEW_ACCEPTED
 APP3-G03 = COMPLETE — REVIEW_ACCEPTED
-APP3-G04 = COMPLETE — REVIEW_DELIVERED
+APP3-G04 = COMPLETE — REVIEW_ACCEPTED
+APP3-DB01 = COMPLETE — REVIEW_DELIVERED
 G01_DB_DISPOSITION = REQUIRES_APP3_DB01_PLACEMENT_RETIREMENT_AND_STABLE_CODE
 G02_DB_CONTRIBUTION = NONE
 G03_DB_CONTRIBUTION = NONE
 G04_DB_CONTRIBUTION = REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA
-APP3-DB01 = REQUIRED — READY_FOR_EXECUTION
+G01 DB contribution = IMPLEMENTED_BY_APP3_DB01
+G04 DB contribution = IMPLEMENTED_BY_APP3_DB01
+APP3-P01 = READY — NOT STARTED
+APP3-P02 = READY — NOT STARTED
+APP3-B01 = READY — NOT STARTED
+APP3-W01 = READY_BY_DB_DISPOSITION — NOT STARTED
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — AUTHORITY_LOCKED_BY_APP3-G04
 FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-G04
 FU-APP3-G03-QUALITY-AGGREGATE-01 = DEFERRED — REGRESSION_ACTIVITY_ONLY
-FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01 = OPEN
+FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-DB01
 O-008 = CLOSED_BY_IMP-D043
 DP-RET-01 design_sessions = CLOSED_BY_IMP-D043
 FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01 = COMPLETE — CLOSED_BY_APP3-G02
@@ -1330,6 +1517,19 @@ API, delivery API, worker processor, schema change, migration, generated contrac
 or UI — `node tools/check-app3-g04.mjs` asserts that absence, and asserts the
 required schema contribution as *pending* before `APP3-DB01` and as *implemented*
 after it, so the same gate is correct on both sides of the migration.
+
+`APP3-DB01` implemented both contribution groups in one forward-only
+migration (`0034`, §6.8): stable per-parent `code` with a deterministic
+`legacy-<uuid>` backfill proved before `NOT NULL`, `retired_at` /
+`superseded_by_id` with same-parent and direct-cycle guards, database-enforced
+protection of identity and geometry once a Template header, a non-terminal
+Session or an approval snapshot references the row, and the canonical derivative
+metadata quartet with all-or-none, positive and READY-editor-safe CHECKs. It
+added **no** table, no derivative kind, no forbidden column, no API, no worker
+and no UI, and performed no backfill of derivative metadata — the migration never
+contacts object storage. `node tools/check-app3-db01.mjs` asserts that, and
+`node tools/check-app3-g04.mjs` now reports
+`PASS — DERIVATIVE_METADATA_IMPLEMENTED`.
 
 Audit: [`audits/APP3_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP3_PRE_IMPLEMENTATION_AUDIT.md).
 Report: [`reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md`](../reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md).

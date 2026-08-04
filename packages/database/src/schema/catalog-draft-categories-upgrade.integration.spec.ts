@@ -30,7 +30,24 @@ import { disposableDatabaseName, migrationsFolder, resolveDatabaseUrl } from '..
 import { APP2_CATEGORY_STATUS, APP2_CATEGORY_TAXONOMY } from './catalog/categories';
 
 const NEW_MIGRATION_TAG = '0033_provision_catalog_draft_categories';
-const BASELINE_MIGRATION_COUNT = 33;
+
+/**
+ * Migrations stripped to rebuild the pre-APP2-B02-G01 baseline.
+ *
+ * Every migration from 0033 onward must go, not just 0033 itself. The drizzle
+ * migrator skips a file whose journal position is older than the last one it
+ * applied, so leaving 0034 in the baseline folder makes the upgrade run silently
+ * apply nothing — the suite would then prove that a migration which never ran
+ * inserted no rows.
+ */
+const POST_BASELINE_TAGS = [
+  NEW_MIGRATION_TAG,
+  '0034_add_app3_placement_and_derivative_authority',
+] as const;
+
+/** Chain length before 0033, and after the full committed chain. */
+const BASELINE_MIGRATION_COUNT = 32;
+const FULL_MIGRATION_COUNT = 34;
 
 interface CategoryRow {
   readonly id: string;
@@ -74,17 +91,21 @@ describe('catalog draft categories upgrade path (integration)', () => {
     });
   }
 
-  /** Copies the committed migrations, minus 0033, into a temporary folder. */
+  /** Copies the committed migrations, minus 0033 onward, to a temp folder. */
   async function buildBaselineFolder(): Promise<string> {
     const folder = await mkdtemp(join(tmpdir(), 'app2b02g01-baseline-'));
     await cp(migrationsFolder(), folder, { recursive: true });
-    await rm(join(folder, `${NEW_MIGRATION_TAG}.sql`));
+    for (const tag of POST_BASELINE_TAGS) {
+      await rm(join(folder, `${tag}.sql`));
+    }
 
     const journalPath = join(folder, 'meta', '_journal.json');
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as {
       entries: { tag: string }[];
     };
-    journal.entries = journal.entries.filter((entry) => entry.tag !== NEW_MIGRATION_TAG);
+    journal.entries = journal.entries.filter(
+      (entry) => !POST_BASELINE_TAGS.includes(entry.tag as (typeof POST_BASELINE_TAGS)[number]),
+    );
     await writeFile(journalPath, JSON.stringify(journal, null, 2));
     return folder;
   }
@@ -133,7 +154,7 @@ describe('catalog draft categories upgrade path (integration)', () => {
       const { rows } = await client.db.execute(
         sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
       );
-      expect((rows[0] as { n: number }).n).toBe(BASELINE_MIGRATION_COUNT - 1);
+      expect((rows[0] as { n: number }).n).toBe(BASELINE_MIGRATION_COUNT);
       expect(await readCategories(client)).toEqual([]);
     } finally {
       await client.close();
@@ -148,7 +169,7 @@ describe('catalog draft categories upgrade path (integration)', () => {
       const { rows } = await client.db.execute(
         sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
       );
-      expect((rows[0] as { n: number }).n).toBe(BASELINE_MIGRATION_COUNT);
+      expect((rows[0] as { n: number }).n).toBe(FULL_MIGRATION_COUNT);
 
       const categories = await readCategories(client);
       expect(categories.map((row) => [row.slug, row.name, row.display_order])).toEqual(
@@ -212,7 +233,7 @@ describe('catalog draft categories upgrade path (integration)', () => {
       const { rows: applied } = await client.db.execute(
         sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
       );
-      expect((applied[0] as { n: number }).n).toBe(BASELINE_MIGRATION_COUNT - 1);
+      expect((applied[0] as { n: number }).n).toBe(BASELINE_MIGRATION_COUNT);
     } finally {
       await client.close();
     }

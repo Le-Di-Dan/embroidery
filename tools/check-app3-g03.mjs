@@ -22,7 +22,7 @@ import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { boundedTable, checkApp3G02 } from './check-app3-g02.mjs';
+import { boundedTable, checkApp3G02, sectionBody } from './check-app3-g02.mjs';
 import { parseTransitions } from './check-app3-g02-lifecycle.mjs';
 import { CLOSURE_COMMIT } from './check-app3-g01.mjs';
 import { checkNextPhaseChronology } from './check-app2-closure-artifacts.mjs';
@@ -158,11 +158,20 @@ export function flatten(text) {
   return text.replace(/\s+/g, ' ');
 }
 
-/** `| \`ID\` | portion | \`STATUS\` |` rows of §6.6.4, keyed `id :: portion`. */
+/**
+ * `| \`ID\` | portion | \`STATUS\` |` rows of §6.6.4, keyed `id :: portion`.
+ *
+ * Bounded at §6.6.4's own end (`FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01`). The
+ * retired form ended at the literal `## 7. `, which was correct only while
+ * §6.6.4 was the last subsection before §7; once `APP3-G04` added §6.6.5 and
+ * §6.7 — and `APP3-DB01` §6.8 — every later dependency table fell inside this
+ * range, and because `Map` keeps the *last* duplicate key, a later gate's status
+ * would silently become the value this gate asserts. Same defect and same repair
+ * as `check-app3-g02.mjs`.
+ */
 export function dependencyTable(phaseText) {
-  const block = section(phaseText, '### 6.6.4 ', '## 7. ');
   return new Map(
-    block
+    sectionBody(phaseText, '### 6.6.4 ')
       .split(/\r?\n/)
       .map((line) => /^\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*`([^`]+)`/.exec(line.trim()))
       .filter(Boolean)

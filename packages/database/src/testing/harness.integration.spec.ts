@@ -57,15 +57,15 @@ describe('integration harness', () => {
       // file on purpose: a test that reads the same file it verifies would keep
       // passing through an unreviewed baseline edit.
       expect(result.stages.at(-1)?.summary).toContain(
-        '82864268c990990e4597c74cfc69b7b5a91b1bc5a2adbde098ab9ad43aed58cf',
+        '7abf3708f8acc7da1124677add5a95ef1bdd421e78ea7f735213fbf8030a3569',
       );
     }, 120_000);
 
-    it('applied all 33 migrations', async () => {
+    it('applied all 34 migrations', async () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(33);
+      expect(Number(result.rows[0]?.count)).toBe(34);
     });
 
     it('resets state between tests without disabling the S24 triggers', async () => {
@@ -87,7 +87,7 @@ describe('integration harness', () => {
       const triggers = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from pg_trigger where not tgisinternal`,
       );
-      expect(Number(triggers.rows[0]?.count)).toBe(30);
+      expect(Number(triggers.rows[0]?.count)).toBe(34);
     });
 
     it('leaves the migration history intact after a reset', async () => {
@@ -96,7 +96,7 @@ describe('integration harness', () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(33);
+      expect(Number(result.rows[0]?.count)).toBe(34);
     });
   });
 

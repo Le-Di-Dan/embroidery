@@ -12,7 +12,7 @@ import { connect, report } from './live-db.mjs';
 // CHECK moved 189 -> 190 in APP2-DB01: `ck_asset_derivatives__watermark_by_kind`
 // gives INV-22 its first physical half. The kind CHECK was replaced in place,
 // so it is one added constraint, not a renumbered inventory.
-const EXPECTED = { p: 78, f: 160, u: 50, c: 190 };
+const EXPECTED = { p: 78, f: 162, u: 52, c: 199 };
 const NAMES = { p: 'PK', f: 'FK', u: 'UNIQUE', c: 'CHECK' };
 
 const client = await connect(process.argv[2]);
@@ -56,9 +56,22 @@ const { rows: relationshipCeiling } = await client.query(`
   JOIN pg_namespace n ON n.oid = c.connamespace
   WHERE c.contype = 'f' AND n.nspname = 'public'
 `);
-note(`relationship ceiling: ${relationshipCeiling[0].n} / 160 (DEV-DB6-017)`);
-if (relationshipCeiling[0].n !== 160) {
-  fail(`relationship ceiling reverted from 160 — live FK count is ${relationshipCeiling[0].n}`);
+// The DB6 ceiling is 160 (DEV-DB6-017). APP3-DB01 adds exactly two application-era
+// edges — the `superseded_by_id` self-references on `product_sides` and
+// `embroidery_areas` — so the live total is 162. Kept as an explicit sum rather
+// than a new round number: the point of the check is that no *undocumented* edge
+// appears, and collapsing it to "162" would hide which two are accounted for.
+const DB6_RELATIONSHIP_CEILING = 160;
+const APP3_DB01_EDGES = 2;
+const EXPECTED_FKS = DB6_RELATIONSHIP_CEILING + APP3_DB01_EDGES;
+note(
+  `relationship ceiling: ${relationshipCeiling[0].n} / ${EXPECTED_FKS} ` +
+    `(${DB6_RELATIONSHIP_CEILING} DEV-DB6-017 + ${APP3_DB01_EDGES} APP3-DB01)`,
+);
+if (relationshipCeiling[0].n !== EXPECTED_FKS) {
+  fail(
+    `relationship ceiling moved — live FK count is ${relationshipCeiling[0].n}, expected ${EXPECTED_FKS}`,
+  );
 }
 
 await client.end();

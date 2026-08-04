@@ -116,10 +116,10 @@ function factChanged(key, replacement) {
 }
 
 describe('APP3-G04 — the repository as it stands', () => {
-  it('passes, before APP3-DB01', () => {
+  it('passes, after APP3-DB01', () => {
     const { failures, mode } = checkApp3G04(REPO_ROOT);
     assert.deepEqual(failures, []);
-    assert.equal(mode, 'REQUIRED_SCHEMA_CONTRIBUTION_PENDING');
+    assert.equal(mode, 'DERIVATIVE_METADATA_IMPLEMENTED');
   });
 
   it('records every ruled fact and dependency row', () => {
@@ -475,94 +475,91 @@ describe('APP3-G04 — authority and repository facts move', () => {
 /**
  * The schema-contribution modes.
  *
- * `APP3-DB01` has not run, so state B is simulated by writing the migration's
- * declared shape into a throwaway copy of the schema file. That is the point:
- * the gate has to be right about a world that does not exist yet, or it will be
- * deleted rather than updated on the day it does.
+ * `APP3-DB01` has now run, so the repository sits in the *implemented* mode and
+ * the pending mode is the one simulated — the mirror image of how this block was
+ * written when the gate shipped. Both directions still have to hold: a gate that
+ * only ever knew one side would have been deleted on migration day rather than
+ * kept, which is precisely what it exists to prevent.
  */
 describe('APP3-G04 — the derivative metadata contribution', () => {
-  const withColumns = derivativesText.replace(
-    "    isWatermarked: boolean('is_watermarked').notNull(),",
-    [
-      "    isWatermarked: boolean('is_watermarked').notNull(),",
-      "    widthPx: integer('width_px'),",
-      "    heightPx: integer('height_px'),",
-      "    mediaType: text('media_type'),",
-      "    byteSize: bigint('byte_size', { mode: 'bigint' }),",
-    ].join('\n'),
-  );
-  const withChecks = withColumns.replace(
-    "    index('ix_asset_derivatives__asset').on(t.assetId),",
-    [
-      '    check(',
-      "      'ck_asset_derivatives__metadata_all_or_none',",
-      '      sql`num_nonnulls(${t.widthPx}, ${t.heightPx}, ${t.mediaType}, ${t.byteSize}) in (0, 4)`,',
-      '    ),',
-      '    check(',
-      "      'ck_asset_derivatives__metadata_positive',",
-      '      sql`(${t.widthPx} is null or ${t.widthPx} > 0) and (${t.heightPx} is null or ${t.heightPx} > 0) and (${t.byteSize} is null or ${t.byteSize} > 0)`,',
-      '    ),',
-      "    index('ix_asset_derivatives__asset').on(t.assetId),",
-    ].join('\n'),
-  );
-  const db01Delivered = phaseText.replace(
-    '| `APP3-DB01` | whole checkpoint, post-G04 | `REQUIRED — READY_FOR_EXECUTION` |',
-    '| `APP3-DB01` | whole checkpoint, post-G04 | `COMPLETE — REVIEW_ACCEPTED` |',
+  /** The schema as it stood before migration 0034: no quartet, no CHECKs. */
+  const withoutColumns = derivativesText
+    .replace(
+      /\n\s*\/\/ APP3-DB01 \/ IMP-D044 PO-12 — canonical output metadata[\s\S]*?byteSize: bigint\('byte_size', \{ mode: 'bigint' \}\),/,
+      '',
+    )
+    .replace(
+      /\n\s*\/\/ APP3-DB01 \/ IMP-D044 PO-12 — the metadata quartet moves[\s\S]*?\n(\s*)\/\/ IDX-087/,
+      '\n$1// IDX-087',
+    );
+
+  /** The quartet present, but its constraints never added. */
+  const withoutChecks = derivativesText.replace(
+    /\n\s*\/\/ APP3-DB01 \/ IMP-D044 PO-12 — the metadata quartet moves[\s\S]*?\n(\s*)\/\/ IDX-087/,
+    '\n$1// IDX-087',
   );
 
-  it('passes after APP3-DB01, in the implemented mode', () => {
+  /** Only two of the four columns. */
+  const halfColumns = derivativesText
+    .replace("    mediaType: text('media_type'),\n", '')
+    .replace("    byteSize: bigint('byte_size', { mode: 'bigint' }),\n", '');
+
+  const db01Pending = phaseText.replace(
+    '| `APP3-DB01` | whole checkpoint, post-G04 | `COMPLETE — REVIEW_DELIVERED` |',
+    '| `APP3-DB01` | whole checkpoint, post-G04 | `REQUIRED — READY_FOR_EXECUTION` |',
+  );
+
+  it('the simulated pre-migration schema really is stripped', () => {
+    for (const column of METADATA_COLUMNS) {
+      assert.ok(!withoutColumns.includes(`'${column}'`), `${column} survived the strip`);
+    }
+    assert.ok(!withoutChecks.includes('metadata_all_or_none'), 'the CHECKs survived the strip');
+    assert.ok(withoutChecks.includes("'width_px'"), 'the columns must survive this strip');
+  });
+
+  it('passes before APP3-DB01, in the pending mode', () => {
     const { failures, mode } = run({
-      [CANONICAL_FILES.derivatives]: withChecks,
-      [CANONICAL_FILES.phase]: db01Delivered,
+      [CANONICAL_FILES.derivatives]: withoutColumns,
+      [CANONICAL_FILES.phase]: db01Pending,
     });
     assert.deepEqual(failures, []);
-    assert.equal(mode, 'DERIVATIVE_METADATA_IMPLEMENTED');
+    assert.equal(mode, 'REQUIRED_SCHEMA_CONTRIBUTION_PENDING');
   });
 
   it('rejects half the columns existing', () => {
-    const half = derivativesText.replace(
-      "    isWatermarked: boolean('is_watermarked').notNull(),",
-      "    isWatermarked: boolean('is_watermarked').notNull(),\n    widthPx: integer('width_px'),\n    heightPx: integer('height_px'),",
-    );
-    const { failures, mode } = run({ [CANONICAL_FILES.derivatives]: half });
+    const { failures, mode } = run({ [CANONICAL_FILES.derivatives]: halfColumns });
     assert.ok(mentions(failures, 'derivative metadata is half-added'));
     assert.equal(mode, 'INCONSISTENT');
   });
 
   it('rejects the columns landing without their constraints', () => {
-    const { failures } = run({
-      [CANONICAL_FILES.derivatives]: withColumns,
-      [CANONICAL_FILES.phase]: db01Delivered,
-    });
+    const { failures } = run({ [CANONICAL_FILES.derivatives]: withoutChecks });
     assert.ok(mentions(failures, 'the all-or-none invariant is missing'));
     assert.ok(mentions(failures, 'positive width/height checks'));
   });
 
-  it('rejects a contribution of NONE while the columns are absent', () => {
+  it('rejects a contribution of NONE', () => {
     const failures = factChanged('G04_DB_CONTRIBUTION', 'NONE');
     assert.ok(mentions(failures, '`G04_DB_CONTRIBUTION` is "NONE"'));
   });
 
   it('rejects APP3-DB01 claiming completion while the columns are absent', () => {
-    const { failures, mode } = run({ [CANONICAL_FILES.phase]: db01Delivered });
+    const { failures, mode } = run({ [CANONICAL_FILES.derivatives]: withoutColumns });
     assert.ok(mentions(failures, 'while no derivative metadata column exists'));
     assert.equal(mode, 'INCONSISTENT');
   });
 
   it('rejects a contribution still pending after the columns land', () => {
-    const { failures } = run({ [CANONICAL_FILES.derivatives]: withChecks });
+    const { failures } = run({ [CANONICAL_FILES.phase]: db01Pending });
     assert.ok(mentions(failures, 'still recorded as "REQUIRED — READY_FOR_EXECUTION"'));
   });
 
   it('rejects a forbidden column added alongside the quartet', () => {
-    const smuggled = withChecks.replace(
+    const smuggled = derivativesText.replace(
       "    mediaType: text('media_type'),",
       "    mediaType: text('media_type'),\n    inspectionDetailId: text('inspection_detail_id'),",
     );
-    const { failures } = run({
-      [CANONICAL_FILES.derivatives]: smuggled,
-      [CANONICAL_FILES.phase]: db01Delivered,
-    });
+    const { failures } = run({ [CANONICAL_FILES.derivatives]: smuggled });
     assert.ok(mentions(failures, 'column `inspection_detail_id` exists'));
   });
 
@@ -570,7 +567,7 @@ describe('APP3-G04 — the derivative metadata contribution', () => {
     assert.deepEqual(METADATA_COLUMNS, ['width_px', 'height_px', 'media_type', 'byte_size']);
     for (const column of METADATA_COLUMNS) {
       assert.ok(EXPECTED_FACTS['Derivative metadata columns'].includes(column), column);
-      assert.ok(!derivativesText.includes(`'${column}'`), `${column} already exists in the schema`);
+      assert.ok(derivativesText.includes(`'${column}'`), `${column} is missing from the schema`);
     }
   });
 });

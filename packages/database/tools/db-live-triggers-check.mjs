@@ -102,6 +102,35 @@ const CANONICAL = {
   design_template_versions: ['frozen_when_not_null', 'published_at', '', 'reject'],
 };
 
+/**
+ * APP3-DB01 placement guards (migration 0034), inventoried separately.
+ *
+ * They are not S24: they use their own two functions rather than
+ * `fn_reject_mutation_conditional`, because "frozen once *another table*
+ * references this row" is a cross-table predicate the S24 mode set cannot
+ * express. Keeping the inventories apart means the S24 freeze still means
+ * exactly what it meant — 30 triggers, one function, unchanged args — while the
+ * APP3 guards are asserted just as strictly instead of being waved through as
+ * "extra".
+ */
+const APP3_DB01_TRIGGERS = {
+  product_sides: [
+    ['tg_product_sides__replacement_guard', 'fn_app3_placement_replacement_guard'],
+    ['tg_product_sides__protected_guard', 'fn_app3_reject_protected_placement_change'],
+  ],
+  embroidery_areas: [
+    ['tg_embroidery_areas__replacement_guard', 'fn_app3_placement_replacement_guard'],
+    ['tg_embroidery_areas__protected_guard', 'fn_app3_reject_protected_placement_change'],
+  ],
+};
+
+const APP3_DB01_FUNCTIONS = [
+  'fn_app3_placement_replacement_guard',
+  'fn_app3_reject_protected_placement_change',
+];
+
+const APP3_TRIGGER_COUNT = Object.values(APP3_DB01_TRIGGERS).flat().length;
+
 const client = await connect(process.argv[2]);
 const { note, fail, finish } = report('triggers');
 
@@ -124,11 +153,21 @@ const { rows: trig } = await client.query(`
   WHERE NOT t.tgisinternal AND n.nspname = 'public'
   ORDER BY c.relname
 `);
-note(`triggers: ${trig.length} / 30`);
-if (trig.length !== 30) fail(`expected exactly 30 triggers, found ${trig.length}`);
+const isApp3 = (row) => APP3_DB01_FUNCTIONS.some((fn) => row.def.includes(fn));
+const s24 = trig.filter((row) => !isApp3(row));
+const app3 = trig.filter(isApp3);
+
+const expectedTotal = 30 + APP3_TRIGGER_COUNT;
+note(
+  `triggers: ${trig.length} / ${expectedTotal} (S24 ${s24.length} / 30, APP3-DB01 ${app3.length} / ${APP3_TRIGGER_COUNT})`,
+);
+if (trig.length !== expectedTotal) {
+  fail(`expected exactly ${expectedTotal} triggers, found ${trig.length}`);
+}
+if (s24.length !== 30) fail(`expected exactly 30 S24 triggers, found ${s24.length}`);
 
 const seen = new Set();
-for (const row of trig) {
+for (const row of s24) {
   seen.add(row.table_name);
   const expected = CANONICAL[row.table_name];
   if (!expected) {
@@ -142,6 +181,46 @@ for (const row of trig) {
 }
 for (const table of Object.keys(CANONICAL)) {
   if (!seen.has(table)) fail(`missing S24 trigger on canonical target table ${table}`);
+}
+
+// APP3-DB01 half: exact names, exact functions, exact tables.
+const app3Seen = new Set(app3.map((row) => `${row.table_name}:${row.tgname}`));
+for (const [table, triggers] of Object.entries(APP3_DB01_TRIGGERS)) {
+  for (const [name, fn] of triggers) {
+    const row = app3.find((candidate) => candidate.tgname === name);
+    if (!row) {
+      fail(`missing APP3-DB01 trigger ${name} on ${table}`);
+      continue;
+    }
+    if (row.table_name !== table) {
+      fail(`APP3-DB01 trigger ${name} is on ${row.table_name}, expected ${table}`);
+    }
+    if (!row.def.includes(fn)) {
+      fail(`APP3-DB01 trigger ${name} no longer calls ${fn} — live def: ${row.def}`);
+    }
+    app3Seen.delete(`${table}:${name}`);
+  }
+}
+for (const extra of app3Seen) {
+  fail(`unexpected APP3 placement trigger ${extra}`);
+}
+
+const { rows: app3Fns } = await client.query(
+  `
+  SELECT p.proname, p.prosecdef FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = ANY($1)
+`,
+  [APP3_DB01_FUNCTIONS],
+);
+note(`APP3-DB01 trigger functions: ${app3Fns.length} / ${APP3_DB01_FUNCTIONS.length}`);
+if (app3Fns.length !== APP3_DB01_FUNCTIONS.length) {
+  fail(
+    `expected ${APP3_DB01_FUNCTIONS.length} APP3-DB01 trigger functions, found ${app3Fns.length}`,
+  );
+}
+for (const fn of app3Fns) {
+  if (fn.prosecdef) fail(`${fn.proname} is SECURITY DEFINER, expected INVOKER`);
 }
 
 await client.end();

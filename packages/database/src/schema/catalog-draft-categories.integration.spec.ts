@@ -1,5 +1,5 @@
 /**
- * APP2-B02-G01 — the provisioned taxonomy on a fresh 33-migration database.
+ * APP2-B02-G01 — the provisioned taxonomy on a fresh, fully migrated database.
  *
  * A fresh install proves the end state: the four canonical rows exist exactly
  * as locked, nothing else was created, and — because migration 0033 touches
@@ -41,11 +41,11 @@ describe('catalog draft categories on a fresh database (integration)', () => {
     return rows as unknown as CategoryRow[];
   }
 
-  it('applies the full 33-migration chain', async () => {
+  it('applies the full 34-migration chain', async () => {
     const { rows } = await database.client.db.execute(
       sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
     );
-    expect((rows[0] as { n: number }).n).toBe(33);
+    expect((rows[0] as { n: number }).n).toBe(34);
   });
 
   it('provisions exactly the four canonical categories and no fifth row', async () => {

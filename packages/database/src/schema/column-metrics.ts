@@ -17,6 +17,15 @@
  *
  * Rows are compact tuples so the register stays one line per table at 78
  * tables: `[table, group, logicalIds, expansions, convention, physical]`.
+ *
+ * The third slot counts every physical column beyond the documented DB4 `COL-*`
+ * IDs: the original `×N` expansions, and — from APP3-DB01 — application-era
+ * columns added by an approved database-change checkpoint. Both are "physical
+ * columns the logical register does not name one-for-one", which is the only
+ * property the formula depends on; splitting them into a fourth slot would
+ * change the register shape, the manifest table and the checker for a
+ * distinction the arithmetic never uses. The manifest §4.1 expansion table names
+ * which is which.
  * A table missing from the register or present without a schema export fails
  * the spec.
  */
@@ -28,7 +37,11 @@ export interface TableColumnMetric {
   readonly group: string;
   /** Documented DB4 `COL-*` IDs for this table. */
   readonly logicalIds: number;
-  /** Extra physical columns produced by DB4 `×N` COL expansions. */
+  /**
+   * Extra physical columns beyond the documented `COL-*` IDs: DB4 `×N`
+   * expansions, plus application-era additions from approved database-change
+   * checkpoints (APP3-DB01 onward).
+   */
   readonly expansions: number;
   /** Convention columns from the manifest §4.0 register (id/created_at/updated_at). */
   readonly convention: number;
@@ -63,14 +76,14 @@ const ROWS: readonly MetricRow[] = [
   // G4 — Asset
   ['assets', 'G4', 12, 0, 3, 15],
   ['asset_inspections', 'G4', 4, 0, 2, 6],
-  ['asset_derivatives', 'G4', 6, 0, 3, 9],
+  ['asset_derivatives', 'G4', 6, 4, 3, 13],
   // G5 — Catalog
   ['categories', 'G5', 9, 0, 3, 12],
   ['products', 'G5', 13, 0, 3, 16],
   ['product_variants', 'G5', 5, 0, 3, 8],
   ['skus', 'G5', 5, 0, 3, 8],
-  ['product_sides', 'G5', 9, 0, 3, 12],
-  ['embroidery_areas', 'G5', 7, 2, 3, 12],
+  ['product_sides', 'G5', 9, 3, 3, 15],
+  ['embroidery_areas', 'G5', 7, 5, 3, 15],
   ['product_media', 'G5', 4, 0, 3, 7],
   // G6 — Inventory core
   ['sku_stocks', 'G6', 3, 0, 3, 6],

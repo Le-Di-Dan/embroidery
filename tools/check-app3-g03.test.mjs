@@ -26,7 +26,7 @@ import {
   checkApp3G03,
   dependencyTable,
 } from './check-app3-g03.mjs';
-import { boundedTable, CANONICAL_FILES as G02_FILES } from './check-app3-g02.mjs';
+import { boundedTable, CANONICAL_FILES as G02_FILES, sectionBody } from './check-app3-g02.mjs';
 import { CANONICAL_FILES as G01_FILES } from './check-app3-g01.mjs';
 
 const ALL_FILES = { ...G01_FILES, ...G02_FILES, ...CANONICAL_FILES };
@@ -116,6 +116,58 @@ describe('APP3-G03 — the repository as it stands', () => {
     assert.match(schemaText, /unique\('uq_design_sessions__session_secret_hash'\)/);
     assert.match(schemaText, /expiresAt: instant\('expires_at'\)\.notNull\(\)/);
     assert.match(schemaText, /autosaveRevision: integer\('autosave_revision'\)\.notNull\(\)/);
+  });
+});
+
+/**
+ * `FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01`.
+ *
+ * §6.6.4 used to be read to a literal `## 7. `. That was invisible while it was
+ * the last subsection before §7 and stayed invisible afterwards only by luck —
+ * the prose that *quotes* the marker sat between §6.6.4 and §7 and ended the
+ * block by accident. These cases assert the bound is now a property of the
+ * section, not of what happens to be written after it.
+ */
+describe('APP3-G03 — §6.6.4 is bounded at its own end', () => {
+  const own = sectionBody(phaseText, '### 6.6.4 ');
+
+  it('reads only its own table', () => {
+    assert.ok(own.includes('`APP3-G03` | whole checkpoint | `COMPLETE — REVIEW_DELIVERED`'));
+    assert.ok(!own.includes('### 6.7'), 'the block must stop before §6.7');
+    assert.ok(!own.includes('UNBLOCKED_BY_G04'), 'a G04-only status leaked into the G03 block');
+  });
+
+  it('cannot be overwritten by a duplicate key in a later section', () => {
+    const doc = [
+      '### 6.6.4 Dependency reconciliation',
+      '| `APP3-G01` | whole checkpoint | `COMPLETE — REVIEW_ACCEPTED` |',
+      '## 6.7 A later gate',
+      '### 6.7.4 Dependency reconciliation',
+      '| `APP3-G01` | whole checkpoint | `OVERWRITTEN_BY_G04` |',
+      '## 6.8 A later checkpoint still',
+      '### 6.8.4 Dependency reconciliation',
+      '| `APP3-G01` | whole checkpoint | `OVERWRITTEN_BY_DB01` |',
+      '## 7. Critical end-to-end journey',
+    ].join('\n');
+    assert.equal(
+      dependencyTable(doc).get('APP3-G01 :: whole checkpoint'),
+      'COMPLETE — REVIEW_ACCEPTED',
+    );
+  });
+
+  it('does not depend on quoted heading prose that precedes §7', () => {
+    const moved = phaseText.replaceAll('`## 7. `', '`the next heading`');
+    assert.notEqual(moved, phaseText, 'the prose anchor moved');
+    assert.deepEqual(
+      [...dependencyTable(moved).entries()],
+      [...dependencyTable(phaseText).entries()],
+    );
+  });
+
+  it('keeps the live baseline valid', () => {
+    for (const [key, value] of Object.entries(EXPECTED_DEPENDENCIES)) {
+      assert.equal(dependencyTable(phaseText).get(key), value, `dependency ${key}`);
+    }
   });
 });
 

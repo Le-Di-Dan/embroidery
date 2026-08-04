@@ -25,17 +25,19 @@ import {
   pgTable,
   primaryKey,
   text,
+  unique,
 } from 'drizzle-orm/pg-core';
 
 import { idColumn, idReference } from '../../primitives/identifiers';
-import { createdAt, updatedAt } from '../../primitives/temporal';
-import { productSides } from './product-sides';
+import { createdAt, instant, updatedAt } from '../../primitives/temporal';
+import { PLACEMENT_CODE_PATTERN, productSides } from './product-sides';
 
 export const embroideryAreas = pgTable(
   'embroidery_areas',
   {
     id: idColumn().notNull(),
     productSideId: idReference('product_side_id').notNull(),
+    code: text('code').notNull(),
     name: text('name').notNull(),
     boundXPx: numeric('bound_x_px').notNull(),
     boundYPx: numeric('bound_y_px').notNull(),
@@ -44,6 +46,8 @@ export const embroideryAreas = pgTable(
     maxWidthMm: numeric('max_width_mm'),
     maxHeightMm: numeric('max_height_mm'),
     displayOrder: integer('display_order').notNull(),
+    retiredAt: instant('retired_at'),
+    supersededById: idReference('superseded_by_id'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -54,6 +58,25 @@ export const embroideryAreas = pgTable(
       columns: [t.productSideId],
       foreignColumns: [productSides.id],
     }).onDelete('restrict'),
+    // APP3-DB01 — mirrors `product_sides`, scoped to one Product Side.
+    foreignKey({
+      name: 'fk_embroidery_areas__superseded_by_id',
+      columns: [t.supersededById],
+      foreignColumns: [t.id],
+    }).onDelete('restrict'),
+    unique('uq_embroidery_areas__side_code').on(t.productSideId, t.code),
+    check(
+      'ck_embroidery_areas__code_format',
+      sql`${t.code} ~ ${sql.raw(`'${PLACEMENT_CODE_PATTERN}'`)}`,
+    ),
+    check(
+      'ck_embroidery_areas__superseded_requires_retired',
+      sql`${t.supersededById} is null or ${t.retiredAt} is not null`,
+    ),
+    check(
+      'ck_embroidery_areas__superseded_not_self',
+      sql`${t.supersededById} is null or ${t.supersededById} <> ${t.id}`,
+    ),
     // CST-066 instances.
     check(
       'ck_embroidery_areas__bounds_positive',

@@ -232,6 +232,13 @@
       "when": 1785426727628,
       "tag": "0033_provision_catalog_draft_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1785807001215,
+      "tag": "0034_add_app3_placement_and_derivative_authority",
+      "breakpoints": true
     }
   ]
 }

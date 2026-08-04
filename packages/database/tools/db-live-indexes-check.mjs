@@ -1,7 +1,7 @@
 /**
  * DB6-S26 — live index inventory checker.
  * Verifies the post-S25 canonical split (DB6_INDEX_IMPLEMENTATION_MANIFEST.md
- * §7): 211 total / 46 partial (13 partial-unique + 33 partial-performance) /
+ * §7, plus APP3-DB01): 213 total / 46 partial (13 partial-unique + 33 partial-performance) /
  * 37 non-partial performance. This is the corrected split, not the stale
  * pre-S25 45/32/38 estimate — do not revert to it.
  * Usage: node db-live-indexes-check.mjs <url>
@@ -16,8 +16,8 @@ const { rows: total } = await client.query(`
   JOIN pg_namespace n ON n.oid = c.relnamespace
   WHERE c.relkind = 'i' AND n.nspname = 'public'
 `);
-note(`total physical indexes: ${total[0].n} / 211`);
-if (total[0].n !== 211) fail(`total physical index count is ${total[0].n}, expected 211`);
+note(`total physical indexes: ${total[0].n} / 213`);
+if (total[0].n !== 213) fail(`total physical index count is ${total[0].n}, expected 213`);
 
 const classify = async (label, expected, where) => {
   const { rows } = await client.query(`
@@ -33,7 +33,7 @@ const classify = async (label, expected, where) => {
 await classify('PK backing', 78, `i.indisprimary`);
 await classify(
   'UNIQUE backing (non-partial)',
-  50,
+  52,
   `i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL`,
 );
 await classify(

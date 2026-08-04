@@ -43,11 +43,15 @@ const NEW_MIGRATION_TAG = '0032_add_catalog_preview_derivative_kind';
  * left in the folder would be applied by the baseline run and silently change
  * what is being upgraded from.
  */
-const POST_BASELINE_TAGS = [NEW_MIGRATION_TAG, '0033_provision_catalog_draft_categories'] as const;
+const POST_BASELINE_TAGS = [
+  NEW_MIGRATION_TAG,
+  '0033_provision_catalog_draft_categories',
+  '0034_add_app3_placement_and_derivative_authority',
+] as const;
 
 /** Chain length before 0032, and after the full committed chain. */
 const BASELINE_MIGRATION_COUNT = 31;
-const FULL_MIGRATION_COUNT = 33;
+const FULL_MIGRATION_COUNT = 34;
 
 /** One row per kind that existed before APP2-DB01, with its watermark reality. */
 const LEGACY_ROWS = [

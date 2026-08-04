@@ -143,6 +143,18 @@ constraint-created (78 PK + 50 UNIQUE = 128)
 = total physical indexes at launch: 211
 ```
 
+> **Post-launch additions (not part of the frozen launch figure).**
+> `APP3-DB01` (migration 0034) added two UNIQUE constraints —
+> `uq_product_sides__product_code` and `uq_embroidery_areas__side_code` — each of
+> which PostgreSQL backs with an index, so a live database now carries **213**
+> physical indexes. The numbers above are deliberately left at their launch
+> values: they are the DB6 baseline the checker's arithmetic and every later
+> parity report are stated against, and rewriting a dated baseline to match
+> today's schema is how a baseline stops being one. No new `IDX-*` slot is
+> allocated — neither index was selected from a query plan; both are the physical
+> shape of a stable-identity constraint (IMP-D041), and `APP3-DB01` added no
+> performance index.
+
 Four clarifications that the formula depends on:
 
 1. **Every `IDX-*` maps 1:1 to exactly one physical index.** No entry expands

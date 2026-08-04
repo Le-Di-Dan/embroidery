@@ -25,6 +25,32 @@ fingerprint proof). No hand-accumulated figure in this document.
 > fingerprint hashes the normalized catalog, never row contents, so a data
 > migration cannot move it.
 
+> **Superseded in part by APP3-DB01** (migration `0034`, application era). The
+> first application-era migration to move the physical shape rather than one
+> constraint. Measured on a fresh 34-migration disposable install:
+>
+> | Figure | DB6 baseline | After `0034` |
+> |---|---|---|
+> | Tables | 78 | **78** (unchanged) |
+> | Columns | 833 | **843** |
+> | PK constraints | 78 | **78** (unchanged) |
+> | FK constraints | 160 | **162** |
+> | UNIQUE constraints | 50 | **52** |
+> | CHECK constraints | 190 | **199** |
+> | Physical indexes | 211 | **213** |
+> | Triggers | 30 | **34** (30 S24 + 4 APP3 placement guards) |
+> | Fingerprint | `82864268…` | **`7abf3708f8acc7da1124677add5a95ef1bdd421e78ea7f735213fbf8030a3569`** |
+>
+> The ten columns are `code`, `retired_at`, `superseded_by_id` on both
+> `product_sides` and `embroidery_areas` (IMP-D041) and `width_px`, `height_px`,
+> `media_type`, `byte_size` on `asset_derivatives` (IMP-D044). The four triggers
+> are the placement replacement and referenced-row guards; they are **not** S24
+> and use their own two functions, so `db-live-triggers-check.mjs` now asserts
+> the two inventories separately rather than widening the S24 freeze. The
+> executable baseline remains the `db-live-*-check.mjs` family and
+> `canonical-fingerprint.txt`; this document keeps its DB6-era figures as the
+> historical record.
+
 ## 1. Tables (78/78)
 
 - 78 unique `TBL-*` IDs, 78 unique physical tables, one owner group each (19 groups,

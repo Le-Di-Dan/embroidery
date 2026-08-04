@@ -147,6 +147,9 @@ leaving the hole open.
 | `CMD-TEST-APP3-G03` | repository tool | checkpoint gate tests | `node --test tools/check-app3-g03.test.mjs` | tools/check-app3-g03.test.mjs | Any edit to the G03 checkers or the inputs they parse. | `ACTIVE_SCOPED` |
 | `CMD-CHECK-APP3-G04` | repository tool | checkpoint gate (APP3-G04) | `node tools/check-app3-g04.mjs` | tools/check-app3-g04.mjs, tools/check-app3-g04-media.mjs | Any edit to editor-media authority, §6.7, IMP-D044, the asset/derivative schema or the APP3 asset contract. Chains G03. Reports its schema mode: `REQUIRED_SCHEMA_CONTRIBUTION_PENDING` before `APP3-DB01`, `DERIVATIVE_METADATA_IMPLEMENTED` after it. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP3-G04` | repository tool | checkpoint gate tests | `node --test tools/check-app3-g04.test.mjs` | tools/check-app3-g04.test.mjs | Any edit to the G04 checkers or the inputs they parse. | `ACTIVE_SCOPED` |
+| `CMD-CHECK-APP3-DB01` | repository tool | checkpoint gate (APP3-DB01) | `node tools/check-app3-db01.mjs` | tools/check-app3-db01.mjs, tools/check-app3-db01-placement.mjs | Any edit to migration 0034, the placement or asset-derivative schema, §6.8, or the APP3 database disposition. Chains G04. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP3-DB01` | repository tool | checkpoint gate tests | `node --test tools/check-app3-db01.test.mjs` | tools/check-app3-db01.test.mjs | Any edit to the DB01 checkers or the inputs they parse. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP3-DB01-INTEGRATION` | `@embroidery/database` | integration test | `pnpm --filter @embroidery/database exec jest --testPathPatterns=app3-` | app3-placement-authority / app3-derivative-metadata / app3-placement-upgrade integration specs | Any change to placement or derivative schema, migration 0034, or the guard triggers. Needs a reachable PostgreSQL; creates and drops its own disposable databases. | `ACTIVE_SCOPED` |
 
 ## 4. Adding a command
 

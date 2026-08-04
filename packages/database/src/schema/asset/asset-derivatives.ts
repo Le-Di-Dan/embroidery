@@ -30,10 +30,12 @@
  */
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   check,
   foreignKey,
   index,
+  integer,
   pgTable,
   primaryKey,
   text,
@@ -81,6 +83,14 @@ export const assetDerivatives = pgTable(
     storageKey: text('storage_key'),
     checksum: text('checksum'),
     isWatermarked: boolean('is_watermarked').notNull(),
+    // APP3-DB01 / IMP-D044 PO-12 — canonical output metadata of *this*
+    // derivative. Nullable because a row is created before processing and
+    // because historical THUMBNAIL/CATALOG_PREVIEW rows carry none; the
+    // all-or-none CHECK is what keeps "nullable" from meaning "half-filled".
+    widthPx: integer('width_px'),
+    heightPx: integer('height_px'),
+    mediaType: text('media_type'),
+    byteSize: bigint('byte_size', { mode: 'bigint' }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -119,6 +129,27 @@ export const assetDerivatives = pgTable(
     check(
       'ck_asset_derivatives__ready_has_storage_key',
       sql`${t.status} <> 'READY' or ${t.storageKey} is not null`,
+    ),
+    // APP3-DB01 / IMP-D044 PO-12 — the metadata quartet moves as a unit. A row
+    // with a width and no media type is not "partly measured", it is a row no
+    // eligibility rule can evaluate.
+    check(
+      'ck_asset_derivatives__metadata_all_or_none',
+      sql`num_nonnulls(${t.widthPx}, ${t.heightPx}, ${t.mediaType}, ${t.byteSize}) in (0, 4)`,
+    ),
+    check(
+      'ck_asset_derivatives__metadata_positive',
+      // `btrim` with an explicit character set: the bare form trims spaces
+      // only, so a tab-only media type would satisfy a "not blank" rule that
+      // exists precisely to reject it.
+      sql`(${t.widthPx} is null or ${t.widthPx} > 0) and (${t.heightPx} is null or ${t.heightPx} > 0) and (${t.byteSize} is null or ${t.byteSize} > 0) and (${t.mediaType} is null or btrim(${t.mediaType}, E' \\t\\r\\n') <> '')`,
+    ),
+    // The eligibility half: a READY editor-safe derivative without dimensions
+    // is exactly the state the Studio may not be asked to guess about. Other
+    // kinds keep their historical freedom.
+    check(
+      'ck_asset_derivatives__ready_normalized_metadata',
+      sql`${t.kind} <> 'NORMALIZED' or ${t.status} <> 'READY' or num_nonnulls(${t.widthPx}, ${t.heightPx}, ${t.mediaType}, ${t.byteSize}) = 4`,
     ),
     // IDX-087 — processing-queue sweep (Q-26); drains, stays tiny.
     index('ix_asset_derivatives__created_id__processing')
