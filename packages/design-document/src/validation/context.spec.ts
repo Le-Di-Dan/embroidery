@@ -140,7 +140,7 @@ describe('decoded pixels', () => {
     expect(findings).toEqual(['DECODED_PIXEL_LIMIT_EXCEEDED']);
   });
 
-  it('charges a repeated derivative once, because it decodes once', () => {
+  it('charges a repeated Asset once, because it decodes once', () => {
     const elements = Array.from({ length: 6 }, (_unused, index) =>
       imageElement({
         id: `image-${String(index)}`,
@@ -153,6 +153,136 @@ describe('decoded pixels', () => {
     // 16.7 MP charged correctly.
     expect(codes(documentWith(elements), context([record]))).toEqual([]);
     expect(LIMITS.maxDecodedPixels).toBe(33_554_432);
+  });
+
+  it('counts one image using one Asset exactly once', () => {
+    const part = square(4096, 0);
+    expect(codes(documentWith([part.element]), context([part.record]))).toEqual([]);
+  });
+
+  it('sums two different Assets independently', () => {
+    // 4096² + 4096² is the ceiling; if the two collapsed into one entry the
+    // total would halve and the +1 case below could never fail.
+    const a = square(4096, 0);
+    const b = square(4096, 1);
+    const extra = square(1, 2);
+    expect(codes(documentWith([a.element, b.element]), context([a.record, b.record]))).toEqual([]);
+    expect(
+      codes(
+        documentWith([a.element, b.element, extra.element]),
+        context([a.record, b.record, extra.record]),
+      ),
+    ).toEqual(['DECODED_PIXEL_LIMIT_EXCEEDED']);
+  });
+
+  it('is deterministic across repeated validation', () => {
+    const parts = [0, 1].map((index) => square(4096, index));
+    const document = documentWith(parts.map((part) => part.element));
+    const authority = context(parts.map((part) => part.record));
+    expect(codes(document, authority)).toEqual(codes(document, authority));
+  });
+
+  it('does not mutate the document or the caller authority map', () => {
+    const parts = [0, 1].map((index) => square(4096, index));
+    const document = documentWith(parts.map((part) => part.element));
+    const authority = context(parts.map((part) => part.record));
+    const documentBefore = JSON.parse(JSON.stringify(document)) as unknown;
+    const authorityBefore = [...authority.derivatives.entries()];
+
+    validateDesignDocumentContext(document, authority);
+
+    expect(document).toEqual(documentBefore);
+    expect([...authority.derivatives.entries()]).toEqual(authorityBefore);
+  });
+});
+
+/**
+ * The correction `APP3-P01-C1` restored.
+ *
+ * `IMP-D044` PO-09 keys both the 20-Asset limit and the decoded-pixel total on
+ * the **Asset**, not the derivative. Keying pixels on `derivativeId` only looks
+ * equivalent while every Asset is placed through one derivative; the moment a
+ * document names one Asset twice through different derivatives, the two rules
+ * disagree — so the document is rejected rather than silently resolved.
+ */
+describe('one Asset, one derivative per document', () => {
+  const twoDerivativesOfOneAsset = (sideA: number, sideB: number) => ({
+    elements: [
+      imageElement({
+        id: 'image-a',
+        assetId: 'asset-shared',
+        derivativeId: 'derivative-a',
+        intrinsicWidthPx: sideA,
+        intrinsicHeightPx: sideA,
+      }),
+      imageElement({
+        id: 'image-b',
+        assetId: 'asset-shared',
+        derivativeId: 'derivative-b',
+        intrinsicWidthPx: sideB,
+        intrinsicHeightPx: sideB,
+      }),
+    ],
+    records: [
+      derivative({
+        derivativeId: 'derivative-a',
+        assetId: 'asset-shared',
+        widthPx: sideA,
+        heightPx: sideA,
+      }),
+      derivative({
+        derivativeId: 'derivative-b',
+        assetId: 'asset-shared',
+        widthPx: sideB,
+        heightPx: sideB,
+      }),
+    ],
+  });
+
+  it('rejects one assetId placed through two different derivative ids', () => {
+    // The delivered ambiguity, reproduced: both derivatives are eligible,
+    // READY, NORMALIZED and correctly measured. Nothing else is wrong.
+    const { elements, records } = twoDerivativesOfOneAsset(800, 400);
+    expect(codes(documentWith(elements), context(records))).toEqual([
+      'DERIVATIVE_METADATA_MISMATCH',
+    ]);
+  });
+
+  it('names the later conflicting element and carries no storage data', () => {
+    const { elements, records } = twoDerivativesOfOneAsset(800, 400);
+    const findings = validateDesignDocumentContext(documentWith(elements), context(records));
+    expect(findings[0]?.path).toBe('$.elements[1].derivativeId');
+    const serialized = JSON.stringify(findings);
+    expect(serialized).not.toContain('storage');
+    expect(serialized).not.toContain('http');
+    expect(serialized.length).toBeLessThan(400);
+  });
+
+  it('rejects the conflict whichever derivative is larger', () => {
+    for (const [a, b] of [
+      [800, 400],
+      [400, 800],
+    ]) {
+      const { elements, records } = twoDerivativesOfOneAsset(a as number, b as number);
+      expect(codes(documentWith(elements), context(records))).toEqual([
+        'DERIVATIVE_METADATA_MISMATCH',
+      ]);
+    }
+  });
+
+  it('accepts the same Asset placed many times through one derivative', () => {
+    const elements = Array.from({ length: 20 }, (_unused, index) =>
+      imageElement({ id: `image-${String(index)}` }),
+    );
+    expect(codes(documentWith(elements), context([derivative()]))).toEqual([]);
+  });
+
+  it('rejects a derivative whose authority names a different Asset', () => {
+    // Two documents' Assets cannot claim one authority record.
+    const element = imageElement({ assetId: 'asset-other' });
+    expect(codes(documentWith([element]), context([derivative()]))).toEqual([
+      'UNKNOWN_ASSET_REFERENCE',
+    ]);
   });
 });
 

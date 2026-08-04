@@ -32,6 +32,7 @@ const QUANTIZE = `${SRC_DIR}/quantization/quantize.ts`;
 const CONTEXT = `${SRC_DIR}/validation/context.ts`;
 const REGISTRY = `${SRC_DIR}/fonts/registry.ts`;
 const MANIFEST = `${PACKAGE_DIR}/package.json`;
+const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 
 const temporaries = [];
 after(() => {
@@ -268,6 +269,61 @@ describe('APP3-P01 — contextual validation demands measured eligibility', () =
     );
     const failures = run({ [CONSTANTS]: text });
     assert.ok(mentions(failures, 'NORMALIZED / READY'), failures.join('\n'));
+  });
+});
+
+/**
+ * `APP3-P01-C1`. The decoded-pixel budget is keyed by Asset, not derivative —
+ * the two only look equivalent while every Asset is placed through a single
+ * derivative, and IMP-D044 PO-09 keys both the 20-Asset limit and the pixel
+ * total on the Asset.
+ */
+describe('APP3-P01 — decoded pixels are budgeted per Asset', () => {
+  const SPEC = `${SRC_DIR}/validation/context.spec.ts`;
+
+  it('rejects a return to derivative-keyed accumulation', () => {
+    const text = read(CONTEXT).replaceAll('countedAssets', 'countedDerivatives');
+    const failures = run({ [CONTEXT]: text });
+    assert.ok(mentions(failures, 'derivative-keyed'), failures.join('\n'));
+  });
+
+  it('rejects keying the accumulator on the derivative id', () => {
+    const text = read(CONTEXT).replace(
+      'countedAssets.get(record.assetId)',
+      'countedAssets.get(record.derivativeId)',
+    );
+    const failures = run({ [CONTEXT]: text });
+    assert.ok(mentions(failures, 'keyed by assetId'), failures.join('\n'));
+  });
+
+  it('rejects dropping the two-derivatives-one-Asset conflict check', () => {
+    const text = read(CONTEXT).replace(
+      'seen.derivativeId !== record.derivativeId',
+      'seen.derivativeId === undefined',
+    );
+    const failures = run({ [CONTEXT]: text });
+    assert.ok(mentions(failures, 'two derivative ids is not detected'), failures.join('\n'));
+  });
+
+  it('rejects losing the G04 repeated-asset ruling it restores', () => {
+    const text = read(PHASE).replaceAll('ONCE_FOR_ASSET_BUDGETS_EACH_FOR_ELEMENTS', 'PER_ELEMENT');
+    const failures = run({ [PHASE]: text });
+    assert.ok(mentions(failures, 'repeated-asset counting ruling'), failures.join('\n'));
+  });
+
+  it('rejects rewording the G04 decoded-pixel ruling away from assets', () => {
+    const text = read(PHASE).replaceAll(
+      'unique referenced image assets',
+      'unique referenced derivatives',
+    );
+    const failures = run({ [PHASE]: text });
+    assert.ok(mentions(failures, 'unique referenced image assets'), failures.join('\n'));
+  });
+
+  it('rejects dropping the conflict regression from the package tests', () => {
+    const text = read(SPEC).replaceAll('two different derivative ids', 'two derivatives');
+    const failures = run({ [SPEC]: text });
+    assert.ok(mentions(failures, 'one-Asset/two-derivatives regression'), failures.join('\n'));
   });
 });
 

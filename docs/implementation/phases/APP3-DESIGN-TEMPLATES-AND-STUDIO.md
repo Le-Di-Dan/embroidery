@@ -1654,6 +1654,55 @@ byte, path or URL is ever serialized into a Design Document.
 No backend checkpoint is complete. `APP3-P01` validates no geometry and no
 bounds; it delivers no API, worker, migration, Figma or UI.
 
+### 6.10.6 `APP3-P01-C1` — decoded-pixel accounting keyed by Asset
+
+Human review returned `APP3-P01 = COMPLETE — CORRECTION_REQUIRED` on one
+contradiction inside the delivered evidence:
+
+| Source | Said |
+|---|---|
+| `IMP-D044` / `APP3-G04` | repeated references to one **Asset** count once toward the unique-asset limit **and** the decoded-pixel total |
+| `APP3-P01` implementation | decoded pixels summed over unique **`derivativeId`** values |
+
+The two are equivalent only while each Asset is reached through one derivative.
+They diverge the moment one `assetId` appears with two different `derivativeId`
+values — and derivative-keying then overcharges the pixel budget for a document
+the Asset rule says costs one decode.
+
+The correction restores the existing ruling. It creates **no** new Product Owner
+decision id and changes no product policy.
+
+| Key | Value |
+|---|---|
+| `Decoded pixel accounting key` | `assetId` |
+| `Unique referenced media key` | `assetId` |
+| `Derivative ids per asset per document` | `EXACTLY_ONE` |
+| `Conflicting derivative ids for one asset` | `REJECT_DOCUMENT` |
+| `Conflict finding code` | `DERIVATIVE_METADATA_MISMATCH` |
+| `Conflict finding path` | the **later** conflicting image element |
+| `Image element counting` | unchanged — each element counts |
+| `Global derivatives per asset` | unchanged — an Asset may still have many |
+
+The ambiguity is **rejected, never resolved**. Counting the first, last, smallest
+or largest derivative makes the pixel budget depend on element order or on an
+arbitrary choice; summing them charges one Asset more than once; normalizing
+every reference to one derivative silently rewrites what the customer placed.
+Each of those breaks one of the two G04 rules, and the ambiguity is equally
+unanswerable for canonical media identity, intrinsic-dimension validation and
+future deterministic rendering. This restricts one derivative selection **per
+Asset within one document**; it does not restrict an Asset to one derivative
+globally.
+
+| Checkpoint | Portion | Status after `APP3-P01-C1` |
+|---|---|---|
+| `APP3-P01-C1` | whole correction | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-P01` | whole checkpoint, post-C1 | `COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW` |
+| `APP3-P02` | whole checkpoint, post-C1 | `READY — NOT STARTED` |
+| `IMP-D044 PO-09` | unique-asset pixel rule | `RESTORED_BY_APP3-P01-C1` |
+
+`APP3-G04-COMPLETION-REPORT.md` and `APP3-P01-COMPLETION-REPORT.md` are
+historical evidence and are not rewritten; this section is the forward record.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -1674,7 +1723,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — DOCUMENT FOUNDATION DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — DOCUMENT FOUNDATION CORRECTION_DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -1692,7 +1741,8 @@ G03_DB_CONTRIBUTION = NONE
 G04_DB_CONTRIBUTION = REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA
 G01 DB contribution = IMPLEMENTED_BY_APP3_DB01
 G04 DB contribution = IMPLEMENTED_BY_APP3_DB01
-APP3-P01 = COMPLETE — REVIEW_DELIVERED
+APP3-P01 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
+APP3-P01-C1 = COMPLETE — REVIEW_DELIVERED
 APP3-P01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
 APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01

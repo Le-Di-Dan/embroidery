@@ -2,18 +2,18 @@
 /**
  * `APP3-P01` — the production Design Document foundation.
  *
- * This gate exists to hold three boundaries that a compiler cannot, and that
- * each erode in a plausible-looking way:
+ * This gate holds four boundaries a compiler cannot, each of which erodes in a
+ * plausible-looking way:
  *
  * 1. **The runtime split.** Hashing is server-only because `crypto.subtle` is
- *    undefined outside a secure context (APP0-R01). The failure mode is not a bad
- *    import — it is a re-export three files deep that drags `node:crypto` into a
- *    Storefront bundle, so the gate walks the whole reachable module graph.
+ *    undefined outside a secure context (APP0-R01), and the failure mode is a
+ *    re-export three files deep — so the gate walks the reachable module graph.
  * 2. **The geometry line.** `APP3-P02` owns bounds, rotation and px↔mm; the
  *    cheapest way to lose it is a "small" helper here that rotates a rectangle.
  * 3. **The font evidence.** The registry transcribes hashes from `APP3-F01`, so
  *    the gate re-hashes the committed binaries — a registry and a manifest can
  *    agree with each other and both be wrong about what is on disk.
+ * 4. **The Asset pixel budget** (`APP3-P01-C1`) — see `checkAssetKeyedPixels`.
  *
  * Read-only. No network, no database. Cross-platform pure Node.
  *
@@ -50,44 +50,32 @@ export const QUANTIZATION_SCALE = 10_000;
 
 export const ELEMENT_KINDS = Object.freeze(['text', 'image', 'shape', 'freehand', 'group']);
 
-const FORBIDDEN_SPECIFIERS = Object.freeze([
-  'react',
-  'next',
-  '@nestjs',
-  'konva',
-  'fabric',
-  'interact.js',
-  '@embroidery/database',
-  '@embroidery/persistence',
-  '@embroidery/object-storage',
-  '@embroidery/design-engine',
-  'spikes/',
-]);
+export const PHASE_FILE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
+
+/** `|` stands in for a space so each list stays one readable line. */
+const words = (list) => Object.freeze(list.split(' ').map((word) => word.replace('|', ' ')));
+
+const FORBIDDEN_SPECIFIERS = words(
+  'react next @nestjs konva fabric interact.js @embroidery/database ' +
+    '@embroidery/persistence @embroidery/object-storage @embroidery/design-engine spikes/',
+);
 
 /** Trigonometry and unit conversion belong to `APP3-P02`. */
-const GEOMETRY_TOKENS = Object.freeze([
-  'Math.cos',
-  'Math.sin',
-  'Math.atan',
-  'Math.tan',
-  'Math.hypot',
-  'function boundingBox',
-  'function pxToMm',
-  'function mmToPx',
-  'isWithinArea',
-]);
+const GEOMETRY_TOKENS = words(
+  'Math.cos Math.sin Math.atan Math.tan Math.hypot function|boundingBox ' +
+    'function|pxToMm function|mmToPx isWithinArea',
+);
 
 function read(rootDir, relative) {
   const path = join(rootDir, relative);
   return existsSync(path) ? readFileSync(path, 'utf8') : undefined;
 }
 
-/** Every non-test source file in the package. */
-function productionFiles(rootDir) {
-  const root = join(rootDir, SRC_DIR);
+/** Every `.ts` under the package source that `accept` selects. */
+function sourceFiles(rootDir, accept, skipTesting = false) {
   const found = [];
   const walk = (directory) => {
-    let entries;
+    let entries = [];
     try {
       entries = readdirSync(directory, { withFileTypes: true });
     } catch {
@@ -95,17 +83,20 @@ function productionFiles(rootDir) {
     }
     for (const entry of entries) {
       const full = join(directory, entry.name);
+      // `testing/` holds fixtures; it is excluded from the published build.
       if (entry.isDirectory()) {
-        // `testing/` holds fixtures; it is excluded from the published build.
-        if (entry.name !== 'testing') walk(full);
-        continue;
+        if (!(skipTesting && entry.name === 'testing')) walk(full);
+      } else if (extname(entry.name) === '.ts' && accept(entry.name)) {
+        found.push(full);
       }
-      if (extname(entry.name) === '.ts' && !entry.name.endsWith('.spec.ts')) found.push(full);
     }
   };
-  walk(root);
+  walk(join(rootDir, SRC_DIR));
   return found;
 }
+
+const productionFiles = (rootDir) =>
+  sourceFiles(rootDir, (name) => !name.endsWith('.spec.ts'), true);
 
 /** Modules a bundler would pull in when it imports `entry`. */
 function reachableFrom(entry, seen = new Set()) {
@@ -132,21 +123,7 @@ function checkPackagePresence(rootDir, fail) {
     fail(`${SRC_DIR}/index.ts is still the empty stub — APP3-P01 is not implemented`);
     return false;
   }
-  const specs = [];
-  const walk = (directory) => {
-    let entries;
-    try {
-      entries = readdirSync(directory, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      const full = join(directory, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (entry.name.endsWith('.spec.ts')) specs.push(full);
-    }
-  };
-  walk(join(rootDir, SRC_DIR));
+  const specs = sourceFiles(rootDir, (name) => name.endsWith('.spec.ts'));
   if (specs.length < 5) {
     fail(`the package carries only ${String(specs.length)} test file(s); expected focused suites`);
   }
@@ -217,6 +194,37 @@ function checkQuantization(rootDir, fail) {
   }
 }
 
+/**
+ * 18 (`APP3-P01-C1`) — the decoded-pixel budget is keyed by Asset, not derivative.
+ *
+ * The two look equivalent only while every Asset is placed through a single
+ * derivative. `IMP-D044` PO-09 keys **both** the 20-Asset limit and the pixel
+ * total on the Asset, so derivative-keying overcharges any document reaching one
+ * Asset through two derivatives — an ambiguity rejected, never resolved.
+ */
+function checkAssetKeyedPixels(rootDir, context, fail) {
+  const phase = read(rootDir, PHASE_FILE) ?? '';
+  const spec = read(rootDir, `${SRC_DIR}/validation/context.spec.ts`) ?? '';
+  const c = context;
+  if (!/countedAssets/.test(c)) fail('contextual validation does not budget pixels per Asset');
+  if (/counted(Derivatives|ByDerivative)/.test(c)) fail('derivative-keyed accumulation remains');
+  if (!/countedAssets\.get\(\s*record\.assetId\s*\)/.test(c))
+    fail('the budget is not keyed by assetId');
+  if (!/seen\.derivativeId\s*!==\s*record\.derivativeId/.test(c)) {
+    fail('one Asset placed through two derivative ids is not detected');
+  }
+  // The rule this restores is G04's, so its wording must still be there.
+  if (!phase.includes('ONCE_FOR_ASSET_BUDGETS_EACH_FOR_ELEMENTS')) {
+    fail('the APP3-G04 repeated-asset counting ruling is no longer recorded');
+  }
+  if (!phase.includes('unique referenced image assets')) {
+    fail('the G04 ruling no longer says "unique referenced image assets"');
+  }
+  if (!/two different derivative ids/.test(spec)) {
+    fail('the package tests lack the one-Asset/two-derivatives regression');
+  }
+}
+
 /** 9, 11 — the canonicalization, migration and contextual APIs exist. */
 function checkApis(rootDir, fail) {
   const index = read(rootDir, `${SRC_DIR}/index.ts`) ?? '';
@@ -240,6 +248,7 @@ function checkApis(rootDir, fail) {
   for (const column of ['widthPx', 'heightPx', 'mediaType', 'byteSize']) {
     if (!context.includes(column)) fail(`contextual validation ignores derivative ${column}`);
   }
+  checkAssetKeyedPixels(rootDir, context, fail);
   const constants = read(rootDir, `${SRC_DIR}/schema/constants.ts`) ?? '';
   if (!constants.includes("'NORMALIZED'") || !constants.includes("'READY'")) {
     fail('the eligible derivative kind and status are not NORMALIZED / READY');
@@ -270,18 +279,14 @@ function checkBoundaries(rootDir, fail) {
     return;
   }
   const reachable = [...reachableFrom(root)];
-  if (reachable.length < 5) {
-    fail('the root export graph could not be walked');
-  }
+  if (reachable.length < 5) fail('the root export graph could not be walked');
   for (const file of reachable) {
-    const source = readFileSync(file, 'utf8');
-    if (/from\s+'node:/.test(source)) {
+    if (/from\s+'node:/.test(readFileSync(file, 'utf8'))) {
       fail(`${file.slice(rootDir.length + 1)} is reachable from the root export and imports node:`);
     }
   }
-  if (reachable.includes(serverEntry)) {
+  if (reachable.includes(serverEntry))
     fail('the browser-safe root export reaches the server module');
-  }
   const rootSource = readFileSync(root, 'utf8');
   for (const token of ['hashDesignDocumentSha256', 'createHash']) {
     if (rootSource.includes(token))
@@ -317,18 +322,12 @@ function checkFontRegistry(rootDir, fail) {
     fail('the controlled font registry is missing');
     return;
   }
-  for (const token of [
-    "fontId: 'inter'",
-    "family: 'Inter'",
-    "licenseSpdx: 'OFL-1.1'",
-    "upstreamTag: 'v4.1'",
-    'e3a3d4c57d5ecc01453a575621882a384c1995a3',
-    "vietnameseCoverage: 'VERIFIED_COMPLETE'",
-    "fallbackPolicy: 'REJECT_IF_CONTROLLED_FONT_UNAVAILABLE'",
-    'VIETNAMESE-COVERAGE.json',
-    'FONT-PROVENANCE.json',
-    'LICENSE.txt',
-  ]) {
+  const required = ["fontId: 'inter'", "family: 'Inter'", "licenseSpdx: 'OFL-1.1'"];
+  required.push("upstreamTag: 'v4.1'", 'e3a3d4c57d5ecc01453a575621882a384c1995a3');
+  required.push("vietnameseCoverage: 'VERIFIED_COMPLETE'", 'VIETNAMESE-COVERAGE.json');
+  required.push("fallbackPolicy: 'REJECT_IF_CONTROLLED_FONT_UNAVAILABLE'", 'LICENSE.txt');
+  required.push('FONT-PROVENANCE.json');
+  for (const token of required) {
     if (!registry.includes(token)) fail(`the font registry does not record ${token}`);
   }
   // Comments legitimately explain why General Sans is absent, so only code counts.
@@ -391,7 +390,8 @@ async function main() {
       'their exact ruled values, quantization at the APP0-R01 scale of 10,000 with negative zero ' +
       'normalized, RFC 8785 canonicalization and an ordered migration registry that fails an ' +
       'unknown version loudly, contextual validation that demands READY NORMALIZED derivative ' +
-      'metadata, and a controlled Inter registry whose hashes match the committed APP3-F01 ' +
+      'metadata and budgets decoded pixels per Asset (rejecting one Asset placed through two ' +
+      'derivatives), and a controlled Inter registry whose hashes match the committed APP3-F01 ' +
       'binaries; hashing is reachable only through the server subpath, no Node built-in is ' +
       'reachable from the browser-safe root, and no geometry, API, worker or UI entered P01',
   );

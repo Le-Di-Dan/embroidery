@@ -12,6 +12,8 @@
 import { DESIGN_DOCUMENT_LIMITS as LIMITS } from '../schema/constants';
 import { prepareDesignDocument } from '../canonical/canonicalize';
 import {
+  context,
+  derivative,
   documentWith,
   emptyDocument,
   imageElement,
@@ -20,6 +22,7 @@ import {
   textElement,
 } from '../testing/fixtures';
 import { validateCanonicalSize, validateDesignDocumentComplexity } from './complexity';
+import { validateDesignDocumentContext } from './context';
 
 const measures = (document: Parameters<typeof validateDesignDocumentComplexity>[0]): string[] =>
   validateDesignDocumentComplexity(document).map((item) => String(item.meta?.measure));
@@ -70,6 +73,26 @@ describe('asset budgets', () => {
     const found = measures(documentWith(elements));
     expect(found).not.toContain('uniqueAssets');
     expect(found).toContain('imageElements');
+  });
+
+  it('counts twenty placements of one asset as one unique asset', () => {
+    const elements = repeatImage(LIMITS.maxImageElements, true);
+    expect(measures(documentWith(elements))).toEqual([]);
+  });
+
+  /**
+   * The identity rule `APP3-P01-C1` restored: both the Asset budget here and
+   * the decoded-pixel total in contextual validation key on `assetId`. Twenty-one
+   * placements of one Asset must trip the image-element limit and **only** that.
+   */
+  it('trips only the image-element limit, never the asset or pixel budget', () => {
+    const elements = repeatImage(LIMITS.maxImageElements + 1, true);
+    const document = documentWith(elements);
+    expect(measures(document)).toEqual(['imageElements']);
+
+    const authority = context([derivative()]);
+    const contextual = validateDesignDocumentContext(document, authority).map((item) => item.code);
+    expect(contextual).toEqual([]);
   });
 });
 

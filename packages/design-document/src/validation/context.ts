@@ -149,30 +149,58 @@ function checkImage(
   return record;
 }
 
+/** What one Asset costs, and which derivative the document chose for it. */
+interface CountedAsset {
+  readonly derivativeId: string;
+  readonly decodedPixels: number;
+}
+
 /**
  * Validates every asset and font reference against caller-supplied authority.
  *
- * Decoded pixels are summed over **unique** derivatives: placing one logo
- * twenty times costs one decode, and charging it twenty times would refuse
- * documents that are cheap to render.
+ * Decoded pixels are summed over unique **Assets** (IMP-D044 PO-09), not over
+ * derivatives. Placing one logo twenty times costs one decode, and charging it
+ * twenty times would refuse documents that are cheap to render.
+ *
+ * The two are only equivalent while each Asset is referenced through a single
+ * derivative — which is why naming one Asset through two different
+ * `derivativeId` values is **rejected** rather than resolved. Every way of
+ * resolving it silently breaks one of the two G04 rules: counting the first,
+ * last, smallest or largest derivative makes the pixel budget depend on element
+ * order or on an arbitrary choice, and summing them charges one Asset more than
+ * once. The ambiguity is also unanswerable for canonical media identity and for
+ * intrinsic-dimension validation, so it is a document defect, not a policy gap.
  */
 export function validateDesignDocumentContext(
   document: DesignDocument,
   context: DesignDocumentContext,
 ): readonly DesignDocumentFinding[] {
   const findings: DesignDocumentFinding[] = [];
-  const countedDerivatives = new Map<string, number>();
+  const countedAssets = new Map<string, CountedAsset>();
 
   for (const [index, element] of document.elements.entries()) {
     const path = `$.elements[${String(index)}]`;
 
     if (element.type === 'image') {
       const record = checkImage(element, path, context, findings);
-      if (record !== undefined && !countedDerivatives.has(record.derivativeId)) {
-        countedDerivatives.set(
-          record.derivativeId,
-          (record.widthPx as number) * (record.heightPx as number),
-        );
+      if (record !== undefined) {
+        const seen = countedAssets.get(record.assetId);
+        if (seen === undefined) {
+          countedAssets.set(record.assetId, {
+            derivativeId: record.derivativeId,
+            decodedPixels: (record.widthPx as number) * (record.heightPx as number),
+          });
+        } else if (seen.derivativeId !== record.derivativeId) {
+          // The path names the *later* element, which is the one that
+          // introduced the disagreement.
+          findings.push(
+            finding(
+              'DERIVATIVE_METADATA_MISMATCH',
+              `${path}.derivativeId`,
+              'This asset is already placed through a different derivative in this design.',
+            ),
+          );
+        }
       }
       continue;
     }
@@ -203,7 +231,7 @@ export function validateDesignDocumentContext(
   }
 
   let decodedPixels = 0;
-  for (const pixels of countedDerivatives.values()) decodedPixels += pixels;
+  for (const counted of countedAssets.values()) decodedPixels += counted.decodedPixels;
 
   const limit = DESIGN_DOCUMENT_LIMITS.maxDecodedPixels;
   if (decodedPixels > limit) {
