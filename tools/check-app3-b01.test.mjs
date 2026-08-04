@@ -332,6 +332,164 @@ describe('APP3-B01 — geometry and DB01 authority', () => {
   });
 });
 
+/**
+ * `APP3-B01-C1`. The delivered checkpoint enforced the compare-and-set and
+ * published the replace body as an **empty object**, so a client could not
+ * discover the token it was required to send. Every case here breaks one half of
+ * the published contract; none of them breaks a functional test.
+ */
+describe('APP3-B01 — the concurrency contract is published', () => {
+  it('rejects a replace body that documents no token', () => {
+    for (const mutate of [
+      (document) =>
+        delete document.components.schemas.ReplaceProductPlacementBody.properties.expectedUpdatedAt,
+      (document) => {
+        document.components.schemas.ReplaceProductPlacementBody.required = ['sides'];
+      },
+    ]) {
+      const failures = run(withOpenApi(mutate));
+      assert.ok(
+        mentions(failures, 'expectedUpdatedAt'),
+        `expected a token failure\n${failures.join('\n')}`,
+      );
+    }
+  });
+
+  it('rejects the empty published body that originally shipped', () => {
+    const failures = run(
+      withOpenApi((document) => {
+        document.components.schemas.ReplaceProductPlacementBody.properties = {};
+        document.components.schemas.ReplaceProductPlacementBody.required = [];
+      }),
+    );
+    assert.ok(mentions(failures, 'publishes no properties at all'), failures.join('\n'));
+  });
+
+  it('rejects an Admin read that stops returning the token', () => {
+    const failures = run(
+      withOpenApi((document) => {
+        delete document.components.schemas.AdminProductPlacementResponse.properties.updatedAt;
+      }),
+    );
+    assert.ok(mentions(failures, 'does not expose `updatedAt`'), failures.join('\n'));
+  });
+
+  it('rejects an optional token on either side', () => {
+    const failures = run(
+      withOpenApi((document) => {
+        document.components.schemas.AdminProductPlacementResponse.required = [
+          'productId',
+          'productStatus',
+          'sides',
+        ];
+      }),
+    );
+    assert.ok(
+      mentions(failures, 'is optional in the Admin placement response'),
+      failures.join('\n'),
+    );
+  });
+
+  it('rejects a replace that stops returning the fresh token', () => {
+    const failures = run(
+      withOpenApi((document) => {
+        document.paths[ADMIN_PATH].put.responses['200'] = { description: 'No content.' };
+      }),
+    );
+    assert.ok(mentions(failures, 'fresh token'), failures.join('\n'));
+  });
+
+  it('rejects the token leaking into the public manifest', () => {
+    const failures = run(
+      withOpenApi((document) => {
+        document.components.schemas.PublicProductPlacementResponse.properties.updatedAt = {
+          type: 'string',
+        };
+      }),
+    );
+    assert.ok(mentions(failures, 'public manifest exposes'), failures.join('\n'));
+  });
+
+  it('rejects a token format that diverges from the Catalog convention', () => {
+    // A bare `datetime()` refuses `+07:00`, which every other Admin Product
+    // write accepts — one column, two rules.
+    const source = read(CANONICAL_FILES.request);
+    const failures = run({
+      [CANONICAL_FILES.request]: source.replace(
+        'z.string().datetime({ offset: true })',
+        'z.string().datetime()',
+      ),
+    });
+    assert.ok(mentions(failures, 'offset: true'), failures.join('\n'));
+  });
+
+  it('rejects an optional token in the request schema', () => {
+    const source = read(CANONICAL_FILES.request);
+    const failures = run({
+      [CANONICAL_FILES.request]: source.replace(
+        'expectedUpdatedAt: z.string().datetime({ offset: true })',
+        'expectedUpdatedAt: z.string().datetime({ offset: true }).optional()',
+      ),
+    });
+    assert.ok(mentions(failures, 'optional in the request schema'), failures.join('\n'));
+  });
+
+  it('rejects a compare-and-set that no longer compares the caller token', () => {
+    const source = read(CANONICAL_FILES.repository);
+    const failures = run({
+      [CANONICAL_FILES.repository]: source.replace(
+        'eq(products.updatedAt, expectedUpdatedAt)',
+        'sql`true`',
+      ),
+    });
+    assert.ok(mentions(failures, 'does not compare the caller token'), failures.join('\n'));
+  });
+
+  it('rejects placement writes ordered before the compare-and-set', () => {
+    const source = read(CANONICAL_FILES.service);
+    const failures = run({
+      [CANONICAL_FILES.service]: source.replace(
+        'const lock = await this.placement.lockProductForReplace(',
+        'await this.apply(await this.plannedFor(productId));\n      const lock = await this.placement.lockProductForReplace(',
+      ),
+    });
+    assert.ok(mentions(failures, 'opening write'), failures.join('\n'));
+  });
+
+  it('rejects a stale write that stops mapping to the safe error', () => {
+    const source = read(CANONICAL_FILES.errors);
+    const failures = run({
+      [CANONICAL_FILES.errors]: source.replaceAll(
+        "'PLACEMENT_VERSION_CONFLICT'",
+        "'PLACEMENT_STALE'",
+      ),
+    });
+    assert.ok(mentions(failures, 'PLACEMENT_VERSION_CONFLICT'), failures.join('\n'));
+  });
+
+  it('rejects a generated client that cannot type the token', () => {
+    const source = read(CANONICAL_FILES.clientSchemas);
+    const failures = run({
+      [CANONICAL_FILES.clientSchemas]: source.replace(
+        'expectedUpdatedAt: string;',
+        'legacyToken: string;',
+      ),
+    });
+    assert.ok(mentions(failures, 'does not type `expectedUpdatedAt`'), failures.join('\n'));
+  });
+
+  it('rejects removing a focused concurrency regression', () => {
+    const source = read(CANONICAL_FILES.concurrencySpec);
+    const failures = run({
+      [CANONICAL_FILES.concurrencySpec]: source.replace(
+        'writes no side or area when the compare-and-set fails',
+        'does something',
+      ),
+    });
+    assert.ok(mentions(failures, 'concurrency regression'), failures.join('\n'));
+  });
+});
+
 describe('APP3-B01 — artifacts and governance', () => {
   it('rejects a stale generated client', () => {
     const source = read(CANONICAL_FILES.client);

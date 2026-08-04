@@ -2243,7 +2243,7 @@ Template and no Session operation exists.
 | `Admin read scope` | active **and** retired rows |
 | `Public read scope` | active rows only |
 | `Ordering` | `display_order`, `code`, `id` — total on every read |
-| `Concurrency token` | `products.updated_at`, guarded in one statement |
+| `Concurrency token` | `products.updated_at`, guarded in one statement; published as `updatedAt` / `expectedUpdatedAt` (§6.15) |
 | `Removal path` | retirement; no `delete` exists in the repository |
 | `Geometry authority` | `@embroidery/design-engine` (IMP-D045), never re-implemented |
 | `Background lane` | `CATALOG_MEDIA` / `PRODUCTION_SENSITIVE` / `ACCEPTED`, SVG rejected |
@@ -2298,6 +2298,63 @@ code — and by no URL, because that route does not exist yet.
 | `APP3-D01` | placement portion, post-B01 | `BACKEND_CONTRACT_AVAILABLE_BY_APP3-B01` |
 | `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | disposition, post-B01 | `OPEN — FINAL_OWNER_APP3-B02` |
 
+## 6.15 `APP3-B01-C1` — the concurrency token becomes a published contract
+
+Human review returned `COMPLETE — CORRECTION_REQUIRED`. The three operations,
+DB01 protection, public projection, Studio eligibility, geometry delegation and
+disposable-database coverage were accepted. One HTTP-contract gap was not.
+
+The compare-and-set on `products.updated_at` was correct and enforced, but the
+**published** contract did not show it: `ReplaceProductPlacementBody` rendered as
+an empty object, so a client reading the document could not see that
+`expectedUpdatedAt` exists, let alone that it is required, and the generated
+client typed the body as an empty interface. A server-side CAS whose token the
+client cannot obtain and submit is not a complete concurrency contract.
+
+The cause is platform-wide, not placement-specific: `createZodDto` carries the
+Zod schema for the validation pipe and **no** OpenAPI metadata, so every
+schema-backed body in the repository publishes empty — `UpdateProductBody`,
+`ArchiveProductBody` and the publication bodies included. Runtime validation was
+never affected. The correction is scoped to the placement body; repairing
+`createZodDto` would change five APP2 schemas belonging to accepted checkpoints.
+
+### 6.15.1 The contract
+
+| Key | Value |
+|---|---|
+| `Token authority` | `products.updated_at` — no placement revision column |
+| `Response field` | `updatedAt` (Admin read **and** successful replace) |
+| `Request field` | `expectedUpdatedAt`, required |
+| `Wire format` | `z.string().datetime({ offset: true })` — the Catalog convention |
+| `Stale-write code` | `PLACEMENT_VERSION_CONFLICT` (409) |
+| `Public exposure` | `NONE` — the manifest carries neither field |
+| `Missing token` | rejected; never defaulted, never read from the database |
+| `CAS position` | the opening write of the replacement transaction |
+
+```text
+GET  placement                → T1
+PUT  placement (expects T1)   → CAS succeeds, commits, returns T2
+PUT  placement (expects T1)   → rejected, no side or area written
+```
+
+A second convention divergence was corrected with it: the placement token used a
+bare `datetime()`, so it refused a token carrying an offset (`+07:00`) that the
+same client could send to every other Admin Product write.
+
+### 6.15.2 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-B01-C1` |
+|---|---|---|
+| `APP3-B01` | whole checkpoint, post-C1 | `COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW` |
+| `APP3-B01-C1` | whole correction, post-C1 | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-B02` | whole checkpoint, post-C1 | `BLOCKED_BY_APP3-B06` |
+| `APP3-A01` | whole checkpoint, post-C1 | `BACKEND_READY_BY_APP3-B01 — BLOCKED_BY_APP3-D01` |
+
+Zero new paths and zero new operations; the correction is schema-only, plus two
+bounded request component schemas so the documented body is usable rather than
+merely truthful about its token. No database schema, migration, worker, renderer,
+UI or dependency change.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -2346,7 +2403,8 @@ APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
 APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01
 APP3-P02 = COMPLETE — REVIEW_ACCEPTED
 APP3-P02-C1 = COMPLETE — REVIEW_ACCEPTED
-APP3-B01 = COMPLETE — REVIEW_DELIVERED
+APP3-B01 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
+APP3-B01-C1 = COMPLETE — REVIEW_DELIVERED
 APP3-A01 = BACKEND_READY_BY_APP3-B01 — BLOCKED_BY_APP3-D01
 APP3-D01 placement portion = BACKEND_CONTRACT_AVAILABLE_BY_APP3-B01
 APP3-P02 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED

@@ -518,7 +518,8 @@
             "type": "array"
           },
           "updatedAt": {
-            "description": "Concurrency token; a replace must echo it back as expectedUpdatedAt.",
+            "description": "Optimistic-concurrency token; send it back as `expectedUpdatedAt`.",
+            "example": "2026-08-04T10:00:00.000Z",
             "format": "date-time",
             "type": "string"
           }
@@ -1411,8 +1412,169 @@
         ],
         "type": "object"
       },
+      "ReplacePlacementAreaBody": {
+        "properties": {
+          "boundHeightPx": {
+            "example": 300,
+            "type": "number"
+          },
+          "boundWidthPx": {
+            "example": 400,
+            "type": "number"
+          },
+          "boundXPx": {
+            "description": "Canvas-space origin, in side image pixels.",
+            "example": 120,
+            "type": "number"
+          },
+          "boundYPx": {
+            "example": 90,
+            "type": "number"
+          },
+          "code": {
+            "example": "chest",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "displayOrder": {
+            "example": 0,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Present to retain and update an area.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxHeightMm": {
+            "example": 60,
+            "type": "number"
+          },
+          "maxWidthMm": {
+            "description": "Physical maximum in millimetres.",
+            "example": 80,
+            "type": "number"
+          },
+          "name": {
+            "example": "Ngực trái",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "supersedesId": {
+            "description": "The area of the same side this new row replaces; that row is retired.",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "displayOrder",
+          "boundXPx",
+          "boundYPx",
+          "boundWidthPx",
+          "boundHeightPx"
+        ],
+        "type": "object"
+      },
+      "ReplacePlacementSideBody": {
+        "properties": {
+          "areas": {
+            "items": {
+              "$ref": "#/components/schemas/ReplacePlacementAreaBody"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "backgroundAssetId": {
+            "description": "The Asset whose derivative renders this side.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "code": {
+            "example": "front",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "displayOrder": {
+            "example": 0,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Present to retain and update a side.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "imageHeightPx": {
+            "example": 1000,
+            "type": "integer"
+          },
+          "imageWidthPx": {
+            "example": 1000,
+            "type": "integer"
+          },
+          "name": {
+            "example": "Mặt trước",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "example": 200,
+            "type": "number"
+          },
+          "physicalWidthMm": {
+            "example": 200,
+            "type": "number"
+          },
+          "pxPerMm": {
+            "description": "Must agree with both axes of this side.",
+            "example": 5,
+            "type": "number"
+          },
+          "supersedesId": {
+            "description": "The side of the same product this new row replaces; that row is retired.",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "displayOrder",
+          "backgroundAssetId",
+          "imageWidthPx",
+          "imageHeightPx",
+          "physicalWidthMm",
+          "physicalHeightMm",
+          "pxPerMm",
+          "areas"
+        ],
+        "type": "object"
+      },
       "ReplaceProductPlacementBody": {
-        "properties": {},
+        "properties": {
+          "expectedUpdatedAt": {
+            "description": "The Product concurrency token, exactly as the Admin placement read returned it in `updatedAt`. Required. A stale value is rejected as a conflict and no side or area is written; a successful replace returns the fresh token in the response `updatedAt`.",
+            "example": "2026-08-04T10:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "sides": {
+            "description": "The complete placement model. A side or area carrying an `id` is retained, one without is created, and one that is omitted is retired — never deleted. An empty list retires the whole placement.",
+            "items": {
+              "$ref": "#/components/schemas/ReplacePlacementSideBody"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "expectedUpdatedAt",
+          "sides"
+        ],
         "type": "object"
       },
       "StaffLoginRequest": {
@@ -3089,7 +3251,7 @@
         ]
       },
       "put": {
-        "description": "Replaces the whole placement model atomically. A side or area carrying an `id` is retained and updated; one without an `id` is created; one that is omitted is **retired**, never deleted. A new row may name the row it replaces through `supersedesId`, within the same parent only. Once a side or area is referenced by a Template or a live Design Session its identity and geometry can no longer change — display copy and ordering still can. Requires `expectedUpdatedAt`; a stale value is rejected rather than overwriting a concurrent change. An empty `sides` list retires the entire placement.",
+        "description": "Replaces the whole placement model atomically. A side or area carrying an `id` is retained and updated; one without an `id` is created; one that is omitted is **retired**, never deleted. A new row may name the row it replaces through `supersedesId`, within the same parent only. Once a side or area is referenced by a Template or a live Design Session its identity and geometry can no longer change — display copy and ordering still can. Requires `expectedUpdatedAt`, the `updatedAt` token the placement read returned; a stale value is rejected as a conflict and **no** side or area is written. A successful replace returns the whole model again with the **fresh** `updatedAt`, which the next write must echo. An empty `sides` list retires the entire placement.",
         "operationId": "adminProductPlacement_replace",
         "parameters": [
           {

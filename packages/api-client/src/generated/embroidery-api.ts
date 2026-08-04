@@ -196,7 +196,7 @@ export const adminProductPlacementGet = (
 };
 
 /**
- * Replaces the whole placement model atomically. A side or area carrying an `id` is retained and updated; one without an `id` is created; one that is omitted is **retired**, never deleted. A new row may name the row it replaces through `supersedesId`, within the same parent only. Once a side or area is referenced by a Template or a live Design Session its identity and geometry can no longer change — display copy and ordering still can. Requires `expectedUpdatedAt`; a stale value is rejected rather than overwriting a concurrent change. An empty `sides` list retires the entire placement.
+ * Replaces the whole placement model atomically. A side or area carrying an `id` is retained and updated; one without an `id` is created; one that is omitted is **retired**, never deleted. A new row may name the row it replaces through `supersedesId`, within the same parent only. Once a side or area is referenced by a Template or a live Design Session its identity and geometry can no longer change — display copy and ordering still can. Requires `expectedUpdatedAt`, the `updatedAt` token the placement read returned; a stale value is rejected as a conflict and **no** side or area is written. A successful replace returns the whole model again with the **fresh** `updatedAt`, which the next write must echo. An empty `sides` list retires the entire placement.
  * @summary Replace the Product placement model
  */
 export const adminProductPlacementReplace = (

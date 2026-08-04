@@ -300,7 +300,7 @@ export interface AdminProductPlacementResponse {
   productStatus: string;
   /** Active and retired sides alike, ordered by displayOrder, code, id. */
   sides: AdminPlacementSideResponse[];
-  /** Concurrency token; a replace must echo it back as expectedUpdatedAt. */
+  /** Optimistic-concurrency token; send it back as `expectedUpdatedAt`. */
   updatedAt: string;
 }
 
@@ -694,8 +694,64 @@ export interface ReadinessStatusResponse {
   timestamp: string;
 }
 
+export interface ReplacePlacementAreaBody {
+  boundHeightPx: number;
+  boundWidthPx: number;
+  /** Canvas-space origin, in side image pixels. */
+  boundXPx: number;
+  boundYPx: number;
+  /**
+   * @maxLength 64
+   * @pattern ^[a-z0-9][a-z0-9_-]{0,63}$
+   */
+  code: string;
+  /** @minimum 0 */
+  displayOrder: number;
+  /** Present to retain and update an area. */
+  id?: string;
+  maxHeightMm?: number;
+  /** Physical maximum in millimetres. */
+  maxWidthMm?: number;
+  /** @maxLength 200 */
+  name: string;
+  /** The area of the same side this new row replaces; that row is retired. */
+  supersedesId?: string;
+}
+
+export interface ReplacePlacementSideBody {
+  /** @maxItems 50 */
+  areas: ReplacePlacementAreaBody[];
+  /** The Asset whose derivative renders this side. */
+  backgroundAssetId: string;
+  /**
+   * @maxLength 64
+   * @pattern ^[a-z0-9][a-z0-9_-]{0,63}$
+   */
+  code: string;
+  /** @minimum 0 */
+  displayOrder: number;
+  /** Present to retain and update a side. */
+  id?: string;
+  imageHeightPx: number;
+  imageWidthPx: number;
+  /** @maxLength 200 */
+  name: string;
+  physicalHeightMm: number;
+  physicalWidthMm: number;
+  /** Must agree with both axes of this side. */
+  pxPerMm: number;
+  /** The side of the same product this new row replaces; that row is retired. */
+  supersedesId?: string;
+}
+
 export interface ReplaceProductPlacementBody {
-  [key: string]: unknown;
+  /** The Product concurrency token, exactly as the Admin placement read returned it in `updatedAt`. Required. A stale value is rejected as a conflict and no side or area is written; a successful replace returns the fresh token in the response `updatedAt`. */
+  expectedUpdatedAt: string;
+  /**
+   * The complete placement model. A side or area carrying an `id` is retained, one without is created, and one that is omitted is retired — never deleted. An empty list retires the whole placement.
+   * @maxItems 20
+   */
+  sides: ReplacePlacementSideBody[];
 }
 
 export interface StaffLoginRequest {

@@ -10,10 +10,10 @@
  * receive, not against a document rebuilt in process.
  *
  * The second risk is authority drift. Placement belongs to Product/Catalog
- * (IMP-D041 PO-01) and geometry belongs to `design-engine` (IMP-D045), and both
- * would be quietly violated by code that compiles: a Design module import, or a
- * two-line `width / mm` check written inline because it is obvious. Each check
- * below names the alternative it refuses.
+ * (IMP-D041 PO-01) and geometry to `design-engine` (IMP-D045); both would be
+ * quietly violated by code that compiles — a Design module import, or a two-line
+ * `width / mm` check written inline because it is obvious. Each check names the
+ * alternative it refuses. `check-app3-b01-concurrency.mjs` owns the third risk.
  *
  * Read-only, cross-platform pure Node.
  * Usage: node tools/check-app3-b01.mjs [rootDir]
@@ -24,6 +24,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { checkApp3P02 } from './check-app3-p02.mjs';
+import { checkPlacementConcurrency } from './check-app3-b01-concurrency.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MODULE_DIR = 'apps/api/src/modules/catalog';
@@ -31,6 +32,7 @@ const MODULE_DIR = 'apps/api/src/modules/catalog';
 export const CANONICAL_FILES = Object.freeze({
   openapi: 'packages/contracts/openapi/openapi.generated.json',
   client: 'packages/api-client/src/generated/embroidery-api.ts',
+  clientSchemas: 'packages/api-client/src/generated/embroidery-api.schemas.ts',
   module: `${MODULE_DIR}/catalog-placement.module.ts`,
   policy: `${MODULE_DIR}/domain/product-placement.policy.ts`,
   repository: `${MODULE_DIR}/infrastructure/persistence/drizzle-product-placement.repository.ts`,
@@ -41,6 +43,10 @@ export const CANONICAL_FILES = Object.freeze({
   adminController: `${MODULE_DIR}/presentation/admin-product-placement.controller.ts`,
   publicController: `${MODULE_DIR}/presentation/public-product-placement.controller.ts`,
   response: `${MODULE_DIR}/presentation/schemas/product-placement.response.ts`,
+  request: `${MODULE_DIR}/presentation/schemas/admin-product-placement.request.ts`,
+  errors: `${MODULE_DIR}/domain/product-placement.errors.ts`,
+  contractSpec: `${MODULE_DIR}/presentation/product-placement.contract.spec.ts`,
+  concurrencySpec: 'apps/api/test/integration/product-placement-concurrency.integration.spec.ts',
   productSides: 'packages/database/src/schema/catalog/product-sides.ts',
   appModule: 'apps/api/src/bootstrap/app.module.ts',
   rootManifest: 'package.json',
@@ -158,9 +164,7 @@ function checkPublicSurface(rootDir, fail) {
   const publicPlacement = Object.entries(schemas).filter(([name]) =>
     /^PublicPlacement|^PublicProductPlacement/.test(name),
   );
-  if (publicPlacement.length === 0) {
-    fail('the OpenAPI document declares no public placement schema');
-  }
+  if (publicPlacement.length === 0) fail('the document declares no public placement schema');
   const serialized = JSON.stringify(Object.fromEntries(publicPlacement));
   for (const field of PRIVATE_FIELDS) {
     if (serialized.includes(field)) fail(`the public placement schema exposes "${field}"`);
@@ -329,12 +333,34 @@ function checkArtifacts(rootDir, fail) {
   }
 }
 
+/** `APP3-B01-C1` — delegated, for the line limit. */
+function checkConcurrencyContract(rootDir, fail) {
+  const raw = read(rootDir, 'openapi');
+  if (raw === undefined) return;
+  checkPlacementConcurrency(
+    {
+      document: JSON.parse(raw),
+      // Orval splits the client: operations in one file, the request/response
+      // interfaces in the other. The token lives in the second.
+      client: `${read(rootDir, 'client') ?? ''}\n${read(rootDir, 'clientSchemas') ?? ''}`,
+      request: code(read(rootDir, 'request') ?? ''),
+      service: code(read(rootDir, 'service') ?? ''),
+      repository: code(read(rootDir, 'repository') ?? ''),
+      errors: read(rootDir, 'errors') ?? '',
+      contractSpec: read(rootDir, 'contractSpec') ?? '',
+      concurrencySpec: read(rootDir, 'concurrencySpec') ?? '',
+    },
+    fail,
+  );
+}
+
 export function checkApp3B01(rootDir = REPO_ROOT) {
   const failures = [];
   const fail = (message) => failures.push(message);
 
   checkOperations(rootDir, fail);
   checkPublicSurface(rootDir, fail);
+  checkConcurrencyContract(rootDir, fail);
   checkOwnership(rootDir, fail);
   checkEligibility(rootDir, fail);
   checkAuthorityReuse(rootDir, fail);
@@ -359,12 +385,14 @@ async function main() {
     'check:app3-b01 — exactly three placement operations (adminProductPlacement_get/_replace ' +
       'behind an Admin session, publicProductPlacement_get anonymous); the manifest carries no ' +
       'background asset id, retirement, storage key or mutation field and excludes retired rows; ' +
-      'placement stays Catalog-owned with no Design import and no object-storage or decoder ' +
-      'call; product_sides.background_asset_id remains the association and eligibility requires ' +
-      'a READY NORMALIZED unwatermarked derivative with the full canonical quartet; geometry is ' +
-      'delegated to @embroidery/design-engine and never re-implemented; the DB01 protection ' +
-      'guard is translated rather than worked around and nothing is deleted; the generated ' +
-      'client is current and the root script count is unchanged',
+      'placement stays Catalog-owned with no Design import, object-storage or decoder call; ' +
+      'product_sides.background_asset_id remains the association and eligibility requires a READY ' +
+      'NORMALIZED unwatermarked derivative with the full canonical quartet; geometry is delegated ' +
+      'to @embroidery/design-engine; the DB01 guard is translated rather than worked around and ' +
+      'nothing is deleted; the concurrency token is a published contract (read returns updatedAt, ' +
+      'replace requires expectedUpdatedAt in the Catalog offset format, success returns the fresh ' +
+      'token, the manifest exposes neither, the compare-and-set opens the transaction, and the ' +
+      'generated client types it both ways); root scripts unchanged',
   );
 }
 

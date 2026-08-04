@@ -36,6 +36,12 @@ const PUBLIC_SOURCE = readFileSync(
 interface OpenApiOperation {
   readonly operationId?: string;
   readonly security?: readonly Record<string, unknown>[];
+  readonly responses?: Record<string, unknown>;
+}
+
+interface OpenApiSchema {
+  readonly properties?: Record<string, unknown>;
+  readonly required?: readonly string[];
 }
 
 /**
@@ -47,7 +53,7 @@ interface OpenApiOperation {
  */
 const document = JSON.parse(readFileSync(resolveArtifactPath(__dirname), 'utf8')) as {
   paths: Record<string, Record<string, OpenApiOperation>>;
-  components: { schemas: Record<string, { properties?: Record<string, unknown> }> };
+  components: { schemas: Record<string, OpenApiSchema> };
 };
 
 const PLACEMENT_OPERATIONS = [
@@ -200,6 +206,102 @@ describe('the request contract', () => {
     expect(productPlacementIdParamSchema.safeParse({ productId: 'not-a-uuid' }).success).toBe(
       false,
     );
+  });
+});
+
+/**
+ * `APP3-B01-C1`. The concurrency contract has to be **visible**, not merely
+ * enforced: a server-side compare-and-set whose token a client cannot discover
+ * or submit is not a contract at all, and the first delivery published the
+ * replace body as an empty object.
+ *
+ * These cases read the committed document and the generated client, because
+ * those are what a consumer actually receives.
+ */
+describe('the concurrency token is an explicit HTTP contract', () => {
+  const schemas = document.components.schemas;
+  const CLIENT_SOURCE = readFileSync(
+    join(
+      __dirname,
+      '../../../../../../packages/api-client/src/generated/embroidery-api.schemas.ts',
+    ),
+    'utf8',
+  );
+
+  it('is returned by the Admin read, and required there', () => {
+    const response = schemas['AdminProductPlacementResponse'];
+    expect(response?.properties).toHaveProperty('updatedAt');
+    expect(response?.required).toContain('updatedAt');
+  });
+
+  it('is required by the Admin replace body', () => {
+    const body = schemas['ReplaceProductPlacementBody'];
+    expect(body?.properties).toHaveProperty('expectedUpdatedAt');
+    expect(body?.required).toContain('expectedUpdatedAt');
+  });
+
+  it('is returned again by a successful replace, so the next write has a fresh one', () => {
+    const put = document.paths['/api/admin/products/{productId}/placement']?.['put'];
+    // The success payload is the whole Admin model, which carries `updatedAt`.
+    expect(JSON.stringify(put?.responses?.['200'])).toContain('AdminProductPlacementResponse');
+  });
+
+  it('uses the same field names as every other Catalog concurrency contract', () => {
+    // `UpdateProductBody`/`ArchiveProductBody` (APP2-B02) and the publication
+    // bodies all spell it this way. A second vocabulary for placement would make
+    // one client hold two rules for one column.
+    expect(schemas['AdminProductDetailResponse']?.properties).toHaveProperty('updatedAt');
+    expect(replaceProductPlacementSchema.shape).toHaveProperty('expectedUpdatedAt');
+  });
+
+  it('accepts a token carrying a UTC offset, exactly as APP2 does', () => {
+    // The first delivery used a bare `datetime()`, which refused `+07:00` — a
+    // token the same client could send to any other Admin Product write.
+    for (const token of ['2026-08-04T10:00:00.000Z', '2026-08-04T17:00:00.000+07:00']) {
+      const result = replaceProductPlacementSchema.safeParse({
+        expectedUpdatedAt: token,
+        sides: [],
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it('rejects a missing, blank or malformed token', () => {
+    for (const token of [undefined, '', '   ', 'yesterday', '2026-08-04', 1_754_300_000_000]) {
+      const result = replaceProductPlacementSchema.safeParse({
+        ...(token === undefined ? {} : { expectedUpdatedAt: token }),
+        sides: [],
+      });
+      expect(result.success).toBe(false);
+    }
+  });
+
+  it('never appears in the public manifest', () => {
+    const publicSchemas = Object.entries(schemas).filter(([name]) => name.startsWith('Public'));
+    const serialized = JSON.stringify(Object.fromEntries(publicSchemas));
+    expect(serialized).not.toContain('expectedUpdatedAt');
+    expect(serialized).not.toContain('updatedAt');
+  });
+
+  it('is typed by the generated client, in and out', () => {
+    expect(CLIENT_SOURCE).toMatch(
+      /interface ReplaceProductPlacementBody[\s\S]{0,600}expectedUpdatedAt: string;/,
+    );
+    expect(CLIENT_SOURCE).toMatch(
+      /interface AdminProductPlacementResponse[\s\S]{0,900}updatedAt: string;/,
+    );
+  });
+
+  it('adds no operation while doing any of this', () => {
+    expect(placementOperations()).toHaveLength(3);
+  });
+
+  it('documents the body the schema actually accepts', () => {
+    // `createZodDto` carries no OpenAPI metadata, so the documented shape is
+    // declared separately. These two descriptions of one contract are held
+    // together here and nowhere else.
+    const documented = Object.keys(schemas['ReplaceProductPlacementBody']?.properties ?? {}).sort();
+    expect(documented).toEqual(Object.keys(replaceProductPlacementSchema.shape).sort());
   });
 });
 

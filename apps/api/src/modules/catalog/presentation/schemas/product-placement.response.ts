@@ -132,9 +132,20 @@ export class AdminProductPlacementResponse {
   @ApiProperty({ example: 'DRAFT' })
   productStatus!: string;
 
+  /**
+   * The Product optimistic-concurrency token (`APP3-B01-C1`).
+   *
+   * Worded exactly as `AdminProductDetailResponse.updatedAt` is, because it is
+   * the same token from the same column: `products.updated_at`. Both the read
+   * and a successful replace return it, so a client always holds the value its
+   * next write must echo — and a replace that consumed `T1` answers with `T2`,
+   * which is what makes a second write with `T1` provably stale rather than
+   * merely unlucky.
+   */
   @ApiProperty({
     format: 'date-time',
-    description: 'Concurrency token; a replace must echo it back as expectedUpdatedAt.',
+    description: 'Optimistic-concurrency token; send it back as `expectedUpdatedAt`.',
+    example: '2026-08-04T10:00:00.000Z',
   })
   updatedAt!: string;
 
