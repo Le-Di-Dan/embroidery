@@ -11,13 +11,11 @@
  * Or the *evidence* can drift from what it should prove: a coverage manifest
  * reporting "0 missing" because its required repertoire quietly shrank to three
  * code points. So this gate hashes the committed bytes against the manifests
- * **and** re-derives the mandated Vietnamese repertoire itself, rather than
- * trusting what the manifest states about itself.
+ * **and** re-derives the mandated Vietnamese repertoire itself.
  *
  * It deliberately does **not** parse WOFF2. Coverage was measured once from the
  * real `cmap` tables by a pinned FontTools run recorded in the evidence;
- * re-implementing a parser here would swap a specified tool for an unreviewed
- * one.
+ * re-implementing a parser would swap a specified tool for an unreviewed one.
  *
  * Read-only. No network, no font parsing. Cross-platform pure Node.
  *
@@ -62,11 +60,9 @@ export const PHASE_FILE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-
 export const P01_ENTRY = 'packages/design-document/src/index.ts';
 
 /** Paths a controlled font may never come from. */
+const SOURCES = 'node_modules fonts.googleapis.com fonts.gstatic.com cdn.jsdelivr.net unpkg.com';
 const FORBIDDEN_SOURCES = Object.freeze(
-  (
-    'node_modules fonts.googleapis.com fonts.gstatic.com cdn.jsdelivr.net unpkg.com ' +
-    'C:\\Windows\\Fonts /System/Library/Fonts /usr/share/fonts'
-  ).split(' '),
+  `${SOURCES} C:\\Windows\\Fonts /System/Library/Fonts /usr/share/fonts`.split(' '),
 );
 
 /**
@@ -78,11 +74,10 @@ export function mandatedCodePoints() {
   for (const text of ['ABCDĐEGHIKLMNOPQRSTUVXY', 'abcdđeghiklmnopqrstuvxy', 'ĂÂÊÔƠƯăâêôơư']) {
     for (const character of text) points.add(character.codePointAt(0));
   }
-  // Canonical decomposition of Vietnamese needs each mark as its own glyph.
-  for (const mark of [0x0300, 0x0301, 0x0302, 0x0303, 0x0306, 0x0309, 0x031b, 0x0323]) {
-    points.add(mark);
-  }
-  for (const cp of [0x0110, 0x0111]) points.add(cp);
+  // Canonical decomposition of Vietnamese needs each mark as its own glyph;
+  // `Đ`/`đ` are separate letters, not accented forms.
+  const marks = [0x0300, 0x0301, 0x0302, 0x0303, 0x0306, 0x0309, 0x031b, 0x0323];
+  for (const cp of [...marks, 0x0110, 0x0111]) points.add(cp);
   for (let cp = 0x1ea0; cp <= 0x1ef9; cp += 1) points.add(cp);
   return points;
 }
@@ -121,9 +116,8 @@ function checkFilePresence(rootDir, fail) {
     }
   }
   for (const entry of readdirSync(directory)) {
-    const lower = entry.toLowerCase();
-    if (!BINARY_EXTENSIONS.some((extension) => lower.endsWith(extension))) continue;
-    if (!FONT_FILES.includes(entry)) {
+    const binary = BINARY_EXTENSIONS.some((ext) => entry.toLowerCase().endsWith(ext));
+    if (binary && !FONT_FILES.includes(entry)) {
       fail(`${FONT_DIR}/${entry} is a font binary outside the audited pair`);
     }
   }
@@ -132,9 +126,7 @@ function checkFilePresence(rootDir, fail) {
 
 /** 3, 4, 6 — every committed byte matches the hash and size recorded for it. */
 function checkIntegrity(rootDir, provenance, fail) {
-  const entries = new Map();
-  for (const entry of provenance.files ?? []) entries.set(entry.path, entry);
-
+  const entries = new Map((provenance.files ?? []).map((entry) => [entry.path, entry]));
   for (const name of FONT_FILES) {
     const entry = entries.get(name);
     if (entry === undefined) {
@@ -171,11 +163,10 @@ function checkIntegrity(rootDir, provenance, fail) {
   const licencePath = join(rootDir, FONT_DIR, LOCKED.licenseFile);
   if (licence?.sha256 !== undefined && existsSync(licencePath)) {
     const digest = sha256File(licencePath);
+    const size = statSync(licencePath).size;
     if (digest !== licence.sha256) {
       fail(`${LOCKED.licenseFile} hashes ${digest}, but provenance records ${licence.sha256}`);
-    }
-    const size = statSync(licencePath).size;
-    if (licence.byteSize !== undefined && size !== licence.byteSize) {
+    } else if (licence.byteSize !== undefined && size !== licence.byteSize) {
       fail(`${LOCKED.licenseFile} is ${size} bytes, but provenance records ${licence.byteSize}`);
     }
   }
@@ -201,11 +192,11 @@ function checkProvenance(rootDir, provenance, fail) {
   }
 
   const styles = new Map((provenance.files ?? []).map((entry) => [entry.path, entry.style]));
-  if (styles.get('InterVariable.woff2') !== 'normal') {
-    fail('InterVariable.woff2 must be recorded as style "normal"');
-  }
-  if (styles.get('InterVariable-Italic.woff2') !== 'italic') {
-    fail('InterVariable-Italic.woff2 must be recorded as style "italic"');
+  for (const [name, style] of [
+    ['InterVariable.woff2', 'normal'],
+    ['InterVariable-Italic.woff2', 'italic'],
+  ]) {
+    if (styles.get(name) !== style) fail(`${name} must be recorded as style "${style}"`);
   }
   // Collapsing the two roles onto one style would leave italic unresolvable.
   if (new Set(styles.values()).size !== styles.size) {
@@ -214,11 +205,11 @@ function checkProvenance(rootDir, provenance, fail) {
 
   const measured = provenance.verification?.metadata ?? [];
   const italicBits = new Map(measured.map((entry) => [entry.path, entry.fsSelectionItalicBit]));
-  if (italicBits.get('InterVariable.woff2') !== false) {
-    fail('measured metadata must show the upright file is not italic');
-  }
-  if (italicBits.get('InterVariable-Italic.woff2') !== true) {
-    fail('measured metadata must show the italic file is italic');
+  for (const [name, bit, complaint] of [
+    ['InterVariable.woff2', false, 'the upright file is not italic'],
+    ['InterVariable-Italic.woff2', true, 'the italic file is italic'],
+  ]) {
+    if (italicBits.get(name) !== bit) fail(`measured metadata must show ${complaint}`);
   }
 
   const serialized = JSON.stringify(provenance);
@@ -266,13 +257,10 @@ function checkCoverage(rootDir, provenance, coverage, fail) {
       Number.parseInt(String(value).replace(/^U\+/i, ''), 16),
     ),
   );
-  const mandated = mandatedCodePoints();
-  const absent = [...mandated].filter((cp) => !declared.has(cp));
+  const absent = [...mandatedCodePoints()].filter((cp) => !declared.has(cp));
   if (absent.length > 0) {
-    fail(
-      `the required repertoire omits ${absent.length} mandated code point(s): ` +
-        `${absent.slice(0, 8).map(hex).join(', ')}${absent.length > 8 ? ', …' : ''}`,
-    );
+    const shown = absent.slice(0, 8).map(hex).join(', ');
+    fail(`the required repertoire omits ${absent.length} mandated code point(s): ${shown}`);
   }
   if (coverage.requiredCodePointCount !== declared.size) {
     fail(
@@ -308,7 +296,7 @@ function checkNoStrayBinaries(rootDir, fail) {
   const skip = new Set(['node_modules', '.git', '.turbo', 'dist', '.next', 'coverage']);
   const allowed = join(rootDir, FONT_DIR);
   const walk = (directory) => {
-    let entries;
+    let entries = [];
     try {
       entries = readdirSync(directory, { withFileTypes: true });
     } catch {
@@ -318,44 +306,56 @@ function checkNoStrayBinaries(rootDir, fail) {
       const full = join(directory, entry.name);
       if (entry.isDirectory()) {
         if (!skip.has(entry.name)) walk(full);
-        continue;
-      }
-      const lower = entry.name.toLowerCase();
-      if (!BINARY_EXTENSIONS.some((extension) => lower.endsWith(extension))) continue;
-      if (!full.startsWith(allowed)) {
-        fail(`font binary outside the controlled directory: ${full.slice(rootDir.length + 1)}`);
+      } else if (BINARY_EXTENSIONS.some((ext) => entry.name.toLowerCase().endsWith(ext))) {
+        if (!full.startsWith(allowed)) {
+          fail(`font binary outside the controlled directory: ${full.slice(rootDir.length + 1)}`);
+        }
       }
     }
   };
   walk(rootDir);
 }
 
-/** 12, 13 — F01 is recorded as the P01 prerequisite, and P01 has not started. */
+/**
+ * 12, 13 — F01 is the recorded P01 prerequisite, and P01's state matches what
+ * the phase plan says about it. Exactly **two** worlds are consistent: before
+ * P01, an empty stub and a plan that blocks it; after P01, no stub, a plan that
+ * says so, and a registry still pointing at *these* assets. A gate demanding the
+ * stub forever would be deleted the day P01 landed — the defect `APP3-G04` was
+ * rebuilt to avoid.
+ */
 function checkPhaseAuthority(rootDir, fail) {
-  const path = join(rootDir, PHASE_FILE);
-  if (existsSync(path)) {
-    const text = readFileSync(path, 'utf8');
-    for (const [token, complaint] of [
-      ['APP3-F01', 'does not record APP3-F01'],
-      ['BLOCKED_BY_APP3-F01_REVIEW_ACCEPTANCE', 'does not block APP3-P01 on review acceptance'],
-      [
-        'NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE',
-        'does not record the cause of the failed APP3-P01 first attempt',
-      ],
-    ]) {
-      if (!text.includes(token)) fail(`the APP3 phase plan ${complaint}`);
-    }
-    if (/APP3-P01\s*=?\s*`?COMPLETE/.test(text)) {
-      fail('the APP3 phase plan marks APP3-P01 complete, which this checkpoint does not deliver');
-    }
-  } else {
-    fail(`${PHASE_FILE} is missing`);
+  const text = readFileSync(join(rootDir, PHASE_FILE), 'utf8');
+  for (const [token, complaint] of [
+    ['APP3-F01', 'does not record APP3-F01'],
+    [
+      'NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE',
+      'does not record the cause of the failed APP3-P01 first attempt',
+    ],
+  ]) {
+    if (!text.includes(token)) fail(`the APP3 phase plan ${complaint}`);
   }
 
-  // F01 supplies evidence only; the runtime registry is still P01's to write.
   const entry = join(rootDir, P01_ENTRY);
-  if (existsSync(entry) && !/export\s*\{\s*\}/.test(readFileSync(entry, 'utf8'))) {
-    fail(`${P01_ENTRY} is no longer an empty stub — APP3-P01 implementation must not start here`);
+  const stubbed = /export\s*\{\s*\}/.test(existsSync(entry) ? readFileSync(entry, 'utf8') : '');
+
+  if (!/APP3-P01\s*=\s*COMPLETE/.test(text)) {
+    if (!text.includes('BLOCKED_BY_APP3-F01_REVIEW_ACCEPTANCE')) {
+      fail('the APP3 phase plan does not block APP3-P01 on review acceptance');
+    }
+    if (!stubbed) {
+      fail(`${P01_ENTRY} is no longer an empty stub while the phase plan still blocks APP3-P01`);
+    }
+    return;
+  }
+  if (stubbed) {
+    fail('the APP3 phase plan records APP3-P01 as delivered, but the package is still a stub');
+  }
+  // P01 exists: F01's remaining job is that it still consumes these assets.
+  const registry = join(rootDir, 'packages/design-document/src/fonts/registry.ts');
+  const source = existsSync(registry) ? readFileSync(registry, 'utf8') : '';
+  for (const name of [...FONT_FILES, LOCKED.licenseFile]) {
+    if (!source.includes(name)) fail(`the delivered font registry does not reference ${name}`);
   }
 }
 
@@ -393,7 +393,7 @@ async function main() {
       'sizes; the licence is the exact upstream text; coverage evidence is bound to those same ' +
       'hashes and reports zero missing code points across the full mandated Vietnamese ' +
       'repertoire; upright and italic stay distinct roles; no font binary lives anywhere else; ' +
-      'APP3-P01 remains unstarted, blocked on F01 review acceptance',
+      'and the recorded APP3-P01 state matches the package on disk',
   );
 }
 

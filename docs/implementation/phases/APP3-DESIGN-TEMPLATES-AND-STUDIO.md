@@ -1554,6 +1554,106 @@ The historical first-attempt failure is recorded forward and is not rewritten.
 `APP3-F01` delivers no package implementation, no API, no worker, no Figma and
 no UI.
 
+## 6.10 `APP3-P01` — production design-document foundation
+
+Resumed after the manual intervention. `APP3-F01` supplied the prerequisite the
+first attempt stopped for; nothing else about the contract changed.
+
+### 6.10.1 Delivered scope
+
+`packages/design-document` now owns the engine-neutral schema, structural
+validation, complexity validation, contextual asset/font validation,
+quantization, RFC 8785 canonicalization, server-side SHA-256, the document
+migration registry and the controlled runtime font registry.
+
+| Key | Value |
+|---|---|
+| `Document schema version` | `1` |
+| `Root fields` | `schemaVersion`, `placement`, `elements` |
+| `Unknown root or element field` | `VALIDATION_FAILURE` |
+| `Element kinds` | `text`, `image`, `shape`, `freehand`, `group` |
+| `Z-order` | array order, preserved by JCS |
+| `Element identity` | stable opaque id, never an array index |
+| `Shape kinds` | `rectangle`, `ellipse`, `line` |
+| `Quantization scale` | `10000` (four decimal places) |
+| `Quantization authority` | `ADR-APP0-001 §4` + `APP0-R01` evidence |
+| `Negative zero` | normalized to `0` |
+| `Canonical form` | RFC 8785 JCS |
+| `Key ordering` | UTF-16 code unit, never locale collation |
+| `Unicode normalization` | NFC rejected-if-absent at the input boundary |
+| `Hash` | SHA-256, lowercase hex, **server export only** |
+| `Browser-safe root export` | `@embroidery/design-document` |
+| `Node-only export` | `@embroidery/design-document/server` |
+| `Browser SHA-256 fallback` | `NONE` |
+| `Geometry, bounds, px↔mm` | `RESERVED_FOR_APP3-P02` |
+
+### 6.10.2 Validation layers
+
+| Layer | Owns | Does not own |
+|---|---|---|
+| Structural | version, fields, union shape, finite numbers, ranges, unique ids, group graph, NFC | any geometric consequence |
+| Complexity | the nine IMP-D044 limits | decoded pixels (needs authority) |
+| Contextual | derivative eligibility and metadata equality, decoded pixels, font variants | anything requiring a database or object-storage read |
+
+Nesting depth counts a leaf's **ancestor groups**: eight nested groups pass, nine
+fail. Text length counts **code points**, so an astral character costs one.
+Canonical size is measured on **UTF-8 bytes** after quantization, never on string
+length. A repeated Asset counts **once** toward the Asset and decoded-pixel
+budgets and **each time** toward image elements. Hidden and locked elements
+count. A failing document is rejected whole — nothing is truncated.
+
+### 6.10.3 Pipeline
+
+```text
+version → structure → complexity → quantization → revalidation → canonical bytes → size
+```
+
+Revalidation after quantization is load-bearing: a width of `0.00004` is a legal
+positive number that quantizes to `0`, which the schema forbids. Without the
+second pass that document would be canonicalized and hashed in a state it never
+legally held.
+
+### 6.10.4 Font registry (consumes `APP3-F01`)
+
+Registry version `1`, one entry, exactly as locked in §6.9.4: `fontId = inter`,
+family `Inter`, styles `normal`/`italic`, weights `100..900`, the two committed
+WOFF2 paths, the committed `LICENSE.txt` path, and
+`REJECT_IF_CONTROLLED_FONT_UNAVAILABLE`. The registry also carries both binary
+SHA-256 values, `OFL-1.1`, `VERIFIED_COMPLETE` Vietnamese coverage and both
+evidence paths.
+
+The metadata is **transcribed**, not read at runtime — the package must stay
+browser-safe and the build emits only `src/`. A package test reads the committed
+manifests **and re-hashes the committed binaries**, so the transcription cannot
+quietly disagree with the evidence. General Sans is not registered and no font
+byte, path or URL is ever serialized into a Design Document.
+
+### 6.10.5 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-P01` |
+|---|---|---|
+| `APP3-G01` | whole checkpoint, post-P01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G02` | whole checkpoint, post-P01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G03` | whole checkpoint, post-P01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G04` | whole checkpoint, post-P01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-DB01` | whole checkpoint, post-P01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-F01` | whole checkpoint, post-P01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-P01` | whole checkpoint, post-P01 | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-P02` | whole checkpoint, post-P01 | `READY — NOT STARTED` |
+| `APP3-B01` | whole checkpoint, post-P01 | `READY — NOT STARTED` |
+| `APP3-B03` | whole checkpoint, post-P01 | `READY_BY_P01 — NOT STARTED` |
+| `APP3-B04` | whole checkpoint, post-P01 | `BLOCKED_BY_APP3-P02_AND_APP3-B06` |
+| `APP3-B05` | whole checkpoint, post-P01 | `READY_BY_P01 — BLOCKED_BY_APP3-B04` |
+| `APP3-B06` | whole checkpoint, post-P01 | `READY — NOT STARTED` |
+| `APP3-B07` | whole checkpoint, post-P01 | `BLOCKED_BY_APP3-P02` |
+| `APP3-B08` | whole checkpoint, post-P01 | `BLOCKED_BY_APP3-P02` |
+| `PO-10 font registry` | runtime implementation | `DELIVERED_BY_APP3-P01` |
+| `APP3-P01` | first attempt, post-P01 | `FAILED — MANUAL_INTERVENTION_REQUIRED` |
+| `APP3-P01` | resolution, post-P01 | `APP3-F01` |
+
+No backend checkpoint is complete. `APP3-P01` validates no geometry and no
+bounds; it delivers no API, worker, migration, Figma or UI.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -1574,7 +1674,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — FONT AUTHORITY DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — DOCUMENT FOUNDATION DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -1585,19 +1685,25 @@ APP3-G02 = COMPLETE — REVIEW_ACCEPTED
 APP3-G03 = COMPLETE — REVIEW_ACCEPTED
 APP3-G04 = COMPLETE — REVIEW_ACCEPTED
 APP3-DB01 = COMPLETE — REVIEW_ACCEPTED
-APP3-F01 = COMPLETE — REVIEW_DELIVERED
+APP3-F01 = COMPLETE — REVIEW_ACCEPTED
 G01_DB_DISPOSITION = REQUIRES_APP3_DB01_PLACEMENT_RETIREMENT_AND_STABLE_CODE
 G02_DB_CONTRIBUTION = NONE
 G03_DB_CONTRIBUTION = NONE
 G04_DB_CONTRIBUTION = REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA
 G01 DB contribution = IMPLEMENTED_BY_APP3_DB01
 G04 DB contribution = IMPLEMENTED_BY_APP3_DB01
-APP3-P01 = BLOCKED_BY_APP3-F01_REVIEW_ACCEPTANCE
+APP3-P01 = COMPLETE — REVIEW_DELIVERED
 APP3-P01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
 APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01
 APP3-P02 = READY — NOT STARTED
 APP3-B01 = READY — NOT STARTED
+APP3-B03 = READY_BY_P01 — NOT STARTED
+APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06
+APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04
+APP3-B06 = READY — NOT STARTED
+APP3-B07 = BLOCKED_BY_APP3-P02
+APP3-B08 = BLOCKED_BY_APP3-P02
 APP3-W01 = READY_BY_DB_DISPOSITION — NOT STARTED
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — AUTHORITY_LOCKED_BY_APP3-G04
 FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-G04

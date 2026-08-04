@@ -43,11 +43,14 @@ const COVERAGE = `${FONT_DIR}/VIETNAMESE-COVERAGE.json`;
 const README = `${FONT_DIR}/README.md`;
 
 /** Files the gate reads. Binaries are copied as bytes, never as text. */
+const REGISTRY = 'packages/design-document/src/fonts/registry.ts';
+
 const TRACKED = [
   ...REQUIRED_FILES.map((name) => `${FONT_DIR}/${name}`),
   `${FONT_DIR}/.gitattributes`,
   PHASE_FILE,
   P01_ENTRY,
+  REGISTRY,
 ];
 
 const temporaries = [];
@@ -320,12 +323,22 @@ describe('APP3-F01 — the README carries the reader to the evidence', () => {
   });
 });
 
+/**
+ * The gate accepts exactly two worlds and refuses every mixture of them.
+ *
+ * The repository now sits in the delivered world — `APP3-P01` landed after F01 —
+ * so the not-started world is the one simulated here. That inversion is the
+ * point: a gate frozen to "the stub must stay empty" would have had to be
+ * deleted the day P01 shipped, and a deleted gate guards nothing.
+ */
 describe('APP3-F01 — the phase authority must record the split', () => {
-  it('rejects a phase plan that does not block P01 on F01 acceptance', () => {
-    const text = read(PHASE_FILE).replaceAll('BLOCKED_BY_APP3-F01_REVIEW_ACCEPTANCE', 'READY');
-    const failures = run({ [PHASE_FILE]: text });
-    assert.ok(mentions(failures, 'review acceptance'), failures.join('\n'));
-  });
+  const PENDING_PLAN = read(PHASE_FILE)
+    .replace(
+      'APP3-P01 = COMPLETE — REVIEW_DELIVERED',
+      'APP3-P01 = BLOCKED_BY_APP3-F01_REVIEW_ACCEPTANCE',
+    )
+    .replaceAll('| `APP3-P01` | whole checkpoint, post-P01 | `COMPLETE — REVIEW_DELIVERED` |', '');
+  const STUB = 'export {};\n';
 
   it('rejects a phase plan that forgets why the first P01 attempt failed', () => {
     const text = read(PHASE_FILE).replaceAll(
@@ -336,17 +349,50 @@ describe('APP3-F01 — the phase authority must record the split', () => {
     assert.ok(mentions(failures, 'failed APP3-P01 first attempt'), failures.join('\n'));
   });
 
-  it('rejects a phase plan that marks APP3-P01 complete', () => {
-    const text = read(PHASE_FILE).replace(
-      'APP3-P01 = BLOCKED_BY_APP3-F01_REVIEW_ACCEPTANCE',
-      'APP3-P01 = COMPLETE — REVIEW_DELIVERED',
-    );
-    const failures = run({ [PHASE_FILE]: text });
-    assert.ok(mentions(failures, 'marks APP3-P01 complete'), failures.join('\n'));
+  it('rejects a phase plan that forgets APP3-F01 entirely', () => {
+    const failures = run({ [PHASE_FILE]: read(PHASE_FILE).replaceAll('APP3-F01', 'APP3-X') });
+    assert.ok(mentions(failures, 'does not record APP3-F01'), failures.join('\n'));
   });
 
-  it('rejects P01 implementation started under cover of this checkpoint', () => {
-    const failures = run({ [P01_ENTRY]: 'export const FONT_REGISTRY = { inter: {} };\n' });
-    assert.ok(mentions(failures, 'no longer an empty stub'), failures.join('\n'));
+  describe('the not-started world', () => {
+    it('accepts a stub package while the plan still blocks P01', () => {
+      assert.deepEqual(run({ [PHASE_FILE]: PENDING_PLAN, [P01_ENTRY]: STUB }), []);
+    });
+
+    it('rejects a plan that neither blocks P01 nor records it as delivered', () => {
+      const text = PENDING_PLAN.replaceAll('BLOCKED_BY_APP3-F01_REVIEW_ACCEPTANCE', 'READY');
+      const failures = run({ [PHASE_FILE]: text, [P01_ENTRY]: STUB });
+      assert.ok(mentions(failures, 'review acceptance'), failures.join('\n'));
+    });
+
+    it('rejects P01 implementation smuggled in while the plan still blocks it', () => {
+      const failures = run({ [PHASE_FILE]: PENDING_PLAN });
+      assert.ok(mentions(failures, 'no longer an empty stub'), failures.join('\n'));
+    });
+  });
+
+  describe('the delivered world', () => {
+    it('accepts the implemented package once the plan records it', () => {
+      assert.deepEqual(run(), []);
+    });
+
+    it('rejects a plan claiming P01 is delivered while the package is a stub', () => {
+      const failures = run({ [P01_ENTRY]: STUB });
+      assert.ok(mentions(failures, 'still a stub'), failures.join('\n'));
+    });
+
+    it('rejects a delivered registry that stopped referencing these assets', () => {
+      // The substitution F01 exists to prevent: P01 keeps its shape but points
+      // the family at some other file.
+      const swapped = read(REGISTRY).replaceAll('InterVariable.woff2', 'SomeOther.woff2');
+      const failures = run({ [REGISTRY]: swapped });
+      assert.ok(mentions(failures, 'does not reference InterVariable.woff2'), failures.join('\n'));
+    });
+
+    it('rejects a delivered registry that dropped the licence path', () => {
+      const stripped = read(REGISTRY).replaceAll('LICENSE.txt', 'NOTES.md');
+      const failures = run({ [REGISTRY]: stripped });
+      assert.ok(mentions(failures, 'does not reference LICENSE.txt'), failures.join('\n'));
+    });
   });
 });
