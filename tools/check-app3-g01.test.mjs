@@ -242,11 +242,40 @@ describe('APP3-G01 — repository facts move underneath the ruling', () => {
     assert.ok(mentions(failures, 'required placement column `px_per_mm` is gone'));
   });
 
-  it('keeps the checker honest about absence: an APP3 placement operation fails the gate', () => {
+  /**
+   * The gate accepts exactly two consistent worlds and refuses every mixture.
+   *
+   * `APP3-G01` ruled that the placement API may exist and `APP3-B01` built it,
+   * so an absence check that could never be satisfied again would be deleted
+   * rather than maintained. These three cases are what keeps it meaningful.
+   */
+  it('refuses a placement operation while APP3-B01 is not recorded complete', () => {
+    const phase = readFileSync(join(REPO_ROOT, CANONICAL_FILES.phase), 'utf8');
+    const failures = checkApp3G01(
+      rootWith({
+        [CANONICAL_FILES.phase]: phase.replaceAll(
+          'APP3-B01 = COMPLETE',
+          'APP3-B01 = READY — NOT STARTED',
+        ),
+      }),
+    );
+    assert.ok(mentions(failures, 'no APP3 backend checkpoint has run'), failures.join('\n'));
+  });
+
+  it('refuses a placement operation the ruling never authorised', () => {
     const openapi = JSON.parse(readFileSync(join(REPO_ROOT, CANONICAL_FILES.openapi), 'utf8'));
-    openapi.paths['/api/public/products/{slug}/placement'] = { get: { operationId: 'smuggled' } };
+    openapi.paths['/api/public/products/{slug}/sides/{sideCode}/background'] = {
+      get: { operationId: 'smuggled' },
+    };
     const failures = checkApp3G01(rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(openapi) }));
-    assert.ok(mentions(failures, 'APP3 placement operation'));
+    assert.ok(mentions(failures, 'is not an APP3-B01 placement operation'), failures.join('\n'));
+  });
+
+  it('refuses a delivered checkpoint whose operation went missing', () => {
+    const openapi = JSON.parse(readFileSync(join(REPO_ROOT, CANONICAL_FILES.openapi), 'utf8'));
+    delete openapi.paths['/api/public/products/{slug}/placement'];
+    const failures = checkApp3G01(rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(openapi) }));
+    assert.ok(mentions(failures, 'is recorded complete but'), failures.join('\n'));
   });
 
   it('rejects a SIDE_BACKGROUND product-media role appearing in the schema', () => {

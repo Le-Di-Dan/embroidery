@@ -100,6 +100,7 @@ export class DrizzleProductRepository extends DrizzleRepository implements Produ
         .values({
           id: input.id,
           productId: input.productId,
+          code: input.code,
           name: input.name,
           backgroundAssetId: input.backgroundAssetId,
           imageWidthPx: input.imageWidthPx,
@@ -122,6 +123,7 @@ export class DrizzleProductRepository extends DrizzleRepository implements Produ
         .values({
           id: input.id,
           productSideId: input.productSideId,
+          code: input.code,
           name: input.name,
           boundXPx: input.boundXPx,
           boundYPx: input.boundYPx,

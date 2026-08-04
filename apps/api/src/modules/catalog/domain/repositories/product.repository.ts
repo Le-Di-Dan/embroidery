@@ -102,6 +102,14 @@ export interface AddSkuInput {
 export interface AddSideInput {
   readonly id: ProductSideId;
   readonly productId: ProductId;
+  /**
+   * Stable machine identity within the Product (`APP3-DB01`, IMP-D041 PO-07).
+   *
+   * Required, because the column is `NOT NULL`: a referenced placement is never
+   * edited in place, so what a Template or Session *means* has to survive its
+   * replacement, and `name` cannot carry that — it is display copy.
+   */
+  readonly code: string;
   readonly name: string;
   readonly backgroundAssetId: string;
   readonly imageWidthPx: number;
@@ -115,6 +123,8 @@ export interface AddSideInput {
 export interface AddAreaInput {
   readonly id: EmbroideryAreaId;
   readonly productSideId: ProductSideId;
+  /** Stable machine identity within the Side; see `AddSideInput.code`. */
+  readonly code: string;
   readonly name: string;
   readonly boundXPx: string;
   readonly boundYPx: string;

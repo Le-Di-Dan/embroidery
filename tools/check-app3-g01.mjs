@@ -3,25 +3,20 @@
  * `APP3-G01` — Product placement and side-media authority (IMP-D041).
  *
  * An authority gate is worth exactly as much as the repository facts it can
- * still prove. So this checker recomputes rather than reads: it parses the
- * ruling's fact table, the decision register, the phase dependency table, the
- * real Drizzle schema and the committed OpenAPI artifact, and it fails when any
- * of them stops agreeing with the ruling.
+ * still prove, so this checker recomputes rather than reads: the ruling's fact
+ * table, the decision register, the phase dependency table, the real Drizzle
+ * schema and the committed OpenAPI artifact.
  *
- * Three of the checks exist specifically to catch the ways a gate rots:
+ * Three checks exist specifically to catch the ways a gate rots:
  *
- * - **The schema still carries what the ruling relies on.** PO-02 and PO-03
- *   describe `background_asset_id`, `px_per_mm` and the area bounds. If a later
- *   change drops one, the ruling is describing a product that no longer exists.
- * - **No APP3 placement operation exists yet.** A gate that quietly grew an API
- *   would be implementation wearing a gate's name, so the *absence* is asserted
- *   as hard as any presence.
- * - **`APP3-G01` claims no derivative kind.** `APP3-G04` owns that choice;
- *   naming `CATALOG_PREVIEW`/`NORMALIZED`/`PREVIEW_WATERMARKED` as this gate's
- *   answer would pre-empt a gate that has not run.
+ * - **The schema still carries what the ruling relies on** — PO-02 and PO-03
+ *   describe `background_asset_id`, `px_per_mm` and the area bounds, and losing
+ *   one would leave the ruling describing a product that no longer exists.
+ * - **The API surface matches the world this repository is in** — see
+ *   `checkNoImplementation`.
+ * - **`APP3-G01` claims no derivative kind** — `APP3-G04` owns that choice.
  *
- * Read-only. No network, no database. Cross-platform pure Node.
- *
+ * Read-only, cross-platform pure Node.
  * Usage: node tools/check-app3-g01.mjs [rootDir]
  */
 import { existsSync, readFileSync } from 'node:fs';
@@ -210,29 +205,17 @@ function checkDecision(register, fail) {
   }
 }
 
-function checkFacts(phase, fail) {
-  const facts = factTable(phase);
-  for (const [key, expected] of Object.entries(EXPECTED_FACTS)) {
-    const actual = facts.get(key);
+/** Every row of `expected` a parsed table fails to match, by exact string. */
+function checkTable(rows, expected, what, fail) {
+  for (const [key, value] of Object.entries(expected)) {
+    const actual = rows.get(key);
     if (actual === undefined) {
-      fail(`${CANONICAL_FILES.phase}: machine-checked placement fact \`${key}\` is missing`);
-    } else if (actual !== expected) {
-      fail(`${CANONICAL_FILES.phase}: \`${key}\` is "${actual}", expected "${expected}"`);
+      fail(`${CANONICAL_FILES.phase}: ${what} \`${key}\` is missing`);
+    } else if (actual !== value) {
+      fail(`${CANONICAL_FILES.phase}: \`${key}\` is "${actual}", expected "${value}"`);
     }
   }
-  return facts;
-}
-
-function checkDependencies(phase, fail) {
-  const rows = dependencyTable(phase);
-  for (const [id, expected] of Object.entries(EXPECTED_DEPENDENCIES)) {
-    const actual = rows.get(id);
-    if (actual === undefined) {
-      fail(`${CANONICAL_FILES.phase}: dependency row for \`${id}\` is missing`);
-    } else if (actual !== expected) {
-      fail(`${CANONICAL_FILES.phase}: \`${id}\` is "${actual}", expected "${expected}"`);
-    }
-  }
+  return rows;
 }
 
 /** PO-03: `product_media` must not become canonical side-background authority. */
@@ -317,17 +300,41 @@ function checkSchema(root, fail) {
   }
 }
 
-/** No APP3 placement operation may exist while G01 is the frontier. */
+/** The only placement paths IMP-D041 PO-02 authorises; delivery is B02's. */
+const B01_PLACEMENT_PATHS = Object.freeze([
+  '/api/admin/products/{productId}/placement',
+  '/api/public/products/{slug}/placement',
+]);
+
+/**
+ * The API surface, in whichever of two worlds this repository is in.
+ *
+ * G01 was the frontier when it ran and asserted that **no** placement operation
+ * existed; `APP3-B01` then implemented PO-02. A gate still demanding that
+ * absence would have to be deleted the day its own ruling was carried out, which
+ * is how a gate becomes something people edit around. So exactly two consistent
+ * worlds are accepted — before B01 (no placement path, and the plan does not
+ * record it) and after (only the two ruled paths, and the plan records it) — and
+ * every mixture fails. Their operation ids and auth are `check-app3-b01.mjs`'s
+ * assertion, not this gate's.
+ */
 function checkNoImplementation(root, phase, fail) {
   const raw = read(root, 'openapi');
+  const delivered = /APP3-B01\s*=\s*COMPLETE/.test(phase);
+  const allowed = delivered ? B01_PLACEMENT_PATHS : [];
   if (raw === undefined) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);
   } else {
     const paths = Object.keys(JSON.parse(raw).paths ?? {});
-    for (const path of paths.filter((p) => PLACEMENT_PATH_RE.test(p))) {
+    for (const path of paths.filter((p) => PLACEMENT_PATH_RE.test(p) && !allowed.includes(p))) {
       fail(
-        `${CANONICAL_FILES.openapi}: APP3 placement operation "${path}" exists, but no APP3 backend checkpoint has run`,
+        delivered
+          ? `${CANONICAL_FILES.openapi}: "${path}" is not an APP3-B01 placement operation`
+          : `${CANONICAL_FILES.openapi}: APP3 placement operation "${path}" exists, but no APP3 backend checkpoint has run`,
       );
+    }
+    for (const path of allowed.filter((p) => !paths.includes(p))) {
+      fail(`${CANONICAL_FILES.openapi}: APP3-B01 is recorded complete but "${path}" is missing`);
     }
   }
   const start = phase.indexOf('## 6.4 ');
@@ -361,8 +368,13 @@ export function checkApp3G01(rootDir = REPO_ROOT) {
   if (phase === undefined || register === undefined) return failures;
 
   checkDecision(register, fail);
-  const facts = checkFacts(phase, fail);
-  checkDependencies(phase, fail);
+  const facts = checkTable(
+    factTable(phase),
+    EXPECTED_FACTS,
+    'machine-checked placement fact',
+    fail,
+  );
+  checkTable(dependencyTable(phase), EXPECTED_DEPENDENCIES, 'dependency row for', fail);
   if (productMedia !== undefined) checkBackgroundOwnership(phase, productMedia, fail);
   checkNoKindSelected(phase, fail);
   if (app2Phase !== undefined) checkRouteAuthority(phase, app2Phase, facts, fail);

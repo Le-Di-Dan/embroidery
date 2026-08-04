@@ -16,6 +16,8 @@ import type {
   AdminProductDetail200,
   AdminProductList200,
   AdminProductListParams,
+  AdminProductPlacementGet200,
+  AdminProductPlacementReplace200,
   AdminProductPublicationReadiness200,
   AdminProductPublish200,
   AdminProductUnpublish200,
@@ -26,8 +28,10 @@ import type {
   PublicProductDetail200,
   PublicProductList200,
   PublicProductListParams,
+  PublicProductPlacementGet200,
   PublishProductBody,
   ReadinessStatusResponse,
+  ReplaceProductPlacementBody,
   StaffLoginRequest,
   StaffSelfGet200,
   UnpublishProductBody,
@@ -178,6 +182,40 @@ export const adminProductArchive = (
 };
 
 /**
+ * Returns every Product Side and Embroidery Area of the product, **including retired ones**, ordered by displayOrder, code and id. Retired rows are what an existing Template or Design Session references, so an operator who could not see them would not understand why a code is unavailable. `updatedAt` is the concurrency token a replace must echo back.
+ * @summary Get the Product placement authoring model
+ */
+export const adminProductPlacementGet = (
+  productId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminProductPlacementGet200>>,
+) => {
+  return apiRequest<AdminProductPlacementGet200>(
+    { url: `/api/admin/products/${productId}/placement`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Replaces the whole placement model atomically. A side or area carrying an `id` is retained and updated; one without an `id` is created; one that is omitted is **retired**, never deleted. A new row may name the row it replaces through `supersedesId`, within the same parent only. Once a side or area is referenced by a Template or a live Design Session its identity and geometry can no longer change — display copy and ordering still can. Requires `expectedUpdatedAt`; a stale value is rejected rather than overwriting a concurrent change. An empty `sides` list retires the entire placement.
+ * @summary Replace the Product placement model
+ */
+export const adminProductPlacementReplace = (
+  productId: unknown,
+  replaceProductPlacementBody: ReplaceProductPlacementBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductPlacementReplace200>>,
+) => {
+  return apiRequest<AdminProductPlacementReplace200>(
+    {
+      url: `/api/admin/products/${productId}/placement`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data: replaceProductPlacementBody,
+    },
+    options,
+  );
+};
+
+/**
  * Reports the complete, closed requirement set in a stable order, whether each is satisfied, and the current lifecycle status and concurrency token. Read-only: it writes nothing, records no audit or event, and makes no storage call. The result is a report about this moment — publish re-evaluates every requirement inside its own transaction and may still refuse.
  * @summary Evaluate product publication readiness
  */
@@ -293,6 +331,20 @@ export const publicProductMediaGet = (
 };
 
 /**
+ * The read-only placement a Studio session starts from: active Product Sides and Embroidery Areas of a publicly visible Product, ordered by displayOrder, code and id. Retired rows are absent, and so is every private fact — no background Asset id, storage key, original or derivative URL, inspection detail or mutation field. `studioEligible` is true only when one active side has at least one active area and an approved editor-safe background; incomplete or unprocessed placement reports false rather than inventing geometry. A Product with no placement is still published and still returns a manifest, with an empty side list.
+ * @summary Get the public placement manifest
+ */
+export const publicProductPlacementGet = (
+  slug: unknown,
+  options?: SecondParameter<typeof apiRequest<PublicProductPlacementGet200>>,
+) => {
+  return apiRequest<PublicProductPlacementGet200>(
+    { url: `/api/public/products/${slug}/placement`, method: 'GET' },
+    options,
+  );
+};
+
+/**
  * Returns the minimum safe identity for the authenticated admin: id, email and display name. No credential, session or role data is exposed.
  * @summary Get the current staff identity
  */
@@ -337,6 +389,12 @@ export type AdminProductUpdateResult = NonNullable<Awaited<ReturnType<typeof adm
 export type AdminProductArchiveResult = NonNullable<
   Awaited<ReturnType<typeof adminProductArchive>>
 >;
+export type AdminProductPlacementGetResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductPlacementGet>>
+>;
+export type AdminProductPlacementReplaceResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductPlacementReplace>>
+>;
 export type AdminProductPublicationReadinessResult = NonNullable<
   Awaited<ReturnType<typeof adminProductPublicationReadiness>>
 >;
@@ -354,6 +412,9 @@ export type PublicProductDetailResult = NonNullable<
 >;
 export type PublicProductMediaGetResult = NonNullable<
   Awaited<ReturnType<typeof publicProductMediaGet>>
+>;
+export type PublicProductPlacementGetResult = NonNullable<
+  Awaited<ReturnType<typeof publicProductPlacementGet>>
 >;
 export type StaffSelfGetResult = NonNullable<Awaited<ReturnType<typeof staffSelfGet>>>;
 export type StaffSessionDeleteResult = NonNullable<Awaited<ReturnType<typeof staffSessionDelete>>>;

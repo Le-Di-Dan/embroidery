@@ -87,6 +87,93 @@ export interface AdminAssetUploadReceiptResponse {
   status: string;
 }
 
+/**
+ * @nullable
+ */
+export type AdminPlacementAreaResponseMaxHeightMm = { [key: string]: unknown } | null;
+
+/**
+ * Physical maximum in millimetres, or null when the side itself is the only limit.
+ * @nullable
+ */
+export type AdminPlacementAreaResponseMaxWidthMm = { [key: string]: unknown } | null;
+
+/**
+ * Set once the area is withdrawn from new selection. Never a deletion.
+ * @nullable
+ */
+export type AdminPlacementAreaResponseRetiredAt = { [key: string]: unknown } | null;
+
+/**
+ * The area of the same side that replaced this one.
+ * @nullable
+ */
+export type AdminPlacementAreaResponseSupersededById = { [key: string]: unknown } | null;
+
+export interface AdminPlacementAreaResponse {
+  boundHeightPx: number;
+  boundWidthPx: number;
+  /** Canvas-space origin, in side image pixels. */
+  boundXPx: number;
+  boundYPx: number;
+  /** Stable machine identity within the side. */
+  code: string;
+  displayOrder: number;
+  id: string;
+  /** @nullable */
+  maxHeightMm: AdminPlacementAreaResponseMaxHeightMm;
+  /**
+   * Physical maximum in millimetres, or null when the side itself is the only limit.
+   * @nullable
+   */
+  maxWidthMm: AdminPlacementAreaResponseMaxWidthMm;
+  /** Display copy; never identity. */
+  name: string;
+  /**
+   * Set once the area is withdrawn from new selection. Never a deletion.
+   * @nullable
+   */
+  retiredAt: AdminPlacementAreaResponseRetiredAt;
+  /**
+   * The area of the same side that replaced this one.
+   * @nullable
+   */
+  supersededById: AdminPlacementAreaResponseSupersededById;
+}
+
+/**
+ * @nullable
+ */
+export type AdminPlacementSideResponseRetiredAt = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type AdminPlacementSideResponseSupersededById = { [key: string]: unknown } | null;
+
+export interface AdminPlacementSideResponse {
+  areas: AdminPlacementAreaResponse[];
+  /** The Asset whose approved derivative renders this side. Admin-only. */
+  backgroundAssetId: string;
+  /** Stable machine identity within the product. */
+  code: string;
+  displayOrder: number;
+  id: string;
+  imageHeightPx: number;
+  /** Background canvas width in pixels. */
+  imageWidthPx: number;
+  name: string;
+  physicalHeightMm: number;
+  /** Physical width the canvas represents. */
+  physicalWidthMm: number;
+  /** The sole canvas↔physical conversion authority for this side. */
+  pxPerMm: number;
+  /** @nullable */
+  retiredAt: AdminPlacementSideResponseRetiredAt;
+  /** @nullable */
+  supersededById: AdminPlacementSideResponseSupersededById;
+}
+
 export type AdminProductCategoryResponseSlug =
   (typeof AdminProductCategoryResponseSlug)[keyof typeof AdminProductCategoryResponseSlug];
 
@@ -206,6 +293,15 @@ export interface AdminProductListResponse {
   items: AdminProductSummaryResponse[];
   /** Opaque keyset cursor for the next page. Absent on the last page. */
   nextCursor?: string;
+}
+
+export interface AdminProductPlacementResponse {
+  productId: string;
+  productStatus: string;
+  /** Active and retired sides alike, ordered by displayOrder, code, id. */
+  sides: AdminPlacementSideResponse[];
+  /** Concurrency token; a replace must echo it back as expectedUpdatedAt. */
+  updatedAt: string;
 }
 
 export type AdminProductPublicationReadinessResponseStatus =
@@ -459,6 +555,61 @@ export interface PublicMediaReferenceResponse {
   url: string;
 }
 
+/**
+ * @nullable
+ */
+export type PublicPlacementAreaResponseMaxHeightMm = { [key: string]: unknown } | null;
+
+/**
+ * Physical maximum in millimetres, or null when the side itself is the only limit.
+ * @nullable
+ */
+export type PublicPlacementAreaResponseMaxWidthMm = { [key: string]: unknown } | null;
+
+export interface PublicPlacementAreaResponse {
+  boundHeightPx: number;
+  boundWidthPx: number;
+  /** Canvas-space origin, in side image pixels. */
+  boundXPx: number;
+  boundYPx: number;
+  /** Stable machine identity within the side. */
+  code: string;
+  displayOrder: number;
+  id: string;
+  /** @nullable */
+  maxHeightMm: PublicPlacementAreaResponseMaxHeightMm;
+  /**
+   * Physical maximum in millimetres, or null when the side itself is the only limit.
+   * @nullable
+   */
+  maxWidthMm: PublicPlacementAreaResponseMaxWidthMm;
+  /** Display copy; never identity. */
+  name: string;
+}
+
+export interface PublicPlacementBackgroundResponse {
+  productSlug: string;
+  sideCode: string;
+}
+
+export interface PublicPlacementSideResponse {
+  areas: PublicPlacementAreaResponse[];
+  background: PublicPlacementBackgroundResponse;
+  /** Stable machine identity within the product. */
+  code: string;
+  displayOrder: number;
+  id: string;
+  imageHeightPx: number;
+  /** Background canvas width in pixels. */
+  imageWidthPx: number;
+  name: string;
+  physicalHeightMm: number;
+  /** Physical width the canvas represents. */
+  physicalWidthMm: number;
+  /** The sole canvas↔physical conversion authority for this side. */
+  pxPerMm: number;
+}
+
 export interface PublicPriceResponse {
   /** Whole đồng as a decimal string. A string, not a number: VND amounts are exact decimals and JSON numbers are IEEE-754 doubles. */
   amount: string;
@@ -508,6 +659,15 @@ export interface PublicProductListResponse {
   nextCursor: string | null;
 }
 
+export interface PublicProductPlacementResponse {
+  productId: string;
+  /** Active sides only, ordered by displayOrder, code, id. */
+  sides: PublicPlacementSideResponse[];
+  slug: string;
+  /** True only when one active side has at least one active area and an approved editor-safe background. Incomplete or unprocessed placement reports false; geometry is never invented. */
+  studioEligible: boolean;
+}
+
 export interface PublishProductBody {
   [key: string]: unknown;
 }
@@ -532,6 +692,10 @@ export interface ReadinessStatusResponse {
   service: ReadinessStatusResponseService;
   status: ReadinessStatusResponseStatus;
   timestamp: string;
+}
+
+export interface ReplaceProductPlacementBody {
+  [key: string]: unknown;
 }
 
 export interface StaffLoginRequest {
@@ -657,6 +821,14 @@ export type AdminProductArchive200 = ApiSuccessResponse & {
   data: AdminProductDetailResponse;
 };
 
+export type AdminProductPlacementGet200 = ApiSuccessResponse & {
+  data: AdminProductPlacementResponse;
+};
+
+export type AdminProductPlacementReplace200 = ApiSuccessResponse & {
+  data: AdminProductPlacementResponse;
+};
+
 export type AdminProductPublicationReadiness200 = ApiSuccessResponse & {
   data: AdminProductPublicationReadinessResponse;
 };
@@ -698,6 +870,10 @@ export type PublicProductList200 = ApiSuccessResponse & {
 
 export type PublicProductDetail200 = ApiSuccessResponse & {
   data: PublicProductDetailResponse;
+};
+
+export type PublicProductPlacementGet200 = ApiSuccessResponse & {
+  data: PublicProductPlacementResponse;
 };
 
 export type StaffSelfGet200 = ApiSuccessResponse & {

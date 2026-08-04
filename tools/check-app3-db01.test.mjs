@@ -519,13 +519,30 @@ describe('APP3-DB01 — recorded state matches the schema', () => {
     assert.ok(mentions(failures, 'FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01'));
   });
 
-  it('rejects an APP3 operation appearing in OpenAPI', () => {
+  /**
+   * The absence check accepts two worlds and refuses every mixture.
+   *
+   * `APP3-DB01` was the frontier when it ran; `APP3-B01` has since shipped the
+   * three placement operations. Asserting an absolute absence would mean
+   * deleting the check the first time it mattered.
+   */
+  it('rejects an APP3 operation no delivered checkpoint owns', () => {
     const openapi = JSON.parse(read(CANONICAL_FILES.openapi));
     openapi.paths['/api/admin/products/{productId}/placements'] = {
       post: { operationId: 'smuggled' },
     };
     const failures = run({ [CANONICAL_FILES.openapi]: JSON.stringify(openapi) });
-    assert.ok(mentions(failures, 'APP3 operation'));
+    assert.ok(mentions(failures, 'belongs to no delivered APP3 checkpoint'), failures.join('\n'));
+  });
+
+  it('rejects a placement operation while APP3-B01 is not recorded complete', () => {
+    const failures = run({
+      [CANONICAL_FILES.phase]: read(CANONICAL_FILES.phase).replaceAll(
+        'APP3-B01 = COMPLETE',
+        'APP3-B01 = READY — NOT STARTED',
+      ),
+    });
+    assert.ok(mentions(failures, 'no APP3 backend checkpoint has run'), failures.join('\n'));
   });
 
   it('propagates an APP3-G04 regression, including its schema mode', () => {

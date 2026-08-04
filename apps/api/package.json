@@ -21,6 +21,7 @@
   "dependencies": {
     "@embroidery/contracts": "workspace:*",
     "@embroidery/database": "workspace:*",
+    "@embroidery/design-engine": "workspace:*",
     "@embroidery/object-storage": "workspace:*",
     "@embroidery/persistence": "workspace:*",
     "@nestjs/common": "^11.1.28",

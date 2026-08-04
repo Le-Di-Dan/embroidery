@@ -99,6 +99,9 @@ importers:
       '@embroidery/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@embroidery/design-engine':
+        specifier: workspace:*
+        version: link:../../packages/design-engine
       '@embroidery/object-storage':
         specifier: workspace:*
         version: link:../../packages/object-storage

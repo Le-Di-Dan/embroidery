@@ -295,19 +295,42 @@ function checkDependencies(phase, fail) {
   }
 }
 
-/** A database checkpoint delivers no operation. */
-function checkNoImplementation(root, fail) {
+/** The only APP3 operations delivered so far; `APP3-B01` owns all three. */
+const B01_PATHS = Object.freeze([
+  '/api/admin/products/{productId}/placement',
+  '/api/public/products/{slug}/placement',
+]);
+
+/**
+ * A database checkpoint delivers no operation — and neither does any checkpoint
+ * that has not run.
+ *
+ * `APP3-DB01` was the frontier when it ran, so the absence was absolute. It no
+ * longer is: `APP3-B01` shipped the three placement operations its own ruling
+ * called for. Rather than delete the check the day it first mattered, it accepts
+ * exactly two consistent worlds — before B01 (no APP3 operation, and the plan
+ * does not record it) and after (only the two placement paths, and the plan
+ * records it) — and refuses every mixture, including a delivered checkpoint
+ * whose operation has since disappeared.
+ */
+function checkNoImplementation(root, phase, fail) {
   const raw = read(root, 'openapi');
   if (raw === undefined) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);
     return;
   }
-  for (const path of Object.keys(JSON.parse(raw).paths ?? {}).filter((p) =>
-    APP3_OPERATION_RE.test(p),
-  )) {
+  const delivered = /APP3-B01\s*=\s*COMPLETE/.test(phase ?? '');
+  const allowed = delivered ? B01_PATHS : [];
+  const paths = Object.keys(JSON.parse(raw).paths ?? {});
+  for (const path of paths.filter((p) => APP3_OPERATION_RE.test(p) && !allowed.includes(p))) {
     fail(
-      `${CANONICAL_FILES.openapi}: APP3 operation "${path}" exists, but no APP3 backend checkpoint has run`,
+      delivered
+        ? `${CANONICAL_FILES.openapi}: "${path}" belongs to no delivered APP3 checkpoint`
+        : `${CANONICAL_FILES.openapi}: APP3 operation "${path}" exists, but no APP3 backend checkpoint has run`,
     );
+  }
+  for (const path of allowed.filter((p) => !paths.includes(p))) {
+    fail(`${CANONICAL_FILES.openapi}: APP3-B01 is recorded complete but "${path}" is missing`);
   }
 }
 
@@ -341,7 +364,7 @@ export function checkApp3Db01(rootDir = REPO_ROOT) {
     files: CANONICAL_FILES,
     fail,
   });
-  checkNoImplementation(rootDir, fail);
+  checkNoImplementation(rootDir, texts.phase, fail);
 
   const g04 = checkApp3G04(rootDir);
   for (const violation of g04.failures) fail(`APP3-G04 regression: ${violation}`);

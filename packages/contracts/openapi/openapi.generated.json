@@ -148,6 +148,171 @@
         ],
         "type": "object"
       },
+      "AdminPlacementAreaResponse": {
+        "properties": {
+          "boundHeightPx": {
+            "example": 300,
+            "type": "number"
+          },
+          "boundWidthPx": {
+            "example": 400,
+            "type": "number"
+          },
+          "boundXPx": {
+            "description": "Canvas-space origin, in side image pixels.",
+            "example": 120,
+            "type": "number"
+          },
+          "boundYPx": {
+            "example": 90,
+            "type": "number"
+          },
+          "code": {
+            "description": "Stable machine identity within the side.",
+            "example": "chest",
+            "type": "string"
+          },
+          "displayOrder": {
+            "example": 0,
+            "type": "number"
+          },
+          "id": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxHeightMm": {
+            "example": 60,
+            "nullable": true,
+            "type": "object"
+          },
+          "maxWidthMm": {
+            "description": "Physical maximum in millimetres, or null when the side itself is the only limit.",
+            "example": 80,
+            "nullable": true,
+            "type": "object"
+          },
+          "name": {
+            "description": "Display copy; never identity.",
+            "example": "Ngực trái",
+            "type": "string"
+          },
+          "retiredAt": {
+            "description": "Set once the area is withdrawn from new selection. Never a deletion.",
+            "example": null,
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "supersededById": {
+            "description": "The area of the same side that replaced this one.",
+            "example": null,
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "displayOrder",
+          "boundXPx",
+          "boundYPx",
+          "boundWidthPx",
+          "boundHeightPx",
+          "maxWidthMm",
+          "maxHeightMm",
+          "retiredAt",
+          "supersededById"
+        ],
+        "type": "object"
+      },
+      "AdminPlacementSideResponse": {
+        "properties": {
+          "areas": {
+            "items": {
+              "$ref": "#/components/schemas/AdminPlacementAreaResponse"
+            },
+            "type": "array"
+          },
+          "backgroundAssetId": {
+            "description": "The Asset whose approved derivative renders this side. Admin-only.",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07",
+            "format": "uuid",
+            "type": "string"
+          },
+          "code": {
+            "description": "Stable machine identity within the product.",
+            "example": "front",
+            "type": "string"
+          },
+          "displayOrder": {
+            "example": 0,
+            "type": "number"
+          },
+          "id": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "imageHeightPx": {
+            "example": 1000,
+            "type": "number"
+          },
+          "imageWidthPx": {
+            "description": "Background canvas width in pixels.",
+            "example": 1000,
+            "type": "number"
+          },
+          "name": {
+            "example": "Mặt trước",
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "example": 200,
+            "type": "number"
+          },
+          "physicalWidthMm": {
+            "description": "Physical width the canvas represents.",
+            "example": 200,
+            "type": "number"
+          },
+          "pxPerMm": {
+            "description": "The sole canvas↔physical conversion authority for this side.",
+            "example": 5,
+            "type": "number"
+          },
+          "retiredAt": {
+            "example": null,
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "supersededById": {
+            "example": null,
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "displayOrder",
+          "imageWidthPx",
+          "imageHeightPx",
+          "physicalWidthMm",
+          "physicalHeightMm",
+          "pxPerMm",
+          "backgroundAssetId",
+          "retiredAt",
+          "supersededById",
+          "areas"
+        ],
+        "type": "object"
+      },
       "AdminProductCategoryResponse": {
         "properties": {
           "name": {
@@ -331,6 +496,38 @@
           "byteSize",
           "status",
           "createdAt"
+        ],
+        "type": "object"
+      },
+      "AdminProductPlacementResponse": {
+        "properties": {
+          "productId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "productStatus": {
+            "example": "DRAFT",
+            "type": "string"
+          },
+          "sides": {
+            "description": "Active and retired sides alike, ordered by displayOrder, code, id.",
+            "items": {
+              "$ref": "#/components/schemas/AdminPlacementSideResponse"
+            },
+            "type": "array"
+          },
+          "updatedAt": {
+            "description": "Concurrency token; a replace must echo it back as expectedUpdatedAt.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productId",
+          "productStatus",
+          "updatedAt",
+          "sides"
         ],
         "type": "object"
       },
@@ -841,6 +1038,155 @@
         ],
         "type": "object"
       },
+      "PublicPlacementAreaResponse": {
+        "properties": {
+          "boundHeightPx": {
+            "example": 300,
+            "type": "number"
+          },
+          "boundWidthPx": {
+            "example": 400,
+            "type": "number"
+          },
+          "boundXPx": {
+            "description": "Canvas-space origin, in side image pixels.",
+            "example": 120,
+            "type": "number"
+          },
+          "boundYPx": {
+            "example": 90,
+            "type": "number"
+          },
+          "code": {
+            "description": "Stable machine identity within the side.",
+            "example": "chest",
+            "type": "string"
+          },
+          "displayOrder": {
+            "example": 0,
+            "type": "number"
+          },
+          "id": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxHeightMm": {
+            "example": 60,
+            "nullable": true,
+            "type": "object"
+          },
+          "maxWidthMm": {
+            "description": "Physical maximum in millimetres, or null when the side itself is the only limit.",
+            "example": 80,
+            "nullable": true,
+            "type": "object"
+          },
+          "name": {
+            "description": "Display copy; never identity.",
+            "example": "Ngực trái",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "displayOrder",
+          "boundXPx",
+          "boundYPx",
+          "boundWidthPx",
+          "boundHeightPx",
+          "maxWidthMm",
+          "maxHeightMm"
+        ],
+        "type": "object"
+      },
+      "PublicPlacementBackgroundResponse": {
+        "properties": {
+          "productSlug": {
+            "example": "ao-thun-theu-hoa",
+            "type": "string"
+          },
+          "sideCode": {
+            "example": "front",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productSlug",
+          "sideCode"
+        ],
+        "type": "object"
+      },
+      "PublicPlacementSideResponse": {
+        "properties": {
+          "areas": {
+            "items": {
+              "$ref": "#/components/schemas/PublicPlacementAreaResponse"
+            },
+            "type": "array"
+          },
+          "background": {
+            "$ref": "#/components/schemas/PublicPlacementBackgroundResponse"
+          },
+          "code": {
+            "description": "Stable machine identity within the product.",
+            "example": "front",
+            "type": "string"
+          },
+          "displayOrder": {
+            "example": 0,
+            "type": "number"
+          },
+          "id": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "imageHeightPx": {
+            "example": 1000,
+            "type": "number"
+          },
+          "imageWidthPx": {
+            "description": "Background canvas width in pixels.",
+            "example": 1000,
+            "type": "number"
+          },
+          "name": {
+            "example": "Mặt trước",
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "example": 200,
+            "type": "number"
+          },
+          "physicalWidthMm": {
+            "description": "Physical width the canvas represents.",
+            "example": 200,
+            "type": "number"
+          },
+          "pxPerMm": {
+            "description": "The sole canvas↔physical conversion authority for this side.",
+            "example": 5,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "displayOrder",
+          "imageWidthPx",
+          "imageHeightPx",
+          "physicalWidthMm",
+          "physicalHeightMm",
+          "pxPerMm",
+          "background",
+          "areas"
+        ],
+        "type": "object"
+      },
       "PublicPriceResponse": {
         "properties": {
           "amount": {
@@ -934,6 +1280,38 @@
           "items",
           "hasNext",
           "nextCursor"
+        ],
+        "type": "object"
+      },
+      "PublicProductPlacementResponse": {
+        "properties": {
+          "productId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "sides": {
+            "description": "Active sides only, ordered by displayOrder, code, id.",
+            "items": {
+              "$ref": "#/components/schemas/PublicPlacementSideResponse"
+            },
+            "type": "array"
+          },
+          "slug": {
+            "example": "ao-thun-theu-hoa",
+            "type": "string"
+          },
+          "studioEligible": {
+            "description": "True only when one active side has at least one active area and an approved editor-safe background. Incomplete or unprocessed placement reports false; geometry is never invented.",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "productId",
+          "slug",
+          "studioEligible",
+          "sides"
         ],
         "type": "object"
       },
@@ -1031,6 +1409,10 @@
           "timestamp",
           "database"
         ],
+        "type": "object"
+      },
+      "ReplaceProductPlacementBody": {
+        "properties": {},
         "type": "object"
       },
       "StaffLoginRequest": {
@@ -2569,6 +2951,374 @@
         ]
       }
     },
+    "/api/admin/products/{productId}/placement": {
+      "get": {
+        "description": "Returns every Product Side and Embroidery Area of the product, **including retired ones**, ordered by displayOrder, code and id. Retired rows are what an existing Template or Design Session references, so an operator who could not see them would not understand why a code is unavailable. `updatedAt` is the concurrency token a replace must echo back.",
+        "operationId": "adminProductPlacement_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "productId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminProductPlacementResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The placement authoring model.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such product.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Get the Product placement authoring model",
+        "tags": [
+          "adminProductPlacement"
+        ]
+      },
+      "put": {
+        "description": "Replaces the whole placement model atomically. A side or area carrying an `id` is retained and updated; one without an `id` is created; one that is omitted is **retired**, never deleted. A new row may name the row it replaces through `supersedesId`, within the same parent only. Once a side or area is referenced by a Template or a live Design Session its identity and geometry can no longer change — display copy and ordering still can. Requires `expectedUpdatedAt`; a stale value is rejected rather than overwriting a concurrent change. An empty `sides` list retires the entire placement.",
+        "operationId": "adminProductPlacement_replace",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "productId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceProductPlacementBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminProductPlacementResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The replaced placement model.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid geometry, a duplicate code, a row addressed from the wrong parent, an unusable background or an invalid replacement.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such product.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Stale `expectedUpdatedAt`, a background that is not usable, or a referenced placement whose identity or geometry may no longer change.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The body is not application/json.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Replace the Product placement model",
+        "tags": [
+          "adminProductPlacement"
+        ]
+      }
+    },
     "/api/admin/products/{productId}/publication-readiness": {
       "get": {
         "description": "Reports the complete, closed requirement set in a stable order, whether each is satisfied, and the current lifecycle status and concurrency token. Read-only: it writes nothing, records no audit or event, and makes no storage call. The result is a report about this moment — publish re-evaluates every requirement inside its own transaction and may still refuse.",
@@ -3761,6 +4511,117 @@
         "summary": "Get one published product image",
         "tags": [
           "publicProductMedia"
+        ]
+      }
+    },
+    "/api/public/products/{slug}/placement": {
+      "get": {
+        "description": "The read-only placement a Studio session starts from: active Product Sides and Embroidery Areas of a publicly visible Product, ordered by displayOrder, code and id. Retired rows are absent, and so is every private fact — no background Asset id, storage key, original or derivative URL, inspection detail or mutation field. `studioEligible` is true only when one active side has at least one active area and an approved editor-safe background; incomplete or unprocessed placement reports false rather than inventing geometry. A Product with no placement is still published and still returns a manifest, with an empty side list.",
+        "operationId": "publicProductPlacement_get",
+        "parameters": [
+          {
+            "description": "The public Product address.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicProductPlacementResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The placement manifest.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No publicly visible product at that address.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get the public placement manifest",
+        "tags": [
+          "publicProductPlacement"
         ]
       }
     },

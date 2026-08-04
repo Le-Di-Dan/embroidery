@@ -127,6 +127,7 @@ describe('catalog persistence (integration)', () => {
       await products.addSide({
         id: sideId,
         productId,
+        code: 'front',
         name: 'Front',
         backgroundAssetId,
         imageWidthPx: 1000,
@@ -139,6 +140,7 @@ describe('catalog persistence (integration)', () => {
       await products.addArea({
         id: areaId,
         productSideId: sideId,
+        code: 'chest',
         name: 'Chest',
         boundXPx: '100',
         boundYPx: '150',

@@ -2219,6 +2219,85 @@ containment and conversion vector delivered by `APP3-P02` still holds, and
 `APP3-P02-C1` changes no document schema, no API, no database, no renderer and no
 `packages/design-document` source.
 
+## 6.14 `APP3-B01` — Product placement authoring and public manifest
+
+The first APP3 backend slice: three HTTP operations that let an Admin author a
+Product's placement model and let the Storefront read the active part of it.
+Implementation belongs to **Product/Catalog** (IMP-D041 PO-01); the Design module
+is not imported and does not exist yet.
+
+### 6.14.1 Delivered surface
+
+| Method and path | Operation id | Auth |
+|---|---|---|
+| `GET /api/admin/products/:productId/placement` | `adminProductPlacement_get` | Admin session |
+| `PUT /api/admin/products/:productId/placement` | `adminProductPlacement_replace` | Admin session + origin/JSON guards |
+| `GET /api/public/products/:slug/placement` | `publicProductPlacement_get` | anonymous |
+
+No individual side or area operation, no media stream, no asset upload, no
+Template and no Session operation exists.
+
+| Key | Value |
+|---|---|
+| `Placement module owner` | `CatalogPlacementModule` (Product/Catalog) |
+| `Admin read scope` | active **and** retired rows |
+| `Public read scope` | active rows only |
+| `Ordering` | `display_order`, `code`, `id` — total on every read |
+| `Concurrency token` | `products.updated_at`, guarded in one statement |
+| `Removal path` | retirement; no `delete` exists in the repository |
+| `Geometry authority` | `@embroidery/design-engine` (IMP-D045), never re-implemented |
+| `Background lane` | `CATALOG_MEDIA` / `PRODUCTION_SENSITIVE` / `ACCEPTED`, SVG rejected |
+| `Editor-safe derivative` | `NORMALIZED` + `READY` + the full canonical quartet |
+| `Object-storage reads` | `NONE` — dimensions come from `asset_derivatives` |
+| `Audit action` | `product.placement_replaced`, bounded counts only |
+| `Outbox event` | `NONE` — no event type is locked and no consumer exists |
+| `Schema or migration change` | `NONE` |
+
+### 6.14.2 Replace semantics
+
+A side or area carrying an `id` is retained and updated; one without an `id` is
+created; one that is **omitted is retired**, never deleted. A new row may name
+the row it replaces through `supersedesId`, within the same parent only, and the
+replaced row is retired with `superseded_by_id` pointing at it. An empty `sides`
+list retires the whole placement, which is legitimate: publication never required
+placement (PO-06).
+
+Everything is validated before a single row is written, so one bad side leaves
+the previous placement exactly as it was. The `APP3-DB01` guard triggers remain
+the authority on a **referenced** row: identity and geometry are refused,
+display copy and ordering are allowed, and a hard delete is rejected by the
+database whatever asked for it. A guard refusal is translated into a stable
+error and never retried by deleting and re-inserting the protected row.
+
+### 6.14.3 `studioEligible`
+
+Derived, never stored, and true only when **one** side is completely usable: at
+least one active Embroidery Area *and* a background whose asset is in the
+side-background lane, is not tombstoned, and has a `READY` `NORMALIZED`,
+unwatermarked, stored derivative carrying `width_px`, `height_px`, `media_type`
+and `byte_size`. Areas on one side and a usable background on another produce
+`false`, because nothing could actually be designed.
+
+Incomplete placement or unfinished processing yields `false` and never fabricated
+geometry. The manifest carries **no** background asset id, retirement, storage
+key, original or derivative URL or inspection detail; a background is addressed
+by the reference components `APP3-B02` will be keyed by — Product slug and Side
+code — and by no URL, because that route does not exist yet.
+
+`APP3-B01` streams and presigns nothing, and does not close
+`FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01`.
+
+### 6.14.4 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-B01` |
+|---|---|---|
+| `APP3-B01` | whole checkpoint | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-P02` | whole checkpoint, post-B01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-B02` | whole checkpoint, post-B01 | `BLOCKED_BY_APP3-B06` |
+| `APP3-A01` | whole checkpoint, post-B01 | `BACKEND_READY_BY_APP3-B01 — BLOCKED_BY_APP3-D01` |
+| `APP3-D01` | placement portion, post-B01 | `BACKEND_CONTRACT_AVAILABLE_BY_APP3-B01` |
+| `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | disposition, post-B01 | `OPEN — FINAL_OWNER_APP3-B02` |
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -2239,7 +2318,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — GEOMETRY FOUNDATION DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — PLACEMENT BACKEND DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -2265,8 +2344,11 @@ IMP-D045 = LOCKED
 APP3-P01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
 APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01
-APP3-P02 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
-APP3-P02-C1 = COMPLETE — REVIEW_DELIVERED
+APP3-P02 = COMPLETE — REVIEW_ACCEPTED
+APP3-P02-C1 = COMPLETE — REVIEW_ACCEPTED
+APP3-B01 = COMPLETE — REVIEW_DELIVERED
+APP3-A01 = BACKEND_READY_BY_APP3-B01 — BLOCKED_BY_APP3-D01
+APP3-D01 placement portion = BACKEND_CONTRACT_AVAILABLE_BY_APP3-B01
 APP3-P02 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P02 FIRST_ATTEMPT CAUSE = GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT
 APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
@@ -2282,7 +2364,8 @@ APP3-B06 = READY — NOT STARTED
 APP3-B07 = BLOCKED_BY_APP3-P02
 APP3-B08 = BLOCKED_BY_APP3-P02
 APP3-W01 = READY_BY_DB_DISPOSITION — NOT STARTED
-FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — AUTHORITY_LOCKED_BY_APP3-G04
+APP3-B02 = BLOCKED_BY_APP3-B06
+FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — FINAL_OWNER_APP3-B02
 FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-G04
 FU-APP3-G03-QUALITY-AGGREGATE-01 = DEFERRED — REGRESSION_ACTIVITY_ONLY
 FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-DB01
