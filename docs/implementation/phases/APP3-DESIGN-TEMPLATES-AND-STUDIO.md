@@ -2087,6 +2087,78 @@ been the schema change this correction is required to avoid.
 `APP3-G05-COMPLETION-REPORT.md` and `APP3-P01-COMPLETION-REPORT.md` are
 historical evidence and are not rewritten; this section is the forward record.
 
+## 6.12 `APP3-P02` — production design-engine geometry foundation
+
+Resumed after the manual intervention. `APP3-G05` and its `C1` correction
+supplied the geometry contract the first attempt stopped for; nothing else about
+the checkpoint changed.
+
+### 6.12.1 Delivered scope
+
+`packages/design-engine` now owns coordinate and matrix primitives, effective
+element and group transforms, local drawable envelopes, stroke-aware transformed
+AABBs, group and document bounds, placement-authority reconciliation, px↔mm
+conversion, Embroidery Area containment, physical-size validation and typed
+geometry findings. Its **only** production dependency is the public root of
+`@embroidery/design-document`.
+
+| Key | Value |
+|---|---|
+| `Rotation implementation` | `a = cos, b = sin, c = -sin, d = cos` (clockwise, y-down) |
+| `Local matrix implementation` | `T(centre) x R x S x T(-half)`, scale first |
+| `Composition implementation` | parent outermost, root-first chain |
+| `Envelope implementation` | stroke-aware, expanded **before** transform |
+| `Bounds implementation` | four envelope corners through the effective matrix |
+| `Containment implementation` | full AABB inside the area, boundary-inclusive |
+| `Conversion implementation` | Product Side `pxPerMm` only |
+| `Placement modes implemented` | `NEW_EDITING`, `HISTORICAL_RENDER` |
+| `Quantization` | reuses P01 `quantizeNumber`; no second precision |
+| `Singularity threshold` | `1e-12`, matrix inversion **only** |
+| `Document mutation` | `NONE` |
+| `Node built-in imports` | `NONE` — the package is browser-safe |
+
+### 6.12.2 What the engine refuses to do
+
+It never mutates a document, never rebases a group's children, never flattens a
+group and never moves an element to make it fit. Containment and physical-size
+validation return findings; the caller decides the workflow, and a document-write
+API must treat a finding as a validation failure (PO-09).
+
+Called directly with input `APP3-P01` never validated — which a caller may do —
+it fails safely: an unknown element, an unresolvable or cyclic parent chain, a
+negative stroke width or a non-finite coordinate produce a typed finding rather
+than a throw or an unbounded walk.
+
+### 6.12.3 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-P02` |
+|---|---|---|
+| `APP3-G01` | whole checkpoint, post-P02 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G02` | whole checkpoint, post-P02 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G03` | whole checkpoint, post-P02 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G04` | whole checkpoint, post-P02 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-DB01` | whole checkpoint, post-P02 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-F01` | whole checkpoint, post-P02 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-P01` | whole checkpoint, post-P02 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G05` | whole checkpoint, post-P02 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G05-C1` | whole correction, post-P02 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-P02` | whole checkpoint, post-P02 | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-P02` | first attempt, post-P02 | `FAILED — MANUAL_INTERVENTION_REQUIRED` |
+| `APP3-P02` | resolution, post-P02 | `APP3-G05` |
+| `APP3-B03` | whole checkpoint, post-P02 | `READY — NOT STARTED` |
+| `APP3-B04` | whole checkpoint, post-P02 | `BLOCKED_BY_APP3-B06` |
+| `APP3-B05` | whole checkpoint, post-P02 | `READY_BY_P01 — BLOCKED_BY_APP3-B04` |
+| `APP3-B06` | whole checkpoint, post-P02 | `READY — NOT STARTED` |
+| `APP3-B07` | whole checkpoint, post-P02 | `READY_BY_P01_AND_P02 — NOT STARTED` |
+| `APP3-B08` | whole checkpoint, post-P02 | `READY_BY_P01_AND_P02 — NOT STARTED` |
+| `APP3-S11` | whole checkpoint, post-P02 | `FOUNDATION_READY_BY_P01_AND_P02 — NOT STARTED` |
+| `IMP-D045` | implementation state | `IMPLEMENTED_BY_APP3-P02` |
+
+No backend or UI checkpoint is complete. `APP3-P02` delivers no renderer, no API,
+no worker, no schema, no migration, no Figma and no UI, and changes no
+`packages/design-document` source. The historical `APP3-G05`, `APP3-G05-C1` and
+`APP3-P01` records are not rewritten.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -2107,7 +2179,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — GEOMETRY AUTHORITY CORRECTION_DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — GEOMETRY FOUNDATION DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -2127,17 +2199,21 @@ G01 DB contribution = IMPLEMENTED_BY_APP3_DB01
 G04 DB contribution = IMPLEMENTED_BY_APP3_DB01
 APP3-P01 = COMPLETE — REVIEW_ACCEPTED
 APP3-P01-C1 = COMPLETE — REVIEW_ACCEPTED
-APP3-G05 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
-APP3-G05-C1 = COMPLETE — REVIEW_DELIVERED
+APP3-G05 = COMPLETE — REVIEW_ACCEPTED
+APP3-G05-C1 = COMPLETE — REVIEW_ACCEPTED
 IMP-D045 = LOCKED
 APP3-P01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
 APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01
-APP3-P02 = BLOCKED_BY_APP3-G05_CORRECTION_REVIEW
+APP3-P02 = COMPLETE — REVIEW_DELIVERED
 APP3-P02 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P02 FIRST_ATTEMPT CAUSE = GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT
 APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
 APP3-B01 = READY — NOT STARTED
+APP3-B04 = BLOCKED_BY_APP3-B06
+APP3-B07 = READY_BY_P01_AND_P02 — NOT STARTED
+APP3-B08 = READY_BY_P01_AND_P02 — NOT STARTED
+APP3-S11 = FOUNDATION_READY_BY_P01_AND_P02 — NOT STARTED
 APP3-B03 = READY_BY_P01 — NOT STARTED
 APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06
 APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04

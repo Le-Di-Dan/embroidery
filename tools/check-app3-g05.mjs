@@ -222,27 +222,33 @@ function checkGeometryFacts(rows, fail) {
 /**
  * 18, 19 — G05 authorises geometry; it does not implement any.
  *
- * The stub check is the one that keeps this gate honest: a decision gate whose
- * checkpoint quietly shipped code alongside it would be indistinguishable from
- * one that did not.
+ * Exactly **two** worlds are consistent, and this accepts only those: before
+ * `APP3-P02` the engine is an empty stub and the phase plan blocks it; after
+ * P02 the stub is legitimately gone and the plan records it delivered. A gate
+ * frozen to "the stub must stay empty" would have to be deleted the day P02
+ * shipped, which is how an authority check quietly stops being run — the defect
+ * `APP3-G04` was rebuilt to avoid and `APP3-F01` hit again at `APP3-P01`.
  */
 function checkNoImplementation(rootDir, phase, fail) {
   const engine = read(rootDir, CANONICAL_FILES.engine);
+  const delivered = /APP3-P02 = COMPLETE/.test(phase);
   if (engine === undefined) {
     fail(`${CANONICAL_FILES.engine} is missing`);
-  } else if (!/export\s*\{\s*\}/.test(engine)) {
-    fail(`${CANONICAL_FILES.engine} is no longer an empty stub — APP3-G05 implements no geometry`);
+  } else if (!/export\s*\{\s*\}/.test(engine) && !delivered) {
+    fail(
+      `${CANONICAL_FILES.engine} is no longer an empty stub while the phase plan still blocks APP3-P02`,
+    );
+  } else if (/export\s*\{\s*\}/.test(engine) && delivered) {
+    fail('the phase plan records APP3-P02 as delivered, but the engine is still a stub');
   }
-  // Accepts either blocking token: G05 review acceptance, or — after
-  // `APP3-G05-C1` — the correction review that supersedes it.
-  if (!/APP3-P02 = BLOCKED_BY_APP3-G05/.test(phase)) {
+  // Before P02 the plan must block it — on G05 review acceptance, or after
+  // `APP3-G05-C1` on the correction review that supersedes it.
+  if (!delivered && !/APP3-P02 = BLOCKED_BY_APP3-G05/.test(phase)) {
     fail('the phase plan does not block APP3-P02 on APP3-G05 review');
   }
+  // The cause survives P02 either way: it is why IMP-D045 exists.
   if (!phase.includes('GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT')) {
     fail('the phase plan does not record the cause of the failed APP3-P02 first attempt');
-  }
-  if (/APP3-P02\s*=\s*COMPLETE/.test(phase)) {
-    fail('the phase plan marks APP3-P02 complete, which this checkpoint does not deliver');
   }
   // The spike is why the stop happened; it must stay classified as research.
   if (!collapse(phase).includes('COMPARATIVE_RESEARCH_NOT_PRODUCTION_AUTHORITY')) {

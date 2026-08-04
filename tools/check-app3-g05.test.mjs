@@ -2,16 +2,14 @@
  * Regressions for the `APP3-G05` geometry-authority gate.
  *
  * Every case flips exactly one ruled property in a throwaway copy of the
- * authority and proves the checker refuses it. No geometry is executed here —
- * `IMP-D045` is a decision, and this file guards the decision, not an
- * implementation of it.
+ * authority and proves the checker refuses it. No geometry runs here —
+ * `IMP-D045` is a decision, and this file guards the decision.
  *
- * The cases worth reading twice are the ones that look like harmless edits: a
- * pivot moved from centre to corner, a composition order reversed, a stroke
- * dropped from a rectangle's bounds. None changes a stored byte, none changes a
- * document hash, and every one silently relocates or re-admits designs that were
- * already approved. That invisibility is why the decision needed locking and why
- * these assertions are exact-string rather than "mentions".
+ * The cases worth reading twice look like harmless edits: a pivot moved from
+ * centre to corner, a composition order reversed, a stroke dropped from a
+ * rectangle's bounds. None changes a stored byte or a document hash, and every
+ * one silently relocates or re-admits designs already approved. That
+ * invisibility is why the assertions are exact-string, not "mentions".
  */
 import { strict as assert } from 'node:assert';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -554,25 +552,36 @@ describe('APP3-G05 — the decision itself', () => {
   });
 });
 
+/**
+ * Two consistent worlds, every mixture refused. The repository now sits in the
+ * delivered one, so the not-started world is simulated here: a gate frozen to
+ * "the stub must stay empty" would have been deleted the day P02 shipped.
+ */
 describe('APP3-G05 — the checkpoint implements no geometry', () => {
-  it('rejects geometry shipped under cover of the decision', () => {
-    const failures = run({ [ENGINE]: 'export function rotate() {\n  return 1;\n}\n' });
+  const STUB = 'export {};\n';
+  const PENDING_PLAN = read(PHASE).replace(
+    'APP3-P02 = COMPLETE — REVIEW_DELIVERED',
+    'APP3-P02 = BLOCKED_BY_APP3-G05_CORRECTION_REVIEW',
+  );
+
+  it('accepts a stub engine while the plan still blocks P02', () => {
+    assert.deepEqual(run({ [PHASE]: PENDING_PLAN, [ENGINE]: STUB }), []);
+  });
+
+  it('rejects geometry shipped while the plan still blocks P02', () => {
+    const failures = run({ [PHASE]: PENDING_PLAN });
     assert.ok(mentions(failures, 'no longer an empty stub'), failures.join('\n'));
   });
 
-  it('rejects a phase plan that does not block APP3-P02', () => {
-    const text = read(PHASE).replaceAll('BLOCKED_BY_APP3-G05_CORRECTION_REVIEW', 'READY');
-    const failures = run({ [PHASE]: text });
+  it('rejects a plan that neither blocks P02 nor records it delivered', () => {
+    const text = PENDING_PLAN.replaceAll('BLOCKED_BY_APP3-G05_CORRECTION_REVIEW', 'READY');
+    const failures = run({ [PHASE]: text, [ENGINE]: STUB });
     assert.ok(mentions(failures, 'block APP3-P02'), failures.join('\n'));
   });
 
-  it('rejects a phase plan that marks APP3-P02 complete', () => {
-    const text = read(PHASE).replace(
-      'APP3-P02 = BLOCKED_BY_APP3-G05_CORRECTION_REVIEW',
-      'APP3-P02 = COMPLETE — REVIEW_DELIVERED',
-    );
-    const failures = run({ [PHASE]: text });
-    assert.ok(mentions(failures, 'marks APP3-P02 complete'), failures.join('\n'));
+  it('rejects a plan claiming P02 is delivered while the engine is a stub', () => {
+    const failures = run({ [ENGINE]: STUB });
+    assert.ok(mentions(failures, 'still a stub'), failures.join('\n'));
   });
 
   it('rejects forgetting why the first APP3-P02 attempt failed', () => {
