@@ -209,11 +209,17 @@ function checkStaging({ phase, register, security, nfr, audit, files }, fail) {
     fail(`${files.audit}: the pre-implementation audit was not reconciled`);
   }
 
-  // No sanitizer may be selected before G07.
-  for (const packageName of SANITIZER_PACKAGES) {
-    const chosen = new RegExp(`(select|choose|adopt|use)[^.]{0,60}\`?${packageName}\`?`, 'i');
-    if (chosen.test(authority)) {
-      fail(`${files.phase}: sanitizer "${packageName}" was selected before APP3-G07`);
+  // No sanitizer may be selected before G07 — and G07 is exactly where one is.
+  // Two consistent worlds: while the gate has not delivered, the G06 authority
+  // must name no sanitizer package at all; once `IMP-D047` is LOCKED the choice
+  // belongs to G07's own section, and G06's remains the one that deferred it.
+  const g07Delivered = /APP3-G07\s*=\s*COMPLETE/.test(phase) && /IMP-D047\s*=\s*LOCKED/.test(phase);
+  if (!g07Delivered) {
+    for (const packageName of SANITIZER_PACKAGES) {
+      const chosen = new RegExp(`(select|choose|adopt|use)[^.]{0,60}\`?${packageName}\`?`, 'i');
+      if (chosen.test(authority)) {
+        fail(`${files.phase}: sanitizer "${packageName}" was selected before APP3-G07`);
+      }
     }
   }
 

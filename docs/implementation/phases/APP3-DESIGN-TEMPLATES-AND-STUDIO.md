@@ -2526,6 +2526,233 @@ G06; the execution recommendation is `APP3-W01A` first.
 `APP3-G06` implements nothing: no API, worker, package, schema, migration,
 OpenAPI, generated client, dependency, infrastructure or Figma change.
 
+## 6.17 `APP3-G07` — Template SVG sanitizer and deterministic normalization authority
+
+`APP3-G06` PO-06/PO-09 authorized Template SVG under `IMP-D044` while making it
+operationally unavailable, and named `APP3-G07` as the owner of the sanitizer
+choice. `APP3-W01A` shipped the raster consumer and returns
+`TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE` for `image/svg+xml`. `APP3-G07`
+supplies the missing authority, locked as **`IMP-D047`**. It is a security and
+application-architecture gate: it installs nothing, implements nothing and
+changes no schema, OpenAPI artifact, generated client or infrastructure.
+
+### 6.17.1 Verified upstream facts
+
+Verified 2026-08-04 against the official npm registry metadata and the official
+project repositories. Nothing below is remembered; each value was fetched.
+
+| Machine-checked sanitizer fact | Value |
+|---|---|
+| `Sanitizer` | `DOMPURIFY_ON_JSDOM` |
+| `Sanitizer package` | `dompurify` |
+| `Sanitizer version` | `3.4.13` |
+| `Sanitizer license` | `MPL-2.0 OR Apache-2.0` |
+| `Sanitizer runtime dependencies` | `0` |
+| `Sanitizer repository` | `https://github.com/cure53/DOMPurify` |
+| `DOM package` | `jsdom` |
+| `DOM version` | `29.1.1` |
+| `DOM license` | `MIT` |
+| `DOM repository` | `https://github.com/jsdom/jsdom` |
+| `Locked worker runtime` | `22.14.0` |
+| `Latest jsdom` | `30.0.1` |
+| `Latest jsdom usable` | `NO_LOCKED_RUNTIME_TOO_OLD` |
+| `Version range form` | `EXACT_PIN_ONLY` |
+| `Install or postinstall script` | `NONE` |
+| `Path data parser` | `PACKAGE_OWNED_DETERMINISTIC_PARSER` |
+| `Path parser dependency` | `NONE` |
+| `SVGO role` | `NOT_A_SANITIZER_AND_NOT_RUN_IN_V1` |
+| `Sharp role` | `NOT_A_SANITIZER_AND_NEVER_RASTERIZES_TEMPLATE_SVG` |
+| `Regex sanitization` | `FORBIDDEN` |
+| `Headless browser` | `FORBIDDEN` |
+| `Sanitization policy version` | `1` |
+| `Sanitization policy persistence` | `WORKER_POLICY_NOT_DATABASE` |
+| `New derivative kind` | `NONE` |
+| `G07 dependency install` | `NONE` |
+| `G07 application change` | `NONE` |
+
+The one finding that changes the answer: **the newest jsdom cannot be used.**
+`jsdom@30.0.1` declares `engines.node` as `^22.22.2 || ^24.15.0 || >=26.0.0`, and
+every application image is `node:22.14.0-alpine`. `22.14.0` does not satisfy
+`^22.22.2`. `jsdom@29.1.1` is the newest release whose range (`^20.19.0 ||
+^22.13.0 || >=24.0.0`) the locked runtime satisfies, so that is the pin. Raising
+the base image is an infrastructure decision this gate has no standing to make,
+and pinning a jsdom the runtime cannot start would have surfaced only in the
+container.
+
+### 6.17.2 Locked rulings (`IMP-D047`)
+
+**PO-01 — the sanitizer is DOMPurify on server-side Node with jsdom.**
+`dompurify@3.4.13` is the active-content and XSS defence layer; `jsdom@29.1.1`
+supplies the DOM it operates on. This is an explicitly approved server-side
+sanitizer architecture, not an implicit browser DOM. `APP3-W01B` must pin both
+exactly — no `*`, `latest`, caret or tilde — and must not select
+`isomorphic-dompurify`, a `sanitize-svg` wrapper, regex-only sanitization, a
+headless browser, SVGO or Sharp in the sanitizer role. Sharp never rasterizes a
+Template SVG; a raster fallback would silently change what an Admin approved.
+
+**PO-02 — DOMPurify's defaults are not the APP3 policy.**
+DOMPurify by default permits HTML, SVG and MathML and is a *removal* engine. The
+APP3 contract is narrower on both counts: explicit allowlists, value validation,
+namespace and URL rejection, complexity limits, deterministic serialization and a
+fixed-point second pass. DOMPurify runs with the SVG namespace, HTML and MathML
+disabled, and with XML parsing (`PARSER_MEDIA_TYPE` set to an XML media type) so
+XML safety is retained. `DOMPurify.removed` is **diagnostic only** and is never
+the security decision — the decision is the repository's own validation.
+
+**PO-03 — SVGO is an optimizer and is not run in v1.**
+SVGO describes itself as "a Node.js library and command-line application for
+optimizing SVG files". Optimization is not a security boundary, and DOMPurify's
+own documentation warns that if you "first sanitize HTML and then modify it
+afterwards, you might easily void the effects of sanitization". Both reasons
+point the same way: no optimizer runs after the sanitizer, and none runs at all
+in v1.
+
+**PO-04 — input form.** UTF-8; source bytes at most 1 MiB; strict XML parsing and
+never HTML error recovery; exactly one root `<svg>`; root namespace
+`http://www.w3.org/2000/svg`; no foreign namespace; no DOCTYPE, entity
+declaration or processing instruction; no external entity resolution of any kind.
+
+**PO-05 — reject the whole file.** Any unsupported element, attribute or value
+rejects the complete file with the stable non-retryable outcome
+`UNSAFE_OR_UNSUPPORTED_TEMPLATE_SVG`. Content is never silently removed: a
+Template that renders differently from what an Admin approved is a worse outcome
+than a refused upload, because nobody is told.
+
+**PO-06 — element allowlist.** Exactly `svg`, `g`, `path`, `rect`, `circle`,
+`ellipse`, `line`, `polyline`, `polygon`. Everything else rejects, explicitly
+including `script`, `foreignObject`, `image`, `a`, `style`, all text and font
+elements, `use`, `symbol`, `defs`, gradients, `marker`, `pattern`, `mask`,
+`clipPath`, filters, `metadata`, `title`, `desc` and every animation element.
+
+**PO-07 — attribute allowlist.** Root attributes are exactly `xmlns` and
+`viewBox`. Elsewhere, only where semantically valid: `transform`, `fill`,
+`fill-opacity`, `fill-rule`, `stroke`, `stroke-width`, `stroke-opacity`,
+`stroke-linecap`, `stroke-linejoin`, `stroke-miterlimit`, `stroke-dasharray`,
+`stroke-dashoffset`, `opacity`, `x`, `y`, `width`, `height`, `rx`, `ry`, `cx`,
+`cy`, `r`, `x1`, `y1`, `x2`, `y2`, `points`, `d`. Always rejected: `id`, `class`,
+`style`, `href`, `xlink:href`, `src`, every `on*`, every `data-*`, every `aria-*`,
+`tabindex`, `role`, `xml:base`, `xml:space`, every `xmlns:*` beyond the root
+`xmlns`, and `vector-effect`. No custom element and no custom attribute.
+Rejecting `id` is also the DOM-clobbering defence.
+
+**PO-08 — no URL, CSS, reference or font.** Every URI and reference form is
+rejected wherever it appears: `url(...)`, `var(...)`, `javascript:`, `data:`,
+`blob:`, `http:`, `https:`, `ftp:`, `file:`, `cid:`, relative and
+protocol-relative URLs, and `#fragment` references. No CSS, no `style` element or
+attribute, no class, no external resource, no remote or embedded font, no text
+rendering, and no `currentColor`, `context-fill` or `context-stroke`. Paint is
+explicit presentation attributes only.
+
+**PO-09 — value grammar.** All numbers are finite base-10 with no unit, no
+percentage, no `calc()`, no `NaN` and no `Infinity`, canonicalized so `-0`
+becomes `0`, with no leading `+`, no unnecessary zeros and one representation per
+value. Paints are `none`, `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`,
+`rgb(integer integer integer)` or `rgb(integer integer integer / alpha)`,
+canonicalized to lowercase `#rrggbb`, `#rrggbbaa` or `none`; named colours,
+`currentColor`, `hsl`, `lab`, `lch`, `color`, `device-cmyk`, `var` and `url` are
+rejected. Enumerations are exactly `fill-rule: nonzero | evenodd`,
+`stroke-linecap: butt | round | square` and
+`stroke-linejoin: miter | round | bevel`. Opacities lie within `0..1`; stroke
+widths and dash values are non-negative; `stroke-miterlimit` is positive.
+
+**PO-10 — transform, viewBox, points and path.** Transforms are exactly
+`matrix(a b c d e f)`, `translate(tx | tx ty)`, `scale(s | sx sy)`,
+`rotate(angle | angle cx cy)`, `skewX(angle)` and `skewY(angle)` with finite
+arguments, exact arity and degrees — no CSS transform syntax, no 3D, no
+`transform-origin` — and function order is preserved and serialized canonically.
+`viewBox` is exactly four finite numbers with a positive integer width and
+height, `width` at most 4096, `height` at most 4096 and
+`width × height` at most 16,777,216. The derivative metadata is
+`width_px = viewBox width` and `height_px = viewBox height` with no rounding, no
+DPI and no fallback to a root `width`/`height`. `points` requires a valid, even
+coordinate count. `d` is parsed as real SVG path grammar for `M/L/H/V/C/S/Q/T/A/Z`
+including exact arity and `0`/`1` arc flags; a permissive character regex is
+forbidden. The parser is **package-owned and deterministic** — the repository
+already owns its geometry semantics under `IMP-D045`, so no audited parser
+dependency is required and `APP3-W01B` adds none.
+
+**PO-11 — complexity limits.** Source bytes at most 1 MiB; sanitized and
+canonical nodes at most 10,000; total canonical path-data characters at most
+1,000,000; maximum element depth 64. The boundary passes and boundary plus one
+rejects. Nothing is ever truncated into compliance.
+
+**PO-12 — the deterministic pipeline.** `APP3-W01B` runs exactly, in order:
+(1) byte limit; (2) forbidden XML form rejection; (3) strict XML parse;
+(4) namespace, allowlist, value and complexity validation; (5) DOMPurify with the
+exact APP3 policy; (6) reject on any structural removal or change; (7) build the
+package-owned canonical representation; (8) deterministic serialization;
+(9) reparse, revalidate and sanitize again; (10) reserialize; (11) require the
+second bytes to equal the first; (12) derive metadata from the final bytes;
+(13) complete through the `APP3-W01A` object, `READY` and quartet protocol. No
+mutation and no optimizer after the final pass. Step 11 is the fixed point that
+makes step 6 meaningful.
+
+**PO-13 — canonical output.** `media_type = image/svg+xml`, UTF-8, no BOM, XML
+declaration omitted, LF line endings, no trailing newline. Serialization
+lowercases allowed names; emits the root `xmlns` first and `viewBox` second and
+sorts remaining attributes lexicographically; uses double quotes with correct XML
+escaping; emits no comment and no insignificant text node; uses one locked
+empty-element form consistently; and gives `svg` and `g` explicit start and end
+tags. Determinism means identical accepted source bytes plus the exact policy and
+dependency versions produce byte-identical output. It does **not** mean that two
+semantically equivalent but textually different sources converge.
+
+**PO-14 — policy version and supply chain.**
+`TEMPLATE_SVG_SANITIZATION_POLICY_VERSION = 1`, worker policy and never a
+database column or a derivative kind. Changing the sanitizer, jsdom or path
+parser version, the allowlists, the value grammar, the limits, the serializer or
+the `viewBox` rule requires security review, a corpus rerun, and a policy version
+increase when behaviour changes. `APP3-W01B` must install with exact lockfile
+integrity, make no runtime network call, download no native binary and run no
+unapproved install script — neither `dompurify@3.4.13` nor `jsdom@29.1.1`
+declares an `install` or `postinstall` script, and `dompurify` has zero runtime
+dependencies. **`APP3-G07` installs nothing.**
+
+**PO-15 — sanitization does not authorize delivery.** A sanitized Template SVG
+remains private, unwatermarked, `NORMALIZED` and Template-owned. `APP3-G07`
+authorizes no generic or public delivery, no inline HTML embedding, no data URL,
+no public ACL and no download endpoint. Passing a sanitizer is not the same as
+being safe to embed anywhere.
+
+### 6.17.3 Required `APP3-W01B` security corpus
+
+Rejection cases are locked for: `script` and `on*`; `foreignObject` and embedded
+HTML; `image`, `href`, `xlink:href` and other external resources; `javascript:`,
+`data:`, `blob:`, `http:` and protocol-relative values; `style`, CSS `url()` and
+`var()`; text and fonts; `use`, `defs` and references; animation; filters, masks,
+clips, gradients and patterns; DOCTYPE, entity and XXE payloads; namespace
+confusion; malformed XML and multiple roots; missing, fractional and oversized
+`viewBox`; `NaN`, `Infinity`, units and percentages; malformed paths and invalid
+arc flags; node, path, depth and byte overflow; DOM-clobbering `id` and `name`;
+encoding and case evasions; mutation-XSS and parser-differential fixtures; and
+the applicable official DOMPurify SVG regression fixtures.
+
+Acceptance cases are locked for every allowed primitive, nested groups, valid
+presentation attributes, every allowed transform, every path command family and
+the exact limit boundaries.
+
+The corpus must prove byte and SHA-256 determinism across repeated runs, across
+fresh processes on Linux and on Windows where supported, plus fixed-point
+equality between the first and second serialization.
+
+### 6.17.4 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-G07` |
+|---|---|---|
+| `APP3-G07` | whole checkpoint | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-W01B` | whole checkpoint, post-G07 | `BLOCKED_BY_APP3-G07_REVIEW_ACCEPTANCE` |
+| `APP3-B03` | whole checkpoint, post-G07 | `BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP_AND_TEMPLATE_SVG_REMAINS_UNAVAILABLE_UNTIL_APP3-W01B` |
+| `APP3-W01A` | whole checkpoint, post-G07 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-B01N` | whole checkpoint, post-G07 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G06` | whole checkpoint, post-G07 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G04` | whole checkpoint, post-G07 | `COMPLETE — REVIEW_ACCEPTED` |
+
+`APP3-W01B` becomes `READY — NOT STARTED` on human acceptance of G07.
+
+`APP3-G07` implements nothing and installs nothing: no dependency, API, worker,
+package, schema, migration, OpenAPI, generated client, infrastructure or Figma
+change.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -2584,7 +2811,7 @@ APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
 APP3-B07 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-B08 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-S11 = FOUNDATION_READY_BY_P01_AND_P02 — NOT STARTED
-APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP_AND_TEMPLATE_SVG_UNAVAILABLE_UNTIL_APP3-W01B
+APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP_AND_TEMPLATE_SVG_REMAINS_UNAVAILABLE_UNTIL_APP3-W01B
 APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06
 APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04
 APP3-B06 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP
@@ -2597,9 +2824,11 @@ APP3-W01 FIRST_ATTEMPT PRIMARY_CAUSE = JOB_CONTRACT_INSUFFICIENT
 APP3-W01 FIRST_ATTEMPT SECONDARY_CAUSE = SVG_SANITIZER_NOT_SELECTED
 APP3-W01 = REPLANNED — REPLACED_BY_APP3-W01A_AND_APP3-W01B
 APP3-W01A = COMPLETE — REVIEW_ACCEPTED
-APP3-B01N = COMPLETE — REVIEW_DELIVERED
-APP3-G07 = READY — NOT STARTED
-APP3-W01B = BLOCKED_BY_APP3-G07
+APP3-B01N = COMPLETE — REVIEW_ACCEPTED
+APP3-G07 = COMPLETE — REVIEW_DELIVERED
+IMP-D047 = LOCKED
+TEMPLATE_SVG_SANITIZATION_POLICY_VERSION = 1
+APP3-W01B = BLOCKED_BY_APP3-G07_REVIEW_ACCEPTANCE
 APP3-B02 = READY_BY_APP3-W01A_AND_APP3-B01N BUT_BLOCKED_WHEN_PLATFORM_ZOD_OPENAPI_FOLLOW_UP_APPLIES
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — FINAL_OWNER_APP3-B02
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = PROCESSING_AND_TRIGGER_FOUNDATION_READY

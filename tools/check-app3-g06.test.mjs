@@ -341,12 +341,17 @@ describe('APP3-G06 — the replan and staging', () => {
   });
 
   it('rejects a sanitizer selected before APP3-G07', () => {
+    // Two consistent worlds: until G07 is delivered and `IMP-D047` is LOCKED,
+    // G06's own authority must name no sanitizer package; afterwards the choice
+    // is G07's to state and G06's remains the section that deferred it.
     for (const packageName of ['dompurify', 'svgo']) {
       const failures = run({
-        [CANONICAL_FILES.phase]: phase().replace(
-          '### 6.16.3 Dependency reconciliation',
-          `W01B will use \`${packageName}\` as the sanitizer.\n\n### 6.16.3 Dependency reconciliation`,
-        ),
+        [CANONICAL_FILES.phase]: phase()
+          .replace(/APP3-G07 = COMPLETE[^\n]*/, 'APP3-G07 = READY — NOT STARTED')
+          .replace(
+            '### 6.16.3 Dependency reconciliation',
+            `W01B will use \`${packageName}\` as the sanitizer.\n\n### 6.16.3 Dependency reconciliation`,
+          ),
       });
       assert.ok(
         mentions(failures, `sanitizer "${packageName}" was selected`),

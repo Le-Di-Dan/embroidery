@@ -84,6 +84,23 @@ Required patterns or equivalent outcomes:
   associations and concurrent claims converge on **one** authoritative READY
   derivative, and an association that has since moved or retired completes as a
   bounded non-retryable rejection rather than an infrastructure retry.
+- Template SVG normalization is **deterministic and reject-whole-file**
+  (`APP3-G07` / IMP-D047). Sanitization is DOMPurify on server-side Node with
+  jsdom, both pinned exactly, running in the SVG namespace with HTML and MathML
+  disabled and XML parsing retained; `DOMPurify.removed` is diagnostic only. Any
+  unsupported element, attribute or value rejects the **complete** file as
+  `UNSAFE_OR_UNSUPPORTED_TEMPLATE_SVG` rather than being silently removed,
+  because a Template that renders differently from what an Admin approved is a
+  worse outcome than a refused upload — nobody is told. Output is canonicalized
+  and then reparsed, revalidated, sanitized and reserialized, and the second
+  bytes must equal the first: identical accepted source bytes plus the exact
+  policy and dependency versions produce byte-identical output, and
+  `width_px`/`height_px` are the `viewBox` width and height with no rounding,
+  no DPI and no root-attribute fallback. No optimizer, and nothing at all, may
+  modify the bytes after the final pass. `TEMPLATE_SVG_SANITIZATION_POLICY_VERSION`
+  is worker policy, not a database column; changing the dependencies,
+  allowlists, value grammar, limits or serializer requires security review, a
+  corpus rerun and a version increase when behaviour changes.
 - Design Document geometry semantics are part of the meaning of
   `schemaVersion = 1` (`APP3-G05` / IMP-D045). A v1 document stores `x`, `y`,
   `rotationDeg`, `scaleX` and `scaleY` with **no pivot or composition marker**,

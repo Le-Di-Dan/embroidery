@@ -74,16 +74,36 @@ animation, filters outside the approved subset, unbounded path/node complexity,
 and a missing or invalid `viewBox`. The sanitized derivative is self-contained
 and the original SVG never reaches the Studio.
 
-**Implementation status (`IMP-D046`, `APP3-G06`).** No sanitizer implementation
-has been selected, so Template SVG is **authorized but operationally
-unavailable**: it must be **rejected safely** until `APP3-G07` locks the
-sanitizer implementation, allowed element and attribute sets, namespace, URL,
-CSS and font policy, `viewBox` authority, node and path-data counting,
-deterministic serialization, output MIME and a security regression corpus, and
-`APP3-W01B` implements it. Until then no checkpoint may silently rasterize
-unsanitized SVG through an image pipeline, sanitize with regular expressions,
-use a browser DOM as an implicit sanitizer, or reinterpret SVG as raster by
-file extension. This is staged delivery, not a removal of the requirement.
+**Sanitizer authority (`IMP-D047`, `APP3-G07`).** The sanitizer is locked:
+**DOMPurify on server-side Node with jsdom** — `dompurify@3.4.13`
+(`MPL-2.0 OR Apache-2.0`, zero runtime dependencies) as the active-content and
+XSS defence layer, `jsdom@29.1.1` (`MIT`) as the DOM, both pinned exactly.
+`jsdom@30` is deliberately not selected: it requires Node `^22.22.2` and the
+locked runtime is `22.14.0`. DOMPurify's **defaults are not the policy** — it
+runs in the SVG namespace with HTML and MathML disabled and XML parsing retained,
+and `DOMPurify.removed` is diagnostic only, never the security decision. APP3
+adds explicit element and attribute allowlists (`svg`, `g`, `path`, `rect`,
+`circle`, `ellipse`, `line`, `polyline`, `polygon` and nothing else), a
+closed value grammar, total refusal of URLs, CSS, references and fonts, the
+complexity limits above, deterministic canonical serialization and a **fixed-point
+second pass** whose bytes must equal the first. Any unsupported element,
+attribute or value **rejects the whole file** as
+`UNSAFE_OR_UNSUPPORTED_TEMPLATE_SVG`; content is never silently removed, because
+a Template that renders differently from what an Admin approved is worse than a
+refused upload. SVGO is an optimizer, not a sanitizer, and never runs after
+sanitization — DOMPurify's own documentation warns that modifying markup
+afterwards can void the sanitization. No regex sanitizer, no headless browser, no
+`isomorphic-dompurify` wrapper, and Sharp never rasterizes a Template SVG.
+`TEMPLATE_SVG_SANITIZATION_POLICY_VERSION = 1` is worker policy, not a database
+column; changing the dependencies, allowlists, grammar, limits or serializer
+requires security review, a corpus rerun and a version increase.
+
+Template SVG remains **authorized but operationally unavailable** until
+`APP3-W01B` implements this authority: it is still **rejected safely** today.
+Sanitization also does not authorize delivery — a sanitized Template SVG stays
+private, unwatermarked, `NORMALIZED` and Template-owned, with no public ACL, no
+data URL, no inline HTML embedding and no download endpoint. This is staged
+delivery, not a removal of the requirement.
 
 **Editor-safe normalization is association-bound.** Normalization runs only when
 a Product Side, Template or Design Session association is created or changed, on
