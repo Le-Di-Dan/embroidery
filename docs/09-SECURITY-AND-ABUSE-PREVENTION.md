@@ -74,6 +74,23 @@ animation, filters outside the approved subset, unbounded path/node complexity,
 and a missing or invalid `viewBox`. The sanitized derivative is self-contained
 and the original SVG never reaches the Studio.
 
+**Implementation status (`IMP-D046`, `APP3-G06`).** No sanitizer implementation
+has been selected, so Template SVG is **authorized but operationally
+unavailable**: it must be **rejected safely** until `APP3-G07` locks the
+sanitizer implementation, allowed element and attribute sets, namespace, URL,
+CSS and font policy, `viewBox` authority, node and path-data counting,
+deterministic serialization, output MIME and a security regression corpus, and
+`APP3-W01B` implements it. Until then no checkpoint may silently rasterize
+unsanitized SVG through an image pipeline, sanitize with regular expressions,
+use a browser DOM as an implicit sanitizer, or reinterpret SVG as raster by
+file extension. This is staged delivery, not a removal of the requirement.
+
+**Editor-safe normalization is association-bound.** Normalization runs only when
+a Product Side, Template or Design Session association is created or changed, on
+one event appended in that same transaction. Uploading an asset never makes it
+Studio-eligible on its own, and the worker re-derives the processing profile from
+the association at claim time rather than trusting anything in the message.
+
 ## 5. Asset access
 
 - Private assets require authorization.

@@ -74,6 +74,16 @@ Required patterns or equivalent outcomes:
   written atomically with its transition to READY, all-or-none. Source-asset
   metadata and append-only inspection evidence are never substituted for it, and
   missing values make a derivative ineligible rather than inferred.
+- Editor-safe normalization is **association-bound and idempotent**
+  (`APP3-G06` / IMP-D046). It is dispatched by one event appended in the same
+  transaction as the Product Side, Template or Session association write, on the
+  existing Outbox and worker claim mechanism — no second queue, scheduler or
+  sweep. The message names the association, never the processing profile, which
+  the worker re-derives at claim time; logical identity is the Asset plus the
+  normalization policy version, so duplicate delivery, several eligible
+  associations and concurrent claims converge on **one** authoritative READY
+  derivative, and an association that has since moved or retired completes as a
+  bounded non-retryable rejection rather than an infrastructure retry.
 - Design Document geometry semantics are part of the meaning of
   `schemaVersion = 1` (`APP3-G05` / IMP-D045). A v1 document stores `x`, `y`,
   `rotationDeg`, `scaleX` and `scaleY` with **no pivot or composition marker**,

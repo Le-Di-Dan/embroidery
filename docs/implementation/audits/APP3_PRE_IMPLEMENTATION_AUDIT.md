@@ -1177,3 +1177,33 @@ is green and `APP3-G01` is `READY — NOT STARTED`.
 `APP3-PRE-AUDIT-C1` changed documentation only. It started no APP3
 engineering, executed nothing, wrote no execution prompt, and touched no Figma
 node, schema, migration, application source, package, manifest or lockfile.
+
+---
+
+## Forward note — `APP3-G06` corrects the W01 dispatch assumption (2026-08-04)
+
+This audit's checkpoint map lists `APP3-W01` as depending on `G04` and
+`DB-DISPOSITION-RESOLVED` alone. That was measured against the schema and the
+gate set; it did not measure the **event timing**, and the first `APP3-W01`
+execution proved the gap:
+
+- `asset.inspection.requested` is appended **inside the upload transaction**, as
+  an Asset moves `UPLOADED → INSPECTING`;
+- its payload is deliberately only `{ schemaVersion, assetId }`;
+- at that moment no APP3 association exists — `product_sides.background_asset_id`
+  requires an already `ACCEPTED` Asset, and `design_template_assets` /
+  `design_session_assets` have no writer because `DesignModule` is not composed
+  into `AppModule`;
+- so the IMP-D044 processing profile was **underivable**;
+- and no SVG sanitizer, ADR or deterministic sanitizer contract existed.
+
+`APP3-W01` therefore stopped at `FAILED — MANUAL INTERVENTION REQUIRED`
+(`JOB_CONTRACT_INSUFFICIENT`, `SVG_SANITIZER_NOT_SELECTED`) having written
+nothing. **`IMP-D046`** (`APP3-G06`) supplies the missing authority: one new
+association-bound event `asset.normalization.requested` on the existing Outbox
+and worker registry, the profile re-derived by the worker at claim time, and the
+checkpoint replanned into raster-only `APP3-W01A` plus Template-SVG `APP3-W01B`
+behind sanitizer authority `APP3-G07`.
+
+Read the W01 row in this audit as superseded by `IMP-D046` and §6.16 of the phase
+plan. The rest of the audit is unchanged.

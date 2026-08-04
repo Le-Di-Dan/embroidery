@@ -2355,6 +2355,177 @@ bounded request component schemas so the documented body is usable rather than
 merely truthful about its token. No database schema, migration, worker, renderer,
 UI or dependency change.
 
+## 6.16 `APP3-G06` — normalization dispatch and raster/SVG staging authority
+
+`APP3-W01` stopped at `FAILED — MANUAL INTERVENTION REQUIRED` having written
+nothing and committed nothing. `APP3-G06` supplies the authority it stopped for,
+locked as **`IMP-D046`**. It is a Product Owner / application-architecture gate:
+it implements no worker, no API, no schema and no dependency, and it does not
+weaken `IMP-D044`.
+
+### 6.16.1 Measured cause of the stop
+
+Four facts, all recomputed from the repository rather than restated:
+
+| Machine-checked normalization fact | Value |
+|---|---|
+| `Existing asset event` | `asset.inspection.requested` |
+| `Existing asset event payload` | `schemaVersion + assetId` |
+| `Existing event append point` | `UPLOAD_TRANSACTION_UPLOADED_TO_INSPECTING` |
+| `Association state at inspection` | `NOT_YET_AVAILABLE` |
+| `Existing SVG sanitizer` | `NONE` |
+| `New normalization event` | `asset.normalization.requested` |
+| `New normalization event count` | `1` |
+| `Normalization payload schema version` | `1` |
+| `Normalization policy version` | `1` |
+| `Normalization job kind` | `ASSET_PROCESSING` |
+| `Normalization queue architecture` | `EXISTING_OUTBOX_AND_WORKER` |
+| `New queue or scheduler` | `NONE` |
+| `Normalization migration` | `NONE` |
+| `Profile persistence` | `NONE` |
+| `New derivative kind` | `NONE` |
+| `Association reference kinds` | `PRODUCT_SIDE_BACKGROUND DESIGN_TEMPLATE_ASSET DESIGN_SESSION_ASSET` |
+| `Association reference fields` | `productSideId designTemplateAssetId designSessionAssetId` |
+| `Profile derivation` | `WORKER_REREADS_ASSOCIATION_AT_CLAIM` |
+| `Producer transaction` | `SAME_TRANSACTION_AS_ASSOCIATION_WRITE` |
+| `Stale association outcome` | `NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE` |
+| `W01 disposition` | `REPLANNED_INTO_W01A_AND_W01B` |
+| `W01A source scope` | `RASTER_ONLY` |
+| `Template SVG availability` | `AUTHORIZED_BUT_UNAVAILABLE_UNTIL_W01B` |
+| `SVG sanitizer owner` | `APP3-G07` |
+| `SIDE_BACKGROUND trigger owner` | `APP3-B01N` |
+| `B01N HTTP operations` | `0` |
+| `G06 application change` | `NONE` |
+
+`asset.inspection.requested` is appended inside the upload transaction as an
+Asset moves `UPLOADED → INSPECTING`; its payload is exactly
+`{ schemaVersion, assetId }` and unknown fields are terminal. At that moment
+`product_sides.background_asset_id` cannot yet name the Asset — placement
+authoring refuses anything not already `ACCEPTED`, which is what that very job
+produces — and neither `design_template_assets` nor `design_session_assets` has
+any writer, because `DesignModule` is not composed into `AppModule`. The profile
+was therefore underivable, and no sanitizer existed to make Template SVG safe.
+
+### 6.16.2 The twelve rulings
+
+**PO-01 — one new event, same architecture.** Exactly one new event type,
+`asset.normalization.requested`, reusing the existing transactional Outbox,
+dispatcher, claim/heartbeat/retry mechanism, attempt evidence and dead-letter
+behaviour, and the existing `ASSET_PROCESSING` job kind. Not a second queue,
+scheduler, sweep, claim table, retry framework or cron reconciler.
+`outbox_events.event_type` is open text with no CHECK and the worker resolves
+handlers from a registry keyed on event type, so this costs **no migration**.
+`asset.inspection.requested` is unchanged and never repurposed.
+
+**PO-02 — the payload identifies the association, not the profile.**
+Schema version `1`; payload `schemaVersion`, `assetId`,
+`normalizationPolicyVersion` (locked at `1`) and `associationRef`, a
+discriminated union over `PRODUCT_SIDE_BACKGROUND` (`productSideId`),
+`DESIGN_TEMPLATE_ASSET` (`designTemplateAssetId`) and `DESIGN_SESSION_ASSET`
+(`designSessionAssetId`). All three are stable opaque primary keys that exist
+today. The payload never carries a profile, ownership claim, storage key, URL,
+session secret, customer id or raw SVG. It says which committed association
+triggered work; it does not assert that association is still valid.
+
+**PO-03 — the profile is derived by the worker.** At claim time the worker
+re-reads the association and the Asset, mapping exactly
+`PRODUCT_SIDE_BACKGROUND → SIDE_BACKGROUND`,
+`DESIGN_TEMPLATE_ASSET → TEMPLATE_ASSET` and
+`DESIGN_SESSION_ASSET → SESSION_UPLOAD`, and proves existence, the pointer to
+`assetId`, owner/context, active lifecycle where required, and the Asset's
+classification, kind and processable state. A discriminator is a lookup key, not
+authorization: no caller-supplied profile, no profile from MIME alone, and no
+scanning an Asset's associations to pick one.
+
+**PO-04 — association-bound producer timing.** The event is appended by the
+write that creates or changes the association, in the same transaction, ordered
+association write → outbox append → commit. A rolled-back association produces
+no visible event. Nothing is appended on a read, a no-op save, a removal without
+a replacement Asset, or an original upload. An event *is* appended on a new
+active association, on a change to another Asset, and on a future authorized
+reprocess command. A derivative is Asset-owned and is not deleted because an
+association moved away.
+
+**PO-05 — producer ownership follows the association write.** `APP3-B01N`
+appends after a new or changed `product_sides.background_asset_id`, touching only
+the accepted B01 replacement transaction and adding **zero** HTTP paths,
+operations and schemas; it is not a B01 correction. `APP3-B03` appends in the
+`design_template_assets` transaction and rejects SVG Template intake with a
+stable capability-unavailable error until W01B. `APP3-B06` appends in the
+`design_session_assets` transaction, never in the raw-upload inspection
+transaction. No endpoint exists merely to enqueue normalization.
+
+**PO-06 — the worker is replanned.** `APP3-W01` is
+`REPLANNED — REPLACED_BY_APP3-W01A_AND_APP3-W01B` and is never marked complete.
+`APP3-W01A` is raster-only (JPEG/PNG/WebP across all three profiles), consumes
+schema version 1, and produces a `READY`, unwatermarked `NORMALIZED` derivative
+with the canonical quartet in a private object; it may be tested by inserting the
+ruled event directly into the disposable harness before any producer exists.
+`APP3-W01B` covers only Template SVG and changes no raster behaviour.
+
+**PO-07 — SVG is staged, not dropped.** `APP3-G07` selects and locks the
+sanitizer implementation, element and attribute sets, namespace handling,
+URL/reference policy, CSS and font/text policy, `viewBox` authority, node and
+path-data counting, deterministic serialization, output MIME and encoding,
+dependency version/licence policy and a security regression corpus. Until G07 and
+W01B are accepted, Template SVG is **authorized by IMP-D044 and operationally
+unavailable**, rejected safely. No silent rasterization through Sharp, no regex
+sanitization, no browser DOM as an implicit sanitizer, no package chosen in
+W01A, and no reinterpretation of SVG as raster by extension.
+
+**PO-08 — event idempotency.** Logical identity is `assetId` +
+`normalizationPolicyVersion` + kind `NORMALIZED`. The association proves
+authorization, not a per-association derivative. Duplicate delivery, different
+eligible associations and concurrent claims converge on one authoritative
+`READY NORMALIZED` row under existing uniqueness and claim rules, and the worker
+still validates the triggering association before accepting an existing result.
+Neither profile nor association id is persisted on `asset_derivatives`.
+
+**PO-09 — stale association behaviour.** A claimed event whose association is
+gone, re-pointed, retired, foreign-owned or misclassified completes as a bounded
+**non-retryable** rejection, `NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE`, with no
+derivative and no private owner data in the detail. An absent association is
+never an infrastructure retry.
+
+**PO-10 — deployment order.** `APP3-W01A` → `APP3-B01N` → `APP3-G07` →
+`APP3-W01B`, never combined. The consumer first, so no producer emits events
+nothing can handle; B01N then enables SIDE_BACKGROUND without reopening B01; G07
+is security authority, not worker implementation; W01B extends only Template SVG.
+
+**PO-11 — B02 dependency correction.** After W01A and B01N,
+`APP3-B02 = BLOCKED_BY_APP3-W01A_AND_APP3-B01N` plus any platform HTTP-schema
+blocker its contract carries. `APP3-B06` is **not** the SIDE_BACKGROUND trigger
+owner; it owns Session Asset association only.
+
+**PO-12 — the platform OpenAPI follow-up stays separate.**
+`FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01` remains open. G06, W01A, G07, W01B and
+B01N add no HTTP request-body schema and are not blocked by it; B03 and B06 stay
+blocked when they introduce one. `createZodDto` is not repaired here.
+
+### 6.16.3 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-G06` |
+|---|---|---|
+| `APP3-G06` | whole checkpoint | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-W01` | first attempt, post-G06 | `FAILED — MANUAL_INTERVENTION_REQUIRED` |
+| `APP3-W01` | disposition, post-G06 | `REPLANNED — REPLACED_BY_APP3-W01A_AND_APP3-W01B` |
+| `APP3-W01A` | whole checkpoint, post-G06 | `BLOCKED_BY_APP3-G06_REVIEW_ACCEPTANCE` |
+| `APP3-B01N` | whole checkpoint, post-G06 | `BLOCKED_BY_APP3-W01A` |
+| `APP3-G07` | whole checkpoint, post-G06 | `BLOCKED_BY_APP3-G06_REVIEW_ACCEPTANCE` |
+| `APP3-W01B` | whole checkpoint, post-G06 | `BLOCKED_BY_APP3-W01A_AND_APP3-G07` |
+| `APP3-B02` | whole checkpoint, post-G06 | `BLOCKED_BY_APP3-W01A_AND_APP3-B01N` |
+| `APP3-B03` | whole checkpoint, post-G06 | `BLOCKED_BY_APP3-W01A_AND_PLATFORM_ZOD_OPENAPI_FOLLOW_UP` |
+| `APP3-B06` | whole checkpoint, post-G06 | `BLOCKED_BY_APP3-W01A_AND_PLATFORM_ZOD_OPENAPI_FOLLOW_UP` |
+| `APP3-B01` | whole checkpoint, post-G06 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G04` | whole checkpoint, post-G06 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-DB01` | whole checkpoint, post-G06 | `COMPLETE — REVIEW_ACCEPTED` |
+
+`APP3-W01A` and `APP3-G07` become `READY — NOT STARTED` on human acceptance of
+G06; the execution recommendation is `APP3-W01A` first.
+
+`APP3-G06` implements nothing: no API, worker, package, schema, migration,
+OpenAPI, generated client, dependency, infrastructure or Figma change.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -2375,7 +2546,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — PLACEMENT BACKEND DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — NORMALIZATION_DISPATCH_AUTHORITY_DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -2403,27 +2574,36 @@ APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
 APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01
 APP3-P02 = COMPLETE — REVIEW_ACCEPTED
 APP3-P02-C1 = COMPLETE — REVIEW_ACCEPTED
-APP3-B01 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
-APP3-B01-C1 = COMPLETE — REVIEW_DELIVERED
+APP3-B01 = COMPLETE — REVIEW_ACCEPTED
+APP3-B01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP3-A01 = BACKEND_READY_BY_APP3-B01 — BLOCKED_BY_APP3-D01
 APP3-D01 placement portion = BACKEND_CONTRACT_AVAILABLE_BY_APP3-B01
 APP3-P02 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P02 FIRST_ATTEMPT CAUSE = GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT
 APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
-APP3-B01 = READY — NOT STARTED
-APP3-B04 = BLOCKED_BY_APP3-B06
 APP3-B07 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-B08 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-S11 = FOUNDATION_READY_BY_P01_AND_P02 — NOT STARTED
-APP3-B03 = READY_BY_P01 — NOT STARTED
+APP3-B03 = BLOCKED_BY_APP3-W01A_AND_PLATFORM_ZOD_OPENAPI_FOLLOW_UP
 APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06
 APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04
-APP3-B06 = READY — NOT STARTED
+APP3-B06 = BLOCKED_BY_APP3-W01A_AND_PLATFORM_ZOD_OPENAPI_FOLLOW_UP
 APP3-B07 = BLOCKED_BY_APP3-P02
 APP3-B08 = BLOCKED_BY_APP3-P02
-APP3-W01 = READY_BY_DB_DISPOSITION — NOT STARTED
-APP3-B02 = BLOCKED_BY_APP3-B06
+APP3-G06 = COMPLETE — REVIEW_DELIVERED
+IMP-D046 = LOCKED
+APP3-W01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
+APP3-W01 FIRST_ATTEMPT PRIMARY_CAUSE = JOB_CONTRACT_INSUFFICIENT
+APP3-W01 FIRST_ATTEMPT SECONDARY_CAUSE = SVG_SANITIZER_NOT_SELECTED
+APP3-W01 = REPLANNED — REPLACED_BY_APP3-W01A_AND_APP3-W01B
+APP3-W01A = BLOCKED_BY_APP3-G06_REVIEW_ACCEPTANCE
+APP3-B01N = BLOCKED_BY_APP3-W01A
+APP3-G07 = BLOCKED_BY_APP3-G06_REVIEW_ACCEPTANCE
+APP3-W01B = BLOCKED_BY_APP3-W01A_AND_APP3-G07
+APP3-B02 = BLOCKED_BY_APP3-W01A_AND_APP3-B01N
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — FINAL_OWNER_APP3-B02
+FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = APP3-W01A_AND_APP3-B01N
+FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_NEXT_SCHEMA_BACKED_HTTP_CHECKPOINT
 FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-G04
 FU-APP3-G03-QUALITY-AGGREGATE-01 = DEFERRED — REGRESSION_ACTIVITY_ONLY
 FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-DB01
