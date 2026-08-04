@@ -1,0 +1,14 @@
+# The committed bytes ARE the evidence here, so nothing in this directory may
+# be normalized on the way into or out of the object store.
+#
+# The repository root sets `* text=auto eol=lf`, which exists for a good reason
+# (DB6-S27: CRLF leaking into dollar-quoted PL/pgSQL bodies broke the schema
+# fingerprint). But upstream Inter's `LICENSE.txt` ships with CRLF, so that rule
+# would rewrite it — and `FONT-PROVENANCE.json` records the SHA-256 of the
+# *upstream* bytes. A normalized checkout would hash differently, failing
+# `node tools/check-app3-f01-font-assets.mjs` on any clean clone while the file
+# looked untouched in a diff.
+#
+# `-text` disables all conversion. The WOFF2 binaries are already safe by
+# content detection; this makes that guarantee explicit rather than incidental.
+* -text

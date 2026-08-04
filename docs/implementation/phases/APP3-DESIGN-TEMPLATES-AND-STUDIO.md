@@ -168,7 +168,8 @@ or be collapsed into the other or into the API.
 | 3 | `APP3-G02` | gate | Design Template authority — `TR-` ids for publish/unpublish/archive/unarchive, scope-vs-M:N compatibility, allowed tools/fonts/colours | 0 | G01 | decides DB01 | no | no |
 | 4 | `APP3-G03` | gate | Design Session authority — O-008 TTL, anonymous transport/issuance/rotation, `09 §7` quotas, autosave cadence + conflict policy, document limits | 0 | G01 | no | no | no |
 | 5 | `APP3-G04` | gate | editor media authority — editor-safe derivative kind, customer/template intake lanes, SVG acceptance + sanitizer, dimensions metadata | 0 | G01 | decides DB01 | no | no |
-| 6 | `APP3-P01` | package | `packages/design-document` — canonical form, JCS + SHA-256, fail-loud `schemaVersion`, document migrations, validation | — | G02, G03 | no | no | `spike:editor:test` |
+| 5a | `APP3-F01` | asset | controlled font acquisition — Inter v4.1 WOFF2 pair, OFL-1.1 licence, provenance and Vietnamese-coverage evidence (§6.9) | 0 | G04 | no | no | no |
+| 6 | `APP3-P01` | package | `packages/design-document` — canonical form, JCS + SHA-256, fail-loud `schemaVersion`, document migrations, validation | — | G02, G03, **F01** | no | no | `spike:editor:test` |
 | 7 | `APP3-P02` | package | `packages/design-engine` — geometry, px↔mm, bounds and safe-area math | — | G01 | no | no | `spike:editor:test` |
 | 8 | `APP3-DB01` | database | **conditional** — only if G01 rules a role/kind/grant/immutability change, G02 rules M:N or G04 rules a new derivative kind. Terminals: `COMPLETE` or `NOT_REQUIRED — GATE_RESOLVED` | — | G01, G02, G04 | yes, if fired | no | no |
 | 9 | `APP3-B01` | backend | placement authoring + public placement read | 3 | G01, `DB-DISPOSITION-RESOLVED` | no | no | no |
@@ -1406,6 +1407,153 @@ closes it).
 No implementation checkpoint is complete. `APP3-DB01` is a database checkpoint;
 it delivers no API, worker, package or UI.
 
+## 6.9 `APP3-F01` — controlled font acquisition
+
+`APP3-F01` exists because `APP3-P01`'s first attempt stopped. It is not a
+correction of P01; it is the prerequisite P01 turned out to depend on.
+
+### 6.9.1 Why the checkpoint exists
+
+`IMP-D044` PO-10 requires a Design Document to store a server-owned `fontId`
+resolved through a registry that names an approved family, approved styles and
+weights, a **controlled** WOFF2 asset, a SHA-256 integrity value, licence
+metadata, Vietnamese glyph coverage and a fallback policy. `APP3-P01` was
+directed to deliver that registry as concrete, file-backed entries.
+
+The repository contained no font binary, no licence artifact, no integrity
+baseline and no coverage evidence. The measured absence:
+
+| Probe | Result |
+|---|---|
+| tracked font binaries (`.woff2`/`.woff`/`.ttf`/`.otf`/`.eot`) | 0 |
+| tracked paths matching `font` | 0 |
+| filesystem font binaries outside `node_modules` | 0 |
+| tracked licence artifact of any kind | 0 |
+| font tooling or font package in any manifest | none |
+
+`packages/styles/src/settings/_typography.scss` names General Sans and Inter,
+but a CSS family list is a browser-resolution instruction, not a controlled
+asset — exactly what PO-10 forbids a document from storing. The one near-miss,
+`node_modules/.pnpm/next@…/next-devtools/server/font/geist-*.woff2`, fails on
+four counts: untracked, third-party dev-tool property, no licence record here,
+and subsetted `latin`/`latin-ext` — the wrong subset for Vietnamese.
+
+The first attempt therefore reported `APP3-P01 = FAILED — MANUAL INTERVENTION
+REQUIRED`, wrote nothing and committed nothing. The human intervention split
+acquisition and licensing from document implementation.
+
+### 6.9.2 Locked selection
+
+| Key | Value |
+|---|---|
+| `Font family` | `Inter` |
+| `Upstream repository` | `https://github.com/rsms/inter` |
+| `Upstream tag` | `v4.1` |
+| `Upstream commit` | `e3a3d4c57d5ecc01453a575621882a384c1995a3` |
+| `Licence` | `OFL-1.1` (SIL Open Font License 1.1) |
+| `Canonical location` | `packages/design-document/assets/fonts/inter/4.1/` |
+| `Upright binary` | `InterVariable.woff2` |
+| `Italic binary` | `InterVariable-Italic.woff2` |
+| `Binary modification` | `FORBIDDEN` |
+| `Acquisition source` | `OFFICIAL_PINNED_TAG_ONLY` |
+
+Forbidden sources: General Sans, any system-installed font, any browser fallback
+face, anything from `node_modules`, a Google Fonts CDN response, an unpinned
+`latest` URL, and any unofficial mirror.
+
+### 6.9.3 Measured evidence
+
+| Key | Value |
+|---|---|
+| `InterVariable.woff2 sha256` | `693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3` |
+| `InterVariable.woff2 bytes` | `352240` |
+| `InterVariable-Italic.woff2 sha256` | `e564f652916db6c139570fefb9524a77c4d48f30c92928de9db19b6b5c7a262a` |
+| `InterVariable-Italic.woff2 bytes` | `387976` |
+| `LICENSE.txt sha256` | `b3195af0fb14368d1b3b10fb9d3fe503b7163ea083859d2ee553bc74da07c320` |
+| `Container flavor` | `woff2` (both) |
+| `Variable` | `true` (both) |
+| `Weight axis` | `wght 100..900` (both) |
+| `Upright italic bits` | `false` (`fsSelection` and `macStyle`) |
+| `Italic italic bits` | `true` (`fsSelection` and `macStyle`) |
+| `Required Vietnamese repertoire` | `156` code points |
+| `Covered` | `156 / 156` in both files |
+| `Missing` | `[]` in both files |
+| `Verification tool` | `fonttools 4.55.3` on Python `3.11.8` |
+
+Coverage was measured from the real `cmap` tables of the committed bytes, never
+inferred from a family name, a CSS fallback list, an upstream claim, a filename
+or a unicode-range comment. The repertoire is the Vietnamese letters, the six
+vowel bases and their lowercase forms, `Đ`/`đ`, the eight combining marks
+canonical decomposition requires, and every assigned code point in
+`U+1EA0..U+1EF9`.
+
+Inter v4.1 ships italic as a **separate file** rather than as an `ital` axis, so
+italic identity rests on the `OS/2` `fsSelection` and `head` `macStyle` bits and
+the `Italic` name subfamily. All three separate the two files cleanly.
+
+### 6.9.4 Reserved for `APP3-P01`
+
+`APP3-F01` supplies evidence only. It writes no TypeScript, no registry and no
+validation. The registry entry P01 must deliver is locked here:
+
+| Key | Value |
+|---|---|
+| `fontId` | `inter` |
+| `family` | `Inter` |
+| `registryVersion` | `1` |
+| `styles` | `normal`, `italic` |
+| `weights` | `100` through `900` |
+| `normalFile` | `packages/design-document/assets/fonts/inter/4.1/InterVariable.woff2` |
+| `italicFile` | `packages/design-document/assets/fonts/inter/4.1/InterVariable-Italic.woff2` |
+| `license` | `packages/design-document/assets/fonts/inter/4.1/LICENSE.txt` |
+| `fallbackPolicy` | `REJECT_IF_CONTROLLED_FONT_UNAVAILABLE` |
+
+P01 may normalize the TypeScript shape. It may not change the family, files,
+licence, styles, weight range or fallback semantics without a new authority
+decision. The registry references the committed licence **path**, not merely the
+SPDX string. Fonts stay outside the Design Document asset budget, and no font
+bytes and no font URL ever enter a Design Document.
+
+### 6.9.5 UI styling versus document font authority
+
+These are different questions and the checkpoint keeps them apart:
+
+| Key | Value |
+|---|---|
+| `UI CSS family stack` | may name General Sans, Inter, `sans-serif` under UI styling authority |
+| `Design Document fontId` | resolves only through the controlled registry, beginning with Inter v4.1 |
+| `General Sans` | `NOT_CONTROLLED` |
+| `_typography.scss` | unchanged by `APP3-F01` |
+
+General Sans is not removed from the CSS stack merely because P01 does not
+control it; a browser-resolved fallback for chrome type is not a claim about
+what a customer may embroider.
+
+### 6.9.6 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-F01` |
+|---|---|---|
+| `APP3-G01` | whole checkpoint, post-F01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G02` | whole checkpoint, post-F01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G03` | whole checkpoint, post-F01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G04` | whole checkpoint, post-F01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-DB01` | whole checkpoint, post-F01 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-F01` | whole checkpoint, post-F01 | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-P01` | whole checkpoint, post-F01 | `BLOCKED_BY_APP3-F01_REVIEW_ACCEPTANCE` |
+| `APP3-P01` | first attempt, post-F01 | `FAILED — MANUAL_INTERVENTION_REQUIRED` |
+| `APP3-P01` | failure cause, post-F01 | `NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE` |
+| `APP3-P01` | resolution, post-F01 | `APP3-F01` |
+| `APP3-P02` | whole checkpoint, post-F01 | `READY — NOT STARTED` |
+| `PO-10 font registry` | asset authority | `DELIVERED_BY_APP3-F01` |
+| `PO-10 font registry` | runtime implementation | `RESERVED_FOR_APP3-P01` |
+
+On human acceptance of `APP3-F01`, `APP3-P01` becomes
+`READY_FOR_MANUAL_INTERVENTION_RESUME`.
+
+The historical first-attempt failure is recorded forward and is not rewritten.
+`APP3-F01` delivers no package implementation, no API, no worker, no Figma and
+no UI.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -1426,7 +1574,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — DATABASE DISPOSITION DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — FONT AUTHORITY DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -1436,14 +1584,18 @@ APP3-G01 = COMPLETE — REVIEW_ACCEPTED
 APP3-G02 = COMPLETE — REVIEW_ACCEPTED
 APP3-G03 = COMPLETE — REVIEW_ACCEPTED
 APP3-G04 = COMPLETE — REVIEW_ACCEPTED
-APP3-DB01 = COMPLETE — REVIEW_DELIVERED
+APP3-DB01 = COMPLETE — REVIEW_ACCEPTED
+APP3-F01 = COMPLETE — REVIEW_DELIVERED
 G01_DB_DISPOSITION = REQUIRES_APP3_DB01_PLACEMENT_RETIREMENT_AND_STABLE_CODE
 G02_DB_CONTRIBUTION = NONE
 G03_DB_CONTRIBUTION = NONE
 G04_DB_CONTRIBUTION = REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA
 G01 DB contribution = IMPLEMENTED_BY_APP3_DB01
 G04 DB contribution = IMPLEMENTED_BY_APP3_DB01
-APP3-P01 = READY — NOT STARTED
+APP3-P01 = BLOCKED_BY_APP3-F01_REVIEW_ACCEPTANCE
+APP3-P01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
+APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
+APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01
 APP3-P02 = READY — NOT STARTED
 APP3-B01 = READY — NOT STARTED
 APP3-W01 = READY_BY_DB_DISPOSITION — NOT STARTED

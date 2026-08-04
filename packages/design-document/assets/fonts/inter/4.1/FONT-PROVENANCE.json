@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "family": "Inter",
+  "upstreamRepository": "https://github.com/rsms/inter",
+  "upstreamTag": "v4.1",
+  "upstreamCommit": "e3a3d4c57d5ecc01453a575621882a384c1995a3",
+  "acquiredAt": "2026-08-04T03:00:49Z",
+  "licenseSpdx": "OFL-1.1",
+  "licenseFile": {
+    "path": "LICENSE.txt",
+    "upstreamPath": "LICENSE.txt",
+    "sha256": "b3195af0fb14368d1b3b10fb9d3fe503b7163ea083859d2ee553bc74da07c320",
+    "byteSize": 4472
+  },
+  "files": [
+    {
+      "path": "InterVariable.woff2",
+      "upstreamPath": "docs/font-files/InterVariable.woff2",
+      "sha256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+      "byteSize": 352240,
+      "style": "normal",
+      "weightRange": "100..900",
+      "format": "woff2"
+    },
+    {
+      "path": "InterVariable-Italic.woff2",
+      "upstreamPath": "docs/font-files/InterVariable-Italic.woff2",
+      "sha256": "e564f652916db6c139570fefb9524a77c4d48f30c92928de9db19b6b5c7a262a",
+      "byteSize": 387976,
+      "style": "italic",
+      "weightRange": "100..900",
+      "format": "woff2"
+    }
+  ],
+  "verification": {
+    "acquisitionMethod": "git clone --depth 1 --branch v4.1 https://github.com/rsms/inter.git",
+    "resolvedTagAtHead": "v4.1",
+    "upstreamWorkingTreeClean": true,
+    "bytesUnmodified": true,
+    "verificationTool": "fonttools",
+    "verificationToolVersion": "4.55.3",
+    "verificationPythonVersion": "3.11.8",
+    "verifiedAt": "2026-08-04T03:00:49Z",
+    "metadata": [
+      {
+        "path": "InterVariable.woff2",
+        "containerFlavor": "woff2",
+        "isVariable": true,
+        "nameFamily": "Inter Variable",
+        "nameSubfamily": "Regular",
+        "weightAxis": { "tag": "wght", "min": 100, "default": 400, "max": 900 },
+        "italicAxis": null,
+        "fsSelectionItalicBit": false,
+        "macStyleItalicBit": false
+      },
+      {
+        "path": "InterVariable-Italic.woff2",
+        "containerFlavor": "woff2",
+        "isVariable": true,
+        "nameFamily": "Inter Variable",
+        "nameSubfamily": "Italic",
+        "weightAxis": { "tag": "wght", "min": 100, "default": 400, "max": 900 },
+        "italicAxis": null,
+        "fsSelectionItalicBit": true,
+        "macStyleItalicBit": true
+      }
+    ],
+    "italicAxisNote": "Inter v4.1 ships italic as a separate variable file rather than as an 'ital' axis on one file. Italic identity is therefore carried by the OS/2 fsSelection and head macStyle italic bits and by the 'Italic' name subfamily, all of which are set on the italic file and clear on the upright file."
+  }
+}
