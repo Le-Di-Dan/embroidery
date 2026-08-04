@@ -23,6 +23,8 @@ import {
   REPO_ROOT,
   boundedTable,
   checkApp3G02,
+  sectionBody,
+  tableRows,
 } from './check-app3-g02.mjs';
 import { CANONICAL_FILES as G01_FILES } from './check-app3-g01.mjs';
 
@@ -70,10 +72,84 @@ describe('APP3-G02 — the repository as it stands', () => {
     for (const [key, value] of Object.entries(EXPECTED_FACTS)) {
       assert.equal(facts.get(key), value, `fact ${key}`);
     }
-    const rows = boundedTable(phaseText, '### 6.5.4 ', '## 7. ');
+    const rows = tableRows(sectionBody(phaseText, '### 6.5.4 '));
     for (const [id, status] of Object.entries(EXPECTED_DEPENDENCIES)) {
       assert.equal(rows.get(id), status, `dependency ${id}`);
     }
+  });
+});
+
+/**
+ * `FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01`.
+ *
+ * The defect was invisible while §6.5.4 was the last subsection before §7: both
+ * bounds produced the same block. It becomes a wrong *answer* only once a later
+ * gate adds its own dependency table, which is why these cases assert the two
+ * forms diverge rather than merely that the current repository passes.
+ */
+describe('APP3-G02 — §6.5.4 is bounded at its own end', () => {
+  const own = sectionBody(phaseText, '### 6.5.4 ');
+
+  it('reads only its own table, not the later G03 one', () => {
+    assert.ok(own.includes('`APP3-G02` | `COMPLETE — REVIEW_DELIVERED`'));
+    assert.ok(!own.includes('### 6.6'), 'the block must stop before §6.6');
+    assert.ok(!own.includes('UNBLOCKED_BY_G03'), 'a G03-only status leaked into the G02 block');
+  });
+
+  it('stops at the next heading of equal or higher level', () => {
+    const table = ['## 5 ', '### 5.1 ', '| `A` | `own` |', '### 5.2 ', '| `A` | `later` |'].join(
+      '\n',
+    );
+    assert.equal(tableRows(sectionBody(table, '### 5.1 ')).get('A'), 'own');
+    const higher = ['### 5.1 ', '| `A` | `own` |', '## 6 ', '| `A` | `later` |'].join('\n');
+    assert.equal(tableRows(sectionBody(higher, '### 5.1 ')).get('A'), 'own');
+    // A deeper heading is part of the section, not a boundary.
+    const deeper = ['### 5.1 ', '#### 5.1.1 ', '| `A` | `own` |'].join('\n');
+    assert.equal(tableRows(sectionBody(deeper, '### 5.1 ')).get('A'), 'own');
+  });
+
+  it('cannot be overwritten by a duplicate key in a later section', () => {
+    // The real shape, small enough to read: G02's table, then two later gates
+    // with rows carrying the same ids, then §7.
+    const doc = [
+      '### 6.5.4 Dependency reconciliation',
+      '| `APP3-G01` | `COMPLETE — REVIEW_ACCEPTED` |',
+      '## 6.6 A later gate',
+      '### 6.6.4 Dependency reconciliation',
+      '| `APP3-G01` | `OVERWRITTEN_BY_G03` |',
+      '## 6.7 A later gate still',
+      '### 6.7.4 Dependency reconciliation',
+      '| `APP3-G01` | `OVERWRITTEN_BY_G04` |',
+      '## 7. Critical end-to-end journey',
+    ].join('\n');
+
+    assert.equal(
+      tableRows(sectionBody(doc, '### 6.5.4 ')).get('APP3-G01'),
+      'COMPLETE — REVIEW_ACCEPTED',
+    );
+    // The retired literal bound is exactly what let the last duplicate win.
+    assert.equal(boundedTable(doc, '### 6.5.4 ', '## 7. ').get('APP3-G01'), 'OVERWRITTEN_BY_G04');
+  });
+
+  it('does not depend on a `## 7. ` mention that happens to precede §7', () => {
+    // The live plan currently mentions the literal marker in prose *before* §7,
+    // so the retired bound was being ended by a sentence about itself. The
+    // repaired bound must not move when that sentence does.
+    const moved = phaseText.replace('`## 7. `', '`the next heading`');
+    assert.notEqual(moved, phaseText, 'the prose anchor moved');
+    assert.deepEqual(
+      [...tableRows(sectionBody(moved, '### 6.5.4 ')).entries()],
+      [...tableRows(sectionBody(phaseText, '### 6.5.4 ')).entries()],
+    );
+  });
+
+  it('still refuses a real regression inside §6.5.4', () => {
+    const failures = failuresAfter(
+      'phase',
+      '| `APP3-G01` | `COMPLETE — REVIEW_ACCEPTED` |\n| `APP3-G02` | `COMPLETE — REVIEW_DELIVERED` |',
+      '| `APP3-G01` | `NOT STARTED` |\n| `APP3-G02` | `COMPLETE — REVIEW_DELIVERED` |',
+    );
+    assert.ok(mentions(failures, '`APP3-G01` is "NOT STARTED"'));
   });
 });
 

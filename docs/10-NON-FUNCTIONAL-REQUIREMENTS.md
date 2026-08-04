@@ -38,6 +38,15 @@ The system should still deliver:
 
 Exact performance budgets will be defined later.
 
+The provisional editor budgets in IMP-D026 assume a bounded scene. `APP3-G04`
+(IMP-D044 PO-08/PO-09) makes that bound explicit and enforceable: one Design
+document may not exceed 512 KiB serialized, 100 elements, 20 image elements, 20
+unique referenced assets or 33,554,432 decoded pixels across those assets, and a
+single uploaded raster may not exceed 10 MiB, 4096 × 4096 px or 16,777,216
+decoded pixels. These are correctness and abuse limits enforced server-side, not
+performance targets — but they are what makes the 50-element budgets meaningful,
+so a later budget revision must not raise them silently.
+
 ## 4. Reliability
 
 Required patterns or equivalent outcomes:
@@ -60,6 +69,11 @@ Required patterns or equivalent outcomes:
 - State transitions are validated.
 - Audit metadata is retained.
 - Referential integrity is enforced.
+- A Studio-eligible derivative carries its own canonical `width_px`,
+  `height_px`, `media_type` and `byte_size` (`APP3-G04` / IMP-D044 PO-07/PO-12),
+  written atomically with its transition to READY, all-or-none. Source-asset
+  metadata and append-only inspection evidence are never substituted for it, and
+  missing values make a derivative ineligible rather than inferred.
 
 ## 6. Accessibility
 

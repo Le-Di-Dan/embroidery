@@ -51,6 +51,29 @@ Uploads must be validated by:
 
 Never trust client-provided MIME type.
 
+**APP3 intake lanes and limits are locked** (`APP3-G04` / IMP-D044 PO-02…PO-05,
+PO-08, 2026-08-04). Three processing profiles produce the one editor-safe
+derivative kind; they are application/worker policy and never a database enum.
+
+| Profile | Actor | Accepted source | SVG |
+|---|---|---|---|
+| `SIDE_BACKGROUND` | Admin (store-authored `CATALOG_MEDIA`) | JPEG, PNG, WebP | **rejected** |
+| `TEMPLATE_ASSET` | authenticated **Admin** (`TEMPLATE_SOURCE`) | JPEG, PNG, WebP, SVG | accepted **only** after mandatory server-side sanitization |
+| `SESSION_UPLOAD` | valid anonymous Design Session credential | JPEG, PNG, WebP | **rejected in APP3** — there is no anonymous SVG intake |
+
+Locked source limits: raster upload **10 MiB**, intrinsic **4096 × 4096 px**,
+**16,777,216** decoded pixels per asset; Admin SVG source **1 MiB**, **10,000**
+sanitized nodes, **1,000,000** path-data characters. Compressed byte size never
+overrides the decoded-pixel limit, and decoders are protected against
+decompression bombs.
+
+Admin SVG sanitization is **server-side and mandatory**, and must reject or
+remove at least `script`, event-handler attributes, `foreignObject`, external
+URLs, remote fonts, embedded HTML, `data:`/`blob:`/`javascript:` URLs,
+animation, filters outside the approved subset, unbounded path/node complexity,
+and a missing or invalid `viewBox`. The sanitized derivative is self-contained
+and the original SVG never reaches the Studio.
+
 ## 5. Asset access
 
 - Private assets require authorization.
@@ -59,6 +82,26 @@ Never trust client-provided MIME type.
 - Production files are strictly internal.
 - Customer previews should be lower-value derivatives.
 - Direct object storage listing is prohibited.
+
+**APP3 has exactly three delivery classes** (`APP3-G04` / IMP-D044 PO-06, PO-07):
+the Product Side background and the published Template asset, both delivered
+publicly **only through their owning context**; and the Session upload, delivered
+privately behind the Session id plus its matching per-session cookie, as
+`private, no-store`, re-authenticated on every request.
+
+There is **no generic public Asset endpoint** — no `GET /assets/:id`. No API
+response carries an object-storage key or a private original URL, no direct
+object-storage URL is durable document authority, APP1 staff auth is never used
+for Storefront delivery, and APP3 adds no `secure_access_grants` purpose or
+schema extension. A contextual stream or reference is not permission to reach
+another derivative of the same Asset.
+
+A derivative is Studio-eligible only when it is READY, of the editor-safe kind,
+and carries `width_px`, `height_px`, `media_type` and `byte_size`. Those live on
+the derivative row: `assets.mime_type`/`assets.size_bytes` describe the **source
+binary** and are never substituted for them, and `asset_inspections.detail` is
+append-only evidence, never runtime authority. Missing dimensions make a
+derivative ineligible; they are never guessed.
 
 ## 6. Watermark strategy
 
@@ -106,6 +149,22 @@ the key is not ownership or customer identity. APP3 creates **no durable browser
 identity** and **no "N active sessions per browser" quota**. Rate-limit responses
 reveal no session existence, and rate limiting never replaces the credential or
 revision check.
+
+**Design document complexity limits are locked** (`APP3-G04` / IMP-D044 PO-09,
+2026-08-04). One Template Version or Design Session document is bounded at
+**512 KiB** serialized, **100 elements** in total, 20 image elements, 80 text
+elements, 20 unique referenced assets, nesting depth 8, 500 characters per text
+element, 5,000 total text characters, and **33,554,432** decoded pixels across
+unique referenced image assets. Enforcement is server-side; client checks are
+early feedback only. A rejected document is not partially saved. Hidden, locked
+and off-canvas elements still count; a repeated Asset counts once toward the
+asset and pixel budgets while each image element counts toward the image total;
+runtime overlays never count. No checkpoint may silently raise these values.
+
+Documents store a server-owned `fontId`, never a CSS family, a font URL or font
+bytes. There is no remote runtime font, no user-uploaded font and no
+Template-embedded font bytes; an unknown `fontId` fails validation and a missing
+font never silently substitutes a geometry-changing face.
 
 ## 8. Payment security
 

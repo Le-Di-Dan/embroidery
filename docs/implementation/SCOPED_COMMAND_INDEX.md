@@ -127,6 +127,27 @@ Exactly 30 scripts, in three groups. A `sonar` script may be added only when
 | `CMD-BENCH-DB9` | `bench:db9` | `@embroidery/api` | benchmark | `pnpm --filter @embroidery/api bench` | DB9 query benchmark harness | Deliberate database performance measurement. | `ACTIVE_SCOPED` |
 | `CMD-EXPLAIN-Q01-PUBLIC-CATALOG` | `explain:q01` | repository tool | diagnostic | `node tools/explain-q01-public-catalog.mjs` | tools/explain-q01-public-catalog.mjs | Q-01 plan inspection during pagination/index work. | `ACTIVE_SCOPED` |
 
+## 3.1 Commands added after `GOV-Q01-C1`
+
+These were never root aliases and never may be — they are listed here because
+this file, not `package.json`, is where a command is discovered. The `Former
+root alias` column is dropped rather than filled with a fiction.
+
+The `APP3-G01`…`G03` gates belong here too: `GOV-Q01` removed their aliases one
+commit *before* this index existed, so the §3 sweep of 71 rows never saw them
+and they have been undiscoverable since. `APP3-G04` indexes them rather than
+leaving the hole open.
+
+| Command ID | Owner | Category | Direct invocation | Source / target | Usage scope | Status |
+|---|---|---|---|---|---|---|
+| `CMD-CHECK-APP3-G01` | repository tool | checkpoint gate (APP3-G01) | `node tools/check-app3-g01.mjs` | tools/check-app3-g01.mjs | Any edit to APP3 placement authority, §6.4, IMP-D041 or the placement schema. | `ACTIVE_SCOPED` |
+| `CMD-CHECK-APP3-G02` | repository tool | checkpoint gate (APP3-G02) | `node tools/check-app3-g02.mjs` | tools/check-app3-g02.mjs | Any edit to Template lifecycle authority, §6.5, IMP-D042, LC-24/LC-04 or the Template schema. Chains G01. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP3-G02` | repository tool | checkpoint gate tests | `node --test tools/check-app3-g02.test.mjs` | tools/check-app3-g02.test.mjs | Any edit to `check-app3-g02.mjs` or the inputs it parses. | `ACTIVE_SCOPED` |
+| `CMD-CHECK-APP3-G03` | repository tool | checkpoint gate (APP3-G03) | `node tools/check-app3-g03.mjs` | tools/check-app3-g03.mjs, tools/check-app3-g03-security.mjs | Any edit to anonymous Session authority, §6.6, IMP-D043, LC-07 or the Session schema. Chains G02. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP3-G03` | repository tool | checkpoint gate tests | `node --test tools/check-app3-g03.test.mjs` | tools/check-app3-g03.test.mjs | Any edit to the G03 checkers or the inputs they parse. | `ACTIVE_SCOPED` |
+| `CMD-CHECK-APP3-G04` | repository tool | checkpoint gate (APP3-G04) | `node tools/check-app3-g04.mjs` | tools/check-app3-g04.mjs, tools/check-app3-g04-media.mjs | Any edit to editor-media authority, §6.7, IMP-D044, the asset/derivative schema or the APP3 asset contract. Chains G03. Reports its schema mode: `REQUIRED_SCHEMA_CONTRIBUTION_PENDING` before `APP3-DB01`, `DERIVATIVE_METADATA_IMPLEMENTED` after it. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP3-G04` | repository tool | checkpoint gate tests | `node --test tools/check-app3-g04.test.mjs` | tools/check-app3-g04.test.mjs | Any edit to the G04 checkers or the inputs they parse. | `ACTIVE_SCOPED` |
+
 ## 4. Adding a command
 
 A future checkpoint:

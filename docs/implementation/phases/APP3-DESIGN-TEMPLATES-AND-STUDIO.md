@@ -252,16 +252,16 @@ or be collapsed into the other or into the API.
 | Design-session TTL (`O-008` / `DP-RET-01`) | `12-DECISION-LOG.md`, ADR-DB1-011 | **CLOSED by `APP3-G03` (IMP-D043 PO-06)** — 30 days absolute from `created_at` |
 | Anonymous session transport, issuance, rotation, enumeration controls | `09 §2`/`§7`, ADR-DB2-001 | **CLOSED by `APP3-G03` (IMP-D043 PO-01…PO-05)** |
 | Autosave **conflict** policy | `ADR-APP0-001` deferred details | **CLOSED by `APP3-G03` (IMP-D043 PO-08)** |
-| Autosave **cadence** | `ADR-APP0-001` deferred details | **STILL OPEN** — not ruled by IMP-D043; no owner assigned here |
+| Autosave **cadence** | `ADR-APP0-001` deferred details | **OPEN — owner `APP3-S11`**, routed by `APP3-G04` §6.7; it must choose the UX cadence under the existing 30 writes/minute ceiling and may not invent a timer here |
 | Anonymous rate and concurrency quotas | `09 §7` | **CLOSED by `APP3-G03` (IMP-D043 PO-07)** |
-| Document complexity / layer / image limits | `09 §7` | **STILL OPEN** — not ruled by IMP-D043; no owner assigned here |
+| Document complexity / layer / image limits | `09 §7` | **CLOSED by `APP3-G04` (IMP-D044 PO-08/PO-09)** |
 | Template transition identifiers and guards (publish/unpublish/archive/unarchive) | DB3 "Additional lifecycles" — states without `TR-` ids | `APP3-G02` |
 | Template↔product compatibility: scope filter or many-to-many | DB2 GAP-08 versus §6 wording | `APP3-G02` |
-| Font whitelist and thread-colour mechanics | `05 §4.1`, `ADR-APP0-001` deferred | `APP3-G02` |
-| Editor-safe derivative kind | `ADR-APP0-001` §5 versus `ASSET_DERIVATIVE_KINDS` | `APP3-G04` |
-| Customer/template asset intake lanes | `asset-intake.policy.ts` is `CATALOG_MEDIA`-only | `APP3-G04` |
-| SVG acceptance + sanitizer selection | `ADR-APP2-001` §4 ("future, separately-decided scope"), `ADR-APP0-001` deferred | `APP3-G04` |
-| Media dimensions metadata (`FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01`) | APP2 follow-up, activated | `APP3-G04` |
+| Font whitelist and thread-colour mechanics | `05 §4.1`, `ADR-APP0-001` deferred | Font mechanics **CLOSED by `APP3-G04` (IMP-D044 PO-10)**; the concrete registry contents are delivered by `APP3-P01`. Thread colour remains `APP3-G02` scope |
+| Editor-safe derivative kind | `ADR-APP0-001` §5 versus `ASSET_DERIVATIVE_KINDS` | **CLOSED by `APP3-G04` (IMP-D044 PO-01)** |
+| Customer/template asset intake lanes | `asset-intake.policy.ts` is `CATALOG_MEDIA`-only | **CLOSED by `APP3-G04` (IMP-D044 PO-02…PO-05)** |
+| SVG acceptance + sanitizer selection | `ADR-APP2-001` §4 ("future, separately-decided scope"), `ADR-APP0-001` deferred | **CLOSED by `APP3-G04` (IMP-D044 PO-04/PO-05)** — acceptance and the mandatory restriction set; the concrete sanitizer library stays an `APP3-P01`/`B06` implementation choice |
+| Media dimensions metadata (`FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01`) | APP2 follow-up, activated | **AUTHORITY LOCKED by `APP3-G04` (IMP-D044 PO-07/PO-12)**; the follow-up itself stays open — final owner `APP3-B02` |
 | Product placement ownership, public contract, background delivery, Studio route | audit §G1/§G7 | `APP3-G01` |
 | Background removal (`05 §4.2`) | no locked authority requires it | Product Owner — `DEFERRED` |
 | Snapping/guide rules, marquee multi-select, crop UX, freehand smoothing | `ADR-APP0-001` deferred | `APP3-S12`/`S13` |
@@ -837,12 +837,393 @@ Neither `APP3-G02` nor `APP3-G03` contributes a column.
 > three-column table above is not a workaround for it: G02 still reads its own
 > frozen §6.5.4 rows correctly. The next checkpoint authorized to touch that file
 > should bound it by the next heading, as `check-app3-g01.mjs` already does.
+>
+> **Closed by `APP3-G04` (§9).** `check-app3-g02.mjs` now bounds §6.5.4 at the
+> next heading of equal or higher level.
+> `FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01` = `COMPLETE — CLOSED_BY_APP3-G04`.
+> The measured detail worth keeping: the retired literal bound was in practice
+> ended by the sentence above that *quotes* the marker, not by §7 — so the block
+> stopped before §6.6.4 by accident, which is why no wrong value was ever
+> produced. A guard that is correct only because of where its own disclosure sits
+> is not a guard.
 
 No implementation checkpoint is complete.
 
 **Remaining open scope this gate did not rule.** `IMP-D043` covers rate and
 concurrency quotas, not **autosave cadence** and not **document complexity, layer
 or image limits**. Both stay open in §6.3 with no new owner invented here.
+
+## 6.7 `APP3-G04` — Editor-safe media, asset eligibility and complexity authority (IMP-D044)
+
+The fourth APP3 execution checkpoint, delivered under a **manual intervention
+directive** after the first attempt stopped at `FAILED — MANUAL INTERVENTION
+REQUIRED`. Authority, dependency reconciliation and a mechanical gate only — **no
+upload API, media delivery API, worker processor, migration, generated contract,
+Studio package, Figma node, Admin UI or Storefront UI**.
+
+The first attempt refused to record the ruling as written. Its PO-12 asserted
+that the schema already carried derivative dimensions; the measured schema
+carries none, so the ruling could not be locked without encoding a false fact as
+a machine-checked one. §6.7.5 records that measurement, and the Product Owner
+replaced PO-12 rather than the measurement.
+
+### 6.7.1 Machine-checked media facts
+
+`node tools/check-app3-g04.mjs` recomputes each of these against the repository.
+The third column is a boundary note for the reader; only the first two columns
+are parsed.
+
+| Fact | Value | Boundary |
+|---|---|---|
+| `Editor-safe derivative kind` | `NORMALIZED` | an existing kind, **not** a new enum value |
+| `New editor derivative kinds` | `NONE` | `EDITOR_SAFE`/`STUDIO_PREVIEW`/`DESIGN_PREVIEW`/`SESSION_PREVIEW` are not authorized |
+| `PREVIEW_WATERMARKED studio eligibility` | `NEVER` | the watermark is baked into its bytes |
+| `CATALOG_PREVIEW studio eligibility` | `NEVER` | store marketing media, never editor media |
+| `Original studio eligibility` | `NEVER` | the private original never reaches the editor |
+| `Derivative kind alone grants access` | `NO` | lane, association, owner state and operation all apply |
+| `Processing profiles` | `SIDE_BACKGROUND TEMPLATE_ASSET SESSION_UPLOAD` | policy identifiers |
+| `Processing profile persistence` | `APPLICATION_POLICY_NOT_DB_ENUM` | never a persisted enum |
+| `Processing profile column` | `NONE` | no column is added for a profile |
+| `Side background source lane` | `CATALOG_MEDIA` | store-authored |
+| `Side background association` | `product_sides.background_asset_id` | the only canonical edge |
+| `Side background accepted sources` | `JPEG PNG WEBP` | raster only |
+| `Side background svg` | `REJECTED` | no anonymous or public SVG surface |
+| `Side background delivery checkpoint` | `APP3-B02` | contextual, not generic |
+| `Side background delivery context` | `PUBLISHED_PRODUCT_AND_ACTIVE_SIDE` | archived and retired never deliver |
+| `Template asset actor` | `ADMIN` | authenticated staff only |
+| `Template asset source lane` | `TEMPLATE_SOURCE` | private originals |
+| `Template asset accepted sources` | `JPEG PNG WEBP SVG` | SVG only on this lane |
+| `Template asset svg sanitization` | `MANDATORY_SERVER_SIDE` | never client-side, never optional |
+| `Template asset svg original to studio` | `NEVER` | only the sanitized derivative |
+| `Template publication requires eligible derivative` | `YES` | every referenced asset |
+| `Session upload actor` | `ANONYMOUS_SESSION_CREDENTIAL` | the IMP-D043 pair |
+| `Session upload source lane` | `CUSTOMER_UPLOAD_CUSTOMER_PRIVATE` | private by default |
+| `Session upload accepted sources` | `JPEG PNG WEBP` | raster only |
+| `Session upload svg` | `REJECTED_IN_APP3` | no anonymous SVG intake |
+| `Session upload visibility` | `PRIVATE_SESSION_OWNED` | one owning session |
+| `Session upload reuse as shared media` | `FORBIDDEN` | never promoted to Product/Template/Catalog |
+| `Delivery classes` | `3` | side background, published Template asset, Session upload |
+| `Generic public asset endpoint` | `NONE` | no `GET /assets/:id` |
+| `Storage key in api response` | `FORBIDDEN` | no bucket, key or direct object URL |
+| `Object storage url as document authority` | `FORBIDDEN` | never durable document state |
+| `Session private delivery cache` | `PRIVATE_NO_STORE` | never a shared cache |
+| `Session private delivery credential` | `REQUIRED_EVERY_REQUEST` | id plus per-session cookie |
+| `Staff auth for storefront delivery` | `FORBIDDEN` | APP1 staff auth stays Admin-only |
+| `secure_access_grants change in APP3` | `NONE` | no purpose value, no schema extension |
+| `Contextual reference grants sibling derivative` | `NO` | one reference is not blanket asset access |
+| `Studio dimension fields` | `width_px height_px media_type byte_size` | the mandatory quartet |
+| `Dimension authority table` | `asset_derivatives` | canonical runtime state |
+| `Inspection detail runtime authority` | `NEVER` | append-only evidence only |
+| `Source asset metadata as derivative metadata` | `FORBIDDEN` | `assets.mime_type`/`assets.size_bytes` describe the source binary |
+| `Missing dimension result` | `INELIGIBLE_NOT_GUESSED` | never inferred, never fabricated |
+| `Raster dimension source` | `INSPECTED_DECODED_IMAGE` | measured, not declared |
+| `Svg dimension source` | `BOUNDED_VIEWBOX` | of the sanitized output |
+| `Svg width height without viewbox` | `INSUFFICIENT` | attributes alone never qualify |
+| `Placement scale basis` | `INTRINSIC_DIMENSIONS_AND_PX_PER_MM` | from the selected Product Side |
+| `Object storage read on document write` | `FORBIDDEN` | validation reads canonical metadata |
+| `Raster upload max bytes` | `10485760` | 10 MiB |
+| `Raster max width px` | `4096` | intrinsic |
+| `Raster max height px` | `4096` | intrinsic |
+| `Raster max decoded pixels` | `16777216` | per asset |
+| `Admin svg max bytes` | `1048576` | 1 MiB source |
+| `Sanitized svg max nodes` | `10000` | element/node count |
+| `Sanitized svg max path characters` | `1000000` | path data |
+| `Compressed size overrides decoded limit` | `NO` | decompression bombs are rejected |
+| `Document max serialized bytes` | `524288` | 512 KiB canonical document |
+| `Document max elements` | `100` | total elements/layers |
+| `Document max image elements` | `20` | |
+| `Document max text elements` | `80` | |
+| `Document max unique assets` | `20` | unique referenced assets |
+| `Document max group depth` | `8` | nesting |
+| `Document max characters per text element` | `500` | |
+| `Document max total text characters` | `5000` | |
+| `Document max decoded pixels` | `33554432` | across unique referenced image assets |
+| `Document limit enforcement` | `SERVER_SIDE` | `design-document` + `design-engine` |
+| `Document client side checks` | `EARLY_FEEDBACK_ONLY` | never the authority |
+| `Document partial save on rejection` | `NONE` | rejected documents are not partly saved |
+| `Hidden locked offcanvas elements count` | `YES` | visibility does not exempt |
+| `Repeated asset reference counting` | `ONCE_FOR_ASSET_BUDGETS_EACH_FOR_ELEMENTS` | |
+| `Runtime overlay elements count` | `NO` | they are not serialized elements |
+| `Silent limit increase` | `FORBIDDEN` | no checkpoint may raise a value quietly |
+| `Document font reference` | `fontId` | never a CSS family, URL or bytes |
+| `Font registry owner` | `SERVER_VERSIONED_REGISTRY` | |
+| `Font registry delivery checkpoint` | `APP3-P01` | before publication or Session writes |
+| `Remote runtime font url` | `FORBIDDEN` | |
+| `User uploaded font` | `FORBIDDEN` | |
+| `Template embedded font bytes` | `FORBIDDEN` | |
+| `Unknown fontId` | `VALIDATION_FAILURE` | never a silent fallback |
+| `Font asset budget consumption` | `NONE` | fonts are not document assets |
+| `Missing font substitution` | `NEVER_SILENT_GEOMETRY_CHANGE` | |
+| `Watermark in editor-safe bytes` | `NEVER` | runtime only |
+| `Watermark serialization` | `NEVER` | never a document element |
+| `Export or download surface` | `NONE` | |
+| `G04_DB_CONTRIBUTION` | `REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA` | |
+| `Derivative metadata columns` | `width_px height_px media_type byte_size` | on `asset_derivatives` |
+| `Derivative metadata nullability` | `NULLABLE_ALL_OR_NONE` | |
+| `Derivative metadata initial not null` | `NO` | historical rows stay representable |
+| `Derivative metadata backfill` | `NOT_REQUIRED_FOR_APP3_ENTRY` | |
+| `Derivative metadata fabrication` | `FORBIDDEN` | |
+| `Derivative metadata write timing` | `ATOMIC_WITH_READY` | |
+| `Forbidden derivative columns` | `INSPECTION_REF PROFILE_ENUM GRANT_PURPOSE` | |
+
+### 6.7.2 The twelve rulings
+
+**PO-01 — canonical editor-safe derivative.** APP3 reuses the existing derivative
+kind `NORMALIZED` as its **sole** editor-safe kind, and authorizes **no** new
+enum value — not `EDITOR_SAFE`, `STUDIO_PREVIEW`, `DESIGN_PREVIEW` or
+`SESSION_PREVIEW`. An editor-safe derivative is browser-decodable,
+orientation-normalized, metadata-stripped, dimension-bounded, of known intrinsic
+size and approved media type, inspection-clean, safe for its exact source lane,
+never an original and never watermark-baked. `PREVIEW_WATERMARKED` is **never**
+Studio source because its watermark is baked into the bytes; `CATALOG_PREVIEW` is
+**never** Studio source because it is store marketing media, CHECK-forbidden from
+watermarking and not editor media. Derivative kind alone **never** grants access:
+eligibility also requires the correct source lane, association, owner state and
+contextual delivery operation.
+
+**PO-02 — processing profiles without a database enum.** The one kind is produced
+under three profiles — `SIDE_BACKGROUND`, `TEMPLATE_ASSET` and `SESSION_UPLOAD`.
+These are **processing-policy identifiers, not database derivative kinds**: they
+belong to future worker/application configuration and are **not** persisted as an
+enum or a schema column by this gate. A profile controls the accepted source
+type, maximum size, output media type, intrinsic-dimension rules and delivery
+eligibility.
+
+**PO-03 — side-background profile.** Source lane `CATALOG_MEDIA`; canonical
+association `product_sides.background_asset_id`; accepted sources JPEG, PNG and
+WebP with **SVG rejected**; output a raster derivative in JPEG, PNG or WebP
+according to transparency and quality policy. Eligibility requires Asset
+inspection CLEAN, the derivative READY, intrinsic width and height present, a
+published Product, an active Product Side, the side belonging to the addressed
+Product, and `background_asset_id` matching the delivered Asset. Delivery belongs
+to `APP3-B02` and is public **only** through Product/Side context — it is not a
+generic public Asset endpoint. Originals, archived Products, retired Sides and
+missing dimensions are never delivered.
+
+**PO-04 — Template asset profile.** Actor: authenticated **Admin**. Source lane
+`TEMPLATE_SOURCE`. Accepted sources JPEG, PNG, WebP and SVG. SVG is accepted
+**only** for Admin-authored Template assets and **only** after mandatory
+server-side sanitization, which must reject or remove at least: `script`,
+event-handler attributes, `foreignObject`, external URLs, remote fonts, embedded
+HTML, `data:`/`blob:`/`javascript:` URLs, animation, filters outside the approved
+subset, unbounded path/node complexity, and a missing or invalid
+`viewBox`/dimensions. The sanitized derivative must be **self-contained**, and the
+original SVG is **never** sent to the Studio. A Template may publish only when
+every referenced asset has an eligible READY derivative under this profile.
+
+**PO-05 — anonymous Session upload profile.** Actor: a valid anonymous Design
+Session credential from IMP-D043. Source lane `CUSTOMER_UPLOAD` /
+`CUSTOMER_PRIVATE`. Accepted sources JPEG, PNG and WebP; **SVG is rejected in
+APP3** — there is no anonymous SVG intake. The upload is owned by exactly one
+active Design Session, its derivative stays **private**, and it must not become
+Product, Template or Catalog media by reuse. Expiry and purge follow the Session
+family rules of IMP-D043. A Session upload never creates Customer identity and
+never survives by being silently promoted to shared authority.
+
+**PO-06 — delivery boundaries.** Exactly three delivery classes exist: the side
+background, delivered publicly through Product + Side authority; the published
+Template asset, delivered publicly through Published Template + Version
+authority; and the Session upload, delivered privately through Session id plus a
+matching per-session cookie. There is **no** generic `GET /assets/:id` public
+endpoint. No API response carries an object-storage key or a private original
+URL, and no direct object-storage URL is durable document authority. Public
+delivery may use immutable cache validators; Session-private delivery is
+`private, no-store` and requires the G03 credential on **every** request. APP1
+staff auth is never used for Storefront delivery. APP3 introduces no persistent
+`secure_access_grants` purpose or schema extension. A contextual stream or
+reference is **not** permission to access another derivative of the same Asset.
+
+**PO-07 — intrinsic dimensions.** Every editor-safe derivative eligible for the
+Studio must expose `width_px`, `height_px`, `media_type` and `byte_size` before a
+Template or Session document may reference it. Raster dimensions come from the
+inspected decoded image; sanitized-SVG dimensions come from a valid bounded
+`viewBox`, and `width`/`height` attributes without a valid `viewBox` are
+**insufficient**. Missing, zero, negative or contradictory dimensions make the
+derivative ineligible. The Studio **never guesses** dimensions. Placement scale
+begins from these intrinsic dimensions and the selected Product Side
+`px_per_mm`. The public or authorized derivative contract exposes dimensions
+without exposing storage keys or originals.
+
+**PO-08 — upload and decoded-image limits.** Locked APP3 source limits: raster
+upload **10 MiB** maximum; raster intrinsic width **4096 px** and height
+**4096 px** maximum; **16,777,216** decoded pixels maximum per asset; Admin SVG
+source **1 MiB** maximum; sanitized SVG **10,000** elements/nodes maximum; and
+sanitized SVG **1,000,000** path-data characters maximum. A file exceeding a
+limit is rejected before it becomes document-eligible. Compressed byte size
+**never** overrides the decoded-pixel limit, and image headers and decoders must
+be protected against decompression bombs.
+
+**PO-09 — document and element complexity limits.** One Template Version or
+Design Session document is bounded at: **512 KiB** serialized canonical document;
+**100** total elements/layers; **20** image elements; **80** text elements; **20**
+unique referenced assets; group nesting depth **8**; **500** characters per text
+element; **5,000** total text characters; and **33,554,432** decoded pixels across
+unique referenced image assets. A rejected document is **not partially saved**.
+Limits are checked server-side through `design-document` and `design-engine`;
+client checks are early feedback only. Hidden, locked and off-canvas elements
+still count. Repeated references to one Asset count **once** toward the
+unique-asset and decoded-pixel totals, while each image element counts toward the
+image-element total. Watermark, runtime handles and selection overlays never
+count, because they are not serialized document elements. No checkpoint may
+silently raise these values.
+
+**PO-10 — font allowlist mechanics.** Documents store a `fontId`, never an
+arbitrary CSS `font-family`, URL or binary font data. A server-owned **versioned
+font registry** maps each `fontId` to an approved family, approved styles and
+weights, a bundled or controlled WOFF2 asset, a SHA-256 integrity value, licence
+metadata, Vietnamese glyph coverage and a fallback policy. There is no remote
+runtime font URL, no user-uploaded font and no Template-embedded font bytes; an
+unknown `fontId` fails validation. The initial concrete registry is delivered by
+`APP3-P01` before Template publication or Session write APIs, and `APP3-D01`
+selects only from that registry. Font files are not Design document assets and do
+not consume the 20 unique referenced-asset budget. A missing font never falls back
+silently to a geometry-changing substitute.
+
+**PO-11 — watermark separation.** An editor-safe derivative **never** contains the
+APP3 watermark. The Studio watermark is runtime-generated, topmost,
+non-selectable, non-deletable, not serialized, opaque and free of raw PII, and
+regenerated on load. `PREVIEW_WATERMARKED` remains outside Studio source
+eligibility, and no export or download surface is created.
+
+**PO-12 — canonical derivative metadata and database contribution.** *(Replaced
+by the manual intervention directive; the superseded text is preserved in §6.7.5.)*
+Every derivative row may carry canonical output metadata — `width_px`,
+`height_px`, `media_type` and `byte_size` — describing the derivative output
+represented by that exact `asset_derivatives` row. They **do not** describe the
+source Asset: `assets.mime_type` and `assets.size_bytes` remain source-binary
+metadata and are never substituted for derivative metadata, and
+`asset_inspections.detail` remains **append-only inspection evidence and is never
+runtime state authority**. The canonical owner is `asset_derivatives`. Therefore
+`G04_DB_CONTRIBUTION = REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA`, and this
+gate records that authority **without implementing the migration**.
+
+### 6.7.3 Database contribution
+
+```text
+G04_DB_CONTRIBUTION = REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA
+```
+
+`APP3-DB01` now owns exactly two contribution groups:
+
+1. Product Side / Embroidery Area retirement, replacement and stable-code
+   authority from `APP3-G01`.
+2. Canonical derivative metadata on `asset_derivatives` from `APP3-G04`.
+
+> **`G01_DB_DISPOSITION` relabel, not a change.** §6.4.1 records
+> `REQUIRES_APP3_DB01` and `check-app3-g01.mjs` asserts that exact string; the
+> longer `REQUIRES_APP3_DB01_PLACEMENT_RETIREMENT_AND_STABLE_CODE` used in §10
+> names the *same* G01 contribution and exists only to tell the two groups apart
+> now that `APP3-DB01` carries two. G01's scope is untouched.
+
+**The locked `APP3-DB01` derivative schema contract.** `APP3-DB01` must add
+`width_px`, `height_px`, `media_type` and `byte_size` to `asset_derivatives`
+using repository-native types chosen after inspecting existing conventions, with
+these semantics: `width_px` and `height_px` positive integers when present;
+`media_type` a non-empty canonical MIME type when present; `byte_size` a positive
+integer or bigint when present. An **all-or-none** invariant applies: either all
+four are null or all four are non-null, with positive-value checks on the
+non-null case.
+
+The four columns are deliberately **not** globally `NOT NULL` in the initial
+migration, because existing `THUMBNAIL` and `CATALOG_PREVIEW` rows may hold no
+canonical metadata, no editor-safe row exists yet, a migration must not call
+object storage, historical rows without deterministic metadata must stay
+representable, and missing metadata makes a derivative **ineligible rather than
+fabricated**.
+
+`APP3-DB01` must not add `inspection_detail_id`, `current_inspection_id`, a
+profile enum column, an editor derivative kind, a generic public-asset flag or a
+grant-purpose column. No index is required solely for these four columns unless
+measured access-path evidence in `APP3-DB01` proves one necessary.
+
+**Write and eligibility semantics.** A worker or application flow may create a
+derivative row before processing with the metadata quartet null. A derivative
+becomes Studio-eligible only when its status is READY, its kind is the
+editor-safe one, `width_px` and `height_px` are present and positive,
+`media_type` is present and approved for the processing profile, `byte_size` is
+present and positive, the inspection, source-lane and profile rules of this gate
+pass, and the contextual owner and association rules pass. The transition to
+READY persists the quartet **atomically** with the completed derivative state.
+The Studio never infers or lazily guesses dimensions, and document validation
+never queries object storage on a Template or Session document write — it reads
+canonical metadata from `asset_derivatives`.
+
+**Existing-row and backfill policy.** No APP3 grandfathering is required.
+`APP3-DB01` adds the nullable quartet and its checks, leaves historical rows null
+where no deterministic canonical value is available, never fabricates a value,
+never parses arbitrary inspection history as runtime authority, and is not
+blocked by old non-Studio derivatives lacking metadata. A later bounded backfill
+may populate a historical derivative **only** when the value can be
+deterministically proven from authoritative object metadata or from exact
+inspection evidence linked to that derivative. Such a backfill is not required
+for APP3 entry.
+
+### 6.7.4 Dependency reconciliation
+
+> **Why the portion labels carry a `post-G04` suffix.** `check-app3-g03.mjs`
+> bounds §6.6.4 with the literal `## 7.` marker, so it reads this table too, and
+> a repeated `id :: portion` key would silently overwrite the status G03
+> asserts. The suffix keeps the two tables' keys disjoint.
+> `tools/` outside the G02 and G04 gates is outside this checkpoint's allowed
+> files, so the defect is disclosed rather than edited:
+> `FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01` = `OPEN`, same repair as §9 applied
+> to G03, owned by the next checkpoint authorized to touch that file.
+
+| Checkpoint | Portion | Status after `APP3-G04` |
+|---|---|---|
+| `APP3-G01` | whole checkpoint, post-G04 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G02` | whole checkpoint, post-G04 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G03` | whole checkpoint, post-G04 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G04` | whole checkpoint, post-G04 | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-P01` | whole checkpoint, post-G04 | `READY — NOT STARTED` |
+| `APP3-P02` | whole checkpoint, post-G04 | `READY — NOT STARTED` |
+| `APP3-DB01` | whole checkpoint, post-G04 | `REQUIRED — READY_FOR_EXECUTION` |
+| `APP3-B02` | G04 portion | `UNBLOCKED_BY_G04` |
+| `APP3-B04` | asset-eligibility portion | `UNBLOCKED_BY_G04` |
+| `APP3-B06` | asset-policy portion | `UNBLOCKED_BY_G04` |
+| `APP3-P01` | font/media schema portion | `UNBLOCKED_BY_G04` |
+| `APP3-P02` | complexity-validation portion | `UNBLOCKED_BY_G04` |
+| `APP3-S11` | autosave cadence ownership | `ROUTED_BY_G04` |
+| `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | authority | `OPEN — AUTHORITY_LOCKED_BY_APP3-G04` |
+| `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | final owner | `APP3-B02` |
+| `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | blocked by | `APP3-DB01 + APP3-B06` |
+| `FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01` | whole follow-up | `COMPLETE — CLOSED_BY_APP3-G04` |
+| `FU-APP3-G03-QUALITY-AGGREGATE-01` | whole follow-up | `DEFERRED — REGRESSION_ACTIVITY_ONLY` |
+| `FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01` | whole follow-up | `OPEN` |
+
+The public-media-dimensions follow-up stays **open** on purpose: this gate locks
+the authority, `APP3-DB01` adds the fields and constraints, `APP3-B06` and the
+worker write canonical metadata for new editor-safe derivatives, and `APP3-B02`
+exposes side-background dimensions through the contextual public contract and
+closes it after integration evidence passes. Claiming closure here would claim a
+schema and a delivery contract that do not exist.
+
+No implementation checkpoint is complete.
+
+### 6.7.5 Measured evidence behind the replaced PO-12
+
+The first `APP3-G04` attempt stopped because the ruling it was given asserted a
+schema fact the repository contradicts. The measurement, taken from the Drizzle
+source **and** the migrated development database:
+
+| Measured | Result |
+|---|---|
+| `asset_derivatives` columns | `id, asset_id, kind, status, storage_key, checksum, is_watermarked, created_at, updated_at` |
+| derivative width/height/media-type/byte-size column | **absent** |
+| repository-wide pixel-dimension columns | only `product_sides` and `embroidery_areas` geometry; every other match is `physical_*_mm` |
+| `assets.mime_type` / `assets.size_bytes` | present, describing the **source binary** |
+| `asset_inspections.detail` | append-only text; V1 JSON records source and derivative dimensions |
+| inspection decoder accepted kinds | exactly `THUMBNAIL` and `CATALOG_PREVIEW`, media type fixed to `image/webp` |
+| inspection detail read paths | worker terminal-replay only; no API module reads it |
+| editor-safe derivative producer | none exists in the repository |
+| editor-safe derivative rows | `0` |
+
+The three reasons the inspection document cannot be the runtime authority: it is
+append-only history with no unique link to one derivative row and no current-state
+index; its decoder structurally rejects any document that is not exactly the two
+catalog kinds; and a per-write decoded-pixel budget check cannot be served from
+unindexed append-only text without first deciding which row is authoritative —
+which is itself the decision this gate was forbidden to invent.
 
 ## 7. Critical end-to-end journey
 
@@ -864,7 +1245,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — THIRD GATE DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — FOURTH GATE DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -872,12 +1253,17 @@ FU-APP3-CLOSURE-FIGMA-BASELINE-01 = COMPLETE — CLOSED_BY_APP2-X01-C1
 FU-APP2-CLOSURE-NEXTPHASE-GUARD-01 = COMPLETE — CLOSED_BY_APP2-X01-C2
 APP3-G01 = COMPLETE — REVIEW_ACCEPTED
 APP3-G02 = COMPLETE — REVIEW_ACCEPTED
-APP3-G03 = COMPLETE — REVIEW_DELIVERED
-APP3-G04 = READY — NOT STARTED
-G01_DB_DISPOSITION = REQUIRES_APP3_DB01
+APP3-G03 = COMPLETE — REVIEW_ACCEPTED
+APP3-G04 = COMPLETE — REVIEW_DELIVERED
+G01_DB_DISPOSITION = REQUIRES_APP3_DB01_PLACEMENT_RETIREMENT_AND_STABLE_CODE
 G02_DB_CONTRIBUTION = NONE
 G03_DB_CONTRIBUTION = NONE
-APP3-DB01 = REQUIRED — AWAITING_G04_CONTRIBUTION
+G04_DB_CONTRIBUTION = REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA
+APP3-DB01 = REQUIRED — READY_FOR_EXECUTION
+FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — AUTHORITY_LOCKED_BY_APP3-G04
+FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-G04
+FU-APP3-G03-QUALITY-AGGREGATE-01 = DEFERRED — REGRESSION_ACTIVITY_ONLY
+FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01 = OPEN
 O-008 = CLOSED_BY_IMP-D043
 DP-RET-01 design_sessions = CLOSED_BY_IMP-D043
 FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01 = COMPLETE — CLOSED_BY_APP3-G02
@@ -931,6 +1317,19 @@ delete via `TR-LC07-05` after a 24-hour grace. It closed `O-008` and the
 (`G03_DB_CONTRIBUTION = NONE`) — every required field and constraint was
 measured to already exist. The gate `node tools/check-app3-g03.mjs` asserts the absence of
 any Session operation as hard as it asserts the authority.
+
+`APP3-G04` locked the twelve Product Owner media rulings as **IMP-D044**
+(§6.7) after a first attempt stopped at `FAILED — MANUAL INTERVENTION REQUIRED`:
+the ruling as issued asserted that `asset_derivatives` already carried intrinsic
+dimensions, and the measured schema carries none (§6.7.5). The Product Owner
+selected canonical derivative metadata columns and explicitly rejected treating
+`asset_inspections.detail` as runtime authority, so this gate contributes
+`REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA` and `APP3-DB01` becomes
+`READY_FOR_EXECUTION` with two contribution groups. It implemented **no** upload
+API, delivery API, worker processor, schema change, migration, generated contract
+or UI — `node tools/check-app3-g04.mjs` asserts that absence, and asserts the
+required schema contribution as *pending* before `APP3-DB01` and as *implemented*
+after it, so the same gate is correct on both sides of the migration.
 
 Audit: [`audits/APP3_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP3_PRE_IMPLEMENTATION_AUDIT.md).
 Report: [`reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md`](../reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md).

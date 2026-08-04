@@ -486,6 +486,16 @@ Further measured gaps:
 - **Dimensions metadata.** `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` is routed and
   nonblocking for APP2 — but the Studio *needs* intrinsic dimensions to place an
   element, so APP3 activates it (§N).
+
+  > **Ruled by `APP3-G04` (IMP-D044 PO-07/PO-12, 2026-08-04).** This audit
+  > assumed activation was a contract decision. It was also a **schema** one:
+  > `asset_derivatives` carries no `width_px`, `height_px`, `media_type` or
+  > `byte_size` column, and the only place dimensions are persisted today —
+  > `asset_inspections.detail` — is append-only evidence whose decoder accepts
+  > exactly `THUMBNAIL` and `CATALOG_PREVIEW`. The four columns are therefore
+  > `APP3-DB01`'s to add, nullable and all-or-none, and a derivative without
+  > them is ineligible rather than inferred. The follow-up stays **open**; its
+  > final owner is `APP3-B02`.
 - **Product background versus customer asset** are different lanes with
   different authorization: the background is store-owned and publication-gated;
   the customer asset is session-granted and private. Never conflate them, and
@@ -627,9 +637,9 @@ This audit modified no Figma node and created no registry row.
 
 | Control | Position entering APP3 |
 |---|---|
-| Document complexity / layer / image / SVG limits | **no values exist** — a blocking value becomes a decision at `APP3-G03`/`G04`; none is invented here |
-| Font whitelist | mechanism undecided (ADR-APP0-001 deferred → APP3) |
-| SVG sanitization | mandatory when SVG is accepted; sanitizer selection is APP3's; intake currently rejects SVG |
+| Document complexity / layer / image / SVG limits | **CLOSED by `APP3-G04`** (IMP-D044 PO-08/PO-09, 2026-08-04): 10 MiB raster / 4096 × 4096 px / 16,777,216 decoded pixels per asset; 1 MiB Admin SVG / 10,000 nodes / 1,000,000 path characters; 512 KiB document / 100 elements / 20 image / 80 text / 20 unique assets / depth 8 / 500 per text element / 5,000 total characters / 33,554,432 decoded pixels. Server-side enforcement; no silent increase |
+| Font whitelist | **mechanism CLOSED by `APP3-G04`** (IMP-D044 PO-10): documents store a server-owned `fontId` against a versioned registry; no remote, embedded or user-supplied font; `APP3-P01` delivers the registry contents |
+| SVG sanitization | **acceptance CLOSED by `APP3-G04`** (IMP-D044 PO-04/PO-05): SVG is accepted **only** on the Admin `TEMPLATE_ASSET` lane and only after mandatory server-side sanitization against a named restriction set; side backgrounds and anonymous Session uploads reject it. The sanitizer library remains an `APP3-P01`/`B06` implementation choice |
 | Network isolation of the editor | ADR-APP0-001: no engine dependency, no external fetch; CSP already a `09 §9` baseline |
 | Watermark regeneration | runtime-only, topmost, non-selectable, non-deletable, opaque token with **no raw PII**, never serialized |
 | No export | no download control, no scene JSON, no high-res URL, no stable public preview URL |
@@ -668,7 +678,7 @@ and the seven committed DB6 checkers are reused.
 
 | Follow-up | Disposition | Owner in APP3 |
 |---|---|---|
-| `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | **ACTIVATE_IN_APP3** — the Studio cannot place an element without intrinsic dimensions | `APP3-G04` (decision) → `APP3-B01`/`B06` |
+| `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` | **OPEN — AUTHORITY_LOCKED_BY_APP3-G04** (IMP-D044 PO-07/PO-12): the quartet `width_px`/`height_px`/`media_type`/`byte_size` is mandatory for Studio eligibility and is owned by `asset_derivatives`, not by source-asset metadata and not by append-only inspection evidence; the columns do not exist yet | `APP3-G04` (authority) → `APP3-DB01` (schema) → `APP3-B06`/worker (writes) → **`APP3-B02` closes it** |
 | `FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` (`DRAFT → ARCHIVED` unauthorized) | **COMPLETE — CLOSED_BY_APP3-G02** — LC-04 gains `TR-LC04-06` `DRAFT → ARCHIVED`, authorising the archive-from-draft `APP2-B02` already shipped; LC-04 is now 6 transitions and archive stays distinct from unpublish (IMP-D042) | `APP3-G02` |
 | publication Outbox `PENDING` (no consumer) | **KEEP_ROUTED_LATER** — APP3 adds no consumer; if template publication emits events, `APP3-G02` must say whether they also stay `PENDING` and `APP3-E01` owns the assertion | later |
 | `FU-APP2-STOREFRONT-CONTENT-BAND-01` | **KEEP_ROUTED_LATER** — APP1 shell owner; the Studio is a full-bleed surface and is not blocked by it | later |
@@ -794,7 +804,7 @@ other or into the API.
 | 2 | **`APP3-G01`** | gate | product placement and side-media authority (§G1, §G7 route ruling) + existing-data/invariant rollout (§P) | 0 | PRE-AUDIT | authority ruling + register row + gate script | **decides `DB01`** [C1] | no | no |
 | 3 | `APP3-G02` | gate | Design Template authority: `TR-` ids for publish/unpublish/archive/unarchive, scope-vs-M:N compatibility, allowed tools/fonts/colours shape | 0 | G01 | ruling + `check:lifecycle` extension | decides `DB01` | no | no |
 | 4 | `APP3-G03` | gate | Design Session authority: O-008 TTL, anonymous transport/issuance/rotation, `09 §7` quotas, autosave cadence + conflict policy, document limits | 0 | G01 | ruling + register rows | no | no | no |
-| 5 | `APP3-G04` | gate | editor media authority: editor-safe derivative kind, customer/template intake lanes, SVG acceptance + sanitizer, dimensions metadata | 0 | G01 | ruling + ADR if a new kind is chosen | decides `DB01` | no | no |
+| 5 | `APP3-G04` | gate | editor media authority: editor-safe derivative kind, customer/template intake lanes, SVG acceptance + sanitizer, dimensions metadata. **Delivered 2026-08-04 as IMP-D044 after one `FAILED — MANUAL INTERVENTION REQUIRED` stop**: no new kind was chosen (`NORMALIZED` reused), but the mandatory dimension quartet does not exist in `asset_derivatives`, so the gate contributes four columns | 0 | G01 | ruling; no ADR — no new kind | **`REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA`** | no | no |
 | 6 | `APP3-P01` | package | `packages/design-document` — canonical form, JCS + SHA-256, `schemaVersion` fail-loud, document migrations, validation | — | G02, G03 | package + tests | no | no | `spike:editor:test` |
 | 7 | `APP3-P02` | package | `packages/design-engine` — geometry, px↔mm, bounds and safe-area math | — | G01 [C1] | package + tests | no | no | `spike:editor:test` |
 | 8 | `APP3-DB01` | database | **conditional** — only if G01 rules a role/kind/grant change, G02 rules M:N compatibility or G04 rules a new derivative kind. Terminals: `COMPLETE` **or** `NOT_REQUIRED — GATE_RESOLVED` (§O.1) [C1] | — | G01, G02, G04 [C1] | forward-only migration **or** a recorded `NOT_REQUIRED` disposition | **yes, if fired** | no | no |

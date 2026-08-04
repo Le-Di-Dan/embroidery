@@ -104,19 +104,44 @@ function read(root, key) {
   return existsSync(abs) ? readFileSync(abs, 'utf8') : undefined;
 }
 
+/** `| \`Key\` | \`Value\` |` rows of a markdown block, as a map. */
+export function tableRows(block) {
+  return new Map(
+    block
+      .split('\n')
+      .map((line) => /^\|\s*`([^`]+)`[^|]*\|\s*`([^`]+)`/.exec(line.trim()))
+      .filter(Boolean)
+      .map((m) => [m[1], m[2]]),
+  );
+}
+
 /** `| \`Key\` | \`Value\` |` rows between two headings, as a map. */
 export function boundedTable(text, startHeading, endHeading) {
   const start = text.indexOf(startHeading);
   if (start < 0) return new Map();
   const rest = text.slice(start + startHeading.length);
   const end = endHeading ? rest.indexOf(endHeading) : -1;
-  return new Map(
-    (end < 0 ? rest : rest.slice(0, end))
-      .split('\n')
-      .map((line) => /^\|\s*`([^`]+)`[^|]*\|\s*`([^`]+)`/.exec(line.trim()))
-      .filter(Boolean)
-      .map((m) => [m[1], m[2]]),
-  );
+  return tableRows(end < 0 ? rest : rest.slice(0, end));
+}
+
+/**
+ * One section's own body, bounded at the next heading of equal or higher level
+ * (`FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01`).
+ *
+ * The previous form ended §6.5.4 at the literal `## 7. `, which was correct only
+ * while §6.5.4 was the last subsection before §7. Once `APP3-G03` added §6.6 —
+ * and `APP3-G04` §6.7 — every later dependency table fell inside G02's range,
+ * and because `Map` keeps the *last* duplicate key, a later gate's status for
+ * `APP3-G01` silently became the value this gate asserted. A section must be
+ * read to its own end, not to a landmark that happens to follow it today.
+ */
+export function sectionBody(text, startHeading) {
+  const start = text.indexOf(startHeading);
+  if (start < 0) return '';
+  const level = (/^#+/.exec(startHeading) ?? ['#'])[0].length;
+  const rest = text.slice(start + startHeading.length);
+  const end = rest.search(new RegExp(`\\n#{1,${String(level)}} `));
+  return end < 0 ? rest : rest.slice(0, end);
 }
 
 function checkDecision(register, fail) {
@@ -150,7 +175,7 @@ function checkFacts(phase, fail) {
 }
 
 function checkDependencies(phase, fail) {
-  const rows = boundedTable(phase, '### 6.5.4 ', '## 7. ');
+  const rows = tableRows(sectionBody(phase, '### 6.5.4 '));
   for (const [id, expected] of Object.entries(EXPECTED_DEPENDENCIES)) {
     const actual = rows.get(id);
     if (actual === undefined) {
