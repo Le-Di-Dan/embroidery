@@ -196,6 +196,19 @@ UX, freehand smoothing, autosave cadence and conflict policy, and whether
 to a named gate or checkpoint below; none may be invented inside an
 implementation checkpoint.
 
+> **Forward note (`APP3-G05`, 2026-08-04).** This audit did not anticipate a
+> deeper gap: ADR-APP0-001 deferred *who owns each geometry helper* but nothing
+> anywhere defined the **coordinate model itself** — rotation origin, rotation
+> direction, scale origin, group coordinate semantics, composition order or a
+> bounds strategy. `APP3-P02` stopped on it, and the APP0-R01 spike could not
+> settle it because its three adapters disagree (SVG pivots on the box centre
+> and inherits the full group transform; Konva pivots top-left and inherits
+> scale only; Fabric pivots top-left and inherits nothing). The identical
+> cross-engine hash proved serialization agreement, not geometric agreement.
+> `IMP-D045` (§6.11 of the phase plan) locks the model, and the three adapters
+> are now recorded as **comparative research evidence, not production
+> authority**.
+
 ---
 
 ## F. Product and actor capability classification

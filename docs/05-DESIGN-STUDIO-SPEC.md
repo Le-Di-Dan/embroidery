@@ -141,6 +141,17 @@ The editor must distinguish:
 
 Users should see understandable measurement units such as millimeters or centimeters.
 
+> **Implementation authority (forward note, `APP3-G05` / `IMP-D045`).** The
+> coordinate model this section requires is locked in
+> `docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md` §6.11:
+> top-left origin, x right, **y down**, degrees, positive rotation **clockwise**,
+> rotation and scale about the untransformed local-box centre. The **sole**
+> px↔mm conversion authority is `product_sides.px_per_mm` — never an Embroidery
+> Area ratio, never a DPI assumption; `embroidery_areas.max_width_mm` and
+> `max_height_mm` are physical limits, not conversion authority. These semantics
+> are part of the meaning of Design Document `schemaVersion = 1` and cannot
+> change without a new decision, a schema-version increase and a migration.
+
 The system must warn when:
 
 - Design exceeds allowed area.

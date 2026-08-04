@@ -1703,6 +1703,270 @@ globally.
 `APP3-G04-COMPLETION-REPORT.md` and `APP3-P01-COMPLETION-REPORT.md` are
 historical evidence and are not rewritten; this section is the forward record.
 
+## 6.11 `APP3-G05` — geometry coordinate, transform and bounds authority
+
+`APP3-G05` exists because `APP3-P02` stopped. It is not a correction of P02; it
+is the Product Owner authority P02 turned out to require.
+
+### 6.11.1 Locked geometry facts (`IMP-D045`)
+
+| Key | Value | Note |
+|---|---|---|
+| `Decision id` | `IMP-D045` | one decision, `LOCKED` |
+| `Coordinate origin` | `TOP_LEFT` | PO-01 |
+| `Positive x direction` | `RIGHT` | PO-01 |
+| `Positive y direction` | `DOWN` | PO-01 |
+| `Angle unit` | `DEGREES` | PO-01 |
+| `Persisted x y meaning` | `UNTRANSFORMED_LOCAL_BOX_TOP_LEFT_IN_PARENT_FRAME` | PO-02 |
+| `Persisted width height meaning` | `POSITIVE_UNSCALED_LOCAL_BOX` | PO-02 |
+| `Local drawable origin` | `0,0` | PO-02 |
+| `Root element parent frame` | `DOCUMENT_SPACE` | PO-02 |
+| `Child element parent frame` | `DIRECT_GROUP_LOCAL_SPACE` | PO-02 |
+| `Positive rotation direction` | `CLOCKWISE` | PO-03, under y-down |
+| `Rotation pivot` | `UNTRANSFORMED_LOCAL_BOX_CENTRE` | PO-03 |
+| `Rotation pivot local coordinates` | `width / 2, height / 2` | PO-03 |
+| `Forbidden rotation pivots` | `PERSISTED_CORNER DOCUMENT_ORIGIN GROUP_ORIGIN TRANSFORMED_AABB_CENTRE RENDERER_DEFAULT` | PO-03 |
+| `Scale pivot` | `UNTRANSFORMED_LOCAL_BOX_CENTRE` | PO-04, same point as rotation |
+| `Scale before rotation` | `YES` | PO-04 |
+| `Negative scale meaning` | `REFLECTION_AROUND_CENTRE_PIVOT` | PO-04, only where P01 accepts it |
+| `Persisted transform mutation by P02` | `NEVER` | PO-04 |
+| `Matrix convention` | `COLUMN_VECTOR` | PO-05 |
+| `Matrix application` | `p' = M x p` | PO-05 |
+| `Matrix field mapping` | `x' = a*x + c*y + e ; y' = b*x + d*y + f` | PO-05 |
+| `Local matrix order` | `T(x + width/2, y + height/2) x R(rotationDeg) x S(scaleX, scaleY) x T(-width/2, -height/2)` | PO-05 |
+| `Clockwise rotation matrix` | `a = cos ; b = sin ; c = -sin ; d = cos ; e = 0 ; f = 0` | PO-05 |
+| `Row vector semantics` | `FORBIDDEN` | PO-05 |
+| `Effective transform composition` | `PARENT_TIMES_CHILD` | PO-06, parent outermost |
+| `Group local frame origin` | `GROUP_UNTRANSFORMED_LOCAL_BOX_TOP_LEFT` | PO-06 |
+| `Group transform inheritance` | `FULL_UNIFORM` | PO-06 |
+| `Forbidden group inheritance` | `CHILD_TIMES_PARENT DOCUMENT_SPACE_CHILDREN PARTIAL SCALE_ONLY RENDERER_OWNED` | PO-06 |
+| `Group persisted box role` | `LOCAL_FRAME_AND_PIVOT_ONLY` | PO-07 |
+| `Group persisted box as bounds` | `NEVER` | PO-07 |
+| `Group pivot from descendant bounds` | `FORBIDDEN` | PO-07 |
+| `Group child rebasing by P02` | `FORBIDDEN` | PO-07 |
+| `Group visible geometry` | `NONE` | PO-07 |
+| `Bounds strategy` | `CONSERVATIVE_TRANSFORMED_AABB` | PO-08 |
+| `Box element bounds` | `TRANSFORM_FOUR_LOCAL_CORNERS_THEN_AXIS_ALIGN` | PO-08, text/image/rectangle/ellipse |
+| `Ellipse bounds` | `DECLARED_BOX_TRANSFORMED_AABB` | PO-08 |
+| `Tight rotated ellipse aabb` | `NOT_APP3_V1` | PO-08 |
+| `Line freehand stroke expansion` | `strokeWidthPx / 2` | PO-08, where a persisted stroke width exists |
+| `Line cap join extension` | `FORBIDDEN` | PO-08 |
+| `Path smoothing or bezier geometry` | `FORBIDDEN` | PO-08 |
+| `Group bounds` | `UNION_OF_DESCENDANT_DRAWABLE_AABB` | PO-08 |
+| `Document bounds` | `UNION_OF_ALL_DRAWABLE_AABB` | PO-08 |
+| `Hidden locked element geometry` | `COUNTS` | PO-08 |
+| `Z order effect on bounds` | `NONE` | PO-08 |
+| `Containment strategy` | `FULL_TRANSFORMED_AABB_INSIDE_AREA` | PO-09 |
+| `Containment boundary equality` | `VALID` | PO-09, after P01 quantization |
+| `Containment overhang` | `INVALID` | PO-09 |
+| `Containment enforcement` | `BLOCKING` | PO-09, document-write APIs treat it as failure |
+| `Containment mutation` | `NONE` | PO-09, no clamp, move, scale-down or snap |
+| `Px per mm authority` | `product_sides.px_per_mm` | PO-10, sole source |
+| `Area derived scale` | `FORBIDDEN` | PO-10 |
+| `Dpi assumption` | `FORBIDDEN` | PO-10, no 96 DPI, no CSS or image DPI |
+| `Area max mm role` | `PHYSICAL_LIMIT_NOT_CONVERSION` | PO-10 |
+| `Product side scale consistency` | `BOTH_AXES_MUST_EQUAL_PX_PER_MM` | PO-10 |
+| `Inconsistent axis resolution` | `TYPED_MISMATCH_NEVER_AVERAGED` | PO-10 |
+| `Placement modes` | `NEW_EDITING HISTORICAL_RENDER` | PO-11 |
+| `New editing retired placement` | `NOT_SELECTABLE` | PO-11 |
+| `Historical render retired placement` | `VALID` | PO-11 |
+| `Retirement as deletion` | `NEVER` | PO-11 |
+| `Silent supersede of historical document` | `FORBIDDEN` | PO-11 |
+| `Geometry semantics binding` | `SCHEMA_VERSION_1` | PO-12 |
+| `Semantic change requirement` | `NEW_DECISION_SCHEMA_VERSION_AND_MIGRATION` | PO-12 |
+| `Silent semantic change` | `FORBIDDEN` | PO-12 |
+| `Geometry engine compatibility record` | `REQUIRED_IN_APPROVAL_AND_RENDERING_EVIDENCE` | PO-12 |
+| `G05_DB_CONTRIBUTION` | `NONE` | PO-12, no column is added here |
+| `Geometry quantization authority` | `REUSES_P01_SCALE_10000` | no second precision |
+
+### 6.11.2 The twelve rulings
+
+**PO-01 — coordinate system.** Document and group coordinate systems have their
+origin at the **top-left**, positive **x** to the **right**, positive **y**
+**down**, with angles in **degrees**. This is the only production coordinate
+system for APP3 v1, and no renderer may reinterpret v1 in a y-up or
+centre-origin space.
+
+**PO-02 — persisted transform meaning.** `x` and `y` are the untransformed
+top-left position of the element's local box **in its parent coordinate system**;
+`width` and `height` are the positive unscaled dimensions of that box. Local
+drawable coordinates run from `(0, 0)` to `(width, height)`. The persisted fields
+are never centre coordinates, post-rotation bounds, post-scale bounds or
+renderer-specific offsets. A root element's parent frame is document space; a
+child's parent frame is its direct group's local space.
+
+**PO-03 — rotation.** Positive `rotationDeg` is **clockwise** under the y-down
+system. The pivot is the centre of the **untransformed local box**,
+`(width / 2, height / 2)` in the element's local frame — which for a root element
+is `(x + width/2, y + height/2)` in document space before rotation. Rotation
+never uses the persisted corner, the document origin, the group origin, the
+transformed AABB centre or a renderer default.
+
+**PO-04 — scale.** `scaleX`/`scaleY` apply around the **same** untransformed
+local-box centre as rotation, and scale is applied **before** rotation in the
+local transform. Negative scale stays valid only where P01 structural authority
+already accepts it, and means reflection about that same centre. Scale never
+alters persisted `x`, `y`, `width` or `height`. An interaction layer may compute a
+new persisted transform after an edit; `APP3-P02` never mutates a document.
+
+**PO-05 — local matrix.** Column-vector affine semantics, `p' = M x p`, with
+`x' = a*x + c*y + e` and `y' = b*x + d*y + f`. The local-to-parent matrix is
+exactly:
+
+```text
+Mlocal = T(x + width/2, y + height/2)
+       x R_clockwise(rotationDeg)
+       x S(scaleX, scaleY)
+       x T(-width/2, -height/2)
+```
+
+Because the system is y-down, the positive-clockwise rotation is
+`a = cos, b = sin, c = -sin, d = cos, e = 0, f = 0`. Scale and rotation are never
+reversed, row-vector semantics are forbidden, and a library's multiplication
+convention must be converted to this contract rather than relied upon.
+
+**PO-06 — group coordinate semantics.** A group defines a **real local
+coordinate frame** whose origin is the top-left of its untransformed local box.
+Every direct child's persisted `x`/`y` is expressed in that frame, and the group's
+own transform maps the frame into its parent. Effective transforms compose
+**parent outermost**:
+
+```text
+Meffective(child)      = Meffective(parent group) x Mlocal(child)
+Meffective(root)       = Mlocal(root)
+Meffective(descendant) = Mlocal(root group) x Mlocal(next group) x ... x Mlocal(descendant)
+```
+
+`child x parent`, document-space coordinates inside a group, partial or
+scale-only inheritance and renderer-owned grouping are all forbidden. A group
+applies translation, rotation, scale and any future v1 transform field uniformly
+to every descendant.
+
+**PO-07 — group frame and bounds.** A group is **not visible geometry**. Its
+persisted `width`/`height` define its local frame and centre pivot and are never
+replaced dynamically by descendant bounds — otherwise a child edit would
+silently move the group's rotation and scale pivot. Group **bounds** are the
+union of transformed descendant drawable bounds, not the group's own box. A
+future grouping interaction must choose the local frame, rebase child transforms
+into it and persist the result explicitly; that belongs to a later Studio
+checkpoint, and `APP3-P02` must never rebase children automatically.
+
+**PO-08 — bounds strategy.** APP3 v1 uses `CONSERVATIVE_TRANSFORMED_AABB`, a
+deliberate production safety strategy rather than path-accurate geometry. For
+box-based elements (`text`, `image`, `rectangle`, `ellipse`) the four local
+corners `(0,0)`, `(width,0)`, `(width,height)`, `(0,height)` are transformed
+through the full effective matrix and axis-aligned. **Ellipse** intentionally
+uses the transformed AABB of its declared box, not the mathematically tight
+rotated-ellipse AABB. **Line and freehand** use the local point/path bounds of
+the production P01 shape, expanded by `strokeWidthPx / 2` where a persisted
+stroke width exists, then transformed conservatively. Line-cap and line-join
+extension, path smoothing, Bezier control geometry and renderer hit regions are
+not invented. **Group** bounds are the union of descendant drawable AABBs and
+**document** bounds the union of all of them. Hidden and locked serialized
+elements still have geometry, and z-order never affects bounds.
+
+**PO-09 — containment.** Production containment is **blocking** and uses the
+complete conservative transformed AABB. An element is inside an Embroidery Area
+only when `minX >= area.minX`, `minY >= area.minY`, `maxX <= area.maxX` and
+`maxY <= area.maxY` after P01 quantization. Touching the boundary exactly is
+valid; **any** overhang is invalid. Checking the untransformed box, the pivot or
+centre alone, or a sample of path points is forbidden, as is clamping,
+translating, rotating, scaling down, snapping, or warning while allowing
+persistence. `APP3-P02` returns findings only; the caller decides the workflow,
+but APP3 document-write APIs must treat an out-of-bounds finding as a validation
+failure. This conservative strategy may reject a path whose visible pixels fit
+while its declared box does not — accepted for v1 to prevent clipping and
+renderer-specific disagreement.
+
+**PO-10 — physical scale authority.** The sole px↔mm source is
+`product_sides.px_per_mm`. Scale is never derived from Embroidery Area width or
+height, CSS DPI, 96 DPI, image metadata DPI, or the APP0 spike's `mmPerPx`
+helper. `embroidery_areas.max_width_mm`/`max_height_mm` are **physical limits,
+not conversion authority**. Product Side consistency requires
+`image_width_px / physical_width_mm = px_per_mm` **and**
+`image_height_px / physical_height_mm = px_per_mm` after P01 quantization; when
+the two axes imply different scale the authority is inconsistent and the axes are
+never averaged.
+
+**PO-11 — historical rows.** Retirement and geometry validity are separate
+concerns. For new editing or new document creation a retired Product Side or
+Embroidery Area is **not selectable**. For an existing historical document that
+already references the same stable placement rows, retired placement remains
+renderable and geometrically valid. `APP3-P02` must expose the distinction
+explicitly as `NEW_EDITING` versus `HISTORICAL_RENDER`. Retirement is never
+treated as deletion, and a historical document is never silently moved to
+`superseded_by_id`.
+
+**PO-12 — integrity consequence.** The v1 document hash does not encode these
+semantics separately, so **`IMP-D045` is part of the semantic interpretation of
+`schemaVersion = 1`**. Approval, rendering and production systems must all use a
+geometry-engine version compatible with it. A change to pivot, rotation
+direction, scale origin, group frame, composition order, bounds strategy,
+containment strategy or `pxPerMm` source is a **schema-semantic change** and
+cannot ship as an internal refactor; it requires a new Product Owner decision, a
+document schema-version increase, an explicit migration and a new canonical
+approval/rendering contract. The phase must later record the geometry-engine
+compatibility version in approval and rendering implementation evidence.
+`G05_DB_CONTRIBUTION = NONE`.
+
+### 6.11.3 Why the spike is not authority
+
+`APP3-P02`'s first attempt stopped at `FAILED — MANUAL INTERVENTION REQUIRED`
+because no accepted document defined rotation origin, rotation direction, scale
+origin, group coordinate semantics, composition order or a bounds strategy — and
+the APP0-R01 spike, the only executable source, contradicts itself:
+
+| Adapter | Rotation / scale pivot | Group transform applied to children |
+|---|---|---|
+| SVG (`adapters/svg/scene.tsx`) | box centre | all of it — children nest inside the group's `<g transform>` |
+| Konva (`adapters/konva/scene.tsx`) | top-left — no `offsetX`/`offsetY` | scale and opacity only — `x`, `y`, `rotation` are zeroed |
+| Fabric (`adapters/fabric/objects.ts`) | top-left — default `originX`/`originY` | none — the group is constructed empty |
+
+The identical cross-engine canonical hash proved **serialization** agreement
+only: the hash is over the document, which stores `x`, `y`, `rotationDeg`
+whatever a renderer does with them. APP0-R01 itself recorded the gap — *"the
+document box centre is not a reliable hit point. Hit testing must be asked of the
+engine, never derived from document geometry."*
+
+The three adapters are therefore **comparative research evidence, not production
+authority**. `IMP-D045` is independent of all three: it happens to agree with the
+SVG adapter on pivot and inheritance, but it is locked because the Product Owner
+ruled it, not because a renderer defaulted to it. `IMP-D026` keeps native SVG as
+the renderer architecture, and the renderer now **implements** `IMP-D045` rather
+than defining it.
+
+The stop was necessary rather than cautious: a v1 document stores `x`, `y`,
+`rotationDeg` with **no pivot marker**, so a later change of convention would
+silently relocate every stored design while the integrity hash — which is over
+the bytes, not the interpretation — stayed valid. PO-12 exists to make that
+class of change impossible to ship quietly.
+
+### 6.11.4 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-G05` |
+|---|---|---|
+| `APP3-G01` | whole checkpoint, post-G05 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G02` | whole checkpoint, post-G05 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G03` | whole checkpoint, post-G05 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G04` | whole checkpoint, post-G05 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-DB01` | whole checkpoint, post-G05 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-F01` | whole checkpoint, post-G05 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-P01` | whole checkpoint, post-G05 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G05` | whole checkpoint, post-G05 | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-P02` | whole checkpoint, post-G05 | `BLOCKED_BY_APP3-G05_REVIEW_ACCEPTANCE` |
+| `APP3-P02` | first attempt, post-G05 | `FAILED — MANUAL_INTERVENTION_REQUIRED` |
+| `APP3-P02` | failure cause, post-G05 | `GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT` |
+| `APP3-P02` | resolution, post-G05 | `APP3-G05` |
+| `IMP-D045` | authority state | `LOCKED` |
+| `APP0-R01 adapters` | evidence class | `COMPARATIVE_RESEARCH_NOT_PRODUCTION_AUTHORITY` |
+
+On human acceptance, `APP3-P02` becomes
+`READY_FOR_MANUAL_INTERVENTION_RESUME`.
+
+`APP3-G05` delivers no geometry implementation, no package source, no renderer,
+no API, no worker, no schema, no migration, no Figma and no UI. The historical
+`APP0-R01`, `APP3-P01` and `APP3-P02` records are not rewritten.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -1723,7 +1987,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — DOCUMENT FOUNDATION CORRECTION_DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — GEOMETRY AUTHORITY DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -1741,12 +2005,17 @@ G03_DB_CONTRIBUTION = NONE
 G04_DB_CONTRIBUTION = REQUIRES_APP3_DB01_ASSET_DERIVATIVE_METADATA
 G01 DB contribution = IMPLEMENTED_BY_APP3_DB01
 G04 DB contribution = IMPLEMENTED_BY_APP3_DB01
-APP3-P01 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
-APP3-P01-C1 = COMPLETE — REVIEW_DELIVERED
+APP3-P01 = COMPLETE — REVIEW_ACCEPTED
+APP3-P01-C1 = COMPLETE — REVIEW_ACCEPTED
+APP3-G05 = COMPLETE — REVIEW_DELIVERED
+IMP-D045 = LOCKED
 APP3-P01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
 APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01
-APP3-P02 = READY — NOT STARTED
+APP3-P02 = BLOCKED_BY_APP3-G05_REVIEW_ACCEPTANCE
+APP3-P02 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
+APP3-P02 FIRST_ATTEMPT CAUSE = GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT
+APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
 APP3-B01 = READY — NOT STARTED
 APP3-B03 = READY_BY_P01 — NOT STARTED
 APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06

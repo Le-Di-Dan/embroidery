@@ -74,6 +74,18 @@ Required patterns or equivalent outcomes:
   written atomically with its transition to READY, all-or-none. Source-asset
   metadata and append-only inspection evidence are never substituted for it, and
   missing values make a derivative ineligible rather than inferred.
+- Design Document geometry semantics are part of the meaning of
+  `schemaVersion = 1` (`APP3-G05` / IMP-D045). A v1 document stores `x`, `y`,
+  `rotationDeg`, `scaleX` and `scaleY` with **no pivot or composition marker**,
+  so changing the rotation pivot, rotation direction, scale origin, group frame,
+  composition order, bounds strategy, containment strategy or `pxPerMm` source
+  would relocate every stored design while its SHA-256 stayed valid — the hash
+  is taken over the bytes, not over their interpretation. Such a change is a
+  schema-semantic event requiring a new decision, a schema-version increase and
+  an explicit document migration; it can never ship as an internal refactor.
+  Approval, rendering and production systems must run a geometry-engine version
+  compatible with the decision, and that compatibility must be recorded in
+  approval and rendering evidence.
 
 ## 6. Accessibility
 

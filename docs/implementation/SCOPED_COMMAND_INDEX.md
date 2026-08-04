@@ -155,6 +155,8 @@ leaving the hole open.
 | `CMD-CHECK-APP3-P01` | repository tool | checkpoint gate (APP3-P01) | `node tools/check-app3-p01.mjs` | tools/check-app3-p01.mjs | Any change to `packages/design-document`, §6.10, the G04 complexity constants, the quantization precision, the browser/server export split or the controlled font registry. Chains F01 and DB01. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP3-P01` | repository tool | checkpoint gate tests | `node --test tools/check-app3-p01.test.mjs` | tools/check-app3-p01.test.mjs | Any edit to the P01 checker or the sources it parses. | `ACTIVE_SCOPED` |
 | `CMD-TEST-DESIGN-DOCUMENT` | `@embroidery/design-document` | package unit tests | `pnpm --filter @embroidery/design-document test` | packages/design-document/src/**/*.spec.ts | Any change to the Design Document schema, validation, quantization, canonicalization, hashing, migration or font registry. Pure unit tests; no database, no network. | `ACTIVE_SCOPED` |
+| `CMD-CHECK-APP3-G05` | repository tool | checkpoint gate (APP3-G05) | `node tools/check-app3-g05.mjs` | tools/check-app3-g05.mjs, tools/check-app3-g05-transform.mjs | Any edit to `IMP-D045`, §6.11, the geometry coordinate/transform/bounds/containment rulings, the `pxPerMm` authority, the placement modes, or the `APP3-P02` disposition. Chains P01. Because a v1 document records no pivot marker, every fact here is asserted as an exact string, not a substring. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP3-G05` | repository tool | checkpoint gate tests | `node --test tools/check-app3-g05.test.mjs` | tools/check-app3-g05.test.mjs | Any edit to the G05 checkers or the authority they parse. | `ACTIVE_SCOPED` |
 
 ## 4. Adding a command
 
