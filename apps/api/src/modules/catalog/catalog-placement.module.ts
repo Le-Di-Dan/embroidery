@@ -4,6 +4,7 @@ import { DatabaseModule } from '@embroidery/persistence';
 import { AssetModule } from '../asset/asset.module';
 import { AuditModule } from '../audit/audit.module';
 import { IdentityModule } from '../identity/identity.module';
+import { ProductPlacementNormalizationRecorder } from './application/product-placement-normalization.recorder';
 import { ProductPlacementQuery } from './application/product-placement.query';
 import { ProductPlacementService } from './application/product-placement.service';
 import { PRODUCT_PLACEMENT_REPOSITORY } from './domain/repositories/product-placement.repository';
@@ -35,12 +36,18 @@ import { PublicProductPlacementController } from './presentation/public-product-
  * Both controllers are registered here, Admin and public alike, because they are
  * two views of one contract: adding a field to the authoring model and
  * forgetting the manifest, or the reverse, should be one file's problem.
+ *
+ * `DatabaseModule` also supplies the `OutboxEventStore` the normalization
+ * recorder appends through (`APP3-B01N`). That recorder is the only thing here
+ * that knows an event exists; it takes no queue, no scheduler and no client, so
+ * this module gained a provider and not a dependency.
  */
 @Module({
   imports: [DatabaseModule, AssetModule, AuditModule, IdentityModule],
   controllers: [AdminProductPlacementController, PublicProductPlacementController],
   providers: [
     { provide: PRODUCT_PLACEMENT_REPOSITORY, useClass: DrizzleProductPlacementRepository },
+    ProductPlacementNormalizationRecorder,
     ProductPlacementQuery,
     ProductPlacementService,
   ],

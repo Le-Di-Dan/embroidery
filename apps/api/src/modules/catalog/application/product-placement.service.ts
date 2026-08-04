@@ -42,6 +42,8 @@ import {
   PRODUCT_PLACEMENT_REPOSITORY,
   type ProductPlacementRepository,
 } from '../domain/repositories/product-placement.repository';
+import { ProductPlacementNormalizationRecorder } from './product-placement-normalization.recorder';
+import { planSideNormalizationRequests } from './product-placement.normalization';
 import { planPlacementReplace, type SideCommand } from './product-placement.plan';
 import { toAdminPlacementView, type AdminPlacementView } from './product-placement.projection';
 
@@ -65,6 +67,7 @@ export class ProductPlacementService {
     @Inject(PRODUCT_PLACEMENT_REPOSITORY) private readonly placement: ProductPlacementRepository,
     @Inject(ASSET_REPOSITORY) private readonly assets: AssetRepository,
     @Inject(AUDIT_EVENT_REPOSITORY) private readonly events: AuditEventRepository,
+    private readonly normalization: ProductPlacementNormalizationRecorder,
     private readonly transactions: TransactionManager,
     private readonly requestContext: RequestContextService,
     private readonly clock: AuditClock,
@@ -96,6 +99,9 @@ export class ProductPlacementService {
 
       await this.apply(plan);
       await this.recordAudit(lock.product.id, plan);
+      // After the Sides exist, still inside this transaction: the event names a
+      // Side id, and a rollback must take the request with it (`APP3-B01N`).
+      await this.normalization.record(planSideNormalizationRequests(plan.sides));
 
       const snapshot = await this.placement.findPlacement(productId);
       if (snapshot === undefined) {
@@ -186,9 +192,10 @@ export class ProductPlacementService {
    * a background asset or any geometry — an audit row is evidence, not a second
    * copy of the record it describes.
    *
-   * No outbox event: `APP3-B01` owns no consumer and no event type has been
-   * locked for placement, and announcing one that nothing is defined to handle
-   * would be a contract invented here.
+   * No outbox event **here**: the placement audit row is evidence of an Admin
+   * action, and the one event this transaction does append is the normalization
+   * request, which belongs to the association that produced it rather than to
+   * this summary (`APP3-B01N`).
    */
   private async recordAudit(
     productId: string,

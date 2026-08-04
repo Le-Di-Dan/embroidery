@@ -28,6 +28,7 @@ const JOB_DIR = 'apps/worker/src/jobs/asset-normalization';
 
 export const CANONICAL_FILES = Object.freeze({
   payload: `${JOB_DIR}/domain/asset-normalization.payload.ts`,
+  sharedContract: 'packages/domain-types/src/events/asset-normalization-requested.ts',
   policy: `${JOB_DIR}/domain/normalization-policy.ts`,
   outcome: `${JOB_DIR}/domain/normalization-outcome.ts`,
   port: `${JOB_DIR}/domain/repositories/asset-normalization.repository.ts`,
@@ -82,27 +83,39 @@ function jobFiles(rootDir) {
   return found;
 }
 
-/** 1 — the event, its payload and the untouched APP2 event. */
+/**
+ * 1 — the event, its payload and the untouched APP2 event.
+ *
+ * The literals moved to `@embroidery/domain-types` at `APP3-B01N`, when a
+ * producer appeared in the other application and one vocabulary needed one
+ * owner. So the values are asserted where they now live, and the consumer is
+ * asserted to *import* them: a worker that re-declared its own copy would keep
+ * compiling and keep passing its own tests while silently ceasing to accept what
+ * the producer writes, which is the exact failure the extraction prevents.
+ */
 function checkEventContract(rootDir, fail) {
   const payload = code(read(rootDir, 'payload') ?? '');
+  const shared = code(read(rootDir, 'sharedContract') ?? '');
   const inspection = code(read(rootDir, 'inspectionPayload') ?? '');
 
-  for (const [pattern, complaint] of [
-    [/ASSET_NORMALIZATION_EVENT_TYPE = 'asset\.normalization\.requested'/, 'the ruled event type'],
-    [/ASSET_NORMALIZATION_PAYLOAD_VERSION = 1/, 'schema version 1'],
-    [/normalizationPolicyVersion/, 'the policy version field'],
-    [/PRODUCT_SIDE_BACKGROUND: 'productSideId'/, 'the Product Side reference field'],
-    [/DESIGN_TEMPLATE_ASSET: 'designTemplateAssetId'/, 'the Template reference field'],
-    [/DESIGN_SESSION_ASSET: 'designSessionAssetId'/, 'the Session reference field'],
+  for (const [source, pattern, complaint] of [
+    [shared, /_REQUESTED_EVENT_TYPE = 'asset\.normalization\.requested'/, 'the ruled event type'],
+    [shared, /ASSET_NORMALIZATION_EVENT_SCHEMA_VERSION = 1/, 'schema version 1'],
+    [shared, /PRODUCT_SIDE_BACKGROUND: 'productSideId'/, 'the Product Side reference field'],
+    [shared, /DESIGN_TEMPLATE_ASSET: 'designTemplateAssetId'/, 'the Template reference field'],
+    [shared, /DESIGN_SESSION_ASSET: 'designSessionAssetId'/, 'the Session reference field'],
+    [payload, /from '@embroidery\/domain-types'/, 'the shared contract import'],
+    [payload, /_EVENT_TYPE = ASSET_NORMALIZATION_REQUESTED_EVENT_TYPE/, 'the event-type alias'],
+    [payload, /_PAYLOAD_VERSION = ASSET_NORMALIZATION_EVENT_SCHEMA_VERSION/, 'the version alias'],
+    [payload, /normalizationPolicyVersion/, 'the policy version field'],
+    // Exact validation: an unknown field must be terminal, not ignored.
+    [payload, /ALLOWED_KEYS/, 'the closed key set'],
+    [payload, /exactKeys/, 'exact key validation'],
   ]) {
-    if (!pattern.test(payload)) fail(`the payload contract is missing ${complaint}`);
-  }
-  // Exact validation: an unknown field must be terminal, not ignored.
-  if (!/ALLOWED_KEYS/.test(payload) || !/exactKeys/.test(payload)) {
-    fail('the payload does not reject unknown fields exactly');
+    if (!pattern.test(source)) fail(`the payload contract is missing ${complaint}`);
   }
   for (const forbidden of ['profile', 'ownerId', 'storageKey', 'sessionSecret', 'customerId']) {
-    if (new RegExp(`readonly ${forbidden}\\b`).test(payload)) {
+    if (new RegExp(`readonly ${forbidden}\\b`).test(payload + shared)) {
       fail(`the payload declares a forbidden field "${forbidden}"`);
     }
   }
@@ -209,7 +222,13 @@ function checkOutputContract(rootDir, fail) {
   if (!/kind: 'NORMALIZED'/.test(policy)) fail('the output kind is not NORMALIZED');
   if (!/isWatermarked: false/.test(policy)) fail('the output policy does not fix isWatermarked');
   if (!/mediaType: 'image\/webp'/.test(policy)) fail('the output media type is not fixed');
-  if (!/NORMALIZATION_POLICY_VERSION = 1/.test(policy)) fail('the policy version is not 1');
+  // The number itself is the shared contract's since `APP3-B01N`; what this
+  // policy must not do is declare a second one.
+  const shared = code(read(rootDir, 'sharedContract') ?? '');
+  if (!/ASSET_NORMALIZATION_POLICY_VERSION = 1/.test(shared)) fail('the policy version is not 1');
+  if (!/NORMALIZATION_POLICY_VERSION = ASSET_NORMALIZATION_POLICY_VERSION/.test(policy)) {
+    fail('the policy version is not taken from the shared contract');
+  }
 
   // The quartet must come from the encoder and the counted stream.
   for (const [pattern, complaint] of [

@@ -17,6 +17,7 @@
  * policy for the one editor-safe kind (PO-01).
  */
 import type { AssetDerivativeKind } from '@embroidery/database';
+import { ASSET_NORMALIZATION_POLICY_VERSION } from '@embroidery/domain-types';
 
 import {
   ASSET_PROCESSING_POLICY_V1,
@@ -25,8 +26,14 @@ import {
 } from '../../asset-inspection/domain/asset-processing-policy';
 import type { RasterEncodePolicy } from '../../asset-inspection/infrastructure/image/sharp-pipeline';
 
-/** Carried in every event payload; a mismatch is a terminal payload rejection. */
-export const NORMALIZATION_POLICY_VERSION = 1;
+/**
+ * Carried in every event payload; a mismatch is a terminal payload rejection.
+ *
+ * The number is the shared contract's (`APP3-B01N`) — the producer asks for a
+ * policy version and this consumer answers for it, so one declaration decides
+ * both halves. The *rules* below remain entirely the worker's.
+ */
+export const NORMALIZATION_POLICY_VERSION = ASSET_NORMALIZATION_POLICY_VERSION;
 
 /**
  * The three transient processing profiles (IMP-D044 PO-02).

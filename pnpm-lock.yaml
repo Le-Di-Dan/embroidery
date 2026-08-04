@@ -102,6 +102,9 @@ importers:
       '@embroidery/design-engine':
         specifier: workspace:*
         version: link:../../packages/design-engine
+      '@embroidery/domain-types':
+        specifier: workspace:*
+        version: link:../../packages/domain-types
       '@embroidery/object-storage':
         specifier: workspace:*
         version: link:../../packages/object-storage
@@ -263,6 +266,9 @@ importers:
       '@embroidery/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@embroidery/domain-types':
+        specifier: workspace:*
+        version: link:../../packages/domain-types
       '@embroidery/object-storage':
         specifier: workspace:*
         version: link:../../packages/object-storage
@@ -507,9 +513,15 @@ importers:
       '@embroidery/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
       eslint:
         specifier: ^10.7.0
         version: 10.7.0(jiti@2.7.0)
+      rimraf:
+        specifier: ^6.1.3
+        version: 6.1.3
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

@@ -119,8 +119,11 @@ describe('APP3-W01A — the delivered consumer passes', () => {
 
 describe('APP3-W01A — the event contract', () => {
   it('rejects renaming the ruled event type', () => {
+    // The literal lives in the shared package since APP3-B01N; the consumer
+    // aliases it. Renaming it there is how both applications would move
+    // together and away from what the accepted contract says.
     const failures = run({
-      [CANONICAL_FILES.payload]: file('payload').replace(
+      [CANONICAL_FILES.sharedContract]: file('sharedContract').replace(
         "'asset.normalization.requested'",
         "'asset.normalize.requested'",
       ),
@@ -128,12 +131,22 @@ describe('APP3-W01A — the event contract', () => {
     assert.ok(mentions(failures, 'the ruled event type'), failures.join('\n'));
   });
 
+  it('rejects a consumer that re-declares the vocabulary instead of importing it', () => {
+    const failures = run({
+      [CANONICAL_FILES.payload]: file('payload').replace(
+        'ASSET_NORMALIZATION_EVENT_TYPE = ASSET_NORMALIZATION_REQUESTED_EVENT_TYPE',
+        "ASSET_NORMALIZATION_EVENT_TYPE = 'asset.normalization.requested'",
+      ),
+    });
+    assert.ok(mentions(failures, 'the event-type alias'), failures.join('\n'));
+  });
+
   it('rejects a profile carried on the payload', () => {
     // The whole point of IMP-D046: the producer states the association, the
     // consumer derives the profile. A payload profile makes the derivation a
     // suggestion.
     const failures = run({
-      [CANONICAL_FILES.payload]: file('payload').replace(
+      [CANONICAL_FILES.sharedContract]: file('sharedContract').replace(
         'readonly assetId: string;',
         'readonly assetId: string;\n  readonly profile: string;',
       ),
@@ -145,7 +158,7 @@ describe('APP3-W01A — the event contract', () => {
     const failures = run({
       [CANONICAL_FILES.payload]: file('payload').replaceAll('exactKeys', 'looseKeys'),
     });
-    assert.ok(mentions(failures, 'reject unknown fields exactly'), failures.join('\n'));
+    assert.ok(mentions(failures, 'exact key validation'), failures.join('\n'));
   });
 
   it('rejects repurposing the accepted APP2 inspection event', () => {

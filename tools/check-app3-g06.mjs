@@ -304,11 +304,24 @@ function checkGovernance(rootDir, fail) {
     fail(`${CANONICAL_FILES.phase}: the platform Zod/OpenAPI follow-up was closed here`);
   }
   // PO-11 moved the follow-up off `APP3-B06` and onto the trigger owner. The
-  // blocker narrows as predecessors land — `W01A_AND_B01N` before W01A, `B01N`
-  // after — so what must hold is that `APP3-B01N` is named and `APP3-B06` is not.
+  // blocker narrows as predecessors land — `W01A_AND_B01N`, then `B01N`, then
+  // none at all once the producer exists — so two consistent worlds are
+  // accepted. Before `APP3-B01N` the blocker must name it; after, the follow-up
+  // must record that its foundation is ready. `APP3-B06` is refused in both:
+  // PO-11 took the trigger role away from it permanently.
+  const produced = /APP3-B01N\s*=\s*COMPLETE/.test(phase);
+  const followUp =
+    /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01[\s\S]{0,400}?(?=\nFU-PLATFORM)/.exec(phase)?.[0] ?? '';
   const blocker = /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = ([^\n]+)/.exec(phase)?.[1] ?? '';
-  if (!blocker.includes('APP3-B01N') || blocker.includes('APP3-B06')) {
+  if (produced) {
+    if (!followUp.includes('PROCESSING_AND_TRIGGER_FOUNDATION_READY') || blocker.length > 0) {
+      fail(`${CANONICAL_FILES.phase}: the public-media-dimensions follow-up was not advanced`);
+    }
+  } else if (!blocker.includes('APP3-B01N')) {
     fail(`${CANONICAL_FILES.phase}: the public-media-dimensions blocker was not corrected`);
+  }
+  if (followUp.includes('APP3-B06')) {
+    fail(`${CANONICAL_FILES.phase}: the public-media-dimensions follow-up names APP3-B06 again`);
   }
 
   const manifest = read(rootDir, 'rootManifest');

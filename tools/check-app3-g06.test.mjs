@@ -390,7 +390,7 @@ describe('APP3-G06 — ownership and blockers', () => {
   it('rejects B02 still being blocked by B06', () => {
     const failures = run({
       [CANONICAL_FILES.phase]: phase().replace(
-        'APP3-B02 = BLOCKED_BY_APP3-W01A_AND_APP3-B01N',
+        /APP3-B02 = READY_BY[^\n]+/,
         'APP3-B02 = BLOCKED_BY_APP3-B06',
       ),
     });
@@ -407,16 +407,36 @@ describe('APP3-G06 — ownership and blockers', () => {
     assert.ok(mentions(failures, 'follow-up'), failures.join('\n'));
   });
 
-  it('rejects a public-media-dimensions blocker that still names B06', () => {
-    // PO-11 moved the follow-up onto the trigger owner. The blocker narrows as
-    // predecessors land, so what must hold is that B01N is named and B06 is not.
+  it('rejects handing the public-media-dimensions follow-up back to B06', () => {
     const failures = run({
       [CANONICAL_FILES.phase]: phase().replace(
-        /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = [^\n]+/,
+        /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = [^\n]+/,
         'FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = APP3-B06',
       ),
     });
-    assert.ok(mentions(failures, 'public-media-dimensions'), failures.join('\n'));
+    assert.ok(mentions(failures, 'names APP3-B06 again'), failures.join('\n'));
+  });
+
+  it('rejects a follow-up left unadvanced once the producer exists', () => {
+    // Two consistent worlds: before B01N the follow-up names it as a blocker,
+    // after B01N it records that its foundation is ready. A blocker that
+    // survives the producer is the mixture that fails.
+    const failures = run({
+      [CANONICAL_FILES.phase]: phase().replace(
+        /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = [^\n]+/,
+        'FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = APP3-B01N',
+      ),
+    });
+    assert.ok(mentions(failures, 'was not advanced'), failures.join('\n'));
+  });
+
+  it('rejects dropping the blocker before the producer exists', () => {
+    const failures = run({
+      [CANONICAL_FILES.phase]: phase()
+        .replaceAll('APP3-B01N = COMPLETE', 'APP3-B01N = READY — NOT STARTED')
+        .replace(/FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = [^\n]+\n/, ''),
+    });
+    assert.ok(mentions(failures, 'was not corrected'), failures.join('\n'));
   });
 });
 
