@@ -1746,13 +1746,40 @@ is the Product Owner authority P02 turned out to require.
 | `Group child rebasing by P02` | `FORBIDDEN` | PO-07 |
 | `Group visible geometry` | `NONE` | PO-07 |
 | `Bounds strategy` | `CONSERVATIVE_TRANSFORMED_AABB` | PO-08 |
-| `Box element bounds` | `TRANSFORM_FOUR_LOCAL_CORNERS_THEN_AXIS_ALIGN` | PO-08, text/image/rectangle/ellipse |
-| `Ellipse bounds` | `DECLARED_BOX_TRANSFORMED_AABB` | PO-08 |
+| `Box element bounds` | `TRANSFORM_FOUR_LOCAL_CORNERS_THEN_AXIS_ALIGN` | PO-08, applied to the local **envelope** |
+| `Envelope transform order` | `EXPAND_LOCAL_THEN_TRANSFORM_THEN_AXIS_ALIGN` | PO-08 (C1) |
+| `Document space stroke addition` | `FORBIDDEN` | PO-08 (C1), never a post-transform half-stroke |
+| `Stroked kinds` | `rectangle ellipse line freehand` | PO-08 (C1), every kind storing `strokeWidthPx` |
+| `Unstroked kinds` | `text image` | PO-08 (C1) |
+| `Text image stroke expansion` | `NONE` | PO-08 (C1) |
+| `Stroke alignment` | `CENTRED_ON_LOCAL_PATH` | PO-08 (C1) |
+| `Stroke expansion` | `strokeWidthPx / 2` | PO-08 (C1), on all four sides |
+| `Zero stroke expansion` | `NONE` | PO-08 (C1), a zero stroke uses the declared box |
+| `Stroke in bounds containment and physical size` | `INCLUDED` | PO-08 (C1) |
+| `Stroke as renderer decoration` | `FORBIDDEN` | PO-08 (C1) |
+| `Stroke subtracted from width height` | `FORBIDDEN` | PO-08 (C1) |
+| `Rectangle local path` | `BOUNDARY_OF_DECLARED_BOX` | PO-08 (C1), `(0,0)` to `(width,height)` |
+| `Rectangle line join` | `MITER` | PO-08 (C1) |
+| `Rectangle miter limit` | `4` | PO-08 (C1) |
+| `Ellipse local path` | `INSCRIBED_IN_DECLARED_BOX` | PO-08 (C1) |
+| `Ellipse bounds` | `DECLARED_BOX_PLUS_HALF_STROKE_TRANSFORMED_AABB` | PO-08 (C1) |
 | `Tight rotated ellipse aabb` | `NOT_APP3_V1` | PO-08 |
-| `Line freehand stroke expansion` | `strokeWidthPx / 2` | PO-08, where a persisted stroke width exists |
-| `Line cap join extension` | `FORBIDDEN` | PO-08 |
+| `Line local path` | `(0,0) to (width,height)` | PO-08 (C1), the only v1 line geometry |
+| `Line segment shape` | `STRAIGHT` | PO-08 (C1) |
+| `Forbidden line paths` | `HORIZONTAL_CENTRELINE VERTICAL_CENTRELINE RENDERER_PATH RENDERER_CHOSEN_DIAGONAL UNSTORED_ENDPOINTS` | PO-08 (C1) |
+| `Line cap` | `ROUND` | PO-08 (C1) |
+| `Line join` | `ROUND` | PO-08 (C1) |
+| `Freehand point frame` | `ELEMENT_LOCAL` | PO-08 (C1) |
+| `Freehand path` | `ORDERED_POLYLINE_STRAIGHT_SEGMENTS` | PO-08 (C1) |
+| `Freehand cap` | `ROUND` | PO-08 (C1) |
+| `Freehand join` | `ROUND` | PO-08 (C1) |
+| `Freehand single point geometry` | `ROUND_DOT_RADIUS_HALF_STROKE` | PO-08 (C1) |
+| `Freehand smoothing simplification` | `FORBIDDEN` | PO-08 (C1) |
+| `Cap join as document field` | `FORBIDDEN_VERSION_LEVEL_CONSTANT` | PO-08 (C1), no v1 schema field |
+| `Stroke semantics change class` | `SCHEMA_SEMANTIC_UNDER_PO_12` | PO-08 (C1) |
 | `Path smoothing or bezier geometry` | `FORBIDDEN` | PO-08 |
-| `Group bounds` | `UNION_OF_DESCENDANT_DRAWABLE_AABB` | PO-08 |
+| `Group painted geometry` | `NONE` | PO-08 (C1) |
+| `Group bounds` | `UNION_OF_DESCENDANT_DRAWABLE_AABB` | PO-08, including every descendant stroke envelope |
 | `Document bounds` | `UNION_OF_ALL_DRAWABLE_AABB` | PO-08 |
 | `Hidden locked element geometry` | `COUNTS` | PO-08 |
 | `Z order effect on bounds` | `NONE` | PO-08 |
@@ -1851,25 +1878,67 @@ future grouping interaction must choose the local frame, rebase child transforms
 into it and persist the result explicitly; that belongs to a later Studio
 checkpoint, and `APP3-P02` must never rebase children automatically.
 
-**PO-08 — bounds strategy.** APP3 v1 uses `CONSERVATIVE_TRANSFORMED_AABB`, a
-deliberate production safety strategy rather than path-accurate geometry. For
-box-based elements (`text`, `image`, `rectangle`, `ellipse`) the four local
-corners `(0,0)`, `(width,0)`, `(width,height)`, `(0,height)` are transformed
-through the full effective matrix and axis-aligned. **Ellipse** intentionally
-uses the transformed AABB of its declared box, not the mathematically tight
-rotated-ellipse AABB. **Line and freehand** use the local point/path bounds of
-the production P01 shape, expanded by `strokeWidthPx / 2` where a persisted
-stroke width exists, then transformed conservatively. Line-cap and line-join
-extension, path smoothing, Bezier control geometry and renderer hit regions are
-not invented. **Group** bounds are the union of descendant drawable AABBs and
+**PO-08 — bounds strategy** *(corrected by `APP3-G05-C1`; see §6.11.5)*. APP3 v1
+uses `CONSERVATIVE_TRANSFORMED_AABB`, a deliberate production safety strategy
+rather than path-accurate geometry.
+
+**The stroke is drawable geometry.** Every kind that stores `strokeWidthPx` —
+`rectangle`, `ellipse`, `line`, `freehand` — contributes its stroke to bounds,
+containment, physical-size validation, group bounds and document bounds. The
+stroke is **centred on the local path**, so the local envelope expands by
+`strokeWidthPx / 2` on all four sides; a zero stroke expands nothing. Stroke is
+never treated as renderer decoration, never ignored because the element also has
+a fill, and never subtracted from the declared `width`/`height`. `text` and
+`image` carry no stroke and use their declared local box unexpanded, as does a
+filled `rectangle` or `ellipse` whose `strokeWidthPx` is `0`.
+
+**Local geometry per kind.** A **rectangle**'s local path is the boundary of
+`(0,0)`–`(width,height)`, with fixed v1 semantics `lineJoin = miter`,
+`miterLimit = 4`; for its four 90° corners the half-stroke envelope is the
+production bounds authority. An **ellipse** is inscribed in the declared box,
+its stroke centred on the outline, and its envelope is the declared box expanded
+by half the stroke — still the conservative transformed AABB of that expanded
+box, never the tight rotated ellipse/stroke AABB. A **line** has no independent
+endpoint fields in v1, so its exact local path is locked as a straight segment
+from `(0,0)` to `(width,height)` with `lineCap = round` and `lineJoin = round`;
+it is never a horizontal or vertical centreline, an arbitrary renderer path, a
+renderer-chosen diagonal or a path with unstored endpoints. **Freehand** points
+are in the element's local frame and form an ordered polyline of straight
+segments, with `lineCap = round` and `lineJoin = round`; no smoothing,
+interpolation, Bezier conversion or point simplification is authorized, a single
+stored point is a round dot of radius `strokeWidthPx / 2`, and an empty sequence
+stays invalid under P01.
+
+**Transform order.** Derive the exact local drawable envelope for the kind,
+transform **all four corners of that envelope** with the full effective matrix,
+take the document-space axis-aligned min/max, then quantize comparable output
+through P01 authority. Transforming only the unexpanded path and adding an
+unscaled document-space half-stroke afterwards is forbidden — it ignores scale
+and rotation. For line and freehand this may overestimate the painted stroke
+under rotation or non-uniform scale; that overestimation is accepted for v1
+containment safety.
+
+**Fixed cap/join are version-level constants, not document fields.** A renderer
+implementing `schemaVersion = 1` must reproduce miter join with `miterLimit 4`
+for rectangle and round cap/join for line and freehand (ellipse has no cap/join
+decision). These values are **not** added to the v1 Design Document and are not
+per-element customer choices; changing one changes painted bounds and is
+therefore a schema-semantic change under PO-12. A future version may expose
+configurable cap/join only through a new Product Owner decision and a migration.
+
+**Group** has no painted geometry of its own; its bounds are the union of
+descendant drawable AABBs **including every descendant stroke envelope**, and
 **document** bounds the union of all of them. Hidden and locked serialized
 elements still have geometry, and z-order never affects bounds.
 
 **PO-09 — containment.** Production containment is **blocking** and uses the
-complete conservative transformed AABB. An element is inside an Embroidery Area
-only when `minX >= area.minX`, `minY >= area.minY`, `maxX <= area.maxX` and
-`maxY <= area.maxY` after P01 quantization. Touching the boundary exactly is
-valid; **any** overhang is invalid. Checking the untransformed box, the pivot or
+complete **stroke-aware** conservative transformed AABB (PO-08 as corrected). An
+element is inside an Embroidery Area only when `minX >= area.minX`,
+`minY >= area.minY`, `maxX <= area.maxX` and `maxY <= area.maxY` after P01
+quantization. Touching the boundary exactly is valid; **any** overhang is
+invalid — including a shape whose fill or path fits while part of its ruled
+stroke envelope overhangs. Physical-size validation uses the same stroke-aware
+bounds. Checking the untransformed box, the pivot or
 centre alone, or a sample of path points is forbidden, as is clamping,
 translating, rotating, scaling down, snapping, or warning while allowing
 persistence. `APP3-P02` returns findings only; the caller decides the workflow,
@@ -1967,6 +2036,57 @@ On human acceptance, `APP3-P02` becomes
 no API, no worker, no schema, no migration, no Figma and no UI. The historical
 `APP0-R01`, `APP3-P01` and `APP3-P02` records are not rewritten.
 
+### 6.11.5 `APP3-G05-C1` — stroke and line geometry correction
+
+Human review returned `APP3-G05 = COMPLETE — CORRECTION_REQUIRED`. The
+coordinate, pivot, matrix, group, containment, physical-scale and integrity
+rulings were accepted; one bounds-authority gap remained, and the delivered
+report had disclosed both halves of it.
+
+```text
+APP3-G05 delivered authority omitted rectangle/ellipse stroke from bounds and
+left the schema-v1 line path unstated.
+
+APP3-G05-C1 restores conservative stroke-aware bounds and fixes the line/freehand
+local path semantics before P02 implementation.
+```
+
+**The stroke omission.** `rectangle` and `ellipse` carry `strokeWidthPx` in P01,
+but PO-08 as delivered expanded only `line` and `freehand`. That contradicted the
+stated purpose of `CONSERVATIVE_TRANSFORMED_AABB`: a stroked rectangle could
+paint outside the accepted bounds and still pass containment — the strategy
+called conservative was, for two of the four stroked kinds, optimistic.
+
+**The unstated line path.** P01's `line` is a `ShapeKind` defined solely by its
+transform box; it stores no endpoints. Without a ruled path, P02 could not
+compute deterministic bounds and no two renderers were obliged to draw the same
+segment. v1 now locks it as the straight segment `(0,0)` → `(width,height)`.
+
+Both are corrections to the drawable-geometry and stroke-envelope portion of
+PO-08 and its dependent containment evidence. **No new decision id** was created
+and **no other ruling changed**: `IMP-D045` was corrected in place before review
+acceptance, and every accepted fact in §6.11.1 above it stands.
+
+**No v1 schema change was required.** Every corrected rule reads existing fields:
+`strokeWidthPx` on `ShapeElement` and `FreehandElement`, `width`/`height` for the
+line path, `points` for the polyline. The fixed `lineCap`, `lineJoin` and
+`miterLimit` are **version-level constants** and are deliberately *not* added to
+the document — a customer never chooses them in v1, and adding them would have
+been the schema change this correction is required to avoid.
+
+| Checkpoint | Portion | Status after `APP3-G05-C1` |
+|---|---|---|
+| `APP3-G05-C1` | whole correction | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-G05` | whole checkpoint, post-C1 | `COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW` |
+| `APP3-P02` | whole checkpoint, post-C1 | `BLOCKED_BY_APP3-G05_CORRECTION_REVIEW` |
+| `IMP-D045` | authority state, post-C1 | `LOCKED` — PO-08 corrected in place |
+| `IMP-D045` | rulings changed by C1 | `PO-08 drawable geometry and stroke envelope` |
+| `IMP-D045` | rulings unchanged by C1 | `PO-01 PO-02 PO-03 PO-04 PO-05 PO-06 PO-07 PO-10 PO-11 PO-12` |
+| `v1 schema` | change required by C1 | `NONE` |
+
+`APP3-G05-COMPLETION-REPORT.md` and `APP3-P01-COMPLETION-REPORT.md` are
+historical evidence and are not rewritten; this section is the forward record.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -1987,7 +2107,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — GEOMETRY AUTHORITY DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — GEOMETRY AUTHORITY CORRECTION_DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -2007,12 +2127,13 @@ G01 DB contribution = IMPLEMENTED_BY_APP3_DB01
 G04 DB contribution = IMPLEMENTED_BY_APP3_DB01
 APP3-P01 = COMPLETE — REVIEW_ACCEPTED
 APP3-P01-C1 = COMPLETE — REVIEW_ACCEPTED
-APP3-G05 = COMPLETE — REVIEW_DELIVERED
+APP3-G05 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
+APP3-G05-C1 = COMPLETE — REVIEW_DELIVERED
 IMP-D045 = LOCKED
 APP3-P01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
 APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01
-APP3-P02 = BLOCKED_BY_APP3-G05_REVIEW_ACCEPTANCE
+APP3-P02 = BLOCKED_BY_APP3-G05_CORRECTION_REVIEW
 APP3-P02 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P02 FIRST_ATTEMPT CAUSE = GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT
 APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05

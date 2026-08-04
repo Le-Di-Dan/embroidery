@@ -86,6 +86,15 @@ Required patterns or equivalent outcomes:
   Approval, rendering and production systems must run a geometry-engine version
   compatible with the decision, and that compatibility must be recorded in
   approval and rendering evidence.
+- The v1 stroke envelope is part of those semantics (`APP3-G05-C1`). Every kind
+  storing `strokeWidthPx` expands its local geometry by `strokeWidthPx / 2` on
+  all four sides **before** the envelope is transformed, and that envelope is
+  what bounds, containment and physical-size validation use — a shape whose fill
+  fits while its stroke overhangs is out of bounds. The fixed `lineJoin`/
+  `miterLimit` for rectangle and `lineCap`/`lineJoin` for line and freehand, and
+  the locked v1 line path `(0,0)` → `(width,height)`, are **version-level
+  constants** rather than document fields; changing one changes painted bounds
+  and is therefore a schema-semantic change, never a renderer refactor.
 
 ## 6. Accessibility
 

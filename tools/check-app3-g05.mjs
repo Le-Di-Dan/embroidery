@@ -53,15 +53,56 @@ export const GEOMETRY_FACTS = Object.freeze({
   // PO-08 — the bounds strategy, named so nobody can call it path-accurate.
   'Bounds strategy': 'CONSERVATIVE_TRANSFORMED_AABB',
   'Box element bounds': 'TRANSFORM_FOUR_LOCAL_CORNERS_THEN_AXIS_ALIGN',
-  'Ellipse bounds': 'DECLARED_BOX_TRANSFORMED_AABB',
   'Tight rotated ellipse aabb': 'NOT_APP3_V1',
-  'Line freehand stroke expansion': 'strokeWidthPx / 2',
-  'Line cap join extension': 'FORBIDDEN',
   'Path smoothing or bezier geometry': 'FORBIDDEN',
+  'Group painted geometry': 'NONE',
   'Group bounds': 'UNION_OF_DESCENDANT_DRAWABLE_AABB',
   'Document bounds': 'UNION_OF_ALL_DRAWABLE_AABB',
   'Hidden locked element geometry': 'COUNTS',
   'Z order effect on bounds': 'NONE',
+
+  /*
+   * PO-08 as corrected by `APP3-G05-C1`.
+   *
+   * The delivered ruling expanded only line and freehand, while P01 also gives
+   * rectangle and ellipse a `strokeWidthPx` — so a stroked rectangle could paint
+   * outside the "conservative" bounds and still pass containment. The strategy
+   * was optimistic for two of the four stroked kinds, which is exactly the
+   * failure it is named to prevent.
+   */
+  'Stroked kinds': 'rectangle ellipse line freehand',
+  'Unstroked kinds': 'text image',
+  'Text image stroke expansion': 'NONE',
+  'Stroke alignment': 'CENTRED_ON_LOCAL_PATH',
+  'Stroke expansion': 'strokeWidthPx / 2',
+  'Zero stroke expansion': 'NONE',
+  'Stroke in bounds containment and physical size': 'INCLUDED',
+  'Stroke as renderer decoration': 'FORBIDDEN',
+  'Stroke subtracted from width height': 'FORBIDDEN',
+  'Rectangle local path': 'BOUNDARY_OF_DECLARED_BOX',
+  'Rectangle line join': 'MITER',
+  'Rectangle miter limit': '4',
+  'Ellipse local path': 'INSCRIBED_IN_DECLARED_BOX',
+  'Ellipse bounds': 'DECLARED_BOX_PLUS_HALF_STROKE_TRANSFORMED_AABB',
+  // v1 stores no endpoints, so the path had to be ruled or no two renderers
+  // were obliged to draw the same segment.
+  'Line local path': '(0,0) to (width,height)',
+  'Line segment shape': 'STRAIGHT',
+  'Forbidden line paths':
+    'HORIZONTAL_CENTRELINE VERTICAL_CENTRELINE RENDERER_PATH RENDERER_CHOSEN_DIAGONAL UNSTORED_ENDPOINTS',
+  'Line cap': 'ROUND',
+  'Line join': 'ROUND',
+  'Freehand point frame': 'ELEMENT_LOCAL',
+  'Freehand path': 'ORDERED_POLYLINE_STRAIGHT_SEGMENTS',
+  'Freehand cap': 'ROUND',
+  'Freehand join': 'ROUND',
+  'Freehand single point geometry': 'ROUND_DOT_RADIUS_HALF_STROKE',
+  'Freehand smoothing simplification': 'FORBIDDEN',
+  // Expanding after the transform would ignore scale and rotation entirely.
+  'Envelope transform order': 'EXPAND_LOCAL_THEN_TRANSFORM_THEN_AXIS_ALIGN',
+  'Document space stroke addition': 'FORBIDDEN',
+  'Cap join as document field': 'FORBIDDEN_VERSION_LEVEL_CONSTANT',
+  'Stroke semantics change class': 'SCHEMA_SEMANTIC_UNDER_PO_12',
 
   // PO-09 — containment is blocking, boundary-inclusive and never mutating.
   'Containment strategy': 'FULL_TRANSFORMED_AABB_INSIDE_AREA',
@@ -102,6 +143,19 @@ export const GEOMETRY_CLAIMS = Object.freeze([
   ['containment is blocking', 'Production containment is **blocking**'],
   ['boundary equality is valid', 'Touching the boundary exactly is valid'],
   ['any overhang is invalid', '**any** overhang is invalid'],
+  // APP3-G05-C1
+  ['the stroke is drawable geometry', '**The stroke is drawable geometry.**'],
+  ['stroke is centred on the local path', 'centred on the local path'],
+  ['a fill does not exempt a stroke', 'never ignored because the element also has'],
+  ['the ruled v1 line path', 'straight segment from `(0,0)` to `(width,height)`'],
+  ['expand-then-transform order', 'transform **all four corners of that envelope**'],
+  [
+    'no post-transform half-stroke',
+    'adding an unscaled document-space half-stroke afterwards is forbidden',
+  ],
+  ['cap/join are version-level constants', 'version-level constants, not document fields'],
+  ['containment is stroke-aware', 'part of its ruled stroke envelope overhangs'],
+  ['physical size uses the same bounds', 'Physical-size validation uses the same stroke-aware'],
   [
     'write APIs treat out-of-bounds as failure',
     'must treat an out-of-bounds finding as a validation failure',
@@ -179,8 +233,10 @@ function checkNoImplementation(rootDir, phase, fail) {
   } else if (!/export\s*\{\s*\}/.test(engine)) {
     fail(`${CANONICAL_FILES.engine} is no longer an empty stub — APP3-G05 implements no geometry`);
   }
-  if (!phase.includes('APP3-P02 = BLOCKED_BY_APP3-G05_REVIEW_ACCEPTANCE')) {
-    fail('the phase plan does not block APP3-P02 on APP3-G05 review acceptance');
+  // Accepts either blocking token: G05 review acceptance, or — after
+  // `APP3-G05-C1` — the correction review that supersedes it.
+  if (!/APP3-P02 = BLOCKED_BY_APP3-G05/.test(phase)) {
+    fail('the phase plan does not block APP3-P02 on APP3-G05 review');
   }
   if (!phase.includes('GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT')) {
     fail('the phase plan does not record the cause of the failed APP3-P02 first attempt');
@@ -236,11 +292,13 @@ async function main() {
       'frame, rotation and scale sharing the local-box centre with scale applied first, ' +
       "column-vector p' = M x p and an exact local matrix order, group-local child coordinates " +
       'composed parent-outermost with the group box as pivot but never as bounds, ' +
-      'CONSERVATIVE_TRANSFORMED_AABB bounds, blocking boundary-inclusive containment that never ' +
-      'clamps, product_sides.px_per_mm as the sole conversion authority with no DPI or ' +
-      'area-derived scale, NEW_EDITING versus HISTORICAL_RENDER placement modes, and a ' +
-      'schema-semantic change bar on every one of them; no geometry is implemented and APP3-P02 ' +
-      'stays blocked on review acceptance',
+      'CONSERVATIVE_TRANSFORMED_AABB bounds whose local envelope carries the half-stroke of every ' +
+      'stroked kind (rectangle miter/4; line and freehand round cap and join; the v1 line path ' +
+      'locked to (0,0)-(width,height)) and is expanded before it is transformed, blocking ' +
+      'boundary-inclusive stroke-aware containment that never clamps, product_sides.px_per_mm as ' +
+      'the sole conversion authority with no DPI or area-derived scale, NEW_EDITING versus ' +
+      'HISTORICAL_RENDER placement modes, and a schema-semantic change bar on every one of them; ' +
+      'no geometry is implemented and APP3-P02 stays blocked on review',
   );
 }
 

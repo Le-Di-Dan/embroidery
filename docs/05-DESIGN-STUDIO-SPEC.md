@@ -148,9 +148,19 @@ Users should see understandable measurement units such as millimeters or centime
 > rotation and scale about the untransformed local-box centre. The **sole**
 > px↔mm conversion authority is `product_sides.px_per_mm` — never an Embroidery
 > Area ratio, never a DPI assumption; `embroidery_areas.max_width_mm` and
-> `max_height_mm` are physical limits, not conversion authority. These semantics
-> are part of the meaning of Design Document `schemaVersion = 1` and cannot
-> change without a new decision, a schema-version increase and a migration.
+> `max_height_mm` are physical limits, not conversion authority.
+>
+> **Stroke counts as drawable size (`APP3-G05-C1`).** The physical dimensions a
+> customer sees, and the size validated against the area maxima, include the
+> **stroke envelope**: every kind storing `strokeWidthPx` expands by
+> `strokeWidthPx / 2` on all four sides before its bounds are transformed. A
+> shape whose fill fits while its stroke overhangs is out of bounds. A v1 `line`
+> is the straight segment `(0,0)` → `(width,height)`; `lineCap`, `lineJoin` and
+> `miterLimit` are version-level constants, never per-element fields.
+>
+> These semantics are part of the meaning of Design Document
+> `schemaVersion = 1` and cannot change without a new decision, a schema-version
+> increase and a migration.
 
 The system must warn when:
 

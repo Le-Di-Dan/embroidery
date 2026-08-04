@@ -7,11 +7,10 @@
  * implementation of it.
  *
  * The cases worth reading twice are the ones that look like harmless edits: a
- * pivot moved from centre to corner, a composition order reversed, a
- * containment check narrowed to the untransformed box. None of them changes a
- * single stored byte, none changes a document hash, and every one of them
- * silently relocates or re-admits designs that were already approved. That
- * invisibility is the whole reason the decision needed locking and the reason
+ * pivot moved from centre to corner, a composition order reversed, a stroke
+ * dropped from a rectangle's bounds. None changes a stored byte, none changes a
+ * document hash, and every one silently relocates or re-admits designs that were
+ * already approved. That invisibility is why the decision needed locking and why
  * these assertions are exact-string rather than "mentions".
  */
 import { strict as assert } from 'node:assert';
@@ -240,19 +239,189 @@ describe('APP3-G05 — the bounds strategy cannot drift', () => {
     assert.ok(mentions(failures, 'Ellipse bounds'), failures.join('\n'));
   });
 
-  it('rejects inventing line-cap or line-join extension', () => {
-    const failures = run({ [PHASE]: retune('Line cap join extension', 'ALLOWED') });
-    assert.ok(mentions(failures, 'Line cap join extension'), failures.join('\n'));
+  it('rejects a line cap other than round', () => {
+    const failures = run({ [PHASE]: retune('Line cap', 'BUTT') });
+    assert.ok(mentions(failures, 'Line cap'), failures.join('\n'));
   });
 
   it('rejects changing the stroke expansion rule', () => {
-    const failures = run({ [PHASE]: retune('Line freehand stroke expansion', 'strokeWidthPx') });
-    assert.ok(mentions(failures, 'Line freehand stroke expansion'), failures.join('\n'));
+    const failures = run({ [PHASE]: retune('Stroke expansion', 'strokeWidthPx') });
+    assert.ok(mentions(failures, 'Stroke expansion'), failures.join('\n'));
   });
 
   it('rejects exempting hidden or locked elements from geometry', () => {
     const failures = run({ [PHASE]: retune('Hidden locked element geometry', 'EXEMPT') });
     assert.ok(mentions(failures, 'Hidden locked element geometry'), failures.join('\n'));
+  });
+});
+
+/**
+ * `APP3-G05-C1`. The delivered PO-08 expanded only line and freehand while P01
+ * also gives rectangle and ellipse a `strokeWidthPx`, so a stroked rectangle
+ * could paint outside the "conservative" bounds and still pass containment — the
+ * strategy was optimistic for half its stroked kinds. And v1's `line` stores no
+ * endpoints, so without a ruled path no two renderers were obliged to draw the
+ * same segment.
+ */
+describe('APP3-G05 — the stroke envelope cannot be dropped', () => {
+  it('rejects a rectangle whose stroke is not part of its bounds', () => {
+    const failures = run({ [PHASE]: retune('Stroked kinds', 'line freehand') });
+    assert.ok(mentions(failures, 'Stroked kinds'), failures.join('\n'));
+  });
+
+  it('rejects an ellipse whose stroke is not part of its bounds', () => {
+    const failures = run({ [PHASE]: retune('Ellipse bounds', 'DECLARED_BOX_TRANSFORMED_AABB') });
+    assert.ok(mentions(failures, 'Ellipse bounds'), failures.join('\n'));
+  });
+
+  it('rejects containment using fill bounds only', () => {
+    const failures = run({
+      [PHASE]: retune('Stroke in bounds containment and physical size', 'BOUNDS_ONLY'),
+    });
+    assert.ok(mentions(failures, 'Stroke in bounds containment'), failures.join('\n'));
+  });
+
+  it('rejects physical-size validation that ignores stroke', () => {
+    const failures = run({
+      [PHASE]: retune('Stroke in bounds containment and physical size', 'EXCLUDED_FROM_PHYSICAL'),
+    });
+    assert.ok(mentions(failures, 'Stroke in bounds containment'), failures.join('\n'));
+  });
+
+  it('rejects stroke demoted to renderer decoration', () => {
+    const failures = run({ [PHASE]: retune('Stroke as renderer decoration', 'ALLOWED') });
+    assert.ok(mentions(failures, 'Stroke as renderer decoration'), failures.join('\n'));
+  });
+
+  it('rejects stroke subtracted from the declared width and height', () => {
+    const failures = run({ [PHASE]: retune('Stroke subtracted from width height', 'ALLOWED') });
+    assert.ok(mentions(failures, 'Stroke subtracted'), failures.join('\n'));
+  });
+
+  it('rejects text or image gaining a stroke expansion', () => {
+    const failures = run({ [PHASE]: retune('Text image stroke expansion', 'strokeWidthPx / 2') });
+    assert.ok(mentions(failures, 'Text image stroke expansion'), failures.join('\n'));
+  });
+
+  it('rejects a stroke that is not centred on the local path', () => {
+    const failures = run({ [PHASE]: retune('Stroke alignment', 'OUTSIDE_LOCAL_PATH') });
+    assert.ok(mentions(failures, 'Stroke alignment'), failures.join('\n'));
+  });
+
+  it('rejects adding the stroke after the transform, in document space', () => {
+    // Expanding post-transform ignores scale and rotation entirely.
+    const failures = run({
+      [PHASE]: retune('Envelope transform order', 'TRANSFORM_THEN_ADD_HALF_STROKE'),
+    });
+    assert.ok(mentions(failures, 'Envelope transform order'), failures.join('\n'));
+  });
+
+  it('rejects permitting a document-space half-stroke addition', () => {
+    const failures = run({ [PHASE]: retune('Document space stroke addition', 'ALLOWED') });
+    assert.ok(mentions(failures, 'Document space stroke addition'), failures.join('\n'));
+  });
+
+  it('rejects dropping the prose that makes stroke drawable geometry', () => {
+    const text = read(PHASE).replaceAll(
+      '**The stroke is drawable geometry.**',
+      'Stroke is a rendering hint.',
+    );
+    const failures = run({ [PHASE]: text });
+    assert.ok(mentions(failures, 'stroke is drawable geometry'), failures.join('\n'));
+  });
+});
+
+describe('APP3-G05 — the v1 line and freehand paths cannot drift', () => {
+  it('rejects a line redefined as a horizontal centreline', () => {
+    const failures = run({
+      [PHASE]: retune('Line local path', '(0,height/2) to (width,height/2)'),
+    });
+    assert.ok(mentions(failures, 'Line local path'), failures.join('\n'));
+  });
+
+  it('rejects leaving the line endpoints renderer-defined', () => {
+    const failures = run({ [PHASE]: retune('Line local path', 'RENDERER_DEFINED') });
+    assert.ok(mentions(failures, 'Line local path'), failures.join('\n'));
+  });
+
+  it('rejects dropping the forbidden-line-path list', () => {
+    const failures = run({ [PHASE]: retune('Forbidden line paths', 'NONE') });
+    assert.ok(mentions(failures, 'Forbidden line paths'), failures.join('\n'));
+  });
+
+  it('rejects a line that is not a straight segment', () => {
+    const failures = run({ [PHASE]: retune('Line segment shape', 'CURVED') });
+    assert.ok(mentions(failures, 'Line segment shape'), failures.join('\n'));
+  });
+
+  it('rejects freehand points read as document space', () => {
+    const failures = run({ [PHASE]: retune('Freehand point frame', 'DOCUMENT_SPACE') });
+    assert.ok(mentions(failures, 'Freehand point frame'), failures.join('\n'));
+  });
+
+  it('rejects freehand smoothing or simplification', () => {
+    for (const [key, value] of [
+      ['Freehand path', 'SMOOTHED_BEZIER'],
+      ['Freehand smoothing simplification', 'ALLOWED'],
+    ]) {
+      const failures = run({ [PHASE]: retune(key, value) });
+      assert.ok(mentions(failures, key), failures.join('\n'));
+    }
+  });
+
+  it('rejects a freehand cap or join other than round', () => {
+    for (const key of ['Freehand cap', 'Freehand join']) {
+      const failures = run({ [PHASE]: retune(key, 'BUTT') });
+      assert.ok(mentions(failures, key), failures.join('\n'));
+    }
+  });
+
+  it('rejects losing the single-point dot rule', () => {
+    const failures = run({ [PHASE]: retune('Freehand single point geometry', 'NONE') });
+    assert.ok(mentions(failures, 'Freehand single point geometry'), failures.join('\n'));
+  });
+
+  it('rejects a rectangle miter limit left renderer-default or unstated', () => {
+    for (const [key, value] of [
+      ['Rectangle miter limit', 'RENDERER_DEFAULT'],
+      ['Rectangle line join', 'RENDERER_DEFAULT'],
+    ]) {
+      const failures = run({ [PHASE]: retune(key, value) });
+      assert.ok(mentions(failures, key), failures.join('\n'));
+    }
+  });
+
+  it('rejects a rectangle local path other than its declared box boundary', () => {
+    const failures = run({ [PHASE]: retune('Rectangle local path', 'RENDERER_PATH') });
+    assert.ok(mentions(failures, 'Rectangle local path'), failures.join('\n'));
+  });
+
+  it('rejects an ellipse not inscribed in its declared box', () => {
+    const failures = run({ [PHASE]: retune('Ellipse local path', 'CIRCUMSCRIBING_DECLARED_BOX') });
+    assert.ok(mentions(failures, 'Ellipse local path'), failures.join('\n'));
+  });
+});
+
+describe('APP3-G05 — cap and join stay version-level constants', () => {
+  it('rejects cap/join becoming a per-element v1 document field', () => {
+    const failures = run({ [PHASE]: retune('Cap join as document field', 'ALLOWED_PER_ELEMENT') });
+    assert.ok(mentions(failures, 'Cap join as document field'), failures.join('\n'));
+  });
+
+  it('rejects calling a stroke-semantics change an internal refactor', () => {
+    const failures = run({
+      [PHASE]: retune('Stroke semantics change class', 'INTERNAL_RENDERER_REFACTOR'),
+    });
+    assert.ok(mentions(failures, 'Stroke semantics change class'), failures.join('\n'));
+  });
+
+  it('rejects dropping the prose that keeps them out of the document', () => {
+    const text = read(PHASE).replaceAll(
+      'version-level constants, not document fields',
+      'per-element document fields',
+    );
+    const failures = run({ [PHASE]: text });
+    assert.ok(mentions(failures, 'version-level constants'), failures.join('\n'));
   });
 });
 
@@ -392,14 +561,14 @@ describe('APP3-G05 — the checkpoint implements no geometry', () => {
   });
 
   it('rejects a phase plan that does not block APP3-P02', () => {
-    const text = read(PHASE).replaceAll('BLOCKED_BY_APP3-G05_REVIEW_ACCEPTANCE', 'READY');
+    const text = read(PHASE).replaceAll('BLOCKED_BY_APP3-G05_CORRECTION_REVIEW', 'READY');
     const failures = run({ [PHASE]: text });
     assert.ok(mentions(failures, 'block APP3-P02'), failures.join('\n'));
   });
 
   it('rejects a phase plan that marks APP3-P02 complete', () => {
     const text = read(PHASE).replace(
-      'APP3-P02 = BLOCKED_BY_APP3-G05_REVIEW_ACCEPTANCE',
+      'APP3-P02 = BLOCKED_BY_APP3-G05_CORRECTION_REVIEW',
       'APP3-P02 = COMPLETE — REVIEW_DELIVERED',
     );
     const failures = run({ [PHASE]: text });
