@@ -19,7 +19,12 @@ import { boundsSize, type Bounds2D } from '../geometry/types';
 import { quantize, quantizedAtMost } from '../geometry/quantized';
 import { geometryFinding, geometryResult, type GeometryFinding } from '../findings/finding';
 import type { GeometryValidationResult } from '../findings/finding';
-import { buildElementGraph, drawableElements, isGeometryFinding } from '../transforms/graph';
+import {
+  buildElementGraph,
+  drawableElements,
+  isGeometryFinding,
+  structuralFinding,
+} from '../transforms/graph';
 import type { ElementGraph } from '../transforms/graph';
 import type { EmbroideryAreaAuthority, PlacementAuthority } from '../placement/authority';
 
@@ -83,12 +88,19 @@ export function validateElementWithinEmbroideryArea(
  * Every drawable element is checked, including hidden and locked ones: PO-08
  * says visibility is not an exemption, and a document that is only legal while
  * something is hidden becomes illegal the moment a customer unhides it.
+ *
+ * An ambiguous graph is reported once, as itself. Repeating the same structural
+ * finding for every element would read as a document with many problems rather
+ * than one document that cannot be measured.
  */
 export function validateDocumentWithinEmbroideryArea(
   document: DesignDocument,
   area: EmbroideryAreaAuthority,
   graph: ElementGraph = buildElementGraph(document),
 ): GeometryValidationResult {
+  const ambiguous = structuralFinding(graph);
+  if (ambiguous !== undefined) return geometryResult([ambiguous]);
+
   const findings: GeometryFinding[] = [];
   for (const element of drawableElements(graph)) {
     findings.push(
@@ -158,6 +170,9 @@ export function validateDocumentPhysicalSize(
   area: EmbroideryAreaAuthority,
   graph: ElementGraph = buildElementGraph(document),
 ): GeometryValidationResult {
+  const ambiguous = structuralFinding(graph);
+  if (ambiguous !== undefined) return geometryResult([ambiguous]);
+
   const findings: GeometryFinding[] = [];
   for (const element of drawableElements(graph)) {
     findings.push(...validateElementPhysicalSize(document, element.id, side, area, graph).findings);

@@ -65,6 +65,7 @@ export {
   isGeometryFinding,
   parentChain,
   resolveEffectiveTransform,
+  structuralFinding,
 } from './transforms/graph';
 export type { EffectiveTransform, ElementGraph } from './transforms/graph';
 

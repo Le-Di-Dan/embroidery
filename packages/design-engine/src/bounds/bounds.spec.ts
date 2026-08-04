@@ -38,6 +38,17 @@ const boundsOf = (document: Parameters<typeof getElementBounds>[0], id: string):
   return result as Bounds2D;
 };
 
+const documentBox = (
+  document: Parameters<typeof getDocumentBounds>[0],
+  options: Parameters<typeof getDocumentBounds>[1] = {},
+): Bounds2D => {
+  const result = getDocumentBounds(document, options);
+  if (result === undefined || isGeometryFinding(result as never)) {
+    throw new Error('unexpected finding');
+  }
+  return result as Bounds2D;
+};
+
 describe('local envelopes', () => {
   it('gives text and image their declared box, unexpanded', () => {
     expect(localEnvelope(textElement())).toEqual({ minX: 0, minY: 0, maxX: 100, maxY: 50 });
@@ -227,7 +238,7 @@ describe('group and document bounds', () => {
         transform: transform({ x: 500, y: 0, width: 10, height: 10 }),
       }),
     ]);
-    expect(getDocumentBounds(document)?.maxX).toBe(510);
+    expect(documentBox(document).maxX).toBe(510);
   });
 
   it('excludes hidden elements only when a caller asks explicitly', () => {
@@ -239,13 +250,51 @@ describe('group and document bounds', () => {
         transform: transform({ x: 500, y: 0, width: 10, height: 10 }),
       }),
     ]);
-    expect(getDocumentBounds(document, { visibleOnly: true })?.maxX).toBe(10);
+    expect(documentBox(document, { visibleOnly: true }).maxX).toBe(10);
   });
 
   it('does not change with z-order', () => {
     const elements = scene().elements;
     const reversed = documentWith([...elements].reverse());
     expect(getDocumentBounds(reversed)).toEqual(getDocumentBounds(scene()));
+  });
+});
+
+/**
+ * `APP3-P02-C1`. Bounds must not be produced from a graph that has no
+ * authoritative parentage — an AABB returned beside a structural finding is the
+ * dangerous outcome, because it looks measured.
+ */
+describe('bounds on an ambiguous graph', () => {
+  const contested = () =>
+    documentWith([
+      textElement({ transform: transform({ width: 10, height: 10 }) }),
+      groupElement({ id: 'g1', transform: transform({ x: 5, y: 0 }), childIds: ['text-1'] }),
+      groupElement({ id: 'g2', transform: transform({ x: 50, y: 0 }), childIds: ['text-1'] }),
+    ]);
+
+  it('fails safely for an element', () => {
+    const result = getElementBounds(contested(), 'text-1');
+    expect(isGeometryFinding(result as never)).toBe(true);
+    expect((result as { code: string }).code).toBe('INVALID_PARENT_CHAIN');
+  });
+
+  it('fails safely for a group, rather than unioning what it can reach', () => {
+    const result = getGroupBounds(contested(), 'g1');
+    expect((result as { code: string }).code).toBe('INVALID_PARENT_CHAIN');
+    expect(JSON.stringify(result)).not.toContain('minX');
+  });
+
+  it('fails safely for the document, distinguishably from an empty one', () => {
+    const result = getDocumentBounds(contested());
+    expect((result as { code: string }).code).toBe('INVALID_PARENT_CHAIN');
+    expect(getDocumentBounds(documentWith([]))).toBeUndefined();
+  });
+
+  it('returns the same finding every time', () => {
+    expect(getElementBounds(contested(), 'text-1')).toEqual(
+      getElementBounds(contested(), 'text-1'),
+    );
   });
 });
 

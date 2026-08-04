@@ -2125,9 +2125,9 @@ validation return findings; the caller decides the workflow, and a document-writ
 API must treat a finding as a validation failure (PO-09).
 
 Called directly with input `APP3-P01` never validated — which a caller may do —
-it fails safely: an unknown element, an unresolvable or cyclic parent chain, a
-negative stroke width or a non-finite coordinate produce a typed finding rather
-than a throw or an unbounded walk.
+it fails safely: an unknown element, an unresolvable, ambiguous or cyclic parent
+chain (§6.13), a negative stroke width or a non-finite coordinate produce a typed
+finding rather than a throw or an unbounded walk.
 
 ### 6.12.3 Dependency reconciliation
 
@@ -2158,6 +2158,66 @@ No backend or UI checkpoint is complete. `APP3-P02` delivers no renderer, no API
 no worker, no schema, no migration, no Figma and no UI, and changes no
 `packages/design-document` source. The historical `APP3-G05`, `APP3-G05-C1` and
 `APP3-P01` records are not rewritten.
+
+## 6.13 `APP3-P02-C1` — ambiguous group parentage is rejected
+
+Human review returned `COMPLETE — CORRECTION_REQUIRED`. The matrix, transform,
+envelope, stroke, placement, px↔mm, containment and physical-size implementation
+was accepted; one direct-call safety defect was not.
+
+The delivered graph kept the **first** group that claimed a child. That
+contradicts the structural contract — an element has at most one direct group
+parent — and an invalid graph with two claims has no authoritative effective
+transform to choose from. Selecting one silently accepted invalid input, made
+geometry depend on group and document order, could produce an incorrect AABB,
+could evaluate containment against the wrong transform, and hid an upstream
+validation bypass.
+
+### 6.13.1 Corrected rule
+
+| Key | Value |
+|---|---|
+| `Parent claims per element` | zero or one; more is invalid |
+| `Repeated child in one group` | invalid |
+| `Group listing itself` | invalid |
+| `Child not in the document` | invalid |
+| `Winner selection` | `NONE` — no first, last, id or z-order rule exists |
+| `Invalid-graph parent map` | empty, never partial |
+| `Invalid-graph finding` | `INVALID_PARENT_CHAIN` (`UNKNOWN_ELEMENT` for an unknown child) |
+| `Finding order` | element order, then unknown ids sorted — independent of group order |
+| `Document normalization` | `NONE` — no claim dropped, no `childIds` rewritten |
+
+Claims are staged while indexing and become a parent map only once every one of
+them is known to be unambiguous, so no partial map is ever exposed.
+
+### 6.13.2 Dependent public paths
+
+Effective-transform resolution, `getElementBounds`, `getGroupBounds`,
+`getDocumentBounds`, `validateElementWithinEmbroideryArea`,
+`validateDocumentWithinEmbroideryArea` and both physical-size validators reject
+an ambiguous graph. Each returns a finding that names the contested child and no
+bounds; none returns `INVALID_PARENT_CHAIN` beside an authoritative-looking AABB.
+`getDocumentBounds` now returns `Bounds2D | GeometryFinding | undefined`, because
+`undefined` alone would let an unmeasurable document read as an empty one.
+
+Valid-graph behaviour is unchanged: every rotation, scale, composition, stroke,
+containment and conversion vector delivered by `APP3-P02` still holds, and
+`IMP-D045` is untouched.
+
+### 6.13.3 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-P02-C1` |
+|---|---|---|
+| `APP3-P02` | whole checkpoint, post-C1 | `COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW` |
+| `APP3-P02-C1` | whole correction, post-C1 | `COMPLETE — REVIEW_DELIVERED` |
+| `IMP-D045` | ruling text, post-C1 | `UNCHANGED` |
+| `APP3-P01` | whole checkpoint, post-C1 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G05` | whole checkpoint, post-C1 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-B07` | whole checkpoint, post-C1 | `READY_BY_P01_AND_P02 — NOT STARTED` |
+| `APP3-B08` | whole checkpoint, post-C1 | `READY_BY_P01_AND_P02 — NOT STARTED` |
+
+`APP3-P02-C1` changes no document schema, no API, no database, no renderer and no
+`packages/design-document` source.
 
 ## 7. Critical end-to-end journey
 
@@ -2205,7 +2265,8 @@ IMP-D045 = LOCKED
 APP3-P01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P01 FIRST_ATTEMPT CAUSE = NO_CONTROLLED_FONT_ASSET_OR_LICENSE_EVIDENCE
 APP3-P01 FIRST_ATTEMPT RESOLUTION = APP3-F01
-APP3-P02 = COMPLETE — REVIEW_DELIVERED
+APP3-P02 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
+APP3-P02-C1 = COMPLETE — REVIEW_DELIVERED
 APP3-P02 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P02 FIRST_ATTEMPT CAUSE = GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT
 APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05

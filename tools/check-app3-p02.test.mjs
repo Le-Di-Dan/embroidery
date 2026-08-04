@@ -3,7 +3,7 @@
  *
  * Every case breaks exactly one ruled semantic in a throwaway copy of the
  * package and proves the checker refuses it. Behaviour of the geometry itself is
- * the package's own 118 unit tests; what these guard is the seam between the
+ * the package's own 137 unit tests; what these guard is the seam between the
  * ruling and the implementation.
  *
  * The cases worth reading twice all compile and all pass a type check: an
@@ -252,7 +252,7 @@ describe('APP3-P02 — group, scale and containment semantics', () => {
   it('rejects group bounds that stop unioning descendants', () => {
     const text = read(CANONICAL_FILES.bounds).replace('drawableDescendants(graph, groupId)', '[]');
     const failures = run({ [CANONICAL_FILES.bounds]: text });
-    assert.ok(mentions(failures, 'union descendant bounds'), failures.join('\n'));
+    assert.ok(mentions(failures, 'union descendants'), failures.join('\n'));
   });
 
   it('rejects using the group persisted box as visible geometry', () => {
@@ -260,6 +260,52 @@ describe('APP3-P02 — group, scale and containment semantics', () => {
     const text = `${read(CANONICAL_FILES.bounds)}\nconst _box = localEnvelope(group);\n`;
     const failures = run({ [CANONICAL_FILES.bounds]: text });
     assert.ok(mentions(failures, 'persisted box as visible geometry'), failures.join('\n'));
+  });
+
+  it('rejects a parent chosen by claim order', () => {
+    // APP3-P02-C1, in the exact form the defect took: insert the first claim and
+    // ignore the rest. It compiles, it is deterministic, and it is wrong.
+    const text = read(CANONICAL_FILES.graph).replace(
+      'if (claiming.size === 1 && onlyParent !== undefined) parentOf.set(childId, onlyParent);',
+      'if (!parentOf.has(childId)) parentOf.set(childId, onlyParent);',
+    );
+    const failures = run({ [CANONICAL_FILES.graph]: text });
+    assert.ok(mentions(failures, 'selects a parent by claim order'), failures.join('\n'));
+  });
+
+  it('rejects dropping any one ambiguity check', () => {
+    for (const [from, to] of [
+      ['listedHere.has(childId)', 'false'],
+      ['claiming.size > 1', 'false'],
+      ['childId === element.id', 'false'],
+      ['!byId.has(childId)', 'false'],
+      ['structuralFindings.length === 0', 'true'],
+    ]) {
+      const failures = run({
+        [CANONICAL_FILES.graph]: read(CANONICAL_FILES.graph).replace(from, to),
+      });
+      assert.ok(mentions(failures, 'ambiguous parentage'), `expected a failure for ${from}`);
+    }
+  });
+
+  it('rejects bounds or containment that proceed on an ambiguous graph', () => {
+    for (const target of [CANONICAL_FILES.bounds, CANONICAL_FILES.containment]) {
+      const text = read(target).replaceAll('structuralFinding(', 'noStructuralCheck(');
+      const failures = run({ [target]: text });
+      assert.ok(mentions(failures, 'no authoritative parentage'), failures.join('\n'));
+    }
+  });
+
+  it('rejects prose that promises a winner, and a renamed regression test', () => {
+    const claimed = `${read(CANONICAL_FILES.graph)}\n// The first parent wins.\n`;
+    assert.ok(mentions(run({ [CANONICAL_FILES.graph]: claimed }), 'claims "first parent wins"'));
+
+    const spec = read(CANONICAL_FILES.graphSpec).replace(
+      'rejects two groups claiming one child',
+      'keeps only the first parent',
+    );
+    const failures = run({ [CANONICAL_FILES.graphSpec]: spec });
+    assert.ok(mentions(failures, 'renamed, not replaced'), failures.join('\n'));
   });
 
   it('rejects rebasing or flattening children', () => {

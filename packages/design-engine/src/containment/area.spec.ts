@@ -24,6 +24,7 @@ import {
   validateDocumentPhysicalSize,
   validateDocumentWithinEmbroideryArea,
   validateElementPhysicalSize,
+  validateElementWithinEmbroideryArea,
 } from './area';
 
 // The area runs from (100,100) to (500,400).
@@ -180,6 +181,63 @@ describe('what containment never exempts or changes', () => {
     const serialized = JSON.stringify(validateDocumentWithinEmbroideryArea(document, AREA));
     expect(serialized).not.toContain('SECRET-MARKER');
     expect(serialized).not.toContain('http');
+  });
+});
+
+/**
+ * `APP3-P02-C1`. Containment decides whether a design may be stitched, so an
+ * ambiguous graph must not reach a verdict at all: an `ok: true` computed from
+ * an arbitrarily chosen parent would approve a placement nobody chose.
+ */
+describe('validation on an ambiguous graph', () => {
+  const contested = () =>
+    documentWith([
+      inside(),
+      groupElement({ id: 'g1', transform: transform({ x: 0, y: 0 }), childIds: ['text-1'] }),
+      groupElement({ id: 'g2', transform: transform({ x: 900, y: 0 }), childIds: ['text-1'] }),
+    ]);
+
+  it('fails containment safely and names the contested child', () => {
+    // Under g1 the element fits and under g2 it does not; neither is authority.
+    const result = validateDocumentWithinEmbroideryArea(contested(), AREA);
+    expect(result.ok).toBe(false);
+    expect(result.findings.map((finding) => finding.code)).toEqual(['INVALID_PARENT_CHAIN']);
+    expect(result.findings[0]?.elementId).toBe('text-1');
+  });
+
+  it('fails element containment safely', () => {
+    const result = validateElementWithinEmbroideryArea(contested(), 'text-1', AREA);
+    expect(result.findings[0]?.code).toBe('INVALID_PARENT_CHAIN');
+  });
+
+  it('fails physical-size validation safely', () => {
+    expect(
+      validateElementPhysicalSize(contested(), 'text-1', sideAuthority(), AREA).findings[0]?.code,
+    ).toBe('INVALID_PARENT_CHAIN');
+    expect(
+      validateDocumentPhysicalSize(contested(), sideAuthority(), AREA).findings.map(
+        (finding) => finding.code,
+      ),
+    ).toEqual(['INVALID_PARENT_CHAIN']);
+  });
+
+  it('reports the ambiguity once, not once per element', () => {
+    const document = documentWith([
+      inside(),
+      shapeElement({ id: 'shape-1', strokeWidthPx: 0 }),
+      groupElement({ id: 'g1', childIds: ['text-1'] }),
+      groupElement({ id: 'g2', childIds: ['text-1'] }),
+    ]);
+    expect(validateDocumentWithinEmbroideryArea(document, AREA).findings).toHaveLength(1);
+  });
+
+  it('does not mutate the document and stays deterministic', () => {
+    const document = contested();
+    const before = JSON.parse(JSON.stringify(document)) as unknown;
+    const first = validateDocumentWithinEmbroideryArea(document, AREA);
+    const second = validateDocumentWithinEmbroideryArea(document, AREA);
+    expect(document).toEqual(before);
+    expect(first).toEqual(second);
   });
 });
 

@@ -116,14 +116,105 @@ describe('safe failure when called directly', () => {
     const resolved = resolveEffectiveTransform(buildElementGraph(document), 'g1');
     expect(isGeometryFinding(resolved) && resolved.code).toBe('INVALID_PARENT_CHAIN');
   });
+});
 
-  it('keeps only the first parent when two groups claim one child', () => {
-    const document = documentWith([
-      textElement(),
-      groupElement({ id: 'g1', transform: transform({ x: 5, y: 0 }), childIds: ['text-1'] }),
-      groupElement({ id: 'g2', transform: transform({ x: 50, y: 0 }), childIds: ['text-1'] }),
-    ]);
-    expect(parentChain(buildElementGraph(document), 'text-1')).toEqual(['g1']);
+/**
+ * `APP3-P02-C1`. The delivered graph kept the first claiming group, which made a
+ * customer's geometry depend on serialization order and handed back an AABB that
+ * looked authoritative for a placement nobody chose. An element has at most one
+ * direct group parent; more than one claim has no answer, so it has no graph.
+ */
+describe('ambiguous parentage is rejected, never resolved', () => {
+  const contested = (order: 'forward' | 'reversed') => {
+    const g1 = groupElement({
+      id: 'g1',
+      transform: transform({ x: 5, y: 0 }),
+      childIds: ['text-1'],
+    });
+    const g2 = groupElement({
+      id: 'g2',
+      transform: transform({ x: 50, y: 0 }),
+      childIds: ['text-1'],
+    });
+    return documentWith([textElement(), ...(order === 'forward' ? [g1, g2] : [g2, g1])]);
+  };
+
+  const repeatedChild = () =>
+    documentWith([textElement(), groupElement({ id: 'g1', childIds: ['text-1', 'text-1'] })]);
+
+  const codesOf = (document: ReturnType<typeof documentWith>) =>
+    buildElementGraph(document).structuralFindings.map((finding) => finding.code);
+
+  it('rejects one group listing the same child twice', () => {
+    expect(codesOf(repeatedChild())).toEqual(['INVALID_PARENT_CHAIN']);
+  });
+
+  it('rejects two groups claiming one child', () => {
+    expect(codesOf(contested('forward'))).toEqual(['INVALID_PARENT_CHAIN']);
+  });
+
+  it('rejects the same document with the two groups in the other order', () => {
+    expect(codesOf(contested('reversed'))).toEqual(codesOf(contested('forward')));
+  });
+
+  it('selects no winner in either order', () => {
+    for (const order of ['forward', 'reversed'] as const) {
+      const graph = buildElementGraph(contested(order));
+      // Not "g1 in one order and g2 in the other" — no parent at all.
+      expect(graph.parentOf.size).toBe(0);
+      expect(parentChain(graph, 'text-1')).toBeUndefined();
+    }
+  });
+
+  it('identifies the contested child and how many groups claimed it', () => {
+    const finding = buildElementGraph(contested('forward')).structuralFindings[0];
+    expect(finding?.elementId).toBe('text-1');
+    expect(finding?.meta?.parentClaimCount).toBe(2);
+  });
+
+  it('returns no effective matrix for any element of an ambiguous document', () => {
+    const graph = buildElementGraph(contested('forward'));
+    for (const id of ['text-1', 'g1', 'g2']) {
+      const resolved = resolveEffectiveTransform(graph, id);
+      expect(isGeometryFinding(resolved)).toBe(true);
+      expect(isGeometryFinding(resolved) && resolved.code).toBe('INVALID_PARENT_CHAIN');
+      expect(JSON.stringify(resolved)).not.toContain('matrix');
+    }
+  });
+
+  it('rejects a group listing itself', () => {
+    const document = documentWith([groupElement({ id: 'g1', childIds: ['g1'] })]);
+    expect(codesOf(document)).toEqual(['INVALID_PARENT_CHAIN']);
+  });
+
+  it('rejects a group listing a child that is not in the document', () => {
+    const document = documentWith([groupElement({ id: 'g1', childIds: ['ghost'] })]);
+    const finding = buildElementGraph(document).structuralFindings[0];
+    expect(finding?.code).toBe('UNKNOWN_ELEMENT');
+    expect(finding?.elementId).toBe('ghost');
+  });
+
+  it('does not delete a claim, rewrite childIds or mutate the document', () => {
+    const document = contested('forward');
+    const before = JSON.parse(JSON.stringify(document)) as unknown;
+    buildElementGraph(document);
+    resolveEffectiveTransform(buildElementGraph(document), 'text-1');
+    expect(document).toEqual(before);
+  });
+
+  it('is deterministic across repeated evaluation', () => {
+    const document = contested('forward');
+    expect(buildElementGraph(document).structuralFindings).toEqual(
+      buildElementGraph(document).structuralFindings,
+    );
+  });
+
+  it('leaves a sound document with a usable graph', () => {
+    const graph = buildElementGraph(
+      documentWith([textElement(), groupElement({ id: 'g1', childIds: ['text-1'] })]),
+    );
+    expect(graph.structuralFindings).toEqual([]);
+    expect(graph.parentOf.get('text-1')).toBe('g1');
   });
 });
 

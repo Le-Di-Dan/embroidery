@@ -33,6 +33,7 @@ import {
   drawableElements,
   isGeometryFinding,
   resolveEffectiveTransform,
+  structuralFinding,
   type ElementGraph,
 } from '../transforms/graph';
 import { localEnvelope } from './envelope';
@@ -116,6 +117,9 @@ export function getGroupBounds(
   options: BoundsOptions = {},
   graph: ElementGraph = buildElementGraph(document),
 ): Bounds2D | GeometryFinding {
+  const ambiguous = structuralFinding(graph, groupId);
+  if (ambiguous !== undefined) return ambiguous;
+
   const group = graph.byId.get(groupId);
   if (group === undefined || group.type !== 'group') {
     return geometryFinding('UNKNOWN_ELEMENT', '$.elements', 'This group is not in the document.', {
@@ -137,12 +141,21 @@ export function getGroupBounds(
   return union;
 }
 
-/** The union of every drawable element's transformed AABB. */
+/**
+ * The union of every drawable element's transformed AABB.
+ *
+ * `undefined` means the document draws nothing; a finding means it could not be
+ * measured at all. Conflating the two would let an ambiguous graph read as an
+ * empty canvas.
+ */
 export function getDocumentBounds(
   document: DesignDocument,
   options: BoundsOptions = {},
   graph: ElementGraph = buildElementGraph(document),
-): Bounds2D | undefined {
+): Bounds2D | GeometryFinding | undefined {
+  const ambiguous = structuralFinding(graph);
+  if (ambiguous !== undefined) return ambiguous;
+
   const elements = drawableElements(graph).filter((element) => includeElement(element, options));
   return unionOf(document, elements, graph).union;
 }

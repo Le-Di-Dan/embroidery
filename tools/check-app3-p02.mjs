@@ -3,19 +3,17 @@
  * `APP3-P02` — the production geometry foundation.
  *
  * `IMP-D045` exists because a v1 Design Document records **no pivot, no
- * composition order and no stroke rule**. The document cannot tell you how it
- * was meant to be read, and its SHA-256 cannot either — the hash is over the
- * bytes, not the interpretation. So the ruling is authority and this gate is
- * what keeps the implementation attached to it.
+ * composition order and no stroke rule**, and its SHA-256 cannot supply them —
+ * the hash is over the bytes, not the interpretation. The ruling is authority;
+ * this gate keeps the implementation attached to it.
  *
- * That is why the checks below assert the *semantics*, not the presence of a
- * function: a `getElementBounds` that silently switched to the untransformed box
- * would still export the right name. Each one names the alternative it refuses —
- * corner pivot, `child × parent`, post-transform stroke, a second quantization
- * scale — because a rule stated without its negation is half a rule.
+ * So the checks assert *semantics*, not the presence of a function: a
+ * `getElementBounds` that silently switched to the untransformed box would still
+ * export the right name. Each names the alternative it refuses — corner pivot,
+ * `child × parent`, post-transform stroke, a parent chosen by claim order —
+ * because a rule stated without its negation is half a rule.
  *
- * Read-only. No network, no database. Cross-platform pure Node.
- *
+ * Read-only, cross-platform pure Node.
  * Usage: node tools/check-app3-p02.mjs [rootDir]
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -41,6 +39,7 @@ export const CANONICAL_FILES = Object.freeze({
   authority: `${SRC_DIR}/placement/authority.ts`,
   units: `${SRC_DIR}/placement/units.ts`,
   containment: `${SRC_DIR}/containment/area.ts`,
+  graphSpec: `${SRC_DIR}/transforms/graph.spec.ts`,
   manifest: `${PACKAGE_DIR}/package.json`,
 });
 
@@ -78,7 +77,7 @@ function code(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
-function sourceFiles(rootDir, accept, skipTesting = false) {
+function sourceFiles(rootDir, accept, { base = SRC_DIR, skipTesting = false } = {}) {
   const found = [];
   const walk = (directory) => {
     let entries = [];
@@ -96,12 +95,12 @@ function sourceFiles(rootDir, accept, skipTesting = false) {
       }
     }
   };
-  walk(join(rootDir, SRC_DIR));
+  walk(join(rootDir, base));
   return found;
 }
 
 const productionFiles = (rootDir) =>
-  sourceFiles(rootDir, (name) => !name.endsWith('.spec.ts'), true);
+  sourceFiles(rootDir, (name) => !name.endsWith('.spec.ts'), { skipTesting: true });
 
 /** 1, 16 — the package is implemented and carries its own tests. */
 function checkPackagePresence(rootDir, fail) {
@@ -120,15 +119,19 @@ function checkPackagePresence(rootDir, fail) {
   }
   const manifest = read(rootDir, CANONICAL_FILES.manifest) ?? '';
   for (const script of ['test', 'build', 'typecheck']) {
-    if (!new RegExp(`"${script}"\\s*:`).test(manifest)) {
-      fail(`${CANONICAL_FILES.manifest} declares no ${script} script`);
-    }
+    if (!new RegExp(`"${script}"\\s*:`).test(manifest))
+      fail(`the manifest has no ${script} script`);
   }
   if (!manifest.includes('"@embroidery/design-document": "workspace:*"')) {
     fail('the manifest does not declare @embroidery/design-document as a production dependency');
   }
   for (const name of REQUIRED_EXPORTS) {
     if (!index.includes(name)) fail(`the package root does not export ${name}`);
+  }
+  // Typed findings must all exist, or a caller cannot switch on them.
+  const findings = read(rootDir, `${SRC_DIR}/findings/finding.ts`) ?? '';
+  for (const name of REQUIRED_CODES) {
+    if (!findings.includes(`'${name}'`)) fail(`the finding union is missing ${name}`);
   }
   return true;
 }
@@ -154,9 +157,7 @@ function checkBoundaries(rootDir, fail) {
     if (/from\s+'node:/.test(code(source))) {
       fail(`${shown} imports a Node built-in; the package must stay browser-safe`);
     }
-    if (/^(let|var)\s+/m.test(code(source))) {
-      fail(`${shown} declares module-level mutable state`);
-    }
+    if (/^(let|var)\s+/m.test(code(source))) fail(`${shown} declares module-level mutable state`);
   }
 }
 
@@ -204,19 +205,8 @@ function checkEnvelopes(rootDir, fail) {
     fail('the envelope module does not expand by half the stroke width');
   }
   // Text and image must return the declared box, never an expanded one.
-  if (
-    !/case 'text':\s*case 'image':\s*return box;/.test(
-      envelope
-        .replace(/\s+/g, ' ')
-        .replace(
-          /case 'text': case 'image': return box;/,
-          "case 'text':\n case 'image':\n return box;",
-        ),
-    )
-  ) {
-    if (!/case 'text':[\s\S]{0,60}case 'image':[\s\S]{0,40}return box;/.test(envelope)) {
-      fail('text and image do not use their declared box unexpanded');
-    }
+  if (!/case 'text':[\s\S]{0,60}case 'image':[\s\S]{0,40}return box;/.test(envelope)) {
+    fail('text and image do not use their declared box unexpanded');
   }
   if (!/x:\s*box\.maxX,\s*y:\s*box\.maxY/.test(envelope)) {
     fail('the v1 line path is not (0,0) to (width,height)');
@@ -228,22 +218,6 @@ function checkEnvelopes(rootDir, fail) {
   }
   if (/expandBounds\([\s\S]{0,60}transformPoint/.test(bounds)) {
     fail('bounds appears to expand after transforming, which ignores scale and rotation');
-  }
-}
-
-/** 9 — a group's persisted box is its pivot, never its bounds. */
-function checkGroupSemantics(rootDir, fail) {
-  const bounds = code(read(rootDir, CANONICAL_FILES.bounds) ?? '');
-  const graph = code(read(rootDir, CANONICAL_FILES.graph) ?? '');
-  // The call, not the identifier: an unused import would otherwise satisfy this.
-  if (!/drawableDescendants\(/.test(bounds)) {
-    fail('getGroupBounds does not union descendant bounds');
-  }
-  if (/localEnvelope\(group\)/.test(bounds)) {
-    fail('getGroupBounds uses the group persisted box as visible geometry');
-  }
-  for (const token of ['rebase', 'flatten']) {
-    if (graph.toLowerCase().includes(token)) fail(`the graph module appears to ${token} children`);
   }
 }
 
@@ -305,22 +279,9 @@ function checkScope(rootDir, fail) {
     }
   }
   // The document package must not have grown geometry of its own.
-  const documentFiles = [];
-  const walk = (directory) => {
-    let entries = [];
-    try {
-      entries = readdirSync(directory, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      const full = join(directory, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.spec.ts'))
-        documentFiles.push(full);
-    }
-  };
-  walk(join(rootDir, DOCUMENT_SRC));
+  const documentFiles = sourceFiles(rootDir, (name) => !name.endsWith('.spec.ts'), {
+    base: DOCUMENT_SRC,
+  });
   for (const file of documentFiles) {
     const source = code(readFileSync(file, 'utf8'));
     for (const token of ['Math.cos', 'Math.sin', 'Math.atan', 'Math.hypot', 'getElementBounds']) {
@@ -331,11 +292,67 @@ function checkScope(rootDir, fail) {
   }
 }
 
-/** Typed findings must all exist, or a caller cannot switch on them. */
-function checkFindings(rootDir, fail) {
-  const source = read(rootDir, `${SRC_DIR}/findings/finding.ts`) ?? '';
-  for (const code_ of REQUIRED_CODES) {
-    if (!source.includes(`'${code_}'`)) fail(`the finding union is missing ${code_}`);
+/**
+ * 9 — a group's persisted box is its pivot, never its bounds — and `APP3-P02-C1`:
+ * ambiguous parentage is refused, not resolved.
+ *
+ * The delivered graph kept whichever group claimed a child first. An element with
+ * two parents has no authoritative transform, so any winner rule makes stored
+ * geometry depend on serialization order and hides an upstream validation bypass.
+ * Both halves are asserted — ambiguity is detected *before* a parent map exists,
+ * and no consumer can measure anything once it has been.
+ */
+function checkGroupSemantics(rootDir, fail) {
+  const raw = read(rootDir, CANONICAL_FILES.graph) ?? '';
+  const graph = code(raw);
+  const bounds = code(read(rootDir, CANONICAL_FILES.bounds) ?? '');
+  const spec = read(rootDir, CANONICAL_FILES.graphSpec) ?? '';
+  const complain = (message) => fail(`ambiguous parentage: ${message}`);
+
+  // The call, not the identifier: an unused import would otherwise satisfy this.
+  if (!/drawableDescendants\(/.test(bounds)) fail('getGroupBounds does not union descendants');
+  if (/localEnvelope\(group\)/.test(bounds)) {
+    fail('getGroupBounds uses the group persisted box as visible geometry');
+  }
+  for (const token of ['rebase', 'flatten']) {
+    if (graph.toLowerCase().includes(token)) fail(`the graph module appears to ${token} children`);
+  }
+  for (const [pattern, complaint] of [
+    [/listedHere\.has\(childId\)/, 'a child repeated inside one group is not rejected'],
+    [/claiming\.size > 1/, 'a child claimed by two groups is not rejected'],
+    [/childId === element\.id/, 'a group claiming itself is not rejected'],
+    [/!byId\.has\(childId\)/, 'an unknown child reference is not rejected'],
+    [
+      /structuralFindings\.length === 0\s*\)\s*\{\s*for \(const \[childId, claiming\]/,
+      'the parent map is built before every claim is known unambiguous',
+    ],
+    [/'INVALID_PARENT_CHAIN'/, 'the graph module does not raise INVALID_PARENT_CHAIN'],
+  ]) {
+    if (!pattern.test(graph)) complain(complaint);
+  }
+  // The old rule, in the exact form it took: insert unless already claimed.
+  if (/!parentOf\.has\(childId\)/.test(graph)) {
+    complain('the graph still selects a parent by claim order');
+  }
+  const containment = code(read(rootDir, CANONICAL_FILES.containment) ?? '');
+  for (const [name, source] of Object.entries({ bounds, containment })) {
+    if (!/structuralFinding\(/.test(source)) {
+      complain(`${name} can proceed on a graph with no authoritative parentage`);
+    }
+  }
+  // Prose counts: a comment promising a winner documents the defect as design.
+  for (const claim of ['first parent wins', 'last parent wins', 'first wins', 'last wins']) {
+    if (`${raw}${spec}`.toLowerCase().includes(claim)) complain(`a module claims "${claim}"`);
+  }
+  for (const proof of [
+    'rejects one group listing the same child twice',
+    'rejects two groups claiming one child',
+    'selects no winner in either order',
+  ]) {
+    if (!spec.includes(proof)) complain(`the regression "${proof}" is missing`);
+  }
+  if (spec.includes('keeps only the first parent')) {
+    complain('the first-parent determinism test was renamed, not replaced');
   }
 }
 
@@ -350,7 +367,6 @@ export function checkApp3P02(rootDir = REPO_ROOT) {
     checkGroupSemantics(rootDir, fail);
     checkValidation(rootDir, fail);
     checkScope(rootDir, fail);
-    checkFindings(rootDir, fail);
   }
 
   // 2, 18 — G05 chains P01, which chains F01/DB01 → G04 → G03 → G02 → G01, so
@@ -371,13 +387,12 @@ async function main() {
   console.log(
     'check:app3-p02 — design-engine implements IMP-D045: clockwise rotation under y-down, ' +
       'T(centre) x R x S x T(-half) with scale first, effective transforms composed parent ' +
-      'outermost, stroke-aware local envelopes (rectangle miter/4, line and freehand round, the ' +
-      'v1 line path (0,0)-(width,height)) expanded before they are transformed, group bounds as ' +
-      'the descendant union rather than the persisted box, product_sides.px_per_mm as the sole ' +
-      'conversion authority, NEW_EDITING versus HISTORICAL_RENDER, and blocking full-AABB ' +
-      'containment that never clamps; only the design-document public root is imported, no Node ' +
-      'built-in or renderer is reachable, no epsilon or DPI constant exists, and no geometry ' +
-      'entered design-document',
+      'outermost, stroke-aware local envelopes expanded before they are transformed, group ' +
+      'bounds as the descendant union, ambiguous parentage refused rather than resolved by ' +
+      'claim order (APP3-P02-C1), product_sides.px_per_mm as the sole conversion authority, ' +
+      'and blocking full-AABB containment that never clamps; only the design-document public ' +
+      'root is imported, no epsilon or DPI constant exists, and no geometry entered ' +
+      'design-document',
   );
 }
 
