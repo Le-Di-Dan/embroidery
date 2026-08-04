@@ -407,11 +407,13 @@ describe('APP3-G06 — ownership and blockers', () => {
     assert.ok(mentions(failures, 'follow-up'), failures.join('\n'));
   });
 
-  it('rejects losing the corrected public-media-dimensions blocker', () => {
+  it('rejects a public-media-dimensions blocker that still names B06', () => {
+    // PO-11 moved the follow-up onto the trigger owner. The blocker narrows as
+    // predecessors land, so what must hold is that B01N is named and B06 is not.
     const failures = run({
       [CANONICAL_FILES.phase]: phase().replace(
-        'FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = APP3-W01A_AND_APP3-B01N\n',
-        '',
+        /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = [^\n]+/,
+        'FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = APP3-B06',
       ),
     });
     assert.ok(mentions(failures, 'public-media-dimensions'), failures.join('\n'));
@@ -419,12 +421,16 @@ describe('APP3-G06 — ownership and blockers', () => {
 });
 
 describe('APP3-G06 — the authority stays authority', () => {
-  it('rejects a worker implementation of the new event', () => {
+  it('rejects a worker implementation while APP3-W01A is not recorded complete', () => {
+    // Two consistent worlds: before W01A the worker must not mention the event,
+    // after it the worker owns it. Every mixture fails.
     const failures = run({
-      'apps/worker/src/jobs/normalization/normalization.handler.ts':
-        "export const eventType = 'asset.normalization.requested';\n",
+      [CANONICAL_FILES.phase]: phase().replaceAll(
+        'APP3-W01A = COMPLETE',
+        'APP3-W01A = READY — NOT STARTED',
+      ),
     });
-    assert.ok(mentions(failures, 'implements the normalization event'), failures.join('\n'));
+    assert.ok(mentions(failures, 'before APP3-W01A is recorded complete'), failures.join('\n'));
   });
 
   it('rejects an API producer appended before the gate is accepted', () => {
@@ -435,12 +441,14 @@ describe('APP3-G06 — the authority stays authority', () => {
     assert.ok(mentions(failures, 'implements the normalization event'), failures.join('\n'));
   });
 
-  it('rejects implementing the stale-association outcome early', () => {
+  it('rejects the stale-association outcome leaking into the API in either world', () => {
+    // The outcome is the consumer's. Delivering W01A does not license the API to
+    // reproduce it — that surface belongs to APP3-B01N, which has not run.
     const failures = run({
-      'apps/worker/src/jobs/normalization/context.ts':
+      'apps/api/src/modules/catalog/application/normalization-context.ts':
         "export const CODE = 'NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE';\n",
     });
-    assert.ok(mentions(failures, 'stale-association outcome'), failures.join('\n'));
+    assert.ok(mentions(failures, "the producer is APP3-B01N's"), failures.join('\n'));
   });
 
   it('rejects a persisted profile column', () => {

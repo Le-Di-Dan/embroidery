@@ -15,8 +15,29 @@ import type { Readable } from 'node:stream';
 import sharp from 'sharp';
 import type { OutputInfo as SharpOutputInfo, Sharp, SharpOptions } from 'sharp';
 
-import type { DerivativeOutputPolicy } from '../../domain/asset-processing-policy';
 import { ASSET_PROCESSING_POLICY_V1 } from '../../domain/asset-processing-policy';
+
+/**
+ * What this pipeline actually needs from a policy (`APP3-W01A`).
+ *
+ * Widened from `DerivativeOutputPolicy` to the structural minimum so the APP3
+ * `NORMALIZED` policy can reuse the same encoder without `CatalogDerivativeKind`
+ * growing a third member — that union is APP2's derivative vocabulary and must
+ * not learn about an editor-safe kind. `DerivativeOutputPolicy` already
+ * satisfies this shape, so every existing call site is unchanged.
+ */
+export interface RasterEncodePolicy {
+  readonly maxWidth: number;
+  readonly maxHeight: number;
+  readonly fit: 'inside';
+  readonly withoutEnlargement: true;
+  readonly webp: {
+    readonly quality: number;
+    readonly alphaQuality: number;
+    readonly effort: number;
+    readonly smartSubsample: boolean;
+  };
+}
 
 /** What the shipped native module reports; asserted against the pinned value. */
 export const INSTALLED_SHARP_VERSION = sharp.versions.sharp;
@@ -127,7 +148,7 @@ export async function readSourceMetadata(body: Readable): Promise<SourceMetadata
  * appears anywhere: Sharp strips EXIF, XMP, IPTC and comments by default, and
  * the way to guarantee they are gone is to never ask for them back.
  */
-export function buildDerivativePipeline(policy: DerivativeOutputPolicy): Sharp {
+export function buildDerivativePipeline(policy: RasterEncodePolicy): Sharp {
   return sharp(sharpOptions())
     .autoOrient()
     .resize({

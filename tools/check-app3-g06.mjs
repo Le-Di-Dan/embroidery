@@ -187,13 +187,21 @@ function checkTable(rows, expected, what, fail) {
 }
 
 /**
- * 19, 20 — the authority stays authority.
+ * 19, 20 — the authority stays authority, in whichever world this repository is
+ * in.
  *
- * A gate that quietly grew an implementation would be a checkpoint wearing a
- * gate's name, so the *absence* is asserted as hard as any presence: no handler
- * for the new event, no producer append, and no profile column anywhere.
+ * G06 was the frontier when it ran, so it asserted that **no** implementation of
+ * its own ruling existed. `APP3-W01A` then built the consumer, and a check that
+ * still demanded the absence would have to be deleted the day the ruling was
+ * carried out. So exactly two consistent worlds are accepted — before W01A (no
+ * mention of the event anywhere in the applications, and the plan does not
+ * record it) and after (the worker owns it, the API still does not) — and every
+ * mixture fails. A producer in `apps/api/**` is refused in **both** worlds:
+ * `APP3-B01N` has not run.
  */
 function checkNoImplementation(rootDir, fail) {
+  const delivered = /APP3-W01A\s*=\s*COMPLETE/.test(read(rootDir, 'phase') ?? '');
+  const workerAllowed = delivered;
   const sources = [];
   const walk = (directory) => {
     let entries = [];
@@ -214,12 +222,24 @@ function checkNoImplementation(rootDir, fail) {
   for (const file of sources) {
     const source = readFileSync(file, 'utf8');
     const shown = file.slice(rootDir.length + 1);
-    if (source.includes('asset.normalization.requested')) {
-      fail(`${shown} implements the normalization event; APP3-G06 is authority only`);
+    const inWorker = shown.replace(/\\/g, '/').startsWith('apps/worker/');
+    const mentions =
+      source.includes('asset.normalization.requested') ||
+      /NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE/.test(source);
+    if (!mentions) continue;
+
+    if (!inWorker) {
+      // The producer belongs to `APP3-B01N`, which has not run in either world.
+      fail(`${shown} implements the normalization event; the producer is APP3-B01N's`);
+    } else if (!workerAllowed) {
+      fail(`${shown} implements the normalization event before APP3-W01A is recorded complete`);
     }
-    if (/NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE/.test(source)) {
-      fail(`${shown} implements the stale-association outcome before W01A`);
-    }
+  }
+  if (
+    workerAllowed &&
+    !sources.some((file) => readFileSync(file, 'utf8').includes('asset.normalization.requested'))
+  ) {
+    fail('APP3-W01A is recorded complete but no worker consumes the normalization event');
   }
 
   // No profile column, and no new derivative kind, may be authorized here.
@@ -283,7 +303,11 @@ function checkGovernance(rootDir, fail) {
   if (/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01\s*=\s*(COMPLETE|CLOSED)/.test(phase)) {
     fail(`${CANONICAL_FILES.phase}: the platform Zod/OpenAPI follow-up was closed here`);
   }
-  if (!/FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = APP3-W01A_AND_APP3-B01N/.test(phase)) {
+  // PO-11 moved the follow-up off `APP3-B06` and onto the trigger owner. The
+  // blocker narrows as predecessors land — `W01A_AND_B01N` before W01A, `B01N`
+  // after — so what must hold is that `APP3-B01N` is named and `APP3-B06` is not.
+  const blocker = /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = ([^\n]+)/.exec(phase)?.[1] ?? '';
+  if (!blocker.includes('APP3-B01N') || blocker.includes('APP3-B06')) {
     fail(`${CANONICAL_FILES.phase}: the public-media-dimensions blocker was not corrected`);
   }
 

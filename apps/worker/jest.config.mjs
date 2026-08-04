@@ -28,6 +28,11 @@ export default {
     'storage-bootstrap-worker',
     'storage-bootstrap-composition',
     'asset-inspection-.*\\.integration',
+    // The APP3-W01A normalization suites join for the same reason: each starts a
+    // MinIO container and a disposable PostgreSQL, so they run from the indexed
+    // `CMD-TEST-APP3-W01A-INTEGRATION`, never from the Docker-free `pnpm test`.
+    // Their Docker-free unit siblings sit next to the code and do run here.
+    'asset-normalization.*\\.integration',
     'asset-processing-worker\\.smoke',
     '\\.process\\.spec\\.ts$',
   ],
