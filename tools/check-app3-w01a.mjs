@@ -17,49 +17,25 @@
  * Usage: node tools/check-app3-w01a.mjs [rootDir]
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, extname, join } from 'node:path';
+import { extname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { checkApp3G06 } from './check-app3-g06.mjs';
+import {
+  CANONICAL_FILES,
+  JOB_DIR,
+  REPO_ROOT,
+  code,
+  isW01bDelivered,
+  read,
+} from './check-app3-w01a-files.mjs';
+import { checkApp3W01aOutput } from './check-app3-w01a-output.mjs';
 
-export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const JOB_DIR = 'apps/worker/src/jobs/asset-normalization';
-
-export const CANONICAL_FILES = Object.freeze({
-  payload: `${JOB_DIR}/domain/asset-normalization.payload.ts`,
-  sharedContract: 'packages/domain-types/src/events/asset-normalization-requested.ts',
-  policy: `${JOB_DIR}/domain/normalization-policy.ts`,
-  outcome: `${JOB_DIR}/domain/normalization-outcome.ts`,
-  port: `${JOB_DIR}/domain/repositories/asset-normalization.repository.ts`,
-  association: `${JOB_DIR}/application/association-resolution.service.ts`,
-  derivative: `${JOB_DIR}/application/normalized-derivative.service.ts`,
-  usecase: `${JOB_DIR}/application/asset-normalization.usecase.ts`,
-  repository: `${JOB_DIR}/infrastructure/persistence/sql-asset-normalization.repository.ts`,
-  handler: `${JOB_DIR}/asset-normalization.handler.ts`,
-  module: `${JOB_DIR}/asset-normalization.module.ts`,
-  workerModule: 'apps/worker/src/bootstrap/worker.module.ts',
-  inspectionPayload: 'apps/worker/src/jobs/asset-inspection/domain/asset-inspection.payload.ts',
-  derivativeSchema: 'packages/database/src/schema/asset/asset-derivatives.ts',
-  openapi: 'packages/contracts/openapi/openapi.generated.json',
-  commandIndex: 'docs/implementation/SCOPED_COMMAND_INDEX.md',
-  phase: 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md',
-  rootManifest: 'package.json',
-  workerManifest: 'apps/worker/package.json',
-});
+export { CANONICAL_FILES, REPO_ROOT, isW01bDelivered };
 
 const ROOT_SCRIPT_COUNT = 30;
 const MIGRATION_COUNT = 34;
-
-function read(rootDir, key) {
-  const path = join(rootDir, CANONICAL_FILES[key] ?? key);
-  return existsSync(path) ? readFileSync(path, 'utf8') : undefined;
-}
-
-/** Source with comments removed, so prose explaining a rule cannot trip a scan. */
-function code(text) {
-  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
 
 function jobFiles(rootDir) {
   const found = [];
@@ -196,74 +172,36 @@ function checkMediaAndLimits(rootDir, fail) {
     fail('SVG appears in the policy beyond its single staged constant');
   }
 
-  // No sanitizer may be introduced before APP3-G07.
+  // Mode-aware on `APP3-W01B`. Two consistent worlds and no third: either the
+  // Template SVG consumer has not landed and no sanitizer exists at all, or it
+  // has and the sanitizer is exactly the two packages `IMP-D047` selected.
+  // Everything W01A actually owns — the raster lane, the profile derivation, the
+  // measured quartet — is asserted identically in both.
+  const w01b = isW01bDelivered(rootDir);
   const manifest = read(rootDir, 'workerManifest') ?? '';
-  for (const packageName of ['dompurify', 'svgo', 'sanitize-svg', 'xmldom', 'svg-sanitizer']) {
-    if (manifest.includes(packageName)) {
+  const forbidden = w01b
+    ? ['svgo', 'sanitize-svg', 'xmldom', 'svg-sanitizer', 'isomorphic-dompurify', 'happy-dom']
+    : ['dompurify', 'jsdom', 'svgo', 'sanitize-svg', 'xmldom', 'svg-sanitizer'];
+  for (const packageName of forbidden) {
+    if (manifest.includes(`"${packageName}"`)) {
       fail(`the worker manifest gained the sanitizer dependency "${packageName}"`);
     }
   }
   const derivative = code(read(rootDir, 'derivative') ?? '');
-  if (!/TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE/.test(derivative)) {
+  if (w01b) {
+    // The staged refusal is gone; SVG must leave the raster lane by the lane
+    // discriminator rather than by a media-type test repeated downstream.
+    if (/TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE/.test(derivative)) {
+      fail('the staged Template SVG refusal survived APP3-W01B');
+    }
+    if (!/lane: 'TEMPLATE_SVG'/.test(derivative)) {
+      fail('Template SVG is not routed out of the raster lane');
+    }
+  } else if (!/TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE/.test(derivative)) {
     fail('Template SVG does not return the staged-capability outcome');
   }
   if (/sharp\(/.test(derivative)) {
     fail('the derivative service constructs a decoder directly instead of the shared pipeline');
-  }
-}
-
-/** 7, 8, 9 — output policy, measured quartet and atomic completion. */
-function checkOutputContract(rootDir, fail) {
-  const policy = code(read(rootDir, 'policy') ?? '');
-  const derivative = code(read(rootDir, 'derivative') ?? '');
-  const repository = code(read(rootDir, 'repository') ?? '');
-  const usecase = code(read(rootDir, 'usecase') ?? '');
-
-  if (!/kind: 'NORMALIZED'/.test(policy)) fail('the output kind is not NORMALIZED');
-  if (!/isWatermarked: false/.test(policy)) fail('the output policy does not fix isWatermarked');
-  if (!/mediaType: 'image\/webp'/.test(policy)) fail('the output media type is not fixed');
-  // The number itself is the shared contract's since `APP3-B01N`; what this
-  // policy must not do is declare a second one.
-  const shared = code(read(rootDir, 'sharedContract') ?? '');
-  if (!/ASSET_NORMALIZATION_POLICY_VERSION = 1/.test(shared)) fail('the policy version is not 1');
-  if (!/NORMALIZATION_POLICY_VERSION = ASSET_NORMALIZATION_POLICY_VERSION/.test(policy)) {
-    fail('the policy version is not taken from the shared contract');
-  }
-
-  // The quartet must come from the encoder and the counted stream.
-  for (const [pattern, complaint] of [
-    [/info\.read\(\)/, 'the encoder output report'],
-    [/counter\.digest\(\)/, 'the counted checksum'],
-    [/BigInt\(counter\.byteSize\)/, 'the counted byte size'],
-    [/widthPx: produced\.width/, 'the measured width'],
-    [/heightPx: produced\.height/, 'the measured height'],
-  ]) {
-    if (!pattern.test(derivative)) fail(`the quartet does not use ${complaint}`);
-  }
-  if (
-    /widthPx: source\.|byteSize: source\.byteSize|mediaType: source\.mediaType/.test(derivative)
-  ) {
-    fail('the quartet substitutes source Asset metadata');
-  }
-
-  // One statement makes it usable, and it is guarded on this attempt's claim.
-  if (!/status = 'READY'[\s\S]{0,400}width_px = \$\{input\.widthPx\}/.test(repository)) {
-    fail('READY and the quartet are not persisted in one statement');
-  }
-  if (!/and status = 'PROCESSING'/.test(repository)) {
-    fail('finalization is not guarded on this attempt’s claim');
-  }
-  if (/update assets set|update assets\s/.test(repository)) {
-    fail('the normalization repository writes assets.status');
-  }
-  for (const kind of ['THUMBNAIL', 'CATALOG_PREVIEW']) {
-    if (repository.includes(kind)) fail(`the repository references the APP2 kind ${kind}`);
-  }
-  // No storage call inside a transaction.
-  if (
-    /runInTransaction\([\s\S]{0,300}(putObjectStream|getObjectStream|deleteObject)/.test(usecase)
-  ) {
-    fail('an object-storage call happens inside a database transaction');
   }
 }
 
@@ -361,7 +299,7 @@ export function checkApp3W01A(rootDir = REPO_ROOT) {
   checkArchitecture(rootDir, fail);
   checkProfileDerivation(rootDir, fail);
   checkMediaAndLimits(rootDir, fail);
-  checkOutputContract(rootDir, fail);
+  for (const violation of checkApp3W01aOutput(rootDir)) fail(violation);
   checkIdempotencyAndSchema(rootDir, fail);
   checkScopeAndGovernance(rootDir, fail);
 

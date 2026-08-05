@@ -20,6 +20,8 @@
     "@embroidery/persistence": "workspace:*",
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
+    "dompurify": "3.4.13",
+    "jsdom": "29.1.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "sharp": "0.35.3"
@@ -31,6 +33,7 @@
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.28",
     "@types/jest": "^30.0.0",
+    "@types/jsdom": "21.1.7",
     "@types/node": "^26.1.1",
     "eslint": "^10.7.0",
     "jest": "^30.4.2",

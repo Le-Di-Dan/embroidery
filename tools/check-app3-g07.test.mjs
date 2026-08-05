@@ -422,40 +422,74 @@ describe('APP3-G07 — the pipeline and the output', () => {
 });
 
 describe('APP3-G07 — nothing was installed and nothing was implemented', () => {
+  /**
+   * Mode-aware since `APP3-W01B`. Every case here restores the pre-W01B world by
+   * removing a delivery token from the phase document, because that world is
+   * where "G07 installs nothing" is the truth being asserted. Two consistent
+   * worlds and no third — the half-flipped cases below prove the third is shut.
+   */
+  const beforeW01b = (overrides = {}) => ({
+    [CANONICAL_FILES.phase]: phase().replace('APP3-W01B = COMPLETE', 'APP3-W01B = READY'),
+    ...overrides,
+  });
+
   it('rejects installing the sanitizer here', () => {
     const manifest = JSON.parse(file('workerManifest'));
     manifest.dependencies = { ...manifest.dependencies, dompurify: '3.4.13' };
-    const failures = run({
-      [CANONICAL_FILES.workerManifest]: `${JSON.stringify(manifest, undefined, 2)}\n`,
-    });
+    const failures = run(
+      beforeW01b({
+        [CANONICAL_FILES.workerManifest]: `${JSON.stringify(manifest, undefined, 2)}\n`,
+      }),
+    );
     assert.ok(mentions(failures, 'APP3-G07 installs nothing'), failures.join('\n'));
   });
 
   it('rejects implementing the sanitizer here', () => {
-    const failures = run({
-      'apps/worker/src/jobs/asset-normalization/application/svg-sanitizer.ts':
-        "import { JSDOM } from 'jsdom';\nexport const window = new JSDOM('').window;\n",
-    });
+    const failures = run(
+      beforeW01b({
+        'apps/worker/src/jobs/asset-normalization/application/svg-sanitizer.ts':
+          "import { JSDOM } from 'jsdom';\nexport const window = new JSDOM('').window;\n",
+      }),
+    );
     assert.ok(mentions(failures, "that is APP3-W01B's"), failures.join('\n'));
   });
 
   it('rejects implementing the policy version here', () => {
-    const failures = run({
-      'apps/worker/src/jobs/asset-normalization/domain/svg-policy.ts':
-        'export const TEMPLATE_SVG_SANITIZATION_POLICY_VERSION = 1;\n',
-    });
+    const failures = run(
+      beforeW01b({
+        'apps/worker/src/jobs/asset-normalization/domain/svg-policy.ts':
+          'export const TEMPLATE_SVG_SANITIZATION_POLICY_VERSION = 1;\n',
+      }),
+    );
     assert.ok(mentions(failures, 'implements the sanitization policy'), failures.join('\n'));
   });
 
   it('rejects removing the staged refusal without implementing anything', () => {
     const staged = W01A_FILES.derivative;
-    const failures = run({
-      [staged]: read(staged).replaceAll(
-        'TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE',
-        'SOURCE_MEDIA_TYPE_NOT_SUPPORTED',
-      ),
-    });
+    const failures = run(
+      beforeW01b({
+        [staged]: read(staged).replaceAll(
+          'TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE',
+          'SOURCE_MEDIA_TYPE_NOT_SUPPORTED',
+        ),
+      }),
+    );
     assert.ok(mentions(failures, 'the staged Template SVG refusal is gone'), failures.join('\n'));
+  });
+
+  it('accepts the delivered sanitizer once APP3-W01B is complete', () => {
+    // The second world. The real tree already installs and implements both
+    // packages, so an empty override is the assertion.
+    const failures = run({});
+    assert.ok(!mentions(failures, 'installs nothing'), failures.join('\n'));
+    assert.ok(!mentions(failures, "that is APP3-W01B's"), failures.join('\n'));
+  });
+
+  it('refuses a half-flipped world: W01B complete but IMP-D047 unlocked', () => {
+    const failures = run({
+      [CANONICAL_FILES.phase]: phase().replace('IMP-D047 = LOCKED', 'IMP-D047 = PROPOSED'),
+    });
+    assert.ok(mentions(failures, 'installs nothing'), failures.join('\n'));
   });
 
   it('rejects a policy column on the derivative table', () => {

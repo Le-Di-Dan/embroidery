@@ -38,6 +38,7 @@ import {
 } from '../domain/repositories/asset-normalization.repository';
 import { AssociationResolutionService } from './association-resolution.service';
 import { NormalizedDerivativeService } from './normalized-derivative.service';
+import { TemplateSvgNormalizationService } from './template-svg-normalization.service';
 
 /** What one attempt concluded. Recorded by the caller; never thrown at the runtime. */
 export type NormalizationResult =
@@ -57,6 +58,7 @@ export class AssetNormalizationUseCase {
     private readonly repository: AssetNormalizationRepository,
     private readonly associations: AssociationResolutionService,
     private readonly derivatives: NormalizedDerivativeService,
+    private readonly templateSvg: TemplateSvgNormalizationService,
   ) {}
 
   async normalize(
@@ -86,9 +88,17 @@ export class AssetNormalizationUseCase {
       payload.assetId,
       payload.associationRef,
     );
-    const mediaType = this.derivatives.assertProcessableSource(profile, source);
+    const lane = this.derivatives.assertProcessableSource(profile, source);
+    if (lane.lane === 'TEMPLATE_SVG') {
+      // Before the claim and before any read: a job asking for sanitization
+      // rules this build does not implement must not take the row (PO-14).
+      this.templateSvg.assertPolicyVersion(payload.normalizationPolicyVersion);
+    }
 
-    const key = this.derivatives.derivativeKey(payload.assetId);
+    const key =
+      lane.lane === 'TEMPLATE_SVG'
+        ? this.templateSvg.derivativeKey(payload.assetId)
+        : this.derivatives.derivativeKey(payload.assetId);
     const prepared = await this.transactions.runInTransaction(() =>
       this.repository.prepareOrRecover({
         assetId: payload.assetId,
@@ -104,7 +114,12 @@ export class AssetNormalizationUseCase {
       return { outcome: 'ALREADY_NORMALIZED', storageKey: prepared.storageKey };
     }
 
-    await this.derivatives.verifySource(mediaType, prepared.source, signal);
+    // The raster lane verifies and then decodes in two reads; the Template SVG
+    // lane proves integrity on the single read that feeds its parser, so its
+    // verification lives inside `produce`.
+    if (lane.lane === 'RASTER') {
+      await this.derivatives.verifySource(lane.mediaType, prepared.source, signal);
+    }
 
     if (prepared.requiresCleanup) {
       // An earlier attempt may have written bytes at this deterministic key.
@@ -113,7 +128,10 @@ export class AssetNormalizationUseCase {
       await this.derivatives.discardObject(key, signal);
     }
 
-    const output = await this.derivatives.produce(prepared.source, signal);
+    const output =
+      lane.lane === 'TEMPLATE_SVG'
+        ? await this.templateSvg.produce(prepared.source, signal)
+        : await this.derivatives.produce(prepared.source, signal);
 
     try {
       await this.transactions.runInTransaction(() =>

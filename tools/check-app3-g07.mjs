@@ -162,8 +162,27 @@ function checkTables(rootDir, fail) {
  *
  * The strongest evidence an authority gate can offer: the sanitizer it selected
  * appears in the *documents* and in no manifest, no lockfile and no source file.
+ *
+ * **Mode-aware.** This is only true until `APP3-W01B` delivers, and W01B's whole
+ * job is to install exactly what this gate named. So there are two consistent
+ * worlds and no third: either W01B has not landed and nothing is installed, or
+ * it has and the *selection* — the versions, the licences, the refusals — is
+ * still what this gate proves. A gate that asserted only the first world would
+ * have to be deleted by the checkpoint it exists to constrain, which is how an
+ * authority stops constraining anything.
  */
+/**
+ * True only in the second consistent world: `APP3-W01B` recorded as delivered
+ * **and** `IMP-D047` still locked. Both tokens, so a status line alone cannot
+ * open the door.
+ */
+function isW01bDelivered(rootDir) {
+  const phase = read(rootDir, 'phase') ?? '';
+  return /APP3-W01B\s*=\s*COMPLETE/.test(phase) && /IMP-D047\s*=\s*LOCKED/.test(phase);
+}
+
 function checkNoInstallOrImplementation(rootDir, fail) {
+  if (isW01bDelivered(rootDir)) return;
   for (const key of ['rootManifest', 'workerManifest', 'apiManifest']) {
     const manifest = read(rootDir, key) ?? '';
     for (const packageName of ['dompurify', 'jsdom', 'svgo', 'sanitize-svg', 'xmldom']) {

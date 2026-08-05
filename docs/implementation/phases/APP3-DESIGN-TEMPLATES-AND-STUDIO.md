@@ -2753,6 +2753,81 @@ equality between the first and second serialization.
 package, schema, migration, OpenAPI, generated client, infrastructure or Figma
 change.
 
+## 6.18 `APP3-W01B` — sanitized Template SVG normalization
+
+`APP3-G07` selected the sanitizer and locked `IMP-D047`; `APP3-W01B` implements
+it. It is an **extension of the accepted `APP3-W01A` consumer**, not a second
+one: the same event, the same claim, the same deterministic key, the same
+`READY`-plus-quartet finalization, the same cleanup and the same attempt
+evidence. What is new is one lane — `TEMPLATE_ASSET` plus `image/svg+xml` — and
+the deterministic pipeline behind it.
+
+No event type, producer, HTTP operation, OpenAPI schema, generated-client
+change, database migration, derivative kind, public delivery route, queue,
+scheduler or retry framework was added. SVG remains profile-invalid for
+`SIDE_BACKGROUND` and `SESSION_UPLOAD`.
+
+### 6.18.1 Delivered dependencies
+
+| Machine-checked dependency fact | Value |
+|---|---|
+| `Sanitizer pin` | `dompurify@3.4.13` |
+| `DOM pin` | `jsdom@29.1.1` |
+| `Version range form` | `EXACT_PIN_ONLY` |
+| `Type declarations` | `@types/jsdom@21.1.7` |
+| `New external type version` | `NONE_ALREADY_RESOLVED` |
+| `Container Node` | `22.14.0` |
+| `Container sanitizer smoke` | `PASS` |
+| `Install or postinstall script` | `NONE` |
+| `Native binary download` | `NONE` |
+| `Runtime network call` | `NONE` |
+| `Lockfile deletions` | `0` |
+| `Package outside worker with sanitizer` | `NONE` |
+
+### 6.18.2 Delivered pipeline
+
+The thirteen `IMP-D047` PO-12 steps run in order, twice. `sanitizeTemplateSvg`
+runs one complete pass on the source, then a second pass **on its own canonical
+output**, and requires the two serializations to be byte-identical. That fixed
+point is what makes "reject on any structural removal" enforceable: the
+canonical form is proven to be a value the whole pipeline maps to itself.
+
+The structural comparison builds the canonical model twice — once from the
+strictly parsed source and once from whatever DOMPurify returned — with the
+**same builder**, so a laxer second reading cannot make the comparison pass.
+`DOMPurify.removed` is never read.
+
+Rejection is whole-file, with two outcomes and no third:
+`UNSAFE_OR_UNSUPPORTED_TEMPLATE_SVG` for anything the policy does not admit, and
+`TEMPLATE_SVG_POLICY_VERSION_UNSUPPORTED` for a job asking for sanitization rules
+this build does not implement — a statement about the deployment, not the file,
+asserted before a byte is read.
+
+`TEMPLATE_SVG_SANITIZATION_POLICY_VERSION` is **defined as**
+`NORMALIZATION_POLICY_VERSION` rather than declared beside it, so the producer's
+policy version and the sanitizer's cannot drift.
+
+### 6.18.3 Where the staged refusal went
+
+`TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE` is gone. A Template SVG now reaches
+a lane discriminator, so an unsafe file is a **content verdict reached after the
+claim** — the row exists and is `FAILED`, exactly as an integrity mismatch or an
+undecodable raster leaves it. `APP3-W01A` refused before claiming because it
+refused a *capability*; judging content means reading it.
+
+### 6.18.4 Disclosed deviation
+
+`APP3-B01N` added `@embroidery/domain-types` as a worker runtime dependency but
+no `COPY` line in the production image's `runner` stage, so the shipped worker
+resolved a dangling symlink and died on its first import. The defect predates
+this checkpoint: the import landed in `2ada703` while
+`infrastructure/docker/worker.Dockerfile` was last touched by APP2-I03. The
+`APP3-W01B` container proof was the first thing to load that module inside the
+runner stage and so the first thing to find it. Two `COPY` lines were added,
+mirroring the three workspace packages already shipped. Recorded as
+`WORKER_IMAGE_DOMAIN_TYPES_COPY_RESTORED`; no Node image upgrade, no new stage
+and no other infrastructure change.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -2811,7 +2886,7 @@ APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
 APP3-B07 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-B08 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-S11 = FOUNDATION_READY_BY_P01_AND_P02 — NOT STARTED
-APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP_AND_TEMPLATE_SVG_REMAINS_UNAVAILABLE_UNTIL_APP3-W01B
+APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP BUT_TEMPLATE_RASTER_AND_SVG_NORMALIZATION_FOUNDATION_READY
 APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06
 APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04
 APP3-B06 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP
@@ -2825,10 +2900,12 @@ APP3-W01 FIRST_ATTEMPT SECONDARY_CAUSE = SVG_SANITIZER_NOT_SELECTED
 APP3-W01 = REPLANNED — REPLACED_BY_APP3-W01A_AND_APP3-W01B
 APP3-W01A = COMPLETE — REVIEW_ACCEPTED
 APP3-B01N = COMPLETE — REVIEW_ACCEPTED
-APP3-G07 = COMPLETE — REVIEW_DELIVERED
+APP3-G07 = COMPLETE — REVIEW_ACCEPTED
 IMP-D047 = LOCKED
 TEMPLATE_SVG_SANITIZATION_POLICY_VERSION = 1
-APP3-W01B = BLOCKED_BY_APP3-G07_REVIEW_ACCEPTANCE
+APP3-W01B = COMPLETE — REVIEW_DELIVERED
+APP3-W01B SANITIZER = DOMPURIFY_3.4.13_ON_JSDOM_29.1.1
+APP3-W01B DISCLOSED_DEVIATION = WORKER_IMAGE_DOMAIN_TYPES_COPY_RESTORED
 APP3-B02 = READY_BY_APP3-W01A_AND_APP3-B01N BUT_BLOCKED_WHEN_PLATFORM_ZOD_OPENAPI_FOLLOW_UP_APPLIES
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — FINAL_OWNER_APP3-B02
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = PROCESSING_AND_TRIGGER_FOUNDATION_READY

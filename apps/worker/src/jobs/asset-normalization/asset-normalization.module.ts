@@ -18,6 +18,7 @@ import { JobHandlerRegistry } from '../../runtime/registry/job-handler.registry'
 import { AssociationResolutionService } from './application/association-resolution.service';
 import { AssetNormalizationUseCase } from './application/asset-normalization.usecase';
 import { NormalizedDerivativeService } from './application/normalized-derivative.service';
+import { TemplateSvgNormalizationService } from './application/template-svg-normalization.service';
 import { AssetNormalizationHandler } from './asset-normalization.handler';
 import { ASSET_NORMALIZATION_REPOSITORY } from './domain/repositories/asset-normalization.repository';
 import { SqlAssetNormalizationRepository } from './infrastructure/persistence/sql-asset-normalization.repository';
@@ -28,6 +29,7 @@ import { SqlAssetNormalizationRepository } from './infrastructure/persistence/sq
     { provide: ASSET_NORMALIZATION_REPOSITORY, useClass: SqlAssetNormalizationRepository },
     AssociationResolutionService,
     NormalizedDerivativeService,
+    TemplateSvgNormalizationService,
     AssetNormalizationUseCase,
     AssetNormalizationHandler,
   ],

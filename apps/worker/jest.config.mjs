@@ -1,3 +1,36 @@
+/**
+ * The ESM-only packages in jsdom 29.1.1's dependency closure.
+ *
+ * Named explicitly rather than opening `node_modules` wholesale, so a future
+ * dependency cannot start being transpiled without this list saying so. Matched
+ * on the *installed directory* rather than the pnpm store key, because pnpm
+ * places a peer dependency under its dependant's own `node_modules` where the
+ * store key never appears.
+ */
+const ESM_ONLY_PACKAGES = [
+  '@asamuzakjp/css-color',
+  '@asamuzakjp/dom-selector',
+  '@asamuzakjp/generational-cache',
+  '@bramus/specificity',
+  '@csstools/color-helpers',
+  '@csstools/css-calc',
+  '@csstools/css-color-parser',
+  '@csstools/css-parser-algorithms',
+  '@csstools/css-tokenizer',
+  '@exodus/bytes',
+  'css-tree',
+  'entities',
+  'lru-cache',
+  'parse5',
+  'tough-cookie',
+];
+
+const SEPARATOR = '[\\\\/]';
+
+const ESM_ONLY_DIRECTORIES = ESM_ONLY_PACKAGES.map(
+  (name) => `${SEPARATOR}${name.split('/').join(SEPARATOR)}${SEPARATOR}`,
+);
+
 /** @type {import('jest').Config} */
 export default {
   testEnvironment: 'node',
@@ -33,11 +66,30 @@ export default {
     // `CMD-TEST-APP3-W01A-INTEGRATION`, never from the Docker-free `pnpm test`.
     // Their Docker-free unit siblings sit next to the code and do run here.
     'asset-normalization.*\\.integration',
+    // `APP3-W01B` joins for the same reason: the Template SVG live-stack suite
+    // starts MinIO and a disposable PostgreSQL, so it runs from the indexed
+    // `CMD-TEST-APP3-W01B-INTEGRATION`. Its sanitizer unit siblings are
+    // Docker-free and do run here, against the real jsdom and DOMPurify.
+    'template-svg-normalization\\.integration',
     'asset-processing-worker\\.smoke',
     '\\.process\\.spec\\.ts$',
   ],
+  // jsdom 29 reaches several ESM-only packages, and Jest runs this suite as
+  // CommonJS. Transpiling those few packages is what lets the APP3-W01B
+  // sanitizer be exercised against the *real* jsdom and the real DOMPurify —
+  // the alternative would be a mock of the parser whose behaviour is the whole
+  // thing under test. Production is unaffected: the worker runs on Node, which
+  // loads them natively.
+  // Anchored at the start of the whole path rather than at a `/node_modules/`
+  // segment: a pnpm store path contains that segment twice, so a lookahead
+  // placed after it is satisfied by the inner one and the exception never
+  // applies.
+  transformIgnorePatterns: [
+    `^(?!.*(?:${ESM_ONLY_DIRECTORIES.join('|')})).*${SEPARATOR}node_modules${SEPARATOR}`,
+  ],
   transform: {
     '^.+\\.ts$': ['ts-jest', {}],
+    '^.+\\.[cm]?js$': ['ts-jest', { tsconfig: { allowJs: true, module: 'commonjs' } }],
   },
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.spec.ts', '!src/main.ts'],
   coverageReporters: ['text', 'lcov'],

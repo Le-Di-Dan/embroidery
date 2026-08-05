@@ -259,23 +259,59 @@ describe('APP3-W01A — raster-only sources and the exact limits', () => {
     assert.ok(mentions(failures, 'SVG appears in the policy'), failures.join('\n'));
   });
 
-  it('rejects a sanitizer chosen before APP3-G07', () => {
+  it('rejects a sanitizer IMP-D047 refused, in either world', () => {
     const manifest = JSON.parse(read(CANONICAL_FILES.workerManifest));
-    manifest.dependencies = { ...manifest.dependencies, dompurify: '^3.0.0' };
+    manifest.dependencies = { ...manifest.dependencies, svgo: '^3.0.0' };
     const failures = run({
       [CANONICAL_FILES.workerManifest]: `${JSON.stringify(manifest, undefined, 2)}\n`,
+    });
+    assert.ok(mentions(failures, 'sanitizer dependency "svgo"'), failures.join('\n'));
+  });
+
+  it('rejects the selected sanitizer while APP3-W01B has not delivered', () => {
+    // The mode-aware half. With the delivery tokens removed from the phase
+    // document, the pre-W01B world is back and DOMPurify may not exist.
+    const manifest = JSON.parse(read(CANONICAL_FILES.workerManifest));
+    manifest.dependencies = { ...manifest.dependencies, dompurify: '3.4.13' };
+    const failures = run({
+      [CANONICAL_FILES.workerManifest]: `${JSON.stringify(manifest, undefined, 2)}\n`,
+      [CANONICAL_FILES.phase]: file('phase').replace('APP3-W01B = COMPLETE', 'APP3-W01B = READY'),
     });
     assert.ok(mentions(failures, 'sanitizer dependency "dompurify"'), failures.join('\n'));
   });
 
-  it('rejects silently dropping the Template SVG staged outcome', () => {
+  it('rejects dropping the staged outcome while APP3-W01B has not delivered', () => {
     const failures = run({
-      [CANONICAL_FILES.derivative]: file('derivative').replaceAll(
-        'TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE',
-        'SOURCE_MEDIA_TYPE_NOT_SUPPORTED',
-      ),
+      [CANONICAL_FILES.phase]: file('phase').replace('APP3-W01B = COMPLETE', 'APP3-W01B = READY'),
     });
     assert.ok(mentions(failures, 'staged-capability outcome'), failures.join('\n'));
+  });
+
+  it('rejects the staged outcome surviving once APP3-W01B has delivered', () => {
+    const failures = run({
+      [CANONICAL_FILES.derivative]: `${file('derivative')}\n// TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE\nconst leftover = 'TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE';\n`,
+    });
+    assert.ok(mentions(failures, 'staged Template SVG refusal survived'), failures.join('\n'));
+  });
+
+  it('rejects Template SVG staying inside the raster lane', () => {
+    const failures = run({
+      [CANONICAL_FILES.derivative]: file('derivative').replaceAll(
+        "lane: 'TEMPLATE_SVG'",
+        "lane: 'RASTER_SVG'",
+      ),
+    });
+    assert.ok(mentions(failures, 'not routed out of the raster lane'), failures.join('\n'));
+  });
+
+  it('refuses a half-flipped world: W01B complete but IMP-D047 unlocked', () => {
+    // The third world the two tokens exist to exclude. Removing the lock while
+    // claiming delivery must restore the strict pre-W01B rules, which the
+    // installed sanitizer then violates.
+    const failures = run({
+      [CANONICAL_FILES.phase]: file('phase').replace('IMP-D047 = LOCKED', 'IMP-D047 = PROPOSED'),
+    });
+    assert.ok(mentions(failures, 'sanitizer dependency "dompurify"'), failures.join('\n'));
   });
 });
 
@@ -291,20 +327,25 @@ describe('APP3-W01A — the quartet is measured, not copied', () => {
   });
 
   it('rejects a byte size that is not the counted stream’s', () => {
+    // `APP3-W01B` moved the counting into the shared writer, so that is where
+    // the substitution now has to be attempted for the check to be meaningful.
     const failures = run({
-      [CANONICAL_FILES.derivative]: file('derivative').replace(
-        'BigInt(counter.byteSize)',
-        'BigInt(0)',
-      ),
+      [CANONICAL_FILES.writer]: file('writer').replace('BigInt(counter.byteSize)', 'BigInt(0)'),
     });
     assert.ok(mentions(failures, 'the counted byte size'), failures.join('\n'));
   });
 
   it('rejects a checksum that is not the counted stream’s', () => {
     const failures = run({
-      [CANONICAL_FILES.derivative]: file('derivative').replaceAll('counter.digest()', "''"),
+      [CANONICAL_FILES.writer]: file('writer').replaceAll('counter.digest()', "''"),
     });
     assert.ok(mentions(failures, 'the counted checksum'), failures.join('\n'));
+  });
+
+  it('accepts the source media type on the lane discriminator, which is not the quartet', () => {
+    // The regression this scoping prevents: the lane says which producer owns
+    // the bytes and is never written to a row, so it may name the source type.
+    assert.ok(!mentions(run({}), 'substitutes source Asset metadata'), 'unscoped quartet check');
   });
 });
 

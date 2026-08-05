@@ -25,6 +25,10 @@ const EXTENSION_BY_MIME_TYPE: Readonly<Record<string, string>> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/webp': 'webp',
+  // The sanitized Template SVG derivative (`APP3-W01B`, IMP-D047). Only the
+  // key builder learns this type: it is not an intake format, and nothing here
+  // makes an SVG deliverable — PO-15 keeps the output private and Template-owned.
+  'image/svg+xml': 'svg',
 };
 
 export const SUPPORTED_CONTENT_TYPES = Object.freeze(Object.keys(EXTENSION_BY_MIME_TYPE));

@@ -10,11 +10,13 @@
  *   alive until the attempt cap (`IMP-D046` PO-09).
  * - **media** — the bytes are not something an editor may open. Also
  *   non-retryable, and also not a fault of the store.
- * - **staged capability** — Template SVG. Authorized by IMP-D044 and merely
- *   unavailable until `APP3-G07` selects a sanitizer and `APP3-W01B` implements
- *   it. Reported as its own outcome precisely so it is never mistaken for
- *   "unsupported type", which is what would make a later capability look like a
- *   product change.
+ * - **Template SVG** — the file is not something the `IMP-D047` policy admits,
+ *   or it asked for a sanitization policy this build does not implement. Also
+ *   non-retryable. The first is one code for every way a file can fail, because
+ *   a precise reason is a probe for what the allowlist contains; the second is
+ *   separate because it is a statement about the *deployment*, not the file, and
+ *   an operator reading "unsafe Template" when the real fact is "this worker is
+ *   behind the producer" would look in the wrong place.
  *
  * Infrastructure failures are **not** here: they stay with the accepted
  * `storage-failure.ts` classification and the runtime's backoff.
@@ -25,7 +27,8 @@
 
 export const NORMALIZATION_OUTCOME_CODES = [
   'NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE',
-  'TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE',
+  'UNSAFE_OR_UNSUPPORTED_TEMPLATE_SVG',
+  'TEMPLATE_SVG_POLICY_VERSION_UNSUPPORTED',
   'NORMALIZATION_SOURCE_MEDIA_UNSUPPORTED',
   'NORMALIZATION_SOURCE_TOO_LARGE',
   'NORMALIZATION_DIMENSIONS_EXCEEDED',
@@ -40,8 +43,10 @@ export type NormalizationOutcomeCode = (typeof NORMALIZATION_OUTCOME_CODES)[numb
 const MESSAGES: Record<NormalizationOutcomeCode, string> = {
   NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE:
     'The placement, template or session context that requested this normalization is no longer eligible.',
-  TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE:
-    'Template SVG normalization is not available in this deployment.',
+  UNSAFE_OR_UNSUPPORTED_TEMPLATE_SVG:
+    'That SVG file contains content the template policy does not allow.',
+  TEMPLATE_SVG_POLICY_VERSION_UNSUPPORTED:
+    'The requested template sanitization policy version is not implemented here.',
   NORMALIZATION_SOURCE_MEDIA_UNSUPPORTED: 'That media type cannot be normalized for the editor.',
   NORMALIZATION_SOURCE_TOO_LARGE: 'The source file is larger than the editor upload limit.',
   NORMALIZATION_DIMENSIONS_EXCEEDED: 'The image is larger than the editor dimension limit.',

@@ -89,23 +89,21 @@ describe('media admission', () => {
       for (const mediaType of ['image/jpeg', 'image/png', 'image/webp']) {
         expect(
           service.assertProcessableSource(profile, facts(Buffer.alloc(8), { mediaType })),
-        ).toBe(mediaType);
+        ).toEqual({ lane: 'RASTER', mediaType });
       }
     }
   });
 
-  it('answers Template SVG with the staged capability, not "unsupported"', () => {
-    // Authorized by IMP-D044 and merely unavailable until G07 + W01B. Reporting
-    // it as an unsupported type would make a later delivery look like a product
-    // change.
+  it('routes Template SVG to the Template lane rather than the raster one', () => {
+    // The staged refusal `APP3-W01A` returned here is gone: SVG on a Template is
+    // now work, not a capability gap. It must not reach the raster producer —
+    // the lane is what keeps a Sharp decode away from markup.
     expect(
-      codeOfSync(() =>
-        service.assertProcessableSource(
-          'TEMPLATE_ASSET',
-          facts(Buffer.alloc(8), { mediaType: 'image/svg+xml' }),
-        ),
+      service.assertProcessableSource(
+        'TEMPLATE_ASSET',
+        facts(Buffer.alloc(8), { mediaType: 'image/svg+xml' }),
       ),
-    ).toBe('TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE');
+    ).toEqual({ lane: 'TEMPLATE_SVG' });
   });
 
   it('answers SVG for the other two profiles as profile-invalid, now and after W01B', () => {

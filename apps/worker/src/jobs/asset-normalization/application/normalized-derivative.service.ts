@@ -56,9 +56,20 @@ import {
   type NormalizationSourceMediaType,
 } from '../domain/normalization-policy';
 import type { NormalizationSourceFacts } from '../domain/repositories/asset-normalization.repository';
+import { writeDerivativeObject } from './derivative-object-writer';
 
 /** EXIF orientations 5-8 transpose the image, so width and height swap. */
 const TRANSPOSING_ORIENTATION = 5;
+
+/**
+ * Which producer owns these bytes (`APP3-W01B`).
+ *
+ * A closed union rather than a boolean: adding a third lane later has to be
+ * handled everywhere it is matched, which a boolean would let a caller ignore.
+ */
+export type NormalizationLane =
+  | { readonly lane: 'RASTER'; readonly mediaType: NormalizationSourceMediaType }
+  | { readonly lane: 'TEMPLATE_SVG' };
 
 export interface NormalizedOutput {
   readonly storageKey: string;
@@ -96,26 +107,25 @@ export class NormalizedDerivativeService {
   }
 
   /**
-   * Decides whether these bytes may be normalized at all, before any decode.
+   * Decides which lane these bytes belong to, before any read or decode.
    *
    * Media type first and by the **recorded** type, never by extension: an
-   * extension is a filename the client chose. Template SVG gets its own answer
-   * because it is authorized and merely unavailable (`IMP-D046` PO-07), and
-   * reporting it as an unsupported type would make `APP3-W01B` look like a
-   * product change rather than a delivery.
+   * extension is a filename the client chose. SVG belongs to the Template lane
+   * and only there — `IMP-D044` PO-03/PO-05 make it profile-invalid for a side
+   * background and a session upload, and `APP3-W01B` did not widen that. The two
+   * lanes are returned rather than branched on here so the caller's dispatch is
+   * a total match over a discriminated union, not a media-type test repeated in
+   * a second place.
    */
   assertProcessableSource(
     profile: NormalizationProfile,
     source: NormalizationSourceFacts,
-  ): NormalizationSourceMediaType {
+  ): NormalizationLane {
     if (source.mediaType === TEMPLATE_SVG_MEDIA_TYPE) {
-      throw normalizationRejection(
-        profile === 'TEMPLATE_ASSET'
-          ? 'TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE'
-          : // SVG is profile-invalid for a side background and a session upload
-            // under IMP-D044 PO-03/PO-05, and stays so after W01B.
-            'NORMALIZATION_SOURCE_MEDIA_UNSUPPORTED',
-      );
+      if (profile !== 'TEMPLATE_ASSET') {
+        throw normalizationRejection('NORMALIZATION_SOURCE_MEDIA_UNSUPPORTED');
+      }
+      return { lane: 'TEMPLATE_SVG' };
     }
     if (!isNormalizationSourceMediaType(source.mediaType)) {
       throw normalizationRejection('NORMALIZATION_SOURCE_MEDIA_UNSUPPORTED');
@@ -125,7 +135,7 @@ export class NormalizedDerivativeService {
       // is checked again below against the same ceiling.
       throw normalizationRejection('NORMALIZATION_SOURCE_TOO_LARGE');
     }
-    return source.mediaType;
+    return { lane: 'RASTER', mediaType: source.mediaType };
   }
 
   /**
@@ -160,51 +170,16 @@ export class NormalizedDerivativeService {
     const body = await this.openOriginal(source, signal);
     const pipeline = buildDerivativePipeline(NORMALIZED_OUTPUT_POLICY);
     const info = captureOutputInfo(pipeline);
-    const counter = new DigestCounterStream();
 
-    // The counter **is** the upload body, and the upload runs as its own promise
-    // — the accepted APP2 shape, and the reason matters. Putting the upload in
-    // `pipeline`'s final-destination callback instead resolves when the source
-    // ends rather than when the multipart upload completes, so the row could be
-    // finalized before the object existed. The live suite caught exactly that,
-    // intermittently, which is the only way that bug ever shows up.
-    const upload = (async () =>
-      this.storage.putObjectStream({
-        bucket: 'DERIVATIVES',
-        key,
-        body: counter,
-        contentType: NORMALIZED_OUTPUT_POLICY.mediaType,
-        signal,
-      }))();
-
-    let uploadFailure: unknown;
-    // Observed immediately: an unattached rejection here would surface as an
-    // unhandled rejection and take the worker process down.
-    const settled = upload.then(
-      () => undefined,
-      (error: unknown) => {
-        uploadFailure = error;
-        // Once the upload is gone nothing will read `counter` again, so the
-        // pipeline would sit on backpressure until the attempt timed out.
-        counter.destroy(error instanceof Error ? error : new Error('derivative upload failed'));
-        return error;
-      },
-    );
-
-    try {
-      await streamPipeline(body, pipeline, counter, { signal });
-    } catch (error: unknown) {
-      await settled;
-      const cause = uploadFailure ?? error;
-      if (isAbort(signal, cause)) throw abortFailure('derivative upload');
-      throw toRetryableFailure('derivative upload', cause);
-    }
-
-    const uploadError = await settled;
-    if (uploadError !== undefined) {
-      if (isAbort(signal, uploadError)) throw abortFailure('derivative upload');
-      throw toRetryableFailure('derivative upload', uploadError);
-    }
+    // The counted sink **is** the upload body; the ordering that makes that safe
+    // lives in one place now, shared with the Template SVG lane.
+    const written = await writeDerivativeObject({
+      storage: this.storage,
+      key,
+      contentType: NORMALIZED_OUTPUT_POLICY.mediaType,
+      signal,
+      fill: (sink) => streamPipeline(body, pipeline, sink, { signal }),
+    });
 
     const produced = info.read();
     if (produced === undefined || produced.width <= 0 || produced.height <= 0) {
@@ -214,11 +189,11 @@ export class NormalizedDerivativeService {
     }
     return {
       storageKey: key,
-      checksum: counter.digest(),
+      checksum: written.checksum,
       widthPx: produced.width,
       heightPx: produced.height,
       mediaType: NORMALIZED_OUTPUT_POLICY.mediaType,
-      byteSize: BigInt(counter.byteSize),
+      byteSize: written.byteSize,
     };
   }
 

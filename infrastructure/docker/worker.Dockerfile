@@ -137,6 +137,14 @@ COPY --from=prod-deps --chown=node:node /app/packages/persistence/node_modules .
 # APP2-I03: the worker verifies its private buckets at startup, so the shipped
 # image needs the object-storage package's compiled output and its own AWS SDK
 # dependencies. Omitting them produces an image that fails at its first import.
+# APP3-B01N added `@embroidery/domain-types` as a worker runtime dependency —
+# it exports the normalization event's version constants, which are values, not
+# types — but no COPY was added here, so the shipped image resolved a dangling
+# symlink and died on its first import. Found by the APP3-W01B production-image
+# sanitizer smoke, the first thing to load this module inside the runner stage.
+# No `node_modules` line: the package has no runtime dependency of its own.
+COPY --from=build --chown=node:node /app/packages/domain-types/dist ./packages/domain-types/dist
+COPY --from=build --chown=node:node /app/packages/domain-types/package.json ./packages/domain-types/package.json
 COPY --from=build --chown=node:node /app/packages/object-storage/dist ./packages/object-storage/dist
 COPY --from=build --chown=node:node /app/packages/object-storage/package.json ./packages/object-storage/package.json
 COPY --from=prod-deps --chown=node:node /app/packages/object-storage/node_modules ./packages/object-storage/node_modules

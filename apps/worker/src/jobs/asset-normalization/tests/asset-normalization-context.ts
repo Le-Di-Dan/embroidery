@@ -41,6 +41,7 @@ import {
 import { AssociationResolutionService } from '../application/association-resolution.service';
 import { AssetNormalizationUseCase } from '../application/asset-normalization.usecase';
 import { NormalizedDerivativeService } from '../application/normalized-derivative.service';
+import { TemplateSvgNormalizationService } from '../application/template-svg-normalization.service';
 import {
   ASSET_NORMALIZATION_EVENT_TYPE,
   ASSET_NORMALIZATION_PAYLOAD_VERSION,
@@ -153,6 +154,7 @@ export async function startAssetNormalizationContext(
           repo,
           new AssociationResolutionService(repo),
           new NormalizedDerivativeService(port, 'test'),
+          new TemplateSvgNormalizationService(port, 'test'),
         );
       },
       seedAsset: (image, overrides = {}) => seedAsset(owned, storage, image, overrides),

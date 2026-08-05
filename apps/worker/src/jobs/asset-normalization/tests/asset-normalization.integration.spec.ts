@@ -286,8 +286,11 @@ describe('editor-safe normalization (live PostgreSQL + MinIO)', () => {
     });
   });
 
-  describe('SVG is staged, not processed', () => {
-    it('answers a Template SVG with the capability outcome and no derivative', async () => {
+  describe('SVG stays out of the raster lane', () => {
+    it('never runs a decoder over markup: a Template SVG is refused as unsafe here', async () => {
+      // These bytes are a JPEG recorded as `image/svg+xml`, which is what a
+      // swapped object looks like. `APP3-W01B` answers the Template lane's
+      // sanitizer verdict rather than a decoder error, and writes nothing.
       const image = await jpeg(64, 64);
       const { assetId } = await ctx.seedAsset(image, {
         kind: 'TEMPLATE_SOURCE',
@@ -301,10 +304,15 @@ describe('editor-safe normalization (live PostgreSQL + MinIO)', () => {
       });
       expect(result.outcome).toBe('REJECTED');
       if (result.outcome === 'REJECTED') {
-        expect(result.code).toBe('TEMPLATE_SVG_NORMALIZATION_NOT_AVAILABLE');
+        expect(result.code).toBe('UNSAFE_OR_UNSUPPORTED_TEMPLATE_SVG');
       }
-      // No object, no row: nothing ran a decoder over an unsanitized SVG.
-      expect(await derivatives(assetId)).toEqual([]);
+      // A content verdict is reached *after* the claim, because judging content
+      // means reading it — so the row exists and is `FAILED`, exactly as an
+      // integrity mismatch or an undecodable raster leaves it. What must not
+      // exist is a `READY` row or an object.
+      const rows = await derivatives(assetId);
+      expect(rows.map((row) => [row.kind, row.status])).toEqual([['NORMALIZED', 'FAILED']]);
+      expect(rows[0]?.storage_key).toBeNull();
     });
 
     it('answers a Side or Session SVG as profile-invalid', async () => {
