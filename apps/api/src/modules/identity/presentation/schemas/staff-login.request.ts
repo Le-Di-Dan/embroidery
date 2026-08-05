@@ -12,6 +12,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { z } from 'zod';
 
 import { createZodDto } from '../../../../platform/validation/zod-dto';
+import { registerZodDtos } from '../../../../platform/validation/zod-dto-registry';
 
 /** RFC 5321 practical maximum for an email address. */
 export const MAX_EMAIL_BYTES = 254;
@@ -54,7 +55,20 @@ export type ParsedStaffLogin = z.output<typeof StaffLoginSchema>;
 /** The validated DTO the global pipe produces for the controller. */
 export class StaffLoginRequestDto extends createZodDto(StaffLoginSchema) {}
 
-/** Swagger-only documentation shape for `@ApiBody`; not used for validation. */
+registerZodDtos(StaffLoginRequestDto);
+
+/**
+ * The published shape for `@ApiBody`; not used for validation.
+ *
+ * The one body in this API that `APP3-P03` deliberately did **not** move onto
+ * the platform converter. Both of its fields are constrained entirely by
+ * `.refine()` — a predicate over an already-typed string — and a refinement has
+ * no JSON Schema rendering by construction, so converting this schema would
+ * publish two bare strings and *lose* the address format and the length bound a
+ * client can see today. The contract spec binds the two together: the fields and
+ * the required list here must match `StaffLoginSchema` exactly, so this class
+ * can document more than the converter can, never something different.
+ */
 export class StaffLoginRequest {
   @ApiProperty({ format: 'email', maxLength: MAX_EMAIL_BYTES, example: 'admin@example.test' })
   email!: string;

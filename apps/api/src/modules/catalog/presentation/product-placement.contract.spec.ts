@@ -309,11 +309,15 @@ describe('the concurrency token is an explicit HTTP contract', () => {
   });
 
   it('documents the body the schema actually accepts', () => {
-    // `createZodDto` carries no OpenAPI metadata, so the documented shape is
-    // declared separately. These two descriptions of one contract are held
-    // together here and nowhere else.
+    // Since `APP3-P03` the documented shape is converted from this very schema,
+    // so the two can no longer be written independently. The assertion stays: it
+    // is what would catch the conversion silently dropping a field.
     const documented = Object.keys(schemas['ReplaceProductPlacementBody']?.properties ?? {}).sort();
     expect(documented).toEqual(Object.keys(replaceProductPlacementSchema.shape).sort());
+    expect(schemas['ReplaceProductPlacementBody']?.required?.slice().sort()).toEqual([
+      'expectedUpdatedAt',
+      'sides',
+    ]);
   });
 });
 

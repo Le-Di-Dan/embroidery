@@ -310,7 +310,17 @@ function checkGovernance(rootDir, fail) {
     if (!index.includes(command)) fail(`${CANONICAL_FILES.commandIndex} does not index ${command}`);
   }
   const phase = read(rootDir, 'phase') ?? '';
-  if (!/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN/.test(phase)) {
+  // Two consistent worlds, and no third: before `APP3-P03` the platform
+  // follow-up is open; after it, closed naming that checkpoint. What this gate
+  // still refuses is a closure with no owner — the follow-up going quiet while
+  // nothing in the repository claims to have fixed it.
+  if (/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-P03/.test(phase)) {
+    if (!/APP3-P03 = COMPLETE/.test(phase)) {
+      fail(
+        'the platform Zod/OpenAPI follow-up is closed by a checkpoint that is not recorded done',
+      );
+    }
+  } else if (!/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN/.test(phase)) {
     fail('the platform Zod/OpenAPI follow-up is no longer recorded as open');
   }
 

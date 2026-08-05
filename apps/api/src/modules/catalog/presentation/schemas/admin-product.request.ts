@@ -10,7 +10,7 @@
 import type { ProductState } from '@embroidery/database';
 import { z } from 'zod';
 
-import { createZodDto } from '../../../../platform/validation';
+import { createZodDto, registerZodDtos } from '../../../../platform/validation';
 import {
   APP2_CATEGORY_SLUGS,
   MAX_BASE_PRICE_AMOUNT,
@@ -135,3 +135,11 @@ export const archiveProductBodySchema = z
   .strict();
 
 export class ArchiveProductBody extends createZodDto(archiveProductBodySchema) {}
+
+registerZodDtos(
+  ProductIdParam,
+  ListProductsQuery,
+  CreateProductBody,
+  UpdateProductBody,
+  ArchiveProductBody,
+);

@@ -290,7 +290,15 @@ function checkScopeAndGovernance(rootDir, fail) {
     if (!index.includes(command)) fail(`${CANONICAL_FILES.commandIndex} does not index ${command}`);
   }
   const phase = read(rootDir, 'phase') ?? '';
-  if (!/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN/.test(phase)) {
+  // Mode-aware since `APP3-P03`: open before it, closed by it afterwards, and
+  // never closed by nothing at all.
+  if (/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-P03/.test(phase)) {
+    if (!/APP3-P03 = COMPLETE/.test(phase)) {
+      fail(
+        'the platform Zod/OpenAPI follow-up is closed by a checkpoint that is not recorded done',
+      );
+    }
+  } else if (!/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN/.test(phase)) {
     fail('the platform Zod/OpenAPI follow-up is no longer recorded as open');
   }
 }

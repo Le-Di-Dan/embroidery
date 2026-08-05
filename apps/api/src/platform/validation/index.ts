@@ -7,6 +7,8 @@
  */
 export { createZodDto, zodSchemaOf } from './zod-dto';
 export type { ZodSchemaCarrier } from './zod-dto';
+export { registerZodDtos, resetZodDtoRegistrations, zodDtoRegistrations } from './zod-dto-registry';
+export type { ZodDtoClass } from './zod-dto-registry';
 export { ZodValidationPipe } from './zod-validation.pipe';
 export { ValidationModule } from './validation.module';
 export { mapZodError, FIELD_ERROR_CODES } from './zod-issue.mapper';

@@ -195,6 +195,49 @@ file was deleted** — only the aliases.
 > removed by `GOV-Q01-C1`. They are indexed as `HISTORICAL_SCOPED` and run
 > directly from `tools/`.
 
+### 5.1 Tooling file size — bounded soft caps (`APP3-P03`)
+
+Application code keeps the hard limits `CLAUDE.md` §6 states. They are **not**
+relaxed:
+
+```text
+application production source ≤ 400 lines
+application test              ≤ 600 lines
+```
+
+Files under `tools/` — checkpoint checkers and their test suites — use bounded
+**soft caps** instead:
+
+```text
+tools/check-*.mjs      ≤ 450 lines
+tools/check-*.test.mjs ≤ 700 lines
+```
+
+The reason is what the two kinds of file are for. A checker is one cohesive
+argument about one checkpoint; splitting it to land under an arbitrary line
+count scatters that argument across files whose only relationship is size, and
+the split itself has to be re-verified. `APP3-B02` spent more effort on repeated
+checker splitting than the bounded excess could justify — and a checker made
+harder to read is a checker made easier to weaken.
+
+Rules:
+
+- do **not** open a correction solely because a tooling file sits above 400/600
+  but within 450/700;
+- split when the soft cap is exceeded, or when responsibilities are genuinely
+  distinct — never to satisfy a line count alone;
+- semantic correctness, test quality and checkpoint throughput take priority
+  over cosmetic line-count compliance;
+- every excess over the former 400/600 limit is still **disclosed** in the
+  completion report;
+- do not pad a file toward the soft cap. The cap is a ceiling, not a target.
+
+`APP3-B02` carries the approved bounded deviation
+`B02_PREDECESSOR_GATE_AND_TEST_FILES` for the gate and gate-test files its
+mode-aware edits pushed over the former limit. No runtime application source
+exceeded its limit: the one repository that crossed it was split by
+responsibility instead.
+
 ---
 
 ## 6. SonarQube disposition

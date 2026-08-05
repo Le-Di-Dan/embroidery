@@ -141,7 +141,7 @@ describe('keyboard reordering', () => {
     await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.edit.save }));
 
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
-    const body = (updateMock.mock.calls[0] as [string, { mediaAssetIds: string[] }])[1];
+    const body = (updateMock.mock.calls[0] as unknown as [string, { mediaAssetIds: string[] }])[1];
     expect(body.mediaAssetIds).toEqual([makeProductMedia(1).assetId, makeProductMedia(0).assetId]);
   });
 
@@ -187,7 +187,7 @@ describe('removal', () => {
     await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.edit.save }));
 
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
-    const body = (updateMock.mock.calls[0] as [string, { mediaAssetIds: string[] }])[1];
+    const body = (updateMock.mock.calls[0] as unknown as [string, { mediaAssetIds: string[] }])[1];
     expect(body.mediaAssetIds).toEqual([makeProductMedia(1).assetId]);
     expect(assetsMock).not.toHaveBeenCalled();
   });
@@ -204,7 +204,7 @@ describe('removal', () => {
     await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.edit.save }));
 
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
-    const body = (updateMock.mock.calls[0] as [string, { mediaAssetIds: string[] }])[1];
+    const body = (updateMock.mock.calls[0] as unknown as [string, { mediaAssetIds: string[] }])[1];
     expect(body.mediaAssetIds).toEqual([]);
   });
 });

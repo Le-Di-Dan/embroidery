@@ -57,7 +57,7 @@ async function renderLoadedDraft(overrides = {}) {
 }
 
 function updateBody(): Record<string, unknown> {
-  const call = updateMock.mock.calls[0] as [string, Record<string, unknown>];
+  const call = updateMock.mock.calls[0] as unknown as [string, Record<string, unknown>];
   return call[1];
 }
 
@@ -284,7 +284,7 @@ describe('save request', () => {
     await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.edit.save }));
     await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(2));
 
-    const second = updateMock.mock.calls[1] as [string, { expectedUpdatedAt: string }];
+    const second = updateMock.mock.calls[1] as unknown as [string, { expectedUpdatedAt: string }];
     expect(second[1].expectedUpdatedAt).toBe('v2');
   });
 });

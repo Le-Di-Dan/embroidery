@@ -2,6 +2,7 @@ import { type INestApplication } from '@nestjs/common';
 import { SwaggerModule, type OpenAPIObject } from '@nestjs/swagger';
 
 import { GLOBAL_ROUTE_PREFIX } from '../bootstrap/api-application';
+import { applyZodDtoSchemas } from '../platform/openapi';
 import { applyEnvelopeSchemas } from './envelope-schema.augmentation';
 import { buildOpenApiConfig } from './openapi-document.config';
 import { createOperationId, validateOperationIds } from './operation-id';
@@ -42,7 +43,13 @@ export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
     ignoreGlobalPrefix: true,
   });
   const prefixed = applyGlobalPrefixToPaths(document, GLOBAL_ROUTE_PREFIX);
-  // Envelope schemas first: the 500 response it documents must also receive the
+  // Request bodies first: `createZodDto` gives Swagger no property metadata, so
+  // every schema-backed body arrives here as an empty object and is rewritten
+  // from the Zod schema that validates it (APP3-P03). This step also refuses a
+  // document in which any request body is still empty, so the two later
+  // augmentations only ever run over a document whose requests are documented.
+  applyZodDtoSchemas(prefixed);
+  // Envelope schemas next: the 500 response it documents must also receive the
   // request-ID response header the next transform adds to every response.
   applyEnvelopeSchemas(prefixed);
   applyRequestIdHeaderContract(prefixed);

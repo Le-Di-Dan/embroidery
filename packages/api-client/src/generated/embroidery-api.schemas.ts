@@ -445,11 +445,29 @@ export interface ApiSuccessResponse {
 }
 
 export interface ArchiveProductBody {
-  [key: string]: unknown;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
+  expectedUpdatedAt: string;
 }
 
+export type CreateProductBodyCategorySlug =
+  (typeof CreateProductBodyCategorySlug)[keyof typeof CreateProductBodyCategorySlug];
+
+export const CreateProductBodyCategorySlug = {
+  'thu-bong': 'thu-bong',
+  khan: 'khan',
+  'quan-ao': 'quan-ao',
+  khac: 'khac',
+} as const;
+
 export interface CreateProductBody {
-  [key: string]: unknown;
+  categorySlug: CreateProductBodyCategorySlug;
+  /** @maxLength 5000 */
+  description?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
 }
 
 export interface CurrentStaffResponse {
@@ -687,7 +705,8 @@ export interface PublicProductPlacementResponse {
 }
 
 export interface PublishProductBody {
-  [key: string]: unknown;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
+  expectedUpdatedAt: string;
 }
 
 export type ReadinessStatusResponseService =
@@ -713,57 +732,131 @@ export interface ReadinessStatusResponse {
 }
 
 export interface ReplacePlacementAreaBody {
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
   boundHeightPx: number;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
   boundWidthPx: number;
-  /** Canvas-space origin, in side image pixels. */
+  /**
+   * Canvas-space origin, in side image pixels.
+   * @minimum 0
+   * @maximum 1000000
+   */
   boundXPx: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
   boundYPx: number;
   /**
    * @maxLength 64
    * @pattern ^[a-z0-9][a-z0-9_-]{0,63}$
    */
   code: string;
-  /** @minimum 0 */
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
   displayOrder: number;
-  /** Present to retain and update an area. */
+  /**
+   * Present to retain and update an area.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
   id?: string;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
   maxHeightMm?: number;
-  /** Physical maximum in millimetres. */
+  /**
+   * Physical maximum in millimetres.
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
   maxWidthMm?: number;
-  /** @maxLength 200 */
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
   name: string;
-  /** The area of the same side this new row replaces; that row is retired. */
+  /**
+   * The area of the same side this new row replaces; that row is retired.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
   supersedesId?: string;
 }
 
 export interface ReplacePlacementSideBody {
   /** @maxItems 50 */
   areas: ReplacePlacementAreaBody[];
-  /** The Asset whose derivative renders this side. */
+  /**
+   * The Asset whose derivative renders this side.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
   backgroundAssetId: string;
   /**
    * @maxLength 64
    * @pattern ^[a-z0-9][a-z0-9_-]{0,63}$
    */
   code: string;
-  /** @minimum 0 */
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
   displayOrder: number;
-  /** Present to retain and update a side. */
+  /**
+   * Present to retain and update a side.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
   id?: string;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
   imageHeightPx: number;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
   imageWidthPx: number;
-  /** @maxLength 200 */
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
   name: string;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
   physicalHeightMm: number;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
   physicalWidthMm: number;
-  /** Must agree with both axes of this side. */
+  /**
+   * Must agree with both axes of this side.
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
   pxPerMm: number;
-  /** The side of the same product this new row replaces; that row is retired. */
+  /**
+   * The side of the same product this new row replaces; that row is retired.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
   supersedesId?: string;
 }
 
 export interface ReplaceProductPlacementBody {
-  /** The Product concurrency token, exactly as the Admin placement read returned it in `updatedAt`. Required. A stale value is rejected as a conflict and no side or area is written; a successful replace returns the fresh token in the response `updatedAt`. */
+  /**
+   * The Product concurrency token, exactly as the Admin placement read returned it in `updatedAt`. Required. A stale value is rejected as a conflict and no side or area is written; a successful replace returns the fresh token in the response `updatedAt`.
+   * @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+   */
   expectedUpdatedAt: string;
   /**
    * The complete placement model. A side or area carrying an `id` is retained, one without is created, and one that is omitted is retired — never deleted. An empty list retires the whole placement.
@@ -780,11 +873,38 @@ export interface StaffLoginRequest {
 }
 
 export interface UnpublishProductBody {
-  [key: string]: unknown;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
+  expectedUpdatedAt: string;
 }
 
+export type UpdateProductBodyCategorySlug =
+  (typeof UpdateProductBodyCategorySlug)[keyof typeof UpdateProductBodyCategorySlug];
+
+export const UpdateProductBodyCategorySlug = {
+  'thu-bong': 'thu-bong',
+  khan: 'khan',
+  'quan-ao': 'quan-ao',
+  khac: 'khac',
+} as const;
+
 export interface UpdateProductBody {
-  [key: string]: unknown;
+  /** @pattern ^\d{1,12}$ */
+  basePriceAmount?: string;
+  categorySlug?: UpdateProductBodyCategorySlug;
+  /**
+   * @maxLength 5000
+   * @nullable
+   */
+  description?: string | null;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
+  expectedUpdatedAt: string;
+  /** @items.pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  mediaAssetIds?: string[];
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name?: string;
 }
 
 export type AdminAssetListParams = {

@@ -2986,6 +2986,86 @@ gate that keys on a status line must not be satisfiable by a paragraph
 describing it — the same discipline `APP3-G07` needed when its rulings and its
 corpus shared vocabulary.
 
+## 6.21 `APP3-P03` — Zod-backed DTO OpenAPI metadata foundation
+
+`createZodDto` gave `@nestjs/swagger` a class with no decorated property, and
+Swagger — which documents a class by reading its `@ApiProperty` metadata —
+correctly concluded there was nothing to document. Every schema-backed request
+body therefore published as `{ "type": "object", "properties": {} }`. Runtime
+validation was never affected, which is precisely why the defect survived four
+checkpoints: nothing failed. Only the *published contract* was wrong, and the
+generated client typed each of those bodies as an open bag.
+
+### 6.21.1 The mapping authority
+
+Zod 4.4.3 exposes `z.toJSONSchema`, its own official exporter, and also carries
+`~standard.jsonSchema` for the Standard Schema protocol. Nothing was written by
+hand and no dependency was added: the schema that validates a request and the
+schema that documents it are two renderings of one object, so they cannot drift.
+
+Three options carry the design. `io: 'input'` documents what a client **sends**,
+so a transforming body never publishes its own parsed output.
+`unrepresentable: 'throw'` stops generation on a construct JSON Schema cannot
+express — replacing a silent `{}` with a quieter silent omission would be no
+improvement. `cycles: 'throw'` refuses a self-referential body, which has no
+finite published form.
+
+A `.refine()` is dropped rather than thrown on. It is a predicate over an
+already-typed value, not an unrepresentable *node*, so the published type stays
+correct while the predicate stays unpublished. Where that would lose a real
+constraint the schema carries it in `.meta({ description })` instead.
+
+### 6.21.2 Registration, and why the name comes from the class
+
+`createZodDto` returns an anonymous base class, so at the moment the schema is
+attached nothing knows what the DTO will be called — and the component name in
+the document is the *subclass's* name. Each feature therefore hands its finished
+classes to `registerZodDtos`, which reads the name off the class itself. Nothing
+is spelled twice, so a rename cannot leave a stale string pointing at a
+component that no longer exists.
+
+Registration is a publication concern only. The validation pipe reads the schema
+straight off the metatype and never consults the registry, so an unregistered
+DTO still validates exactly as before. It would only fail to *document* itself —
+and the augmentation refuses to emit a document in which that has happened.
+
+That refusal is the load-bearing part. A fix that repairs the six known bodies
+but silently skips the seventh added next year would leave exactly the defect it
+claims to have closed.
+
+### 6.21.3 What the placement body kept
+
+`APP3-B01-C1` had documented the replace body with hand-written decorator
+classes, explicitly as a scoped workaround. Those are gone; the descriptions and
+examples moved onto the Zod schema as `.meta()`, and `.meta({ id })` keeps
+`ReplacePlacementSideBody` and `ReplacePlacementAreaBody` as named components —
+so the generated client's types stay exactly where that correction put them,
+now with the bounds, formats and patterns the runtime actually enforces.
+
+### 6.21.4 The one body left alone
+
+Both fields of the staff-login schema are constrained entirely by `.refine()`.
+Converting it would publish two bare strings and *lose* the address format and
+length bound a client can read today, so its hand-written published shape stays
+and the contract spec binds the two together: it may document more than the
+converter can, never something different.
+
+### 6.21.5 Disclosed deviation
+
+Six accepted gates — `APP3-B01N`, `APP3-B02`, `APP3-G06`, `APP3-G07`,
+`APP3-W01A` and the `APP3-W01B` boundaries — each asserted that the platform
+follow-up was still open, and two of them that `APP3-B03` still recorded it as a
+blocker. Closing the follow-up is this checkpoint's whole purpose, so those gates
+could not pass unchanged while §12 requires them to pass. Each was made
+**mode-aware** on this checkpoint's own delivered status line, in the pattern
+used ten times before: two consistent worlds, no third, and the half-flipped
+mixture asserted to fail. Recorded as
+`PREDECESSOR_GATES_MADE_MODE_AWARE_ON_P03`.
+
+As in §6.20.6, the status token itself is deliberately not quoted in this prose:
+a gate that keys on a status line must not be satisfiable by a paragraph
+describing it.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -3006,7 +3086,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — PUBLIC_SIDE_BACKGROUND_DELIVERY_DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — ZOD_OPENAPI_METADATA_FOUNDATION_DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -3044,10 +3124,10 @@ APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
 APP3-B07 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-B08 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-S11 = FOUNDATION_READY_BY_P01_AND_P02 — NOT STARTED
-APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP BUT_TEMPLATE_RASTER_AND_SVG_NORMALIZATION_FOUNDATION_READY
+APP3-B03 = READY — NOT STARTED
 APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06
 APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04
-APP3-B06 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP
+APP3-B06 = READY — NOT STARTED
 APP3-B07 = BLOCKED_BY_APP3-P02
 APP3-B08 = BLOCKED_BY_APP3-P02
 APP3-G06 = COMPLETE — REVIEW_ACCEPTED
@@ -3067,12 +3147,21 @@ APP3-W01B DISCLOSED_DEVIATION = WORKER_IMAGE_DOMAIN_TYPES_COPY_RESTORED
 APP3-W01B-C1 = COMPLETE — REVIEW_DELIVERED
 APP3-W01B-C1 NUMERIC_CANONICAL_FORM = SHORTEST_BINARY64_ROUND_TRIP
 APP3-W01B-C1 FIXED_PRECISION_BUDGET = NONE
-APP3-B02 = COMPLETE — REVIEW_DELIVERED
+APP3-B02 = COMPLETE — REVIEW_ACCEPTED
 APP3-B02 OPERATION = publicProductSideBackground_get
 APP3-B02 DISCLOSED_DEVIATION = PREDECESSOR_GATES_MADE_MODE_AWARE_ON_B02
+APPROVED_BOUNDED_TOOLING_SIZE_DEVIATION = B02_PREDECESSOR_GATE_AND_TEST_FILES
+APP3-P03 = COMPLETE — REVIEW_DELIVERED
+APP3-P03 MAPPING_STRATEGY = ZOD_OFFICIAL_TO_JSON_SCHEMA_EXPORTER
+APP3-P03 UNSUPPORTED_NODE_BEHAVIOR = GENERATION_FAILS_LOUDLY
+APP3-P03 NEW_DEPENDENCY = NONE
+APP3-P03 DISCLOSED_DEVIATION = PREDECESSOR_GATES_MADE_MODE_AWARE_ON_P03
+TOOLING_SOFT_CAP_CHECKER_LINES = 450
+TOOLING_SOFT_CAP_TEST_LINES = 700
+APPLICATION_FILE_LIMITS = UNCHANGED_400_SOURCE_600_TEST
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = COMPLETE — CLOSED_BY_APP3-B02
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = SIDE_BACKGROUND_QUARTET_AND_DELIVERY_PATH_PUBLISHED
-FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_SCHEMA_BACKED_HTTP_BODY_CHECKPOINTS
+FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-P03
 FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-G04
 FU-APP3-G03-QUALITY-AGGREGATE-01 = DEFERRED — REGRESSION_ACTIVITY_ONLY
 FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-DB01

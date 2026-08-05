@@ -33,12 +33,28 @@ const CLIENT_TREE_SHA256 = '7c44662902317e306d2deecd128b544ab2ad9faf5298bed7d813
 const OPENAPI_SHA256_AFTER_B02 = '38ab7dae47d297471325424496668ca6526fe533915f9df4302f691d7f6be683';
 const CLIENT_TREE_SHA256_AFTER_B02 =
   '129883fa61c01c15a19150256f27cdbddc37c92eac3a848b6e22b77bb4629d9c';
+// `APP3-P03` republished every schema-backed request body from its Zod schema.
+// The *counts* are identical — it adds no path, operation or component — but the
+// bytes are not, which is exactly what a digest is for: the surface did not
+// grow, its description became true.
+const OPENAPI_SHA256_AFTER_P03 = 'd1dfe0479759392e9c57e9a767165cab56c80f0495edab7cf474ac7924244709';
+const CLIENT_TREE_SHA256_AFTER_P03 =
+  '3fcc05d01e01fec9c8566348be6aacf7beefdf654a0487f66e061b3234ead7a8';
 const PHASE_FILE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
+
+function phaseStatus(rootDir) {
+  const path = join(rootDir, PHASE_FILE);
+  return existsSync(path) ? readFileSync(path, 'utf8') : '';
+}
 
 /** True once `APP3-B02` has delivered its one public operation. */
 function isB02Delivered(rootDir) {
-  const path = join(rootDir, PHASE_FILE);
-  return existsSync(path) && /APP3-B02\s*=\s*COMPLETE/.test(readFileSync(path, 'utf8'));
+  return /APP3-B02\s*=\s*COMPLETE/.test(phaseStatus(rootDir));
+}
+
+/** True once `APP3-P03` has republished the request bodies. */
+function isP03Delivered(rootDir) {
+  return /APP3-P03\s*=\s*COMPLETE/.test(phaseStatus(rootDir));
 }
 const GENERATED_CLIENT_DIR = 'packages/api-client/src/generated';
 const MIGRATION_COUNT = 34;
@@ -77,10 +93,22 @@ function hashGeneratedTree(dir) {
 
 /** 12, 13 — no HTTP surface, no client change, no migration. */
 export function checkApp3B01NArtifacts(rootDir, fail) {
-  const afterB02 = isB02Delivered(rootDir);
+  // Three ordered worlds, resolved newest first. `APP3-P03` implies `APP3-B02`
+  // — it can only have republished a surface that already existed — so the
+  // counts stay the B02 ones and only the digests move.
+  const afterP03 = isP03Delivered(rootDir);
+  const afterB02 = afterP03 || isB02Delivered(rootDir);
   const facts = afterB02 ? OPENAPI_FACTS_AFTER_B02 : OPENAPI_FACTS;
-  const expectedDigest = afterB02 ? OPENAPI_SHA256_AFTER_B02 : OPENAPI_SHA256;
-  const expectedTree = afterB02 ? CLIENT_TREE_SHA256_AFTER_B02 : CLIENT_TREE_SHA256;
+  const expectedDigest = afterP03
+    ? OPENAPI_SHA256_AFTER_P03
+    : afterB02
+      ? OPENAPI_SHA256_AFTER_B02
+      : OPENAPI_SHA256;
+  const expectedTree = afterP03
+    ? CLIENT_TREE_SHA256_AFTER_P03
+    : afterB02
+      ? CLIENT_TREE_SHA256_AFTER_B02
+      : CLIENT_TREE_SHA256;
 
   const path = join(rootDir, OPENAPI_FILE);
   if (!existsSync(path)) {

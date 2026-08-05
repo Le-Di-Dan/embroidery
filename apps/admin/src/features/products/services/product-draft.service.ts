@@ -6,12 +6,19 @@
  * Every failure leaves this module as a `ProductApiError` carrying only the
  * normalized envelope, so no raw transport error reaches React state.
  *
- * The request bodies are typed by this feature rather than by the generated
- * tree: `CreateProductBody` and `UpdateProductBody` are emitted as open index
- * signatures (the Zod DTOs contribute no properties to the artifact), so an
- * unchecked object would compile. The local interfaces in
- * `product-form-values` are what actually pin the field set, and they are
- * asserted by tests against the contract's documented shape.
+ * The request bodies are typed by this feature *and* by the generated tree.
+ * Until `APP3-P03` the generated `CreateProductBody` and `UpdateProductBody`
+ * were open index signatures — the Zod DTOs contributed no properties to the
+ * artifact — so an unchecked object compiled and each call needed a cast. The
+ * generated types now carry the real field set, so the create call needs no
+ * cast at all and the local interfaces in `product-form-values` are checked
+ * against the published contract by the compiler rather than only by tests.
+ *
+ * The patch call keeps one cast, and it is not a leftover: under this app's
+ * `exactOptionalPropertyTypes`, `ProductUpdateRequestBody` admits an explicit
+ * `undefined` for a field the generated type declares as merely optional. The
+ * form legitimately sends that for an untouched field, and the server treats an
+ * absent value and an explicit `undefined` alike.
  */
 import {
   adminProductCreate,
@@ -19,11 +26,7 @@ import {
   adminProductUpdate,
   normalizeApiClientError,
 } from '@embroidery/api-client';
-import type {
-  AdminProductDetailResponse,
-  CreateProductBody,
-  UpdateProductBody,
-} from '@embroidery/api-client';
+import type { AdminProductDetailResponse, UpdateProductBody } from '@embroidery/api-client';
 
 import { getBrowserApiClient } from '../../../config/browser-api-client';
 import { ProductApiError } from '../model/product-failure';
@@ -49,10 +52,7 @@ export async function createProductDraft(
   signal?: AbortSignal,
 ): Promise<AdminProductDetailResponse> {
   try {
-    const response = await adminProductCreate(
-      body as unknown as CreateProductBody,
-      requestOptions(signal),
-    );
+    const response = await adminProductCreate(body, requestOptions(signal));
     return response.data;
   } catch (error: unknown) {
     throw new ProductApiError(normalizeApiClientError(error));
@@ -85,7 +85,7 @@ export async function updateProductDraft(
   try {
     const response = await adminProductUpdate(
       productId,
-      body as unknown as UpdateProductBody,
+      body as UpdateProductBody,
       requestOptions(signal),
     );
     return response.data;

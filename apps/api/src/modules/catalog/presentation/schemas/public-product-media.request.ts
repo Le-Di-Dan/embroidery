@@ -13,7 +13,7 @@
  */
 import { z } from 'zod';
 
-import { createZodDto } from '../../../../platform/validation';
+import { createZodDto, registerZodDtos } from '../../../../platform/validation';
 import { SLUG_MAX_LENGTH } from '../../domain/product-slug';
 import { PUBLIC_PRODUCT_MEDIA_RENDITIONS } from '../../domain/public-product-media.policy';
 
@@ -38,3 +38,5 @@ export const publicProductMediaParamsSchema = z
   .strict();
 
 export class PublicProductMediaParams extends createZodDto(publicProductMediaParamsSchema) {}
+
+registerZodDtos(PublicProductMediaParams);

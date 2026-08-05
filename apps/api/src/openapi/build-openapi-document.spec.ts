@@ -58,8 +58,14 @@ describe('buildOpenApiDocument', () => {
     // three new paths.
     // + APP2-T01 public catalog media delivery — one binary op on one new path.
     // + APP2-B04 public catalog list and detail — two JSON ops on two new paths.
-    expect(stats.pathCount).toBe(16);
-    expect(stats.operationCount).toBe(19);
+    // + APP3-B01 Admin placement read/replace (2 ops on one path) and the public
+    // placement manifest (1 op on its own path).
+    // + APP3-B02 public Side background delivery — one binary op on one new path.
+    // The three APP3 operations were added while this count still read 16/19, so
+    // the assertion had been failing before `APP3-P03` touched anything; it is
+    // corrected here rather than left as a permanently red guard.
+    expect(stats.pathCount).toBe(19);
+    expect(stats.operationCount).toBe(23);
     expect(stats.schemaCount).toBeGreaterThan(0);
   });
 

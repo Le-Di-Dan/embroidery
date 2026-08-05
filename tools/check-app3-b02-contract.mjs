@@ -322,7 +322,15 @@ function checkBoundaries(rootDir, fail) {
   if (!/FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = COMPLETE — CLOSED_BY_APP3-B02/.test(phase)) {
     fail('the public-dimensions follow-up is not closed by this checkpoint');
   }
-  if (!/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN/.test(phase)) {
+  // Mode-aware since `APP3-P03`: open before it, closed by it afterwards, and
+  // never closed by nothing at all.
+  if (/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-P03/.test(phase)) {
+    if (!/APP3-P03 = COMPLETE/.test(phase)) {
+      fail(
+        'the platform Zod/OpenAPI follow-up is closed by a checkpoint that is not recorded done',
+      );
+    }
+  } else if (!/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN/.test(phase)) {
     fail('the platform body follow-up was closed or altered');
   }
 

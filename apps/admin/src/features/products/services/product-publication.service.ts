@@ -6,13 +6,13 @@
  * Every failure leaves this module as a `ProductApiError` carrying only the
  * normalized envelope, so no raw transport error reaches React state.
  *
- * The command bodies are typed by this feature rather than by the generated
- * tree: `PublishProductBody` and `UnpublishProductBody` are emitted as open
- * index signatures (the Zod DTOs contribute no properties to the artifact), so
- * an object with a stray field — or with no `expectedUpdatedAt` at all — would
- * compile. `PublicationCommandBody` is what actually pins the single field the
- * server's `.strict()` schema accepts, and it is asserted by tests against the
- * contract's documented shape.
+ * The command bodies are typed by this feature *and* by the generated tree.
+ * Until `APP3-P03` the generated `PublishProductBody` and `UnpublishProductBody`
+ * were open index signatures — the Zod DTOs contributed no properties to the
+ * artifact — so an object with a stray field, or with no `expectedUpdatedAt` at
+ * all, compiled and each call needed a cast. `PublicationCommandBody` still
+ * pins the single field the server's `.strict()` schema accepts; the compiler
+ * now checks it against the published contract too.
  *
  * `adminProductArchive` is deliberately not reachable from here. It is not
  * re-exported from `@embroidery/api-client`, so unpublish cannot be confused
@@ -27,8 +27,6 @@ import {
 import type {
   AdminProductPublicationReadinessResponse,
   AdminProductPublicationResponse,
-  PublishProductBody,
-  UnpublishProductBody,
 } from '@embroidery/api-client';
 
 import { getBrowserApiClient } from '../../../config/browser-api-client';
@@ -74,11 +72,7 @@ export async function publishProduct(
   signal?: AbortSignal,
 ): Promise<AdminProductPublicationResponse> {
   try {
-    const response = await adminProductPublish(
-      productId,
-      body as unknown as PublishProductBody,
-      requestOptions(signal),
-    );
+    const response = await adminProductPublish(productId, body, requestOptions(signal));
     return response.data;
   } catch (error: unknown) {
     throw new ProductApiError(normalizeApiClientError(error));
@@ -100,11 +94,7 @@ export async function unpublishProduct(
   signal?: AbortSignal,
 ): Promise<AdminProductPublicationResponse> {
   try {
-    const response = await adminProductUnpublish(
-      productId,
-      body as unknown as UnpublishProductBody,
-      requestOptions(signal),
-    );
+    const response = await adminProductUnpublish(productId, body, requestOptions(signal));
     return response.data;
   } catch (error: unknown) {
     throw new ProductApiError(normalizeApiClientError(error));

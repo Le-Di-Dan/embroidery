@@ -69,7 +69,7 @@ async function renderReady(detailOverrides = {}, readinessOverrides = {}) {
 }
 
 function publishBody(): Record<string, unknown> {
-  const call = publishMock.mock.calls[0] as [string, Record<string, unknown>];
+  const call = publishMock.mock.calls[0] as unknown as [string, Record<string, unknown>];
   return call[1];
 }
 
@@ -322,7 +322,7 @@ describe('unpublish request', () => {
     await waitFor(() => {
       expect(unpublishMock).toHaveBeenCalledTimes(1);
     });
-    const call = unpublishMock.mock.calls[0] as [string, Record<string, unknown>];
+    const call = unpublishMock.mock.calls[0] as unknown as [string, Record<string, unknown>];
     expect(call[1]).toEqual({ expectedUpdatedAt: TOKEN });
   });
 

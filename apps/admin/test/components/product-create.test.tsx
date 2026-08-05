@@ -146,7 +146,7 @@ describe('create request', () => {
     await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.create.submit }));
 
     await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1));
-    const [body] = createMock.mock.calls[0] as [Record<string, unknown>];
+    const [body] = createMock.mock.calls[0] as unknown as [Record<string, unknown>];
     expect(Object.keys(body).sort()).toEqual(['categorySlug', 'description', 'name']);
     expect(body).toMatchObject({
       categorySlug: 'khan',
@@ -162,7 +162,7 @@ describe('create request', () => {
     await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.create.submit }));
 
     await waitFor(() => expect(createMock).toHaveBeenCalled());
-    const [body] = createMock.mock.calls[0] as [Record<string, unknown>];
+    const [body] = createMock.mock.calls[0] as unknown as [Record<string, unknown>];
     for (const field of [
       'slug',
       'status',
@@ -195,7 +195,7 @@ describe('create request', () => {
     await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.create.submit }));
 
     await waitFor(() => expect(createMock).toHaveBeenCalled());
-    const [body] = createMock.mock.calls[0] as [{ name: string }];
+    const [body] = createMock.mock.calls[0] as unknown as [{ name: string }];
     expect(body.name).toBe('Khăn');
   });
 });

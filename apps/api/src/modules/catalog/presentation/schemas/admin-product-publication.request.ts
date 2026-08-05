@@ -9,7 +9,7 @@
  */
 import { z } from 'zod';
 
-import { createZodDto } from '../../../../platform/validation';
+import { createZodDto, registerZodDtos } from '../../../../platform/validation';
 
 /**
  * The concurrency token, echoed back exactly as it was published.
@@ -24,3 +24,7 @@ export const publicationCommandBodySchema = z
 export class PublishProductBody extends createZodDto(publicationCommandBodySchema) {}
 
 export class UnpublishProductBody extends createZodDto(publicationCommandBodySchema) {}
+
+// Both commands publish the same one-field body under their own component name;
+// the registry accepts a shared schema, never two different ones under one name.
+registerZodDtos(PublishProductBody, UnpublishProductBody);

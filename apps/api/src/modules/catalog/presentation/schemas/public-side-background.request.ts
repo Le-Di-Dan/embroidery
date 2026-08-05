@@ -13,7 +13,7 @@
  */
 import { z } from 'zod';
 
-import { createZodDto } from '../../../../platform/validation';
+import { createZodDto, registerZodDtos } from '../../../../platform/validation';
 import { SLUG_MAX_LENGTH } from '../../domain/product-slug';
 
 /**
@@ -41,3 +41,5 @@ export const publicSideBackgroundParamsSchema = z
   .strict();
 
 export class PublicSideBackgroundParams extends createZodDto(publicSideBackgroundParamsSchema) {}
+
+registerZodDtos(PublicSideBackgroundParams);

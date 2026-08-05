@@ -222,13 +222,28 @@ function checkGovernance(rootDir, fail) {
   // checkpoint through it: the follow-up blocks schema-backed request *bodies*,
   // not every HTTP checkpoint. It must still be OPEN in either wording — what
   // this gate refuses is its closure, not its refinement.
-  if (
-    !/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_[A-Z_]*SCHEMA_BACKED_HTTP/.test(phase)
-  ) {
-    fail('the open platform follow-up was closed or altered');
-  }
-  if (!/APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP/.test(phase)) {
-    fail('APP3-B03 no longer records the platform follow-up as its blocker');
+  // Two consistent worlds since `APP3-P03`: before it the follow-up is open and
+  // B03 records it as the blocker; after it the follow-up closes naming that
+  // checkpoint and B03 becomes ready. The half-flipped mixture — closed while
+  // B03 still calls it a blocker, or open while B03 is ready — is refused.
+  if (/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-P03/.test(phase)) {
+    if (!/APP3-P03 = COMPLETE/.test(phase)) {
+      fail('the platform follow-up is closed by a checkpoint that is not recorded done');
+    }
+    if (!/APP3-B03 = READY — NOT STARTED/.test(phase)) {
+      fail('the platform follow-up closed but APP3-B03 was not released from it');
+    }
+  } else {
+    if (
+      !/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_[A-Z_]*SCHEMA_BACKED_HTTP/.test(
+        phase,
+      )
+    ) {
+      fail('the open platform follow-up was closed or altered');
+    }
+    if (!/APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP/.test(phase)) {
+      fail('APP3-B03 no longer records the platform follow-up as its blocker');
+    }
   }
 }
 

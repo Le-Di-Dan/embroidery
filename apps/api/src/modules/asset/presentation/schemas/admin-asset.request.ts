@@ -9,7 +9,7 @@ import type { AssetState } from '@embroidery/database';
 import type { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 import { z } from 'zod';
 
-import { createZodDto } from '../../../../platform/validation';
+import { createZodDto, registerZodDtos } from '../../../../platform/validation';
 import {
   ACCEPTED_MEDIA_TYPES,
   INTAKE_ASSET_KIND,
@@ -64,6 +64,8 @@ export const listAssetsQuerySchema = z
   .strict();
 
 export class ListAssetsQuery extends createZodDto(listAssetsQuerySchema) {}
+
+registerZodDtos(AssetIdParam, ListAssetsQuery);
 
 /**
  * Documentation-only description of the multipart body.

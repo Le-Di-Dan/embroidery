@@ -296,12 +296,23 @@ function checkGovernance(rootDir, fail) {
   // The blocker's *scope* narrows once a body-free HTTP checkpoint has shipped
   // through it: `APP3-B02` proved the follow-up blocks schema-backed request
   // *bodies*, not every HTTP checkpoint. It must still be OPEN in both worlds.
-  if (
+  // A third world opens once `APP3-P03` ships the platform repair: the
+  // follow-up closes naming that checkpoint. What stays refused is its closure
+  // by *this* one — G06 adds no request-body schema and cannot have fixed it.
+  if (/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-P03/.test(phase)) {
+    if (!/APP3-P03 = COMPLETE/.test(phase)) {
+      fail(
+        `${CANONICAL_FILES.phase}: the platform follow-up is closed by an undelivered checkpoint`,
+      );
+    }
+  } else if (
     !/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_[A-Z_]*SCHEMA_BACKED_HTTP/.test(phase)
   ) {
     fail(`${CANONICAL_FILES.phase}: the platform Zod/OpenAPI follow-up is not recorded as open`);
   }
-  if (/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01\s*=\s*(COMPLETE|CLOSED)/.test(phase)) {
+  if (
+    /FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01\s*=\s*(COMPLETE|CLOSED)_?[^\n]*APP3-G06/.test(phase)
+  ) {
     fail(`${CANONICAL_FILES.phase}: the platform Zod/OpenAPI follow-up was closed here`);
   }
   // PO-11 moved the follow-up off `APP3-B06` and onto the trigger owner. The

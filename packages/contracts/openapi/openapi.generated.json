@@ -867,11 +867,45 @@
         "type": "object"
       },
       "ArchiveProductBody": {
-        "properties": {},
+        "additionalProperties": false,
+        "properties": {
+          "expectedUpdatedAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedUpdatedAt"
+        ],
         "type": "object"
       },
       "CreateProductBody": {
-        "properties": {},
+        "additionalProperties": false,
+        "properties": {
+          "categorySlug": {
+            "enum": [
+              "thu-bong",
+              "khan",
+              "quan-ao",
+              "khac"
+            ],
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 5000,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "categorySlug",
+          "name"
+        ],
         "type": "object"
       },
       "CurrentStaffResponse": {
@@ -1426,7 +1460,17 @@
         "type": "object"
       },
       "PublishProductBody": {
-        "properties": {},
+        "additionalProperties": false,
+        "properties": {
+          "expectedUpdatedAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedUpdatedAt"
+        ],
         "type": "object"
       },
       "ReadinessStatusResponse": {
@@ -1461,22 +1505,33 @@
         "type": "object"
       },
       "ReplacePlacementAreaBody": {
+        "additionalProperties": false,
         "properties": {
           "boundHeightPx": {
             "example": 300,
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "number"
           },
           "boundWidthPx": {
             "example": 400,
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "number"
           },
           "boundXPx": {
             "description": "Canvas-space origin, in side image pixels.",
             "example": 120,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "number"
           },
           "boundYPx": {
             "example": 90,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "number"
           },
           "code": {
@@ -1487,31 +1542,41 @@
           },
           "displayOrder": {
             "example": 0,
+            "maximum": 10000,
             "minimum": 0,
             "type": "integer"
           },
           "id": {
             "description": "Present to retain and update an area.",
             "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
             "type": "string"
           },
           "maxHeightMm": {
             "example": 60,
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "number"
           },
           "maxWidthMm": {
             "description": "Physical maximum in millimetres.",
             "example": 80,
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "number"
           },
           "name": {
             "example": "Ngực trái",
             "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "supersedesId": {
             "description": "The area of the same side this new row replaces; that row is retired.",
             "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
             "type": "string"
           }
         },
@@ -1527,6 +1592,7 @@
         "type": "object"
       },
       "ReplacePlacementSideBody": {
+        "additionalProperties": false,
         "properties": {
           "areas": {
             "items": {
@@ -1538,6 +1604,7 @@
           "backgroundAssetId": {
             "description": "The Asset whose derivative renders this side.",
             "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
             "type": "string"
           },
           "code": {
@@ -1548,43 +1615,62 @@
           },
           "displayOrder": {
             "example": 0,
+            "maximum": 10000,
             "minimum": 0,
             "type": "integer"
           },
           "id": {
             "description": "Present to retain and update a side.",
             "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
             "type": "string"
           },
           "imageHeightPx": {
             "example": 1000,
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "integer"
           },
           "imageWidthPx": {
             "example": 1000,
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "integer"
           },
           "name": {
             "example": "Mặt trước",
             "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "physicalHeightMm": {
             "example": 200,
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "number"
           },
           "physicalWidthMm": {
             "example": 200,
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "number"
           },
           "pxPerMm": {
             "description": "Must agree with both axes of this side.",
             "example": 5,
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
             "type": "number"
           },
           "supersedesId": {
             "description": "The side of the same product this new row replaces; that row is retired.",
             "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
             "type": "string"
           }
         },
@@ -1603,11 +1689,13 @@
         "type": "object"
       },
       "ReplaceProductPlacementBody": {
+        "additionalProperties": false,
         "properties": {
           "expectedUpdatedAt": {
             "description": "The Product concurrency token, exactly as the Admin placement read returned it in `updatedAt`. Required. A stale value is rejected as a conflict and no side or area is written; a successful replace returns the fresh token in the response `updatedAt`.",
             "example": "2026-08-04T10:00:00.000Z",
             "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
             "type": "string"
           },
           "sides": {
@@ -1646,11 +1734,62 @@
         "type": "object"
       },
       "UnpublishProductBody": {
-        "properties": {},
+        "additionalProperties": false,
+        "properties": {
+          "expectedUpdatedAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedUpdatedAt"
+        ],
         "type": "object"
       },
       "UpdateProductBody": {
-        "properties": {},
+        "additionalProperties": false,
+        "properties": {
+          "basePriceAmount": {
+            "pattern": "^\\d{1,12}$",
+            "type": "string"
+          },
+          "categorySlug": {
+            "enum": [
+              "thu-bong",
+              "khan",
+              "quan-ao",
+              "khac"
+            ],
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 5000,
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedUpdatedAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "mediaAssetIds": {
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedUpdatedAt"
+        ],
         "type": "object"
       }
     },

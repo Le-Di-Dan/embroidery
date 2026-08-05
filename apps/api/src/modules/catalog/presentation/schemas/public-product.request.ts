@@ -10,7 +10,7 @@
  */
 import { z } from 'zod';
 
-import { createZodDto } from '../../../../platform/validation';
+import { createZodDto, registerZodDtos } from '../../../../platform/validation';
 import { APP2_CATEGORY_SLUGS } from '../../domain/product-draft.policy';
 
 /**
@@ -39,3 +39,5 @@ export const publicProductSlugParamSchema = z.object({ slug: slugSchema }).stric
 
 export class PublicProductListQueryDto extends createZodDto(publicProductListQuerySchema) {}
 export class PublicProductSlugParam extends createZodDto(publicProductSlugParamSchema) {}
+
+registerZodDtos(PublicProductListQueryDto, PublicProductSlugParam);
