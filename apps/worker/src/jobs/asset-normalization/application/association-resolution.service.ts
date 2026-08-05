@@ -28,6 +28,7 @@ import {
   type AssetNormalizationRepository,
   type NormalizationSourceFacts,
 } from '../domain/repositories/asset-normalization.repository';
+import { inspectionPendingFailure, isSessionInspectionPending } from '../domain/inspection-pending';
 
 /** The exact mapping `IMP-D046` PO-03 locks. Total, and the only one. */
 export const PROFILE_BY_ASSOCIATION: Readonly<
@@ -42,8 +43,10 @@ export const PROFILE_BY_ASSOCIATION: Readonly<
  * The Asset states and lanes each profile admits (IMP-D044 PO-03/PO-04/PO-05).
  *
  * `ACCEPTED` throughout: normalization presupposes a completed inspection, so an
- * Asset still `INSPECTING` — or one since `REJECTED` or tombstoned — is a stale
- * context, not something to wait for.
+ * Asset since `REJECTED` or tombstoned is a stale context, not something to wait
+ * for. The one exception is a Design Session upload still `INSPECTING`, whose
+ * request is committed alongside the inspection it is waiting on — see
+ * `inspection-pending.ts` (`APP3-W01C`).
  */
 const LANE_BY_PROFILE: Readonly<Record<NormalizationProfile, readonly string[]>> = Object.freeze({
   SIDE_BACKGROUND: ['CATALOG_MEDIA'],
@@ -85,7 +88,7 @@ export class AssociationResolutionService {
     }
 
     const source = await this.repository.findSource(assetId);
-    if (source === undefined || source.deleted || source.status !== REQUIRED_ASSET_STATUS) {
+    if (source === undefined || source.deleted) {
       throw normalizationRejection('NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE');
     }
 
@@ -95,6 +98,23 @@ export class AssociationResolutionService {
       // different intake lane than this profile may normalize — a Template
       // pointing at a customer upload, say. That is a context failure, not a
       // media one: nothing about the bytes was examined.
+      //
+      // Checked before the status so a wrong-lane Asset stays terminal even
+      // while it is still being inspected: waiting for a verdict cannot make it
+      // belong to this profile.
+      throw normalizationRejection('NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE');
+    }
+
+    if (source.status !== REQUIRED_ASSET_STATUS) {
+      // A Session upload commits its association and its inspection request in
+      // one transaction, so normalization can arrive before inspection has
+      // finished. That Asset has not been judged yet — it is not ineligible —
+      // and answering "no longer eligible" would strand it permanently
+      // (`APP3-W01C`, `IMP-D048` PO-08). Every other profile, and every other
+      // status, keeps the terminal verdict exactly as before.
+      if (reference.kind === 'DESIGN_SESSION_ASSET' && isSessionInspectionPending(source.status)) {
+        throw inspectionPendingFailure();
+      }
       throw normalizationRejection('NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE');
     }
 

@@ -81,10 +81,9 @@ export const EXPECTED_DEPENDENCIES = Object.freeze({
   'APP3-W01B :: whole checkpoint, post-G08': 'COMPLETE — REVIEW_ACCEPTED',
 });
 
-/** Status lines §18 requires, exactly. */
+/** Status lines the ruling requires in every world. */
 export const EXPECTED_STATUS = Object.freeze([
   'APP3 = IN PROGRESS — SESSION_UPLOAD_ARCHITECTURE_REPLANNED_FOR_REVIEW',
-  'APP3-G08 = COMPLETE — REVIEW_DELIVERED',
   'IMP-D048 = LOCKED',
   'APP3-B06 = REPLANNED — REPLACED_BY_APP3-B06A_AND_APP3-B06B',
   'APP3-B06 FIRST_ATTEMPT = BLOCKED — ENTRY_ARCHITECTURE_PRESUPPOSITION_ABSENT',
@@ -94,12 +93,33 @@ export const EXPECTED_STATUS = Object.freeze([
   'SESSION_UPLOAD_ARCHITECTURE = API_OWNED_MULTIPART_STREAMING',
   'SESSION_UPLOAD_PRESIGN = NONE',
   'SESSION_BOOTSTRAP_OWNER = APP3-B07',
-  'APP3-B06A = BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE',
-  'APP3-W01C = BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE',
-  'APP3-B06B = BLOCKED_BY_APP3-B06A_APP3-W01C_AND_APP3-B07',
   'APP3-B06B EXPECTED_SURFACE = PATHS_20_OPERATIONS_24',
   'INSPECTION_NORMALIZATION_ORDERING = NOT_PROVABLE_ROUTED_TO_APP3-W01C',
   'APP3-B03 = READY — NOT STARTED',
+]);
+
+/**
+ * The two worlds this ruling's own successors put the phase in.
+ *
+ * G08 was the frontier when it ran, so it recorded its successors as blocked on
+ * its acceptance. `APP3-W01C` then carried out the PO-08 route, and a gate that
+ * still demanded the blocked form would have to be deleted the day its own
+ * ruling was executed. Exactly two consistent sets are accepted, and every
+ * mixture fails.
+ */
+export const STATUS_BEFORE_W01C = Object.freeze([
+  'APP3-G08 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-B06A = BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE',
+  'APP3-W01C = BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE',
+  'APP3-B06B = BLOCKED_BY_APP3-B06A_APP3-W01C_AND_APP3-B07',
+]);
+
+export const STATUS_AFTER_W01C = Object.freeze([
+  'APP3-G08 = COMPLETE — REVIEW_ACCEPTED',
+  'APP3-W01C = COMPLETE — REVIEW_DELIVERED',
+  'APP3-B06A = READY — NOT STARTED',
+  'APP3-B07 = READY — NOT STARTED',
+  'APP3-B06B = BLOCKED_BY_APP3-B06A_AND_APP3-B07',
 ]);
 
 const RULINGS = Object.freeze([
@@ -286,9 +306,19 @@ export function checkApp3G08(rootDir = REPO_ROOT) {
   checkTable(dependencyTable(phase), EXPECTED_DEPENDENCIES, 'dependency', fail);
 
   const status = statusBlock(phase);
-  for (const line of EXPECTED_STATUS) {
+  const afterW01C = /\nAPP3-W01C = COMPLETE/.test(status);
+  for (const line of [
+    ...EXPECTED_STATUS,
+    ...(afterW01C ? STATUS_AFTER_W01C : STATUS_BEFORE_W01C),
+  ]) {
     if (!status.includes(`\n${line}\n`)) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
+    }
+  }
+  // No mixture: a line from the world this phase is not in is a contradiction.
+  for (const line of afterW01C ? STATUS_BEFORE_W01C : STATUS_AFTER_W01C) {
+    if (status.includes(`\n${line}\n`)) {
+      fail(`${CANONICAL_FILES.phase}: status block still records the superseded "${line}"`);
     }
   }
 

@@ -11,7 +11,9 @@
  * The repository is a double, deliberately: what is under test is the decision,
  * and a live database would prove the SQL instead.
  */
-import { normalizationRejection } from '../domain/normalization-outcome';
+import { dispositionOf } from '../../../runtime/errors/worker-job-error';
+import { SESSION_TRANSIENT_ASSET_STATUSES } from '../domain/inspection-pending';
+import { NormalizationRejection, normalizationRejection } from '../domain/normalization-outcome';
 import type {
   AssetNormalizationRepository,
   AssociationFacts,
@@ -142,6 +144,114 @@ describe('a context that has moved', () => {
         'NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE',
       );
     }
+  });
+
+  it('keeps a Template Asset terminal while it is still inspecting', async () => {
+    // The `APP3-W01C` retry is Session-only. A Template association's Asset is
+    // associated long after inspection, so an `INSPECTING` one is a real stale
+    // context and waiting for it would loop to the dead-letter for nothing.
+    const service = new AssociationResolutionService(
+      repository({
+        association: active,
+        asset: source({ status: 'INSPECTING', kind: 'TEMPLATE_SOURCE' }),
+      }),
+    );
+    expect(await codeOf(() => service.resolve(ASSET, referenceOf('DESIGN_TEMPLATE_ASSET')))).toBe(
+      'NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE',
+    );
+  });
+});
+
+describe('a Session upload whose inspection has not finished (`APP3-W01C`)', () => {
+  const sessionSource = (overrides: Partial<NormalizationSourceFacts> = {}) =>
+    source({ kind: 'CUSTOMER_UPLOAD', classification: 'CUSTOMER_PRIVATE', ...overrides });
+
+  const resolveSession = (asset: NormalizationSourceFacts | undefined) =>
+    new AssociationResolutionService(repository({ association: active, asset })).resolve(
+      ASSET,
+      referenceOf('DESIGN_SESSION_ASSET'),
+    );
+
+  it('is a retryable attempt failure, not a verdict about the request', async () => {
+    // The distinction is the whole checkpoint: a verdict completes the job and
+    // the derivative is never produced, a failed attempt goes back to the
+    // runtime's existing backoff.
+    await expect(resolveSession(sessionSource({ status: 'INSPECTING' }))).rejects.toMatchObject({
+      name: 'WorkerJobError',
+      errorClass: 'JOB_TRANSIENT_FAILURE',
+    });
+  });
+
+  it('is not a NormalizationRejection, so nothing records a terminal outcome', async () => {
+    expect(await codeOf(() => resolveSession(sessionSource({ status: 'INSPECTING' })))).not.toBe(
+      'NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE',
+    );
+    await expect(
+      resolveSession(sessionSource({ status: 'INSPECTING' })),
+    ).rejects.not.toBeInstanceOf(NormalizationRejection);
+  });
+
+  it('retries under the existing policy and dead-letters at the cap', () => {
+    // No new retry mechanism: the class alone decides, through the runtime
+    // function that already governs every other handler.
+    expect(dispositionOf('JOB_TRANSIENT_FAILURE', 1, 5)).toBe('RETRYABLE');
+    expect(dispositionOf('JOB_TRANSIENT_FAILURE', 5, 5)).toBe('TERMINAL');
+  });
+
+  it('names no asset, session, association or storage identity', async () => {
+    try {
+      await resolveSession(sessionSource({ status: 'INSPECTING' }));
+    } catch (error: unknown) {
+      const message = (error as Error).message;
+      for (const secret of [ASSET, ASSOCIATION, 'storage', 'originals']) {
+        expect(message).not.toContain(secret);
+      }
+    }
+  });
+
+  it('proceeds normally once inspection has accepted the Asset', async () => {
+    const resolved = await resolveSession(sessionSource({ status: 'ACCEPTED' }));
+    expect(resolved.profile).toBe('SESSION_UPLOAD');
+  });
+
+  it('is terminal for every state that is not a pending inspection', async () => {
+    for (const asset of [
+      undefined,
+      sessionSource({ deleted: true }),
+      sessionSource({ status: 'REJECTED' }),
+      sessionSource({ status: 'DELETION_PENDING' }),
+      sessionSource({ status: 'DELETED' }),
+    ]) {
+      expect(await codeOf(() => resolveSession(asset))).toBe(
+        'NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE',
+      );
+    }
+  });
+
+  it('does not wait on `UPLOADED`, which a committed request cannot observe', async () => {
+    // The producer appends the event in the transaction that leaves `UPLOADED`,
+    // so admitting it would turn a real defect into a silent retry loop.
+    expect(SESSION_TRANSIENT_ASSET_STATUSES).toEqual(['INSPECTING']);
+    expect(await codeOf(() => resolveSession(sessionSource({ status: 'UPLOADED' })))).toBe(
+      'NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE',
+    );
+  });
+
+  it('stays terminal when the Asset is in the wrong lane, however it is inspected', async () => {
+    expect(
+      await codeOf(() =>
+        resolveSession(sessionSource({ status: 'INSPECTING', kind: 'CATALOG_MEDIA' })),
+      ),
+    ).toBe('NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE');
+  });
+
+  it('stays terminal when the association itself has gone', async () => {
+    const service = new AssociationResolutionService(
+      repository({ association: undefined, asset: sessionSource({ status: 'INSPECTING' }) }),
+    );
+    expect(await codeOf(() => service.resolve(ASSET, referenceOf('DESIGN_SESSION_ASSET')))).toBe(
+      'NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE',
+    );
   });
 
   it('refuses an Asset from another intake lane', async () => {

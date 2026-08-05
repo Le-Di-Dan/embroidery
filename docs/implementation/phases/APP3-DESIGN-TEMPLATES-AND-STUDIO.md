@@ -3174,6 +3174,58 @@ since `APP3-W01C` is the smaller change and can land while B06A is in review.
 `APP3-G08` implements nothing: no API, worker, package, schema, migration,
 OpenAPI, generated client, dependency, infrastructure or Figma change.
 
+## 6.23 `APP3-W01C` — a pending inspection is not a verdict
+
+`IMP-D048` PO-08 routed one worker semantic ahead of `APP3-B06B`, and this
+checkpoint carries it out. Exactly one classification changed.
+
+### 6.23.1 The change
+
+`AssociationResolutionService` admitted only an `ACCEPTED` Asset and answered
+everything else with `NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE` — a
+`NormalizationRejection`, which the use case *records and completes*. For a
+Design Session upload that is wrong in a specific way: the association and the
+inspection request are committed in one transaction, so a normalization attempt
+can arrive before inspection has finished. That Asset is not ineligible; it has
+not been judged yet.
+
+It is now raised as a failed attempt instead:
+
+| Session Asset state | Outcome |
+|---|---|
+| `ACCEPTED` | proceed |
+| `INSPECTING` | **retryable attempt failure** |
+| `REJECTED` | terminal |
+| missing, deleted or tombstoned | terminal |
+| wrong intake lane | terminal |
+| association missing, inactive or re-pointed | terminal |
+
+`UPLOADED` is deliberately absent. The producer appends the event in the same
+transaction that leaves `UPLOADED`, so a committed request cannot observe it —
+and admitting a state that cannot occur would convert a real defect into a
+silent retry loop.
+
+### 6.23.2 Why it needed no new mechanism
+
+The signal is the runtime's own `JOB_TRANSIENT_FAILURE`. `dispositionOf` already
+retries that class under the existing backoff and lease policy and turns it
+terminal at the attempt cap, so an inspection that never completes dead-letters
+for an operator instead of looping. No scheduler, sweep, poll, sleep inside an
+attempt, second queue or second event was added, and the job kind is unchanged.
+
+### 6.23.3 Why nothing is left behind
+
+The refusal is raised while resolving the association — step 1 of the use case,
+**before** the derivative claim at step 4. A waiting attempt therefore writes no
+`PROCESSING` row, no `FAILED` row and no object, so the next attempt starts clean
+rather than taking over one its predecessor abandoned. This is a property of
+ordering, not of cleanup, and the gate asserts the order directly.
+
+The narrowing keeps `APP3-W01A`'s rule that bytes are never an answer on their
+own: an existing `READY` derivative does not short-circuit a Session Asset that
+is still inspecting, because the association is validated before the replay is
+considered.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -3229,7 +3281,6 @@ APP3-D01 placement portion = BACKEND_CONTRACT_AVAILABLE_BY_APP3-B01
 APP3-P02 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P02 FIRST_ATTEMPT CAUSE = GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT
 APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
-APP3-B07 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-B08 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-S11 = FOUNDATION_READY_BY_P01_AND_P02 — NOT STARTED
 APP3-B03 = READY — NOT STARTED
@@ -3271,15 +3322,19 @@ FU-PLATFORM-ZOD-DTO-OPENAPI-PARAMETERS-01 = OPEN — NONBLOCKING_EXISTING_SURFAC
 APP3-B06 FIRST_ATTEMPT = BLOCKED — ENTRY_ARCHITECTURE_PRESUPPOSITION_ABSENT
 APP3-B06 FIRST_ATTEMPT CAUSE = SESSION_UPLOAD_INTENT_ARCHITECTURE_DOES_NOT_EXIST
 APP3-B06 FIRST_ATTEMPT RESOLUTION = APP3-G08
-APP3-G08 = COMPLETE — REVIEW_DELIVERED
+APP3-G08 = COMPLETE — REVIEW_ACCEPTED
 IMP-D048 = LOCKED
 APP3-B06 = REPLANNED — REPLACED_BY_APP3-B06A_AND_APP3-B06B
 SESSION_UPLOAD_ARCHITECTURE = API_OWNED_MULTIPART_STREAMING
 SESSION_UPLOAD_PRESIGN = NONE
 SESSION_BOOTSTRAP_OWNER = APP3-B07
-APP3-B06A = BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE
-APP3-W01C = BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE
-APP3-B06B = BLOCKED_BY_APP3-B06A_APP3-W01C_AND_APP3-B07
+APP3-W01C = COMPLETE — REVIEW_DELIVERED
+APP3-W01C RETRY_SIGNAL = JOB_TRANSIENT_FAILURE
+APP3-W01C TRANSIENT_ASSET_STATUSES = INSPECTING
+APP3-W01C SCOPE = DESIGN_SESSION_ASSET_ONLY
+APP3-B06A = READY — NOT STARTED
+APP3-B07 = READY — NOT STARTED
+APP3-B06B = BLOCKED_BY_APP3-B06A_AND_APP3-B07
 APP3-B06B OPERATION = publicDesignSessionAsset_upload
 APP3-B06B EXPECTED_SURFACE = PATHS_20_OPERATIONS_24
 INSPECTION_NORMALIZATION_ORDERING = NOT_PROVABLE_ROUTED_TO_APP3-W01C
