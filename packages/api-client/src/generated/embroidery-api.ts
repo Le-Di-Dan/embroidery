@@ -345,6 +345,25 @@ export const publicProductPlacementGet = (
 };
 
 /**
+ * Streams the approved editor-safe background of one active Product Side of a PUBLISHED product. Anonymous: no session, cookie or storage credential is involved. Publication, category visibility, side activity, the background association and the derivative are re-checked on every request, so unpublishing a product, retiring a side or replacing a background stops delivery immediately even for a caller that already knows the address. Responses are never cached.
+ * @summary Get one published product side background
+ */
+export const publicProductSideBackgroundGet = (
+  slug: unknown,
+  sideCode: unknown,
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/public/products/${slug}/sides/${sideCode}/background`,
+      method: 'GET',
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Returns the minimum safe identity for the authenticated admin: id, email and display name. No credential, session or role data is exposed.
  * @summary Get the current staff identity
  */
@@ -415,6 +434,9 @@ export type PublicProductMediaGetResult = NonNullable<
 >;
 export type PublicProductPlacementGetResult = NonNullable<
   Awaited<ReturnType<typeof publicProductPlacementGet>>
+>;
+export type PublicProductSideBackgroundGetResult = NonNullable<
+  Awaited<ReturnType<typeof publicProductSideBackgroundGet>>
 >;
 export type StaffSelfGetResult = NonNullable<Awaited<ReturnType<typeof staffSelfGet>>>;
 export type StaffSessionDeleteResult = NonNullable<Awaited<ReturnType<typeof staffSessionDelete>>>;

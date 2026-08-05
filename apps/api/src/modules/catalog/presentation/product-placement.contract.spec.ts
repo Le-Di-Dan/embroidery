@@ -103,9 +103,13 @@ describe('the three placement operations', () => {
 
   it('creates no individual side, area, media, Template or Session operation', () => {
     const paths = Object.keys(document.paths);
+    // `APP3-B02` owns exactly one of these shapes — the Side-background
+    // delivery route — and nothing else in the family exists.
+    const b02 = '/api/public/products/{slug}/sides/{sideCode}/background';
     for (const forbidden of ['/sides/', '/areas/', '/templates', '/sessions', '/background']) {
-      expect(paths.filter((path) => path.includes(forbidden))).toEqual([]);
+      expect(paths.filter((path) => path.includes(forbidden) && path !== b02)).toEqual([]);
     }
+    expect(paths.filter((path) => path === b02)).toEqual([b02]);
   });
 });
 
@@ -150,10 +154,18 @@ describe('the documented public shapes', () => {
     }
   });
 
-  it('describe the side background by reference components only', () => {
+  it('describe the side background by its identity plus one delivery block', () => {
+    // `APP3-B02` added `delivery`; the identity components are unchanged, and
+    // no private fact joined them.
     expect(
       Object.keys(schemas['PublicPlacementBackgroundResponse']?.properties ?? {}).sort(),
-    ).toEqual(['productSlug', 'sideCode']);
+    ).toEqual(['delivery', 'productSlug', 'sideCode']);
+  });
+
+  it('describe the delivery block as a relative path plus the intrinsic quartet', () => {
+    expect(
+      Object.keys(schemas['PublicPlacementBackgroundDeliveryResponse']?.properties ?? {}).sort(),
+    ).toEqual(['byteSize', 'heightPx', 'mediaType', 'path', 'widthPx']);
   });
 
   it('keep the background association Admin-only', () => {

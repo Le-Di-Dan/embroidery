@@ -218,10 +218,12 @@ function checkGovernance(rootDir, fail) {
   const phase = read(rootDir, 'phase') ?? '';
   if (!/APP3-W01B = COMPLETE/.test(phase)) fail('the phase status does not record APP3-W01B');
   if (!/IMP-D047 = LOCKED/.test(phase)) fail('IMP-D047 is no longer locked');
+  // The blocker's *scope* narrowed once `APP3-B02` shipped a body-free HTTP
+  // checkpoint through it: the follow-up blocks schema-backed request *bodies*,
+  // not every HTTP checkpoint. It must still be OPEN in either wording — what
+  // this gate refuses is its closure, not its refinement.
   if (
-    !/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_NEXT_SCHEMA_BACKED_HTTP_CHECKPOINT/.test(
-      phase,
-    )
+    !/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_[A-Z_]*SCHEMA_BACKED_HTTP/.test(phase)
   ) {
     fail('the open platform follow-up was closed or altered');
   }

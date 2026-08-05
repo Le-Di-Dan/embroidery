@@ -395,7 +395,7 @@ describe('APP3-G06 — ownership and blockers', () => {
   it('rejects B02 still being blocked by B06', () => {
     const failures = run({
       [CANONICAL_FILES.phase]: phase().replace(
-        /APP3-B02 = READY_BY[^\n]+/,
+        /APP3-B02 = COMPLETE[^\n]+/,
         'APP3-B02 = BLOCKED_BY_APP3-B06',
       ),
     });
@@ -405,7 +405,7 @@ describe('APP3-G06 — ownership and blockers', () => {
   it('rejects closing the platform Zod/OpenAPI follow-up here', () => {
     const failures = run({
       [CANONICAL_FILES.phase]: phase().replace(
-        'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_NEXT_SCHEMA_BACKED_HTTP_CHECKPOINT',
+        /FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_[A-Z_]+/,
         'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-G06',
       ),
     });
@@ -423,14 +423,20 @@ describe('APP3-G06 — ownership and blockers', () => {
   });
 
   it('rejects a follow-up left unadvanced once the producer exists', () => {
-    // Two consistent worlds: before B01N the follow-up names it as a blocker,
-    // after B01N it records that its foundation is ready. A blocker that
-    // survives the producer is the mixture that fails.
+    // Three ordered worlds since `APP3-B02`: before the producer the follow-up
+    // names it as a blocker, after the producer it records that its foundation
+    // is ready, and after its final owner it is closed. A blocker that survives
+    // any of those transitions is the mixture that fails.
     const failures = run({
-      [CANONICAL_FILES.phase]: phase().replace(
-        /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = [^\n]+/,
-        'FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = APP3-B01N',
-      ),
+      [CANONICAL_FILES.phase]: phase()
+        .replace(
+          /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = COMPLETE[^\n]+/,
+          'FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — FINAL_OWNER_APP3-B02',
+        )
+        .replace(
+          /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = [^\n]+/,
+          'FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = APP3-B01N',
+        ),
     });
     assert.ok(mentions(failures, 'was not advanced'), failures.join('\n'));
   });
@@ -439,9 +445,25 @@ describe('APP3-G06 — ownership and blockers', () => {
     const failures = run({
       [CANONICAL_FILES.phase]: phase()
         .replaceAll('APP3-B01N = COMPLETE', 'APP3-B01N = READY — NOT STARTED')
+        .replace(
+          /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = COMPLETE[^\n]+/,
+          'FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — FINAL_OWNER_APP3-B02',
+        )
         .replace(/FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = [^\n]+\n/, ''),
     });
     assert.ok(mentions(failures, 'was not corrected'), failures.join('\n'));
+  });
+
+  it('rejects closing the dimensions follow-up without its owner delivered', () => {
+    // The third world's own mixture: the follow-up recorded closed while
+    // `APP3-B02` — the only checkpoint that can close it — has not run.
+    const failures = run({
+      // `replaceAll`: a status token must be removed everywhere, or a stray
+      // prose mention would keep the delivered world alive and the case would
+      // pass for the wrong reason.
+      [CANONICAL_FILES.phase]: phase().replaceAll(/APP3-B02 = COMPLETE[^\n]*/g, 'APP3-B02 = READY'),
+    });
+    assert.ok(mentions(failures, 'closed without its owner'), failures.join('\n'));
   });
 });
 

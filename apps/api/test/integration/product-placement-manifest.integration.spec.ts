@@ -262,7 +262,19 @@ describe('public placement manifest (live PostgreSQL)', () => {
     it('addresses the background by product slug and side code only', async () => {
       const seeded = await seedPublished();
       const view = await query.publicRead(seeded.slug);
-      expect(view.sides[0]?.background).toEqual({ productSlug: seeded.slug, sideCode: 'front' });
+      // `APP3-B02` added the delivery block; the address it carries is still
+      // composed from the slug and the side code and from nothing private.
+      expect(view.sides[0]?.background).toEqual({
+        productSlug: seeded.slug,
+        sideCode: 'front',
+        delivery: {
+          path: `/api/public/products/${seeded.slug}/sides/front/background`,
+          widthPx: 1000,
+          heightPx: 1000,
+          mediaType: 'image/webp',
+          byteSize: 40960,
+        },
+      });
     });
 
     it('is deterministic across repeated reads', async () => {

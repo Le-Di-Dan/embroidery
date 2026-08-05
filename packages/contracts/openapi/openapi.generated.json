@@ -1103,8 +1103,55 @@
         ],
         "type": "object"
       },
+      "PublicPlacementBackgroundDeliveryResponse": {
+        "properties": {
+          "byteSize": {
+            "description": "Exact byte size of the object served at `path`.",
+            "example": 184320,
+            "type": "number"
+          },
+          "heightPx": {
+            "description": "The background image's intrinsic pixel height.",
+            "example": 1536,
+            "type": "number"
+          },
+          "mediaType": {
+            "description": "The editor-safe derivative media type.",
+            "example": "image/webp",
+            "type": "string"
+          },
+          "path": {
+            "description": "Relative application path to the editor-safe background bytes. It is an application address, never a storage address, and never an Asset or derivative identity. It grants nothing on its own: publication, category visibility, side activity, the background association and the derivative are re-proved on every request.",
+            "example": "/api/public/products/ao-thun-theu-hoa/sides/front/background",
+            "type": "string"
+          },
+          "widthPx": {
+            "description": "The background image's intrinsic pixel width. Not the Side's authored placement canvas `imageWidthPx`, which is separate placement geometry.",
+            "example": 2048,
+            "type": "number"
+          }
+        },
+        "required": [
+          "path",
+          "widthPx",
+          "heightPx",
+          "mediaType",
+          "byteSize"
+        ],
+        "type": "object"
+      },
       "PublicPlacementBackgroundResponse": {
         "properties": {
+          "delivery": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicPlacementBackgroundDeliveryResponse"
+              }
+            ],
+            "description": "Null when this side has no deliverable editor-safe background — unprocessed, unready, watermarked, incompletely described or withdrawn. Never partially populated: a path and the metadata travel together or not at all, so no fabricated geometry is ever returned.",
+            "nullable": true,
+            "type": "object"
+          },
           "productSlug": {
             "example": "ao-thun-theu-hoa",
             "type": "string"
@@ -1116,7 +1163,8 @@
         },
         "required": [
           "productSlug",
-          "sideCode"
+          "sideCode",
+          "delivery"
         ],
         "type": "object"
       },
@@ -4784,6 +4832,164 @@
         "summary": "Get the public placement manifest",
         "tags": [
           "publicProductPlacement"
+        ]
+      }
+    },
+    "/api/public/products/{slug}/sides/{sideCode}/background": {
+      "get": {
+        "description": "Streams the approved editor-safe background of one active Product Side of a PUBLISHED product. Anonymous: no session, cookie or storage credential is involved. Publication, category visibility, side activity, the background association and the derivative are re-checked on every request, so unpublishing a product, retiring a side or replacing a background stops delivery immediately even for a caller that already knows the address. Responses are never cached.",
+        "operationId": "publicProductSideBackground_get",
+        "parameters": [
+          {
+            "description": "The Product Side's stable public code. It is not a storage reference and grants no access on its own.",
+            "in": "path",
+            "name": "sideCode",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "The server-owned product slug.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The editor-safe background bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Always `no-store`, so a cache cannot outlive an unpublish or a retirement.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed slug or side code.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No background is publicly available at this address. Returned identically for an unknown product, an unpublished or archived product, a withdrawn category, an unknown or foreign side code, a retired side, and a background whose editor-safe derivative is absent, unready, watermarked or incompletely described.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Background storage is temporarily unavailable, or the stored object contradicts the recorded derivative.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get one published product side background",
+        "tags": [
+          "publicProductSideBackground"
         ]
       }
     },

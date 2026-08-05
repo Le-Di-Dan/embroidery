@@ -20,6 +20,7 @@ import type {
   PublicPlacement,
   PublicPlacementSideRow,
 } from '../domain/repositories/product-placement.repository';
+import { publicSideBackgroundPath } from '../domain/public-side-background-path';
 import { toFiniteNumber, toOptionalNumber } from './product-placement-geometry';
 
 export interface AdminPlacementAreaView {
@@ -120,17 +121,46 @@ export function toAdminPlacementView(snapshot: PlacementSnapshot): AdminPlacemen
 }
 
 /**
- * The reference components `APP3-B02` will address a background with.
+ * How a Studio addresses and sizes a Side background (`APP3-B02` §7).
  *
- * Components, not a URL: B02 owns the side-background delivery route and has not
- * been built, so composing a path here would publish an address that does not
- * resolve — the one defect a JSON contract can create entirely on its own. The
- * Product slug and the Side's stable code are what that route will be keyed by,
- * and neither is private.
+ * The identity components are unchanged from `APP3-B01` and always present: the
+ * Product slug and the Side's stable code, neither of which is private.
+ *
+ * `delivery` is the additive half, and it is **all-or-nothing by construction**.
+ * A path without dimensions, or dimensions without a path, would be fabricated
+ * metadata for a background that cannot be served — so the two travel together
+ * or not at all, and `null` is the single answer for every reason a background
+ * is not deliverable. That is the same shape as the eligibility the route
+ * itself re-proves, which is why the manifest and `APP3-B02` cannot disagree.
  */
 export interface PublicBackgroundReference {
   readonly productSlug: string;
   readonly sideCode: string;
+  readonly delivery: PublicBackgroundDelivery | null;
+}
+
+/**
+ * The deliverable background: where to fetch it and what it intrinsically is.
+ *
+ * `path` is a **relative application path** built from the Product slug and the
+ * Side code — never a host, a bucket, an object key, a signature or an expiry,
+ * and never an Asset or derivative identity. It grants nothing on its own: the
+ * route re-resolves publication, category visibility, side activity, the
+ * background association and the derivative on every request.
+ *
+ * `widthPx`/`heightPx` are the **derivative's intrinsic** pixel dimensions —
+ * the real size of the image a canvas will paint. They are deliberately not the
+ * Side's `imageWidthPx`/`imageHeightPx`, which are the operator's authored
+ * placement canvas; the two are separate facts and substituting one for the
+ * other would put a design on geometry nobody chose. This is what closes
+ * `FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01` for Side backgrounds.
+ */
+export interface PublicBackgroundDelivery {
+  readonly path: string;
+  readonly widthPx: number;
+  readonly heightPx: number;
+  readonly mediaType: string;
+  readonly byteSize: number;
 }
 
 export interface PublicPlacementAreaView {
@@ -197,8 +227,37 @@ function toPublicSideView(
     physicalWidthMm: toFiniteNumber(row.physicalWidthMm),
     physicalHeightMm: toFiniteNumber(row.physicalHeightMm),
     pxPerMm: toFiniteNumber(row.pxPerMm),
-    background: { productSlug: slug, sideCode: row.code },
+    background: toPublicBackgroundReference(row, slug),
     areas: areas.map(toPublicAreaView),
+  };
+}
+
+/**
+ * The background reference, with a delivery block only when one is real.
+ *
+ * The path is composed *here* rather than in the repository, because a path is a
+ * transport fact and the repository deals in rows. It is composed at all only
+ * when the quartet is present — publishing an address for a background that
+ * cannot be served is the one defect a JSON contract can create entirely on its
+ * own, and it is exactly what `APP3-B01` avoided by emitting components instead.
+ */
+function toPublicBackgroundReference(
+  row: PublicPlacementSideRow,
+  slug: string,
+): PublicBackgroundReference {
+  const reference = { productSlug: slug, sideCode: row.code };
+  if (row.background === undefined) {
+    return { ...reference, delivery: null };
+  }
+  return {
+    ...reference,
+    delivery: {
+      path: publicSideBackgroundPath({ slug, sideCode: row.code }),
+      widthPx: row.background.widthPx,
+      heightPx: row.background.heightPx,
+      mediaType: row.background.mediaType,
+      byteSize: row.background.byteSize,
+    },
   };
 }
 
@@ -221,7 +280,7 @@ export function toPublicPlacementView(placement: PublicPlacement): PublicPlaceme
     toPublicSideView(side, placement.slug, areasBySide.get(side.id) ?? []),
   );
   const studioEligible = placement.sides.some(
-    (side) => side.hasEligibleBackground && (areasBySide.get(side.id)?.length ?? 0) > 0,
+    (side) => side.background !== undefined && (areasBySide.get(side.id)?.length ?? 0) > 0,
   );
   return { productId: placement.productId, slug: placement.slug, studioEligible, sides };
 }

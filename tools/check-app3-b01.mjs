@@ -211,10 +211,17 @@ function checkOwnership(rootDir, fail) {
   const raw = read(rootDir, 'openapi');
   if (raw !== undefined) {
     const paths = Object.keys(JSON.parse(raw).paths ?? {});
+    // Mode-aware on `APP3-B02`, which owns exactly one of these shapes; every
+    // other one still belongs to a checkpoint that has not run.
+    const phase = read(rootDir, 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md');
+    const b02Path = /APP3-B02\s*=\s*COMPLETE/.test(phase ?? '')
+      ? '/api/public/products/{slug}/sides/{sideCode}/background'
+      : undefined;
     // No leading slash: `design-sessions` and `design-templates` are the shapes
     // `APP3-B03`/`APP3-B06` will use, and a `/sessions` needle would miss both.
     for (const forbidden of ['/sides/', '/areas/', 'templates', 'sessions', '/background']) {
       for (const path of paths.filter((candidate) => candidate.includes(forbidden))) {
+        if (path === b02Path) continue;
         fail(`${path} belongs to a checkpoint that has not run`);
       }
     }

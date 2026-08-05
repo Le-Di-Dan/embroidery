@@ -2893,6 +2893,99 @@ Nothing else changed: no sanitizer architecture, allowlist, limit, path command,
 output MIME, event, object protocol or database behaviour, and no dependency,
 Docker, API, schema, migration or delivery change.
 
+## 6.20 `APP3-B02` — public Product Side background delivery
+
+One anonymous binary operation, and one additive extension of the `APP3-B01`
+public manifest. Together they close the intrinsic-dimensions contract for Side
+backgrounds and give a Studio session everything it needs to open a canvas:
+where the background is, how large it really is, and what it is.
+
+```text
+GET /api/public/products/:slug/sides/:sideCode/background
+    publicProductSideBackground_get
+```
+
+### 6.20.1 Why the address is keyed by placement
+
+The route is addressed by **Product slug and Side code** — never an Asset id, a
+derivative id, a storage key or a Product Side UUID. A background may be
+*replaced* without the Side changing, so an artifact-keyed address would go
+stale on every operator swap; a placement-keyed one keeps resolving to whatever
+the Side's current approved background is. And it stops resolving entirely the
+moment the Product is unpublished, the Product or Category is archived, the Side
+is retired or the background stops being deliverable, because the route re-proves
+all of it on every request. **Knowing an address grants nothing.**
+
+### 6.20.2 The contextual query
+
+One transactionless statement proves twenty facts against a single snapshot:
+Product slug, publication and archive state; Category publication and archive
+state; the Side's membership, code and activity; the background association; the
+Asset's lane, classification, status and tombstone; and the derivative's kind,
+READY state, unwatermarked flag, storage key and complete quartet. Splitting it
+would open windows in which an unpublish could commit between checks.
+
+Every miss — unknown, unpublished, archived, withdrawn, foreign, retired,
+replaced, unready, watermarked, incompletely described — collapses to the same
+safe not-found, so an anonymous caller cannot enumerate what is not yet public.
+`studioEligible` is never trusted as an authorization; it is re-derived.
+
+### 6.20.3 Provider and persisted metadata are reconciled
+
+`APP2-T01` could only trust the provider's byte count, because
+`asset_derivatives` had no size column. `APP3-DB01` added the quartet, so two
+independent statements about the same object now exist. Before any byte is sent
+they must agree: the provider's count must be finite, positive and **equal** to
+the persisted `byte_size`. Where they disagree the stream is destroyed and the
+request fails safely — sending the provider's length would contradict the
+manifest a Studio already read, and sending the persisted one would truncate or
+hang the response. The read path never repairs the database.
+
+### 6.20.4 The manifest extension
+
+`background` keeps its `productSlug`/`sideCode` identity components and gains
+`delivery`, which is **all-or-nothing**:
+
+```text
+delivery = { path, widthPx, heightPx, mediaType, byteSize } | null
+```
+
+A path without dimensions would invite a request that cannot be served, and
+dimensions without a path would be fabricated geometry. `null` is the single
+answer for every non-deliverable reason and is exactly what makes
+`studioEligible` false.
+
+`widthPx`/`heightPx` are the **derivative's intrinsic** pixel dimensions. They
+are deliberately not the Side's `imageWidthPx`/`imageHeightPx`, which are the
+operator's authored placement canvas; substituting one for the other would put a
+design on geometry nobody chose. This distinction is what closes
+`FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01`.
+
+### 6.20.5 Delivery boundary
+
+`no-store`, `nosniff`, `inline` with no filename, `Content-Type` from the
+persisted `media_type`, and a `Content-Length` only from the reconciled size. No
+ETag, last-modified, bucket, object key, checksum, provider endpoint or original
+filename reaches a response. Only the `APP3-W01A` raster output is deliverable;
+Template SVG is not, and `IMP-D044` PO-03 keeps it profile-invalid here. No
+upload, mutation, presign, download, generic Asset or generic derivative
+operation was added.
+
+### 6.20.6 Disclosed deviation
+
+`APP3-B01`, `APP3-B01N`, `APP3-W01A`, `APP3-G04` and `APP3-DB01` each froze the
+pre-B02 published surface — "no APP3 HTTP operation beyond B01", frozen OpenAPI
+and generated-client hashes, frozen path lists. B02 is required to add exactly
+one operation, so those gates could not pass unchanged while §13 requires them to
+pass. Each was made **mode-aware** on this checkpoint's own delivered status
+line, in the pattern used nine times before: two consistent worlds and no third.
+Recorded as `PREDECESSOR_GATES_MADE_MODE_AWARE_ON_B02`.
+
+The status token itself is deliberately *not* quoted anywhere in this prose. A
+gate that keys on a status line must not be satisfiable by a paragraph
+describing it — the same discipline `APP3-G07` needed when its rulings and its
+corpus shared vocabulary.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -2913,7 +3006,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — TEMPLATE_SVG_NORMALIZATION_CORRECTION_DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — PUBLIC_SIDE_BACKGROUND_DELIVERY_DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -2968,16 +3061,18 @@ APP3-B01N = COMPLETE — REVIEW_ACCEPTED
 APP3-G07 = COMPLETE — REVIEW_ACCEPTED
 IMP-D047 = LOCKED
 TEMPLATE_SVG_SANITIZATION_POLICY_VERSION = 1
-APP3-W01B = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
+APP3-W01B = COMPLETE — REVIEW_ACCEPTED
 APP3-W01B SANITIZER = DOMPURIFY_3.4.13_ON_JSDOM_29.1.1
 APP3-W01B DISCLOSED_DEVIATION = WORKER_IMAGE_DOMAIN_TYPES_COPY_RESTORED
 APP3-W01B-C1 = COMPLETE — REVIEW_DELIVERED
 APP3-W01B-C1 NUMERIC_CANONICAL_FORM = SHORTEST_BINARY64_ROUND_TRIP
 APP3-W01B-C1 FIXED_PRECISION_BUDGET = NONE
-APP3-B02 = READY_BY_APP3-W01A_AND_APP3-B01N BUT_BLOCKED_WHEN_PLATFORM_ZOD_OPENAPI_FOLLOW_UP_APPLIES
-FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — FINAL_OWNER_APP3-B02
-FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = PROCESSING_AND_TRIGGER_FOUNDATION_READY
-FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_NEXT_SCHEMA_BACKED_HTTP_CHECKPOINT
+APP3-B02 = COMPLETE — REVIEW_DELIVERED
+APP3-B02 OPERATION = publicProductSideBackground_get
+APP3-B02 DISCLOSED_DEVIATION = PREDECESSOR_GATES_MADE_MODE_AWARE_ON_B02
+FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = COMPLETE — CLOSED_BY_APP3-B02
+FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = SIDE_BACKGROUND_QUARTET_AND_DELIVERY_PATH_PUBLISHED
+FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_SCHEMA_BACKED_HTTP_BODY_CHECKPOINTS
 FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-G04
 FU-APP3-G03-QUALITY-AGGREGATE-01 = DEFERRED — REGRESSION_ACTIVITY_ONLY
 FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-DB01

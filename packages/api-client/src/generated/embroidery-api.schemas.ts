@@ -587,7 +587,25 @@ export interface PublicPlacementAreaResponse {
   name: string;
 }
 
+export interface PublicPlacementBackgroundDeliveryResponse {
+  /** Exact byte size of the object served at `path`. */
+  byteSize: number;
+  /** The background image's intrinsic pixel height. */
+  heightPx: number;
+  /** The editor-safe derivative media type. */
+  mediaType: string;
+  /** Relative application path to the editor-safe background bytes. It is an application address, never a storage address, and never an Asset or derivative identity. It grants nothing on its own: publication, category visibility, side activity, the background association and the derivative are re-proved on every request. */
+  path: string;
+  /** The background image's intrinsic pixel width. Not the Side's authored placement canvas `imageWidthPx`, which is separate placement geometry. */
+  widthPx: number;
+}
+
 export interface PublicPlacementBackgroundResponse {
+  /**
+   * Null when this side has no deliverable editor-safe background — unprocessed, unready, watermarked, incompletely described or withdrawn. Never partially populated: a path and the metadata travel together or not at all, so no fabricated geometry is ever returned.
+   * @nullable
+   */
+  delivery: PublicPlacementBackgroundDeliveryResponse | null;
   productSlug: string;
   sideCode: string;
 }

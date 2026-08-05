@@ -29,6 +29,17 @@ export interface SeedBackgroundOptions {
   readonly watermarked?: boolean;
   /** Omits the canonical quartet, which only a non-READY row may do. */
   readonly withoutMetadata?: boolean;
+  /**
+   * The recorded quartet, when the caller also stores a real object
+   * (`APP3-B02`). Delivery reconciles the persisted `byte_size` against the
+   * provider's count, so a suite that writes bytes must be able to record the
+   * size it actually wrote — and a suite proving the *mismatch* refusal must be
+   * able to record a size it deliberately did not.
+   */
+  readonly byteSize?: number;
+  readonly widthPx?: number;
+  readonly heightPx?: number;
+  readonly derivativeMediaType?: string;
 }
 
 /**
@@ -67,8 +78,10 @@ export async function seedBackgroundAsset(
     values (${newId()}, ${id}, ${kind}, ${status},
             ${status === 'READY' ? `development/derivatives/${id}/${kind}.webp` : null},
             ${options.watermarked === true},
-            ${withMetadata ? 1000 : null}, ${withMetadata ? 1000 : null},
-            ${withMetadata ? 'image/webp' : null}, ${withMetadata ? 40960 : null})
+            ${withMetadata ? (options.widthPx ?? 1000) : null},
+            ${withMetadata ? (options.heightPx ?? 1000) : null},
+            ${withMetadata ? (options.derivativeMediaType ?? 'image/webp') : null},
+            ${withMetadata ? (options.byteSize ?? 40960) : null})
   `);
 
   return id;

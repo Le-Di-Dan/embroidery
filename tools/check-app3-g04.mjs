@@ -326,15 +326,20 @@ function checkMetadataOwnership(root, fail) {
   }
 }
 
-/** No APP3 asset operation may exist while this is only an authority gate. */
+/** Mode-aware on `APP3-B02`: before it no such path may exist, after it this one may. */
+const B02_DELIVERY_PATH = '/api/public/products/{slug}/sides/{sideCode}/background';
+const b02Delivered = (phase) => /APP3-B02\s*=\s*COMPLETE/.test(phase ?? '');
+
+/** No APP3 asset operation may exist beyond the ones a delivered checkpoint owns. */
 function checkNoImplementation(root, fail) {
+  const allowed = b02Delivered(read(root, 'phase')) ? [B02_DELIVERY_PATH] : [];
   const raw = read(root, 'openapi');
   if (raw === undefined) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);
     return;
   }
-  for (const path of Object.keys(JSON.parse(raw).paths ?? {}).filter((p) =>
-    APP3_ASSET_PATH_RE.test(p),
+  for (const path of Object.keys(JSON.parse(raw).paths ?? {}).filter(
+    (p) => APP3_ASSET_PATH_RE.test(p) && !allowed.includes(p),
   )) {
     fail(
       `${CANONICAL_FILES.openapi}: APP3 asset operation "${path}" exists, but no APP3 backend checkpoint has run`,

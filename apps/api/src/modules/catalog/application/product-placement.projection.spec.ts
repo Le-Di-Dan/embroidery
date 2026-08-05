@@ -72,7 +72,7 @@ const publicSide = (overrides: Partial<PublicPlacementSideRow> = {}): PublicPlac
   physicalWidthMm: '200.00',
   physicalHeightMm: '200.00',
   pxPerMm: '5.0',
-  hasEligibleBackground: true,
+  background: { widthPx: 2048, heightPx: 1536, mediaType: 'image/webp', byteSize: 184320 },
   ...overrides,
 });
 
@@ -149,12 +149,54 @@ describe('the public manifest', () => {
     }
   });
 
-  it('addresses the background by reference components, never a URL', () => {
+  it('addresses the background by a relative path and the intrinsic quartet', () => {
     const view = toPublicPlacementView(manifest([publicSide()], []));
-    // `APP3-B02` owns the delivery route and has not been built; composing an
-    // address here would publish one that does not resolve.
-    expect(view.sides[0]?.background).toEqual({ productSlug: 'ao-thun', sideCode: 'front' });
+    // `APP3-B02` delivers the route, so the manifest now carries the address it
+    // is keyed by — built from the public slug and Side code, never from an
+    // Asset or derivative identity.
+    expect(view.sides[0]?.background).toEqual({
+      productSlug: 'ao-thun',
+      sideCode: 'front',
+      delivery: {
+        path: '/api/public/products/ao-thun/sides/front/background',
+        widthPx: 2048,
+        heightPx: 1536,
+        mediaType: 'image/webp',
+        byteSize: 184320,
+      },
+    });
+  });
+
+  it('emits a relative path only — never a host, bucket, key or signature', () => {
+    const serialized = JSON.stringify(toPublicPlacementView(manifest([publicSide()], [])));
+    expect(serialized).toContain('/api/public/products/');
+    for (const forbidden of ['http://', 'https://', '//', 'X-Amz', 'storageKey', 'bucket']) {
+      expect(serialized).not.toContain(forbidden);
+    }
+  });
+
+  it('omits the delivery block entirely when the background is not deliverable', () => {
+    const view = toPublicPlacementView(manifest([publicSide({ background: undefined })], []));
+    // Identity components survive; the address and the geometry do not. A path
+    // without dimensions would be an invitation to a request that cannot be
+    // served, and dimensions without a path would be fabricated geometry.
+    expect(view.sides[0]?.background).toEqual({
+      productSlug: 'ao-thun',
+      sideCode: 'front',
+      delivery: null,
+    });
     expect(JSON.stringify(view)).not.toContain('/api/');
+  });
+
+  it('never substitutes the placement canvas for the intrinsic dimensions', () => {
+    // The authored Side canvas is 1000×1000; the derivative is 2048×1536. A
+    // Studio that sized its canvas from the wrong pair would put a design on
+    // geometry nobody chose.
+    const side = toPublicPlacementView(manifest([publicSide()], [])).sides[0];
+    expect(side?.imageWidthPx).toBe(1000);
+    expect(side?.imageHeightPx).toBe(1000);
+    expect(side?.background.delivery?.widthPx).toBe(2048);
+    expect(side?.background.delivery?.heightPx).toBe(1536);
   });
 
   it('is Studio-eligible only when one side has both an area and a background', () => {
@@ -166,9 +208,7 @@ describe('the public manifest', () => {
   });
 
   it('is not eligible when the background is unprocessed', () => {
-    const view = toPublicPlacementView(
-      manifest([publicSide({ hasEligibleBackground: false })], [area()]),
-    );
+    const view = toPublicPlacementView(manifest([publicSide({ background: undefined })], [area()]));
     expect(view.studioEligible).toBe(false);
     // The side is still described: the geometry is real even though the Studio
     // cannot open on it, and inventing an absence would be a second lie.
@@ -176,7 +216,7 @@ describe('the public manifest', () => {
   });
 
   it('is not eligible when the area and the usable background are on different sides', () => {
-    const withArea = publicSide({ hasEligibleBackground: false });
+    const withArea = publicSide({ background: undefined });
     const withBackground = publicSide({ id: 'side-2' as ProductSideId, code: 'back' });
     expect(
       toPublicPlacementView(manifest([withArea, withBackground], [area()])).studioEligible,

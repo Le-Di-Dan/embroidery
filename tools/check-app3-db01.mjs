@@ -295,6 +295,10 @@ function checkDependencies(phase, fail) {
   }
 }
 
+/** Mode-aware on `APP3-B02`: before it no such path may exist, after it this one may. */
+const B02_DELIVERY_PATH = '/api/public/products/{slug}/sides/{sideCode}/background';
+const b02Delivered = (phase) => /APP3-B02\s*=\s*COMPLETE/.test(phase ?? '');
+
 /** The only APP3 operations delivered so far; `APP3-B01` owns all three. */
 const B01_PATHS = Object.freeze([
   '/api/admin/products/{productId}/placement',
@@ -320,7 +324,10 @@ function checkNoImplementation(root, phase, fail) {
     return;
   }
   const delivered = /APP3-B01\s*=\s*COMPLETE/.test(phase ?? '');
-  const allowed = delivered ? B01_PATHS : [];
+  const allowed = [
+    ...(delivered ? B01_PATHS : []),
+    ...(b02Delivered(phase) ? [B02_DELIVERY_PATH] : []),
+  ];
   const paths = Object.keys(JSON.parse(raw).paths ?? {});
   for (const path of paths.filter((p) => APP3_OPERATION_RE.test(p) && !allowed.includes(p))) {
     fail(

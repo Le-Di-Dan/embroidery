@@ -416,7 +416,7 @@ describe('APP3-W01B — the boundaries it must not cross', () => {
   it('rejects closing the open platform follow-up', () => {
     const failures = run({
       [BOUNDARY_FILES.phase]: boundaryFile('phase').replace(
-        'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_NEXT_SCHEMA_BACKED_HTTP_CHECKPOINT',
+        /FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_[A-Z_]+/,
         'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = CLOSED',
       ),
     });

@@ -59,3 +59,14 @@ export function isW01bDelivered(rootDir) {
   const phase = read(rootDir, 'phase') ?? '';
   return /APP3-W01B\s*=\s*COMPLETE/.test(phase) && /IMP-D047\s*=\s*LOCKED/.test(phase);
 }
+
+/**
+ * True once `APP3-B02` has delivered its one public operation.
+ *
+ * The published surface is frozen per world rather than absolutely: `APP3-W01A`
+ * adds no HTTP operation in either, and that is the property being asserted —
+ * the total is only the way to measure it.
+ */
+export function isB02Delivered(rootDir) {
+  return /APP3-B02\s*=\s*COMPLETE/.test(read(rootDir, 'phase') ?? '');
+}

@@ -4,6 +4,7 @@ import { AssetIntakeModule } from '../modules/asset/asset-intake.module';
 import { CatalogDraftModule } from '../modules/catalog/catalog-draft.module';
 import { CatalogPlacementModule } from '../modules/catalog/catalog-placement.module';
 import { CatalogPublicMediaModule } from '../modules/catalog/catalog-public-media.module';
+import { CatalogPublicSideBackgroundModule } from '../modules/catalog/catalog-public-side-background.module';
 import { CatalogPublicModule } from '../modules/catalog/catalog-public.module';
 import { CatalogPublicationModule } from '../modules/catalog/catalog-publication.module';
 import { HealthModule } from '../modules/health/health.module';
@@ -28,9 +29,10 @@ import { ValidationModule } from '../platform/validation/validation.module';
     CatalogPublicationModule,
     CatalogPlacementModule,
     CatalogPublicMediaModule,
-    // After the media module purely for readability: the two share the
-    // `public/products` base path but their routes differ in segment count, so
-    // registration order cannot make one shadow the other.
+    CatalogPublicSideBackgroundModule,
+    // After the media and background modules purely for readability: all of them
+    // share the `public/products` base path but their routes differ in segment
+    // count, so registration order cannot make one shadow another.
     CatalogPublicModule,
   ],
 })

@@ -38,6 +38,7 @@ import {
 import { ProductSlugParam } from './schemas/admin-product-placement.request';
 import {
   PublicPlacementAreaResponse,
+  PublicPlacementBackgroundDeliveryResponse,
   PublicPlacementBackgroundResponse,
   PublicPlacementSideResponse,
   PublicProductPlacementResponse,
@@ -79,6 +80,7 @@ export class PublicProductPlacementController {
     PublicPlacementSideResponse,
     PublicPlacementAreaResponse,
     PublicPlacementBackgroundResponse,
+    PublicPlacementBackgroundDeliveryResponse,
   )
   @ApiResponse({
     status: 200,

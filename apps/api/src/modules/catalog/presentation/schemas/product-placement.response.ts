@@ -164,12 +164,57 @@ export class AdminProductPlacementResponse {
  * resolve. Neither component is private — the slug is the public Product address
  * and the code is the side's stable public identity.
  */
+/**
+ * The deliverable background: where to fetch it and what it intrinsically is.
+ *
+ * Present only when the Side's background really is deliverable, so a client can
+ * treat its presence as the eligibility answer without a second call.
+ */
+export class PublicPlacementBackgroundDeliveryResponse {
+  @ApiProperty({
+    example: '/api/public/products/ao-thun-theu-hoa/sides/front/background',
+    description:
+      'Relative application path to the editor-safe background bytes. It is an application ' +
+      'address, never a storage address, and never an Asset or derivative identity. It grants ' +
+      'nothing on its own: publication, category visibility, side activity, the background ' +
+      'association and the derivative are re-proved on every request.',
+  })
+  path!: string;
+
+  @ApiProperty({
+    example: 2048,
+    description:
+      "The background image's intrinsic pixel width. Not the Side's authored placement canvas " +
+      '`imageWidthPx`, which is separate placement geometry.',
+  })
+  widthPx!: number;
+
+  @ApiProperty({ example: 1536, description: "The background image's intrinsic pixel height." })
+  heightPx!: number;
+
+  @ApiProperty({ example: 'image/webp', description: 'The editor-safe derivative media type.' })
+  mediaType!: string;
+
+  @ApiProperty({ example: 184320, description: 'Exact byte size of the object served at `path`.' })
+  byteSize!: number;
+}
+
 export class PublicPlacementBackgroundResponse {
   @ApiProperty({ example: 'ao-thun-theu-hoa' })
   productSlug!: string;
 
   @ApiProperty({ example: 'front' })
   sideCode!: string;
+
+  @ApiProperty({
+    type: PublicPlacementBackgroundDeliveryResponse,
+    nullable: true,
+    description:
+      'Null when this side has no deliverable editor-safe background — unprocessed, unready, ' +
+      'watermarked, incompletely described or withdrawn. Never partially populated: a path and ' +
+      'the metadata travel together or not at all, so no fabricated geometry is ever returned.',
+  })
+  delivery!: PublicPlacementBackgroundDeliveryResponse | null;
 }
 
 export class PublicPlacementAreaResponse extends PlacementAreaGeometry {}

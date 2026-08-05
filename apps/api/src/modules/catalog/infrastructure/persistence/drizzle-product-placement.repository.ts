@@ -62,6 +62,11 @@ import {
   SIDE_BACKGROUND_ASSET_STATUS,
 } from '../../domain/product-placement.policy';
 import { toArea, toSide } from './product-placement-row.mapper';
+import {
+  mediaTypeArrayLiteral,
+  toPublicBackground,
+  type EligibleBackgroundJson,
+} from './public-background-metadata.mapper';
 
 const { products, categories, productSides, embroideryAreas } = schema;
 
@@ -279,7 +284,7 @@ export class DrizzleProductPlacementRepository
           physicalWidthMm: productSides.physicalWidthMm,
           physicalHeightMm: productSides.physicalHeightMm,
           pxPerMm: productSides.pxPerMm,
-          hasEligibleBackground: this.editorSafeBackgroundExists(),
+          background: this.editorSafeBackgroundMetadata(),
         })
         .from(productSides)
         .where(and(eq(productSides.productId, product.id), isNull(productSides.retiredAt)))
@@ -310,6 +315,7 @@ export class DrizzleProductPlacementRepository
         sides: sideRows.map((row): PublicPlacementSideRow => ({
           ...row,
           id: row.id as ProductSideId,
+          background: toPublicBackground(row.background),
         })),
         areas: areaRows.map(toArea),
       };
@@ -317,12 +323,19 @@ export class DrizzleProductPlacementRepository
   }
 
   /**
-   * Whether this side's background resolves to a usable editor-safe derivative.
+   * This side's editor-safe background metadata, or SQL `NULL`.
    *
-   * A boolean and nothing else. The asset id, its storage key and the
-   * derivative's key are all private (IMP-D044 PO-06); selecting one here so the
-   * service could "decide later" would already have put it in a public read
-   * path's result set.
+   * The quartet and nothing else (IMP-D044 PO-07). The asset id, its storage key
+   * and the derivative's key and id are all private (PO-06); selecting one here
+   * so the projection could "decide later" would already have put it in a public
+   * read path's result set. `APP3-B01` returned a bare boolean because there was
+   * no delivery route to describe; `APP3-B02` needs the intrinsic dimensions a
+   * Studio canvas is sized from, so the same predicate now yields the four
+   * values rather than a yes.
+   *
+   * **One** subquery, not four: the predicate is the eligibility rule, and
+   * evaluating it once per side keeps the four values provably from the same row.
+   * Four correlated scalar subqueries could in principle disagree.
    *
    * The inner tables are **aliased by hand**. In a `select` field position
    * Drizzle renders a column reference unqualified, so `assets.id`,
@@ -331,10 +344,19 @@ export class DrizzleProductPlacementRepository
    * on the first integration run. Explicit aliases make each reference say which
    * table it means, and the only interpolated column is the outer
    * `background_asset_id`, whose name no inner table shares.
+   *
+   * `byte_size` crosses as text: it is a `bigint` column, and letting it become
+   * a JSON number would lose precision silently above 2^53. The projection
+   * converts it once, with a guard.
    */
-  private editorSafeBackgroundExists() {
-    return sql<boolean>`exists (
-      select 1
+  private editorSafeBackgroundMetadata() {
+    return sql<EligibleBackgroundJson | null>`(
+      select json_build_object(
+        'widthPx', bg_derivative.width_px,
+        'heightPx', bg_derivative.height_px,
+        'mediaType', bg_derivative.media_type,
+        'byteSize', bg_derivative.byte_size::text
+      )
       from assets bg_asset
       join asset_derivatives bg_derivative on bg_derivative.asset_id = bg_asset.id
       where bg_asset.id = ${productSides.backgroundAssetId}
@@ -349,7 +371,9 @@ export class DrizzleProductPlacementRepository
         and bg_derivative.width_px is not null
         and bg_derivative.height_px is not null
         and bg_derivative.media_type is not null
+        and bg_derivative.media_type = any(${sql.raw(mediaTypeArrayLiteral())})
         and bg_derivative.byte_size is not null
+      limit 1
     )`;
   }
 }

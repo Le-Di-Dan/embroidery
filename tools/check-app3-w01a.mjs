@@ -27,6 +27,7 @@ import {
   JOB_DIR,
   REPO_ROOT,
   code,
+  isB02Delivered,
   isW01bDelivered,
   read,
 } from './check-app3-w01a-files.mjs';
@@ -260,7 +261,10 @@ function checkScopeAndGovernance(rootDir, fail) {
         ['get', 'put', 'post', 'patch', 'delete'].includes(method),
       ),
     );
-    if (operations.length !== 22) {
+    // Mode-aware on `APP3-B02`, which delivers exactly one operation. Two
+    // consistent worlds and no third: W01A itself still adds none in either.
+    const expected = isB02Delivered(rootDir) ? 23 : 22;
+    if (operations.length !== expected) {
       fail(`the OpenAPI document declares ${String(operations.length)} operations; W01A adds none`);
     }
     if (JSON.stringify(document).includes('normalization')) {

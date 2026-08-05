@@ -264,10 +264,23 @@ describe('APP3-G01 — repository facts move underneath the ruling', () => {
 
   it('refuses a placement operation the ruling never authorised', () => {
     const openapi = JSON.parse(readFileSync(join(REPO_ROOT, CANONICAL_FILES.openapi), 'utf8'));
-    openapi.paths['/api/public/products/{slug}/sides/{sideCode}/background'] = {
+    openapi.paths['/api/public/products/{slug}/sides/{sideCode}/areas'] = {
       get: { operationId: 'smuggled' },
     };
     const failures = checkApp3G01(rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(openapi) }));
+    assert.ok(mentions(failures, 'is not an APP3-B01 placement operation'), failures.join('\n'));
+  });
+
+  it('refuses the APP3-B02 delivery path while B02 has not delivered', () => {
+    // The mode-aware half. The path is legitimate *only* in the world where the
+    // phase records its owner as complete; with that token gone the same
+    // operation is an unauthorised placement surface again.
+    const phase = readFileSync(join(REPO_ROOT, CANONICAL_FILES.phase), 'utf8');
+    const failures = checkApp3G01(
+      rootWith({
+        [CANONICAL_FILES.phase]: phase.replaceAll(/APP3-B02 = COMPLETE[^\n]*/g, 'APP3-B02 = READY'),
+      }),
+    );
     assert.ok(mentions(failures, 'is not an APP3-B01 placement operation'), failures.join('\n'));
   });
 

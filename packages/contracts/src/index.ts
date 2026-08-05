@@ -23,3 +23,11 @@ export type {
   PublicProductMediaPathInput,
   PublicProductMediaRendition,
 } from './public-media/public-product-media-path';
+export {
+  buildPublicSideBackgroundPath,
+  PUBLIC_SIDE_BACKGROUND_PATH_PREFIX,
+  PUBLIC_SIDE_BACKGROUND_SEGMENT,
+  PUBLIC_SIDE_BACKGROUND_SIDES_SEGMENT,
+  PublicSideBackgroundPathError,
+} from './public-media/public-product-side-background-path';
+export type { PublicSideBackgroundPathInput } from './public-media/public-product-side-background-path';

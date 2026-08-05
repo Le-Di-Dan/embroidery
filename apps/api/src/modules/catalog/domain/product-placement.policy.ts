@@ -97,6 +97,19 @@ export const EDITOR_SAFE_DERIVATIVE_KIND = 'NORMALIZED' as const satisfies Asset
 export const EDITOR_SAFE_DERIVATIVE_STATE = PRODUCT_PUBLICATION_DERIVATIVE_STATE;
 
 /**
+ * The media types an editor-safe Side background may actually be (`APP3-B02`).
+ *
+ * Exactly the raster output `APP3-W01A` produces. Stated here, beside the kind
+ * and the state, because the *manifest* and the *delivery route* must agree
+ * about what is deliverable: the manifest advertising a background the route
+ * then refuses is a broken Studio, and two copies of this list is how that
+ * happens. `image/svg+xml` is absent by construction — `IMP-D044` PO-03 makes
+ * SVG profile-invalid for `SIDE_BACKGROUND`, and a sanitized Template
+ * (`APP3-W01B`) is not a Side background.
+ */
+export const EDITOR_SAFE_DELIVERABLE_MEDIA_TYPES = ['image/webp'] as const;
+
+/**
  * The canonical metadata quartet a Studio-eligible derivative must carry
  * (IMP-D044 PO-07, PO-12).
  *

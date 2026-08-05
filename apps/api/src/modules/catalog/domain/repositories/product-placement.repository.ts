@@ -143,14 +143,38 @@ export interface PublicPlacementSideRow {
   readonly physicalHeightMm: string;
   readonly pxPerMm: string;
   /**
-   * True when this side's `background_asset_id` resolves to an editor-safe
-   * derivative carrying the whole canonical metadata quartet (IMP-D044 PO-07).
+   * The canonical derivative metadata when this side's `background_asset_id`
+   * resolves to a deliverable editor-safe derivative, and `undefined` otherwise
+   * (IMP-D044 PO-07; `APP3-B02` §7).
    *
-   * A boolean, deliberately: the asset id, its storage key and the derivative's
-   * key are all private, and a public projection that carried one of them so the
-   * service could "decide later" would have already leaked it.
+   * All four fields or none. `APP3-B01` carried a boolean here because there was
+   * no delivery route to describe; `APP3-B02` needs the intrinsic dimensions a
+   * Studio canvas is sized from, and the media type and byte size a client plans
+   * a fetch with. What is still absent is every private fact — the asset id, its
+   * storage key and the derivative's key and id — so the widening adds the
+   * Studio's contract without adding a leak.
+   *
+   * `undefined` is the same answer for every failing reason, exactly as the
+   * boolean's `false` was, and it is what makes `studioEligible` false.
    */
-  readonly hasEligibleBackground: boolean;
+  readonly background: PublicPlacementBackgroundRow | undefined;
+}
+
+/**
+ * The deliverable background's canonical metadata (IMP-D044 PO-07).
+ *
+ * Exactly the quartet `asset_derivatives` carries for a READY NORMALIZED row,
+ * and nothing else. These are the **derivative's intrinsic** dimensions — the
+ * real pixel size of the image a Studio will paint — and are deliberately not
+ * the Side's `imageWidthPx`/`imageHeightPx`, which are the operator's authored
+ * placement canvas. The two are separate facts and substituting one for the
+ * other would put a design on geometry nobody chose.
+ */
+export interface PublicPlacementBackgroundRow {
+  readonly widthPx: number;
+  readonly heightPx: number;
+  readonly mediaType: string;
+  readonly byteSize: number;
 }
 
 export interface PublicPlacement {

@@ -318,10 +318,17 @@ const B01_PLACEMENT_PATHS = Object.freeze([
  * every mixture fails. Their operation ids and auth are `check-app3-b01.mjs`'s
  * assertion, not this gate's.
  */
+/** Mode-aware on `APP3-B02`: before it no such path may exist, after it this one may. */
+const B02_DELIVERY_PATH = '/api/public/products/{slug}/sides/{sideCode}/background';
+const b02Delivered = (phase) => /APP3-B02\s*=\s*COMPLETE/.test(phase ?? '');
+
 function checkNoImplementation(root, phase, fail) {
   const raw = read(root, 'openapi');
   const delivered = /APP3-B01\s*=\s*COMPLETE/.test(phase);
-  const allowed = delivered ? B01_PLACEMENT_PATHS : [];
+  const allowed = [
+    ...(delivered ? B01_PLACEMENT_PATHS : []),
+    ...(b02Delivered(phase) ? [B02_DELIVERY_PATH] : []),
+  ];
   if (raw === undefined) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);
   } else {

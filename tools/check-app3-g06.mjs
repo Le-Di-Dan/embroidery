@@ -293,10 +293,11 @@ function checkArchitecturePremise(rootDir, fail) {
 /** 21, 23 — the platform follow-up stays open and no root script was added. */
 function checkGovernance(rootDir, fail) {
   const phase = read(rootDir, 'phase') ?? '';
+  // The blocker's *scope* narrows once a body-free HTTP checkpoint has shipped
+  // through it: `APP3-B02` proved the follow-up blocks schema-backed request
+  // *bodies*, not every HTTP checkpoint. It must still be OPEN in both worlds.
   if (
-    !/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_NEXT_SCHEMA_BACKED_HTTP_CHECKPOINT/.test(
-      phase,
-    )
+    !/FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_[A-Z_]*SCHEMA_BACKED_HTTP/.test(phase)
   ) {
     fail(`${CANONICAL_FILES.phase}: the platform Zod/OpenAPI follow-up is not recorded as open`);
   }
@@ -313,7 +314,16 @@ function checkGovernance(rootDir, fail) {
   const followUp =
     /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01[\s\S]{0,400}?(?=\nFU-PLATFORM)/.exec(phase)?.[0] ?? '';
   const blocker = /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 BLOCKED_BY = ([^\n]+)/.exec(phase)?.[1] ?? '';
-  if (produced) {
+  // Three ordered worlds now: before the producer, after it, and after
+  // `APP3-B02` — the follow-up's final owner — closes it outright.
+  const closed = /FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = COMPLETE — CLOSED_BY_APP3-B02/.test(phase);
+  if (closed) {
+    if (!/APP3-B02\s*=\s*COMPLETE/.test(phase) || blocker.length > 0) {
+      fail(
+        `${CANONICAL_FILES.phase}: the public-media-dimensions follow-up was closed without its owner`,
+      );
+    }
+  } else if (produced) {
     if (!followUp.includes('PROCESSING_AND_TRIGGER_FOUNDATION_READY') || blocker.length > 0) {
       fail(`${CANONICAL_FILES.phase}: the public-media-dimensions follow-up was not advanced`);
     }
