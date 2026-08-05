@@ -11,7 +11,6 @@
  * into its own explicit command, so a re-parse of the serialized form produces
  * this exact list again. That idempotence is what step 11's fixed point rests on.
  */
-import { TEMPLATE_SVG_NUMBER_ABS_MAX } from '../template-svg-policy';
 import { PathScanner } from './path-tokenizer';
 
 export interface SvgPathCommand {
@@ -57,7 +56,9 @@ function readGroup(
   for (let index = 0; index < arity; index += 1) {
     if (index > 0) scanner.skipCommaWhitespace();
     const value = isArc && ARC_FLAG_INDEXES.has(index) ? scanner.readFlag() : scanner.readNumber();
-    if (value === undefined || Math.abs(value) > TEMPLATE_SVG_NUMBER_ABS_MAX) return undefined;
+    // Any finite binary64 is a coordinate this policy accepts; the scanner has
+    // already refused a non-finite one. No magnitude ceiling (`APP3-W01B-C1`).
+    if (value === undefined) return undefined;
     args.push(value);
   }
   return args;

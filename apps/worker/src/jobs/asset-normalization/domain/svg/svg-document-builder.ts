@@ -80,10 +80,12 @@ function buildRootAttributes(element: SvgDomElement): readonly CanonicalAttribut
   if (viewBox === undefined) return undefined;
   const parsed = parseSvgViewBox(viewBox);
   if (parsed === undefined) return undefined;
+  const canonical = formatSvgViewBox(parsed);
+  if (canonical === undefined) return undefined;
 
   return [
     { name: XMLNS, value: SVG_NAMESPACE },
-    { name: VIEW_BOX, value: formatSvgViewBox(parsed) },
+    { name: VIEW_BOX, value: canonical },
   ];
 }
 

@@ -38,6 +38,11 @@ const CORPUS: readonly string[] = [
   `<svg xmlns="${NS}" viewBox="0 0 320 240"><g transform="translate(1,2)"><path d="M0 0L10 10 20 0Z" fill="#F00"/><rect x="0" y="0" width="8" height="8"/></g></svg>`,
   `<svg xmlns="${NS}" viewBox="0 0 4096 4096"><polygon points="0,0 10,0 10,10" stroke="rgb(0 128 255 / 0.5)" stroke-dasharray="4,2"/></svg>`,
   `<svg xmlns="${NS}" viewBox="0 0 10 10"><path d="M0 0a1 1 0 011 1" stroke-width="1.500000" opacity="1.0"/></svg>`,
+  // `APP3-W01B-C1`: the numeric edge corpus. Shortest-round-trip printing is
+  // the one part of canonicalization delegated to the runtime, so it is the one
+  // part that has to be proved identical on a second platform rather than
+  // assumed. A fixed decimal budget would have made every one of these `0`.
+  `<svg xmlns="${NS}" viewBox="0 0 100 100"><g transform="translate(1e-7 -1e-9) scale(0.30000000000000004)"><path d="M1e-7 -1e-9L0.1234567890123 123456789.0625Z" stroke-width="1e-7" opacity="0.0000001"/><polyline points="1e-7,1e-9 5e-324,1.7976931348623157e308"/></g></svg>`,
   `<svg xmlns="${NS}" viewBox="0 0 10 10"><script>alert(1)</script></svg>`,
 ];
 
@@ -124,14 +129,15 @@ describe('Template SVG determinism across processes and platforms', () => {
     for (const report of reports) {
       expect(report.results).toEqual(hostReport.results);
     }
-    // Three accepted files and one refused, so the corpus proves both halves.
+    // Four accepted files and one refused, so the corpus proves both halves.
     expect(hostReport.results.map((entry) => entry.outcome)).toEqual([
+      'NORMALIZED',
       'NORMALIZED',
       'NORMALIZED',
       'NORMALIZED',
       'REJECTED',
     ]);
-    expect(new Set(hostReport.results.map((entry) => entry.sha256)).size).toBe(4);
+    expect(new Set(hostReport.results.map((entry) => entry.sha256)).size).toBe(5);
   }, 300_000);
 
   it('loads the exact pinned dependencies under the locked Node in the production image', async () => {

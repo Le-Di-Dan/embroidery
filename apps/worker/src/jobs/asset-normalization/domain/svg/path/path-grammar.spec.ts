@@ -91,7 +91,6 @@ describe('rejection', () => {
     ['truncated exponent', 'M0 0L1e 1'],
     ['expression', 'M0 0L1+1 1'],
     ['script smuggled in', 'M0 0L1 1</path><script>alert(1)</script>'],
-    ['out of range', 'M0 0L2000000000 1'],
     ['hex number', 'M0 0L0x10 1'],
   ])('refuses %s', (_label, input) => {
     expect(parseSvgPathData(input)).toBeUndefined();

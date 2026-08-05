@@ -477,3 +477,115 @@ describe('APP3-W01B — the corpus is real', () => {
     assert.ok(mentions(failures, 'cross-platform byte identity'), failures.join('\n'));
   });
 });
+
+describe('APP3-W01B-C1 — numeric canonicalization is lossless', () => {
+  // The corrected defect exactly: `toFixed` turns 1e-7 into 0, and every test
+  // stays green because the fixed point is reached *after* the rounding.
+  for (const forbidden of ['toFixed(6)', 'toPrecision(6)', 'toLocaleString()']) {
+    it(`rejects "${forbidden}" as the formatter`, () => {
+      const failures = run({
+        [CANONICAL_FILES.number]: file('number').replace(
+          "normalized.toString().replace('e+', 'e')",
+          `normalized.${forbidden}`,
+        ),
+      });
+      assert.ok(mentions(failures, 'must not round or clamp'), failures.join('\n'));
+    });
+  }
+
+  it('rejects a magnitude ceiling reintroduced under its old name', () => {
+    const failures = run({
+      [CANONICAL_FILES.svgPolicy]: `${file('svgPolicy')}\nexport const TEMPLATE_SVG_NUMBER_ABS_MAX = 1e9;\n`,
+    });
+    assert.ok(mentions(failures, 'must not round or clamp'), failures.join('\n'));
+  });
+
+  it('rejects dropping the -0 normalization', () => {
+    const failures = run({
+      [CANONICAL_FILES.number]: file('number').replaceAll(
+        'Object.is(value, -0) ? 0 : value',
+        'value',
+      ),
+    });
+    assert.ok(mentions(failures, 'the -0 normalization'), failures.join('\n'));
+  });
+
+  it('rejects dropping the verified round trip', () => {
+    const failures = run({
+      [CANONICAL_FILES.number]: file('number').replace(
+        'return Object.is(reparsed, normalized) ? token : undefined;',
+        'return token;',
+      ),
+    });
+    assert.ok(mentions(failures, 'the verified round trip'), failures.join('\n'));
+  });
+
+  it('rejects dropping exponent normalization', () => {
+    const failures = run({
+      [CANONICAL_FILES.number]: file('number').replace(
+        "normalized.toString().replace('e+', 'e')",
+        'normalized.toString()',
+      ),
+    });
+    assert.ok(mentions(failures, 'shortest round-trip printing'), failures.join('\n'));
+  });
+
+  it('rejects a second numeric formatter in the path serializer', () => {
+    const failures = run({
+      [CANONICAL_FILES.pathSerializer]: file('pathSerializer').replaceAll(
+        'formatSvgNumber',
+        'String',
+      ),
+    });
+    assert.ok(mentions(failures, 'does not use the shared numeric formatter'), failures.join('\n'));
+  });
+
+  it('rejects paint alpha bypassing the shared numeric parser', () => {
+    const failures = run({
+      [CANONICAL_FILES.paint]: file('paint').replaceAll('parseSvgNumber', 'parseLooseNumber'),
+    });
+    assert.ok(
+      mentions(failures, 'does not go through the shared numeric parser'),
+      failures.join('\n'),
+    );
+  });
+
+  it('rejects applying design-document quantization to SVG geometry', () => {
+    const failures = run({
+      [CANONICAL_FILES.number]: `${file('number')}\nconst _scale = NUMERIC_SCALE;\n`,
+    });
+    assert.ok(mentions(failures, 'design-document quantization'), failures.join('\n'));
+  });
+
+  for (const [needle, complaint] of [
+    ['Number.MIN_VALUE', 'the smallest positive subnormal'],
+    ['Number.MAX_VALUE', 'the largest finite double'],
+    ['adjacent binary64 values distinct', 'adjacent-value separation'],
+    ['never collapses a tiny non-zero value to zero', 'tiny-value survival'],
+    ['paint alpha conversion', 'the alpha conversion boundary'],
+  ]) {
+    it(`rejects a numeric corpus with no coverage of ${complaint}`, () => {
+      const failures = run({
+        [CANONICAL_FILES.numberCorpus]: file('numberCorpus').replaceAll(needle, 'REMOVED'),
+      });
+      assert.ok(mentions(failures, `does not cover ${complaint}`), failures.join('\n'));
+    });
+  }
+
+  it('rejects an acceptance corpus that never proves fidelity in the stored bytes', () => {
+    const failures = run({
+      [CANONICAL_FILES.acceptanceCorpus]: file('acceptanceCorpus').replaceAll(
+        'numeric fidelity end to end',
+        'something else',
+      ),
+    });
+    assert.ok(mentions(failures, 'fidelity in the stored bytes'), failures.join('\n'));
+  });
+
+  it('rejects a container run that drops the numeric edge corpus', () => {
+    const failures = run({
+      [CANONICAL_FILES.determinism]: file('determinism').replaceAll('1.7976931348623157e308', '1'),
+    });
+    assert.ok(mentions(failures, 'numeric edge corpus in the container run'), failures.join('\n'));
+  });
+});

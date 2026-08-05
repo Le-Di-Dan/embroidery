@@ -44,20 +44,15 @@ export const TEMPLATE_SVG_VIEWBOX_LIMITS = Object.freeze({
 });
 
 /**
- * Numeric canonicalization (PO-09).
+ * Numeric canonicalization (PO-09, corrected by `APP3-W01B-C1`).
  *
- * A fixed decimal budget is what makes "one representation per value" true *and*
- * re-parseable: `String(1e-7)` is `"1e-7"`, which is a number JavaScript can
- * print but a value grammar this strict would have to re-admit in exponent form
- * to reach a fixed point. Six decimals is finer than the design engine's own
- * quantization (`IMP-D045`, scale 10,000) and coarse enough that rounding is
- * idempotent — canonicalizing a canonical value returns it unchanged, which is
- * the property step 11 depends on.
+ * There is deliberately **no constant here**. Canonicalization is the shortest
+ * decimal token that parses back to the identical binary64 value, and it lives
+ * entirely in `svg-number.ts`; a precision budget or a magnitude ceiling in this
+ * file would be a knob that silently changes approved geometry. The design
+ * engine's own quantization (`IMP-D045`, scale 10,000) governs design documents
+ * and is deliberately not applied to Template SVG.
  */
-export const TEMPLATE_SVG_NUMBER_DECIMALS = 6;
-
-/** Bounded so the canonical form never reaches exponent notation. */
-export const TEMPLATE_SVG_NUMBER_ABS_MAX = 1_000_000_000;
 
 /** The element allowlist (PO-06). Everything absent from this list rejects. */
 export const TEMPLATE_SVG_ELEMENTS = [

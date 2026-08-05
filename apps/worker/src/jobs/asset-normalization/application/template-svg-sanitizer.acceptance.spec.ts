@@ -169,6 +169,43 @@ describe('exact boundaries', () => {
   });
 });
 
+describe('numeric fidelity end to end (APP3-W01B-C1)', () => {
+  const TINY =
+    '<g transform="translate(1e-7 -1e-9)">' +
+    '<path d="M1e-7 -1e-9L0.30000000000000004 0.1234567890123Z" stroke-width="1e-7"/>' +
+    '<polyline points="1e-7,1e-9 2,3"/></g>';
+
+  it('carries tiny and high-precision values into the canonical bytes unchanged', () => {
+    // The corrected defect: a fixed six-decimal budget printed every one of
+    // these as `0`, collapsing the transform to the identity and flattening
+    // the path — visibly, silently, and with every test still green.
+    expect(output(svg(TINY))).toBe(
+      `<svg xmlns="${NS}" viewBox="0 0 100 100"><g transform="translate(1e-7 -1e-9)">` +
+        '<path d="M1e-7 -1e-9L0.30000000000000004 0.1234567890123Z" stroke-width="1e-7"/>' +
+        '<polyline points="1e-7 1e-9 2 3"/></g></svg>',
+    );
+  });
+
+  it('reaches its fixed point without rounding: S1 equals S2 byte for byte', () => {
+    const first = sanitizeTemplateSvg(svg(TINY))?.bytes as Buffer;
+    const second = sanitizeTemplateSvg(first)?.bytes as Buffer;
+    expect(second.equals(first)).toBe(true);
+    expect(sha256(second)).toBe(sha256(first));
+  });
+
+  it('still reports the quartet from the viewBox, which the correction did not touch', () => {
+    const result = sanitizeTemplateSvg(svg(TINY, `xmlns="${NS}" viewBox="0 0 320 240"`));
+    expect(result?.widthPx).toBe(320);
+    expect(result?.heightPx).toBe(240);
+    expect(result?.bytes.length).toBeGreaterThan(0);
+  });
+
+  it('keeps the largest finite and smallest subnormal coordinates', () => {
+    const extreme = svg('<path d="M5e-324 1.7976931348623157e308Z"/>');
+    expect(output(extreme)).toContain('d="M5e-324 1.7976931348623157e308Z"');
+  });
+});
+
 describe('canonical output form', () => {
   const source = svg('<g transform="translate(1,2)"><path d="M0 0 1 1" fill="#F00"/></g>');
 

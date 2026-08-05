@@ -14,12 +14,28 @@
  * pattern or an external document.
  */
 
+import { parseSvgNumber } from './svg-number';
+
 const HEX_PATTERN = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 /** Modern space-separated `rgb()` only. The legacy comma form is not accepted. */
 const RGB_PATTERN = /^rgb\(\s*([^)]*)\)$/;
 
 const MAX_CHANNEL = 255;
+
+/**
+ * The locked alpha → 8-bit conversion (`APP3-W01B-C1` §6).
+ *
+ * `round(alpha × 255)`, with JavaScript's half-up rule: a half-step lands on the
+ * larger channel, so `0.5` becomes `128` (`0x80`) and not `127`. Stated as one
+ * function because the boundary behaviour is a *decision*, and an implicit one
+ * would let a later edit shift every translucent Template by one level. The
+ * accepted paint output — `none`, `#rrggbb`, `#rrggbbaa` — is unchanged by the
+ * numeric correction.
+ */
+function alphaToChannel(alpha: number): number {
+  return Math.round(alpha * MAX_CHANNEL);
+}
 
 /** The alpha byte that means "fully opaque", and so is dropped from the output. */
 const OPAQUE_ALPHA = 'ff';
@@ -44,10 +60,14 @@ function parseChannel(token: string): number | undefined {
   return value > MAX_CHANNEL ? undefined : value;
 }
 
+/**
+ * Alpha goes through the one numeric authority (`APP3-W01B-C1` §5), so an
+ * alpha value obeys exactly the grammar every coordinate obeys — no second,
+ * looser number syntax hiding inside a colour.
+ */
 function parseAlpha(token: string): number | undefined {
-  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(token)) return undefined;
-  const value = Number(token);
-  if (!Number.isFinite(value) || value < 0 || value > 1) return undefined;
+  const value = parseSvgNumber(token);
+  if (value === undefined || value < 0 || value > 1) return undefined;
   return value;
 }
 
@@ -72,7 +92,7 @@ function parseRgbFunction(body: string): string | undefined {
   if (alphaPart !== undefined) {
     const parsed = parseAlpha(alphaPart.trim());
     if (parsed === undefined) return undefined;
-    const byte = Math.round(parsed * MAX_CHANNEL);
+    const byte = alphaToChannel(parsed);
     alpha = byte === MAX_CHANNEL ? '' : toHexByte(byte);
   }
 

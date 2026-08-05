@@ -34,6 +34,8 @@ function number(predicate: (value: number) => boolean): Validator {
   };
 }
 
+/** Every geometry, opacity, stroke and dash value goes through `number`. */
+
 function enumeration(attribute: string): Validator {
   const allowed = TEMPLATE_SVG_ENUMS[attribute] ?? [];
   return (value) => (allowed.includes(value.trim()) ? value.trim() : undefined);
@@ -136,6 +138,6 @@ export function parseSvgViewBox(value: string): SvgViewBox | undefined {
   return { minX, minY, width, height };
 }
 
-export function formatSvgViewBox(viewBox: SvgViewBox): string {
+export function formatSvgViewBox(viewBox: SvgViewBox): string | undefined {
   return formatNumberList([viewBox.minX, viewBox.minY, viewBox.width, viewBox.height]);
 }

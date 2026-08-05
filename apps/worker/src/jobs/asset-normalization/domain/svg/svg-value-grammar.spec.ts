@@ -24,8 +24,13 @@ describe('numbers', () => {
     ['5.', '5'],
     ['1e3', '1000'],
     ['1E-2', '0.01'],
-    ['-0.0000001', '0'],
+    // Corrected by `APP3-W01B-C1`: the fixed six-decimal budget printed this
+    // as `0`, silently deleting the value.
+    ['-0.0000001', '-1e-7'],
     ['1000000000', '1000000000'],
+    ['1E-07', '1e-7'],
+    ['0.00000100', '0.000001'],
+    ['1e+21', '1e21'],
   ])('canonicalizes %s to %s', (input, expected) => {
     expect(canonicalizeSvgNumber(input)).toBe(expected);
   });
@@ -46,7 +51,13 @@ describe('numbers', () => {
     '-',
     '1,0',
     '1e999',
-    '1000000001',
+    '1_000',
+    '0b101',
+    '0o17',
+    '1.2.3',
+    '1e+',
+    '--1',
+    '1,5',
     '١',
   ])('refuses %s', (input) => {
     expect(parseSvgNumber(input)).toBeUndefined();
@@ -60,10 +71,11 @@ describe('numbers', () => {
     }
   });
 
-  it('never prints exponent notation, which would not re-parse', () => {
-    for (const value of [1e-7, 1e9, -1e9, 0.0000005, 999999999.999999]) {
-      expect(formatSvgNumber(value)).not.toMatch(/e/i);
-      expect(parseSvgNumber(formatSvgNumber(value))).toBeDefined();
+  it('prints exponent notation where the canonical form needs it, and re-parses it', () => {
+    for (const value of [1e-7, 1e21, -1e-7, 5e-324, Number.MAX_VALUE]) {
+      const token = formatSvgNumber(value) as string;
+      expect(token).toMatch(/^-?[\d.]+(e-?\d+)?$/);
+      expect(parseSvgNumber(token)).toBe(value);
     }
   });
 });

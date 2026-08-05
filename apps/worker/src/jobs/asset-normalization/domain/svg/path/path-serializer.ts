@@ -15,8 +15,19 @@
 import { formatSvgNumber } from '../svg-number';
 import type { SvgPathCommand } from './path-parser';
 
-export function formatSvgPathData(commands: readonly SvgPathCommand[]): string {
-  return commands
-    .map((command) => `${command.command}${command.args.map(formatSvgNumber).join(' ')}`)
-    .join('');
+export function formatSvgPathData(commands: readonly SvgPathCommand[]): string | undefined {
+  const parts: string[] = [];
+  for (const command of commands) {
+    const args: string[] = [];
+    for (const value of command.args) {
+      // The one numeric authority, here as everywhere: no separate serializer
+      // for path parameters, so a coordinate cannot be printed by looser rules
+      // than a `transform` argument (`APP3-W01B-C1`).
+      const token = formatSvgNumber(value);
+      if (token === undefined) return undefined;
+      args.push(token);
+    }
+    parts.push(`${command.command}${args.join(' ')}`);
+  }
+  return parts.join('');
 }

@@ -1,52 +1,79 @@
 /**
- * The Template SVG number grammar (`IMP-D047` PO-09).
+ * The Template SVG number grammar (`IMP-D047` PO-09, corrected by
+ * `APP3-W01B-C1`).
  *
- * Every numeric value in the policy passes through here, and the two halves are
- * deliberately separate: `parseSvgNumber` decides whether a *string* is a legal
- * number, and `formatSvgNumber` decides how a legal number is *written*. A
- * validator that also formatted would be free to accept something it could not
- * reproduce, and step 11's fixed point would be the thing that discovered it.
+ * The semantic domain is one finite IEEE-754 **binary64** value. A token is
+ * validated lexically, parsed, checked finite, normalized for `-0`, and then
+ * serialized to the *shortest decimal token that parses back to the identical
+ * binary64 value*. The round trip is **verified**, not assumed.
  *
- * Nothing here accepts a unit, a percentage, `calc()`, `NaN`, `Infinity` or
- * trailing garbage. The full input must be the number: a partial match is how a
- * value like `10px` or `1;alert(1)` becomes "10".
+ * The first delivery canonicalized to a fixed six-decimal budget. That was
+ * wrong, and quietly so: `1e-7` became `0`, a tiny `translate` collapsed to the
+ * identity, and a high-precision path lost its low-order digits — all while
+ * every test passed and the pipeline reached a fixed point, because rounding
+ * twice rounds to the same place. A Template that renders differently from the
+ * one an Admin approved is exactly what PO-05 refuses, and a budget makes that
+ * happen silently. Nothing here rounds, truncates, clamps or drops a digit.
+ *
+ * `Number.prototype.toString` is the shortest round-tripping decimal by
+ * specification, so it *is* the canonical form; the only spelling it produces
+ * that this policy does not want is the `+` in an exponent.
  */
-import { TEMPLATE_SVG_NUMBER_ABS_MAX, TEMPLATE_SVG_NUMBER_DECIMALS } from './template-svg-policy';
 
 /**
  * Base-10 with an optional exponent, and no other spelling.
  *
- * A leading `+` and an exponent are legal SVG source and are canonicalized away
- * on output; a leading `.` and a trailing `.` are legal SVG too. Hex, octal,
- * `Infinity` and `NaN` are not numbers this grammar can express at all, so they
- * fail on the pattern rather than on a later `isFinite` check.
+ * A leading `+` and an exponent are legal SVG source and are canonicalized on
+ * output; a leading `.` and a trailing `.` are legal SVG too. Hex, octal,
+ * numeric separators, `Infinity` and `NaN` are not numbers this grammar can
+ * express at all, so they fail on the pattern rather than on a later check —
+ * `Number()` accepts several of them, and the grammar is what decides.
  */
 const NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
 
-/** Parses one complete number, or `undefined` when the text is not one. */
+/** `-0` and `0` are the same coordinate; only one of them may be written. */
+export function normalizeNegativeZero(value: number): number {
+  return Object.is(value, -0) ? 0 : value;
+}
+
+/**
+ * Parses one complete number, or `undefined` when the text is not one.
+ *
+ * No magnitude ceiling: every finite binary64 is a value this policy accepts and
+ * can print. The first delivery capped magnitude only to keep
+ * `Number.prototype.toString` out of exponent notation, and `IMP-D047` allows
+ * lowercase exponent notation where canonical serialization needs it — so the
+ * cap bought nothing and could have rejected legitimate geometry.
+ */
 export function parseSvgNumber(text: string): number | undefined {
   if (!NUMBER_PATTERN.test(text)) return undefined;
   const value = Number(text);
   if (!Number.isFinite(value)) return undefined;
-  if (Math.abs(value) > TEMPLATE_SVG_NUMBER_ABS_MAX) return undefined;
-  return value;
+  return normalizeNegativeZero(value);
 }
 
 /**
- * The canonical spelling of a legal number.
+ * The canonical spelling of a finite value, or `undefined` if it does not
+ * round-trip.
  *
- * Fixed to the policy's decimal budget and then stripped of the zeros that
- * budget added, so `1`, `1.0`, `+1e0` and `1.0000000` all print as `1` — one
- * representation per value. `-0` prints as `0`: the two are the same coordinate
- * and printing both would make an accepted file's output depend on which one a
- * producer happened to emit.
+ * The threshold between plain decimal and exponent notation is
+ * `Number.prototype.toString`'s own — plain for `1e-6 ≤ |v| < 1e21`, exponent
+ * outside it — used consistently and nowhere overridden. Choosing a different
+ * threshold would mean re-implementing shortest-round-trip printing, which is
+ * the one thing here that must not be re-implemented.
+ *
+ * The `undefined` return is defence in depth: the specification guarantees the
+ * round trip, so a failure would mean the runtime is not the one this policy was
+ * written against, and refusing the file is the only safe answer.
  */
-export function formatSvgNumber(value: number): string {
-  if (Object.is(value, -0)) return '0';
-  const fixed = value.toFixed(TEMPLATE_SVG_NUMBER_DECIMALS);
-  const trimmed = fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed;
-  // `-0.0000001` rounds to `-0.000000`, whose trimmed form is `-0`.
-  return trimmed === '-0' || trimmed === '' ? '0' : trimmed;
+export function formatSvgNumber(value: number): string | undefined {
+  const normalized = normalizeNegativeZero(value);
+  // Lowercase `e` and no leading exponent zeros are already what the
+  // specification produces; only the exponent's `+` is removed.
+  const token = normalized.toString().replace('e+', 'e');
+  if (!NUMBER_PATTERN.test(token)) return undefined;
+  const reparsed = Number(token);
+  return Object.is(reparsed, normalized) ? token : undefined;
 }
 
 /** Parses and canonicalizes in one step, or `undefined` when illegal. */
@@ -83,6 +110,12 @@ export function parseNumberList(text: string): readonly number[] | undefined {
 }
 
 /** The canonical list form: single spaces, canonical members, no trailing space. */
-export function formatNumberList(values: readonly number[]): string {
-  return values.map(formatSvgNumber).join(' ');
+export function formatNumberList(values: readonly number[]): string | undefined {
+  const tokens: string[] = [];
+  for (const value of values) {
+    const token = formatSvgNumber(value);
+    if (token === undefined) return undefined;
+    tokens.push(token);
+  }
+  return tokens.join(' ');
 }

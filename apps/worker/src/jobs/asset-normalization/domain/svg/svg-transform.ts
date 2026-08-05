@@ -11,7 +11,7 @@
  * about *spelling* — one space between arguments, one canonical number per
  * argument, no separator variation.
  */
-import { formatSvgNumber, parseSvgNumber } from './svg-number';
+import { formatNumberList, parseSvgNumber } from './svg-number';
 
 /** The locked arities. A `translate` may take one argument or two, and no other count. */
 const ARITIES: Readonly<Record<string, readonly number[]>> = Object.freeze({
@@ -85,10 +85,14 @@ export function parseSvgTransformList(text: string): readonly SvgTransform[] | u
 }
 
 /** The canonical spelling: `name(a b c)`, single spaces, no separator variation. */
-export function formatSvgTransformList(transforms: readonly SvgTransform[]): string {
-  return transforms
-    .map((transform) => `${transform.name}(${transform.args.map(formatSvgNumber).join(' ')})`)
-    .join(' ');
+export function formatSvgTransformList(transforms: readonly SvgTransform[]): string | undefined {
+  const parts: string[] = [];
+  for (const transform of transforms) {
+    const args = formatNumberList(transform.args);
+    if (args === undefined) return undefined;
+    parts.push(`${transform.name}(${args})`);
+  }
+  return parts.join(' ');
 }
 
 /** Parses and canonicalizes in one step, or `undefined` when illegal. */

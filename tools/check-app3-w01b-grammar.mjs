@@ -48,6 +48,7 @@ export const CANONICAL_FILES = Object.freeze({
   outcome: `${JOB_DIR}/domain/normalization-outcome.ts`,
   policy: `${JOB_DIR}/domain/normalization-policy.ts`,
   module: `${JOB_DIR}/asset-normalization.module.ts`,
+  numberCorpus: `${SVG_DIR}/svg-number-edge.spec.ts`,
   rejectionCorpus: `${JOB_DIR}/application/template-svg-sanitizer.rejection.spec.ts`,
   acceptanceCorpus: `${JOB_DIR}/application/template-svg-sanitizer.acceptance.spec.ts`,
   integration: `${JOB_DIR}/tests/template-svg-normalization.integration.spec.ts`,
@@ -131,6 +132,82 @@ function checkAllowlists(rootDir, fail) {
   }
   if (!/!isTemplateSvgElementName\(name\)/.test(builder)) {
     fail('the builder does not apply the element allowlist');
+  }
+}
+
+/**
+ * 1b — numeric canonicalization is lossless (`APP3-W01B-C1`).
+ *
+ * The corrected defect: a fixed six-decimal budget turned `1e-7` into `0`, so a
+ * tiny transform collapsed to the identity and a high-precision path lost its
+ * low-order digits — silently, with every test green, and with the fixed point
+ * still reached because rounding a rounded value rounds to the same place.
+ *
+ * A fixed point after rounding proves the rounding is stable, never that the
+ * geometry survived. So the gate asserts the *semantic* property — the canonical
+ * token parses back to the identical binary64 value — and asserts the absence of
+ * every technique that could quietly reintroduce a budget.
+ */
+function checkNumericCanonicalization(rootDir, fail) {
+  const number = code(read(rootDir, 'number') ?? '');
+
+  for (const [pattern, complaint] of [
+    [/Object\.is\(value, -0\) \? 0 : value/, 'the -0 normalization'],
+    [/normalized\.toString\(\)\.replace\('e\+', 'e'\)/, 'shortest round-trip printing'],
+    [/Object\.is\(reparsed, normalized\)/, 'the verified round trip'],
+    [/Number\.isFinite\(value\)/, 'the finite check'],
+  ]) {
+    if (!pattern.test(number)) fail(`numeric canonicalization is missing ${complaint}`);
+  }
+
+  // No budget, anywhere in SVG production code. Checked across the whole SVG
+  // subtree rather than one file, because a second lossy serializer in the path
+  // or transform code is exactly what the correction removed.
+  for (const key of [
+    'number',
+    'paint',
+    'transform',
+    'values',
+    'builder',
+    'serializer',
+    'pathParser',
+    'pathSerializer',
+    'tokenizer',
+    'svgPolicy',
+  ]) {
+    const source = code(read(rootDir, key) ?? '');
+    for (const forbidden of [
+      'toFixed(',
+      'toPrecision(',
+      'toLocaleString(',
+      'NUMBER_DECIMALS',
+      'NUMBER_ABS_MAX',
+      'EPSILON',
+      'Math.trunc(',
+    ]) {
+      if (source.includes(forbidden)) {
+        fail(
+          `${CANONICAL_FILES[key]} uses "${forbidden}"; canonicalization must not round or clamp`,
+        );
+      }
+    }
+  }
+
+  // One authority: nothing may print a number except the shared formatter.
+  for (const key of ['transform', 'values', 'pathSerializer']) {
+    const source = code(read(rootDir, key) ?? '');
+    if (!/formatSvgNumber|formatNumberList/.test(source)) {
+      fail(`${CANONICAL_FILES[key]} does not use the shared numeric formatter`);
+    }
+  }
+  if (!/parseSvgNumber/.test(code(read(rootDir, 'paint') ?? ''))) {
+    fail('paint alpha does not go through the shared numeric parser');
+  }
+  // The design engine's quantization governs design documents, never SVG.
+  for (const key of ['number', 'values', 'pathSerializer']) {
+    if (/NUMERIC_SCALE|quantize/i.test(code(read(rootDir, key) ?? ''))) {
+      fail(`${CANONICAL_FILES[key]} applies design-document quantization to SVG geometry`);
+    }
   }
 }
 
@@ -251,8 +328,27 @@ function checkCorpus(rootDir, fail) {
     if (!acceptance.includes(needle)) fail(`the acceptance corpus does not assert ${complaint}`);
   }
 
+  const numbers = read(rootDir, 'numberCorpus') ?? '';
+  for (const [needle, complaint] of [
+    ['Number.MIN_VALUE', 'the smallest positive subnormal'],
+    ['Number.MAX_VALUE', 'the largest finite double'],
+    ['adjacent binary64 values distinct', 'adjacent-value separation'],
+    ['never collapses a tiny non-zero value to zero', 'tiny-value survival'],
+    ['recovers the identical value', 'round-trip identity'],
+    ['normalizes the negative zero', 'the -0 rule'],
+    ['normalizes the exponent', 'exponent normalization'],
+    ['arc flags exact', 'arc flags surviving the numeric change'],
+    ['paint alpha conversion', 'the alpha conversion boundary'],
+  ]) {
+    if (!numbers.includes(needle)) fail(`the numeric corpus does not cover ${complaint}`);
+  }
+  if (!acceptance.includes('numeric fidelity end to end')) {
+    fail('the acceptance corpus does not prove numeric fidelity in the stored bytes');
+  }
+
   for (const [needle, complaint] of [
     ['fresh host processes', 'fresh-process repetition'],
+    ['1.7976931348623157e308', 'the numeric edge corpus in the container run'],
     ["expect(report.node).toBe('v22.14.0')", 'the locked container Node'],
     [`expect(report.jsdom).toBe('${EXACT_PINS.jsdom}')`, 'the container jsdom pin'],
     ['byte-identical output on Alpine Linux', 'cross-platform byte identity'],
@@ -266,6 +362,7 @@ export function checkApp3W01bGrammar(rootDir = REPO_ROOT) {
   const fail = (message) => failures.push(message);
 
   checkAllowlists(rootDir, fail);
+  checkNumericCanonicalization(rootDir, fail);
   checkParsers(rootDir, fail);
   checkLimits(rootDir, fail);
   checkSourceForm(rootDir, fail);

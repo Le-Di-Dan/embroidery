@@ -2646,7 +2646,13 @@ explicit presentation attributes only.
 **PO-09 — value grammar.** All numbers are finite base-10 with no unit, no
 percentage, no `calc()`, no `NaN` and no `Infinity`, canonicalized so `-0`
 becomes `0`, with no leading `+`, no unnecessary zeros and one representation per
-value. Paints are `none`, `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`,
+value. **Clarified by `APP3-W01B-C1`:** "one representation per value" means the
+shortest decimal token that parses back to the identical IEEE-754 binary64
+value — never a fixed decimal precision budget. A budget rounds, and rounding a
+valid finite coordinate is a silent visual modification of an approved Template,
+which PO-05 forbids. Lowercase exponent notation with no `+` and no leading
+exponent zeros is the canonical form wherever shortest-round-trip printing needs
+it. Paints are `none`, `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`,
 `rgb(integer integer integer)` or `rgb(integer integer integer / alpha)`,
 canonicalized to lowercase `#rrggbb`, `#rrggbbaa` or `none`; named colours,
 `currentColor`, `hsl`, `lab`, `lch`, `color`, `device-cmyk`, `var` and `url` are
@@ -2828,6 +2834,65 @@ mirroring the three workspace packages already shipped. Recorded as
 `WORKER_IMAGE_DOMAIN_TYPES_COPY_RESTORED`; no Node image upgrade, no new stage
 and no other infrastructure change.
 
+## 6.19 `APP3-W01B-C1` — lossless SVG numeric canonicalization
+
+Human review accepted `APP3-W01B` except for one semantic defect: numbers were
+canonicalized to a **fixed six-decimal budget**. A budget rounds, and rounding a
+valid finite coordinate silently changes approved geometry — `1e-7` printed as
+`0`, so a tiny `translate` collapsed to the identity and a high-precision path
+lost its low-order digits. Nothing failed: the corpus passed and the pipeline
+reached its fixed point, because rounding a rounded value rounds to the same
+place. **A fixed point reached after rounding proves the rounding is stable, not
+that the geometry survived.**
+
+### 6.19.1 Corrected semantics
+
+The semantic domain is one finite IEEE-754 **binary64** value. A token is
+validated lexically, parsed, checked finite, normalized for `-0`, serialized to
+the shortest decimal token that parses back to the identical value, and the
+round trip is then **verified** rather than assumed.
+
+| Machine-checked numeric fact | Value |
+|---|---|
+| `Canonical form` | `SHORTEST_BINARY64_ROUND_TRIP` |
+| `Fixed precision budget` | `NONE` |
+| `Magnitude ceiling` | `NONE` |
+| `Negative zero` | `NORMALIZED_TO_POSITIVE_ZERO` |
+| `Exponent form` | `LOWERCASE_NO_PLUS_NO_LEADING_ZEROS` |
+| `Plain/exponent threshold` | `NUMBER_PROTOTYPE_TOSTRING` |
+| `Round-trip verification` | `ENFORCED_PER_TOKEN` |
+| `Numeric authorities` | `ONE` |
+| `Design-document quantization applied` | `NO` |
+
+Lexical rules: `-0 → 0`, no leading `+`, lowercase `e`, no `+` or leading zeros
+in the exponent, no unnecessary trailing fractional zeros, no trailing decimal
+point, no surrounding whitespace. The plain-decimal/exponent threshold is
+`Number.prototype.toString`'s own — plain for `1e-6 ≤ |v| < 1e21` — used
+consistently and nowhere overridden.
+
+The magnitude ceiling the first delivery carried existed **only** to keep
+canonical output out of exponent notation. `IMP-D047` permits lowercase exponent
+notation where canonical serialization needs it, so the ceiling bought nothing
+and could reject legitimate geometry; it is removed, and the smallest positive
+subnormal and the largest finite double now round-trip.
+
+### 6.19.2 One numeric authority
+
+`viewBox`, every geometry attribute, opacity, stroke and dash values, transform
+arguments, `points`, path parameters and colour-alpha input all pass through the
+same parser and the same formatter. No separate serializer remains in path or
+transform code. Arc flags stay exact `0`/`1`, validated **before** any general
+numeric canonicalization, and the integer-only `viewBox` width/height rule is
+unchanged.
+
+Paint output stays `none`, `#rrggbb`, `#rrggbbaa`. The alpha → 8-bit conversion
+is `round(alpha × 255)` with a half-up boundary, now a named function and
+explicitly tested at its half-steps.
+
+Nothing else changed: no sanitizer architecture, allowlist, limit, path command,
+output MIME, event, object protocol or database behaviour, and no dependency,
+Docker, API, schema, migration or delivery change.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -2848,7 +2913,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — EDITOR_SAFE_MEDIA_WORKER_DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — TEMPLATE_SVG_NORMALIZATION_CORRECTION_DELIVERED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -2903,9 +2968,12 @@ APP3-B01N = COMPLETE — REVIEW_ACCEPTED
 APP3-G07 = COMPLETE — REVIEW_ACCEPTED
 IMP-D047 = LOCKED
 TEMPLATE_SVG_SANITIZATION_POLICY_VERSION = 1
-APP3-W01B = COMPLETE — REVIEW_DELIVERED
+APP3-W01B = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
 APP3-W01B SANITIZER = DOMPURIFY_3.4.13_ON_JSDOM_29.1.1
 APP3-W01B DISCLOSED_DEVIATION = WORKER_IMAGE_DOMAIN_TYPES_COPY_RESTORED
+APP3-W01B-C1 = COMPLETE — REVIEW_DELIVERED
+APP3-W01B-C1 NUMERIC_CANONICAL_FORM = SHORTEST_BINARY64_ROUND_TRIP
+APP3-W01B-C1 FIXED_PRECISION_BUDGET = NONE
 APP3-B02 = READY_BY_APP3-W01A_AND_APP3-B01N BUT_BLOCKED_WHEN_PLATFORM_ZOD_OPENAPI_FOLLOW_UP_APPLIES
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = OPEN — FINAL_OWNER_APP3-B02
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = PROCESSING_AND_TRIGGER_FOUNDATION_READY
