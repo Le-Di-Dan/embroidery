@@ -534,13 +534,18 @@ describe('APP3-P03 — the phase records one of exactly two worlds', () => {
   it('accepts the undelivered world in full', () => {
     const failures = run(
       phaseWith(
-        ['APP3-P03 = COMPLETE — REVIEW_DELIVERED', 'APP3-P03 = READY — NOT STARTED'],
+        ['APP3-P03 = COMPLETE — REVIEW_ACCEPTED', 'APP3-P03 = READY — NOT STARTED'],
         [
           'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-P03',
           'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_SCHEMA_BACKED_HTTP_BODY_CHECKPOINTS',
         ],
         ['APP3-B03 = READY — NOT STARTED', 'APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP'],
-        ['APP3-B06 = READY — NOT STARTED', 'APP3-B06 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP'],
+        // `APP3-G08` replanned B06; the undelivered world is the one where the
+        // replanned checkpoint still records this follow-up as its blocker.
+        [
+          'APP3-B06 = REPLANNED — REPLACED_BY_APP3-B06A_AND_APP3-B06B',
+          'APP3-B06 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP',
+        ],
       ),
       // Only the phase half is exercised: the artifacts on disk are the
       // delivered ones, and the predecessors key their digests on the same line.
@@ -561,7 +566,7 @@ describe('APP3-P03 — the phase records one of exactly two worlds', () => {
 
   it('refuses the follow-up closed while the checkpoint is not recorded done', () => {
     const failures = run(
-      phaseWith(['APP3-P03 = COMPLETE — REVIEW_DELIVERED', 'APP3-P03 = IN PROGRESS']),
+      phaseWith(['APP3-P03 = COMPLETE — REVIEW_ACCEPTED', 'APP3-P03 = IN PROGRESS']),
     );
     assert.ok(mentions(failures, 'is not delivered'), failures.join('\n'));
   });

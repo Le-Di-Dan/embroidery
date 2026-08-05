@@ -60,6 +60,13 @@ Required patterns or equivalent outcomes:
 - No overwrite of approved design.
 - Safe inventory reservation and release.
 - Recoverable background jobs.
+- Asynchronous work that depends on an earlier stage completing must **wait and
+  converge**, never record a terminal verdict on a stage that has not finished
+  yet. Where two jobs for one asset can become visible together — as an
+  anonymous Session upload's inspection and normalization do — the dependent job
+  treats the not-yet-ready state as retryable under the existing lease, backoff
+  and dead-letter policy, and stays terminal only for outcomes that cannot
+  change (`IMP-D048` PO-08). Ordering is never inferred from insertion time.
 
 ## 5. Data integrity
 

@@ -183,7 +183,7 @@ or be collapsed into the other or into the API.
 | 17 | `APP3-A03` | frontend | Admin template editor | 1 screen | B03, D01, P01, P02 | no | yes | `spike:editor:test` |
 | 18 | `APP3-A04` | frontend | Admin template publication interaction | 1 screen | B04, D01 | no | yes | no |
 | 19 | `APP3-W01` | worker | editor-safe derivative + customer-upload inspection lane | 0 HTTP | G04, `DB-DISPOSITION-RESOLVED` | no | no | no |
-| 20 | `APP3-B06` | backend | session-scoped customer asset intake + granted delivery | 2 | G04, W01 | no | no | no |
+| 20 | `APP3-B06` | backend | session-scoped customer asset intake + granted delivery — **replanned by `APP3-G08` into `APP3-B06A` + `APP3-B06B`; see §6.22, and read the 2-operation scope below as superseded planning input** | 2 | G04, W01 | no | no | no |
 | 21 | `APP3-B07` | backend | session bootstrap (blank + clone) and resume | 2 | G03, P01, **P02**, B01 | no | no | no |
 | 22 | `APP3-B08` | backend | session autosave with `autosave_revision` CAS | 1 | B07, **P02** (out-of-bounds rejection) | no | no | no |
 | 23 | `APP3-S01` | frontend | Studio bootstrap shell + product/template selection | 1 capability | B07, B05, D01 | no | yes | no |
@@ -3066,6 +3066,114 @@ As in §6.20.6, the status token itself is deliberately not quoted in this prose
 a gate that keys on a status line must not be satisfiable by a paragraph
 describing it.
 
+## 6.22 `APP3-G08` — Session upload architecture and authorization staging authority
+
+`APP3-B06` stopped at `BLOCKED — ENTRY_ARCHITECTURE_PRESUPPOSITION_ABSENT`
+having written nothing and committed nothing. The prompt it was given described a
+two-operation upload lane — an upload-intent that hands the browser an upload
+target, then a completion that verifies the provider's object — and the
+repository has no such architecture and, under the accepted boundary, cannot
+acquire one. `APP3-G08` supplies the authority, locked as **`IMP-D048`**. It is a
+Product Owner / application-architecture gate: it implements no API, worker,
+package, schema or dependency.
+
+### 6.22.1 Measured cause of the stop
+
+| Machine-checked upload-architecture fact | Value |
+|---|---|
+| `Server upload-intent operation` | `NONE` |
+| `Upload-completion proof operation` | `NONE` |
+| `ObjectStoragePort presign method` | `NONE` |
+| `ObjectStoragePort method count` | `6` |
+| `Delivered APP2 upload architecture` | `API_OWNED_MULTIPART_STREAMING` |
+| `Delivered upload durable steps` | `TX_A_UPLOADED_THEN_TX_B_INSPECTING` |
+| `Admin upload-intent module` | `BROWSER_STATE_MACHINE_ONLY` |
+| `Session cookie verifier in API` | `NONE` |
+| `DesignModule in AppModule` | `ABSENT` |
+| `Session association writer result` | `VOID` |
+| `Session asset lane` | `CUSTOMER_UPLOAD + CUSTOMER_PRIVATE` |
+| `Session asset lane migration` | `NONE` |
+| `Session bootstrap owner` | `APP3-B07` |
+| `Normalization required asset status` | `ACCEPTED` |
+| `Normalization verdict while INSPECTING` | `TERMINAL_NON_RETRYABLE` |
+
+The three upload facts are one fact seen three times. `ObjectStoragePort` has
+exactly six methods and says why it has no seventh: a presign capability would
+create a delivery path that bypasses the publication check
+(`ADR-APP2-001` §4.7/§4.8). The package is read-only to this phase, so the
+intent operation could not return an upload target, the completion operation had
+no provider proof to verify, and the two JSON bodies the plan required could only
+exist if the bytes travelled out of band — which is the presign lane again. The
+refusal was correct: the alternative was to invent a public anonymous upload
+surface and call it a reuse.
+
+### 6.22.2 The architecture that is selected
+
+`IMP-D048` PO-01 keeps the delivered lane. One API-owned multipart operation
+receives the bytes, streams them to private storage, and commits. This is not a
+compromise for want of a better option — it is the architecture whose security
+properties the phase already depends on, and the one whose Tx A / Tx B boundary
+`APP3-W01A` was built against.
+
+### 6.22.3 Why bootstrap is not reassigned
+
+The directive offered `APP3-B06A` as a bounded home for one anonymous Session
+bootstrap operation, conditional on no accepted checkpoint already owning it.
+One does: `APP3-B07` is `session bootstrap (blank + clone) and resume`, two
+operations, and it owns setting the per-session cookie. Assigning bootstrap to
+B06A would have created a second issuer of the same credential. B06A therefore
+owns the reusable *verifier* and nothing that mints a secret, and `APP3-B06B`
+carries an explicit runtime dependency on `APP3-B07`.
+
+### 6.22.4 The ordering defect, and why it needs its own owner
+
+`APP3-B06`'s audit asked whether inspection is guaranteed to finish before
+normalization is claimable. Measured against the accepted worker, it is not — and
+the fallback is worse than a race. `AssociationResolutionService` admits only an
+`ACCEPTED` Asset and treats anything else as
+`NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE`, which is a **terminal** verdict the
+use case records before completing; the source comment is explicit that an Asset
+still `INSPECTING` is "a stale context, not something to wait for".
+
+B06B would commit both events in one transaction, so they become visible
+together. Neither admissible mechanism holds: nothing orders the two claims, and
+a not-yet-`ACCEPTED` Asset is killed rather than retried. Every session upload
+that lost the race would silently end with no normalized derivative and no
+retry.
+
+This never surfaced in `APP3-B01N` because a Product Side background associates
+an Asset whose inspection completed long before — association and inspection are
+far apart there and simultaneous here. `IMP-D048` PO-08 therefore routes
+**`APP3-W01C`** ahead of B06B: a not-yet-inspected Asset under a
+`DESIGN_SESSION_ASSET` reference becomes retryable and converges under the
+existing lease, backoff and dead-letter policy, while `REJECTED`, deleted and
+missing Assets stay terminal. No polling, cron, second event or blind
+normalization is admissible as a substitute.
+
+### 6.22.5 Dependency reconciliation
+
+| Checkpoint | Portion | Status after `APP3-G08` |
+|---|---|---|
+| `APP3-G08` | whole checkpoint | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-B06` | first attempt, post-G08 | `BLOCKED — ENTRY_ARCHITECTURE_PRESUPPOSITION_ABSENT` |
+| `APP3-B06` | disposition, post-G08 | `REPLANNED — REPLACED_BY_APP3-B06A_AND_APP3-B06B` |
+| `APP3-B06A` | whole checkpoint, post-G08 | `BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE` |
+| `APP3-W01C` | whole checkpoint, post-G08 | `BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE` |
+| `APP3-B06B` | whole checkpoint, post-G08 | `BLOCKED_BY_APP3-B06A_APP3-W01C_AND_APP3-B07` |
+| `APP3-B07` | whole checkpoint, post-G08 | `READY — NOT STARTED` |
+| `APP3-B03` | whole checkpoint, post-G08 | `READY — NOT STARTED` |
+| `APP3-S06` | whole checkpoint, post-G08 | `BLOCKED_BY_APP3-B06B_AND_APP3-D01` |
+| `APP3-P03` | whole checkpoint, post-G08 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-W01A` | whole checkpoint, post-G08 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-W01B` | whole checkpoint, post-G08 | `COMPLETE — REVIEW_ACCEPTED` |
+
+`APP3-B06A` and `APP3-W01C` become `READY — NOT STARTED` on human acceptance of
+G08; they are independent and the execution recommendation is `APP3-B06A` first,
+since `APP3-W01C` is the smaller change and can land while B06A is in review.
+
+`APP3-G08` implements nothing: no API, worker, package, schema, migration,
+OpenAPI, generated client, dependency, infrastructure or Figma change.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -3086,7 +3194,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — ZOD_OPENAPI_METADATA_FOUNDATION_DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — SESSION_UPLOAD_ARCHITECTURE_REPLANNED_FOR_REVIEW
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -3125,11 +3233,8 @@ APP3-B07 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-B08 = READY_BY_P01_AND_P02 — NOT STARTED
 APP3-S11 = FOUNDATION_READY_BY_P01_AND_P02 — NOT STARTED
 APP3-B03 = READY — NOT STARTED
-APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06
+APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06B
 APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04
-APP3-B06 = READY — NOT STARTED
-APP3-B07 = BLOCKED_BY_APP3-P02
-APP3-B08 = BLOCKED_BY_APP3-P02
 APP3-G06 = COMPLETE — REVIEW_ACCEPTED
 IMP-D046 = LOCKED
 APP3-W01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
@@ -3151,7 +3256,7 @@ APP3-B02 = COMPLETE — REVIEW_ACCEPTED
 APP3-B02 OPERATION = publicProductSideBackground_get
 APP3-B02 DISCLOSED_DEVIATION = PREDECESSOR_GATES_MADE_MODE_AWARE_ON_B02
 APPROVED_BOUNDED_TOOLING_SIZE_DEVIATION = B02_PREDECESSOR_GATE_AND_TEST_FILES
-APP3-P03 = COMPLETE — REVIEW_DELIVERED
+APP3-P03 = COMPLETE — REVIEW_ACCEPTED
 APP3-P03 MAPPING_STRATEGY = ZOD_OFFICIAL_TO_JSON_SCHEMA_EXPORTER
 APP3-P03 UNSUPPORTED_NODE_BEHAVIOR = GENERATION_FAILS_LOUDLY
 APP3-P03 NEW_DEPENDENCY = NONE
@@ -3162,6 +3267,23 @@ APPLICATION_FILE_LIMITS = UNCHANGED_400_SOURCE_600_TEST
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 = COMPLETE — CLOSED_BY_APP3-B02
 FU-APP2-PUBLIC-MEDIA-DIMENSIONS-01 STATE = SIDE_BACKGROUND_QUARTET_AND_DELIVERY_PATH_PUBLISHED
 FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-P03
+FU-PLATFORM-ZOD-DTO-OPENAPI-PARAMETERS-01 = OPEN — NONBLOCKING_EXISTING_SURFACE_CLEANUP
+APP3-B06 FIRST_ATTEMPT = BLOCKED — ENTRY_ARCHITECTURE_PRESUPPOSITION_ABSENT
+APP3-B06 FIRST_ATTEMPT CAUSE = SESSION_UPLOAD_INTENT_ARCHITECTURE_DOES_NOT_EXIST
+APP3-B06 FIRST_ATTEMPT RESOLUTION = APP3-G08
+APP3-G08 = COMPLETE — REVIEW_DELIVERED
+IMP-D048 = LOCKED
+APP3-B06 = REPLANNED — REPLACED_BY_APP3-B06A_AND_APP3-B06B
+SESSION_UPLOAD_ARCHITECTURE = API_OWNED_MULTIPART_STREAMING
+SESSION_UPLOAD_PRESIGN = NONE
+SESSION_BOOTSTRAP_OWNER = APP3-B07
+APP3-B06A = BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE
+APP3-W01C = BLOCKED_BY_APP3-G08_REVIEW_ACCEPTANCE
+APP3-B06B = BLOCKED_BY_APP3-B06A_APP3-W01C_AND_APP3-B07
+APP3-B06B OPERATION = publicDesignSessionAsset_upload
+APP3-B06B EXPECTED_SURFACE = PATHS_20_OPERATIONS_24
+INSPECTION_NORMALIZATION_ORDERING = NOT_PROVABLE_ROUTED_TO_APP3-W01C
+APP3-G08 DISCLOSED_DEVIATION = STALE_DUPLICATE_B07_B08_STATUS_LINES_REMOVED
 FU-APP3-G02-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-G04
 FU-APP3-G03-QUALITY-AGGREGATE-01 = DEFERRED — REGRESSION_ACTIVITY_ONLY
 FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-DB01

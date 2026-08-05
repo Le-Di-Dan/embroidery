@@ -111,6 +111,19 @@ one event appended in that same transaction. Uploading an asset never makes it
 Studio-eligible on its own, and the worker re-derives the processing profile from
 the association at claim time rather than trusting anything in the message.
 
+**Anonymous Session uploads are API-owned and streamed** (`IMP-D048`,
+`APP3-G08`). A customer's Design Session upload reaches storage only by
+streaming through the API, which authorizes the Session, validates the bounded
+upload and writes the private object itself. The browser is never given a
+storage endpoint, a presigned URL, a storage credential or an upload token, and
+`ObjectStoragePort` exposes no presign operation — a presign capability would
+create a delivery path that bypasses the publication check. There is no
+upload-intent/completion pair and no second upload-token architecture: one
+multipart operation carries the whole lane, under the same streaming byte
+enforcement, media allowlist and private-object rules as Admin intake, with a
+**10 MiB** source limit and `image/jpeg`, `image/png`, `image/webp` only. The
+uploaded original stays private and is never delivered by a generic route.
+
 ## 5. Asset access
 
 - Private assets require authorization.

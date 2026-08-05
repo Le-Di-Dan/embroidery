@@ -212,7 +212,15 @@ function checkPhaseStatus(rootDir, fail) {
   const blocked =
     /APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP/.test(phase) ||
     /APP3-B06 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP/.test(phase);
-  const ready = /APP3-B03 = READY — NOT STARTED/.test(phase) && /APP3-B06 = READY/.test(phase);
+  // `APP3-B06` may be READY, or replanned into successors that are themselves
+  // recorded — `APP3-G08` replaced it with B06A/B06B. What P03 must never leave
+  // behind is a B06 still waiting on *this* follow-up, which `blocked` covers.
+  const b06Unblocked =
+    /APP3-B06 = READY/.test(phase) ||
+    (/APP3-B06 = REPLANNED — REPLACED_BY_APP3-B06A_AND_APP3-B06B/.test(phase) &&
+      /APP3-B06A = /.test(phase) &&
+      /APP3-B06B = /.test(phase));
+  const ready = /APP3-B03 = READY — NOT STARTED/.test(phase) && b06Unblocked;
 
   if (delivered) {
     if (!closed) fail('APP3-P03 is delivered but the platform follow-up is not closed by it');
