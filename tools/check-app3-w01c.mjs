@@ -2,18 +2,13 @@
 /**
  * `APP3-W01C` — retry Session normalization while inspection is in progress.
  *
- * One worker semantic changed, and the gate exists because the change is easy to
- * widen by accident. Making *any* not-yet-`ACCEPTED` Asset retryable would look
- * like a one-word simplification and would turn a rejected file into an infinite
- * retry; making it retryable for every profile would do the same to a retired
- * Product Side. So the narrowing is asserted from both ends: the session lane
- * waits only on the proven transient state, and every other profile and every
- * other state keeps the terminal verdict it had.
- *
- * The second thing it protects is *where* the refusal happens. The retry is
- * raised while resolving the association — before the derivative claim — which
- * is the only reason a waiting attempt leaves no `PROCESSING` row behind. Move
- * the check below the claim and every retry would strand one.
+ * The gate exists because the one changed semantic is easy to widen by accident.
+ * Making *any* not-yet-`ACCEPTED` Asset retryable reads as a one-word
+ * simplification and turns a rejected file into an infinite retry; widening it
+ * past the session lane does the same to a retired Product Side. So the
+ * narrowing is asserted from both ends. It also protects *where* the refusal
+ * happens: before the derivative claim, which is the only reason a waiting
+ * attempt strands no `PROCESSING` row.
  *
  * Read-only, cross-platform pure Node.
  * Usage: node tools/check-app3-w01c.mjs [rootDir]
@@ -92,12 +87,10 @@ function checkAuthority(rootDir, fail) {
 }
 
 /**
- * 2 — the transient set is exactly the one proven state.
- *
- * `UPLOADED` is the one worth naming: it looks like an obvious sibling of
- * `INSPECTING` and it cannot occur, because the producer appends the event in
- * the transaction that leaves it. Admitting it would convert a real defect into
- * a silent retry loop.
+ * 2 — the transient set is exactly the one proven state. `UPLOADED` looks like
+ * an obvious sibling of `INSPECTING` and cannot occur, because the producer
+ * appends the event in the transaction that leaves it; admitting it would turn
+ * a real defect into a silent retry loop.
  */
 function checkTransientSet(rootDir, fail) {
   const pending = read(rootDir, 'pending');
@@ -141,10 +134,9 @@ function checkRetrySignal(rootDir, fail) {
     fail(`${CANONICAL_FILES.errors}: the existing attempt-cap disposition is gone`);
   }
 
-  // The message is read live by an operator and only the class is persisted, so
-  // no identity may appear in it. The whole factory body is inspected rather
-  // than a quoted literal: a template string would slip past a `'...'` match
-  // precisely because it is the interpolating form.
+  // Only the class is persisted and the message is read live, so no identity may
+  // appear. The whole factory body is scanned, not a quoted literal: a template
+  // string would slip past a `'...'` match precisely by being the interpolating form.
   const factory = /export function inspectionPendingFailure\(\)[\s\S]*?\n\}/.exec(code(pending));
   if (factory === null) {
     fail(`${CANONICAL_FILES.pending}: the retry factory could not be located`);
@@ -396,12 +388,13 @@ function checkLedger(rootDir, fail) {
 
 /** 11 — the accepted predecessors still pass. */
 function checkPredecessors(rootDir, fail) {
-  for (const [label, run] of [
-    ['APP3-G08', checkApp3G08],
-    ['APP3-W01A', checkApp3W01A],
-    ['APP3-W01B', checkApp3W01B],
-    ['APP3-G06', checkApp3G06],
-  ]) {
+  const chain = {
+    'APP3-G08': checkApp3G08,
+    'APP3-W01A': checkApp3W01A,
+    'APP3-W01B': checkApp3W01B,
+    'APP3-G06': checkApp3G06,
+  };
+  for (const [label, run] of Object.entries(chain)) {
     const result = run(rootDir);
     for (const violation of Array.isArray(result) ? result : (result.failures ?? [])) {
       fail(`${label} regression: ${violation}`);
