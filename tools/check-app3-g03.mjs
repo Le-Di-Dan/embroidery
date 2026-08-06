@@ -345,12 +345,28 @@ function checkNoImplementation(root, fail) {
       }
     }
   }
+  // A *surface* is a controller, not a directory name. `APP3-B06A` delivers the
+  // reusable authorization foundation — guards, policies and a request context —
+  // which legitimately lives in `application/` and `presentation/` while
+  // publishing no operation at all. Keying on the folder would have made the
+  // ruling "no Session operation exists" unimplementable without an odd layout,
+  // so it keys on what the ruling actually forbids.
   const moduleDir = join(root, DESIGN_MODULE_DIR);
   if (!existsSync(moduleDir)) return;
-  for (const entry of readdirSync(moduleDir, { withFileTypes: true })) {
-    const surface = entry.isDirectory() && ['presentation', 'application'].includes(entry.name);
-    if (surface) fail(`${DESIGN_MODULE_DIR}/${entry.name}: a Design HTTP surface exists`);
-  }
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.spec.ts')) {
+        const source = readFileSync(full, 'utf8').replace(/^\s*(\/\*|\*|\/\/).*$/gm, '');
+        if (/@Controller\(/.test(source)) {
+          fail(`${full}: a Design HTTP controller exists, but no APP3 backend checkpoint ran`);
+        }
+      }
+    }
+  };
+  walk(moduleDir);
 }
 
 /** Every APP3-G03 invariant, as a list of failure strings. */

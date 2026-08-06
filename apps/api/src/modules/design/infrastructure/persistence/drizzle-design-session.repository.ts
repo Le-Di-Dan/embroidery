@@ -10,6 +10,7 @@ import { and, eq, gt } from 'drizzle-orm';
 import { PLACEMENT_HIERARCHY_PORT } from '../../../catalog/domain/repositories/placement-hierarchy.port';
 import type { PlacementHierarchyPort } from '../../../catalog/domain/repositories/placement-hierarchy.port';
 import type {
+  AdvanceRevisionInput,
   CloneFromTemplateInput,
   DesignSession,
   DesignSessionId,
@@ -173,6 +174,55 @@ export class DrizzleDesignSessionRepository
       }
       throw guardViolationError(
         'DesignSessionRepository.saveDocument',
+        'STALE_WRITE',
+        'This session was modified since you last loaded it.',
+      );
+    });
+  }
+
+  async advanceRevision(input: AdvanceRevisionInput): Promise<DesignSession> {
+    return this.run('advanceRevision', async () => {
+      this.requireTransaction('advanceRevision');
+
+      // The same predicate set as `saveDocument`, without the document: ACTIVE,
+      // unexpired and at the expected revision. A stale caller matches zero rows
+      // and mutates nothing, so the CAS is the guard rather than a read-then-
+      // write that a concurrent writer could slip between.
+      const [row] = await this.db
+        .update(designSessions)
+        .set({
+          autosaveRevision: input.expectedRevision + 1,
+          lastActivityAt: input.at,
+          updatedAt: input.at,
+        })
+        .where(
+          and(
+            eq(designSessions.id, input.id),
+            eq(designSessions.status, 'ACTIVE'),
+            eq(designSessions.autosaveRevision, input.expectedRevision),
+            gt(designSessions.expiresAt, input.at),
+          ),
+        )
+        .returning();
+
+      if (row !== undefined) {
+        return toSession(row);
+      }
+
+      const [current] = await this.db
+        .select({ id: designSessions.id })
+        .from(designSessions)
+        .where(eq(designSessions.id, input.id))
+        .limit(1);
+
+      if (current === undefined) {
+        throw notFoundError(
+          'DesignSessionRepository.advanceRevision',
+          'That session does not exist.',
+        );
+      }
+      throw guardViolationError(
+        'DesignSessionRepository.advanceRevision',
         'STALE_WRITE',
         'This session was modified since you last loaded it.',
       );

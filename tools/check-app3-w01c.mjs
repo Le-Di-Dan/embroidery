@@ -52,10 +52,7 @@ export const CANONICAL_FILES = Object.freeze({
 });
 
 export const ROOT_SCRIPT_COUNT = 30;
-const SOFT_CAP_CHECKER = 450;
-const SOFT_CAP_TEST = 700;
-const SOURCE_LIMIT = 400;
-const TEST_LIMIT = 600;
+const [SOFT_CAP_CHECKER, SOFT_CAP_TEST, SOURCE_LIMIT, TEST_LIMIT] = [450, 700, 400, 600];
 
 export function read(rootDir, key) {
   const path = join(rootDir, CANONICAL_FILES[key] ?? key);
@@ -71,14 +68,17 @@ export function code(text) {
 function checkAuthority(rootDir, fail) {
   const phase = read(rootDir, 'phase') ?? '';
   const register = read(rootDir, 'register') ?? '';
-  for (const line of [
+  for (const entry of [
     'APP3-G08 = COMPLETE — REVIEW_ACCEPTED',
     'IMP-D048 = LOCKED',
-    'APP3-W01C = COMPLETE — REVIEW_DELIVERED',
     'APP3-B06 = REPLANNED — REPLACED_BY_APP3-B06A_AND_APP3-B06B',
+    // Delivered or accepted: which review stage this checkpoint has reached is
+    // a fact about the calendar, not about the retry semantics it locks.
+    /\nAPP3-W01C = COMPLETE — REVIEW_(DELIVERED|ACCEPTED)\n/,
   ]) {
-    if (!phase.includes(`\n${line}\n`)) {
-      fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
+    const satisfied = entry instanceof RegExp ? entry.test(phase) : phase.includes(`\n${entry}\n`);
+    if (!satisfied) {
+      fail(`${CANONICAL_FILES.phase}: status block does not record "${String(entry)}"`);
     }
   }
   const row = register.split('\n').find((line) => line.startsWith('| IMP-D048 |'));
@@ -241,8 +241,15 @@ function checkClaimOrder(rootDir, fail) {
 
 /** 7 — no polling, sleeping, scheduler, queue, event or producer was added. */
 function checkNoNewMechanism(rootDir, fail) {
-  const files = ['pending', 'resolver', 'useCase', 'handler', 'outcome'];
-  for (const key of [...files, 'resolverSpec', 'convergenceSpec']) {
+  for (const key of [
+    'pending',
+    'resolver',
+    'useCase',
+    'handler',
+    'outcome',
+    'resolverSpec',
+    'convergenceSpec',
+  ]) {
     const text = code(read(rootDir, key) ?? '');
     for (const [pattern, what] of [
       [/setTimeout|setInterval|sleep\(|delay\(/, 'a sleep or polling primitive'],

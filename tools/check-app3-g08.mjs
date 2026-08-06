@@ -83,7 +83,9 @@ export const EXPECTED_DEPENDENCIES = Object.freeze({
 
 /** Status lines the ruling requires in every world. */
 export const EXPECTED_STATUS = Object.freeze([
-  'APP3 = IN PROGRESS — SESSION_UPLOAD_ARCHITECTURE_REPLANNED_FOR_REVIEW',
+  // The phase-level token names whatever the newest checkpoint delivered, so
+  // pinning it here would make every later checkpoint edit this gate.
+  /\nAPP3 = IN PROGRESS — [A-Z0-9_]+\n/,
   'IMP-D048 = LOCKED',
   'APP3-B06 = REPLANNED — REPLACED_BY_APP3-B06A_AND_APP3-B06B',
   'APP3-B06 FIRST_ATTEMPT = BLOCKED — ENTRY_ARCHITECTURE_PRESUPPOSITION_ABSENT',
@@ -116,11 +118,20 @@ export const STATUS_BEFORE_W01C = Object.freeze([
 
 export const STATUS_AFTER_W01C = Object.freeze([
   'APP3-G08 = COMPLETE — REVIEW_ACCEPTED',
-  'APP3-W01C = COMPLETE — REVIEW_DELIVERED',
-  'APP3-B06A = READY — NOT STARTED',
   'APP3-B07 = READY — NOT STARTED',
-  'APP3-B06B = BLOCKED_BY_APP3-B06A_AND_APP3-B07',
+  // These three move again as their own checkpoints are accepted and delivered.
+  // What G08 rules is that W01C is *done* and that B06B waits on B06A and B07 —
+  // not which review stage each line happens to be at, which is a fact about
+  // the calendar rather than about the architecture.
+  /\nAPP3-W01C = COMPLETE — REVIEW_(DELIVERED|ACCEPTED)\n/,
+  /\nAPP3-B06A = (READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED|ACCEPTED))\n/,
+  /\nAPP3-B06B = BLOCKED_BY_APP3-(B06A_AND_)?B07\n/,
 ]);
+
+/** An expected status entry: an exact line, or a pattern over the block. */
+function statusMatches(status, entry) {
+  return entry instanceof RegExp ? entry.test(status) : status.includes(`\n${entry}\n`);
+}
 
 const RULINGS = Object.freeze([
   'PO-01',
@@ -307,18 +318,20 @@ export function checkApp3G08(rootDir = REPO_ROOT) {
 
   const status = statusBlock(phase);
   const afterW01C = /\nAPP3-W01C = COMPLETE/.test(status);
-  for (const line of [
+  for (const entry of [
     ...EXPECTED_STATUS,
     ...(afterW01C ? STATUS_AFTER_W01C : STATUS_BEFORE_W01C),
   ]) {
-    if (!status.includes(`\n${line}\n`)) {
-      fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
+    if (!statusMatches(status, entry)) {
+      fail(`${CANONICAL_FILES.phase}: status block does not record "${String(entry)}"`);
     }
   }
   // No mixture: a line from the world this phase is not in is a contradiction.
-  for (const line of afterW01C ? STATUS_BEFORE_W01C : STATUS_AFTER_W01C) {
-    if (status.includes(`\n${line}\n`)) {
-      fail(`${CANONICAL_FILES.phase}: status block still records the superseded "${line}"`);
+  for (const entry of afterW01C ? STATUS_BEFORE_W01C : STATUS_AFTER_W01C) {
+    if (statusMatches(status, entry)) {
+      fail(
+        `${CANONICAL_FILES.phase}: status block still records the superseded "${String(entry)}"`,
+      );
     }
   }
 

@@ -75,6 +75,13 @@ export interface SaveDocumentInput {
   readonly expectedRevision: number;
 }
 
+export interface AdvanceRevisionInput {
+  readonly id: DesignSessionId;
+  /** The revision the caller last read; must match the stored one exactly. */
+  readonly expectedRevision: number;
+  readonly at: Date;
+}
+
 export const DESIGN_SESSION_REPOSITORY = Symbol('DESIGN_SESSION_REPOSITORY');
 
 export interface DesignSessionRepository {
@@ -106,6 +113,24 @@ export interface DesignSessionRepository {
    * @requiresTransaction
    */
   saveDocument(input: SaveDocumentInput): Promise<DesignSession>;
+
+  /**
+   * The reusable concurrency seam for a Session mutation that is not an
+   * autosave (`APP3-B06A`, `IMP-D043` PO-08).
+   *
+   * Exactly the `saveDocument` contract without the document: the session must
+   * be ACTIVE, unexpired and at `expectedRevision`, and the revision advances by
+   * **one**. `APP3-B07` and `APP3-B06B` call this inside their own business
+   * transaction so a stale write conflicts instead of overwriting a newer one,
+   * and so the revision cannot advance twice for one logical change.
+   *
+   * Throws `STALE_WRITE` on a revision, status or expiry mismatch and
+   * `NOT_FOUND` when no such session exists — the same two verdicts
+   * `saveDocument` raises, so callers need one mapping rather than two.
+   *
+   * @requiresTransaction
+   */
+  advanceRevision(input: AdvanceRevisionInput): Promise<DesignSession>;
 
   /** Associates an uploaded asset with the session. @requiresTransaction */
   attachAsset(id: DesignSessionId, assetId: string): Promise<void>;
