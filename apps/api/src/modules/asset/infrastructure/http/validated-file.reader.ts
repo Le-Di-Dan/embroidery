@@ -38,6 +38,12 @@ export interface ConsumeFileInput {
   /** Absent for the hash-only replay path — then nothing is written anywhere. */
   readonly sink?: Writable | undefined;
   readonly signal: AbortSignal;
+  /**
+   * The lane's authoritative byte ceiling. Defaults to the APP2 Admin limit so
+   * every existing caller keeps the value it was compiled against; the anonymous
+   * Session lane passes its own, smaller one (`IMP-D048` PO-05).
+   */
+  readonly maxBytes?: number | undefined;
 }
 
 /** Honours backpressure so a slow object-store upload cannot balloon memory. */
@@ -55,6 +61,7 @@ function abortError(signal: AbortSignal): AssetIntakeError {
 
 export async function consumeValidatedFile(input: ConsumeFileInput): Promise<ConsumedFile> {
   const { source, declaredMediaType, sink, signal } = input;
+  const maxBytes = input.maxBytes ?? MAX_UPLOAD_BYTES;
   const hash = createHash('sha256');
 
   let byteSize = 0;
@@ -92,7 +99,7 @@ export async function consumeValidatedFile(input: ConsumeFileInput): Promise<Con
       // Checked before anything else touches the chunk: the moment the counter
       // passes the limit the request is over, and no further byte may be
       // hashed, buffered or forwarded to storage.
-      if (byteSize > MAX_UPLOAD_BYTES) {
+      if (byteSize > maxBytes) {
         throw assetIntakeError('ASSET_UPLOAD_TOO_LARGE');
       }
       hash.update(chunk);

@@ -25,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 
 import { sectionBody, tableRows } from './check-app3-g02.mjs';
 import { checkApp3G04 } from './check-app3-g04.mjs';
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedSessionPaths } from './app3-accepted-surface.mjs';
 import { checkPlacementAuthority } from './check-app3-db01-placement.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -328,10 +328,8 @@ function checkNoImplementation(root, phase, fail) {
   const allowed = [
     ...(delivered ? B01_PATHS : []),
     ...(b02Delivered(phase) ? [B02_DELIVERY_PATH] : []),
-    // `APP3-B07`'s two Session operations belong to a delivered checkpoint.
-    ...(acceptedSurface(root).designSessionRoutes
-      ? ['/api/public/design-sessions', '/api/public/design-sessions/{sessionId}/resume']
-      : []),
+    // Session operations belonging to whichever checkpoints have delivered.
+    ...acceptedSessionPaths(root),
   ];
   const paths = Object.keys(JSON.parse(raw).paths ?? {});
   for (const path of paths.filter((p) => APP3_OPERATION_RE.test(p) && !allowed.includes(p))) {

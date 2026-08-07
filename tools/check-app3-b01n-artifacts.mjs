@@ -14,6 +14,8 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { isB06BDelivered } from './app3-accepted-surface.mjs';
+
 /**
  * The published surface, frozen **per world** (`APP3-B01-C1`, extended by
  * `APP3-B02`).
@@ -43,6 +45,12 @@ const OPENAPI_SHA256_AFTER_B07 = '6da98f6fc4ef67efeffa97321903b47aaf0698d9b7f635
 const CLIENT_TREE_SHA256_AFTER_B07 =
   '9130056543917dda7c3967b8d42ee6630ee3d1e9e1c3140e27aa6d93c1cd6db4';
 const OPENAPI_FACTS_AFTER_B07 = Object.freeze({ paths: 21, operations: 25, schemas: 48 });
+/** `APP3-B06B` — one more Session operation: the anonymous raster intake. */
+const OPENAPI_SHA256_AFTER_B06B =
+  'c366677db8b38c59128739b8b6d560de049ed5510dd01cacd1c6c8cd73595cdd';
+const CLIENT_TREE_SHA256_AFTER_B06B =
+  '6cb189bbdff720920bf10dad4d3520dd962ff8dbd6a57630636d4be8730075c7';
+const OPENAPI_FACTS_AFTER_B06B = Object.freeze({ paths: 22, operations: 26, schemas: 49 });
 const CLIENT_TREE_SHA256_AFTER_P03 =
   '3fcc05d01e01fec9c8566348be6aacf7beefdf654a0487f66e061b3234ead7a8';
 const PHASE_FILE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
@@ -107,30 +115,40 @@ export function checkApp3B01NArtifacts(rootDir, fail) {
   // — it can only have republished a surface that already existed — so the
   // counts stay the B02 ones and only the digests move.
   // A fourth world: `APP3-B07` is the first checkpoint since B01N to publish new
-  // operations, so both the counts and the digests move together. Historical
-  // constants are kept, not replaced — each world still proves its own artifact.
-  const afterB07 = isB07Delivered(rootDir);
+  // operations, so both the counts and the digests move together. A fifth adds
+  // `APP3-B06B`'s single intake operation. Historical constants are kept, not
+  // replaced — each world still proves its own artifact, so a rollback to any
+  // earlier phase state is still checked against what that state actually
+  // published rather than against the newest numbers.
+  const afterB06B = isB06BDelivered(rootDir);
+  const afterB07 = afterB06B || isB07Delivered(rootDir);
   const afterP03 = afterB07 || isP03Delivered(rootDir);
   const afterB02 = afterP03 || isB02Delivered(rootDir);
-  const facts = afterB07
-    ? OPENAPI_FACTS_AFTER_B07
-    : afterB02
-      ? OPENAPI_FACTS_AFTER_B02
-      : OPENAPI_FACTS;
-  const expectedDigest = afterB07
-    ? OPENAPI_SHA256_AFTER_B07
-    : afterP03
-      ? OPENAPI_SHA256_AFTER_P03
+  const facts = afterB06B
+    ? OPENAPI_FACTS_AFTER_B06B
+    : afterB07
+      ? OPENAPI_FACTS_AFTER_B07
       : afterB02
-        ? OPENAPI_SHA256_AFTER_B02
-        : OPENAPI_SHA256;
-  const expectedTree = afterB07
-    ? CLIENT_TREE_SHA256_AFTER_B07
-    : afterP03
-      ? CLIENT_TREE_SHA256_AFTER_P03
-      : afterB02
-        ? CLIENT_TREE_SHA256_AFTER_B02
-        : CLIENT_TREE_SHA256;
+        ? OPENAPI_FACTS_AFTER_B02
+        : OPENAPI_FACTS;
+  const expectedDigest = afterB06B
+    ? OPENAPI_SHA256_AFTER_B06B
+    : afterB07
+      ? OPENAPI_SHA256_AFTER_B07
+      : afterP03
+        ? OPENAPI_SHA256_AFTER_P03
+        : afterB02
+          ? OPENAPI_SHA256_AFTER_B02
+          : OPENAPI_SHA256;
+  const expectedTree = afterB06B
+    ? CLIENT_TREE_SHA256_AFTER_B06B
+    : afterB07
+      ? CLIENT_TREE_SHA256_AFTER_B07
+      : afterP03
+        ? CLIENT_TREE_SHA256_AFTER_P03
+        : afterB02
+          ? CLIENT_TREE_SHA256_AFTER_B02
+          : CLIENT_TREE_SHA256;
 
   const path = join(rootDir, OPENAPI_FILE);
   if (!existsSync(path)) {
@@ -155,7 +173,10 @@ export function checkApp3B01NArtifacts(rootDir, fail) {
         fail(`the OpenAPI document declares ${String(measured)} ${label}; B01N adds none`);
       }
     }
-    if (JSON.stringify(document).includes('normalization')) {
+    // The counts and the digest above are the real assertion. This word ban is a
+    // proxy that only held while no delivered operation legitimately said
+    // "normalization"; `APP3-B06B`'s intake does.
+    if (!isB06BDelivered(rootDir) && JSON.stringify(document).includes('normalization')) {
       fail('an HTTP operation or schema mentions normalization; B01N adds no HTTP surface');
     }
   }

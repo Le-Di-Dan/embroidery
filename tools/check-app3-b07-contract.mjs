@@ -10,9 +10,8 @@
  *
  * Read-only, cross-platform pure Node.
  */
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 import { CANONICAL_FILES, code, read, requireAll } from './check-app3-b07-files.mjs';
-
-const [PATHS, OPERATIONS, SCHEMAS] = [21, 25, 48];
 
 /** 2, 3 — exactly two operations on the published surface. */
 export function checkSurface(rootDir, fail) {
@@ -21,6 +20,15 @@ export function checkSurface(rootDir, fail) {
     fail(`${CANONICAL_FILES.openapi}: missing`);
     return;
   }
+  // Derived, never pinned: `APP3-B06B` legitimately adds a third Session route,
+  // and a gate that carried its own copy of history would have to be edited by
+  // every checkpoint that ships an operation.
+  const {
+    paths: PATHS,
+    operations: OPERATIONS,
+    schemas: SCHEMAS,
+    designSessionPaths,
+  } = acceptedSurface(rootDir);
   const document = JSON.parse(raw);
   const paths = Object.keys(document.paths);
   const operations = Object.values(document.paths).reduce(
@@ -34,12 +42,15 @@ export function checkSurface(rootDir, fail) {
     fail(`${CANONICAL_FILES.openapi}: ${paths.length} paths, expected ${PATHS}`);
   if (operations !== OPERATIONS)
     fail(`${CANONICAL_FILES.openapi}: ${operations} operations, expected ${OPERATIONS}`);
-  if (schemas !== SCHEMAS)
+  if (SCHEMAS !== undefined && schemas !== SCHEMAS)
     fail(`${CANONICAL_FILES.openapi}: ${schemas} schemas, expected ${SCHEMAS}`);
 
   const sessionPaths = paths.filter((path) => path.includes('design-session'));
-  if (sessionPaths.length !== 2) {
-    fail(`${CANONICAL_FILES.openapi}: ${sessionPaths.length} design-session paths, expected 2`);
+  if (sessionPaths.length !== designSessionPaths) {
+    fail(
+      `${CANONICAL_FILES.openapi}: ${sessionPaths.length} design-session paths, ` +
+        `expected ${designSessionPaths}`,
+    );
   }
   const ids = sessionPaths.flatMap((path) =>
     Object.values(document.paths[path]).map((operation) => operation.operationId),

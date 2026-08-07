@@ -75,17 +75,20 @@ export function checkAuthority(rootDir, fail) {
   // B06A recorded its successors as blocked on it. `APP3-B07` then shipped, so
   // exactly two consistent worlds are accepted — what stays fixed either way is
   // that G08 and W01C are accepted and B06A itself is complete.
-  const afterB07 = /\nAPP3-B07 = COMPLETE/.test(phase);
+  const afterB06B = /\nAPP3-B06B = COMPLETE/.test(phase);
+  const afterB07 = afterB06B || /\nAPP3-B07 = COMPLETE/.test(phase);
   for (const line of [
     'APP3-G08 = COMPLETE — REVIEW_ACCEPTED',
     'APP3-W01C = COMPLETE — REVIEW_ACCEPTED',
-    ...(afterB07
-      ? ['APP3-B06A = COMPLETE — REVIEW_ACCEPTED', 'APP3-B06B = READY — NOT STARTED']
-      : [
-          'APP3-B06A = COMPLETE — REVIEW_DELIVERED',
-          'APP3-B07 = READY — NOT STARTED',
-          'APP3-B06B = BLOCKED_BY_APP3-B07',
-        ]),
+    ...(afterB06B
+      ? ['APP3-B06A = COMPLETE — REVIEW_ACCEPTED', 'APP3-B06B = COMPLETE — REVIEW_DELIVERED']
+      : afterB07
+        ? ['APP3-B06A = COMPLETE — REVIEW_ACCEPTED', 'APP3-B06B = READY — NOT STARTED']
+        : [
+            'APP3-B06A = COMPLETE — REVIEW_DELIVERED',
+            'APP3-B07 = READY — NOT STARTED',
+            'APP3-B06B = BLOCKED_BY_APP3-B07',
+          ]),
   ]) {
     if (!phase.includes(`\n${line}\n`)) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
@@ -220,8 +223,18 @@ export function checkRevisionSeam(rootDir, fail) {
   }
 }
 
-/** 17 — no Asset, upload, association or event behaviour lives here yet. */
+/**
+ * 17 — no Asset, upload, association or event behaviour lives here yet.
+ *
+ * Mode-aware on `APP3-B06B`: this is a *scope* assertion about what B06A itself
+ * shipped, and once B06B delivers, the very behaviour named here is supposed to
+ * exist. Keeping the ban absolute would mean the checkpoint that carries out the
+ * plan breaks the gate that recorded it.
+ */
 export function checkNoAssetBehaviour(rootDir, fail) {
+  if (/\nAPP3-B06B = COMPLETE/.test(read(rootDir, 'phase') ?? '')) {
+    return;
+  }
   for (const [file, text] of ownedSources(rootDir)) {
     const body = code(text);
     for (const [pattern, what] of [

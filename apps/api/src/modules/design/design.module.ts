@@ -30,6 +30,12 @@ import { DesignDocumentAuthority } from './application/design-document.authority
 import { OpenDesignSessionUseCase } from './application/open-design-session.use-case';
 import { ResumeDesignSessionUseCase } from './application/resume-design-session.use-case';
 import { PublicDesignSessionController } from './presentation/public-design-session.controller';
+import { AssetModule } from '../asset/asset.module';
+import { ObjectStorageModule } from '../asset/infrastructure/storage/object-storage.module';
+import { UploadTimer } from '../asset/application/ports/upload-timer';
+import { SessionAssetTransactionsService } from './application/session-asset-transactions.service';
+import { SessionAssetIntakeService } from './application/session-asset-intake.service';
+import { PublicDesignSessionAssetController } from './presentation/public-design-session-asset.controller';
 
 /**
  * CTX-DSN — design templates, sessions, cases, versions and approval
@@ -41,7 +47,17 @@ import { PublicDesignSessionController } from './presentation/public-design-sess
  * boundary holds.
  */
 @Module({
-  imports: [DatabaseModule, CatalogModule, CatalogPlacementReadModule],
+  imports: [
+    DatabaseModule,
+    CatalogModule,
+    CatalogPlacementReadModule,
+    // `APP3-B06B` — `AssetModule` for its exported `ASSET_REPOSITORY` **port**,
+    // never its tables or its intake internals, and `ObjectStorageModule` for
+    // the same `ObjectStoragePort` the Admin lane streams through. Design owns
+    // the association and the session; Asset keeps owning the asset row.
+    AssetModule,
+    ObjectStorageModule,
+  ],
   providers: [
     { provide: DESIGN_CASE_REPOSITORY, useClass: DrizzleDesignCaseRepository },
     { provide: APPROVAL_SNAPSHOT_REPOSITORY, useClass: DrizzleApprovalSnapshotRepository },
@@ -68,8 +84,12 @@ import { PublicDesignSessionController } from './presentation/public-design-sess
     DesignDocumentAuthority,
     OpenDesignSessionUseCase,
     ResumeDesignSessionUseCase,
+    // APP3-B06B — anonymous raster intake.
+    UploadTimer,
+    SessionAssetTransactionsService,
+    SessionAssetIntakeService,
   ],
-  controllers: [PublicDesignSessionController],
+  controllers: [PublicDesignSessionController, PublicDesignSessionAssetController],
   exports: [
     DESIGN_CASE_REPOSITORY,
     APPROVAL_SNAPSHOT_REPOSITORY,

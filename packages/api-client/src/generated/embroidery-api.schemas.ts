@@ -597,6 +597,38 @@ export interface DatabaseHealthResponse {
   status: DatabaseHealthResponseStatus;
 }
 
+/**
+ * Inspection and normalization have been queued, not completed. No derivative exists yet.
+ */
+export type DesignSessionAssetIntakeResponseAssetStatus =
+  (typeof DesignSessionAssetIntakeResponseAssetStatus)[keyof typeof DesignSessionAssetIntakeResponseAssetStatus];
+
+export const DesignSessionAssetIntakeResponseAssetStatus = {
+  INSPECTING: 'INSPECTING',
+} as const;
+
+export type DesignSessionAssetIntakeResponseMediaType =
+  (typeof DesignSessionAssetIntakeResponseMediaType)[keyof typeof DesignSessionAssetIntakeResponseMediaType];
+
+export const DesignSessionAssetIntakeResponseMediaType = {
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface DesignSessionAssetIntakeResponse {
+  assetId: string;
+  /** Inspection and normalization have been queued, not completed. No derivative exists yet. */
+  assetStatus: DesignSessionAssetIntakeResponseAssetStatus;
+  /** Server-measured size in bytes. */
+  byteSize: number;
+  /** The session↔asset association. Stable across replays of the same upload, and the reference normalization is requested against. */
+  designSessionAssetId: string;
+  mediaType: DesignSessionAssetIntakeResponseMediaType;
+  /** The session revision after this upload. Supply it on the next mutation. */
+  sessionRevision: number;
+}
+
 export type HealthStatusResponseService =
   (typeof HealthStatusResponseService)[keyof typeof HealthStatusResponseService];
 
@@ -1109,6 +1141,15 @@ export type AdminProductPublish200 = ApiSuccessResponse & {
 
 export type AdminProductUnpublish200 = ApiSuccessResponse & {
   data: AdminProductPublicationResponse;
+};
+
+export type PublicDesignSessionAssetCreateBody = {
+  /** Exactly one image/png, image/jpeg, image/webp image of at most 10485760 bytes. The declared type must match the file signature; SVG, GIF and every other type is refused. */
+  file: Blob;
+};
+
+export type PublicDesignSessionAssetCreate202 = ApiSuccessResponse & {
+  data: DesignSessionAssetIntakeResponse;
 };
 
 export type PublicProductListParams = {

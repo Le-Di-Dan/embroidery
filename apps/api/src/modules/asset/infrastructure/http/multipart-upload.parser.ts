@@ -22,13 +22,11 @@ import Busboy from 'busboy';
 
 import { assetIntakeError, AssetIntakeError } from '../../domain/asset-intake.errors';
 import {
-  INTAKE_ASSET_KIND,
-  INTAKE_CLASSIFICATION,
-  MAX_UPLOAD_BYTES,
   UPLOAD_FIELD_ASSET_KIND,
   UPLOAD_FIELD_CLASSIFICATION,
   UPLOAD_FILE_PART,
 } from '../../domain/asset-intake.policy';
+import { ADMIN_CATALOG_INTAKE_LANE, type AssetIntakeLane } from '../../domain/intake-lane';
 
 /** Bounds on the metadata half of the body, independent of the file limit. */
 const MAX_FIELD_VALUE_BYTES = 128;
@@ -74,7 +72,12 @@ interface PendingState {
  * for `classification` in one body has no correct interpretation, and picking
  * one would silently accept a request the client did not mean to send.
  */
-function readField(state: PendingState, name: string, value: string): void {
+function readField(state: PendingState, lane: AssetIntakeLane, name: string, value: string): void {
+  if (!lane.declaresMetadataFields) {
+    // This lane's body is one file part and nothing else, so any field at all
+    // is a shape violation rather than an unrecognised name.
+    throw assetIntakeError('ASSET_UPLOAD_METADATA_INVALID');
+  }
   if (state.fileSeen) {
     // A field after the file part cannot participate in the fingerprint that
     // was already computed, so accepting it would make the receipt a lie.
@@ -84,7 +87,7 @@ function readField(state: PendingState, name: string, value: string): void {
     throw assetIntakeError('ASSET_UPLOAD_METADATA_INVALID');
   }
   if (name === UPLOAD_FIELD_ASSET_KIND) {
-    if (state.assetKind !== undefined || value !== INTAKE_ASSET_KIND) {
+    if (state.assetKind !== undefined || value !== lane.assetKind) {
       throw assetIntakeError('ASSET_UPLOAD_METADATA_INVALID');
     }
     state.assetKind = value;
@@ -93,7 +96,7 @@ function readField(state: PendingState, name: string, value: string): void {
   if (name === UPLOAD_FIELD_CLASSIFICATION) {
     // The classification is fixed by policy and is not client-selectable; the
     // field exists so the request is self-describing, not so it can vary.
-    if (state.classification !== undefined || value !== INTAKE_CLASSIFICATION) {
+    if (state.classification !== undefined || value !== lane.classification) {
       throw assetIntakeError('ASSET_UPLOAD_METADATA_INVALID');
     }
     state.classification = value;
@@ -112,6 +115,7 @@ function readField(state: PendingState, name: string, value: string): void {
 export function openMultipartUpload(
   request: IncomingMessage,
   signal: AbortSignal,
+  lane: AssetIntakeLane = ADMIN_CATALOG_INTAKE_LANE,
 ): Promise<OpenedUpload> {
   return new Promise<OpenedUpload>((resolve, reject) => {
     let busboy: Busboy.Busboy;
@@ -124,7 +128,7 @@ export function openMultipartUpload(
           files: 1,
           fields: MAX_FIELDS,
           fieldSize: MAX_FIELD_VALUE_BYTES,
-          fileSize: MAX_UPLOAD_BYTES + 1,
+          fileSize: lane.maxUploadBytes + 1,
         },
       });
     } catch {
@@ -166,7 +170,7 @@ export function openMultipartUpload(
 
     busboy.on('field', (name: string, value: string) => {
       try {
-        readField(state, name, value);
+        readField(state, lane, name, value);
       } catch (error: unknown) {
         fail(error instanceof Error ? error : assetIntakeError('ASSET_UPLOAD_METADATA_INVALID'));
       }
@@ -178,7 +182,10 @@ export function openMultipartUpload(
         fail(assetIntakeError('ASSET_UPLOAD_INVALID_MULTIPART'));
         return;
       }
-      if (state.assetKind === undefined || state.classification === undefined) {
+      if (
+        lane.declaresMetadataFields &&
+        (state.assetKind === undefined || state.classification === undefined)
+      ) {
         discard(stream);
         fail(assetIntakeError('ASSET_UPLOAD_METADATA_INVALID'));
         return;

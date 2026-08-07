@@ -34,7 +34,6 @@ export const CANONICAL_FILES = Object.freeze({
   boundarySpec: 'apps/api/test/architecture/catalog-placement-boundary.spec.ts',
 });
 
-const [PATHS, OPERATIONS, SCHEMAS] = [21, 25, 48];
 const [ROOT_SCRIPTS, MIGRATIONS] = [30, 34];
 const [SOFT_CHECKER, SOFT_TEST, SRC_LIMIT, TEST_LIMIT] = [450, 700, 400, 600];
 

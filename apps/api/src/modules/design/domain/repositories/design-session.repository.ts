@@ -160,8 +160,18 @@ export interface DesignSessionRepository {
    */
   rotateSecret(input: RotateSecretInput): Promise<DesignSession | undefined>;
 
-  /** Associates an uploaded asset with the session. @requiresTransaction */
-  attachAsset(id: DesignSessionId, assetId: string): Promise<void>;
+  /**
+   * Associates an uploaded asset with the session, insert-or-confirm.
+   *
+   * Returns the `design_session_assets` id — the value `APP3-B06B` puts in the
+   * normalization event's `associationRef`. Returning it is what makes the call
+   * safe to replay: a second attempt on the same (session, asset) pair confirms
+   * the existing row through CST-043 and yields the **same** id, so a retry
+   * cannot produce a second association or a second normalization target.
+   *
+   * @requiresTransaction
+   */
+  attachAsset(id: DesignSessionId, assetId: string): Promise<string>;
 
   /** Marks the session SUBMITTED and links the request it handed off to. @requiresTransaction */
   submit(id: DesignSessionId, customRequestId: string, at: Date): Promise<DesignSession>;

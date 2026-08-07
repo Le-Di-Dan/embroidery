@@ -259,9 +259,41 @@ export class DrizzleDesignSessionRepository
     });
   }
 
-  async attachAsset(id: DesignSessionId, assetId: string): Promise<void> {
+  async attachAsset(id: DesignSessionId, assetId: string): Promise<string> {
     return this.run('attachAsset', async () => {
-      await this.db.insert(designSessionAssets).values({ id: newId(), sessionId: id, assetId });
+      // Insert-or-confirm on CST-043. `onConflictDoNothing` returns no row when
+      // the pair already exists, so the existing id is read back rather than
+      // assumed — a replay must yield the *same* association, not a new one and
+      // not a guess at one.
+      const [inserted] = await this.db
+        .insert(designSessionAssets)
+        .values({ id: newId(), sessionId: id, assetId })
+        .onConflictDoNothing({
+          target: [designSessionAssets.sessionId, designSessionAssets.assetId],
+        })
+        .returning({ id: designSessionAssets.id });
+
+      if (inserted !== undefined) {
+        return inserted.id;
+      }
+
+      const [existing] = await this.db
+        .select({ id: designSessionAssets.id })
+        .from(designSessionAssets)
+        .where(
+          and(eq(designSessionAssets.sessionId, id), eq(designSessionAssets.assetId, assetId)),
+        );
+
+      if (existing === undefined) {
+        // The conflict fired but the row is gone: the only way that happens is a
+        // concurrent hard delete of the session, and inventing an id here would
+        // hand the worker an association that does not exist.
+        throw notFoundError(
+          'DesignSessionRepository.attachAsset',
+          'That session no longer exists.',
+        );
+      }
+      return existing.id;
     });
   }
 

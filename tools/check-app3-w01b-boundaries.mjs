@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 import { checkApp3W01A } from './check-app3-w01a.mjs';
 import { checkApp3G07 } from './check-app3-g07.mjs';
+import { isB06BDelivered } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const JOB_DIR = 'apps/worker/src/jobs/asset-normalization';
@@ -56,7 +57,10 @@ function code(text) {
 /** 1 — no new contract of any kind. */
 function checkNoNewContract(rootDir, fail) {
   const openapi = read(rootDir, 'openapi') ?? '';
-  for (const token of ['svg', 'sanitiz', 'Template SVG']) {
+  // Mode-aware: APP3-B06B's intake refuses SVG and says so in its published
+  // description. The migration and dependency assertions below are unaffected.
+  const tokens = isB06BDelivered(rootDir) ? [] : ['svg', 'sanitiz', 'Template SVG'];
+  for (const token of tokens) {
     if (openapi.toLowerCase().includes(token.toLowerCase())) {
       fail(`the OpenAPI document mentions "${token}"; APP3-W01B publishes no HTTP surface`);
     }

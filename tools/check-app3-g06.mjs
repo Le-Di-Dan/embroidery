@@ -200,8 +200,20 @@ function checkTable(rows, expected, what, fail) {
  * `APP3-B01N` has not run.
  */
 function checkNoImplementation(rootDir, fail) {
-  const delivered = /APP3-W01A\s*=\s*COMPLETE/.test(read(rootDir, 'phase') ?? '');
+  const phase = read(rootDir, 'phase') ?? '';
+  const delivered = /APP3-W01A\s*=\s*COMPLETE/.test(phase);
   const workerAllowed = delivered;
+  /**
+   * `APP3-B06B` adds the second sanctioned API producer — the Session intake —
+   * plus the suite that proves its payload. Named exactly, so this stays an
+   * allow-list of two files rather than a hole for the whole application.
+   */
+  const b06bAllowed = /\nAPP3-B06B = COMPLETE/.test(phase)
+    ? [
+        'apps/api/src/modules/design/application/session-asset-transactions.service.ts',
+        'apps/api/src/modules/design/session-asset-intake.spec.ts',
+      ]
+    : [];
   const sources = [];
   const walk = (directory) => {
     let entries = [];
@@ -227,6 +239,7 @@ function checkNoImplementation(rootDir, fail) {
       source.includes('asset.normalization.requested') ||
       /NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE/.test(source);
     if (!mentions) continue;
+    if (b06bAllowed.includes(shown.replace(/\\/g, '/'))) continue;
 
     if (!inWorker) {
       // The producer belongs to `APP3-B01N`, which has not run in either world.

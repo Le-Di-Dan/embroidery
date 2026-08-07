@@ -32,7 +32,7 @@ import {
   read,
 } from './check-app3-w01a-files.mjs';
 import { checkApp3W01aOutput } from './check-app3-w01a-output.mjs';
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedSurface, isB06BDelivered } from './app3-accepted-surface.mjs';
 
 export { CANONICAL_FILES, REPO_ROOT, isW01bDelivered };
 
@@ -269,7 +269,9 @@ function checkScopeAndGovernance(rootDir, fail) {
     if (operations.length !== expected) {
       fail(`the OpenAPI document declares ${String(operations.length)} operations; W01A adds none`);
     }
-    if (JSON.stringify(document).includes('normalization')) {
+    // The operation count above is the assertion. The word ban is a proxy that
+    // `APP3-B06B`'s intake operation legitimately trips.
+    if (!isB06BDelivered(rootDir) && JSON.stringify(document).includes('normalization')) {
       fail('an HTTP operation or schema mentions normalization; W01A adds no HTTP surface');
     }
   }

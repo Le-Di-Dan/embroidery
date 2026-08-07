@@ -126,7 +126,9 @@ export const STATUS_AFTER_W01C = Object.freeze([
   /\nAPP3-W01C = COMPLETE — REVIEW_(DELIVERED|ACCEPTED)\n/,
   /\nAPP3-B07 = (READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED|ACCEPTED))\n/,
   /\nAPP3-B06A = (READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED|ACCEPTED))\n/,
-  /\nAPP3-B06B = (BLOCKED_BY_APP3-(B06A_AND_)?B07|READY — NOT STARTED)\n/,
+  // …and finally delivered. G08 ruled B06B's architecture; a gate that only ever
+  // accepted the blocked or ready form would fail the day its own ruling shipped.
+  /\nAPP3-B06B = (BLOCKED_BY_APP3-(B06A_AND_)?B07|READY — NOT STARTED|COMPLETE — REVIEW_DELIVERED)\n/,
 ]);
 
 /** An expected status entry: an exact line, or a pattern over the block. */

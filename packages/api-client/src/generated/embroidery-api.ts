@@ -26,6 +26,8 @@ import type {
   CreateDesignSessionBody,
   CreateProductBody,
   HealthStatusResponse,
+  PublicDesignSessionAssetCreate202,
+  PublicDesignSessionAssetCreateBody,
   PublicProductDetail200,
   PublicProductList200,
   PublicProductListParams,
@@ -303,6 +305,29 @@ export const publicDesignSessionCreate = (
 };
 
 /**
+ * Streams a single PNG, JPEG or WebP image of at most 10485760 bytes into private storage, associates it with the session and queues inspection and normalization. The image is never public. Idempotent: repeating the request with the same Idempotency-Key and the same file returns the original result and writes no second object or association.
+ * @summary Upload one raster image into a design session
+ */
+export const publicDesignSessionAssetCreate = (
+  sessionId: string,
+  publicDesignSessionAssetCreateBody: PublicDesignSessionAssetCreateBody,
+  options?: SecondParameter<typeof apiRequest<PublicDesignSessionAssetCreate202>>,
+) => {
+  const formData = new FormData();
+  formData.append(`file`, publicDesignSessionAssetCreateBody.file);
+
+  return apiRequest<PublicDesignSessionAssetCreate202>(
+    {
+      url: `/api/public/design-sessions/${sessionId}/assets`,
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      data: formData,
+    },
+    options,
+  );
+};
+
+/**
  * Rotates the session secret and returns the current snapshot. The previous secret stops working immediately; expiry and document revision are unchanged.
  * @summary Resume an anonymous design session
  */
@@ -461,6 +486,9 @@ export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthChec
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
 export type PublicDesignSessionCreateResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionCreate>>
+>;
+export type PublicDesignSessionAssetCreateResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignSessionAssetCreate>>
 >;
 export type PublicDesignSessionResumeResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionResume>>

@@ -32,10 +32,14 @@ const [SOFT_CHECKER, SOFT_TEST, SRC_LIMIT, TEST_LIMIT] = [450, 700, 400, 600];
 /** 1 — predecessors accepted and B07 recorded. */
 function checkStatus(rootDir, fail) {
   const phase = read(rootDir, 'phase') ?? '';
+  // Two worlds: B07 at the frontier, and B07 accepted with `APP3-B06B` shipped
+  // on top of it. What stays fixed either way is that B06A is accepted, B07 is
+  // complete, and B08 has not started.
+  const afterB06B = /\nAPP3-B06B = COMPLETE/.test(phase);
   for (const line of [
     'APP3-B06A = COMPLETE — REVIEW_ACCEPTED',
-    'APP3-B07 = COMPLETE — REVIEW_DELIVERED',
-    'APP3-B06B = READY — NOT STARTED',
+    afterB06B ? 'APP3-B07 = COMPLETE — REVIEW_ACCEPTED' : 'APP3-B07 = COMPLETE — REVIEW_DELIVERED',
+    afterB06B ? 'APP3-B06B = COMPLETE — REVIEW_DELIVERED' : 'APP3-B06B = READY — NOT STARTED',
     'APP3-B08 = READY — NOT STARTED',
   ]) {
     if (!phase.includes(`\n${line}\n`)) {
