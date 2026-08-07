@@ -25,6 +25,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { checkNextPhaseChronology } from './check-app2-closure-artifacts.mjs';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -320,6 +321,12 @@ const B01_PLACEMENT_PATHS = Object.freeze([
  */
 /** Mode-aware on `APP3-B02`: before it no such path may exist, after it this one may. */
 const B02_DELIVERY_PATH = '/api/public/products/{slug}/sides/{sideCode}/background';
+
+/** The two  Session operations. */
+const B07_SESSION_PATHS = Object.freeze([
+  '/api/public/design-sessions',
+  '/api/public/design-sessions/{sessionId}/resume',
+]);
 const b02Delivered = (phase) => /APP3-B02\s*=\s*COMPLETE/.test(phase ?? '');
 
 function checkNoImplementation(root, phase, fail) {
@@ -328,6 +335,9 @@ function checkNoImplementation(root, phase, fail) {
   const allowed = [
     ...(delivered ? B01_PLACEMENT_PATHS : []),
     ...(b02Delivered(phase) ? [B02_DELIVERY_PATH] : []),
+    // `APP3-B07` owns the two Session operations. G01 rules what a *placement*
+    // path may be, and these are Session paths that merely match the pattern.
+    ...(acceptedSurface(REPO_ROOT).designSessionRoutes ? B07_SESSION_PATHS : []),
   ];
   if (raw === undefined) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);

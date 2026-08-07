@@ -32,6 +32,7 @@ import { fileURLToPath } from 'node:url';
 
 import { sectionBody, tableRows } from './check-app3-g02.mjs';
 import { checkApp3G03 } from './check-app3-g03.mjs';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 import { LIMIT_FACTS, MEDIA_FACTS, checkMediaAuthority } from './check-app3-g04-media.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -338,8 +339,14 @@ function checkNoImplementation(root, fail) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);
     return;
   }
+  // `APP3-B07` owns the two Session routes; they are a delivered checkpoint's
+  // operations, not the un-run asset surface this ban is about.
+  const sessionRoutes = acceptedSurface(root).designSessionRoutes;
   for (const path of Object.keys(JSON.parse(raw).paths ?? {}).filter(
-    (p) => APP3_ASSET_PATH_RE.test(p) && !allowed.includes(p),
+    (p) =>
+      APP3_ASSET_PATH_RE.test(p) &&
+      !allowed.includes(p) &&
+      !(sessionRoutes && p.includes('/design-sessions')),
   )) {
     fail(
       `${CANONICAL_FILES.openapi}: APP3 asset operation "${path}" exists, but no APP3 backend checkpoint has run`,

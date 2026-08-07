@@ -74,6 +74,11 @@ export async function createApiIntegrationContext(
   const previousNodeEnv = process.env['NODE_ENV'];
   process.env['DATABASE_URL'] = database.url;
   process.env['NODE_ENV'] = 'test';
+  // `APP3-B07` composes `DesignModule`, whose config refuses to resolve without
+  // a pepper (`IMP-D043` PO-02). Supplied here as a synthetic test value rather
+  // than by weakening the production requirement — a fallback would make the
+  // one rule that keeps a stolen database useless optional in production too.
+  const restoreDesignSessionEnv = applyDesignSessionTestEnv();
   // Non-connecting object-storage placeholders unless the caller already set
   // real ones — an upload suite points them at a live disposable MinIO.
   const restoreStorageEnv = applyOfflineObjectStorageEnv();
@@ -103,6 +108,7 @@ export async function createApiIntegrationContext(
     throw error;
   } finally {
     restoreStorageEnv();
+    restoreDesignSessionEnv();
     if (previousUrl === undefined) {
       delete process.env['DATABASE_URL'];
     } else {
@@ -114,4 +120,25 @@ export async function createApiIntegrationContext(
       process.env['NODE_ENV'] = previousNodeEnv;
     }
   }
+}
+
+/** The synthetic Design Session environment every booted API needs (APP3-B07). */
+export const DESIGN_SESSION_TEST_ORIGIN = 'http://embroidery.test';
+
+export function applyDesignSessionTestEnv(): () => void {
+  const names = [
+    ['DESIGN_SESSION_SECRET_PEPPER', 'test-design-session-pepper-0123456789abcdef'],
+    ['DESIGN_SESSION_ALLOWED_ORIGINS', DESIGN_SESSION_TEST_ORIGIN],
+    ['DESIGN_SESSION_COOKIE_SECURE', 'false'],
+  ] as const;
+  const previous = names.map(([name]) => [name, process.env[name]] as const);
+  for (const [name, value] of names) {
+    if (process.env[name] === undefined) process.env[name] = value;
+  }
+  return () => {
+    for (const [name, value] of previous) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  };
 }

@@ -27,6 +27,7 @@ import { parseTransitions } from './check-app3-g02-lifecycle.mjs';
 import { CLOSURE_COMMIT } from './check-app3-g01.mjs';
 import { checkNextPhaseChronology } from './check-app2-closure-artifacts.mjs';
 import { SECURITY_FACTS, checkSecurityAuthority } from './check-app3-g03-security.mjs';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -331,7 +332,9 @@ function checkNoImplementation(root, fail) {
   if (raw === undefined) {
     fail(`${where}: OpenAPI artifact is missing`);
   } else {
+    const b07 = acceptedSurface(root).designSessionRoutes;
     for (const [path, methods] of Object.entries(JSON.parse(raw).paths ?? {})) {
+      if (b07 && path.includes('/design-sessions')) continue;
       if (SESSION_PATH_RE.test(path)) {
         fail(`${where}: Design Session path "${path}" exists, but no APP3 backend checkpoint ran`);
       }
@@ -351,6 +354,9 @@ function checkNoImplementation(root, fail) {
   // publishing no operation at all. Keying on the folder would have made the
   // ruling "no Session operation exists" unimplementable without an odd layout,
   // so it keys on what the ruling actually forbids.
+  // `APP3-B07` then delivered the two Session operations the ruling deferred, so
+  // from that point a controller is what the plan asked for, not a violation.
+  if (acceptedSurface(root).designSessionRoutes) return;
   const moduleDir = join(root, DESIGN_MODULE_DIR);
   if (!existsSync(moduleDir)) return;
   const walk = (dir) => {

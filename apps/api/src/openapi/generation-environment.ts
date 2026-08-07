@@ -68,4 +68,28 @@ export function ensureGenerationEnvironment(env: NodeJS.ProcessEnv = process.env
     env['DATABASE_URL'] = GENERATION_DATABASE_URL;
   }
   applyOfflineObjectStorageEnv(env);
+  applyGenerationDesignSessionEnv(env);
+}
+
+/**
+ * Non-secret placeholders for the Design Session credential configuration
+ * (`APP3-B07`).
+ *
+ * `DesignModule` refuses to resolve without a pepper (`IMP-D043` PO-02), and
+ * document generation builds the whole application graph — so without this the
+ * artifact simply cannot be produced. These are generation-time placeholders in
+ * the same spirit as the offline storage values above: they are never a
+ * fallback for a running API, because generation is the only caller.
+ */
+export function applyGenerationDesignSessionEnv(env: NodeJS.ProcessEnv = process.env): void {
+  const placeholders: ReadonlyArray<readonly [string, string]> = [
+    ['DESIGN_SESSION_SECRET_PEPPER', 'openapi-generation-placeholder-pepper-0000'],
+    ['DESIGN_SESSION_ALLOWED_ORIGINS', 'https://openapi.generation.invalid'],
+    ['DESIGN_SESSION_COOKIE_SECURE', 'true'],
+  ];
+  for (const [name, value] of placeholders) {
+    if (env[name] === undefined || env[name] === '') {
+      env[name] = value;
+    }
+  }
 }

@@ -22,6 +22,7 @@ import { checkApp3G06 } from './check-app3-g06.mjs';
 import { checkApp3G08 } from './check-app3-g08.mjs';
 import { checkApp3W01A } from './check-app3-w01a.mjs';
 import { checkApp3W01B } from './check-app3-w01b.mjs';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -145,10 +146,7 @@ function checkRetrySignal(rootDir, fail) {
   }
 }
 
-/**
- * 2, 3, 4, 5 — the branch is narrowed on both the profile and the state, and
- * every other path keeps its terminal verdict.
- */
+/** 2, 3, 4, 5 — the branch is narrowed on profile and state; others stay terminal. */
 function checkResolverNarrowing(rootDir, fail) {
   const resolver = read(rootDir, 'resolver');
   if (resolver === undefined) {
@@ -325,7 +323,7 @@ function checkBoundary(rootDir, fail) {
 
   const openapi = read(rootDir, 'openapi') ?? '{}';
   const paths = Object.keys(JSON.parse(openapi).paths ?? {}).length;
-  if (paths !== 19) {
+  if (paths !== acceptedSurface(rootDir).paths) {
     fail(`${CANONICAL_FILES.openapi}: ${String(paths)} paths — W01C publishes no HTTP surface`);
   }
 
@@ -338,6 +336,7 @@ function checkBoundary(rootDir, fail) {
 
 /** 12 — the successors this unblocks have not been started. */
 function checkSuccessorsNotStarted(rootDir, fail) {
+  if (acceptedSurface(rootDir).designSessionRoutes) return;
   const appModule = read(rootDir, 'apps/api/src/bootstrap/app.module.ts') ?? '';
   if (/DesignModule|DesignSessionAssetModule/.test(appModule)) {
     fail('apps/api/src/bootstrap/app.module.ts: a design module is composed — B06A/B06B started');

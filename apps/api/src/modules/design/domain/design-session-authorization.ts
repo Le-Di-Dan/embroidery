@@ -63,6 +63,23 @@ export function designSessionUnauthorized(): HttpException {
   );
 }
 
+/**
+ * The single bootstrap refusal (`APP3-B07`).
+ *
+ * An unpublished Product, a Studio-ineligible one, an unknown Side code, a
+ * retired Area, a draft Template, a Template scoped elsewhere and a document
+ * that fails validation are all one answer: this placement cannot open a
+ * session. Separating them would let an anonymous caller map the catalog by
+ * watching which refusal it gets — including rows publication deliberately
+ * hides.
+ */
+export function designSessionBootstrapRefused(): HttpException {
+  return new HttpException(
+    { message: 'A design session cannot be opened for that selection.' },
+    HttpStatus.UNPROCESSABLE_ENTITY,
+  );
+}
+
 /** The Origin / Fetch Metadata refusal (PO-05). Distinct status, still reasonless. */
 export function designSessionOriginRefused(): HttpException {
   return new HttpException(

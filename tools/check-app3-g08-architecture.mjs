@@ -176,6 +176,10 @@ export function checkStoragePortUnchanged(rootDir, fail) {
  * deleted the day its own ruling was carried out.
  */
 export function checkNoImplementation(rootDir, status, fail) {
+  // `APP3-B07` owns the two Session routes and composes the module. G08 only
+  // ever ruled that *B06B* had not started, which is a different fact — and
+  // keeping the route ban here would make its own successor unshippable.
+  if (/\nAPP3-B07 = COMPLETE/.test(read(rootDir, 'phase') ?? '')) return;
   const delivered = /\nAPP3-B06B = COMPLETE/.test(status);
   const appModule = read(rootDir, 'appModule') ?? '';
   const openapi = read(rootDir, 'openapi') ?? '{}';

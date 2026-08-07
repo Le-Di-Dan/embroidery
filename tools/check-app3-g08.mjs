@@ -42,6 +42,7 @@ import { checkApp3G06 } from './check-app3-g06.mjs';
 import { checkApp3P03 } from './check-app3-p03.mjs';
 import { checkApp3W01A } from './check-app3-w01a.mjs';
 import { checkApp3W01B } from './check-app3-w01b.mjs';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export { CANONICAL_FILES, DECISION_ID, read } from './check-app3-g08-architecture.mjs';
@@ -118,14 +119,14 @@ export const STATUS_BEFORE_W01C = Object.freeze([
 
 export const STATUS_AFTER_W01C = Object.freeze([
   'APP3-G08 = COMPLETE — REVIEW_ACCEPTED',
-  'APP3-B07 = READY — NOT STARTED',
-  // These three move again as their own checkpoints are accepted and delivered.
-  // What G08 rules is that W01C is *done* and that B06B waits on B06A and B07 —
-  // not which review stage each line happens to be at, which is a fact about
-  // the calendar rather than about the architecture.
+  // These move again as their own checkpoints are accepted and delivered. What
+  // G08 rules is that W01C is *done*, that B07 owns bootstrap and that B06B
+  // waits on B06A and B07 — not which review stage each line happens to be at,
+  // which is a fact about the calendar rather than about the architecture.
   /\nAPP3-W01C = COMPLETE — REVIEW_(DELIVERED|ACCEPTED)\n/,
+  /\nAPP3-B07 = (READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED|ACCEPTED))\n/,
   /\nAPP3-B06A = (READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED|ACCEPTED))\n/,
-  /\nAPP3-B06B = BLOCKED_BY_APP3-(B06A_AND_)?B07\n/,
+  /\nAPP3-B06B = (BLOCKED_BY_APP3-(B06A_AND_)?B07|READY — NOT STARTED)\n/,
 ]);
 
 /** An expected status entry: an exact line, or a pattern over the block. */

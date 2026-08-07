@@ -32,6 +32,7 @@ import {
   read,
 } from './check-app3-w01a-files.mjs';
 import { checkApp3W01aOutput } from './check-app3-w01a-output.mjs';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 
 export { CANONICAL_FILES, REPO_ROOT, isW01bDelivered };
 
@@ -261,9 +262,10 @@ function checkScopeAndGovernance(rootDir, fail) {
         ['get', 'put', 'post', 'patch', 'delete'].includes(method),
       ),
     );
-    // Mode-aware on `APP3-B02`, which delivers exactly one operation. Two
-    // consistent worlds and no third: W01A itself still adds none in either.
-    const expected = isB02Delivered(rootDir) ? 23 : 22;
+    // Mode-aware on the checkpoints that legitimately publish operations —
+    // `APP3-B02` (one) and `APP3-B07` (two). W01A itself still adds none in
+    // every world, which is the fact this asserts.
+    const expected = acceptedSurface(rootDir).operations;
     if (operations.length !== expected) {
       fail(`the OpenAPI document declares ${String(operations.length)} operations; W01A adds none`);
     }

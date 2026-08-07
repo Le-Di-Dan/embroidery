@@ -124,6 +124,15 @@ enforcement, media allowlist and private-object rules as Admin intake, with a
 **10 MiB** source limit and `image/jpeg`, `image/png`, `image/webp` only. The
 uploaded original stays private and is never delivered by a generic route.
 
+**Anonymous Session credentials are minted once and rotated on resume**
+(`APP3-B07`). Creation issues 256 CSPRNG bits, persists only
+`HMAC-SHA-256(pepper, secret)` and returns the raw value solely in
+`__Host-nettheu_ds_<session-id>`; it never appears in JSON, a URL, a log, an
+Audit payload or the OpenAPI contract. Resume replaces the digest in one guarded
+statement keyed on the current one, so exactly one racing caller wins, the old
+secret dies immediately and there is no grace window. Rotation extends neither
+the absolute 30-day TTL nor the document revision.
+
 ## 5. Asset access
 
 - Private assets require authorization.

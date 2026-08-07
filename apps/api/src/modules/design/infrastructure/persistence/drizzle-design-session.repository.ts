@@ -16,6 +16,7 @@ import type {
   DesignSessionId,
   DesignSessionRepository,
   OpenDesignSessionInput,
+  RotateSecretInput,
   SaveDocumentInput,
 } from '../../domain/repositories/design-session.repository';
 import { DESIGN_TEMPLATE_REPOSITORY } from '../../domain/repositories/design-template.repository';
@@ -177,6 +178,35 @@ export class DrizzleDesignSessionRepository
         'STALE_WRITE',
         'This session was modified since you last loaded it.',
       );
+    });
+  }
+
+  async rotateSecret(input: RotateSecretInput): Promise<DesignSession | undefined> {
+    return this.run('rotateSecret', async () => {
+      this.requireTransaction('rotateSecret');
+
+      // The current digest is part of the predicate, so a second resume holding
+      // the same old secret matches zero rows rather than issuing a second live
+      // cookie. `expiresAt` and `autosaveRevision` are not in the SET: rotation
+      // never extends the TTL and never touches the document (`IMP-D043` PO-04).
+      const [row] = await this.db
+        .update(designSessions)
+        .set({
+          sessionSecretHash: input.nextSecretHash,
+          lastActivityAt: input.at,
+          updatedAt: input.at,
+        })
+        .where(
+          and(
+            eq(designSessions.id, input.id),
+            eq(designSessions.sessionSecretHash, input.expectedSecretHash),
+            eq(designSessions.status, 'ACTIVE'),
+            gt(designSessions.expiresAt, input.at),
+          ),
+        )
+        .returning();
+
+      return row === undefined ? undefined : toSession(row);
     });
   }
 

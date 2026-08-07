@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
 import { CatalogModule } from '../catalog/catalog.module';
+import { CatalogPlacementReadModule } from '../catalog/catalog-placement-read.module';
 import { APPROVAL_SNAPSHOT_REPOSITORY } from './domain/repositories/approval-snapshot.repository';
 import { DESIGN_CASE_REPOSITORY } from './domain/repositories/design-case.repository';
 import { DESIGN_SESSION_REPOSITORY } from './domain/repositories/design-session.repository';
@@ -23,6 +24,12 @@ import { DesignSessionOriginPolicy } from './infrastructure/http/design-session-
 import { DesignSessionRateLimiter } from './infrastructure/rate-limit/design-session-rate-limiter';
 import { EphemeralNetworkKeyService } from './infrastructure/rate-limit/ephemeral-network-key.service';
 import { DesignSessionGuard } from './presentation/guards/design-session.guard';
+import { DesignSessionSecretIssuer } from './infrastructure/crypto/design-session-secret.issuer';
+import { DesignSessionScopeResolver } from './application/design-session-scope.resolver';
+import { DesignDocumentAuthority } from './application/design-document.authority';
+import { OpenDesignSessionUseCase } from './application/open-design-session.use-case';
+import { ResumeDesignSessionUseCase } from './application/resume-design-session.use-case';
+import { PublicDesignSessionController } from './presentation/public-design-session.controller';
 
 /**
  * CTX-DSN — design templates, sessions, cases, versions and approval
@@ -34,7 +41,7 @@ import { DesignSessionGuard } from './presentation/guards/design-session.guard';
  * boundary holds.
  */
 @Module({
-  imports: [DatabaseModule, CatalogModule],
+  imports: [DatabaseModule, CatalogModule, CatalogPlacementReadModule],
   providers: [
     { provide: DESIGN_CASE_REPOSITORY, useClass: DrizzleDesignCaseRepository },
     { provide: APPROVAL_SNAPSHOT_REPOSITORY, useClass: DrizzleApprovalSnapshotRepository },
@@ -55,7 +62,14 @@ import { DesignSessionGuard } from './presentation/guards/design-session.guard';
     DesignSessionRateLimiter,
     AuthorizeDesignSessionService,
     DesignSessionGuard,
+    // APP3-B07 — bootstrap, clone and resume.
+    DesignSessionSecretIssuer,
+    DesignSessionScopeResolver,
+    DesignDocumentAuthority,
+    OpenDesignSessionUseCase,
+    ResumeDesignSessionUseCase,
   ],
+  controllers: [PublicDesignSessionController],
   exports: [
     DESIGN_CASE_REPOSITORY,
     APPROVAL_SNAPSHOT_REPOSITORY,

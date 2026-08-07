@@ -37,6 +37,10 @@ export interface DesignSessionRateLimits {
   readonly mutation: { readonly max: number; readonly windowMs: number };
   /** PO-07: authorization failures, 10 per 15 minutes per network key and session id. */
   readonly authorizationFailure: { readonly max: number; readonly windowMs: number };
+  /** PO-07: session creation, 5/hour per ephemeral network key. */
+  readonly creation: { readonly max: number; readonly windowMs: number };
+  /** PO-07: the creation burst ceiling, 2/minute per ephemeral network key. */
+  readonly creationBurst: { readonly max: number; readonly windowMs: number };
 }
 
 export interface DesignSessionAuthConfig {
@@ -55,6 +59,8 @@ const MINUTE_MS = 60_000;
 const RATE_LIMITS: DesignSessionRateLimits = Object.freeze({
   mutation: { max: 30, windowMs: MINUTE_MS },
   authorizationFailure: { max: 10, windowMs: 15 * MINUTE_MS },
+  creation: { max: 5, windowMs: 60 * MINUTE_MS },
+  creationBurst: { max: 2, windowMs: MINUTE_MS },
 });
 
 function parseBoolean(raw: string | undefined, fallback: boolean, name: string): boolean {

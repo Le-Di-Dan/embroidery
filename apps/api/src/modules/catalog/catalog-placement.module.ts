@@ -1,14 +1,12 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
+import { CatalogPlacementReadModule } from './catalog-placement-read.module';
 import { AssetModule } from '../asset/asset.module';
 import { AuditModule } from '../audit/audit.module';
 import { IdentityModule } from '../identity/identity.module';
 import { ProductPlacementNormalizationRecorder } from './application/product-placement-normalization.recorder';
-import { ProductPlacementQuery } from './application/product-placement.query';
 import { ProductPlacementService } from './application/product-placement.service';
-import { PRODUCT_PLACEMENT_REPOSITORY } from './domain/repositories/product-placement.repository';
-import { DrizzleProductPlacementRepository } from './infrastructure/persistence/drizzle-product-placement.repository';
 import { AdminProductPlacementController } from './presentation/admin-product-placement.controller';
 import { PublicProductPlacementController } from './presentation/public-product-placement.controller';
 
@@ -24,6 +22,12 @@ import { PublicProductPlacementController } from './presentation/public-product-
  * Kept separate from `CatalogDraftModule` and `CatalogPublicationModule` for the
  * reason they are separate from each other: placement has its own repository,
  * its own two controllers and its own dependency set.
+ *
+ * The repository and the read query live one level down in
+ * `CatalogPlacementReadModule`, which carries no controller. That split exists so
+ * `APP3-B07` can resolve a Session's scope through the one Catalog query
+ * authority without importing this module and, with it, two HTTP surfaces it has
+ * no business mounting.
  *
  * `AssetModule` is imported for its **public** repository port — the background
  * association is validated through that boundary rather than by reading the
@@ -43,13 +47,8 @@ import { PublicProductPlacementController } from './presentation/public-product-
  * this module gained a provider and not a dependency.
  */
 @Module({
-  imports: [DatabaseModule, AssetModule, AuditModule, IdentityModule],
+  imports: [DatabaseModule, CatalogPlacementReadModule, AssetModule, AuditModule, IdentityModule],
   controllers: [AdminProductPlacementController, PublicProductPlacementController],
-  providers: [
-    { provide: PRODUCT_PLACEMENT_REPOSITORY, useClass: DrizzleProductPlacementRepository },
-    ProductPlacementNormalizationRecorder,
-    ProductPlacementQuery,
-    ProductPlacementService,
-  ],
+  providers: [ProductPlacementNormalizationRecorder, ProductPlacementService],
 })
 export class CatalogPlacementModule {}

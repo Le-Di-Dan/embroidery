@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 
 import { checkApp3P02 } from './check-app3-p02.mjs';
 import { checkPlacementConcurrency } from './check-app3-b01-concurrency.mjs';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MODULE_DIR = 'apps/api/src/modules/catalog';
@@ -217,11 +218,14 @@ function checkOwnership(rootDir, fail) {
     const b02Path = /APP3-B02\s*=\s*COMPLETE/.test(phase ?? '')
       ? '/api/public/products/{slug}/sides/{sideCode}/background'
       : undefined;
+    const b07Paths = acceptedSurface(rootDir).designSessionRoutes
+      ? ['/api/public/design-sessions', '/api/public/design-sessions/{sessionId}/resume']
+      : [];
     // No leading slash: `design-sessions` and `design-templates` are the shapes
     // `APP3-B03`/`APP3-B06` will use, and a `/sessions` needle would miss both.
     for (const forbidden of ['/sides/', '/areas/', 'templates', 'sessions', '/background']) {
       for (const path of paths.filter((candidate) => candidate.includes(forbidden))) {
-        if (path === b02Path) continue;
+        if (path === b02Path || b07Paths.includes(path)) continue;
         fail(`${path} belongs to a checkpoint that has not run`);
       }
     }

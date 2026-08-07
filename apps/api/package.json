@@ -21,6 +21,7 @@
   "dependencies": {
     "@embroidery/contracts": "workspace:*",
     "@embroidery/database": "workspace:*",
+    "@embroidery/design-document": "workspace:*",
     "@embroidery/design-engine": "workspace:*",
     "@embroidery/domain-types": "workspace:*",
     "@embroidery/object-storage": "workspace:*",

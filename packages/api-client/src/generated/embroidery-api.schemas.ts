@@ -449,6 +449,82 @@ export interface ArchiveProductBody {
   expectedUpdatedAt: string;
 }
 
+export type CloneDesignSessionBodyMode =
+  (typeof CloneDesignSessionBodyMode)[keyof typeof CloneDesignSessionBodyMode];
+
+export const CloneDesignSessionBodyMode = {
+  CLONE_TEMPLATE: 'CLONE_TEMPLATE',
+} as const;
+
+export interface CloneDesignSessionBody {
+  /**
+   * Stable Embroidery Area code within that Side.
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  areaCode: string;
+  mode: CloneDesignSessionBodyMode;
+  /**
+   * Public Product slug, as published by the placement manifest.
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  productSlug: string;
+  /**
+   * Stable Product Side code within that Product.
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  sideCode: string;
+  /**
+   * Public slug of a published Design Template scoped to this exact placement.
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  templateSlug: string;
+}
+
+export type CreateBlankDesignSessionBodyMode =
+  (typeof CreateBlankDesignSessionBodyMode)[keyof typeof CreateBlankDesignSessionBodyMode];
+
+export const CreateBlankDesignSessionBodyMode = {
+  BLANK: 'BLANK',
+} as const;
+
+export interface CreateBlankDesignSessionBody {
+  /**
+   * Stable Embroidery Area code within that Side.
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  areaCode: string;
+  mode: CreateBlankDesignSessionBodyMode;
+  /**
+   * Public Product slug, as published by the placement manifest.
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  productSlug: string;
+  /**
+   * Stable Product Side code within that Product.
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  sideCode: string;
+}
+
+/**
+ * Opens one anonymous Design Session on an exact public placement, either empty or cloned from a published Template.
+ */
+export type CreateDesignSessionBody = CreateBlankDesignSessionBody | CloneDesignSessionBody;
+
 export type CreateProductBodyCategorySlug =
   (typeof CreateProductBodyCategorySlug)[keyof typeof CreateProductBodyCategorySlug];
 

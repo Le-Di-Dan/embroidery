@@ -19,6 +19,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATALOG = 'apps/api/src/modules/catalog';
@@ -281,8 +282,10 @@ function checkBoundaries(rootDir, fail) {
         ['get', 'post', 'put', 'patch', 'delete'].includes(key),
       ).length;
     }
-    if (operations !== 23) {
-      fail(`the document publishes ${operations} operations; APP3-B02 leaves exactly 23`);
+    if (operations !== acceptedSurface(rootDir).operations) {
+      fail(
+        `the document publishes ${operations} operations; APP3-B02 leaves exactly ${acceptedSurface(rootDir).operations}`,
+      );
     }
     // The accepted APP2-T01 route must be untouched.
     if (

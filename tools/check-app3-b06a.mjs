@@ -37,6 +37,7 @@ import {
 import { checkApp3G03 } from './check-app3-g03.mjs';
 import { checkApp3G08 } from './check-app3-g08.mjs';
 import { checkApp3W01C } from './check-app3-w01c.mjs';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -71,12 +72,20 @@ function moduleSources(rootDir) {
 /** 1 — the authority this checkpoint builds on is accepted. */
 export function checkAuthority(rootDir, fail) {
   const phase = read(rootDir, 'phase') ?? '';
+  // B06A recorded its successors as blocked on it. `APP3-B07` then shipped, so
+  // exactly two consistent worlds are accepted — what stays fixed either way is
+  // that G08 and W01C are accepted and B06A itself is complete.
+  const afterB07 = /\nAPP3-B07 = COMPLETE/.test(phase);
   for (const line of [
     'APP3-G08 = COMPLETE — REVIEW_ACCEPTED',
     'APP3-W01C = COMPLETE — REVIEW_ACCEPTED',
-    'APP3-B06A = COMPLETE — REVIEW_DELIVERED',
-    'APP3-B07 = READY — NOT STARTED',
-    'APP3-B06B = BLOCKED_BY_APP3-B07',
+    ...(afterB07
+      ? ['APP3-B06A = COMPLETE — REVIEW_ACCEPTED', 'APP3-B06B = READY — NOT STARTED']
+      : [
+          'APP3-B06A = COMPLETE — REVIEW_DELIVERED',
+          'APP3-B07 = READY — NOT STARTED',
+          'APP3-B06B = BLOCKED_BY_APP3-B07',
+        ]),
   ]) {
     if (!phase.includes(`\n${line}\n`)) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
@@ -92,31 +101,47 @@ export function checkScope(rootDir, fail) {
     fail(`${CANONICAL_FILES.phase}: APP3-B07 no longer owns session bootstrap`);
   }
 
-  // No production controller and no operation may exist in the design module.
+  // No production controller may exist in the design module — until `APP3-B07`,
+  // which owns the first two Session operations.
+  const publishes = acceptedSurface(rootDir).designSessionRoutes;
   for (const [file, text] of moduleSources(rootDir)) {
-    if (file.endsWith('.spec.ts')) continue;
+    if (file.endsWith('.spec.ts') || publishes) continue;
     if (/@Controller\(/.test(code(text))) {
       fail(`${file}: APP3-B06A publishes no HTTP operation, but a controller exists`);
     }
   }
+  const surface = acceptedSurface(rootDir);
   const openapi = read(rootDir, 'openapi') ?? '{}';
-  if (openapi.includes('/public/design-sessions')) {
+  if (!surface.designSessionRoutes && openapi.includes('/public/design-sessions')) {
     fail(`${CANONICAL_FILES.openapi}: a design-session route exists — B07/B06B started`);
   }
   const paths = Object.keys(JSON.parse(openapi).paths ?? {}).length;
-  if (paths !== OPENAPI_PATHS) {
-    fail(`${CANONICAL_FILES.openapi}: ${String(paths)} paths, expected ${String(OPENAPI_PATHS)}`);
+  if (paths !== surface.paths) {
+    fail(`${CANONICAL_FILES.openapi}: ${String(paths)} paths, expected ${String(surface.paths)}`);
   }
 }
 
-/** 3 — nothing here mints a secret or sets a success cookie. */
+/**
+ * 3 — issuance belongs to `APP3-B07`, and only to it.
+ *
+ * Two consistent worlds. Before B07 the design module mints nothing and sets no
+ * cookie at all, which is what proved B06A had not overreached. After B07 it
+ * mints in exactly one place — the issuer — and sets exactly one cookie, from
+ * the same policy that clears it. Every mixture fails, and the clearing helper
+ * is required in both.
+ */
 export function checkIssuesNothing(rootDir, fail) {
+  const delivered = /\nAPP3-B07 = COMPLETE/.test(read(rootDir, 'phase') ?? '');
+  const mayIssue = (file) =>
+    file.includes('ephemeral-network-key') ||
+    (delivered && (file.includes('secret.issuer') || file.includes('cookie.policy')));
+
   for (const [file, text] of ownedSources(rootDir)) {
     const body = code(text);
-    if (/randomBytes\(/.test(body) && !file.includes('ephemeral-network-key')) {
+    if (/randomBytes\(/.test(body) && !mayIssue(file)) {
       fail(`${file}: mints random bytes — secret issuance belongs to APP3-B07`);
     }
-    if (/serializeSessionCookie|issueCookie|Max-Age=\$\{/.test(body)) {
+    if (/serializeSessionCookie|issueCookie|Max-Age=\$\{/.test(body) && !mayIssue(file)) {
       fail(`${file}: issues a session cookie — that belongs to APP3-B07`);
     }
   }
@@ -124,7 +149,7 @@ export function checkIssuesNothing(rootDir, fail) {
   if (!/serializeDeletionCookie/.test(cookies)) {
     fail(`${CANONICAL_FILES.cookies}: no cookie-clearing helper`);
   }
-  if (/Max-Age=\${/.test(cookies)) {
+  if (!delivered && /Max-Age=\${/.test(cookies)) {
     fail(`${CANONICAL_FILES.cookies}: a variable Max-Age implies issuance, not clearing`);
   }
 }

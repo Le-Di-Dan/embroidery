@@ -20,6 +20,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { acceptedSurface } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -257,18 +258,18 @@ function checkNoSurfaceDelta(rootDir, fail) {
   const document = openapi(rootDir);
   if (document === undefined) return;
   const paths = Object.keys(document.paths ?? {});
-  if (paths.length !== PATH_COUNT) {
+  if (paths.length !== acceptedSurface(rootDir).paths) {
     fail(
-      `the document publishes ${String(paths.length)} paths; APP3-P03 adds none to ${String(PATH_COUNT)}`,
+      `the document publishes ${String(paths.length)} paths; APP3-P03 adds none to ${String(acceptedSurface(rootDir).paths)}`,
     );
   }
   let operations = 0;
   for (const pathItem of Object.values(document.paths ?? {})) {
     for (const method of Object.keys(pathItem)) if (HTTP_METHODS.includes(method)) operations += 1;
   }
-  if (operations !== OPERATION_COUNT) {
+  if (operations !== acceptedSurface(rootDir).operations) {
     fail(
-      `the document publishes ${String(operations)} operations; APP3-P03 adds none to ${String(OPERATION_COUNT)}`,
+      `the document publishes ${String(operations)} operations; APP3-P03 adds none to ${String(acceptedSurface(rootDir).operations)}`,
     );
   }
   const background =

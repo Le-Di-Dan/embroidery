@@ -23,6 +23,7 @@ import type {
   AdminProductUnpublish200,
   AdminProductUpdate200,
   ArchiveProductBody,
+  CreateDesignSessionBody,
   CreateProductBody,
   HealthStatusResponse,
   PublicProductDetail200,
@@ -283,6 +284,39 @@ export const healthReadiness = (
 };
 
 /**
+ * Opens one session on an exact public placement, either empty or cloned from a published Template scoped to that same placement. The session secret is returned only as a host-only, HttpOnly cookie.
+ * @summary Open an anonymous design session
+ */
+export const publicDesignSessionCreate = (
+  createDesignSessionBody: CreateDesignSessionBody,
+  options?: SecondParameter<typeof apiRequest<void>>,
+) => {
+  return apiRequest<void>(
+    {
+      url: `/api/public/design-sessions`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createDesignSessionBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Rotates the session secret and returns the current snapshot. The previous secret stops working immediately; expiry and document revision are unchanged.
+ * @summary Resume an anonymous design session
+ */
+export const publicDesignSessionResume = (
+  sessionId: string,
+  options?: SecondParameter<typeof apiRequest<void>>,
+) => {
+  return apiRequest<void>(
+    { url: `/api/public/design-sessions/${sessionId}/resume`, method: 'POST' },
+    options,
+  );
+};
+
+/**
  * Returns published products in editorial order, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts and archived products are excluded by the query itself. Pagination is keyset: `nextCursor` is opaque, bound to the filter it was issued under, and null on the last page. Responses are never stored. Publication is re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished product visible.
  * @summary List published products
  */
@@ -425,6 +459,12 @@ export type AdminProductUnpublishResult = NonNullable<
 >;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
+export type PublicDesignSessionCreateResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignSessionCreate>>
+>;
+export type PublicDesignSessionResumeResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignSessionResume>>
+>;
 export type PublicProductListResult = NonNullable<Awaited<ReturnType<typeof publicProductList>>>;
 export type PublicProductDetailResult = NonNullable<
   Awaited<ReturnType<typeof publicProductDetail>>

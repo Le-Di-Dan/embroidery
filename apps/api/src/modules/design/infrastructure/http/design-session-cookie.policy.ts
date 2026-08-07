@@ -100,6 +100,28 @@ export class DesignSessionCookiePolicy {
   }
 
   /**
+   * A `Set-Cookie` carrying a freshly issued secret (`APP3-B07`).
+   *
+   * `Max-Age` is derived from `expiresAt` and clamped at zero, so the cookie can
+   * never outlive the session it authorizes — `IMP-D043` PO-03 requires exactly
+   * that, and a fixed lifetime would drift from the absolute TTL on every
+   * rotation. Attributes match `serializeDeletionCookie` so a later clear can
+   * actually remove what this set.
+   */
+  serializeSessionCookie(sessionId: string, secret: string, expiresAt: Date, now: Date): string {
+    const maxAgeSeconds = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+    const parts = [
+      `${this.cookieName(sessionId)}=${secret}`,
+      `Max-Age=${String(maxAgeSeconds)}`,
+      'Path=/',
+      'HttpOnly',
+      'SameSite=Lax',
+    ];
+    if (this.config.cookieSecure) parts.push('Secure');
+    return parts.join('; ');
+  }
+
+  /**
    * A `Set-Cookie` that deletes this Session's cookie.
    *
    * Attributes must match the ones it was set with or the browser keeps the

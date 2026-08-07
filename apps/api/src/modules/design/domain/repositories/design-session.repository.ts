@@ -75,6 +75,15 @@ export interface SaveDocumentInput {
   readonly expectedRevision: number;
 }
 
+export interface RotateSecretInput {
+  readonly id: DesignSessionId;
+  /** The digest currently stored. The update is guarded on it, so exactly one
+   * concurrent resume can win and the old secret dies the moment it does. */
+  readonly expectedSecretHash: string;
+  readonly nextSecretHash: string;
+  readonly at: Date;
+}
+
 export interface AdvanceRevisionInput {
   readonly id: DesignSessionId;
   /** The revision the caller last read; must match the stored one exactly. */
@@ -131,6 +140,25 @@ export interface DesignSessionRepository {
    * @requiresTransaction
    */
   advanceRevision(input: AdvanceRevisionInput): Promise<DesignSession>;
+
+  /**
+   * Rotates the session secret in one guarded statement (`APP3-B07`,
+   * `IMP-D043` PO-04).
+   *
+   * The predicate includes the **current** digest, so two resumes presenting the
+   * same old secret cannot both succeed: the loser matches zero rows. The old
+   * digest is overwritten rather than retained, which is what "no previous-secret
+   * grace window" means physically — there is nowhere for an old secret to still
+   * verify from.
+   *
+   * `expires_at` and `autosave_revision` are deliberately absent from the SET:
+   * rotation never extends the TTL and never touches the document.
+   *
+   * Returns the rotated row, or `undefined` when the guard matched nothing.
+   *
+   * @requiresTransaction
+   */
+  rotateSecret(input: RotateSecretInput): Promise<DesignSession | undefined>;
 
   /** Associates an uploaded asset with the session. @requiresTransaction */
   attachAsset(id: DesignSessionId, assetId: string): Promise<void>;

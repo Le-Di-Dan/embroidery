@@ -25,6 +25,7 @@ import {
   type DesignSessionAuthConfig,
 } from '../../config/design-session-auth.config';
 
+const CREATION_DIMENSION = 'design-session.creation';
 const MUTATION_DIMENSION = 'design-session.mutation';
 const FAILURE_DIMENSION = 'design-session.authorization-failure';
 
@@ -34,6 +35,28 @@ export class DesignSessionRateLimiter {
     private readonly limiter: SlidingWindowRateLimiter,
     @Inject(DESIGN_SESSION_AUTH_CONFIG) private readonly config: DesignSessionAuthConfig,
   ) {}
+
+  /**
+   * PO-07: session creation, 5/hour with a 2/minute burst, per network key.
+   *
+   * Both windows are recorded on every attempt and either may refuse. The burst
+   * exists because five per hour alone would let a script take the whole budget
+   * in one second; the hourly cap exists because two per minute alone would
+   * allow a hundred an hour. Neither bounds the other.
+   */
+  checkCreation(networkKey: string): RateLimitDecision {
+    const hourly = this.limiter.check(
+      `${CREATION_DIMENSION}.hour`,
+      networkKey,
+      this.config.rateLimits.creation,
+    );
+    const burst = this.limiter.check(
+      `${CREATION_DIMENSION}.burst`,
+      networkKey,
+      this.config.rateLimits.creationBurst,
+    );
+    return hourly.allowed ? burst : hourly;
+  }
 
   /** PO-07: 30 authorized mutations per minute, per session id. */
   checkMutation(sessionId: string): RateLimitDecision {
