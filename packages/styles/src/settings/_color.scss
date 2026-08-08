@@ -29,6 +29,15 @@ $color-action-primary: #e8475f;
 $color-action-hover: #d73850;
 $color-action-active: #c92e45;
 
+// Overlay
+//
+// The canonical modal/dialog/bottom-sheet scrim (`FIG-DS-SCRIM-TOKEN`, DS node
+// 78:2), added by APP3-D01-C1 and consumed from APP3-A01 onward. Exactly one
+// scrim on purpose: no 40/45/50 alpha family, so two overlays can never sit at
+// two different depths. `ink/900` at 45% — the same ink as $color-text-primary,
+// never a literal black, which reads colder than the palette.
+$color-overlay-scrim: rgba(23, 23, 23, 0.45);
+
 // Status
 $color-status-success: #16a34a;
 $color-status-warning: #d97706;

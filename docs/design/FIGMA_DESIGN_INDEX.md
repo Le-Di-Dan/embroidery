@@ -515,20 +515,20 @@ Sub-section anchors: `00` `596:6` · `01` `596:7` · `02` `596:8` · `03` `596:9
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | FIG-APP3-OVERVIEW-FLOWMAP | Shared | APP3 phase overview | Flow Map & Checkpoint Dependency | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 597:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=597-3) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-PLACEMENT-DESKTOP-DEFAULT | Admin | Admin placement authoring | Placement Authoring | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 598:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=598-3) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-PLACEMENT-DESKTOP-AREAEDIT | Admin | Admin placement authoring | Placement Authoring | Area Editing | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 598:76 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=598-76) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-PLACEMENT-DESKTOP-VALIDATION | Admin | Admin placement authoring | Placement Authoring | Validation Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 598:149 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=598-149) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-PLACEMENT-DESKTOP-LOADING | Admin | Admin placement authoring | Placement Authoring | Loading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 598:225 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=598-225) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATELIST-DESKTOP-DEFAULT | Admin | Admin template list | Template List | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-3) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATELIST-DESKTOP-LOADING | Admin | Admin template list | Template List | Loading Skeleton | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:91 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-91) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATELIST-DESKTOP-EMPTY | Admin | Admin template list | Template List | Empty | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-140) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATELIST-DESKTOP-ERROR | Admin | Admin template list | Template List | API Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:188 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-188) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATELIST-MOBILE-DEFAULT | Admin | Admin template list | Template List | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:236 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-236) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATEEDITOR-DESKTOP-DEFAULT | Admin | Admin template editor | Template Editor | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-3) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATEEDITOR-DESKTOP-TEXTSELECTED | Admin | Admin template editor | Template Editor | Text Selected | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:48 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-48) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATEEDITOR-DESKTOP-SAVING | Admin | Admin template editor | Template Editor | Unsaved / Saving | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:100 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-100) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATEEDITOR-DESKTOP-CONFLICT | Admin | Admin template editor | Template Editor | Stale Version Conflict | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:147 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-147) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-ADMIN-TEMPLATEEDITOR-MOBILE-READONLY | Admin | Admin template editor | Template Editor | Read-only Notice | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-204) | APP3-D01 | — | — | 2026-08-09 |
+| FIG-ADMIN-PLACEMENT-DESKTOP-DEFAULT | Admin | Admin placement authoring | Placement Authoring | Default | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 598:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=598-3) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-PLACEMENT-DESKTOP-AREAEDIT | Admin | Admin placement authoring | Placement Authoring | Area Editing | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 598:76 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=598-76) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-PLACEMENT-DESKTOP-VALIDATION | Admin | Admin placement authoring | Placement Authoring | Validation Error | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 598:149 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=598-149) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-PLACEMENT-DESKTOP-LOADING | Admin | Admin placement authoring | Placement Authoring | Loading | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 598:225 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=598-225) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATELIST-DESKTOP-DEFAULT | Admin | Admin template list | Template List | Default | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-3) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATELIST-DESKTOP-LOADING | Admin | Admin template list | Template List | Loading Skeleton | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:91 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-91) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATELIST-DESKTOP-EMPTY | Admin | Admin template list | Template List | Empty | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-140) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATELIST-DESKTOP-ERROR | Admin | Admin template list | Template List | API Error | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:188 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-188) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATELIST-MOBILE-DEFAULT | Admin | Admin template list | Template List | Default | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 600:236 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=600-236) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATEEDITOR-DESKTOP-DEFAULT | Admin | Admin template editor | Template Editor | Default | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-3) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATEEDITOR-DESKTOP-TEXTSELECTED | Admin | Admin template editor | Template Editor | Text Selected | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:48 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-48) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATEEDITOR-DESKTOP-SAVING | Admin | Admin template editor | Template Editor | Unsaved / Saving | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:100 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-100) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATEEDITOR-DESKTOP-CONFLICT | Admin | Admin template editor | Template Editor | Stale Version Conflict | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:147 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-147) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-TEMPLATEEDITOR-MOBILE-READONLY | Admin | Admin template editor | Template Editor | Read-only Notice | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 601:204 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=601-204) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
 | FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-READY | Admin | Admin template lifecycle | Publish Readiness | Ready | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 602:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=602-3) | APP3-D01 | — | — | 2026-08-09 |
 | FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-GUARDFAIL | Admin | Admin template lifecycle | Publish Readiness | Guard Failure | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 602:54 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=602-54) | APP3-D01 | — | — | 2026-08-09 |
 | FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-PUBLISHCONFIRM | Admin | Admin template lifecycle | Publish Confirmation | Confirmation | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 602:105 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=602-105) | APP3-D01 | — | — | 2026-08-09 |
@@ -576,9 +576,9 @@ Sub-section anchors: `00` `596:6` · `01` `596:7` · `02` `596:8` · `03` `596:9
 | FIG-STUDIO-MOBILE-TEXTSHEET | Storefront | Studio mobile & touch | Mobile Text Sheet | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 610:409 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=610-409) | APP3-D01 | — | — | 2026-08-09 |
 | FIG-STUDIO-MOBILE-IMAGESHEET | Storefront | Studio mobile & touch | Mobile Image Sheet | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 610:465 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=610-465) | APP3-D01 | — | — | 2026-08-09 |
 | FIG-STUDIO-MOBILE-CONFLICT | Storefront | Studio mobile & touch | Mobile Conflict Sheet | Stale Revision Conflict | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 610:514 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=610-514) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-APP3-SHARED-STATEMATRIX | Shared | APP3 shared components & states | Shared State Matrix | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 611:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=611-3) | APP3-D01 | — | — | 2026-08-09 |
+| FIG-APP3-SHARED-STATEMATRIX | Shared | APP3 shared components & states | Shared State Matrix | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 611:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=611-3) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
 | FIG-APP3-DS-GAPS | Shared | APP3 shared components & states | Design-system Gaps | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 611:91 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=611-91) | APP3-D01 | — | — | 2026-08-09 |
-| FIG-APP3-RESPONSIVE-REFERENCE | Shared | APP3 responsive reference | Responsive Reference | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 611:105 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=611-105) | APP3-D01 | — | — | 2026-08-09 |
+| FIG-APP3-RESPONSIVE-REFERENCE | Shared | APP3 responsive reference | Responsive Reference | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 611:105 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=611-105) | APP3-D01 | — | APP3-A01 §0 operator review | 2026-08-09 |
 | FIG-APP3-HANDOFF-DEPENDENCY | Shared | APP3 handoff & dependency | Handoff & Backend Dependency | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 611:145 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=611-145) | APP3-D01 | — | — | 2026-08-09 |
 
 ### 4.8 APP3-D01-C1 — responsive reference frames (NEW, this correction)
@@ -596,13 +596,49 @@ placement preview that scales rather than reflows. That collapse rule cannot be
 inferred from `A03`, which is the condition the correction directive sets for
 drawing a second Admin reference.
 
-Rows are `REVIEW_REQUIRED`; the correction does not self-approve.
+The correction did not self-approve these rows. The operator reviewed `APP3-D01`
+and `APP3-D01-C1`, accepted both, and the approval was applied to the registry by
+`APP3-A01` §1 — see §4.9.
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| FIG-ADMIN-TEMPLATEEDITOR-NARROW-1280 | Admin | Admin template editor | Template Editor | Narrow Desktop Reference | Desktop 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 618:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=618-3) | APP3-D01-C1 | — | — | 2026-08-09 |
-| FIG-ADMIN-PLACEMENT-NARROW-1280 | Admin | Admin placement authoring | Placement Authoring | Narrow Desktop Reference | Desktop 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 618:74 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=618-74) | APP3-D01-C1 | — | — | 2026-08-09 |
-| FIG-STUDIO-EDITING-TABLET-1024 | Storefront | Studio editing surface | Studio Editing | Tablet Reference | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 618:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=618-140) | APP3-D01-C1 | — | — | 2026-08-09 |
+| FIG-ADMIN-TEMPLATEEDITOR-NARROW-1280 | Admin | Admin template editor | Template Editor | Narrow Desktop Reference | Desktop 1280 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 618:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=618-3) | APP3-D01-C1 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-ADMIN-PLACEMENT-NARROW-1280 | Admin | Admin placement authoring | Placement Authoring | Narrow Desktop Reference | Desktop 1280 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 618:74 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=618-74) | APP3-D01-C1 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-STUDIO-EDITING-TABLET-1024 | Storefront | Studio editing surface | Studio Editing | Tablet Reference | Tablet 1024 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 618:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=618-140) | APP3-D01-C1 | — | APP3-A01 §0 operator review | 2026-08-09 |
+
+### 4.9 APP3-D01 / D01-C1 operator approval (applied by `APP3-A01`)
+
+The operator reviewed `APP3-D01` and its single correction and accepted both:
+
+```text
+APP3-D01    = COMPLETE — REVIEW_ACCEPTED
+APP3-D01-C1 = COMPLETE — REVIEW_ACCEPTED
+```
+
+`APP3-A01` §1 applied that approval here. **21** rows moved
+`REVIEW_REQUIRED → APPROVED_FOR_IMPLEMENTATION`:
+
+| Group | Rows |
+|---|---|
+| A01 · Admin placement authoring | 4 |
+| A02 · Admin template list | 5 |
+| A03 · Admin template editor | 5 |
+| Shared state matrix + responsive reference | 2 |
+| D01-C1 responsive references (`618:3`, `618:74`, `618:140`) | 3 |
+| `FIG-DS-INPUT`, `FIG-DS-SCRIM-TOKEN` | 2 |
+
+The transition is **scoped to what `A01`/`A02`/`A03` need**, which is how the
+`APP3-A01` directive framed it. `A04` and every Studio screen remain
+`REVIEW_REQUIRED`: their designs were accepted, but no checkpoint has been
+cleared to implement them, and an `APPROVED_FOR_IMPLEMENTATION` row is a
+standing licence for §2 to let frontend work proceed. Granting it early would
+make this registry stop being the gate it exists to be. Those rows transition
+when their own checkpoints open.
+
+`FU-DESIGN-PUBLISH-DS-INPUT-01` stays **OPEN**. Approval is not publication: the
+Figma library still needs a manual publish before another file can instance
+`FIG-DS-INPUT`. It does not block code, which consumes the token and component
+semantics rather than a Figma instance.
 
 ## 5. IA and user-flow registry
 
@@ -635,8 +671,8 @@ matrices, plus published-library status confirmed via `search_design_system`.
 | FIG-DS-NAVLINK | DS | Actions | NavLink (Default / Active) | Catalog | All | component-set | APPROVED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Components · Actions | 40:14 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=40-14) | — | — | Approved Foundation + WF08 validation matrix; published library | 2026-07-25 |
 | FIG-DS-SEARCHBAR | DS | Navigation | SearchBar | Catalog | All | component | APPROVED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Components · Actions | 40:16 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=40-16) | — | — | Approved Foundation + WF08 validation matrix; published library; login Input pattern source | 2026-07-25 |
 | FIG-DS-FOUNDATIONS | DS | Tokens & Styles | Foundations board (Color, Type, Spacing, Radius) | Catalog | All | foundation | APPROVED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Foundations | 37:3 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=37-3) | — | — | Approved Foundation (DESIGN_SYSTEM_FOUNDATION.md §4–7); WF07 token matrix | 2026-07-25 |
-| FIG-DS-SCRIM-TOKEN | DS | Tokens & Styles | overlay/scrim semantic token (swatch + demo) | Catalog | All | foundation | REVIEW_REQUIRED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Foundations | 78:2 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=78-2) | APP3-D01-C1 | — | — | 2026-08-09 |
-| FIG-DS-INPUT | DS | Forms | Input (State = Default/Focus/Filled/Error/Disabled) | Catalog | All | component-set | REVIEW_REQUIRED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Components · Forms | 76:29 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=76-29) | APP3-D01-C1 | — | — | 2026-08-09 |
+| FIG-DS-SCRIM-TOKEN | DS | Tokens & Styles | overlay/scrim semantic token (swatch + demo) | Catalog | All | foundation | APPROVED_FOR_IMPLEMENTATION | hsxSjwkqQKM9vuyRgWSesU | HF01 · Foundations | 78:2 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=78-2) | APP3-D01-C1 | — | APP3-A01 §0 operator review | 2026-08-09 |
+| FIG-DS-INPUT | DS | Forms | Input (State = Default/Focus/Filled/Error/Disabled) | Catalog | All | component-set | APPROVED_FOR_IMPLEMENTATION | hsxSjwkqQKM9vuyRgWSesU | HF01 · Components · Forms | 76:29 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=76-29) | APP3-D01-C1 | — | APP3-A01 §0 operator review | 2026-08-09 |
 
 **`FIG-DS-INPUT` closed by `APP3-D01-C1`** under `D01_C1_DS_REPAIR_AUTHORIZATION` — an
 operator-approved, narrowly scoped exception to `FIG-FILE-DS`'s read-only policy,

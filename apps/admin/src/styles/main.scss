@@ -6,6 +6,9 @@
 
 @use '@embroidery/styles' as styles;
 
+// Shared Admin primitives (used by more than one feature).
+@use '../shared/forms/admin-field';
+
 // Feature styles (each feature owns a leaf stylesheet, composed here).
 @use '../features/staff-auth/styles/staff-login';
 @use '../features/admin-shell/styles/admin-shell';
@@ -13,6 +16,7 @@
 @use '../features/products/styles/products';
 @use '../features/products/styles/product-form';
 @use '../features/products/styles/product-publication';
+@use '../features/product-placement/styles/product-placement';
 
 // Browser normalization: predictable box model.
 *,

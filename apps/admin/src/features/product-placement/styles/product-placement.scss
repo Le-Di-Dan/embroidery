@@ -1,0 +1,732 @@
+// Admin placement authoring (`APP3-A01`).
+//
+// Reproduces `FIG-ADMIN-PLACEMENT-DESKTOP-*` (`596:7`) at 1440 and
+// `FIG-ADMIN-PLACEMENT-NARROW-1280` (`618:74`) at 1280. Every colour, radius
+// and space is a token: no literal hex, and the dialog scrim is the canonical
+// `$color-overlay-scrim` (`FIG-DS-SCRIM-TOKEN`), never an inline rgba.
+//
+// Class names are prefixed `placement-*` and `admin-field*`. The global
+// stylesheet has no scoping, so a generic `.field` or `.canvas` here would
+// collide with another feature's rules and jsdom could never catch it.
+
+@use '@embroidery/styles' as styles;
+
+// Narrow-desktop reference (`618:74`): the sidebar narrows and the preview
+// scales rather than reflowing.
+//
+// There is deliberately no mobile breakpoint here. Below the authoring floor
+// the screen renders the read-only notice *instead of* the editor
+// (`useViewportMode`), so no rule below ever has to hide an editing control.
+$placement-narrow-desktop: 1400px;
+
+.placement {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.placement__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: styles.spacing(16);
+}
+
+.placement__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.placement__subtitle {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-secondary;
+}
+
+.placement__back,
+.placement__secondary {
+  display: inline-block;
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.placement__status,
+.placement__failure {
+  padding: styles.spacing(16);
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+}
+
+.placement__failure-title {
+  margin: 0 0 styles.spacing(4);
+  font-weight: 600;
+  color: styles.$color-status-error;
+}
+
+.placement__failure-body {
+  margin: 0 0 styles.spacing(12);
+  color: styles.$color-text-secondary;
+}
+
+// ---------------------------------------------------------------------------
+// Three columns: hierarchy · preview · inspector.
+//
+// The preview is the only fixed column, because it holds a fixed-aspect canvas
+// that scales rather than reflows (`618:74`). The two panels are the elastic
+// ones, with minimums that keep a numeric field legible.
+// ---------------------------------------------------------------------------
+.placement__columns {
+  display: grid;
+  // The preview is the elastic column, capped at its 1440 width. `minmax(0, …)`
+  // is what stops a grid track from refusing to shrink below its content and
+  // pushing the row wider than the page.
+  grid-template-columns: minmax(240px, 296px) minmax(0, 520px) minmax(240px, 280px);
+  gap: styles.spacing(16);
+  align-items: start;
+}
+
+@media (max-width: $placement-narrow-desktop) {
+  .placement__columns {
+    // At 1280 the panels give up their slack first and the preview then scales
+    // proportionally into whatever remains (`618:74`). All three regions stay
+    // simultaneously visible, nothing collapses to a drawer, and the row never
+    // exceeds the page — which is what the ruling means by no horizontal
+    // overflow.
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(200px, 244px);
+    gap: styles.spacing(12);
+  }
+}
+
+.placement-hierarchy,
+.placement-preview,
+.placement-inspector {
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.placement-inspector {
+  // The inspector scrolls; the stage never does.
+  max-height: 720px;
+  overflow-y: auto;
+}
+
+// ---------------------------------------------------------------------------
+// Hierarchy
+// ---------------------------------------------------------------------------
+.placement-hierarchy__product-label {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-tertiary;
+  text-transform: uppercase;
+}
+
+.placement-hierarchy__product {
+  margin: 0 0 styles.spacing(16);
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+}
+
+.placement-hierarchy__section-head,
+.placement-hierarchy__areas-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(8);
+  margin-bottom: styles.spacing(8);
+}
+
+.placement-hierarchy__section-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-secondary;
+}
+
+.placement-hierarchy__areas-label {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-tertiary;
+}
+
+.placement-hierarchy__add,
+.placement-hierarchy__retire {
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  cursor: pointer;
+  // The column is 296px at 1440 and narrower at 1280. Without these the action
+  // wraps to several lines and takes the row name's width with it.
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.placement-hierarchy__sides,
+.placement-hierarchy__areas,
+.placement-hierarchy__side {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.placement-hierarchy__side {
+  margin-bottom: styles.spacing(16);
+  padding-bottom: styles.spacing(12);
+  border-bottom: 1px solid styles.$color-border-primary;
+}
+
+// The nesting that makes Product → Side → Area unmistakable.
+.placement-hierarchy__areas {
+  padding-left: styles.spacing(16);
+  border-left: 2px solid styles.$color-border-primary;
+}
+
+.placement-hierarchy__row,
+.placement-hierarchy__area {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(8);
+  margin-bottom: styles.spacing(4);
+}
+
+.placement-hierarchy__side-button,
+.placement-hierarchy__area-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(8);
+  padding: styles.spacing(8);
+  border: 1px solid transparent;
+  border-radius: styles.$radius-sm;
+  background: transparent;
+  color: styles.$color-text-primary;
+  text-align: left;
+  cursor: pointer;
+
+  &--selected {
+    border-color: styles.$color-action-primary;
+    background: styles.$color-background-secondary;
+  }
+
+  &--invalid {
+    border-color: styles.$color-status-error;
+  }
+
+  &--retired,
+  &--removed {
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+
+  &--removed {
+    text-decoration: line-through;
+  }
+}
+
+.placement-hierarchy__name {
+  flex: 1;
+  // `min-width: 0` lets a long name wrap inside the row instead of forcing the
+  // flex line wider than the column.
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.placement-hierarchy__badge {
+  padding: styles.spacing(4) styles.spacing(8);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  white-space: nowrap;
+
+  &--retired {
+    background: styles.$color-border-primary;
+  }
+
+  &--pending {
+    color: styles.$color-status-warning;
+  }
+
+  &--new {
+    color: styles.$color-status-info;
+  }
+}
+
+.placement-hierarchy__empty,
+.placement-hierarchy__no-areas {
+  margin: 0 0 styles.spacing(8);
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Preview
+// ---------------------------------------------------------------------------
+.placement-preview__title {
+  margin: 0 0 styles.spacing(12);
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-secondary;
+}
+
+// The stage carries the frame and the placeholder; the SVG inside it carries
+// the geometry. Splitting them keeps every positioned element here static —
+// nothing in this block depends on a value only the component knows.
+.placement-preview__stage {
+  position: relative;
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  // An area past the edge is clipped here and flagged in the inspector — it is
+  // never silently moved back inside.
+  overflow: hidden;
+}
+
+// An SVG with a `viewBox` and no height derives its own height from the
+// authored aspect ratio, so the shape is always the product's and never the
+// column's — and no aspect-ratio value has to cross from the component.
+.placement-preview__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.placement-preview__placeholder {
+  position: absolute;
+  // Pinned to the top rather than centred: an area rectangle sits over the
+  // middle of the canvas and cut the sentence in half.
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: styles.spacing(8) styles.spacing(16);
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+  text-align: center;
+}
+
+// Selection and validity arrive as data attributes with predefined selectors,
+// one of the mechanisms `05-FRONTEND-AND-SCSS-STANDARD.md` §8 names.
+.placement-preview__area {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.placement-preview__area-rect {
+  fill: transparent;
+  stroke: styles.$color-action-primary;
+  stroke-width: 2;
+  // Keeps the outline 2 device pixels at any canvas scale. Without it the
+  // stroke is drawn in canvas units and a 2000px-wide side renders a hairline.
+  vector-effect: non-scaling-stroke;
+}
+
+.placement-preview__area[data-selected='true'] .placement-preview__area-rect {
+  fill: styles.$color-surface-primary;
+  fill-opacity: 0.55;
+}
+
+.placement-preview__area[data-invalid='true'] .placement-preview__area-rect {
+  stroke: styles.$color-status-error;
+  stroke-dasharray: 6 4;
+}
+
+// The dashed safe boundary, inset inside the area rectangle.
+.placement-preview__safe {
+  fill: none;
+  stroke: styles.$color-border-secondary;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.placement-preview__area-name {
+  fill: styles.$color-text-primary;
+}
+
+.placement-preview__area-error {
+  fill: styles.$color-status-error;
+}
+
+.placement-preview__empty,
+.placement-preview__meta {
+  margin: styles.spacing(8) 0 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Inspector
+// ---------------------------------------------------------------------------
+.placement-inspector__title {
+  margin: 0 0 styles.spacing(12);
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-secondary;
+}
+
+.placement-inspector__section-title {
+  margin: 0 0 styles.spacing(12);
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+}
+
+.placement-inspector__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: styles.spacing(8);
+}
+
+.placement-inspector__background {
+  margin-bottom: styles.spacing(16);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+}
+
+.placement-inspector__label {
+  margin: 0 0 styles.spacing(4);
+  font-weight: 600;
+  font-size: styles.$font-size-body-s;
+}
+
+.placement-inspector__background-state {
+  margin: 0 0 styles.spacing(8);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.placement-inspector__secondary {
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  cursor: pointer;
+}
+
+.placement-inspector__empty,
+.placement-inspector__read-only {
+  margin: 0 0 styles.spacing(12);
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+}
+
+.placement-inspector__error {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Save bar
+// ---------------------------------------------------------------------------
+.placement-save-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: styles.spacing(16);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-secondary;
+}
+
+.placement-save-bar__status {
+  margin: 0;
+  font-weight: 600;
+}
+
+.placement-save-bar__invalid,
+.placement-save-bar__conflict {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-status-warning;
+  font-size: styles.$font-size-body-s;
+}
+
+.placement-save-bar__failure {
+  margin-top: styles.spacing(8);
+}
+
+.placement-save-bar__failure-title {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-weight: 600;
+}
+
+.placement-save-bar__failure-body {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.placement-save-bar__actions {
+  display: flex;
+  gap: styles.spacing(8);
+  flex-shrink: 0;
+}
+
+.placement-save-bar__primary,
+.placement-save-bar__secondary {
+  padding: styles.spacing(8) styles.spacing(16);
+  border-radius: styles.$radius-sm;
+  cursor: pointer;
+}
+
+.placement-save-bar__primary {
+  border: 1px solid styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:disabled {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-border-secondary;
+    cursor: not-allowed;
+  }
+}
+
+.placement-save-bar__secondary {
+  border: 1px solid styles.$color-border-secondary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Dialogs
+// ---------------------------------------------------------------------------
+.placement-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(16);
+  // The canonical scrim token — never an inline rgba (`FIG-DS-SCRIM-TOKEN`).
+  background: styles.$color-overlay-scrim;
+}
+
+.placement-dialog {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+
+  &--wide {
+    max-width: 720px;
+  }
+}
+
+.placement-dialog__title {
+  margin: 0 0 styles.spacing(12);
+  font-size: styles.$font-size-heading-s;
+}
+
+.placement-dialog__text {
+  margin: 0 0 styles.spacing(8);
+}
+
+.placement-dialog__note {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.placement-dialog__footer {
+  margin-top: styles.spacing(16);
+}
+
+.placement-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: styles.spacing(8);
+}
+
+.placement-dialog__primary,
+.placement-dialog__secondary {
+  padding: styles.spacing(8) styles.spacing(16);
+  border-radius: styles.$radius-sm;
+  cursor: pointer;
+}
+
+.placement-dialog__primary {
+  border: 1px solid styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:disabled {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-border-secondary;
+    cursor: not-allowed;
+  }
+}
+
+.placement-dialog__secondary {
+  border: 1px solid styles.$color-border-secondary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+// ---------------------------------------------------------------------------
+// Background picker
+// ---------------------------------------------------------------------------
+.placement-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: styles.spacing(12);
+  margin: styles.spacing(12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.placement-picker__label {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(8);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  cursor: pointer;
+}
+
+.placement-picker__thumb {
+  display: block;
+  height: 96px;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.placement-picker__type {
+  display: block;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.placement-picker__state,
+.placement-picker__help,
+.placement-picker__status,
+.placement-picker__empty-body,
+.placement-picker__unavailable-body {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+}
+
+.placement-picker__continuation {
+  margin-top: styles.spacing(16);
+  text-align: center;
+}
+
+.placement-picker__continuation-error,
+.placement-picker__unavailable-title {
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+}
+
+.placement-picker__empty-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+// ---------------------------------------------------------------------------
+// Mobile read-only notice
+// ---------------------------------------------------------------------------
+.placement-mobile__notice {
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.placement-mobile__badge {
+  display: inline-block;
+  margin: 0 0 styles.spacing(8);
+  padding: styles.spacing(4) styles.spacing(8);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.placement-mobile__title {
+  margin: 0 0 styles.spacing(8);
+  font-size: styles.$font-size-heading-s;
+}
+
+.placement-mobile__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+}
+
+.placement-mobile__sides,
+.placement-mobile__areas {
+  margin: styles.spacing(16) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.placement-mobile__areas {
+  margin-top: styles.spacing(4);
+  padding-left: styles.spacing(16);
+  border-left: 2px solid styles.$color-border-primary;
+}
+
+.placement-mobile__side {
+  margin-bottom: styles.spacing(12);
+}
+
+.placement-mobile__side-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.placement-mobile__area {
+  padding: styles.spacing(4) 0;
+  color: styles.$color-text-secondary;
+}
+
+.placement-mobile__retired {
+  margin-left: styles.spacing(8);
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// The placement entry affordance on the product detail screen.
+// ---------------------------------------------------------------------------
+.product-placement__entry {
+  display: inline-block;
+  margin-left: styles.spacing(8);
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  text-decoration: none;
+}

@@ -1,0 +1,85 @@
+// The canonical Admin text field (`FIG-DS-INPUT`, DS node `76:29`).
+//
+// Shared Admin scope, not a feature stylesheet: the component lives in
+// `src/shared/forms` and any Admin feature may use it. All five approved states
+// are expressed here — Default, Focus, Filled, Error, Disabled — with Focus and
+// Filled as real CSS conditions rather than caller-selected modifiers.
+//
+// `admin-field` is a deliberately specific prefix. The Admin stylesheet is
+// global and unscoped, so a generic `.field` would collide with another
+// feature's rules in a way jsdom could never catch.
+
+@use '@embroidery/styles' as styles;
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin-bottom: styles.spacing(12);
+  // Lets the field shrink below its content width inside a narrow grid cell.
+  // Without it a two-up pair of numeric fields overflows its panel, and a
+  // panel that scrolls on one axis clips on the other — so the second field of
+  // every pair silently disappeared rather than wrapping.
+  min-width: 0;
+}
+
+.admin-field__label {
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.admin-field__control {
+  // An `<input>` carries a browser default `size` that resists shrinking; both
+  // are needed for the control to fit the column it was given.
+  width: 100%;
+  min-width: 0;
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+
+  // Focus. Never `outline: none` without a replacement — the outline is the
+  // only indication a keyboard operator has of where they are.
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+    border-color: styles.$color-action-primary;
+  }
+
+  // Filled: a value present, expressed as a condition of the control rather
+  // than as a prop the caller could set while the field is empty.
+  &:not(:placeholder-shown) {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-surface-secondary;
+  }
+
+  &:disabled {
+    background: styles.$color-background-secondary;
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.admin-field--error .admin-field__control {
+  border-color: styles.$color-status-error;
+
+  &:focus-visible {
+    outline-color: styles.$color-status-error;
+  }
+}
+
+.admin-field__help {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-tertiary;
+}
+
+.admin-field__error {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-status-error;
+}

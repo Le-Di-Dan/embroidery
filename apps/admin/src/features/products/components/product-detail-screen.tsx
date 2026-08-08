@@ -10,6 +10,7 @@ import { ADMIN_PRODUCTS_ROUTE } from '../model/product-route';
 import { parseProductStatus } from '../model/product-status';
 import { useProductDetailQuery } from '../hooks/use-product-detail-query';
 import { ProductEditForm } from './product-edit-form';
+import { ProductPlacementEntry } from './product-placement-entry';
 import { ProductPublicationEntry } from './product-publication-entry';
 
 interface ProductDetailScreenProps {
@@ -102,6 +103,13 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
             productId={product.productId}
             status={parseProductStatus(product.status)}
           />
+          {/*
+            Placement stays reachable for a non-DRAFT product. Sides and areas
+            exist independently of public visibility, and a PUBLISHED product
+            whose placement needs a correction is exactly the case that must not
+            be locked out (`APP3-A01`).
+          */}
+          <ProductPlacementEntry productId={product.productId} />
         </div>
       </section>
     );
@@ -116,6 +124,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
       */}
       <div className="product-form__publication-entry">
         <ProductPublicationEntry productId={product.productId} status="DRAFT" />
+        <ProductPlacementEntry productId={product.productId} />
       </div>
       <ProductEditForm
         key={product.updatedAt}

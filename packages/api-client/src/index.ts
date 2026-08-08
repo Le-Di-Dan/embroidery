@@ -108,6 +108,27 @@ export type {
   UnpublishProductBody,
 } from './generated/embroidery-api.schemas';
 
+// Admin Product placement authoring (APP3-B01), exposed for the Admin
+// placement screen (`APP3-A01`). The read and the replace cross together: the
+// read is the only source of the `updatedAt` the replace must echo back, so an
+// operation boundary that offered one without the other would publish a write
+// nobody could safely perform.
+//
+// `publicProductPlacementGet` stays withheld. It answers a deliberately
+// narrower model — no `backgroundAssetId`, no retired rows and no concurrency
+// token — and putting it on this boundary beside the Admin pair would invite an
+// authoring screen to bind to it and silently lose the history the operator is
+// meant to see.
+export { adminProductPlacementGet, adminProductPlacementReplace } from './generated/embroidery-api';
+export type {
+  AdminProductPlacementResponse,
+  AdminPlacementSideResponse,
+  AdminPlacementAreaResponse,
+  ReplaceProductPlacementBody,
+  ReplacePlacementSideBody,
+  ReplacePlacementAreaBody,
+} from './generated/embroidery-api.schemas';
+
 // Anonymous public catalog reads (APP2-B04): the listing for the Storefront
 // Discover feed (`APP2-S01`) and the detail resolver for Product Detail
 // (`APP2-S02`).

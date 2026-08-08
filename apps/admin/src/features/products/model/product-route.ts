@@ -32,3 +32,17 @@ export function adminProductDetailRoute(productId: string): string {
 export function adminProductPublicationRoute(productId: string): string {
   return `${adminProductDetailRoute(productId)}/publication`;
 }
+
+/**
+ * Placement authoring for one product (`APP3-A01`).
+ *
+ * A child of the detail route for the same reason publication is: placement is
+ * one more thing you do to a product you are already looking at, and nesting
+ * keeps the product UUID the single identity in the path. The route lives here
+ * rather than in the placement feature so the product route family has exactly
+ * one owner — and so the detail screen can link to placement without the two
+ * features importing each other.
+ */
+export function adminProductPlacementRoute(productId: string): string {
+  return `${adminProductDetailRoute(productId)}/placement`;
+}
