@@ -42,6 +42,12 @@ export {
   SUPPORTED_DESIGN_DOCUMENT_SCHEMA_VERSIONS,
 } from './schema/constants';
 
+// The generated structural schema (`APP3-B08-C1`). Data only — no validator,
+// no dependency, and no second definition of the shape: it is derived from the
+// TypeScript types above by `scripts/generate-schema.mjs`.
+export { DESIGN_DOCUMENT_JSON_SCHEMA, DESIGN_DOCUMENT_SCHEMA_ROOT_TYPE } from './schema/generated';
+export type { DesignDocumentJsonSchema, DesignDocumentSchemaNode } from './schema/generated';
+
 // Typed findings
 export type {
   DesignDocumentFinding,

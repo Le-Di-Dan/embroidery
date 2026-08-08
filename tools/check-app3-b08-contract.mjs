@@ -12,6 +12,10 @@
 import { acceptedSurface } from './app3-accepted-surface.mjs';
 import { CANONICAL_FILES, HTTP_METHODS, OPERATION, ROUTE, read } from './check-app3-b08-files.mjs';
 
+/** The generated P01 component the autosave body must reference (`APP3-B08-C1`). */
+const DESIGN_DOCUMENT_SCHEMA = 'DesignDocument';
+const PUBLISHED_SCHEMA_MARKER = 'x-embroidery-published-schema';
+
 /** 2 — exactly one new operation, published concretely. */
 export function checkSurface(rootDir, fail) {
   const raw = read(rootDir, 'openapi');
@@ -93,8 +97,29 @@ function checkRequestSchema(document, put, fail) {
   if (revision?.type !== 'integer' || revision.minimum !== 0) {
     fail(`${CANONICAL_FILES.openapi}: expectedRevision is not an integer with minimum 0`);
   }
-  if (schema.properties?.document?.type !== 'object') {
-    fail(`${CANONICAL_FILES.openapi}: the document snapshot is not published as an object`);
+  // `APP3-B08-C1`: the snapshot publishes the generated P01 component, not an
+  // open object. An open object is not a contract — it typed the generated
+  // client as an unbounded map — so the reference is the assertion, and a
+  // regression to `type: 'object'` must fail here rather than pass as "an
+  // object was published".
+  const documentField = schema.properties?.document ?? {};
+  const reference = documentField.$ref ?? documentField.allOf?.[0]?.$ref;
+  if (reference !== `#/components/schemas/${DESIGN_DOCUMENT_SCHEMA}`) {
+    fail(
+      `${CANONICAL_FILES.openapi}: the document snapshot does not reference ${DESIGN_DOCUMENT_SCHEMA}`,
+    );
+  }
+  if (document.components?.schemas?.[DESIGN_DOCUMENT_SCHEMA] === undefined) {
+    fail(`${CANONICAL_FILES.openapi}: ${DESIGN_DOCUMENT_SCHEMA} is not published as a component`);
+  }
+  // The marker is an internal opt-in, never part of the contract.
+  if (JSON.stringify(document).includes(PUBLISHED_SCHEMA_MARKER)) {
+    fail(`${CANONICAL_FILES.openapi}: the published-schema marker leaked into the artifact`);
+  }
+  // OpenAPI 3.0 has no `const`; a draft-07 keyword surviving the conversion
+  // would make the element union unreadable to every generator.
+  if (/"const"\s*:/.test(JSON.stringify(document.components?.schemas ?? {}))) {
+    fail(`${CANONICAL_FILES.openapi}: a draft-07 "const" keyword survived into OpenAPI 3.0`);
   }
   // The caller never supplies the persisted schema version; the server derives
   // it from the document itself.
@@ -141,6 +166,14 @@ export function checkGeneratedClient(rootDir, fail) {
   }
   if (!/expectedRevision: number/.test(schemas)) {
     fail(`${CANONICAL_FILES.clientSchemas}: the request type is not concrete`);
+  }
+  // `APP3-B08-C1`: the whole point of the correction. Before it the client typed
+  // the snapshot as an unbounded map, so a caller got no help and no safety.
+  if (!/export interface DesignDocument\b/.test(schemas)) {
+    fail(`${CANONICAL_FILES.clientSchemas}: the Design Document type was not generated`);
+  }
+  if (!/document: DesignDocument/.test(schemas)) {
+    fail(`${CANONICAL_FILES.clientSchemas}: the autosave body does not carry the document type`);
   }
   for (const leak of ['sessionSecretHash', 'storageKey', 'objectKey']) {
     if (schemas.includes(leak) || client.includes(leak)) {

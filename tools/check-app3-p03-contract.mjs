@@ -176,17 +176,7 @@ function checkNoEmptyPublishedBody(rootDir, fail) {
     }
     const resolved = resolve(schema);
     if (resolved === undefined || typeof resolved !== 'object') return;
-    // "Empty" means the schema describes *nothing*, which is the `createZodDto`
-    // defect `APP3-B01-C1` found. A schema that declares `additionalProperties`
-    // is not that: it is a deliberate open map, and `APP3-B08`'s document
-    // snapshot is one — the canonical Design Document schema is `APP3-P01`'s,
-    // and mirroring it at the HTTP edge would create a second definition that
-    // drifts. Requiring named properties here was a proxy for "describes
-    // something", and B08 is the first legitimate operation it misjudges.
-    const describesNothing =
-      Object.keys(resolved.properties ?? {}).length === 0 &&
-      resolved.additionalProperties === undefined;
-    if (resolved.type === 'object' && describesNothing) {
+    if (resolved.type === 'object' && Object.keys(resolved.properties ?? {}).length === 0) {
       fail(`${operationId}: publishes an empty request-body schema`);
       return;
     }

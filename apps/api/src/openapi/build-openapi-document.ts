@@ -3,6 +3,7 @@ import { SwaggerModule, type OpenAPIObject } from '@nestjs/swagger';
 
 import { GLOBAL_ROUTE_PREFIX } from '../bootstrap/api-application';
 import { applyZodDtoSchemas } from '../platform/openapi';
+import { applyDesignDocumentSchemas } from './design-document-schema.augmentation';
 import { applyEnvelopeSchemas } from './envelope-schema.augmentation';
 import { buildOpenApiConfig } from './openapi-document.config';
 import { createOperationId, validateOperationIds } from './operation-id';
@@ -49,6 +50,10 @@ export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
   // document in which any request body is still empty, so the two later
   // augmentations only ever run over a document whose requests are documented.
   applyZodDtoSchemas(prefixed);
+  // The generated P01 Design Document components, before the empty-body sweep's
+  // successors run: `APP3-B08`'s body references them by name, so they have to
+  // exist by the time anything resolves a `$ref` (`APP3-B08-C1`).
+  applyDesignDocumentSchemas(prefixed);
   // Envelope schemas next: the 500 response it documents must also receive the
   // request-ID response header the next transform adds to every response.
   applyEnvelopeSchemas(prefixed);

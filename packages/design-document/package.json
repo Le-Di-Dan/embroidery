@@ -21,7 +21,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "schema:generate": "node scripts/generate-schema.mjs",
+    "schema:check": "node scripts/generate-schema.mjs --check"
   },
   "devDependencies": {
     "@embroidery/eslint-config": "workspace:*",
@@ -32,6 +34,7 @@
     "jest": "^30.4.2",
     "rimraf": "^6.1.3",
     "ts-jest": "^29.4.11",
+    "ts-json-schema-generator": "^2.9.0",
     "typescript": "^5.9.3"
   }
 }

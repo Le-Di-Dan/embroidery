@@ -1,0 +1,414 @@
+{
+  "$comment": "GENERATED — DO NOT EDIT. Produced by scripts/generate-schema.mjs from the TypeScript type DesignDocument in src/schema/document.ts. Structural contract only: P01 runtime validation remains the semantic authority (NFC, non-empty strings, non-zero scale, value ranges, point-count bounds). Regenerate rather than editing; the currentness gate fails on drift.",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/DesignDocument",
+  "definitions": {
+    "DesignDocument": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number"
+        },
+        "placement": {
+          "$ref": "#/definitions/DesignPlacementSnapshot"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DesignElement"
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "placement",
+        "elements"
+      ],
+      "additionalProperties": false,
+      "description": "Array order is z-order, bottom first, and JCS preserves it (ADR-DB1-012 §7)."
+    },
+    "DesignPlacementSnapshot": {
+      "type": "object",
+      "properties": {
+        "productSideId": {
+          "type": "string"
+        },
+        "embroideryAreaId": {
+          "type": "string"
+        },
+        "canvasWidthPx": {
+          "type": "number"
+        },
+        "canvasHeightPx": {
+          "type": "number"
+        },
+        "physicalWidthMm": {
+          "type": "number"
+        },
+        "physicalHeightMm": {
+          "type": "number"
+        },
+        "pxPerMm": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "productSideId",
+        "embroideryAreaId",
+        "canvasWidthPx",
+        "canvasHeightPx",
+        "physicalWidthMm",
+        "physicalHeightMm",
+        "pxPerMm"
+      ],
+      "additionalProperties": false,
+      "description": "What the editor was told about the chosen placement when the document was authored.\n\nThis is **document data, not authority**. Product Side and Embroidery Area rows remain the source of truth, and a later API compares these values with them; `APP3-P01` only proves the values are well-formed positive finite numbers, and `APP3-P02` owns every geometric consequence."
+    },
+    "DesignElement": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TextElement"
+        },
+        {
+          "$ref": "#/definitions/ImageElement"
+        },
+        {
+          "$ref": "#/definitions/ShapeElement"
+        },
+        {
+          "$ref": "#/definitions/FreehandElement"
+        },
+        {
+          "$ref": "#/definitions/GroupElement"
+        }
+      ]
+    },
+    "TextElement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "text"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "transform": {
+          "$ref": "#/definitions/DesignElementTransform"
+        },
+        "text": {
+          "type": "string"
+        },
+        "fontId": {
+          "type": "string"
+        },
+        "fontSizePx": {
+          "type": "number"
+        },
+        "fontWeight": {
+          "type": "number"
+        },
+        "fontStyle": {
+          "$ref": "#/definitions/FontStyle"
+        },
+        "textAlign": {
+          "$ref": "#/definitions/TextAlign"
+        },
+        "fill": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "fill",
+        "fontId",
+        "fontSizePx",
+        "fontStyle",
+        "fontWeight",
+        "id",
+        "locked",
+        "opacity",
+        "text",
+        "textAlign",
+        "transform",
+        "type",
+        "visible"
+      ],
+      "additionalProperties": false,
+      "description": "Text references a server-owned `fontId` (IMP-D044 PO-10) — never a CSS family, a font URL or font bytes, so a document can never ask a browser to fetch something the server did not approve."
+    },
+    "DesignElementTransform": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "rotationDeg": {
+          "type": "number"
+        },
+        "scaleX": {
+          "type": "number"
+        },
+        "scaleY": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotationDeg",
+        "scaleX",
+        "scaleY"
+      ],
+      "additionalProperties": false,
+      "description": "Persisted transform values. Finite numbers only; no matrix, no derived bounds."
+    },
+    "FontStyle": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "italic"
+      ]
+    },
+    "TextAlign": {
+      "type": "string",
+      "enum": [
+        "left",
+        "center",
+        "right"
+      ]
+    },
+    "ImageElement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "image"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "transform": {
+          "$ref": "#/definitions/DesignElementTransform"
+        },
+        "assetId": {
+          "type": "string"
+        },
+        "derivativeId": {
+          "type": "string"
+        },
+        "intrinsicWidthPx": {
+          "type": "number"
+        },
+        "intrinsicHeightPx": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "assetId",
+        "derivativeId",
+        "id",
+        "intrinsicHeightPx",
+        "intrinsicWidthPx",
+        "locked",
+        "opacity",
+        "transform",
+        "type",
+        "visible"
+      ],
+      "additionalProperties": false,
+      "description": "Image references an Asset **and** the exact approved derivative it was measured against. `intrinsic*` is what the document believes; contextual validation proves it equals the canonical derivative metadata, which is why no storage key or source URL is needed or permitted here."
+    },
+    "ShapeElement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "shape"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "transform": {
+          "$ref": "#/definitions/DesignElementTransform"
+        },
+        "shape": {
+          "$ref": "#/definitions/ShapeKind"
+        },
+        "fill": {
+          "type": "string"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "strokeWidthPx": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "fill",
+        "id",
+        "locked",
+        "opacity",
+        "shape",
+        "stroke",
+        "strokeWidthPx",
+        "transform",
+        "type",
+        "visible"
+      ],
+      "additionalProperties": false
+    },
+    "ShapeKind": {
+      "type": "string",
+      "enum": [
+        "rectangle",
+        "ellipse",
+        "line"
+      ]
+    },
+    "FreehandElement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "freehand"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "transform": {
+          "$ref": "#/definitions/DesignElementTransform"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FreehandPoint"
+          }
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "strokeWidthPx": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "locked",
+        "opacity",
+        "points",
+        "stroke",
+        "strokeWidthPx",
+        "transform",
+        "type",
+        "visible"
+      ],
+      "additionalProperties": false,
+      "description": "A bounded point sequence. No smoothing, simplification or path generation."
+    },
+    "FreehandPoint": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false
+    },
+    "GroupElement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "group"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "transform": {
+          "$ref": "#/definitions/DesignElementTransform"
+        },
+        "childIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "childIds",
+        "id",
+        "locked",
+        "opacity",
+        "transform",
+        "type",
+        "visible"
+      ],
+      "additionalProperties": false,
+      "description": "A group names its children by id and does not contain them. Membership is a relationship, so grouping never rewrites top-level z-order — which is what lets a customer group two elements without anything moving on screen."
+    }
+  }
+}

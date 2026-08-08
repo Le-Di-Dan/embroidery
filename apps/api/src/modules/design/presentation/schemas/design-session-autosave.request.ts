@@ -24,6 +24,10 @@
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
+import {
+  DESIGN_DOCUMENT_SCHEMA_NAME,
+  PUBLISHED_SCHEMA_MARKER,
+} from '../../../../openapi/design-document-schema.augmentation';
 
 /**
  * The revision the caller last read.
@@ -51,6 +55,14 @@ const autosaveSchema = z
         'The complete canonical Design Document snapshot. Validated, quantized and ' +
         'canonicalized by the Design Document authority; the stored value is the ' +
         'canonical form, not the object as sent.',
+      // `APP3-B08-C1`. The Zod schema stays permissive because `APP3-P01` is the
+      // acceptance authority and a Zod copy of the document would be a second
+      // definition that drifts. This marker is how the field still *publishes*
+      // the real structure: the OpenAPI augmentation replaces any node carrying
+      // it with a `$ref` to the schema generated from P01's own TypeScript
+      // types. Validation and publication therefore have one source each, and
+      // neither restates the other.
+      [PUBLISHED_SCHEMA_MARKER]: DESIGN_DOCUMENT_SCHEMA_NAME,
     }),
   })
   .strict()

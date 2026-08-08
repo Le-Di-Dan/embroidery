@@ -884,9 +884,12 @@
         "additionalProperties": false,
         "properties": {
           "document": {
-            "additionalProperties": {},
-            "description": "The complete canonical Design Document snapshot. Validated, quantized and canonicalized by the Design Document authority; the stored value is the canonical form, not the object as sent.",
-            "type": "object"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignDocument"
+              }
+            ],
+            "description": "The complete canonical Design Document snapshot. Validated, quantized and canonicalized by the Design Document authority; the stored value is the canonical form, not the object as sent."
           },
           "expectedRevision": {
             "description": "The autosave revision the client last read. A mismatch is refused, not merged.",
@@ -1122,6 +1125,123 @@
         ],
         "type": "object"
       },
+      "DesignDocument": {
+        "additionalProperties": false,
+        "description": "Array order is z-order, bottom first, and JCS preserves it (ADR-DB1-012 §7).",
+        "properties": {
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/DesignElement"
+            },
+            "type": "array"
+          },
+          "placement": {
+            "$ref": "#/components/schemas/DesignPlacementSnapshot"
+          },
+          "schemaVersion": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "placement",
+          "elements"
+        ],
+        "type": "object"
+      },
+      "DesignElement": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/TextElement"
+          },
+          {
+            "$ref": "#/components/schemas/ImageElement"
+          },
+          {
+            "$ref": "#/components/schemas/ShapeElement"
+          },
+          {
+            "$ref": "#/components/schemas/FreehandElement"
+          },
+          {
+            "$ref": "#/components/schemas/GroupElement"
+          }
+        ]
+      },
+      "DesignElementTransform": {
+        "additionalProperties": false,
+        "description": "Persisted transform values. Finite numbers only; no matrix, no derived bounds.",
+        "properties": {
+          "height": {
+            "type": "number"
+          },
+          "rotationDeg": {
+            "type": "number"
+          },
+          "scaleX": {
+            "type": "number"
+          },
+          "scaleY": {
+            "type": "number"
+          },
+          "width": {
+            "type": "number"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height",
+          "rotationDeg",
+          "scaleX",
+          "scaleY"
+        ],
+        "type": "object"
+      },
+      "DesignPlacementSnapshot": {
+        "additionalProperties": false,
+        "description": "What the editor was told about the chosen placement when the document was authored.\n\nThis is **document data, not authority**. Product Side and Embroidery Area rows remain the source of truth, and a later API compares these values with them; `APP3-P01` only proves the values are well-formed positive finite numbers, and `APP3-P02` owns every geometric consequence.",
+        "properties": {
+          "canvasHeightPx": {
+            "type": "number"
+          },
+          "canvasWidthPx": {
+            "type": "number"
+          },
+          "embroideryAreaId": {
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "type": "number"
+          },
+          "physicalWidthMm": {
+            "type": "number"
+          },
+          "productSideId": {
+            "type": "string"
+          },
+          "pxPerMm": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "productSideId",
+          "embroideryAreaId",
+          "canvasWidthPx",
+          "canvasHeightPx",
+          "physicalWidthMm",
+          "physicalHeightMm",
+          "pxPerMm"
+        ],
+        "type": "object"
+      },
       "DesignSessionAssetIntakeResponse": {
         "properties": {
           "assetId": {
@@ -1173,6 +1293,123 @@
         ],
         "type": "object"
       },
+      "FontStyle": {
+        "enum": [
+          "normal",
+          "italic"
+        ],
+        "type": "string"
+      },
+      "FreehandElement": {
+        "additionalProperties": false,
+        "description": "A bounded point sequence. No smoothing, simplification or path generation.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "opacity": {
+            "type": "number"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/FreehandPoint"
+            },
+            "type": "array"
+          },
+          "stroke": {
+            "type": "string"
+          },
+          "strokeWidthPx": {
+            "type": "number"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/DesignElementTransform"
+          },
+          "type": {
+            "enum": [
+              "freehand"
+            ],
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "locked",
+          "opacity",
+          "points",
+          "stroke",
+          "strokeWidthPx",
+          "transform",
+          "type",
+          "visible"
+        ],
+        "type": "object"
+      },
+      "FreehandPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "GroupElement": {
+        "additionalProperties": false,
+        "description": "A group names its children by id and does not contain them. Membership is a relationship, so grouping never rewrites top-level z-order — which is what lets a customer group two elements without anything moving on screen.",
+        "properties": {
+          "childIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "opacity": {
+            "type": "number"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/DesignElementTransform"
+          },
+          "type": {
+            "enum": [
+              "group"
+            ],
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "childIds",
+          "id",
+          "locked",
+          "opacity",
+          "transform",
+          "type",
+          "visible"
+        ],
+        "type": "object"
+      },
       "HealthStatusResponse": {
         "properties": {
           "service": {
@@ -1201,6 +1438,58 @@
           "service",
           "uptimeSeconds",
           "timestamp"
+        ],
+        "type": "object"
+      },
+      "ImageElement": {
+        "additionalProperties": false,
+        "description": "Image references an Asset **and** the exact approved derivative it was measured against. `intrinsic*` is what the document believes; contextual validation proves it equals the canonical derivative metadata, which is why no storage key or source URL is needed or permitted here.",
+        "properties": {
+          "assetId": {
+            "type": "string"
+          },
+          "derivativeId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "intrinsicHeightPx": {
+            "type": "number"
+          },
+          "intrinsicWidthPx": {
+            "type": "number"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "opacity": {
+            "type": "number"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/DesignElementTransform"
+          },
+          "type": {
+            "enum": [
+              "image"
+            ],
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "assetId",
+          "derivativeId",
+          "id",
+          "intrinsicHeightPx",
+          "intrinsicWidthPx",
+          "locked",
+          "opacity",
+          "transform",
+          "type",
+          "visible"
         ],
         "type": "object"
       },
@@ -1890,6 +2179,65 @@
         ],
         "type": "object"
       },
+      "ShapeElement": {
+        "additionalProperties": false,
+        "properties": {
+          "fill": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "opacity": {
+            "type": "number"
+          },
+          "shape": {
+            "$ref": "#/components/schemas/ShapeKind"
+          },
+          "stroke": {
+            "type": "string"
+          },
+          "strokeWidthPx": {
+            "type": "number"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/DesignElementTransform"
+          },
+          "type": {
+            "enum": [
+              "shape"
+            ],
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fill",
+          "id",
+          "locked",
+          "opacity",
+          "shape",
+          "stroke",
+          "strokeWidthPx",
+          "transform",
+          "type",
+          "visible"
+        ],
+        "type": "object"
+      },
+      "ShapeKind": {
+        "enum": [
+          "rectangle",
+          "ellipse",
+          "line"
+        ],
+        "type": "string"
+      },
       "StaffLoginRequest": {
         "properties": {
           "email": {
@@ -1907,6 +2255,78 @@
         "required": [
           "email",
           "password"
+        ],
+        "type": "object"
+      },
+      "TextAlign": {
+        "enum": [
+          "left",
+          "center",
+          "right"
+        ],
+        "type": "string"
+      },
+      "TextElement": {
+        "additionalProperties": false,
+        "description": "Text references a server-owned `fontId` (IMP-D044 PO-10) — never a CSS family, a font URL or font bytes, so a document can never ask a browser to fetch something the server did not approve.",
+        "properties": {
+          "fill": {
+            "type": "string"
+          },
+          "fontId": {
+            "type": "string"
+          },
+          "fontSizePx": {
+            "type": "number"
+          },
+          "fontStyle": {
+            "$ref": "#/components/schemas/FontStyle"
+          },
+          "fontWeight": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "opacity": {
+            "type": "number"
+          },
+          "text": {
+            "type": "string"
+          },
+          "textAlign": {
+            "$ref": "#/components/schemas/TextAlign"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/DesignElementTransform"
+          },
+          "type": {
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fill",
+          "fontId",
+          "fontSizePx",
+          "fontStyle",
+          "fontWeight",
+          "id",
+          "locked",
+          "opacity",
+          "text",
+          "textAlign",
+          "transform",
+          "type",
+          "visible"
         ],
         "type": "object"
       },

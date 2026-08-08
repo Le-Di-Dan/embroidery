@@ -22,7 +22,12 @@ const SURFACES = Object.freeze([
     marker: /\nAPP3-B08 = COMPLETE/,
     paths: 23,
     operations: 27,
-    schemas: 50,
+    // 50 at `APP3-B08`, then +13 at `APP3-B08-C1`, which publishes the P01
+    // Design Document as real components instead of an open object. The
+    // definitions are generated from P01's TypeScript types, so this number
+    // moves when the document type does — it is measured from the artifact,
+    // never chosen.
+    schemas: 63,
     designSessionRoutes: true,
     designSessionPaths: 4,
   },
@@ -98,6 +103,15 @@ export function acceptedSessionPaths(rootDir) {
  * artifact it is supposed to constrain.
  */
 export const B06B_DELIVERED_STATUS = 'APP3-B06B = COMPLETE — REVIEW_ACCEPTED';
+
+/**
+ * The exact status line `APP3-B08` is recorded under once delivered.
+ *
+ * Here for the same reason as the B06B line above: `APP3-B08-C1` moved the token
+ * to `_AFTER_C1`, and a literal copied into each gate is a literal that breaks
+ * every gate at once. Asserted here, never read back out of the phase document.
+ */
+export const B08_DELIVERED_STATUS = 'APP3-B08 = COMPLETE — REVIEW_DELIVERED_AFTER_C1';
 
 /**
  * True once `APP3-B06B` has published the anonymous raster intake.

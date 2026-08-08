@@ -19,6 +19,16 @@ manifest.json
 # Reformatting these changes bytes drizzle treats as migration identity.
 packages/database/migrations/meta/
 
+# The generated Design Document JSON Schema (APP3-B08-C1). Its serialization is
+# the generator's, and `schema:check` compares bytes — reformatting it makes the
+# drift gate fail against an artifact nobody edited.
+packages/design-document/src/schema/generated/design-document.schema.json
+
+# The generated OpenAPI artifact and API client, for the same reason: both are
+# compared by digest, and both are produced by their own writers.
+packages/contracts/openapi/openapi.generated.json
+packages/api-client/src/generated/
+
 # Generated OpenAPI contract — byte identity is owned by `pnpm check:openapi`
 # (deterministic serializer), not by Prettier. Never hand-formatted.
 packages/contracts/openapi/

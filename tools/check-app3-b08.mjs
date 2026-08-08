@@ -25,6 +25,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { B08_DELIVERED_STATUS } from './app3-accepted-surface.mjs';
 import { checkApp3B06B } from './check-app3-b06b.mjs';
 import { checkGeneratedClient, checkSurface } from './check-app3-b08-contract.mjs';
 import { CANONICAL_FILES, REPO_ROOT, code, read, requireAll } from './check-app3-b08-files.mjs';
@@ -46,7 +47,7 @@ export function checkStatus(rootDir, fail) {
     'APP3-B07 = COMPLETE — REVIEW_ACCEPTED',
     'APP3-B06B = COMPLETE — REVIEW_ACCEPTED',
     'APP3-B06B-C1 = COMPLETE — REVIEW_ACCEPTED',
-    'APP3-B08 = COMPLETE — REVIEW_DELIVERED',
+    B08_DELIVERED_STATUS,
     // Cadence is a Studio concern; B08 must not acquire it by accident.
     'AUTOSAVE_CADENCE_OWNER = APP3-S11',
   ]) {
@@ -348,7 +349,10 @@ async function main() {
       'asset this Session uploaded or already referenced, decided from persistence and never ' +
       'from object storage; and autosave never extends expiry, never rotates or issues a ' +
       'credential, never records idempotency, never appends an event, and leaves cadence to ' +
-      'APP3-S11 — with no migration, dependency, root script or worker change',
+      'APP3-S11; the snapshot publishes the P01 Design Document as generated components rather ' +
+      'than an open object, so the contract and the generated client carry the real structure ' +
+      'while P01 stays the acceptance authority — with no migration, root script or worker ' +
+      'change, and one operator-authorized dev-only schema generator in @embroidery/design-document',
   );
 }
 

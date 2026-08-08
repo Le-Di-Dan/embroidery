@@ -93,7 +93,8 @@ describe('the accepted surface authority', () => {
     const surface = acceptedSurface(REPO_ROOT);
     assert.equal(surface.paths, 23);
     assert.equal(surface.operations, 27);
-    assert.equal(surface.schemas, 50);
+    // 50 at B08, 63 after `APP3-B08-C1` published the 13 P01 components.
+    assert.equal(surface.schemas, 63);
     assert.equal(surface.designSessionPaths, 4);
   });
 
@@ -210,6 +211,43 @@ describe('the published surface', () => {
       });
       assert.ok(mentions(run(checkSurface, { openapi }), leak), leak);
     }
+  });
+
+  it('rejects the document snapshot regressing to an open object', () => {
+    // The exact `APP3-B08` defect C1 corrects: an object that describes nothing.
+    const openapi = openapiWith((d) => {
+      d.components.schemas.AutosaveDesignSessionBody.properties.document = {
+        type: 'object',
+        additionalProperties: {},
+      };
+    });
+    assert.ok(mentions(run(checkSurface, { openapi }), 'does not reference DesignDocument'));
+  });
+
+  it('rejects a reference to a component that was never published', () => {
+    const openapi = openapiWith((d) => {
+      delete d.components.schemas.DesignDocument;
+    });
+    assert.ok(mentions(run(checkSurface, { openapi }), 'not published as a component'));
+  });
+
+  it('rejects the internal publication marker leaking into the contract', () => {
+    const openapi = openapiWith((d) => {
+      d.components.schemas.AutosaveDesignSessionBody.properties.document[
+        'x-embroidery-published-schema'
+      ] = 'DesignDocument';
+    });
+    assert.ok(mentions(run(checkSurface, { openapi }), 'marker leaked'));
+  });
+
+  it('rejects a draft-07 const surviving into OpenAPI 3.0', () => {
+    const openapi = openapiWith((d) => {
+      d.components.schemas.TextElement = {
+        type: 'object',
+        properties: { type: { const: 'text' } },
+      };
+    });
+    assert.ok(mentions(run(checkSurface, { openapi }), 'draft-07'));
   });
 
   it('rejects an adjacent operation B08 does not own', () => {
@@ -436,6 +474,14 @@ describe('the generated client', () => {
       'expectedRevision: unknown',
     );
     assert.ok(mentions(run(checkGeneratedClient, { clientSchemas }), 'not concrete'));
+  });
+
+  it('rejects a client that types the document as an unbounded map again', () => {
+    const clientSchemas = file('clientSchemas')
+      .replace(/export interface DesignDocument\b/g, 'export interface DesignDoc')
+      .replace(/document: DesignDocument/g, 'document: { [key: string]: unknown }');
+    const failures = run(checkGeneratedClient, { clientSchemas });
+    assert.ok(mentions(failures, 'Design Document type was not generated'), failures.join('\n'));
   });
 });
 

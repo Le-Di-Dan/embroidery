@@ -51,10 +51,10 @@ const OPENAPI_SHA256_AFTER_B06B =
 const CLIENT_TREE_SHA256_AFTER_B06B =
   '6cb189bbdff720920bf10dad4d3520dd962ff8dbd6a57630636d4be8730075c7';
 const OPENAPI_FACTS_AFTER_B06B = Object.freeze({ paths: 22, operations: 26, schemas: 49 });
-const OPENAPI_SHA256_AFTER_B08 = '4fa09b27bfc9de265af4e0da705de3c9cfe0173758f9fa570ad07cb83c04ab06';
+const OPENAPI_SHA256_AFTER_B08 = '698ef2e5eed11fcd3d04a6eb059bb9a4e3a10122563f3017a0d4f3f64b7626b5';
 const CLIENT_TREE_SHA256_AFTER_B08 =
-  '4bf8dd9db03b44856e84e4f17804d53fc65924046efa842cc0b610dad27486f5';
-const OPENAPI_FACTS_AFTER_B08 = Object.freeze({ paths: 23, operations: 27, schemas: 50 });
+  'af1fe9e510f91b8e0a7426a26e9865aa548303fcde36cbb4a90fc99faaa433c7';
+const OPENAPI_FACTS_AFTER_B08 = Object.freeze({ paths: 23, operations: 27, schemas: 63 });
 const CLIENT_TREE_SHA256_AFTER_P03 =
   '3fcc05d01e01fec9c8566348be6aacf7beefdf654a0487f66e061b3234ead7a8';
 const PHASE_FILE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
