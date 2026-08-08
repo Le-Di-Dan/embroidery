@@ -19,14 +19,29 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-P04` adds no path and no operation — it publishes the *responses*
+    // the three Session operations already returned. It is a distinct world
+    // rather than an edit to B08's because the foundation is reviewed on its
+    // own, and while it is under review `APP3-B08` is recorded blocked; a
+    // surface keyed only on B08 would then claim the pre-B08 numbers against a
+    // post-B08 artifact.
+    marker: /\nAPP3-P04 = COMPLETE/,
+    paths: 23,
+    operations: 27,
+    // 63 after `APP3-B08-C1`; +3 here for the shared snapshot and its optional
+    // scope and lineage. Measured from the artifact, never chosen.
+    schemas: 66,
+    designSessionRoutes: true,
+    designSessionPaths: 4,
+  },
+  {
     marker: /\nAPP3-B08 = COMPLETE/,
     paths: 23,
     operations: 27,
     // 50 at `APP3-B08`, then +13 at `APP3-B08-C1`, which publishes the P01
     // Design Document as real components instead of an open object. The
     // definitions are generated from P01's TypeScript types, so this number
-    // moves when the document type does — it is measured from the artifact,
-    // never chosen.
+    // moves when the document type does.
     schemas: 63,
     designSessionRoutes: true,
     designSessionPaths: 4,
@@ -105,13 +120,27 @@ export function acceptedSessionPaths(rootDir) {
 export const B06B_DELIVERED_STATUS = 'APP3-B06B = COMPLETE — REVIEW_ACCEPTED';
 
 /**
- * The exact status line `APP3-B08` is recorded under once delivered.
+ * The status lines `APP3-B08` may legitimately be recorded under.
  *
- * Here for the same reason as the B06B line above: `APP3-B08-C1` moved the token
- * to `_AFTER_C1`, and a literal copied into each gate is a literal that breaks
- * every gate at once. Asserted here, never read back out of the phase document.
+ * Two consistent worlds and no third. While `APP3-P04` is under review B08 is
+ * *blocked on that foundation* — the directive's own model — and once the
+ * foundation is accepted B08 becomes accepted with it. A gate pinning a single
+ * token would fail in one of the two states, and pinning none would accept a B08
+ * that had quietly regressed to not-started.
+ *
+ * Asserted here rather than read back out of the phase document: a status
+ * derived from the document it checks accepts whatever was written.
  */
-export const B08_DELIVERED_STATUS = 'APP3-B08 = COMPLETE — REVIEW_DELIVERED_AFTER_C1';
+export const B08_STATUS_LINES = Object.freeze([
+  'APP3-B08 = BLOCKED — AWAITING_FOUNDATION_REVIEW',
+  'APP3-B08 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/** The status lines `APP3-B08-C1` may be recorded under, for the same reason. */
+export const B08_C1_STATUS_LINES = Object.freeze([
+  'APP3-B08-C1 = FAILED — MANUAL INTERVENTION REQUIRED',
+  'APP3-B08-C1 = COMPLETE — REVIEW_ACCEPTED_AFTER_MANUAL_INTERVENTION',
+]);
 
 /**
  * True once `APP3-B06B` has published the anonymous raster intake.
@@ -130,9 +159,23 @@ export function isB06BDelivered(rootDir) {
   return /\nAPP3-B06B = COMPLETE/.test(phase);
 }
 
-/** True once `APP3-B08` has published autosave, which moves 22/26/49 → 23/27/50. */
+/** True once `APP3-P04` has published the shared Session response contract. */
+export function isP04Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-P04 = COMPLETE/.test(phase);
+}
+
+/**
+ * True once the autosave operation exists on the published surface.
+ *
+ * `APP3-P04` counts, because it can only have published responses for an
+ * operation B08 had already delivered — and while the foundation is under
+ * review B08 itself is recorded blocked rather than complete. Reading only the
+ * B08 line would make a delivered surface look undelivered.
+ */
 export function isB08Delivered(rootDir) {
   const path = join(rootDir, PHASE);
   const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
-  return /\nAPP3-B08 = COMPLETE/.test(phase);
+  return /\nAPP3-B08 = COMPLETE/.test(phase) || isP04Delivered(rootDir);
 }

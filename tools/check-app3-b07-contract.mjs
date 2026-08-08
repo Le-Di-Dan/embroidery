@@ -11,6 +11,10 @@
  * Read-only, cross-platform pure Node.
  */
 import { acceptedSurface } from './app3-accepted-surface.mjs';
+import {
+  checkGeneratedResponseTypes,
+  checkSessionResponseContract,
+} from './app3-session-response-contract.mjs';
 import { CANONICAL_FILES, code, read, requireAll } from './check-app3-b07-files.mjs';
 
 /** 2, 3 — exactly two operations on the published surface. */
@@ -44,6 +48,20 @@ export function checkSurface(rootDir, fail) {
     fail(`${CANONICAL_FILES.openapi}: ${operations} operations, expected ${OPERATIONS}`);
   if (SCHEMAS !== undefined && schemas !== SCHEMAS)
     fail(`${CANONICAL_FILES.openapi}: ${schemas} schemas, expected ${SCHEMAS}`);
+
+  // `APP3-P04` — bootstrap and resume answer concretely with the shared
+  // snapshot. The rule is shared with the B08 gate so the two cannot drift
+  // apart on what a published response has to be.
+  checkSessionResponseContract(document, (message) => fail(`response contract: ${message}`), [
+    '/api/public/design-sessions',
+    '/api/public/design-sessions/{sessionId}/resume',
+  ]);
+  checkGeneratedResponseTypes(
+    read(rootDir, 'client') ?? '',
+    read(rootDir, 'clientSchemas') ?? '',
+    (message) => fail(`response type: ${message}`),
+    ['publicDesignSessionCreate', 'publicDesignSessionResume'],
+  );
 
   const sessionPaths = paths.filter((path) => path.includes('design-session'));
   if (sessionPaths.length !== designSessionPaths) {

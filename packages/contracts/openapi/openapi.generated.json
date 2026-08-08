@@ -1293,6 +1293,167 @@
         ],
         "type": "object"
       },
+      "DesignSessionLineageResponse": {
+        "properties": {
+          "templateSlug": {
+            "description": "Public Design Template slug.",
+            "example": "hoa-sen-co-dien",
+            "type": "string"
+          },
+          "templateVersion": {
+            "description": "The published Template version cloned.",
+            "example": 3,
+            "type": "number"
+          }
+        },
+        "required": [
+          "templateSlug",
+          "templateVersion"
+        ],
+        "type": "object"
+      },
+      "DesignSessionScopeResponse": {
+        "properties": {
+          "areaCode": {
+            "description": "Stable Embroidery Area code.",
+            "example": "chest",
+            "type": "string"
+          },
+          "boundHeightPx": {
+            "description": "Safe-area height, in canvas pixels.",
+            "example": 300,
+            "type": "number"
+          },
+          "boundWidthPx": {
+            "description": "Safe-area width, in canvas pixels.",
+            "example": 400,
+            "type": "number"
+          },
+          "boundXPx": {
+            "description": "Safe-area left edge, in canvas pixels.",
+            "example": 100,
+            "type": "number"
+          },
+          "boundYPx": {
+            "description": "Safe-area top edge, in canvas pixels.",
+            "example": 150,
+            "type": "number"
+          },
+          "canvasHeightPx": {
+            "description": "Side image height in canvas pixels.",
+            "example": 1200,
+            "type": "number"
+          },
+          "canvasWidthPx": {
+            "description": "Side image width in canvas pixels.",
+            "example": 1000,
+            "type": "number"
+          },
+          "physicalHeightMm": {
+            "description": "Physical height of the Side in millimetres.",
+            "example": 480,
+            "type": "number"
+          },
+          "physicalWidthMm": {
+            "description": "Physical width of the Side in millimetres.",
+            "example": 400,
+            "type": "number"
+          },
+          "productSlug": {
+            "description": "Public Product slug.",
+            "example": "ao-thun-co-tron",
+            "type": "string"
+          },
+          "pxPerMm": {
+            "description": "The sole px↔mm conversion authority for this Side.",
+            "example": 2.5,
+            "type": "number"
+          },
+          "sideCode": {
+            "description": "Stable Product Side code.",
+            "example": "front",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productSlug",
+          "sideCode",
+          "areaCode",
+          "canvasWidthPx",
+          "canvasHeightPx",
+          "physicalWidthMm",
+          "physicalHeightMm",
+          "pxPerMm",
+          "boundXPx",
+          "boundYPx",
+          "boundWidthPx",
+          "boundHeightPx"
+        ],
+        "type": "object"
+      },
+      "DesignSessionSnapshotResponse": {
+        "properties": {
+          "document": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignDocument"
+              }
+            ],
+            "description": "The canonical, quantized Design Document as persisted."
+          },
+          "documentSchemaVersion": {
+            "description": "The Design Document schema version this snapshot is governed by.",
+            "example": 1,
+            "type": "number"
+          },
+          "expiresAt": {
+            "description": "Absolute 30-day expiry. Never extended by reading or saving.",
+            "example": "2026-09-07T09:15:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "lineage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignSessionLineageResponse"
+              }
+            ],
+            "description": "Present only when the session was cloned from a published Template."
+          },
+          "revision": {
+            "description": "The autosave revision. Present it on the next mutation.",
+            "example": 4,
+            "type": "number"
+          },
+          "scope": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignSessionScopeResponse"
+              }
+            ],
+            "description": "Placement geometry. Present on bootstrap, which resolved it from the public slug and codes; absent on resume and autosave, which address the session by id."
+          },
+          "sessionId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "description": "Design Session lifecycle state.",
+            "example": "ACTIVE",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "status",
+          "revision",
+          "expiresAt",
+          "documentSchemaVersion",
+          "document"
+        ],
+        "type": "object"
+      },
       "FontStyle": {
         "enum": [
           "normal",
@@ -5050,6 +5211,28 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignSessionSnapshotResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
             "description": "The session and its initial document.",
             "headers": {
               "X-Request-ID": {
@@ -5535,6 +5718,28 @@
         },
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignSessionSnapshotResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
             "description": "The saved session snapshot.",
             "headers": {
               "X-Request-ID": {
@@ -5732,6 +5937,28 @@
         ],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignSessionSnapshotResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
             "description": "The current session snapshot.",
             "headers": {
               "X-Request-ID": {

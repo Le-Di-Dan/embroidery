@@ -27,10 +27,20 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiExtraModels,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { ApiSuccessCode } from '../../../platform/http-response/api-envelope.decorators';
-import { ENVELOPE_SCHEMA_NAMES } from '../../../openapi/envelope-schema.augmentation';
+import {
+  ENVELOPE_SCHEMA_NAMES,
+  envelopeSchemaOf,
+} from '../../../openapi/envelope-schema.augmentation';
 import {
   AutosaveDesignSessionUseCase,
   DesignDocumentRejectedError,
@@ -57,6 +67,11 @@ import {
   DesignSessionIdParam,
 } from './schemas/public-design-session.request';
 import { AutosaveDesignSessionBody } from './schemas/design-session-autosave.request';
+import {
+  DesignSessionLineageResponse,
+  DesignSessionScopeResponse,
+  DesignSessionSnapshotResponse,
+} from './schemas/design-session-snapshot.response';
 
 const ERROR_SCHEMA = { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.error}` };
 
@@ -70,6 +85,14 @@ interface CookieWritableResponse {
 }
 
 @ApiTags('publicDesignSession')
+// Registered once for the whole controller: all three operations answer with the
+// same snapshot, and the nested scope/lineage components are only reachable
+// through it (`APP3-P04`).
+@ApiExtraModels(
+  DesignSessionSnapshotResponse,
+  DesignSessionScopeResponse,
+  DesignSessionLineageResponse,
+)
 @Controller('public/design-sessions')
 export class PublicDesignSessionController {
   constructor(
@@ -93,7 +116,11 @@ export class PublicDesignSessionController {
       'only as a host-only, HttpOnly cookie.',
   })
   @ApiBody({ type: CreateDesignSessionBody })
-  @ApiResponse({ status: 201, description: 'The session and its initial document.' })
+  @ApiResponse({
+    status: 201,
+    description: 'The session and its initial document.',
+    schema: envelopeSchemaOf(DesignSessionSnapshotResponse),
+  })
   @ApiResponse({ status: 400, description: 'Malformed body.', schema: ERROR_SCHEMA })
   @ApiResponse({
     status: 403,
@@ -167,7 +194,11 @@ export class PublicDesignSessionController {
     schema: { type: 'string', format: 'uuid' },
     description: 'Public Design Session identifier.',
   })
-  @ApiResponse({ status: 200, description: 'The current session snapshot.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The current session snapshot.',
+    schema: envelopeSchemaOf(DesignSessionSnapshotResponse),
+  })
   @ApiResponse({
     status: 401,
     description: 'The session could not be authorized.',
@@ -224,7 +255,11 @@ export class PublicDesignSessionController {
     description: 'Public Design Session identifier.',
   })
   @ApiBody({ type: AutosaveDesignSessionBody })
-  @ApiResponse({ status: 200, description: 'The saved session snapshot.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The saved session snapshot.',
+    schema: envelopeSchemaOf(DesignSessionSnapshotResponse),
+  })
   @ApiResponse({
     status: 400,
     description: 'Malformed body, or a revision that is not a non-negative integer.',

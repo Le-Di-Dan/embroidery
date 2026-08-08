@@ -29,6 +29,9 @@ import type {
   HealthStatusResponse,
   PublicDesignSessionAssetCreate202,
   PublicDesignSessionAssetCreateBody,
+  PublicDesignSessionAutosave200,
+  PublicDesignSessionCreate201,
+  PublicDesignSessionResume200,
   PublicProductDetail200,
   PublicProductList200,
   PublicProductListParams,
@@ -292,9 +295,9 @@ export const healthReadiness = (
  */
 export const publicDesignSessionCreate = (
   createDesignSessionBody: CreateDesignSessionBody,
-  options?: SecondParameter<typeof apiRequest<void>>,
+  options?: SecondParameter<typeof apiRequest<PublicDesignSessionCreate201>>,
 ) => {
-  return apiRequest<void>(
+  return apiRequest<PublicDesignSessionCreate201>(
     {
       url: `/api/public/design-sessions`,
       method: 'POST',
@@ -335,9 +338,9 @@ export const publicDesignSessionAssetCreate = (
 export const publicDesignSessionAutosave = (
   sessionId: string,
   autosaveDesignSessionBody: AutosaveDesignSessionBody,
-  options?: SecondParameter<typeof apiRequest<void>>,
+  options?: SecondParameter<typeof apiRequest<PublicDesignSessionAutosave200>>,
 ) => {
-  return apiRequest<void>(
+  return apiRequest<PublicDesignSessionAutosave200>(
     {
       url: `/api/public/design-sessions/${sessionId}/document`,
       method: 'PUT',
@@ -354,9 +357,9 @@ export const publicDesignSessionAutosave = (
  */
 export const publicDesignSessionResume = (
   sessionId: string,
-  options?: SecondParameter<typeof apiRequest<void>>,
+  options?: SecondParameter<typeof apiRequest<PublicDesignSessionResume200>>,
 ) => {
-  return apiRequest<void>(
+  return apiRequest<PublicDesignSessionResume200>(
     { url: `/api/public/design-sessions/${sessionId}/resume`, method: 'POST' },
     options,
   );

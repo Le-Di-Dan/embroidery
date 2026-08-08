@@ -11,6 +11,10 @@ export const CANONICAL_FILES = Object.freeze({
   report: 'docs/implementation/reports/APP3-B07-COMPLETION-REPORT.md',
   rootManifest: 'package.json',
   apiManifest: 'apps/api/package.json',
+  // `APP3-P04` — the generated client, so the response-type rule can prove the
+  // two operations this gate owns no longer resolve their success to `void`.
+  client: 'packages/api-client/src/generated/embroidery-api.ts',
+  clientSchemas: 'packages/api-client/src/generated/embroidery-api.schemas.ts',
   controller: `${DESIGN}/presentation/public-design-session.controller.ts`,
   request: `${DESIGN}/presentation/schemas/public-design-session.request.ts`,
   openUseCase: `${DESIGN}/application/open-design-session.use-case.ts`,

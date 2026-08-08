@@ -21,6 +21,7 @@ import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { SESSION_RESPONSE_OPERATIONS } from './app3-session-response-contract.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -199,6 +200,36 @@ function checkNoEmptyPublishedBody(rootDir, fail) {
 }
 
 /** 5 — the placement body keeps its exact `APP3-B01-C1` contract. */
+/**
+ * 4a (`APP3-P04`) — certified operations publish a concrete success response.
+ *
+ * Deliberately an **allowlist**, not a generic rule. P03 can see what a document
+ * publishes; it cannot see whether a handler returns a body, so a blanket
+ * "every 2xx must have a schema" would fail truthfully-empty responses and would
+ * be a rule this gate has no authority to make. What it can assert is that
+ * operations already certified as returning a body have not since regressed to
+ * publishing nothing — which is exactly how the three Design Session operations
+ * came to generate as `void`.
+ *
+ * Adding an operation here is a deliberate act. The detailed shape of each is
+ * ruled by the gate that owns it; this is the floor.
+ */
+function checkCertifiedSuccessResponses(rootDir, fail) {
+  const document = openapi(rootDir);
+  if (document === undefined) return;
+
+  for (const entry of SESSION_RESPONSE_OPERATIONS) {
+    const operation = document.paths?.[entry.path]?.[entry.method];
+    if (operation === undefined) continue;
+    const schema = operation.responses?.[entry.status]?.content?.['application/json']?.schema;
+    if (schema === undefined) {
+      fail(
+        `${operation.operationId ?? entry.path}: returns a body but publishes no ${entry.status} schema`,
+      );
+    }
+  }
+}
+
 function checkPlacementBody(rootDir, fail) {
   const document = openapi(rootDir);
   if (document === undefined) return;
@@ -289,6 +320,7 @@ export function checkApp3P03Contract(rootDir = REPO_ROOT) {
   checkEveryConsumerRegistered(rootDir, fail);
   checkNoManualWorkaround(rootDir, fail);
   checkNoEmptyPublishedBody(rootDir, fail);
+  checkCertifiedSuccessResponses(rootDir, fail);
   checkPlacementBody(rootDir, fail);
   checkGeneratedClient(rootDir, fail);
   checkNoSurfaceDelta(rootDir, fail);

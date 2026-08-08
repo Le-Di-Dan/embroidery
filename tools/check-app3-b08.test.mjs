@@ -93,8 +93,9 @@ describe('the accepted surface authority', () => {
     const surface = acceptedSurface(REPO_ROOT);
     assert.equal(surface.paths, 23);
     assert.equal(surface.operations, 27);
-    // 50 at B08, 63 after `APP3-B08-C1` published the 13 P01 components.
-    assert.equal(surface.schemas, 63);
+    // 50 at B08, 63 after `APP3-B08-C1` published the 13 P01 components, 66
+    // after `APP3-P04` published the shared response snapshot.
+    assert.equal(surface.schemas, 66);
     assert.equal(surface.designSessionPaths, 4);
   });
 
@@ -248,6 +249,54 @@ describe('the published surface', () => {
       };
     });
     assert.ok(mentions(run(checkSurface, { openapi }), 'draft-07'));
+  });
+
+  it('rejects an autosave success that publishes no response schema', () => {
+    // The `APP3-P04` defect: no schema generates as `void`.
+    const openapi = openapiWith((d) => {
+      delete d.paths[ROUTE].put.responses['200'].content;
+    });
+    assert.ok(mentions(run(checkSurface, { openapi }), 'publishes no success response schema'));
+  });
+
+  it('rejects an autosave response that stops sharing the snapshot component', () => {
+    const openapi = openapiWith((d) => {
+      d.paths[ROUTE].put.responses['200'].content['application/json'].schema = {
+        type: 'object',
+        additionalProperties: true,
+      };
+    });
+    assert.ok(mentions(run(checkSurface, { openapi }), 'not DesignSessionSnapshotResponse'));
+  });
+
+  it('rejects a snapshot whose document regresses to an open map', () => {
+    const openapi = openapiWith((d) => {
+      d.components.schemas.DesignSessionSnapshotResponse.properties.document = {
+        type: 'object',
+        additionalProperties: true,
+      };
+    });
+    const failures = run(checkSurface, { openapi });
+    assert.ok(mentions(failures, 'does not reference DesignDocument'), failures.join('\n'));
+    assert.ok(mentions(failures, 'still published as an open object'), failures.join('\n'));
+  });
+
+  it('rejects making scope or lineage required, which runtime omits', () => {
+    for (const field of ['scope', 'lineage']) {
+      const openapi = openapiWith((d) => {
+        const snapshot = d.components.schemas.DesignSessionSnapshotResponse;
+        snapshot.required = [...snapshot.required, field];
+      });
+      assert.ok(mentions(run(checkSurface, { openapi }), `"${field}" is required`), field);
+    }
+  });
+
+  it('rejects dropping a field the runtime always returns', () => {
+    const openapi = openapiWith((d) => {
+      const snapshot = d.components.schemas.DesignSessionSnapshotResponse;
+      snapshot.required = snapshot.required.filter((name) => name !== 'revision');
+    });
+    assert.ok(mentions(run(checkSurface, { openapi }), '"revision" is not required'));
   });
 
   it('rejects an adjacent operation B08 does not own', () => {
@@ -474,6 +523,23 @@ describe('the generated client', () => {
       'expectedRevision: unknown',
     );
     assert.ok(mentions(run(checkGeneratedClient, { clientSchemas }), 'not concrete'));
+  });
+
+  it('rejects a client whose autosave success falls back to void', () => {
+    // `APP3-P04`'s reason for existing, asserted at the generated-client edge.
+    const client = file('client').replace(
+      /apiRequest<PublicDesignSessionAutosave200>/g,
+      'apiRequest<void>',
+    );
+    assert.ok(mentions(run(checkGeneratedClient, { client }), 'resolves its success to "void"'));
+  });
+
+  it('rejects a client whose autosave success type is not generated', () => {
+    const client = file('client').replace(
+      /apiRequest<PublicDesignSessionAutosave200>/g,
+      'apiRequest<SomethingUndeclared>',
+    );
+    assert.ok(mentions(run(checkGeneratedClient, { client }), 'is not a generated type'));
   });
 
   it('rejects a client that types the document as an unbounded map again', () => {

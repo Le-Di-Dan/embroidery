@@ -10,10 +10,15 @@
  * Read-only, cross-platform pure Node.
  */
 import { acceptedSurface } from './app3-accepted-surface.mjs';
+import {
+  checkGeneratedResponseTypes,
+  checkSessionResponseContract,
+} from './app3-session-response-contract.mjs';
 import { CANONICAL_FILES, HTTP_METHODS, OPERATION, ROUTE, read } from './check-app3-b08-files.mjs';
 
 /** The generated P01 component the autosave body must reference (`APP3-B08-C1`). */
 const DESIGN_DOCUMENT_SCHEMA = 'DesignDocument';
+const AUTOSAVE_PATH = ROUTE;
 const PUBLISHED_SCHEMA_MARKER = 'x-embroidery-published-schema';
 
 /** 2 — exactly one new operation, published concretely. */
@@ -71,6 +76,12 @@ export function checkSurface(rootDir, fail) {
   checkRequestSchema(document, put, fail);
   checkNoPrivateMaterial(raw, fail);
   checkNoForbiddenOperations(paths, fail);
+  // `APP3-P04` — autosave's own success response. The shared rule lives in one
+  // module so this gate and the B07 gate cannot disagree about what "concrete"
+  // means; this call rules on the autosave operation only.
+  checkSessionResponseContract(document, (message) => fail(`response contract: ${message}`), [
+    AUTOSAVE_PATH,
+  ]);
 }
 
 /** The body must be concrete — never the empty schema `createZodDto` can emit. */
@@ -175,6 +186,10 @@ export function checkGeneratedClient(rootDir, fail) {
   if (!/document: DesignDocument/.test(schemas)) {
     fail(`${CANONICAL_FILES.clientSchemas}: the autosave body does not carry the document type`);
   }
+  // `APP3-P04` — autosave's success must be a generated type, never `void`.
+  checkGeneratedResponseTypes(client, schemas, (message) => fail(`response type: ${message}`), [
+    'publicDesignSessionAutosave',
+  ]);
   for (const leak of ['sessionSecretHash', 'storageKey', 'objectKey']) {
     if (schemas.includes(leak) || client.includes(leak)) {
       fail(`${CANONICAL_FILES.client}: generated client exposes "${leak}"`);

@@ -25,7 +25,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { B08_DELIVERED_STATUS } from './app3-accepted-surface.mjs';
+import { B08_C1_STATUS_LINES, B08_STATUS_LINES } from './app3-accepted-surface.mjs';
 import { checkApp3B06B } from './check-app3-b06b.mjs';
 import { checkGeneratedClient, checkSurface } from './check-app3-b08-contract.mjs';
 import { CANONICAL_FILES, REPO_ROOT, code, read, requireAll } from './check-app3-b08-files.mjs';
@@ -47,12 +47,25 @@ export function checkStatus(rootDir, fail) {
     'APP3-B07 = COMPLETE — REVIEW_ACCEPTED',
     'APP3-B06B = COMPLETE — REVIEW_ACCEPTED',
     'APP3-B06B-C1 = COMPLETE — REVIEW_ACCEPTED',
-    B08_DELIVERED_STATUS,
     // Cadence is a Studio concern; B08 must not acquire it by accident.
     'AUTOSAVE_CADENCE_OWNER = APP3-S11',
   ]) {
     if (!phase.includes(`\n${line}\n`)) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
+    }
+  }
+
+  // B08 and its correction each have exactly two legitimate states — under
+  // foundation review, and accepted with it. Exactly one of each must be
+  // recorded, so a status that drifted to neither is caught.
+  for (const [subject, alternatives] of [
+    ['APP3-B08', B08_STATUS_LINES],
+    ['APP3-B08-C1', B08_C1_STATUS_LINES],
+  ]) {
+    if (!alternatives.some((line) => phase.includes(`\n${line}\n`))) {
+      fail(
+        `${CANONICAL_FILES.phase}: ${subject} is in none of its accepted states (${alternatives.join(' | ')})`,
+      );
     }
   }
 }

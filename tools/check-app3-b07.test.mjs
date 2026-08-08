@@ -82,10 +82,24 @@ function openapiWith(mutate) {
 }
 
 describe('the accepted surface authority', () => {
-  it('reports the B07 surface for the delivered phase', () => {
-    const surface = acceptedSurface(REPO_ROOT);
+  it('reports the B07 surface when B07 is the frontier', () => {
+    // Pinned against a phase where B07 *is* the newest delivered checkpoint,
+    // not against the real repository. Asserting the live numbers made this
+    // stale the day `APP3-B06B` shipped a third Session route — it has been
+    // failing since, unnoticed, because it was measuring history rather than
+    // the rule. What B07 rules is its own world, and that never moves.
+    const phase = ['# phase', '', '```text', 'APP3-B07 = COMPLETE — REVIEW_DELIVERED', '```'].join(
+      '\n',
+    );
+    const surface = acceptedSurface(rootWith({ phase }));
     assert.equal(surface.paths, 21);
     assert.equal(surface.operations, 25);
+    assert.equal(surface.designSessionRoutes, true);
+  });
+
+  it('moves past B07 once a later checkpoint is recorded', () => {
+    const surface = acceptedSurface(REPO_ROOT);
+    assert.ok(surface.paths >= 21, 'the accepted surface never shrinks below B07');
     assert.equal(surface.designSessionRoutes, true);
   });
 
@@ -103,6 +117,9 @@ describe('the accepted surface authority', () => {
   });
 });
 
+/** The Session route count the accepted surface currently allows. */
+const SESSIONS = String(acceptedSurface(REPO_ROOT).designSessionPaths);
+
 describe('the published surface', () => {
   it('accepts the delivered artifact', () => {
     assert.deepEqual(run(checkSurface), []);
@@ -112,14 +129,21 @@ describe('the published surface', () => {
     const openapi = openapiWith((d) => {
       delete d.paths['/api/public/design-sessions/{sessionId}/resume'];
     });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'design-session paths, expected 2'));
+    // Derived for the same reason as the count above: `APP3-B06B` and
+    // `APP3-B08` each added a Session route, so a pinned "expected 2" stopped
+    // describing anything the day the second one shipped.
+    assert.ok(
+      mentions(run(checkSurface, { openapi }), `design-session paths, expected ${SESSIONS}`),
+    );
   });
 
   it('rejects a third B07 operation', () => {
     const openapi = openapiWith((d) => {
       d.paths['/api/public/design-sessions/{sessionId}/abandon'] = { post: {} };
     });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'design-session paths, expected 2'));
+    assert.ok(
+      mentions(run(checkSurface, { openapi }), `design-session paths, expected ${SESSIONS}`),
+    );
   });
 
   it('rejects a pre-B07 count under a delivered B07', () => {
@@ -127,7 +151,11 @@ describe('the published surface', () => {
       delete d.paths['/api/public/design-sessions'];
       delete d.paths['/api/public/design-sessions/{sessionId}/resume'];
     });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'paths, expected 21'));
+    // Derived, not pinned: the expected total is whatever the accepted surface
+    // currently is, so a later checkpoint that legitimately adds an operation
+    // does not silently turn this case into a no-op.
+    const expected = acceptedSurface(REPO_ROOT).paths;
+    assert.ok(mentions(run(checkSurface, { openapi }), `paths, expected ${String(expected)}`));
   });
 
   it('rejects a bootstrap body that stops publishing both branches', () => {

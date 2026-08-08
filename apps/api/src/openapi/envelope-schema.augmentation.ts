@@ -1,4 +1,5 @@
-import { type OpenAPIObject } from '@nestjs/swagger';
+import { getSchemaPath, type OpenAPIObject } from '@nestjs/swagger';
+import type { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
 import { API_ERROR_CODE, INTERNAL_ERROR_MESSAGE } from '../platform/http-response/api-error-code';
 import {
@@ -28,6 +29,26 @@ export const ENVELOPE_SCHEMA_NAMES = {
   success: 'ApiSuccessResponse',
   error: 'ApiErrorResponse',
 } as const;
+
+/**
+ * The published shape of one successful envelope carrying `model` as its data
+ * (`APP3-P04`).
+ *
+ * Lives beside the envelope names rather than in a controller because it is the
+ * same three lines for every schema-backed success response in the API, and a
+ * copy per controller is how one of them ends up referencing the wrong envelope
+ * or forgetting `data` is required. `APP3-B06B` still carries its own local
+ * copy; it is left alone here because its gate is outside this foundation's
+ * budget, and folding it in is a follow-up rather than a silent edit.
+ */
+export function envelopeSchemaOf(model: Parameters<typeof getSchemaPath>[0]): SchemaObject {
+  return {
+    allOf: [
+      { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.success}` },
+      { type: 'object', required: ['data'], properties: { data: { $ref: getSchemaPath(model) } } },
+    ],
+  };
+}
 
 const requestIdSchema = {
   type: 'string',

@@ -814,6 +814,58 @@ export interface DesignSessionAssetIntakeResponse {
   sessionRevision: number;
 }
 
+export interface DesignSessionLineageResponse {
+  /** Public Design Template slug. */
+  templateSlug: string;
+  /** The published Template version cloned. */
+  templateVersion: number;
+}
+
+export interface DesignSessionScopeResponse {
+  /** Stable Embroidery Area code. */
+  areaCode: string;
+  /** Safe-area height, in canvas pixels. */
+  boundHeightPx: number;
+  /** Safe-area width, in canvas pixels. */
+  boundWidthPx: number;
+  /** Safe-area left edge, in canvas pixels. */
+  boundXPx: number;
+  /** Safe-area top edge, in canvas pixels. */
+  boundYPx: number;
+  /** Side image height in canvas pixels. */
+  canvasHeightPx: number;
+  /** Side image width in canvas pixels. */
+  canvasWidthPx: number;
+  /** Physical height of the Side in millimetres. */
+  physicalHeightMm: number;
+  /** Physical width of the Side in millimetres. */
+  physicalWidthMm: number;
+  /** Public Product slug. */
+  productSlug: string;
+  /** The sole px↔mm conversion authority for this Side. */
+  pxPerMm: number;
+  /** Stable Product Side code. */
+  sideCode: string;
+}
+
+export interface DesignSessionSnapshotResponse {
+  /** The canonical, quantized Design Document as persisted. */
+  document: DesignDocument;
+  /** The Design Document schema version this snapshot is governed by. */
+  documentSchemaVersion: number;
+  /** Absolute 30-day expiry. Never extended by reading or saving. */
+  expiresAt: string;
+  /** Present only when the session was cloned from a published Template. */
+  lineage?: DesignSessionLineageResponse;
+  /** The autosave revision. Present it on the next mutation. */
+  revision: number;
+  /** Placement geometry. Present on bootstrap, which resolved it from the public slug and codes; absent on resume and autosave, which address the session by id. */
+  scope?: DesignSessionScopeResponse;
+  sessionId: string;
+  /** Design Session lifecycle state. */
+  status: string;
+}
+
 export type HealthStatusResponseService =
   (typeof HealthStatusResponseService)[keyof typeof HealthStatusResponseService];
 
@@ -1328,6 +1380,10 @@ export type AdminProductUnpublish200 = ApiSuccessResponse & {
   data: AdminProductPublicationResponse;
 };
 
+export type PublicDesignSessionCreate201 = ApiSuccessResponse & {
+  data: DesignSessionSnapshotResponse;
+};
+
 export type PublicDesignSessionAssetCreateBody = {
   /** Exactly one image/png, image/jpeg, image/webp image of at most 10485760 bytes. The declared type must match the file signature; SVG, GIF and every other type is refused. */
   file: Blob;
@@ -1335,6 +1391,14 @@ export type PublicDesignSessionAssetCreateBody = {
 
 export type PublicDesignSessionAssetCreate202 = ApiSuccessResponse & {
   data: DesignSessionAssetIntakeResponse;
+};
+
+export type PublicDesignSessionAutosave200 = ApiSuccessResponse & {
+  data: DesignSessionSnapshotResponse;
+};
+
+export type PublicDesignSessionResume200 = ApiSuccessResponse & {
+  data: DesignSessionSnapshotResponse;
 };
 
 export type PublicProductListParams = {

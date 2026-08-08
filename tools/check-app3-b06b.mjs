@@ -22,7 +22,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { B06B_DELIVERED_STATUS } from './app3-accepted-surface.mjs';
+import { B06B_DELIVERED_STATUS, isB08Delivered } from './app3-accepted-surface.mjs';
 import { checkApp3B07 } from './check-app3-b07.mjs';
 import { checkLane, checkResponse, checkSurface } from './check-app3-b06b-contract.mjs';
 import { CANONICAL_FILES, REPO_ROOT, code, read, requireAll } from './check-app3-b06b-files.mjs';
@@ -44,7 +44,7 @@ function checkStatus(rootDir, fail) {
     // B08 was `READY — NOT STARTED` while B06B was the frontier. It has since
     // shipped on top, so this is mode-aware rather than pinned: what B06B rules
     // is that B08 exists as a successor, not which review stage it is at.
-    ...(/\nAPP3-B08 = COMPLETE/.test(phase) ? [] : ['APP3-B08 = READY — NOT STARTED']),
+    ...(isB08Delivered(rootDir) ? [] : ['APP3-B08 = READY — NOT STARTED']),
   ]) {
     if (!phase.includes(`\n${line}\n`)) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
