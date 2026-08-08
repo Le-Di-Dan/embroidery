@@ -19,7 +19,9 @@ import {
   acceptedAdminTemplateOperationCount,
   acceptedSurface,
   isB04Delivered,
+  isB05Delivered,
   lifecycleAdminTemplatePaths,
+  publicTemplatePaths,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -29,15 +31,17 @@ const DESIGN = 'apps/api/src/modules/design';
 export const SAVE_ROUTE = '/api/admin/design-templates/{templateId}/document';
 export const SAVE_OPERATION = 'adminDesignTemplate_saveDocument';
 
-/** Routes owned by a later checkpoint that must not appear here. */
-// The three lifecycle routes are deliberately absent: `APP3-B04` owns them, and
-// once it is accepted they are part of the world rather than a violation. They
-// are asserted mode-aware below instead, against the shared surface authority.
-const FORBIDDEN_ROUTES = Object.freeze([
-  ['/api/public/design-templates', 'APP3-B05'],
-  ['/api/public/design-templates/{slug}', 'APP3-B05'],
-]);
-
+/**
+ * There is no flat list of forbidden routes any more, and its absence is the
+ * rule rather than an omission.
+ *
+ * `APP3-B04`'s three transitions and `APP3-B05`'s two public reads were both
+ * banned outright here, and both have since been delivered by the checkpoint
+ * that owned them. A ban is a proxy for "that checkpoint has not run", and it
+ * stops describing the world the moment it does. Each successor is now asserted
+ * in **both** directions against the shared surface authority: not published
+ * before its checkpoint is accepted, and *required* once it is.
+ */
 export const CANONICAL_FILES = Object.freeze({
   phase: 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md',
   index: 'docs/implementation/SCOPED_COMMAND_INDEX.md',
@@ -149,10 +153,20 @@ export function checkSurface(rootDir, fail) {
     );
   }
 
-  for (const [route, owner] of FORBIDDEN_ROUTES) {
-    if (document.paths?.[route] !== undefined) {
-      fail(`${CANONICAL_FILES.openapi}: publishes ${route}, which belongs to ${owner}`);
-    }
+  // `APP3-B05`'s two public reads, asserted in both directions rather than
+  // banned outright. Before B05 neither may exist; once the phase records it
+  // accepted, a *missing* one is the failure — a flat ban would have this gate
+  // refusing a route the phase already signed off, which is precisely the proxy
+  // decay `APP3-B06B` recorded and `APP3-B04` had to repair.
+  const publicDelivered = isB05Delivered(rootDir);
+  for (const route of publicTemplatePaths()) {
+    const routePublished = document.paths?.[route] !== undefined;
+    if (routePublished === publicDelivered) continue;
+    fail(
+      routePublished
+        ? `${CANONICAL_FILES.openapi}: publishes ${route}, which belongs to APP3-B05`
+        : `${CANONICAL_FILES.openapi}: APP3-B05 is delivered but ${route} is missing`,
+    );
   }
 }
 

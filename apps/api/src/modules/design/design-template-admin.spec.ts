@@ -217,19 +217,21 @@ describe('the three Admin Design Template operations', () => {
     }
   });
 
-  it('carries no B04A, B05 or B05A capability', () => {
-    // B04A's restore and B05/B05A's public reads, asserted as absences.
-    // `…/document` and B04's three transitions are deliberately no longer in
-    // this list: `APP3-B03A` and `APP3-B04` delivered them, and each one's
-    // ownership is proved by that checkpoint's own gate.
-    for (const forbidden of [
-      '/api/admin/design-templates/{templateId}/restore',
-      '/api/public/design-templates',
-      '/api/public/design-templates/{slug}',
-    ]) {
-      expect(document.paths[forbidden]).toBeUndefined();
+  it('carries no B04A or B05A capability', () => {
+    // B04A's restore, asserted as an absence. `…/document`, B04's three
+    // transitions and `APP3-B05`'s two public reads are deliberately no longer
+    // in this list: `APP3-B03A`, `APP3-B04` and `APP3-B05` delivered them, and
+    // each one's ownership is proved by that checkpoint's own gate. A ban is a
+    // proxy for "that checkpoint has not run" and stops describing the world the
+    // moment it does.
+    expect(document.paths['/api/admin/design-templates/{templateId}/restore']).toBeUndefined();
+    // B05A's byte delivery, whose address is not locked yet — asserted by shape.
+    for (const path of Object.keys(document.paths)) {
+      if (!path.startsWith('/api/public/design-templates')) continue;
+      expect(path).not.toMatch(/\/(assets?|preview|download|file|image|media)\b/);
     }
-    // `@Put` is B03A's save; `@Patch` and `@Delete` belong to no APP3 checkpoint.
+    // The Admin controller stays a JSON surface: `@Put` is B03A's save;
+    // `@Patch` and `@Delete` belong to no APP3 checkpoint.
     expect(CONTROLLER_SOURCE).not.toMatch(/@(Patch|Delete)\(/);
   });
 

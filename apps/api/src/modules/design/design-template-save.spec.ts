@@ -231,12 +231,16 @@ describe('the published save contract', () => {
     );
   });
 
-  it('publishes no B04A, B05 or B05A route alongside it', () => {
-    for (const forbidden of [
-      '/api/admin/design-templates/{templateId}/restore',
-      '/api/public/design-templates',
-    ]) {
-      expect(document.paths[forbidden]).toBeUndefined();
+  it('publishes no B04A or B05A route alongside it', () => {
+    // `/api/public/design-templates` is deliberately no longer in this list:
+    // `APP3-B05` delivered it, and its ownership is proved by that checkpoint's
+    // own gate. What remains are routes no checkpoint has run — B04A's restore,
+    // and any byte-delivery path under the public Template prefix, which is
+    // B05A's and whose address is not even locked yet.
+    expect(document.paths['/api/admin/design-templates/{templateId}/restore']).toBeUndefined();
+    for (const path of Object.keys(document.paths)) {
+      if (!path.startsWith('/api/public/design-templates')) continue;
+      expect(path).not.toMatch(/\/(assets?|preview|download|file|image|media)\b/);
     }
   });
 

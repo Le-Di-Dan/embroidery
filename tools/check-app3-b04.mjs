@@ -14,7 +14,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedSurface, isB05Delivered, publicTemplatePaths } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -144,10 +144,20 @@ export function checkSurface(rootDir, fail) {
     );
   }
 
-  for (const route of ['/api/public/design-templates', '/api/public/design-templates/{slug}']) {
-    if (document.paths?.[route] !== undefined) {
-      fail(`${CANONICAL_FILES.openapi}: publishes ${route}, which belongs to APP3-B05`);
-    }
+  // `APP3-B05`'s two public reads, asserted in both directions rather than
+  // banned outright. Before B05 neither may exist; once the phase records it
+  // accepted, a *missing* one is the failure — a flat ban would have this gate
+  // refusing a route the phase already signed off, which is precisely the proxy
+  // decay `APP3-B06B` recorded and `APP3-B04` had to repair.
+  const publicDelivered = isB05Delivered(rootDir);
+  for (const route of publicTemplatePaths()) {
+    const routePublished = document.paths?.[route] !== undefined;
+    if (routePublished === publicDelivered) continue;
+    fail(
+      routePublished
+        ? `${CANONICAL_FILES.openapi}: publishes ${route}, which belongs to APP3-B05`
+        : `${CANONICAL_FILES.openapi}: APP3-B05 is delivered but ${route} is missing`,
+    );
   }
 }
 

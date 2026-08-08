@@ -4,6 +4,7 @@ import { AssetIntakeModule } from '../modules/asset/asset-intake.module';
 import { CatalogDraftModule } from '../modules/catalog/catalog-draft.module';
 import { DesignModule } from '../modules/design/design.module';
 import { DesignTemplateAdminModule } from '../modules/design/design-template-admin.module';
+import { DesignTemplatePublicModule } from '../modules/design/design-template-public.module';
 import { CatalogPlacementModule } from '../modules/catalog/catalog-placement.module';
 import { CatalogPublicMediaModule } from '../modules/catalog/catalog-public-media.module';
 import { CatalogPublicSideBackgroundModule } from '../modules/catalog/catalog-public-side-background.module';
@@ -40,6 +41,10 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // requires DESIGN_SESSION_SECRET_PEPPER and fails loudly without it.
     DesignModule,
     DesignTemplateAdminModule,
+    // APP3-B05 — the anonymous public Template reads. Registered after the Admin
+    // module purely for readability: the two share no base path, so registration
+    // order cannot make one shadow the other.
+    DesignTemplatePublicModule,
   ],
 })
 export class AppModule {}

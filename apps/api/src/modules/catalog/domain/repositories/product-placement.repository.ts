@@ -184,6 +184,13 @@ export interface PublicPlacement {
   readonly areas: readonly PlacementAreaRow[];
 }
 
+/** The exact `product → side → area` triple a caller asks about (`APP3-B05`). */
+export interface PlacementScopeReference {
+  readonly productId: ProductId;
+  readonly productSideId: ProductSideId;
+  readonly embroideryAreaId: EmbroideryAreaId;
+}
+
 export const PRODUCT_PLACEMENT_REPOSITORY = Symbol('PRODUCT_PLACEMENT_REPOSITORY');
 
 export interface ProductPlacementRepository {
@@ -239,4 +246,27 @@ export interface ProductPlacementRepository {
    * forget to filter it out.
    */
   findPublicPlacement(slug: string): Promise<PublicPlacement | undefined>;
+
+  /**
+   * Whether this exact triple is publicly designable **right now** (`APP3-B05`).
+   *
+   * `findPublicPlacement` answers the same question for a whole Product and is
+   * keyed by its public slug, which a caller holding only ids cannot supply. A
+   * public Design Template read holds exactly the three ids and needs one
+   * yes/no, so this is that question asked directly rather than a whole manifest
+   * fetched and filtered — and, more importantly, it keeps the *definition* of
+   * publicly designable in Catalog. Design asking "is this scope public?"
+   * through a port is the boundary; Design re-deriving the product-publication
+   * and category predicates for itself would be the leak.
+   *
+   * `undefined` for every failing reason alike — unknown product, draft or
+   * archived product, non-public category, retired Side, retired Area, an Area
+   * hanging from a different Side, or a Side of a different Product. A caller
+   * that could tell them apart would be an oracle for unreleased catalogue work.
+   *
+   * A **read**: it resolves nothing, repairs nothing and writes nothing.
+   */
+  findPublicPlacementScope(
+    reference: PlacementScopeReference,
+  ): Promise<PlacementScopeReference | undefined>;
 }

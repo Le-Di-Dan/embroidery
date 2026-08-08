@@ -42,6 +42,9 @@ import type {
   PublicDesignSessionAutosave200,
   PublicDesignSessionCreate201,
   PublicDesignSessionResume200,
+  PublicDesignTemplateDetail200,
+  PublicDesignTemplateList200,
+  PublicDesignTemplateListParams,
   PublicProductDetail200,
   PublicProductList200,
   PublicProductListParams,
@@ -506,6 +509,34 @@ export const publicDesignSessionResume = (
 };
 
 /**
+ * Returns the published templates compatible with one embroidery area, newest first, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts, archived and unpublished templates are excluded by the query itself. A template whose product has since left the public catalogue, or whose side or area has been retired, is omitted without the template being changed in any way. Compatibility is the exact `productId` + `productSideId` + `embroideryAreaId` triple. All three are required and there is no product-wide, side-wide or wildcard match: a template is compatible with one embroidery area and with nothing else. Pagination is keyset: `nextCursor` is opaque, bound to the scope it was issued under, and absent on the last page. Responses are never stored. Publication and placement eligibility are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished or archived template visible.
+ * @summary List published design templates for one embroidery area
+ */
+export const publicDesignTemplateList = (
+  params: PublicDesignTemplateListParams,
+  options?: SecondParameter<typeof apiRequest<PublicDesignTemplateList200>>,
+) => {
+  return apiRequest<PublicDesignTemplateList200>(
+    { url: `/api/public/design-templates`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Resolves a published template by its server-owned slug and returns the published immutable version — the highest version that carries a publication timestamp, which is not necessarily the highest version that exists. An unknown slug, a draft, an archived template, one that was unpublished, one whose versions were never published, and one whose product, side or area is no longer publicly designable all return the same 404: a public caller must not be able to tell unreleased store work from work that never existed. Responses are never stored. Publication and placement eligibility are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished or archived template visible.
+ * @summary Get one published design template by slug
+ */
+export const publicDesignTemplateDetail = (
+  slug: unknown,
+  options?: SecondParameter<typeof apiRequest<PublicDesignTemplateDetail200>>,
+) => {
+  return apiRequest<PublicDesignTemplateDetail200>(
+    { url: `/api/public/design-templates/${slug}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
  * Returns published products in editorial order, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts and archived products are excluded by the query itself. Pagination is keyset: `nextCursor` is opaque, bound to the filter it was issued under, and null on the last page. Responses are never stored. Publication is re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished product visible.
  * @summary List published products
  */
@@ -680,6 +711,12 @@ export type PublicDesignSessionAutosaveResult = NonNullable<
 >;
 export type PublicDesignSessionResumeResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionResume>>
+>;
+export type PublicDesignTemplateListResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignTemplateList>>
+>;
+export type PublicDesignTemplateDetailResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignTemplateDetail>>
 >;
 export type PublicProductListResult = NonNullable<Awaited<ReturnType<typeof publicProductList>>>;
 export type PublicProductDetailResult = NonNullable<

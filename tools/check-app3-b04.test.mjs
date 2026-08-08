@@ -119,7 +119,12 @@ describe('the published surface', () => {
     const openapi = openapiWith((d) => {
       delete d.paths[Object.keys(OPERATIONS)[0]];
     });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'paths, expected 29'));
+    // The expected count comes from the shared surface authority, not a literal.
+    // This gate runs in whatever world the phase records, and every checkpoint
+    // after B04 legitimately moves that number — pinning `29` here made the case
+    // stop describing its own subject the day `APP3-B05` shipped.
+    const expected = acceptedSurface(REPO_ROOT).paths;
+    assert.ok(mentions(run(checkSurface, { openapi }), `paths, expected ${String(expected)}`));
   });
 
   it("rejects APP3-B04A's restore appearing here", () => {

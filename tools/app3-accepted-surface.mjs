@@ -19,6 +19,19 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-B05` — the two anonymous public Template reads. Two paths, two
+    // operations, and five response components: the list envelope, the summary,
+    // the detail, the scope and the published version. The Design Document is
+    // *not* among them — the detail references the component `APP3-P01` already
+    // publishes rather than restating one.
+    marker: /\nAPP3-B05 = COMPLETE/,
+    paths: 31,
+    operations: 36,
+    schemas: 81,
+    designSessionRoutes: true,
+    designSessionPaths: 4,
+  },
+  {
     // `APP3-B04` — the three LC-24 lifecycle transitions. Three paths, three
     // operations, and three request bodies; restore is `APP3-B04A`'s and is not
     // in this world.
@@ -203,6 +216,46 @@ export function acceptedAdminTemplatePaths(rootDir) {
 export function lifecycleAdminTemplatePaths() {
   return [...ADMIN_TEMPLATE_LIFECYCLE_PATHS];
 }
+
+/**
+ * The two public Design Template paths `APP3-B05` publishes.
+ *
+ * Kept apart from the Admin list rather than folded into it. Five gates hold an
+ * allow-list of "APP3 paths that legitimately exist" and refuse everything else,
+ * and every one of them matches on the shape `design-templates?` — so a public
+ * Template route trips all five without being any of theirs. They consult this
+ * list; they do not carry a copy of it. But three *other* gates count the Admin
+ * Template operations, and a public path folded into that count would inflate a
+ * number that is supposed to describe the Admin surface alone.
+ */
+const PUBLIC_TEMPLATE_PATHS = Object.freeze([
+  '/api/public/design-templates',
+  '/api/public/design-templates/{slug}',
+]);
+
+/** True once `APP3-B05` has published the public Design Template reads. */
+export function isB05Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-B05 = COMPLETE/.test(phase);
+}
+
+/** The public Template paths the accepted world may contain — none before B05. */
+export function acceptedPublicTemplatePaths(rootDir) {
+  return isB05Delivered(rootDir) ? [...PUBLIC_TEMPLATE_PATHS] : [];
+}
+
+/** Both public paths, for gates that must assert their absence before B05. */
+export function publicTemplatePaths() {
+  return [...PUBLIC_TEMPLATE_PATHS];
+}
+
+/** The status lines `APP3-B05` may legitimately be recorded under. */
+export const B05_STATUS_LINES = Object.freeze([
+  'APP3-B05 = READY — NOT STARTED',
+  'APP3-B05 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-B05 = COMPLETE — REVIEW_ACCEPTED',
+]);
 
 /**
  * How many operations each accepted path carries. Only the collection carries

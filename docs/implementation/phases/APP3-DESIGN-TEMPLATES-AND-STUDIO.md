@@ -3309,7 +3309,7 @@ authorization context:
 | # | Delivery class | Authorization context | Owner | Status |
 |---|---|---|---|---|
 | 1 | Product Side background | Product + Side | `APP3-B02` | `COMPLETE — REVIEW_ACCEPTED` (`publicProductSideBackground_get`) |
-| 2 | Published Template asset | Published Template + Published Template Version | **`APP3-B05A`** | `DEFINED — NOT STARTED` |
+| 2 | Published Template asset | Published Template + Published Template Version | **`APP3-B05A`** | `DEFINED — READY — NOT STARTED` (`APP3-B05` accepted) |
 | 3 | Design Session upload | Session id + matching per-session credential | **`APP3-B06C`** | `DEFINED — NOT STARTED` |
 
 Three symmetrical checkpoints of one operation each. The shape is `APP3-B02`'s,
@@ -3334,7 +3334,7 @@ authorising another derivative of the same Asset.
 | Semantic authorities | `B04` publication lifecycle · `B05` published-template read · `W01B` sanitized/normalized Template SVG · `DB01` + `G04` derivative metadata quartet |
 | Unlocks | `APP3-S01` (the template picker's preview), `APP3-E01` |
 | Origin | replan child created by `APP3-ROADMAP-RECONCILIATION` under `ASSET_DELIVERY_RULING = OPTION_2` |
-| Status | `DEFINED — BLOCKED_BY_APP3-B04_AND_APP3-B05` |
+| Status | `DEFINED — READY — NOT STARTED` — both predecessors accepted |
 
 **`APP3-B05` is not enlarged.** It stays exactly two operations —
 `GET /api/public/design-templates` and `GET /api/public/design-templates/{slug}`
@@ -3420,7 +3420,7 @@ delivery surfaces the journey actually traverses.
 | `APP3-B06A` | session credential verifier, 0 HTTP operations | `APP3-B06` | `COMPLETE — REVIEW_ACCEPTED` |
 | `APP3-B06B` | session raster intake, 1 operation | `APP3-B06` | `COMPLETE — REVIEW_ACCEPTED` |
 | **`APP3-B06C`** | session private asset delivery, 1 operation | `APP3-B06` | `DEFINED — READY — NOT STARTED` |
-| **`APP3-B05A`** | published Template asset delivery, 1 operation | `APP3-B05` | `DEFINED — BLOCKED` |
+| **`APP3-B05A`** | published Template asset delivery, 1 operation | `APP3-B05` | `DEFINED — READY — NOT STARTED` |
 | **`APP3-B03A`** | Template draft document save, 1 operation | `APP3-B03` | `COMPLETE — REVIEW_ACCEPTED` |
 | **`APP3-B04A`** | Template restore, 1 operation | `APP3-B04` | `READY — NOT STARTED` |
 
@@ -3456,6 +3456,7 @@ to decide whether a dependent may start.
 | `APP3-B07` | session bootstrap (blank + clone) and resume; **sole issuer** of the session cookie | 2 | `G03`, `P01`, `P02`, `B01` | `B06B`, `B08`, `S01` | §6.1 #21 | `COMPLETE — REVIEW_ACCEPTED` |
 | `APP3-B08` | session autosave under `autosave_revision` CAS; stale revision is `409` with no mutation | 1 | `B07`, `P02` | `S10` | §6.1 #22 | `COMPLETE — REVIEW_ACCEPTED` |
 | `APP3-P04` | publishes the shared Session response contract for all three Session operations; **publication only, no runtime change** | 0 new | `B08`, `B08-C1`, `P03` | any client consuming a Session response | manual intervention after `B08-C1` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-B05` | anonymous public published-Template reads — list for one exact `product → side → area` triple, and detail by slug; selects the **highest version whose `published_at` is set**, re-evaluates the placement chain’s public eligibility on **every** request, and writes nothing | 2 | `B04`, `B01`, `G02`, `P01`, `DB01` | `B05A`, `S01` | §6.1 #15 | `COMPLETE — REVIEW_DELIVERED` |
 
 Autosave **cadence** is `APP3-S10`'s, not `APP3-B08`'s and not `APP3-S11`'s:
 `B08` enforces the 30 writes/minute ceiling and must not invent a timer; `S10`
@@ -3465,29 +3466,35 @@ value itself stays **OPEN until `APP3-S10` runs**.
 
 ### 6.24.7 Current execution state
 
-Eligible now, all hard predecessors accepted (`APP3-B04` delivered, so the
-public read takes its place at the head of the chain):
+Eligible now, all hard predecessors accepted (`APP3-B05` delivered, so byte
+delivery takes its place at the head of the chain):
 
 ```text
-APP3-B05    public published-template read    2 operations
-APP3-B04A   template restore                  1 operation
-APP3-D01    phase design package              gates every A*/S* checkpoint
-APP3-B06C   session private asset delivery    1 operation
+APP3-B05A   published Template asset delivery  1 operation
+APP3-D01    phase design package               gates every A*/S* checkpoint
+APP3-B04A   template restore                   1 operation
+APP3-B06C   session private asset delivery     1 operation
 ```
 
 Recommended next, for the single-checkpoint human-review workflow:
 
 ```text
-NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B05
+NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B05A
 ```
 
-because `APP3-B04` has given it something to read — a template can now reach
-`PUBLISHED` — and it is the only remaining checkpoint on the longest chain,
-`B05 → B05A → S01`. `APP3-B04A` and `APP3-B06C` are
-genuinely ready and are deliberately not recommended first: they sit on shorter branches
-(`B06C → S06`) that cannot be consumed until `S02` exists, so running it now
-would deliver a surface with no consumer for several checkpoints, while the
-critical path stood still.
+because `APP3-B05` has given it something to authorize from — a published
+Template and a published Version now resolve through a real read — and it is the
+only remaining **backend** checkpoint on the longest chain,
+`B05 → B05A → S01`. `APP3-S01` cannot start before it: the Template picker
+shows a Template preview derivative (§6.24.2), so the frontend chain is blocked
+on byte delivery and not merely on `APP3-D01`.
+
+`APP3-D01` is the one genuine parallel candidate, and the only other thing that
+gates `APP3-S01`. `APP3-B04A` and `APP3-B06C` stay genuinely ready and stay
+deliberately unrecommended: they sit on shorter branches (`B06C → S06`) that
+cannot be consumed until `S02` exists, so running one now would deliver a
+surface with no consumer for several checkpoints while the critical path stood
+still.
 
 `APP3-D01` is eligible in parallel or immediately after `B03`. It gates every
 Admin and Storefront checkpoint in the phase, and no frontend work may start
@@ -3831,7 +3838,7 @@ DESIGN_TEMPLATE_ASSET_NORMALIZATION_PRODUCER = APP3-B03A
 DESIGN_TEMPLATE_ASSET_NORMALIZATION_PRODUCER STATE = IMPLEMENTED_BY_APP3-B03A
 FU-APP3-TEMPLATE-SOURCE-ASSET-INTAKE-01 = OPEN — OWNER_NOT_YET_ASSIGNED
 DESIGN_TEMPLATE_ASSET_NORMALIZATION_PRODUCER PREVIOUS = APP3-B03 — SUPERSEDED_BY_B03_CONTRACT_RULING
-APP3-B04 = COMPLETE — REVIEW_DELIVERED
+APP3-B04 = COMPLETE — REVIEW_ACCEPTED
 APP3-B04 OPERATIONS = adminDesignTemplate_publish adminDesignTemplate_unpublish adminDesignTemplate_archive
 APP3-B04 SURFACE = PATHS_29_OPERATIONS_34_SCHEMAS_76
 APP3-B04 TRANSITIONS = TR-LC24-02 TR-LC24-03 TR-LC24-04 TR-LC24-05
@@ -3850,8 +3857,23 @@ APP3-B04A OPERATIONS = 1
 APP3-B04A ROUTE = POST_/api/admin/design-templates/:templateId/restore
 APP3-B04A OPERATION_ID = adminDesignTemplate_restore
 APP3-B04A TRANSITION = TR-LC24-06
-APP3-B05 = READY — NOT STARTED
-APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05
+APP3-B05 = COMPLETE — REVIEW_DELIVERED
+APP3-B05 OPERATIONS = publicDesignTemplate_list publicDesignTemplate_detail
+APP3-B05 SURFACE = PATHS_31_OPERATIONS_36_SCHEMAS_81
+APP3-B05 COMPATIBILITY = EXACT_TRIPLE_PRODUCT_SIDE_AREA
+APP3-B05 SCOPE_REQUIREMENT = ALL_THREE_IDS_REQUIRED_NO_PARTIAL_NO_WILDCARD
+APP3-B05 VERSION_SELECTION = HIGHEST_PUBLISHED_AT_NOT_NULL
+APP3-B05 SCOPE_ELIGIBILITY = RE_EVALUATED_AT_READ_TIME
+APP3-B05 NON_DISCLOSURE = ONE_ANSWER_FOR_EVERY_INVISIBLE_STATE
+APP3-B05 PAGINATION = KEYSET_CREATED_AT_DESC_ID_DESC_SCOPE_BOUND_CURSOR
+APP3-B05 DOCUMENT_SCHEMA = REUSES_APP3-P01_DESIGNDOCUMENT_COMPONENT
+APP3-B05 AUTHENTICATION = ANONYMOUS
+APP3-B05 CACHE = NO_STORE
+APP3-B05 WRITES = NONE
+APP3-B05 AUDIT = NONE
+APP3-B05 EVENTS = NONE
+APP3-B05 MIGRATION = NONE
+APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05 — NOT STARTED
 APP3-B06C = DEFINED — READY — NOT STARTED
 APP3-D01 = READY — NOT STARTED
 APP3-G06 = COMPLETE — REVIEW_ACCEPTED
@@ -3983,8 +4005,8 @@ APP3-B06C OPERATIONS = 1
 APP3-B06C ROUTE = GET_/api/public/design-sessions/:sessionId/assets/:assetId/editor-preview
 APP3-B06C AUTHORIZATION = SESSION_ID_PLUS_PER_SESSION_CREDENTIAL
 APP3-B06C ORIGIN = REPLAN_CHILD_OF_APP3-B06 — NOT_A_B06B_CORRECTION
-NEXT_ELIGIBLE_IMPLEMENTATION_CHECKPOINTS = APP3-B05 APP3-B04A APP3-D01 APP3-B06C
-NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B05
+NEXT_ELIGIBLE_IMPLEMENTATION_CHECKPOINTS = APP3-B05A APP3-D01 APP3-B04A APP3-B06C
+NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B05A
 NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = NONE
 FRONTEND_GATE = APP3-D01
 every other APP3 checkpoint = NOT STARTED

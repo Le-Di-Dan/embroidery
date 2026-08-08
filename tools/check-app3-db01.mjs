@@ -25,7 +25,11 @@ import { fileURLToPath } from 'node:url';
 
 import { sectionBody, tableRows } from './check-app3-g02.mjs';
 import { checkApp3G04 } from './check-app3-g04.mjs';
-import { acceptedAdminTemplatePaths, acceptedSessionPaths } from './app3-accepted-surface.mjs';
+import {
+  acceptedAdminTemplatePaths,
+  acceptedPublicTemplatePaths,
+  acceptedSessionPaths,
+} from './app3-accepted-surface.mjs';
 import { checkPlacementAuthority } from './check-app3-db01-placement.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -335,6 +339,8 @@ function checkNoImplementation(root, phase, fail) {
     // carried this same ban, and a seventh copy is how one of them keeps
     // refusing a route the phase already accepted.
     ...acceptedAdminTemplatePaths(root),
+    // `APP3-B05`'s two public Template reads, for the same reason.
+    ...acceptedPublicTemplatePaths(root),
   ];
   const paths = Object.keys(JSON.parse(raw).paths ?? {});
   for (const path of paths.filter((p) => APP3_OPERATION_RE.test(p) && !allowed.includes(p))) {

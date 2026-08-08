@@ -1011,6 +1011,51 @@ export interface PublicCategoryResponse {
   slug: PublicCategoryResponseSlug;
 }
 
+export interface PublicDesignTemplateVersionResponse {
+  /** The Design Document schema version it is governed by. */
+  documentSchemaVersion: number;
+  /** Set once when this exact version was first published; never cleared or rewritten. */
+  publishedAt: string;
+  /** Monotonic per Template. There is no version 0. */
+  version: number;
+}
+
+export interface PublicDesignTemplateScopeResponse {
+  embroideryAreaId: string;
+  productId: string;
+  productSideId: string;
+}
+
+export interface PublicDesignTemplateDetailResponse {
+  /** Absent when the Template carries no description. */
+  description?: string;
+  /** The canonical Design Document of the published version, exactly as published. */
+  document: DesignDocument;
+  name: string;
+  publishedVersion: PublicDesignTemplateVersionResponse;
+  scope: PublicDesignTemplateScopeResponse;
+  /** The public address of this Template — server-owned and derived from its name. */
+  slug: string;
+}
+
+export interface PublicDesignTemplateSummaryResponse {
+  /** Absent when the Template carries no description. */
+  description?: string;
+  name: string;
+  publishedVersion: PublicDesignTemplateVersionResponse;
+  scope: PublicDesignTemplateScopeResponse;
+  /** The public address of this Template — server-owned and derived from its name. */
+  slug: string;
+}
+
+export interface PublicDesignTemplateListResponse {
+  /** True when a further page exists. */
+  hasNext: boolean;
+  items: PublicDesignTemplateSummaryResponse[];
+  /** Opaque keyset cursor for the next page. Absent on the last page. */
+  nextCursor?: string;
+}
+
 export type PublicMediaReferenceResponseRole =
   (typeof PublicMediaReferenceResponseRole)[keyof typeof PublicMediaReferenceResponseRole];
 
@@ -1586,6 +1631,29 @@ export type PublicDesignSessionAutosave200 = ApiSuccessResponse & {
 
 export type PublicDesignSessionResume200 = ApiSuccessResponse & {
   data: DesignSessionSnapshotResponse;
+};
+
+export type PublicDesignTemplateListParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from a prior page.
+   */
+  cursor?: unknown;
+  embroideryAreaId: string;
+  productSideId: string;
+  productId: string;
+};
+
+export type PublicDesignTemplateList200 = ApiSuccessResponse & {
+  data: PublicDesignTemplateListResponse;
+};
+
+export type PublicDesignTemplateDetail200 = ApiSuccessResponse & {
+  data: PublicDesignTemplateDetailResponse;
 };
 
 export type PublicProductListParams = {

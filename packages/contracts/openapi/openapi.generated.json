@@ -1948,6 +1948,146 @@
         ],
         "type": "object"
       },
+      "PublicDesignTemplateDetailResponse": {
+        "properties": {
+          "description": {
+            "description": "Absent when the Template carries no description.",
+            "type": "string"
+          },
+          "document": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignDocument"
+              }
+            ],
+            "description": "The canonical Design Document of the published version, exactly as published."
+          },
+          "name": {
+            "example": "Hoa sen cổ điển",
+            "type": "string"
+          },
+          "publishedVersion": {
+            "$ref": "#/components/schemas/PublicDesignTemplateVersionResponse"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/PublicDesignTemplateScopeResponse"
+          },
+          "slug": {
+            "description": "The public address of this Template — server-owned and derived from its name.",
+            "example": "hoa-sen-co-dien",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "scope",
+          "publishedVersion",
+          "document"
+        ],
+        "type": "object"
+      },
+      "PublicDesignTemplateListResponse": {
+        "properties": {
+          "hasNext": {
+            "description": "True when a further page exists.",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicDesignTemplateSummaryResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "description": "Opaque keyset cursor for the next page. Absent on the last page.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "hasNext"
+        ],
+        "type": "object"
+      },
+      "PublicDesignTemplateScopeResponse": {
+        "properties": {
+          "embroideryAreaId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "productId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "productSideId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productId",
+          "productSideId",
+          "embroideryAreaId"
+        ],
+        "type": "object"
+      },
+      "PublicDesignTemplateSummaryResponse": {
+        "properties": {
+          "description": {
+            "description": "Absent when the Template carries no description.",
+            "type": "string"
+          },
+          "name": {
+            "example": "Hoa sen cổ điển",
+            "type": "string"
+          },
+          "publishedVersion": {
+            "$ref": "#/components/schemas/PublicDesignTemplateVersionResponse"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/PublicDesignTemplateScopeResponse"
+          },
+          "slug": {
+            "description": "The public address of this Template — server-owned and derived from its name.",
+            "example": "hoa-sen-co-dien",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "scope",
+          "publishedVersion"
+        ],
+        "type": "object"
+      },
+      "PublicDesignTemplateVersionResponse": {
+        "properties": {
+          "documentSchemaVersion": {
+            "description": "The Design Document schema version it is governed by.",
+            "example": 1,
+            "type": "number"
+          },
+          "publishedAt": {
+            "description": "Set once when this exact version was first published; never cleared or rewritten.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "description": "Monotonic per Template. There is no version 0.",
+            "example": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "documentSchemaVersion",
+          "publishedAt"
+        ],
+        "type": "object"
+      },
       "PublicMediaReferenceResponse": {
         "properties": {
           "role": {
@@ -7861,6 +8001,286 @@
         "summary": "Resume an anonymous design session",
         "tags": [
           "publicDesignSession"
+        ]
+      }
+    },
+    "/api/public/design-templates": {
+      "get": {
+        "description": "Returns the published templates compatible with one embroidery area, newest first, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts, archived and unpublished templates are excluded by the query itself. A template whose product has since left the public catalogue, or whose side or area has been retired, is omitted without the template being changed in any way. Compatibility is the exact `productId` + `productSideId` + `embroideryAreaId` triple. All three are required and there is no product-wide, side-wide or wildcard match: a template is compatible with one embroidery area and with nothing else. Pagination is keyset: `nextCursor` is opaque, bound to the scope it was issued under, and absent on the last page. Responses are never stored. Publication and placement eligibility are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished or archived template visible.",
+        "operationId": "publicDesignTemplate_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a prior page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "in": "query",
+            "name": "embroideryAreaId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "productSideId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "productId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicDesignTemplateListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "A page of published templates. Empty when the area holds none and, identically, when the scope is no longer publicly designable.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unknown query parameter, a missing or malformed scope id, an out-of-range page size, or a cursor that is malformed or was issued for a different scope.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List published design templates for one embroidery area",
+        "tags": [
+          "publicDesignTemplate"
+        ]
+      }
+    },
+    "/api/public/design-templates/{slug}": {
+      "get": {
+        "description": "Resolves a published template by its server-owned slug and returns the published immutable version — the highest version that carries a publication timestamp, which is not necessarily the highest version that exists. An unknown slug, a draft, an archived template, one that was unpublished, one whose versions were never published, and one whose product, side or area is no longer publicly designable all return the same 404: a public caller must not be able to tell unreleased store work from work that never existed. Responses are never stored. Publication and placement eligibility are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished or archived template visible.",
+        "operationId": "publicDesignTemplate_detail",
+        "parameters": [
+          {
+            "description": "The server-owned public template slug.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicDesignTemplateDetailResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The published template and its published Design Document.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The slug is not well formed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No published design template is available at that slug.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get one published design template by slug",
+        "tags": [
+          "publicDesignTemplate"
         ]
       }
     },

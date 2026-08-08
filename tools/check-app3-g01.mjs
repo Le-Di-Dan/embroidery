@@ -25,7 +25,11 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { checkNextPhaseChronology } from './check-app2-closure-artifacts.mjs';
-import { acceptedAdminTemplatePaths, acceptedSessionPaths } from './app3-accepted-surface.mjs';
+import {
+  acceptedAdminTemplatePaths,
+  acceptedPublicTemplatePaths,
+  acceptedSessionPaths,
+} from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -338,6 +342,10 @@ function checkNoImplementation(root, phase, fail) {
     // carried this same ban, and a seventh copy is how one of them keeps
     // refusing a route the phase already accepted.
     ...acceptedAdminTemplatePaths(REPO_ROOT),
+    // `APP3-B05` publishes the two public Template reads. Same reasoning as
+    // the line above, and a separate list because the Admin count must not
+    // grow by a path that is not on the Admin surface.
+    ...acceptedPublicTemplatePaths(REPO_ROOT),
   ];
   if (raw === undefined) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);

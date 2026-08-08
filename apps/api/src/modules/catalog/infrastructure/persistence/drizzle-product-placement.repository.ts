@@ -44,6 +44,7 @@ import type {
   CreateSideInput,
   PlacementAreaRow,
   PlacementLockResult,
+  PlacementScopeReference,
   PlacementSideRow,
   PlacementSnapshot,
   ProductPlacementRepository,
@@ -319,6 +320,60 @@ export class DrizzleProductPlacementRepository
         })),
         areas: areaRows.map(toArea),
       };
+    });
+  }
+
+  /**
+   * The one-statement public-eligibility test for an exact triple (`APP3-B05`).
+   *
+   * Every condition is in the same `WHERE`, joined through the chain itself:
+   * the Side's `product_id` must be the addressed Product and the Area's
+   * `product_side_id` must be the addressed Side, so a Side of another Product
+   * and an Area of another Side of the *same* Product both fail on the join
+   * rather than on a comparison a caller could forget to write. The Product's
+   * publication and its category's are the same two predicates
+   * `findPublicPlacement` carries; retirement is `retired_at IS NULL` on both
+   * rows. Nothing arrives for a service to filter afterwards.
+   *
+   * One row or none. There is no ordering and no page: the triple is unique by
+   * construction (`products.id`, `product_sides.id`, `embroidery_areas.id` are
+   * all primary keys), so `limit 1` is a guard rather than a selection.
+   */
+  async findPublicPlacementScope(
+    reference: PlacementScopeReference,
+  ): Promise<PlacementScopeReference | undefined> {
+    return this.run('findPublicPlacementScope', async () => {
+      const [row] = await this.db
+        .select({
+          productId: products.id,
+          productSideId: productSides.id,
+          embroideryAreaId: embroideryAreas.id,
+        })
+        .from(embroideryAreas)
+        .innerJoin(productSides, eq(productSides.id, embroideryAreas.productSideId))
+        .innerJoin(products, eq(products.id, productSides.productId))
+        .innerJoin(categories, eq(categories.id, products.categoryId))
+        .where(
+          and(
+            eq(embroideryAreas.id, reference.embroideryAreaId),
+            eq(productSides.id, reference.productSideId),
+            eq(products.id, reference.productId),
+            isNull(embroideryAreas.retiredAt),
+            isNull(productSides.retiredAt),
+            eq(products.status, PRODUCT_PUBLISHED_STATE),
+            eq(categories.status, APP2_CATEGORY_STATUS),
+            isNull(categories.archivedAt),
+          ),
+        )
+        .limit(1);
+
+      return row === undefined
+        ? undefined
+        : {
+            productId: row.productId as ProductId,
+            productSideId: row.productSideId as ProductSideId,
+            embroideryAreaId: row.embroideryAreaId as EmbroideryAreaId,
+          };
     });
   }
 
