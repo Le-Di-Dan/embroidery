@@ -26,6 +26,7 @@ import {
   checkApp3B06B,
   checkAssociation,
   checkDurableTransaction,
+  checkLiveSuite,
   checkSecurity,
   checkStreaming,
 } from './check-app3-b06b.mjs';
@@ -396,6 +397,53 @@ describe('the bounded response', () => {
   it('rejects claiming inspection or normalization succeeded', () => {
     const projection = file('projection').replace("'INSPECTING'", "'ACCEPTED'");
     assert.ok(run(checkResponse, { projection }).length > 0);
+  });
+});
+
+describe('the live durability suite (APP3-B06B-C1)', () => {
+  const index = read(REPO_ROOT, 'commandIndex') ?? '';
+  const live = (overrides = {}, text = index) => {
+    const failures = [];
+    checkLiveSuite(rootWith(overrides), (message) => failures.push(message), text);
+    return failures;
+  };
+
+  it('accepts the delivered suite', () => {
+    assert.deepEqual(live(), []);
+  });
+
+  it('rejects a missing suite, harness or config', () => {
+    for (const key of ['liveSpec', 'liveHarness', 'liveConfig']) {
+      const root = rootWith();
+      rmSync(join(root, CANONICAL_FILES[key]));
+      const failures = [];
+      checkLiveSuite(root, (message) => failures.push(message), index);
+      assert.ok(mentions(failures, 'missing'), key);
+    }
+  });
+
+  it('rejects a suite with no indexed command', () => {
+    assert.ok(
+      mentions(
+        live({}, index.replace(/CMD-TEST-APP3-B06B-INTEGRATION/g, 'CMD-X')),
+        'no indexed command',
+      ),
+    );
+  });
+
+  it('rejects letting the Docker-only suite into the Docker-free default run', () => {
+    const defaultJestConfig = file('defaultJestConfig').replace(
+      "'<rootDir>/test/integration/design-session-asset',",
+      '',
+    );
+    assert.ok(mentions(live({ defaultJestConfig }), 'not excluded'));
+  });
+
+  it('rejects a stale session revision that is not the published conflict', () => {
+    // The exact defect C1 found: without the translation the request answers
+    // 500 while the frozen contract publishes 409.
+    const transactions = file('transactions').replace(/designSessionStaleWrite/g, 'rethrow');
+    assert.ok(mentions(live({ transactions }), 'published conflict'));
   });
 });
 

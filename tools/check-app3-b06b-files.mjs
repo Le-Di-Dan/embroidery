@@ -35,6 +35,10 @@ export const CANONICAL_FILES = Object.freeze({
   sessionRepository: `${DESIGN}/domain/repositories/design-session.repository.ts`,
   drizzleSession: `${DESIGN}/infrastructure/persistence/drizzle-design-session.repository.ts`,
   unitSpec: `${DESIGN}/session-asset-intake.spec.ts`,
+  liveSpec: 'apps/api/test/integration/design-session-asset-intake.integration.spec.ts',
+  liveHarness: 'apps/api/test/support/design-session-asset-context.ts',
+  liveConfig: 'apps/api/jest.design-session-asset.config.mjs',
+  defaultJestConfig: 'apps/api/jest.config.mjs',
   rootManifest: 'package.json',
   commandIndex: 'docs/implementation/SCOPED_COMMAND_INDEX.md',
 });

@@ -18,6 +18,7 @@
  * No object-store call happens here. These bodies touch the database only.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { isPersistenceError } from '@embroidery/database';
 import {
   IdempotencyAllocationStore,
   OutboxEventStore,
@@ -37,6 +38,7 @@ import {
   type AssetRepository,
 } from '../../asset/domain/repositories/asset.repository';
 import { assetIntakeError } from '../../asset/domain/asset-intake.errors';
+import { designSessionStaleWrite } from '../domain/design-session-authorization';
 import {
   ASSET_INSPECTION_EVENT_TYPE,
   ASSET_INSPECTION_PAYLOAD_VERSION,
@@ -136,8 +138,15 @@ export class SessionAssetTransactionsService {
 
       const sessionId = allocation.sessionId as DesignSessionId;
       // Throws STALE_WRITE on a revision, status or expiry mismatch — including
-      // a session that expired between authorization and this moment.
-      const session = await this.sessions.advanceRevision({ id: sessionId, expectedRevision, at });
+      // a session that expired between authorization and this moment. That is a
+      // `PersistenceError`, not an `HttpException`, so without the translation
+      // below it would leave the request as a 500 while the published contract
+      // promises 409 for exactly this case.
+      const session = await this.sessions
+        .advanceRevision({ id: sessionId, expectedRevision, at })
+        .catch((error: unknown) => {
+          throw translateSessionGuard(error);
+        });
 
       const designSessionAssetId = await this.sessions.attachAsset(sessionId, asset.id);
 
@@ -218,6 +227,25 @@ export class SessionAssetTransactionsService {
       throw assetIntakeError('STALE_UPLOAD_CLAIM');
     }
   }
+}
+
+/**
+ * The PO-08 conflict, reached from the one route that can now cause it.
+ *
+ * `designSessionStaleWrite()` is `APP3-B06A`'s and is deliberately reused rather
+ * than restated: it is the decision that a session which moved on is a 409 that
+ * reveals no current revision. A vanished session collapses into the same
+ * answer — the guard proved it existed moments ago, so its absence is a race,
+ * and distinguishing the two would tell an anonymous caller which one happened.
+ *
+ * Anything else is re-thrown untouched. A translation that swallowed unknown
+ * persistence failures would turn a database outage into a client error.
+ */
+function translateSessionGuard(error: unknown): unknown {
+  if (!isPersistenceError(error)) return error;
+  return error.code === 'STALE_WRITE' || error.code === 'RECORD_NOT_FOUND'
+    ? designSessionStaleWrite()
+    : error;
 }
 
 /** Every immutable fact the row and the just-measured stream must agree on. */

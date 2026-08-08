@@ -37,7 +37,7 @@ import {
 import { checkApp3G03 } from './check-app3-g03.mjs';
 import { checkApp3G08 } from './check-app3-g08.mjs';
 import { checkApp3W01C } from './check-app3-w01c.mjs';
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedSurface, B06B_DELIVERED_STATUS } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -81,7 +81,7 @@ export function checkAuthority(rootDir, fail) {
     'APP3-G08 = COMPLETE — REVIEW_ACCEPTED',
     'APP3-W01C = COMPLETE — REVIEW_ACCEPTED',
     ...(afterB06B
-      ? ['APP3-B06A = COMPLETE — REVIEW_ACCEPTED', 'APP3-B06B = COMPLETE — REVIEW_DELIVERED']
+      ? ['APP3-B06A = COMPLETE — REVIEW_ACCEPTED', B06B_DELIVERED_STATUS]
       : afterB07
         ? ['APP3-B06A = COMPLETE — REVIEW_ACCEPTED', 'APP3-B06B = READY — NOT STARTED']
         : [

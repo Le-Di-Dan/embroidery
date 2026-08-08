@@ -18,6 +18,7 @@ import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { B06B_DELIVERED_STATUS } from './app3-accepted-surface.mjs';
 import { CANONICAL_FILES, code, read, requireAll } from './check-app3-b07-files.mjs';
 import { checkApp3B06A } from './check-app3-b06a.mjs';
 import { checkRequestContract, checkSurface } from './check-app3-b07-contract.mjs';
@@ -39,7 +40,7 @@ function checkStatus(rootDir, fail) {
   for (const line of [
     'APP3-B06A = COMPLETE — REVIEW_ACCEPTED',
     afterB06B ? 'APP3-B07 = COMPLETE — REVIEW_ACCEPTED' : 'APP3-B07 = COMPLETE — REVIEW_DELIVERED',
-    afterB06B ? 'APP3-B06B = COMPLETE — REVIEW_DELIVERED' : 'APP3-B06B = READY — NOT STARTED',
+    afterB06B ? B06B_DELIVERED_STATUS : 'APP3-B06B = READY — NOT STARTED',
     'APP3-B08 = READY — NOT STARTED',
   ]) {
     if (!phase.includes(`\n${line}\n`)) {

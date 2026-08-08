@@ -22,6 +22,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { B06B_DELIVERED_STATUS } from './app3-accepted-surface.mjs';
 import { checkApp3B07 } from './check-app3-b07.mjs';
 import { checkLane, checkResponse, checkSurface } from './check-app3-b06b-contract.mjs';
 import { CANONICAL_FILES, REPO_ROOT, code, read, requireAll } from './check-app3-b06b-files.mjs';
@@ -39,7 +40,7 @@ function checkStatus(rootDir, fail) {
     'APP3-W01C = COMPLETE — REVIEW_ACCEPTED',
     'APP3-B06A = COMPLETE — REVIEW_ACCEPTED',
     'APP3-B07 = COMPLETE — REVIEW_ACCEPTED',
-    'APP3-B06B = COMPLETE — REVIEW_DELIVERED',
+    B06B_DELIVERED_STATUS,
     'APP3-B08 = READY — NOT STARTED',
   ]) {
     if (!phase.includes(`\n${line}\n`)) {
@@ -273,6 +274,36 @@ export function checkBoundary(rootDir, fail) {
   if (!index.includes('check-app3-b06b')) {
     fail(`${CANONICAL_FILES.commandIndex}: the B06B checker is not indexed`);
   }
+  checkLiveSuite(rootDir, fail, index);
+}
+
+/**
+ * 11a (`APP3-B06B-C1`) — the live suite exists and can be found.
+ *
+ * Deliberately limited to existence, wiring and discoverability. A structural
+ * gate cannot observe an assertion executing, and one that claimed to would be
+ * exactly the substitution C1 exists to correct: B06B passed every structural
+ * check while its durable behaviour had never met a real database. Whether the
+ * suite *passed* belongs in the C1 report, next to the command that produced it.
+ */
+export function checkLiveSuite(rootDir, fail, index) {
+  for (const key of ['liveSpec', 'liveHarness', 'liveConfig']) {
+    if (read(rootDir, key) === undefined) fail(`${CANONICAL_FILES[key]}: missing`);
+  }
+  if (!index.includes('CMD-TEST-APP3-B06B-INTEGRATION')) {
+    fail(`${CANONICAL_FILES.commandIndex}: the B06B live suite has no indexed command`);
+  }
+  // Docker-only, so it must stay out of the Docker-free default run.
+  const defaultConfig = read(rootDir, 'defaultJestConfig') ?? '';
+  if (!defaultConfig.includes('test/integration/design-session-asset')) {
+    fail(`${CANONICAL_FILES.defaultJestConfig}: the Docker-only Session suite is not excluded`);
+  }
+  // The stale-revision translation C1 added is the one runtime fix; without it
+  // a stale revision answers 500 against a contract that publishes 409.
+  const transactions = code(read(rootDir, 'transactions') ?? '');
+  if (!/designSessionStaleWrite/.test(transactions)) {
+    fail(`${CANONICAL_FILES.transactions}: a stale session revision is not a published conflict`);
+  }
 }
 
 /** 12 — file sizes stay inside the standard. */
@@ -297,11 +328,17 @@ export function checkSizes(rootDir, fail) {
     const lines = text.split('\n').length;
     if (lines > SRC_LIMIT) fail(`${CANONICAL_FILES[key]}: ${lines} lines, above ${SRC_LIMIT}`);
   }
-  const spec = read(rootDir, 'unitSpec');
-  if (spec === undefined) {
-    fail(`${CANONICAL_FILES.unitSpec}: missing`);
-  } else if (spec.split('\n').length > TEST_LIMIT) {
-    fail(`${CANONICAL_FILES.unitSpec}: above ${TEST_LIMIT} lines`);
+  for (const key of ['unitSpec', 'liveSpec']) {
+    const spec = read(rootDir, key);
+    if (spec === undefined) {
+      fail(`${CANONICAL_FILES[key]}: missing`);
+    } else if (spec.split('\n').length > TEST_LIMIT) {
+      fail(`${CANONICAL_FILES[key]}: above ${TEST_LIMIT} lines`);
+    }
+  }
+  const harness = read(rootDir, 'liveHarness');
+  if (harness !== undefined && harness.split('\n').length > SRC_LIMIT) {
+    fail(`${CANONICAL_FILES.liveHarness}: above ${SRC_LIMIT} lines`);
   }
   for (const [file, cap] of [
     ['tools/check-app3-b06b.mjs', SOFT_CHECKER],

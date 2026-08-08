@@ -79,6 +79,18 @@ export function acceptedSessionPaths(rootDir) {
 }
 
 /**
+ * The exact status line `APP3-B06B` is recorded under once delivered.
+ *
+ * Three gates (B06A, B06B, B07) each assert this line, and each had its own
+ * copy of the literal — so `APP3-B06B-C1` changing the token broke all three at
+ * once. The value is asserted here, not read back out of the phase document: a
+ * status derived from the document it is meant to check would accept whatever
+ * was written, which is the same defect as measuring a surface by counting the
+ * artifact it is supposed to constrain.
+ */
+export const B06B_DELIVERED_STATUS = 'APP3-B06B = COMPLETE — REVIEW_DELIVERED_AFTER_C1';
+
+/**
  * True once `APP3-B06B` has published the anonymous raster intake.
  *
  * Several gates ban a *word* — "normalization", "svg" — anywhere in the OpenAPI

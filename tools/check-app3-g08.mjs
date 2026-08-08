@@ -126,9 +126,13 @@ export const STATUS_AFTER_W01C = Object.freeze([
   /\nAPP3-W01C = COMPLETE — REVIEW_(DELIVERED|ACCEPTED)\n/,
   /\nAPP3-B07 = (READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED|ACCEPTED))\n/,
   /\nAPP3-B06A = (READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED|ACCEPTED))\n/,
-  // …and finally delivered. G08 ruled B06B's architecture; a gate that only ever
-  // accepted the blocked or ready form would fail the day its own ruling shipped.
-  /\nAPP3-B06B = (BLOCKED_BY_APP3-(B06A_AND_)?B07|READY — NOT STARTED|COMPLETE — REVIEW_DELIVERED)\n/,
+  // …and finally delivered, then corrected. G08 ruled B06B's architecture; a
+  // gate that only ever accepted the blocked or ready form would fail the day
+  // its own ruling shipped — and one that stopped at the first delivered form
+  // fails the day that delivery is corrected, which is what `APP3-B06B-C1` did.
+  // The review stage is still calendar, not architecture; what stays ruled is
+  // that B06B is one of the states G08 defined for it.
+  /\nAPP3-B06B = (BLOCKED_BY_APP3-(B06A_AND_)?B07|READY — NOT STARTED|COMPLETE — REVIEW_DELIVERED(_AFTER_C1)?)\n/,
 ]);
 
 /** An expected status entry: an exact line, or a pattern over the block. */
