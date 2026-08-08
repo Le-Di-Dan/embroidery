@@ -18,7 +18,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedSurface, isB03ADelivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   COLLECTION_ROUTE,
@@ -124,26 +124,38 @@ describe('the published surface', () => {
     const openapi = openapiWith((d) => {
       delete d.paths[ITEM_ROUTE];
     });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'paths, expected 25'));
+    // Derived, not pinned at 25: `APP3-B03A` legitimately moved the accepted
+    // surface, and a literal here would fail on a correct repository.
+    const expected = acceptedSurface(REPO_ROOT).paths;
+    assert.ok(mentions(run(checkSurface, { openapi }), `paths, expected ${String(expected)}`));
   });
 
-  it('rejects a fourth Admin Template operation', () => {
+  it('rejects one more Admin Template operation than the phase allows', () => {
     const openapi = openapiWith((d) => {
       d.paths[`${COLLECTION_ROUTE}/import`] = {
         post: { operationId: 'adminDesignTemplate_import' },
       };
     });
-    const failures = run(checkSurface, { openapi });
-    assert.ok(mentions(failures, 'admin design-template operations, expected 3'));
+    // Three before `APP3-B03A`, four after — and never one more, in either world.
+    const allowed = isB03ADelivered(REPO_ROOT) ? 4 : 3;
+    assert.ok(
+      mentions(
+        run(checkSurface, { openapi }),
+        `admin design-template operations, expected ${String(allowed)}`,
+      ),
+    );
   });
 
-  it("rejects APP3-B03A's save appearing inside B03", () => {
-    const openapi = openapiWith((d) => {
-      d.paths[`${ITEM_ROUTE}/document`] = {
-        put: { operationId: 'adminDesignTemplate_saveDocument' },
-      };
-    });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'belongs to APP3-B03A'));
+  it("rejects APP3-B03A's save appearing while B03A is unstarted", () => {
+    // The mode-aware half of the rule. The delivered world is asserted by the
+    // suite's first case, which accepts the real artifact; this one rebuilds the
+    // *undelivered* world and proves the save is still refused there.
+    const phase = file('phase').replace(
+      /\nAPP3-B03A = COMPLETE[^\n]*\n/,
+      '\nAPP3-B03A = READY — NOT STARTED\n',
+    );
+    const failures = run(checkSurface, { phase });
+    assert.ok(mentions(failures, 'belongs to APP3-B03A'), failures.join('\n'));
   });
 
   it('rejects a B04 lifecycle route', () => {
@@ -306,9 +318,22 @@ describe('authorization', () => {
     assert.ok(mentions(run(checkAuthorization, { controller }), 'anonymous Session auth'));
   });
 
-  it('rejects a mutating verb beyond the create', () => {
-    const controller = file('controller').replace('  @Post()', "  @Put(':templateId')\n  @Post()");
-    assert.ok(mentions(run(checkAuthorization, { controller }), 'mutating verb'));
+  it('rejects a mutating verb no APP3 checkpoint owns', () => {
+    const controller = file('controller').replace(
+      '  @Post()',
+      "  @Patch(':templateId')\n  @Post()",
+    );
+    assert.ok(mentions(run(checkAuthorization, { controller }), 'no APP3 checkpoint owns'));
+  });
+
+  it('rejects the save verb disappearing while APP3-B03A is delivered', () => {
+    const controller = file('controller').replaceAll("@Put(':templateId/document')", '@Post()');
+    assert.ok(
+      mentions(
+        run(checkAuthorization, { controller }),
+        "does not match APP3-B03A's delivered state",
+      ),
+    );
   });
 
   it('rejects a local envelope helper', () => {

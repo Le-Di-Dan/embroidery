@@ -15,6 +15,7 @@ import type {
   DesignTemplateVersion,
   ListDesignTemplatesInput,
   PublishDesignTemplateVersionInput,
+  SaveDesignTemplateDraftVersionInput,
 } from '../../domain/repositories/design-template.repository';
 import { toTemplate, toTemplateVersion } from './design-row.mapper';
 
@@ -105,6 +106,133 @@ export class DrizzleDesignTemplateRepository
         .where(eq(designTemplates.id, input.designTemplateId));
 
       return toTemplateVersion(version);
+    });
+  }
+
+  /**
+   * The draft save, as one compare-and-set (`APP3-B03A`).
+   *
+   * The counter is advanced with the expected value **in the predicate** rather
+   * than read-then-written: two saves racing on the same `expectedCurrentVersion`
+   * both reach the `update`, and exactly one matches a row. Postgres serialises
+   * them on the row lock, so the loser re-reads a counter that has already moved
+   * and matches nothing.
+   *
+   * The counter moves *before* the version row is inserted, so the loser is
+   * rejected without either statement having written a version — and the unique
+   * `(design_template_id, version)` is a second, independent guard rather than
+   * the primary one, because relying on it would mean discovering the conflict
+   * as a constraint violation after doing the work.
+   */
+  async saveDraftVersion(
+    input: SaveDesignTemplateDraftVersionInput,
+  ): Promise<DesignTemplateVersion> {
+    return this.run('saveDraftVersion', async () => {
+      const tx = this.requireTransaction('saveDraftVersion');
+      const nextVersion = input.expectedCurrentVersion + 1;
+
+      const [advanced] = await tx
+        .update(designTemplates)
+        .set({ currentVersion: nextVersion, updatedAt: new Date() })
+        .where(
+          and(
+            eq(designTemplates.id, input.designTemplateId),
+            eq(designTemplates.status, 'DRAFT'),
+            eq(designTemplates.currentVersion, input.expectedCurrentVersion),
+          ),
+        )
+        .returning({ id: designTemplates.id });
+
+      if (advanced === undefined) {
+        const [current] = await tx
+          .select({ id: designTemplates.id })
+          .from(designTemplates)
+          .where(eq(designTemplates.id, input.designTemplateId))
+          .limit(1);
+
+        if (current === undefined) {
+          throw notFoundError(
+            'DesignTemplateRepository.saveDraftVersion',
+            'That design template does not exist.',
+          );
+        }
+        // One code for both remaining causes on purpose: a caller learning
+        // "not DRAFT" separately from "counter moved" learns the template's
+        // lifecycle state from a save it was not allowed to make.
+        throw guardViolationError(
+          'DesignTemplateRepository.saveDraftVersion',
+          'STALE_WRITE',
+          'This design template changed since it was loaded.',
+        );
+      }
+
+      const [version] = await tx
+        .insert(designTemplateVersions)
+        .values({
+          id: input.id,
+          designTemplateId: input.designTemplateId,
+          version: nextVersion,
+          designDocument: input.designDocument,
+          documentSchemaVersion: input.documentSchemaVersion,
+          // Null, always. `IMP-D042` PO-04: publish sets this once, later, and
+          // never clears it — a draft save must not pre-stamp it.
+          publishedAt: null,
+        })
+        .returning();
+
+      if (version === undefined) {
+        throw guardViolationError(
+          'DesignTemplateRepository.saveDraftVersion',
+          'DESIGN_TEMPLATE_VERSION_NOT_CREATED',
+          'Could not save the design template version.',
+        );
+      }
+      return toTemplateVersion(version);
+    });
+  }
+
+  async ensureAssetAssociation(
+    id: DesignTemplateId,
+    assetId: string,
+  ): Promise<{ readonly designTemplateAssetId: string; readonly created: boolean }> {
+    return this.run('ensureAssetAssociation', async () => {
+      const tx = this.requireTransaction('ensureAssetAssociation');
+
+      const [inserted] = await tx
+        .insert(designTemplateAssets)
+        .values({ id: newId(), designTemplateId: id, assetId })
+        // The unique `(template, asset)` decides, not a prior read: two saves
+        // referencing the same new Asset would both see it absent and both
+        // insert, and exactly one row must exist with exactly one event behind
+        // it.
+        .onConflictDoNothing({
+          target: [designTemplateAssets.designTemplateId, designTemplateAssets.assetId],
+        })
+        .returning({ id: designTemplateAssets.id });
+
+      if (inserted !== undefined) {
+        return { designTemplateAssetId: inserted.id, created: true };
+      }
+
+      const [existing] = await tx
+        .select({ id: designTemplateAssets.id })
+        .from(designTemplateAssets)
+        .where(
+          and(
+            eq(designTemplateAssets.designTemplateId, id),
+            eq(designTemplateAssets.assetId, assetId),
+          ),
+        )
+        .limit(1);
+
+      if (existing === undefined) {
+        throw guardViolationError(
+          'DesignTemplateRepository.ensureAssetAssociation',
+          'DESIGN_TEMPLATE_ASSET_NOT_ASSOCIATED',
+          'Could not associate that asset with the design template.',
+        );
+      }
+      return { designTemplateAssetId: existing.id, created: false };
     });
   }
 

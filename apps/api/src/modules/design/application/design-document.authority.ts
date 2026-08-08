@@ -172,7 +172,9 @@ export class DesignDocumentAuthority {
  * verdict rather than being flattened into "invalid", because a client that sent
  * a future document needs to know it is the version that is wrong.
  */
-function rejectionForFindings(findings: readonly DesignDocumentFinding[]): DocumentRejection {
+export function rejectionForFindings(
+  findings: readonly DesignDocumentFinding[],
+): DocumentRejection {
   for (const entry of findings) {
     if (entry.code === 'UNSUPPORTED_SCHEMA_VERSION') return 'DOCUMENT_SCHEMA_UNSUPPORTED';
   }

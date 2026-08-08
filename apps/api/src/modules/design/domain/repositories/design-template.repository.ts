@@ -67,6 +67,30 @@ export interface CreateDesignTemplateInput {
   readonly embroideryAreaId?: EmbroideryAreaId | undefined;
 }
 
+/**
+ * One draft save (`APP3-B03A`).
+ *
+ * Separate from `PublishDesignTemplateVersionInput` rather than a nullable
+ * `publishedAt` on it: `publishVersion` writes a version **and publishes it**,
+ * setting the header to `PUBLISHED`, and widening it to sometimes not do that
+ * would make one method mean two things. `IMP-D042` PO-04 keeps them apart too —
+ * a save writes a version with `published_at` null, and publish sets that stamp
+ * once, later, on a version that already exists.
+ */
+export interface SaveDesignTemplateDraftVersionInput {
+  readonly id: DesignTemplateVersionId;
+  readonly designTemplateId: DesignTemplateId;
+  /**
+   * The header counter the caller believes it is advancing from.
+   *
+   * `0` is the ordinary first save: `APP3-B03` creates a header with no version
+   * at all, so the first document a Template ever holds is version 1.
+   */
+  readonly expectedCurrentVersion: number;
+  readonly designDocument: Record<string, unknown>;
+  readonly documentSchemaVersion: number;
+}
+
 export interface PublishDesignTemplateVersionInput {
   readonly id: DesignTemplateVersionId;
   readonly designTemplateId: DesignTemplateId;
@@ -117,6 +141,41 @@ export interface DesignTemplateRepository {
 
   /** Associates a private original artwork asset with the template. @requiresTransaction */
   attachAsset(id: DesignTemplateId, assetId: string): Promise<void>;
+
+  /**
+   * Writes one immutable draft version under a compare-and-set on the header
+   * (`APP3-B03A`).
+   *
+   * Succeeds only when the Template exists, is `DRAFT`, and its `current_version`
+   * is exactly `expectedCurrentVersion`; the new version and the advanced counter
+   * are written together, so the counter can never point past the last version
+   * actually written. `published_at` is null — publication is `APP3-B04`'s and
+   * sets that stamp once.
+   *
+   * Throws `RECORD_NOT_FOUND` for an unknown Template and `STALE_WRITE` when the
+   * Template is not `DRAFT` or the counter has moved. Both leave the row
+   * untouched, which is what makes exactly one of two racing saves win.
+   *
+   * @requiresTransaction
+   */
+  saveDraftVersion(input: SaveDesignTemplateDraftVersionInput): Promise<DesignTemplateVersion>;
+
+  /**
+   * Ensures a `(template, asset)` association exists and reports whether this
+   * call is the one that created it.
+   *
+   * The `created` flag is the whole point: `IMP-D046` PO-04 appends a
+   * normalization request on a **new** association and on nothing else, so a
+   * caller that could not tell an insert from a no-op would either re-request
+   * work on every save or never request it at all. `attachAsset` cannot answer
+   * it — it returns `void` and would raise on the unique constraint.
+   *
+   * @requiresTransaction
+   */
+  ensureAssetAssociation(
+    id: DesignTemplateId,
+    assetId: string,
+  ): Promise<{ readonly designTemplateAssetId: string; readonly created: boolean }>;
 
   /** @requiresTransaction */
   archive(id: DesignTemplateId, at: Date): Promise<void>;

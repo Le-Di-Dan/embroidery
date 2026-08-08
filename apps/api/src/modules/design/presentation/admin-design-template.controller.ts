@@ -1,14 +1,17 @@
 /**
- * The three Admin Design Template operations (`APP3-B03`).
+ * The Admin Design Template operations (`APP3-B03` + `APP3-B03A`).
  *
- *   POST /api/admin/design-templates              — adminDesignTemplate_create
- *   GET  /api/admin/design-templates              — adminDesignTemplate_list
- *   GET  /api/admin/design-templates/:templateId  — adminDesignTemplate_detail
+ *   POST /api/admin/design-templates                   — adminDesignTemplate_create
+ *   GET  /api/admin/design-templates                   — adminDesignTemplate_list
+ *   GET  /api/admin/design-templates/:templateId       — adminDesignTemplate_detail
+ *   PUT  /api/admin/design-templates/:id/document      — adminDesignTemplate_saveDocument
  *
- * There is no fourth. `PUT …/:templateId/document` is `APP3-B03A`, and
- * publish/unpublish/archive are `APP3-B04`; a route for either appearing here
- * would be the four-into-three contract the `B03_CONTRACT_RULING` split exists
- * to prevent.
+ * Four, and no fifth. The first three are `APP3-B03`; the save is `APP3-B03A`,
+ * the checkpoint the `B03_CONTRACT_RULING` split created for it precisely so the
+ * document, the immutable version, the Asset association and the normalization
+ * producer would be reviewed on their own. Publish, unpublish and archive are
+ * `APP3-B04` and a route for any of them appearing here would be that split
+ * undone.
  *
  * The controller owns the HTTP contract and nothing else: guards, status codes,
  * documentation, and turning a transport-free `DesignTemplateDraftError` into
@@ -23,7 +26,9 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
+  UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -47,6 +52,10 @@ import { StaffJsonBodyGuard } from '../../identity/presentation/guards/staff-jso
 import { StaffOriginGuard } from '../../identity/presentation/guards/staff-origin.guard';
 import { DesignTemplateDraftService } from '../application/design-template-draft.service';
 import { DesignTemplateQuery } from '../application/design-template.query';
+import {
+  SaveTemplateDocumentUseCase,
+  TemplateDocumentRejectedError,
+} from '../application/save-template-document.use-case';
 import type {
   TemplateDetailView,
   TemplateListView,
@@ -64,6 +73,7 @@ import {
   DESIGN_TEMPLATE_STATUS_FILTERS,
   DesignTemplateIdParam,
   ListDesignTemplatesQuery,
+  SaveDesignTemplateDocumentBody,
 } from './schemas/admin-design-template.request';
 
 const ERROR_SCHEMA = { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.error}` };
@@ -77,6 +87,7 @@ export class AdminDesignTemplateController {
   constructor(
     private readonly drafts: DesignTemplateDraftService,
     private readonly query: DesignTemplateQuery,
+    private readonly saves: SaveTemplateDocumentUseCase,
   ) {}
 
   @Get()
@@ -188,16 +199,78 @@ export class AdminDesignTemplateController {
     );
   }
 
+  @Put(':templateId/document')
+  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)
+  @ApiSuccessCode('DESIGN_TEMPLATE_VERSION_SAVED', 'Design template version saved.')
+  @ApiOperation({
+    summary: 'Save a design template draft document',
+    description:
+      'Saves a full Design Document snapshot for a DRAFT template as a new immutable version. ' +
+      'Send `expectedCurrentVersion` exactly as the read returned it — `0` for a template that ' +
+      'has no version yet. A stale value is rejected as a conflict and nothing is written; the ' +
+      'server derives the next version number, and a saved version is never published by this ' +
+      'operation.',
+  })
+  @ApiParam({ name: 'templateId', format: 'uuid' })
+  @ApiBody({ type: SaveDesignTemplateDocumentBody })
+  @ApiResponse({
+    status: 200,
+    description: 'The template, at its new current version.',
+    schema: envelopeSchemaOf(AdminDesignTemplateDetailResponse),
+  })
+  @ApiResponse({ status: 400, description: 'Invalid body.', schema: ERROR_SCHEMA })
+  @ApiResponse({ status: 401, description: 'No live Admin session.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 403,
+    description: 'The request states an origin outside the Admin allowlist.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({ status: 404, description: 'No such design template.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 409,
+    description: 'Stale `expectedCurrentVersion`, or a template that is not a DRAFT.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 415,
+    description: 'The body is not application/json.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'The Design Document is malformed, too complex, or references unusable media.',
+    schema: ERROR_SCHEMA,
+  })
+  async saveDocument(
+    @Param() params: DesignTemplateIdParam,
+    @Body() body: SaveDesignTemplateDocumentBody,
+  ): Promise<TemplateDetailView> {
+    return this.guarded(() =>
+      this.saves.save({
+        templateId: params.templateId,
+        expectedCurrentVersion: body.expectedCurrentVersion,
+        document: body.document,
+      }),
+    );
+  }
+
   /**
-   * The single translation point from the feature's transport-free error type to
+   * The single translation point from the feature's transport-free error types to
    * the canonical HTTP exception. Anything else propagates untouched and is
    * sanitised by the platform filter, which is the correct treatment for an
    * unreviewed failure.
+   *
+   * A refused document is a **422**, the same code `APP3-B08` publishes for the
+   * same class of refusal: the request was well formed and the server understood
+   * it, and the document itself is what could not be accepted.
    */
   private async guarded<T>(work: () => Promise<T>): Promise<T> {
     try {
       return await work();
     } catch (error: unknown) {
+      if (error instanceof TemplateDocumentRejectedError) {
+        throw new UnprocessableEntityException(error.message);
+      }
       throw isDesignTemplateDraftError(error) ? toHttpException(error) : error;
     }
   }

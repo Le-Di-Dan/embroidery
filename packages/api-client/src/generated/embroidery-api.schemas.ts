@@ -1304,6 +1304,16 @@ export interface ReplaceProductPlacementBody {
   sides: ReplacePlacementSideBody[];
 }
 
+export interface SaveDesignTemplateDocumentBody {
+  /** The full Design Document snapshot to save as the next immutable version. */
+  document: DesignDocument;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  expectedCurrentVersion: number;
+}
+
 export interface StaffLoginRequest {
   /** @maxLength 254 */
   email: string;
@@ -1436,6 +1446,10 @@ export type AdminDesignTemplateCreate201 = ApiSuccessResponse & {
 };
 
 export type AdminDesignTemplateDetail200 = ApiSuccessResponse & {
+  data: AdminDesignTemplateDetailResponse;
+};
+
+export type AdminDesignTemplateSaveDocument200 = ApiSuccessResponse & {
   data: AdminDesignTemplateDetailResponse;
 };
 

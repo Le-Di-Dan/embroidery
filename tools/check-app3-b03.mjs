@@ -14,7 +14,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedSurface, isB03ADelivered } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -38,7 +38,6 @@ export const OPERATIONS = Object.freeze({
  * the split resolved.
  */
 const FORBIDDEN_ROUTES = Object.freeze([
-  [`${ITEM_ROUTE}/document`, 'APP3-B03A'],
   [`${ITEM_ROUTE}/publish`, 'APP3-B04'],
   [`${ITEM_ROUTE}/unpublish`, 'APP3-B04'],
   [`${ITEM_ROUTE}/archive`, 'APP3-B04'],
@@ -105,10 +104,16 @@ function checkPredecessors(rootDir, fail) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
     }
   }
-  // B03A must stay unstarted: this gate proves B03 in a world where the save
-  // does not exist, and would otherwise pass against a repository that had both.
-  if (!/\nAPP3-B03A = (BLOCKED_BY_APP3-B03|READY) — NOT STARTED\n/.test(phase)) {
-    fail(`${CANONICAL_FILES.phase}: APP3-B03A is not recorded as an unstarted successor`);
+  // `APP3-B03A` may be unstarted or delivered, and no third thing. This gate
+  // originally required it to be *unstarted* — a proxy for "the save does not
+  // exist yet" that its own successor invalidated the day it shipped. What B03
+  // actually rules is that the save belongs to B03A whichever state it is in.
+  if (
+    !/\nAPP3-B03A = (BLOCKED_BY_APP3-B03 — NOT STARTED|READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED|ACCEPTED))\n/.test(
+      phase,
+    )
+  ) {
+    fail(`${CANONICAL_FILES.phase}: APP3-B03A is not recorded in a legitimate state`);
   }
 }
 
@@ -148,12 +153,26 @@ export function checkSurface(rootDir, fail) {
     }
   }
 
+  // Mode-aware on `APP3-B03A`, which owns exactly one further operation on this
+  // prefix. Before it, three; after it, four — and never a fifth in either world.
+  const saveDelivered = isB03ADelivered(rootDir);
+  const expectedOperations = saveDelivered ? 4 : 3;
   const templateOperations = Object.entries(document.paths ?? {})
     .filter(([route]) => route.startsWith(COLLECTION_ROUTE))
     .flatMap(([, methods]) => Object.keys(methods));
-  if (templateOperations.length !== 3) {
+  if (templateOperations.length !== expectedOperations) {
     fail(
-      `${CANONICAL_FILES.openapi}: ${templateOperations.length} admin design-template operations, expected 3`,
+      `${CANONICAL_FILES.openapi}: ${templateOperations.length} admin design-template operations, expected ${expectedOperations}`,
+    );
+  }
+
+  const saveRoute = `${ITEM_ROUTE}/document`;
+  const savePublished = document.paths?.[saveRoute] !== undefined;
+  if (savePublished !== saveDelivered) {
+    fail(
+      savePublished
+        ? `${CANONICAL_FILES.openapi}: publishes ${saveRoute}, which belongs to APP3-B03A`
+        : `${CANONICAL_FILES.openapi}: APP3-B03A is delivered but ${saveRoute} is missing`,
     );
   }
 
@@ -293,15 +312,27 @@ export function checkAuthorization(rootDir, fail) {
   if (!/@UseGuards\(AuthenticatedAdminGuard\)/.test(controller)) {
     fail(`${CANONICAL_FILES.controller}: the Admin guard is not applied to the controller`);
   }
+  // One guarded write per mutating operation: B03's create, plus B03A's save
+  // once it is delivered. Derived rather than pinned at one, which is what made
+  // this fail the day the save shipped correctly guarded.
+  const expectedWrites = isB03ADelivered(rootDir) ? 2 : 1;
   const mutatingGuards = controller.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g);
-  if ((mutatingGuards?.length ?? 0) !== 1) {
-    fail(`${CANONICAL_FILES.controller}: the write is not guarded by exactly one origin/body pair`);
+  const guardCount = mutatingGuards?.length ?? 0;
+  if (guardCount !== expectedWrites) {
+    fail(
+      `${CANONICAL_FILES.controller}: ${String(guardCount)} guarded writes, expected ${String(expectedWrites)}`,
+    );
   }
   if (/DesignSessionGuard|design-session/.test(controller)) {
     fail(`${CANONICAL_FILES.controller}: mixes anonymous Session auth into an Admin surface`);
   }
-  if (/@(Put|Patch|Delete)\(/.test(controller)) {
-    fail(`${CANONICAL_FILES.controller}: declares a mutating verb beyond the create`);
+  // `@Put` is APP3-B03A's save. `@Patch` and `@Delete` belong to no APP3
+  // checkpoint and stay banned in both worlds.
+  if (/@(Patch|Delete)\(/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: declares a mutating verb no APP3 checkpoint owns`);
+  }
+  if (/@Put\(/.test(controller) !== isB03ADelivered(rootDir)) {
+    fail(`${CANONICAL_FILES.controller}: the @Put save does not match APP3-B03A's delivered state`);
   }
   if (/function envelopeOf/.test(controller)) {
     fail(

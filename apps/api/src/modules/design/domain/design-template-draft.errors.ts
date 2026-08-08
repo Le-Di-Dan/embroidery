@@ -32,6 +32,11 @@ export const DESIGN_TEMPLATE_DRAFT_ERROR_CODES = [
   'DESIGN_TEMPLATE_SCOPE_INCOMPLETE',
   'DESIGN_TEMPLATE_SLUG_CONFLICT',
   'DESIGN_TEMPLATE_CURSOR_INVALID',
+  // `APP3-B03A` — the draft document save. Added to this vocabulary rather than
+  // given one of their own so the feature keeps a single error type and a single
+  // translation point.
+  'DESIGN_TEMPLATE_NOT_EDITABLE',
+  'DESIGN_TEMPLATE_VERSION_CONFLICT',
 ] as const;
 
 export type DesignTemplateDraftErrorCode = (typeof DESIGN_TEMPLATE_DRAFT_ERROR_CODES)[number];
@@ -44,6 +49,9 @@ const MESSAGES: Record<DesignTemplateDraftErrorCode, string> = {
     'A design template scope needs the product, the side and the area together.',
   DESIGN_TEMPLATE_SLUG_CONFLICT: 'A template address could not be reserved for this name.',
   DESIGN_TEMPLATE_CURSOR_INVALID: 'The supplied pagination cursor is not valid.',
+  DESIGN_TEMPLATE_NOT_EDITABLE: 'This design template is not in a state that allows editing.',
+  DESIGN_TEMPLATE_VERSION_CONFLICT:
+    'This design template changed since it was loaded. Reload and try again.',
 };
 
 /**
@@ -87,7 +95,12 @@ export function toHttpException(error: DesignTemplateDraftError): HttpException 
   switch (error.code) {
     case 'DESIGN_TEMPLATE_NOT_FOUND':
       return new NotFoundException(error.message);
+    // A save the caller may retry after reloading, and a lifecycle state that
+    // forbids editing, are both conflicts rather than bad requests: the body was
+    // well formed and the server state is what refused it.
     case 'DESIGN_TEMPLATE_SLUG_CONFLICT':
+    case 'DESIGN_TEMPLATE_NOT_EDITABLE':
+    case 'DESIGN_TEMPLATE_VERSION_CONFLICT':
       return new ConflictException(error.message);
     default:
       return new BadRequestException(error.message);

@@ -39,6 +39,18 @@ const DESIGN_TEMPLATE_KIND = 'DESIGN_TEMPLATE' as const;
 /** `TR-LC24-01`. Lowercase dot-namespaced, as `DB3_AUDIT_SPECIFICATION.md` locks. */
 export const DESIGN_TEMPLATE_CREATED_ACTION = 'design_template.created';
 
+/**
+ * The draft save (`APP3-B03A`).
+ *
+ * A version save is not one of LC-24's six transitions — the header stays
+ * `DRAFT` throughout — so PO-03's "every transition is audited" does not reach
+ * it. It is audited anyway because an immutable version is durable evidence a
+ * later publication freezes and a customer eventually clones, and a version that
+ * appeared with no record of who wrote it would be unexplained provenance. The
+ * action is named for what happened, not for a transition that did not.
+ */
+export const DESIGN_TEMPLATE_VERSION_SAVED_ACTION = 'design_template.version_saved';
+
 export interface RecordTemplateCreatedInput {
   readonly templateId: string;
   /** Server-owned public address; safe, and the only way to identify the row later. */
@@ -73,6 +85,31 @@ export class DesignTemplateAuditRecorder {
   }
 
   /**
+   * One row per successful draft version save.
+   *
+   * The summary carries the version number and nothing else. Not the document —
+   * `IMP-D044` documents run to 512 KiB and an audit summary is not a place for a
+   * payload — not the asset ids it references, not a storage fact, and not the
+   * name, which the header already records.
+   *
+   * @requiresTransaction — the row must commit with the version or not at all.
+   */
+  async recordDraftVersionSaved(input: {
+    readonly templateId: string;
+    readonly version: number;
+  }): Promise<void> {
+    await this.events.append({
+      occurredAt: this.clock.now(),
+      actor: this.currentActor(),
+      action: DESIGN_TEMPLATE_VERSION_SAVED_ACTION,
+      targetKind: DESIGN_TEMPLATE_KIND,
+      targetId: input.templateId,
+      summary: { version: input.version },
+      correlationId: this.requestContext.requireRequestId(),
+    });
+  }
+
+  /**
    * The acting Admin, taken from the bound request actor.
    *
    * Never derived from the request body: the actor is whatever authentication
@@ -84,7 +121,7 @@ export class DesignTemplateAuditRecorder {
     if (actor.kind !== 'ADMIN') {
       // The guard admits only an authenticated Admin, so this is unreachable
       // through HTTP; it stays a hard stop rather than a silent coercion.
-      throw new Error('Creating a design template requires an Admin actor.');
+      throw new Error('Writing design template evidence requires an Admin actor.');
     }
     return { kind: 'ADMIN', adminId: actor.adminId };
   }

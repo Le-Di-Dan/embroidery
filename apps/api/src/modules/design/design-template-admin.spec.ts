@@ -201,17 +201,27 @@ describe('the three Admin Design Template operations', () => {
       }
     }
 
+    // Three from this checkpoint. `APP3-B03A` legitimately added a fourth, so
+    // this asserts that B03's own three are present and correct rather than that
+    // the prefix carries exactly three — a count that stopped describing B03 the
+    // day its successor shipped.
     const templateOperations = Object.entries(document.paths)
       .filter(([path]) => path.startsWith('/api/admin/design-templates'))
       .flatMap(([, methods]) => Object.values(methods).map((operation) => operation.operationId));
-    expect(templateOperations).toHaveLength(3);
+    for (const operationId of [
+      'adminDesignTemplate_create',
+      'adminDesignTemplate_list',
+      'adminDesignTemplate_detail',
+    ]) {
+      expect(templateOperations).toContain(operationId);
+    }
   });
 
-  it('carries no B03A, B04, B05 or B05A capability', () => {
-    // B03A's save, B04's transitions and B05/B05A's public reads, each asserted
-    // as an absence from the delivered route surface.
+  it('carries no B04, B05 or B05A capability', () => {
+    // B04's transitions and B05/B05A's public reads, asserted as absences.
+    // `…/document` is deliberately no longer in this list: `APP3-B03A` delivered
+    // it, and its ownership is proved by that checkpoint's own gate.
     for (const forbidden of [
-      '/api/admin/design-templates/{templateId}/document',
       '/api/admin/design-templates/{templateId}/publish',
       '/api/admin/design-templates/{templateId}/unpublish',
       '/api/admin/design-templates/{templateId}/archive',
@@ -220,16 +230,18 @@ describe('the three Admin Design Template operations', () => {
     ]) {
       expect(document.paths[forbidden]).toBeUndefined();
     }
-    expect(CONTROLLER_SOURCE).not.toMatch(/@(Put|Patch|Delete)\(/);
+    // `@Put` is B03A's save; `@Patch` and `@Delete` belong to no APP3 checkpoint.
+    expect(CONTROLLER_SOURCE).not.toMatch(/@(Patch|Delete)\(/);
   });
 
   it('guards every operation with the Admin session', () => {
     expect(CONTROLLER_SOURCE).toMatch(/@UseGuards\(AuthenticatedAdminGuard\)/);
-    // The two mutating guards apply to the write only; a read carrying an origin
-    // guard would reject a legitimate cross-origin GET.
+    // One origin/body pair per mutating operation — B03's create and B03A's
+    // save — and none on a read, where an origin guard would reject a legitimate
+    // cross-origin GET.
     expect(
       CONTROLLER_SOURCE.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g),
-    ).toHaveLength(1);
+    ).toHaveLength(2);
   });
 
   it('publishes a concrete schema for every success', () => {
@@ -520,6 +532,7 @@ describe('the controller wiring', () => {
   it('translates only its own error type', () => {
     const controller = new AdminDesignTemplateController(
       { create: () => Promise.resolve({ templateId: TEMPLATE_ID }) } as never,
+      {} as never,
       {} as never,
     );
     expect(controller).toBeInstanceOf(AdminDesignTemplateController);

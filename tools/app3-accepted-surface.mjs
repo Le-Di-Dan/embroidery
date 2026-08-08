@@ -19,6 +19,17 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-B03A` — the draft document save. One operation on a new path; the
+    // schema count moves by one for its request body, which references the
+    // already-published `DesignDocument` rather than restating it.
+    marker: /\nAPP3-B03A = COMPLETE/,
+    paths: 26,
+    operations: 31,
+    schemas: 73,
+    designSessionRoutes: true,
+    designSessionPaths: 4,
+  },
+  {
     // `APP3-B03` — the first Admin Design Template surface. Two paths and three
     // operations: create and list share the collection, detail takes the id.
     // The Session numbers below are untouched by it, which is the point of
@@ -138,6 +149,9 @@ const ADMIN_TEMPLATE_PATHS = Object.freeze([
   '/api/admin/design-templates/{templateId}',
 ]);
 
+/** The one path `APP3-B03A` adds on top of them. */
+const ADMIN_TEMPLATE_SAVE_PATH = '/api/admin/design-templates/{templateId}/document';
+
 /** True once `APP3-B03` has published the Admin Design Template surface. */
 export function isB03Delivered(rootDir) {
   const path = join(rootDir, PHASE);
@@ -145,8 +159,18 @@ export function isB03Delivered(rootDir) {
   return /\nAPP3-B03 = COMPLETE/.test(phase);
 }
 
+/** True once `APP3-B03A` has published the draft document save. */
+export function isB03ADelivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-B03A = COMPLETE/.test(phase);
+}
+
 export function acceptedAdminTemplatePaths(rootDir) {
-  return isB03Delivered(rootDir) ? [...ADMIN_TEMPLATE_PATHS] : [];
+  if (!isB03Delivered(rootDir)) return [];
+  return isB03ADelivered(rootDir)
+    ? [...ADMIN_TEMPLATE_PATHS, ADMIN_TEMPLATE_SAVE_PATH]
+    : [...ADMIN_TEMPLATE_PATHS];
 }
 
 /**
@@ -162,6 +186,14 @@ export const B03_STATUS_LINES = Object.freeze([
   'APP3-B03 = READY — NOT STARTED',
   'APP3-B03 = COMPLETE — REVIEW_DELIVERED',
   'APP3-B03 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/** The status lines `APP3-B03A` may legitimately be recorded under. */
+export const B03A_STATUS_LINES = Object.freeze([
+  'APP3-B03A = BLOCKED_BY_APP3-B03 — NOT STARTED',
+  'APP3-B03A = READY — NOT STARTED',
+  'APP3-B03A = COMPLETE — REVIEW_DELIVERED',
+  'APP3-B03A = COMPLETE — REVIEW_ACCEPTED',
 ]);
 
 /** True when the phase records B03 in one of its legitimate states. */

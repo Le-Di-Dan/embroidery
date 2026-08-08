@@ -15,6 +15,7 @@ import type {
   AdminDesignTemplateDetail200,
   AdminDesignTemplateList200,
   AdminDesignTemplateListParams,
+  AdminDesignTemplateSaveDocument200,
   AdminProductArchive200,
   AdminProductCreate201,
   AdminProductDetail200,
@@ -44,6 +45,7 @@ import type {
   PublishProductBody,
   ReadinessStatusResponse,
   ReplaceProductPlacementBody,
+  SaveDesignTemplateDocumentBody,
   StaffLoginRequest,
   StaffSelfGet200,
   UnpublishProductBody,
@@ -149,6 +151,26 @@ export const adminDesignTemplateDetail = (
 ) => {
   return apiRequest<AdminDesignTemplateDetail200>(
     { url: `/api/admin/design-templates/${templateId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Saves a full Design Document snapshot for a DRAFT template as a new immutable version. Send `expectedCurrentVersion` exactly as the read returned it — `0` for a template that has no version yet. A stale value is rejected as a conflict and nothing is written; the server derives the next version number, and a saved version is never published by this operation.
+ * @summary Save a design template draft document
+ */
+export const adminDesignTemplateSaveDocument = (
+  templateId: unknown,
+  saveDesignTemplateDocumentBody: SaveDesignTemplateDocumentBody,
+  options?: SecondParameter<typeof apiRequest<AdminDesignTemplateSaveDocument200>>,
+) => {
+  return apiRequest<AdminDesignTemplateSaveDocument200>(
+    {
+      url: `/api/admin/design-templates/${templateId}/document`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data: saveDesignTemplateDocumentBody,
+    },
     options,
   );
 };
@@ -544,6 +566,9 @@ export type AdminDesignTemplateCreateResult = NonNullable<
 >;
 export type AdminDesignTemplateDetailResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplateDetail>>
+>;
+export type AdminDesignTemplateSaveDocumentResult = NonNullable<
+  Awaited<ReturnType<typeof adminDesignTemplateSaveDocument>>
 >;
 export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
 export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;

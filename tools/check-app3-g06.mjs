@@ -214,6 +214,23 @@ function checkNoImplementation(rootDir, fail) {
         'apps/api/src/modules/design/session-asset-intake.spec.ts',
       ]
     : [];
+  /**
+   * `APP3-B03A` adds the third sanctioned API producer — the Design Template
+   * draft save — plus the suites that prove its payload.
+   *
+   * `IMP-D046` PO-05 named `APP3-B03` as this producer; the
+   * `B03_CONTRACT_RULING` split moved it to `APP3-B03A`, because producer
+   * ownership follows the association write and `APP3-B03` no longer performs
+   * one. Named exactly, so this stays an allow-list of three files rather than a
+   * hole for the whole application.
+   */
+  const b03aAllowed = /\nAPP3-B03A = COMPLETE/.test(phase)
+    ? [
+        'apps/api/src/modules/design/application/save-template-document.use-case.ts',
+        'apps/api/src/modules/design/design-template-save.spec.ts',
+        'apps/api/test/integration/design-template-save.integration.spec.ts',
+      ]
+    : [];
   const sources = [];
   const walk = (directory) => {
     let entries = [];
@@ -239,7 +256,8 @@ function checkNoImplementation(rootDir, fail) {
       source.includes('asset.normalization.requested') ||
       /NORMALIZATION_CONTEXT_NO_LONGER_ELIGIBLE/.test(source);
     if (!mentions) continue;
-    if (b06bAllowed.includes(shown.replace(/\\/g, '/'))) continue;
+    const normalized = shown.replace(/\\/g, '/');
+    if (b06bAllowed.includes(normalized) || b03aAllowed.includes(normalized)) continue;
 
     if (!inWorker) {
       // The producer belongs to `APP3-B01N`, which has not run in either world.

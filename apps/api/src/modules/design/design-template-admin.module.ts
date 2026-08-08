@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
+import { AssetModule } from '../asset/asset.module';
 import { AuditModule } from '../audit/audit.module';
 import { IdentityModule } from '../identity/identity.module';
 import { CatalogPlacementReadModule } from '../catalog/catalog-placement-read.module';
@@ -10,6 +11,9 @@ import { DesignTemplateAuditRecorder } from './application/design-template-audit
 import { DesignTemplateDraftService } from './application/design-template-draft.service';
 import { DesignTemplateQuery } from './application/design-template.query';
 import { DesignTemplateScopeAuthority } from './application/design-template-scope.authority';
+import { SaveTemplateDocumentUseCase } from './application/save-template-document.use-case';
+import { TemplateDocumentAuthority } from './application/template-document.authority';
+import { TemplateDocumentMediaAuthority } from './application/template-document-media.authority';
 import { AdminDesignTemplateController } from './presentation/admin-design-template.controller';
 
 /**
@@ -35,7 +39,7 @@ import { AdminDesignTemplateController } from './presentation/admin-design-templ
  * one contract — only the composition differs.
  */
 @Module({
-  imports: [DatabaseModule, AuditModule, IdentityModule, CatalogPlacementReadModule],
+  imports: [DatabaseModule, AuditModule, IdentityModule, CatalogPlacementReadModule, AssetModule],
   controllers: [AdminDesignTemplateController],
   providers: [
     { provide: DESIGN_TEMPLATE_REPOSITORY, useClass: DrizzleDesignTemplateRepository },
@@ -43,6 +47,12 @@ import { AdminDesignTemplateController } from './presentation/admin-design-templ
     DesignTemplateAuditRecorder,
     DesignTemplateDraftService,
     DesignTemplateQuery,
+    // APP3-B03A — the draft save. The media authority reads derivatives through
+    // the Asset port AssetModule exports, never its tables or its intake
+    // internals; Design owns the association and Asset keeps owning the row.
+    TemplateDocumentAuthority,
+    TemplateDocumentMediaAuthority,
+    SaveTemplateDocumentUseCase,
   ],
 })
 export class DesignTemplateAdminModule {}

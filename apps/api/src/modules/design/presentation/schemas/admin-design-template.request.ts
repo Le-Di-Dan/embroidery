@@ -20,6 +20,10 @@ import type { DesignTemplateState } from '@embroidery/database';
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
+import {
+  DESIGN_DOCUMENT_SCHEMA_NAME,
+  PUBLISHED_SCHEMA_MARKER,
+} from '../../../../openapi/design-document-schema.augmentation';
 
 /**
  * The lifecycle values the list filter accepts.
@@ -93,4 +97,55 @@ export const createDesignTemplateBodySchema = z
 
 export class CreateDesignTemplateBody extends createZodDto(createDesignTemplateBodySchema) {}
 
-registerZodDtos(DesignTemplateIdParam, ListDesignTemplatesQuery, CreateDesignTemplateBody);
+/**
+ * The draft save body (`APP3-B03A`).
+ *
+ * A **full snapshot** with an optimistic-concurrency token, and nothing else. No
+ * JSON Patch and no partial element mutation: a version is immutable from
+ * creation, so a patch would have to be applied against a version the server
+ * would then have to reconstruct, and two clients patching the same base would
+ * silently merge rather than conflict.
+ *
+ * `expectedCurrentVersion` is the header counter the caller believes it is
+ * advancing from, and **`0` is the ordinary first save** — `APP3-B03` creates a
+ * header with no version at all. The server derives the next number from it; the
+ * caller never chooses which version it is writing, because a caller that could
+ * would be able to overwrite an immutable one.
+ *
+ * `document` is published through the generated `APP3-P01` component graph, not
+ * restated here. Zod validates that a document is *present*; `APP3-P01` is the
+ * sole authority on whether it is a valid one, and duplicating any part of that
+ * shape would create a second definition that drifts.
+ *
+ * Deliberately absent: `templateId` (it is the path), `status`, `version`,
+ * `publishedAt`, `documentSchemaVersion` (read from the document itself),
+ * association ids and event ids — every one of them server-owned.
+ */
+export const saveDesignTemplateDocumentBodySchema = z
+  .object({
+    expectedCurrentVersion: z.number().int().min(0),
+    document: z
+      .unknown()
+      .refine((value) => typeof value === 'object' && value !== null, {
+        message: 'A design document is required.',
+      })
+      // The published shape comes from the generated `APP3-P01` component graph:
+      // document assembly replaces this node with a reference to it, and the gate
+      // fails if it does not. Zod's job here is only that a document is present.
+      .meta({
+        [PUBLISHED_SCHEMA_MARKER]: DESIGN_DOCUMENT_SCHEMA_NAME,
+        description: 'The full Design Document snapshot to save as the next immutable version.',
+      }),
+  })
+  .strict();
+
+export class SaveDesignTemplateDocumentBody extends createZodDto(
+  saveDesignTemplateDocumentBodySchema,
+) {}
+
+registerZodDtos(
+  DesignTemplateIdParam,
+  ListDesignTemplatesQuery,
+  CreateDesignTemplateBody,
+  SaveDesignTemplateDocumentBody,
+);
