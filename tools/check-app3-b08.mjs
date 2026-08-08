@@ -47,8 +47,11 @@ export function checkStatus(rootDir, fail) {
     'APP3-B07 = COMPLETE — REVIEW_ACCEPTED',
     'APP3-B06B = COMPLETE — REVIEW_ACCEPTED',
     'APP3-B06B-C1 = COMPLETE — REVIEW_ACCEPTED',
-    // Cadence is a Studio concern; B08 must not acquire it by accident.
-    'AUTOSAVE_CADENCE_OWNER = APP3-S11',
+    // Cadence is a Studio concern; B08 must not acquire it by accident. The
+    // owner was corrected from `APP3-S11` (mobile controls) to `APP3-S10` (the
+    // autosave capability) by `APP3-ROADMAP-RECONCILIATION`. What this rule
+    // protects is unchanged: cadence belongs to a Studio checkpoint, not here.
+    'AUTOSAVE_CADENCE_OWNER = APP3-S10',
   ]) {
     if (!phase.includes(`\n${line}\n`)) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
@@ -169,7 +172,7 @@ export function checkDurableWrite(rootDir, fail) {
     ],
     [/outbox|OutboxEventStore/i, 'appends an event for a document save'],
     [/submit\(|submittedRequestId|customer/i, 'touches submission or customer identity'],
-    [/debounce|intervalMs|cadence|retryTimer|queueDepth/i, 'takes autosave cadence from APP3-S11'],
+    [/debounce|intervalMs|cadence|retryTimer|queueDepth/i, 'takes autosave cadence from APP3-S10'],
   ]) {
     if (pattern.test(source)) fail(`${CANONICAL_FILES.useCase}: ${complaint}`);
   }
@@ -362,7 +365,7 @@ async function main() {
       'asset this Session uploaded or already referenced, decided from persistence and never ' +
       'from object storage; and autosave never extends expiry, never rotates or issues a ' +
       'credential, never records idempotency, never appends an event, and leaves cadence to ' +
-      'APP3-S11; the snapshot publishes the P01 Design Document as generated components rather ' +
+      'APP3-S10; the snapshot publishes the P01 Design Document as generated components rather ' +
       'than an open object, so the contract and the generated client carry the real structure ' +
       'while P01 stays the acceptance authority — with no migration, root script or worker ' +
       'change, and one operator-authorized dev-only schema generator in @embroidery/design-document',

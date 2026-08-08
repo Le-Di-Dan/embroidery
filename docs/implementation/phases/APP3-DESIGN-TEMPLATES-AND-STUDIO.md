@@ -178,29 +178,53 @@ or be collapsed into the other or into the API.
 | 12 | `APP3-A01` | frontend | Admin placement authoring | 1 screen | B01, D01 | no | yes | no |
 | 13 | `APP3-B03` | backend | template draft authoring | 3 | G02, P01, `DB-DISPOSITION-RESOLVED` | no | no | no |
 | 14 | `APP3-B04` | backend | template lifecycle (publish / unpublish / archive) | 3 | B03, **P02** (in-bounds invariant) | no | no | no |
-| 15 | `APP3-B05` | backend | public published-template read for a product scope | 2 | B04, B01 | no | no | no |
+| 15 | `APP3-B05` | backend | public published-template read for a product scope — JSON metadata only; **byte delivery of a published Template asset is `APP3-B05A`, never a third operation here (§6.24.2)** | 2 | B04, B01 | no | no | no |
 | 16 | `APP3-A02` | frontend | Admin template list | 1 screen | B03, D01 | no | yes | no |
 | 17 | `APP3-A03` | frontend | Admin template editor | 1 screen | B03, D01, P01, P02 | no | yes | `spike:editor:test` |
 | 18 | `APP3-A04` | frontend | Admin template publication interaction | 1 screen | B04, D01 | no | yes | no |
 | 19 | `APP3-W01` | worker | editor-safe derivative + customer-upload inspection lane | 0 HTTP | G04, `DB-DISPOSITION-RESOLVED` | no | no | no |
-| 20 | `APP3-B06` | backend | session-scoped customer asset intake + granted delivery — **replanned by `APP3-G08` into `APP3-B06A` + `APP3-B06B`; see §6.22, and read the 2-operation scope below as superseded planning input** | 2 | G04, W01 | no | no | no |
+| 20 | `APP3-B06` | backend | session-scoped customer asset intake + granted delivery — **replanned by `APP3-G08` into `APP3-B06A` + `APP3-B06B`, and completed by `APP3-B06C`, which carries the *granted delivery* half this row always contained; see §6.22 and §6.24.3** | 2 | G04, W01 | no | no | no |
 | 21 | `APP3-B07` | backend | session bootstrap (blank + clone) and resume | 2 | G03, P01, **P02**, B01 | no | no | no |
 | 22 | `APP3-B08` | backend | session autosave with `autosave_revision` CAS | 1 | B07, **P02** (out-of-bounds rejection) | no | no | no |
-| 23 | `APP3-S01` | frontend | Studio bootstrap shell + product/template selection | 1 capability | B07, B05, D01 | no | yes | no |
+| 23 | `APP3-S01` | frontend | Studio bootstrap shell + product/template selection | 1 capability | B07, B05, **B05A** (the picker shows a Template preview derivative — §6.24.2), D01 | no | yes | no |
 | 24 | `APP3-S02` | frontend | SVG stage, renderer adapter, selection | 1 capability | S01, P01, P02 | no | yes | **benchmark** |
 | 25 | `APP3-S03` | frontend | transforms and DOM handles (≥44 px, outside the element box) | 1 capability | S02 | no | yes | **benchmark** |
 | 26 | `APP3-S04` | frontend | layer list, z-order, lock, hide, group | 1 capability | S02 | no | yes | no |
 | 27 | `APP3-S05` | frontend | text capability within whitelist constraints | 1 capability | S02, P01 | no | yes | no |
-| 28 | `APP3-S06` | frontend | asset/image (and SVG once ruled) capability | 1 capability | S02, B06 | no | yes | no |
+| 28 | `APP3-S06` | frontend | asset/image (and SVG once ruled) capability | 1 capability | S02, **B06B** (intake) **and B06C** (private delivery) — the two halves the `B06` row always named | no | yes | no |
 | 29 | `APP3-S07` | frontend | zoom / pan / safe area / product background | 1 capability | S02, B02 | no | yes | **benchmark** |
 | 30 | `APP3-S08` | frontend | undo / redo as document commands | 1 capability | S02 | no | yes | no |
 | 31 | `APP3-S09` | frontend | runtime watermark | 1 capability | S02 | no | yes | no |
-| 32 | `APP3-S10` | frontend | autosave / conflict / resume / expiry UI | 1 capability | S01, B08 | no | yes | no |
+| 32 | `APP3-S10` | frontend | autosave / conflict / resume / expiry UI — **and the autosave cadence** (§6.3) | 1 capability | S01, B08 | no | yes | no |
 | 33 | `APP3-S11` | frontend | mobile controls and touch gestures | 1 capability | S03, S07 | no | yes | **benchmark** |
 | 34 | `APP3-S12` | frontend | shapes, freehand, curved text (`LATER_APP3`) | 1 capability | S02 | no | yes | no |
 | 35 | `APP3-S13` | frontend | align / distribute / snap / guides / crop (`LATER_APP3`) | 1 capability | S02 | no | yes | no |
-| 36 | `APP3-E01` | E2E | cross-layer journey (§7) | — | S10, S11, B05 | no | no | **benchmark** |
+| 36 | `APP3-E01` | E2E | cross-layer journey (§7) | — | S10, S11, B05, **B05A**, **B06C** — every delivery class the journey traverses (§6.24.4) | no | no | **benchmark** |
 | 37 | `APP3-X01` | closure | close R2 Customization Alpha; hand off to APP4/APP5 | — | E01 | no | no | no |
+
+### How to read this map
+
+Added by `APP3-ROADMAP-RECONCILIATION` after an execution-order audit found that
+`APP3-S11` had been proposed as the next checkpoint on the strength of an
+*ownership* line, while its own predecessors (`S03`, `S07`) had not started.
+
+- The **`#` column and the `Predecessors` column** drive execution planning. Where
+  they could ever disagree, the predecessor edges win: they are the primary
+  authority.
+- A **numeric suffix is a lane-local identifier**, not a global execution order.
+  `B06A`/`B06B`/`B07`/`B08` shipped while `B03`/`B04`/`B05` had not started, and
+  that was correct — each followed its own predecessors. A high number is not
+  disqualifying and a low one is not a claim.
+- An **`OWNER =` statement assigns a decision, never a position in the queue.**
+  `AUTOSAVE_CADENCE_OWNER = APP3-S10` says who may choose the cadence; it says
+  nothing about when `S10` runs, and a checkpoint that owns a decision is
+  frequently one of the last to execute.
+- A **readiness note about a *package* is not readiness of a *checkpoint*.**
+  "Foundation ready by `P01` and `P02`" means those packages exist. Only the
+  predecessor row decides whether a checkpoint may start.
+- Checkpoints added after this map by an accepted replan, correction or manual
+  intervention are reconciled in **§6.24**, which is where to look for "what owns
+  this responsibility now".
 
 ## 6.2 Locked inheritance for every APP3 checkpoint
 
@@ -253,7 +277,7 @@ or be collapsed into the other or into the API.
 | Design-session TTL (`O-008` / `DP-RET-01`) | `12-DECISION-LOG.md`, ADR-DB1-011 | **CLOSED by `APP3-G03` (IMP-D043 PO-06)** — 30 days absolute from `created_at` |
 | Anonymous session transport, issuance, rotation, enumeration controls | `09 §2`/`§7`, ADR-DB2-001 | **CLOSED by `APP3-G03` (IMP-D043 PO-01…PO-05)** |
 | Autosave **conflict** policy | `ADR-APP0-001` deferred details | **CLOSED by `APP3-G03` (IMP-D043 PO-08)** |
-| Autosave **cadence** | `ADR-APP0-001` deferred details | **OPEN — owner `APP3-S11`**, routed by `APP3-G04` §6.7; it must choose the UX cadence under the existing 30 writes/minute ceiling and may not invent a timer here |
+| Autosave **cadence** | `ADR-APP0-001` deferred details | **OPEN — owner `APP3-S10`**, routed by `APP3-G04` §6.7; it must choose the UX cadence under the existing 30 writes/minute ceiling and may not invent a timer here. **Corrected from `APP3-S11` by `APP3-ROADMAP-RECONCILIATION`:** cadence is a property of the autosave loop, which is `S10`'s capability (§6.1 #32); `S11` is *mobile controls and touch gestures* (#33) and never owned an autosave concern |
 | Anonymous rate and concurrency quotas | `09 §7` | **CLOSED by `APP3-G03` (IMP-D043 PO-07)** |
 | Document complexity / layer / image limits | `09 §7` | **CLOSED by `APP3-G04` (IMP-D044 PO-08/PO-09)** |
 | Template transition identifiers and guards (publish/unpublish/archive/unarchive) | DB3 "Additional lifecycles" — states without `TR-` ids | `APP3-G02` |
@@ -810,6 +834,13 @@ Neither `APP3-G02` nor `APP3-G03` contributes a column.
 > concurrency and expiry authority while other predecessors still block the
 > checkpoint as a whole. One status per checkpoint could only be recorded by
 > losing one of those two facts.
+>
+> **The `APP3-S11 :: conflict/reload UX authority` row below is a dated record**
+> asserted verbatim by `check-app3-g03.mjs` and is not rewritten. Conflict and
+> reload UX is **`APP3-S10`**'s capability (§6.1 #32, §6.24.6); `APP3-S11` is
+> mobile controls and touch gestures. Read the row as "G03 unblocked the Studio's
+> conflict/reload UX" — which is what it settled — with the identifier corrected
+> by `APP3-ROADMAP-RECONCILIATION`.
 
 | Checkpoint | Portion | Status after `APP3-G03` |
 |---|---|---|
@@ -1176,6 +1207,13 @@ for APP3 entry.
 > `COMPLETE — REVIEW_DELIVERED` when migration 0034 landed.** It is the one row
 > in this table that is *supposed* to change: `check-app3-g04.mjs` reads it
 > against the real schema and refuses either half without the other.
+>
+> **The `APP3-S11 :: autosave cadence ownership` row below is a dated record and
+> is deliberately left as G04 wrote it**, because `check-app3-g04.mjs` asserts
+> this table verbatim as evidence of what G04 *routed*. Current cadence ownership
+> is **`APP3-S10`** — see §6.3 and §6.24.6. Read the row as "G04 routed cadence to
+> the Studio autosave capability", which is what it meant; the identifier it used
+> was corrected by `APP3-ROADMAP-RECONCILIATION`.
 
 | Checkpoint | Portion | Status after `APP3-G04` |
 |---|---|---|
@@ -3226,6 +3264,231 @@ own: an existing `READY` derivative does not short-circuit a Session Asset that
 is still inspecting, because the association is validated before the replay is
 considered.
 
+## 6.24 Current checkpoint authority (`APP3-ROADMAP-RECONCILIATION`)
+
+The §6.1 map is the phase's logical plan and is **not** rewritten here: its rows
+and numbering stand. But fourteen checkpoints have entered APP3 since it was
+written — through accepted replans, authority gates issued when a checkpoint
+stopped, and platform foundations inserted by manual intervention — and until now
+the only place to learn what any of them owns was a completion report.
+
+This section answers one question: **which checkpoint owns this responsibility
+now?** It adds no scope and reopens no accepted decision.
+
+It exists because an execution-order audit found two failures of exactly this
+kind. `APP3-S11` was proposed as the next checkpoint although eight predecessors
+had not started, on the strength of an ownership line. And one of the three
+delivery classes `IMP-D044` PO-06 mandates had **no owner at all** — the second
+half of `APP3-B06`, lost when `APP3-G08` replanned it. The operator ruled on the
+second (`ASSET_DELIVERY_RULING = OPTION_2_DEDICATED_DELIVERY_CHECKPOINTS`); both
+are reconciled below.
+
+### 6.24.1 Delivery-class ownership (`IMP-D044` PO-06)
+
+PO-06 (§6.7.2) admits exactly three delivery classes and forbids a generic
+`GET /assets/:id`. Each class is now one checkpoint, one operation, one
+authorization context:
+
+| # | Delivery class | Authorization context | Owner | Status |
+|---|---|---|---|---|
+| 1 | Product Side background | Product + Side | `APP3-B02` | `COMPLETE — REVIEW_ACCEPTED` (`publicProductSideBackground_get`) |
+| 2 | Published Template asset | Published Template + Published Template Version | **`APP3-B05A`** | `DEFINED — NOT STARTED` |
+| 3 | Design Session upload | Session id + matching per-session credential | **`APP3-B06C`** | `DEFINED — NOT STARTED` |
+
+Three symmetrical checkpoints of one operation each. The shape is `APP3-B02`'s,
+which was itself carved out of `APP3-B01` for the same reason: byte delivery and
+JSON authoring are different checkpoints with different risks, and merging them
+is how a delivery path acquires an authorization it was never reviewed for.
+
+**Every one of the three is bound by PO-06 without exception**: no generic
+Asset-by-id API, no object-storage key or private-original URL in any response,
+no presign, no credential in browser storage, and no delivery of one Asset
+authorising another derivative of the same Asset.
+
+### 6.24.2 `APP3-B05A` — published Template asset delivery
+
+| Field | Value |
+|---|---|
+| Lane | Backend/API — delivery |
+| Responsibility | stream one Asset proven to belong to the addressed **Published Template + Published Template Version** |
+| HTTP operations | **exactly 1** |
+| Route | `TO_BE_LOCKED_AT_APP3-B05A_ENTRY_AUDIT` |
+| Direct predecessors | `APP3-B05` (which transitively carries `B04`, `B01`, `DB01`), `APP3-W01B` |
+| Semantic authorities | `B04` publication lifecycle · `B05` published-template read · `W01B` sanitized/normalized Template SVG · `DB01` + `G04` derivative metadata quartet |
+| Unlocks | `APP3-S01` (the template picker's preview), `APP3-E01` |
+| Origin | replan child created by `APP3-ROADMAP-RECONCILIATION` under `ASSET_DELIVERY_RULING = OPTION_2` |
+| Status | `DEFINED — BLOCKED_BY_APP3-B04_AND_APP3-B05` |
+
+**`APP3-B05` is not enlarged.** It stays exactly two operations —
+`GET /api/public/design-templates` and `GET /api/public/design-templates/{slug}`
+— and stays a JSON metadata read. Byte delivery is a separate concern with a
+separate authorization proof, so it is a separate checkpoint.
+
+**The route is deliberately not designed here.** No prior authority ever
+canonicalized one: the pre-implementation audit's endpoint matrix gave `APP3-B05`
+two JSON reads and no delivery path, which is precisely why this class had no
+owner. Inventing a path in a docs-only reconciliation would lock a contract
+nobody has reviewed. What *is* locked now is the operation count, the
+authorization context and the delivery semantics; the path is an entry-audit
+decision.
+
+Authorization must be proved from the **Published Template + Version** chain.
+A raw `assetId` is never sufficient on its own, and an unpublished or archived
+Template Version must not deliver.
+
+### 6.24.3 `APP3-B06C` — Design Session private asset delivery
+
+| Field | Value |
+|---|---|
+| Lane | Backend/API — delivery |
+| Responsibility | privately deliver one Design Session upload, authorized by **Session id + matching per-session credential** |
+| HTTP operations | **exactly 1** |
+| Route | `GET /api/public/design-sessions/{sessionId}/assets/{assetId}/editor-preview` |
+| Direct predecessor | `APP3-B06B` (which transitively carries `B06A`, `B07`, `W01C`, `W01A`, `G08`, `G04`, `DB01`) |
+| Semantic authorities | `B06B` intake + `DESIGN_SESSION_ASSET` association · `B06A`/`B07` session credential verification · `W01A`/`W01C` normalization lifecycle and the `INSPECTING` race · `G04`/`DB01` editor-safe derivative kind and metadata quartet |
+| Unlocks | `APP3-S06`, `APP3-E01` |
+| Origin | **replan child** completing `APP3-B06`, per §6.1 #20 |
+| Status | `DEFINED — READY — NOT STARTED` |
+
+This is not a correction of `APP3-B06B` and is not a `B06B-C2`. `APP3-B06`'s
+scope was always *"session-scoped customer asset intake **+ granted delivery**"*,
+two operations. `APP3-G08` replanned it into `B06A` (the cookie verifier, zero
+HTTP operations) and `B06B` (intake, one operation) and the delivery half was
+never reassigned. The pre-implementation audit named both operations explicitly:
+
+```text
+POST /api/public/design-sessions/{id}/assets        → delivered by APP3-B06B
+GET  …/assets/{assetId}/editor-preview              → APP3-B06C
+```
+
+The path keeps that semantic and takes `{sessionId}` from the delivered Session
+routes' naming rather than the audit's provisional `{id}`.
+
+**It must deliver only** an Asset proven to belong to the authorized Session
+*through its `DESIGN_SESSION_ASSET` association*, and only when the canonical
+editor-safe derivative state permits. Another Session's upload must never be
+reachable, and where the delivery authority requires the normalized editor
+preview, the private customer original must not be served in its place.
+Delivery is `private, no-store` and re-verifies the G03 credential on **every**
+request (PO-06).
+
+It mutates nothing: no upload, no lifecycle transition, no derivative generation,
+no worker behaviour, no migration.
+
+**`APP3-B06C` is `READY`** — every predecessor is accepted. It is not, however,
+the recommended next checkpoint; see §6.24.7.
+
+### 6.24.4 Delivery classes and the exit gate
+
+`APP3-E01`'s journey traverses two of the three classes: the customer picks a
+published Template (class 2) and places an uploaded image (class 3), and the
+security assertion *"private original denied, no export surface"* is only
+meaningful against a delivery surface that exists to refuse. `APP3-E01` therefore
+gains `B05A` and `B06C` as predecessors (§6.1 #36). Phase closure cannot pass
+while a delivery class the journey needs is missing.
+
+This is not "every backend checkpoint becomes an E01 predecessor" — only the
+delivery surfaces the journey actually traverses.
+
+### 6.24.5 Checkpoints added after §6.1, classified
+
+**Replan / execution children** — real work items with their own scope and review:
+
+| ID | Owns | Parent | Status |
+|---|---|---|---|
+| `APP3-B01N` | normalization producer for placement associations | `APP3-G06` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-W01A` | raster normalization consumer | `APP3-W01` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-W01B` | sanitized Template SVG normalization | `APP3-W01` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-W01C` | a pending inspection is retryable, not a verdict | `IMP-D048` PO-08 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-B06A` | session credential verifier, 0 HTTP operations | `APP3-B06` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-B06B` | session raster intake, 1 operation | `APP3-B06` | `COMPLETE — REVIEW_ACCEPTED` |
+| **`APP3-B06C`** | session private asset delivery, 1 operation | `APP3-B06` | `DEFINED — READY — NOT STARTED` |
+| **`APP3-B05A`** | published Template asset delivery, 1 operation | `APP3-B05` | `DEFINED — BLOCKED` |
+
+**Governance gates** — authority only; each implements nothing:
+
+| ID | Locks | Status |
+|---|---|---|
+| `APP3-G05` (+`-C1`) | geometry coordinate/transform/bounds semantics — `IMP-D045` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G06` | normalization dispatch and raster/SVG staging — `IMP-D046` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G07` | Template SVG sanitizer authority — `IMP-D047` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-G08` | Session upload architecture — `IMP-D048` | `COMPLETE — REVIEW_ACCEPTED` |
+
+**Platform foundations inserted by accepted intervention:**
+
+| ID | Owns | Status |
+|---|---|---|
+| `APP3-P03` | Zod-backed DTO OpenAPI metadata foundation | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-P04` | shared Design Session response contract | `COMPLETE — REVIEW_ACCEPTED` |
+
+**Correction evidence children** — lineage, **not roadmap work items.** They own
+no new product scope and never appear in a dependency graph:
+`APP3-PRE-AUDIT-C1`, `APP3-P01-C1`, `APP3-P02-C1`, `APP3-G05-C1`, `APP3-B01-C1`,
+`APP3-W01B-C1`, `APP3-B06B-C1`, `APP3-B08-C1`. Each is recorded against the
+checkpoint it corrects; read that checkpoint's status, never the correction's,
+to decide whether a dependent may start.
+
+### 6.24.6 Definitions for checkpoints delivered without a §6.x section
+
+| ID | Responsibility | Ops | Hard predecessors | Unlocks | Origin | Status |
+|---|---|---|---|---|---|---|
+| `APP3-B06A` | reusable per-session credential **verifier**; mints nothing | 0 | `G08` | `B06B`, `B06C` | `APP3-G08` replan of `B06` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-B06B` | anonymous session raster intake, API-owned multipart streaming to private storage | 1 | `B06A`, `W01C`, `B07` | `B06C`, `S06` | `APP3-G08` replan of `B06` | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-B07` | session bootstrap (blank + clone) and resume; **sole issuer** of the session cookie | 2 | `G03`, `P01`, `P02`, `B01` | `B06B`, `B08`, `S01` | §6.1 #21 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-B08` | session autosave under `autosave_revision` CAS; stale revision is `409` with no mutation | 1 | `B07`, `P02` | `S10` | §6.1 #22 | `COMPLETE — REVIEW_ACCEPTED` |
+| `APP3-P04` | publishes the shared Session response contract for all three Session operations; **publication only, no runtime change** | 0 new | `B08`, `B08-C1`, `P03` | any client consuming a Session response | manual intervention after `B08-C1` | `COMPLETE — REVIEW_ACCEPTED` |
+
+Autosave **cadence** is `APP3-S10`'s, not `APP3-B08`'s and not `APP3-S11`'s:
+`B08` enforces the 30 writes/minute ceiling and must not invent a timer; `S10`
+owns the autosave/conflict/resume/expiry capability and therefore its cadence;
+`S11` owns mobile controls and touch gestures and owns no autosave concern. The
+value itself stays **OPEN until `APP3-S10` runs**.
+
+### 6.24.7 Current execution state
+
+Eligible now, all hard predecessors accepted:
+
+```text
+APP3-B03    template draft authoring          3 operations
+APP3-D01    phase design package              gates every A*/S* checkpoint
+APP3-B06C   session private asset delivery    1 operation
+```
+
+Recommended next, for the single-checkpoint human-review workflow:
+
+```text
+NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B03
+```
+
+because every hard predecessor is accepted, it is three closely-related API
+operations, it carries no Figma dependency, and it is the head of the longest
+remaining chain — `B03 → B04 → B05 → B05A → S01`. `APP3-B06C` is genuinely
+ready and is deliberately not recommended first: it sits on a shorter branch
+(`B06C → S06`) that cannot be consumed until `S02` exists, so running it now
+would deliver a surface with no consumer for several checkpoints, while the
+critical path stood still.
+
+`APP3-D01` is eligible in parallel or immediately after `B03`. It gates every
+Admin and Storefront checkpoint in the phase, and no frontend work may start
+before it is accepted:
+
+```text
+NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = NONE
+```
+
+Dependency-safe forward shape:
+
+```text
+B03 → B04 → B05 → B05A ─┐
+                         ├→ S01 → S02 → {S03, S04, S05, S06, S07, S08, S09}
+D01 ────────────────────┘                     │
+                                              └→ S03 + S07 → S11
+S01 + B08 → S10
+B06B → B06C → S06
+S10 + S11 + B05 + B05A + B06C → E01 → X01
+D01 → A01, A02, A03, A04
+```
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -3237,6 +3500,11 @@ Admin publishes a template compatible with a published product. A customer start
 - Template versions explain existing sessions.
 - Mobile critical interactions pass.
 - No 3D/download scope appears.
+- **Every `IMP-D044` PO-06 delivery class the journey traverses exists and
+  refuses correctly** — the published Template asset (`APP3-B05A`) and the
+  Session upload (`APP3-B06C`) alongside the delivered side background
+  (`APP3-B02`). "Private original denied" is only evidence when there is a
+  delivery surface to deny it (§6.24.4).
 - E2E passes.
 
 ## 9. Handoff
@@ -3246,7 +3514,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — SESSION_AUTOSAVE_DELIVERED_FOR_REVIEW
+APP3 = IN PROGRESS — SESSION_BACKEND_ACCEPTED_NO_FRONTEND_STARTED
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -3281,11 +3549,15 @@ APP3-D01 placement portion = BACKEND_CONTRACT_AVAILABLE_BY_APP3-B01
 APP3-P02 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
 APP3-P02 FIRST_ATTEMPT CAUSE = GEOMETRY_SEMANTICS_NOT_AUTHORIZED_AND_SPIKE_DIVERGENT
 APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
-APP3-B08 = BLOCKED — AWAITING_FOUNDATION_REVIEW
-APP3-S11 = FOUNDATION_READY_BY_P01_AND_P02 — NOT STARTED
+APP3-B08 = COMPLETE — REVIEW_ACCEPTED
+APP3-S11 = NOT STARTED — BLOCKED_BY_APP3-S03_AND_APP3-S07
+APP3-S11 FOUNDATION_NOTE = P01_AND_P02_PACKAGES_EXIST — NOT_CHECKPOINT_READINESS
 APP3-B03 = READY — NOT STARTED
-APP3-B04 = BLOCKED_BY_APP3-P02_AND_APP3-B06B
+APP3-B04 = BLOCKED_BY_APP3-B03
 APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04
+APP3-B05A = DEFINED — BLOCKED_BY_APP3-B04_AND_APP3-B05
+APP3-B06C = DEFINED — READY — NOT STARTED
+APP3-D01 = READY — NOT STARTED
 APP3-G06 = COMPLETE — REVIEW_ACCEPTED
 IMP-D046 = LOCKED
 APP3-W01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
@@ -3300,7 +3572,7 @@ TEMPLATE_SVG_SANITIZATION_POLICY_VERSION = 1
 APP3-W01B = COMPLETE — REVIEW_ACCEPTED
 APP3-W01B SANITIZER = DOMPURIFY_3.4.13_ON_JSDOM_29.1.1
 APP3-W01B DISCLOSED_DEVIATION = WORKER_IMAGE_DOMAIN_TYPES_COPY_RESTORED
-APP3-W01B-C1 = COMPLETE — REVIEW_DELIVERED
+APP3-W01B-C1 = COMPLETE — REVIEW_ACCEPTED
 APP3-W01B-C1 NUMERIC_CANONICAL_FORM = SHORTEST_BINARY64_ROUND_TRIP
 APP3-W01B-C1 FIXED_PRECISION_BUDGET = NONE
 APP3-B02 = COMPLETE — REVIEW_ACCEPTED
@@ -3354,7 +3626,7 @@ APP3-B06B DELIVERED_SURFACE_DELTA = PLUS_1_PATH_PLUS_1_OPERATION_PLUS_1_SCHEMA_O
 APP3-B08 OPERATION = publicDesignSession_autosave
 APP3-B08 ROUTE = PUT_/api/public/design-sessions/:sessionId/document
 APP3-B08 SURFACE = PATHS_23_OPERATIONS_27_SCHEMAS_63
-APP3-B08-C1 = FAILED — MANUAL INTERVENTION REQUIRED
+APP3-B08-C1 = COMPLETE — REVIEW_ACCEPTED_AFTER_MANUAL_INTERVENTION
 APP3-B08-C1 CAUSE_2 = GENERATED_CLIENT_RESPONSE_REMAINS_VOID
 APP3-B08-C1 REQUEST_SIDE = ACCEPTED_AND_PRESERVED
 APP3-B08-C1 CAUSE = DOCUMENT_SNAPSHOT_PUBLISHED_AS_OPEN_OBJECT
@@ -3371,8 +3643,12 @@ APP3-B08 IDEMPOTENCY = NONE_REFETCH_NEVER_BLIND_REPLAY
 APP3-B08 EXPIRY = NEVER_EXTENDED_BY_AUTOSAVE
 APP3-B08 EVENTS = NONE
 APP3-B08 RACE_PROOF = 10_ITERATIONS_ONE_WINNER_ONE_CONFLICT_ONE_INCREMENT
-AUTOSAVE_CADENCE_OWNER = APP3-S11
-APP3-P04 = COMPLETE — REVIEW_DELIVERED
+AUTOSAVE_UI_OWNER = APP3-S10
+AUTOSAVE_CADENCE_OWNER = APP3-S10
+AUTOSAVE_CADENCE_VALUE = OPEN — UNTIL_APP3-S10
+MOBILE_TOUCH_OWNER = APP3-S11
+AUTOSAVE_CADENCE_OWNER PREVIOUS = APP3-S11 — CORRECTED_BY_APP3-ROADMAP-RECONCILIATION
+APP3-P04 = COMPLETE — REVIEW_ACCEPTED
 APP3-P04 TITLE = SHARED_DESIGN_SESSION_RESPONSE_OPENAPI_CONTRACT
 APP3-P04 CAUSE = GENERATED_CLIENT_RESPONSE_REMAINS_VOID
 APP3-P04 OPERATIONS_COVERED = publicDesignSession_create publicDesignSession_resume publicDesignSession_autosave
@@ -3397,6 +3673,23 @@ FU-APP3-G03-DEPENDENCY-TABLE-BOUND-01 = COMPLETE — CLOSED_BY_APP3-DB01
 O-008 = CLOSED_BY_IMP-D043
 DP-RET-01 design_sessions = CLOSED_BY_IMP-D043
 FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01 = COMPLETE — CLOSED_BY_APP3-G02
+APP3-ROADMAP-RECONCILIATION = COMPLETE — DOCS_ONLY
+ASSET_DELIVERY_RULING = OPTION_2_DEDICATED_DELIVERY_CHECKPOINTS
+DELIVERY_CLASS_1_SIDE_BACKGROUND_OWNER = APP3-B02
+DELIVERY_CLASS_2_PUBLISHED_TEMPLATE_ASSET_OWNER = APP3-B05A
+DELIVERY_CLASS_3_SESSION_UPLOAD_OWNER = APP3-B06C
+APP3-B05A OPERATIONS = 1
+APP3-B05A ROUTE = TO_BE_LOCKED_AT_APP3-B05A_ENTRY_AUDIT
+APP3-B05A AUTHORIZATION = PUBLISHED_TEMPLATE_PLUS_VERSION
+APP3-B05 OPERATIONS = 2 — UNCHANGED_JSON_READ_ONLY
+APP3-B06C OPERATIONS = 1
+APP3-B06C ROUTE = GET_/api/public/design-sessions/:sessionId/assets/:assetId/editor-preview
+APP3-B06C AUTHORIZATION = SESSION_ID_PLUS_PER_SESSION_CREDENTIAL
+APP3-B06C ORIGIN = REPLAN_CHILD_OF_APP3-B06 — NOT_A_B06B_CORRECTION
+NEXT_ELIGIBLE_IMPLEMENTATION_CHECKPOINTS = APP3-B03 APP3-D01 APP3-B06C
+NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B03
+NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = NONE
+FRONTEND_GATE = APP3-D01
 every other APP3 checkpoint = NOT STARTED
 ```
 

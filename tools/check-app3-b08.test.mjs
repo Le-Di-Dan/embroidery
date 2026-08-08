@@ -123,9 +123,9 @@ describe('the status block', () => {
     }
   });
 
-  it('rejects taking autosave cadence away from APP3-S11', () => {
+  it('rejects taking autosave cadence away from APP3-S10', () => {
     const phase = file('phase').replace(
-      '\nAUTOSAVE_CADENCE_OWNER = APP3-S11\n',
+      '\nAUTOSAVE_CADENCE_OWNER = APP3-S10\n',
       '\nAUTOSAVE_CADENCE_OWNER = APP3-B08\n',
     );
     assert.ok(mentions(run(checkStatus, { phase }), 'AUTOSAVE_CADENCE_OWNER'));
