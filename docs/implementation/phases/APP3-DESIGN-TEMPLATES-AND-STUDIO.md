@@ -3501,8 +3501,16 @@ Admin and Storefront checkpoint in the phase, and no frontend work may start
 before it is accepted:
 
 ```text
-NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = NONE
+NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = APP3-A01 APP3-A02 APP3-A03
+  — CONDITIONAL_ON_APP3-D01_DESIGN_APPROVAL
 ```
+
+`APP3-D01` is delivered: the `APP_03` page (`592:3`) carries one section (`596:3`) of 19
+nested sections and 66 frames, registered as 66 `REVIEW_REQUIRED` rows. The package covers
+`A01`–`A04` and `S01`–`S11`, so those checkpoints are no longer blocked *by the absence of
+design* — but `FIGMA_DESIGN_INDEX.md` §2 still blocks implementation against a row that is
+not `APPROVED_FOR_IMPLEMENTATION`. Human design approval is the remaining gate, and it is
+deliberately not something this checkpoint may grant itself.
 
 Dependency-safe forward shape:
 
@@ -3656,7 +3664,7 @@ not a goal."* `APP3-B03A` supplies the capability it omitted. The same is true o
 | `APP3-B05A` | whole checkpoint | `BLOCKED_BY_APP3-B04_AND_APP3-B05` |
 | `APP3-A02` | backend portion | `APP3-B03` — unchanged |
 | `APP3-A03` | backend portion | `APP3-B03A` — the editor's save |
-| `APP3-D01` | whole checkpoint | `READY — NOT STARTED` |
+| `APP3-D01` | whole checkpoint | `COMPLETE — REVIEW_DELIVERED` — 66 rows `REVIEW_REQUIRED` |
 | `APP3-B06C` | whole checkpoint | `READY — NOT STARTED` |
 
 Forward critical path: `B03 → B03A → B04 → B05 → B05A`. Surface arithmetic:
@@ -3875,7 +3883,14 @@ APP3-B05 EVENTS = NONE
 APP3-B05 MIGRATION = NONE
 APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05 — NOT STARTED
 APP3-B06C = DEFINED — READY — NOT STARTED
-APP3-D01 = READY — NOT STARTED
+APP3-D01 = COMPLETE — REVIEW_DELIVERED
+APP3-D01 FIGMA_PAGE = APP_03 (592:3) in FIG-FILE-PRODUCT
+APP3-D01 FIGMA_SECTION = 596:3 — 19 nested sections, 66 frames
+APP3-D01 REGISTRY_ROWS = 66 — all REVIEW_REQUIRED, none self-approved
+APP3-D01 COVERAGE = A01 A02 A03 A04 S01 S02 S03 S04 S05 S06 S07 S08 S09 S10 S11
+APP3-D01 OUT_OF_SCOPE = APP3-S12 APP3-S13 — LATER_APP3, not designed as implementation-ready
+APP3-D01 AUTOSAVE_CADENCE = OPEN — UNTIL_APP3-S10 (not decided in D01)
+APP3-D01 DS_GAPS_REPORTED = FIG-DS-INPUT FIG-DS-SCRIM-TOKEN — reported, not written into the read-only DS file
 APP3-G06 = COMPLETE — REVIEW_ACCEPTED
 IMP-D046 = LOCKED
 APP3-W01 FIRST_ATTEMPT = FAILED — MANUAL_INTERVENTION_REQUIRED
@@ -4007,8 +4022,9 @@ APP3-B06C AUTHORIZATION = SESSION_ID_PLUS_PER_SESSION_CREDENTIAL
 APP3-B06C ORIGIN = REPLAN_CHILD_OF_APP3-B06 — NOT_A_B06B_CORRECTION
 NEXT_ELIGIBLE_IMPLEMENTATION_CHECKPOINTS = APP3-B05A APP3-D01 APP3-B04A APP3-B06C
 NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B05A
-NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = NONE
-FRONTEND_GATE = APP3-D01
+NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = APP3-A01 APP3-A02 APP3-A03 — CONDITIONAL_ON_APP3-D01_DESIGN_APPROVAL
+FRONTEND_GATE = APP3-D01 — DELIVERED, AWAITING_DESIGN_APPROVAL
+APP3-D01 APPROVAL_RULE = registry rows are REVIEW_REQUIRED; FIGMA_DESIGN_INDEX §2 blocks any frontend checkpoint until they are APPROVED_FOR_IMPLEMENTATION
 every other APP3 checkpoint = NOT STARTED
 ```
 
