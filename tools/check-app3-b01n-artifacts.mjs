@@ -16,6 +16,7 @@ import { join } from 'node:path';
 
 import {
   isB03ADelivered,
+  isB04Delivered,
   isB03Delivered,
   isB06BDelivered,
   isB08Delivered,
@@ -77,6 +78,11 @@ const OPENAPI_SHA256_AFTER_B03A =
 const CLIENT_TREE_SHA256_AFTER_B03A =
   'f5097275272ada16c47d99ef8fa6be113170b4464d305cdc44d70c737867956e';
 const OPENAPI_FACTS_AFTER_B03A = Object.freeze({ paths: 26, operations: 31, schemas: 73 });
+/** `APP3-B04` — the three LC-24 lifecycle operations. */
+const OPENAPI_SHA256_AFTER_B04 = 'f8a14fedde8f855742efe6b7e54218720df4d099544f664a7c55a3b57ac1d526';
+const CLIENT_TREE_SHA256_AFTER_B04 =
+  '2ead0316b3a2b5ccecbb588b5a17ff5fd2272700a29fbe645dc4d824897ce433';
+const OPENAPI_FACTS_AFTER_B04 = Object.freeze({ paths: 29, operations: 34, schemas: 76 });
 const CLIENT_TREE_SHA256_AFTER_P03 =
   '3fcc05d01e01fec9c8566348be6aacf7beefdf654a0487f66e061b3234ead7a8';
 const PHASE_FILE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
@@ -150,7 +156,8 @@ export function checkApp3B01NArtifacts(rootDir, fail) {
   // every earlier one is: each state still proves its own artifact, so a
   // rollback to any earlier phase is checked against what that phase published
   // rather than against the newest numbers.
-  const afterB03A = isB03ADelivered(rootDir);
+  const afterB04 = isB04Delivered(rootDir);
+  const afterB03A = afterB04 || isB03ADelivered(rootDir);
   const afterB03 = afterB03A || isB03Delivered(rootDir);
   const afterP04 = afterB03 || isP04Delivered(rootDir);
   const afterB08 = afterP04 || isB08Delivered(rootDir);
@@ -158,55 +165,61 @@ export function checkApp3B01NArtifacts(rootDir, fail) {
   const afterB07 = afterB06B || isB07Delivered(rootDir);
   const afterP03 = afterB07 || isP03Delivered(rootDir);
   const afterB02 = afterP03 || isB02Delivered(rootDir);
-  const facts = afterB03A
-    ? OPENAPI_FACTS_AFTER_B03A
-    : afterB03
-      ? OPENAPI_FACTS_AFTER_B03
-      : afterP04
-        ? OPENAPI_FACTS_AFTER_P04
-        : afterB08
-          ? OPENAPI_FACTS_AFTER_B08
-          : afterB06B
-            ? OPENAPI_FACTS_AFTER_B06B
-            : afterB07
-              ? OPENAPI_FACTS_AFTER_B07
-              : afterB02
-                ? OPENAPI_FACTS_AFTER_B02
-                : OPENAPI_FACTS;
-  const expectedDigest = afterB03A
-    ? OPENAPI_SHA256_AFTER_B03A
-    : afterB03
-      ? OPENAPI_SHA256_AFTER_B03
-      : afterP04
-        ? OPENAPI_SHA256_AFTER_P04
-        : afterB08
-          ? OPENAPI_SHA256_AFTER_B08
-          : afterB06B
-            ? OPENAPI_SHA256_AFTER_B06B
-            : afterB07
-              ? OPENAPI_SHA256_AFTER_B07
-              : afterP03
-                ? OPENAPI_SHA256_AFTER_P03
+  const facts = afterB04
+    ? OPENAPI_FACTS_AFTER_B04
+    : afterB03A
+      ? OPENAPI_FACTS_AFTER_B03A
+      : afterB03
+        ? OPENAPI_FACTS_AFTER_B03
+        : afterP04
+          ? OPENAPI_FACTS_AFTER_P04
+          : afterB08
+            ? OPENAPI_FACTS_AFTER_B08
+            : afterB06B
+              ? OPENAPI_FACTS_AFTER_B06B
+              : afterB07
+                ? OPENAPI_FACTS_AFTER_B07
                 : afterB02
-                  ? OPENAPI_SHA256_AFTER_B02
-                  : OPENAPI_SHA256;
-  const expectedTree = afterB03A
-    ? CLIENT_TREE_SHA256_AFTER_B03A
-    : afterB03
-      ? CLIENT_TREE_SHA256_AFTER_B03
-      : afterP04
-        ? CLIENT_TREE_SHA256_AFTER_P04
-        : afterB08
-          ? CLIENT_TREE_SHA256_AFTER_B08
-          : afterB06B
-            ? CLIENT_TREE_SHA256_AFTER_B06B
-            : afterB07
-              ? CLIENT_TREE_SHA256_AFTER_B07
-              : afterP03
-                ? CLIENT_TREE_SHA256_AFTER_P03
-                : afterB02
-                  ? CLIENT_TREE_SHA256_AFTER_B02
-                  : CLIENT_TREE_SHA256;
+                  ? OPENAPI_FACTS_AFTER_B02
+                  : OPENAPI_FACTS;
+  const expectedDigest = afterB04
+    ? OPENAPI_SHA256_AFTER_B04
+    : afterB03A
+      ? OPENAPI_SHA256_AFTER_B03A
+      : afterB03
+        ? OPENAPI_SHA256_AFTER_B03
+        : afterP04
+          ? OPENAPI_SHA256_AFTER_P04
+          : afterB08
+            ? OPENAPI_SHA256_AFTER_B08
+            : afterB06B
+              ? OPENAPI_SHA256_AFTER_B06B
+              : afterB07
+                ? OPENAPI_SHA256_AFTER_B07
+                : afterP03
+                  ? OPENAPI_SHA256_AFTER_P03
+                  : afterB02
+                    ? OPENAPI_SHA256_AFTER_B02
+                    : OPENAPI_SHA256;
+  const expectedTree = afterB04
+    ? CLIENT_TREE_SHA256_AFTER_B04
+    : afterB03A
+      ? CLIENT_TREE_SHA256_AFTER_B03A
+      : afterB03
+        ? CLIENT_TREE_SHA256_AFTER_B03
+        : afterP04
+          ? CLIENT_TREE_SHA256_AFTER_P04
+          : afterB08
+            ? CLIENT_TREE_SHA256_AFTER_B08
+            : afterB06B
+              ? CLIENT_TREE_SHA256_AFTER_B06B
+              : afterB07
+                ? CLIENT_TREE_SHA256_AFTER_B07
+                : afterP03
+                  ? CLIENT_TREE_SHA256_AFTER_P03
+                  : afterB02
+                    ? CLIENT_TREE_SHA256_AFTER_B02
+                    : CLIENT_TREE_SHA256;
 
   const path = join(rootDir, OPENAPI_FILE);
   if (!existsSync(path)) {

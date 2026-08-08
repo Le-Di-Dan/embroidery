@@ -18,7 +18,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-import { acceptedSurface, isB03ADelivered } from './app3-accepted-surface.mjs';
+import { acceptedAdminTemplateOperationCount, acceptedSurface } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   COLLECTION_ROUTE,
@@ -136,8 +136,9 @@ describe('the published surface', () => {
         post: { operationId: 'adminDesignTemplate_import' },
       };
     });
-    // Three before `APP3-B03A`, four after — and never one more, in either world.
-    const allowed = isB03ADelivered(REPO_ROOT) ? 4 : 3;
+    // Three before `APP3-B03A`, four after, seven once `APP3-B04` lands — and
+    // never one more than the accepted world explains, whichever world that is.
+    const allowed = acceptedAdminTemplateOperationCount(REPO_ROOT);
     assert.ok(
       mentions(
         run(checkSurface, { openapi }),
@@ -158,11 +159,23 @@ describe('the published surface', () => {
     assert.ok(mentions(failures, 'belongs to APP3-B03A'), failures.join('\n'));
   });
 
-  it('rejects a B04 lifecycle route', () => {
+  it("rejects APP3-B04's lifecycle routes while B04 is unstarted", () => {
+    // Same shape as the B03A case above, for the same reason: publish now exists
+    // in the real artifact, so *adding* it proves nothing. This rebuilds the
+    // undelivered world and proves the three routes are still refused there.
+    const phase = file('phase').replace(
+      /\nAPP3-B04 = COMPLETE[^\n]*\n/,
+      '\nAPP3-B04 = READY — NOT STARTED\n',
+    );
+    const failures = run(checkSurface, { phase });
+    assert.ok(mentions(failures, 'belongs to APP3-B04'), failures.join('\n'));
+  });
+
+  it('rejects a lifecycle route going missing once B04 is accepted', () => {
     const openapi = openapiWith((d) => {
-      d.paths[`${ITEM_ROUTE}/publish`] = { post: { operationId: 'adminDesignTemplate_publish' } };
+      delete d.paths[`${ITEM_ROUTE}/publish`];
     });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'belongs to APP3-B04'));
+    assert.ok(mentions(run(checkSurface, { openapi }), 'APP3-B04 is delivered but'));
   });
 
   it('rejects a renamed operation id', () => {

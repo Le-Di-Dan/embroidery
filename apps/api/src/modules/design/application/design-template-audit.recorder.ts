@@ -51,6 +51,24 @@ export const DESIGN_TEMPLATE_CREATED_ACTION = 'design_template.created';
  */
 export const DESIGN_TEMPLATE_VERSION_SAVED_ACTION = 'design_template.version_saved';
 
+/**
+ * The three LC-24 transitions `APP3-B04` owns, and their audit actions.
+ *
+ * Publish and unpublish stay distinct codes and neither is ever recorded as the
+ * other — the same rule `IMP-D035` locked for Products, for the same reason: an
+ * operator reading the trail must be able to tell a template that came back for
+ * editing from one that was retired. Archive is a third thing again, and is
+ * never a delete.
+ */
+export type DesignTemplateLifecycleTransition = 'PUBLISHED' | 'UNPUBLISHED' | 'ARCHIVED';
+
+export const DESIGN_TEMPLATE_LIFECYCLE_ACTIONS: Record<DesignTemplateLifecycleTransition, string> =
+  {
+    PUBLISHED: 'design_template.published',
+    UNPUBLISHED: 'design_template.unpublished',
+    ARCHIVED: 'design_template.archived',
+  };
+
 export interface RecordTemplateCreatedInput {
   readonly templateId: string;
   /** Server-owned public address; safe, and the only way to identify the row later. */
@@ -105,6 +123,40 @@ export class DesignTemplateAuditRecorder {
       targetKind: DESIGN_TEMPLATE_KIND,
       targetId: input.templateId,
       summary: { version: input.version },
+      correlationId: this.requestContext.requireRequestId(),
+    });
+  }
+
+  /**
+   * One row per successful LC-24 lifecycle transition (`APP3-B04`).
+   *
+   * `IMP-D042` PO-03 audits **every** transition, so all three share one writer
+   * and one bounded summary: where the template came from, where it went, and
+   * which immutable version was the subject. A reason is carried only for
+   * archive, because PO-03 requires one for archive and restore and for nothing
+   * else — a reason invented for publish would be evidence the server made up.
+   *
+   * Never the document, an Asset id, a storage fact, a credential or an outbox
+   * payload.
+   *
+   * @requiresTransaction — the row must commit with the transition or not at all.
+   */
+  async recordLifecycle(input: {
+    readonly templateId: string;
+    readonly transition: DesignTemplateLifecycleTransition;
+    readonly from: string;
+    readonly to: string;
+    readonly version: number;
+    readonly reason?: string;
+  }): Promise<void> {
+    await this.events.append({
+      occurredAt: this.clock.now(),
+      actor: this.currentActor(),
+      action: DESIGN_TEMPLATE_LIFECYCLE_ACTIONS[input.transition],
+      targetKind: DESIGN_TEMPLATE_KIND,
+      targetId: input.templateId,
+      summary: { from: input.from, to: input.to, version: input.version },
+      ...(input.reason === undefined ? {} : { reason: input.reason }),
       correlationId: this.requestContext.requireRequestId(),
     });
   }

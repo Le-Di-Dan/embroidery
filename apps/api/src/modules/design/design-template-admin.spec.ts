@@ -217,14 +217,13 @@ describe('the three Admin Design Template operations', () => {
     }
   });
 
-  it('carries no B04, B05 or B05A capability', () => {
-    // B04's transitions and B05/B05A's public reads, asserted as absences.
-    // `…/document` is deliberately no longer in this list: `APP3-B03A` delivered
-    // it, and its ownership is proved by that checkpoint's own gate.
+  it('carries no B04A, B05 or B05A capability', () => {
+    // B04A's restore and B05/B05A's public reads, asserted as absences.
+    // `…/document` and B04's three transitions are deliberately no longer in
+    // this list: `APP3-B03A` and `APP3-B04` delivered them, and each one's
+    // ownership is proved by that checkpoint's own gate.
     for (const forbidden of [
-      '/api/admin/design-templates/{templateId}/publish',
-      '/api/admin/design-templates/{templateId}/unpublish',
-      '/api/admin/design-templates/{templateId}/archive',
+      '/api/admin/design-templates/{templateId}/restore',
       '/api/public/design-templates',
       '/api/public/design-templates/{slug}',
     ]) {
@@ -236,12 +235,12 @@ describe('the three Admin Design Template operations', () => {
 
   it('guards every operation with the Admin session', () => {
     expect(CONTROLLER_SOURCE).toMatch(/@UseGuards\(AuthenticatedAdminGuard\)/);
-    // One origin/body pair per mutating operation — B03's create and B03A's
-    // save — and none on a read, where an origin guard would reject a legitimate
-    // cross-origin GET.
+    // One origin/body pair per mutating operation — B03's create, B03A's save
+    // and B04's three transitions — and none on a read, where an origin guard
+    // would reject a legitimate cross-origin GET.
     expect(
       CONTROLLER_SOURCE.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g),
-    ).toHaveLength(2);
+    ).toHaveLength(5);
   });
 
   it('publishes a concrete schema for every success', () => {
@@ -532,6 +531,7 @@ describe('the controller wiring', () => {
   it('translates only its own error type', () => {
     const controller = new AdminDesignTemplateController(
       { create: () => Promise.resolve({ templateId: TEMPLATE_ID }) } as never,
+      {} as never,
       {} as never,
       {} as never,
     );

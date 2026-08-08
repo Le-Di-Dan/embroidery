@@ -210,18 +210,30 @@ function useCase(
 describe('the published save contract', () => {
   it('publishes exactly one new operation, at the locked route and id', () => {
     expect(document.paths[ROUTE]?.put?.operationId).toBe('adminDesignTemplate_saveDocument');
+    // Enumerated rather than counted. A bare number said "four" and had to be
+    // rewritten the day `APP3-B04` legitimately published three more; naming
+    // each operation and its owner keeps the assertion just as strict — an
+    // eighth still fails — while saying which checkpoint every one belongs to.
     const templateOperations = Object.entries(document.paths)
       .filter(([path]) => path.startsWith('/api/admin/design-templates'))
-      .flatMap(([, methods]) => Object.keys(methods));
-    // Three from APP3-B03 plus this one. A fifth would be scope creep.
-    expect(templateOperations).toHaveLength(4);
+      .flatMap(([path, methods]) => Object.keys(methods).map((method) => `${method} ${path}`))
+      .sort();
+    expect(templateOperations).toEqual(
+      [
+        'get /api/admin/design-templates', // APP3-B03
+        'post /api/admin/design-templates', // APP3-B03
+        'get /api/admin/design-templates/{templateId}', // APP3-B03
+        'put /api/admin/design-templates/{templateId}/document', // this checkpoint
+        'post /api/admin/design-templates/{templateId}/archive', // APP3-B04
+        'post /api/admin/design-templates/{templateId}/publish', // APP3-B04
+        'post /api/admin/design-templates/{templateId}/unpublish', // APP3-B04
+      ].sort(),
+    );
   });
 
-  it('publishes no B04, B05 or B05A route alongside it', () => {
+  it('publishes no B04A, B05 or B05A route alongside it', () => {
     for (const forbidden of [
-      '/api/admin/design-templates/{templateId}/publish',
-      '/api/admin/design-templates/{templateId}/unpublish',
-      '/api/admin/design-templates/{templateId}/archive',
+      '/api/admin/design-templates/{templateId}/restore',
       '/api/public/design-templates',
     ]) {
       expect(document.paths[forbidden]).toBeUndefined();
@@ -253,9 +265,11 @@ describe('the published save contract', () => {
 
   it('guards the write with the Admin session and the mutating pair', () => {
     expect(CONTROLLER_SOURCE).toMatch(/@Put\(':templateId\/document'\)/);
+    // One per mutating operation: B03's create, this save, and B04's three
+    // transitions — the two reads carry the controller-level Admin guard only.
     expect(
       CONTROLLER_SOURCE.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g),
-    ).toHaveLength(2);
+    ).toHaveLength(5);
   });
 });
 

@@ -19,6 +19,17 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-B04` — the three LC-24 lifecycle transitions. Three paths, three
+    // operations, and three request bodies; restore is `APP3-B04A`'s and is not
+    // in this world.
+    marker: /\nAPP3-B04 = COMPLETE/,
+    paths: 29,
+    operations: 34,
+    schemas: 76,
+    designSessionRoutes: true,
+    designSessionPaths: 4,
+  },
+  {
     // `APP3-B03A` — the draft document save. One operation on a new path; the
     // schema count moves by one for its request body, which references the
     // already-published `DesignDocument` rather than restating it.
@@ -152,6 +163,13 @@ const ADMIN_TEMPLATE_PATHS = Object.freeze([
 /** The one path `APP3-B03A` adds on top of them. */
 const ADMIN_TEMPLATE_SAVE_PATH = '/api/admin/design-templates/{templateId}/document';
 
+/** The three `APP3-B04` adds. Restore is `APP3-B04A`'s and is deliberately absent. */
+const ADMIN_TEMPLATE_LIFECYCLE_PATHS = Object.freeze([
+  '/api/admin/design-templates/{templateId}/publish',
+  '/api/admin/design-templates/{templateId}/unpublish',
+  '/api/admin/design-templates/{templateId}/archive',
+]);
+
 /** True once `APP3-B03` has published the Admin Design Template surface. */
 export function isB03Delivered(rootDir) {
   const path = join(rootDir, PHASE);
@@ -166,11 +184,44 @@ export function isB03ADelivered(rootDir) {
   return /\nAPP3-B03A = COMPLETE/.test(phase);
 }
 
+/** True once `APP3-B04` has published the LC-24 lifecycle transitions. */
+export function isB04Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-B04 = COMPLETE/.test(phase);
+}
+
 export function acceptedAdminTemplatePaths(rootDir) {
   if (!isB03Delivered(rootDir)) return [];
-  return isB03ADelivered(rootDir)
-    ? [...ADMIN_TEMPLATE_PATHS, ADMIN_TEMPLATE_SAVE_PATH]
-    : [...ADMIN_TEMPLATE_PATHS];
+  const paths = [...ADMIN_TEMPLATE_PATHS];
+  if (isB03ADelivered(rootDir)) paths.push(ADMIN_TEMPLATE_SAVE_PATH);
+  if (isB04Delivered(rootDir)) paths.push(...ADMIN_TEMPLATE_LIFECYCLE_PATHS);
+  return paths;
+}
+
+/** The three lifecycle paths, for gates that must assert their absence before B04. */
+export function lifecycleAdminTemplatePaths() {
+  return [...ADMIN_TEMPLATE_LIFECYCLE_PATHS];
+}
+
+/**
+ * How many operations each accepted path carries. Only the collection carries
+ * two — list and create; every other Admin Template path carries one.
+ */
+const ADMIN_TEMPLATE_PATH_OPERATIONS = Object.freeze({ '/api/admin/design-templates': 2 });
+
+/**
+ * The number of Admin Design Template operations the accepted world publishes.
+ *
+ * Derived from the same accepted-path list, so a gate never carries its own
+ * literal: every checkpoint that adds a path moves this count for all of them at
+ * once, and a count that no accepted checkpoint explains still fails.
+ */
+export function acceptedAdminTemplateOperationCount(rootDir) {
+  return acceptedAdminTemplatePaths(rootDir).reduce(
+    (total, path) => total + (ADMIN_TEMPLATE_PATH_OPERATIONS[path] ?? 1),
+    0,
+  );
 }
 
 /**
@@ -186,6 +237,13 @@ export const B03_STATUS_LINES = Object.freeze([
   'APP3-B03 = READY — NOT STARTED',
   'APP3-B03 = COMPLETE — REVIEW_DELIVERED',
   'APP3-B03 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/** The status lines `APP3-B04` may legitimately be recorded under. */
+export const B04_STATUS_LINES = Object.freeze([
+  'APP3-B04 = READY — NOT STARTED',
+  'APP3-B04 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-B04 = COMPLETE — REVIEW_ACCEPTED',
 ]);
 
 /** The status lines `APP3-B03A` may legitimately be recorded under. */

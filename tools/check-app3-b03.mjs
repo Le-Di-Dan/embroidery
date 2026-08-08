@@ -14,7 +14,13 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedSurface, isB03ADelivered } from './app3-accepted-surface.mjs';
+import {
+  acceptedAdminTemplateOperationCount,
+  acceptedSurface,
+  isB03ADelivered,
+  isB04Delivered,
+  lifecycleAdminTemplatePaths,
+} from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -37,10 +43,10 @@ export const OPERATIONS = Object.freeze({
  * exclude, and its arrival inside B03 would restore the four-into-three contract
  * the split resolved.
  */
+// The three lifecycle routes are deliberately absent: `APP3-B04` owns them, and
+// once it is accepted they are part of the world rather than a violation. They
+// are asserted mode-aware below instead, against the shared surface authority.
 const FORBIDDEN_ROUTES = Object.freeze([
-  [`${ITEM_ROUTE}/publish`, 'APP3-B04'],
-  [`${ITEM_ROUTE}/unpublish`, 'APP3-B04'],
-  [`${ITEM_ROUTE}/archive`, 'APP3-B04'],
   ['/api/public/design-templates', 'APP3-B05'],
   ['/api/public/design-templates/{slug}', 'APP3-B05'],
 ]);
@@ -153,10 +159,12 @@ export function checkSurface(rootDir, fail) {
     }
   }
 
-  // Mode-aware on `APP3-B03A`, which owns exactly one further operation on this
-  // prefix. Before it, three; after it, four — and never a fifth in either world.
+  // Mode-aware on every accepted successor that owns a route on this prefix —
+  // `APP3-B03A`'s save, then `APP3-B04`'s three lifecycle transitions. The count
+  // comes from the shared surface authority rather than a literal here, so an
+  // operation no accepted checkpoint explains still fails in every world.
   const saveDelivered = isB03ADelivered(rootDir);
-  const expectedOperations = saveDelivered ? 4 : 3;
+  const expectedOperations = acceptedAdminTemplateOperationCount(rootDir);
   const templateOperations = Object.entries(document.paths ?? {})
     .filter(([route]) => route.startsWith(COLLECTION_ROUTE))
     .flatMap(([, methods]) => Object.keys(methods));
@@ -173,6 +181,17 @@ export function checkSurface(rootDir, fail) {
       savePublished
         ? `${CANONICAL_FILES.openapi}: publishes ${saveRoute}, which belongs to APP3-B03A`
         : `${CANONICAL_FILES.openapi}: APP3-B03A is delivered but ${saveRoute} is missing`,
+    );
+  }
+
+  const lifecycleDelivered = isB04Delivered(rootDir);
+  for (const route of lifecycleAdminTemplatePaths()) {
+    const routePublished = document.paths?.[route] !== undefined;
+    if (routePublished === lifecycleDelivered) continue;
+    fail(
+      routePublished
+        ? `${CANONICAL_FILES.openapi}: publishes ${route}, which belongs to APP3-B04`
+        : `${CANONICAL_FILES.openapi}: APP3-B04 is delivered but ${route} is missing`,
     );
   }
 
@@ -292,8 +311,12 @@ export function checkCreateSemantics(rootDir, fail) {
     fail(`${CANONICAL_FILES.request}: ${strictCount} strict schemas, expected one per request`);
   }
 
-  // The adapter's create is what actually decides the initial state.
-  if (!/status:\s*'DRAFT'/.test(adapter) || !/currentVersion:\s*0/.test(adapter)) {
+  // The adapter's create is what actually decides the initial state — and the
+  // rule reads the `create` body alone. `APP3-B04`'s unpublish legitimately
+  // writes `status: 'DRAFT'` too, so a whole-file scan would stay green while
+  // create itself started templates somewhere else entirely.
+  const create = /\n  async create\(([\s\S]*?)\n  }\n/.exec(adapter)?.[1] ?? '';
+  if (!/status:\s*'DRAFT'/.test(create) || !/currentVersion:\s*0/.test(create)) {
     fail(`${CANONICAL_FILES.adapter}: create no longer writes a DRAFT header with zero versions`);
   }
   // `buildPage` needs the extra row; fetching exactly `limit` reports hasNext
@@ -312,10 +335,13 @@ export function checkAuthorization(rootDir, fail) {
   if (!/@UseGuards\(AuthenticatedAdminGuard\)/.test(controller)) {
     fail(`${CANONICAL_FILES.controller}: the Admin guard is not applied to the controller`);
   }
-  // One guarded write per mutating operation: B03's create, plus B03A's save
-  // once it is delivered. Derived rather than pinned at one, which is what made
-  // this fail the day the save shipped correctly guarded.
-  const expectedWrites = isB03ADelivered(rootDir) ? 2 : 1;
+  // One guarded write per mutating operation: every accepted Admin Template
+  // operation except B03's own two reads, the list and the detail. Derived from
+  // the shared surface authority rather than pinned, which is what made this
+  // fail the day B03A's save — and then B04's three transitions — shipped
+  // correctly guarded.
+  const ADMIN_TEMPLATE_READS = 2;
+  const expectedWrites = acceptedAdminTemplateOperationCount(rootDir) - ADMIN_TEMPLATE_READS;
   const mutatingGuards = controller.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g);
   const guardCount = mutatingGuards?.length ?? 0;
   if (guardCount !== expectedWrites) {

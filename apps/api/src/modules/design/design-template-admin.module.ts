@@ -14,6 +14,8 @@ import { DesignTemplateScopeAuthority } from './application/design-template-scop
 import { SaveTemplateDocumentUseCase } from './application/save-template-document.use-case';
 import { TemplateDocumentAuthority } from './application/template-document.authority';
 import { TemplateDocumentMediaAuthority } from './application/template-document-media.authority';
+import { DesignTemplateLifecycleUseCase } from './application/design-template-lifecycle.use-case';
+import { TemplatePublicationAuthority } from './application/template-publication.authority';
 import { AdminDesignTemplateController } from './presentation/admin-design-template.controller';
 
 /**
@@ -53,6 +55,12 @@ import { AdminDesignTemplateController } from './presentation/admin-design-templ
     TemplateDocumentAuthority,
     TemplateDocumentMediaAuthority,
     SaveTemplateDocumentUseCase,
+    // APP3-B04 — the LC-24 transitions. The publication authority composes the
+    // whole GRD-T01 guard from the authorities that own each part: P01 for the
+    // document, P02 for geometry, the Catalog placement port for the scope chain
+    // and the B03A media allowlist for assets.
+    TemplatePublicationAuthority,
+    DesignTemplateLifecycleUseCase,
   ],
 })
 export class DesignTemplateAdminModule {}

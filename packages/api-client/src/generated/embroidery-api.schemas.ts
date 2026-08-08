@@ -696,6 +696,19 @@ export interface ApiSuccessResponse {
   success: true;
 }
 
+export interface ArchiveDesignTemplateBody {
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  expectedCurrentVersion: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+}
+
 export interface ArchiveProductBody {
   /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
   expectedUpdatedAt: string;
@@ -1143,6 +1156,14 @@ export interface PublicProductPlacementResponse {
   studioEligible: boolean;
 }
 
+export interface PublishDesignTemplateBody {
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  expectedCurrentVersion: number;
+}
+
 export interface PublishProductBody {
   /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
   expectedUpdatedAt: string;
@@ -1321,6 +1342,14 @@ export interface StaffLoginRequest {
   password: string;
 }
 
+export interface UnpublishDesignTemplateBody {
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  expectedCurrentVersion: number;
+}
+
 export interface UnpublishProductBody {
   /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
   expectedUpdatedAt: string;
@@ -1449,7 +1478,19 @@ export type AdminDesignTemplateDetail200 = ApiSuccessResponse & {
   data: AdminDesignTemplateDetailResponse;
 };
 
+export type AdminDesignTemplateArchive200 = ApiSuccessResponse & {
+  data: AdminDesignTemplateDetailResponse;
+};
+
 export type AdminDesignTemplateSaveDocument200 = ApiSuccessResponse & {
+  data: AdminDesignTemplateDetailResponse;
+};
+
+export type AdminDesignTemplatePublish200 = ApiSuccessResponse & {
+  data: AdminDesignTemplateDetailResponse;
+};
+
+export type AdminDesignTemplateUnpublish200 = ApiSuccessResponse & {
   data: AdminDesignTemplateDetailResponse;
 };
 

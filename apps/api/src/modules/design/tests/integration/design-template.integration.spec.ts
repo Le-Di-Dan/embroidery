@@ -129,7 +129,9 @@ describe('design template persistence (integration)', () => {
       const { id } = await createTemplate();
       await publish(id);
 
-      await templates.archive(id, new Date());
+      // `APP3-B04` narrowed archive to a guarded lifecycle command: the source
+      // state and the expected counter are now part of the contract.
+      await templates.archive({ id, expectedCurrentVersion: 1, at: new Date() });
 
       await expect(templates.loadPublished(id)).resolves.toBeUndefined();
     });

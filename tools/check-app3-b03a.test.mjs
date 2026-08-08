@@ -18,7 +18,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedAdminTemplateOperationCount, acceptedSurface } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   REPO_ROOT,
@@ -121,27 +121,43 @@ describe('the published surface', () => {
     const openapi = openapiWith((d) => {
       delete d.paths[SAVE_ROUTE];
     });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'paths, expected 26'));
+    // Derived, not pinned at 26: `APP3-B04` legitimately moved the accepted
+    // surface, and a literal here would fail on a correct repository.
+    const expected = acceptedSurface(REPO_ROOT).paths;
+    assert.ok(mentions(run(checkSurface, { openapi }), `paths, expected ${String(expected)}`));
   });
 
-  it('rejects a fifth Admin Template operation', () => {
+  it('rejects one more Admin Template operation than the accepted world explains', () => {
     const openapi = openapiWith((d) => {
       d.paths['/api/admin/design-templates/{templateId}/preview'] = {
         post: { operationId: 'adminDesignTemplate_preview' },
       };
     });
+    const allowed = acceptedAdminTemplateOperationCount(REPO_ROOT);
     assert.ok(
-      mentions(run(checkSurface, { openapi }), 'admin design-template operations, expected 4'),
+      mentions(
+        run(checkSurface, { openapi }),
+        `admin design-template operations, expected ${String(allowed)}`,
+      ),
     );
   });
 
-  it("rejects APP3-B04's publish route", () => {
+  it("rejects APP3-B04's lifecycle routes while B04 is unstarted", () => {
+    // Publish now exists in the real artifact, so *adding* it proves nothing.
+    // This rebuilds the undelivered world and proves it is still refused there.
+    const phase = file('phase').replace(
+      /\nAPP3-B04 = COMPLETE[^\n]*\n/,
+      '\nAPP3-B04 = READY — NOT STARTED\n',
+    );
+    const failures = run(checkSurface, { phase });
+    assert.ok(mentions(failures, 'belongs to APP3-B04'), failures.join('\n'));
+  });
+
+  it('rejects a lifecycle route going missing once B04 is accepted', () => {
     const openapi = openapiWith((d) => {
-      d.paths['/api/admin/design-templates/{templateId}/publish'] = {
-        post: { operationId: 'adminDesignTemplate_publish' },
-      };
+      delete d.paths['/api/admin/design-templates/{templateId}/publish'];
     });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'belongs to APP3-B04'));
+    assert.ok(mentions(run(checkSurface, { openapi }), 'APP3-B04 is delivered but'));
   });
 
   it('rejects a renamed operation id', () => {

@@ -143,9 +143,53 @@ export class SaveDesignTemplateDocumentBody extends createZodDto(
   saveDesignTemplateDocumentBodySchema,
 ) {}
 
+/**
+ * The lifecycle bodies (`APP3-B04`).
+ *
+ * `expectedCurrentVersion` is the `IMP-D042` PO-03 concurrency token, and it is
+ * the same counter `APP3-B03A` advances rather than a second one: the current
+ * immutable version *is* the publication subject, so a caller holding a stale
+ * view of it is exactly the caller who must not transition. Mandatory on all
+ * three — a transition without one is the unguarded read-then-write that lets
+ * two Admins publish and archive the same template at once.
+ *
+ * Nothing else is accepted. Not the target status, which the route already says;
+ * not `publishedAt`, which the server stamps once; not a version to publish,
+ * which is always the current one.
+ */
+export const lifecycleTemplateBodySchema = z
+  .object({ expectedCurrentVersion: z.number().int().min(0) })
+  .strict();
+
+export class PublishDesignTemplateBody extends createZodDto(lifecycleTemplateBodySchema) {}
+export class UnpublishDesignTemplateBody extends createZodDto(lifecycleTemplateBodySchema) {}
+
+/** `design_templates` stores no reason; the cap keeps an audit summary bounded. */
+export const TEMPLATE_ARCHIVE_REASON_MAX_LENGTH = 500;
+
+/**
+ * Archive additionally requires a reason.
+ *
+ * `IMP-D042` PO-03 requires one for archive and restore and for neither publish
+ * nor unpublish, so it lives on this body alone. It is trimmed and non-empty:
+ * a blank reason satisfies the letter of a required field and none of its
+ * purpose.
+ */
+export const archiveDesignTemplateBodySchema = z
+  .object({
+    expectedCurrentVersion: z.number().int().min(0),
+    reason: z.string().trim().min(1).max(TEMPLATE_ARCHIVE_REASON_MAX_LENGTH),
+  })
+  .strict();
+
+export class ArchiveDesignTemplateBody extends createZodDto(archiveDesignTemplateBodySchema) {}
+
 registerZodDtos(
   DesignTemplateIdParam,
   ListDesignTemplatesQuery,
   CreateDesignTemplateBody,
   SaveDesignTemplateDocumentBody,
+  PublishDesignTemplateBody,
+  UnpublishDesignTemplateBody,
+  ArchiveDesignTemplateBody,
 );

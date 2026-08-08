@@ -22,6 +22,7 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  UnprocessableEntityException,
   type HttpException,
 } from '@nestjs/common';
 
@@ -37,6 +38,15 @@ export const DESIGN_TEMPLATE_DRAFT_ERROR_CODES = [
   // translation point.
   'DESIGN_TEMPLATE_NOT_EDITABLE',
   'DESIGN_TEMPLATE_VERSION_CONFLICT',
+  // `APP3-B04` — the LC-24 lifecycle transitions. Added to this vocabulary for
+  // the same reason B03A's were: one error type and one translation point.
+  //
+  // The two are semantically distinct and must not be collapsed. A source state
+  // that forbids the transition is a **conflict** the Admin can resolve by
+  // reloading; a template that is in the right state but not *ready* to publish
+  // is an **unprocessable** request the Admin resolves by fixing the template.
+  'DESIGN_TEMPLATE_LIFECYCLE_NOT_ALLOWED',
+  'DESIGN_TEMPLATE_PUBLISH_NOT_READY',
 ] as const;
 
 export type DesignTemplateDraftErrorCode = (typeof DESIGN_TEMPLATE_DRAFT_ERROR_CODES)[number];
@@ -52,6 +62,9 @@ const MESSAGES: Record<DesignTemplateDraftErrorCode, string> = {
   DESIGN_TEMPLATE_NOT_EDITABLE: 'This design template is not in a state that allows editing.',
   DESIGN_TEMPLATE_VERSION_CONFLICT:
     'This design template changed since it was loaded. Reload and try again.',
+  DESIGN_TEMPLATE_LIFECYCLE_NOT_ALLOWED:
+    'This design template cannot make that change from its current state.',
+  DESIGN_TEMPLATE_PUBLISH_NOT_READY: 'This design template is not ready to be published yet.',
 };
 
 /**
@@ -101,7 +114,12 @@ export function toHttpException(error: DesignTemplateDraftError): HttpException 
     case 'DESIGN_TEMPLATE_SLUG_CONFLICT':
     case 'DESIGN_TEMPLATE_NOT_EDITABLE':
     case 'DESIGN_TEMPLATE_VERSION_CONFLICT':
+    case 'DESIGN_TEMPLATE_LIFECYCLE_NOT_ALLOWED':
       return new ConflictException(error.message);
+    // Readiness is not a conflict: the request was well formed and the state was
+    // right; the template itself is what could not be published.
+    case 'DESIGN_TEMPLATE_PUBLISH_NOT_READY':
+      return new UnprocessableEntityException(error.message);
     default:
       return new BadRequestException(error.message);
   }

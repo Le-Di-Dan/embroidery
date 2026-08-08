@@ -121,6 +121,19 @@ export interface ListDesignTemplatesInput {
   readonly limit: number;
 }
 
+/**
+ * One LC-24 lifecycle command (`APP3-B04`).
+ *
+ * `expectedCurrentVersion` is the concurrency token `IMP-D042` PO-03 requires.
+ * It is the counter `APP3-B03A` already advances, rather than a new column: the
+ * current immutable version *is* the publication subject, so a caller holding a
+ * stale view of it is exactly the caller who must not transition.
+ */
+export interface DesignTemplateLifecycleInput {
+  readonly id: DesignTemplateId;
+  readonly expectedCurrentVersion: number;
+}
+
 export const DESIGN_TEMPLATE_REPOSITORY = Symbol('DESIGN_TEMPLATE_REPOSITORY');
 
 export interface DesignTemplateRepository {
@@ -177,8 +190,45 @@ export interface DesignTemplateRepository {
     assetId: string,
   ): Promise<{ readonly designTemplateAssetId: string; readonly created: boolean }>;
 
-  /** @requiresTransaction */
-  archive(id: DesignTemplateId, at: Date): Promise<void>;
+  /**
+   * Publishes the template's **current** version (`APP3-B04`, `TR-LC24-02`).
+   *
+   * Succeeds only when the template is `DRAFT` at exactly
+   * `expectedCurrentVersion`. It creates no version — the publication subject is
+   * the highest immutable version `APP3-B03A` already wrote — and it stamps that
+   * version's `published_at` **only when it is null**, so a republication of the
+   * same version keeps its original timestamp (`IMP-D042` PO-04: set once, never
+   * cleared or rewritten).
+   *
+   * Throws `RECORD_NOT_FOUND` for an unknown template and `STALE_WRITE` when the
+   * state or the counter has moved. Both leave every row untouched.
+   *
+   * @requiresTransaction
+   */
+  publishCurrentVersion(input: DesignTemplateLifecycleInput & { readonly at: Date }): Promise<void>;
+
+  /**
+   * Returns a published template to `DRAFT` (`TR-LC24-03`).
+   *
+   * The header only: `current_version` is preserved, every version row survives,
+   * and no `published_at` is cleared — editing after unpublish creates a *new*
+   * version rather than reopening the old one.
+   *
+   * @requiresTransaction
+   */
+  unpublish(input: DesignTemplateLifecycleInput): Promise<void>;
+
+  /**
+   * Archives from `DRAFT` or `PUBLISHED` (`TR-LC24-04`/`TR-LC24-05`).
+   *
+   * Durable retirement, distinct from unpublish and never a delete: versions,
+   * their timestamps and every association survive. Guarded by source state and
+   * the counter for the same reason the other two are — a read-then-update would
+   * let a concurrent publish and archive both believe they won.
+   *
+   * @requiresTransaction
+   */
+  archive(input: DesignTemplateLifecycleInput & { readonly at: Date }): Promise<void>;
 
   findById(id: DesignTemplateId): Promise<DesignTemplate | undefined>;
   findBySlug(slug: string): Promise<DesignTemplate | undefined>;

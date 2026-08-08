@@ -11,11 +11,14 @@ import type {
   AdminAssetListParams,
   AdminAssetUpload202,
   AdminAssetUploadBody,
+  AdminDesignTemplateArchive200,
   AdminDesignTemplateCreate201,
   AdminDesignTemplateDetail200,
   AdminDesignTemplateList200,
   AdminDesignTemplateListParams,
+  AdminDesignTemplatePublish200,
   AdminDesignTemplateSaveDocument200,
+  AdminDesignTemplateUnpublish200,
   AdminProductArchive200,
   AdminProductCreate201,
   AdminProductDetail200,
@@ -27,6 +30,7 @@ import type {
   AdminProductPublish200,
   AdminProductUnpublish200,
   AdminProductUpdate200,
+  ArchiveDesignTemplateBody,
   ArchiveProductBody,
   AutosaveDesignSessionBody,
   CreateDesignSessionBody,
@@ -42,12 +46,14 @@ import type {
   PublicProductList200,
   PublicProductListParams,
   PublicProductPlacementGet200,
+  PublishDesignTemplateBody,
   PublishProductBody,
   ReadinessStatusResponse,
   ReplaceProductPlacementBody,
   SaveDesignTemplateDocumentBody,
   StaffLoginRequest,
   StaffSelfGet200,
+  UnpublishDesignTemplateBody,
   UnpublishProductBody,
   UpdateProductBody,
 } from './embroidery-api.schemas';
@@ -156,6 +162,26 @@ export const adminDesignTemplateDetail = (
 };
 
 /**
+ * Retires a DRAFT or a PUBLISHED template. This is not a delete and not an unpublish: the template, its immutable versions, their publication timestamps and its asset associations all remain, and nothing cascades to the Product, its assets or any Design Session. A reason is required and is recorded in the audit trail. Restoring an archived template is APP3-B04A.
+ * @summary Archive a design template
+ */
+export const adminDesignTemplateArchive = (
+  templateId: unknown,
+  archiveDesignTemplateBody: ArchiveDesignTemplateBody,
+  options?: SecondParameter<typeof apiRequest<AdminDesignTemplateArchive200>>,
+) => {
+  return apiRequest<AdminDesignTemplateArchive200>(
+    {
+      url: `/api/admin/design-templates/${templateId}/archive`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: archiveDesignTemplateBody,
+    },
+    options,
+  );
+};
+
+/**
  * Saves a full Design Document snapshot for a DRAFT template as a new immutable version. Send `expectedCurrentVersion` exactly as the read returned it — `0` for a template that has no version yet. A stale value is rejected as a conflict and nothing is written; the server derives the next version number, and a saved version is never published by this operation.
  * @summary Save a design template draft document
  */
@@ -170,6 +196,46 @@ export const adminDesignTemplateSaveDocument = (
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       data: saveDesignTemplateDocumentBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Moves a DRAFT to PUBLISHED, publishing its current immutable version. The full GRD-T01 guard runs first: a complete and active product/side/area chain, a document valid under APP3-P01, geometry in bounds for that exact area under APP3-P02, and every referenced Template asset editor-safe. No version is created and the document is never modified. `published_at` is stamped once and is not rewritten by a later republication.
+ * @summary Publish a design template
+ */
+export const adminDesignTemplatePublish = (
+  templateId: unknown,
+  publishDesignTemplateBody: PublishDesignTemplateBody,
+  options?: SecondParameter<typeof apiRequest<AdminDesignTemplatePublish200>>,
+) => {
+  return apiRequest<AdminDesignTemplatePublish200>(
+    {
+      url: `/api/admin/design-templates/${templateId}/publish`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: publishDesignTemplateBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Returns a PUBLISHED template to DRAFT. The header only: every version survives, no `published_at` is cleared, and no new version is created. This is not an archive — the template stays editable, and editing it creates a new immutable version.
+ * @summary Unpublish a design template
+ */
+export const adminDesignTemplateUnpublish = (
+  templateId: unknown,
+  unpublishDesignTemplateBody: UnpublishDesignTemplateBody,
+  options?: SecondParameter<typeof apiRequest<AdminDesignTemplateUnpublish200>>,
+) => {
+  return apiRequest<AdminDesignTemplateUnpublish200>(
+    {
+      url: `/api/admin/design-templates/${templateId}/unpublish`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: unpublishDesignTemplateBody,
     },
     options,
   );
@@ -567,8 +633,17 @@ export type AdminDesignTemplateCreateResult = NonNullable<
 export type AdminDesignTemplateDetailResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplateDetail>>
 >;
+export type AdminDesignTemplateArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof adminDesignTemplateArchive>>
+>;
 export type AdminDesignTemplateSaveDocumentResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplateSaveDocument>>
+>;
+export type AdminDesignTemplatePublishResult = NonNullable<
+  Awaited<ReturnType<typeof adminDesignTemplatePublish>>
+>;
+export type AdminDesignTemplateUnpublishResult = NonNullable<
+  Awaited<ReturnType<typeof adminDesignTemplateUnpublish>>
 >;
 export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
 export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;

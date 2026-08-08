@@ -178,11 +178,12 @@ or be collapsed into the other or into the API.
 | 12 | `APP3-A01` | frontend | Admin placement authoring | 1 screen | B01, D01 | no | yes | no |
 | 13 | `APP3-B03` | backend | template draft authoring — **header creation and Admin reads only**; the draft *document save* is `APP3-B03A` (§6.25) | 3 | G02, P01, `DB-DISPOSITION-RESOLVED` | no | no | no |
 | 13a | **`APP3-B03A`** | backend | Design Template draft document/version authoring — one save that writes a new immutable version (§6.25) | 1 | B03, P01, G06 | no | no | no |
-| 14 | `APP3-B04` | backend | template lifecycle (publish / unpublish / archive) | 3 | **B03A** (publish needs an immutable version to publish; B03 comes transitively), **P02** (in-bounds invariant) | no | no | no |
+| 14 | `APP3-B04` | backend | template lifecycle (publish / unpublish / archive) — **restore is `APP3-B04A`** (§6.26) | 3 | **B03A** (publish needs an immutable version to publish; B03 comes transitively), **P02** (in-bounds invariant) | no | no | no |
+| 14a | **`APP3-B04A`** | backend | Design Template restore — `ARCHIVED → DRAFT` (`TR-LC24-06`) | 1 | B04 | no | no | no |
 | 15 | `APP3-B05` | backend | public published-template read for a product scope — JSON metadata only; **byte delivery of a published Template asset is `APP3-B05A`, never a third operation here (§6.24.2)** | 2 | B04, B01 | no | no | no |
 | 16 | `APP3-A02` | frontend | Admin template list | 1 screen | B03, D01 | no | yes | no |
 | 17 | `APP3-A03` | frontend | Admin template editor | 1 screen | **B03A** (the editor's save; B03 comes transitively), D01, P01, P02 | no | yes | `spike:editor:test` |
-| 18 | `APP3-A04` | frontend | Admin template publication interaction | 1 screen | B04, D01 | no | yes | no |
+| 18 | `APP3-A04` | frontend | Admin template publication interaction | 1 screen | B04, D01 — **and `B04A` when the screen offers restore** (§6.26) | no | yes | no |
 | 19 | `APP3-W01` | worker | editor-safe derivative + customer-upload inspection lane | 0 HTTP | G04, `DB-DISPOSITION-RESOLVED` | no | no | no |
 | 20 | `APP3-B06` | backend | session-scoped customer asset intake + granted delivery — **replanned by `APP3-G08` into `APP3-B06A` + `APP3-B06B`, and completed by `APP3-B06C`, which carries the *granted delivery* half this row always contained; see §6.22 and §6.24.3** | 2 | G04, W01 | no | no | no |
 | 21 | `APP3-B07` | backend | session bootstrap (blank + clone) and resume | 2 | G03, P01, **P02**, B01 | no | no | no |
@@ -3420,7 +3421,8 @@ delivery surfaces the journey actually traverses.
 | `APP3-B06B` | session raster intake, 1 operation | `APP3-B06` | `COMPLETE — REVIEW_ACCEPTED` |
 | **`APP3-B06C`** | session private asset delivery, 1 operation | `APP3-B06` | `DEFINED — READY — NOT STARTED` |
 | **`APP3-B05A`** | published Template asset delivery, 1 operation | `APP3-B05` | `DEFINED — BLOCKED` |
-| **`APP3-B03A`** | Template draft document save, 1 operation | `APP3-B03` | `COMPLETE — REVIEW_DELIVERED` |
+| **`APP3-B03A`** | Template draft document save, 1 operation | `APP3-B03` | `COMPLETE — REVIEW_ACCEPTED` |
+| **`APP3-B04A`** | Template restore, 1 operation | `APP3-B04` | `READY — NOT STARTED` |
 
 **Governance gates** — authority only; each implements nothing:
 
@@ -3463,11 +3465,12 @@ value itself stays **OPEN until `APP3-S10` runs**.
 
 ### 6.24.7 Current execution state
 
-Eligible now, all hard predecessors accepted (`APP3-B03A` delivered, so
-publication takes its place at the head of the chain):
+Eligible now, all hard predecessors accepted (`APP3-B04` delivered, so the
+public read takes its place at the head of the chain):
 
 ```text
-APP3-B04    template lifecycle                3 operations
+APP3-B05    public published-template read    2 operations
+APP3-B04A   template restore                  1 operation
 APP3-D01    phase design package              gates every A*/S* checkpoint
 APP3-B06C   session private asset delivery    1 operation
 ```
@@ -3475,13 +3478,13 @@ APP3-B06C   session private asset delivery    1 operation
 Recommended next, for the single-checkpoint human-review workflow:
 
 ```text
-NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B04
+NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B05
 ```
 
-because `APP3-B03A` has given it the immutable version `IMP-D042` PO-07 requires
-before a publish, and it is the only remaining checkpoint on the longest chain,
-`B04 → B05 → B05A → S01`. `APP3-B06C` is
-genuinely ready and is deliberately not recommended first: it sits on a shorter branch
+because `APP3-B04` has given it something to read — a template can now reach
+`PUBLISHED` — and it is the only remaining checkpoint on the longest chain,
+`B05 → B05A → S01`. `APP3-B04A` and `APP3-B06C` are
+genuinely ready and are deliberately not recommended first: they sit on shorter branches
 (`B06C → S06`) that cannot be consumed until `S02` exists, so running it now
 would deliver a surface with no consumer for several checkpoints, while the
 critical path stood still.
@@ -3498,6 +3501,7 @@ Dependency-safe forward shape:
 
 ```text
 B03 → B03A → B04 → B05 → B05A ─┐
+B04 → B04A (restore)
                                 ├→ S01 → S02 → {S03, S04, S05, S06, S07, S08, S09}
 D01 ───────────────────────────┘                     │
                                                      └→ S03 + S07 → S11
@@ -3654,6 +3658,80 @@ Forward critical path: `B03 → B03A → B04 → B05 → B05A`. Surface arithmet
 This ruling implements nothing: no API, application, repository, package, schema,
 migration, OpenAPI, generated client, worker, dependency or Figma change.
 
+## 6.26 `APP3-B04` / `APP3-B04A` — restore gets its own checkpoint
+
+`B04_LIFECYCLE_ROUTING_RULING = RESTORE_SPLIT_TO_APP3_B04A`, decided by the
+operator **before** `APP3-B04` began rather than after it stopped.
+
+### 6.26.1 The arithmetic that would have repeated
+
+LC-24 has six transitions. `APP3-B03` owns the first, and `APP3-B04`'s canonical
+scope is three operations — which leaves five transitions for four operations:
+
+| Transition | Owner |
+|---|---|
+| `(nonexistent) → DRAFT` (`TR-LC24-01`) | `APP3-B03` |
+| `DRAFT → PUBLISHED` (`TR-LC24-02`) | `APP3-B04` |
+| `PUBLISHED → DRAFT` (`TR-LC24-03`) | `APP3-B04` |
+| `DRAFT → ARCHIVED` (`TR-LC24-04`) | `APP3-B04` |
+| `PUBLISHED → ARCHIVED` (`TR-LC24-05`) | `APP3-B04` |
+| `ARCHIVED → DRAFT` (`TR-LC24-06`) | **`APP3-B04A`** |
+
+Archive absorbs two transitions into one operation because they are the same
+durable retirement differing only in where they start. Restore does not fold in
+anywhere: it is the one transition that *revives* a template, and `IMP-D042`
+PO-03 gives it its own requirement — restore always lands in `DRAFT`, never back
+in `PUBLISHED`, and requires an audit reason.
+
+This is the same four-into-three shape `APP3-B03` stopped on. It was routed in
+advance rather than discovered again.
+
+### 6.26.2 `APP3-B04A` — Design Template restore
+
+| Field | Value |
+|---|---|
+| Lane | Backend/API |
+| Responsibility | `ARCHIVED → DRAFT` (`TR-LC24-06`) |
+| HTTP operations | **exactly 1** — `POST /api/admin/design-templates/{templateId}/restore` |
+| `operationId` | `adminDesignTemplate_restore` |
+| Predecessor | `APP3-B04` |
+| Unlocks | `APP3-A04`'s restore affordance |
+| Origin | operator routing ruling issued with the `APP3-B04` directive |
+| Status | `READY — NOT STARTED` |
+
+It carries the PO-03 clauses restore owns: the target is always `DRAFT` and never
+`PUBLISHED`, republication is separate and separately guarded, an audit reason is
+required, and no version, association or timestamp is touched. Not implemented by
+`APP3-B04`.
+
+### 6.26.3 What `APP3-B04` delivered
+
+Three operations under one concurrency token, `expectedCurrentVersion` — the same
+counter `APP3-B03A` advances, because the current immutable version *is* the
+publication subject, so a caller holding a stale view of it is exactly the caller
+who must not transition.
+
+Publish runs `GRD-T01` **whole** (PO-07: *"no backend checkpoint may implement a
+reduced publish guard"*), delegating each clause to the authority that owns it —
+`APP3-P01` for the document, `APP3-P02` in `NEW_EDITING` mode for placement
+agreement and containment, the Catalog placement port for the active
+`Product → Side → Area` chain, and the `APP3-B03A` media allowlist for assets.
+The guard is read-only: a template that cannot publish is left exactly as it was.
+
+`published_at` is stamped by a predicate (`WHERE published_at IS NULL`) rather
+than a read-and-branch, so a republication of the same version keeps its original
+timestamp even under a concurrent second publish. Unpublish touches the header
+alone. Archive accepts `DRAFT` and `PUBLISHED`, requires a bounded reason, and
+deletes and cascades nothing.
+
+**A note on the races.** Publish versus publish is a true conflict and leaves
+exactly one winner. The pairs involving archive are not: archive accepts both
+`DRAFT` and `PUBLISHED`, so when the other transition commits first, archive
+legitimately applies to the state it produced — `PUBLISHED → DRAFT → ARCHIVED` is
+two valid transitions in sequence, not a lost race. What holds in every
+interleaving is that nothing half-applies, the end state is one LC-24 recognises,
+and the audit trail records exactly the transitions that succeeded.
+
 ## 7. Critical end-to-end journey
 
 Admin publishes a template compatible with a published product. A customer starts a 2D session, adds text/image within limits, sees watermark, autosaves, reloads the session, and cannot submit tampered geometry or access private production assets.
@@ -3679,7 +3757,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — TEMPLATE_AUTHORING_AND_SESSION_BACKEND_DELIVERED_NO_FRONTEND_STARTED
+APP3 = IN PROGRESS — TEMPLATE_LIFECYCLE_AND_SESSION_BACKEND_DELIVERED_NO_FRONTEND_STARTED
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -3731,7 +3809,7 @@ B03_CONTRACT_RULING = OPTION_2_SPLIT_DRAFT_SAVE_INTO_APP3_B03A
 APP3-B03 SCOPE = HEADER_CREATE_PLUS_ADMIN_LIST_AND_DETAIL
 APP3-B03 CREATE = HEADER_ONLY_NO_VERSION
 APP3-B03 OPERATIONS = 3
-APP3-B03A = COMPLETE — REVIEW_DELIVERED
+APP3-B03A = COMPLETE — REVIEW_ACCEPTED
 APP3-B03A OPERATION = adminDesignTemplate_saveDocument
 APP3-B03A ROUTE = PUT_/api/admin/design-templates/:templateId/document
 APP3-B03A SURFACE = PATHS_26_OPERATIONS_31_SCHEMAS_73
@@ -3753,9 +3831,27 @@ DESIGN_TEMPLATE_ASSET_NORMALIZATION_PRODUCER = APP3-B03A
 DESIGN_TEMPLATE_ASSET_NORMALIZATION_PRODUCER STATE = IMPLEMENTED_BY_APP3-B03A
 FU-APP3-TEMPLATE-SOURCE-ASSET-INTAKE-01 = OPEN — OWNER_NOT_YET_ASSIGNED
 DESIGN_TEMPLATE_ASSET_NORMALIZATION_PRODUCER PREVIOUS = APP3-B03 — SUPERSEDED_BY_B03_CONTRACT_RULING
-APP3-B04 = READY — NOT STARTED
-APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04
-APP3-B05A = DEFINED — BLOCKED_BY_APP3-B04_AND_APP3-B05
+APP3-B04 = COMPLETE — REVIEW_DELIVERED
+APP3-B04 OPERATIONS = adminDesignTemplate_publish adminDesignTemplate_unpublish adminDesignTemplate_archive
+APP3-B04 SURFACE = PATHS_29_OPERATIONS_34_SCHEMAS_76
+APP3-B04 TRANSITIONS = TR-LC24-02 TR-LC24-03 TR-LC24-04 TR-LC24-05
+APP3-B04 CONCURRENCY_TOKEN = expectedCurrentVersion
+APP3-B04 PUBLISH_GUARD = GRD-T01_COMPLETE_NO_REDUCED_GUARD
+APP3-B04 GEOMETRY_AUTHORITY = APP3-P02_NEW_EDITING
+APP3-B04 PUBLISHED_AT = SET_ONCE_NEVER_REWRITTEN
+APP3-B04 VERSIONS_CREATED = NONE
+APP3-B04 EVENTS = NONE
+APP3-B04 AUDIT = design_template.published design_template.unpublished design_template.archived
+APP3-B04 ARCHIVE_REASON = REQUIRED_BOUNDED_500
+APP3-B04 MIGRATION = NONE
+B04_LIFECYCLE_ROUTING_RULING = RESTORE_SPLIT_TO_APP3_B04A
+APP3-B04A = READY — NOT STARTED
+APP3-B04A OPERATIONS = 1
+APP3-B04A ROUTE = POST_/api/admin/design-templates/:templateId/restore
+APP3-B04A OPERATION_ID = adminDesignTemplate_restore
+APP3-B04A TRANSITION = TR-LC24-06
+APP3-B05 = READY — NOT STARTED
+APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05
 APP3-B06C = DEFINED — READY — NOT STARTED
 APP3-D01 = READY — NOT STARTED
 APP3-G06 = COMPLETE — REVIEW_ACCEPTED
@@ -3887,8 +3983,8 @@ APP3-B06C OPERATIONS = 1
 APP3-B06C ROUTE = GET_/api/public/design-sessions/:sessionId/assets/:assetId/editor-preview
 APP3-B06C AUTHORIZATION = SESSION_ID_PLUS_PER_SESSION_CREDENTIAL
 APP3-B06C ORIGIN = REPLAN_CHILD_OF_APP3-B06 — NOT_A_B06B_CORRECTION
-NEXT_ELIGIBLE_IMPLEMENTATION_CHECKPOINTS = APP3-B04 APP3-D01 APP3-B06C
-NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B04
+NEXT_ELIGIBLE_IMPLEMENTATION_CHECKPOINTS = APP3-B05 APP3-B04A APP3-D01 APP3-B06C
+NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B05
 NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = NONE
 FRONTEND_GATE = APP3-D01
 every other APP3 checkpoint = NOT STARTED

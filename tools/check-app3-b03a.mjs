@@ -15,7 +15,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import {
+  acceptedAdminTemplateOperationCount,
+  acceptedSurface,
+  isB04Delivered,
+  lifecycleAdminTemplatePaths,
+} from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -25,10 +30,10 @@ export const SAVE_ROUTE = '/api/admin/design-templates/{templateId}/document';
 export const SAVE_OPERATION = 'adminDesignTemplate_saveDocument';
 
 /** Routes owned by a later checkpoint that must not appear here. */
+// The three lifecycle routes are deliberately absent: `APP3-B04` owns them, and
+// once it is accepted they are part of the world rather than a violation. They
+// are asserted mode-aware below instead, against the shared surface authority.
 const FORBIDDEN_ROUTES = Object.freeze([
-  ['/api/admin/design-templates/{templateId}/publish', 'APP3-B04'],
-  ['/api/admin/design-templates/{templateId}/unpublish', 'APP3-B04'],
-  ['/api/admin/design-templates/{templateId}/archive', 'APP3-B04'],
   ['/api/public/design-templates', 'APP3-B05'],
   ['/api/public/design-templates/{slug}', 'APP3-B05'],
 ]);
@@ -123,10 +128,24 @@ export function checkSurface(rootDir, fail) {
   const templateOperations = Object.entries(document.paths ?? {})
     .filter(([route]) => route.startsWith('/api/admin/design-templates'))
     .flatMap(([, methods]) => Object.keys(methods));
-  // Three from `APP3-B03` plus this one. A fifth is scope creep.
-  if (templateOperations.length !== 4) {
+  // Three from `APP3-B03`, this one, and each accepted successor's — counted by
+  // the shared surface authority, so an operation no accepted checkpoint
+  // explains is still scope creep in every world.
+  const expectedOperations = acceptedAdminTemplateOperationCount(rootDir);
+  if (templateOperations.length !== expectedOperations) {
     fail(
-      `${CANONICAL_FILES.openapi}: ${templateOperations.length} admin design-template operations, expected 4`,
+      `${CANONICAL_FILES.openapi}: ${templateOperations.length} admin design-template operations, expected ${expectedOperations}`,
+    );
+  }
+
+  const lifecycleDelivered = isB04Delivered(rootDir);
+  for (const route of lifecycleAdminTemplatePaths()) {
+    const routePublished = document.paths?.[route] !== undefined;
+    if (routePublished === lifecycleDelivered) continue;
+    fail(
+      routePublished
+        ? `${CANONICAL_FILES.openapi}: publishes ${route}, which belongs to APP3-B04`
+        : `${CANONICAL_FILES.openapi}: APP3-B04 is delivered but ${route} is missing`,
     );
   }
 
@@ -208,11 +227,15 @@ export function checkSaveSemantics(rootDir, fail) {
     fail(`${CANONICAL_FILES.repository}: publishVersion no longer requires a real publishedAt`);
   }
 
-  // The expected value must be in the predicate, not read then written.
-  if (!/eq\(designTemplates\.currentVersion, input\.expectedCurrentVersion\)/.test(adapter)) {
+  // The expected value must be in the predicate, not read then written — and
+  // read from the save's own body. `APP3-B04`'s shared lifecycle `transition`
+  // carries the same token predicate, so a whole-file scan would stay green
+  // while the save itself became a read-then-write.
+  const save = /\n  async saveDraftVersion\(([\s\S]*?)\n  }\n/.exec(adapter)?.[1] ?? '';
+  if (!/eq\(designTemplates\.currentVersion, input\.expectedCurrentVersion\)/.test(save)) {
     fail(`${CANONICAL_FILES.adapter}: the save does not compare-and-set on current_version`);
   }
-  if (!/eq\(designTemplates\.status, 'DRAFT'\)/.test(adapter)) {
+  if (!/eq\(designTemplates\.status, 'DRAFT'\)/.test(save)) {
     fail(`${CANONICAL_FILES.adapter}: the save does not require a DRAFT header`);
   }
   if (!/publishedAt:\s*null/.test(adapter)) {

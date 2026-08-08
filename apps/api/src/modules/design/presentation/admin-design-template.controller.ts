@@ -5,13 +5,17 @@
  *   GET  /api/admin/design-templates                   — adminDesignTemplate_list
  *   GET  /api/admin/design-templates/:templateId       — adminDesignTemplate_detail
  *   PUT  /api/admin/design-templates/:id/document      — adminDesignTemplate_saveDocument
+ *   POST /api/admin/design-templates/:id/publish       — adminDesignTemplate_publish
+ *   POST /api/admin/design-templates/:id/unpublish     — adminDesignTemplate_unpublish
+ *   POST /api/admin/design-templates/:id/archive       — adminDesignTemplate_archive
  *
- * Four, and no fifth. The first three are `APP3-B03`; the save is `APP3-B03A`,
- * the checkpoint the `B03_CONTRACT_RULING` split created for it precisely so the
- * document, the immutable version, the Asset association and the normalization
- * producer would be reviewed on their own. Publish, unpublish and archive are
- * `APP3-B04` and a route for any of them appearing here would be that split
- * undone.
+ * Seven, and no eighth. Three are `APP3-B03`, the save is `APP3-B03A`, and the
+ * three LC-24 transitions are `APP3-B04`. **Restore is not here**:
+ * `B04_LIFECYCLE_ROUTING_RULING` routes `ARCHIVED → DRAFT` to `APP3-B04A`, so
+ * B04 stays at three operations rather than becoming the four-into-three contract
+ * the B03 split already had to resolve once. Public reads are `APP3-B05` and
+ * binary delivery is `APP3-B05A`; a route for either appearing here would undo
+ * that split too.
  *
  * The controller owns the HTTP contract and nothing else: guards, status codes,
  * documentation, and turning a transport-free `DesignTemplateDraftError` into
@@ -56,6 +60,10 @@ import {
   SaveTemplateDocumentUseCase,
   TemplateDocumentRejectedError,
 } from '../application/save-template-document.use-case';
+import {
+  DesignTemplateLifecycleUseCase,
+  TemplateNotPublishableError,
+} from '../application/design-template-lifecycle.use-case';
 import type {
   TemplateDetailView,
   TemplateListView,
@@ -74,6 +82,9 @@ import {
   DesignTemplateIdParam,
   ListDesignTemplatesQuery,
   SaveDesignTemplateDocumentBody,
+  ArchiveDesignTemplateBody,
+  PublishDesignTemplateBody,
+  UnpublishDesignTemplateBody,
 } from './schemas/admin-design-template.request';
 
 const ERROR_SCHEMA = { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.error}` };
@@ -88,6 +99,7 @@ export class AdminDesignTemplateController {
     private readonly drafts: DesignTemplateDraftService,
     private readonly query: DesignTemplateQuery,
     private readonly saves: SaveTemplateDocumentUseCase,
+    private readonly lifecycle: DesignTemplateLifecycleUseCase,
   ) {}
 
   @Get()
@@ -254,6 +266,166 @@ export class AdminDesignTemplateController {
     );
   }
 
+  @Post(':templateId/publish')
+  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiSuccessCode('DESIGN_TEMPLATE_PUBLISHED', 'Design template published.')
+  @ApiOperation({
+    summary: 'Publish a design template',
+    description:
+      'Moves a DRAFT to PUBLISHED, publishing its current immutable version. The full GRD-T01 ' +
+      'guard runs first: a complete and active product/side/area chain, a document valid under ' +
+      'APP3-P01, geometry in bounds for that exact area under APP3-P02, and every referenced ' +
+      'Template asset editor-safe. No version is created and the document is never modified. ' +
+      '`published_at` is stamped once and is not rewritten by a later republication.',
+  })
+  @ApiParam({ name: 'templateId', format: 'uuid' })
+  @ApiBody({ type: PublishDesignTemplateBody })
+  @ApiResponse({
+    status: 200,
+    description: 'The published template.',
+    schema: envelopeSchemaOf(AdminDesignTemplateDetailResponse),
+  })
+  @ApiResponse({ status: 400, description: 'Invalid body.', schema: ERROR_SCHEMA })
+  @ApiResponse({ status: 401, description: 'No live Admin session.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 403,
+    description: 'The request states an origin outside the Admin allowlist.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({ status: 404, description: 'No such design template.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 409,
+    description: 'Stale `expectedCurrentVersion`, or a template that is not a DRAFT.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 415,
+    description: 'The body is not application/json.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 422,
+    description:
+      'The template is not ready: no version, an incomplete or retired scope, an invalid ' +
+      'document, geometry outside the area, or an ineligible asset.',
+    schema: ERROR_SCHEMA,
+  })
+  async publish(
+    @Param() params: DesignTemplateIdParam,
+    @Body() body: PublishDesignTemplateBody,
+  ): Promise<TemplateDetailView> {
+    return this.guarded(() =>
+      this.lifecycle.publish({
+        templateId: params.templateId,
+        expectedCurrentVersion: body.expectedCurrentVersion,
+      }),
+    );
+  }
+
+  @Post(':templateId/unpublish')
+  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiSuccessCode('DESIGN_TEMPLATE_UNPUBLISHED', 'Design template unpublished.')
+  @ApiOperation({
+    summary: 'Unpublish a design template',
+    description:
+      'Returns a PUBLISHED template to DRAFT. The header only: every version survives, no ' +
+      '`published_at` is cleared, and no new version is created. This is not an archive — the ' +
+      'template stays editable, and editing it creates a new immutable version.',
+  })
+  @ApiParam({ name: 'templateId', format: 'uuid' })
+  @ApiBody({ type: UnpublishDesignTemplateBody })
+  @ApiResponse({
+    status: 200,
+    description: 'The unpublished template.',
+    schema: envelopeSchemaOf(AdminDesignTemplateDetailResponse),
+  })
+  @ApiResponse({ status: 400, description: 'Invalid body.', schema: ERROR_SCHEMA })
+  @ApiResponse({ status: 401, description: 'No live Admin session.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 403,
+    description: 'The request states an origin outside the Admin allowlist.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({ status: 404, description: 'No such design template.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 409,
+    description: 'Stale `expectedCurrentVersion`, or a template that is not PUBLISHED.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 415,
+    description: 'The body is not application/json.',
+    schema: ERROR_SCHEMA,
+  })
+  async unpublish(
+    @Param() params: DesignTemplateIdParam,
+    @Body() body: UnpublishDesignTemplateBody,
+  ): Promise<TemplateDetailView> {
+    return this.guarded(() =>
+      this.lifecycle.unpublish({
+        templateId: params.templateId,
+        expectedCurrentVersion: body.expectedCurrentVersion,
+      }),
+    );
+  }
+
+  @Post(':templateId/archive')
+  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiSuccessCode('DESIGN_TEMPLATE_ARCHIVED', 'Design template archived.')
+  @ApiOperation({
+    summary: 'Archive a design template',
+    description:
+      'Retires a DRAFT or a PUBLISHED template. This is not a delete and not an unpublish: the ' +
+      'template, its immutable versions, their publication timestamps and its asset ' +
+      'associations all remain, and nothing cascades to the Product, its assets or any Design ' +
+      'Session. A reason is required and is recorded in the audit trail. Restoring an archived ' +
+      'template is APP3-B04A.',
+  })
+  @ApiParam({ name: 'templateId', format: 'uuid' })
+  @ApiBody({ type: ArchiveDesignTemplateBody })
+  @ApiResponse({
+    status: 200,
+    description: 'The archived template.',
+    schema: envelopeSchemaOf(AdminDesignTemplateDetailResponse),
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid body or missing reason.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({ status: 401, description: 'No live Admin session.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 403,
+    description: 'The request states an origin outside the Admin allowlist.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({ status: 404, description: 'No such design template.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 409,
+    description: 'Stale `expectedCurrentVersion`, or a state that cannot be archived.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 415,
+    description: 'The body is not application/json.',
+    schema: ERROR_SCHEMA,
+  })
+  async archive(
+    @Param() params: DesignTemplateIdParam,
+    @Body() body: ArchiveDesignTemplateBody,
+  ): Promise<TemplateDetailView> {
+    return this.guarded(() =>
+      this.lifecycle.archive({
+        templateId: params.templateId,
+        expectedCurrentVersion: body.expectedCurrentVersion,
+        reason: body.reason,
+      }),
+    );
+  }
+
   /**
    * The single translation point from the feature's transport-free error types to
    * the canonical HTTP exception. Anything else propagates untouched and is
@@ -268,7 +440,13 @@ export class AdminDesignTemplateController {
     try {
       return await work();
     } catch (error: unknown) {
-      if (error instanceof TemplateDocumentRejectedError) {
+      // Both refusals are 422: the request was well formed and the server
+      // understood it, and the *content* — a document, or a template's readiness
+      // to publish — is what could not be accepted.
+      if (
+        error instanceof TemplateDocumentRejectedError ||
+        error instanceof TemplateNotPublishableError
+      ) {
         throw new UnprocessableEntityException(error.message);
       }
       throw isDesignTemplateDraftError(error) ? toHttpException(error) : error;
