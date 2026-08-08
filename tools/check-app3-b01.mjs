@@ -25,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 
 import { checkApp3P02 } from './check-app3-p02.mjs';
 import { checkPlacementConcurrency } from './check-app3-b01-concurrency.mjs';
-import { acceptedSessionPaths } from './app3-accepted-surface.mjs';
+import { acceptedAdminTemplatePaths, acceptedSessionPaths } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MODULE_DIR = 'apps/api/src/modules/catalog';
@@ -219,11 +219,16 @@ function checkOwnership(rootDir, fail) {
       ? '/api/public/products/{slug}/sides/{sideCode}/background'
       : undefined;
     const b07Paths = acceptedSessionPaths(rootDir);
+    // `APP3-B03` publishes the two Admin Design Template paths. The list comes
+    // from the shared surface authority rather than a literal here: six gates
+    // carried this same ban, and a seventh copy is how one of them keeps
+    // refusing a route the phase already accepted.
+    const b03Paths = acceptedAdminTemplatePaths(rootDir);
     // No leading slash: `design-sessions` and `design-templates` are the shapes
     // `APP3-B03`/`APP3-B06` will use, and a `/sessions` needle would miss both.
     for (const forbidden of ['/sides/', '/areas/', 'templates', 'sessions', '/background']) {
       for (const path of paths.filter((candidate) => candidate.includes(forbidden))) {
-        if (path === b02Path || b07Paths.includes(path)) continue;
+        if (path === b02Path || b07Paths.includes(path) || b03Paths.includes(path)) continue;
         fail(`${path} belongs to a checkpoint that has not run`);
       }
     }

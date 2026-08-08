@@ -19,6 +19,21 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-B03` — the first Admin Design Template surface. Two paths and three
+    // operations: create and list share the collection, detail takes the id.
+    // The Session numbers below are untouched by it, which is the point of
+    // keeping them a separate field rather than a share of the total.
+    marker: /\nAPP3-B03 = COMPLETE/,
+    paths: 25,
+    operations: 30,
+    // 66 after `APP3-P04`; +6 here for the detail, list and summary responses
+    // plus the scope and version objects and the list envelope. Measured from
+    // the artifact, never chosen.
+    schemas: 72,
+    designSessionRoutes: true,
+    designSessionPaths: 4,
+  },
+  {
     // `APP3-P04` adds no path and no operation — it publishes the *responses*
     // the three Session operations already returned. It is a distinct world
     // rather than an edit to B08's because the foundation is reviewed on its
@@ -105,6 +120,53 @@ const SESSION_PATHS = Object.freeze([
 
 export function acceptedSessionPaths(rootDir) {
   return SESSION_PATHS.slice(0, acceptedSurface(rootDir).designSessionPaths);
+}
+
+/**
+ * The Admin Design Template paths `APP3-B03` publishes.
+ *
+ * Six earlier gates each carry an allow-list of "APP3 paths that legitimately
+ * exist" and refuse everything else, with a message saying no backend checkpoint
+ * has run. That proxy was true right up to `APP3-B03`, which is precisely the
+ * failure mode `APP3-B06B` recorded: a gate that bans a shape is a proxy the
+ * next checkpoint invalidates. Each gate keeps its real assertion — the counts,
+ * the frozen digests, its own subject — and consults this one list instead of
+ * carrying a seventh copy of the literal.
+ */
+const ADMIN_TEMPLATE_PATHS = Object.freeze([
+  '/api/admin/design-templates',
+  '/api/admin/design-templates/{templateId}',
+]);
+
+/** True once `APP3-B03` has published the Admin Design Template surface. */
+export function isB03Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-B03 = COMPLETE/.test(phase);
+}
+
+export function acceptedAdminTemplatePaths(rootDir) {
+  return isB03Delivered(rootDir) ? [...ADMIN_TEMPLATE_PATHS] : [];
+}
+
+/**
+ * The status lines `APP3-B03` may legitimately be recorded under.
+ *
+ * Two consistent worlds and no third, for the same reason `APP3-B08` has two:
+ * three gates assert that the platform Zod/OpenAPI follow-up and B03's readiness
+ * agree, and a single pinned token would fail the moment B03 shipped. Asserted
+ * here rather than read back out of the phase document, which would accept
+ * whatever was written.
+ */
+export const B03_STATUS_LINES = Object.freeze([
+  'APP3-B03 = READY — NOT STARTED',
+  'APP3-B03 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-B03 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/** True when the phase records B03 in one of its legitimate states. */
+export function hasAcceptedB03Status(phase) {
+  return B03_STATUS_LINES.some((line) => phase.includes(`\n${line}\n`));
 }
 
 /**

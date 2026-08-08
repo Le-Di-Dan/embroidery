@@ -11,6 +11,10 @@ import type {
   AdminAssetListParams,
   AdminAssetUpload202,
   AdminAssetUploadBody,
+  AdminDesignTemplateCreate201,
+  AdminDesignTemplateDetail200,
+  AdminDesignTemplateList200,
+  AdminDesignTemplateListParams,
   AdminProductArchive200,
   AdminProductCreate201,
   AdminProductDetail200,
@@ -25,6 +29,7 @@ import type {
   ArchiveProductBody,
   AutosaveDesignSessionBody,
   CreateDesignSessionBody,
+  CreateDesignTemplateBody,
   CreateProductBody,
   HealthStatusResponse,
   PublicDesignSessionAssetCreate202,
@@ -97,6 +102,53 @@ export const adminAssetDetail = (
 ) => {
   return apiRequest<AdminAssetDetail200>(
     { url: `/api/admin/assets/${assetId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Keyset-paginated, newest first. There is no offset paging and no total count. With no status filter the page carries drafts, published and archived templates alike. List items carry no version summary and no document; open the detail read for those.
+ * @summary List Admin design templates
+ */
+export const adminDesignTemplateList = (
+  params?: AdminDesignTemplateListParams,
+  options?: SecondParameter<typeof apiRequest<AdminDesignTemplateList200>>,
+) => {
+  return apiRequest<AdminDesignTemplateList200>(
+    { url: `/api/admin/design-templates`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Creates the header in DRAFT. The slug is derived from the name by the server and is the public address. The placement scope is optional but must be supplied as a complete product/side/area triple when supplied at all. **No version is created**: the template holds no document until its first save, which is APP3-B03A.
+ * @summary Create a design template draft
+ */
+export const adminDesignTemplateCreate = (
+  createDesignTemplateBody: CreateDesignTemplateBody,
+  options?: SecondParameter<typeof apiRequest<AdminDesignTemplateCreate201>>,
+) => {
+  return apiRequest<AdminDesignTemplateCreate201>(
+    {
+      url: `/api/admin/design-templates`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createDesignTemplateBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Returns the header, its placement scope when it has one, and the highest version with its canonical Design Document. A template with no version yet carries neither field — there is no version 0 and no synthesised empty document.
+ * @summary Get one Admin design template
+ */
+export const adminDesignTemplateDetail = (
+  templateId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminDesignTemplateDetail200>>,
+) => {
+  return apiRequest<AdminDesignTemplateDetail200>(
+    { url: `/api/admin/design-templates/${templateId}`, method: 'GET' },
     options,
   );
 };
@@ -484,6 +536,15 @@ export const staffSessionCreate = (
 export type AdminAssetListResult = NonNullable<Awaited<ReturnType<typeof adminAssetList>>>;
 export type AdminAssetUploadResult = NonNullable<Awaited<ReturnType<typeof adminAssetUpload>>>;
 export type AdminAssetDetailResult = NonNullable<Awaited<ReturnType<typeof adminAssetDetail>>>;
+export type AdminDesignTemplateListResult = NonNullable<
+  Awaited<ReturnType<typeof adminDesignTemplateList>>
+>;
+export type AdminDesignTemplateCreateResult = NonNullable<
+  Awaited<ReturnType<typeof adminDesignTemplateCreate>>
+>;
+export type AdminDesignTemplateDetailResult = NonNullable<
+  Awaited<ReturnType<typeof adminDesignTemplateDetail>>
+>;
 export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
 export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;
 export type AdminProductDetailResult = NonNullable<Awaited<ReturnType<typeof adminProductDetail>>>;

@@ -3420,7 +3420,7 @@ delivery surfaces the journey actually traverses.
 | `APP3-B06B` | session raster intake, 1 operation | `APP3-B06` | `COMPLETE — REVIEW_ACCEPTED` |
 | **`APP3-B06C`** | session private asset delivery, 1 operation | `APP3-B06` | `DEFINED — READY — NOT STARTED` |
 | **`APP3-B05A`** | published Template asset delivery, 1 operation | `APP3-B05` | `DEFINED — BLOCKED` |
-| **`APP3-B03A`** | Template draft document save, 1 operation | `APP3-B03` | `DEFINED — BLOCKED_BY_APP3-B03` |
+| **`APP3-B03A`** | Template draft document save, 1 operation | `APP3-B03` | `DEFINED — READY — NOT STARTED` |
 
 **Governance gates** — authority only; each implements nothing:
 
@@ -3463,10 +3463,11 @@ value itself stays **OPEN until `APP3-S10` runs**.
 
 ### 6.24.7 Current execution state
 
-Eligible now, all hard predecessors accepted:
+Eligible now, all hard predecessors accepted (`APP3-B03` delivered, so its
+successor takes its place at the head of the chain):
 
 ```text
-APP3-B03    template draft header + reads      3 operations
+APP3-B03A   template draft document save      1 operation
 APP3-D01    phase design package              gates every A*/S* checkpoint
 APP3-B06C   session private asset delivery    1 operation
 ```
@@ -3474,12 +3475,12 @@ APP3-B06C   session private asset delivery    1 operation
 Recommended next, for the single-checkpoint human-review workflow:
 
 ```text
-NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B03
+NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B03A
 ```
 
-because every hard predecessor is accepted, it is three closely-related API
-operations, it carries no Figma dependency, and it is the head of the longest
-remaining chain — `B03 → B03A → B04 → B05 → B05A → S01`. `APP3-B06C` is
+because it unblocks `APP3-B04` — publish needs an immutable version to publish —
+and it is the only remaining checkpoint on the longest chain,
+`B03A → B04 → B05 → B05A → S01`. `APP3-B06C` is
 genuinely ready and is deliberately not recommended first: it sits on a shorter branch
 (`B06C → S06`) that cannot be consumed until `S02` exists, so running it now
 would deliver a surface with no consumer for several checkpoints, while the
@@ -3637,8 +3638,8 @@ not a goal."* `APP3-B03A` supplies the capability it omitted. The same is true o
 
 | Checkpoint | Portion | Status after this ruling |
 |---|---|---|
-| `APP3-B03` | whole checkpoint | `READY — NOT STARTED` |
-| `APP3-B03A` | whole checkpoint | `BLOCKED_BY_APP3-B03 — NOT STARTED` |
+| `APP3-B03` | whole checkpoint | `COMPLETE — REVIEW_DELIVERED` |
+| `APP3-B03A` | whole checkpoint | `READY — NOT STARTED` |
 | `APP3-B04` | direct predecessors | `APP3-B03A` + `APP3-P02` |
 | `APP3-B05` | whole checkpoint | `BLOCKED_BY_APP3-B04` |
 | `APP3-B05A` | whole checkpoint | `BLOCKED_BY_APP3-B04_AND_APP3-B05` |
@@ -3678,7 +3679,7 @@ APP4/APP5 may associate verified customer/contact and request records with valid
 ## 10. Status
 
 ```text
-APP3 = IN PROGRESS — SESSION_BACKEND_ACCEPTED_NO_FRONTEND_STARTED
+APP3 = IN PROGRESS — TEMPLATE_HEADER_AND_SESSION_BACKEND_ACCEPTED_NO_FRONTEND_STARTED
 APP3-PRE-IMPLEMENTATION-AUDIT = COMPLETE — REVIEW_ACCEPTED_AFTER_CORRECTION
 APP2-X01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP2-X01-C2 = COMPLETE — REVIEW_ACCEPTED
@@ -3716,7 +3717,13 @@ APP3-P02 FIRST_ATTEMPT RESOLUTION = APP3-G05
 APP3-B08 = COMPLETE — REVIEW_ACCEPTED
 APP3-S11 = NOT STARTED — BLOCKED_BY_APP3-S03_AND_APP3-S07
 APP3-S11 FOUNDATION_NOTE = P01_AND_P02_PACKAGES_EXIST — NOT_CHECKPOINT_READINESS
-APP3-B03 = READY — NOT STARTED
+APP3-B03 = COMPLETE — REVIEW_DELIVERED
+APP3-B03 OPERATIONS_DELIVERED = adminDesignTemplate_create adminDesignTemplate_list adminDesignTemplate_detail
+APP3-B03 SURFACE = PATHS_25_OPERATIONS_30_SCHEMAS_72
+APP3-B03 CREATE_RESULT = DRAFT_HEADER_ZERO_VERSIONS
+APP3-B03 AUDIT = design_template.created ON DESIGN_TEMPLATE
+APP3-B03 OUTBOX = NONE
+APP3-B03 MIGRATION = NONE
 APP3-B03 FIRST_ATTEMPT = FAILED — MANUAL INTERVENTION REQUIRED
 APP3-B03 FIRST_ATTEMPT CAUSE = B03_HTTP_CONTRACT_AUTHORITY_CONFLICT
 APP3-B03 FIRST_ATTEMPT RESOLUTION = B03_CONTRACT_RULING
@@ -3724,7 +3731,7 @@ B03_CONTRACT_RULING = OPTION_2_SPLIT_DRAFT_SAVE_INTO_APP3_B03A
 APP3-B03 SCOPE = HEADER_CREATE_PLUS_ADMIN_LIST_AND_DETAIL
 APP3-B03 CREATE = HEADER_ONLY_NO_VERSION
 APP3-B03 OPERATIONS = 3
-APP3-B03A = BLOCKED_BY_APP3-B03 — NOT STARTED
+APP3-B03A = READY — NOT STARTED
 APP3-B03A OPERATIONS = 1
 APP3-B03A ROUTE = PUT_/api/admin/design-templates/:templateId/document
 APP3-B03A OWNS = DRAFT_DOCUMENT_SAVE_AND_IMMUTABLE_VERSION_CREATION
@@ -3865,8 +3872,8 @@ APP3-B06C OPERATIONS = 1
 APP3-B06C ROUTE = GET_/api/public/design-sessions/:sessionId/assets/:assetId/editor-preview
 APP3-B06C AUTHORIZATION = SESSION_ID_PLUS_PER_SESSION_CREDENTIAL
 APP3-B06C ORIGIN = REPLAN_CHILD_OF_APP3-B06 — NOT_A_B06B_CORRECTION
-NEXT_ELIGIBLE_IMPLEMENTATION_CHECKPOINTS = APP3-B03 APP3-D01 APP3-B06C
-NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B03
+NEXT_ELIGIBLE_IMPLEMENTATION_CHECKPOINTS = APP3-B03A APP3-D01 APP3-B06C
+NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B03A
 NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = NONE
 FRONTEND_GATE = APP3-D01
 every other APP3 checkpoint = NOT STARTED

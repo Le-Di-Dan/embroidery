@@ -24,6 +24,8 @@
  * Usage: node tools/check-app3-g02.mjs [rootDir]
  */
 import { existsSync, readFileSync } from 'node:fs';
+
+import { acceptedAdminTemplatePaths } from './app3-accepted-surface.mjs';
 import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -322,8 +324,12 @@ function checkNoImplementation(root, fail) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);
     return;
   }
-  for (const path of Object.keys(JSON.parse(raw).paths ?? {}).filter((p) =>
-    TEMPLATE_PATH_RE.test(p),
+  // `APP3-B03` is the backend checkpoint this ban was waiting for. Its two
+  // paths come from the shared surface authority; everything else that looks
+  // like a Template operation is still un-run.
+  const delivered = acceptedAdminTemplatePaths(root);
+  for (const path of Object.keys(JSON.parse(raw).paths ?? {}).filter(
+    (p) => TEMPLATE_PATH_RE.test(p) && !delivered.includes(p),
   )) {
     fail(
       `${CANONICAL_FILES.openapi}: Template operation "${path}" exists, but no APP3 backend checkpoint has run`,

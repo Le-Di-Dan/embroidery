@@ -531,6 +531,22 @@ describe('APP3-P03 — the phase records one of exactly two worlds', () => {
     return { [CANONICAL_FILES.phase]: phase };
   };
 
+  /**
+   * Whatever line the phase currently records `APP3-B03` under.
+   *
+   * Derived rather than pinned: B03 was `READY — NOT STARTED` when P03 shipped
+   * and is `COMPLETE` once it delivers, and a hard-coded token turned
+   * `phaseWith` into a silent no-op the day that moved — the fixture assertion
+   * fired, and the "undelivered world" it was building still looked delivered.
+   * What P03 rules is that B03 is *not blocked by this follow-up*, and that is
+   * true of every state except the blocked one.
+   */
+  const liveB03Status = () => {
+    const match = /\nAPP3-B03 = [^\n]+\n/.exec(file('phase'));
+    assert.ok(match !== null, 'the phase records no APP3-B03 status line');
+    return match[0].slice(1, -1);
+  };
+
   it('accepts the undelivered world in full', () => {
     const failures = run(
       phaseWith(
@@ -539,7 +555,7 @@ describe('APP3-P03 — the phase records one of exactly two worlds', () => {
           'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = COMPLETE — CLOSED_BY_APP3-P03',
           'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN — BLOCKS_SCHEMA_BACKED_HTTP_BODY_CHECKPOINTS',
         ],
-        ['APP3-B03 = READY — NOT STARTED', 'APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP'],
+        [liveB03Status(), 'APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP'],
         // `APP3-G08` replanned B06; the undelivered world is the one where the
         // replanned checkpoint still records this follow-up as its blocker.
         [
@@ -556,10 +572,7 @@ describe('APP3-P03 — the phase records one of exactly two worlds', () => {
 
   it('refuses the follow-up closed while B03 still calls it a blocker', () => {
     const failures = run(
-      phaseWith([
-        'APP3-B03 = READY — NOT STARTED',
-        'APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP',
-      ]),
+      phaseWith([liveB03Status(), 'APP3-B03 = BLOCKED_BY_PLATFORM_ZOD_OPENAPI_FOLLOW_UP']),
     );
     assert.ok(mentions(failures, 'still records it as their blocker'), failures.join('\n'));
   });

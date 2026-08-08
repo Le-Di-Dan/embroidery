@@ -32,7 +32,7 @@ import { fileURLToPath } from 'node:url';
 
 import { sectionBody, tableRows } from './check-app3-g02.mjs';
 import { checkApp3G03 } from './check-app3-g03.mjs';
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedAdminTemplatePaths, acceptedSurface } from './app3-accepted-surface.mjs';
 import { LIMIT_FACTS, MEDIA_FACTS, checkMediaAuthority } from './check-app3-g04-media.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -346,7 +346,10 @@ function checkNoImplementation(root, fail) {
     (p) =>
       APP3_ASSET_PATH_RE.test(p) &&
       !allowed.includes(p) &&
-      !(sessionRoutes && p.includes('/design-sessions')),
+      !(sessionRoutes && p.includes('/design-sessions')) &&
+      // `APP3-B03`'s Admin Template reads are a delivered checkpoint's
+      // operations, not the un-run asset surface this ban is about.
+      !acceptedAdminTemplatePaths(root).includes(p),
   )) {
     fail(
       `${CANONICAL_FILES.openapi}: APP3 asset operation "${path}" exists, but no APP3 backend checkpoint has run`,

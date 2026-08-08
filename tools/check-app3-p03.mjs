@@ -32,6 +32,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { hasAcceptedB03Status } from './app3-accepted-surface.mjs';
 import { checkApp3B01 } from './check-app3-b01.mjs';
 import { checkApp3B01N } from './check-app3-b01n.mjs';
 import { checkApp3B02 } from './check-app3-b02.mjs';
@@ -220,7 +221,11 @@ function checkPhaseStatus(rootDir, fail) {
     (/APP3-B06 = REPLANNED — REPLACED_BY_APP3-B06A_AND_APP3-B06B/.test(phase) &&
       /APP3-B06A = /.test(phase) &&
       /APP3-B06B = /.test(phase));
-  const ready = /APP3-B03 = READY — NOT STARTED/.test(phase) && b06Unblocked;
+  // What P03 must leave behind is a B03 no longer blocked by the platform
+  // follow-up — ready, delivered or accepted all satisfy that. Pinning the
+  // single READY token made this fail the moment B03 shipped, which is the
+  // opposite of what the rule is for.
+  const ready = hasAcceptedB03Status(phase) && b06Unblocked;
 
   if (delivered) {
     if (!closed) fail('APP3-P03 is delivered but the platform follow-up is not closed by it');

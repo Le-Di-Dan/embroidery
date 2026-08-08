@@ -37,6 +37,12 @@ export const AUDIT_TARGET_KINDS = [
   // no CHECK by DB4 design, so this list is the application's own G-DB7-46
   // guard, not a schema constraint — adding a kind here needs no migration.
   'PRODUCT',
+  // `APP3-B03` — the target of `design_template.created` (LC-24 `TR-LC24-01`,
+  // IMP-D042 PO-03, which audits every transition). Same footing as `PRODUCT`
+  // above: `target_kind` is open text with no CHECK by DB4 design, so this list
+  // is the application's own G-DB7-46 guard and adding a kind needs no
+  // migration.
+  'DESIGN_TEMPLATE',
   'GALLERY_ENTRY',
   'CONTENT_PAGE',
   'AGREEMENT_VERSION',

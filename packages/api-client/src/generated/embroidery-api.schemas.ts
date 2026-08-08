@@ -87,6 +87,258 @@ export interface AdminAssetUploadReceiptResponse {
   status: string;
 }
 
+export type AdminDesignTemplateDetailResponseStatus =
+  (typeof AdminDesignTemplateDetailResponseStatus)[keyof typeof AdminDesignTemplateDetailResponseStatus];
+
+export const AdminDesignTemplateDetailResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export interface AdminDesignTemplateVersionResponse {
+  createdAt: string;
+  /** The Design Document schema version it is governed by. */
+  documentSchemaVersion: number;
+  /** Set once when this exact version is first published; never cleared. */
+  publishedAt?: string;
+  /** Monotonic per Template. There is no version 0. */
+  version: number;
+}
+
+export type FontStyle = (typeof FontStyle)[keyof typeof FontStyle];
+
+export const FontStyle = {
+  normal: 'normal',
+  italic: 'italic',
+} as const;
+
+export type TextAlign = (typeof TextAlign)[keyof typeof TextAlign];
+
+export const TextAlign = {
+  left: 'left',
+  center: 'center',
+  right: 'right',
+} as const;
+
+/**
+ * Persisted transform values. Finite numbers only; no matrix, no derived bounds.
+ */
+export interface DesignElementTransform {
+  height: number;
+  rotationDeg: number;
+  scaleX: number;
+  scaleY: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
+export type TextElementType = (typeof TextElementType)[keyof typeof TextElementType];
+
+export const TextElementType = {
+  text: 'text',
+} as const;
+
+/**
+ * Text references a server-owned `fontId` (IMP-D044 PO-10) — never a CSS family, a font URL or font bytes, so a document can never ask a browser to fetch something the server did not approve.
+ */
+export interface TextElement {
+  fill: string;
+  fontId: string;
+  fontSizePx: number;
+  fontStyle: FontStyle;
+  fontWeight: number;
+  id: string;
+  locked: boolean;
+  opacity: number;
+  text: string;
+  textAlign: TextAlign;
+  transform: DesignElementTransform;
+  type: TextElementType;
+  visible: boolean;
+}
+
+export type ImageElementType = (typeof ImageElementType)[keyof typeof ImageElementType];
+
+export const ImageElementType = {
+  image: 'image',
+} as const;
+
+/**
+ * Image references an Asset **and** the exact approved derivative it was measured against. `intrinsic*` is what the document believes; contextual validation proves it equals the canonical derivative metadata, which is why no storage key or source URL is needed or permitted here.
+ */
+export interface ImageElement {
+  assetId: string;
+  derivativeId: string;
+  id: string;
+  intrinsicHeightPx: number;
+  intrinsicWidthPx: number;
+  locked: boolean;
+  opacity: number;
+  transform: DesignElementTransform;
+  type: ImageElementType;
+  visible: boolean;
+}
+
+export type ShapeKind = (typeof ShapeKind)[keyof typeof ShapeKind];
+
+export const ShapeKind = {
+  rectangle: 'rectangle',
+  ellipse: 'ellipse',
+  line: 'line',
+} as const;
+
+export type ShapeElementType = (typeof ShapeElementType)[keyof typeof ShapeElementType];
+
+export const ShapeElementType = {
+  shape: 'shape',
+} as const;
+
+export interface ShapeElement {
+  fill: string;
+  id: string;
+  locked: boolean;
+  opacity: number;
+  shape: ShapeKind;
+  stroke: string;
+  strokeWidthPx: number;
+  transform: DesignElementTransform;
+  type: ShapeElementType;
+  visible: boolean;
+}
+
+export interface FreehandPoint {
+  x: number;
+  y: number;
+}
+
+export type FreehandElementType = (typeof FreehandElementType)[keyof typeof FreehandElementType];
+
+export const FreehandElementType = {
+  freehand: 'freehand',
+} as const;
+
+/**
+ * A bounded point sequence. No smoothing, simplification or path generation.
+ */
+export interface FreehandElement {
+  id: string;
+  locked: boolean;
+  opacity: number;
+  points: FreehandPoint[];
+  stroke: string;
+  strokeWidthPx: number;
+  transform: DesignElementTransform;
+  type: FreehandElementType;
+  visible: boolean;
+}
+
+export type GroupElementType = (typeof GroupElementType)[keyof typeof GroupElementType];
+
+export const GroupElementType = {
+  group: 'group',
+} as const;
+
+/**
+ * A group names its children by id and does not contain them. Membership is a relationship, so grouping never rewrites top-level z-order — which is what lets a customer group two elements without anything moving on screen.
+ */
+export interface GroupElement {
+  childIds: string[];
+  id: string;
+  locked: boolean;
+  opacity: number;
+  transform: DesignElementTransform;
+  type: GroupElementType;
+  visible: boolean;
+}
+
+export type DesignElement =
+  TextElement | ImageElement | ShapeElement | FreehandElement | GroupElement;
+
+/**
+ * What the editor was told about the chosen placement when the document was authored.
+ *
+ * This is **document data, not authority**. Product Side and Embroidery Area rows remain the source of truth, and a later API compares these values with them; `APP3-P01` only proves the values are well-formed positive finite numbers, and `APP3-P02` owns every geometric consequence.
+ */
+export interface DesignPlacementSnapshot {
+  canvasHeightPx: number;
+  canvasWidthPx: number;
+  embroideryAreaId: string;
+  physicalHeightMm: number;
+  physicalWidthMm: number;
+  productSideId: string;
+  pxPerMm: number;
+}
+
+/**
+ * Array order is z-order, bottom first, and JCS preserves it (ADR-DB1-012 §7).
+ */
+export interface DesignDocument {
+  elements: DesignElement[];
+  placement: DesignPlacementSnapshot;
+  schemaVersion: number;
+}
+
+export interface AdminDesignTemplateScopeResponse {
+  embroideryAreaId: string;
+  productId: string;
+  productSideId: string;
+}
+
+export interface AdminDesignTemplateDetailResponse {
+  /** Set only for an archived template. */
+  archivedAt?: string;
+  createdAt: string;
+  /** The highest version. Absent for a header that has no version yet, which is every template until its first document save. Not carried on the list page. */
+  currentVersion?: AdminDesignTemplateVersionResponse;
+  /** Absent when the draft has no description. */
+  description?: string;
+  /** The canonical Design Document of the current version. */
+  document?: DesignDocument;
+  name: string;
+  /** Absent while the draft is authored without a placement. Present only as a complete triple. */
+  scope?: AdminDesignTemplateScopeResponse;
+  /** Server-owned public address, derived from the name. */
+  slug: string;
+  status: AdminDesignTemplateDetailResponseStatus;
+  templateId: string;
+  updatedAt: string;
+}
+
+export type AdminDesignTemplateSummaryResponseStatus =
+  (typeof AdminDesignTemplateSummaryResponseStatus)[keyof typeof AdminDesignTemplateSummaryResponseStatus];
+
+export const AdminDesignTemplateSummaryResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export interface AdminDesignTemplateSummaryResponse {
+  /** Set only for an archived template. */
+  archivedAt?: string;
+  createdAt: string;
+  /** The highest version. Absent for a header that has no version yet, which is every template until its first document save. Not carried on the list page. */
+  currentVersion?: AdminDesignTemplateVersionResponse;
+  name: string;
+  /** Absent while the draft is authored without a placement. Present only as a complete triple. */
+  scope?: AdminDesignTemplateScopeResponse;
+  /** Server-owned public address, derived from the name. */
+  slug: string;
+  status: AdminDesignTemplateSummaryResponseStatus;
+  templateId: string;
+  updatedAt: string;
+}
+
+export interface AdminDesignTemplateListResponse {
+  /** True when a further page exists. */
+  hasNext: boolean;
+  items: AdminDesignTemplateSummaryResponse[];
+  /** Opaque keyset cursor for the next page. Absent on the last page. */
+  nextCursor?: string;
+}
+
 /**
  * @nullable
  */
@@ -449,180 +701,6 @@ export interface ArchiveProductBody {
   expectedUpdatedAt: string;
 }
 
-export type FontStyle = (typeof FontStyle)[keyof typeof FontStyle];
-
-export const FontStyle = {
-  normal: 'normal',
-  italic: 'italic',
-} as const;
-
-export type TextAlign = (typeof TextAlign)[keyof typeof TextAlign];
-
-export const TextAlign = {
-  left: 'left',
-  center: 'center',
-  right: 'right',
-} as const;
-
-/**
- * Persisted transform values. Finite numbers only; no matrix, no derived bounds.
- */
-export interface DesignElementTransform {
-  height: number;
-  rotationDeg: number;
-  scaleX: number;
-  scaleY: number;
-  width: number;
-  x: number;
-  y: number;
-}
-
-export type TextElementType = (typeof TextElementType)[keyof typeof TextElementType];
-
-export const TextElementType = {
-  text: 'text',
-} as const;
-
-/**
- * Text references a server-owned `fontId` (IMP-D044 PO-10) — never a CSS family, a font URL or font bytes, so a document can never ask a browser to fetch something the server did not approve.
- */
-export interface TextElement {
-  fill: string;
-  fontId: string;
-  fontSizePx: number;
-  fontStyle: FontStyle;
-  fontWeight: number;
-  id: string;
-  locked: boolean;
-  opacity: number;
-  text: string;
-  textAlign: TextAlign;
-  transform: DesignElementTransform;
-  type: TextElementType;
-  visible: boolean;
-}
-
-export type ImageElementType = (typeof ImageElementType)[keyof typeof ImageElementType];
-
-export const ImageElementType = {
-  image: 'image',
-} as const;
-
-/**
- * Image references an Asset **and** the exact approved derivative it was measured against. `intrinsic*` is what the document believes; contextual validation proves it equals the canonical derivative metadata, which is why no storage key or source URL is needed or permitted here.
- */
-export interface ImageElement {
-  assetId: string;
-  derivativeId: string;
-  id: string;
-  intrinsicHeightPx: number;
-  intrinsicWidthPx: number;
-  locked: boolean;
-  opacity: number;
-  transform: DesignElementTransform;
-  type: ImageElementType;
-  visible: boolean;
-}
-
-export type ShapeKind = (typeof ShapeKind)[keyof typeof ShapeKind];
-
-export const ShapeKind = {
-  rectangle: 'rectangle',
-  ellipse: 'ellipse',
-  line: 'line',
-} as const;
-
-export type ShapeElementType = (typeof ShapeElementType)[keyof typeof ShapeElementType];
-
-export const ShapeElementType = {
-  shape: 'shape',
-} as const;
-
-export interface ShapeElement {
-  fill: string;
-  id: string;
-  locked: boolean;
-  opacity: number;
-  shape: ShapeKind;
-  stroke: string;
-  strokeWidthPx: number;
-  transform: DesignElementTransform;
-  type: ShapeElementType;
-  visible: boolean;
-}
-
-export interface FreehandPoint {
-  x: number;
-  y: number;
-}
-
-export type FreehandElementType = (typeof FreehandElementType)[keyof typeof FreehandElementType];
-
-export const FreehandElementType = {
-  freehand: 'freehand',
-} as const;
-
-/**
- * A bounded point sequence. No smoothing, simplification or path generation.
- */
-export interface FreehandElement {
-  id: string;
-  locked: boolean;
-  opacity: number;
-  points: FreehandPoint[];
-  stroke: string;
-  strokeWidthPx: number;
-  transform: DesignElementTransform;
-  type: FreehandElementType;
-  visible: boolean;
-}
-
-export type GroupElementType = (typeof GroupElementType)[keyof typeof GroupElementType];
-
-export const GroupElementType = {
-  group: 'group',
-} as const;
-
-/**
- * A group names its children by id and does not contain them. Membership is a relationship, so grouping never rewrites top-level z-order — which is what lets a customer group two elements without anything moving on screen.
- */
-export interface GroupElement {
-  childIds: string[];
-  id: string;
-  locked: boolean;
-  opacity: number;
-  transform: DesignElementTransform;
-  type: GroupElementType;
-  visible: boolean;
-}
-
-export type DesignElement =
-  TextElement | ImageElement | ShapeElement | FreehandElement | GroupElement;
-
-/**
- * What the editor was told about the chosen placement when the document was authored.
- *
- * This is **document data, not authority**. Product Side and Embroidery Area rows remain the source of truth, and a later API compares these values with them; `APP3-P01` only proves the values are well-formed positive finite numbers, and `APP3-P02` owns every geometric consequence.
- */
-export interface DesignPlacementSnapshot {
-  canvasHeightPx: number;
-  canvasWidthPx: number;
-  embroideryAreaId: string;
-  physicalHeightMm: number;
-  physicalWidthMm: number;
-  productSideId: string;
-  pxPerMm: number;
-}
-
-/**
- * Array order is z-order, bottom first, and JCS preserves it (ADR-DB1-012 §7).
- */
-export interface DesignDocument {
-  elements: DesignElement[];
-  placement: DesignPlacementSnapshot;
-  schemaVersion: number;
-}
-
 export interface AutosaveDesignSessionBody {
   /** The complete canonical Design Document snapshot. Validated, quantized and canonicalized by the Design Document authority; the stored value is the canonical form, not the object as sent. */
   document: DesignDocument;
@@ -709,6 +787,22 @@ export interface CreateBlankDesignSessionBody {
  * Opens one anonymous Design Session on an exact public placement, either empty or cloned from a published Template.
  */
 export type CreateDesignSessionBody = CreateBlankDesignSessionBody | CloneDesignSessionBody;
+
+export interface CreateDesignTemplateBody {
+  /** @maxLength 2000 */
+  description?: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  embroideryAreaId?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  productId?: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  productSideId?: string;
+}
 
 export type CreateProductBodyCategorySlug =
   (typeof CreateProductBodyCategorySlug)[keyof typeof CreateProductBodyCategorySlug];
@@ -1305,6 +1399,44 @@ export type AdminAssetUpload202 = ApiSuccessResponse & {
 
 export type AdminAssetDetail200 = ApiSuccessResponse & {
   data: AdminAssetDetailResponse;
+};
+
+export type AdminDesignTemplateListParams = {
+  /**
+   * Only templates scoped to this Product.
+   */
+  productId?: string;
+  status?: AdminDesignTemplateListStatus;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from a previous page.
+   */
+  cursor?: unknown;
+};
+
+export type AdminDesignTemplateListStatus =
+  (typeof AdminDesignTemplateListStatus)[keyof typeof AdminDesignTemplateListStatus];
+
+export const AdminDesignTemplateListStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export type AdminDesignTemplateList200 = ApiSuccessResponse & {
+  data: AdminDesignTemplateListResponse;
+};
+
+export type AdminDesignTemplateCreate201 = ApiSuccessResponse & {
+  data: AdminDesignTemplateDetailResponse;
+};
+
+export type AdminDesignTemplateDetail200 = ApiSuccessResponse & {
+  data: AdminDesignTemplateDetailResponse;
 };
 
 export type AdminProductListParams = {

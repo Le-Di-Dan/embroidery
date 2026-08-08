@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 import { checkApp3W01A } from './check-app3-w01a.mjs';
 import { checkApp3G07 } from './check-app3-g07.mjs';
-import { isB06BDelivered } from './app3-accepted-surface.mjs';
+import { hasAcceptedB03Status, isB06BDelivered } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const JOB_DIR = 'apps/worker/src/jobs/asset-normalization';
@@ -234,7 +234,9 @@ function checkGovernance(rootDir, fail) {
     if (!/APP3-P03 = COMPLETE/.test(phase)) {
       fail('the platform follow-up is closed by a checkpoint that is not recorded done');
     }
-    if (!/APP3-B03 = READY — NOT STARTED/.test(phase)) {
+    // Ready, delivered or accepted: all three mean B03 was released from the
+    // follow-up, which is the only thing this half of the rule asserts.
+    if (!hasAcceptedB03Status(phase)) {
       fail('the platform follow-up closed but APP3-B03 was not released from it');
     }
   } else {

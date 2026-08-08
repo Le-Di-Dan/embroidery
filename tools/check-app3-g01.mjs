@@ -25,7 +25,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { checkNextPhaseChronology } from './check-app2-closure-artifacts.mjs';
-import { acceptedSessionPaths } from './app3-accepted-surface.mjs';
+import { acceptedAdminTemplatePaths, acceptedSessionPaths } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -333,6 +333,11 @@ function checkNoImplementation(root, phase, fail) {
     // `APP3-B07` owns the two Session operations. G01 rules what a *placement*
     // path may be, and these are Session paths that merely match the pattern.
     ...acceptedSessionPaths(REPO_ROOT),
+    // `APP3-B03` publishes the two Admin Design Template paths. The list comes
+    // from the shared surface authority rather than a literal here: six gates
+    // carried this same ban, and a seventh copy is how one of them keeps
+    // refusing a route the phase already accepted.
+    ...acceptedAdminTemplatePaths(REPO_ROOT),
   ];
   if (raw === undefined) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);

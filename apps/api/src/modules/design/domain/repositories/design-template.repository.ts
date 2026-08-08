@@ -33,6 +33,17 @@ export interface DesignTemplate {
   readonly status: DesignTemplateState;
   readonly currentVersion: number;
   readonly previewDerivativeId: string | undefined;
+  /**
+   * Added by `APP3-B03` for the Admin surface.
+   *
+   * `createdAt` is the keyset sort key the Admin list pages on, `updatedAt` is
+   * the concurrency token the Admin contract hands back, and `archivedAt` is the
+   * only way to tell a template archived long ago from one archived a moment
+   * ago. All three were already columns; only the projection omitted them.
+   */
+  readonly archivedAt: Date | undefined;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 export interface DesignTemplateVersion {
@@ -42,6 +53,8 @@ export interface DesignTemplateVersion {
   readonly designDocument: unknown;
   readonly documentSchemaVersion: number;
   readonly publishedAt: Date | undefined;
+  /** When the version row was written. Added by `APP3-B03` for the Admin read. */
+  readonly createdAt: Date;
 }
 
 export interface CreateDesignTemplateInput {
@@ -60,6 +73,28 @@ export interface PublishDesignTemplateVersionInput {
   readonly designDocument: Record<string, unknown>;
   readonly documentSchemaVersion: number;
   readonly publishedAt: Date;
+}
+
+/**
+ * The Admin list query (`APP3-B03`).
+ *
+ * `status` is the only filter the header itself can answer without a join, and
+ * `productId` the only scope filter that does not require resolving a public
+ * name. Nothing here filters by document content: a list that had to read
+ * documents to answer would be the N+1 §8 forbids.
+ */
+export interface ListDesignTemplatesInput {
+  readonly filter: {
+    readonly status?: DesignTemplateState | undefined;
+    readonly productId?: ProductId | undefined;
+  };
+  /** Exclusive keyset position from the previous page. */
+  readonly after?: { readonly createdAt: Date; readonly id: string } | undefined;
+  /**
+   * The page size. The adapter fetches `limit + 1` so `buildPage` can detect a
+   * next page from the extra row; a caller never sees it.
+   */
+  readonly limit: number;
 }
 
 export const DESIGN_TEMPLATE_REPOSITORY = Symbol('DESIGN_TEMPLATE_REPOSITORY');
@@ -101,4 +136,24 @@ export interface DesignTemplateRepository {
   ): Promise<{ template: DesignTemplate; version: DesignTemplateVersion } | undefined>;
 
   listAssetIds(id: DesignTemplateId): Promise<string[]>;
+
+  /**
+   * One keyset page of templates for the Admin surface (`APP3-B03`).
+   *
+   * Ordered `created_at DESC, id DESC` — newest first, with the tie-breaker DB5
+   * requires because `created_at` is not unique. Offset paging is deliberately
+   * not offered: a page would drift under a concurrent create and the operator
+   * would see a row twice or miss one entirely.
+   */
+  list(input: ListDesignTemplatesInput): Promise<DesignTemplate[]>;
+
+  /**
+   * The template's highest version, whether or not it is published.
+   *
+   * `loadPublished` cannot answer this: it refuses a template that is not
+   * `PUBLISHED` right now, which is every draft. The Admin detail read needs the
+   * newest version of a `DRAFT` too — and must be able to learn there is none,
+   * because `APP3-B03` creates a header with zero versions.
+   */
+  findLatestVersion(id: DesignTemplateId): Promise<DesignTemplateVersion | undefined>;
 }

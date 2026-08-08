@@ -109,6 +109,9 @@ export function toTemplate(row: TemplateRow): DesignTemplate {
     status: row.status as DesignTemplateState,
     currentVersion: row.currentVersion,
     previewDerivativeId: row.previewDerivativeId ?? undefined,
+    archivedAt: row.archivedAt ?? undefined,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 }
 
@@ -120,6 +123,7 @@ export function toTemplateVersion(row: TemplateVersionRow): DesignTemplateVersio
     designDocument: row.designDocument,
     documentSchemaVersion: row.documentSchemaVersion,
     publishedAt: row.publishedAt ?? undefined,
+    createdAt: row.createdAt,
   };
 }
 

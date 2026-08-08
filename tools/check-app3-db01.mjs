@@ -25,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 
 import { sectionBody, tableRows } from './check-app3-g02.mjs';
 import { checkApp3G04 } from './check-app3-g04.mjs';
-import { acceptedSessionPaths } from './app3-accepted-surface.mjs';
+import { acceptedAdminTemplatePaths, acceptedSessionPaths } from './app3-accepted-surface.mjs';
 import { checkPlacementAuthority } from './check-app3-db01-placement.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -330,6 +330,11 @@ function checkNoImplementation(root, phase, fail) {
     ...(b02Delivered(phase) ? [B02_DELIVERY_PATH] : []),
     // Session operations belonging to whichever checkpoints have delivered.
     ...acceptedSessionPaths(root),
+    // `APP3-B03` publishes the two Admin Design Template paths. The list comes
+    // from the shared surface authority rather than a literal here: six gates
+    // carried this same ban, and a seventh copy is how one of them keeps
+    // refusing a route the phase already accepted.
+    ...acceptedAdminTemplatePaths(root),
   ];
   const paths = Object.keys(JSON.parse(raw).paths ?? {});
   for (const path of paths.filter((p) => APP3_OPERATION_RE.test(p) && !allowed.includes(p))) {

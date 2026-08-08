@@ -98,7 +98,11 @@ export const EXPECTED_STATUS = Object.freeze([
   'SESSION_BOOTSTRAP_OWNER = APP3-B07',
   'APP3-B06B EXPECTED_SURFACE = PATHS_20_OPERATIONS_24',
   'INSPECTION_NORMALIZATION_ORDERING = NOT_PROVABLE_ROUTED_TO_APP3-W01C',
-  'APP3-B03 = READY — NOT STARTED',
+  // Released from the single token by `APP3-B03`. What G08 rules is that the
+  // platform follow-up no longer blocks B03 — ready, delivered and accepted all
+  // say so, and pinning one of them made this gate fail the day its successor
+  // shipped, which is a fact about the calendar rather than the architecture.
+  /\nAPP3-B03 = (READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED|ACCEPTED))\n/,
 ]);
 
 /**

@@ -345,9 +345,22 @@ describe('APP3-G02 — authority and repository facts move', () => {
 
   it('rejects a Template operation appearing in OpenAPI', () => {
     const openapi = JSON.parse(readFileSync(join(REPO_ROOT, CANONICAL_FILES.openapi), 'utf8'));
-    openapi.paths['/api/admin/design-templates'] = { post: { operationId: 'smuggled' } };
+    // Not `/api/admin/design-templates`: `APP3-B03` delivered that path and the
+    // gate now allows it through the shared surface authority, so smuggling it
+    // would assert nothing. A publish route is the right example — it is exactly
+    // the Template operation still owned by a checkpoint that has not run.
+    openapi.paths['/api/admin/design-templates/{templateId}/publish'] = {
+      post: { operationId: 'smuggled' },
+    };
     const failures = checkApp3G02(rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(openapi) }));
     assert.ok(mentions(failures, 'Template operation'));
+  });
+
+  it('still allows the Admin Template paths APP3-B03 delivered', () => {
+    // The other half of the same rule: a gate made mode-aware must accept the
+    // delivered world as well as refuse the undelivered one, or it has simply
+    // been loosened.
+    assert.deepEqual(checkApp3G02(REPO_ROOT), []);
   });
 
   it('rejects published_at becoming NOT NULL', () => {

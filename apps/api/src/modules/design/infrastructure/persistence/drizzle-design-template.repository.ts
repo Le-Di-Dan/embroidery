@@ -5,7 +5,7 @@
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, lt, or } from 'drizzle-orm';
 
 import type {
   CreateDesignTemplateInput,
@@ -13,6 +13,7 @@ import type {
   DesignTemplateId,
   DesignTemplateRepository,
   DesignTemplateVersion,
+  ListDesignTemplatesInput,
   PublishDesignTemplateVersionInput,
 } from '../../domain/repositories/design-template.repository';
 import { toTemplate, toTemplateVersion } from './design-row.mapper';
@@ -201,6 +202,61 @@ export class DrizzleDesignTemplateRepository
       }
 
       return { template: toTemplate(template), version: toTemplateVersion(version) };
+    });
+  }
+
+  /**
+   * One keyset page, newest first.
+   *
+   * The position predicate is the standard row-comparison
+   * `(created_at, id) < (cursor.created_at, cursor.id)` written out as an `or`
+   * of two `and`s, because Drizzle has no row-value constructor. Writing it as
+   * `created_at <= cursor` alone would re-emit every row sharing the cursor's
+   * timestamp on the next page.
+   */
+  async list(input: ListDesignTemplatesInput): Promise<DesignTemplate[]> {
+    return this.run('list', async () => {
+      const conditions = [
+        input.filter.status === undefined
+          ? undefined
+          : eq(designTemplates.status, input.filter.status),
+        input.filter.productId === undefined
+          ? undefined
+          : eq(designTemplates.productId, input.filter.productId),
+        input.after === undefined
+          ? undefined
+          : or(
+              lt(designTemplates.createdAt, input.after.createdAt),
+              and(
+                eq(designTemplates.createdAt, input.after.createdAt),
+                lt(designTemplates.id, input.after.id),
+              ),
+            ),
+      ].filter((condition) => condition !== undefined);
+
+      const rows = await this.db
+        .select()
+        .from(designTemplates)
+        .where(conditions.length === 0 ? undefined : and(...conditions))
+        .orderBy(desc(designTemplates.createdAt), desc(designTemplates.id))
+        // One more than the page: `buildPage` detects the next page by the
+        // presence of that extra row, so fetching exactly `limit` would report
+        // `hasNext: false` on every full page and truncate the list at one page.
+        .limit(input.limit + 1);
+
+      return rows.map(toTemplate);
+    });
+  }
+
+  async findLatestVersion(id: DesignTemplateId): Promise<DesignTemplateVersion | undefined> {
+    return this.run('findLatestVersion', async () => {
+      const [row] = await this.db
+        .select()
+        .from(designTemplateVersions)
+        .where(eq(designTemplateVersions.designTemplateId, id))
+        .orderBy(desc(designTemplateVersions.version))
+        .limit(1);
+      return row === undefined ? undefined : toTemplateVersion(row);
     });
   }
 

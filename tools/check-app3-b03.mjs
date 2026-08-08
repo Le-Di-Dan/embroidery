@@ -1,0 +1,410 @@
+#!/usr/bin/env node
+/**
+ * `APP3-B03` — Design Template header creation and the two Admin reads.
+ *
+ * The rules worth a machine are the ones that stay green while being wrong. A
+ * fourth operation, a create that quietly writes a version, a normalization
+ * event produced from the wrong checkpoint, a document accepted on the create
+ * body and dropped — every one of those ships a working system and breaks the
+ * `B03_CONTRACT_RULING` split that gave `APP3-B03A` its scope.
+ *
+ * Read-only, cross-platform pure Node. No network, no database, no container.
+ */
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { acceptedSurface } from './app3-accepted-surface.mjs';
+
+export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+const DESIGN = 'apps/api/src/modules/design';
+
+export const COLLECTION_ROUTE = '/api/admin/design-templates';
+export const ITEM_ROUTE = '/api/admin/design-templates/{templateId}';
+
+/** The three, and only three, operations this checkpoint publishes. */
+export const OPERATIONS = Object.freeze({
+  [`post ${COLLECTION_ROUTE}`]: 'adminDesignTemplate_create',
+  [`get ${COLLECTION_ROUTE}`]: 'adminDesignTemplate_list',
+  [`get ${ITEM_ROUTE}`]: 'adminDesignTemplate_detail',
+});
+
+/**
+ * Routes that belong to a *later* checkpoint and must not appear here.
+ *
+ * `APP3-B03A`'s save above all: it is the operation this checkpoint was split to
+ * exclude, and its arrival inside B03 would restore the four-into-three contract
+ * the split resolved.
+ */
+const FORBIDDEN_ROUTES = Object.freeze([
+  [`${ITEM_ROUTE}/document`, 'APP3-B03A'],
+  [`${ITEM_ROUTE}/publish`, 'APP3-B04'],
+  [`${ITEM_ROUTE}/unpublish`, 'APP3-B04'],
+  [`${ITEM_ROUTE}/archive`, 'APP3-B04'],
+  ['/api/public/design-templates', 'APP3-B05'],
+  ['/api/public/design-templates/{slug}', 'APP3-B05'],
+]);
+
+export const CANONICAL_FILES = Object.freeze({
+  phase: 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md',
+  index: 'docs/implementation/SCOPED_COMMAND_INDEX.md',
+  openapi: 'packages/contracts/openapi/openapi.generated.json',
+  client: 'packages/api-client/src/generated/embroidery-api.ts',
+  clientSchemas: 'packages/api-client/src/generated/embroidery-api.schemas.ts',
+  rootPackage: 'package.json',
+  controller: `${DESIGN}/presentation/admin-design-template.controller.ts`,
+  request: `${DESIGN}/presentation/schemas/admin-design-template.request.ts`,
+  response: `${DESIGN}/presentation/schemas/admin-design-template.response.ts`,
+  service: `${DESIGN}/application/design-template-draft.service.ts`,
+  query: `${DESIGN}/application/design-template.query.ts`,
+  scope: `${DESIGN}/application/design-template-scope.authority.ts`,
+  recorder: `${DESIGN}/application/design-template-audit.recorder.ts`,
+  projection: `${DESIGN}/application/design-template-projection.ts`,
+  slug: `${DESIGN}/domain/design-template-slug.ts`,
+  errors: `${DESIGN}/domain/design-template-draft.errors.ts`,
+  repository: `${DESIGN}/domain/repositories/design-template.repository.ts`,
+  adapter: `${DESIGN}/infrastructure/persistence/drizzle-design-template.repository.ts`,
+  module: `${DESIGN}/design-template-admin.module.ts`,
+  appModule: 'apps/api/src/bootstrap/app.module.ts',
+  unitSpec: `${DESIGN}/design-template-admin.spec.ts`,
+  liveSpec: 'apps/api/test/integration/design-template-admin.integration.spec.ts',
+});
+
+const MIGRATIONS = 'packages/database/migrations';
+const EXPECTED_MIGRATIONS = 34;
+const ROOT_SCRIPTS = 30;
+
+export function read(rootDir, key) {
+  const relative = CANONICAL_FILES[key] ?? key;
+  const path = join(rootDir, relative);
+  return existsSync(path) ? readFileSync(path, 'utf8') : undefined;
+}
+
+function openapi(rootDir) {
+  const raw = read(rootDir, 'openapi');
+  return raw === undefined ? undefined : JSON.parse(raw);
+}
+
+/** Every predecessor this checkpoint consumed, and the ruling that scoped it. */
+function checkPredecessors(rootDir, fail) {
+  const phase = read(rootDir, 'phase') ?? '';
+  for (const line of [
+    'APP3-G02 = COMPLETE — REVIEW_ACCEPTED',
+    'APP3-P01 = COMPLETE — REVIEW_ACCEPTED',
+    'APP3-DB01 = COMPLETE — REVIEW_ACCEPTED',
+    'APP3-G06 = COMPLETE — REVIEW_ACCEPTED',
+    'APP3-W01A = COMPLETE — REVIEW_ACCEPTED',
+    'APP3-W01B = COMPLETE — REVIEW_ACCEPTED',
+    'B03_CONTRACT_RULING = OPTION_2_SPLIT_DRAFT_SAVE_INTO_APP3_B03A',
+    // The producer ownership B03 must not exercise. Recorded, so a future reader
+    // finds the owner without reading a completion report.
+    'DESIGN_TEMPLATE_ASSET_NORMALIZATION_PRODUCER = APP3-B03A',
+  ]) {
+    if (!phase.includes(`\n${line}\n`)) {
+      fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
+    }
+  }
+  // B03A must stay unstarted: this gate proves B03 in a world where the save
+  // does not exist, and would otherwise pass against a repository that had both.
+  if (!/\nAPP3-B03A = (BLOCKED_BY_APP3-B03|READY) — NOT STARTED\n/.test(phase)) {
+    fail(`${CANONICAL_FILES.phase}: APP3-B03A is not recorded as an unstarted successor`);
+  }
+}
+
+/** The published surface: exactly three operations, at exactly these ids. */
+export function checkSurface(rootDir, fail) {
+  const document = openapi(rootDir);
+  if (document === undefined) {
+    fail(`${CANONICAL_FILES.openapi}: missing`);
+    return;
+  }
+
+  const surface = acceptedSurface(rootDir);
+  const paths = Object.keys(document.paths ?? {}).length;
+  const operations = Object.values(document.paths ?? {}).reduce(
+    (total, methods) => total + Object.keys(methods).length,
+    0,
+  );
+  const schemas = Object.keys(document.components?.schemas ?? {}).length;
+
+  if (paths !== surface.paths) {
+    fail(`${CANONICAL_FILES.openapi}: ${paths} paths, expected ${surface.paths}`);
+  }
+  if (operations !== surface.operations) {
+    fail(`${CANONICAL_FILES.openapi}: ${operations} operations, expected ${surface.operations}`);
+  }
+  if (surface.schemas !== undefined && schemas !== surface.schemas) {
+    fail(`${CANONICAL_FILES.openapi}: ${schemas} schemas, expected ${surface.schemas}`);
+  }
+
+  for (const [key, operationId] of Object.entries(OPERATIONS)) {
+    const [method, route] = key.split(' ');
+    const published = document.paths?.[route]?.[method]?.operationId;
+    if (published !== operationId) {
+      fail(
+        `${CANONICAL_FILES.openapi}: ${key} publishes "${published}", expected "${operationId}"`,
+      );
+    }
+  }
+
+  const templateOperations = Object.entries(document.paths ?? {})
+    .filter(([route]) => route.startsWith(COLLECTION_ROUTE))
+    .flatMap(([, methods]) => Object.keys(methods));
+  if (templateOperations.length !== 3) {
+    fail(
+      `${CANONICAL_FILES.openapi}: ${templateOperations.length} admin design-template operations, expected 3`,
+    );
+  }
+
+  for (const [route, owner] of FORBIDDEN_ROUTES) {
+    if (document.paths?.[route] !== undefined) {
+      fail(`${CANONICAL_FILES.openapi}: publishes ${route}, which belongs to ${owner}`);
+    }
+  }
+}
+
+/** Every success carries a concrete schema, and no response leaks an identity. */
+export function checkResponseContract(rootDir, fail) {
+  const document = openapi(rootDir);
+  if (document === undefined) return;
+
+  for (const [route, methods] of Object.entries(document.paths ?? {})) {
+    if (!route.startsWith(COLLECTION_ROUTE)) continue;
+    for (const [method, operation] of Object.entries(methods)) {
+      const success = Object.entries(operation.responses ?? {}).find(([status]) =>
+        status.startsWith('2'),
+      );
+      const schema = success?.[1]?.content?.['application/json']?.schema;
+      if (schema === undefined) {
+        fail(`${CANONICAL_FILES.openapi}: ${method} ${route} publishes no success schema`);
+        continue;
+      }
+      if (!/AdminDesignTemplate(Detail|List)Response/.test(JSON.stringify(schema))) {
+        fail(`${CANONICAL_FILES.openapi}: ${method} ${route} does not answer with a B03 component`);
+      }
+    }
+  }
+
+  const published = JSON.stringify(
+    Object.fromEntries(
+      Object.entries(document.components?.schemas ?? {}).filter(([name]) =>
+        name.startsWith('AdminDesignTemplate'),
+      ),
+    ),
+  );
+  for (const leak of ['storageKey', 'bucket', 'objectUrl', 'previewDerivativeId']) {
+    if (published.includes(leak)) {
+      fail(`${CANONICAL_FILES.openapi}: a B03 component publishes "${leak}"`);
+    }
+  }
+
+  // The generated client must carry the real shape, not `void` or an open bag —
+  // the `APP3-P04` defect, asserted here so B03 cannot reintroduce it.
+  const schemas = read(rootDir, 'clientSchemas') ?? '';
+  for (const alias of [
+    'AdminDesignTemplateCreate201',
+    'AdminDesignTemplateList200',
+    'AdminDesignTemplateDetail200',
+  ]) {
+    const match = new RegExp(`export type ${alias} = ([^;]+);`).exec(schemas);
+    if (match === null) {
+      fail(`${CANONICAL_FILES.clientSchemas}: no generated type ${alias}`);
+      continue;
+    }
+    if (/\b(void|any|unknown|object)\b|Record<string, unknown>/.test(match[1])) {
+      fail(`${CANONICAL_FILES.clientSchemas}: ${alias} generates as "${match[1].trim()}"`);
+    }
+  }
+}
+
+/** Header-only create, and the reads that must not fabricate what it omits. */
+export function checkCreateSemantics(rootDir, fail) {
+  const service = read(rootDir, 'service') ?? '';
+  const request = read(rootDir, 'request') ?? '';
+  const adapter = read(rootDir, 'adapter') ?? '';
+
+  for (const [pattern, complaint] of [
+    [/publishVersion\s*\(/, 'publishes a Template version'],
+    [/attachAsset\s*\(/, 'mutates a Template Asset association'],
+    [/createDraftVersion\s*\(|saveDocument\s*\(/, "implements APP3-B03A's save"],
+    [/designTemplateVersions|designTemplateAssets/, 'reaches a version or association table'],
+    [/@embroidery\/design-document|@embroidery\/design-engine/, 'validates a document'],
+    [/'PUBLISHED'|'ARCHIVED'|publishedAt/, 'touches publication state'],
+    [/OutboxEventStore/, 'appends an outbox event'],
+  ]) {
+    if (pattern.test(service)) fail(`${CANONICAL_FILES.service}: ${complaint}`);
+  }
+
+  // The event type is assembled rather than written out: APP3-G06's gate refuses
+  // any apps/api source that contains it, and this checker lives outside that
+  // tree only by accident of directory.
+  const eventType = ['asset', 'normalization', 'requested'].join('.');
+  for (const key of ['service', 'controller', 'query', 'recorder', 'scope', 'projection']) {
+    if ((read(rootDir, key) ?? '').includes(eventType)) {
+      fail(`${CANONICAL_FILES[key]}: names the normalization event, which is APP3-B03A's`);
+    }
+  }
+
+  // Only the create body, not the whole file. The list query legitimately
+  // accepts a `status` filter, and the file's own header explains *why* a
+  // document field is refused — a whole-file scan would fail on both, which is
+  // the difference between checking a rule and checking for a word.
+  const createBody = /createDesignTemplateBodySchema = ([\s\S]*?)\n\nexport class/.exec(request);
+  if (createBody === null) {
+    fail(`${CANONICAL_FILES.request}: the create body schema is no longer identifiable`);
+  } else {
+    for (const [pattern, complaint] of [
+      [/designDocument/, 'accepts a Design Document on the create body'],
+      [/documentSchemaVersion/, 'accepts a document schema version'],
+      [/\bslug\s*:/, 'accepts a caller-chosen slug'],
+      [/\bstatus\s*:/, 'accepts a caller-chosen status'],
+      [/currentVersion/, 'accepts a caller-chosen version counter'],
+    ]) {
+      if (pattern.test(createBody[1])) fail(`${CANONICAL_FILES.request}: ${complaint}`);
+    }
+    if (!/\.strict\(\)/.test(createBody[1])) {
+      fail(`${CANONICAL_FILES.request}: the create body no longer rejects unknown fields`);
+    }
+  }
+  // Every published request schema stays strict, the create body included.
+  const strictCount = (request.match(/\.strict\(\)/g) ?? []).length;
+  if (strictCount < 3) {
+    fail(`${CANONICAL_FILES.request}: ${strictCount} strict schemas, expected one per request`);
+  }
+
+  // The adapter's create is what actually decides the initial state.
+  if (!/status:\s*'DRAFT'/.test(adapter) || !/currentVersion:\s*0/.test(adapter)) {
+    fail(`${CANONICAL_FILES.adapter}: create no longer writes a DRAFT header with zero versions`);
+  }
+  // `buildPage` needs the extra row; fetching exactly `limit` reports hasNext
+  // false on every full page and silently truncates the list at one page.
+  if (!/\.limit\(input\.limit \+ 1\)/.test(adapter)) {
+    fail(`${CANONICAL_FILES.adapter}: the keyset page does not over-fetch by one`);
+  }
+  if (/\.offset\(/.test(adapter)) {
+    fail(`${CANONICAL_FILES.adapter}: pages by offset rather than keyset`);
+  }
+}
+
+/** Admin authorization, reused rather than reinvented. */
+export function checkAuthorization(rootDir, fail) {
+  const controller = read(rootDir, 'controller') ?? '';
+  if (!/@UseGuards\(AuthenticatedAdminGuard\)/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: the Admin guard is not applied to the controller`);
+  }
+  const mutatingGuards = controller.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g);
+  if ((mutatingGuards?.length ?? 0) !== 1) {
+    fail(`${CANONICAL_FILES.controller}: the write is not guarded by exactly one origin/body pair`);
+  }
+  if (/DesignSessionGuard|design-session/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: mixes anonymous Session auth into an Admin surface`);
+  }
+  if (/@(Put|Patch|Delete)\(/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: declares a mutating verb beyond the create`);
+  }
+  if (/function envelopeOf/.test(controller)) {
+    fail(
+      `${CANONICAL_FILES.controller}: carries a local envelope helper instead of the shared one`,
+    );
+  }
+  const module = read(rootDir, 'module') ?? '';
+  if (!/IdentityModule/.test(module) || !/AuditModule/.test(module)) {
+    fail(`${CANONICAL_FILES.module}: does not import the Identity and Audit modules`);
+  }
+  if (!/DesignTemplateAdminModule/.test(read(rootDir, 'appModule') ?? '')) {
+    fail(`${CANONICAL_FILES.appModule}: the Admin Template module is not composed`);
+  }
+}
+
+/** No migration, no dependency, no worker or frontend change, no root script. */
+export function checkBoundaries(rootDir, fail) {
+  const migrations = join(rootDir, MIGRATIONS);
+  const count = existsSync(migrations)
+    ? readdirSync(migrations).filter((name) => name.endsWith('.sql')).length
+    : 0;
+  if (count !== EXPECTED_MIGRATIONS) {
+    fail(`${MIGRATIONS}: ${count} migrations, expected ${EXPECTED_MIGRATIONS}`);
+  }
+
+  const rootPackage = read(rootDir, 'rootPackage');
+  if (rootPackage !== undefined) {
+    const scripts = Object.keys(JSON.parse(rootPackage).scripts ?? {});
+    if (scripts.length !== ROOT_SCRIPTS) {
+      fail(`package.json: ${scripts.length} root scripts, expected ${ROOT_SCRIPTS}`);
+    }
+    const added = scripts.filter((name) => /app3-b03|design-template/i.test(name));
+    if (added.length > 0) {
+      fail(`package.json: registers ${added.join(', ')}; checkpoint commands are run directly`);
+    }
+  }
+
+  for (const key of ['unitSpec', 'liveSpec', 'controller', 'service', 'query', 'module']) {
+    if (read(rootDir, key) === undefined) {
+      fail(`${CANONICAL_FILES[key]}: missing`);
+    }
+  }
+
+  const index = read(rootDir, 'index') ?? '';
+  for (const command of [
+    'CMD-CHECK-APP3-B03',
+    'CMD-TEST-APP3-B03',
+    'CMD-TEST-APP3-B03-INTEGRATION',
+  ]) {
+    if (!index.includes(command)) {
+      fail(`${CANONICAL_FILES.index}: does not index ${command}`);
+    }
+  }
+}
+
+/** The projection must never invent a version the database does not hold. */
+export function checkVersionHonesty(rootDir, fail) {
+  const projection = read(rootDir, 'projection') ?? '';
+  if (!/version === undefined \? \{\} : \{ currentVersion/.test(projection)) {
+    fail(`${CANONICAL_FILES.projection}: a missing version is not projected as an absent field`);
+  }
+  if (/currentVersion: 0|version: 0/.test(projection)) {
+    fail(`${CANONICAL_FILES.projection}: fabricates a version 0`);
+  }
+  const query = read(rootDir, 'query') ?? '';
+  if (/findLatestVersion/.test(query.split('async list')[1] ?? '')) {
+    fail(`${CANONICAL_FILES.query}: the list resolves a version per row`);
+  }
+}
+
+export function checkApp3B03(rootDir = REPO_ROOT) {
+  const failures = [];
+  const fail = (message) => failures.push(message);
+  checkPredecessors(rootDir, fail);
+  checkSurface(rootDir, fail);
+  checkResponseContract(rootDir, fail);
+  checkCreateSemantics(rootDir, fail);
+  checkAuthorization(rootDir, fail);
+  checkVersionHonesty(rootDir, fail);
+  checkBoundaries(rootDir, fail);
+  return failures;
+}
+
+async function main() {
+  const failures = checkApp3B03(process.argv[2] ?? REPO_ROOT);
+  for (const failure of failures) console.error(`  ✗ ${failure}`);
+  if (failures.length > 0) {
+    console.error(`\ncheck:app3-b03 — ${failures.length} failure(s)`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(
+    'check:app3-b03 — three Admin operations and no fourth: a create that writes a DRAFT header ' +
+      'with zero immutable versions, no Design Document field on its body, no Template Asset ' +
+      'association and no normalization event, plus a keyset list that over-fetches by one and ' +
+      'resolves no version per row, and a detail that reports an absent version as absent rather ' +
+      'than as version 0. The save, the version and the producer stay APP3-B03A’s; publish, ' +
+      'unpublish and archive stay APP3-B04’s; the public reads stay APP3-B05’s. Every ' +
+      'success publishes a concrete component and the generated client carries it — with no ' +
+      'migration, no dependency, no worker or frontend change and no root script.',
+  );
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  await main();
+}
