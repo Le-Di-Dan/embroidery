@@ -176,11 +176,12 @@ or be collapsed into the other or into the API.
 | 10 | `APP3-B02` | backend | side-background delivery | 1 | B01 | no | no | no |
 | 11 | `APP3-D01` | design | **one** phase-level package — Admin Template screens + full Studio (states, mobile, watermark, safe area) into a new `APP_03` page | — | G01–G04 | no | yes | no |
 | 12 | `APP3-A01` | frontend | Admin placement authoring | 1 screen | B01, D01 | no | yes | no |
-| 13 | `APP3-B03` | backend | template draft authoring | 3 | G02, P01, `DB-DISPOSITION-RESOLVED` | no | no | no |
-| 14 | `APP3-B04` | backend | template lifecycle (publish / unpublish / archive) | 3 | B03, **P02** (in-bounds invariant) | no | no | no |
+| 13 | `APP3-B03` | backend | template draft authoring — **header creation and Admin reads only**; the draft *document save* is `APP3-B03A` (§6.25) | 3 | G02, P01, `DB-DISPOSITION-RESOLVED` | no | no | no |
+| 13a | **`APP3-B03A`** | backend | Design Template draft document/version authoring — one save that writes a new immutable version (§6.25) | 1 | B03, P01, G06 | no | no | no |
+| 14 | `APP3-B04` | backend | template lifecycle (publish / unpublish / archive) | 3 | **B03A** (publish needs an immutable version to publish; B03 comes transitively), **P02** (in-bounds invariant) | no | no | no |
 | 15 | `APP3-B05` | backend | public published-template read for a product scope — JSON metadata only; **byte delivery of a published Template asset is `APP3-B05A`, never a third operation here (§6.24.2)** | 2 | B04, B01 | no | no | no |
 | 16 | `APP3-A02` | frontend | Admin template list | 1 screen | B03, D01 | no | yes | no |
-| 17 | `APP3-A03` | frontend | Admin template editor | 1 screen | B03, D01, P01, P02 | no | yes | `spike:editor:test` |
+| 17 | `APP3-A03` | frontend | Admin template editor | 1 screen | **B03A** (the editor's save; B03 comes transitively), D01, P01, P02 | no | yes | `spike:editor:test` |
 | 18 | `APP3-A04` | frontend | Admin template publication interaction | 1 screen | B04, D01 | no | yes | no |
 | 19 | `APP3-W01` | worker | editor-safe derivative + customer-upload inspection lane | 0 HTTP | G04, `DB-DISPOSITION-RESOLVED` | no | no | no |
 | 20 | `APP3-B06` | backend | session-scoped customer asset intake + granted delivery — **replanned by `APP3-G08` into `APP3-B06A` + `APP3-B06B`, and completed by `APP3-B06C`, which carries the *granted delivery* half this row always contained; see §6.22 and §6.24.3** | 2 | G04, W01 | no | no | no |
@@ -2493,6 +2494,21 @@ stable capability-unavailable error until W01B. `APP3-B06` appends in the
 `design_session_assets` transaction, never in the raw-upload inspection
 transaction. No endpoint exists merely to enqueue normalization.
 
+> **Producer ownership superseded — `APP3-B03` → `APP3-B03A` (§6.25).** The
+> ruling above is the `IMP-D046` text as issued and is not rewritten. Its
+> principle, *producer ownership follows the association write*, is unchanged and
+> is what moves the name: `APP3-B03` was split, and the checkpoint that now
+> writes `design_template_assets` during draft authoring is **`APP3-B03A`**.
+> `APP3-B03` performs no document save and therefore mutates no association.
+> Everything else in PO-05 stands exactly — the same
+> `design_template_assets` transaction, the same `asset.normalization.requested`
+> at `schemaVersion 1` / `normalizationPolicyVersion 1` with
+> `associationRef.kind = DESIGN_TEMPLATE_ASSET`, the same association-write →
+> append → commit ordering, the same refusal to append on a read, a no-op save or
+> a removal without a replacement, and still no endpoint whose purpose is to
+> enqueue normalization. `APP3-B06`'s clause was already carried out by
+> `APP3-B06B`.
+
 **PO-06 — the worker is replanned.** `APP3-W01` is
 `REPLANNED — REPLACED_BY_APP3-W01A_AND_APP3-W01B` and is never marked complete.
 `APP3-W01A` is raster-only (JPEG/PNG/WebP across all three profiles), consumes
@@ -3404,6 +3420,7 @@ delivery surfaces the journey actually traverses.
 | `APP3-B06B` | session raster intake, 1 operation | `APP3-B06` | `COMPLETE — REVIEW_ACCEPTED` |
 | **`APP3-B06C`** | session private asset delivery, 1 operation | `APP3-B06` | `DEFINED — READY — NOT STARTED` |
 | **`APP3-B05A`** | published Template asset delivery, 1 operation | `APP3-B05` | `DEFINED — BLOCKED` |
+| **`APP3-B03A`** | Template draft document save, 1 operation | `APP3-B03` | `DEFINED — BLOCKED_BY_APP3-B03` |
 
 **Governance gates** — authority only; each implements nothing:
 
@@ -3449,7 +3466,7 @@ value itself stays **OPEN until `APP3-S10` runs**.
 Eligible now, all hard predecessors accepted:
 
 ```text
-APP3-B03    template draft authoring          3 operations
+APP3-B03    template draft header + reads      3 operations
 APP3-D01    phase design package              gates every A*/S* checkpoint
 APP3-B06C   session private asset delivery    1 operation
 ```
@@ -3462,8 +3479,8 @@ NEXT_RECOMMENDED_IMPLEMENTATION_CHECKPOINT = APP3-B03
 
 because every hard predecessor is accepted, it is three closely-related API
 operations, it carries no Figma dependency, and it is the head of the longest
-remaining chain — `B03 → B04 → B05 → B05A → S01`. `APP3-B06C` is genuinely
-ready and is deliberately not recommended first: it sits on a shorter branch
+remaining chain — `B03 → B03A → B04 → B05 → B05A → S01`. `APP3-B06C` is
+genuinely ready and is deliberately not recommended first: it sits on a shorter branch
 (`B06C → S06`) that cannot be consumed until `S02` exists, so running it now
 would deliver a surface with no consumer for several checkpoints, while the
 critical path stood still.
@@ -3479,15 +3496,162 @@ NEXT_ELIGIBLE_FRONTEND_CHECKPOINTS = NONE
 Dependency-safe forward shape:
 
 ```text
-B03 → B04 → B05 → B05A ─┐
-                         ├→ S01 → S02 → {S03, S04, S05, S06, S07, S08, S09}
-D01 ────────────────────┘                     │
-                                              └→ S03 + S07 → S11
+B03 → B03A → B04 → B05 → B05A ─┐
+                                ├→ S01 → S02 → {S03, S04, S05, S06, S07, S08, S09}
+D01 ───────────────────────────┘                     │
+                                                     └→ S03 + S07 → S11
 S01 + B08 → S10
 B06B → B06C → S06
 S10 + S11 + B05 + B05A + B06C → E01 → X01
-D01 → A01, A02, A03, A04
+D01 → A01, A04 ;  D01 + B03 → A02 ;  D01 + B03A → A03
 ```
+
+## 6.25 `APP3-B03` / `APP3-B03A` — the draft save gets its own checkpoint
+
+`APP3-B03` stopped at `FAILED — MANUAL INTERVENTION REQUIRED`,
+`CAUSE = B03_HTTP_CONTRACT_AUTHORITY_CONFLICT`, having written nothing. The
+operator ruled the split as
+**`B03_CONTRACT_RULING = OPTION_2_SPLIT_DRAFT_SAVE_INTO_APP3_B03A`**.
+
+### 6.25.1 Measured cause of the stop
+
+B03 was asked for four capabilities inside a canonical three-operation budget.
+
+| Machine-checked contract fact | Value |
+|---|---|
+| `Canonical B03 endpoint matrix` | `POST /api/admin/design-templates` · `GET …` (list) · `GET …/{id}` |
+| `Canonical B03 operation count` | `3` |
+| `Draft document save in that matrix` | `NONE` |
+| `Checkpoint owning Template document save` | `NONE` |
+| `APP3-A02 backend` | `APP3-B03` — needs the list |
+| `APP3-A03 backend` | `APP3-B03` — needs the editor's save |
+| `IMP-D042 PO-04` | every save while `DRAFT` writes a new monotonic immutable version |
+| `IMP-D042 PO-07` | publish requires **at least one immutable version** |
+| `DesignTemplateRepository draft-version method` | `NONE` |
+| `publishVersion publishedAt` | `Date` — required, so it cannot write a draft version |
+| `design_template_versions.published_at` | **nullable** — the schema can express one |
+| `CreateDesignTemplateInput document/version fields` | `NONE` — header only |
+| `current_version CHECK` | `NONE` — `0` is storable |
+
+The last three rows decide the shape of the fix. The **schema** was always able
+to hold an unpublished version; only the port method and the HTTP operation were
+missing. So no migration is required, and the create operation the audit named
+was already header-only in the delivered persistence contract.
+
+The alternative — widening `APP3-B03` to four operations — was rejected: the
+save is not a fourth read-shaped operation but a different kind of work
+(P01 canonical document persistence, immutable version creation, concurrency,
+`design_template_assets` reconciliation, `G06` event production, transactional
+rollback), and folding it in would have hidden all of that behind one review of a
+checkpoint whose other three operations are a create and two reads.
+
+### 6.25.2 `APP3-B03` — draft header and Admin reads
+
+| Field | Value |
+|---|---|
+| Lane | Backend/API |
+| Responsibility | create a Design Template header in `DRAFT`; Admin list; Admin detail |
+| HTTP operations | **exactly 3** — `POST /api/admin/design-templates`, `GET /api/admin/design-templates`, `GET /api/admin/design-templates/{templateId}` |
+| Predecessors | `G02`, `P01`, `DB-DISPOSITION-RESOLVED` |
+| Unlocks | `APP3-B03A`, `APP3-A02` |
+| Status | `READY — NOT STARTED` |
+
+**Create is header-only.** `POST` creates the header in `DRAFT` and creates **no**
+immutable version, so a newly created Template legitimately has **zero versions**
+until the first `APP3-B03A` save. This is deliberate, and it is what the
+delivered `CreateDesignTemplateInput` already expresses — it carries no
+`designDocument` and no `documentSchemaVersion`. `APP3-B03` must represent the
+no-version state truthfully rather than fabricate a version 1, and must not
+accept a Design Document merely to avoid an empty version list. Nothing is lost:
+`IMP-D042` PO-07 already requires *at least one immutable version* to publish, so
+`APP3-B04` cannot publish a header-only Template.
+
+`APP3-B03` does **not** own the draft document save, immutable version creation,
+`design_template_assets` mutation, normalization event production, publication,
+public reads or binary delivery.
+
+The route parameter is written `{templateId}` to match the delivered API's
+naming (`{productId}`, `{sessionId}`, `{assetId}`); the audit's `{id}` is the
+same route.
+
+### 6.25.3 `APP3-B03A` — draft document save
+
+| Field | Value |
+|---|---|
+| Lane | Backend/API |
+| Responsibility | save a full canonical Design Document snapshot for a `DRAFT` Template by creating a new immutable version |
+| HTTP operations | **exactly 1** — `PUT /api/admin/design-templates/{templateId}/document` |
+| `operationId` | `adminDesignTemplate_saveDocument`, subject to the locked `<domain>_<method>` convention being confirmed at entry audit |
+| Predecessors | `B03`, `P01`, `G06` (accepted normalization contract) |
+| Unlocks | `APP3-B04`, `APP3-A03` |
+| Origin | execution/replan child created by manual intervention after the B03 endpoint-count conflict |
+| Status | `BLOCKED_BY_APP3-B03 — NOT STARTED` |
+
+It carries the `IMP-D042` PO-04 behaviour that had no owner: the Template must
+exist and be `DRAFT`; the request carries a **full** document snapshot, never a
+patch or a partial element mutation; `P01` validates, quantizes and canonicalizes
+it and the canonical form is what persists; a successful save creates a new
+immutable version with the next monotonic number and `published_at = null`; prior
+versions never change; the current draft version is the highest version. A
+non-`DRAFT` Template is refused with the canonical lifecycle conflict and **no
+version is created**. It never publishes, unpublishes, archives, restores or
+hard-deletes — those stay `APP3-B04`.
+
+**Repository seam.** `APP3-B03A` is authorized to extend
+`DesignTemplateRepository` with a narrow draft-version method (or a generalized
+immutable-version method, if repository convention prefers that to a second
+near-duplicate of `publishVersion`) whose semantics are `publishedAt = null`,
+immutable insert, monotonic allocation, safe under concurrency. It must not
+change the database schema, must not mutate a historical version, and must not
+overload `publishVersion` with misleading nullable semantics to avoid adding the
+right seam.
+
+```text
+CONCURRENCY_BEHAVIOR = TO_BE_RESOLVED_FROM_DB7/G02_AT_APP3-B03A_ENTRY_AUDIT
+```
+
+`APP3-B03A`, not `APP3-B03`, owns same-Template concurrent draft saves. Whichever
+model the DB7/G02 authority turns out to require — both saves succeeding with
+distinct monotonic versions, or optimistic single-winner with a canonical
+conflict — the invariants are fixed: no duplicate version number, no overwritten
+immutable version, no partial save. That choice is an entry-audit reading of
+existing authority, not an invention.
+
+**`APP3-B03A` owns the `DESIGN_TEMPLATE_ASSET` normalization producer**
+(§6.16.2 supersession note), because it is the only draft-authoring checkpoint
+that creates or changes an active Template Asset association. The `IMP-D046`
+event contract is untouched.
+
+`APP3-P02` is deliberately **not** a predecessor: publication geometry stays
+`APP3-B04`, per the §6.1 package dependency rule.
+
+### 6.25.4 What the pre-implementation audit still says
+
+The audit's `APP3-B03` row — three routes, create plus two reads — **remains
+valid and is not rewritten**. It was never wrong about what it listed; it was
+incomplete, and it says so itself: *"Paths are provisional; CRUD completeness is
+not a goal."* `APP3-B03A` supplies the capability it omitted. The same is true of
+`APP3-B04`'s and `APP3-B05`'s rows, which are unchanged.
+
+### 6.25.5 Dependency reconciliation
+
+| Checkpoint | Portion | Status after this ruling |
+|---|---|---|
+| `APP3-B03` | whole checkpoint | `READY — NOT STARTED` |
+| `APP3-B03A` | whole checkpoint | `BLOCKED_BY_APP3-B03 — NOT STARTED` |
+| `APP3-B04` | direct predecessors | `APP3-B03A` + `APP3-P02` |
+| `APP3-B05` | whole checkpoint | `BLOCKED_BY_APP3-B04` |
+| `APP3-B05A` | whole checkpoint | `BLOCKED_BY_APP3-B04_AND_APP3-B05` |
+| `APP3-A02` | backend portion | `APP3-B03` — unchanged |
+| `APP3-A03` | backend portion | `APP3-B03A` — the editor's save |
+| `APP3-D01` | whole checkpoint | `READY — NOT STARTED` |
+| `APP3-B06C` | whole checkpoint | `READY — NOT STARTED` |
+
+Forward critical path: `B03 → B03A → B04 → B05 → B05A`. Surface arithmetic:
+`APP3-B03` takes 27 operations to **30**; `APP3-B03A` then takes 30 to **31**.
+
+This ruling implements nothing: no API, application, repository, package, schema,
+migration, OpenAPI, generated client, worker, dependency or Figma change.
 
 ## 7. Critical end-to-end journey
 
@@ -3553,7 +3717,21 @@ APP3-B08 = COMPLETE — REVIEW_ACCEPTED
 APP3-S11 = NOT STARTED — BLOCKED_BY_APP3-S03_AND_APP3-S07
 APP3-S11 FOUNDATION_NOTE = P01_AND_P02_PACKAGES_EXIST — NOT_CHECKPOINT_READINESS
 APP3-B03 = READY — NOT STARTED
-APP3-B04 = BLOCKED_BY_APP3-B03
+APP3-B03 FIRST_ATTEMPT = FAILED — MANUAL INTERVENTION REQUIRED
+APP3-B03 FIRST_ATTEMPT CAUSE = B03_HTTP_CONTRACT_AUTHORITY_CONFLICT
+APP3-B03 FIRST_ATTEMPT RESOLUTION = B03_CONTRACT_RULING
+B03_CONTRACT_RULING = OPTION_2_SPLIT_DRAFT_SAVE_INTO_APP3_B03A
+APP3-B03 SCOPE = HEADER_CREATE_PLUS_ADMIN_LIST_AND_DETAIL
+APP3-B03 CREATE = HEADER_ONLY_NO_VERSION
+APP3-B03 OPERATIONS = 3
+APP3-B03A = BLOCKED_BY_APP3-B03 — NOT STARTED
+APP3-B03A OPERATIONS = 1
+APP3-B03A ROUTE = PUT_/api/admin/design-templates/:templateId/document
+APP3-B03A OWNS = DRAFT_DOCUMENT_SAVE_AND_IMMUTABLE_VERSION_CREATION
+APP3-B03A CONCURRENCY_BEHAVIOR = TO_BE_RESOLVED_FROM_DB7/G02_AT_APP3-B03A_ENTRY_AUDIT
+DESIGN_TEMPLATE_ASSET_NORMALIZATION_PRODUCER = APP3-B03A
+DESIGN_TEMPLATE_ASSET_NORMALIZATION_PRODUCER PREVIOUS = APP3-B03 — SUPERSEDED_BY_B03_CONTRACT_RULING
+APP3-B04 = BLOCKED_BY_APP3-B03A
 APP3-B05 = READY_BY_P01 — BLOCKED_BY_APP3-B04
 APP3-B05A = DEFINED — BLOCKED_BY_APP3-B04_AND_APP3-B05
 APP3-B06C = DEFINED — READY — NOT STARTED
@@ -3674,6 +3852,7 @@ O-008 = CLOSED_BY_IMP-D043
 DP-RET-01 design_sessions = CLOSED_BY_IMP-D043
 FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01 = COMPLETE — CLOSED_BY_APP3-G02
 APP3-ROADMAP-RECONCILIATION = COMPLETE — DOCS_ONLY
+APP3_B03_CONTRACT_RECONCILIATION = COMPLETE — DOCS_ONLY
 ASSET_DELIVERY_RULING = OPTION_2_DEDICATED_DELIVERY_CHECKPOINTS
 DELIVERY_CLASS_1_SIDE_BACKGROUND_OWNER = APP3-B02
 DELIVERY_CLASS_2_PUBLISHED_TEMPLATE_ASSET_OWNER = APP3-B05A
