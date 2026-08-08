@@ -581,6 +581,29 @@ Sub-section anchors: `00` `596:6` · `01` `596:7` · `02` `596:8` · `03` `596:9
 | FIG-APP3-RESPONSIVE-REFERENCE | Shared | APP3 responsive reference | Responsive Reference | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 611:105 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=611-105) | APP3-D01 | — | — | 2026-08-09 |
 | FIG-APP3-HANDOFF-DEPENDENCY | Shared | APP3 handoff & dependency | Handoff & Backend Dependency | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 611:145 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=611-145) | APP3-D01 | — | — | 2026-08-09 |
 
+### 4.8 APP3-D01-C1 — responsive reference frames (NEW, this correction)
+
+Section **`596:23`** — `17 — Responsive Reference`, page **APP_03** (`592:3`).
+
+`APP3-D01` specified the Admin 1280 and Studio 1024 breakpoints in prose but drew
+neither. Human review ruled that insufficient for implementation authority, so
+`APP3-D01-C1` draws all three as real frames. Every breakpoint the package claims
+now has a Figma reference; none is prose-only.
+
+**Both** Admin 1280 references are drawn deliberately: `A03` has an elastic stage
+between two minimum-width panels, while `A01`'s middle column is a fixed-aspect
+placement preview that scales rather than reflows. That collapse rule cannot be
+inferred from `A03`, which is the condition the correction directive sets for
+drawing a second Admin reference.
+
+Rows are `REVIEW_REQUIRED`; the correction does not self-approve.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-ADMIN-TEMPLATEEDITOR-NARROW-1280 | Admin | Admin template editor | Template Editor | Narrow Desktop Reference | Desktop 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 618:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=618-3) | APP3-D01-C1 | — | — | 2026-08-09 |
+| FIG-ADMIN-PLACEMENT-NARROW-1280 | Admin | Admin placement authoring | Placement Authoring | Narrow Desktop Reference | Desktop 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 618:74 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=618-74) | APP3-D01-C1 | — | — | 2026-08-09 |
+| FIG-STUDIO-EDITING-TABLET-1024 | Storefront | Studio editing surface | Studio Editing | Tablet Reference | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_03 | 618:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=618-140) | APP3-D01-C1 | — | — | 2026-08-09 |
+
 ## 5. IA and user-flow registry
 
 Flow/IA/wireframe nodes are indexed as `REFERENCE_ONLY` — they inform, but do not
@@ -612,6 +635,25 @@ matrices, plus published-library status confirmed via `search_design_system`.
 | FIG-DS-NAVLINK | DS | Actions | NavLink (Default / Active) | Catalog | All | component-set | APPROVED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Components · Actions | 40:14 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=40-14) | — | — | Approved Foundation + WF08 validation matrix; published library | 2026-07-25 |
 | FIG-DS-SEARCHBAR | DS | Navigation | SearchBar | Catalog | All | component | APPROVED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Components · Actions | 40:16 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=40-16) | — | — | Approved Foundation + WF08 validation matrix; published library; login Input pattern source | 2026-07-25 |
 | FIG-DS-FOUNDATIONS | DS | Tokens & Styles | Foundations board (Color, Type, Spacing, Radius) | Catalog | All | foundation | APPROVED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Foundations | 37:3 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=37-3) | — | — | Approved Foundation (DESIGN_SYSTEM_FOUNDATION.md §4–7); WF07 token matrix | 2026-07-25 |
+| FIG-DS-SCRIM-TOKEN | DS | Tokens & Styles | overlay/scrim semantic token (swatch + demo) | Catalog | All | foundation | REVIEW_REQUIRED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Foundations | 78:2 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=78-2) | APP3-D01-C1 | — | — | 2026-08-09 |
+| FIG-DS-INPUT | DS | Forms | Input (State = Default/Focus/Filled/Error/Disabled) | Catalog | All | component-set | REVIEW_REQUIRED | hsxSjwkqQKM9vuyRgWSesU | HF01 · Components · Forms | 76:29 | [open](https://www.figma.com/design/hsxSjwkqQKM9vuyRgWSesU/DS-Core-Components-WF06?node-id=76-29) | APP3-D01-C1 | — | — | 2026-08-09 |
+
+**`FIG-DS-INPUT` closed by `APP3-D01-C1`** under `D01_C1_DS_REPAIR_AUTHORIZATION` — an
+operator-approved, narrowly scoped exception to `FIG-FILE-DS`'s read-only policy,
+covering `FIG-DS-INPUT` and `FIG-DS-SCRIM-TOKEN` and nothing else. The set is the
+canonical form text field: label, field and helper/error text, every visual
+property bound to `Color`/`Radius`/`Spacing` tokens, no literal colours.
+
+It does **not** duplicate `FIG-DS-SEARCHBAR`. SearchBar is a search affordance that
+had been serving as the "login Input pattern source" for want of a real one; the
+form field is now its own component and SearchBar keeps its own semantics
+unchanged. No existing DS component, token or brand value was renamed or
+re-styled.
+
+Newly created DS assets are **not yet published to the library**. Publishing is a
+manual Figma action; until an operator publishes `DS – Core Components (WF06)`,
+`Input` cannot be instanced cross-file into `APP_03`. See
+`FU-DESIGN-PUBLISH-DS-INPUT-01`.
 
 ### 6.1b APP2 design-system supplements (product file, not the DS library)
 
@@ -622,7 +664,7 @@ into the library. One supplement was activated by `APP2-D01` (`GAP-D01`); it is
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| FIG-DS-INPUT-APP2 | DS Supplement | Forms | Input (Default/Focus/Filled/Error/Disabled) | Catalog | All | component-set | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 424:35 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=424-35) | APP2-D01 | — | — | 2026-07-26 |
+| FIG-DS-INPUT-APP2 | DS Supplement | Forms | Input (Default/Focus/Filled/Error/Disabled) | Catalog | All | component-set | SUPERSEDED | BQwqV8GdfUIELvsQDB1UQE | APP_02 | 424:35 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=424-35) | APP2-D01 | FIG-DS-INPUT | — | 2026-08-09 |
 
 Bound to approved DS tokens only (`background/{surface,secondary}`, `text/{primary,secondary,tertiary}`,
 `border/{primary,secondary}`, `action/primary`, `status/error`, `radius/md`; text styles
@@ -640,23 +682,22 @@ recorded as a future DS gap candidate, **not** activated here.
 Consumed by APP1-D01 via `importVariableByKeyAsync` / `importStyleByKeyAsync`:
 
 - **Primitives** (16): `white`, `sand/50·100·25`, `ink/900`, `gray/400·500`, `stone/200·300`, `rose/500·600·700`, `green/600`, `amber/600`, `red/600`, `blue/600`.
-- **Color** (19 semantic, mode Light): `background/{primary,secondary,surface,elevated}`, `text/{primary,secondary,tertiary,inverse}`, `border/{primary,secondary,strong}`, `action/{primary,hover,active,disabled}`, `status/{success,warning,error,info}`.
+- **Color** (20 semantic, mode Light): `background/{primary,secondary,surface,elevated}`, `text/{primary,secondary,tertiary,inverse}`, `border/{primary,secondary,strong}`, `action/{primary,hover,active,disabled}`, `status/{success,warning,error,info}`, **`overlay/scrim`**.
+  - `overlay/scrim` = `ink/900` at 45%, scoped `FRAME_FILL`/`SHAPE_FILL` — the canonical modal/dialog/bottom-sheet scrim (`FIG-DS-SCRIM-TOKEN`), added by `APP3-D01-C1`. **One** semantic token on purpose: no 40/45/50 alpha family. Mirrored into the product file `Semantic` collection as `Color/Overlay/Scrim`, which is how every other APP3 token is consumed, and bound by all 9 `APP_03` dialog and bottom-sheet scrims.
 - **Spacing** (10): `space/4…128`. **Radius** (5): `radius/{xs,sm,md,lg,xl}` = 8/12/16/24/32.
 - **Text styles** (11): `Display/{XL,L,M}`, `Heading/{XL,L,M,S}`, `Body/{L,M,S}`, `Caption` — Inter.
 - **Effect styles** (2): `Elevation/Floating`, `Elevation/Modal`.
 
 ### 6.3 Design-system references used per APP1-D01 screen
 
-- **Login (all states):** DS `Button` (Primary/Disabled), composed **Input** (see gap `FIG-DS-INPUT`) styled from `SearchBar`; text styles `Heading/M·S`, `Body/L·S·M`, `Caption`; colors `background/{primary,secondary,surface}`, `text/{primary,secondary,tertiary,inverse}`, `border/primary`, `action/primary`, `status/{error,warning}`; `radius/{md,lg}`; `Elevation/Floating`.
-- **Shell (all states):** DS `Button` (Ghost = logout, Primary = re-login), text/color/radius tokens as above; `Elevation/Modal` on the session-expired popup; overlay scrim uses `ink/900 @45%` (gap `FIG-DS-SCRIM-TOKEN`).
+- **Login (all states):** DS `Button` (Primary/Disabled), composed **Input** (the canonical `FIG-DS-INPUT` now exists — see §6.1; this APP1 screen still uses its original `SearchBar`-derived composition and may adopt the component when the DS library is republished) styled from `SearchBar`; text styles `Heading/M·S`, `Body/L·S·M`, `Caption`; colors `background/{primary,secondary,surface}`, `text/{primary,secondary,tertiary,inverse}`, `border/primary`, `action/primary`, `status/{error,warning}`; `radius/{md,lg}`; `Elevation/Floating`.
+- **Shell (all states):** DS `Button` (Ghost = logout, Primary = re-login), text/color/radius tokens as above; `Elevation/Modal` on the session-expired popup; overlay scrim uses `ink/900 @45%`, now canonicalized as the `overlay/scrim` token (§6.2); this APP1 screen keeps its original literal until it is next revised.
 - **Reuse map / notes / annotations:** text + color + radius tokens only.
 
 ## 7. Missing / duplicate / superseded registry
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| FIG-DS-INPUT | DS | Forms | Input / TextField / Password component | Missing | — | component | MISSING | — | — |  | — | APP1-D01 | — | GAP-D01 — still absent from the DS library (re-confirmed via search_design_system 2026-07-26). APP2-D01 supplements it in the product file as FIG-DS-INPUT-APP2 (§6.1b); the library gap itself remains open until DS owners adopt it | 2026-07-26 |
-| FIG-DS-SCRIM-TOKEN | DS | Tokens | Scrim / dark-surface semantic token | Missing | — | variable | MISSING | — | — |  | — | APP1-D01 | — | GAP-D02 — still no dark/scrim semantic token (re-confirmed 2026-07-26); APP2 dialogs reuse the APP1-D02 local composition ink/900 @45% | 2026-07-26 |
 
 **Duplicate/stale findings:** UI01–UI05 (`User Interface`) and WF01–WF09 (`Wireframe`)
 are parallel hi-fi (DRAFT) and wireframe (REFERENCE_ONLY) renditions of the public
@@ -721,7 +762,7 @@ canonical entry exists for any APP1-D01 composite key.
   added, **10 `APP2-S02-G01` rows + 4 UI03 draft rows added** — see §4.3.1, §4.4.1 and
   §4.5). The four `APP2-D01` Product Detail rows moved `REVIEW_REQUIRED` →
   `REFERENCE_ONLY`; the total is unchanged by that move.
-- **Gaps:** GAP-D01 (no DS Input — supplemented for APP2 as `FIG-DS-INPUT-APP2`, DS
+- **Gaps:** GAP-D01 and GAP-D02 are **CLOSED by `APP3-D01-C1`** — `FIG-DS-INPUT` is now a real DS component set (§6.1, `76:29`) and `overlay/scrim` a real DS semantic token (§6.2). Both were repaired in `FIG-FILE-DS` under the operator-approved `D01_C1_DS_REPAIR_AUTHORIZATION` exception, which covered these two and nothing else. New DS assets still require a manual library publish before other files can instance them (`FU-DESIGN-PUBLISH-DS-INPUT-01`). Historical note — GAP-D01 (no DS Input — supplemented for APP2 as `FIG-DS-INPUT-APP2`, DS
   library gap still open), GAP-D02 (no scrim token — still local `ink/900 @45%`).
   The former `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02 (now
   `APPROVED_FOR_IMPLEMENTATION`, §4.2). APP2-D01 supersedes **no** APP1 row.
