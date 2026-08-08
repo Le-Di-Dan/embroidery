@@ -35,6 +35,9 @@ import { ObjectStorageModule } from '../asset/infrastructure/storage/object-stor
 import { UploadTimer } from '../asset/application/ports/upload-timer';
 import { SessionAssetTransactionsService } from './application/session-asset-transactions.service';
 import { SessionAssetIntakeService } from './application/session-asset-intake.service';
+import { AutosaveDesignSessionUseCase } from './application/autosave-design-session.use-case';
+import { SessionDocumentMediaAuthority } from './application/session-document-media.authority';
+import { SessionPlacementResolver } from './application/session-placement.authority';
 import { PublicDesignSessionAssetController } from './presentation/public-design-session-asset.controller';
 
 /**
@@ -88,6 +91,13 @@ import { PublicDesignSessionAssetController } from './presentation/public-design
     UploadTimer,
     SessionAssetTransactionsService,
     SessionAssetIntakeService,
+    // APP3-B08 — autosave. The placement resolver reads by id through the
+    // placement port `CatalogPlacementReadModule` already exports, and the media
+    // authority reads derivatives through the Asset port `AssetModule` exports;
+    // neither adds a dependency this module did not already hold.
+    SessionPlacementResolver,
+    SessionDocumentMediaAuthority,
+    AutosaveDesignSessionUseCase,
   ],
   controllers: [PublicDesignSessionController, PublicDesignSessionAssetController],
   exports: [

@@ -16,10 +16,14 @@
 import { Injectable } from '@nestjs/common';
 import {
   CURRENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
+  prepareDesignDocument,
   readSchemaVersion,
   validateDesignDocumentComplexity,
+  validateDesignDocumentContext,
   validateDesignDocumentStructure,
   type DesignDocument,
+  type DesignDocumentContext,
+  type DesignDocumentFinding,
 } from '@embroidery/design-document';
 import {
   validateDocumentWithinEmbroideryArea,
@@ -29,6 +33,7 @@ import {
 } from '@embroidery/design-engine';
 
 import type { ResolvedDesignScope } from './design-session-scope.resolver';
+import type { SessionPlacementAuthority } from './session-placement.authority';
 
 /** Why a document may not open. Internal; the caller publishes one shape. */
 export type DocumentRejection =
@@ -36,7 +41,9 @@ export type DocumentRejection =
   | 'DOCUMENT_SCHEMA_UNSUPPORTED'
   | 'DOCUMENT_TOO_COMPLEX'
   | 'DOCUMENT_PLACEMENT_MISMATCH'
-  | 'DOCUMENT_OUT_OF_BOUNDS';
+  | 'DOCUMENT_OUT_OF_BOUNDS'
+  /** A referenced image is unknown, ineligible or unmeasured (`APP3-B08`). */
+  | 'DOCUMENT_MEDIA_INELIGIBLE';
 
 export type DocumentOutcome =
   | { readonly ok: true; readonly document: DesignDocument; readonly schemaVersion: number }
@@ -101,6 +108,79 @@ export class DesignDocumentAuthority {
 
     return { ok: true, document, schemaVersion: version.value };
   }
+
+  /**
+   * Proves an arbitrary document may be **saved** onto a live placement
+   * (`APP3-B08` §6/§7/§8).
+   *
+   * Bootstrap validates a document the server itself just built or copied from a
+   * published Template. Autosave validates one an anonymous caller typed, so it
+   * runs three steps bootstrap does not need:
+   *
+   * - `prepareDesignDocument` quantizes and canonicalizes, and — the part that
+   *   matters — **revalidates after quantization**, because rounding can push a
+   *   value onto a boundary the schema rejects. What is persisted is the
+   *   prepared document, never the caller's object.
+   * - contextual validation, which is the only thing that decides whether a
+   *   referenced image may be placed at all.
+   * - the placement authority carries real `retiredAt` values, so a Side or Area
+   *   retired since the Session opened is refused rather than assumed live.
+   *
+   * The order is the one the contracts require: structure before anything that
+   * reads fields, quantization before geometry (geometry must judge the numbers
+   * that will actually be stored), and context last because it is the only step
+   * needing external authority.
+   */
+  validateForSave(
+    candidate: unknown,
+    placement: SessionPlacementAuthority,
+    context: DesignDocumentContext,
+  ): DocumentOutcome {
+    const version = readSchemaVersion(candidate);
+    if (!version.ok || version.value !== CURRENT_DESIGN_DOCUMENT_SCHEMA_VERSION) {
+      return { ok: false, rejection: 'DOCUMENT_SCHEMA_UNSUPPORTED' };
+    }
+
+    const prepared = prepareDesignDocument(candidate);
+    if (!prepared.ok) {
+      // `prepareDesignDocument` folds structure, complexity, quantization and
+      // canonicalization into one result; the findings say which, and the
+      // complexity codes are the ones that must not read as "malformed".
+      return { ok: false, rejection: rejectionForFindings(prepared.findings) };
+    }
+    const document = prepared.value.document;
+
+    if (!validatePlacementSnapshot(document.placement, placement.side, placement.area).ok) {
+      return { ok: false, rejection: 'DOCUMENT_PLACEMENT_MISMATCH' };
+    }
+    if (!validateDocumentWithinEmbroideryArea(document, placement.area).ok) {
+      return { ok: false, rejection: 'DOCUMENT_OUT_OF_BOUNDS' };
+    }
+    if (validateDesignDocumentContext(document, context).length > 0) {
+      return { ok: false, rejection: 'DOCUMENT_MEDIA_INELIGIBLE' };
+    }
+
+    return { ok: true, document, schemaVersion: version.value };
+  }
+}
+
+/**
+ * Complexity is a different refusal from a malformed body.
+ *
+ * The codes are the vocabulary's own — `COMPLEXITY_LIMIT_EXCEEDED` and
+ * `DECODED_PIXEL_LIMIT_EXCEEDED` — and an unsupported version keeps its own
+ * verdict rather than being flattened into "invalid", because a client that sent
+ * a future document needs to know it is the version that is wrong.
+ */
+function rejectionForFindings(findings: readonly DesignDocumentFinding[]): DocumentRejection {
+  for (const entry of findings) {
+    if (entry.code === 'UNSUPPORTED_SCHEMA_VERSION') return 'DOCUMENT_SCHEMA_UNSUPPORTED';
+  }
+  const tooComplex = findings.some(
+    (entry) =>
+      entry.code === 'COMPLEXITY_LIMIT_EXCEEDED' || entry.code === 'DECODED_PIXEL_LIMIT_EXCEEDED',
+  );
+  return tooComplex ? 'DOCUMENT_TOO_COMPLEX' : 'DOCUMENT_STRUCTURE_INVALID';
 }
 
 /** `retiredAt: null` — the resolver only returns a live Side. */

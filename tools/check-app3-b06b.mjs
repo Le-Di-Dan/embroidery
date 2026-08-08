@@ -41,7 +41,10 @@ function checkStatus(rootDir, fail) {
     'APP3-B06A = COMPLETE — REVIEW_ACCEPTED',
     'APP3-B07 = COMPLETE — REVIEW_ACCEPTED',
     B06B_DELIVERED_STATUS,
-    'APP3-B08 = READY — NOT STARTED',
+    // B08 was `READY — NOT STARTED` while B06B was the frontier. It has since
+    // shipped on top, so this is mode-aware rather than pinned: what B06B rules
+    // is that B08 exists as a successor, not which review stage it is at.
+    ...(/\nAPP3-B08 = COMPLETE/.test(phase) ? [] : ['APP3-B08 = READY — NOT STARTED']),
   ]) {
     if (!phase.includes(`\n${line}\n`)) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);

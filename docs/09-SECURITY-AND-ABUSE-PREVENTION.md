@@ -202,6 +202,31 @@ Protect editor and upload services with:
 | Authorized mutations | 30 / minute | session id |
 | Concurrent mutations | 1 in flight | session id |
 
+**Autosave is the first operation to spend the mutation budget in bulk**
+(`APP3-B08`, 2026-08-08). It replaces the whole working document under a single
+atomic compare-and-set on the session's `autosave_revision`, so a save that
+arrives against a revision the client has not read is refused with `409` and
+writes nothing. Three consequences are security properties, not implementation
+detail:
+
+- **A save is never replayed blindly.** There is deliberately no idempotency
+  record for autosave. A client whose response was lost must refetch and re-save;
+  repeating the request would resurrect an edit the customer may already have
+  undone.
+- **Typing does not extend a session.** The 30-day lifetime stays absolute
+  (PO-06); autosave never touches `expires_at`, never issues a cookie and never
+  rotates the secret.
+- **A document can only ever reference media the session is entitled to.** The
+  derivative authority handed to validation contains only Assets this session
+  uploaded plus those its already-accepted document referenced, so a
+  cross-session reference fails because it was never in the allowlist rather
+  than because a comparison caught it. Eligibility is read from canonical
+  persistence metadata; validating a document never reads object storage
+  (IMP-D044).
+
+Autosave **cadence** — debounce, retry timing, offline queueing — is a Studio
+concern owned by `APP3-S11` and is deliberately absent from backend authority.
+
 The network key is an **ephemeral HMAC of normalized source network data under a
 rotating runtime salt** — raw IP is never persisted in Design Session tables, and
 the key is not ownership or customer identity. APP3 creates **no durable browser

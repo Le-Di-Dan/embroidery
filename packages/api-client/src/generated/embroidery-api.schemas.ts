@@ -449,6 +449,22 @@ export interface ArchiveProductBody {
   expectedUpdatedAt: string;
 }
 
+/**
+ * The complete canonical Design Document snapshot. Validated, quantized and canonicalized by the Design Document authority; the stored value is the canonical form, not the object as sent.
+ */
+export type AutosaveDesignSessionBodyDocument = { [key: string]: unknown };
+
+export interface AutosaveDesignSessionBody {
+  /** The complete canonical Design Document snapshot. Validated, quantized and canonicalized by the Design Document authority; the stored value is the canonical form, not the object as sent. */
+  document: AutosaveDesignSessionBodyDocument;
+  /**
+   * The autosave revision the client last read. A mismatch is refused, not merged.
+   * @minimum 0
+   * @maximum 999999999
+   */
+  expectedRevision: number;
+}
+
 export type CloneDesignSessionBodyMode =
   (typeof CloneDesignSessionBodyMode)[keyof typeof CloneDesignSessionBodyMode];
 

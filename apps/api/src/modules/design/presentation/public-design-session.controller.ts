@@ -22,6 +22,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Req,
   Res,
   UseGuards,
@@ -30,11 +31,16 @@ import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/s
 
 import { ApiSuccessCode } from '../../../platform/http-response/api-envelope.decorators';
 import { ENVELOPE_SCHEMA_NAMES } from '../../../openapi/envelope-schema.augmentation';
+import {
+  AutosaveDesignSessionUseCase,
+  DesignDocumentRejectedError,
+} from '../application/autosave-design-session.use-case';
 import { OpenDesignSessionUseCase } from '../application/open-design-session.use-case';
 import { ResumeDesignSessionUseCase } from '../application/resume-design-session.use-case';
 import type { DesignSessionSnapshotView } from '../application/design-session-snapshot';
 import {
   designSessionBootstrapRefused,
+  designSessionDocumentRefused,
   designSessionOriginRefused,
   designSessionRateLimited,
   designSessionUnauthorized,
@@ -50,6 +56,7 @@ import {
   CreateDesignSessionBody,
   DesignSessionIdParam,
 } from './schemas/public-design-session.request';
+import { AutosaveDesignSessionBody } from './schemas/design-session-autosave.request';
 
 const ERROR_SCHEMA = { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.error}` };
 
@@ -68,6 +75,7 @@ export class PublicDesignSessionController {
   constructor(
     private readonly open: OpenDesignSessionUseCase,
     private readonly resumption: ResumeDesignSessionUseCase,
+    private readonly autosaving: AutosaveDesignSessionUseCase,
     private readonly origins: DesignSessionOriginPolicy,
     private readonly limiter: DesignSessionRateLimiter,
     private readonly networkKeys: EphemeralNetworkKeyService,
@@ -193,5 +201,73 @@ export class PublicDesignSessionController {
       ),
     );
     return outcome.snapshot;
+  }
+
+  @Put(':sessionId/document')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(DesignSessionGuard)
+  @ApiSuccessCode('DESIGN_SESSION_AUTOSAVED', 'Design document saved.')
+  @ApiOperation({
+    summary: 'Autosave the design document of an anonymous session',
+    description:
+      'Replaces the working document under optimistic concurrency. The caller presents the ' +
+      'revision it last read; a mismatch is refused with 409 rather than merged, and the ' +
+      'client must refetch before retrying — a save whose outcome is unknown is never ' +
+      'replayed blindly. The stored value is the canonical, quantized document, which is ' +
+      'what the response returns. Saving never extends the session lifetime and never ' +
+      'issues or rotates a cookie.',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    required: true,
+    schema: { type: 'string', format: 'uuid' },
+    description: 'Public Design Session identifier.',
+  })
+  @ApiBody({ type: AutosaveDesignSessionBody })
+  @ApiResponse({ status: 200, description: 'The saved session snapshot.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Malformed body, or a revision that is not a non-negative integer.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'The session could not be authorized.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Origin or Fetch Metadata refused.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'The session changed since the caller last read it. Refetch before retrying.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'The document is not valid for this placement, or references unusable media.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({ status: 429, description: 'Too many requests.', schema: ERROR_SCHEMA })
+  async autosave(
+    @Body() body: AutosaveDesignSessionBody,
+    @CurrentDesignSession() context: DesignSessionContext,
+  ): Promise<DesignSessionSnapshotView> {
+    try {
+      // The id comes from the authorized context, never the path parameter: the
+      // guard proved ownership of *that* session.
+      return await this.autosaving.execute({
+        sessionId: context.designSessionId,
+        expectedRevision: body.expectedRevision,
+        document: body.document,
+      });
+    } catch (error: unknown) {
+      // Every document rejection collapses to one refusal. Naming which rule
+      // failed would let a caller probe the placement and the media catalogue of
+      // a session by watching the reason change.
+      throw error instanceof DesignDocumentRejectedError ? designSessionDocumentRefused() : error;
+    }
   }
 }

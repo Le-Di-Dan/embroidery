@@ -132,7 +132,7 @@ export const STATUS_AFTER_W01C = Object.freeze([
   // fails the day that delivery is corrected, which is what `APP3-B06B-C1` did.
   // The review stage is still calendar, not architecture; what stays ruled is
   // that B06B is one of the states G08 defined for it.
-  /\nAPP3-B06B = (BLOCKED_BY_APP3-(B06A_AND_)?B07|READY — NOT STARTED|COMPLETE — REVIEW_DELIVERED(_AFTER_C1)?)\n/,
+  /\nAPP3-B06B = (BLOCKED_BY_APP3-(B06A_AND_)?B07|READY — NOT STARTED|COMPLETE — REVIEW_(DELIVERED(_AFTER_C1)?|ACCEPTED))\n/,
 ]);
 
 /** An expected status entry: an exact line, or a pattern over the block. */

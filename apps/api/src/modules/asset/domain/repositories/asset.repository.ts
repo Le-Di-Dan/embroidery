@@ -42,6 +42,20 @@ export interface AssetDerivative {
   readonly status: AssetDerivativeState;
   readonly storageKey: string | undefined;
   readonly isWatermarked: boolean;
+  /**
+   * The `APP3-DB01` canonical metadata quartet, projected because `APP3-B08`
+   * needs it to decide whether a derivative may be placed in a design.
+   *
+   * Nullable together or not at all: the table's CHECK allows only 0 or 4 of
+   * them, requires each to be positive, and requires all four on a
+   * `NORMALIZED`/`READY` row. So a null here means "not measured yet", never
+   * "measured as nothing" — and `IMP-D044` forbids re-reading the binary to
+   * fill it in, which is why an unmeasured derivative is simply ineligible.
+   */
+  readonly widthPx: number | undefined;
+  readonly heightPx: number | undefined;
+  readonly mediaType: string | undefined;
+  readonly byteSize: number | undefined;
 }
 
 export interface AssetInspection {

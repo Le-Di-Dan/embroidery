@@ -103,6 +103,24 @@ export function designSessionRateLimited(): HttpException {
  * the live revision would let an unauthorized caller poll for activity. The
  * revision a client needs comes from a successful read, not from a refusal.
  */
+/**
+ * The single autosave document refusal (`APP3-B08`).
+ *
+ * A malformed document, one that is too complex, one whose placement snapshot
+ * disagrees with the live Side and Area, one that leaves the embroidery area,
+ * and one referencing media this session may not place are all one answer.
+ * Naming which rule failed would turn the endpoint into an oracle: a caller
+ * could learn a session's placement geometry and probe which Asset ids exist by
+ * watching the reason change. 422, because the request is well formed and the
+ * document is what cannot be accepted.
+ */
+export function designSessionDocumentRefused(): HttpException {
+  return new HttpException(
+    { message: 'That design document cannot be saved for this session.' },
+    HttpStatus.UNPROCESSABLE_ENTITY,
+  );
+}
+
 export function designSessionStaleWrite(): HttpException {
   return new HttpException(
     { message: 'This design session changed since you last loaded it.' },

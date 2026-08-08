@@ -47,6 +47,12 @@ export function toDerivative(row: DerivativeRow): AssetDerivative {
     status: row.status as AssetDerivativeState,
     storageKey: row.storageKey ?? undefined,
     isWatermarked: row.isWatermarked,
+    widthPx: row.widthPx ?? undefined,
+    heightPx: row.heightPx ?? undefined,
+    mediaType: row.mediaType ?? undefined,
+    // `byte_size` is a bigint column; a derivative that large is not placeable
+    // anyway, but the conversion is explicit rather than implicit.
+    byteSize: row.byteSize === null ? undefined : Number(row.byteSize),
   };
 }
 

@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { isB06BDelivered } from './app3-accepted-surface.mjs';
+import { isB06BDelivered, isB08Delivered } from './app3-accepted-surface.mjs';
 
 /**
  * The published surface, frozen **per world** (`APP3-B01-C1`, extended by
@@ -51,6 +51,10 @@ const OPENAPI_SHA256_AFTER_B06B =
 const CLIENT_TREE_SHA256_AFTER_B06B =
   '6cb189bbdff720920bf10dad4d3520dd962ff8dbd6a57630636d4be8730075c7';
 const OPENAPI_FACTS_AFTER_B06B = Object.freeze({ paths: 22, operations: 26, schemas: 49 });
+const OPENAPI_SHA256_AFTER_B08 = '4fa09b27bfc9de265af4e0da705de3c9cfe0173758f9fa570ad07cb83c04ab06';
+const CLIENT_TREE_SHA256_AFTER_B08 =
+  '4bf8dd9db03b44856e84e4f17804d53fc65924046efa842cc0b610dad27486f5';
+const OPENAPI_FACTS_AFTER_B08 = Object.freeze({ paths: 23, operations: 27, schemas: 50 });
 const CLIENT_TREE_SHA256_AFTER_P03 =
   '3fcc05d01e01fec9c8566348be6aacf7beefdf654a0487f66e061b3234ead7a8';
 const PHASE_FILE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
@@ -120,35 +124,42 @@ export function checkApp3B01NArtifacts(rootDir, fail) {
   // replaced — each world still proves its own artifact, so a rollback to any
   // earlier phase state is still checked against what that state actually
   // published rather than against the newest numbers.
-  const afterB06B = isB06BDelivered(rootDir);
+  const afterB08 = isB08Delivered(rootDir);
+  const afterB06B = afterB08 || isB06BDelivered(rootDir);
   const afterB07 = afterB06B || isB07Delivered(rootDir);
   const afterP03 = afterB07 || isP03Delivered(rootDir);
   const afterB02 = afterP03 || isB02Delivered(rootDir);
-  const facts = afterB06B
-    ? OPENAPI_FACTS_AFTER_B06B
-    : afterB07
-      ? OPENAPI_FACTS_AFTER_B07
-      : afterB02
-        ? OPENAPI_FACTS_AFTER_B02
-        : OPENAPI_FACTS;
-  const expectedDigest = afterB06B
-    ? OPENAPI_SHA256_AFTER_B06B
-    : afterB07
-      ? OPENAPI_SHA256_AFTER_B07
-      : afterP03
-        ? OPENAPI_SHA256_AFTER_P03
+  const facts = afterB08
+    ? OPENAPI_FACTS_AFTER_B08
+    : afterB06B
+      ? OPENAPI_FACTS_AFTER_B06B
+      : afterB07
+        ? OPENAPI_FACTS_AFTER_B07
         : afterB02
-          ? OPENAPI_SHA256_AFTER_B02
-          : OPENAPI_SHA256;
-  const expectedTree = afterB06B
-    ? CLIENT_TREE_SHA256_AFTER_B06B
-    : afterB07
-      ? CLIENT_TREE_SHA256_AFTER_B07
-      : afterP03
-        ? CLIENT_TREE_SHA256_AFTER_P03
-        : afterB02
-          ? CLIENT_TREE_SHA256_AFTER_B02
-          : CLIENT_TREE_SHA256;
+          ? OPENAPI_FACTS_AFTER_B02
+          : OPENAPI_FACTS;
+  const expectedDigest = afterB08
+    ? OPENAPI_SHA256_AFTER_B08
+    : afterB06B
+      ? OPENAPI_SHA256_AFTER_B06B
+      : afterB07
+        ? OPENAPI_SHA256_AFTER_B07
+        : afterP03
+          ? OPENAPI_SHA256_AFTER_P03
+          : afterB02
+            ? OPENAPI_SHA256_AFTER_B02
+            : OPENAPI_SHA256;
+  const expectedTree = afterB08
+    ? CLIENT_TREE_SHA256_AFTER_B08
+    : afterB06B
+      ? CLIENT_TREE_SHA256_AFTER_B06B
+      : afterB07
+        ? CLIENT_TREE_SHA256_AFTER_B07
+        : afterP03
+          ? CLIENT_TREE_SHA256_AFTER_P03
+          : afterB02
+            ? CLIENT_TREE_SHA256_AFTER_B02
+            : CLIENT_TREE_SHA256;
 
   const path = join(rootDir, OPENAPI_FILE);
   if (!existsSync(path)) {

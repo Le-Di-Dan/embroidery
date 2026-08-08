@@ -19,6 +19,14 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    marker: /\nAPP3-B08 = COMPLETE/,
+    paths: 23,
+    operations: 27,
+    schemas: 50,
+    designSessionRoutes: true,
+    designSessionPaths: 4,
+  },
+  {
     marker: /\nAPP3-B06B = COMPLETE/,
     paths: 22,
     operations: 26,
@@ -72,6 +80,7 @@ const SESSION_PATHS = Object.freeze([
   '/api/public/design-sessions',
   '/api/public/design-sessions/{sessionId}/resume',
   '/api/public/design-sessions/{sessionId}/assets',
+  '/api/public/design-sessions/{sessionId}/document',
 ]);
 
 export function acceptedSessionPaths(rootDir) {
@@ -88,7 +97,7 @@ export function acceptedSessionPaths(rootDir) {
  * was written, which is the same defect as measuring a surface by counting the
  * artifact it is supposed to constrain.
  */
-export const B06B_DELIVERED_STATUS = 'APP3-B06B = COMPLETE — REVIEW_DELIVERED_AFTER_C1';
+export const B06B_DELIVERED_STATUS = 'APP3-B06B = COMPLETE — REVIEW_ACCEPTED';
 
 /**
  * True once `APP3-B06B` has published the anonymous raster intake.
@@ -105,4 +114,11 @@ export function isB06BDelivered(rootDir) {
   const path = join(rootDir, PHASE);
   const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
   return /\nAPP3-B06B = COMPLETE/.test(phase);
+}
+
+/** True once `APP3-B08` has published autosave, which moves 22/26/49 → 23/27/50. */
+export function isB08Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-B08 = COMPLETE/.test(phase);
 }

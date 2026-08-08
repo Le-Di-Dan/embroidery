@@ -41,7 +41,9 @@ function checkStatus(rootDir, fail) {
     'APP3-B06A = COMPLETE — REVIEW_ACCEPTED',
     afterB06B ? 'APP3-B07 = COMPLETE — REVIEW_ACCEPTED' : 'APP3-B07 = COMPLETE — REVIEW_DELIVERED',
     afterB06B ? B06B_DELIVERED_STATUS : 'APP3-B06B = READY — NOT STARTED',
-    'APP3-B08 = READY — NOT STARTED',
+    // Mode-aware for the same reason the B06B line is: B07 ruled that B08 is a
+    // successor, not which review stage it has reached.
+    ...(/\nAPP3-B08 = COMPLETE/.test(phase) ? [] : ['APP3-B08 = READY — NOT STARTED']),
   ]) {
     if (!phase.includes(`\n${line}\n`)) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);

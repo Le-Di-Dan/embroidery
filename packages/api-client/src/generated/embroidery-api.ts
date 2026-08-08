@@ -23,6 +23,7 @@ import type {
   AdminProductUnpublish200,
   AdminProductUpdate200,
   ArchiveProductBody,
+  AutosaveDesignSessionBody,
   CreateDesignSessionBody,
   CreateProductBody,
   HealthStatusResponse,
@@ -328,6 +329,26 @@ export const publicDesignSessionAssetCreate = (
 };
 
 /**
+ * Replaces the working document under optimistic concurrency. The caller presents the revision it last read; a mismatch is refused with 409 rather than merged, and the client must refetch before retrying — a save whose outcome is unknown is never replayed blindly. The stored value is the canonical, quantized document, which is what the response returns. Saving never extends the session lifetime and never issues or rotates a cookie.
+ * @summary Autosave the design document of an anonymous session
+ */
+export const publicDesignSessionAutosave = (
+  sessionId: string,
+  autosaveDesignSessionBody: AutosaveDesignSessionBody,
+  options?: SecondParameter<typeof apiRequest<void>>,
+) => {
+  return apiRequest<void>(
+    {
+      url: `/api/public/design-sessions/${sessionId}/document`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data: autosaveDesignSessionBody,
+    },
+    options,
+  );
+};
+
+/**
  * Rotates the session secret and returns the current snapshot. The previous secret stops working immediately; expiry and document revision are unchanged.
  * @summary Resume an anonymous design session
  */
@@ -489,6 +510,9 @@ export type PublicDesignSessionCreateResult = NonNullable<
 >;
 export type PublicDesignSessionAssetCreateResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionAssetCreate>>
+>;
+export type PublicDesignSessionAutosaveResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignSessionAutosave>>
 >;
 export type PublicDesignSessionResumeResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionResume>>
