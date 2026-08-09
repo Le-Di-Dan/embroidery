@@ -155,19 +155,31 @@ export { adminProductSideBackgroundGet } from './generated/embroidery-api';
 // create entry point: a list you cannot add to is a dead end, and the create
 // response is what the list is reconciled from.
 //
-// `adminDesignTemplate_detail` stays withheld. The list renders from summaries
-// alone by design, and putting the detail read on this boundary is an invitation
-// to resolve a row by fetching it — which is the N+1 the keyset list exists to
-// avoid. `APP3-A03` brings it across when it opens one template.
+// `adminDesignTemplate_detail` and `adminDesignTemplate_saveDocument` crossed
+// with the Template editor (`APP3-A03`), which is the consumer this boundary was
+// waiting for. They cross **together**: the detail read is the only source of
+// the `expectedCurrentVersion` the save must echo back, so offering one without
+// the other would publish a write nobody could safely perform.
 //
-// The lifecycle operations (`publish`, `unpublish`, `archive`) stay withheld
-// too: `APP3-A02` is list management, not lifecycle mutation, and an operation
-// here is an invitation to add a button for it.
+// The detail read staying off the boundary until now was not caution about the
+// operation — it was about *who* could reach it. A list screen that can resolve
+// a row by fetching it is the N+1 a keyset list exists to avoid, and that rule
+// is unchanged: `APP3-A02`'s own gate still asserts the list never performs a
+// detail read, and now asserts it against a boundary where the operation exists.
+//
+// The lifecycle operations (`publish`, `unpublish`, `archive`) stay withheld:
+// neither `APP3-A02` nor `APP3-A03` is lifecycle mutation, and an operation here
+// is an invitation to add a button for it. `APP3-A04` brings them across.
 //
 // The status enum is re-exported as a value so the filter options are derived
 // from the contract rather than a hand-kept list that could drift out of step
 // with the three lifecycle states the server actually accepts.
-export { adminDesignTemplateCreate, adminDesignTemplateList } from './generated/embroidery-api';
+export {
+  adminDesignTemplateCreate,
+  adminDesignTemplateList,
+  adminDesignTemplateDetail,
+  adminDesignTemplateSaveDocument,
+} from './generated/embroidery-api';
 export { AdminDesignTemplateListStatus } from './generated/embroidery-api.schemas';
 export type {
   AdminDesignTemplateListParams,
@@ -177,6 +189,20 @@ export type {
   AdminDesignTemplateScopeResponse,
   AdminDesignTemplateVersionResponse,
   CreateDesignTemplateBody,
+  SaveDesignTemplateDocumentBody,
+} from './generated/embroidery-api.schemas';
+
+// The generated Design Document transport types (`APP3-A03`).
+//
+// These are Orval's projection of the *same* `APP3-P01` types the
+// `@embroidery/design-document` package owns — the OpenAPI schema is generated
+// from them. They are exposed only so a caller can name the wire shape at the
+// transport seam; `@embroidery/design-document` remains the single authority on
+// document structure, schema version, quantization and validation, and nothing
+// may validate a document against these declarations instead.
+export type {
+  DesignDocument as TransportDesignDocument,
+  DesignPlacementSnapshot as TransportDesignPlacementSnapshot,
 } from './generated/embroidery-api.schemas';
 
 // Anonymous public catalog reads (APP2-B04): the listing for the Storefront

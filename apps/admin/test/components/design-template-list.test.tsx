@@ -81,13 +81,18 @@ describe('the generated boundary', () => {
     expect('productId' in params).toBe(false);
   });
 
-  it('never reads a template detail to render a row', () => {
+  it('never reads a template detail to render a row', async () => {
     const actual = jest.requireActual<Record<string, unknown>>('@embroidery/api-client');
+    // `APP3-A03` put the detail read on the curated boundary for the editor, so
+    // this is no longer provable by its absence — and the rule it stands for is
+    // stronger stated directly: however many rows are rendered, the list issues
+    // the *list* call and nothing else.
+    expect(typeof actual['adminDesignTemplateDetail']).toBe('function');
 
-    // Withheld from the curated boundary entirely: an available detail read is
-    // an invitation to resolve a row by fetching it, which is the N+1 a keyset
-    // list exists to avoid.
-    expect(actual['adminDesignTemplateDetail']).toBeUndefined();
+    render();
+    await screen.findByTestId('template-table');
+
+    expect(listMock).toHaveBeenCalledTimes(1);
   });
 
   it('exposes no lifecycle operation to this screen', () => {
@@ -252,18 +257,28 @@ describe('capabilities the contract does not have', () => {
     }
   });
 
-  it('represents the missing editor as a disabled control that explains itself', async () => {
+  it('opens the editor at the exact APP3-A03 route for that template', async () => {
     render();
     await screen.findByTestId('template-table');
 
     const edit = screen.getByTestId(`template-edit-${TEMPLATE_DRAFT_ID}`);
-    expect(edit).toBeDisabled();
-    // Not a link: APP3-A03 does not exist, so navigation would be a dead end.
-    expect(edit.tagName.toLowerCase()).toBe('button');
-    expect(
-      screen.getAllByText(DESIGN_TEMPLATE_COPY.editAffordance.unavailable).length,
-    ).toBeGreaterThan(0);
-    expect(router.push).not.toHaveBeenCalled();
+    // A real link now that `APP3-A03` exists — it was a disabled button stating
+    // its own dependency until the route did. A link and not a button handler,
+    // so the editor can be opened in a new tab.
+    expect(edit.tagName.toLowerCase()).toBe('a');
+    expect(edit).toHaveAttribute('href', `/design-templates/${TEMPLATE_DRAFT_ID}`);
+    expect(edit).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('addresses the editor by template id, never by the public slug', async () => {
+    render();
+    await screen.findByTestId('template-table');
+
+    // The slug is the *published* address and a draft may never have been
+    // published, so a slug-addressed editor would be unreachable for exactly
+    // the templates it exists to edit.
+    const edit = screen.getByTestId(`template-edit-${TEMPLATE_DRAFT_ID}`);
+    expect(edit.getAttribute('href')).not.toContain('hoa-sen');
   });
 });
 

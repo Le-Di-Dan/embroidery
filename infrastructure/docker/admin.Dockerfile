@@ -37,6 +37,14 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 FROM deps AS dev
 COPY . .
+# Workspace runtime packages ship TypeScript source and resolve to `dist`
+# (IMP-D018), so they must be compiled inside the image before Next can resolve
+# them. `@embroidery/admin^...` selects every workspace dependency of the Admin
+# *except* the Admin itself, so a newly added one is built here automatically
+# rather than failing the dev server with a module-not-found — which is exactly
+# how `APP3-A03` found this, after adding `@embroidery/design-document` and
+# `@embroidery/design-engine`. Mirrors the API image, which needed it first.
+RUN pnpm --filter "@embroidery/admin^..." build
 ENV NODE_ENV=development
 EXPOSE 3001
 CMD ["pnpm", "--filter", "@embroidery/admin", "dev"]
@@ -47,6 +55,9 @@ CMD ["pnpm", "--filter", "@embroidery/admin", "dev"]
 FROM deps AS build
 COPY . .
 ENV NODE_ENV=production
+# Same reason as the dev stage: the Admin's workspace dependencies resolve to
+# `dist`, so they are compiled before `next build` runs.
+RUN pnpm --filter "@embroidery/admin^..." build
 RUN pnpm --filter @embroidery/admin build
 
 # ---------------------------------------------------------------------------

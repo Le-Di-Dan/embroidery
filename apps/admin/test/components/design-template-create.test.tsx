@@ -191,8 +191,12 @@ describe('submission', () => {
     await user.click(within(dialog).getByTestId('template-create-submit'));
     await screen.findByTestId('template-created');
 
-    // There is nothing to call: the operation is not on the boundary at all.
-    expect(actual['adminDesignTemplateDetail']).toBeUndefined();
+    // The operation exists since `APP3-A03` — so this now asserts the behaviour
+    // rather than the impossibility. The create response is already a detail
+    // view; re-reading it would be asking a question the server just answered.
+    expect(typeof actual['adminDesignTemplateDetail']).toBe('function');
+    expect(listMock.mock.calls.length).toBeGreaterThan(0);
+    expect(createMock).toHaveBeenCalledTimes(1);
   });
 });
 

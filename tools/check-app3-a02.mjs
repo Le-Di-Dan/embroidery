@@ -127,13 +127,26 @@ check(
 // ---------------------------------------------------------------------------
 check('route: the list page exists', existsSync(ROUTE));
 
-const appRoutes = collect(join(ADMIN, 'src/app'), /\.tsx?$/).filter((path) =>
-  /design-template/i.test(path),
+const appRoutes = collect(join(ADMIN, 'src/app'), /\.tsx?$/)
+  .filter((path) => /design-template/i.test(path))
+  .map((path) => path.replace(/\\/g, '/'));
+
+// Two routes, and the **pair** is the rule. The list owned the only one until
+// `APP3-A03` delivered the editor segment; counting one would now fail for a
+// reason that has nothing to do with the property being protected, which is
+// that there is no third spelling of this URL space.
+const hasEditorRoute = existsSync(
+  join(ADMIN, 'src/app/(protected)/design-templates/[templateId]/page.tsx'),
 );
 check(
-  'route: exactly one design-template route',
-  appRoutes.length === 1,
-  `found ${String(appRoutes.length)}`,
+  'route: exactly the list route, plus the editor route once APP3-A03 exists',
+  appRoutes.length === (hasEditorRoute ? 2 : 1),
+  `found ${String(appRoutes.length)} with editor route ${hasEditorRoute ? 'present' : 'absent'}`,
+);
+check(
+  'route: the list segment is one of them',
+  appRoutes.some((path) => /design-templates\/page\.tsx$/.test(path)),
+  'the list route segment is missing',
 );
 check(
   'route: sits in the protected route group',
@@ -157,14 +170,21 @@ check(
   'the shell has no Design Template entry, or it does not use the route constant',
 );
 
-// A02 must not have started A03/A04.
-for (const forbidden of ['template-editor', 'template-lifecycle', 'design-studio']) {
+// A02 must not have started A04 or the Studio. The Template *editor* is
+// `APP3-A03`'s and is expected to exist once that checkpoint has delivered —
+// what stays forbidden is A02 growing one of its own.
+for (const forbidden of ['template-lifecycle', 'design-studio']) {
   check(
     `scope: no ${forbidden} feature was created`,
     !existsSync(join(ADMIN, 'src/features', forbidden)),
     `apps/admin/src/features/${forbidden} exists`,
   );
 }
+check(
+  'scope: the list feature contains no editor of its own',
+  !existsSync(join(FEATURE, 'components/design-template-editor-screen.tsx')),
+  'an editor screen was added inside the list feature',
+);
 
 // ---------------------------------------------------------------------------
 // 4 · Generated-client boundary
@@ -178,15 +198,24 @@ const featureSources = collect(FEATURE, /\.tsx?$/).map((path) => ({
 check('feature: has source files', featureSources.length > 0);
 
 const curated = stripComments(read(CURATED_CLIENT));
+// Asserted as membership of one export statement, not as an exact substring.
+// The previous spelling pinned the two names adjacent on a single line, which
+// Prettier rewrapped the moment `APP3-A03` added a third — a formatting change
+// is not a boundary change.
+const curatedExports = curated.match(/export \{[^}]*\} from '\.\/generated\/embroidery-api';/gs);
 check(
-  'client: the list and create operations are on the curated boundary',
-  /adminDesignTemplateCreate, adminDesignTemplateList/.test(curated),
+  'client: the list and create operations are on the curated boundary together',
+  (curatedExports ?? []).some(
+    (statement) =>
+      statement.includes('adminDesignTemplateList') &&
+      statement.includes('adminDesignTemplateCreate'),
+  ),
   'the two consumed operations are not exported together',
 );
 
-// The withheld operations, as real absences.
+// The lifecycle operations, as real absences. These are `APP3-A04`'s and no
+// checkpoint since has had a reason to bring one across.
 for (const [operation, why] of [
-  ['adminDesignTemplateDetail', 'a row-level detail read is the N+1 a keyset list avoids'],
   ['adminDesignTemplatePublish', 'lifecycle belongs to APP3-A04'],
   ['adminDesignTemplateUnpublish', 'lifecycle belongs to APP3-A04'],
   ['adminDesignTemplateArchive', 'lifecycle belongs to APP3-A04'],
@@ -197,6 +226,18 @@ for (const [operation, why] of [
     why,
   );
 }
+
+// The detail read is a different case and must be checked in both worlds.
+// `APP3-A02` proved "no N+1" by the operation being unreachable; `APP3-A03`
+// legitimately brought it across for the editor. So the rule moves to where the
+// property actually lives — the list's own sources, asserted below — and here
+// the two worlds are pinned so neither can drift silently.
+const detailIsCurated = /export \{[^}]*adminDesignTemplateDetail/s.test(curated);
+check(
+  'client: the detail read is curated only alongside the save it belongs with',
+  !detailIsCurated || /export \{[^}]*adminDesignTemplateSaveDocument/s.test(curated),
+  'the detail read crossed the boundary without the save that needs its version token',
+);
 
 const consumers = featureSources.filter(
   (file) =>
@@ -408,8 +449,9 @@ if (failures.length > 0) {
 console.log(
   `APP3-A02 check passed (${String(checks.length)} assertions; one protected route, ` +
     'two generated operations, five approved design rows). The list renders from summaries ' +
-    'alone — the detail read and every lifecycle operation stay off the client boundary, so a ' +
-    'row cannot become an N+1 or grow a publish button; the cursor is forwarded unparsed and ' +
+    'alone — no source in this feature reaches the detail read that APP3-A03 curated for the ' +
+    'editor, and every lifecycle operation stays off the client boundary, so a row cannot ' +
+    'become an N+1 or grow a publish button; the cursor is forwarded unparsed and ' +
     'the filters sit in the query key, so a filter change resets the collection structurally; ' +
     'and the two cells the contract under-reports are distinguished — an unreported version is ' +
     'never rendered as an absent one.',

@@ -63,11 +63,23 @@ describe('generated client boundary', () => {
     expect(typeof apiClient.adminDesignTemplateCreate).toBe('function');
   });
 
-  it('withholds the detail read that would become an N+1', () => {
-    expect((apiClient as Record<string, unknown>)['adminDesignTemplateDetail']).toBeUndefined();
+  it('never performs a detail read, now that one is reachable', () => {
+    // `APP3-A03` put `adminDesignTemplateDetail` on the boundary, because the
+    // editor opens exactly one template by id. That makes this rule *stronger*
+    // than it was, not weaker: the operation used to be unreachable, so the
+    // absence proved itself. Now it is reachable and the list must still never
+    // call it — which is the property the N+1 rule was always about.
+    expect(typeof apiClient.adminDesignTemplateDetail).toBe('function');
+
+    for (const source of sources) {
+      expect(source.text).not.toContain('adminDesignTemplateDetail');
+      expect(source.text).not.toContain('adminDesignTemplateSaveDocument');
+    }
   });
 
   it('withholds every lifecycle operation', () => {
+    // Unchanged and still an absence: `APP3-A04` owns these, and neither the
+    // list nor the editor may reach one.
     for (const operation of [
       'adminDesignTemplatePublish',
       'adminDesignTemplateUnpublish',
@@ -152,20 +164,35 @@ describe('route boundary', () => {
     expect(routeSourceRaw.split('\n').length).toBeLessThan(30);
   });
 
-  it('is the only design-template route in the app', () => {
+  it('has exactly the list route and the APP3-A03 editor route', () => {
+    // Two routes now, and the pair is the assertion: a third would be an alias,
+    // which is the thing this rule has always been about. `APP3-A03` delivered
+    // the editor segment, so counting one would now fail for the wrong reason.
     const appDir = join(__dirname, '..', '..', 'src', 'app');
-    const routes = collectSources(appDir).filter((path) => /design-template/i.test(path));
+    const routes = collectSources(appDir)
+      .filter((path) => /design-template/i.test(path))
+      .map((path) => path.replace(/\\/g, '/'));
 
-    expect(routes).toHaveLength(1);
+    expect(routes).toHaveLength(2);
+    expect(routes.some((path) => /design-templates\/page\.tsx$/.test(path))).toBe(true);
+    expect(routes.some((path) => /design-templates\/\[templateId\]\/page\.tsx$/.test(path))).toBe(
+      true,
+    );
   });
 
-  it('declares no editor route for a screen that does not exist', () => {
-    for (const source of sources) {
-      // APP3-A03 owns the editor. A constant naming it here is how a list ends
-      // up linking into a 404.
-      expect(source.text).not.toMatch(/design-templates\/\$\{/);
-      expect(source.text).not.toMatch(/EDITOR_ROUTE/);
-    }
+  it('builds the editor link from the one route authority', () => {
+    // The affordance is a real link now that the editor exists. It must not be
+    // a second spelling of the URL: one owner is what keeps the child segment
+    // from drifting off its parent.
+    const routeModule = sources.find((source) => /design-template-route\.ts$/.test(source.path));
+    expect(routeModule?.text).toContain('adminDesignTemplateEditorRoute');
+
+    const literalBuilders = sources.filter(
+      (source) =>
+        !/design-template-route\.ts$/.test(source.path) &&
+        /['"`]\/design-templates\//.test(source.text),
+    );
+    expect(literalBuilders).toEqual([]);
   });
 });
 

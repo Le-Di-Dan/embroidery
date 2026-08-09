@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import type { AdminDesignTemplateSummaryResponse } from '@embroidery/api-client';
 
 import { DESIGN_TEMPLATE_COPY } from '../model/design-template-copy';
+import { adminDesignTemplateEditorRoute } from '../model/design-template-route';
 import { scopeCell, scopeLabel, versionCell, versionLabel } from '../model/design-template-rows';
 import { DesignTemplateStatusBadge } from './design-template-status-badge';
 
@@ -61,25 +63,21 @@ export function DesignTemplateTable({ items, productNames }: DesignTemplateTable
             </td>
             <td>
               {/*
-                `APP3-A03` does not exist. A link would be a dead end and a
-                silent no-op button would be worse, so the control is a real
-                disabled button that states its own dependency.
+                A real link now that `APP3-A03` exists. It was a disabled button
+                with a stated reason until the route did, which is the same rule
+                either way: never a control that leads nowhere.
+
+                `<Link>`, not a button with a handler — the editor is a page, so
+                it must be openable in a new tab and reachable by the browser's
+                own navigation.
               */}
-              <button
-                type="button"
+              <Link
                 className="design-template-table__edit"
-                disabled
-                aria-describedby={`template-edit-note-${item.templateId}`}
+                href={adminDesignTemplateEditorRoute(item.templateId)}
                 data-testid={`template-edit-${item.templateId}`}
               >
                 {DESIGN_TEMPLATE_COPY.editAffordance.label}
-              </button>
-              <span
-                className="design-template-table__edit-note"
-                id={`template-edit-note-${item.templateId}`}
-              >
-                {DESIGN_TEMPLATE_COPY.editAffordance.unavailable}
-              </span>
+              </Link>
             </td>
           </tr>
         ))}

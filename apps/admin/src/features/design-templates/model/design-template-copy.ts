@@ -15,8 +15,10 @@
  * with no placement scope each get their own sentence. An empty cell would read
  * as a rendering bug; "—" alone would read as zero.
  *
- * *No string promises an editor.* `APP3-A03` does not exist yet, so the row
- * affordance says what is missing instead of linking somewhere broken.
+ * *No string promises what does not exist.* The row affordance said what was
+ * missing while `APP3-A03` was unbuilt; now that the editor route exists it is a
+ * real link, and the sentence explaining its absence is gone rather than left
+ * behind to contradict it.
  */
 export const DESIGN_TEMPLATE_COPY = {
   page: {
@@ -84,9 +86,12 @@ export const DESIGN_TEMPLATE_COPY = {
   },
 
   editAffordance: {
+    /**
+     * A real link since `APP3-A03` delivered the editor route. It was a disabled
+     * button carrying its own reason until then — the same rule in both states:
+     * a control either works or says why it does not, and never leads nowhere.
+     */
     label: 'Mở trình chỉnh sửa',
-    /** Why the control is inert. `APP3-A03` is not built. */
-    unavailable: 'Trình chỉnh sửa mẫu sẽ có ở bước sau (APP3-A03).',
   },
 
   states: {

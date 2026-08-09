@@ -1,0 +1,598 @@
+// Admin Design Template editor (`APP3-A03`).
+//
+// Reproduces `FIG-ADMIN-TEMPLATEEDITOR-DESKTOP-{DEFAULT,TEXTSELECTED,SAVING,
+// CONFLICT}`, `FIG-ADMIN-TEMPLATEEDITOR-MOBILE-READONLY` (section `596:9`) and
+// the narrow-desktop reference `FIG-ADMIN-TEMPLATEEDITOR-NARROW-1280`
+// (`618:3`). Every colour, radius and space is a token: no literal hex, no
+// rgba, and the dialog scrim is the canonical `$color-overlay-scrim`.
+//
+// Class names are prefixed `template-editor*`. The Admin stylesheet is global
+// and unscoped, so a generic `.stage`, `.layers` or `.inspector` here would
+// collide with another feature's rules in a way jsdom could never catch —
+// `APP2-A03` found exactly that defect.
+
+@use '@embroidery/styles' as styles;
+
+// The three-region floor from `618:3`: layers hold 240px and the inspector
+// 260px as minimums, and the stage takes whatever is left. They are named here
+// rather than inlined because the annotation is the authority for both the
+// grid below and the viewport hook that decides when the editor stops being an
+// editor at all.
+$editor-layers-min: 240px;
+$editor-inspector-min: 260px;
+
+.template-editor {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24);
+}
+
+.template-editor__loading {
+  margin: 0;
+  padding: styles.spacing(24);
+  color: styles.$color-text-secondary;
+}
+
+// ---------------------------------------------------------------------------
+// Topbar
+// ---------------------------------------------------------------------------
+
+.template-editor-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(16);
+  flex-wrap: wrap;
+}
+
+.template-editor-topbar__identity {
+  display: flex;
+  align-items: baseline;
+  gap: styles.spacing(12);
+  min-width: 0;
+}
+
+.template-editor-topbar__back {
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-secondary;
+  padding: styles.spacing(4) styles.spacing(12);
+  cursor: pointer;
+}
+
+.template-editor-topbar__name {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+.template-editor-topbar__status {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.template-editor-topbar__state {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(12);
+}
+
+.template-editor-topbar__version {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// The chip states differ in text as well as colour, so the palette is
+// reinforcement and never the only signal (§32).
+.template-editor-topbar__chip {
+  border-radius: styles.$radius-xs;
+  padding: styles.spacing(4) styles.spacing(12);
+  font-size: styles.$font-size-caption;
+  border: 1px solid styles.$color-border-secondary;
+  color: styles.$color-text-secondary;
+  background: styles.$color-surface-secondary;
+
+  &[data-chip='saved'] {
+    border-color: styles.$color-status-success;
+    color: styles.$color-status-success;
+  }
+
+  &[data-chip='unsaved'] {
+    border-color: styles.$color-status-warning;
+    color: styles.$color-status-warning;
+  }
+
+  &[data-chip='conflict'] {
+    border-color: styles.$color-status-error;
+    color: styles.$color-status-error;
+  }
+}
+
+.template-editor-topbar__save {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-action-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+  cursor: pointer;
+
+  &:disabled {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-background-secondary;
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.template-editor__conflict-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(16);
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-status-error;
+}
+
+.template-editor__conflict-banner-text {
+  margin: 0;
+}
+
+.template-editor__conflict-banner-action {
+  flex: 0 0 auto;
+  padding: styles.spacing(4) styles.spacing(12);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-status-error;
+  cursor: pointer;
+}
+
+// ---------------------------------------------------------------------------
+// The three regions
+// ---------------------------------------------------------------------------
+
+// `minmax(0, 1fr)` for the stage, not `1fr`. A grid track's default minimum is
+// `auto`, so an SVG that wants to be wide would push the row past the viewport
+// and give the page a horizontal scrollbar — which is precisely what `618:3`
+// annotates as forbidden. Zero is the floor that lets the stage shrink.
+.template-editor__workspace {
+  display: grid;
+  grid-template-columns: $editor-layers-min minmax(0, 1fr) $editor-inspector-min;
+  gap: styles.spacing(16);
+  align-items: start;
+}
+
+.template-editor__side {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Layers
+// ---------------------------------------------------------------------------
+
+.template-editor-layers {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+}
+
+.template-editor-layers__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+}
+
+.template-editor-layers__note,
+.template-editor-layers__disabled-reason,
+.template-editor-layers__empty {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-secondary;
+}
+
+.template-editor-layers__actions {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.template-editor-layers__add {
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:disabled {
+    background: styles.$color-background-secondary;
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.template-editor-layers__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.template-editor-layers__item {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(8);
+}
+
+.template-editor-layers__button {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: styles.spacing(8);
+  text-align: left;
+  padding: styles.spacing(8);
+  border: 1px solid transparent;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+  cursor: pointer;
+
+  &[data-selected='true'] {
+    border-color: styles.$color-action-primary;
+    background: styles.$color-surface-primary;
+  }
+}
+
+.template-editor-layers__type {
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+  flex: 0 0 auto;
+}
+
+.template-editor-layers__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: styles.$color-text-primary;
+}
+
+.template-editor-layers__flag {
+  font-size: styles.$font-size-caption;
+  color: styles.$color-status-warning;
+  flex: 0 0 auto;
+}
+
+.template-editor-layers__remove {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+// ---------------------------------------------------------------------------
+// Stage
+// ---------------------------------------------------------------------------
+
+.template-editor-stage {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  min-width: 0;
+}
+
+.template-editor-stage__frame {
+  position: relative;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  padding: styles.spacing(12);
+}
+
+// The SVG scales its own coordinate system, so the frame only has to give it a
+// width. `height: auto` keeps the aspect ratio the viewBox already defines.
+.template-editor-stage__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+}
+
+.template-editor-stage__notice {
+  position: absolute;
+  inset-inline: styles.spacing(12);
+  top: styles.spacing(12);
+  z-index: 1;
+  padding: styles.spacing(8) styles.spacing(12);
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+
+  p {
+    margin: 0;
+  }
+}
+
+.template-editor-stage__notice-action {
+  margin-top: styles.spacing(4);
+  border: none;
+  background: none;
+  color: styles.$color-action-primary;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.template-editor-stage__empty,
+.template-editor-stage__warning {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.template-editor-stage__warning {
+  color: styles.$color-status-warning;
+}
+
+// Geometry appearance stays in SCSS; the components pass only coordinates and
+// `data-` attributes, which is what `05-FRONTEND-AND-SCSS-STANDARD.md` §8
+// permits for SVG (`className` on an SVG element is an `SVGAnimatedString` that
+// React handles inconsistently).
+.template-editor-stage__area {
+  fill: none;
+  stroke: styles.$color-status-info;
+  stroke-width: 2;
+}
+
+.template-editor-stage__safe {
+  fill: none;
+  stroke: styles.$color-status-info;
+  stroke-width: 1;
+  stroke-dasharray: 6 6;
+}
+
+.template-editor-stage__selection {
+  fill: none;
+  stroke: styles.$color-action-primary;
+  stroke-width: 2;
+}
+
+.template-editor-stage__handle {
+  fill: styles.$color-surface-primary;
+  stroke: styles.$color-action-primary;
+  stroke-width: 1;
+}
+
+.template-editor-stage__image-placeholder {
+  fill: styles.$color-background-secondary;
+  stroke: styles.$color-border-secondary;
+  stroke-width: 2;
+  stroke-dasharray: 8 8;
+}
+
+.template-editor-stage__placeholder-label {
+  fill: styles.$color-text-tertiary;
+}
+
+.template-editor-stage__text {
+  font-family: styles.$font-family-secondary;
+}
+
+// ---------------------------------------------------------------------------
+// Scope + inspector
+// ---------------------------------------------------------------------------
+
+.template-editor-scope,
+.template-editor-inspector {
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+}
+
+.template-editor-scope__title,
+.template-editor-inspector__title {
+  margin: 0 0 styles.spacing(8);
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+}
+
+.template-editor-scope__list {
+  margin: 0;
+
+  div {
+    margin-bottom: styles.spacing(8);
+  }
+
+  dt {
+    color: styles.$color-text-primary;
+  }
+
+  dd {
+    margin: 0;
+    color: styles.$color-text-tertiary;
+    font-size: styles.$font-size-caption;
+  }
+}
+
+.template-editor-scope__unresolved {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+}
+
+.template-editor-scope__canvas,
+.template-editor-inspector__empty,
+.template-editor-inspector__help {
+  margin: styles.spacing(8) 0 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+// The inspector scrolls vertically at 1280 (`618:3`).
+//
+// `overflow-x: visible` is **not** the fix, and writing it here would be a
+// comment describing something the browser does not do: CSS computes a
+// `visible` axis to `auto` whenever the other axis is not `visible`, so
+// `overflow-y: auto` makes this a scroll container on both axes no matter what
+// the x rule says. Verified in the browser — the computed `overflow-x` is
+// `auto`.
+//
+// What actually keeps `APP3-A01`'s clipped-inspector defect from recurring is
+// that nothing inside is allowed to be wider than the column: `min-width: 0`
+// lets the grid track shrink, and every control is `width: 100%` of it rather
+// than an intrinsic width. There is then no x-axis overflow to clip.
+.template-editor-inspector {
+  max-height: 70vh;
+  overflow-y: auto;
+
+  input,
+  select {
+    max-width: 100%;
+  }
+}
+
+.template-editor-inspector__section {
+  border: none;
+  margin: 0 0 styles.spacing(16);
+  padding: 0;
+
+  legend {
+    padding: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+}
+
+.template-editor-inspector__label {
+  display: block;
+  margin-top: styles.spacing(8);
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.template-editor-inspector__select {
+  width: 100%;
+  padding: styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+// ---------------------------------------------------------------------------
+// Notices and dialogs
+// ---------------------------------------------------------------------------
+
+.template-editor-notice {
+  margin: styles.spacing(24);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.template-editor-notice__title {
+  margin: 0 0 styles.spacing(8);
+  font-size: styles.$font-size-body-l;
+  color: styles.$color-text-primary;
+}
+
+.template-editor-notice__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+}
+
+.template-editor-notice__action {
+  margin-top: styles.spacing(12);
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+}
+
+.template-editor-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(24);
+  background: styles.$color-overlay-scrim;
+}
+
+.template-editor-dialog {
+  width: min(520px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+
+  p {
+    margin: 0 0 styles.spacing(8);
+    color: styles.$color-text-secondary;
+  }
+}
+
+.template-editor-dialog__title {
+  margin: 0 0 styles.spacing(12);
+  font-size: styles.$font-size-body-l;
+  color: styles.$color-text-primary;
+}
+
+.template-editor-dialog__lead {
+  color: styles.$color-text-primary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.template-editor-dialog__help {
+  font-size: styles.$font-size-caption;
+}
+
+.template-editor-dialog__actions {
+  display: flex;
+  gap: styles.spacing(12);
+  margin-top: styles.spacing(16);
+}
+
+.template-editor-dialog__primary {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-action-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+  cursor: pointer;
+}
+
+.template-editor-dialog__secondary {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+}

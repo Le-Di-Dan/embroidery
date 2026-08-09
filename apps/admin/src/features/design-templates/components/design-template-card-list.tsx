@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import type { AdminDesignTemplateSummaryResponse } from '@embroidery/api-client';
 
 import { DESIGN_TEMPLATE_COPY } from '../model/design-template-copy';
+import { adminDesignTemplateEditorRoute } from '../model/design-template-route';
 import { scopeCell, scopeLabel, versionCell, versionLabel } from '../model/design-template-rows';
 import { DesignTemplateStatusBadge } from './design-template-status-badge';
 import { formatInstant } from './design-template-table';
@@ -52,20 +54,15 @@ export function DesignTemplateCardList({ items, productNames }: DesignTemplateCa
               </dd>
             </dl>
 
-            <button
-              type="button"
+            {/* A real link now that `APP3-A03` exists; a disabled button with a
+                stated reason until it did. */}
+            <Link
               className="design-template-cards__edit"
-              disabled
-              aria-describedby={`template-card-edit-note-${item.templateId}`}
+              href={adminDesignTemplateEditorRoute(item.templateId)}
+              data-testid={`template-card-edit-${item.templateId}`}
             >
               {DESIGN_TEMPLATE_COPY.editAffordance.label}
-            </button>
-            <span
-              className="design-template-cards__edit-note"
-              id={`template-card-edit-note-${item.templateId}`}
-            >
-              {DESIGN_TEMPLATE_COPY.editAffordance.unavailable}
-            </span>
+            </Link>
           </article>
         </li>
       ))}
