@@ -95,15 +95,20 @@ describe('the generated boundary', () => {
     expect(listMock).toHaveBeenCalledTimes(1);
   });
 
-  it('exposes no lifecycle operation to this screen', () => {
+  it('leaves every lifecycle operation to APP3-A04, though all four now exist', () => {
+    // The operations are on the boundary since `APP3-A04`. This screen still
+    // renders no control for one — asserted on the rendered rows in
+    // "offers no lifecycle control on a row" below — and the module-level fact
+    // worth keeping here is that reachability is not the same as consumption.
     const actual = jest.requireActual<Record<string, unknown>>('@embroidery/api-client');
 
     for (const operation of [
       'adminDesignTemplatePublish',
       'adminDesignTemplateUnpublish',
       'adminDesignTemplateArchive',
+      'adminDesignTemplateRestore',
     ]) {
-      expect(actual[operation]).toBeUndefined();
+      expect(typeof actual[operation]).toBe('function');
     }
   });
 });

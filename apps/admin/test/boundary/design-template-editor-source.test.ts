@@ -61,26 +61,38 @@ describe('generated client boundary', () => {
     expect(typeof apiClient.adminDesignTemplateSaveDocument).toBe('function');
   });
 
-  it('withholds every lifecycle operation', () => {
-    // `APP3-A04` owns publish, unpublish, archive and restore. An operation on
-    // the boundary is an invitation to add a button for it, so the absence is
-    // asserted rather than assumed.
+  it('invokes no lifecycle operation, now that all four are reachable', () => {
+    // `APP3-A04` owns publish, unpublish, archive and restore and brought them
+    // across the boundary together. The rule this replaces asserted they were
+    // *absent*, which was a proxy for "no consumer exists yet" — true until the
+    // consumer arrived. What the editor actually rules is that **it** is not
+    // that consumer: this screen edits a document and issues no transition.
     for (const operation of [
       'adminDesignTemplatePublish',
       'adminDesignTemplateUnpublish',
       'adminDesignTemplateArchive',
       'adminDesignTemplateRestore',
     ]) {
-      expect((apiClient as Record<string, unknown>)[operation]).toBeUndefined();
+      expect(typeof (apiClient as Record<string, unknown>)[operation]).toBe('function');
+      for (const source of sources) {
+        expect(source.text).not.toContain(operation);
+      }
     }
   });
 
-  it('consumes no lifecycle operation by name either', () => {
-    for (const source of sources) {
-      for (const operation of ['Publish', 'Unpublish', 'Archive', 'Restore']) {
-        expect(source.text).not.toContain(`adminDesignTemplate${operation}`);
-      }
-    }
+  it('navigates to the lifecycle screen rather than performing a transition', () => {
+    // The one `APP3-A04` affordance the editor carries. It is a route push
+    // through the navigation guard, never a command — so the editor still
+    // cannot change a lifecycle state, and a dirty draft still prompts on the
+    // way out.
+    const screenSource = sources.find((source) =>
+      /design-template-editor-screen\.tsx$/.test(source.path),
+    );
+    expect(screenSource).toBeDefined();
+    expect(screenSource?.text).toContain('adminDesignTemplatePublicationRoute');
+    expect(screenSource?.text).toMatch(
+      /guard\.requestNavigation\(\(\) => \{\s*router\.push\(adminDesignTemplatePublicationRoute/,
+    );
   });
 
   it('reaches the API only through the generated operations', () => {

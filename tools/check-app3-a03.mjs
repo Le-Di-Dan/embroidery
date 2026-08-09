@@ -34,7 +34,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedAdminTemplatePaths } from './app3-accepted-paths.mjs';
+import { acceptedAdminTemplatePaths, isA04Delivered } from './app3-accepted-paths.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -146,15 +146,24 @@ for (const id of A03_ROWS) {
 
 // Approval stays scoped: a screen whose checkpoint has not opened is still
 // unapproved, or this gate would pass on a registry that licensed the phase.
+//
+// The two A04 rows moved when *their* checkpoint ran, so they are ruled against
+// its delivered state rather than pinned to the world A03 shipped into. The
+// Studio row has no checkpoint yet and stays unapproved in every world — which
+// is what keeps this from becoming a blanket licence.
 for (const id of [
   'FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-READY',
   'FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-RESTOREBLOCKED',
   'FIG-STUDIO-SHELL-DESKTOP-DEFAULT',
 ]) {
+  const expected =
+    id.startsWith('FIG-ADMIN-TEMPLATELIFECYCLE') && isA04Delivered(REPO_ROOT)
+      ? 'APPROVED_FOR_IMPLEMENTATION'
+      : 'REVIEW_REQUIRED';
   check(
-    `design: ${id} is still unapproved`,
-    rowStatus(id) === 'REVIEW_REQUIRED',
-    `a row outside A03 was approved without its checkpoint (status ${String(rowStatus(id))})`,
+    `design: ${id} matches its own checkpoint`,
+    rowStatus(id) === expected,
+    `expected ${expected}, found ${String(rowStatus(id))}`,
   );
 }
 
@@ -189,10 +198,21 @@ check(
 const editorRoutes = collect(join(ADMIN, 'src/app'), /\.tsx?$/)
   .map((path) => path.replace(/\\/g, '/'))
   .filter((path) => /design-templates\/\[/.test(path));
+// One editor **segment**, plus the lifecycle child `APP3-A04` adds beneath it.
+// A bare `1` would fail on a legitimate child route; what this rule is actually
+// about is that no *alias* for the editor exists, so the assertion is on the
+// exact set of segments rather than on how many there are.
+const a04Delivered = isA04Delivered(REPO_ROOT);
+const expectedEditorRoutes = a04Delivered ? 2 : 1;
 check(
-  'route: exactly one editor segment, with no alias',
-  editorRoutes.length === 1,
-  `found ${String(editorRoutes.length)}`,
+  'route: exactly the editor segment and its accepted children',
+  editorRoutes.length === expectedEditorRoutes &&
+    editorRoutes.some((path) => /design-templates\/\[templateId\]\/page\.tsx$/.test(path)) &&
+    (!a04Delivered ||
+      editorRoutes.some((path) =>
+        /design-templates\/\[templateId\]\/publication\/page\.tsx$/.test(path),
+      )),
+  `found ${String(editorRoutes.length)}: ${editorRoutes.join(', ')}`,
 );
 
 // ---------------------------------------------------------------------------
@@ -289,7 +309,11 @@ check(
     'other would publish a write nobody could safely perform',
 );
 
-// The lifecycle operations, as real absences — for A02 and A03 alike.
+// The lifecycle operations. `APP3-A04` brought all four across the boundary
+// together, so "withheld" stopped being the rule the day its consumer arrived.
+// What the editor actually rules is that **it** is not that consumer: this
+// screen edits a document and issues no transition, whether or not the
+// boundary offers one.
 for (const operation of [
   'adminDesignTemplatePublish',
   'adminDesignTemplateUnpublish',
@@ -297,9 +321,9 @@ for (const operation of [
   'adminDesignTemplateRestore',
 ]) {
   check(
-    `client: ${operation} stays withheld`,
-    !new RegExp(`export \\{[^}]*${operation}`, 's').test(curated),
-    'lifecycle belongs to APP3-A04',
+    `client: ${operation} matches APP3-A04 delivered state`,
+    new RegExp(`export \\{[^}]*${operation}`, 's').test(curated) === isA04Delivered(REPO_ROOT),
+    'a lifecycle export does not match APP3-A04 delivered state',
   );
   check(
     `client: ${operation} is not consumed anywhere in the editor`,

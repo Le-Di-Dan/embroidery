@@ -158,21 +158,19 @@ describe('design registry', () => {
     }, 'FIG-ADMIN-TEMPLATELIST-DESKTOP-EMPTY is approved');
   });
 
-  it('refuses a blanket approval that licenses APP3-A04 early', () => {
-    // The one mutation a per-row approval check cannot see: the rows A02 needs
-    // are all still approved, so a gate that only looked forward would pass.
+  it('refuses an A04 row approved before its checkpoint delivered', () => {
+    // Tested in the world the ban describes: rewind the phase to pre-A04, and
+    // the row that is legitimately approved today becomes a licence granted
+    // early. Pinning the old literal would only prove the gate remembers a
+    // world that has moved on.
     refuses((root) => {
-      const text = readAt(root, REGISTRY);
-      const line = text
-        .split('\n')
-        .find((row) => row.startsWith('| FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-READY |'));
-      assert.ok(line !== undefined, 'the A04 row must exist to be broken');
+      const phase = readAt(root, PHASE_PLAN);
       writeAt(
         root,
-        REGISTRY,
-        text.replace(line, line.replace('REVIEW_REQUIRED', 'APPROVED_FOR_IMPLEMENTATION')),
+        PHASE_PLAN,
+        phase.replace(/\nAPP3-A04 = COMPLETE[^\n]*\n/, '\nAPP3-A04 = READY — NOT STARTED\n'),
       );
-    }, 'A04 lifecycle rows are still unapproved');
+    }, 'does not match APP3-A04 delivered state');
   });
 });
 
@@ -195,17 +193,14 @@ describe('client boundary', () => {
     }, 'performs no per-row detail read');
   });
 
-  it('refuses a lifecycle operation added to the curated export', () => {
-    refuses(
-      (root) =>
-        edit(
-          root,
-          CURATED_CLIENT,
-          "  adminDesignTemplateAssignScope,\n} from './generated/embroidery-api';",
-          "  adminDesignTemplateAssignScope,\n  adminDesignTemplatePublish,\n} from './generated/embroidery-api';",
-        ),
-      'adminDesignTemplatePublish stays withheld',
-    );
+  it('refuses a lifecycle operation reaching the Template list', () => {
+    // The export itself is legitimate since `APP3-A04`. What the list rules is
+    // that **it** never calls one — a stronger property than the absence it
+    // replaced, because the operation is now genuinely within reach.
+    refuses((root) => {
+      const probe = `${FEATURE}/model/lifecycle-probe.ts`;
+      writeAt(root, probe, 'export const probe = adminDesignTemplateArchive;\n');
+    }, 'is not consumed by the list');
   });
 
   it('refuses a second module reaching the generated operations', () => {

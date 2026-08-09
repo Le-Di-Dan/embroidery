@@ -186,35 +186,35 @@ describe('design authority', () => {
   });
 
   it('refuses a Studio row approved early, which would license the whole phase', () => {
-    // Approval must stay scoped to the checkpoint that earned it. A blanket
-    // approval is the failure mode this direction exists to catch.
-    refuses(
-      (root) =>
-        edit(
-          root,
-          REGISTRY,
-          '| FIG-STUDIO-SHELL-DESKTOP-DEFAULT | Storefront | Studio shell & template selection | Studio Shell + Template Picker | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED',
-          '| FIG-STUDIO-SHELL-DESKTOP-DEFAULT | Storefront | Studio shell & template selection | Studio Shell + Template Picker | Default | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION',
-        ),
-      'FIG-STUDIO-SHELL-DESKTOP-DEFAULT is still unapproved',
-    );
+    // The Studio row has no checkpoint in any world, so this one needs no
+    // rewind — it is the rule that keeps the A04 relaxation from becoming a
+    // blanket licence.
+    refuses((root) => {
+      const text = readAt(root, REGISTRY);
+      const line = text
+        .split('\n')
+        .find((row) => row.startsWith('| FIG-STUDIO-SHELL-DESKTOP-DEFAULT |'));
+      writeAt(
+        root,
+        REGISTRY,
+        text.replace(line, line.replace('REVIEW_REQUIRED', 'APPROVED_FOR_IMPLEMENTATION')),
+      );
+    }, 'matches its own checkpoint');
   });
 });
 
 describe('client boundary', () => {
-  it('refuses a lifecycle operation added to the curated boundary', () => {
-    // It compiles, every test passes, and a publish button becomes one import
-    // away — which is the whole reason the absence is checked mechanically.
-    refuses(
-      (root) =>
-        edit(
-          root,
-          CURATED_CLIENT,
-          '  adminDesignTemplateAssignScope,\n} from',
-          '  adminDesignTemplateAssignScope,\n  adminDesignTemplatePublish,\n} from',
-        ),
-      'adminDesignTemplatePublish stays withheld',
-    );
+  it('refuses a lifecycle export that does not match APP3-A04 delivered state', () => {
+    // Both directions. Before A04 an export was a licence nobody had claimed;
+    // after it, a *missing* export would strand the screen that consumes it.
+    refuses((root) => {
+      const phase = readAt(root, PHASE_PLAN);
+      writeAt(
+        root,
+        PHASE_PLAN,
+        phase.replace(/\nAPP3-A04 = COMPLETE[^\n]*\n/, '\nAPP3-A04 = READY — NOT STARTED\n'),
+      );
+    }, 'does not match APP3-A04 delivered state');
   });
 
   it('refuses the detail read crossing without the save it belongs with', () => {

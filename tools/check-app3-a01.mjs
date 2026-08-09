@@ -24,6 +24,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { isA04Delivered } from './app3-accepted-paths.mjs';
 import { checkA01BackgroundPreview } from './check-app3-a01-background.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -142,10 +143,16 @@ check(
   rowStatus('FIG-STUDIO-STAGE-DESKTOP-SELECTED') === 'REVIEW_REQUIRED',
   'a Studio screen row was approved without its checkpoint',
 );
+// The A04 lifecycle rows, in **both** directions. Before that checkpoint an
+// approval would have licensed a screen nobody had reviewed; once it has
+// delivered, an unapproved row would mean the screen shipped against a design
+// that was never signed off. A one-directional ban stops describing the world
+// the moment the checkpoint it names runs.
 check(
-  'design: A04 lifecycle rows are still unapproved',
-  rowStatus('FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-READY') === 'REVIEW_REQUIRED',
-  'an A04 row was approved without its checkpoint',
+  'design: A04 lifecycle rows follow their checkpoint',
+  rowStatus('FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-READY') ===
+    (isA04Delivered(REPO_ROOT) ? 'APPROVED_FOR_IMPLEMENTATION' : 'REVIEW_REQUIRED'),
+  'an A04 row does not match APP3-A04 delivered state',
 );
 
 // ---------------------------------------------------------------------------

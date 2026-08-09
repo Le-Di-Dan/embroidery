@@ -1,0 +1,519 @@
+// Admin Design Template lifecycle / publication (`APP3-A04`).
+//
+// Reproduces the five approved frames in section `596:10`:
+// `FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-{READY,GUARDFAIL,PUBLISHCONFIRM,ARCHIVE,
+// RESTOREBLOCKED}`. Every colour, radius and space is a token: no literal hex,
+// no rgba, and both dialog scrims are the canonical `$color-overlay-scrim`.
+//
+// Class names are prefixed `template-lifecycle*`. The Admin stylesheet is global
+// and unscoped, so a generic `.readiness`, `.actions` or `.badge` here would
+// collide with another feature's rules in a way jsdom could never catch —
+// `APP2-A03` found exactly that defect.
+//
+// **No A04 mobile frame exists.** All five approved rows are Desktop 1440, so
+// the 390 layout below is engineering judgment rather than an approved design:
+// the two panels stack into one column and every control stays operable.
+// Lifecycle management is a legitimate small-screen task — unlike canvas
+// authoring, which is why `APP3-A03` goes read-only there and this screen does
+// not. Nothing is hidden; only the geometry changes.
+
+@use '@embroidery/styles' as styles;
+
+// The two-column floor from `602:3`: the readiness panel holds 620px and the
+// action panel 724px at 1440. Named because the same numbers decide the grid
+// and the point at which it collapses.
+$lifecycle-readiness-min: 420px;
+$lifecycle-actions-min: 380px;
+
+.template-lifecycle {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24);
+  // `min-width: 0` rather than `overflow-x`, which computes to `auto` and would
+  // clip the y-axis too — the defect `APP3-A03` recorded.
+  min-width: 0;
+  max-width: 100%;
+
+  &__topbar {
+    display: flex;
+    align-items: center;
+    gap: styles.spacing(12);
+    flex-wrap: wrap;
+    padding: styles.spacing(16) styles.spacing(24);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+  }
+
+  &__back {
+    color: styles.$color-text-tertiary;
+    font-size: styles.$font-size-body-s;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      color: styles.$color-text-primary;
+    }
+  }
+
+  &__name {
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  // Status is text inside the badge, never colour alone.
+  &__badge {
+    padding: styles.spacing(4) styles.spacing(12);
+    border-radius: 999px;
+    background: styles.$color-background-secondary;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-medium;
+    border: 1px solid styles.$color-border-secondary;
+    color: styles.$color-text-secondary;
+
+    &[data-status='DRAFT'] {
+      border-color: styles.$color-status-info;
+      color: styles.$color-status-info;
+    }
+
+    &[data-status='PUBLISHED'] {
+      border-color: styles.$color-status-success;
+      color: styles.$color-status-success;
+    }
+
+    &[data-status='ARCHIVED'] {
+      border-color: styles.$color-text-tertiary;
+      color: styles.$color-text-tertiary;
+    }
+  }
+
+  &__version {
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__live:empty {
+    display: none;
+  }
+
+  &__live {
+    margin: 0;
+    padding: styles.spacing(12) styles.spacing(16);
+    border-radius: styles.$radius-xs;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-status-success;
+    color: styles.$color-status-success;
+    font-size: styles.$font-size-body-s;
+  }
+
+  &__failure {
+    padding: styles.spacing(12) styles.spacing(16);
+    border-radius: styles.$radius-xs;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-status-error;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-body-s;
+
+    p {
+      margin: 0 0 styles.spacing(4);
+    }
+  }
+
+  &__notice {
+    padding: styles.spacing(24);
+    color: styles.$color-text-secondary;
+  }
+
+  &__body {
+    display: grid;
+    gap: styles.spacing(16);
+    grid-template-columns:
+      minmax($lifecycle-readiness-min, 620fr)
+      minmax($lifecycle-actions-min, 724fr);
+    min-width: 0;
+
+    // The archived state is a single full-width panel (`602:211`).
+    &[data-archived='true'] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    // 1280: the two columns still fit above the floors, so nothing changes but
+    // the available space. Below the sum of the floors they stack.
+    @media (max-width: 900px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+.template-lifecycle-readiness,
+.template-lifecycle-actions,
+.template-lifecycle-archived {
+  min-width: 0;
+  padding: styles.spacing(24);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+
+  &__title {
+    margin: 0 0 styles.spacing(16);
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.template-lifecycle-readiness {
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(16);
+  }
+
+  &__row {
+    display: flex;
+    gap: styles.spacing(12);
+    align-items: flex-start;
+  }
+
+  // The mark is decorative: every row states its outcome in the detail text too,
+  // so the state is never carried by glyph or colour alone.
+  &__mark {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: styles.spacing(24);
+    block-size: styles.spacing(24);
+    border-radius: 999px;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-secondary;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__row[data-state='READY'] &__mark {
+    border-color: styles.$color-status-success;
+    color: styles.$color-status-success;
+  }
+
+  &__row[data-state='NOT_READY'] &__mark {
+    border-color: styles.$color-status-error;
+    color: styles.$color-status-error;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  &__detail {
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+  }
+
+  &__footer {
+    margin: styles.spacing(24) 0 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.template-lifecycle-actions {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+
+  &__badge {
+    align-self: flex-start;
+    margin: 0;
+    padding: styles.spacing(4) styles.spacing(12);
+    border-radius: 999px;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-status-error;
+    color: styles.$color-status-error;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-medium;
+  }
+
+  &__heading {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__primary {
+    align-self: flex-start;
+    min-block-size: styles.spacing(48);
+    padding: styles.spacing(12) styles.spacing(24);
+    border: 0;
+    border-radius: styles.$radius-xs;
+    background: styles.$color-action-primary;
+    color: styles.$color-surface-primary;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: styles.$color-action-hover;
+    }
+
+    // `604:3` — refused, not hidden: the operator must see what they cannot do.
+    &:disabled {
+      background: styles.$color-surface-primary;
+      border: 1px solid styles.$color-border-secondary;
+      color: styles.$color-text-primary;
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  &__danger {
+    margin-block-start: styles.spacing(12);
+    padding: styles.spacing(16);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+  }
+
+  &__danger-title {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__danger-button {
+    align-self: flex-start;
+    min-block-size: styles.spacing(48);
+    padding: styles.spacing(12) styles.spacing(24);
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-xs;
+    background: styles.$color-surface-primary;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      border-color: styles.$color-status-error;
+      color: styles.$color-status-error;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  &__state {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.template-lifecycle-archived {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+
+  &__heading {
+    margin: 0;
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__restore {
+    align-self: flex-start;
+    min-block-size: styles.spacing(48);
+    padding: styles.spacing(12) styles.spacing(24);
+    border: 0;
+    border-radius: styles.$radius-xs;
+    background: styles.$color-action-primary;
+    color: styles.$color-surface-primary;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: styles.$color-action-hover;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.template-lifecycle-dialog {
+  inline-size: min(560px, 100%);
+  max-block-size: 90vh;
+  overflow-y: auto;
+  padding: styles.spacing(32);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-lg;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+
+  &__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: styles.spacing(24);
+    // The canonical scrim (`FIG-DS-SCRIM-TOKEN`), never an rgba literal.
+    background: styles.$color-overlay-scrim;
+  }
+
+  &__badge {
+    align-self: flex-start;
+    margin: 0;
+    padding: styles.spacing(4) styles.spacing(12);
+    border-radius: 999px;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-secondary;
+    color: styles.$color-text-secondary;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-medium;
+
+    &[data-destructive='true'] {
+      border-color: styles.$color-status-error;
+      color: styles.$color-status-error;
+    }
+  }
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__note,
+  &__hint {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__error {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-status-error;
+  }
+
+  &__label {
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  &__reason {
+    inline-size: 100%;
+    padding: styles.spacing(12);
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-xs;
+    background: styles.$color-surface-primary;
+    color: styles.$color-text-primary;
+    font: inherit;
+    font-size: styles.$font-size-body-s;
+    resize: vertical;
+
+    &[aria-invalid='true'] {
+      border-color: styles.$color-status-error;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: styles.spacing(12);
+    margin-block-start: styles.spacing(12);
+    flex-wrap: wrap;
+  }
+
+  &__primary,
+  &__danger,
+  &__secondary {
+    min-block-size: styles.spacing(48);
+    padding: styles.spacing(12) styles.spacing(24);
+    border-radius: styles.$radius-xs;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  &__primary {
+    border: 0;
+    background: styles.$color-action-primary;
+    color: styles.$color-surface-primary;
+  }
+
+  &__danger {
+    border: 0;
+    background: styles.$color-status-error;
+    color: styles.$color-surface-primary;
+  }
+
+  &__secondary {
+    border: 1px solid styles.$color-border-secondary;
+    background: styles.$color-surface-primary;
+    color: styles.$color-text-primary;
+  }
+}

@@ -198,7 +198,7 @@ export function checkSurface(rootDir, fail) {
 
 /** The published request/response contract — see `check-app3-b04a-contract.mjs`. */
 export function checkClientBoundary(rootDir, fail) {
-  checkContractClientBoundary((key) => read(rootDir, key), fail, CANONICAL_FILES);
+  checkContractClientBoundary((key) => read(rootDir, key), fail, CANONICAL_FILES, rootDir);
 }
 
 export function checkRequestContract(rootDir, fail) {

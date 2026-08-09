@@ -217,9 +217,22 @@ describe('the client boundary', () => {
     assert.ok(mentions(run(checkClientBoundary, { clientSchemas }), 'generates as "void"'));
   });
 
-  it('rejects the curated Admin boundary exporting restore before APP3-A04', () => {
-    const curatedClient = `${file('curatedClient')}\nexport const adminDesignTemplateRestore = 1;\n`;
-    assert.ok(mentions(run(checkClientBoundary, { curatedClient }), 'APP3-A04 owns lifecycle'));
+  it('rejects a curated restore export that does not match APP3-A04 delivered state', () => {
+    // Ruled in **both** directions since `APP3-A04` delivered the consumer.
+    // `APP3-B04A` is backend-only, so restore had to stay off the handwritten
+    // boundary while no screen could use it; once A04 shipped, a *missing*
+    // export is the failure — the four lifecycle operations are one state
+    // machine and cross together. The ban is tested in the world it describes.
+    const phase = file('phase').replace(
+      /\nAPP3-A04 = COMPLETE[^\n]*\n/,
+      '\nAPP3-A04 = READY — NOT STARTED\n',
+    );
+    assert.ok(
+      mentions(run(checkClientBoundary, { phase }), 'exports restore before APP3-A04 consumes it'),
+    );
+
+    const curatedClient = file('curatedClient').replace('  adminDesignTemplateRestore,\n', '');
+    assert.ok(mentions(run(checkClientBoundary, { curatedClient }), 'restore is not exported'));
   });
 });
 

@@ -76,6 +76,22 @@ export function isB04Delivered(rootDir) {
   return /\nAPP3-B04 = COMPLETE/.test(phase);
 }
 
+/**
+ * True once `APP3-A04` has delivered the Admin lifecycle screen.
+ *
+ * Four predecessor gates rule on facts A04 legitimately changes: the five
+ * lifecycle design rows move from `REVIEW_REQUIRED` to approved, the four
+ * lifecycle operations cross the curated client, and a third Design Template
+ * route appears. Each of those was an absence that proved "A04 has not run", and
+ * each stops describing the world the moment it does — so they consult this
+ * rather than carrying a copy of the ban.
+ */
+export function isA04Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-A04 = COMPLETE/.test(phase);
+}
+
 /** True once `APP3-B04A` has published the restore transition. */
 export function isB04ADelivered(rootDir) {
   const path = join(rootDir, PHASE);

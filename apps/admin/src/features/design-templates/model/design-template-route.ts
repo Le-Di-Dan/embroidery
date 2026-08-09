@@ -27,3 +27,22 @@ export const ADMIN_DESIGN_TEMPLATES_ROUTE = '/design-templates';
 export function adminDesignTemplateEditorRoute(templateId: string): string {
   return `${ADMIN_DESIGN_TEMPLATES_ROUTE}/${encodeURIComponent(templateId)}`;
 }
+
+/**
+ * One Template's lifecycle / publication screen (`APP3-A04`).
+ *
+ * A **separate route** from the editor rather than a mode of it. The two answer
+ * different questions — the editor asks *what does this Template contain*, this
+ * one asks *where is it in LC-24 and may it go somewhere else* — and folding the
+ * lifecycle commands into the editor would put four guarded state transitions
+ * behind a screen whose primary job is an unsaved draft. The operator can then
+ * reach publication without carrying a dirty document into it, because the
+ * editor's navigation guard still stands between the two.
+ *
+ * Addressed by the same UUID as the editor, for the same reason: the slug is the
+ * *published* address, and this is exactly the screen an unpublished Template
+ * must be reachable through.
+ */
+export function adminDesignTemplatePublicationRoute(templateId: string): string {
+  return `${adminDesignTemplateEditorRoute(templateId)}/publication`;
+}

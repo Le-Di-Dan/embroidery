@@ -35,6 +35,9 @@ const COPIED = [
   // The gate delegates its C1 rules here; without it the copied gate cannot
   // even load, and every case would "fail" for the wrong reason.
   'tools/check-app3-a01-background.mjs',
+  // `APP3-A04` made the design-row rule world-aware, so the gate now consults
+  // the shared APP3 path authority. Same failure mode as above if it is absent.
+  'tools/app3-accepted-paths.mjs',
   'package.json',
   'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md',
   'docs/design/FIGMA_DESIGN_INDEX.md',
@@ -244,7 +247,21 @@ describe('design registry', () => {
     }, 'Studio rows are still unapproved');
   });
 
-  it('refuses an A04 lifecycle row approved without its checkpoint', () => {
+  it('refuses an A04 lifecycle row approved before its checkpoint delivered', () => {
+    // The ban has to be tested in the world it describes: rewind the phase to a
+    // pre-A04 state, then approve the row. Pinning the old literal would only
+    // prove the gate still remembers a world that has moved on.
+    refuses((root) => {
+      const phase = readAt(root, PHASE_PLAN);
+      writeAt(
+        root,
+        PHASE_PLAN,
+        phase.replace(/\nAPP3-A04 = COMPLETE[^\n]*\n/, '\nAPP3-A04 = READY — NOT STARTED\n'),
+      );
+    }, 'does not match APP3-A04 delivered state');
+  });
+
+  it('refuses an A04 lifecycle row left unapproved once its checkpoint delivered', () => {
     refuses((root) => {
       const text = readAt(root, REGISTRY);
       const line = text
@@ -253,9 +270,9 @@ describe('design registry', () => {
       writeAt(
         root,
         REGISTRY,
-        text.replace(line, line.replace('REVIEW_REQUIRED', 'APPROVED_FOR_IMPLEMENTATION')),
+        text.replace(line, line.replace('APPROVED_FOR_IMPLEMENTATION', 'REVIEW_REQUIRED')),
       );
-    }, 'A04 lifecycle rows are still unapproved');
+    }, 'does not match APP3-A04 delivered state');
   });
 });
 

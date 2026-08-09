@@ -29,6 +29,8 @@
 export const DESIGN_TEMPLATE_EDITOR_COPY = {
   page: {
     backToList: 'Danh sách mẫu thêu',
+    /** The one `APP3-A04` affordance: navigation, never a lifecycle command. */
+    managePublication: 'Quản lý xuất bản',
     loading: 'Đang tải mẫu thêu…',
     notFoundTitle: 'Không tìm thấy mẫu thêu',
     notFoundBody: 'Mẫu thêu này không tồn tại hoặc đã bị xoá khỏi danh sách.',

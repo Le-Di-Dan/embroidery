@@ -12,6 +12,7 @@ import {
 import type { DesignDocument, DesignElement } from '@embroidery/design-document';
 
 import { DESIGN_TEMPLATE_EDITOR_COPY } from '../model/design-template-editor-copy';
+import type { EditorSideBackground } from '../hooks/use-editor-side-background';
 import type { ResolvedTemplateScope } from '../model/editor-scope';
 import { EditorStageElement } from './editor-stage-element';
 
@@ -24,6 +25,30 @@ export type StageBackground =
   | { readonly kind: 'loading' }
   | { readonly kind: 'absent' }
   | { readonly kind: 'failed'; readonly retryable: boolean; readonly onRetry: () => void };
+
+/**
+ * The stage background, derived from the Side-background query and the scope.
+ *
+ * Lives beside the type it produces rather than in the screen: the four states
+ * are this component's vocabulary, and the mapping is the only place that
+ * decides which one a given query state means. The screen composes; it does not
+ * re-derive.
+ */
+export function stageBackgroundFrom(
+  scopeResolved: boolean,
+  background: EditorSideBackground,
+): StageBackground {
+  if (!scopeResolved) return { kind: 'absent' };
+  if (background.objectUrl !== null) return { kind: 'ready', objectUrl: background.objectUrl };
+  if (background.failure !== null) {
+    return {
+      kind: 'failed',
+      retryable: background.failure === 'retryable',
+      onRetry: background.retry,
+    };
+  }
+  return background.isLoading ? { kind: 'loading' } : { kind: 'absent' };
+}
 
 interface EditorStageProps {
   readonly document: DesignDocument;

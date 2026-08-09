@@ -12,6 +12,16 @@ interface EditorTopbarProps {
   readonly editable: boolean;
   readonly onSave: () => void;
   readonly onBack: () => void;
+  /**
+   * Navigate to the lifecycle screen (`APP3-A04`).
+   *
+   * A **navigation** affordance and nothing else. The four LC-24 commands stay
+   * off this screen entirely: the editor's job is a document, and a publish
+   * control beside an unsaved draft invites publishing the version that is not
+   * on screen. It routes through the same guard the back link does, so leaving a
+   * dirty editor for publication still asks.
+   */
+  readonly onManagePublication: () => void;
 }
 
 /**
@@ -40,6 +50,7 @@ export function EditorTopbar({
   editable,
   onSave,
   onBack,
+  onManagePublication,
 }: EditorTopbarProps) {
   const copy = DESIGN_TEMPLATE_EDITOR_COPY;
 
@@ -76,6 +87,15 @@ export function EditorTopbar({
         >
           {chipLabel(chip)}
         </span>
+
+        <button
+          type="button"
+          className="template-editor-topbar__publication"
+          data-testid="editor-manage-publication"
+          onClick={onManagePublication}
+        >
+          {copy.page.managePublication}
+        </button>
 
         {editable ? (
           <button

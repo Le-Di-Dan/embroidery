@@ -113,14 +113,23 @@ describe('non-DRAFT templates', () => {
     });
   }
 
-  it('offers no lifecycle control anywhere', async () => {
+  it('offers no lifecycle command anywhere — only a link to the screen that has them', async () => {
     detailMock.mockResolvedValue(
       detailEnvelope(makeVersionedDetail(1, makeDocument(), { status: 'PUBLISHED' })),
     );
     render();
     await screen.findByTestId('editor-read-only');
 
-    for (const label of [/xuất bản/i, /gỡ xuất bản/i, /lưu trữ/i, /khôi phục/i]) {
+    // `APP3-A04` added exactly one affordance here, and it is navigation. The
+    // four commands themselves must still be unreachable from this screen —
+    // "Quản lý xuất bản" opens the lifecycle route, it does not publish.
+    expect(screen.getByTestId('editor-manage-publication')).toBeInTheDocument();
+    for (const label of [
+      /^xuất bản mẫu thêu$/i,
+      /^gỡ xuất bản$/i,
+      /^lưu trữ mẫu thêu$/i,
+      /^khôi phục về draft$/i,
+    ]) {
       expect(screen.queryByRole('button', { name: label })).toBeNull();
     }
   });

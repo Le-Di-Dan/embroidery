@@ -176,9 +176,18 @@ export { adminProductSideBackgroundGet } from './generated/embroidery-api';
 // it only for an unscoped, versionless `DRAFT`, and there is no rescope or
 // clear-scope operation to pair it with. Nothing here should ever grow one.
 //
-// The lifecycle operations (`publish`, `unpublish`, `archive`) stay withheld:
-// neither `APP3-A02` nor `APP3-A03` is lifecycle mutation, and an operation here
-// is an invitation to add a button for it. `APP3-A04` brings them across.
+// The four LC-24 lifecycle operations cross with `APP3-A04`, the lifecycle
+// screen, and they cross **together**. They are one state machine: a surface
+// that could publish but not unpublish, or archive but not restore, would strand
+// an operator in a state with no way back — and `restore` in particular is the
+// only exit from `ARCHIVED`, so withholding it would make archive behave like
+// the delete it is explicitly not. `APP3-B04A` delivered it for exactly this.
+//
+// They stayed withheld through `APP3-A02` and `APP3-A03` because an operation on
+// this boundary is an invitation to add a button for it, and neither of those
+// screens is lifecycle mutation. That rule has not been relaxed — it has been
+// *satisfied*: the consumer now exists, and A02's and A03's own gates still
+// assert that neither of them calls one.
 //
 // The status enum is re-exported as a value so the filter options are derived
 // from the contract rather than a hand-kept list that could drift out of step
@@ -189,6 +198,10 @@ export {
   adminDesignTemplateDetail,
   adminDesignTemplateSaveDocument,
   adminDesignTemplateAssignScope,
+  adminDesignTemplatePublish,
+  adminDesignTemplateUnpublish,
+  adminDesignTemplateArchive,
+  adminDesignTemplateRestore,
 } from './generated/embroidery-api';
 export { AdminDesignTemplateListStatus } from './generated/embroidery-api.schemas';
 export type {
@@ -201,6 +214,10 @@ export type {
   CreateDesignTemplateBody,
   SaveDesignTemplateDocumentBody,
   AssignDesignTemplateScopeBody,
+  PublishDesignTemplateBody,
+  UnpublishDesignTemplateBody,
+  ArchiveDesignTemplateBody,
+  RestoreDesignTemplateBody,
 } from './generated/embroidery-api.schemas';
 
 // The generated Design Document transport types (`APP3-A03`).

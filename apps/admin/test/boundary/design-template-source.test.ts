@@ -77,16 +77,23 @@ describe('generated client boundary', () => {
     }
   });
 
-  it('withholds every lifecycle operation', () => {
-    // Unchanged and still an absence: `APP3-A04` owns these, and neither the
-    // list nor the editor may reach one.
+  it('never invokes a lifecycle operation, now that all four are reachable', () => {
+    // `APP3-A04` brought the four LC-24 operations across the boundary together,
+    // because they are one state machine. That makes this rule *stronger* than
+    // the absence it replaced, in exactly the way the detail rule above was
+    // strengthened: the operations used to be unreachable, so the absence proved
+    // itself. Now they are reachable and the list must still never call one —
+    // which is the property "no row-level lifecycle control" was always about.
     for (const operation of [
       'adminDesignTemplatePublish',
       'adminDesignTemplateUnpublish',
       'adminDesignTemplateArchive',
       'adminDesignTemplateRestore',
     ]) {
-      expect((apiClient as Record<string, unknown>)[operation]).toBeUndefined();
+      expect(typeof (apiClient as Record<string, unknown>)[operation]).toBe('function');
+      for (const source of sources) {
+        expect(source.text).not.toContain(operation);
+      }
     }
   });
 
@@ -164,20 +171,25 @@ describe('route boundary', () => {
     expect(routeSourceRaw.split('\n').length).toBeLessThan(30);
   });
 
-  it('has exactly the list route and the APP3-A03 editor route', () => {
-    // Two routes now, and the pair is the assertion: a third would be an alias,
-    // which is the thing this rule has always been about. `APP3-A03` delivered
-    // the editor segment, so counting one would now fail for the wrong reason.
+  it('has exactly the list, editor and publication routes', () => {
+    // Three routes now, and the set is the assertion: a fourth would be an
+    // alias, which is the thing this rule has always been about. Each was
+    // delivered by the checkpoint that owns it — list `APP3-A02`, editor
+    // `APP3-A03`, publication `APP3-A04` — so a bare count would fail for the
+    // wrong reason every time one of them legitimately shipped.
     const appDir = join(__dirname, '..', '..', 'src', 'app');
     const routes = collectSources(appDir)
       .filter((path) => /design-template/i.test(path))
       .map((path) => path.replace(/\\/g, '/'));
 
-    expect(routes).toHaveLength(2);
+    expect(routes).toHaveLength(3);
     expect(routes.some((path) => /design-templates\/page\.tsx$/.test(path))).toBe(true);
     expect(routes.some((path) => /design-templates\/\[templateId\]\/page\.tsx$/.test(path))).toBe(
       true,
     );
+    expect(
+      routes.some((path) => /design-templates\/\[templateId\]\/publication\/page\.tsx$/.test(path)),
+    ).toBe(true);
   });
 
   it('builds the editor link from the one route authority', () => {

@@ -3,7 +3,10 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { ADMIN_DESIGN_TEMPLATES_ROUTE } from '../../design-templates';
+import {
+  ADMIN_DESIGN_TEMPLATES_ROUTE,
+  adminDesignTemplatePublicationRoute,
+} from '../../design-templates';
 import { DESIGN_TEMPLATE_EDITOR_COPY } from '../model/design-template-editor-copy';
 import { buildTextElement, canAddTextElement } from '../model/editor-document';
 import { resolveConflictCause } from '../model/editor-failure';
@@ -29,7 +32,7 @@ import { EditorLayerList } from './editor-layer-list';
 import { EditorNotice } from './editor-notice';
 import { EditorScopeAssignment } from './editor-scope-assignment';
 import { EditorScopePanel } from './editor-scope-panel';
-import { EditorStage, type StageBackground } from './editor-stage';
+import { EditorStage, stageBackgroundFrom } from './editor-stage';
 import { EditorTopbar } from './editor-topbar';
 import { STATUS_LABELS, saveFailureCopy } from './editor-screen-copy';
 
@@ -189,24 +192,21 @@ export function DesignTemplateEditorScreen({ templateId }: { readonly templateId
   const selected = selectedElement(state);
   const savedVersion = detail?.currentVersion?.version ?? null;
 
-  const stageBackground: StageBackground =
-    resolvedScope === null
-      ? { kind: 'absent' }
-      : background.objectUrl !== null
-        ? { kind: 'ready', objectUrl: background.objectUrl }
-        : background.failure !== null
-          ? {
-              kind: 'failed',
-              retryable: background.failure === 'retryable',
-              onRetry: background.retry,
-            }
-          : background.isLoading
-            ? { kind: 'loading' }
-            : { kind: 'absent' };
+  const stageBackground = stageBackgroundFrom(resolvedScope !== null, background);
 
   const goBack = () => {
     guard.requestNavigation(() => {
       router.push(ADMIN_DESIGN_TEMPLATES_ROUTE);
+    });
+  };
+
+  // The lifecycle screen (`APP3-A04`) is a navigation, so it goes through the
+  // same guard the back link does: leaving a dirty editor to publish still asks,
+  // and the version A04 acts on is the one the server holds — never the draft
+  // this screen has not saved.
+  const goToPublication = () => {
+    guard.requestNavigation(() => {
+      router.push(adminDesignTemplatePublicationRoute(templateId));
     });
   };
 
@@ -236,6 +236,7 @@ export function DesignTemplateEditorScreen({ templateId }: { readonly templateId
           });
         }}
         onBack={goBack}
+        onManagePublication={goToPublication}
       />
 
       {editable ? null : (

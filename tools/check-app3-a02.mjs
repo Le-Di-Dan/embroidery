@@ -25,7 +25,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedAdminTemplatePaths } from './app3-accepted-paths.mjs';
+import { acceptedAdminTemplatePaths, isA04Delivered } from './app3-accepted-paths.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -119,9 +119,10 @@ for (const id of A02_ROWS) {
 // Approval stays scoped: a screen whose checkpoint has not opened is still
 // unapproved, or this gate would pass on a registry that licensed the phase.
 check(
-  'design: A04 lifecycle rows are still unapproved',
-  rowStatus('FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-READY') === 'REVIEW_REQUIRED',
-  'an A04 row was approved without its checkpoint',
+  'design: A04 lifecycle rows follow their checkpoint',
+  rowStatus('FIG-ADMIN-TEMPLATELIFECYCLE-DESKTOP-READY') ===
+    (isA04Delivered(REPO_ROOT) ? 'APPROVED_FOR_IMPLEMENTATION' : 'REVIEW_REQUIRED'),
+  'an A04 row does not match APP3-A04 delivered state',
 );
 
 // ---------------------------------------------------------------------------
@@ -133,17 +134,23 @@ const appRoutes = collect(join(ADMIN, 'src/app'), /\.tsx?$/)
   .filter((path) => /design-template/i.test(path))
   .map((path) => path.replace(/\\/g, '/'));
 
-// Two routes, and the **pair** is the rule. The list owned the only one until
-// `APP3-A03` delivered the editor segment; counting one would now fail for a
-// reason that has nothing to do with the property being protected, which is
-// that there is no third spelling of this URL space.
+// The **set** is the rule, not the count. The list owned the only route until
+// `APP3-A03` delivered the editor segment and `APP3-A04` its publication child;
+// a number would fail on each of those for a reason that has nothing to do with
+// the property being protected, which is that there is no *alias* — no second
+// spelling of this URL space. Each route is admitted only once the checkpoint
+// that owns it exists.
 const hasEditorRoute = existsSync(
   join(ADMIN, 'src/app/(protected)/design-templates/[templateId]/page.tsx'),
 );
+const hasPublicationRoute = existsSync(
+  join(ADMIN, 'src/app/(protected)/design-templates/[templateId]/publication/page.tsx'),
+);
+const expectedRoutes = 1 + (hasEditorRoute ? 1 : 0) + (hasPublicationRoute ? 1 : 0);
 check(
-  'route: exactly the list route, plus the editor route once APP3-A03 exists',
-  appRoutes.length === (hasEditorRoute ? 2 : 1),
-  `found ${String(appRoutes.length)} with editor route ${hasEditorRoute ? 'present' : 'absent'}`,
+  'route: exactly the list route and the accepted child segments',
+  appRoutes.length === expectedRoutes,
+  `found ${String(appRoutes.length)}, expected ${String(expectedRoutes)}: ${appRoutes.join(', ')}`,
 );
 check(
   'route: the list segment is one of them',
@@ -215,17 +222,27 @@ check(
   'the two consumed operations are not exported together',
 );
 
-// The lifecycle operations, as real absences. These are `APP3-A04`'s and no
-// checkpoint since has had a reason to bring one across.
-for (const [operation, why] of [
-  ['adminDesignTemplatePublish', 'lifecycle belongs to APP3-A04'],
-  ['adminDesignTemplateUnpublish', 'lifecycle belongs to APP3-A04'],
-  ['adminDesignTemplateArchive', 'lifecycle belongs to APP3-A04'],
+// The lifecycle operations. Withheld until `APP3-A04` existed to consume them,
+// and exported once it did — so the rule that survives is not "unreachable"
+// but "not reached **from here**": the list must never invoke one whether or
+// not the boundary offers it. That is the property "no row-level lifecycle
+// control" was always about, and it is stronger now than the absence it
+// replaced.
+for (const operation of [
+  'adminDesignTemplatePublish',
+  'adminDesignTemplateUnpublish',
+  'adminDesignTemplateArchive',
+  'adminDesignTemplateRestore',
 ]) {
   check(
-    `client: ${operation} stays withheld`,
-    !new RegExp(`export \\{[^}]*${operation}`).test(curated),
-    why,
+    `client: ${operation} matches APP3-A04 delivered state`,
+    new RegExp(`export \\{[^}]*${operation}`, 's').test(curated) === isA04Delivered(REPO_ROOT),
+    'a lifecycle export does not match APP3-A04 delivered state',
+  );
+  check(
+    `client: ${operation} is not consumed by the list`,
+    featureSources.every((file) => !file.text.includes(operation)),
+    'a lifecycle operation reached the Template list',
   );
 }
 

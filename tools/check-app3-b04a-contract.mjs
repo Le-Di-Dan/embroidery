@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { isA04Delivered } from './app3-accepted-paths.mjs';
 /**
  * The published restore contract: the request body, and the two client
  * boundaries either side of it.
@@ -21,7 +22,7 @@
  */
 
 /** The generated client must carry restore; the curated Admin boundary must not. */
-export function checkClientBoundary(read, fail, files) {
+export function checkClientBoundary(read, fail, files, rootDir) {
   const clientSchemas = read('clientSchemas') ?? '';
   const match = /export type AdminDesignTemplateRestore200 = ([^;]+);/.exec(clientSchemas);
   if (match === null) {
@@ -39,8 +40,18 @@ export function checkClientBoundary(read, fail, files) {
   }
 
   const curated = read('curatedClient') ?? '';
-  if (/[Rr]estore/.test(curated)) {
-    fail(`${files.curatedClient}: exports restore — APP3-A04 owns lifecycle on the client`);
+  // Ruled in **both** directions. `APP3-B04A` is backend-only, so restore had
+  // to stay off the handwritten boundary while no screen could use it; once
+  // `APP3-A04` delivered the consumer, a *missing* export is the failure — the
+  // four lifecycle operations are one state machine and cross together.
+  const consumed = isA04Delivered(rootDir);
+  const exported = /adminDesignTemplateRestore/.test(curated);
+  if (exported !== consumed) {
+    fail(
+      exported
+        ? `${files.curatedClient}: exports restore before APP3-A04 consumes it`
+        : `${files.curatedClient}: APP3-A04 is delivered but restore is not exported`,
+    );
   }
 }
 
