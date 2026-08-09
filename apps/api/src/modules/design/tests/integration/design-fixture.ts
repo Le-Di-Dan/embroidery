@@ -116,16 +116,23 @@ export async function seedDesignChain(
     insert into product_variants (id, product_id, color_name, size_label, display_order, is_active)
     values (${variantId}, ${productId}, 'Black', 'M', 1, true)
   `);
+  // `code` is `NOT NULL` since migration 0034 (`APP3-DB01`), which added the
+  // stable machine identity that survives a row being retired and replaced.
+  // This fixture predates it, so every suite seeding through it has been
+  // failing in setup since that migration landed — repaired here rather than
+  // worked around, because a shared fixture that cannot seed makes each suite
+  // look individually broken.
   await db.execute(sql`
     insert into product_sides
-      (id, product_id, name, background_asset_id, image_width_px, image_height_px,
+      (id, product_id, code, name, background_asset_id, image_width_px, image_height_px,
        physical_width_mm, physical_height_mm, px_per_mm, display_order)
-    values (${sideId}, ${productId}, 'Front', ${assetId}, 1000, 1200, 400, 480, 2.5, 1)
+    values (${sideId}, ${productId}, 'front', 'Front', ${assetId}, 1000, 1200, 400, 480, 2.5, 1)
   `);
   await db.execute(sql`
     insert into embroidery_areas
-      (id, product_side_id, name, bound_x_px, bound_y_px, bound_width_px, bound_height_px, display_order)
-    values (${areaId}, ${sideId}, 'Chest', 100, 150, 300, 200, 1)
+      (id, product_side_id, code, name, bound_x_px, bound_y_px, bound_width_px, bound_height_px,
+       display_order)
+    values (${areaId}, ${sideId}, 'chest', 'Chest', 100, 150, 300, 200, 1)
   `);
   await db.execute(sql`
     insert into agreements (id, agreement_type, name)

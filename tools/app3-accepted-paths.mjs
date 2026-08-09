@@ -35,6 +35,9 @@ const ADMIN_TEMPLATE_PATHS = Object.freeze([
 /** The one path `APP3-B03A` adds on top of them. */
 const ADMIN_TEMPLATE_SAVE_PATH = '/api/admin/design-templates/{templateId}/document';
 
+/** The one `APP3-B03B` adds: the one-time initial scope assignment. */
+const ADMIN_TEMPLATE_SCOPE_PATH = '/api/admin/design-templates/{templateId}/scope';
+
 /** The three `APP3-B04` adds. Restore is `APP3-B04A`'s and is deliberately absent. */
 const ADMIN_TEMPLATE_LIFECYCLE_PATHS = Object.freeze([
   '/api/admin/design-templates/{templateId}/publish',
@@ -56,6 +59,13 @@ export function isB03ADelivered(rootDir) {
   return /\nAPP3-B03A = COMPLETE/.test(phase);
 }
 
+/** True once `APP3-B03B` has published the initial scope assignment. */
+export function isB03BDelivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-B03B = COMPLETE/.test(phase);
+}
+
 /** True once `APP3-B04` has published the LC-24 lifecycle transitions. */
 export function isB04Delivered(rootDir) {
   const path = join(rootDir, PHASE);
@@ -67,6 +77,7 @@ export function acceptedAdminTemplatePaths(rootDir) {
   if (!isB03Delivered(rootDir)) return [];
   const paths = [...ADMIN_TEMPLATE_PATHS];
   if (isB03ADelivered(rootDir)) paths.push(ADMIN_TEMPLATE_SAVE_PATH);
+  if (isB03BDelivered(rootDir)) paths.push(ADMIN_TEMPLATE_SCOPE_PATH);
   if (isB04Delivered(rootDir)) paths.push(...ADMIN_TEMPLATE_LIFECYCLE_PATHS);
   return paths;
 }

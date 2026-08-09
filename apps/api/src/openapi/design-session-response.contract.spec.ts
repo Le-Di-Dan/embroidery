@@ -16,6 +16,7 @@ import { type INestApplication } from '@nestjs/common';
 
 import { createApiApplication } from '../bootstrap/api-application';
 import { buildOpenApiDocument } from './build-openapi-document';
+import { readCommittedArtifact, resolveArtifactPath } from './openapi-artifact';
 import { ensureGenerationEnvironment } from './generation-environment';
 import {
   DESIGN_DOCUMENT_SCHEMA_NAME,
@@ -164,16 +165,19 @@ describe('the shared Design Session response contract', () => {
   });
 
   describe('the surface is unchanged', () => {
-    it('still publishes 23 paths and 27 operations', () => {
-      const paths = Object.keys(doc().paths);
-      const methods = ['get', 'post', 'put', 'patch', 'delete'];
-      const operations = paths.reduce(
-        (total, path) =>
-          total + Object.keys(doc().paths[path]!).filter((key) => methods.includes(key)).length,
-        0,
-      );
-      expect(paths).toHaveLength(23);
-      expect(operations).toBe(27);
+    it('matches the committed artifact exactly, path for path', () => {
+      // Compared against the committed artifact rather than a literal count.
+      // A number here says nothing about this contract and goes stale the day
+      // any checkpoint publishes an operation — it read `23`/`27` and broke on
+      // `APP3-B03B`'s scope assignment, which has nothing to do with Design
+      // Session responses. Comparing the path *set* is both stronger and stable:
+      // it catches a route this process serves but the artifact does not, which
+      // is the drift actually worth failing on.
+      const committed = JSON.parse(
+        readCommittedArtifact(resolveArtifactPath(__dirname)) ?? '{}',
+      ) as { paths: Record<string, Record<string, unknown>> };
+
+      expect(Object.keys(doc().paths).sort()).toEqual(Object.keys(committed.paths).sort());
     });
   });
 });

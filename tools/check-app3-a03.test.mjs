@@ -28,6 +28,10 @@ const GATE = 'tools/check-app3-a03.mjs';
 /** Everything the gate reads. */
 const COPIED = [
   GATE,
+  // The gate consults the shared per-checkpoint path authority, so the scratch
+  // copy needs it too — without it the gate crashes on import and every case
+  // 'fails' for a reason unrelated to the property it was breaking.
+  'tools/app3-accepted-paths.mjs',
   'package.json',
   'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md',
   'docs/implementation/SCOPED_COMMAND_INDEX.md',
@@ -744,7 +748,7 @@ describe('contract and governance immutability', () => {
       // `APP3-B04` published them — so adding one of those would change nothing.
       document.paths['/api/admin/design-templates/{templateId}/duplicate'] = { post: {} };
       writeAt(root, relative, JSON.stringify(document, null, 2));
-    }, 'the published surface is unchanged');
+    }, 'the Admin Template surface is exactly what the accepted checkpoints published');
   });
 
   it('refuses a new root script', () => {

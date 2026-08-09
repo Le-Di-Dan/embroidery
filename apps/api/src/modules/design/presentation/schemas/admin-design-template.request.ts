@@ -98,6 +98,38 @@ export const createDesignTemplateBodySchema = z
 export class CreateDesignTemplateBody extends createZodDto(createDesignTemplateBodySchema) {}
 
 /**
+ * The initial scope assignment body (`APP3-B03B`).
+ *
+ * All three ids are **required**, unlike the create body where the triple is
+ * optional as a triple. An assignment that could omit a field would be an
+ * assignment that could produce a partial scope, which `IMP-D042` PO-06 calls
+ * wrong rather than incomplete — and this operation exists precisely to move a
+ * Template from *no* scope to a *complete* one.
+ *
+ * There is no `expectedCurrentVersion`. Every other guarded write in this
+ * surface carries one because its legal source state is a range; this one's is a
+ * single point — `DRAFT`, counter `0`, all three columns null, no versions — so
+ * a caller-supplied token could only ever hold the value the server already
+ * requires. A field whose only legal value is `0` is a field that can only be
+ * wrong, and the compare-and-set pins all four conditions regardless of what a
+ * caller believes.
+ *
+ * Nothing server-owned is accepted: no status, no `currentVersion`, no version,
+ * no document, no slug, name, description, `publishedAt` or asset id.
+ */
+export const assignDesignTemplateScopeBodySchema = z
+  .object({
+    productId: z.string().uuid(),
+    productSideId: z.string().uuid(),
+    embroideryAreaId: z.string().uuid(),
+  })
+  .strict();
+
+export class AssignDesignTemplateScopeBody extends createZodDto(
+  assignDesignTemplateScopeBodySchema,
+) {}
+
+/**
  * The draft save body (`APP3-B03A`).
  *
  * A **full snapshot** with an optimistic-concurrency token, and nothing else. No
@@ -188,6 +220,7 @@ registerZodDtos(
   DesignTemplateIdParam,
   ListDesignTemplatesQuery,
   CreateDesignTemplateBody,
+  AssignDesignTemplateScopeBody,
   SaveDesignTemplateDocumentBody,
   PublishDesignTemplateBody,
   UnpublishDesignTemplateBody,

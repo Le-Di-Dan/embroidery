@@ -52,6 +52,18 @@ export const DESIGN_TEMPLATE_CREATED_ACTION = 'design_template.created';
 export const DESIGN_TEMPLATE_VERSION_SAVED_ACTION = 'design_template.version_saved';
 
 /**
+ * The one-time initial scope assignment (`APP3-B03B`).
+ *
+ * Not an LC-24 transition either — the header is `DRAFT` before and after — but
+ * it is the moment a Template stops being authorable-nowhere and becomes bound
+ * to one exact Product Side and Area. Every document it will ever hold carries
+ * that placement in an immutable snapshot, so an assignment that appeared with
+ * no record of who made it would be unexplained provenance for every version
+ * that follows.
+ */
+export const DESIGN_TEMPLATE_SCOPE_ASSIGNED_ACTION = 'design_template.scope_assigned';
+
+/**
  * The three LC-24 transitions `APP3-B04` owns, and their audit actions.
  *
  * Publish and unpublish stay distinct codes and neither is ever recorded as the
@@ -123,6 +135,45 @@ export class DesignTemplateAuditRecorder {
       targetKind: DESIGN_TEMPLATE_KIND,
       targetId: input.templateId,
       summary: { version: input.version },
+      correlationId: this.requestContext.requireRequestId(),
+    });
+  }
+
+  /**
+   * One row per successful initial scope assignment (`APP3-B03B`).
+   *
+   * The summary carries where the Template came from — `from: 'UNSCOPED'`, which
+   * is the only source state this operation accepts — and the exact triple it
+   * was bound to. The scope ids are the subject of the change, so unlike every
+   * other action here they belong in the record: an assignment trail that did
+   * not say *which* placement was chosen would not explain the one thing that
+   * happened.
+   *
+   * No reason: `IMP-D042` PO-03 requires one for archive and restore only, and
+   * this command carries none, so a required reason would have to be fabricated.
+   * No document, no Asset id, no storage fact, no Outbox payload — this
+   * operation produces none of them.
+   *
+   * @requiresTransaction — the row must commit with the scope or not at all.
+   */
+  async recordScopeAssigned(input: {
+    readonly templateId: string;
+    readonly productId: string;
+    readonly productSideId: string;
+    readonly embroideryAreaId: string;
+  }): Promise<void> {
+    await this.events.append({
+      occurredAt: this.clock.now(),
+      actor: this.currentActor(),
+      action: DESIGN_TEMPLATE_SCOPE_ASSIGNED_ACTION,
+      targetKind: DESIGN_TEMPLATE_KIND,
+      targetId: input.templateId,
+      summary: {
+        from: 'UNSCOPED',
+        productId: input.productId,
+        productSideId: input.productSideId,
+        embroideryAreaId: input.embroideryAreaId,
+      },
       correlationId: this.requestContext.requireRequestId(),
     });
   }

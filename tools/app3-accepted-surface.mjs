@@ -19,6 +19,20 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-B03B` — the one-time initial scope assignment, a just-in-time
+    // unblock for `APP3-A03`: a Template created unscoped through the Admin UI
+    // could never be authored, because `APP3-P01` requires a placement snapshot
+    // in every Design Document. One path, one operation and one request-body
+    // schema; no response component, because it answers the detail view B03
+    // already publishes.
+    marker: /\nAPP3-B03B = COMPLETE/,
+    paths: 33,
+    operations: 38,
+    schemas: 82,
+    designSessionRoutes: true,
+    designSessionPaths: 4,
+  },
+  {
     // `APP3-B02A` — the one authenticated Admin Side-background delivery, a
     // just-in-time unblock for `APP3-A01`'s placement preview. One path, one
     // operation and **no schema**: the response is binary, so there is no

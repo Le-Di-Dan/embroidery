@@ -358,7 +358,9 @@ describe('published contract', () => {
       const document = JSON.parse(readAt(root, 'openapi'));
       document.paths['/api/admin/extra'] = { get: { operationId: 'extra_get', responses: {} } };
       writeAt(root, 'openapi', JSON.stringify(document));
-    }, 'publishes 33 paths');
+      // The expected total now comes from the accepted-surface authority, so the
+      // mutation is 'one more than whatever the current world publishes'.
+    }, 'publishes 34 paths');
   });
 
   it('refuses a withdrawn operation', () => {
@@ -366,7 +368,7 @@ describe('published contract', () => {
       const document = JSON.parse(readAt(root, 'openapi'));
       delete document.paths[ROUTE];
       writeAt(root, 'openapi', JSON.stringify(document));
-    }, 'publishes 31 paths');
+    }, 'publishes 32 paths');
   });
 
   it('refuses a drifted operation id', () => {

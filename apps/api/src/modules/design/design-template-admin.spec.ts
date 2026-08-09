@@ -237,12 +237,20 @@ describe('the three Admin Design Template operations', () => {
 
   it('guards every operation with the Admin session', () => {
     expect(CONTROLLER_SOURCE).toMatch(/@UseGuards\(AuthenticatedAdminGuard\)/);
-    // One origin/body pair per mutating operation — B03's create, B03A's save
-    // and B04's three transitions — and none on a read, where an origin guard
-    // would reject a legitimate cross-origin GET.
+    // One origin/body pair per mutating operation, and none on a read where an
+    // origin guard would reject a legitimate cross-origin GET. Derived from the
+    // published surface: a literal said `5` and had to be rewritten when
+    // `APP3-B03B` published a sixth, which is a proxy failing for a reason
+    // unrelated to the property it protects.
+    const MUTATING = new Set(['post', 'put', 'patch', 'delete']);
+    const mutating = Object.entries(document.paths)
+      .filter(([path]) => path.startsWith('/api/admin/design-templates'))
+      .flatMap(([, methods]) => Object.keys(methods))
+      .filter((method) => MUTATING.has(method)).length;
+
     expect(
       CONTROLLER_SOURCE.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g),
-    ).toHaveLength(5);
+    ).toHaveLength(mutating);
   });
 
   it('publishes a concrete schema for every success', () => {
@@ -534,6 +542,8 @@ describe('the controller wiring', () => {
     const controller = new AdminDesignTemplateController(
       { create: () => Promise.resolve({ templateId: TEMPLATE_ID }) } as never,
       {} as never,
+      {} as never,
+      // APP3-B03B — the scope-assignment use case.
       {} as never,
       {} as never,
     );

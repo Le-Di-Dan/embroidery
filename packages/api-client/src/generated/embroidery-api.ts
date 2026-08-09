@@ -12,6 +12,7 @@ import type {
   AdminAssetUpload202,
   AdminAssetUploadBody,
   AdminDesignTemplateArchive200,
+  AdminDesignTemplateAssignScope200,
   AdminDesignTemplateCreate201,
   AdminDesignTemplateDetail200,
   AdminDesignTemplateList200,
@@ -32,6 +33,7 @@ import type {
   AdminProductUpdate200,
   ArchiveDesignTemplateBody,
   ArchiveProductBody,
+  AssignDesignTemplateScopeBody,
   AutosaveDesignSessionBody,
   CreateDesignSessionBody,
   CreateDesignTemplateBody,
@@ -219,6 +221,26 @@ export const adminDesignTemplatePublish = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: publishDesignTemplateBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Binds an unscoped template to one exact product, side and embroidery area. This is a one-time initial assignment, not a rescope: it succeeds only while the template is a DRAFT with no version and no scope at all, and is refused once any scope or any version exists. All three ids are required together. No version, document or asset association is created and the lifecycle state does not change.
+ * @summary Assign the initial scope of a design template
+ */
+export const adminDesignTemplateAssignScope = (
+  templateId: unknown,
+  assignDesignTemplateScopeBody: AssignDesignTemplateScopeBody,
+  options?: SecondParameter<typeof apiRequest<AdminDesignTemplateAssignScope200>>,
+) => {
+  return apiRequest<AdminDesignTemplateAssignScope200>(
+    {
+      url: `/api/admin/design-templates/${templateId}/scope`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data: assignDesignTemplateScopeBody,
     },
     options,
   );
@@ -691,6 +713,9 @@ export type AdminDesignTemplateSaveDocumentResult = NonNullable<
 >;
 export type AdminDesignTemplatePublishResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplatePublish>>
+>;
+export type AdminDesignTemplateAssignScopeResult = NonNullable<
+  Awaited<ReturnType<typeof adminDesignTemplateAssignScope>>
 >;
 export type AdminDesignTemplateUnpublishResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplateUnpublish>>

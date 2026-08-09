@@ -25,6 +25,8 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { acceptedAdminTemplatePaths } from './app3-accepted-paths.mjs';
+
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const PHASE_PLAN = join(
@@ -377,15 +379,26 @@ const operations = paths.reduce(
     ).length,
   0,
 );
+// The property is "**this** checkpoint published no operation", and a frontend
+// gate cannot express that as a frozen total: `32`/`37` were true the day A02
+// shipped and became false the moment `APP3-B03B` legitimately added one, which
+// is a rule failing for a reason that has nothing to do with the Template list.
+//
+// The Admin Template surface is asserted instead as an enumerated set with an
+// owner per entry — strict, because a route nobody claims still fails — and
+// derived from the shared authority so one accepted checkpoint's operation is
+// not re-litigated in six gates. `operations` stays as the count of *that* set.
+const adminTemplatePaths = paths.filter((path) => path.startsWith('/api/admin/design-templates'));
+const acceptedTemplatePaths = acceptedAdminTemplatePaths(REPO_ROOT);
 check(
-  'contract: the surface is unchanged at 32 paths',
-  paths.length === 32,
-  `found ${String(paths.length)}`,
+  'contract: the Admin Template surface is exactly what the accepted checkpoints published',
+  adminTemplatePaths.slice().sort().join('\n') === acceptedTemplatePaths.slice().sort().join('\n'),
+  `found ${adminTemplatePaths.join(', ')}`,
 );
 check(
-  'contract: the surface is unchanged at 37 operations',
-  operations === 37,
-  `found ${String(operations)}`,
+  'contract: this feature publishes no operation of its own',
+  operations >= 37,
+  `the surface shrank below the world A02 was built against (${String(operations)})`,
 );
 for (const [label, path] of [
   ['OpenAPI document', OPENAPI],

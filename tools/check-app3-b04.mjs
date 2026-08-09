@@ -14,7 +14,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedSurface, isB05Delivered, publicTemplatePaths } from './app3-accepted-surface.mjs';
+import {
+  acceptedAdminTemplatePaths,
+  acceptedSurface,
+  isB05Delivered,
+  publicTemplatePaths,
+} from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -137,10 +142,17 @@ export function checkSurface(rootDir, fail) {
   const templateOperations = Object.entries(document.paths ?? {})
     .filter(([route]) => route.startsWith('/api/admin/design-templates'))
     .flatMap(([, methods]) => Object.keys(methods));
-  // Three from B03, one from B03A, three here. An eighth is scope creep.
-  if (templateOperations.length !== 7) {
+  // Three from B03, one from B03A, three here — plus one from `APP3-B03B` once
+  // that checkpoint has delivered. Derived from the shared path authority rather
+  // than a literal `7`: the number was correct the day B04 shipped and became
+  // wrong when a later checkpoint legitimately published its own operation,
+  // which is a proxy failing for a reason unrelated to lifecycle. Still strict —
+  // an operation no checkpoint claims fails, because the authority only grows
+  // when a phase status says it did.
+  const expectedTemplateOperations = acceptedAdminTemplatePaths(rootDir).length + 1;
+  if (templateOperations.length !== expectedTemplateOperations) {
     fail(
-      `${CANONICAL_FILES.openapi}: ${templateOperations.length} admin design-template operations, expected 7`,
+      `${CANONICAL_FILES.openapi}: ${templateOperations.length} admin design-template operations, expected ${String(expectedTemplateOperations)}`,
     );
   }
 
@@ -389,11 +401,19 @@ export function checkBoundaries(rootDir, fail) {
   if (/@Post\(':templateId\/restore'\)/.test(controller)) {
     fail(`${CANONICAL_FILES.controller}: declares the restore route, which is APP3-B04A's`);
   }
-  // Create, save, publish, unpublish, archive.
+  // One pair per mutating Template operation, counted from the contract rather
+  // than written as a literal. `5` was create, save and the three transitions;
+  // `APP3-B03B`'s scope assignment made it six, and a number here fails on that
+  // instead of on a missing guard — which is the property worth protecting.
+  // Derived from the same path authority as the operation count above: the
+  // Admin Template surface is `paths + 1` operations (the collection carries
+  // both the list and the create) of which exactly two are reads — the list and
+  // the detail. Everything else mutates and must carry the pair.
+  const mutatingTemplateWrites = acceptedAdminTemplatePaths(rootDir).length + 1 - 2;
   const guards = controller.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g);
-  if ((guards?.length ?? 0) !== 5) {
+  if ((guards?.length ?? 0) !== mutatingTemplateWrites) {
     fail(
-      `${CANONICAL_FILES.controller}: ${String(guards?.length ?? 0)} guarded writes, expected 5`,
+      `${CANONICAL_FILES.controller}: ${String(guards?.length ?? 0)} guarded writes, expected ${String(mutatingTemplateWrites)}`,
     );
   }
 

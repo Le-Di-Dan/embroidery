@@ -7,6 +7,7 @@ import { IdentityModule } from '../identity/identity.module';
 import { CatalogPlacementReadModule } from '../catalog/catalog-placement-read.module';
 import { DESIGN_TEMPLATE_REPOSITORY } from './domain/repositories/design-template.repository';
 import { DrizzleDesignTemplateRepository } from './infrastructure/persistence/drizzle-design-template.repository';
+import { AssignTemplateScopeUseCase } from './application/assign-template-scope.use-case';
 import { DesignTemplateAuditRecorder } from './application/design-template-audit.recorder';
 import { DesignTemplateDraftService } from './application/design-template-draft.service';
 import { DesignTemplateQuery } from './application/design-template.query';
@@ -55,6 +56,10 @@ import { AdminDesignTemplateController } from './presentation/admin-design-templ
     TemplateDocumentAuthority,
     TemplateDocumentMediaAuthority,
     SaveTemplateDocumentUseCase,
+    // APP3-B03B — the one-time initial scope assignment. Reuses the same
+    // `DesignTemplateScopeAuthority` the create path validates with, so there is
+    // one definition of a legal product/side/area chain rather than two.
+    AssignTemplateScopeUseCase,
     // APP3-B04 — the LC-24 transitions. The publication authority composes the
     // whole GRD-T01 guard from the authorities that own each part: P01 for the
     // document, P02 for geometry, the Catalog placement port for the scope chain

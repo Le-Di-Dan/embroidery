@@ -48,25 +48,32 @@ describe('buildOpenApiDocument', () => {
     expect(paths.every((path) => path.startsWith('/api/'))).toBe(true);
   });
 
-  it('documents the health routes plus the APP1 staff and APP2 asset/product endpoints', () => {
+  it('documents exactly the surface the committed artifact publishes', () => {
     const stats = describeDocument(buildOpenApiDocument(app));
-    // Health (2 ops) + staff session open/close (2 ops on one path) + staff/me
-    // (1 op) + APP2-B01 Admin asset upload/detail/list (3 ops on 3 paths)
-    // + APP2-B02 Admin product list/create (2 ops on one path), detail/update
-    // (2 ops on one path) and archive (1 op on its own path).
-    // + APP2-B03 publication readiness, publish and unpublish — three ops on
-    // three new paths.
-    // + APP2-T01 public catalog media delivery — one binary op on one new path.
-    // + APP2-B04 public catalog list and detail — two JSON ops on two new paths.
-    // + APP3-B01 Admin placement read/replace (2 ops on one path) and the public
-    // placement manifest (1 op on its own path).
-    // + APP3-B02 public Side background delivery — one binary op on one new path.
-    // The three APP3 operations were added while this count still read 16/19, so
-    // the assertion had been failing before `APP3-P03` touched anything; it is
-    // corrected here rather than left as a permanently red guard.
-    expect(stats.pathCount).toBe(19);
-    expect(stats.operationCount).toBe(23);
-    expect(stats.schemaCount).toBeGreaterThan(0);
+
+    // Compared against the **committed artifact**, not against literals.
+    //
+    // This assertion has now gone stale twice for the same reason: a hard-coded
+    // count says nothing about correctness and fails the moment any checkpoint
+    // legitimately publishes an operation — the previous comment here records it
+    // having "been failing before `APP3-P03` touched anything". The property
+    // actually worth guarding is that the document this process builds *is* the
+    // one committed to `packages/contracts`, which is exactly what would break
+    // if a controller changed without regeneration. That never goes stale for
+    // the wrong reason, and it is strictly stronger than any total.
+    const committed = JSON.parse(readCommittedArtifact(resolveArtifactPath(__dirname)) ?? '{}') as {
+      paths: Record<string, Record<string, unknown>>;
+      components: { schemas: Record<string, unknown> };
+    };
+    const METHODS = ['get', 'post', 'put', 'patch', 'delete'];
+    const committedOperations = Object.values(committed.paths).reduce(
+      (total, methods) => total + Object.keys(methods).filter((m) => METHODS.includes(m)).length,
+      0,
+    );
+
+    expect(stats.pathCount).toBe(Object.keys(committed.paths).length);
+    expect(stats.operationCount).toBe(committedOperations);
+    expect(stats.schemaCount).toBe(Object.keys(committed.components.schemas).length);
   });
 
   it('gives every operation a deterministic policy-conforming id', () => {

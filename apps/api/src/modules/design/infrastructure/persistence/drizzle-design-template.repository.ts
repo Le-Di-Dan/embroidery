@@ -5,11 +5,12 @@
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { and, desc, eq, inArray, isNull, lt, or } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, lt, notExists, or, sql } from 'drizzle-orm';
 
 import type { DesignTemplateState } from '@embroidery/database';
 
 import type {
+  AssignDesignTemplateScopeInput,
   CreateDesignTemplateInput,
   DesignTemplateLifecycleInput,
   DesignTemplate,
@@ -191,6 +192,74 @@ export class DrizzleDesignTemplateRepository
         );
       }
       return toTemplateVersion(version);
+    });
+  }
+
+  async assignInitialScope(input: AssignDesignTemplateScopeInput): Promise<DesignTemplate> {
+    return this.run('assignInitialScope', async () => {
+      const tx = this.requireTransaction('assignInitialScope');
+
+      // Every condition of the ruling is in the predicate. The three `isNull`
+      // checks are what make the assignment one-time: a Template that already
+      // has a scope cannot match, so a rescope is unrepresentable here rather
+      // than merely unimplemented.
+      //
+      // The `notExists` is not redundant with `currentVersion = 0`. The counter
+      // and the version rows are advanced together by `saveDraftVersion`, so
+      // they agree in every state this code can produce — but "agree in every
+      // state we can produce" is an assumption, and the ruling says *zero
+      // immutable versions*. Asserting the thing the ruling names costs one
+      // correlated subquery and fails closed if the two ever diverge.
+      const [assigned] = await tx
+        .update(designTemplates)
+        .set({
+          productId: input.productId,
+          productSideId: input.productSideId,
+          embroideryAreaId: input.embroideryAreaId,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(designTemplates.id, input.id),
+            eq(designTemplates.status, 'DRAFT'),
+            eq(designTemplates.currentVersion, 0),
+            isNull(designTemplates.productId),
+            isNull(designTemplates.productSideId),
+            isNull(designTemplates.embroideryAreaId),
+            notExists(
+              tx
+                .select({ one: sql`1` })
+                .from(designTemplateVersions)
+                .where(eq(designTemplateVersions.designTemplateId, input.id)),
+            ),
+          ),
+        )
+        .returning();
+
+      if (assigned === undefined) {
+        const [current] = await tx
+          .select({ id: designTemplates.id })
+          .from(designTemplates)
+          .where(eq(designTemplates.id, input.id))
+          .limit(1);
+
+        if (current === undefined) {
+          throw notFoundError(
+            'DesignTemplateRepository.assignInitialScope',
+            'That design template does not exist.',
+          );
+        }
+        // One code for every remaining cause on purpose, exactly as
+        // `saveDraftVersion` does: a caller learning "already scoped" separately
+        // from "not DRAFT" separately from "has versions" learns the template's
+        // lifecycle state from a write it was not allowed to make.
+        throw guardViolationError(
+          'DesignTemplateRepository.assignInitialScope',
+          'STALE_WRITE',
+          'This design template can no longer be given an initial scope.',
+        );
+      }
+      return toTemplate(assigned);
     });
   }
 

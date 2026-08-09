@@ -714,6 +714,15 @@ export interface ArchiveProductBody {
   expectedUpdatedAt: string;
 }
 
+export interface AssignDesignTemplateScopeBody {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  embroideryAreaId: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  productId: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  productSideId: string;
+}
+
 export interface AutosaveDesignSessionBody {
   /** The complete canonical Design Document snapshot. Validated, quantized and canonicalized by the Design Document authority; the stored value is the canonical form, not the object as sent. */
   document: DesignDocument;
@@ -1532,6 +1541,10 @@ export type AdminDesignTemplateSaveDocument200 = ApiSuccessResponse & {
 };
 
 export type AdminDesignTemplatePublish200 = ApiSuccessResponse & {
+  data: AdminDesignTemplateDetailResponse;
+};
+
+export type AdminDesignTemplateAssignScope200 = ApiSuccessResponse & {
   data: AdminDesignTemplateDetailResponse;
 };
 

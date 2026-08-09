@@ -64,6 +64,21 @@ const document = JSON.parse(readFileSync(resolveArtifactPath(__dirname), 'utf8')
   components: { schemas: Record<string, { properties?: Record<string, unknown> }> };
 };
 
+/**
+ * How many Admin Template operations mutate, according to the contract itself.
+ *
+ * The guard assertions below count decorator occurrences against this rather
+ * than against a literal, so publishing a new mutating operation *without* the
+ * origin/body pair still fails while publishing one *with* it does not.
+ */
+function mutatingTemplateOperationCount(): number {
+  const MUTATING = new Set(['post', 'put', 'patch', 'delete']);
+  return Object.entries(document.paths)
+    .filter(([path]) => path.startsWith('/api/admin/design-templates'))
+    .flatMap(([, methods]) => Object.keys(methods))
+    .filter((method) => MUTATING.has(method)).length;
+}
+
 /** A minimal valid canonical document; `elements` carries the image when asked. */
 function designDocument(elements: readonly unknown[] = []): Record<string, unknown> {
   return {
@@ -224,6 +239,7 @@ describe('the published save contract', () => {
         'post /api/admin/design-templates', // APP3-B03
         'get /api/admin/design-templates/{templateId}', // APP3-B03
         'put /api/admin/design-templates/{templateId}/document', // this checkpoint
+        'put /api/admin/design-templates/{templateId}/scope', // APP3-B03B
         'post /api/admin/design-templates/{templateId}/archive', // APP3-B04
         'post /api/admin/design-templates/{templateId}/publish', // APP3-B04
         'post /api/admin/design-templates/{templateId}/unpublish', // APP3-B04
@@ -269,11 +285,14 @@ describe('the published save contract', () => {
 
   it('guards the write with the Admin session and the mutating pair', () => {
     expect(CONTROLLER_SOURCE).toMatch(/@Put\(':templateId\/document'\)/);
-    // One per mutating operation: B03's create, this save, and B04's three
-    // transitions — the two reads carry the controller-level Admin guard only.
+    // Derived from the published surface rather than written as a literal. The
+    // property is "every mutating Template operation carries the pair, and the
+    // reads carry the controller-level Admin guard only" — a number said `5`
+    // and had to be rewritten the day `APP3-B03B` legitimately published a
+    // sixth, which is a proxy failing for a reason unrelated to what it guards.
     expect(
       CONTROLLER_SOURCE.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g),
-    ).toHaveLength(5);
+    ).toHaveLength(mutatingTemplateOperationCount());
   });
 });
 

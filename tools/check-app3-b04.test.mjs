@@ -134,14 +134,14 @@ describe('the published surface', () => {
     assert.ok(mentions(run(checkSurface, { openapi }), 'belongs to APP3-B04A'));
   });
 
-  it('rejects an eighth Admin Template operation', () => {
+  it('rejects an Admin Template operation no checkpoint claims', () => {
     const openapi = openapiWith((d) => {
       d.paths['/api/admin/design-templates/{templateId}/clone'] = {
         post: { operationId: 'adminDesignTemplate_clone' },
       };
     });
     assert.ok(
-      mentions(run(checkSurface, { openapi }), 'admin design-template operations, expected 7'),
+      mentions(run(checkSurface, { openapi }), 'admin design-template operations, expected 8'),
     );
   });
 
@@ -370,7 +370,7 @@ describe('boundaries', () => {
       "  @Post(':templateId/archive')\n  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)",
       "  @Post(':templateId/archive')",
     );
-    assert.ok(mentions(run(checkBoundaries, { controller }), 'guarded writes, expected 5'));
+    assert.ok(mentions(run(checkBoundaries, { controller }), 'guarded writes, expected 6'));
   });
 
   it('rejects an unwired provider', () => {

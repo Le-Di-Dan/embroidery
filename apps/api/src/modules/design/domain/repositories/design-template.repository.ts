@@ -134,6 +134,24 @@ export interface DesignTemplateLifecycleInput {
   readonly expectedCurrentVersion: number;
 }
 
+/**
+ * The one-time initial scope assignment (`APP3-B03B`).
+ *
+ * Carries the resolved triple and nothing else — no expected token. Every other
+ * guarded write here takes one because its legal source state is a *range*: a
+ * save may advance from any counter, a publish may transition from any version.
+ * This one's legal source state is a single point — `DRAFT`, counter `0`, all
+ * three columns null, no version rows — so a caller-supplied token could only
+ * ever hold the value the server already requires, and a field whose only legal
+ * value is `0` is a field that can only be wrong.
+ */
+export interface AssignDesignTemplateScopeInput {
+  readonly id: DesignTemplateId;
+  readonly productId: ProductId;
+  readonly productSideId: ProductSideId;
+  readonly embroideryAreaId: EmbroideryAreaId;
+}
+
 export const DESIGN_TEMPLATE_REPOSITORY = Symbol('DESIGN_TEMPLATE_REPOSITORY');
 
 export interface DesignTemplateRepository {
@@ -229,6 +247,33 @@ export interface DesignTemplateRepository {
    * @requiresTransaction
    */
   archive(input: DesignTemplateLifecycleInput & { readonly at: Date }): Promise<void>;
+
+  /**
+   * Assigns the placement scope of an unscoped Template, exactly once
+   * (`APP3-B03B`).
+   *
+   * Succeeds only when the Template exists, is `DRAFT`, its `current_version` is
+   * `0`, all three scope columns are null **and** it has no version rows. Every
+   * one of those is part of the compare-and-set predicate, not a prior read: a
+   * read-then-update would let two concurrent assignments both observe an
+   * unscoped Template and both write, leaving the second one's triple over the
+   * first one's with no record that either happened.
+   *
+   * The three columns are written together, so a partial scope — the state
+   * `IMP-D042` PO-06 calls *wrong* rather than incomplete — cannot be produced
+   * by an interrupted assignment.
+   *
+   * There is no matching clear or rescope method, and that absence is the
+   * ruling: `B03B_SCOPE_RULING` is initial assignment only, because a document
+   * already saved carries an immutable placement snapshot that a rescope would
+   * silently invalidate.
+   *
+   * Throws `RECORD_NOT_FOUND` for an unknown Template and `STALE_WRITE` when the
+   * Template is no longer assignable. Both leave every column untouched.
+   *
+   * @requiresTransaction
+   */
+  assignInitialScope(input: AssignDesignTemplateScopeInput): Promise<DesignTemplate>;
 
   findById(id: DesignTemplateId): Promise<DesignTemplate | undefined>;
   findBySlug(slug: string): Promise<DesignTemplate | undefined>;

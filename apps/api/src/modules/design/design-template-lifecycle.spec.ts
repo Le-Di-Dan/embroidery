@@ -289,10 +289,18 @@ describe('the published lifecycle contract', () => {
 
   it('guards all three writes with the Admin session and the mutating pair', () => {
     expect(CONTROLLER_SOURCE).toMatch(/@UseGuards\(AuthenticatedAdminGuard\)/);
-    // Create, save, publish, unpublish, archive: five mutating operations.
+    // Counted from the contract, not written as a literal: a number said
+    // `5` and broke when `APP3-B03B` published a sixth mutating operation,
+    // which is a proxy failing for a reason unrelated to the guard it protects.
+    const MUTATING = new Set(['post', 'put', 'patch', 'delete']);
+    const mutating = Object.entries(document.paths)
+      .filter(([path]) => path.startsWith('/api/admin/design-templates'))
+      .flatMap(([, methods]) => Object.keys(methods))
+      .filter((method) => MUTATING.has(method)).length;
+
     expect(
       CONTROLLER_SOURCE.match(/@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/g),
-    ).toHaveLength(5);
+    ).toHaveLength(mutating);
   });
 });
 

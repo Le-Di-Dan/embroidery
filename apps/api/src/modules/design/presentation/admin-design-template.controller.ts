@@ -4,13 +4,21 @@
  *   POST /api/admin/design-templates                   — adminDesignTemplate_create
  *   GET  /api/admin/design-templates                   — adminDesignTemplate_list
  *   GET  /api/admin/design-templates/:templateId       — adminDesignTemplate_detail
+ *   PUT  /api/admin/design-templates/:id/scope         — adminDesignTemplate_assignScope
  *   PUT  /api/admin/design-templates/:id/document      — adminDesignTemplate_saveDocument
  *   POST /api/admin/design-templates/:id/publish       — adminDesignTemplate_publish
  *   POST /api/admin/design-templates/:id/unpublish     — adminDesignTemplate_unpublish
  *   POST /api/admin/design-templates/:id/archive       — adminDesignTemplate_archive
  *
- * Seven, and no eighth. Three are `APP3-B03`, the save is `APP3-B03A`, and the
- * three LC-24 transitions are `APP3-B04`. **Restore is not here**:
+ * Eight, and no ninth. Three are `APP3-B03`, the save is `APP3-B03A`, the scope
+ * assignment is `APP3-B03B`, and the three LC-24 transitions are `APP3-B04`.
+ *
+ * `APP3-B03B` is the *initial* assignment only — it binds an unscoped, versionless
+ * `DRAFT` to one placement and refuses everything else. There is no rescope and
+ * no clear-scope route, and their absence is the ruling rather than an omission:
+ * a saved version carries an immutable placement snapshot, so rescoping after one
+ * exists would leave every stored document describing a placement the header no
+ * longer claims. **Restore is not here** either:
  * `B04_LIFECYCLE_ROUTING_RULING` routes `ARCHIVED → DRAFT` to `APP3-B04A`, so
  * B04 stays at three operations rather than becoming the four-into-three contract
  * the B03 split already had to resolve once. Public reads are `APP3-B05` and
@@ -54,6 +62,7 @@ import {
 import { AuthenticatedAdminGuard } from '../../identity/presentation/guards/authenticated-admin.guard';
 import { StaffJsonBodyGuard } from '../../identity/presentation/guards/staff-json-body.guard';
 import { StaffOriginGuard } from '../../identity/presentation/guards/staff-origin.guard';
+import { AssignTemplateScopeUseCase } from '../application/assign-template-scope.use-case';
 import { DesignTemplateDraftService } from '../application/design-template-draft.service';
 import { DesignTemplateQuery } from '../application/design-template.query';
 import {
@@ -77,6 +86,7 @@ import {
   AdminDesignTemplateListResponse,
 } from './schemas/admin-design-template.response';
 import {
+  AssignDesignTemplateScopeBody,
   CreateDesignTemplateBody,
   DESIGN_TEMPLATE_STATUS_FILTERS,
   DesignTemplateIdParam,
@@ -99,6 +109,7 @@ export class AdminDesignTemplateController {
     private readonly drafts: DesignTemplateDraftService,
     private readonly query: DesignTemplateQuery,
     private readonly saves: SaveTemplateDocumentUseCase,
+    private readonly scopeAssignment: AssignTemplateScopeUseCase,
     private readonly lifecycle: DesignTemplateLifecycleUseCase,
   ) {}
 
@@ -262,6 +273,63 @@ export class AdminDesignTemplateController {
         templateId: params.templateId,
         expectedCurrentVersion: body.expectedCurrentVersion,
         document: body.document,
+      }),
+    );
+  }
+
+  @Put(':templateId/scope')
+  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)
+  @ApiSuccessCode('DESIGN_TEMPLATE_SCOPE_ASSIGNED', 'Design template scope assigned.')
+  @ApiOperation({
+    summary: 'Assign the initial scope of a design template',
+    description:
+      'Binds an unscoped template to one exact product, side and embroidery area. This is a ' +
+      'one-time initial assignment, not a rescope: it succeeds only while the template is a ' +
+      'DRAFT with no version and no scope at all, and is refused once any scope or any version ' +
+      'exists. All three ids are required together. No version, document or asset association ' +
+      'is created and the lifecycle state does not change.',
+  })
+  @ApiParam({ name: 'templateId', format: 'uuid' })
+  @ApiBody({ type: AssignDesignTemplateScopeBody })
+  @ApiResponse({
+    status: 200,
+    description: 'The template, now scoped, still a DRAFT with no version.',
+    schema: envelopeSchemaOf(AdminDesignTemplateDetailResponse),
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid body, or a product/side/area chain that does not resolve.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({ status: 401, description: 'No live Admin session.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 403,
+    description: 'The request states an origin outside the Admin allowlist.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({ status: 404, description: 'No such design template.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 409,
+    description:
+      'The template already has a scope, already has a version, or is not a DRAFT. Nothing ' +
+      'was written.',
+    schema: ERROR_SCHEMA,
+  })
+  @ApiResponse({
+    status: 415,
+    description: 'The body is not application/json.',
+    schema: ERROR_SCHEMA,
+  })
+  async assignScope(
+    @Param() params: DesignTemplateIdParam,
+    @Body() body: AssignDesignTemplateScopeBody,
+  ): Promise<TemplateDetailView> {
+    return this.guarded(() =>
+      this.scopeAssignment.assign({
+        templateId: params.templateId,
+        productId: body.productId,
+        productSideId: body.productSideId,
+        embroideryAreaId: body.embroideryAreaId,
       }),
     );
   }

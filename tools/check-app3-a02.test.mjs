@@ -27,6 +27,10 @@ const GATE = 'tools/check-app3-a02.mjs';
 /** Everything the gate reads. */
 const COPIED = [
   GATE,
+  // The gate consults the shared per-checkpoint path authority, so the scratch
+  // copy needs it too — without it the gate crashes on import and every case
+  // 'fails' for a reason unrelated to the property it was breaking.
+  'tools/app3-accepted-paths.mjs',
   'package.json',
   'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md',
   'docs/implementation/SCOPED_COMMAND_INDEX.md',
@@ -173,17 +177,22 @@ describe('design registry', () => {
 });
 
 describe('client boundary', () => {
-  it('refuses a detail read added to the curated export', () => {
-    refuses(
-      (root) =>
-        edit(
-          root,
-          CURATED_CLIENT,
-          'adminDesignTemplateCreate, adminDesignTemplateList',
-          'adminDesignTemplateCreate, adminDesignTemplateDetail, adminDesignTemplateList',
-        ),
-      'adminDesignTemplateDetail stays withheld',
-    );
+  it('refuses a detail read reaching the list feature', () => {
+    // `APP3-A03` put `adminDesignTemplateDetail` on the curated boundary for the
+    // editor, so the old mutation — adding it to the export — is now the
+    // accepted world rather than a violation. The property the rule always
+    // stood for is unchanged and is asserted directly: whatever the boundary
+    // offers, the *list* must never call it, because a per-row detail read is
+    // the N+1 a keyset list exists to avoid.
+    refuses((root) => {
+      const table = `${FEATURE}/components/design-template-table.tsx`;
+      const text = readAt(root, table);
+      writeAt(
+        root,
+        table,
+        `import { adminDesignTemplateDetail } from '@embroidery/api-client';\n${text}`,
+      );
+    }, 'performs no per-row detail read');
   });
 
   it('refuses a lifecycle operation added to the curated export', () => {
@@ -192,8 +201,8 @@ describe('client boundary', () => {
         edit(
           root,
           CURATED_CLIENT,
-          'adminDesignTemplateCreate, adminDesignTemplateList',
-          'adminDesignTemplateCreate, adminDesignTemplateList, adminDesignTemplatePublish',
+          "  adminDesignTemplateSaveDocument,\n} from './generated/embroidery-api';",
+          "  adminDesignTemplateSaveDocument,\n  adminDesignTemplatePublish,\n} from './generated/embroidery-api';",
         ),
       'adminDesignTemplatePublish stays withheld',
     );
@@ -311,11 +320,24 @@ describe('scope', () => {
     refuses((root) => edit(root, ROUTE, 'import', "'use client';\n\nimport"), 'thin boundary');
   });
 
-  it('refuses an APP3-A03 editor feature started here', () => {
+  it('refuses an APP3-A04 lifecycle feature started here', () => {
     refuses((root) => {
-      mkdirSync(join(root, 'apps/admin/src/features/template-editor'), { recursive: true });
-      writeAt(root, 'apps/admin/src/features/template-editor/index.ts', 'export {};\n');
-    }, 'no template-editor feature was created');
+      mkdirSync(join(root, 'apps/admin/src/features/template-lifecycle'), { recursive: true });
+      writeAt(root, 'apps/admin/src/features/template-lifecycle/index.ts', 'export {};\n');
+    }, 'no template-lifecycle feature was created');
+  });
+
+  it('refuses the list feature growing an editor of its own', () => {
+    // The editor feature itself is `APP3-A03`'s and legitimately exists now, so
+    // the old "no editor feature anywhere" mutation is the accepted world. What
+    // stays forbidden is the *list* capability owning one.
+    refuses((root) => {
+      writeAt(
+        root,
+        `${FEATURE}/components/design-template-editor-screen.tsx`,
+        'export function DesignTemplateEditorScreen() {\n  return null;\n}\n',
+      );
+    }, 'contains no editor of its own');
   });
 
   it('refuses an OpenAPI surface change', () => {
@@ -332,7 +354,7 @@ describe('scope', () => {
         'packages/contracts/openapi/openapi.generated.json',
         JSON.stringify(document, null, 2),
       );
-    }, 'surface is unchanged at 32 paths');
+    }, 'the Admin Template surface is exactly what the accepted checkpoints published');
   });
 
   it('refuses a new root script', () => {

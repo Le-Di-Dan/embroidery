@@ -427,14 +427,23 @@ describe('APP3-B01N — the frozen artifacts and governance', () => {
     assert.ok(mentions(failures, 'hides the runtime requirement'), failures.join('\n'));
   });
 
-  it('rejects quietly closing the platform Zod/OpenAPI follow-up', () => {
+  it('rejects the platform Zod/OpenAPI follow-up being closed by a checkpoint that is not done', () => {
+    // `APP3-P03` closed this follow-up, so the gate now takes its *closed*
+    // branch and the old mutation — rewriting `= OPEN` to `= CLOSED` — matched
+    // nothing and asserted nothing. It has been a red, vacuous test since P03;
+    // re-pointed at the branch that is actually live, which is the one rule the
+    // closed world still has: a follow-up may only be closed by a checkpoint
+    // the phase records as complete.
     const failures = run({
       [CANONICAL_FILES.phase]: file('phase').replace(
-        'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = OPEN',
-        'FU-PLATFORM-ZOD-DTO-OPENAPI-METADATA-01 = CLOSED',
+        /\nAPP3-P03 = COMPLETE/,
+        '\nAPP3-P03 = IN_PROGRESS',
       ),
     });
-    assert.ok(mentions(failures, 'no longer recorded as open'), failures.join('\n'));
+    assert.ok(
+      mentions(failures, 'closed by a checkpoint that is not recorded done'),
+      failures.join('\n'),
+    );
   });
 
   it('reports an APP3-W01A regression through the chained gate', () => {

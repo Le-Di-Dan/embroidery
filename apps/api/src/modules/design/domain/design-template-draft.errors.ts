@@ -38,6 +38,16 @@ export const DESIGN_TEMPLATE_DRAFT_ERROR_CODES = [
   // translation point.
   'DESIGN_TEMPLATE_NOT_EDITABLE',
   'DESIGN_TEMPLATE_VERSION_CONFLICT',
+  // `APP3-B03B` — the one-time initial scope assignment. Added to this
+  // vocabulary rather than given one of its own for the same reason B03A's
+  // were: one error type and one translation point.
+  //
+  // Distinct from `DESIGN_TEMPLATE_SCOPE_INVALID`, which says the triple does
+  // not resolve. This one says the *Template* is no longer a candidate — it
+  // already has a scope, it has versions, or it left DRAFT. The two call for
+  // opposite responses: a different triple can fix the first and nothing can
+  // fix the second.
+  'DESIGN_TEMPLATE_SCOPE_NOT_ASSIGNABLE',
   // `APP3-B04` — the LC-24 lifecycle transitions. Added to this vocabulary for
   // the same reason B03A's were: one error type and one translation point.
   //
@@ -62,6 +72,8 @@ const MESSAGES: Record<DesignTemplateDraftErrorCode, string> = {
   DESIGN_TEMPLATE_NOT_EDITABLE: 'This design template is not in a state that allows editing.',
   DESIGN_TEMPLATE_VERSION_CONFLICT:
     'This design template changed since it was loaded. Reload and try again.',
+  DESIGN_TEMPLATE_SCOPE_NOT_ASSIGNABLE:
+    'This design template can no longer be given an initial scope.',
   DESIGN_TEMPLATE_LIFECYCLE_NOT_ALLOWED:
     'This design template cannot make that change from its current state.',
   DESIGN_TEMPLATE_PUBLISH_NOT_READY: 'This design template is not ready to be published yet.',
@@ -108,13 +120,15 @@ export function toHttpException(error: DesignTemplateDraftError): HttpException 
   switch (error.code) {
     case 'DESIGN_TEMPLATE_NOT_FOUND':
       return new NotFoundException(error.message);
-    // A save the caller may retry after reloading, and a lifecycle state that
-    // forbids editing, are both conflicts rather than bad requests: the body was
-    // well formed and the server state is what refused it.
+    // A save the caller may retry after reloading, a lifecycle state that
+    // forbids editing, and a template that is no longer assignable are all
+    // conflicts rather than bad requests: the body was well formed and the
+    // server state is what refused it.
     case 'DESIGN_TEMPLATE_SLUG_CONFLICT':
     case 'DESIGN_TEMPLATE_NOT_EDITABLE':
     case 'DESIGN_TEMPLATE_VERSION_CONFLICT':
     case 'DESIGN_TEMPLATE_LIFECYCLE_NOT_ALLOWED':
+    case 'DESIGN_TEMPLATE_SCOPE_NOT_ASSIGNABLE':
       return new ConflictException(error.message);
     // Readiness is not a conflict: the request was well formed and the state was
     // right; the template itself is what could not be published.

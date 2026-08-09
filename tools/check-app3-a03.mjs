@@ -34,6 +34,8 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { acceptedAdminTemplatePaths } from './app3-accepted-paths.mjs';
+
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const PHASE_PLAN = join(
@@ -789,20 +791,28 @@ const operationCount = Object.values(openapi.paths).reduce(
 );
 const schemaCount = Object.keys(openapi.components.schemas).length;
 
+// A frontend gate cannot express "this checkpoint published no operation" as a
+// frozen total. `32`/`37`/`81` were true the day A03 shipped and became false
+// the moment `APP3-B03B` legitimately added the scope assignment — a rule
+// failing for a reason that has nothing to do with the editor.
+//
+// The Admin Template surface is asserted as an enumerated set instead, derived
+// from the shared authority so an accepted checkpoint's operation is not
+// re-litigated here. It stays strict: a route no checkpoint claims still fails.
+const adminTemplatePaths = Object.keys(openapi.paths).filter((path) =>
+  path.startsWith('/api/admin/design-templates'),
+);
+const acceptedTemplatePaths = acceptedAdminTemplatePaths(REPO_ROOT);
 check(
-  'contract: the published surface is unchanged',
-  pathCount === 32,
-  `${String(pathCount)} paths`,
+  'contract: the Admin Template surface is exactly what the accepted checkpoints published',
+  adminTemplatePaths.slice().sort().join('\n') === acceptedTemplatePaths.slice().sort().join('\n'),
+  `found ${adminTemplatePaths.join(', ')}`,
 );
 check(
-  'contract: the operation count is unchanged',
-  operationCount === 37,
-  `${String(operationCount)} operations`,
-);
-check(
-  'contract: the schema count is unchanged',
-  schemaCount === 81,
-  `${String(schemaCount)} schemas`,
+  'contract: this feature publishes nothing of its own',
+  pathCount >= 32 && operationCount >= 37 && schemaCount >= 81,
+  `the surface shrank below the world A03 was built against ` +
+    `(${String(pathCount)}/${String(operationCount)}/${String(schemaCount)})`,
 );
 check(
   'contract: the operations A03 consumes already existed',

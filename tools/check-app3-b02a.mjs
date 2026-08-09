@@ -26,6 +26,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { acceptedSurface } from './app3-accepted-surface.mjs';
+
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const CANONICAL_FILES = {
@@ -252,10 +254,20 @@ export function checkApp3B02a(rootDir) {
       ).length,
     0,
   );
-  if (paths.length !== 32)
-    fail(`the document publishes ${String(paths.length)} paths, expected 32`);
-  if (operations !== 37) {
-    fail(`the document publishes ${String(operations)} operations, expected 37`);
+  // Measured against the accepted surface for the *current* world, not against
+  // the literals B02A shipped with: `32`/`37` were true the day it delivered and
+  // became false when `APP3-B03B` legitimately published one operation, which is
+  // this gate failing for a reason that has nothing to do with Side backgrounds.
+  const expected = acceptedSurface(rootDir);
+  if (paths.length !== expected.paths) {
+    fail(
+      `the document publishes ${String(paths.length)} paths, expected ${String(expected.paths)}`,
+    );
+  }
+  if (operations !== expected.operations) {
+    fail(
+      `the document publishes ${String(operations)} operations, expected ${String(expected.operations)}`,
+    );
   }
   const published = document.paths?.[ROUTE]?.get;
   if (published === undefined) fail(`the document does not publish ${ROUTE}`);
