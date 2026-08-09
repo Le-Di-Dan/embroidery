@@ -26,6 +26,23 @@ x-object-storage-env: &object-storage-env
   OBJECT_STORAGE_ORIGINALS_BUCKET: ${OBJECT_STORAGE_ORIGINALS_BUCKET:-embroidery-dev-originals}
   OBJECT_STORAGE_DERIVATIVES_BUCKET: ${OBJECT_STORAGE_DERIVATIVES_BUCKET:-embroidery-dev-derivatives}
 
+# Anonymous Design Session configuration (IMP-D043, APP3-B06A/B07).
+#
+# Required by EVERY consumer of `AppModule`, not just the HTTP server: APP3-B07
+# composed `DesignModule` into it, and `loadDesignSessionAuthConfig` throws at
+# context creation when the pepper is missing. The staff-bootstrap CLI builds
+# the same `AppModule`, so it needs this too — without it the one-shot exits 1
+# and `service_completed_successfully` keeps the whole stack un-ready.
+#
+# The pepper has NO default here on purpose. IMP-D043 PO-02 requires it to come
+# from runtime secret configuration and to fail loudly with no fallback; a
+# development default in this file would be exactly the unpeppered-equivalent
+# shortcut that ruling forbids. Set it in `.env` (>= 32 characters).
+x-design-session-env: &design-session-env
+  DESIGN_SESSION_SECRET_PEPPER: ${DESIGN_SESSION_SECRET_PEPPER:-}
+  DESIGN_SESSION_ALLOWED_ORIGINS: ${DESIGN_SESSION_ALLOWED_ORIGINS:-http://embroidery.local}
+  DESIGN_SESSION_COOKIE_SECURE: ${DESIGN_SESSION_COOKIE_SECURE:-false}
+
 services:
   # Edge gateway — the only public browser entrypoint in normal mode (D-036).
   # Direct application ports are exposed only via docker-compose.debug.yml.
@@ -132,7 +149,7 @@ services:
       dockerfile: infrastructure/docker/api.Dockerfile
       target: dev
     environment:
-      <<: *object-storage-env
+      <<: [*object-storage-env, *design-session-env]
       NODE_ENV: development
       API_PORT: '4000'
       # Reach the database over the compose network (never the host mapping).
@@ -199,8 +216,10 @@ services:
       target: dev
     environment:
       # This CLI creates a full Nest application context from AppModule, so it
-      # instantiates the asset providers and needs the same storage config.
-      <<: *object-storage-env
+      # instantiates the asset providers and needs the same storage config — and,
+      # since APP3-B07 composed DesignModule into AppModule, the same Design
+      # Session config. Anything added to AppModule lands here too.
+      <<: [*object-storage-env, *design-session-env]
       NODE_ENV: development
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
       STAFF_BOOTSTRAP_EMAIL: ${STAFF_BOOTSTRAP_EMAIL:-}
