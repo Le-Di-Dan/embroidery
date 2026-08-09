@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import {
   B05A_STATUS_LINES,
   acceptedSurface,
+  isS01Delivered,
   publicTemplateAssetPath,
   publicTemplatePaths,
 } from './app3-accepted-surface.mjs';
@@ -153,9 +154,21 @@ export function checkPredecessors(rootDir, fail) {
   if (!/FU-APP3-TEMPLATE-SOURCE-ASSET-INTAKE-01/.test(phase)) {
     fail(`${CANONICAL_FILES.phase}: the TEMPLATE_SOURCE intake follow-up is no longer recorded`);
   }
-  // S01 is the consumer, not part of this checkpoint.
-  if (/\nAPP3-S01 = COMPLETE/.test(phase)) {
+  // S01 is the consumer, not part of this checkpoint — so while S01 has not
+  // shipped, a phase document claiming it has is B05A implementing its own
+  // consumer. Once `APP3-S01` legitimately delivers, the absence stops
+  // describing the world and the assertion would be refusing an accepted
+  // checkpoint; the authority answers which world this is.
+  if (!isS01Delivered(rootDir) && /\nAPP3-S01 = COMPLETE/.test(phase)) {
     fail(`${CANONICAL_FILES.phase}: APP3-S01 is recorded complete; B05A does not implement it`);
+  }
+  // In either world, B05A owns no Storefront source. That is the half of the
+  // rule that never stops being true.
+  if (
+    existsSync(join(rootDir, 'apps/storefront/src/features/design-studio')) &&
+    !isS01Delivered(rootDir)
+  ) {
+    fail('apps/storefront/src/features/design-studio exists; B05A builds no Storefront feature');
   }
 }
 

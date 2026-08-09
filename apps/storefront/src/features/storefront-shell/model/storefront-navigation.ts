@@ -48,6 +48,31 @@ export function buildStorefrontProductDetailPath(slug: string): string {
   return `${STOREFRONT_PRODUCT_DETAIL_ROUTE_BASE}/${encodeURIComponent(slug)}`;
 }
 
+/**
+ * The canonical Studio segment, appended to one Product Detail path
+ * (`APP3-S01`).
+ *
+ * The Studio is entered **through a Product**, because a design session is
+ * opened on one exact `product → side → area` placement and nothing in the
+ * public contract addresses a session without one. That is why `/studio`,
+ * `/editor`, `/thiet-ke/[id]` and `/design-session/[sessionId]` are rejected:
+ * each of them implies a Studio that exists apart from a Product, and none of
+ * them can name the placement the API requires.
+ *
+ * Side and Area are **not** path authority. They are chosen inside the route
+ * from the public placement manifest, deterministically when there is only one
+ * of each, so a shared link can never pin a Side that has since been retired.
+ */
+export const STOREFRONT_STUDIO_ROUTE_SEGMENT = 'thiet-ke';
+
+/**
+ * The one place a Studio URL is built — the Product Detail path plus the Studio
+ * segment, so the two addresses cannot drift apart.
+ */
+export function buildStorefrontStudioPath(slug: string): string {
+  return `${buildStorefrontProductDetailPath(slug)}/${STOREFRONT_STUDIO_ROUTE_SEGMENT}`;
+}
+
 /** A primary-navigation entry. `route` stays `null` until the area ships. */
 export interface StorefrontNavItem {
   readonly id: string;
@@ -61,6 +86,10 @@ export interface StorefrontNavItem {
  * has a route: `APP2-S01` built it. The other four areas are not built, so their
  * items stay presentation only. Do not add an `href` here for a route that does
  * not yet exist.
+ *
+ * `studio` stays `route: null` after `APP3-S01`, and that is the correct
+ * outcome rather than an oversight. S01 built a Studio *per Product*; there is
+ * no Studio landing page, so any `href` here would have to invent one.
  */
 export const STOREFRONT_PRIMARY_NAV: readonly StorefrontNavItem[] = [
   { id: 'discover', label: 'Khám phá', route: STOREFRONT_DISCOVER_ROUTE },

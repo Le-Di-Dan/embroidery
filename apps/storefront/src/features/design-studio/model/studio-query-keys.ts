@@ -1,0 +1,45 @@
+/**
+ * TanStack Query keys for the Studio bootstrap route (`APP3-S01`).
+ *
+ * The compatibility triple is part of every Template key, and that is a
+ * correctness requirement rather than a caching nicety. `APP3-B05` matches a
+ * Template against one exact `productId + productSideId + embroideryAreaId` and
+ * nothing wider, and it binds each keyset cursor to the scope it was issued
+ * under. A key that omitted any of the three would let a response for one Side
+ * settle into the cache of another, and would eventually replay a cursor the
+ * server refuses.
+ *
+ * Because the triple is in the key, changing Side or Area does not merely
+ * invalidate: it addresses a **different** query. An in-flight request for the
+ * old placement can no longer write into the new one's cache entry no matter
+ * when it lands, which is what makes the stale-response rule structural instead
+ * of a race a component has to remember to guard.
+ */
+import type { StudioPlacementTriple } from './studio-placement';
+
+/**
+ * Page size for the Template picker. The API's own maximum is 100; requesting
+ * explicitly keeps the client's window independent of a server-side default.
+ */
+export const STUDIO_TEMPLATE_PAGE_SIZE = 12;
+
+function tripleKey(triple: StudioPlacementTriple): readonly string[] {
+  return [triple.productId, triple.productSideId, triple.embroideryAreaId];
+}
+
+export const studioQueryKeys = {
+  all: ['studio'] as const,
+  placement: (slug: string) => [...studioQueryKeys.all, 'placement', slug] as const,
+  templateList: (triple: StudioPlacementTriple) =>
+    [...studioQueryKeys.all, 'templates', ...tripleKey(triple)] as const,
+  templateDetail: (triple: StudioPlacementTriple, templateSlug: string) =>
+    [...studioQueryKeys.all, 'template-detail', ...tripleKey(triple), templateSlug] as const,
+  /**
+   * The preview is keyed by Template slug **and version** as well as the asset,
+   * because B05A only serves the version that is public right now: a key
+   * without the version would keep serving a blob for a version the server has
+   * already retired.
+   */
+  templateAsset: (templateSlug: string, version: number, assetId: string) =>
+    [...studioQueryKeys.all, 'template-asset', templateSlug, String(version), assetId] as const,
+} as const;

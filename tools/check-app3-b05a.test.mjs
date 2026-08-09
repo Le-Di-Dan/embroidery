@@ -152,12 +152,28 @@ describe('predecessors', () => {
     assert.ok(mentions(run(checkPredecessors, { phase }), 'intake follow-up'));
   });
 
-  it('rejects an S01 that has quietly been implemented', () => {
-    const phase = file('phase').replace(
-      /\nAPP3-S01 = [^\n]*\n/,
-      '\nAPP3-S01 = COMPLETE — REVIEW_DELIVERED\n',
-    );
-    assert.ok(mentions(run(checkPredecessors, { phase }), 'APP3-S01'));
+  /**
+   * The phase document with `APP3-S01` rewound to the world before it shipped.
+   *
+   * The status-line half of this rule stopped being falsifiable through the
+   * phase document once S01 legitimately delivered: the gate reads that same
+   * line to decide which world it is in, so writing `COMPLETE` there now
+   * *defines* the delivered world rather than violating it. Recorded rather
+   * than papered over — a case asserting it would be asserting a tautology.
+   *
+   * What still bites is the structural half, and it is the one that mattered:
+   * a phase that has not delivered S01 beside a repository that has grown a
+   * Storefront Studio feature anyway.
+   */
+  const beforeS01 = () =>
+    file('phase').replace(/\nAPP3-S01 = [^\n]*\n/, '\nAPP3-S01 = READY — NOT STARTED\n');
+
+  it('rejects a Storefront Studio feature built by a backend checkpoint', () => {
+    const root = rootWith({ phase: beforeS01() });
+    mkdirSync(join(root, 'apps/storefront/src/features/design-studio'), { recursive: true });
+    const failures = [];
+    checkPredecessors(root, (message) => failures.push(message));
+    assert.ok(mentions(failures, 'design-studio'));
   });
 });
 

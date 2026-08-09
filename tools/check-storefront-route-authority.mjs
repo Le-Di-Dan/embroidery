@@ -60,8 +60,22 @@ export const EXPECTED = Object.freeze({
  * Paths that must never become the canonical Discover route or an approved Discover alias.
  * `/san-pham` left this list when IMP-D039 made it the Product Detail base — it is not
  * unguarded, it is guarded by the Product Detail gate instead.
+ *
+ * `/studio` and `/editor` joined the list with `APP3-S01`, and for the same
+ * reason the original three are on it: each is a plausible-looking top-level
+ * path that no ruling has ever authorised. S01 put the Studio at
+ * `/san-pham/[slug]/thiet-ke`, a child of the Product Detail route, because a
+ * design session is opened on one exact placement and a top-level Studio could
+ * not name one. `check-app3-s01.mjs` owns the positive Studio ruling; this list
+ * only holds the line that neither spelling may be promoted here.
  */
-export const REJECTED_PATHS = Object.freeze(['/discover', '/catalog', '/products']);
+export const REJECTED_PATHS = Object.freeze([
+  '/discover',
+  '/catalog',
+  '/products',
+  '/studio',
+  '/editor',
+]);
 
 /** The heading that opens the bounded ruling block inside the phase plan. */
 const RULING_HEADING = '### 6.2.2 ';

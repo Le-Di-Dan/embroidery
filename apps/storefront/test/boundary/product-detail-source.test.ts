@@ -10,7 +10,7 @@
  * story measure lives in the stylesheet rather than only in a document.
  */
 import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 const SRC = join(__dirname, '..', '..', 'src');
 const FEATURE_DIR = join(SRC, 'features', 'product-detail');
@@ -44,10 +44,18 @@ const sources = collect(FEATURE_DIR, /\.(ts|tsx)$/).map((path) => ({
   path,
   text: readFileSync(path, 'utf8'),
 }));
-const routeFiles = collect(ROUTE_DIR, /\.tsx$/).map((path) => ({
-  path,
-  text: readFileSync(path, 'utf8'),
-}));
+/**
+ * The Product Detail segment's **own** files, not its children's.
+ *
+ * `collect` recurses, and since `APP3-S01` the segment has a child route
+ * (`thiet-ke`) owned by another checkpoint with its own boundary test. Scanning
+ * into it would make every rule here — the single operation, the absent
+ * commerce fields — a rule about the Studio as well, and this file has no
+ * authority over that.
+ */
+const routeFiles = collect(ROUTE_DIR, /\.tsx$/)
+  .filter((path) => dirname(path) === ROUTE_DIR)
+  .map((path) => ({ path, text: readFileSync(path, 'utf8') }));
 const allCode = codeOnly([...sources, ...routeFiles].map((file) => file.text).join('\n'));
 const scss = readFileSync(STYLESHEET, 'utf8');
 const scssCode = codeOnly(scss);

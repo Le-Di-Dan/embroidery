@@ -114,11 +114,13 @@ export type {
 // operation boundary that offered one without the other would publish a write
 // nobody could safely perform.
 //
-// `publicProductPlacementGet` stays withheld. It answers a deliberately
-// narrower model — no `backgroundAssetId`, no retired rows and no concurrency
-// token — and putting it on this boundary beside the Admin pair would invite an
-// authoring screen to bind to it and silently lose the history the operator is
-// meant to see.
+// `publicProductPlacementGet` was withheld here through `APP3-A01`. It answers a
+// deliberately narrower model — no `backgroundAssetId`, no retired rows and no
+// concurrency token — and putting it on this boundary beside the Admin pair
+// would have invited an authoring screen to bind to it and silently lose the
+// history the operator is meant to see. It crosses with `APP3-S01`, its first
+// real consumer, in the Studio block below; the rule it protected is unchanged,
+// and A01's own gate still asserts the authoring screen calls the Admin pair.
 export { adminProductPlacementGet, adminProductPlacementReplace } from './generated/embroidery-api';
 export type {
   AdminProductPlacementResponse,
@@ -260,6 +262,69 @@ export type {
   PublicProductSeoResponse,
   PublicCategoryResponse,
   PublicMediaReferenceResponse,
+} from './generated/embroidery-api.schemas';
+
+// Anonymous Studio bootstrap (APP3-S01): the public placement manifest, the two
+// published-Template reads, the Template asset delivery and the two Session
+// operations the Studio route actually calls.
+//
+// They cross together because they are one journey and each is meaningless
+// without the next: the manifest is the only Side/Area authority, the list is
+// compatible with exactly one `product → side → area` triple the manifest
+// produced, the detail resolves the chosen Template's published document, the
+// asset route is the only address that serves a byte referenced by that
+// document, and the create/resume pair is what turns a choice into a session.
+//
+// `publicDesignTemplateAssetGet` (`APP3-B05A`) resolves to a `Blob`. The caller
+// turns it into a browser object URL as a purely local rendering handle — never
+// persisted, never sent back, never a storage address. Publication, the current
+// published version, document membership, the durable association, placement
+// eligibility and the derivative are all re-proved by the server on every
+// request, so the address grants nothing on its own.
+//
+// The two `mode` enums are re-exported as **values** because the create body is
+// a discriminated union: `BLANK` and `CLONE_TEMPLATE` must come from the
+// contract, not from a literal a screen could mistype into a request the server
+// would refuse for a reason nobody could see in the diff.
+//
+// Deliberately still withheld:
+//
+// - `publicDesignSessionAutosave` and `publicDesignSessionAssetCreate` — S01
+//   bootstraps a session and stops. Autosave is `APP3-S10`'s and customer image
+//   upload is `APP3-S06`'s, and an operation on this boundary is an invitation
+//   to call it before the screen that owns it exists.
+// - `publicProductSideBackgroundGet` — the Side background belongs to the S02
+//   editor stage. S01 renders no stage, so it needs no background bytes.
+// - `publicProductMediaGet`, unchanged: product images are fetched by the
+//   browser from the relative `media[].url` the catalog responses return.
+export {
+  publicProductPlacementGet,
+  publicDesignTemplateList,
+  publicDesignTemplateDetail,
+  publicDesignTemplateAssetGet,
+  publicDesignSessionCreate,
+  publicDesignSessionResume,
+} from './generated/embroidery-api';
+export {
+  CreateBlankDesignSessionBodyMode,
+  CloneDesignSessionBodyMode,
+} from './generated/embroidery-api.schemas';
+export type {
+  PublicProductPlacementResponse,
+  PublicPlacementSideResponse,
+  PublicPlacementAreaResponse,
+  PublicDesignTemplateListParams,
+  PublicDesignTemplateListResponse,
+  PublicDesignTemplateSummaryResponse,
+  PublicDesignTemplateDetailResponse,
+  PublicDesignTemplateVersionResponse,
+  PublicDesignTemplateScopeResponse,
+  CreateDesignSessionBody,
+  CreateBlankDesignSessionBody,
+  CloneDesignSessionBody,
+  DesignSessionSnapshotResponse,
+  DesignSessionScopeResponse,
+  DesignSessionLineageResponse,
 } from './generated/embroidery-api.schemas';
 
 // Generated transport types derived from the committed OpenAPI artifact.

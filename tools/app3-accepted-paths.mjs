@@ -191,6 +191,34 @@ export function publicTemplateAssetPath() {
   return PUBLIC_TEMPLATE_ASSET_PATH;
 }
 
+/**
+ * True once `APP3-S01` has delivered the Storefront Studio bootstrap.
+ *
+ * `APP3-B05A` asserts that `APP3-S01` is *not* recorded complete, as its proof
+ * that a backend checkpoint did not quietly implement its own consumer. That
+ * absence was a true statement about the world right up to the moment S01
+ * legitimately shipped — the same shape as every other proxy this module
+ * exists to retire. B05A keeps the assertion and consults this instead, so the
+ * ban still bites in the world it was written for.
+ *
+ * S01 publishes no HTTP path, so there is deliberately no accepted-path list
+ * beside this: the frontend changes no surface, and a gate that expected one
+ * would be asserting a change S01 must never make.
+ */
+export function isS01Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S01 = COMPLETE/.test(phase);
+}
+
+/** The status lines `APP3-S01` may legitimately be recorded under. */
+export const S01_STATUS_LINES = Object.freeze([
+  'APP3-S01 = BLOCKED_BY_APP3-B05A',
+  'APP3-S01 = READY — NOT STARTED',
+  'APP3-S01 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-S01 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
 /** The status lines `APP3-B05A` may legitimately be recorded under. */
 export const B05A_STATUS_LINES = Object.freeze([
   'APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05 — NOT STARTED',

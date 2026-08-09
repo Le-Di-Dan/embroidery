@@ -1,0 +1,316 @@
+// Studio bootstrap shell & Template selection — feature-scoped styles
+// (APP3-S01). Design source: FIG-STUDIO-SHELL-DESKTOP-{DEFAULT,PREVIEWPENDING,
+// EMPTY,EXPIRED} and FIG-STUDIO-SHELL-MOBILE-DEFAULT (file
+// BQwqV8GdfUIELvsQDB1UQE, page APP_03, section 05 — 596:11; nodes 604:5,
+// 604:46, 604:73, 604:85, 604:100).
+//
+// Colour, type, radius, spacing and control size come from @embroidery/styles.
+// The design package binds every fill to a semantic variable and introduces no
+// APP3-local colour, so there is no colour literal here either.
+//
+// Approved viewports are desktop 1440 and mobile 390. 1024 is engineering
+// interpolation: the two-column split simply collapses one tier earlier, which
+// is why the only breakpoint below is the one that switches it.
+
+@use '@embroidery/styles' as styles;
+
+// Local layout decisions. The design system defers a shared breakpoint scale
+// (FU-A16), so this is feature-local and aligned with the shell's own
+// threshold: 1025+ is the two-column tier, everything below is stacked. The
+// audited Studio frames are 1440 and 390 with nothing drawn between them.
+$bp-studio-split: 1025px;
+
+.studio-page {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+.studio-page__heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-l;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.studio {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: styles.spacing(24);
+
+  @media (min-width: $bp-studio-split) {
+    // Picker column beside preview column. `minmax(0, …)` on both tracks is
+    // what keeps a long Template name or a wide preview from forcing the grid
+    // past the viewport — the x-axis must never scroll.
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+}
+
+.studio__intro,
+.studio__status {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-m;
+
+  @media (min-width: $bp-studio-split) {
+    grid-column: 1 / -1;
+  }
+}
+
+.studio__section-heading {
+  margin: 0 0 styles.spacing(12);
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.studio__templates,
+.studio__preview {
+  min-width: 0;
+}
+
+// ---------------------------------------------------------------- placement
+
+.studio-placement {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+
+  @media (min-width: $bp-studio-split) {
+    grid-column: 1 / -1;
+    flex-direction: row;
+  }
+}
+
+.studio-placement__field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.studio-placement__label {
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+}
+
+.studio-placement__select {
+  // The shared touch-target minimum, applied to a real control rather than to
+  // a hand-built listbox. It satisfies the 44px mobile rule on every viewport.
+  min-height: styles.$size-touch-target-min;
+  max-width: 100%;
+  padding: 0 styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+}
+
+.studio-placement__single {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+}
+
+.studio-placement__note {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------- templates
+
+.studio-templates__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.studio-templates__row {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(12);
+  width: 100%;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  text-align: start;
+  cursor: pointer;
+
+  &:hover {
+    border-color: styles.$color-action-hover;
+  }
+}
+
+.studio-templates__row--selected {
+  // Selection is carried by the border, the surface AND the badge glyph in the
+  // markup. Colour alone would not be a state every visitor can perceive.
+  border-color: styles.$color-action-primary;
+  background: styles.$color-surface-secondary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.studio-templates__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.studio-templates__version {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  white-space: nowrap;
+}
+
+.studio-templates__badge {
+  color: styles.$color-action-primary;
+}
+
+.studio-templates__status,
+.studio-templates__more,
+.studio-preview__status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-m;
+
+  p {
+    margin: 0;
+  }
+}
+
+.studio-templates__more {
+  margin-top: styles.spacing(12);
+}
+
+.studio-templates__hint {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+// ------------------------------------------------------------------ preview
+
+.studio-preview {
+  margin: 0;
+}
+
+.studio-preview__image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-secondary;
+}
+
+// -------------------------------------------------------- start / session
+
+.studio-start,
+.studio-session,
+.studio-expired,
+.studio-unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  min-width: 0;
+
+  @media (min-width: $bp-studio-split) {
+    grid-column: 1 / -1;
+  }
+}
+
+.studio-start__heading,
+.studio-session__heading,
+.studio-expired__heading,
+.studio-unavailable__heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.studio-start__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.studio-start__status,
+.studio-session__body,
+.studio-expired__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-m;
+}
+
+.studio-session__facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+
+  dt {
+    color: styles.$color-text-tertiary;
+    font-size: styles.$font-size-caption;
+  }
+
+  dd {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-body-m;
+    overflow-wrap: anywhere;
+  }
+}
+
+.studio-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.studio-button--primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+    border-color: styles.$color-action-hover;
+  }
+
+  &:disabled {
+    background: styles.$color-surface-secondary;
+    border-color: styles.$color-border-secondary;
+    color: styles.$color-text-tertiary;
+  }
+}

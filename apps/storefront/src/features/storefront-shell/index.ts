@@ -9,5 +9,7 @@ export {
   STOREFRONT_HOME_ROUTE,
   STOREFRONT_DISCOVER_ROUTE,
   STOREFRONT_PRODUCT_DETAIL_ROUTE_BASE,
+  STOREFRONT_STUDIO_ROUTE_SEGMENT,
   buildStorefrontProductDetailPath,
+  buildStorefrontStudioPath,
 } from './model/storefront-navigation';
