@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { checkNextPhaseChronology } from './check-app2-closure-artifacts.mjs';
 import {
   acceptedAdminTemplatePaths,
+  acceptedAdminSideBackgroundPaths,
   acceptedPublicTemplatePaths,
   acceptedSessionPaths,
 } from './app3-accepted-surface.mjs';
@@ -346,6 +347,10 @@ function checkNoImplementation(root, phase, fail) {
     // the line above, and a separate list because the Admin count must not
     // grow by a path that is not on the Admin surface.
     ...acceptedPublicTemplatePaths(REPO_ROOT),
+    // `APP3-B02A` publishes the one Admin Side-background delivery. Same
+    // reasoning again: it is a delivered checkpoint's operation, not an
+    // un-run route this ban exists to catch.
+    ...acceptedAdminSideBackgroundPaths(REPO_ROOT),
   ];
   if (raw === undefined) {
     fail(`${CANONICAL_FILES.openapi}: OpenAPI artifact is missing`);

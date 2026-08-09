@@ -6737,6 +6737,190 @@
         ]
       }
     },
+    "/api/admin/products/{productId}/sides/{sideId}/background": {
+      "get": {
+        "description": "Streams the editor-safe background of one Product Side to an authenticated Admin, for authoring Embroidery Areas on the real image. Publication is deliberately **not** required: placement is authored while a Product is still a draft, so requiring it would make the screen work only for products that no longer need setting up. What is required is an authenticated Admin and a Side that belongs to the named Product. The Asset lane, the background association and the derivative are re-checked on every request, so replacing a background takes effect immediately. Responses are never cached.",
+        "operationId": "adminProductSideBackground_get",
+        "parameters": [
+          {
+            "description": "The Product Side UUID. It must belong to the named Product; a Side of another Product is refused identically to one that does not exist.",
+            "in": "path",
+            "name": "sideId",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "The Product UUID, never the public slug.",
+            "in": "path",
+            "name": "productId",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The editor-safe background bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Always `no-store`. These bytes may belong to a product that was never published, so no shared or browser cache may retain them.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed product or side id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No authenticated Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No background is available at this address. Returned identically for an unknown product, an unknown side, a side belonging to a different product, a side with no background association, a withdrawn or tombstoned Asset, and a background whose editor-safe derivative is absent, unready, watermarked or incompletely described.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Background storage is temporarily unavailable, or the stored object contradicts the recorded derivative.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Get one Product Side background for placement authoring",
+        "tags": [
+          "adminProductSideBackground"
+        ]
+      }
+    },
     "/api/admin/products/{productId}/unpublish": {
       "post": {
         "description": "Moves a PUBLISHED product back to DRAFT (`TR-LC04-05`), removing public visibility by lifecycle state alone. This is not archive and not a delete: the slug, category, price, media links, images and their derivatives all remain, `archivedAt` is never written, and the product becomes editable again. Requires `expectedUpdatedAt`, the `updatedAt` token last read for this product. A stale value is rejected as `PRODUCT_VERSION_CONFLICT` rather than overwriting a concurrent change, and a successful write advances the token.",

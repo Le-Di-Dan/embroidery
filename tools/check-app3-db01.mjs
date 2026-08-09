@@ -27,6 +27,7 @@ import { sectionBody, tableRows } from './check-app3-g02.mjs';
 import { checkApp3G04 } from './check-app3-g04.mjs';
 import {
   acceptedAdminTemplatePaths,
+  acceptedAdminSideBackgroundPaths,
   acceptedPublicTemplatePaths,
   acceptedSessionPaths,
 } from './app3-accepted-surface.mjs';
@@ -341,6 +342,8 @@ function checkNoImplementation(root, phase, fail) {
     ...acceptedAdminTemplatePaths(root),
     // `APP3-B05`'s two public Template reads, for the same reason.
     ...acceptedPublicTemplatePaths(root),
+    // `APP3-B02A`'s Admin Side-background delivery, for the same reason.
+    ...acceptedAdminSideBackgroundPaths(root),
   ];
   const paths = Object.keys(JSON.parse(raw).paths ?? {});
   for (const path of paths.filter((p) => APP3_OPERATION_RE.test(p) && !allowed.includes(p))) {

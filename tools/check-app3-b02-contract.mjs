@@ -19,7 +19,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedAdminSideBackgroundPaths, acceptedSurface } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATALOG = 'apps/api/src/modules/catalog';
@@ -95,9 +95,18 @@ function checkOperation(rootDir, fail) {
   const document = openapi(rootDir);
   if (document === undefined) return;
 
-  const matching = Object.keys(document.paths ?? {}).filter((path) => path.includes('/sides/'));
-  if (matching.length !== 1 || matching[0] !== B02_PATH) {
-    fail(`expected exactly one side path "${B02_PATH}"; found ${JSON.stringify(matching)}`);
+  // Mode-aware on `APP3-B02A`, which publishes the Admin counterpart of this
+  // route. Before it, this is the only `/sides/` path there is; after it there
+  // are exactly two and the second must be that one. Asserted as an exact set
+  // rather than a count: "at most two" would admit any future side route.
+  const expectedSidePaths = [B02_PATH, ...acceptedAdminSideBackgroundPaths(rootDir)].sort();
+  const matching = Object.keys(document.paths ?? {})
+    .filter((path) => path.includes('/sides/'))
+    .sort();
+  if (JSON.stringify(matching) !== JSON.stringify(expectedSidePaths)) {
+    fail(
+      `expected exactly one side path per delivered checkpoint ${JSON.stringify(expectedSidePaths)}; found ${JSON.stringify(matching)}`,
+    );
     return;
   }
 

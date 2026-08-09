@@ -34,6 +34,7 @@ import { sectionBody, tableRows } from './check-app3-g02.mjs';
 import { checkApp3G03 } from './check-app3-g03.mjs';
 import {
   acceptedAdminTemplatePaths,
+  acceptedAdminSideBackgroundPaths,
   acceptedPublicTemplatePaths,
   acceptedSurface,
 } from './app3-accepted-surface.mjs';
@@ -356,7 +357,10 @@ function checkNoImplementation(root, fail) {
       !acceptedAdminTemplatePaths(root).includes(p) &&
       // `APP3-B05`'s public Template reads are a delivered checkpoint's
       // operations, not the un-run asset surface this ban is about.
-      !acceptedPublicTemplatePaths(root).includes(p),
+      !acceptedPublicTemplatePaths(root).includes(p) &&
+      // `APP3-B02A`'s Admin Side-background delivery is a delivered
+      // checkpoint's operation, not the un-run asset surface this ban is about.
+      !acceptedAdminSideBackgroundPaths(root).includes(p),
   )) {
     fail(
       `${CANONICAL_FILES.openapi}: APP3 asset operation "${path}" exists, but no APP3 backend checkpoint has run`,

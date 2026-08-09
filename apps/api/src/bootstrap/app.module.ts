@@ -5,6 +5,7 @@ import { CatalogDraftModule } from '../modules/catalog/catalog-draft.module';
 import { DesignModule } from '../modules/design/design.module';
 import { DesignTemplateAdminModule } from '../modules/design/design-template-admin.module';
 import { DesignTemplatePublicModule } from '../modules/design/design-template-public.module';
+import { CatalogAdminSideBackgroundModule } from '../modules/catalog/catalog-admin-side-background.module';
 import { CatalogPlacementModule } from '../modules/catalog/catalog-placement.module';
 import { CatalogPublicMediaModule } from '../modules/catalog/catalog-public-media.module';
 import { CatalogPublicSideBackgroundModule } from '../modules/catalog/catalog-public-side-background.module';
@@ -31,6 +32,12 @@ import { ValidationModule } from '../platform/validation/validation.module';
     CatalogDraftModule,
     CatalogPublicationModule,
     CatalogPlacementModule,
+    // APP3-B02A — Admin Side background delivery, the JIT unblock for APP3-A01's
+    // placement preview. Registered beside the placement module it serves and
+    // before the public delivery module: the two share the `sides/.../background`
+    // suffix but differ in base (`admin/products` vs `public/products`), so
+    // neither can shadow the other.
+    CatalogAdminSideBackgroundModule,
     CatalogPublicMediaModule,
     CatalogPublicSideBackgroundModule,
     // After the media and background modules purely for readability: all of them

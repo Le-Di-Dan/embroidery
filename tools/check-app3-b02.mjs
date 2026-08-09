@@ -22,6 +22,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { acceptedAdminSideBackgroundPaths } from './app3-accepted-surface.mjs';
 import { checkApp3B01 } from './check-app3-b01.mjs';
 import { checkApp3B01N } from './check-app3-b01n.mjs';
 import { checkApp3G04 } from './check-app3-g04.mjs';
@@ -266,9 +267,21 @@ function checkNoGenericSurface(rootDir, fail) {
   } catch {
     return;
   }
-  const sideControllers = names.filter((name) => name.includes('side-background'));
-  if (sideControllers.length !== 1) {
-    fail(`found ${sideControllers.length} side-background controllers; exactly one is allowed`);
+  // Mode-aware on `APP3-B02A`, which adds the Admin counterpart of this
+  // controller. The rule's real subject is "no *unauthorized* second delivery
+  // route", so it names the controllers each delivered checkpoint owns instead
+  // of counting them — a count would have been satisfied by any second file.
+  const expectedSideControllers = [
+    'public-product-side-background.controller.ts',
+    ...(acceptedAdminSideBackgroundPaths(rootDir).length > 0
+      ? ['admin-product-side-background.controller.ts']
+      : []),
+  ].sort();
+  const sideControllers = names.filter((name) => name.includes('side-background')).sort();
+  if (JSON.stringify(sideControllers) !== JSON.stringify(expectedSideControllers)) {
+    fail(
+      `expected side-background controllers ${JSON.stringify(expectedSideControllers)}; found ${JSON.stringify(sideControllers)}`,
+    );
   }
 
   const controller = code(read(rootDir, 'controller') ?? '');

@@ -375,12 +375,16 @@ describe('APP3-B02 — no generic asset surface', () => {
     assert.ok(mentions(failures, 'can write to object storage'), failures.join('\n'));
   });
 
-  it('rejects a second side-background controller', () => {
+  it('rejects an unauthorized side-background controller', () => {
+    // The rule became mode-aware when `APP3-B02A` added the Admin counterpart,
+    // so it now names the controllers the delivered checkpoints own rather than
+    // counting them — a count would have been satisfied by this rogue file.
     const failures = run({
       'apps/api/src/modules/catalog/presentation/legacy-side-background.controller.ts':
         'export class LegacySideBackgroundController {}\n',
     });
-    assert.ok(mentions(failures, 'exactly one is allowed'), failures.join('\n'));
+    assert.ok(mentions(failures, 'expected side-background controllers'), failures.join('\n'));
+    assert.ok(mentions(failures, 'legacy-side-background.controller.ts'), failures.join('\n'));
   });
 });
 

@@ -400,6 +400,25 @@ export const adminProductPublish = (
 };
 
 /**
+ * Streams the editor-safe background of one Product Side to an authenticated Admin, for authoring Embroidery Areas on the real image. Publication is deliberately **not** required: placement is authored while a Product is still a draft, so requiring it would make the screen work only for products that no longer need setting up. What is required is an authenticated Admin and a Side that belongs to the named Product. The Asset lane, the background association and the derivative are re-checked on every request, so replacing a background takes effect immediately. Responses are never cached.
+ * @summary Get one Product Side background for placement authoring
+ */
+export const adminProductSideBackgroundGet = (
+  productId: unknown,
+  sideId: unknown,
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/admin/products/${productId}/sides/${sideId}/background`,
+      method: 'GET',
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Moves a PUBLISHED product back to DRAFT (`TR-LC04-05`), removing public visibility by lifecycle state alone. This is not archive and not a delete: the slug, category, price, media links, images and their derivatives all remain, `archivedAt` is never written, and the product becomes editable again. Requires `expectedUpdatedAt`, the `updatedAt` token last read for this product. A stale value is rejected as `PRODUCT_VERSION_CONFLICT` rather than overwriting a concurrent change, and a successful write advances the token.
  * @summary Unpublish a product
  */
@@ -694,6 +713,9 @@ export type AdminProductPublicationReadinessResult = NonNullable<
 >;
 export type AdminProductPublishResult = NonNullable<
   Awaited<ReturnType<typeof adminProductPublish>>
+>;
+export type AdminProductSideBackgroundGetResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductSideBackgroundGet>>
 >;
 export type AdminProductUnpublishResult = NonNullable<
   Awaited<ReturnType<typeof adminProductUnpublish>>

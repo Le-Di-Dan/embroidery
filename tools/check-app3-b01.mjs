@@ -27,6 +27,7 @@ import { checkApp3P02 } from './check-app3-p02.mjs';
 import { checkPlacementConcurrency } from './check-app3-b01-concurrency.mjs';
 import {
   acceptedAdminTemplatePaths,
+  acceptedAdminSideBackgroundPaths,
   acceptedPublicTemplatePaths,
   acceptedSessionPaths,
 } from './app3-accepted-surface.mjs';
@@ -230,6 +231,9 @@ function checkOwnership(rootDir, fail) {
     const b03Paths = acceptedAdminTemplatePaths(rootDir);
     // `APP3-B05`'s two public Template reads, for the same reason.
     const b05Paths = acceptedPublicTemplatePaths(rootDir);
+    // `APP3-B02A`'s Admin Side-background delivery, for the same reason. It
+    // matches both the '/sides/' and '/background' needles below.
+    const b02aPaths = acceptedAdminSideBackgroundPaths(rootDir);
     // No leading slash: `design-sessions` and `design-templates` are the shapes
     // `APP3-B03`/`APP3-B06` will use, and a `/sessions` needle would miss both.
     for (const forbidden of ['/sides/', '/areas/', 'templates', 'sessions', '/background']) {
@@ -238,7 +242,8 @@ function checkOwnership(rootDir, fail) {
           path === b02Path ||
           b07Paths.includes(path) ||
           b03Paths.includes(path) ||
-          b05Paths.includes(path)
+          b05Paths.includes(path) ||
+          b02aPaths.includes(path)
         ) {
           continue;
         }
