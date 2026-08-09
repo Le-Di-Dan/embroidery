@@ -148,6 +148,37 @@ export type {
 // Product is still a draft.
 export { adminProductSideBackgroundGet } from './generated/embroidery-api';
 
+// Admin Design Template management (APP3-B03), exposed for the Template list
+// screen (`APP3-A02`).
+//
+// The list and the create cross together because the list screen owns the
+// create entry point: a list you cannot add to is a dead end, and the create
+// response is what the list is reconciled from.
+//
+// `adminDesignTemplate_detail` stays withheld. The list renders from summaries
+// alone by design, and putting the detail read on this boundary is an invitation
+// to resolve a row by fetching it — which is the N+1 the keyset list exists to
+// avoid. `APP3-A03` brings it across when it opens one template.
+//
+// The lifecycle operations (`publish`, `unpublish`, `archive`) stay withheld
+// too: `APP3-A02` is list management, not lifecycle mutation, and an operation
+// here is an invitation to add a button for it.
+//
+// The status enum is re-exported as a value so the filter options are derived
+// from the contract rather than a hand-kept list that could drift out of step
+// with the three lifecycle states the server actually accepts.
+export { adminDesignTemplateCreate, adminDesignTemplateList } from './generated/embroidery-api';
+export { AdminDesignTemplateListStatus } from './generated/embroidery-api.schemas';
+export type {
+  AdminDesignTemplateListParams,
+  AdminDesignTemplateListResponse,
+  AdminDesignTemplateSummaryResponse,
+  AdminDesignTemplateDetailResponse,
+  AdminDesignTemplateScopeResponse,
+  AdminDesignTemplateVersionResponse,
+  CreateDesignTemplateBody,
+} from './generated/embroidery-api.schemas';
+
 // Anonymous public catalog reads (APP2-B04): the listing for the Storefront
 // Discover feed (`APP2-S01`) and the detail resolver for Product Detail
 // (`APP2-S02`).

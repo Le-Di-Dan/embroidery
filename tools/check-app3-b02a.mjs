@@ -80,8 +80,13 @@ export function checkApp3B02a(rootDir) {
   if (!/\nAPP3-B02 = COMPLETE — REVIEW_ACCEPTED/.test(plan)) {
     fail('APP3-B02 is not recorded as accepted');
   }
-  if (!/\nAPP3-A01 = COMPLETE — REVIEW_DELIVERED/.test(plan)) {
-    fail('APP3-A01 is not recorded as delivered');
+  // The property is "A01 exists as a delivered consumer of this operation", not
+  // the exact review word. `REVIEW_ACCEPTED` is strictly stronger than
+  // `REVIEW_DELIVERED`, so pinning the weaker literal made this gate fail the
+  // moment A01 was accepted — a predecessor getting *better* must never break a
+  // successor's entry check.
+  if (!/\nAPP3-A01 = COMPLETE — REVIEW_(DELIVERED|ACCEPTED)/.test(plan)) {
+    fail('APP3-A01 is not recorded as delivered or accepted');
   }
   if (!/A01_REVIEW_BLOCKER = ADMIN_SIDE_BACKGROUND_PREVIEW_UNAVAILABLE/.test(plan)) {
     fail('the A01 background-preview blocker this checkpoint unblocks is not recorded');

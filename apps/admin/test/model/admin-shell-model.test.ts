@@ -14,6 +14,7 @@ import {
 } from '../../src/features/admin-shell/model/admin-shell-nav';
 import { ADMIN_SHELL_COPY } from '../../src/features/admin-shell/model/admin-shell-copy';
 import { ADMIN_ASSETS_ROUTE } from '../../src/features/assets/model/asset-route';
+import { ADMIN_DESIGN_TEMPLATES_ROUTE } from '../../src/features/design-templates/model/design-template-route';
 import { ADMIN_PRODUCTS_ROUTE } from '../../src/features/products/model/product-route';
 import { AUTHENTICATED_HOME_ROUTE } from '../../src/config/routes';
 import { makeApiClientError, makeNetworkError } from '../support/api-error';
@@ -23,6 +24,8 @@ const IMPLEMENTED_ADMIN_ROUTES = [
   AUTHENTICATED_HOME_ROUTE,
   ADMIN_ASSETS_ROUTE,
   ADMIN_PRODUCTS_ROUTE,
+  // `APP3-A02` — the Design Template list, at `(protected)/design-templates`.
+  ADMIN_DESIGN_TEMPLATES_ROUTE,
 ];
 
 describe('session-expiry model', () => {

@@ -1,0 +1,500 @@
+// Admin Design Template list (`APP3-A02`).
+//
+// Reproduces `FIG-ADMIN-TEMPLATELIST-DESKTOP-{DEFAULT,LOADING,EMPTY,ERROR}` and
+// `FIG-ADMIN-TEMPLATELIST-MOBILE-DEFAULT` (section `596:8`). Every colour,
+// radius and space is a token: no literal hex, no rgba, and the dialog scrim is
+// the canonical `$color-overlay-scrim` (`FIG-DS-SCRIM-TOKEN`).
+//
+// Class names are prefixed `design-template*`. The Admin stylesheet is global
+// and unscoped, so a generic `.table` or `.cards` here would collide with
+// another feature's rules in a way jsdom could never catch.
+
+@use '@embroidery/styles' as styles;
+
+// The table/card switch. Above it the six-column table; below it the card list,
+// because the approved design has a card adaptation and pushing a six-column
+// table sideways on a phone hides the columns that matter behind a gesture.
+$template-card-breakpoint: 900px;
+
+.design-templates {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.design-templates__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(16);
+}
+
+.design-templates__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.design-templates__subtitle {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-secondary;
+}
+
+// Exactly one subtitle is rendered per breakpoint; `display: none` also removes
+// the other from the accessibility tree.
+.design-templates__subtitle--narrow {
+  display: none;
+}
+
+.design-templates__create {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-action-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+  cursor: pointer;
+}
+
+.design-templates__created {
+  margin: 0;
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-status-success;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-primary;
+}
+
+// ---------------------------------------------------------------------------
+// Filters
+// ---------------------------------------------------------------------------
+.design-template-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: styles.spacing(16);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.design-template-filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.design-template-filters__label {
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.design-template-filters__control {
+  min-width: 0;
+  max-width: 320px;
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+}
+
+.design-template-filters__note,
+.design-template-filters__constraint {
+  flex-basis: 100%;
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Status badge — the label is always text; colour is redundant, never the
+// message.
+// ---------------------------------------------------------------------------
+.design-template-status {
+  display: inline-block;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  white-space: nowrap;
+
+  &--draft {
+    border-color: styles.$color-border-secondary;
+    color: styles.$color-text-secondary;
+  }
+
+  &--published {
+    border-color: styles.$color-status-success;
+    color: styles.$color-status-success;
+  }
+
+  &--archived {
+    border-color: styles.$color-text-tertiary;
+    color: styles.$color-text-tertiary;
+  }
+
+  &--unknown {
+    border-color: styles.$color-status-warning;
+    color: styles.$color-status-warning;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Desktop table
+// ---------------------------------------------------------------------------
+.design-template-table {
+  width: 100%;
+  // Fixed layout so the colgroup below is authoritative. Under `auto`, a `col`
+  // width is only a hint and the longest cell content still wins the slack —
+  // which is how the template name ended up the narrowest column on the screen.
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: styles.$color-surface-primary;
+
+  th,
+  td {
+    padding: styles.spacing(12);
+    border-bottom: 1px solid styles.$color-border-primary;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  thead th {
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+    font-weight: styles.$font-weight-medium;
+  }
+}
+
+// Proportions, not pixels: the name takes the slack and the five reporting
+// columns stay wide enough for their longest truthful phrase.
+.design-template-table__col--name {
+  width: 28%;
+}
+
+.design-template-table__col--status {
+  width: 10%;
+}
+
+.design-template-table__col--scope,
+.design-template-table__col--version {
+  width: 14%;
+}
+
+.design-template-table__col--updated {
+  width: 12%;
+}
+
+.design-template-table__col--actions {
+  width: 22%;
+}
+
+// Present for assistive technology, not painted: the page heading already names
+// the collection, so a visible caption would repeat it.
+.design-template-table__caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.design-template-table__name {
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.design-template-table__edit,
+.design-template-cards__edit {
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+  cursor: not-allowed;
+}
+
+.design-template-table__edit-note,
+.design-template-cards__edit-note {
+  display: block;
+  margin-top: styles.spacing(4);
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Mobile cards
+// ---------------------------------------------------------------------------
+.design-template-cards {
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.design-template-cards__item {
+  margin-bottom: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.design-template-cards__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: styles.spacing(8);
+}
+
+.design-template-cards__name {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  color: styles.$color-text-primary;
+}
+
+.design-template-cards__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: styles.spacing(4) styles.spacing(12);
+  margin: styles.spacing(12) 0;
+
+  dt {
+    color: styles.$color-text-tertiary;
+    font-size: styles.$font-size-body-s;
+  }
+
+  dd {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-body-s;
+  }
+}
+
+@media (max-width: $template-card-breakpoint) {
+  .design-template-table {
+    display: none;
+  }
+
+  .design-template-cards {
+    display: block;
+  }
+
+  .design-templates__subtitle--wide {
+    display: none;
+  }
+
+  .design-templates__subtitle--narrow {
+    display: block;
+  }
+
+  .design-template-filters__control {
+    max-width: 100%;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Collection states
+// ---------------------------------------------------------------------------
+.design-template-collection__empty,
+.design-template-collection__failure {
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+  text-align: center;
+}
+
+.design-template-collection__empty-title,
+.design-template-collection__failure-title {
+  margin: 0 0 styles.spacing(4);
+  font-weight: styles.$font-weight-semibold;
+}
+
+.design-template-collection__failure-title {
+  color: styles.$color-status-error;
+}
+
+.design-template-collection__empty-body,
+.design-template-collection__failure-body {
+  margin: 0 0 styles.spacing(12);
+  color: styles.$color-text-secondary;
+}
+
+.design-template-collection__action,
+.design-template-pagination__action {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
+.design-template-pagination {
+  margin-top: styles.spacing(16);
+  text-align: center;
+}
+
+.design-template-pagination__error-title {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.design-template-pagination__error-body {
+  margin: styles.spacing(4) 0 styles.spacing(8);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Loading skeleton — placeholder rows in the list's own geometry, so the page
+// does not jump when the real rows land.
+// ---------------------------------------------------------------------------
+.design-template-skeleton__status {
+  margin: 0 0 styles.spacing(12);
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+}
+
+.design-template-skeleton__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.design-template-skeleton__row {
+  display: flex;
+  gap: styles.spacing(12);
+  padding: styles.spacing(12);
+  border-bottom: 1px solid styles.$color-border-primary;
+}
+
+.design-template-skeleton__bar {
+  display: block;
+  height: 16px;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+
+  &--name {
+    flex: 3;
+  }
+
+  &--status {
+    flex: 1;
+  }
+
+  &--scope {
+    flex: 2;
+  }
+
+  &--meta {
+    flex: 1;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Create dialog
+// ---------------------------------------------------------------------------
+.design-template-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(16);
+  // The canonical scrim token — never an inline rgba (`FIG-DS-SCRIM-TOKEN`).
+  background: styles.$color-overlay-scrim;
+}
+
+.design-template-dialog {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.design-template-dialog__title {
+  margin: 0 0 styles.spacing(8);
+  font-size: styles.$font-size-heading-s;
+}
+
+.design-template-dialog__help,
+.design-template-dialog__note {
+  margin: 0 0 styles.spacing(16);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.design-template-dialog__failure {
+  margin-bottom: styles.spacing(16);
+}
+
+.design-template-dialog__failure-title {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.design-template-dialog__failure-body {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.design-template-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: styles.spacing(8);
+}
+
+.design-template-dialog__primary,
+.design-template-dialog__secondary {
+  padding: styles.spacing(8) styles.spacing(16);
+  border-radius: styles.$radius-sm;
+  cursor: pointer;
+}
+
+.design-template-dialog__primary {
+  border: 1px solid styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:disabled {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-border-secondary;
+    cursor: not-allowed;
+  }
+}
+
+.design-template-dialog__secondary {
+  border: 1px solid styles.$color-border-secondary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}

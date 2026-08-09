@@ -59,16 +59,20 @@ describe('AdminShell — mobile navigation drawer', () => {
     const dialog = screen.getByRole('dialog', { name: 'Điều hướng' });
     const close = within(dialog).getByRole('button', { name: 'Đóng menu điều hướng' });
     const logout = within(dialog).getByRole('button', { name: 'Đăng xuất' });
-    // The drawer now also carries the real navigation destinations, so the
-    // trap cycles through the links between the two buttons.
-    const assets = within(dialog).getByRole('link', { name: 'Tài sản hình ảnh' });
-    const products = within(dialog).getByRole('link', { name: 'Sản phẩm' });
+    // The drawer carries the real navigation destinations, so the trap cycles
+    // through every link between the two buttons. Walked generically rather
+    // than by name: the property under test is that focus stays inside and
+    // wraps, and enumerating today's entries makes the next checkpoint that
+    // adds one fail a test about focus for a reason that has nothing to do
+    // with focus.
+    const links = within(dialog).getAllByRole('link');
+    expect(links.length).toBeGreaterThan(0);
 
     expect(close).toHaveFocus();
-    await user.keyboard('{Tab}');
-    expect(assets).toHaveFocus();
-    await user.keyboard('{Tab}');
-    expect(products).toHaveFocus();
+    for (const link of links) {
+      await user.keyboard('{Tab}');
+      expect(link).toHaveFocus();
+    }
     await user.keyboard('{Tab}');
     expect(logout).toHaveFocus();
     await user.keyboard('{Tab}');
