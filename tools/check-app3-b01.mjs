@@ -28,6 +28,7 @@ import { checkPlacementConcurrency } from './check-app3-b01-concurrency.mjs';
 import {
   acceptedAdminTemplatePaths,
   acceptedAdminSideBackgroundPaths,
+  acceptedPublicTemplateAssetPaths,
   acceptedPublicTemplatePaths,
   acceptedSessionPaths,
 } from './app3-accepted-surface.mjs';
@@ -231,6 +232,8 @@ function checkOwnership(rootDir, fail) {
     const b03Paths = acceptedAdminTemplatePaths(rootDir);
     // `APP3-B05`'s two public Template reads, for the same reason.
     const b05Paths = acceptedPublicTemplatePaths(rootDir);
+    // `APP3-B05A`'s published Template asset delivery, for the same reason.
+    const b05aPaths = acceptedPublicTemplateAssetPaths(rootDir);
     // `APP3-B02A`'s Admin Side-background delivery, for the same reason. It
     // matches both the '/sides/' and '/background' needles below.
     const b02aPaths = acceptedAdminSideBackgroundPaths(rootDir);
@@ -243,6 +246,7 @@ function checkOwnership(rootDir, fail) {
           b07Paths.includes(path) ||
           b03Paths.includes(path) ||
           b05Paths.includes(path) ||
+          b05aPaths.includes(path) ||
           b02aPaths.includes(path)
         ) {
           continue;

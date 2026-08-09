@@ -354,20 +354,49 @@ describe('the copy rulings', () => {
 });
 
 describe('contract immutability', () => {
-  it('rejects any movement of the published document', () => {
+  /**
+   * The phase rewound to the world the freeze describes.
+   *
+   * The frozen digests say "**A04** added no operation", which was the whole
+   * artifact right up to `APP3-B05A` — a backend checkpoint that legitimately
+   * publishes one. The rule is now ruled in both directions, so the ban is
+   * proved against the world it is about rather than deleted along with it.
+   */
+  const beforeB05A = () =>
+    file('phase').replace(/\nAPP3-B05A = [^\n]*\n/, '\nAPP3-B05A = READY — NOT STARTED\n');
+
+  it('rejects any movement of the published document, before B05A', () => {
     const document = JSON.parse(file('openapi'));
     document.paths['/api/admin/design-templates/{templateId}/something'] = { post: {} };
-    const failures = run(checkContractImmutability, { openapi: JSON.stringify(document) });
+    const failures = run(checkContractImmutability, {
+      phase: beforeB05A(),
+      openapi: JSON.stringify(document),
+    });
     assert.ok(mentions(failures, 'APP3-A04 adds no API operation'));
   });
 
-  it('rejects any movement of the generated client', () => {
-    const root = rootWith();
+  it('rejects any movement of the generated client, before B05A', () => {
+    const root = rootWith({ phase: beforeB05A() });
     const generated = join(root, 'packages/api-client/src/generated/embroidery-api.ts');
     writeFileSync(generated, `${readFileSync(generated, 'utf8')}\n// edited\n`, 'utf8');
     const failures = [];
     checkContractImmutability(root, (message) => failures.push(message));
     assert.ok(mentions(failures, 'the generated client must not move'));
+  });
+
+  it('accepts the artifact B05A legitimately published', () => {
+    assert.deepEqual(run(checkContractImmutability), []);
+  });
+
+  it('still counts the surface once the digests are released', () => {
+    // Releasing the byte-level freeze must not release the assertion. The counts
+    // are checked against the accepted-surface authority, which moves only when
+    // a checkpoint records that it did — so an operation nobody accounted for
+    // still fails here.
+    const document = JSON.parse(file('openapi'));
+    document.paths['/api/admin/design-templates/{templateId}/something'] = { post: {} };
+    const failures = run(checkContractImmutability, { openapi: JSON.stringify(document) });
+    assert.ok(mentions(failures, 'expected'));
   });
 });
 

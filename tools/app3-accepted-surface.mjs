@@ -19,6 +19,18 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-B05A` — the one anonymous public Template asset delivery. One path,
+    // one operation and **no schema**: the response is binary and the request has
+    // no body, so there is no component to publish. The count is measured from
+    // the artifact rather than assumed unchanged.
+    marker: /\nAPP3-B05A = COMPLETE/,
+    paths: 35,
+    operations: 40,
+    schemas: 83,
+    designSessionRoutes: true,
+    designSessionPaths: 4,
+  },
+  {
     // `APP3-B04A` — `TR-LC24-06`, the fourth and last LC-24 transition. One
     // path, one operation and one request-body schema; no response component,
     // because it answers the Admin detail view `APP3-B03` already publishes.

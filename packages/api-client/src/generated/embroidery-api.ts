@@ -600,6 +600,26 @@ export const publicDesignTemplateDetail = (
 };
 
 /**
+ * Streams the editor-safe bytes of an asset referenced by the exact design-template version that is public right now. Anonymous: no session, cookie or storage credential is involved. The asset id is subordinate and grants nothing on its own — there is no address that serves an asset outside the template and version that authorise it. Publication, the current published version, the version document that references the asset, the durable template association, product and placement eligibility, and the derivative are all re-checked on every request, so unpublishing or archiving the template, publishing a newer version, retiring a side or an area, or withdrawing the product stops delivery immediately even for a caller that already knows the address. Only the current published version is addressable: an older version that was once public is refused exactly as an unknown one is. Responses are never cached.
+ * @summary Get one asset placed by the current published version of a design template
+ */
+export const publicDesignTemplateAssetGet = (
+  slug: string,
+  version: number,
+  assetId: string,
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/public/design-templates/${slug}/versions/${version}/assets/${assetId}`,
+      method: 'GET',
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Returns published products in editorial order, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts and archived products are excluded by the query itself. Pagination is keyset: `nextCursor` is opaque, bound to the filter it was issued under, and null on the last page. Responses are never stored. Publication is re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished product visible.
  * @summary List published products
  */
@@ -789,6 +809,9 @@ export type PublicDesignTemplateListResult = NonNullable<
 >;
 export type PublicDesignTemplateDetailResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignTemplateDetail>>
+>;
+export type PublicDesignTemplateAssetGetResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignTemplateAssetGet>>
 >;
 export type PublicProductListResult = NonNullable<Awaited<ReturnType<typeof publicProductList>>>;
 export type PublicProductDetailResult = NonNullable<

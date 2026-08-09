@@ -28,6 +28,7 @@ import { checkNextPhaseChronology } from './check-app2-closure-artifacts.mjs';
 import {
   acceptedAdminTemplatePaths,
   acceptedAdminSideBackgroundPaths,
+  acceptedPublicTemplateAssetPaths,
   acceptedPublicTemplatePaths,
   acceptedSessionPaths,
 } from './app3-accepted-surface.mjs';
@@ -347,6 +348,9 @@ function checkNoImplementation(root, phase, fail) {
     // the line above, and a separate list because the Admin count must not
     // grow by a path that is not on the Admin surface.
     ...acceptedPublicTemplatePaths(REPO_ROOT),
+    // `APP3-B05A` publishes the one contextual Template asset delivery. Kept
+    // apart from the B05 list so the count of B05-owned operations stays two.
+    ...acceptedPublicTemplateAssetPaths(REPO_ROOT),
     // `APP3-B02A` publishes the one Admin Side-background delivery. Same
     // reasoning again: it is a delivered checkpoint's operation, not an
     // un-run route this ban exists to catch.

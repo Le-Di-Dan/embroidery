@@ -161,6 +161,45 @@ export function publicTemplatePaths() {
 }
 
 /**
+ * The one path `APP3-B05A` adds: contextual published Template asset delivery.
+ *
+ * Held apart from `PUBLIC_TEMPLATE_PATHS` deliberately. Three gates count the
+ * *B05-owned* public Template operations, and folding a binary delivery route
+ * into that list would inflate a number meant to describe two JSON reads —
+ * `APP3-B05` owns `publicDesignTemplate_list` and `publicDesignTemplate_detail`
+ * and nothing else. The route is nonetheless a `design-templates` address, so
+ * every gate holding an allow-list of legitimate APP3 paths must learn about it
+ * from here rather than by growing a copy.
+ */
+const PUBLIC_TEMPLATE_ASSET_PATH =
+  '/api/public/design-templates/{slug}/versions/{version}/assets/{assetId}';
+
+/** True once `APP3-B05A` has published the Template asset delivery route. */
+export function isB05ADelivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-B05A = COMPLETE/.test(phase);
+}
+
+/** The delivery path the accepted world may contain — none before B05A. */
+export function acceptedPublicTemplateAssetPaths(rootDir) {
+  return isB05ADelivered(rootDir) ? [PUBLIC_TEMPLATE_ASSET_PATH] : [];
+}
+
+/** The path itself, for gates that rule on it in either direction. */
+export function publicTemplateAssetPath() {
+  return PUBLIC_TEMPLATE_ASSET_PATH;
+}
+
+/** The status lines `APP3-B05A` may legitimately be recorded under. */
+export const B05A_STATUS_LINES = Object.freeze([
+  'APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05 — NOT STARTED',
+  'APP3-B05A = READY — NOT STARTED',
+  'APP3-B05A = COMPLETE — REVIEW_DELIVERED',
+  'APP3-B05A = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/**
  * The one Admin Side-background delivery path (`APP3-B02A`).
  *
  * Held here rather than in each gate for the reason the whole module exists: it

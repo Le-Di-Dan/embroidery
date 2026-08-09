@@ -21,7 +21,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import { acceptedSurface, isB05ADelivered } from './app3-accepted-surface.mjs';
 import {
   A04_DESIGN_ROWS,
   A04_LIFECYCLE_OPERATIONS,
@@ -70,7 +70,17 @@ const ROOT_SCRIPTS = 30;
 const RUNTIME_FILE_LIMIT = 400;
 const TEST_FILE_LIMIT = 600;
 
-/** The world `APP3-B04A` left, which a frontend checkpoint may not move. */
+/**
+ * The world `APP3-B04A` left, which a **frontend** checkpoint may not move.
+ *
+ * Asserted only while that is still the world. `APP3-B05A` is a backend
+ * checkpoint and legitimately publishes an operation, so a digest frozen against
+ * B04A's artifact stops describing reality the moment it ships — and rewriting
+ * the constant would erase the very fact A04 was asked to prove. The rule is
+ * therefore ruled in both directions: before B05A the exact bytes are pinned,
+ * after it the surface counts below carry the assertion against the accepted
+ * surface authority, which moves only when a checkpoint records that it did.
+ */
 const FROZEN_OPENAPI_SHA256 = 'f736306045faa1c7a638bf7749b27051e351b967d29d574c20c6dce1fb581908';
 const GENERATED_CLIENT_DIR = 'packages/api-client/src/generated';
 const FROZEN_CLIENT_TREE_SHA256 =
@@ -343,7 +353,7 @@ export function checkContractImmutability(rootDir, fail) {
     fail(`${CANONICAL_FILES.openapi}: missing`);
   } else {
     const digest = createHash('sha256').update(openapi).digest('hex');
-    if (digest !== FROZEN_OPENAPI_SHA256) {
+    if (!isB05ADelivered(rootDir) && digest !== FROZEN_OPENAPI_SHA256) {
       fail(`${CANONICAL_FILES.openapi}: sha256 ${digest}; APP3-A04 adds no API operation`);
     }
     const document = JSON.parse(openapi);
@@ -365,7 +375,7 @@ export function checkContractImmutability(rootDir, fail) {
   }
 
   const tree = hashGeneratedTree(join(rootDir, GENERATED_CLIENT_DIR));
-  if (tree !== FROZEN_CLIENT_TREE_SHA256) {
+  if (!isB05ADelivered(rootDir) && tree !== FROZEN_CLIENT_TREE_SHA256) {
     fail(`${GENERATED_CLIENT_DIR}: tree hash ${tree}; the generated client must not move`);
   }
 }

@@ -27,6 +27,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 import {
   acceptedAdminTemplatePaths,
+  acceptedPublicTemplateAssetPaths,
   acceptedPublicTemplatePaths,
 } from './app3-accepted-surface.mjs';
 import { dirname, join } from 'node:path';
@@ -330,7 +331,12 @@ function checkNoImplementation(root, fail) {
   // `APP3-B03` is the backend checkpoint this ban was waiting for. Its two
   // paths come from the shared surface authority; everything else that looks
   // like a Template operation is still un-run.
-  const delivered = [...acceptedAdminTemplatePaths(root), ...acceptedPublicTemplatePaths(root)];
+  const delivered = [
+    ...acceptedAdminTemplatePaths(root),
+    ...acceptedPublicTemplatePaths(root),
+    // `APP3-B05A`'s delivery route is a delivered checkpoint's operation too.
+    ...acceptedPublicTemplateAssetPaths(root),
+  ];
   for (const path of Object.keys(JSON.parse(raw).paths ?? {}).filter(
     (p) => TEMPLATE_PATH_RE.test(p) && !delivered.includes(p),
   )) {

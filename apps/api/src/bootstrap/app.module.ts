@@ -4,6 +4,7 @@ import { AssetIntakeModule } from '../modules/asset/asset-intake.module';
 import { CatalogDraftModule } from '../modules/catalog/catalog-draft.module';
 import { DesignModule } from '../modules/design/design.module';
 import { DesignTemplateAdminModule } from '../modules/design/design-template-admin.module';
+import { DesignTemplateAssetPublicModule } from '../modules/design/design-template-asset-public.module';
 import { DesignTemplatePublicModule } from '../modules/design/design-template-public.module';
 import { CatalogAdminSideBackgroundModule } from '../modules/catalog/catalog-admin-side-background.module';
 import { CatalogPlacementModule } from '../modules/catalog/catalog-placement.module';
@@ -52,6 +53,12 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // module purely for readability: the two share no base path, so registration
     // order cannot make one shadow the other.
     DesignTemplatePublicModule,
+    // APP3-B05A — published Template asset delivery. Registered after the JSON
+    // reads it depends on for meaning, though not for wiring: its route shares
+    // their base and adds four segments, so no registration order can make one
+    // shadow another. Kept a separate module so the two JSON reads keep their
+    // storage-free dependency closure.
+    DesignTemplateAssetPublicModule,
   ],
 })
 export class AppModule {}

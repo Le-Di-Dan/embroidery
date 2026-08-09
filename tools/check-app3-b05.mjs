@@ -16,7 +16,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedSurface, publicTemplatePaths } from './app3-accepted-surface.mjs';
+import {
+  B05A_STATUS_LINES,
+  acceptedPublicTemplateAssetPaths,
+  acceptedSurface,
+  publicTemplatePaths,
+} from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -91,10 +96,14 @@ export function checkPredecessors(rootDir, fail) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
     }
   }
-  // The delivery successor must be recorded and unstarted: this gate proves B05
-  // in a world where byte delivery does not exist.
-  if (!/\nAPP3-B05A = (READY|DEFINED — BLOCKED_BY_APP3-B05) — NOT STARTED\n/.test(phase)) {
-    fail(`${CANONICAL_FILES.phase}: APP3-B05A is not recorded as an unstarted successor`);
+  // The delivery successor must be recorded under one of its legitimate status
+  // lines. This asserted "recorded **and unstarted**", which was a true proxy for
+  // "byte delivery does not exist" right up to the checkpoint that made it exist.
+  // B05's own rules are unchanged; only the set of worlds this gate admits has
+  // widened, and the list is asserted here rather than read back out of the
+  // document it checks.
+  if (!B05A_STATUS_LINES.some((line) => phase.includes(`\n${line}\n`))) {
+    fail(`${CANONICAL_FILES.phase}: APP3-B05A is not recorded under a legitimate status`);
   }
 }
 
@@ -147,10 +156,16 @@ export function checkSurface(rootDir, fail) {
     }
   }
 
-  // Exactly two, so a third public Template operation is a failure whatever it
-  // is called — including `APP3-B05A`'s delivery route.
+  // Exactly two operations are **B05's**, so a third under this base is a
+  // failure whatever it is called — unless it is a route the phase has since
+  // accepted from another checkpoint. `APP3-B05A`'s delivery route is exactly
+  // that: it shares the base, it is emphatically not a third B05 read, and it is
+  // excluded by name from a list B05A does not get to grow. Before B05A the list
+  // is empty and this is the original ban, unchanged.
+  const b05aRoutes = acceptedPublicTemplateAssetPaths(rootDir);
   const publicTemplateOperations = Object.entries(document.paths ?? {})
     .filter(([route]) => route.startsWith('/api/public/design-templates'))
+    .filter(([route]) => !b05aRoutes.includes(route))
     .flatMap(([, methods]) => Object.keys(methods));
   if (publicTemplateOperations.length !== 2) {
     fail(
@@ -160,6 +175,7 @@ export function checkSurface(rootDir, fail) {
   for (const route of Object.keys(document.paths ?? {})) {
     if (!route.startsWith('/api/public/design-templates')) continue;
     if (publicTemplatePaths().includes(route)) continue;
+    if (b05aRoutes.includes(route)) continue;
     fail(`${CANONICAL_FILES.openapi}: ${route} is not an APP3-B05 operation`);
   }
 

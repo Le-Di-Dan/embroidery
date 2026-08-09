@@ -21,6 +21,7 @@ import { after, describe, it } from 'node:test';
 
 import {
   APP3_SURFACE_TOOL_FILES,
+  B05A_STATUS_LINES,
   acceptedPublicTemplatePaths,
   acceptedSurface,
 } from './app3-accepted-surface.mjs';
@@ -155,12 +156,23 @@ describe('predecessors', () => {
     }
   });
 
-  it('rejects a B05A that has quietly started', () => {
-    const phase = file('phase').replace(
-      /\nAPP3-B05A = [^\n]*\n/,
-      '\nAPP3-B05A = COMPLETE — REVIEW_DELIVERED\n',
-    );
-    assert.ok(mentions(run(checkPredecessors, { phase }), 'unstarted successor'));
+  it('accepts B05A under every status line it may legitimately hold', () => {
+    // The rule was "recorded **and unstarted**", which described the world right
+    // up to the checkpoint that delivered byte delivery. It now admits the four
+    // legitimate lines and nothing else.
+    for (const line of B05A_STATUS_LINES) {
+      const phase = file('phase').replace(/\nAPP3-B05A = [^\n]*\n/, `\n${line}\n`);
+      assert.deepEqual(
+        run(checkPredecessors, { phase }).filter((f) => f.includes('APP3-B05A')),
+        [],
+        line,
+      );
+    }
+  });
+
+  it('rejects a B05A recorded under no legitimate status at all', () => {
+    const phase = file('phase').replace(/\nAPP3-B05A = [^\n]*\n/, '\nAPP3-B05A = WHATEVER\n');
+    assert.ok(mentions(run(checkPredecessors, { phase }), 'legitimate status'));
   });
 });
 
@@ -183,14 +195,27 @@ describe('the published surface', () => {
     assert.ok(mentions(run(checkSurface, { openapi: moved }), LIST));
   });
 
-  it('rejects a third public Template operation', () => {
+  it('rejects a third public Template operation that no checkpoint accepted', () => {
     const openapi = openapiWith((document) => {
-      // `APP3-B05A`'s delivery route, arriving a checkpoint early.
+      // Not B05A's route: a *different* public Template operation, which is what
+      // this ban has always been about. B05A's own address is excluded by name.
       document.paths['/api/public/design-templates/{slug}/assets/{assetId}'] = {
         get: { operationId: 'publicDesignTemplate_asset', responses: {} },
       };
     });
     const failures = run(checkSurface, { openapi });
+    assert.ok(mentions(failures, 'expected 2'));
+    assert.ok(mentions(failures, 'is not an APP3-B05 operation'));
+  });
+
+  it('still refuses B05A’s own route in a world where B05A has not run', () => {
+    // The ban tested against the world it describes: rewind the phase, and the
+    // delivery route is a third public Template operation again.
+    const phase = file('phase').replace(
+      /\nAPP3-B05A = [^\n]*\n/,
+      '\nAPP3-B05A = READY — NOT STARTED\n',
+    );
+    const failures = run(checkSurface, { phase });
     assert.ok(mentions(failures, 'expected 2'));
     assert.ok(mentions(failures, 'is not an APP3-B05 operation'));
   });

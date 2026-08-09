@@ -80,6 +80,17 @@ const MODULE_PROVIDERS = /providers:\s*\[([\s\S]*?)\n {2}\],/.exec(MODULE_SOURCE
 const LIST_PATH = '/api/public/design-templates';
 const DETAIL_PATH = '/api/public/design-templates/{slug}';
 
+/**
+ * `APP3-B05A`'s delivery route, which shares this base and is emphatically not a
+ * third `APP3-B05` read.
+ *
+ * Named here so the rules below exclude exactly one address rather than
+ * loosening a pattern. B05 still owns two operations and still streams nothing;
+ * what changed is that another checkpoint now legitimately lives next door.
+ */
+const B05A_DELIVERY_PATH =
+  '/api/public/design-templates/{slug}/versions/{version}/assets/{assetId}';
+
 const PRODUCT_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071';
 const SIDE_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072';
 const AREA_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073';
@@ -242,14 +253,21 @@ describe('the published contract', () => {
 
     const publicTemplateOperations = Object.entries(document.paths)
       .filter(([path]) => path.startsWith('/api/public/design-templates'))
+      .filter(([path]) => path !== B05A_DELIVERY_PATH)
       .flatMap(([, methods]) => Object.keys(methods));
     expect(publicTemplateOperations).toHaveLength(2);
     expect(publicTemplateOperations.every((method) => method === 'get')).toBe(true);
   });
 
-  it('carries no APP3-B05A delivery route and no write method', () => {
+  it('delivers no bytes itself, whatever else shares its base', () => {
+    // This banned every `assets`/`preview`/`download` shape under the base, as a
+    // proxy for "B05 streams nothing". True until `APP3-B05A` shipped the route
+    // the proxy was named after — so the proxy is replaced by the real
+    // assertion: **this controller** cannot stream, whoever else can. B05A's own
+    // address is excluded by name and by nothing else.
     for (const path of Object.keys(document.paths)) {
       if (!path.startsWith('/api/public/design-templates')) continue;
+      if (path === B05A_DELIVERY_PATH) continue;
       expect(path).not.toMatch(/\/(assets?|preview|download|file|image|media)\b/);
     }
     expect(CONTROLLER_SOURCE).not.toMatch(/@(Post|Put|Patch|Delete)\(/);
