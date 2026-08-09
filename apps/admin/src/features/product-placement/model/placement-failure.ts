@@ -94,3 +94,46 @@ export function isVersionConflict(error: unknown): boolean {
 export function isNotFound(error: unknown): boolean {
   return normalizedOf(error)?.httpStatus === HTTP_NOT_FOUND;
 }
+
+/**
+ * What a failed Side-background fetch means for the preview (`APP3-B02A`).
+ *
+ * Separate from `PlacementSaveFailure` because the consequences are different: a
+ * save failure is about the operator's unsaved work, while this one is about a
+ * picture. Neither may ever be presented as the other — a background that cannot
+ * be fetched must not look like a placement that cannot be saved.
+ *
+ * `unavailable` and `retryable` are deliberately distinct. `404` means the
+ * server will not resolve a background at this address at all — retrying changes
+ * nothing, and offering a retry would invite the operator to keep clicking. A
+ * `503` or a transport failure is the opposite: the row says the background
+ * exists, so trying again is exactly the right advice.
+ */
+export type BackgroundFailure = 'unavailable' | 'retryable';
+
+const HTTP_SERVICE_UNAVAILABLE = 503;
+
+export function classifyBackgroundFailure(error: unknown): BackgroundFailure {
+  const normalized = normalizedOf(error);
+  if (normalized === null) return 'retryable';
+
+  // A malformed pair is a client bug the operator cannot act on, and the server
+  // will keep refusing it — so it is reported as unavailable, not retryable.
+  if (
+    normalized.httpStatus === HTTP_NOT_FOUND ||
+    normalized.code === 'ADMIN_SIDE_BACKGROUND_NOT_FOUND' ||
+    normalized.code === 'ADMIN_SIDE_BACKGROUND_INVALID'
+  ) {
+    return 'unavailable';
+  }
+  if (
+    normalized.httpStatus === HTTP_SERVICE_UNAVAILABLE ||
+    normalized.code === 'ADMIN_SIDE_BACKGROUND_UNAVAILABLE'
+  ) {
+    return 'retryable';
+  }
+  // Everything else — including a session failure, which the shared Admin auth
+  // handling reacts to on its own — is retryable here. The preview never
+  // interprets an auth outcome itself.
+  return 'retryable';
+}

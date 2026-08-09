@@ -10,20 +10,21 @@ import {
 } from '../../products';
 import { toReplaceBody } from '../model/placement-body';
 import { PLACEMENT_COPY } from '../model/placement-copy';
-import { isDirty } from '../model/placement-draft';
+import { backgroundMatchesServer, isDirty, type SideDraft } from '../model/placement-draft';
 import { isNotFound } from '../model/placement-failure';
 import { validateDraft } from '../model/placement-validation';
 import { selectedSideKey, type PlacementSelection } from '../model/placement-selection';
 import { usePlacementDraft } from '../hooks/use-placement-draft';
 import { usePlacementMutation } from '../hooks/use-placement-mutation';
 import { usePlacementQuery } from '../hooks/use-placement-query';
+import { useSideBackground, type SideBackground } from '../hooks/use-side-background';
 import { useViewportMode } from '../hooks/use-viewport-mode';
 import { PlacementBackgroundDialog } from './placement-background-dialog';
 import { PlacementConflictDialog } from './placement-conflict-dialog';
 import { PlacementHierarchyPanel } from './placement-hierarchy-panel';
 import { PlacementInspector } from './placement-inspector';
 import { PlacementMobileNotice } from './placement-mobile-notice';
-import { PlacementPreview } from './placement-preview';
+import { PlacementPreview, type BackgroundState } from './placement-preview';
 import { PlacementSaveBar } from './placement-save-bar';
 
 interface ProductPlacementScreenProps {
@@ -70,6 +71,18 @@ export function ProductPlacementScreen({ productId }: ProductPlacementScreenProp
     selection.kind === 'area'
       ? (side?.areas.find((row) => row.key === selection.areaKey) ?? null)
       : null;
+
+  // The Side's authorized background (`APP3-B02A`). Fetched only when the draft
+  // still names the background the server has persisted for this Side —
+  // otherwise the route would answer with the bytes of the background being
+  // replaced, and drawing those would present an unsaved choice as applied.
+  const backgroundIsServerTruth =
+    side !== null && model !== undefined && backgroundMatchesServer(side, model);
+  const background = useSideBackground({
+    productId,
+    sideId: backgroundIsServerTruth ? side.id : null,
+    enabled: backgroundIsServerTruth,
+  });
 
   if (query.isPending) {
     return (
@@ -190,6 +203,7 @@ export function ProductPlacementScreen({ productId }: ProductPlacementScreenProp
         <PlacementPreview
           side={side}
           selectedAreaKey={selection.kind === 'area' ? selection.areaKey : null}
+          background={resolveBackgroundState(side, backgroundIsServerTruth, background)}
           onSelectArea={(areaKey) => {
             if (side !== null) {
               session.select({ kind: 'area', sideKey: side.key, areaKey });
@@ -249,6 +263,30 @@ export function ProductPlacementScreen({ productId }: ProductPlacementScreenProp
       ) : null}
     </section>
   );
+}
+
+/**
+ * Turns the fetch outcome into what the stage should say.
+ *
+ * The two "not fetched" cases are separated on purpose. An unsaved **Side** has
+ * no address at all; a saved Side whose draft names a **different** background
+ * has an address that would answer with the old bytes. Collapsing them into one
+ * message would tell an operator mid-replacement that their Side is unsaved.
+ */
+function resolveBackgroundState(
+  side: SideDraft | null,
+  isServerTruth: boolean,
+  background: SideBackground,
+): BackgroundState {
+  if (side === null) return { kind: 'loading' };
+  if (!isServerTruth) {
+    return side.id === null ? { kind: 'unsaved-side' } : { kind: 'pending' };
+  }
+  if (background.failure !== null) {
+    return { kind: 'failed', failure: background.failure, onRetry: background.retry };
+  }
+  if (background.objectUrl !== null) return { kind: 'ready', objectUrl: background.objectUrl };
+  return { kind: 'loading' };
 }
 
 function PlacementHeader({ productId }: { readonly productId: string }) {

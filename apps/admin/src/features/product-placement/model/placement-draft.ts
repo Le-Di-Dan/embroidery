@@ -177,6 +177,25 @@ export function emptySideDraft(): SideDraft {
 }
 
 /**
+ * Whether this Side's background is the one the server currently serves.
+ *
+ * `APP3-B02A` delivers whatever background the **persisted** Side association
+ * names. So a draft that has picked a different Asset — or a Side that has never
+ * been saved — has no address at which its intended background could be
+ * fetched, and asking anyway would return the bytes of the background being
+ * replaced. Showing those under a pending change is the one thing worse than
+ * showing nothing: it tells the operator the replacement already happened.
+ *
+ * Deliberately compares against the authoritative model rather than a "dirty"
+ * flag: only the server can say what it is currently serving.
+ */
+export function backgroundMatchesServer(side: SideDraft, model: PlacementModel): boolean {
+  if (side.id === null) return false;
+  const authoritative = model.sides.find((row) => row.id === side.id);
+  return authoritative !== undefined && authoritative.backgroundAssetId === side.backgroundAssetId;
+}
+
+/**
  * Whether the draft still matches the snapshot it was seeded from.
  *
  * Compared against the draft the *server* answer produces, not against a flag

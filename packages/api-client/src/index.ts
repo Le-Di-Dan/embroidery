@@ -129,6 +129,25 @@ export type {
   ReplacePlacementAreaBody,
 } from './generated/embroidery-api.schemas';
 
+// Admin Side background delivery (APP3-B02A), exposed for the placement preview
+// (`APP3-A01-C1`).
+//
+// `APP3-B02A` deliberately withheld this from the boundary because no consumer
+// existed — an operation here is an invitation to call it, which is the same
+// reasoning that keeps `publicProductMediaGet` off it. `APP3-A01-C1` is that
+// consumer: it renders the Side's real background so Embroidery Areas are
+// authored on the actual image rather than on an empty frame.
+//
+// It resolves to a `Blob`. The caller turns that into a browser object URL as a
+// purely local rendering handle — never persisted, never sent back, and not a
+// storage address. No bucket, key or provider URL crosses this boundary in
+// either direction.
+//
+// `publicProductSideBackgroundGet` stays withheld for the reason it always was:
+// it requires the Product to be PUBLISHED, and placement is authored while the
+// Product is still a draft.
+export { adminProductSideBackgroundGet } from './generated/embroidery-api';
+
 // Anonymous public catalog reads (APP2-B04): the listing for the Storefront
 // Discover feed (`APP2-S01`) and the detail resolver for Product Detail
 // (`APP2-S02`).

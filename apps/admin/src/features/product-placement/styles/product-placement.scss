@@ -305,20 +305,48 @@ $placement-narrow-desktop: 1400px;
   height: auto;
 }
 
-.placement-preview__placeholder {
+// The authorized Side background (`APP3-B02A`), drawn in the SVG's own
+// coordinate space. No positioning here — `x`/`y`/`width`/`height` are geometry
+// and belong on the element, not in a stylesheet.
+.placement-preview__background {
+  // Contextual artwork: pointer events belong to the area controls above it, or
+  // clicking the picture would swallow a click meant for an area.
+  pointer-events: none;
+}
+
+// What the stage says when it is not showing artwork: loading, pending, an
+// unsaved Side, or a failure.
+.placement-preview__notice {
   position: absolute;
   // Pinned to the top rather than centred: an area rectangle sits over the
-  // middle of the canvas and cut the sentence in half.
+  // middle of the canvas and would cut the sentence in half.
   top: 0;
   right: 0;
   left: 0;
+  z-index: 1;
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin: 0;
+  gap: styles.spacing(8);
   padding: styles.spacing(8) styles.spacing(16);
+  background: styles.$color-surface-secondary;
+  text-align: center;
+}
+
+.placement-preview__notice-text {
+  margin: 0;
   color: styles.$color-text-tertiary;
   font-size: styles.$font-size-body-s;
-  text-align: center;
+}
+
+.placement-preview__notice-action {
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  cursor: pointer;
 }
 
 // Selection and validity arrive as data attributes with predefined selectors,
@@ -330,6 +358,16 @@ $placement-narrow-desktop: 1400px;
     outline: 2px solid styles.$color-action-primary;
     outline-offset: 2px;
   }
+}
+
+// The legibility halo beneath every area outline. Wider and light, so the
+// coloured stroke above it stays visible over artwork of any hue.
+.placement-preview__area-halo {
+  fill: none;
+  stroke: styles.$color-surface-primary;
+  stroke-width: 5;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .placement-preview__area-rect {
@@ -357,6 +395,19 @@ $placement-narrow-desktop: 1400px;
   stroke: styles.$color-border-secondary;
   stroke-width: 1;
   stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+// Type over artwork needs the same treatment as the outlines. `paint-order`
+// puts the light stroke *behind* the glyphs, so the label stays readable on a
+// dark photograph without a box that would hide the area it is labelling.
+.placement-preview__area-name,
+.placement-preview__area-error {
+  paint-order: stroke fill;
+  stroke: styles.$color-surface-primary;
+  stroke-width: 3;
+  stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }

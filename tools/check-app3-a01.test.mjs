@@ -32,12 +32,16 @@ const GATE = 'tools/check-app3-a01.mjs';
 /** Everything the gate reads. A path missing here shows up as a failed baseline. */
 const COPIED = [
   GATE,
+  // The gate delegates its C1 rules here; without it the copied gate cannot
+  // even load, and every case would "fail" for the wrong reason.
+  'tools/check-app3-a01-background.mjs',
   'package.json',
   'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md',
   'docs/design/FIGMA_DESIGN_INDEX.md',
   'packages/styles/src/settings/_color.scss',
   'packages/contracts/openapi/openapi.generated.json',
   'packages/api-client/src/generated/embroidery-api.ts',
+  'packages/api-client/src/index.ts',
   'apps/admin/src/app',
   'apps/admin/src/shared',
   'apps/admin/src/features/product-placement',
@@ -56,6 +60,11 @@ const SERVICE = 'apps/admin/src/features/product-placement/services/product-plac
 const BODY = 'apps/admin/src/features/product-placement/model/placement-body.ts';
 const FAILURE = 'apps/admin/src/features/product-placement/model/placement-failure.ts';
 const ROUTE = 'apps/admin/src/app/(protected)/products/[productId]/placement/page.tsx';
+const CURATED_CLIENT = 'packages/api-client/src/index.ts';
+const BACKGROUND_SERVICE =
+  'apps/admin/src/features/product-placement/services/side-background.service.ts';
+const BACKGROUND_HOOK = 'apps/admin/src/features/product-placement/hooks/use-side-background.ts';
+const PREVIEW = 'apps/admin/src/features/product-placement/components/placement-preview.tsx';
 
 const temporaries = [];
 after(() => {

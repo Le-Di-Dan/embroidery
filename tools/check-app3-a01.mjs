@@ -24,6 +24,8 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { checkA01BackgroundPreview } from './check-app3-a01-background.mjs';
+
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const PHASE_PLAN = join(
@@ -38,6 +40,11 @@ const STYLESHEET = join(FEATURE, 'styles/product-placement.scss');
 const SHARED_FIELD = join(ADMIN, 'src/shared/forms/admin-text-field.tsx');
 const OPENAPI = join(REPO_ROOT, 'packages/contracts/openapi/openapi.generated.json');
 const CLIENT = join(REPO_ROOT, 'packages/api-client/src/generated/embroidery-api.ts');
+const CURATED_CLIENT = join(REPO_ROOT, 'packages/api-client/src/index.ts');
+const BACKGROUND_SERVICE = join(FEATURE, 'services/side-background.service.ts');
+const BACKGROUND_HOOK = join(FEATURE, 'hooks/use-side-background.ts');
+const PREVIEW = join(FEATURE, 'components/placement-preview.tsx');
+const SCREEN = join(FEATURE, 'components/product-placement-screen.tsx');
 
 const failures = [];
 const checks = [];
@@ -383,6 +390,30 @@ for (const [label, path] of [
     !read(path).includes('APP3-A01'),
     `${label} mentions APP3-A01`,
   );
+}
+
+// ---------------------------------------------------------------------------
+// 9b · APP3-A01-C1 — the authorized Side background in the preview
+//
+// The rules live in their own module so this file stays within the 400-line
+// source limit; the verdict is still this gate's. One command, one answer.
+// ---------------------------------------------------------------------------
+const readIfPresent = (path) => (existsSync(path) ? stripComments(read(path)) : '');
+
+for (const finding of checkA01BackgroundPreview({
+  plan,
+  curated: readIfPresent(CURATED_CLIENT),
+  backgroundService: readIfPresent(BACKGROUND_SERVICE),
+  backgroundHook: readIfPresent(BACKGROUND_HOOK),
+  preview: readIfPresent(PREVIEW),
+  screen: readIfPresent(SCREEN),
+  featureSources: featureSources.map((file) => ({
+    ...file,
+    where: relative(REPO_ROOT, file.path),
+  })),
+  hasBackgroundSources: existsSync(BACKGROUND_SERVICE) || existsSync(BACKGROUND_HOOK),
+})) {
+  check(finding.label, finding.ok, finding.detail);
 }
 
 const rootScripts = Object.keys(

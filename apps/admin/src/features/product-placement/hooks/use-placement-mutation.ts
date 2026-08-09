@@ -32,13 +32,50 @@ export interface PlacementReplaceInput {
 
 export type PlacementMutation = UseMutationResult<PlacementModel, Error, PlacementReplaceInput>;
 
+/**
+ * The Sides whose background bytes the server would now answer differently.
+ *
+ * A Side counts when its `backgroundAssetId` changed, and also when it is new —
+ * a Side that did not exist before has no cached image, but invalidating a key
+ * nothing is observing is free, and leaving it out would mean relying on the
+ * order in which the screen happens to select things.
+ *
+ * With no previous snapshot nothing is returned: without a baseline there is no
+ * evidence any association moved, and invalidating everything on a guess is the
+ * refetch-storm this function exists to avoid.
+ */
+function changedBackgroundSideIds(
+  previous: PlacementModel | undefined,
+  next: PlacementModel,
+): readonly string[] {
+  if (previous === undefined) return [];
+  const before = new Map(previous.sides.map((side) => [side.id, side.backgroundAssetId]));
+  return next.sides
+    .filter((side) => before.get(side.id) !== side.backgroundAssetId)
+    .map((side) => side.id);
+}
+
 export function usePlacementMutation(): PlacementMutation {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ productId, body }: PlacementReplaceInput) => replacePlacement(productId, body),
     onSuccess: (result) => {
-      queryClient.setQueryData<PlacementModel>(placementQueryKeys.detail(result.productId), result);
+      const key = placementQueryKeys.detail(result.productId);
+      // Read before overwriting: the previous snapshot is the only thing that
+      // says which Side associations actually moved.
+      const previous = queryClient.getQueryData<PlacementModel>(key);
+      queryClient.setQueryData<PlacementModel>(key, result);
+
+      // `APP3-A01-C1`: a Side whose background association changed is now served
+      // different bytes, so its cached image is wrong. Invalidated per Side
+      // rather than by prefix — re-fetching every Side's background would pull
+      // megabytes for images the operator did not touch and is not looking at.
+      for (const sideId of changedBackgroundSideIds(previous, result)) {
+        void queryClient.invalidateQueries({
+          queryKey: placementQueryKeys.sideBackground(result.productId, sideId),
+        });
+      }
     },
     /**
      * A failed replace writes nothing on the server, so the cached snapshot is

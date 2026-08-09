@@ -177,10 +177,16 @@ describe('storage boundary', () => {
     expect(actual['publicProductPlacementGet']).toBeUndefined();
   });
 
-  it('states that the background is not rendered rather than showing an empty frame', async () => {
-    renderWithProviders(<ProductPlacementScreen productId={PLACEMENT_PRODUCT_ID} />);
-    await user.click(await screen.findByText('Mặt trước'));
+  it('keeps picker tiles as placeholders after A01-C1', async () => {
+    // `APP3-B02A` delivers a background by Product + Side, which is the
+    // association it authorizes. There is no asset-by-id route, and inventing
+    // one to draw thumbnails here is the bypass A01-C1 §10 forbids — so the
+    // *preview* gained a real image while the *picker* legitimately did not.
+    await openPicker();
+    await waitFor(() => {
+      expect(screen.getByRole('radio')).toBeInTheDocument();
+    });
 
-    expect(screen.getByText(PLACEMENT_COPY.preview.backgroundPlaceholder)).toBeInTheDocument();
+    expect(screen.getByText(PLACEMENT_COPY.picker.thumbnailPlaceholder)).toBeInTheDocument();
   });
 });

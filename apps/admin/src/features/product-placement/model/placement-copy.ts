@@ -71,12 +71,22 @@ export const PLACEMENT_COPY = {
   preview: {
     title: 'Xem trước vị trí',
     empty: 'Chọn một mặt sản phẩm để xem trước.',
+    /** Alt-equivalent for the background layer; never a filename. */
+    backgroundAlt: (side: string) => `Ảnh nền của ${side}`,
+    backgroundLoading: 'Đang tải ảnh nền…',
+    /** `404` — the server will not resolve a background here; retrying cannot help. */
+    backgroundUnavailable: 'Chưa có ảnh nền dùng được cho mặt này.',
+    /** `503`/transport — the row says it exists, so trying again is the right advice. */
+    backgroundFailed: 'Không tải được ảnh nền.',
+    backgroundRetry: 'Thử lại',
     /**
-     * There is no authenticated Admin media-delivery contract, so the canvas is
-     * drawn to the authored dimensions and the background is represented rather
-     * than fetched. Saying so is more honest than an empty frame.
+     * A background Asset was chosen but not saved yet. The server still serves
+     * the previous one, so nothing is drawn rather than showing bytes that would
+     * misrepresent the pending choice.
      */
-    backgroundPlaceholder: 'Ảnh nền chưa hiển thị được trong màn hình quản trị.',
+    backgroundPending: 'Ảnh nền mới sẽ hiển thị sau khi lưu.',
+    /** A Side that has never been saved has no address to fetch from. */
+    backgroundUnsavedSide: 'Lưu mặt sản phẩm để xem ảnh nền.',
     canvasLabel: (width: number, height: number) => `Khung nền ${width} × ${height} px`,
     areaLabel: (name: string) => `Vùng thêu ${name}`,
     outsideCanvas: 'Vùng thêu nằm ngoài khung nền.',
@@ -183,6 +193,16 @@ export const PLACEMENT_COPY = {
     cancel: 'Huỷ',
     confirm: 'Dùng ảnh này',
     selected: 'Đang chọn',
+    /**
+     * Picker tiles stay placeholders after `APP3-A01-C1`.
+     *
+     * `APP3-B02A` delivers a background by **Product + Side**, which is the
+     * association it authorizes. There is no asset-by-id delivery route, and
+     * inventing one to draw thumbnails is exactly the bypass `APP3-A01-C1` §10
+     * forbids — so the picker names the media type it can prove and nothing it
+     * cannot show.
+     */
+    thumbnailPlaceholder: 'Ảnh xem trước có sau khi lưu vào mặt sản phẩm.',
   },
 
   mobile: {

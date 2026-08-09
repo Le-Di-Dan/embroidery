@@ -3,11 +3,28 @@
 import { PLACEMENT_COPY } from '../model/placement-copy';
 import type { AreaDraft, SideDraft } from '../model/placement-draft';
 import { areaWithinCanvas, parseNumber } from '../model/placement-validation';
+import type { BackgroundFailure } from '../model/placement-failure';
+
+/**
+ * Why the background is not simply "loaded or not".
+ *
+ * Four of these states are *not* failures, and presenting them as one would be
+ * wrong in a way the operator would act on: `pending` and `unsaved-side` mean
+ * the server is serving something other than what the draft names, so drawing
+ * anything would misrepresent an unsaved choice as already applied.
+ */
+export type BackgroundState =
+  | { readonly kind: 'ready'; readonly objectUrl: string }
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'pending' }
+  | { readonly kind: 'unsaved-side' }
+  | { readonly kind: 'failed'; readonly failure: BackgroundFailure; readonly onRetry: () => void };
 
 interface PlacementPreviewProps {
   readonly side: SideDraft | null;
   readonly selectedAreaKey: string | null;
   readonly onSelectArea: (areaKey: string) => void;
+  readonly background: BackgroundState;
 }
 
 /**
@@ -27,17 +44,28 @@ interface PlacementPreviewProps {
  * the model is never converted, never rounded into state and never written back
  * (`APP3-A01` §13).
  *
- * The background image is not fetched. `APP2` publishes no authenticated Admin
- * media-delivery route — its own asset picker renders placeholders for the same
- * reason — and the public side-background route is explicitly not an authoring
- * dependency (§15), because it requires the product to be published and would
- * make an unpublished product unauthorable.
+ * The background arrives as an `<image>` in the **same** coordinate space
+ * (`APP3-A01-C1`), drawn at `0,0` across the authored canvas so the areas above
+ * it land on the artwork rather than beside it. `xMidYMid meet` is deliberate:
+ * the derivative's intrinsic size is a separate fact from the Side's authored
+ * canvas (`APP3-B02` says so explicitly), so letting it letterbox is the only
+ * option that cannot distort the image — and distortion is the failure an
+ * operator would trust and author against.
+ *
+ * The bytes come from `APP3-B02A` and nowhere else: no public route, no storage
+ * URL, no asset-by-id bypass. The `objectUrl` here is a browser handle owned by
+ * `useSideBackground`, never a storage address and never persisted.
  *
  * An area that lies outside the canvas is still drawn, clipped by the frame,
  * and flagged. Hiding it would remove the only visual evidence of the mistake
  * the inspector is complaining about.
  */
-export function PlacementPreview({ side, selectedAreaKey, onSelectArea }: PlacementPreviewProps) {
+export function PlacementPreview({
+  side,
+  selectedAreaKey,
+  onSelectArea,
+  background,
+}: PlacementPreviewProps) {
   const canvasWidth = side === null ? null : parseNumber(side.imageWidthPx);
   const canvasHeight = side === null ? null : parseNumber(side.imageHeightPx);
 
@@ -70,9 +98,7 @@ export function PlacementPreview({ side, selectedAreaKey, onSelectArea }: Placem
       <h2 className="placement-preview__title">{PLACEMENT_COPY.preview.title}</h2>
 
       <div className="placement-preview__stage">
-        <p className="placement-preview__placeholder">
-          {PLACEMENT_COPY.preview.backgroundPlaceholder}
-        </p>
+        <BackgroundNotice background={background} />
 
         <svg
           className="placement-preview__canvas"
@@ -82,6 +108,29 @@ export function PlacementPreview({ side, selectedAreaKey, onSelectArea }: Placem
           aria-label={PLACEMENT_COPY.preview.canvasLabel(canvasWidth, canvasHeight)}
           data-testid="placement-preview-canvas"
         >
+          {/*
+            The bottom layer, in the Side's own pixel space. Declared before the
+            areas so painting order puts the artwork underneath them — SVG has no
+            z-index, document order *is* the stacking.
+
+            `aria-hidden`: it is contextual artwork, not a control. The areas
+            above it are the interactive elements, and announcing the artwork
+            would put a non-actionable node in the operator's path (§14).
+          */}
+          {background.kind === 'ready' ? (
+            <image
+              className="placement-preview__background"
+              href={background.objectUrl}
+              x={0}
+              y={0}
+              width={canvasWidth}
+              height={canvasHeight}
+              preserveAspectRatio="xMidYMid meet"
+              aria-hidden="true"
+              data-testid="placement-preview-background"
+            />
+          ) : null}
+
           {side.areas
             .filter((area) => !area.removed && area.retiredAt === null)
             .map((area) => (
@@ -101,6 +150,64 @@ export function PlacementPreview({ side, selectedAreaKey, onSelectArea }: Placem
         {PLACEMENT_COPY.preview.canvasLabel(canvasWidth, canvasHeight)}
       </p>
     </section>
+  );
+}
+
+/**
+ * What the stage says when it is not showing artwork.
+ *
+ * Nothing is rendered in the `ready` state: a notice over a loaded background
+ * would sit on top of the very thing it was reporting about.
+ *
+ * `role="status"` for the states that are just information, `role="alert"` only
+ * for the two real failures — a background that is still loading is not
+ * something to interrupt an operator for.
+ */
+function BackgroundNotice({ background }: { readonly background: BackgroundState }) {
+  if (background.kind === 'ready') return null;
+
+  if (background.kind === 'failed') {
+    const message =
+      background.failure === 'unavailable'
+        ? PLACEMENT_COPY.preview.backgroundUnavailable
+        : PLACEMENT_COPY.preview.backgroundFailed;
+    return (
+      <div
+        className="placement-preview__notice"
+        role="alert"
+        data-testid="placement-background-notice"
+      >
+        <p className="placement-preview__notice-text">{message}</p>
+        {/* Retry is offered only where retrying can work: a 404 means the server
+            will not resolve a background at this address at all. */}
+        {background.failure === 'retryable' ? (
+          <button
+            type="button"
+            className="placement-preview__notice-action"
+            data-testid="placement-background-retry"
+            onClick={background.onRetry}
+          >
+            {PLACEMENT_COPY.preview.backgroundRetry}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  const message = {
+    loading: PLACEMENT_COPY.preview.backgroundLoading,
+    pending: PLACEMENT_COPY.preview.backgroundPending,
+    'unsaved-side': PLACEMENT_COPY.preview.backgroundUnsavedSide,
+  }[background.kind];
+
+  return (
+    <div
+      className="placement-preview__notice"
+      role="status"
+      data-testid="placement-background-notice"
+    >
+      <p className="placement-preview__notice-text">{message}</p>
+    </div>
   );
 }
 
@@ -160,6 +267,14 @@ function AreaRectangle({ area, side, labelSize, selected, onSelect }: AreaRectan
         }
       }}
     >
+      {/*
+        A light under-stroke, drawn first so the coloured outline sits on top of
+        it. Before this, an area boundary could disappear entirely against a
+        background of a similar hue — and the operator authoring on that
+        background is exactly who needs to see it. The halo is not decoration:
+        it is what makes the outline legible over *arbitrary* artwork.
+      */}
+      <rect className="placement-preview__area-halo" x={x} y={y} width={width} height={height} />
       <rect className="placement-preview__area-rect" x={x} y={y} width={width} height={height} />
 
       {/* The safe boundary is a presentation of the same rectangle, not a

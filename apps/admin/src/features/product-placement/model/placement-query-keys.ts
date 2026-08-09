@@ -18,4 +18,18 @@ export const placementQueryKeys = {
   all: ROOT,
   /** The complete authoring model for one product, retired rows included. */
   detail: (productId: string) => [...ROOT, 'detail', productId] as const,
+  /**
+   * One Side's authorized background bytes (`APP3-B02A`).
+   *
+   * Keyed by the pair the route is addressed with, so switching Side addresses a
+   * different entry rather than reusing the previous one — which is what makes
+   * "never show the previous Side's image under the new Side's areas" a property
+   * of the cache rather than a rule a component has to remember.
+   *
+   * Deliberately **not** keyed by `backgroundAssetId`: the route serves whatever
+   * background the *persisted* Side association currently names, so an id from
+   * an unsaved draft in the key would address bytes the server would not return.
+   */
+  sideBackground: (productId: string, sideId: string) =>
+    [...ROOT, 'side-background', productId, sideId] as const,
 } as const;

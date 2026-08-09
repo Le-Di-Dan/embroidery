@@ -123,7 +123,7 @@ export function PlacementBackgroundDialog({
                 <span className="placement-picker__info">
                   <span className="placement-picker__type">{asset.mediaType}</span>
                   <span className="placement-picker__state">
-                    {PLACEMENT_COPY.preview.backgroundPlaceholder}
+                    {PLACEMENT_COPY.picker.thumbnailPlaceholder}
                   </span>
                 </span>
               </label>
