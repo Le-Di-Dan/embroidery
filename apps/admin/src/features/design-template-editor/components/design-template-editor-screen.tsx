@@ -7,9 +7,14 @@ import { ADMIN_DESIGN_TEMPLATES_ROUTE } from '../../design-templates';
 import { DESIGN_TEMPLATE_EDITOR_COPY } from '../model/design-template-editor-copy';
 import { buildTextElement, canAddTextElement } from '../model/editor-document';
 import { resolveConflictCause } from '../model/editor-failure';
-import { resolveEditorSource, rebuildDocument } from '../model/editor-source';
+import {
+  isInitiallyAssignable,
+  resolveEditorSource,
+  rebuildDocument,
+} from '../model/editor-source';
 import { canSave, saveChip, selectedElement } from '../model/editor-state';
 import { useEditorNavigationGuard } from '../hooks/use-editor-navigation-guard';
+import { useScopeAssignment } from '../hooks/use-scope-assignment';
 import { useEditorSession } from '../hooks/use-editor-session';
 import { useEditorSideBackground } from '../hooks/use-editor-side-background';
 import { useEditorViewport } from '../hooks/use-editor-viewport';
@@ -22,6 +27,7 @@ import { EditorConflictDialog } from './editor-conflict-dialog';
 import { EditorInspector } from './editor-inspector';
 import { EditorLayerList } from './editor-layer-list';
 import { EditorNotice } from './editor-notice';
+import { EditorScopeAssignment } from './editor-scope-assignment';
 import { EditorScopePanel } from './editor-scope-panel';
 import { EditorStage, type StageBackground } from './editor-stage';
 import { EditorTopbar } from './editor-topbar';
@@ -51,12 +57,31 @@ export function DesignTemplateEditorScreen({ templateId }: { readonly templateId
   const [reloadPrompt, setReloadPrompt] = useState(false);
 
   const detailQuery = useTemplateDetailQuery(templateId);
-  const scopeRef = detailQuery.detail?.scope;
-  // A Template with no scope issues no Product request at all — the absence is
-  // enforced by the query being disabled, not by a component remembering.
-  const placement = useTemplatePlacementQuery(
-    viewport === 'mobile' || scopeRef === undefined ? null : scopeRef.productId,
-  );
+  const detailValue = detailQuery.detail;
+  const scopeRef = detailValue?.scope;
+
+  const assignable =
+    viewport !== 'mobile' && detailValue !== undefined && isInitiallyAssignable(detailValue);
+
+  const scopeAssignment = useScopeAssignment({
+    templateId,
+    enabled: assignable,
+    reloadDetail: detailQuery.reload,
+  });
+
+  // One placement query for both jobs. While assigning it follows the candidate
+  // Product; once the scope exists it follows the scope — and because the
+  // assignment binds the Product the operator just browsed, the key is the same
+  // one and the editor opens against a warm cache rather than a second request.
+  //
+  // A Template that is neither scoped nor assignable issues nothing at all, and
+  // neither does a phone: the absence is enforced by the query being disabled,
+  // not by a component remembering.
+  const placementProductId =
+    viewport === 'mobile'
+      ? null
+      : (scopeRef?.productId ?? (assignable ? scopeAssignment.candidateProductId : null));
+  const placement = useTemplatePlacementQuery(placementProductId);
 
   const source = resolveEditorSource({
     detail: detailQuery.detail,
@@ -129,6 +154,25 @@ export function DesignTemplateEditorScreen({ templateId }: { readonly templateId
   }
 
   const copy = DESIGN_TEMPLATE_EDITOR_COPY;
+
+  if (source.kind === 'scope-assignable') {
+    return (
+      <EditorScopeAssignment
+        products={scopeAssignment.products.products}
+        productsLoading={scopeAssignment.products.isLoading}
+        productsFailed={scopeAssignment.products.failed}
+        onRetryProducts={scopeAssignment.products.retry}
+        placement={placement.placement}
+        placementLoading={placement.isLoading}
+        placementFailed={placement.failed}
+        onRetryPlacement={placement.retry}
+        assigning={scopeAssignment.assigning}
+        failure={scopeAssignment.failure}
+        onProductChange={scopeAssignment.onProductChange}
+        onAssign={scopeAssignment.assign}
+      />
+    );
+  }
 
   if (source.kind !== 'ready' || state === null || ready === null) {
     return (

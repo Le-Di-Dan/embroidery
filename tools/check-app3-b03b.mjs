@@ -105,14 +105,20 @@ for (const [id, expected] of [
   );
 }
 
-// The blocker this checkpoint exists to close must still be recorded as the
-// reason A03 is not accepted — a gate that stopped asserting it would let the
-// correction be forgotten while the operation shipped.
+// The blocker this checkpoint exists to close, in whichever world the phase is
+// in. Before `APP3-A03-C1` the correction must still be recorded as the reason
+// A03 is not accepted, or it could be forgotten while the operation shipped;
+// after it, the blocker must be recorded as *closed by that correction* — the
+// point of the operation is that a consumer exists.
+const c1Delivered = /\nAPP3-A03-C1 = COMPLETE/.test(plan);
 check(
-  'entry: APP3-A03 is still awaiting its correction',
-  /APP3-A03 =\s*\n?COMPLETE — REVIEW_DELIVERED — CORRECTION_REQUIRED/.test(plan) ||
-    plan.includes('APP3-A03 = COMPLETE — REVIEW_DELIVERED — CORRECTION_REQUIRED'),
-  'the A03 correction state is not recorded',
+  'entry: the A03 blocker is recorded in the state the phase is actually in',
+  c1Delivered
+    ? /\nA03_REVIEW_BLOCKER = CLOSED_BY_APP3-A03-C1/.test(plan)
+    : plan.includes('APP3-A03 = COMPLETE — REVIEW_DELIVERED — CORRECTION_REQUIRED'),
+  c1Delivered
+    ? 'A03-C1 delivered but the blocker is not recorded as closed by it'
+    : 'the A03 correction state is not recorded',
 );
 
 // ---------------------------------------------------------------------------
@@ -377,14 +383,50 @@ check(
   readRaw(GENERATED_CLIENT).includes('export const adminDesignTemplateAssignScope ='),
   'the client was not regenerated',
 );
-// B03B is backend-only: `APP3-A03-C1` brings the operation across the curated
-// boundary after human acceptance. An export here now would be a frontend
-// change this checkpoint is forbidden to make.
-check(
-  'client: the curated boundary does not yet expose it',
-  !/export \{[^}]*adminDesignTemplateAssignScope/s.test(read(CURATED_CLIENT)),
-  'B03B must not modify the Admin frontend surface; APP3-A03-C1 owns that',
+// Two worlds, and the rule differs in each. Before `APP3-A03-C1`, B03B was
+// backend-only and an export here would have been a frontend change it was
+// forbidden to make. After, the export is the point — a published operation
+// with no consumer is an invitation nobody accepted — and what must hold
+// instead is that exactly one feature reaches it.
+const curatedExportsScope = /export \{[^}]*adminDesignTemplateAssignScope/s.test(
+  read(CURATED_CLIENT),
 );
+
+if (c1Delivered) {
+  check(
+    'client: the curated boundary exposes it for its APP3-A03-C1 consumer',
+    curatedExportsScope,
+    'the delivered consumer cannot reach the operation',
+  );
+
+  const adminSources = collect(join(REPO_ROOT, 'apps/admin/src/features'), /\.tsx?$/).map(
+    (path) => ({
+      path: path.replace(/\\/g, '/'),
+      text: stripComments(readRaw(path)),
+    }),
+  );
+  const consumers = adminSources.filter((file) =>
+    file.text.includes('adminDesignTemplateAssignScope'),
+  );
+  check(
+    'client: exactly one Admin module consumes it, in the editor feature',
+    consumers.length === 1 && consumers[0].path.includes('/features/design-template-editor/'),
+    consumers.map((file) => file.path).join(', ') || 'no consumer',
+  );
+  check(
+    'client: the Template list performs no scope mutation',
+    adminSources
+      .filter((file) => file.path.includes('/features/design-templates/'))
+      .every((file) => !file.text.includes('adminDesignTemplateAssignScope')),
+    'the list grew a scope write that belongs to the editor',
+  );
+} else {
+  check(
+    'client: the curated boundary does not yet expose it',
+    !curatedExportsScope,
+    'B03B must not modify the Admin frontend surface; APP3-A03-C1 owns that',
+  );
+}
 
 // ---------------------------------------------------------------------------
 // 8 · No frontend, schema or dependency change
@@ -459,10 +501,15 @@ for (const [command, invocation] of [
 
 // The follow-up must say what was and was not closed. "Partially resolved" is
 // the whole point: initial assignment ships, general rescope does not.
+// The follow-up moves once, when a consumer exists. Before that it is
+// *partially* resolved — the operation shipped but nothing used it; after, it is
+// closed **for the current APP3 scope**, which is not the same as closed.
 check(
-  'governance: the scope follow-up is reconciled, not closed',
-  /FU-APP3-TEMPLATE-SCOPE-EDIT-01 = PARTIALLY_RESOLVED_BY_APP3-B03B/.test(plan),
-  'the follow-up is missing, still open, or claims full resolution',
+  'governance: the scope follow-up matches the delivered world',
+  c1Delivered
+    ? /FU-APP3-TEMPLATE-SCOPE-EDIT-01 = CLOSED_FOR_CURRENT_APP3_SCOPE/.test(plan)
+    : /FU-APP3-TEMPLATE-SCOPE-EDIT-01 = PARTIALLY_RESOLVED_BY_APP3-B03B/.test(plan),
+  'the follow-up is missing, still open, or claims more than was delivered',
 );
 check(
   'governance: the follow-up does not claim general rescope',

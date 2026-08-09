@@ -36,6 +36,10 @@ const COPIED = [
   'packages/database/migrations',
   'packages/database/src/schema',
   'apps/api/src/modules/design',
+  // The consumer rules scan the Admin features: `APP3-A03-C1` made this gate
+  // world-aware, and after that correction it asserts *which* module reaches
+  // the operation, not merely that none does.
+  'apps/admin/src/features',
 ];
 
 const PHASE_PLAN = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
@@ -123,16 +127,20 @@ describe('entry authority', () => {
     );
   });
 
-  it('refuses an A03 quietly marked accepted before its correction', () => {
+  it('refuses the A03 blocker being erased once the correction delivered', () => {
+    // The rule is world-aware: before `APP3-A03-C1` the correction had to stay
+    // recorded, and after it the blocker must be recorded as *closed by that
+    // correction*. Either way the phase may not simply stop mentioning it — a
+    // blocker nobody records is a blocker nobody re-checks.
     refuses(
       (root) =>
         edit(
           root,
           PHASE_PLAN,
-          'APP3-A03 = COMPLETE — REVIEW_DELIVERED — CORRECTION_REQUIRED',
-          'APP3-A03 = COMPLETE — REVIEW_ACCEPTED',
+          '\nA03_REVIEW_BLOCKER = CLOSED_BY_APP3-A03-C1',
+          '\nA03_REVIEW_BLOCKER_NOTE = tidied away',
         ),
-      'APP3-A03 is still awaiting its correction',
+      'the A03 blocker is recorded in the state the phase is actually in',
     );
   });
 });
@@ -338,19 +346,27 @@ describe('errors, audit and boundaries', () => {
     );
   });
 
-  it('refuses the operation crossing the curated client boundary', () => {
-    // B03B is backend-only. Exporting it here would change the Admin surface,
-    // which `APP3-A03-C1` owns and this checkpoint is forbidden to touch.
+  it('refuses the operation being withdrawn from its delivered consumer', () => {
+    // Before `APP3-A03-C1` this rule ran the other way: an export here would
+    // have been a frontend change B03B was forbidden to make. Now the export is
+    // the point — a published operation with no consumer is an invitation
+    // nobody accepted — so removing it is what the gate refuses.
     refuses(
-      (root) =>
-        edit(
-          root,
-          CURATED_CLIENT,
-          '  adminDesignTemplateSaveDocument,\n} from',
-          '  adminDesignTemplateSaveDocument,\n  adminDesignTemplateAssignScope,\n} from',
-        ),
-      'the curated boundary does not yet expose it',
+      (root) => edit(root, CURATED_CLIENT, '  adminDesignTemplateAssignScope,\n', ''),
+      'the curated boundary exposes it for its APP3-A03-C1 consumer',
     );
+  });
+
+  it('refuses a second Admin module reaching the scope write', () => {
+    refuses((root) => {
+      const table = 'apps/admin/src/features/design-templates/components/design-template-table.tsx';
+      const text = readAt(root, table);
+      writeAt(
+        root,
+        table,
+        `import { adminDesignTemplateAssignScope } from '@embroidery/api-client';\n${text}`,
+      );
+    }, 'exactly one Admin module consumes it');
   });
 
   it('refuses a controller that decides instead of delegating', () => {
@@ -409,10 +425,10 @@ describe('proof and governance', () => {
         edit(
           root,
           PHASE_PLAN,
-          'FU-APP3-TEMPLATE-SCOPE-EDIT-01 = PARTIALLY_RESOLVED_BY_APP3-B03B',
-          'FU-APP3-TEMPLATE-SCOPE-EDIT-01 = RESOLVED_BY_APP3-B03B',
+          'FU-APP3-TEMPLATE-SCOPE-EDIT-01 = CLOSED_FOR_CURRENT_APP3_SCOPE',
+          'FU-APP3-TEMPLATE-SCOPE-EDIT-01 = RESOLVED — general rescope delivered',
         ),
-      'the scope follow-up is reconciled, not closed',
+      'the scope follow-up matches the delivered world',
     );
   });
 

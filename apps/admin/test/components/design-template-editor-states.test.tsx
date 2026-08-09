@@ -17,6 +17,7 @@ import {
 import {
   adminDesignTemplateDetail,
   adminDesignTemplateSaveDocument,
+  adminProductList,
   adminProductPlacementGet,
   adminProductSideBackgroundGet,
 } from '@embroidery/api-client';
@@ -34,6 +35,7 @@ import {
   makeVersionedDetail,
   placementEnvelope,
 } from '../support/design-template-editor-fixture';
+import { makeProduct, makeProductPage, productEnvelope } from '../support/product-fixture';
 import { installObjectUrl } from '../support/object-url';
 
 jest.mock('next/navigation', () => mockCreateNavigationMock('/design-templates/x').module);
@@ -41,6 +43,7 @@ jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   adminDesignTemplateDetail: jest.fn(),
   adminDesignTemplateSaveDocument: jest.fn(),
+  adminProductList: jest.fn(),
   adminProductPlacementGet: jest.fn(),
   adminProductSideBackgroundGet: jest.fn(),
 }));
@@ -51,6 +54,7 @@ const detailMock = adminDesignTemplateDetail as jest.MockedFunction<
 const saveMock = adminDesignTemplateSaveDocument as jest.MockedFunction<
   typeof adminDesignTemplateSaveDocument
 >;
+const productsMock = adminProductList as jest.MockedFunction<typeof adminProductList>;
 const placementMock = adminProductPlacementGet as jest.MockedFunction<
   typeof adminProductPlacementGet
 >;
@@ -86,6 +90,7 @@ beforeEach(() => {
   setViewport('desktop');
   user = createUser();
   detailMock.mockResolvedValue(detailEnvelope(makeVersionedDetail(1)));
+  productsMock.mockResolvedValue(productEnvelope(makeProductPage([makeProduct()])));
   placementMock.mockResolvedValue(placementEnvelope(makePlacement()));
   backgroundMock.mockResolvedValue(new Blob(['x'], { type: 'image/png' }));
   saveMock.mockResolvedValue(detailEnvelope(makeVersionedDetail(2)));
@@ -133,15 +138,29 @@ describe('non-DRAFT templates', () => {
 });
 
 describe('scope', () => {
-  it('states an unscoped template truthfully and requests no Product', async () => {
+  it('offers the initial assignment for an unscoped DRAFT, and loads no placement yet', async () => {
+    // `APP3-A03-C1` turned this state from a dead end into the selector. What
+    // has not changed is the restraint: nothing about a *Product* is fetched
+    // until the operator picks one, and no protected media is streamed at all.
     detailMock.mockResolvedValue(detailEnvelope(makeUnversionedDetail({ scope: undefined })));
+    render();
+
+    expect(await screen.findByTestId('editor-scope-assign')).toBeInTheDocument();
+    expect(placementMock).not.toHaveBeenCalled();
+    expect(backgroundMock).not.toHaveBeenCalled();
+  });
+
+  it('states the dead end for an unscoped template that can no longer be assigned', async () => {
+    detailMock.mockResolvedValue(
+      detailEnvelope(makeUnversionedDetail({ scope: undefined, status: 'ARCHIVED' })),
+    );
     render();
 
     expect(await screen.findByTestId('editor-unscoped')).toHaveTextContent(
       DESIGN_TEMPLATE_EDITOR_COPY.scope.none,
     );
+    expect(screen.queryByTestId('editor-scope-assign')).toBeNull();
     expect(placementMock).not.toHaveBeenCalled();
-    expect(backgroundMock).not.toHaveBeenCalled();
   });
 
   it('resolves the Side and Area by the exact ids the scope names', async () => {

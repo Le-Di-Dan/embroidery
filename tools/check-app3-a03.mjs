@@ -644,16 +644,34 @@ check(
 );
 
 check(
-  'scope: the editor mutates no scope',
+  'scope: the editor mutates no placement',
   sources.every((file) => !/adminProductPlacementReplace/.test(file.text)),
-  'A03 owns no scope mutation',
+  'the editor owns no Product placement mutation',
+);
+
+// `APP3-A03-C1` gave the unscoped state a purpose, so the rule changed shape.
+// It used to be "an unscoped Template asks for no Product at all"; a selector
+// that could not list Products would be useless. What still holds — and is the
+// property the old rule was protecting — is that nothing about a *Product* is
+// fetched speculatively: the placement query follows the scope when there is
+// one, the operator's explicit choice while assigning, and nothing otherwise.
+check(
+  'scope: the placement query follows the scope, or an explicit choice, or nothing',
+  /scopeRef\?\.productId \?\? \(assignable \? scopeAssignment\.candidateProductId : null\)/.test(
+    screenSource,
+  ),
+  'the placement query is not bounded to a resolved scope or a chosen Product',
 );
 check(
-  'scope: an unscoped template issues no Product request',
-  /viewport === 'mobile' \|\| scopeRef === undefined \? null : scopeRef\.productId/.test(
-    screen?.text ?? '',
-  ),
-  'the placement query is not disabled for an unscoped template',
+  'scope: nothing for the editor is fetched on a small viewport',
+  /viewport === 'mobile'\s*\n?\s*\? null/.test(screenSource),
+  'a phone would issue the placement request the read-only notice has no use for',
+);
+check(
+  'scope: the Product list is requested only while an assignment is possible',
+  /useScopeProductOptions\(enabled\)/.test(read(join(FEATURE, 'hooks/use-scope-assignment.ts'))) &&
+    /enabled: assignable/.test(screenSource),
+  'the Product list is fetched for a Template that cannot be assigned one',
 );
 check(
   'scope: the Side and Area are resolved by id',
@@ -669,6 +687,117 @@ check(
   ),
   'a fallback Side would author a document against geometry the Template does not name',
 );
+
+// ---------------------------------------------------------------------------
+// 11b · APP3-A03-C1 — the one-time initial scope assignment
+// ---------------------------------------------------------------------------
+const c1Delivered = /\nAPP3-A03-C1 = COMPLETE/.test(plan);
+
+if (c1Delivered) {
+  const selector = read(join(FEATURE, 'components/editor-scope-assignment.tsx'));
+  const selection = read(join(FEATURE, 'model/scope-selection.ts'));
+  const scopeService = read(join(FEATURE, 'services/template-scope.service.ts'));
+
+  check(
+    'C1: the blocker is closed — the selector exists and is reachable',
+    selector !== '' && /EditorScopeAssignment/.test(screenSource),
+    'an unscoped DRAFT still has no way to acquire a scope',
+  );
+  check(
+    'C1: only an unscoped, versionless DRAFT is offered the assignment',
+    /detail\.scope === undefined &&\s*\n?\s*detail\.status === EDITABLE_TEMPLATE_STATUS &&\s*\n?\s*detail\.currentVersion === undefined/.test(
+      read(join(FEATURE, 'model/editor-source.ts')),
+    ),
+    'the selector would be offered for a Template APP3-B03B refuses',
+  );
+  check(
+    'C1: the assignment operation is consumed in exactly one service',
+    sources.filter((file) => file.text.includes('adminDesignTemplateAssignScope')).length === 1,
+    'the scope write is reachable from more than one module',
+  );
+  check(
+    'C1: the request is exactly the three ids',
+    /const body: AssignDesignTemplateScopeBody = \{ productId, productSideId, embroideryAreaId \};/.test(
+      scopeService,
+    ),
+    'the assignment body carries something the contract does not declare',
+  );
+  check(
+    'C1: Products come from the accepted Admin operation',
+    /adminProductList/.test(scopeService) &&
+      sources.every((file) => !/publicProductList|adminProductDetail/.test(file.text)),
+    'Product discovery was invented, or reaches the published-only public list',
+  );
+  // The cascade is the whole reason the selection is a reducer. Anchored to the
+  // returned object, not to the identifiers: a `SELECT_PRODUCT` that spread the
+  // previous state would still mention every field.
+  check(
+    'C1: choosing a Product clears the Side and the Area',
+    /return \{ productId: action\.productId, productSideId: null, embroideryAreaId: null \};/.test(
+      selection,
+    ),
+    'a stale Side could survive a Product change, producing a triple from two Products',
+  );
+  check(
+    'C1: choosing a Side clears the Area',
+    /return \{ \.\.\.state, productSideId: action\.productSideId, embroideryAreaId: null \};/.test(
+      selection,
+    ),
+    'a stale Area could survive a Side change',
+  );
+  check(
+    'C1: retired Sides and Areas are not offered',
+    /\.filter\(isLive\)/.test(selection) &&
+      /retiredAt === null \|\| row\.retiredAt === undefined/.test(selection),
+    'a retired row would be offered as a legal new placement',
+  );
+  check(
+    'C1: Areas are read from the chosen Side, never a flattened list',
+    /side\.areas\.filter\(isLive\)/.test(selection),
+    'an Area from a sibling Side would be reachable',
+  );
+  check(
+    'C1: no partial triple can be submitted',
+    /if \(productId === null \|\| productSideId === null \|\| embroideryAreaId === null\) return null;/.test(
+      selection,
+    ) && /disabled=\{triple === null \|\| assigning\}/.test(selector),
+    'the confirm can act without a complete triple',
+  );
+  check(
+    'C1: success writes the server answer into the cache instead of re-reading',
+    /setQueryData\(designTemplateEditorKeys\.detail\(templateId\), detail\)/.test(
+      read(join(FEATURE, 'hooks/use-assign-template-scope.ts')),
+    ),
+    'the transition would need a second detail GET',
+  );
+  check(
+    'C1: the assignment is never retried',
+    /retry: false/.test(read(join(FEATURE, 'hooks/use-assign-template-scope.ts'))),
+    'a retry would resend a triple the server already refused',
+  );
+  check(
+    'C1: a lost race is resolved by one re-read, never by forcing the triple',
+    /const fresh = await reloadDetail\(\);/.test(
+      read(join(FEATURE, 'hooks/use-scope-assignment.ts')),
+    ),
+    'the 409 is answered without asking the server what actually happened',
+  );
+  check(
+    'C1: no rescope or clear-scope path exists',
+    sources.every((file) => !/rescope|clearScope|unassignScope|replaceScope/i.test(file.text)),
+    'APP3-B03B publishes neither, so a control for either is a promise nothing can keep',
+  );
+  check(
+    'C1: the scope stays read-only context after assignment',
+    !/onChangeScope|onClearScope/.test(read(join(FEATURE, 'components/editor-scope-panel.tsx'))),
+    'the scope panel grew a mutation affordance',
+  );
+  check(
+    'C1: the correction is recorded and the follow-up reconciled',
+    /FU-APP3-TEMPLATE-SCOPE-EDIT-01 = CLOSED_FOR_CURRENT_APP3_SCOPE/.test(plan),
+    'the follow-up still claims the blocker is open, or claims general rescope',
+  );
+}
 
 const layers = stripComments(read(join(FEATURE, 'components/editor-layer-list.tsx')));
 check(

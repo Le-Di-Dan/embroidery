@@ -210,8 +210,8 @@ describe('client boundary', () => {
         edit(
           root,
           CURATED_CLIENT,
-          '  adminDesignTemplateSaveDocument,\n} from',
-          '  adminDesignTemplateSaveDocument,\n  adminDesignTemplatePublish,\n} from',
+          '  adminDesignTemplateAssignScope,\n} from',
+          '  adminDesignTemplateAssignScope,\n  adminDesignTemplatePublish,\n} from',
         ),
       'adminDesignTemplatePublish stays withheld',
     );
@@ -219,7 +219,7 @@ describe('client boundary', () => {
 
   it('refuses the detail read crossing without the save it belongs with', () => {
     refuses(
-      (root) => edit(root, CURATED_CLIENT, '  adminDesignTemplateSaveDocument,\n} from', '} from'),
+      (root) => edit(root, CURATED_CLIENT, '  adminDesignTemplateSaveDocument,\n', ''),
       'the detail read and the document save cross the boundary together',
     );
   });
@@ -626,16 +626,20 @@ describe('status, scope and the image limitation', () => {
     );
   });
 
-  it('refuses a Product request for an unscoped template', () => {
+  it('refuses a placement query that is not bounded to a scope or an explicit choice', () => {
+    // `APP3-A03-C1` gave the unscoped state a selector, so "no Product request
+    // at all" is no longer the rule. The restraint that survives is that the
+    // query follows a resolved scope, or a Product the operator actually picked,
+    // and nothing else — a speculative fetch is what this still refuses.
     refuses(
       (root) =>
         edit(
           root,
           SCREEN,
-          "viewport === 'mobile' || scopeRef === undefined ? null : scopeRef.productId,",
-          'scopeRef?.productId ?? null,',
+          '(scopeRef?.productId ?? (assignable ? scopeAssignment.candidateProductId : null))',
+          '(scopeRef?.productId ?? null)',
         ),
-      'an unscoped template issues no Product request',
+      'the placement query follows the scope, or an explicit choice, or nothing',
     );
   });
 
@@ -647,7 +651,7 @@ describe('status, scope and the image limitation', () => {
         SCOPE,
         `import { adminProductPlacementReplace } from '@embroidery/api-client';\n${text}`,
       );
-    }, 'the editor mutates no scope');
+    }, 'the editor mutates no placement');
   });
 
   it('refuses an enabled add-image control while intake is absent', () => {

@@ -44,7 +44,20 @@ export type EditorSource =
   | { readonly kind: 'loading' }
   | { readonly kind: 'not-found' }
   | { readonly kind: 'load-failed' }
-  /** No placement scope, so no representable document (and no Product request). */
+  /**
+   * Unscoped, and `APP3-B03B` would accept an initial assignment: a `DRAFT`
+   * with no version at all. This is the only state that shows the selector.
+   */
+  | { readonly kind: 'scope-assignable' }
+  /**
+   * Unscoped and **not** assignable — versioned, or no longer a `DRAFT`.
+   *
+   * A real state rather than an impossible one: `APP3-B03A` requires a
+   * placement snapshot to save, so a versioned unscoped Template cannot be
+   * produced by any current path, but a lifecycle transition on a scopeless
+   * draft can still leave one. It has no representable document and no way to
+   * acquire a scope, so it is reported and nothing is fetched for it.
+   */
   | { readonly kind: 'unscoped' }
   | { readonly kind: 'scope-failed' }
   /** The scope names rows the Product no longer has, and there is no document. */
@@ -59,6 +72,23 @@ export type EditorSource =
       readonly scope: ResolvedTemplateScope | null;
       readonly editable: boolean;
     };
+
+/**
+ * Whether `APP3-B03B` would accept an initial scope assignment for this
+ * Template.
+ *
+ * All three conditions, because the server checks all three: no scope, still a
+ * `DRAFT`, and no version. `currentVersion` is an optional object precisely so
+ * "no version" is not a version zero, so its absence is the check — never a
+ * comparison against `0`, which the detail view does not publish.
+ */
+export function isInitiallyAssignable(detail: AdminDesignTemplateDetailResponse): boolean {
+  return (
+    detail.scope === undefined &&
+    detail.status === EDITABLE_TEMPLATE_STATUS &&
+    detail.currentVersion === undefined
+  );
+}
 
 export interface EditorSourceInput {
   readonly detail: AdminDesignTemplateDetailResponse | undefined;
@@ -80,7 +110,13 @@ export function resolveEditorSource({
   const editable = detail.status === EDITABLE_TEMPLATE_STATUS;
   const scopeRef = detail.scope;
 
-  if (scopeRef === undefined) return { kind: 'unscoped' };
+  if (scopeRef === undefined) {
+    // `APP3-B03B`'s source-state rule, restated exactly: only an unscoped,
+    // versionless `DRAFT` may be assigned. Anything else unscoped is a dead end
+    // the server would refuse, so the selector is not offered — showing it would
+    // be offering a choice whose only outcome is a `409`.
+    return isInitiallyAssignable(detail) ? { kind: 'scope-assignable' } : { kind: 'unscoped' };
+  }
   if (placement.isLoading) return { kind: 'loading' };
   if (placement.failed || placement.placement === undefined) return { kind: 'scope-failed' };
 

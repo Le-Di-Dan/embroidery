@@ -261,3 +261,59 @@ describe('the route', () => {
     expect(routeSource).not.toContain('HydrationBoundary');
   });
 });
+
+describe('the initial scope assignment (APP3-A03-C1)', () => {
+  it('is on the curated boundary, as this feature is its only consumer', () => {
+    expect(typeof apiClient.adminDesignTemplateAssignScope).toBe('function');
+  });
+
+  it('is consumed in exactly one module', () => {
+    const consumers = sources.filter((source) =>
+      source.text.includes('adminDesignTemplateAssignScope'),
+    );
+    expect(consumers).toHaveLength(1);
+    expect(consumers[0]?.path).toMatch(/template-scope\.service\.ts$/);
+  });
+
+  it('never spells the scope route', () => {
+    // Matched as a **URL literal**, not as the substring `/scope` — which the
+    // feature's own `../model/scope-selection` import contains, and which is a
+    // module path rather than a route. A rule that fires on an import is not a
+    // rule about routes.
+    for (const source of sources) {
+      expect(source.text).not.toMatch(/['"`][^'"`]*design-templates[^'"`]*scope/);
+      expect(source.text).not.toMatch(/design-templates\/\$\{/);
+    }
+  });
+
+  it('discovers Products through the accepted Admin operation, not the public one', () => {
+    const productReaders = sources.filter((source) => source.text.includes('adminProductList'));
+    expect(productReaders).toHaveLength(1);
+
+    for (const source of sources) {
+      // The public list answers a narrower, published-only model; a draft
+      // Product is a perfectly ordinary authoring target.
+      expect(source.text).not.toContain('publicProductList');
+      expect(source.text).not.toContain('publicProductDetail');
+      // And no per-id fan-out, which is the N+1 the list exists to avoid.
+      expect(source.text).not.toContain('adminProductDetail');
+    }
+  });
+
+  it('offers no rescope or clear-scope path anywhere', () => {
+    // `APP3-B03B` publishes neither, so a control or a call for either would be
+    // a promise the contract cannot keep.
+    for (const source of sources) {
+      expect(source.text).not.toMatch(/rescope|clearScope|unassignScope|replaceScope/i);
+    }
+  });
+
+  it('leaves the Template list free of any scope mutation', () => {
+    const listFeature = join(__dirname, '..', '..', 'src', 'features', 'design-templates');
+    for (const path of collectSources(listFeature)) {
+      const text = stripComments(readFileSync(path, 'utf8'));
+      expect(text).not.toContain('adminDesignTemplateAssignScope');
+      expect(text).not.toMatch(/rescope|clearScope/i);
+    }
+  });
+});

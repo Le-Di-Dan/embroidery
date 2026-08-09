@@ -533,6 +533,84 @@ $editor-inspector-min: 260px;
   cursor: pointer;
 }
 
+// ---------------------------------------------------------------------------
+// Initial scope assignment (`APP3-A03-C1`)
+// ---------------------------------------------------------------------------
+
+// A bounded reading column rather than the full editor width: three dependent
+// choices read as a sequence, and a 1440px-wide row of selects reads as a form.
+// `min()` keeps it from overflowing at 1280 or below without a media query.
+.template-editor-assign {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  width: min(560px, 100%);
+  margin: styles.spacing(24);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.template-editor-assign__title {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  color: styles.$color-text-primary;
+}
+
+.template-editor-assign__intro,
+.template-editor-assign__empty,
+.template-editor-assign__hint {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.template-editor-assign__field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.template-editor-assign__label {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+.template-editor-assign__select {
+  width: 100%;
+  max-width: 100%;
+  padding: styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+.template-editor-assign__actions {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(12);
+  flex-wrap: wrap;
+}
+
+.template-editor-assign__submit {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-action-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+  cursor: pointer;
+
+  &:disabled {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-background-secondary;
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+}
+
 .template-editor-dialog__backdrop {
   position: fixed;
   inset: 0;

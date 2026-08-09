@@ -30,4 +30,13 @@ export const designTemplateEditorKeys = {
    */
   sideBackground: (productId: string, sideId: string) =>
     [...PLACEMENT_ROOT, 'side-background', productId, sideId] as const,
+  /**
+   * The Products offered by the initial scope selector (`APP3-A03-C1`).
+   *
+   * Rooted under the Product capability, not the Template one: it is the same
+   * `adminProduct_list` page the rest of the Admin reads, and rooting it here
+   * would make a Template invalidation discard a list that has nothing to do
+   * with Templates.
+   */
+  productOptions: () => ['admin', 'products', 'scope-options'] as const,
 } as const;

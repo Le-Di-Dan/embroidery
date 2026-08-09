@@ -391,7 +391,10 @@ describe('the editor source', () => {
     expect(source.kind).toBe('document-invalid');
   });
 
-  it('reports an unscoped template without ever asking for a Product', () => {
+  it('offers the assignment for an unscoped template rather than a dead end', () => {
+    // `APP3-A03-C1`: an unscoped, versionless DRAFT is exactly the state
+    // `APP3-B03B` accepts, so this branch is the selector — not the bounded
+    // "nothing can be done here" it was before the operation existed.
     const source = resolveEditorSource({
       detail: makeUnversionedDetail({ scope: undefined }),
       detailLoading: false,
@@ -400,7 +403,7 @@ describe('the editor source', () => {
       placement: { placement: undefined, isLoading: false, failed: false, retry: () => undefined },
     });
 
-    expect(source.kind).toBe('unscoped');
+    expect(source.kind).toBe('scope-assignable');
   });
 
   it('keeps an existing document when the scope no longer resolves', () => {

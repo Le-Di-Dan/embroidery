@@ -201,8 +201,8 @@ describe('client boundary', () => {
         edit(
           root,
           CURATED_CLIENT,
-          "  adminDesignTemplateSaveDocument,\n} from './generated/embroidery-api';",
-          "  adminDesignTemplateSaveDocument,\n  adminDesignTemplatePublish,\n} from './generated/embroidery-api';",
+          "  adminDesignTemplateAssignScope,\n} from './generated/embroidery-api';",
+          "  adminDesignTemplateAssignScope,\n  adminDesignTemplatePublish,\n} from './generated/embroidery-api';",
         ),
       'adminDesignTemplatePublish stays withheld',
     );

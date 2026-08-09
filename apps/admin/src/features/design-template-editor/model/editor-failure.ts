@@ -50,6 +50,7 @@ function normalizedOf(error: unknown): NormalizedApiError | null {
   return isTemplateEditorApiError(error) ? error.normalized : null;
 }
 
+const HTTP_BAD_REQUEST = 400;
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const HTTP_UNPROCESSABLE = 422;
@@ -99,6 +100,41 @@ export function resolveConflictCause(
 ): Extract<SaveFailure, 'stale-version' | 'not-editable'> {
   if (status === undefined) return 'stale-version';
   return status === 'DRAFT' ? 'stale-version' : 'not-editable';
+}
+
+export type AssignScopeFailure =
+  /**
+   * The Template is no longer a candidate for an initial assignment: it already
+   * has a scope, it has a version, or it left `DRAFT`.
+   *
+   * `APP3-B03B` answers `409` for all three and does not say which — deliberately,
+   * so a caller cannot learn a Template's lifecycle state from a write it was
+   * not allowed to make. The screen therefore re-reads the Template rather than
+   * guessing, exactly as the save path does for its own `409`.
+   */
+  | 'not-assignable'
+  /** The triple does not resolve, or names a retired Side or Area. */
+  | 'scope-invalid'
+  | 'generic';
+
+export function classifyAssignScopeFailure(error: unknown): AssignScopeFailure {
+  const normalized = normalizedOf(error);
+  if (normalized === null) return 'generic';
+  if (normalized.httpStatus === HTTP_CONFLICT) return 'not-assignable';
+  return normalized.httpStatus === HTTP_BAD_REQUEST ? 'scope-invalid' : 'generic';
+}
+
+/**
+ * What a lost race means for the operator, decided from the re-read.
+ *
+ * Another tab may have assigned first. If the Template now carries a scope, the
+ * winner's triple is simply the truth and the editor continues from it — there
+ * is nothing to recover and nothing to retry. Anything else means the Template
+ * stopped being assignable for a different reason, and the ordinary blocked
+ * states already describe that.
+ */
+export function scopeRaceOutcome(scopeAssigned: boolean): 'accept-server-scope' | 'blocked' {
+  return scopeAssigned ? 'accept-server-scope' : 'blocked';
 }
 
 export type BackgroundFailure = 'unavailable' | 'retryable';

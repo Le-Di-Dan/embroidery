@@ -167,6 +167,15 @@ export { adminProductSideBackgroundGet } from './generated/embroidery-api';
 // is unchanged: `APP3-A02`'s own gate still asserts the list never performs a
 // detail read, and now asserts it against a boundary where the operation exists.
 //
+// `adminDesignTemplate_assignScope` crosses with `APP3-A03-C1`, its first and
+// only consumer. `APP3-B03B` published it and deliberately kept it off this
+// boundary, because a backend checkpoint exposing an operation no screen calls
+// is an invitation with nobody to accept it.
+//
+// It is a **one-time initial** assignment, not a scope editor: the server admits
+// it only for an unscoped, versionless `DRAFT`, and there is no rescope or
+// clear-scope operation to pair it with. Nothing here should ever grow one.
+//
 // The lifecycle operations (`publish`, `unpublish`, `archive`) stay withheld:
 // neither `APP3-A02` nor `APP3-A03` is lifecycle mutation, and an operation here
 // is an invitation to add a button for it. `APP3-A04` brings them across.
@@ -179,6 +188,7 @@ export {
   adminDesignTemplateList,
   adminDesignTemplateDetail,
   adminDesignTemplateSaveDocument,
+  adminDesignTemplateAssignScope,
 } from './generated/embroidery-api';
 export { AdminDesignTemplateListStatus } from './generated/embroidery-api.schemas';
 export type {
@@ -190,6 +200,7 @@ export type {
   AdminDesignTemplateVersionResponse,
   CreateDesignTemplateBody,
   SaveDesignTemplateDocumentBody,
+  AssignDesignTemplateScopeBody,
 } from './generated/embroidery-api.schemas';
 
 // The generated Design Document transport types (`APP3-A03`).

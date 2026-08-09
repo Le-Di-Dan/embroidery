@@ -112,13 +112,17 @@ export const DESIGN_TEMPLATE_EDITOR_COPY = {
     title: 'Phạm vi',
     none: 'Chưa gán phạm vi',
     /**
-     * The reason a Template without a scope cannot be authored is a document
-     * fact, not a policy this screen invented: `APP3-P01` requires a placement
-     * snapshot in every Design Document, and there is no accepted operation that
-     * assigns a scope after creation.
+     * The unscoped Template that can **no longer** be assigned one.
+     *
+     * `APP3-B03B` admits an initial assignment only for a versionless `DRAFT`,
+     * so this state is a Template that lost its eligibility — it has a version,
+     * or it left `DRAFT`. Until `APP3-A03-C1` this sentence said no assignment
+     * operation existed at all, which was true then and would be a lie now.
+     *
+     * The assignable case never reaches here: it gets the selector instead.
      */
     noneBody:
-      'Mọi tài liệu thiết kế đều cần một phạm vi (sản phẩm · mặt · vùng thêu). Mẫu này chưa được gán khi tạo, và hiện chưa có thao tác nào gán phạm vi sau đó.',
+      'Mọi tài liệu thiết kế đều cần một phạm vi (sản phẩm · mặt · vùng thêu). Chỉ gán được phạm vi cho bản nháp chưa có phiên bản nào, và mẫu này không còn ở trạng thái đó.',
     unresolvedTitle: 'Không xác định được phạm vi',
     unresolvedBody:
       'Mặt hoặc vùng thêu được mẫu này tham chiếu không còn tồn tại trên sản phẩm. Bản nháp của bạn vẫn được giữ nguyên.',
@@ -129,6 +133,49 @@ export const DESIGN_TEMPLATE_EDITOR_COPY = {
     side: (name: string) => `Mặt: ${name}`,
     area: (name: string) => `Vùng thêu: ${name}`,
     canvas: (width: number, height: number) => `Khung vẽ ${String(width)}×${String(height)} px`,
+  },
+
+  /**
+   * The one-time initial scope assignment (`APP3-A03-C1`).
+   *
+   * The copy never says "change" or "edit" anywhere: `APP3-B03B` publishes no
+   * rescope, so a word implying one would promise a capability that does not
+   * exist. It says *assign*, once, and afterwards the scope is context.
+   */
+  assign: {
+    title: 'Chọn phạm vi cho mẫu',
+    intro:
+      'Mẫu này chưa có phạm vi. Chọn sản phẩm, mặt và vùng thêu để bắt đầu thiết kế. Phạm vi chỉ gán được một lần và không đổi được sau đó.',
+    productLabel: 'Sản phẩm',
+    productPlaceholder: 'Chọn sản phẩm',
+    productLoading: 'Đang tải danh sách sản phẩm…',
+    productFailedTitle: 'Không tải được danh sách sản phẩm',
+    productFailedBody: 'Đã xảy ra lỗi khi tải sản phẩm. Vui lòng thử lại.',
+    productEmpty: 'Chưa có sản phẩm nào để chọn.',
+    sideLabel: 'Mặt sản phẩm',
+    sidePlaceholder: 'Chọn mặt',
+    sideLoading: 'Đang tải mặt và vùng thêu…',
+    sideFailedTitle: 'Không tải được mặt và vùng thêu',
+    sideFailedBody: 'Đã xảy ra lỗi khi tải thông tin sản phẩm. Vui lòng thử lại.',
+    /** Truthful: retired rows exist but may not be chosen for a *new* scope. */
+    sideEmpty: 'Sản phẩm này chưa có mặt nào đang dùng được.',
+    areaLabel: 'Vùng thêu',
+    areaPlaceholder: 'Chọn vùng thêu',
+    areaEmpty: 'Mặt này chưa có vùng thêu nào đang dùng được.',
+    submit: 'Gán phạm vi',
+    submitting: 'Đang gán phạm vi…',
+    /** Why the button is disabled, stated rather than left to be guessed. */
+    incomplete: 'Chọn đủ sản phẩm, mặt và vùng thêu để tiếp tục.',
+    retry: 'Thử lại',
+    assignedAnnouncement: 'Đã gán phạm vi. Bạn có thể bắt đầu thiết kế.',
+    notAssignableTitle: 'Mẫu này không còn gán được phạm vi',
+    notAssignableBody:
+      'Mẫu đã được gán phạm vi ở nơi khác, đã có phiên bản, hoặc không còn là bản nháp. Nội dung hiển thị đã được cập nhật theo máy chủ.',
+    invalidTitle: 'Phạm vi không hợp lệ',
+    invalidBody:
+      'Máy chủ không chấp nhận tổ hợp sản phẩm · mặt · vùng thêu này. Vui lòng chọn lại.',
+    failedTitle: 'Không gán được phạm vi',
+    failedBody: 'Đã xảy ra lỗi khi gán phạm vi. Lựa chọn của bạn vẫn được giữ nguyên.',
   },
 
   background: {
