@@ -55,7 +55,14 @@ export type StudioSelectionAction =
   | { readonly type: 'select-template'; readonly templateSlug: string }
   | { readonly type: 'clear-template' };
 
-/** A complete, self-consistent selection for one Side of one manifest. */
+/**
+ * A complete, self-consistent selection for one Side of one manifest.
+ *
+ * A Side with no Area resolves to `areaId: null` rather than to another Side.
+ * That pair — a selected Side and no Area — is a **representable** state, not an
+ * error: it is what the manifest actually says, and every downstream stage keys
+ * off the missing Area to stay closed (IMP-D041 PO-04, `APP3-S01-C1`).
+ */
 function selectionForSide(
   placement: PublicProductPlacementResponse,
   sideId: string | null,
@@ -67,6 +74,14 @@ function selectionForSide(
     areaId: area?.id ?? null,
     templateSlug: null,
   };
+}
+
+function isSameSelection(left: StudioSelection, right: StudioSelection): boolean {
+  return (
+    left.sideId === right.sideId &&
+    left.areaId === right.areaId &&
+    left.templateSlug === right.templateSlug
+  );
 }
 
 export function studioSelectionReducer(
@@ -82,7 +97,11 @@ export function studioSelectionReducer(
       // than moving the visitor to a different Side.
       const area = findArea(side, state.areaId);
       if (area !== undefined) return state;
-      return { ...selectionForSide(action.placement, side.id) };
+      // The Side is still present, so it is kept even when it now has no Area
+      // at all. "Present but unusable" and "gone" are different facts, and only
+      // the second one may move the visitor somewhere they did not choose.
+      const next = selectionForSide(action.placement, side.id);
+      return isSameSelection(next, state) ? state : next;
     }
     case 'select-side': {
       if (action.sideId === state.sideId) return state;

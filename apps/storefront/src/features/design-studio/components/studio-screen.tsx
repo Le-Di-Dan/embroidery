@@ -107,7 +107,10 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
     );
   }
 
-  if (!eligible) return <StudioUnavailable reason="ineligible" />;
+  // No Side at all is a Product with no placement to work on and nowhere else to
+  // go, which is the same closed state as `studioEligible === false`. A Side
+  // with no Area is not: that one keeps the screen open, below.
+  if (!eligible || side === undefined) return <StudioUnavailable reason="ineligible" />;
 
   return (
     <div className="studio">
@@ -126,45 +129,63 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
         selection={selection}
       />
 
-      <section className="studio__templates" aria-labelledby="studio-templates-heading">
-        <h2 className="studio__section-heading" id="studio-templates-heading">
-          {STUDIO_COPY.templateHeading}
-        </h2>
-        <StudioTemplatePicker
-          list={list}
-          onSelect={(templateSlug) => {
-            dispatch({ type: 'select-template', templateSlug });
-          }}
-          selectedSlug={liveTemplateSlug}
-        />
-      </section>
+      {codes === undefined ? (
+        /*
+         * The selected Side carries no Area, so the placement chain is
+         * incomplete and everything downstream of it is simply **absent** —
+         * no Template section, no preview, no Blank or Clone action. Absent
+         * rather than disabled: there is no affordance here to mis-click, and
+         * no request that could be made without a triple to address it with.
+         *
+         * The Product is not declared unavailable. The Side selector above is
+         * untouched, so the visitor moves to another Side themselves; nothing
+         * moves them.
+         */
+        <p className="studio__notice" role="status">
+          {STUDIO_COPY.sideWithoutArea}
+          <span className="studio__notice-hint">{STUDIO_COPY.sideWithoutAreaHint}</span>
+        </p>
+      ) : (
+        <>
+          <section className="studio__templates" aria-labelledby="studio-templates-heading">
+            <h2 className="studio__section-heading" id="studio-templates-heading">
+              {STUDIO_COPY.templateHeading}
+            </h2>
+            <StudioTemplatePicker
+              list={list}
+              onSelect={(templateSlug) => {
+                dispatch({ type: 'select-template', templateSlug });
+              }}
+              selectedSlug={liveTemplateSlug}
+            />
+          </section>
 
-      {selection.templateSlug === null ? null : (
-        <section className="studio__preview" aria-labelledby="studio-preview-heading">
-          <h2 className="studio__section-heading" id="studio-preview-heading">
-            {STUDIO_COPY.previewHeading}
-          </h2>
-          <StudioTemplatePreview
-            detail={detail}
-            isTextOnly={detail.detail !== undefined && previewReference === undefined}
-            preview={preview}
+          {selection.templateSlug === null ? null : (
+            <section className="studio__preview" aria-labelledby="studio-preview-heading">
+              <h2 className="studio__section-heading" id="studio-preview-heading">
+                {STUDIO_COPY.previewHeading}
+              </h2>
+              <StudioTemplatePreview
+                detail={detail}
+                isTextOnly={detail.detail !== undefined && previewReference === undefined}
+                preview={preview}
+              />
+            </section>
+          )}
+
+          <StudioStartActions
+            canStart
+            onStartBlank={() => {
+              session.startBlank(codes);
+            }}
+            onStartClone={() => {
+              if (liveTemplateSlug !== null) session.startClone(codes, liveTemplateSlug);
+            }}
+            selectedTemplateSlug={liveTemplateSlug}
+            session={session}
           />
-        </section>
+        </>
       )}
-
-      <StudioStartActions
-        canStart={codes !== undefined}
-        onStartBlank={() => {
-          if (codes !== undefined) session.startBlank(codes);
-        }}
-        onStartClone={() => {
-          if (codes !== undefined && liveTemplateSlug !== null) {
-            session.startClone(codes, liveTemplateSlug);
-          }
-        }}
-        selectedTemplateSlug={liveTemplateSlug}
-        session={session}
-      />
     </div>
   );
 }

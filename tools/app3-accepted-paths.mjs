@@ -216,6 +216,10 @@ export const S01_STATUS_LINES = Object.freeze([
   'APP3-S01 = BLOCKED_BY_APP3-B05A',
   'APP3-S01 = READY — NOT STARTED',
   'APP3-S01 = COMPLETE — REVIEW_DELIVERED',
+  // Human review returned S01 with one ordinary correction (`APP3-S01-C1`).
+  // The checkpoint is still delivered — the route, the operations and the bans
+  // all hold — so the world-aware gates continue to read it as delivered.
+  'APP3-S01 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW',
   'APP3-S01 = COMPLETE — REVIEW_ACCEPTED',
 ]);
 

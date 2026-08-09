@@ -80,20 +80,22 @@ export function findArea(
 }
 
 /**
- * The Side a fresh visit starts on.
+ * The Side a fresh visit starts on: the first row in canonical order.
  *
- * The first Side in canonical order **that carries at least one Area**. The
- * filter is load-bearing: `studioEligible` is a whole-Product fact, so a
- * Product can be eligible through its second Side while its first has no Area
- * at all, and auto-selecting that first Side would strand the visitor on an
- * empty Area picker with nothing to choose. Falling back to the first Side
- * overall keeps the function total for a manifest that has no Areas anywhere.
+ * IMP-D041 / `APP3-G01` PO-04 names the ordered active Side list as the
+ * customer-facing authority and "the first active row by display order + stable
+ * tie-breaker" as the initial choice. Nothing may narrow that list before the
+ * first row is taken — not by Area count, not by background, Template count or
+ * bootstrap readiness. `studioEligible` is a whole-Product fact, so a first Side
+ * carrying no Area is a real state of a genuinely eligible Product, and skipping
+ * past it would be the frontend rewriting PO-04 into "the first Studio-usable
+ * Side wins". The screen shows that Side, says why it cannot be worked on, and
+ * leaves the Side selector operable so the visitor moves themselves.
  */
 export function initialSideOf(
   placement: PublicProductPlacementResponse,
 ): PublicPlacementSideResponse | undefined {
-  const sides = orderedSides(placement);
-  return sides.find((side) => side.areas.length > 0) ?? sides[0];
+  return orderedSides(placement)[0];
 }
 
 /** The Area a Side starts on: the first in canonical order, within that Side. */

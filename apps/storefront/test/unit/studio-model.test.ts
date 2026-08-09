@@ -9,6 +9,7 @@
 import {
   codesOf,
   findArea,
+  findSide,
   initialAreaOf,
   initialSideOf,
   orderedSides,
@@ -57,10 +58,10 @@ describe('deterministic Side and Area selection (IMP-D041)', () => {
     expect(initialAreaOf(side)?.id).toBe('area-1');
   });
 
-  it('skips a leading Side that carries no Area', () => {
-    // `studioEligible` is a whole-Product fact, so a Product can be eligible
-    // through its second Side. Landing on the first would strand the visitor on
-    // an empty Area picker.
+  it('starts on the canonical first Side even when it carries no Area', () => {
+    // PO-04 names the ordered active Side list as the authority. `studioEligible`
+    // being true through a later Side does not license skipping the first one:
+    // the customer sees the Side the authority names and moves themselves.
     const placement = makePlacement({
       sides: [
         makeSide({ id: 'side-empty', code: 'a', displayOrder: 1, areas: [] }),
@@ -68,7 +69,19 @@ describe('deterministic Side and Area selection (IMP-D041)', () => {
       ],
     });
 
-    expect(initialSideOf(placement)?.id).toBe('side-real');
+    expect(initialSideOf(placement)?.id).toBe('side-empty');
+    expect(initialAreaOf(initialSideOf(placement))).toBeUndefined();
+  });
+
+  it('takes the canonical first Side when several are usable', () => {
+    const placement = makePlacement({
+      sides: [
+        makeSide({ id: 'side-late', code: 'z', displayOrder: 2 }),
+        makeSide({ id: 'side-first', code: 'a', displayOrder: 1 }),
+      ],
+    });
+
+    expect(initialSideOf(placement)?.id).toBe('side-first');
   });
 
   it('resolves an Area only inside its own Side', () => {
@@ -229,6 +242,86 @@ describe('the selection cascade', () => {
   it('keeps a still-valid selection across a re-read', () => {
     const state = resolved();
     expect(studioSelectionReducer(state, { type: 'reconcile', placement: twoSides })).toBe(state);
+  });
+});
+
+describe('a selected Side that carries no Area (IMP-D041 PO-04)', () => {
+  const EMPTY_FIRST = makePlacement({
+    sides: [
+      makeSide({ id: 'side-empty', code: 'a', displayOrder: 1, areas: [] }),
+      makeSide({
+        id: 'side-real',
+        code: 'b',
+        displayOrder: 2,
+        areas: [makeArea({ id: 'area-9', code: 'lung' })],
+      }),
+    ],
+  });
+
+  function landed() {
+    return studioSelectionReducer(EMPTY_STUDIO_SELECTION, {
+      type: 'reconcile',
+      placement: EMPTY_FIRST,
+    });
+  }
+
+  it('lands on the first Side with no Area selected', () => {
+    expect(landed()).toEqual({ sideId: 'side-empty', areaId: null, templateSlug: null });
+  });
+
+  it('produces no triple and no codes, so nothing downstream is addressable', () => {
+    const side = findSide(EMPTY_FIRST, 'side-empty');
+
+    expect(tripleOf(EMPTY_FIRST, side, undefined)).toBeUndefined();
+    expect(codesOf(side, undefined)).toBeUndefined();
+  });
+
+  it('auto-selects the Area when the customer moves to the usable Side', () => {
+    expect(
+      studioSelectionReducer(landed(), {
+        type: 'select-side',
+        placement: EMPTY_FIRST,
+        sideId: 'side-real',
+      }),
+    ).toEqual({ sideId: 'side-real', areaId: 'area-9', templateSlug: null });
+  });
+
+  it('stays on the empty Side when the customer chooses it again', () => {
+    const onReal = studioSelectionReducer(landed(), {
+      type: 'select-side',
+      placement: EMPTY_FIRST,
+      sideId: 'side-real',
+    });
+
+    const back = studioSelectionReducer(onReal, {
+      type: 'select-side',
+      placement: EMPTY_FIRST,
+      sideId: 'side-empty',
+    });
+
+    // The customer chose this Side. Nothing bounces them off it, and a later
+    // re-read of the manifest does not either.
+    expect(back).toEqual({ sideId: 'side-empty', areaId: null, templateSlug: null });
+    expect(studioSelectionReducer(back, { type: 'reconcile', placement: EMPTY_FIRST })).toBe(back);
+  });
+
+  it('keeps a still-present Side whose Areas were all retired', () => {
+    const state = studioSelectionReducer(EMPTY_STUDIO_SELECTION, {
+      type: 'reconcile',
+      placement: makePlacement({
+        sides: [makeSide({ id: 'side-1', areas: [makeArea({ id: 'area-1' })] })],
+      }),
+    });
+    expect(state.areaId).toBe('area-1');
+
+    const emptied = studioSelectionReducer(state, {
+      type: 'reconcile',
+      placement: makePlacement({ sides: [makeSide({ id: 'side-1', areas: [] })] }),
+    });
+
+    // Present-but-unusable is not gone: the Side is kept and only the Area
+    // clears. Only a Side that actually left the manifest moves the selection.
+    expect(emptied).toEqual({ sideId: 'side-1', areaId: null, templateSlug: null });
   });
 });
 

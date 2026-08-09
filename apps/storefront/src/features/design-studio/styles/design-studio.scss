@@ -70,6 +70,29 @@ $bp-studio-split: 1025px;
   min-width: 0;
 }
 
+// The selected Side has no Embroidery Area. Deliberately the same bounded
+// empty presentation the Template list already uses — a new visual state would
+// make an ordinary, recoverable placement gap look like a different kind of
+// failure than it is.
+.studio__notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(4);
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-m;
+
+  @media (min-width: $bp-studio-split) {
+    grid-column: 1 / -1;
+  }
+}
+
+.studio__notice-hint {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
 // ---------------------------------------------------------------- placement
 
 .studio-placement {

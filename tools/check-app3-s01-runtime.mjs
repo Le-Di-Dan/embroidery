@@ -98,6 +98,23 @@ export function checkTemplateReads(rootDir, fail) {
   }
 }
 
+/**
+ * Every shape of "the first Studio-usable Side wins" (`APP3-S01-C1`).
+ *
+ * The refinement human review rejected: skipping the canonical first active
+ * Side because it happens to carry no Area. It is a product-authority change,
+ * not an implementation detail, and it is invisible in a manifest where every
+ * Side is usable — which is every fixture anyone reaches for first. So it is
+ * banned by shape, in the whole feature, rather than watched for in one file.
+ */
+const SIDE_SKIPPING_SELECTION = Object.freeze([
+  /\.(find|filter)\(\s*\(?\s*\w+\s*\)?\s*=>\s*\w+\.areas\.length\s*[>!=]/,
+  /\.(find|filter)\(\s*\(?\s*\w+\s*\)?\s*=>\s*\w+\.areas\[0\]/,
+  /firstStudioUsableSide/,
+  /firstSideWithArea/,
+  /usableSides/,
+]);
+
 /** Deterministic IMP-D041 selection, and a cascade that is one transition. */
 export function checkSelection(rootDir, fail) {
   const placement = code(rootDir, 'placementModel');
@@ -106,6 +123,22 @@ export function checkSelection(rootDir, fail) {
   }
   if (!placement.includes('side.areas.find')) {
     fail(`${CANONICAL_FILES.placementModel}: an Area is not resolved inside its own Side`);
+  }
+  // PO-04: the initial Side is the first row of the ordered list, taken whole.
+  // Asserting the exact expression rather than a property of the result is the
+  // point — every skipping variant is written by narrowing the list first, and
+  // this is the one shape in which no filter can be inserted unnoticed.
+  if (!/return orderedSides\(placement\)\[0\];/.test(placement)) {
+    fail(
+      `${CANONICAL_FILES.placementModel}: the initial Side is not the canonical first row (IMP-D041 PO-04)`,
+    );
+  }
+  for (const skipping of SIDE_SKIPPING_SELECTION) {
+    if (skipping.test(featureCode(rootDir))) {
+      fail(
+        `${FEATURE}: narrows the Side list by usability before choosing an initial Side (${String(skipping)})`,
+      );
+    }
   }
 
   const selection = code(rootDir, 'selection');
@@ -122,6 +155,15 @@ export function checkSelection(rootDir, fail) {
   if (!selection.includes('templateSlug: null')) {
     fail(`${CANONICAL_FILES.selection}: a placement change does not clear the Template`);
   }
+  // A Side with no Area must stay representable: `areaId` goes null and the
+  // Side is kept. A reducer that could not express the pair would have to move
+  // the visitor somewhere, which is the refinement being corrected.
+  if (!selection.includes('areaId: area?.id ?? null')) {
+    fail(`${CANONICAL_FILES.selection}: a Side with no Area cannot resolve to a null Area`);
+  }
+  if (!/const next = selectionForSide\(action\.placement, side\.id\)/.test(selection)) {
+    fail(`${CANONICAL_FILES.selection}: a still-present Side is not kept across reconcile`);
+  }
 
   const screen = code(rootDir, 'screen');
   if (!screen.includes('useReducer(studioSelectionReducer')) {
@@ -132,6 +174,20 @@ export function checkSelection(rootDir, fail) {
   }
   if (!/useTemplateList\(eligible \? triple : undefined\)/.test(screen)) {
     fail(`${CANONICAL_FILES.screen}: an ineligible Product still requests Templates`);
+  }
+  // An incomplete placement chain removes the Template, preview and bootstrap
+  // sections outright. Absent, not disabled: a disabled control is still a
+  // control, and the guard that keeps it disabled is one edit from being wrong.
+  if (!/codes === undefined \? \(/.test(screen)) {
+    fail(`${CANONICAL_FILES.screen}: an Area-less Side does not close the downstream chain`);
+  }
+  if (!screen.includes('STUDIO_COPY.sideWithoutArea')) {
+    fail(`${CANONICAL_FILES.screen}: an Area-less Side is not explained to the customer`);
+  }
+  // The Product-level refusal must not be reached for a Side-level gap: another
+  // Side may be perfectly usable, and the Side selector has to stay operable.
+  if (/side === undefined[\s\S]{0,200}sideWithoutArea/.test(screen)) {
+    fail(`${CANONICAL_FILES.screen}: a Side-level gap is reported as a Product-level refusal`);
   }
 }
 

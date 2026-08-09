@@ -89,8 +89,19 @@ export function StudioPlacementPicker({
           </select>
         ) : (
           <p className="studio-placement__single" id="studio-area">
-            {areas[0]?.name ?? ''}{' '}
-            <span className="studio-placement__note">{STUDIO_COPY.singleAreaNote}</span>
+            {/*
+              Three states, not two. A Side with no Area must not borrow the
+              "only one Area" sentence — that would state something the manifest
+              does not say, on exactly the Side where it is least true.
+            */}
+            {areas.length === 0 ? (
+              <span className="studio-placement__note">{STUDIO_COPY.areaNone}</span>
+            ) : (
+              <>
+                {areas[0]?.name ?? ''}{' '}
+                <span className="studio-placement__note">{STUDIO_COPY.singleAreaNote}</span>
+              </>
+            )}
           </p>
         )}
       </div>

@@ -99,9 +99,10 @@ function rootWith(overrides = {}) {
 
 /** The phase document with S01 rewound to the world before this checkpoint. */
 function beforeS01() {
-  return file('phase')
-    .replace('\nAPP3-S01 = COMPLETE — REVIEW_DELIVERED\n', '\nAPP3-S01 = READY — NOT STARTED\n')
-    .replace('\nAPP3-S01 = COMPLETE — REVIEW_ACCEPTED\n', '\nAPP3-S01 = READY — NOT STARTED\n');
+  return file('phase').replace(
+    /\nAPP3-S01 = COMPLETE[^\n]*\n/,
+    '\nAPP3-S01 = READY — NOT STARTED\n',
+  );
 }
 
 describe('entry authority', () => {
@@ -327,6 +328,100 @@ describe('selection', () => {
       ),
     });
     assert.ok(mentions(failuresOf(checkSelection, root), 'ineligible Product'));
+  });
+});
+
+/**
+ * The exact refinement human review rejected in `APP3-S01-C1`, put back.
+ *
+ * A mutation the delivered code actually shipped, not an invented one — which
+ * is the only kind that proves the gate would have caught it. Every fixture in
+ * which each Side has an Area passes with the refinement in place, so the gate
+ * has to rule on the code's shape rather than on a selection outcome.
+ */
+describe('the canonical first active Side (IMP-D041 PO-04)', () => {
+  it('refuses an initial Side chosen from a list narrowed by Area count', () => {
+    const root = rootWith({
+      placementModel: file('placementModel').replace(
+        'return orderedSides(placement)[0];',
+        [
+          'const sides = orderedSides(placement);',
+          '  return sides.find((side) => side.areas.length > 0) ?? sides[0];',
+        ].join('\n'),
+      ),
+    });
+
+    const failures = failuresOf(checkSelection, root);
+    assert.ok(mentions(failures, 'canonical first row'));
+    assert.ok(mentions(failures, 'narrows the Side list'));
+  });
+
+  it('refuses the same skip written as a named helper', () => {
+    const root = rootWith({
+      placementModel: file('placementModel').replace(
+        'return orderedSides(placement)[0];',
+        'return firstSideWithArea(orderedSides(placement));',
+      ),
+    });
+
+    assert.ok(mentions(failuresOf(checkSelection, root), 'narrows the Side list'));
+  });
+
+  it('refuses the same skip written as a filter anywhere in the feature', () => {
+    const root = rootWith({
+      [`${FEATURE}/model/studio-usable-sides.ts`]:
+        'export const usable = (p) => p.sides.filter((side) => side.areas.length > 0)[0];\n',
+    });
+
+    assert.ok(mentions(failuresOf(checkSelection, root), 'narrows the Side list'));
+  });
+
+  it('refuses a reducer that cannot represent a Side with no Area', () => {
+    const root = rootWith({
+      selection: file('selection').replace('areaId: area?.id ?? null', 'areaId: area?.id ?? ""'),
+    });
+
+    assert.ok(mentions(failuresOf(checkSelection, root), 'null Area'));
+  });
+
+  it('refuses a reconcile that drops a still-present Side', () => {
+    const root = rootWith({
+      selection: file('selection').replace(
+        'const next = selectionForSide(action.placement, side.id);',
+        'const next = selectionForSide(action.placement, null);',
+      ),
+    });
+
+    assert.ok(mentions(failuresOf(checkSelection, root), 'still-present Side is not kept'));
+  });
+
+  it('refuses a screen that leaves the downstream chain open with no Area', () => {
+    const root = rootWith({
+      screen: file('screen').replace('codes === undefined ? (', 'false ? ('),
+    });
+
+    assert.ok(mentions(failuresOf(checkSelection, root), 'close the downstream chain'));
+  });
+
+  it('refuses an Area-less Side reported as a Product-level refusal', () => {
+    const root = rootWith({
+      screen: file('screen').replace(
+        '{codes === undefined ? (',
+        '{side === undefined || codes === undefined ? (',
+      ),
+    });
+
+    assert.ok(mentions(failuresOf(checkSelection, root), 'Product-level refusal'));
+  });
+
+  it('refuses a screen that never explains why the Side is unusable', () => {
+    const root = rootWith({
+      // `replaceAll`: the hint constant shares the prefix, and leaving it behind
+      // would satisfy the rule with a sentence that explains nothing.
+      screen: file('screen').replaceAll('STUDIO_COPY.sideWithoutArea', "''"),
+    });
+
+    assert.ok(mentions(failuresOf(checkSelection, root), 'not explained to the customer'));
   });
 });
 

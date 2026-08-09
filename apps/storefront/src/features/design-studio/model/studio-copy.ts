@@ -26,6 +26,11 @@ export const STUDIO_COPY = {
   areaLabel: 'Vùng thêu',
   singleSideNote: 'Sản phẩm này chỉ có một mặt thêu.',
   singleAreaNote: 'Mặt này chỉ có một vùng thêu.',
+  // A selected Side with no Area. The sentence is about that Side only — the
+  // Product stays open, because another Side may well be usable.
+  areaNone: 'Không có vùng thêu.',
+  sideWithoutArea: 'Mặt thêu này chưa có vùng thêu khả dụng.',
+  sideWithoutAreaHint: 'Hãy chọn mặt khác để tiếp tục.',
 
   templateHeading: 'Chọn mẫu có sẵn',
   templateLoading: 'Đang tải mẫu thiết kế…',

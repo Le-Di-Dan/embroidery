@@ -146,8 +146,101 @@ describe('placement and Studio eligibility', () => {
     const select = await screen.findByRole('combobox', { name: STUDIO_COPY.sideLabel });
     expect(select).toHaveValue('side-1');
   });
+});
 
-  it('offers a retry when the manifest read fails', async () => {
+describe('a first Side that carries no Embroidery Area (IMP-D041 PO-04)', () => {
+  const EMPTY_FIRST = makePlacement({
+    sides: [
+      makeSide({ id: 'side-empty', code: 'a', name: 'Mặt trước', displayOrder: 1, areas: [] }),
+      makeSide({
+        id: 'side-real',
+        code: 'b',
+        name: 'Mặt sau',
+        displayOrder: 2,
+        areas: [makeArea({ id: 'area-9', code: 'lung', name: 'Lưng' })],
+      }),
+    ],
+  });
+
+  beforeEach(() => {
+    placementMock.mockResolvedValue(envelopeOf(EMPTY_FIRST));
+    listMock.mockResolvedValue(envelopeOf(makeTemplatePage([makeTemplate()])));
+  });
+
+  it('lands on the canonical first Side rather than the first usable one', async () => {
+    renderStudio();
+
+    const select = await screen.findByRole('combobox', { name: STUDIO_COPY.sideLabel });
+    expect(select).toHaveValue('side-empty');
+    expect(await screen.findByText(STUDIO_COPY.sideWithoutArea)).toBeInTheDocument();
+  });
+
+  it('requests no Template, no detail and no preview while no Area is selected', async () => {
+    renderStudio();
+    await screen.findByText(STUDIO_COPY.sideWithoutArea);
+
+    expect(listMock).not.toHaveBeenCalled();
+    expect(detailMock).not.toHaveBeenCalled();
+    expect(assetMock).not.toHaveBeenCalled();
+    expect(screen.queryByText(STUDIO_COPY.templateHeading)).not.toBeInTheDocument();
+  });
+
+  it('offers no Blank and no Clone bootstrap, so no Session can be created', async () => {
+    renderStudio();
+    await screen.findByText(STUDIO_COPY.sideWithoutArea);
+
+    // Absent, not disabled: there is no affordance to press and no triple to
+    // address a request with.
+    expect(screen.queryByRole('button', { name: STUDIO_COPY.startBlank })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: STUDIO_COPY.startClone })).not.toBeInTheDocument();
+  });
+
+  it('does not declare the whole Product unavailable', async () => {
+    renderStudio();
+    await screen.findByText(STUDIO_COPY.sideWithoutArea);
+
+    expect(screen.queryByText(STUDIO_COPY.ineligibleHeading)).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: STUDIO_COPY.sideLabel })).toBeEnabled();
+    // The "only one Area" sentence would be a claim the manifest never made.
+    expect(screen.queryByText(STUDIO_COPY.singleAreaNote)).not.toBeInTheDocument();
+  });
+
+  it('auto-selects the Area and queries the exact triple once the customer moves', async () => {
+    const user = createUser();
+    renderStudio();
+    await screen.findByText(STUDIO_COPY.sideWithoutArea);
+
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: STUDIO_COPY.sideLabel }),
+      'side-real',
+    );
+
+    await waitFor(() => {
+      expect(listMock).toHaveBeenCalled();
+    });
+    const params = nth(listMock.mock.calls, 0)[0];
+    expect(params.productSideId).toBe('side-real');
+    expect(params.embroideryAreaId).toBe('area-9');
+    expect(screen.getByRole('button', { name: STUDIO_COPY.startBlank })).toBeEnabled();
+  });
+
+  it('stays on the empty Side when the customer deliberately goes back to it', async () => {
+    const user = createUser();
+    renderStudio();
+    const select = await screen.findByRole('combobox', { name: STUDIO_COPY.sideLabel });
+
+    await user.selectOptions(select, 'side-real');
+    await screen.findByRole('button', { name: STUDIO_COPY.startBlank });
+    await user.selectOptions(select, 'side-empty');
+
+    expect(await screen.findByText(STUDIO_COPY.sideWithoutArea)).toBeInTheDocument();
+    // No auto-jump back to the usable Side.
+    expect(select).toHaveValue('side-empty');
+  });
+});
+
+describe('placement read failure', () => {
+  it('reports a failed manifest read as retryable', async () => {
     placementMock.mockRejectedValue(apiFailure(503));
 
     renderStudio();

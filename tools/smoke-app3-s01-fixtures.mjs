@@ -86,7 +86,10 @@ const REAL_OBJECT_BYTES = 10100;
  * generation by the shared `FAMILY` prefix.
  */
 const FAMILY = '019fe70';
-const GENERATION = '1';
+const GENERATION = '2';
+
+/** Every generation ever seeded, so `revert` sweeps the objects of all of them. */
+const GENERATIONS = ['0', '1', '2'];
 const PREFIX = `${FAMILY}${GENERATION}`;
 const id = (n) => `${PREFIX}-0000-7000-8000-${String(n).padStart(12, '0')}`;
 
@@ -279,7 +282,7 @@ function revert() {
     update design_templates set status = 'ARCHIVED', archived_at = now()
     where id::text like '${FAMILY}%' and archived_at is null
   `);
-  for (const generation of ['0', '1']) {
+  for (const generation of GENERATIONS) {
     const key = `development/derivatives/${FAMILY}${generation}-0000-7000-8000-000000000010/NORMALIZED.webp`;
     try {
       object('delete', key);
