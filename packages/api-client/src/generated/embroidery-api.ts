@@ -18,6 +18,7 @@ import type {
   AdminDesignTemplateList200,
   AdminDesignTemplateListParams,
   AdminDesignTemplatePublish200,
+  AdminDesignTemplateRestore200,
   AdminDesignTemplateSaveDocument200,
   AdminDesignTemplateUnpublish200,
   AdminProductArchive200,
@@ -55,6 +56,7 @@ import type {
   PublishProductBody,
   ReadinessStatusResponse,
   ReplaceProductPlacementBody,
+  RestoreDesignTemplateBody,
   SaveDesignTemplateDocumentBody,
   StaffLoginRequest,
   StaffSelfGet200,
@@ -167,7 +169,7 @@ export const adminDesignTemplateDetail = (
 };
 
 /**
- * Retires a DRAFT or a PUBLISHED template. This is not a delete and not an unpublish: the template, its immutable versions, their publication timestamps and its asset associations all remain, and nothing cascades to the Product, its assets or any Design Session. A reason is required and is recorded in the audit trail. Restoring an archived template is APP3-B04A.
+ * Retires a DRAFT or a PUBLISHED template. This is not a delete and not an unpublish: the template, its immutable versions, their publication timestamps and its asset associations all remain, and nothing cascades to the Product, its assets or any Design Session. A reason is required and is recorded in the audit trail. An archived template can be restored to DRAFT.
  * @summary Archive a design template
  */
 export const adminDesignTemplateArchive = (
@@ -221,6 +223,26 @@ export const adminDesignTemplatePublish = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: publishDesignTemplateBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Returns an ARCHIVED template to DRAFT, the only editable state. The header only: every immutable version, every publication timestamp, the placement scope and every asset association survive exactly as they were, and the archive marker is cleared. No version or document is created, nothing is repaired and nothing cascades to any Design Session, clone or approval snapshot. **There is no publication guard** — restore never publishes, and a previously published template comes back as a draft that must be published again to become public. A reason is required and is recorded in the audit trail.
+ * @summary Restore an archived design template
+ */
+export const adminDesignTemplateRestore = (
+  templateId: unknown,
+  restoreDesignTemplateBody: RestoreDesignTemplateBody,
+  options?: SecondParameter<typeof apiRequest<AdminDesignTemplateRestore200>>,
+) => {
+  return apiRequest<AdminDesignTemplateRestore200>(
+    {
+      url: `/api/admin/design-templates/${templateId}/restore`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: restoreDesignTemplateBody,
     },
     options,
   );
@@ -713,6 +735,9 @@ export type AdminDesignTemplateSaveDocumentResult = NonNullable<
 >;
 export type AdminDesignTemplatePublishResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplatePublish>>
+>;
+export type AdminDesignTemplateRestoreResult = NonNullable<
+  Awaited<ReturnType<typeof adminDesignTemplateRestore>>
 >;
 export type AdminDesignTemplateAssignScopeResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplateAssignScope>>

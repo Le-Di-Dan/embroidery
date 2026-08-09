@@ -13,6 +13,29 @@ export const OPERATION_ID_PATTERN = /^[a-z][a-zA-Z0-9]*_[a-zA-Z][a-zA-Z0-9]*$/;
 
 const CONTROLLER_SUFFIX = /Controller$/;
 
+/**
+ * Controller classes that serve one published domain between them.
+ *
+ * The default policy derives the domain key from the class name, which is right
+ * until a controller has to be split for a reason that is not a contract
+ * change. `APP3-B04A` split the Admin Design Template surface into an authoring
+ * controller and a lifecycle controller to bring both under the CLAUDE.md §6
+ * file-size limit — and that rename silently reissued eight *accepted*
+ * operation ids (`adminDesignTemplate_list` became
+ * `adminDesignTemplateAuthoring_list`, and so on), which is a breaking change to
+ * every generated client for a refactor that changed no behaviour.
+ *
+ * So the domain key becomes explicit where it cannot be inferred. This table is
+ * deliberately small, exhaustive and reviewable: an entry states "these classes
+ * are one domain", which is a contract fact, rather than letting a file-layout
+ * decision decide a public identifier. Splitting a controller is now safe; the
+ * only way to rename an operation is to say so here.
+ */
+export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
+  AdminDesignTemplateAuthoringController: 'adminDesignTemplate',
+  AdminDesignTemplateLifecycleController: 'adminDesignTemplate',
+};
+
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */
 const HTTP_METHOD_KEYS: ReadonlySet<string> = new Set([
   'get',
@@ -36,7 +59,8 @@ export function createOperationId(controllerKey: string, methodKey: string): str
       `Cannot derive an operation id from controller "${controllerKey}" and method "${methodKey}".`,
     );
   }
-  const domainKey = domain.charAt(0).toLowerCase() + domain.slice(1);
+  const declared = CONTROLLER_DOMAIN_KEYS[controllerKey];
+  const domainKey = declared ?? domain.charAt(0).toLowerCase() + domain.slice(1);
   return `${domainKey}_${methodKey}`;
 }
 

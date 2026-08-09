@@ -17,7 +17,8 @@ import { TemplateDocumentAuthority } from './application/template-document.autho
 import { TemplateDocumentMediaAuthority } from './application/template-document-media.authority';
 import { DesignTemplateLifecycleUseCase } from './application/design-template-lifecycle.use-case';
 import { TemplatePublicationAuthority } from './application/template-publication.authority';
-import { AdminDesignTemplateController } from './presentation/admin-design-template.controller';
+import { AdminDesignTemplateAuthoringController } from './presentation/admin-design-template-authoring.controller';
+import { AdminDesignTemplateLifecycleController } from './presentation/admin-design-template-lifecycle.controller';
 
 /**
  * The Admin Design Template surface (`APP3-B03`).
@@ -43,7 +44,11 @@ import { AdminDesignTemplateController } from './presentation/admin-design-templ
  */
 @Module({
   imports: [DatabaseModule, AuditModule, IdentityModule, CatalogPlacementReadModule, AssetModule],
-  controllers: [AdminDesignTemplateController],
+  // Two controllers, one route family. `APP3-B04A` split the surface by
+  // responsibility — authoring writes documents and scopes, lifecycle moves a
+  // header between LC-24 states — when the single file passed the CLAUDE.md §6
+  // limit. Same prefix, same guards, same error translation.
+  controllers: [AdminDesignTemplateAuthoringController, AdminDesignTemplateLifecycleController],
   providers: [
     { provide: DESIGN_TEMPLATE_REPOSITORY, useClass: DrizzleDesignTemplateRepository },
     DesignTemplateScopeAuthority,
@@ -60,7 +65,7 @@ import { AdminDesignTemplateController } from './presentation/admin-design-templ
     // `DesignTemplateScopeAuthority` the create path validates with, so there is
     // one definition of a legal product/side/area chain rather than two.
     AssignTemplateScopeUseCase,
-    // APP3-B04 — the LC-24 transitions. The publication authority composes the
+    // APP3-B04 + APP3-B04A — the four LC-24 transitions. The publication authority composes the
     // whole GRD-T01 guard from the authorities that own each part: P01 for the
     // document, P02 for geometry, the Catalog placement port for the scope chain
     // and the B03A media allowlist for assets.

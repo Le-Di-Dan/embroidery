@@ -27,6 +27,10 @@ import type { DesignTemplateAuditRecorder } from './application/design-template-
 import type { DesignTemplateScopeAuthority } from './application/design-template-scope.authority';
 import { AssignDesignTemplateScopeBody } from './presentation/schemas/admin-design-template.request';
 import { designTemplateDraftError } from './domain/design-template-draft.errors';
+import {
+  ADMIN_TEMPLATE_ADAPTER_SOURCE,
+  ADMIN_TEMPLATE_CONTROLLER_SOURCE,
+} from './tests/admin-template-sources';
 import type {
   AssignDesignTemplateScopeInput,
   DesignTemplate,
@@ -48,9 +52,13 @@ function stripComments(text: string): string {
 
 const read = (relative: string) => stripComments(readFileSync(join(__dirname, relative), 'utf8'));
 
-const CONTROLLER_SOURCE = read('presentation/admin-design-template.controller.ts');
+// The HTTP and persistence surfaces come from the shared source authority: both
+// were split by responsibility at `APP3-B04A`, and a path literal here would
+// have gone on passing while scanning a file the code had left.
+
+const CONTROLLER_SOURCE = stripComments(ADMIN_TEMPLATE_CONTROLLER_SOURCE);
 const USE_CASE_SOURCE = read('application/assign-template-scope.use-case.ts');
-const REPOSITORY_SOURCE = read('infrastructure/persistence/drizzle-design-template.repository.ts');
+const REPOSITORY_SOURCE = stripComments(ADMIN_TEMPLATE_ADAPTER_SOURCE);
 
 const TEMPLATE_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f60b1';
 const PRODUCT_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f60b2';

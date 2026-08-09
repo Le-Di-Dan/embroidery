@@ -38,12 +38,15 @@ const ADMIN_TEMPLATE_SAVE_PATH = '/api/admin/design-templates/{templateId}/docum
 /** The one `APP3-B03B` adds: the one-time initial scope assignment. */
 const ADMIN_TEMPLATE_SCOPE_PATH = '/api/admin/design-templates/{templateId}/scope';
 
-/** The three `APP3-B04` adds. Restore is `APP3-B04A`'s and is deliberately absent. */
+/** The three `APP3-B04` adds. Restore is `APP3-B04A`'s and is listed separately. */
 const ADMIN_TEMPLATE_LIFECYCLE_PATHS = Object.freeze([
   '/api/admin/design-templates/{templateId}/publish',
   '/api/admin/design-templates/{templateId}/unpublish',
   '/api/admin/design-templates/{templateId}/archive',
 ]);
+
+/** The one `APP3-B04A` adds: `TR-LC24-06`, the only way out of `ARCHIVED`. */
+const ADMIN_TEMPLATE_RESTORE_PATH = '/api/admin/design-templates/{templateId}/restore';
 
 /** True once `APP3-B03` has published the Admin Design Template surface. */
 export function isB03Delivered(rootDir) {
@@ -73,12 +76,20 @@ export function isB04Delivered(rootDir) {
   return /\nAPP3-B04 = COMPLETE/.test(phase);
 }
 
+/** True once `APP3-B04A` has published the restore transition. */
+export function isB04ADelivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-B04A = COMPLETE/.test(phase);
+}
+
 export function acceptedAdminTemplatePaths(rootDir) {
   if (!isB03Delivered(rootDir)) return [];
   const paths = [...ADMIN_TEMPLATE_PATHS];
   if (isB03ADelivered(rootDir)) paths.push(ADMIN_TEMPLATE_SAVE_PATH);
   if (isB03BDelivered(rootDir)) paths.push(ADMIN_TEMPLATE_SCOPE_PATH);
   if (isB04Delivered(rootDir)) paths.push(...ADMIN_TEMPLATE_LIFECYCLE_PATHS);
+  if (isB04ADelivered(rootDir)) paths.push(ADMIN_TEMPLATE_RESTORE_PATH);
   return paths;
 }
 
@@ -86,6 +97,19 @@ export function acceptedAdminTemplatePaths(rootDir) {
 export function lifecycleAdminTemplatePaths() {
   return [...ADMIN_TEMPLATE_LIFECYCLE_PATHS];
 }
+
+/** The restore path itself, for gates that rule on it in either direction. */
+export function restoreAdminTemplatePath() {
+  return ADMIN_TEMPLATE_RESTORE_PATH;
+}
+
+/** The status lines `APP3-B04A` may legitimately be recorded under. */
+export const B04A_STATUS_LINES = Object.freeze([
+  'APP3-B04A = READY — NOT STARTED',
+  'APP3-B04A = BLOCKED_BY_APP3-B04 — NOT STARTED',
+  'APP3-B04A = COMPLETE — REVIEW_DELIVERED',
+  'APP3-B04A = COMPLETE — REVIEW_ACCEPTED',
+]);
 
 /**
  * The two public Design Template paths `APP3-B05` publishes.

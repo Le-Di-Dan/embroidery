@@ -17,7 +17,14 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-import { acceptedSurface } from './app3-accepted-surface.mjs';
+import {
+  ADMIN_TEMPLATE_ADAPTER_FILES,
+  ADMIN_TEMPLATE_CONTROLLER_FILES,
+  APP3_SURFACE_TOOL_FILES,
+  acceptedAdminTemplateOperationCount,
+  acceptedSurface,
+  adminTemplateSurfaceFiles,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   OPERATIONS,
@@ -39,14 +46,40 @@ after(() => {
 });
 
 const file = (key) => read(REPO_ROOT, key) ?? '';
+// The four LC-24 transitions and their shared compare-and-set live in the
+// lifecycle writes, and their routes on the lifecycle controller — both split
+// out of one file by `APP3-B04A`. A mutation case must edit the file that
+// actually holds the code it breaks, or it writes a decoy the gate never reads
+// and the case passes while proving nothing.
+const LIFECYCLE_WRITES = ADMIN_TEMPLATE_ADAPTER_FILES[2];
+const LIFECYCLE_CONTROLLER = ADMIN_TEMPLATE_CONTROLLER_FILES[1];
+
 const mentions = (failures, needle) => failures.some((f) => f.includes(needle));
+
+/**
+ * The phase document as it read before `APP3-B04A` delivered.
+ *
+ * Restore is ruled on in both directions, so the cases proving the *ban* have
+ * to run in the world the ban describes. Rewriting the status line is how a
+ * world-aware rule gets tested at all; pinning the old literal would only
+ * prove the gate still remembers a world that has moved on.
+ */
+const preB04APhase = () =>
+  file('phase').replace(/\nAPP3-B04A = COMPLETE[^\n]*\n/, '\nAPP3-B04A = READY — NOT STARTED\n');
 
 let base;
 function baseRoot() {
   if (base !== undefined) return base;
   base = mkdtempSync(join(tmpdir(), 'app3-b04-'));
   temporaries.push(base);
-  const extras = ['tools/check-app3-b04.mjs', 'tools/app3-accepted-surface.mjs'];
+  const extras = [
+    'tools/check-app3-b04.mjs',
+    ...APP3_SURFACE_TOOL_FILES,
+    // `APP3-B04A` split the Admin Template surface by responsibility, and a
+    // harness copying only the files named in CANONICAL_FILES would run every
+    // rule against a repo where the code under test is simply not present.
+    ...adminTemplateSurfaceFiles(),
+  ];
   for (const relative of [...Object.values(CANONICAL_FILES), ...extras]) {
     const target = join(base, relative);
     mkdirSync(dirname(target), { recursive: true });
@@ -127,11 +160,26 @@ describe('the published surface', () => {
     assert.ok(mentions(run(checkSurface, { openapi }), `paths, expected ${String(expected)}`));
   });
 
-  it("rejects APP3-B04A's restore appearing here", () => {
+  it("rejects APP3-B04A's restore appearing before that checkpoint delivered", () => {
     const openapi = openapiWith((d) => {
       d.paths[RESTORE_ROUTE] = { post: { operationId: 'adminDesignTemplate_restore' } };
     });
-    assert.ok(mentions(run(checkSurface, { openapi }), 'belongs to APP3-B04A'));
+    const failures = run(checkSurface, { openapi, phase: preB04APhase() });
+    assert.ok(mentions(failures, 'belongs to APP3-B04A'));
+  });
+
+  it('rejects restore going missing once APP3-B04A is delivered', () => {
+    const openapi = openapiWith((d) => {
+      delete d.paths[RESTORE_ROUTE];
+    });
+    assert.ok(mentions(run(checkSurface, { openapi }), 'delivered but'));
+  });
+
+  it('rejects restore published under an operation id that is not APP3-B04A own', () => {
+    const openapi = openapiWith((d) => {
+      d.paths[RESTORE_ROUTE].post.operationId = 'adminDesignTemplate_unarchive';
+    });
+    assert.ok(mentions(run(checkSurface, { openapi }), "not APP3-B04A's"));
   });
 
   it('rejects an Admin Template operation no checkpoint claims', () => {
@@ -141,7 +189,12 @@ describe('the published surface', () => {
       };
     });
     assert.ok(
-      mentions(run(checkSurface, { openapi }), 'admin design-template operations, expected 8'),
+      mentions(
+        run(checkSurface, { openapi }),
+        `admin design-template operations, expected ${String(
+          acceptedAdminTemplateOperationCount(REPO_ROOT),
+        )}`,
+      ),
     );
   });
 
@@ -175,7 +228,7 @@ describe('the request contract', () => {
 
   it('rejects a blank-acceptable archive reason', () => {
     const request = file('request').replace(
-      'reason: z.string().trim().min(1).max(TEMPLATE_ARCHIVE_REASON_MAX_LENGTH),',
+      'reason: z.string().trim().min(1).max(TEMPLATE_LIFECYCLE_REASON_MAX_LENGTH),',
       'reason: z.string().optional(),',
     );
     assert.ok(mentions(run(checkRequestContract, { request }), 'bounded non-blank reason'));
@@ -241,49 +294,63 @@ describe('the transitions', () => {
   });
 
   it('rejects dropping the source state or the token from the predicate', () => {
-    const noState = file('adapter').replace(
+    const noState = file(LIFECYCLE_WRITES).replace(
       'inArray(designTemplates.status, [...from])',
       'undefined',
     );
-    assert.ok(mentions(run(checkTransitions, { adapter: noState }), 'constrain the source state'));
+    assert.ok(
+      mentions(
+        run(checkTransitions, { [LIFECYCLE_WRITES]: noState }),
+        'constrain the source state',
+      ),
+    );
 
     // `replaceAll`, not `replace`: the same token predicate appears in
     // `APP3-B03A`'s `saveDraftVersion`, and replacing only the first would
     // delete that one and leave this rule's subject standing — the checker
     // reads the lifecycle `transition` body alone for exactly that reason.
-    const noToken = file('adapter').replaceAll(
+    const noToken = file(LIFECYCLE_WRITES).replaceAll(
       'eq(designTemplates.currentVersion, input.expectedCurrentVersion),',
       '',
     );
-    assert.ok(mentions(run(checkTransitions, { adapter: noToken }), 'compare-and-set'));
+    assert.ok(mentions(run(checkTransitions, { [LIFECYCLE_WRITES]: noToken }), 'compare-and-set'));
   });
 
   it('rejects stamping published_at unconditionally', () => {
     // The whole set-once rule is that predicate; without it a republication
     // silently rewrites the original timestamp.
-    const adapter = file('adapter').replace('isNull(designTemplateVersions.publishedAt),', '');
-    assert.ok(mentions(run(checkTransitions, { adapter }), 'IS NULL predicate'));
+    const adapter = file(LIFECYCLE_WRITES).replace(
+      'isNull(designTemplateVersions.publishedAt),',
+      '',
+    );
+    assert.ok(
+      mentions(run(checkTransitions, { [LIFECYCLE_WRITES]: adapter }), 'IS NULL predicate'),
+    );
   });
 
   it('rejects a publish that moves the version counter', () => {
-    const adapter = file('adapter').replace(
+    const adapter = file(LIFECYCLE_WRITES).replace(
       "        status: 'PUBLISHED',\n        updatedAt: input.at,",
       "        status: 'PUBLISHED',\n        currentVersion: 99,\n        updatedAt: input.at,",
     );
-    assert.ok(mentions(run(checkTransitions, { adapter }), 'moves current_version'));
+    assert.ok(
+      mentions(run(checkTransitions, { [LIFECYCLE_WRITES]: adapter }), 'moves current_version'),
+    );
   });
 
   it('rejects an unpublish that touches a version', () => {
-    const adapter = file('adapter').replace(
+    const adapter = file(LIFECYCLE_WRITES).replace(
       "      await this.transition('unpublish', input, ['PUBLISHED'], {",
       "      const probe = designTemplateVersions;\n      await this.transition('unpublish', input, ['PUBLISHED'], {",
     );
-    assert.ok(mentions(run(checkTransitions, { adapter }), 'touches a version'));
+    assert.ok(
+      mentions(run(checkTransitions, { [LIFECYCLE_WRITES]: adapter }), 'touches a version'),
+    );
   });
 
   it('rejects deleting rows — archive is retention', () => {
-    const adapter = `${file('adapter')}\nconst probe = (tx) => tx.delete(1);\n`;
-    assert.ok(mentions(run(checkTransitions, { adapter }), 'deletes rows'));
+    const adapter = `${file(LIFECYCLE_WRITES)}\nconst probe = (tx) => tx.delete(1);\n`;
+    assert.ok(mentions(run(checkTransitions, { [LIFECYCLE_WRITES]: adapter }), 'deletes rows'));
   });
 
   it('rejects creating a version or an association during a transition', () => {
@@ -300,9 +367,22 @@ describe('the transitions', () => {
     assert.ok(mentions(run(checkTransitions, { useCase: withAssociation }), 'association'));
   });
 
-  it('rejects implementing restore here', () => {
-    const useCase = `${file('useCase')}\nasync function restoreProbe() { return { from: 'ARCHIVED' }; }\n`;
-    assert.ok(mentions(run(checkTransitions, { useCase }), 'belongs to APP3-B04A'));
+  it('rejects implementing restore before APP3-B04A delivered it', () => {
+    const failures = run(checkTransitions, { phase: preB04APhase() });
+    assert.ok(mentions(failures, 'belongs to APP3-B04A'));
+  });
+
+  it('rejects restore disappearing once APP3-B04A is delivered', () => {
+    const useCase = file('useCase').replace('async restore(', 'async notRestore(');
+    assert.ok(mentions(run(checkTransitions, { useCase }), 'no restore is implemented'));
+  });
+
+  it('rejects a transition that leaves ARCHIVED for anything but DRAFT', () => {
+    const useCase = file('useCase').replace(
+      /from: 'ARCHIVED',(\s*)to: 'DRAFT',/,
+      "from: 'ARCHIVED',$1to: 'PUBLISHED',",
+    );
+    assert.ok(mentions(run(checkTransitions, { useCase }), 'something other than DRAFT'));
   });
 
   it('rejects leaving a stale compare-and-set untranslated', () => {
@@ -357,20 +437,39 @@ describe('boundaries', () => {
     assert.ok(mentions(failures, '35 migrations'));
   });
 
-  it('rejects the restore route on the controller', () => {
-    const controller = file('controller').replace(
-      "  @Post(':templateId/publish')",
-      "  @Post(':templateId/restore')\n  @Post(':templateId/publish')",
+  it('rejects the restore route before APP3-B04A delivered it', () => {
+    const failures = run(checkBoundaries, { phase: preB04APhase() });
+    assert.ok(mentions(failures, 'APP3-B04A’s'));
+  });
+
+  it('rejects the restore route disappearing once APP3-B04A is delivered', () => {
+    const controller = file(LIFECYCLE_CONTROLLER).replace(
+      "@Post(':templateId/restore')",
+      "@Post(':templateId/unrestore')",
     );
-    assert.ok(mentions(run(checkBoundaries, { controller }), "APP3-B04A's"));
+    assert.ok(
+      mentions(
+        run(checkBoundaries, { [LIFECYCLE_CONTROLLER]: controller }),
+        'no controller declares the restore route',
+      ),
+    );
   });
 
   it('rejects an unguarded write', () => {
-    const controller = file('controller').replace(
+    const controller = file(LIFECYCLE_CONTROLLER).replace(
       "  @Post(':templateId/archive')\n  @UseGuards(StaffOriginGuard, StaffJsonBodyGuard)",
       "  @Post(':templateId/archive')",
     );
-    assert.ok(mentions(run(checkBoundaries, { controller }), 'guarded writes, expected 6'));
+    // The expected number is derived, not pinned: `6` was right until
+    // `APP3-B04A` published a seventh mutating operation, and a literal here
+    // would fail on the count rather than on the missing guard it exists to catch.
+    const expected = acceptedAdminTemplateOperationCount(REPO_ROOT) - 2;
+    assert.ok(
+      mentions(
+        run(checkBoundaries, { [LIFECYCLE_CONTROLLER]: controller }),
+        `guarded writes, expected ${String(expected)}`,
+      ),
+    );
   });
 
   it('rejects an unwired provider', () => {

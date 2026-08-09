@@ -35,10 +35,8 @@ import type {
 } from './domain/repositories/design-template.repository';
 import type { DesignTemplateAuditRecorder } from './application/design-template-audit.recorder';
 
-const CONTROLLER_SOURCE = readFileSync(
-  join(__dirname, 'presentation/admin-design-template.controller.ts'),
-  'utf8',
-);
+import { ADMIN_TEMPLATE_CONTROLLER_SOURCE as CONTROLLER_SOURCE } from './tests/admin-template-sources';
+
 const USE_CASE_SOURCE = readFileSync(
   join(__dirname, 'application/save-template-document.use-case.ts'),
   'utf8',
@@ -243,17 +241,18 @@ describe('the published save contract', () => {
         'post /api/admin/design-templates/{templateId}/archive', // APP3-B04
         'post /api/admin/design-templates/{templateId}/publish', // APP3-B04
         'post /api/admin/design-templates/{templateId}/unpublish', // APP3-B04
+        'post /api/admin/design-templates/{templateId}/restore', // APP3-B04A
       ].sort(),
     );
   });
 
-  it('publishes no B04A or B05A route alongside it', () => {
-    // `/api/public/design-templates` is deliberately no longer in this list:
-    // `APP3-B05` delivered it, and its ownership is proved by that checkpoint's
-    // own gate. What remains are routes no checkpoint has run — B04A's restore,
-    // and any byte-delivery path under the public Template prefix, which is
-    // B05A's and whose address is not even locked yet.
-    expect(document.paths['/api/admin/design-templates/{templateId}/restore']).toBeUndefined();
+  it('publishes no B05A route alongside it', () => {
+    // `/api/public/design-templates` and B04A's restore are deliberately no
+    // longer in this list: `APP3-B05` and `APP3-B04A` delivered them, and each
+    // one's ownership is proved by that checkpoint's own gate. A ban is a proxy
+    // for "that checkpoint has not run" and stops describing the world the
+    // moment it does. What remains is any byte-delivery path under the public
+    // Template prefix, which is B05A's and whose address is not locked yet.
     for (const path of Object.keys(document.paths)) {
       if (!path.startsWith('/api/public/design-templates')) continue;
       expect(path).not.toMatch(/\/(assets?|preview|download|file|image|media)\b/);

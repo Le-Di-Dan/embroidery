@@ -27,7 +27,7 @@ import type { DesignTemplateAuditRecorder } from './application/design-template-
 import { DesignTemplateDraftService } from './application/design-template-draft.service';
 import { DesignTemplateQuery } from './application/design-template.query';
 import { DesignTemplateScopeAuthority } from './application/design-template-scope.authority';
-import { AdminDesignTemplateController } from './presentation/admin-design-template.controller';
+import { AdminDesignTemplateAuthoringController } from './presentation/admin-design-template-authoring.controller';
 import {
   CreateDesignTemplateBody,
   DesignTemplateIdParam,
@@ -41,10 +41,8 @@ import type {
 } from './domain/repositories/design-template.repository';
 import type { ProductId } from '../catalog/domain/repositories/placement-hierarchy.port';
 
-const CONTROLLER_SOURCE = readFileSync(
-  join(__dirname, 'presentation/admin-design-template.controller.ts'),
-  'utf8',
-);
+import { ADMIN_TEMPLATE_CONTROLLER_SOURCE as CONTROLLER_SOURCE } from './tests/admin-template-sources';
+
 const SERVICE_SOURCE = readFileSync(
   join(__dirname, 'application/design-template-draft.service.ts'),
   'utf8',
@@ -217,14 +215,13 @@ describe('the three Admin Design Template operations', () => {
     }
   });
 
-  it('carries no B04A or B05A capability', () => {
-    // B04A's restore, asserted as an absence. `…/document`, B04's three
-    // transitions and `APP3-B05`'s two public reads are deliberately no longer
-    // in this list: `APP3-B03A`, `APP3-B04` and `APP3-B05` delivered them, and
-    // each one's ownership is proved by that checkpoint's own gate. A ban is a
-    // proxy for "that checkpoint has not run" and stops describing the world the
-    // moment it does.
-    expect(document.paths['/api/admin/design-templates/{templateId}/restore']).toBeUndefined();
+  it('carries no B05A capability', () => {
+    // `…/document`, B04's three transitions, B04A's restore and `APP3-B05`'s two
+    // public reads are deliberately no longer in this list: each was delivered
+    // by the checkpoint that owned it, and each one's ownership is proved by
+    // that checkpoint's own gate. A ban is a proxy for "that checkpoint has not
+    // run" and stops describing the world the moment it does.
+    //
     // B05A's byte delivery, whose address is not locked yet — asserted by shape.
     for (const path of Object.keys(document.paths)) {
       if (!path.startsWith('/api/public/design-templates')) continue;
@@ -539,15 +536,16 @@ describe('what APP3-B03 must never contain', () => {
 
 describe('the controller wiring', () => {
   it('translates only its own error type', () => {
-    const controller = new AdminDesignTemplateController(
+    const controller = new AdminDesignTemplateAuthoringController(
       { create: () => Promise.resolve({ templateId: TEMPLATE_ID }) } as never,
       {} as never,
       {} as never,
-      // APP3-B03B — the scope-assignment use case.
-      {} as never,
+      // APP3-B03B — the scope-assignment use case. `APP3-B04A` moved the four
+      // LC-24 transitions to their own controller, so the lifecycle use case is
+      // no longer a dependency of this one.
       {} as never,
     );
-    expect(controller).toBeInstanceOf(AdminDesignTemplateController);
+    expect(controller).toBeInstanceOf(AdminDesignTemplateAuthoringController);
     expect(CONTROLLER_SOURCE).toMatch(/isDesignTemplateDraftError\(error\) \? toHttpException/);
   });
 

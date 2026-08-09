@@ -19,6 +19,17 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-B04A` — `TR-LC24-06`, the fourth and last LC-24 transition. One
+    // path, one operation and one request-body schema; no response component,
+    // because it answers the Admin detail view `APP3-B03` already publishes.
+    marker: /\nAPP3-B04A = COMPLETE/,
+    paths: 34,
+    operations: 39,
+    schemas: 83,
+    designSessionRoutes: true,
+    designSessionPaths: 4,
+  },
+  {
     // `APP3-B03B` — the one-time initial scope assignment, a just-in-time
     // unblock for `APP3-A03`: a Template created unscoped through the Admin UI
     // could never be authored, because `APP3-P01` requires a placement snapshot
@@ -190,3 +201,26 @@ export function acceptedSessionPaths(rootDir) {
  * the repository's 400-line source limit.
  */
 export * from './app3-accepted-paths.mjs';
+
+/**
+ * The source-file authority, re-exported for the same reason: one entry point
+ * per gate. It answers "which files carry the Admin Template surface", which the
+ * `APP3-B04A` responsibility split made a question worth asking once.
+ */
+export * from './app3-template-sources.mjs';
+
+/**
+ * Every tool module this authority is assembled from.
+ *
+ * Each gate's regression harness runs the checker against a throwaway copy of
+ * the repository, and copies an explicit list of files into it. Importing this
+ * module now pulls in two more, so a harness listing only the entry point gets
+ * `ERR_MODULE_NOT_FOUND` — every case failing at once, for a reason that has
+ * nothing to do with the rules under test. The list is published here so a
+ * harness copies *the authority* rather than a file it remembers.
+ */
+export const APP3_SURFACE_TOOL_FILES = Object.freeze([
+  'tools/app3-accepted-surface.mjs',
+  'tools/app3-accepted-paths.mjs',
+  'tools/app3-template-sources.mjs',
+]);

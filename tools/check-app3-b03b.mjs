@@ -30,6 +30,12 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  acceptedSurface,
+  readAdminTemplateAdapter,
+  readAdminTemplateControllers,
+} from './app3-accepted-surface.mjs';
+
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const PHASE_PLAN = join(
@@ -41,8 +47,10 @@ const USE_CASE = join(API, 'application/assign-template-scope.use-case.ts');
 const SCOPE_AUTHORITY = join(API, 'application/design-template-scope.authority.ts');
 const AUDIT = join(API, 'application/design-template-audit.recorder.ts');
 const REPOSITORY_PORT = join(API, 'domain/repositories/design-template.repository.ts');
-const REPOSITORY = join(API, 'infrastructure/persistence/drizzle-design-template.repository.ts');
-const CONTROLLER = join(API, 'presentation/admin-design-template.controller.ts');
+// The adapter and controller surfaces come from the shared source authority
+// (`app3-template-sources.mjs`) rather than a path literal: `APP3-B04A` split
+// both by responsibility, and a stale path here would have left every predicate
+// rule below scanning an empty string and passing.
 const REQUEST_DTO = join(API, 'presentation/schemas/admin-design-template.request.ts');
 const ERRORS = join(API, 'domain/design-template-draft.errors.ts');
 const MODULE = join(API, 'design-template-admin.module.ts');
@@ -132,10 +140,20 @@ const operationCount = Object.values(openapi.paths).reduce(
   0,
 );
 
-check('contract: the surface is 33 paths', paths.length === 33, `${String(paths.length)} paths`);
+// The accepted world, from the shared authority rather than the literals this
+// gate shipped with. `33`/`38` were exactly right the day B03B delivered and
+// became wrong the moment `APP3-B04A` legitimately published restore — a count
+// failing for a reason unrelated to scope assignment. The assertion is still
+// strict: the surface must match whatever the phase status says was accepted.
+const surface = acceptedSurface(REPO_ROOT);
 check(
-  'contract: the surface is 38 operations',
-  operationCount === 38,
+  `contract: the surface is ${String(surface.paths)} paths`,
+  paths.length === surface.paths,
+  `${String(paths.length)} paths`,
+);
+check(
+  `contract: the surface is ${String(surface.operations)} operations`,
+  operationCount === surface.operations,
   `${String(operationCount)} operations`,
 );
 check(
@@ -203,7 +221,11 @@ for (const status of ['400', '401', '404', '409']) {
 // ---------------------------------------------------------------------------
 // 3 · One-time assignment, structurally
 // ---------------------------------------------------------------------------
-const repository = read(REPOSITORY);
+// The whole adapter surface: `APP3-B04A` split it into reads, authoring writes
+// and lifecycle writes, and this gate's `indexOf` slice would otherwise have
+// found nothing and reported "the repository method exists" as the only failure
+// while every predicate rule silently passed against an empty string.
+const repository = stripComments(readAdminTemplateAdapter(REPO_ROOT) ?? '');
 const predicate = repository.slice(
   repository.indexOf('async assignInitialScope'),
   repository.indexOf('async ensureAssetAssociation'),
@@ -355,7 +377,7 @@ check(
   'the body is not a strict complete triple',
 );
 
-const controller = read(CONTROLLER);
+const controller = stripComments(readAdminTemplateControllers(REPO_ROOT) ?? '');
 check(
   'controller: the route is a guarded Admin write',
   /@Put\(':templateId\/scope'\)\s*\n\s*@UseGuards\(StaffOriginGuard, StaffJsonBodyGuard\)/.test(
@@ -557,8 +579,9 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `APP3-B03B check passed (${String(checks.length)} assertions; one new operation, 33 paths / ` +
-    '38 operations). The assignment is one-time by construction — the compare-and-set requires ' +
+  `APP3-B03B check passed (${String(checks.length)} assertions; one new operation, ` +
+    `${String(surface.paths)} paths / ${String(surface.operations)} operations in the accepted ` +
+    'world). The assignment is one-time by construction — the compare-and-set requires ' +
     'DRAFT, counter zero, all three scope columns null and no version rows, so a rescope cannot ' +
     'match it and no clear or rescope method exists to try; it creates no version, document, ' +
     'association or event and changes no lifecycle state; scope validity is decided by APP3-B03 ' +

@@ -18,7 +18,14 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-import { acceptedAdminTemplateOperationCount, acceptedSurface } from './app3-accepted-surface.mjs';
+import {
+  APP3_SURFACE_TOOL_FILES,
+  acceptedAdminTemplateOperationCount,
+  ADMIN_TEMPLATE_ADAPTER_FILES,
+  ADMIN_TEMPLATE_CONTROLLER_FILES,
+  adminTemplateSurfaceFiles,
+  acceptedSurface,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   COLLECTION_ROUTE,
@@ -38,6 +45,13 @@ after(() => {
   for (const dir of temporaries) rmSync(dir, { recursive: true, force: true });
 });
 
+// APP3-B04A split the Admin Template surface by responsibility. A mutation case
+// must edit the file that actually holds the code it breaks, or it writes a
+// decoy the gate never reads and the case passes while proving nothing.
+const ADAPTER_READS = ADMIN_TEMPLATE_ADAPTER_FILES[0];
+const AUTHORING_WRITES = ADMIN_TEMPLATE_ADAPTER_FILES[1];
+const AUTHORING_CONTROLLER = ADMIN_TEMPLATE_CONTROLLER_FILES[0];
+
 const file = (key) => read(REPO_ROOT, key) ?? '';
 const mentions = (failures, needle) => failures.some((f) => f.includes(needle));
 
@@ -46,7 +60,15 @@ function baseRoot() {
   if (base !== undefined) return base;
   base = mkdtempSync(join(tmpdir(), 'app3-b03-'));
   temporaries.push(base);
-  const extras = ['tools/check-app3-b03.mjs', 'tools/app3-accepted-surface.mjs'];
+  const extras = [
+    'tools/check-app3-b03.mjs',
+    ...APP3_SURFACE_TOOL_FILES,
+    // The Admin Template surface is no longer one controller and one adapter:
+    // APP3-B04A split both by responsibility, and a harness that copied only
+    // the files named in CANONICAL_FILES would run every rule against a repo
+    // where the code under test simply is not present.
+    ...adminTemplateSurfaceFiles(),
+  ];
   for (const relative of [...Object.values(CANONICAL_FILES), ...extras]) {
     const target = join(base, relative);
     mkdirSync(dirname(target), { recursive: true });
@@ -270,9 +292,12 @@ describe('header-only create', () => {
       ['status: ', "status: 'PUBLISHED',\n          _status: '"],
       ['currentVersion: 0', 'currentVersion: 1'],
     ]) {
-      const adapter = file('adapter').replace(mutation[0], mutation[1]);
+      const adapter = file(AUTHORING_WRITES).replace(mutation[0], mutation[1]);
       assert.ok(
-        mentions(run(checkCreateSemantics, { adapter }), 'DRAFT header with zero versions'),
+        mentions(
+          run(checkCreateSemantics, { [AUTHORING_WRITES]: adapter }),
+          'DRAFT header with zero versions',
+        ),
         mutation[0],
       );
     }
@@ -281,8 +306,10 @@ describe('header-only create', () => {
   it('rejects a keyset page that fetches exactly the limit', () => {
     // The real defect this checkpoint hit: `hasNext` is then false on every full
     // page and the list silently truncates after one page.
-    const adapter = file('adapter').replace('.limit(input.limit + 1)', '.limit(input.limit)');
-    assert.ok(mentions(run(checkCreateSemantics, { adapter }), 'over-fetch by one'));
+    const adapter = file(ADAPTER_READS).replace('.limit(input.limit + 1)', '.limit(input.limit)');
+    assert.ok(
+      mentions(run(checkCreateSemantics, { [ADAPTER_READS]: adapter }), 'over-fetch by one'),
+    );
   });
 
   it('rejects offset paging', () => {
@@ -290,7 +317,7 @@ describe('header-only create', () => {
       '.limit(input.limit + 1)',
       '.offset(0)\n        .limit(input.limit + 1)',
     );
-    assert.ok(mentions(run(checkCreateSemantics, { adapter }), 'pages by offset'));
+    assert.ok(mentions(run(checkCreateSemantics, { [ADAPTER_READS]: adapter }), 'pages by offset'));
   });
 });
 
@@ -322,36 +349,62 @@ describe('authorization', () => {
   });
 
   it('rejects dropping the Admin guard', () => {
-    const controller = file('controller').replace('@UseGuards(AuthenticatedAdminGuard)\n', '');
-    assert.ok(mentions(run(checkAuthorization, { controller }), 'Admin guard is not applied'));
+    const controller = file(AUTHORING_CONTROLLER).replace(
+      '@UseGuards(AuthenticatedAdminGuard)\n',
+      '',
+    );
+    assert.ok(
+      mentions(
+        run(checkAuthorization, { [AUTHORING_CONTROLLER]: controller }),
+        'Admin guard is not applied',
+      ),
+    );
   });
 
   it('rejects mixing anonymous Session auth into the Admin surface', () => {
-    const controller = `${file('controller')}\nimport { DesignSessionGuard } from './guards/design-session.guard';\n`;
-    assert.ok(mentions(run(checkAuthorization, { controller }), 'anonymous Session auth'));
+    const controller = `${file(AUTHORING_CONTROLLER)}\nimport { DesignSessionGuard } from './guards/design-session.guard';\n`;
+    assert.ok(
+      mentions(
+        run(checkAuthorization, { [AUTHORING_CONTROLLER]: controller }),
+        'anonymous Session auth',
+      ),
+    );
   });
 
   it('rejects a mutating verb no APP3 checkpoint owns', () => {
-    const controller = file('controller').replace(
+    const controller = file(AUTHORING_CONTROLLER).replace(
       '  @Post()',
       "  @Patch(':templateId')\n  @Post()",
     );
-    assert.ok(mentions(run(checkAuthorization, { controller }), 'no APP3 checkpoint owns'));
+    assert.ok(
+      mentions(
+        run(checkAuthorization, { [AUTHORING_CONTROLLER]: controller }),
+        'no APP3 checkpoint owns',
+      ),
+    );
   });
 
   it('rejects the save verb disappearing while APP3-B03A is delivered', () => {
-    const controller = file('controller').replaceAll("@Put(':templateId/document')", '@Post()');
+    const controller = file(AUTHORING_CONTROLLER).replaceAll(
+      "@Put(':templateId/document')",
+      '@Post()',
+    );
     assert.ok(
       mentions(
-        run(checkAuthorization, { controller }),
+        run(checkAuthorization, { [AUTHORING_CONTROLLER]: controller }),
         "does not match APP3-B03A's delivered state",
       ),
     );
   });
 
   it('rejects a local envelope helper', () => {
-    const controller = `${file('controller')}\nfunction envelopeOf(model) { return model; }\n`;
-    assert.ok(mentions(run(checkAuthorization, { controller }), 'local envelope helper'));
+    const controller = `${file(AUTHORING_CONTROLLER)}\nfunction envelopeOf(model) { return model; }\n`;
+    assert.ok(
+      mentions(
+        run(checkAuthorization, { [AUTHORING_CONTROLLER]: controller }),
+        'local envelope helper',
+      ),
+    );
   });
 
   it('rejects an unregistered module', () => {

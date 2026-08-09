@@ -20,8 +20,11 @@ import {
   isB03ADelivered,
   isB04Delivered,
   isB05Delivered,
+  ADMIN_TEMPLATE_CONTROLLER_FILES,
   lifecycleAdminTemplatePaths,
   publicTemplatePaths,
+  readAdminTemplateAdapter,
+  readAdminTemplateControllers,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -56,7 +59,10 @@ export const CANONICAL_FILES = Object.freeze({
   client: 'packages/api-client/src/generated/embroidery-api.ts',
   clientSchemas: 'packages/api-client/src/generated/embroidery-api.schemas.ts',
   rootPackage: 'package.json',
-  controller: `${DESIGN}/presentation/admin-design-template.controller.ts`,
+  // B03's own five operations live on the authoring controller; the four LC-24
+  // transitions moved to their own at `APP3-B04A`. Rules about the *whole* Admin
+  // Template surface read the shared authority instead of this one file.
+  controller: `${DESIGN}/presentation/admin-design-template-authoring.controller.ts`,
   request: `${DESIGN}/presentation/schemas/admin-design-template.request.ts`,
   response: `${DESIGN}/presentation/schemas/admin-design-template.response.ts`,
   service: `${DESIGN}/application/design-template-draft.service.ts`,
@@ -268,7 +274,7 @@ export function checkResponseContract(rootDir, fail) {
 export function checkCreateSemantics(rootDir, fail) {
   const service = read(rootDir, 'service') ?? '';
   const request = read(rootDir, 'request') ?? '';
-  const adapter = read(rootDir, 'adapter') ?? '';
+  const adapter = readAdminTemplateAdapter(rootDir) ?? '';
 
   for (const [pattern, complaint] of [
     [/publishVersion\s*\(/, 'publishes a Template version'],
@@ -339,9 +345,19 @@ export function checkCreateSemantics(rootDir, fail) {
 
 /** Admin authorization, reused rather than reinvented. */
 export function checkAuthorization(rootDir, fail) {
-  const controller = read(rootDir, 'controller') ?? '';
-  if (!/@UseGuards\(AuthenticatedAdminGuard\)/.test(controller)) {
-    fail(`${CANONICAL_FILES.controller}: the Admin guard is not applied to the controller`);
+  // The whole controller surface: the guard count, the banned verbs and the
+  // envelope helper are properties of the Admin Template contract, not of
+  // whichever file `APP3-B04A` left each handler in.
+  const controller = readAdminTemplateControllers(rootDir) ?? '';
+  // Per controller file, not once across the joined surface. `APP3-B04A` made
+  // this two classes, and a single match anywhere would keep passing with the
+  // guard stripped from one of them — the half carrying the LC-24 transitions.
+  for (const relative of ADMIN_TEMPLATE_CONTROLLER_FILES) {
+    const source = read(rootDir, relative);
+    if (source === undefined || !/@Controller\(/.test(source)) continue;
+    if (!/@UseGuards\(AuthenticatedAdminGuard\)/.test(source)) {
+      fail(`${relative}: the Admin guard is not applied to the controller`);
+    }
   }
   // One guarded write per mutating operation: every accepted Admin Template
   // operation except B03's own two reads, the list and the detail. Derived from
@@ -365,7 +381,10 @@ export function checkAuthorization(rootDir, fail) {
   if (/@(Patch|Delete)\(/.test(controller)) {
     fail(`${CANONICAL_FILES.controller}: declares a mutating verb no APP3 checkpoint owns`);
   }
-  if (/@Put\(/.test(controller) !== isB03ADelivered(rootDir)) {
+  // The save route itself, not "some `@Put` somewhere". `APP3-B03B` added a
+  // second `@Put` for the scope assignment, so a bare verb scan stopped being
+  // able to say whether B03A's save was still routed at all.
+  if (/@Put\(':templateId\/document'\)/.test(controller) !== isB03ADelivered(rootDir)) {
     fail(`${CANONICAL_FILES.controller}: the @Put save does not match APP3-B03A's delivered state`);
   }
   if (/function envelopeOf/.test(controller)) {

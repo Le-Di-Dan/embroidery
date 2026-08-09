@@ -21,12 +21,18 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { after, describe, it } from 'node:test';
 
+import { APP3_SURFACE_TOOL_FILES, acceptedSurface } from './app3-accepted-surface.mjs';
+
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const GATE = 'tools/check-app3-b03b.mjs';
 
 /** Everything the gate reads. */
 const COPIED = [
   GATE,
+  // The gate now consults the shared APP3 surface authority, which is three
+  // modules; copying only the entry point makes every case die on
+  // ERR_MODULE_NOT_FOUND rather than on the rule it is testing.
+  ...APP3_SURFACE_TOOL_FILES,
   'package.json',
   'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md',
   'docs/implementation/SCOPED_COMMAND_INDEX.md',
@@ -49,8 +55,11 @@ const CURATED_CLIENT = 'packages/api-client/src/index.ts';
 const DESIGN = 'apps/api/src/modules/design';
 const USE_CASE = `${DESIGN}/application/assign-template-scope.use-case.ts`;
 const AUDIT = `${DESIGN}/application/design-template-audit.recorder.ts`;
-const REPOSITORY = `${DESIGN}/infrastructure/persistence/drizzle-design-template.repository.ts`;
-const CONTROLLER = `${DESIGN}/presentation/admin-design-template.controller.ts`;
+// `APP3-B04A` split both surfaces by responsibility. A mutation case must break
+// the file that actually holds the code — an anchor in a file the gate no longer
+// reads would make `edit()` throw, or worse, silently prove nothing.
+const REPOSITORY = `${DESIGN}/infrastructure/persistence/design-template-authoring.writes.ts`;
+const CONTROLLER = `${DESIGN}/presentation/admin-design-template-authoring.controller.ts`;
 const ERRORS = `${DESIGN}/domain/design-template-draft.errors.ts`;
 const INTEGRATION = `${DESIGN}/tests/integration/design-template-scope-assign.integration.spec.ts`;
 
@@ -233,11 +242,18 @@ describe('the contract', () => {
   });
 
   it('refuses a surface that grew beyond the one operation', () => {
-    refuses((root) => {
-      const document = JSON.parse(readAt(root, OPENAPI));
-      document.paths['/api/admin/design-templates/{templateId}/duplicate'] = { post: {} };
-      writeAt(root, OPENAPI, JSON.stringify(document, null, 2));
-    }, 'the surface is 33 paths');
+    refuses(
+      (root) => {
+        const document = JSON.parse(readAt(root, OPENAPI));
+        document.paths['/api/admin/design-templates/{templateId}/duplicate'] = { post: {} };
+        writeAt(root, OPENAPI, JSON.stringify(document, null, 2));
+        // The message names the accepted world, which moves as later checkpoints
+        // legitimately publish. `33` was right at B03B and wrong from B04A on —
+        // the assertion is that a *grown* surface is caught, not that the number
+        // never changes.
+      },
+      `the surface is ${String(acceptedSurface(REPO_ROOT).paths)} paths`,
+    );
   });
 });
 

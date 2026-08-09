@@ -249,6 +249,27 @@ export interface DesignTemplateRepository {
   archive(input: DesignTemplateLifecycleInput & { readonly at: Date }): Promise<void>;
 
   /**
+   * Returns an archived template to `DRAFT` (`TR-LC24-06`, `APP3-B04A`).
+   *
+   * The header only, and the exact inverse of what archive marked: `status` goes
+   * back to `DRAFT` and `archived_at` — the *current* archive-state marker — is
+   * cleared, which is what DB3 LC-24 spells out for this transition. The history
+   * of the archive and the restore lives in Audit, where a marker that also had
+   * to serve as a historical record could not.
+   *
+   * Everything else is preserved: `current_version`, every version row, every
+   * `published_at`, the scope triple and every Asset association. Restore creates
+   * nothing — a template that was archived with no version comes back with none.
+   *
+   * `ARCHIVED` is the only source state, so `ARCHIVED → PUBLISHED` is
+   * unrepresentable here rather than merely unimplemented; republication is the
+   * separate `publishCurrentVersion` and re-runs the whole GRD-T01 guard.
+   *
+   * @requiresTransaction
+   */
+  restore(input: DesignTemplateLifecycleInput & { readonly at: Date }): Promise<void>;
+
+  /**
    * Assigns the placement scope of an unscoped Template, exactly once
    * (`APP3-B03B`).
    *

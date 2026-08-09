@@ -15,10 +15,14 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  B04A_STATUS_LINES,
   acceptedAdminTemplatePaths,
   acceptedSurface,
+  isB04ADelivered,
   isB05Delivered,
   publicTemplatePaths,
+  readAdminTemplateAdapter,
+  readAdminTemplateControllers,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -46,9 +50,7 @@ export const CANONICAL_FILES = Object.freeze({
   guard: `${DESIGN}/application/template-publication.authority.ts`,
   recorder: `${DESIGN}/application/design-template-audit.recorder.ts`,
   request: `${DESIGN}/presentation/schemas/admin-design-template.request.ts`,
-  controller: `${DESIGN}/presentation/admin-design-template.controller.ts`,
   repository: `${DESIGN}/domain/repositories/design-template.repository.ts`,
-  adapter: `${DESIGN}/infrastructure/persistence/drizzle-design-template.repository.ts`,
   module: `${DESIGN}/design-template-admin.module.ts`,
   unitSpec: `${DESIGN}/design-template-lifecycle.spec.ts`,
   liveSpec: 'apps/api/test/integration/design-template-lifecycle.integration.spec.ts',
@@ -88,10 +90,14 @@ function checkPredecessors(rootDir, fail) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
     }
   }
-  // The successor must be recorded and unstarted: this gate proves B04 in a
-  // world where restore does not exist.
-  if (!/\nAPP3-B04A = (READY|BLOCKED_BY_APP3-B04) — NOT STARTED\n/.test(phase)) {
-    fail(`${CANONICAL_FILES.phase}: APP3-B04A is not recorded as an unstarted successor`);
+  // The successor must be recorded in one of its legitimate states. It used to
+  // have to be *unstarted*, which was right while restore did not exist and
+  // became wrong the moment `APP3-B04A` legitimately delivered it — the proxy
+  // decay this repository has now recorded several times. What still matters is
+  // that B04A is accounted for at all: a phase that had quietly dropped the row
+  // would leave `ARCHIVED` a terminal state with nobody owning the way out.
+  if (!B04A_STATUS_LINES.some((line) => phase.includes(`\n${line}\n`))) {
+    fail(`${CANONICAL_FILES.phase}: APP3-B04A is not recorded in a legitimate state`);
   }
 }
 
@@ -135,8 +141,27 @@ export function checkSurface(rootDir, fail) {
     }
   }
 
-  if (document.paths?.[RESTORE_ROUTE] !== undefined) {
-    fail(`${CANONICAL_FILES.openapi}: publishes ${RESTORE_ROUTE}, which belongs to APP3-B04A`);
+  // Restore, asserted in **both** directions rather than banned outright.
+  // Before `APP3-B04A` the route must not exist; once the phase records that
+  // checkpoint delivered, a *missing* route is the failure — and it must still
+  // be B04A's operation id, so B04 cannot quietly grow a fourth transition of
+  // its own under the same path.
+  const restoreDelivered = isB04ADelivered(rootDir);
+  const restorePublished = document.paths?.[RESTORE_ROUTE] !== undefined;
+  if (restorePublished !== restoreDelivered) {
+    fail(
+      restorePublished
+        ? `${CANONICAL_FILES.openapi}: publishes ${RESTORE_ROUTE}, which belongs to APP3-B04A`
+        : `${CANONICAL_FILES.openapi}: APP3-B04A is delivered but ${RESTORE_ROUTE} is missing`,
+    );
+  }
+  if (restoreDelivered) {
+    const restoreId = document.paths?.[RESTORE_ROUTE]?.post?.operationId;
+    if (restoreId !== 'adminDesignTemplate_restore') {
+      fail(
+        `${CANONICAL_FILES.openapi}: ${RESTORE_ROUTE} publishes "${restoreId}", not APP3-B04A's`,
+      );
+    }
   }
 
   const templateOperations = Object.entries(document.paths ?? {})
@@ -260,7 +285,10 @@ export function checkPublishGuard(rootDir, fail) {
 
 /** The compare-and-set, the set-once stamp and what each transition preserves. */
 export function checkTransitions(rootDir, fail) {
-  const adapter = read(rootDir, 'adapter') ?? '';
+  // The whole adapter surface, from the shared authority: `APP3-B04A` split it
+  // into reads, authoring writes and lifecycle writes, and a gate still reading
+  // one file would have gone on passing while scanning code that had moved.
+  const adapter = readAdminTemplateAdapter(rootDir) ?? '';
   const repository = read(rootDir, 'repository') ?? '';
   const useCase = read(rootDir, 'useCase') ?? '';
 
@@ -321,11 +349,20 @@ export function checkTransitions(rootDir, fail) {
   if (!/DESIGN_TEMPLATE_VERSION_CONFLICT/.test(useCase)) {
     fail(`${CANONICAL_FILES.useCase}: a stale compare-and-set is not translated to the conflict`);
   }
-  // Usage, not the word: the file's own header explains where restore lives, and
-  // a bare-word scan would fail on that explanation. `ARCHIVED` appearing as a
-  // *source* state is what a restore implementation would need.
-  if (/\basync restore\s*\(|from: 'ARCHIVED'/.test(useCase)) {
-    fail(`${CANONICAL_FILES.useCase}: implements restore, which belongs to APP3-B04A`);
+  // Restore in the use case, ruled on in both directions. Before `APP3-B04A` it
+  // must be absent; after, present — and in *either* world the transition it
+  // performs must land in `DRAFT`. `ARCHIVED → PUBLISHED` is not a transition
+  // LC-24 recognises, and that is the rule worth keeping once the ban expires.
+  const restoreImplemented = /\basync restore\s*\(/.test(useCase);
+  if (restoreImplemented !== isB04ADelivered(rootDir)) {
+    fail(
+      restoreImplemented
+        ? `${CANONICAL_FILES.useCase}: implements restore, which belongs to APP3-B04A`
+        : `${CANONICAL_FILES.useCase}: APP3-B04A is delivered but no restore is implemented`,
+    );
+  }
+  if (/from: 'ARCHIVED',\s*\n\s*to: '(?!DRAFT)/.test(useCase)) {
+    fail(`${CANONICAL_FILES.useCase}: a transition leaves ARCHIVED for something other than DRAFT`);
   }
 }
 
@@ -358,8 +395,29 @@ export function checkAudit(rootDir, fail) {
   if (transaction === -1 || audited === -1 || transaction > audited) {
     fail(`${CANONICAL_FILES.useCase}: the audit row is not written inside the transition`);
   }
-  if (!/reason: command\.reason/.test(useCase)) {
-    fail(`${CANONICAL_FILES.useCase}: archive does not carry its reason into the audit row`);
+  // Per transition, not once across the file. `APP3-B04A` added a second
+  // reason-bearing transition, so a single `reason: command.reason` anywhere
+  // stopped proving that *archive* carries one — the rule would have stayed
+  // green with archive's reason deleted and restore's left in place.
+  for (const [method, transition] of [
+    ['archive', 'archive'],
+    ...(isB04ADelivered(rootDir) ? [['restore', 'restore']] : []),
+  ]) {
+    const block = new RegExp(`async ${method}\\(([\\s\\S]*?)\\n  }\\n`).exec(useCase);
+    if (block === null) {
+      fail(`${CANONICAL_FILES.useCase}: the ${transition} transition is no longer identifiable`);
+    } else if (!/reason: command\.reason/.test(block[1])) {
+      fail(
+        `${CANONICAL_FILES.useCase}: ${transition} does not carry its reason into the audit row`,
+      );
+    }
+  }
+  // And nowhere else: PO-03 requires a reason for exactly those two.
+  for (const method of ['publish', 'unpublish']) {
+    const block = new RegExp(`async ${method}\\(([\\s\\S]*?)\\n  }\\n`).exec(useCase);
+    if (block !== null && /reason:/.test(block[1])) {
+      fail(`${CANONICAL_FILES.useCase}: ${method} records a reason PO-03 does not require`);
+    }
   }
 }
 
@@ -397,9 +455,18 @@ export function checkBoundaries(rootDir, fail) {
     }
   }
 
-  const controller = read(rootDir, 'controller') ?? '';
-  if (/@Post\(':templateId\/restore'\)/.test(controller)) {
-    fail(`${CANONICAL_FILES.controller}: declares the restore route, which is APP3-B04A's`);
+  const controller = readAdminTemplateControllers(rootDir);
+  if (controller === undefined) {
+    fail('the Admin Design Template controller surface is missing a file');
+    return;
+  }
+  const restoreRouted = /@Post\(':templateId\/restore'\)/.test(controller);
+  if (restoreRouted !== isB04ADelivered(rootDir)) {
+    fail(
+      restoreRouted
+        ? 'the controller declares the restore route, which is APP3-B04A’s'
+        : 'APP3-B04A is delivered but no controller declares the restore route',
+    );
   }
   // One pair per mutating Template operation, counted from the contract rather
   // than written as a literal. `5` was create, save and the three transitions;

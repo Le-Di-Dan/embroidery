@@ -19,7 +19,11 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-import { acceptedPublicTemplatePaths, acceptedSurface } from './app3-accepted-surface.mjs';
+import {
+  APP3_SURFACE_TOOL_FILES,
+  acceptedPublicTemplatePaths,
+  acceptedSurface,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   OPERATIONS,
@@ -50,7 +54,7 @@ function baseRoot() {
   if (base !== undefined) return base;
   base = mkdtempSync(join(tmpdir(), 'app3-b05-'));
   temporaries.push(base);
-  const extras = ['tools/check-app3-b05.mjs', 'tools/app3-accepted-surface.mjs'];
+  const extras = ['tools/check-app3-b05.mjs', ...APP3_SURFACE_TOOL_FILES];
   for (const relative of [...Object.values(CANONICAL_FILES), ...extras]) {
     const target = join(base, relative);
     mkdirSync(dirname(target), { recursive: true });
@@ -206,9 +210,18 @@ describe('the published surface', () => {
   });
 
   it('rejects a surface count that no accepted checkpoint explains', () => {
+    // The expected counts come from the shared authority, not from literals.
+    // `31`/`81` were the accepted world the day B05 shipped and stopped being it
+    // when B02A, B03B and B04A each legitimately published an operation — the
+    // regression would then fail on the *number* rather than on the property it
+    // exists to prove, which is that a drifted count is caught at all.
+    const world = acceptedSurface(REPO_ROOT);
     for (const [mutate, needle] of [
-      [(d) => delete d.paths[DETAIL], 'paths, expected 31'],
-      [(d) => (d.components.schemas['Extra'] = { type: 'object' }), 'schemas, expected 81'],
+      [(d) => delete d.paths[DETAIL], `paths, expected ${String(world.paths)}`],
+      [
+        (d) => (d.components.schemas['Extra'] = { type: 'object' }),
+        `schemas, expected ${String(world.schemas)}`,
+      ],
     ]) {
       assert.ok(mentions(run(checkSurface, { openapi: openapiWith(mutate) }), needle), needle);
     }

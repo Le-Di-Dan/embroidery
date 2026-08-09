@@ -1379,6 +1379,19 @@ export interface ReplaceProductPlacementBody {
   sides: ReplacePlacementSideBody[];
 }
 
+export interface RestoreDesignTemplateBody {
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  expectedCurrentVersion: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+}
+
 export interface SaveDesignTemplateDocumentBody {
   /** The full Design Document snapshot to save as the next immutable version. */
   document: DesignDocument;
@@ -1541,6 +1554,10 @@ export type AdminDesignTemplateSaveDocument200 = ApiSuccessResponse & {
 };
 
 export type AdminDesignTemplatePublish200 = ApiSuccessResponse & {
+  data: AdminDesignTemplateDetailResponse;
+};
+
+export type AdminDesignTemplateRestore200 = ApiSuccessResponse & {
   data: AdminDesignTemplateDetailResponse;
 };
 

@@ -22,6 +22,7 @@ import {
   isB05Delivered,
   lifecycleAdminTemplatePaths,
   publicTemplatePaths,
+  readAdminTemplateAdapter,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -220,7 +221,7 @@ export function checkRequestContract(rootDir, fail) {
 
 /** The compare-and-set, and the immutability it protects. */
 export function checkSaveSemantics(rootDir, fail) {
-  const adapter = read(rootDir, 'adapter') ?? '';
+  const adapter = readAdminTemplateAdapter(rootDir) ?? '';
   const repository = read(rootDir, 'repository') ?? '';
   const useCase = read(rootDir, 'useCase') ?? '';
   const request = read(rootDir, 'request') ?? '';

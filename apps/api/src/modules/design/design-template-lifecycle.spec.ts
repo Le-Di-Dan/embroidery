@@ -38,10 +38,8 @@ import type {
   DesignTemplateRepository,
 } from './domain/repositories/design-template.repository';
 
-const CONTROLLER_SOURCE = readFileSync(
-  join(__dirname, 'presentation/admin-design-template.controller.ts'),
-  'utf8',
-);
+import { ADMIN_TEMPLATE_CONTROLLER_SOURCE as CONTROLLER_SOURCE } from './tests/admin-template-sources';
+
 const USE_CASE_SOURCE = readFileSync(
   join(__dirname, 'application/design-template-lifecycle.use-case.ts'),
   'utf8',
@@ -280,11 +278,12 @@ describe('the published lifecycle contract', () => {
     }
   });
 
-  it('publishes no restore route — that is APP3-B04A', () => {
-    expect(document.paths[`${BASE}/restore`]).toBeUndefined();
-    // Usage, not the word: the controller's own header explains where restore
-    // lives, and a bare-word scan would fail on that explanation.
-    expect(CONTROLLER_SOURCE).not.toMatch(/@Post\(':templateId\/restore'\)/);
+  it('leaves restore to APP3-B04A, which owns it and delivered it', () => {
+    // Was an *absence* assertion, right until B04A ran. B04's real rule is that
+    // restore is not one of *its* three transitions, so this is now ownership.
+    const restore = document.paths[`${BASE}/restore`];
+    expect(restore?.post?.operationId).toBe('adminDesignTemplate_restore');
+    expect(Object.keys(restore ?? {})).toEqual(['post']);
   });
 
   it('guards all three writes with the Admin session and the mutating pair', () => {

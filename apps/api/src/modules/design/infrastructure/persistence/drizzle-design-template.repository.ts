@@ -1,13 +1,24 @@
 /**
  * Drizzle implementation of the AGG-12 Design Template contract
  * (TBL-034..TBL-036).
+ *
+ * The single implementation of `DesignTemplateRepository`, and the only class
+ * bound to `DESIGN_TEMPLATE_REPOSITORY`. It owns the reads directly and composes
+ * two write collaborators — authoring (`APP3-B03`/`B03A`/`B03B`) and the LC-24
+ * transitions (`APP3-B04`/`B04A`) — which `APP3-B04A` split out to close
+ * `FU-APP3-DESIGN-TEMPLATE-FILE-SIZE-01`.
+ *
+ * The collaborators are constructed here rather than injected. They are
+ * implementation detail of this adapter, not ports: giving them tokens and
+ * providers would publish two more names into every module that binds the
+ * repository, and would let a caller reach a write path without going through
+ * the contract. They share this adapter's `DatabaseExecutor`, so a transaction
+ * opened around a use case is the same ambient transaction all three see.
  */
 import { Injectable } from '@nestjs/common';
-import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
+import { schema } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { and, desc, eq, inArray, isNull, lt, notExists, or, sql } from 'drizzle-orm';
-
-import type { DesignTemplateState } from '@embroidery/database';
+import { and, desc, eq, lt, or } from 'drizzle-orm';
 
 import type {
   AssignDesignTemplateScopeInput,
@@ -21,6 +32,8 @@ import type {
   PublishDesignTemplateVersionInput,
   SaveDesignTemplateDraftVersionInput,
 } from '../../domain/repositories/design-template.repository';
+import { DesignTemplateAuthoringWrites } from './design-template-authoring.writes';
+import { DesignTemplateLifecycleWrites } from './design-template-lifecycle.writes';
 import { toTemplate, toTemplateVersion } from './design-row.mapper';
 
 const { designTemplates, designTemplateVersions, designTemplateAssets } = schema;
@@ -30,416 +43,70 @@ export class DrizzleDesignTemplateRepository
   extends DrizzleRepository
   implements DesignTemplateRepository
 {
+  private readonly authoring: DesignTemplateAuthoringWrites;
+  private readonly lifecycle: DesignTemplateLifecycleWrites;
+
   constructor(executor: DatabaseExecutor) {
     super(executor);
+    this.authoring = new DesignTemplateAuthoringWrites(executor);
+    this.lifecycle = new DesignTemplateLifecycleWrites(executor);
   }
 
-  async create(input: CreateDesignTemplateInput): Promise<DesignTemplate> {
-    return this.run('create', async () => {
-      const [row] = await this.db
-        .insert(designTemplates)
-        .values({
-          id: input.id,
-          name: input.name,
-          slug: input.slug,
-          description: input.description ?? null,
-          productId: input.productId ?? null,
-          productSideId: input.productSideId ?? null,
-          embroideryAreaId: input.embroideryAreaId ?? null,
-          status: 'DRAFT',
-          currentVersion: 0,
-        })
-        .returning();
+  // --- authoring writes (APP3-B03 / B03A / B03B) ---------------------------
 
-      if (row === undefined) {
-        throw guardViolationError(
-          'DesignTemplateRepository.create',
-          'DESIGN_TEMPLATE_NOT_CREATED',
-          'Could not create the design template.',
-        );
-      }
-      return toTemplate(row);
-    });
+  create(input: CreateDesignTemplateInput): Promise<DesignTemplate> {
+    return this.authoring.create(input);
   }
 
-  async publishVersion(input: PublishDesignTemplateVersionInput): Promise<DesignTemplateVersion> {
-    return this.run('publishVersion', async () => {
-      const tx = this.requireTransaction('publishVersion');
-
-      const [template] = await tx
-        .select()
-        .from(designTemplates)
-        .where(eq(designTemplates.id, input.designTemplateId))
-        .limit(1)
-        .for('update');
-
-      if (template === undefined) {
-        throw notFoundError(
-          'DesignTemplateRepository.publishVersion',
-          'That design template does not exist.',
-        );
-      }
-
-      const nextVersion = template.currentVersion + 1;
-
-      const [version] = await tx
-        .insert(designTemplateVersions)
-        .values({
-          id: input.id,
-          designTemplateId: input.designTemplateId,
-          version: nextVersion,
-          designDocument: input.designDocument,
-          documentSchemaVersion: input.documentSchemaVersion,
-          publishedAt: input.publishedAt,
-        })
-        .returning();
-
-      if (version === undefined) {
-        throw guardViolationError(
-          'DesignTemplateRepository.publishVersion',
-          'DESIGN_TEMPLATE_VERSION_NOT_CREATED',
-          'Could not publish the design template version.',
-        );
-      }
-
-      // The counter and the version row move together — `current_version`
-      // can never point past the last version actually written.
-      await tx
-        .update(designTemplates)
-        .set({ currentVersion: nextVersion, status: 'PUBLISHED', updatedAt: new Date() })
-        .where(eq(designTemplates.id, input.designTemplateId));
-
-      return toTemplateVersion(version);
-    });
+  publishVersion(input: PublishDesignTemplateVersionInput): Promise<DesignTemplateVersion> {
+    return this.authoring.publishVersion(input);
   }
 
-  /**
-   * The draft save, as one compare-and-set (`APP3-B03A`).
-   *
-   * The counter is advanced with the expected value **in the predicate** rather
-   * than read-then-written: two saves racing on the same `expectedCurrentVersion`
-   * both reach the `update`, and exactly one matches a row. Postgres serialises
-   * them on the row lock, so the loser re-reads a counter that has already moved
-   * and matches nothing.
-   *
-   * The counter moves *before* the version row is inserted, so the loser is
-   * rejected without either statement having written a version — and the unique
-   * `(design_template_id, version)` is a second, independent guard rather than
-   * the primary one, because relying on it would mean discovering the conflict
-   * as a constraint violation after doing the work.
-   */
-  async saveDraftVersion(
-    input: SaveDesignTemplateDraftVersionInput,
-  ): Promise<DesignTemplateVersion> {
-    return this.run('saveDraftVersion', async () => {
-      const tx = this.requireTransaction('saveDraftVersion');
-      const nextVersion = input.expectedCurrentVersion + 1;
-
-      const [advanced] = await tx
-        .update(designTemplates)
-        .set({ currentVersion: nextVersion, updatedAt: new Date() })
-        .where(
-          and(
-            eq(designTemplates.id, input.designTemplateId),
-            eq(designTemplates.status, 'DRAFT'),
-            eq(designTemplates.currentVersion, input.expectedCurrentVersion),
-          ),
-        )
-        .returning({ id: designTemplates.id });
-
-      if (advanced === undefined) {
-        const [current] = await tx
-          .select({ id: designTemplates.id })
-          .from(designTemplates)
-          .where(eq(designTemplates.id, input.designTemplateId))
-          .limit(1);
-
-        if (current === undefined) {
-          throw notFoundError(
-            'DesignTemplateRepository.saveDraftVersion',
-            'That design template does not exist.',
-          );
-        }
-        // One code for both remaining causes on purpose: a caller learning
-        // "not DRAFT" separately from "counter moved" learns the template's
-        // lifecycle state from a save it was not allowed to make.
-        throw guardViolationError(
-          'DesignTemplateRepository.saveDraftVersion',
-          'STALE_WRITE',
-          'This design template changed since it was loaded.',
-        );
-      }
-
-      const [version] = await tx
-        .insert(designTemplateVersions)
-        .values({
-          id: input.id,
-          designTemplateId: input.designTemplateId,
-          version: nextVersion,
-          designDocument: input.designDocument,
-          documentSchemaVersion: input.documentSchemaVersion,
-          // Null, always. `IMP-D042` PO-04: publish sets this once, later, and
-          // never clears it — a draft save must not pre-stamp it.
-          publishedAt: null,
-        })
-        .returning();
-
-      if (version === undefined) {
-        throw guardViolationError(
-          'DesignTemplateRepository.saveDraftVersion',
-          'DESIGN_TEMPLATE_VERSION_NOT_CREATED',
-          'Could not save the design template version.',
-        );
-      }
-      return toTemplateVersion(version);
-    });
+  saveDraftVersion(input: SaveDesignTemplateDraftVersionInput): Promise<DesignTemplateVersion> {
+    return this.authoring.saveDraftVersion(input);
   }
 
-  async assignInitialScope(input: AssignDesignTemplateScopeInput): Promise<DesignTemplate> {
-    return this.run('assignInitialScope', async () => {
-      const tx = this.requireTransaction('assignInitialScope');
-
-      // Every condition of the ruling is in the predicate. The three `isNull`
-      // checks are what make the assignment one-time: a Template that already
-      // has a scope cannot match, so a rescope is unrepresentable here rather
-      // than merely unimplemented.
-      //
-      // The `notExists` is not redundant with `currentVersion = 0`. The counter
-      // and the version rows are advanced together by `saveDraftVersion`, so
-      // they agree in every state this code can produce — but "agree in every
-      // state we can produce" is an assumption, and the ruling says *zero
-      // immutable versions*. Asserting the thing the ruling names costs one
-      // correlated subquery and fails closed if the two ever diverge.
-      const [assigned] = await tx
-        .update(designTemplates)
-        .set({
-          productId: input.productId,
-          productSideId: input.productSideId,
-          embroideryAreaId: input.embroideryAreaId,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(designTemplates.id, input.id),
-            eq(designTemplates.status, 'DRAFT'),
-            eq(designTemplates.currentVersion, 0),
-            isNull(designTemplates.productId),
-            isNull(designTemplates.productSideId),
-            isNull(designTemplates.embroideryAreaId),
-            notExists(
-              tx
-                .select({ one: sql`1` })
-                .from(designTemplateVersions)
-                .where(eq(designTemplateVersions.designTemplateId, input.id)),
-            ),
-          ),
-        )
-        .returning();
-
-      if (assigned === undefined) {
-        const [current] = await tx
-          .select({ id: designTemplates.id })
-          .from(designTemplates)
-          .where(eq(designTemplates.id, input.id))
-          .limit(1);
-
-        if (current === undefined) {
-          throw notFoundError(
-            'DesignTemplateRepository.assignInitialScope',
-            'That design template does not exist.',
-          );
-        }
-        // One code for every remaining cause on purpose, exactly as
-        // `saveDraftVersion` does: a caller learning "already scoped" separately
-        // from "not DRAFT" separately from "has versions" learns the template's
-        // lifecycle state from a write it was not allowed to make.
-        throw guardViolationError(
-          'DesignTemplateRepository.assignInitialScope',
-          'STALE_WRITE',
-          'This design template can no longer be given an initial scope.',
-        );
-      }
-      return toTemplate(assigned);
-    });
+  assignInitialScope(input: AssignDesignTemplateScopeInput): Promise<DesignTemplate> {
+    return this.authoring.assignInitialScope(input);
   }
 
-  async ensureAssetAssociation(
+  ensureAssetAssociation(
     id: DesignTemplateId,
     assetId: string,
   ): Promise<{ readonly designTemplateAssetId: string; readonly created: boolean }> {
-    return this.run('ensureAssetAssociation', async () => {
-      const tx = this.requireTransaction('ensureAssetAssociation');
-
-      const [inserted] = await tx
-        .insert(designTemplateAssets)
-        .values({ id: newId(), designTemplateId: id, assetId })
-        // The unique `(template, asset)` decides, not a prior read: two saves
-        // referencing the same new Asset would both see it absent and both
-        // insert, and exactly one row must exist with exactly one event behind
-        // it.
-        .onConflictDoNothing({
-          target: [designTemplateAssets.designTemplateId, designTemplateAssets.assetId],
-        })
-        .returning({ id: designTemplateAssets.id });
-
-      if (inserted !== undefined) {
-        return { designTemplateAssetId: inserted.id, created: true };
-      }
-
-      const [existing] = await tx
-        .select({ id: designTemplateAssets.id })
-        .from(designTemplateAssets)
-        .where(
-          and(
-            eq(designTemplateAssets.designTemplateId, id),
-            eq(designTemplateAssets.assetId, assetId),
-          ),
-        )
-        .limit(1);
-
-      if (existing === undefined) {
-        throw guardViolationError(
-          'DesignTemplateRepository.ensureAssetAssociation',
-          'DESIGN_TEMPLATE_ASSET_NOT_ASSOCIATED',
-          'Could not associate that asset with the design template.',
-        );
-      }
-      return { designTemplateAssetId: existing.id, created: false };
-    });
+    return this.authoring.ensureAssetAssociation(id, assetId);
   }
 
-  async setPreviewDerivative(id: DesignTemplateId, previewDerivativeId: string): Promise<void> {
-    return this.run('setPreviewDerivative', async () => {
-      const [row] = await this.db
-        .update(designTemplates)
-        .set({ previewDerivativeId, updatedAt: new Date() })
-        .where(eq(designTemplates.id, id))
-        .returning({ id: designTemplates.id });
-
-      if (row === undefined) {
-        throw notFoundError(
-          'DesignTemplateRepository.setPreviewDerivative',
-          'That design template does not exist.',
-        );
-      }
-    });
+  setPreviewDerivative(id: DesignTemplateId, previewDerivativeId: string): Promise<void> {
+    return this.authoring.setPreviewDerivative(id, previewDerivativeId);
   }
 
-  async attachAsset(id: DesignTemplateId, assetId: string): Promise<void> {
-    return this.run('attachAsset', async () => {
-      await this.db
-        .insert(designTemplateAssets)
-        .values({ id: newId(), designTemplateId: id, assetId });
-    });
+  attachAsset(id: DesignTemplateId, assetId: string): Promise<void> {
+    return this.authoring.attachAsset(id, assetId);
   }
 
-  /**
-   * The three LC-24 lifecycle transitions `APP3-B04` owns, as one shape.
-   *
-   * Every one is a single guarded `UPDATE`: the source state and the expected
-   * counter are **in the predicate**, so two concurrent transitions on the same
-   * template serialise on the row and exactly one matches. A read-then-update
-   * would let a publish and an archive both read `DRAFT` and both proceed.
-   *
-   * `current_version` is never in the `SET`. The publication subject is the
-   * version `APP3-B03A` already wrote, and a lifecycle transition that moved the
-   * counter would silently change which version is published.
-   */
-  private async transition(
-    operation: string,
-    input: DesignTemplateLifecycleInput,
-    from: readonly DesignTemplateState[],
-    set: Record<string, unknown>,
-  ): Promise<void> {
-    const tx = this.requireTransaction(operation);
+  // --- LC-24 transitions (APP3-B04 / B04A) ---------------------------------
 
-    const [changed] = await tx
-      .update(designTemplates)
-      .set(set)
-      .where(
-        and(
-          eq(designTemplates.id, input.id),
-          inArray(designTemplates.status, [...from]),
-          eq(designTemplates.currentVersion, input.expectedCurrentVersion),
-        ),
-      )
-      .returning({ id: designTemplates.id });
-
-    if (changed !== undefined) return;
-
-    const [current] = await tx
-      .select({ id: designTemplates.id })
-      .from(designTemplates)
-      .where(eq(designTemplates.id, input.id))
-      .limit(1);
-
-    if (current === undefined) {
-      throw notFoundError(
-        `DesignTemplateRepository.${operation}`,
-        'That design template does not exist.',
-      );
-    }
-    // One code for "wrong state" and "counter moved" alike: distinguishing them
-    // would tell a caller the template's lifecycle state through a transition it
-    // was not allowed to make.
-    throw guardViolationError(
-      `DesignTemplateRepository.${operation}`,
-      'STALE_WRITE',
-      'This design template changed since it was loaded.',
-    );
-  }
-
-  async publishCurrentVersion(
+  publishCurrentVersion(
     input: DesignTemplateLifecycleInput & { readonly at: Date },
   ): Promise<void> {
-    return this.run('publishCurrentVersion', async () => {
-      const tx = this.requireTransaction('publishCurrentVersion');
-      await this.transition('publishCurrentVersion', input, ['DRAFT'], {
-        status: 'PUBLISHED',
-        updatedAt: input.at,
-      });
-
-      // `published_at` is stamped **only when null**. A republication of the same
-      // version keeps its original timestamp, which is what `IMP-D042` PO-04
-      // means by set once and never rewritten — expressed as a predicate rather
-      // than as a read-and-branch, so a concurrent republish cannot overwrite it
-      // between the read and the write.
-      await tx
-        .update(designTemplateVersions)
-        .set({ publishedAt: input.at })
-        .where(
-          and(
-            eq(designTemplateVersions.designTemplateId, input.id),
-            eq(designTemplateVersions.version, input.expectedCurrentVersion),
-            isNull(designTemplateVersions.publishedAt),
-          ),
-        );
-    });
+    return this.lifecycle.publishCurrentVersion(input);
   }
 
-  async unpublish(input: DesignTemplateLifecycleInput): Promise<void> {
-    return this.run('unpublish', async () => {
-      // The header only. Versions and their timestamps survive untouched:
-      // editing after an unpublish creates a *new* immutable version rather than
-      // reopening the one that was published.
-      await this.transition('unpublish', input, ['PUBLISHED'], {
-        status: 'DRAFT',
-        updatedAt: new Date(),
-      });
-    });
+  unpublish(input: DesignTemplateLifecycleInput): Promise<void> {
+    return this.lifecycle.unpublish(input);
   }
 
-  async archive(input: DesignTemplateLifecycleInput & { readonly at: Date }): Promise<void> {
-    return this.run('archive', async () => {
-      // Both source states in one predicate: `TR-LC24-04` and `TR-LC24-05` are
-      // the same durable retirement, and archive is never a delete.
-      await this.transition('archive', input, ['DRAFT', 'PUBLISHED'], {
-        status: 'ARCHIVED',
-        archivedAt: input.at,
-        updatedAt: input.at,
-      });
-    });
+  archive(input: DesignTemplateLifecycleInput & { readonly at: Date }): Promise<void> {
+    return this.lifecycle.archive(input);
   }
+
+  /** `TR-LC24-06`. Clears the current archive marker; preserves everything else. */
+  restore(input: DesignTemplateLifecycleInput & { readonly at: Date }): Promise<void> {
+    return this.lifecycle.restore(input);
+  }
+
+  // --- reads ---------------------------------------------------------------
 
   async findById(id: DesignTemplateId): Promise<DesignTemplate | undefined> {
     return this.run('findById', async () => {

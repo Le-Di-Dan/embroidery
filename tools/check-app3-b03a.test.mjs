@@ -18,7 +18,13 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-import { acceptedAdminTemplateOperationCount, acceptedSurface } from './app3-accepted-surface.mjs';
+import {
+  APP3_SURFACE_TOOL_FILES,
+  acceptedAdminTemplateOperationCount,
+  ADMIN_TEMPLATE_ADAPTER_FILES,
+  adminTemplateSurfaceFiles,
+  acceptedSurface,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   REPO_ROOT,
@@ -39,6 +45,10 @@ after(() => {
   for (const dir of temporaries) rmSync(dir, { recursive: true, force: true });
 });
 
+// The save and the association insert live in the authoring writes, which
+// APP3-B04A split out of the adapter. A case must break the real file.
+const AUTHORING_WRITES = ADMIN_TEMPLATE_ADAPTER_FILES[1];
+
 const file = (key) => read(REPO_ROOT, key) ?? '';
 const mentions = (failures, needle) => failures.some((f) => f.includes(needle));
 
@@ -47,7 +57,15 @@ function baseRoot() {
   if (base !== undefined) return base;
   base = mkdtempSync(join(tmpdir(), 'app3-b03a-'));
   temporaries.push(base);
-  const extras = ['tools/check-app3-b03a.mjs', 'tools/app3-accepted-surface.mjs'];
+  const extras = [
+    'tools/check-app3-b03a.mjs',
+    ...APP3_SURFACE_TOOL_FILES,
+    // The Admin Template surface is no longer one controller and one adapter:
+    // APP3-B04A split both by responsibility, and a harness that copied only
+    // the files named in CANONICAL_FILES would run every rule against a repo
+    // where the code under test simply is not present.
+    ...adminTemplateSurfaceFiles(),
+  ];
   for (const relative of [...Object.values(CANONICAL_FILES), ...extras]) {
     const target = join(base, relative);
     mkdirSync(dirname(target), { recursive: true });
@@ -216,26 +234,43 @@ describe('the compare-and-set', () => {
 
   it('rejects dropping the expected version from the predicate', () => {
     // Read-then-write: both racing saves would believe they won.
-    const adapter = file('adapter').replace(
+    const adapter = file(AUTHORING_WRITES).replace(
       'eq(designTemplates.currentVersion, input.expectedCurrentVersion),',
       '',
     );
-    assert.ok(mentions(run(checkSaveSemantics, { adapter }), 'does not compare-and-set'));
+    assert.ok(
+      mentions(
+        run(checkSaveSemantics, { [AUTHORING_WRITES]: adapter }),
+        'does not compare-and-set',
+      ),
+    );
   });
 
   it('rejects dropping the DRAFT requirement', () => {
-    const adapter = file('adapter').replace("eq(designTemplates.status, 'DRAFT'),", '');
-    assert.ok(mentions(run(checkSaveSemantics, { adapter }), 'does not require a DRAFT header'));
+    const adapter = file(AUTHORING_WRITES).replace("eq(designTemplates.status, 'DRAFT'),", '');
+    assert.ok(
+      mentions(
+        run(checkSaveSemantics, { [AUTHORING_WRITES]: adapter }),
+        'does not require a DRAFT header',
+      ),
+    );
   });
 
   it('rejects stamping a draft version as published', () => {
-    const adapter = file('adapter').replace('publishedAt: null,', 'publishedAt: new Date(),');
-    assert.ok(mentions(run(checkSaveSemantics, { adapter }), 'published_at null'));
+    const adapter = file(AUTHORING_WRITES).replace(
+      'publishedAt: null,',
+      'publishedAt: new Date(),',
+    );
+    assert.ok(
+      mentions(run(checkSaveSemantics, { [AUTHORING_WRITES]: adapter }), 'published_at null'),
+    );
   });
 
   it('rejects a read-then-insert association', () => {
-    const adapter = file('adapter').replace(/\.onConflictDoNothing\(\{[\s\S]*?\}\)/, '');
-    assert.ok(mentions(run(checkSaveSemantics, { adapter }), 'not conflict-atomic'));
+    const adapter = file(AUTHORING_WRITES).replace(/\.onConflictDoNothing\(\{[\s\S]*?\}\)/, '');
+    assert.ok(
+      mentions(run(checkSaveSemantics, { [AUTHORING_WRITES]: adapter }), 'not conflict-atomic'),
+    );
   });
 
   it('rejects widening publishVersion to a nullable stamp', () => {

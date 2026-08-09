@@ -197,24 +197,52 @@ export class PublishDesignTemplateBody extends createZodDto(lifecycleTemplateBod
 export class UnpublishDesignTemplateBody extends createZodDto(lifecycleTemplateBodySchema) {}
 
 /** `design_templates` stores no reason; the cap keeps an audit summary bounded. */
-export const TEMPLATE_ARCHIVE_REASON_MAX_LENGTH = 500;
+export const TEMPLATE_LIFECYCLE_REASON_MAX_LENGTH = 500;
 
 /**
  * Archive additionally requires a reason.
  *
  * `IMP-D042` PO-03 requires one for archive and restore and for neither publish
- * nor unpublish, so it lives on this body alone. It is trimmed and non-empty:
- * a blank reason satisfies the letter of a required field and none of its
- * purpose.
+ * nor unpublish, so it lives on this body and the restore body below and on
+ * neither of the other two. It is trimmed and non-empty: a blank reason
+ * satisfies the letter of a required field and none of its purpose.
  */
 export const archiveDesignTemplateBodySchema = z
   .object({
     expectedCurrentVersion: z.number().int().min(0),
-    reason: z.string().trim().min(1).max(TEMPLATE_ARCHIVE_REASON_MAX_LENGTH),
+    reason: z.string().trim().min(1).max(TEMPLATE_LIFECYCLE_REASON_MAX_LENGTH),
   })
   .strict();
 
 export class ArchiveDesignTemplateBody extends createZodDto(archiveDesignTemplateBodySchema) {}
+
+/**
+ * The restore body (`APP3-B04A`, `TR-LC24-06`).
+ *
+ * Structurally identical to archive, and deliberately its own schema rather than
+ * the same DTO under a second name: the two are separate published contracts and
+ * one of them changing must not silently change the other. The bound is the
+ * shared constant above, so the two cannot drift apart by accident either.
+ *
+ * The token is `expectedCurrentVersion` — `APP3-B04`'s, not a second one.
+ * Restore preserves the counter rather than moving it, so the caller is stating
+ * which retained version it believes it is bringing back; a caller holding a
+ * stale view of that is exactly the caller who must not transition.
+ *
+ * Nothing server-owned is accepted, and in particular no `status`, no
+ * `archivedAt` and no force flag. A request that could name its target state
+ * could ask for `ARCHIVED → PUBLISHED`, which `IMP-D042` PO-03 says is not a
+ * transition at all: restore always lands in `DRAFT` and republication is the
+ * separate guarded `TR-LC24-02`.
+ */
+export const restoreDesignTemplateBodySchema = z
+  .object({
+    expectedCurrentVersion: z.number().int().min(0),
+    reason: z.string().trim().min(1).max(TEMPLATE_LIFECYCLE_REASON_MAX_LENGTH),
+  })
+  .strict();
+
+export class RestoreDesignTemplateBody extends createZodDto(restoreDesignTemplateBodySchema) {}
 
 registerZodDtos(
   DesignTemplateIdParam,
@@ -225,4 +253,5 @@ registerZodDtos(
   PublishDesignTemplateBody,
   UnpublishDesignTemplateBody,
   ArchiveDesignTemplateBody,
+  RestoreDesignTemplateBody,
 );

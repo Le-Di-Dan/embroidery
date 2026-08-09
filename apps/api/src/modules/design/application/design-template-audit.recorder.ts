@@ -72,13 +72,20 @@ export const DESIGN_TEMPLATE_SCOPE_ASSIGNED_ACTION = 'design_template.scope_assi
  * editing from one that was retired. Archive is a third thing again, and is
  * never a delete.
  */
-export type DesignTemplateLifecycleTransition = 'PUBLISHED' | 'UNPUBLISHED' | 'ARCHIVED';
+export type DesignTemplateLifecycleTransition =
+  'PUBLISHED' | 'UNPUBLISHED' | 'ARCHIVED' | 'RESTORED';
 
 export const DESIGN_TEMPLATE_LIFECYCLE_ACTIONS: Record<DesignTemplateLifecycleTransition, string> =
   {
     PUBLISHED: 'design_template.published',
     UNPUBLISHED: 'design_template.unpublished',
     ARCHIVED: 'design_template.archived',
+    // `TR-LC24-06` (`APP3-B04A`). A fourth distinct code, never folded into
+    // unpublish: both land in `DRAFT`, and an operator reading the trail must be
+    // able to tell a template that came back from retirement from one that was
+    // simply taken off the storefront. The archive it reverses keeps its own row
+    // — restore is a new fact, not a retraction of the old one.
+    RESTORED: 'design_template.restored',
   };
 
 export interface RecordTemplateCreatedInput {
@@ -181,11 +188,11 @@ export class DesignTemplateAuditRecorder {
   /**
    * One row per successful LC-24 lifecycle transition (`APP3-B04`).
    *
-   * `IMP-D042` PO-03 audits **every** transition, so all three share one writer
+   * `IMP-D042` PO-03 audits **every** transition, so all four share one writer
    * and one bounded summary: where the template came from, where it went, and
    * which immutable version was the subject. A reason is carried only for
-   * archive, because PO-03 requires one for archive and restore and for nothing
-   * else — a reason invented for publish would be evidence the server made up.
+   * archive and restore, because PO-03 requires one for exactly those two — a
+   * reason invented for publish would be evidence the server made up.
    *
    * Never the document, an Asset id, a storage fact, a credential or an outbox
    * payload.
