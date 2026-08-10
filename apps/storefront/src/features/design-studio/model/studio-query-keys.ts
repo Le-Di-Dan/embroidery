@@ -42,4 +42,14 @@ export const studioQueryKeys = {
    */
   templateAsset: (templateSlug: string, version: number, assetId: string) =>
     [...studioQueryKeys.all, 'template-asset', templateSlug, String(version), assetId] as const,
+  /**
+   * The stage background (`APP3-S02`), keyed by the Product slug and the Side
+   * code the **Session** resolved — the same pair that addresses the route.
+   *
+   * A key that named only the Product would let one Side's artwork be served
+   * under another's, which on a stage is not a cosmetic slip: every element
+   * would be drawn over the wrong garment.
+   */
+  sideBackground: (productSlug: string, sideCode: string) =>
+    [...studioQueryKeys.all, 'side-background', productSlug, sideCode] as const,
 } as const;

@@ -136,3 +136,52 @@ export function featureCode(rootDir) {
     .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
     .join('\n');
 }
+
+/**
+ * The files `APP3-S02` added to this feature, named exactly.
+ *
+ * Several rules here were written when the Studio had no stage, and they are
+ * the rules that keep it having exactly one. Making them world-aware means
+ * splitting the feature rather than loosening the rule: everything S01 owns
+ * still may not reach a background operation, hold a store, or render an
+ * `<svg>`, and the stage may — once.
+ *
+ * The list names the S02 files rather than the S01 ones on purpose. A file
+ * added tomorrow is not on it, so it inherits the strict S01 rules by default.
+ * A list of S01 files would have let a new file escape every one of them.
+ */
+export const S02_FILES = Object.freeze([
+  'components/studio-stage.tsx',
+  'components/studio-stage-background-notice.tsx',
+  'components/studio-stage-element.tsx',
+  'components/studio-stage-screen.tsx',
+  'components/studio-stage-selection.tsx',
+  'components/studio-stage-unavailable.tsx',
+  'hooks/use-side-background.ts',
+  'model/studio-stage-copy.ts',
+  'model/studio-stage-label.ts',
+  'renderer/studio-paint.ts',
+  'renderer/studio-scene.ts',
+  'renderer/studio-svg-matrix.ts',
+  'services/studio-background.client.ts',
+  'store/studio-interaction.store.ts',
+]);
+
+/** The three section-06 rows `APP3-S02` legitimately approves. */
+export const S02_DESIGN_ROWS = Object.freeze([
+  'FIG-STUDIO-STAGE-DESKTOP-UNSELECTED',
+  'FIG-STUDIO-STAGE-DESKTOP-SELECTED',
+  'FIG-STUDIO-STAGE-DESKTOP-EMPTY',
+]);
+
+/** The feature minus what S02 added, plus the route. Prose stripped. */
+export function s01FeatureCode(rootDir) {
+  const s02 = new Set(S02_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  const files = [
+    ...collect(join(rootDir, FEATURE), /\.tsx?$/).filter((path) => !s02.has(path)),
+    join(rootDir, CANONICAL_FILES.route),
+  ];
+  return files
+    .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
+    .join('\n');
+}

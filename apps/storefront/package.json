@@ -17,6 +17,8 @@
   "dependencies": {
     "@embroidery/api-client": "workspace:*",
     "@embroidery/contracts": "workspace:*",
+    "@embroidery/design-document": "workspace:*",
+    "@embroidery/design-engine": "workspace:*",
     "@embroidery/styles": "workspace:*",
     "@tanstack/react-query": "^5.101.2",
     "axios": "^1.18.1",

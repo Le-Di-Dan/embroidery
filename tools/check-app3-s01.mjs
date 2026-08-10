@@ -32,7 +32,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S01_STATUS_LINES, acceptedSurface, isS01Delivered } from './app3-accepted-surface.mjs';
+import {
+  S01_STATUS_LINES,
+  acceptedSurface,
+  isS01Delivered,
+  isS02Delivered,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   EXPECTED_MIGRATIONS,
@@ -43,6 +48,7 @@ import {
   REPO_ROOT,
   ROOT_SCRIPTS,
   S01_DESIGN_ROWS,
+  S02_DESIGN_ROWS,
   STOREFRONT,
   STUDIO_ROUTE,
   code,
@@ -100,9 +106,12 @@ export function checkPredecessors(rootDir, fail) {
   if (!/FU-APP3-TEMPLATE-SOURCE-ASSET-INTAKE-01/.test(phase)) {
     fail(`${CANONICAL_FILES.phase}: the TEMPLATE_SOURCE intake follow-up is no longer recorded`);
   }
-  // S02 is the next checkpoint, not part of this one.
-  if (/\nAPP3-S02 = COMPLETE/.test(phase)) {
-    fail(`${CANONICAL_FILES.phase}: APP3-S02 is recorded complete; S01 does not implement it`);
+  // S02 is the next checkpoint, not part of this one — and a successor cannot
+  // ship before the predecessor it consumes. Once S01 is delivered the stage is
+  // free to exist; before that, an S02 recorded complete would mean the stage
+  // was built on a bootstrap that had not shipped.
+  if (!isS01Delivered(rootDir) && /\nAPP3-S02 = COMPLETE/.test(phase)) {
+    fail(`${CANONICAL_FILES.phase}: APP3-S02 is recorded complete before APP3-S01 delivered it`);
   }
 }
 
@@ -137,7 +146,13 @@ export function checkDesignApproval(rootDir, fail) {
 
   // The half that makes the approval *scoped*: a blanket Studio approval must
   // fail this gate rather than pass it.
-  for (const id of LATER_STUDIO_ROWS) {
+  //
+  // World-aware on the section-06 rows only. `APP3-S02` legitimately approves
+  // its own three frames, so once it has delivered they are no longer evidence
+  // of a blanket approval — while every row belonging to a checkpoint that
+  // still has not opened stays exactly as ruled.
+  const opened = isS02Delivered(rootDir) ? new Set(S02_DESIGN_ROWS) : new Set();
+  for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }
@@ -314,7 +329,7 @@ function main() {
     return;
   }
   console.log(
-    'check:app3-s01 — one Storefront Studio route at /san-pham/[slug]/thiet-ke and no competing spelling, on exactly the five approved section-05 design rows with every later Studio row still unapproved: a server shell over a lazy client island, the public placement manifest as the sole Side/Area authority with studioEligible blocking Template and Session work, deterministic IMP-D041 PO-04 selection that starts on the canonical first active Side without narrowing the list by usability first and keeps an Area-less Side selected while closing everything downstream of it, a cascade that is one reducer transition, exact-triple compatibility carried in the query key so a late response for a previous placement cannot land, opaque keyset continuation with no fabricated offset/page/total, one detail read for the one selected Template, a B05A-contextual preview whose blob is revoked on every change and never persisted, the generated BLANK and CLONE_TEMPLATE branches with no clone-to-blank fallback and no duplicate submit, resume by the in-memory create response with no secret argument and no browser persistence of any kind, no APP3-S02 renderer concern, and an OpenAPI artifact, generated client, migration count and root-script count all unchanged.',
+    'check:app3-s01 — one Storefront Studio route at /san-pham/[slug]/thiet-ke and no competing spelling, on exactly the five approved section-05 design rows with every later Studio row still unapproved: a server shell over a lazy client island, the public placement manifest as the sole Side/Area authority with studioEligible blocking Template and Session work, deterministic IMP-D041 PO-04 selection that starts on the canonical first active Side without narrowing the list by usability first and keeps an Area-less Side selected while closing everything downstream of it, a cascade that is one reducer transition, exact-triple compatibility carried in the query key so a late response for a previous placement cannot land, opaque keyset continuation with no fabricated offset/page/total, one detail read for the one selected Template, a B05A-contextual preview whose blob is revoked on every change and never persisted, the generated BLANK and CLONE_TEMPLATE branches with no clone-to-blank fallback and no duplicate submit, resume by the in-memory create response with no secret argument and no browser persistence of any kind, no renderer concern in the bootstrap screen and exactly one native-SVG renderer in the feature once APP3-S02 has delivered one (none before it, and never a canvas), no Zustand store holding a Session identity, and an OpenAPI artifact, generated client, migration count and root-script count all unchanged.',
   );
 }
 

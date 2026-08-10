@@ -293,12 +293,25 @@ export type {
 //   bootstraps a session and stops. Autosave is `APP3-S10`'s and customer image
 //   upload is `APP3-S06`'s, and an operation on this boundary is an invitation
 //   to call it before the screen that owns it exists.
-// - `publicProductSideBackgroundGet` — the Side background belongs to the S02
-//   editor stage. S01 renders no stage, so it needs no background bytes.
 // - `publicProductMediaGet`, unchanged: product images are fetched by the
 //   browser from the relative `media[].url` the catalog responses return.
+//
+// `publicProductSideBackgroundGet` crossed with `APP3-S02`, the stage that
+// finally renders one. S01 withheld it for the reason stated at the time — it
+// rendered no stage, so it needed no background bytes — and that rule is
+// satisfied rather than relaxed: S01's own gate still asserts the bootstrap
+// screen never calls it.
+//
+// It resolves to a `Blob`, like the Template asset above and for the same
+// reason. The caller turns it into a browser object URL as a purely local
+// rendering handle — never persisted, never sent back, never a storage address.
+// The address is contextual: a public Product slug and a Side's stable public
+// code, neither of which is an asset id, a derivative id or a storage key, and
+// the server re-proves publication, side activity and the derivative on every
+// request.
 export {
   publicProductPlacementGet,
+  publicProductSideBackgroundGet,
   publicDesignTemplateList,
   publicDesignTemplateDetail,
   publicDesignTemplateAssetGet,

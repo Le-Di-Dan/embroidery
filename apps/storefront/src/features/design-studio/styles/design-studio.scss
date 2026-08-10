@@ -337,3 +337,160 @@ $bp-studio-split: 1025px;
     color: styles.$color-text-tertiary;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Studio stage & selection (APP3-S02)
+//
+// Design source: FIG-STUDIO-STAGE-DESKTOP-{UNSELECTED 606:3, SELECTED 606:63,
+// EMPTY 606:133}, section 06 — 596:12, with FIG-STUDIO-EDITING-TABLET-1024
+// (618:140) as the responsive reference.
+//
+// There is no geometry in this file, and that is the point. The SVG `viewBox`
+// is the document's own placement canvas, so the browser scales the entire
+// coordinate system and every element keeps its authored position at every
+// width. Nothing here positions an element, offsets one or multiplies a
+// document number by a viewport scale: CSS decides how big the drawing is
+// drawn, APP3-P02 decides what is in it.
+// ---------------------------------------------------------------------------
+
+.studio-stage {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+}
+
+.studio-stage__frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  min-width: 0;
+}
+
+// The SVG scales its own coordinate system, so the frame only has to give it a
+// width. `height: auto` keeps the aspect ratio the viewBox already defines, and
+// `max-width: 100%` is what stops a wide canvas from scrolling the page on the
+// x-axis at 390.
+.studio-stage__canvas {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 70vh;
+}
+
+.studio-stage__background {
+  // Contextual artwork sits under everything and is never a hit target.
+  pointer-events: none;
+}
+
+.studio-stage__area {
+  fill: none;
+  stroke: styles.$color-status-info;
+  stroke-width: 2;
+  stroke-dasharray: 8 8;
+  // A static boundary, not a control: APP3-S07 owns any interaction with it.
+  pointer-events: none;
+}
+
+.studio-stage__selection {
+  fill: none;
+  stroke: styles.$color-action-primary;
+  stroke-width: 2;
+  // A presentation of the selection the element itself already announces. It
+  // must never intercept the click that would select something else.
+  pointer-events: none;
+}
+
+// Selection is not communicated by colour alone: the element carries
+// `aria-pressed`, the stage states the selected element's name in text, and the
+// outline above is the third channel rather than the only one.
+.studio-stage__canvas [role='button'] {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+// Deliberately drawn to look like a placeholder. A customer must never mistake
+// it for their own artwork while the bytes are still APP3-S06/B06C's to serve.
+.studio-stage__image-placeholder {
+  fill: styles.$color-background-secondary;
+  stroke: styles.$color-border-secondary;
+  stroke-width: 2;
+  stroke-dasharray: 8 8;
+}
+
+.studio-stage__placeholder-label {
+  fill: styles.$color-text-tertiary;
+}
+
+// No `font-family` here on purpose. The face comes from the controlled font
+// registry, per element, through the `fontFamily` attribute the adapter
+// resolved — a stylesheet rule would override every document's own font with
+// one the customer never chose.
+.studio-stage__text {
+  // Text is drawn, not selected: a drag-select on the canvas would look like an
+  // editing affordance APP3-S05 has not shipped.
+  user-select: none;
+}
+
+.studio-stage__notice {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: styles.spacing(8);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.studio-stage__notice-action {
+  min-height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-caption;
+  cursor: pointer;
+}
+
+.studio-stage__empty,
+.studio-stage__selection-status {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-m;
+}
+
+.studio-stage__hint {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.studio-stage__unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.studio-stage__unavailable-text {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+}

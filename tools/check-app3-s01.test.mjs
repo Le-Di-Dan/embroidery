@@ -134,11 +134,15 @@ describe('entry authority', () => {
     assert.ok(mentions(failuresOf(checkPredecessors, root), 'intake follow-up'));
   });
 
-  it('refuses an S01 that recorded S02 complete', () => {
+  it('refuses an S02 recorded complete before S01 delivered it', () => {
+    // A successor cannot ship on a predecessor that has not. Once S01 *is*
+    // delivered the stage is free to exist, so the rewind is what makes this a
+    // violation rather than the ordinary world — the rule moved with the world
+    // instead of being deleted when the world moved past it.
     const root = rootWith({
-      phase: `${file('phase')}\nAPP3-S02 = COMPLETE — REVIEW_DELIVERED\n`,
+      phase: `${beforeS01()}\nAPP3-S02 = COMPLETE — REVIEW_DELIVERED\n`,
     });
-    assert.ok(mentions(failuresOf(checkPredecessors, root), 'APP3-S02 is recorded complete'));
+    assert.ok(mentions(failuresOf(checkPredecessors, root), 'before APP3-S01 delivered it'));
   });
 });
 
@@ -162,9 +166,24 @@ describe('scoped design approval', () => {
 
   it('refuses a blanket Studio approval', () => {
     // The mutation that unblocks every later Studio checkpoint at once, and the
-    // reason approval is asserted in both directions.
+    // reason approval is asserted in both directions. Asserted on a layers row:
+    // `APP3-S02` legitimately approved the three section-06 stage rows, so those
+    // are no longer evidence of anything — a gate that still named one of them
+    // would be catching this mutation for a reason that had stopped being true.
     const root = rootWith({
       registry: file('registry').replaceAll('REVIEW_REQUIRED', 'APPROVED_FOR_IMPLEMENTATION'),
+    });
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'));
+  });
+
+  it('refuses the S02 stage rows approved before S02 opened', () => {
+    // The other half of the same world-awareness: in the world where S02 has
+    // not delivered, those three rows are exactly as unapproved as the rest.
+    const root = rootWith({
+      phase: file('phase').replace(
+        /\nAPP3-S02 = COMPLETE[^\n]*\n/,
+        '\nAPP3-S02 = READY — NOT STARTED\n',
+      ),
     });
     assert.ok(
       mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-STAGE-DESKTOP-UNSELECTED'),
@@ -446,11 +465,40 @@ describe('the preview blob', () => {
     assert.ok(mentions(failuresOf(checkPreview, root), 'previous'));
   });
 
-  it('refuses an S02 renderer concern', () => {
+  it('refuses a second renderer beside the one S02 delivered', () => {
+    // Two `<svg>` roots are two renderers whatever the second is called, and the
+    // second arrives in a file no rule was written to name — which is why the
+    // count is taken over the whole feature rather than over a known list.
     const root = rootWith({
-      [`${FEATURE}/components/studio-stage.tsx`]: 'export const S = () => <svg />;',
+      [`${FEATURE}/components/studio-second-stage.tsx`]: 'export const S = () => <svg />;',
     });
-    assert.ok(mentions(failuresOf(checkPreview, root), 'APP3-S02 renderer'));
+    assert.ok(mentions(failuresOf(checkPreview, root), 'opens 2 <svg> roots'));
+  });
+
+  it('refuses a renderer inside the bootstrap screen S01 owns', () => {
+    // The original S01 rule, unchanged and still biting: the stage may exist,
+    // but not here.
+    const root = rootWith({
+      screen: file('screen').replace('<div className="studio">', '<div className="studio"><svg />'),
+    });
+    assert.ok(mentions(failuresOf(checkPreview, root), 'bootstrap screen builds a renderer'));
+  });
+
+  it('refuses any renderer at all in the world before S02', () => {
+    const root = rootWith({
+      phase: file('phase').replace(
+        /\nAPP3-S02 = COMPLETE[^\n]*\n/,
+        '\nAPP3-S02 = READY — NOT STARTED\n',
+      ),
+    });
+    assert.ok(mentions(failuresOf(checkPreview, root), 'expected exactly 0'));
+  });
+
+  it('refuses a canvas in either world', () => {
+    const root = rootWith({
+      [`${FEATURE}/components/studio-raster.tsx`]: 'export const S = () => <canvas />;',
+    });
+    assert.ok(mentions(failuresOf(checkPreview, root), '<canvas'));
   });
 });
 
@@ -490,6 +538,17 @@ describe('bootstrap and the secret boundary', () => {
       ),
     });
     assert.ok(mentions(failuresOf(checkSession, root), 'localStorage'));
+  });
+
+  it('refuses a Session identity reaching the S02 interaction store', () => {
+    // The half of the old blanket Zustand ban that actually mattered. S02
+    // legitimately introduced a store, so the rule is now asserted where it
+    // bites — a store that could hold a session id, rather than a store at all.
+    const root = rootWith({
+      [`${FEATURE}/store/studio-interaction.store.ts`]:
+        'export const s = { selectedElementId: null, sessionId: null };',
+    });
+    assert.ok(mentions(failuresOf(checkSession, root), 'Session identity may reach'));
   });
 
   it('refuses an expiry not bound to the 401 the API answers', () => {

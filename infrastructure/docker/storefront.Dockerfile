@@ -38,6 +38,15 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS dev
 COPY . .
 ENV NODE_ENV=development
+# Workspace runtime packages ship TypeScript source and resolve to `dist`
+# (IMP-D018), so they must be compiled inside the image before Next can resolve
+# them. `@embroidery/storefront^...` selects every workspace dependency of the
+# Storefront *except* the Storefront itself, so a newly added one is built here
+# automatically rather than failing the dev server with a module-not-found —
+# which is exactly how `APP3-S02` found this, after adding
+# `@embroidery/design-document` and `@embroidery/design-engine`. The Admin image
+# needed it first, at `APP3-A03`, for the same two packages.
+RUN pnpm --filter "@embroidery/storefront^..." build
 EXPOSE 3000
 CMD ["pnpm", "--filter", "@embroidery/storefront", "dev"]
 
@@ -47,6 +56,10 @@ CMD ["pnpm", "--filter", "@embroidery/storefront", "dev"]
 FROM deps AS build
 COPY . .
 ENV NODE_ENV=production
+# Same reason as the dev stage: the Storefront's workspace dependencies resolve
+# to `dist`, so they are compiled before `next build` runs. Omitting it here
+# would leave the production image unbuildable while dev worked.
+RUN pnpm --filter "@embroidery/storefront^..." build
 RUN pnpm --filter @embroidery/storefront build
 
 # ---------------------------------------------------------------------------

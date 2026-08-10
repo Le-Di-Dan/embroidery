@@ -65,6 +65,43 @@ const routeFiles = collect(ROUTE_DIR, /\.tsx$/).map((path) => ({
 const allCode = codeOnly([...sources, ...routeFiles].map((file) => file.text).join('\n'));
 const scssCode = codeOnly(readFileSync(STYLESHEET, 'utf8'));
 
+/**
+ * The files `APP3-S02` added, named exactly.
+ *
+ * Several rules below were written when the Studio had no stage, and they are
+ * the rules that keep it having exactly one. Making them world-aware means
+ * splitting the feature rather than loosening the rule: everything S01 owns
+ * still may not reach a background operation, hold a store, import a document
+ * authority or render an `<svg>`, and the stage may — once.
+ *
+ * The list is of the S02 files rather than the S01 ones on purpose. A file
+ * added tomorrow is not on it, so it inherits the strict S01 rules by default;
+ * a list of S01 files would have let a new file escape every one of them.
+ */
+const S02_FILES = new Set(
+  [
+    'components/studio-stage.tsx',
+    'components/studio-stage-background-notice.tsx',
+    'components/studio-stage-element.tsx',
+    'components/studio-stage-screen.tsx',
+    'components/studio-stage-selection.tsx',
+    'components/studio-stage-unavailable.tsx',
+    'hooks/use-side-background.ts',
+    'model/studio-stage-copy.ts',
+    'model/studio-stage-label.ts',
+    'renderer/studio-paint.ts',
+    'renderer/studio-scene.ts',
+    'renderer/studio-svg-matrix.ts',
+    'services/studio-background.client.ts',
+    'store/studio-interaction.store.ts',
+  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
+const s01Sources = sources.filter((file) => !S02_FILES.has(file.path));
+const s02Sources = sources.filter((file) => S02_FILES.has(file.path));
+const s01Code = codeOnly([...s01Sources, ...routeFiles].map((file) => file.text).join('\n'));
+const s02Code = codeOnly(s02Sources.map((file) => file.text).join('\n'));
+
 describe('the Studio route', () => {
   it('discovers the feature and the single route file', () => {
     expect(sources.length).toBeGreaterThan(10);
@@ -119,17 +156,31 @@ describe('the API boundary', () => {
     }
   });
 
-  it('reaches no Admin, autosave, session-asset or side-background operation', () => {
+  it('reaches no Admin, autosave, session-asset or media operation', () => {
     for (const forbidden of [
       'admin',
       'Admin',
       'publicDesignSessionAutosave',
       'publicDesignSessionAssetCreate',
-      'publicProductSideBackgroundGet',
       'publicProductMediaGet',
     ]) {
       expect(allCode).not.toContain(forbidden);
     }
+  });
+
+  it('keeps the Side background out of the bootstrap screen S01 owns', () => {
+    // Unchanged from S01: the bootstrap chain renders no stage, so it needs no
+    // background bytes and must not acquire the ability to ask for them.
+    expect(s01Code).not.toContain('publicProductSideBackgroundGet');
+  });
+
+  it('reaches the Side background exactly once, from the S02 stage service', () => {
+    const callers = s02Sources.filter((file) =>
+      codeOnly(file.text).includes('publicProductSideBackgroundGet('),
+    );
+    expect(callers.map((file) => file.path.replaceAll('\\', '/').split('/').at(-1))).toEqual([
+      'studio-background.client.ts',
+    ]);
   });
 
   it('uses the approved Axios client and never raw transport', () => {
@@ -177,12 +228,37 @@ describe('Session identity never reaches the browser', () => {
     }
   });
 
-  it('holds no Zustand store', () => {
+  it('holds no Zustand store in the bootstrap screen', () => {
     // Zustand is for editor and browser-only interaction state, which is
-    // `APP3-S02`'s. S01's selection is a reducer and its server state is
-    // TanStack Query's; duplicating either in a store is forbidden outright.
-    expect(allCode).not.toContain('zustand');
-    expect(allCode).not.toContain('create(');
+    // `APP3-S02`'s. S01's placement selection is a reducer and its server state
+    // is TanStack Query's; duplicating either in a store is forbidden outright.
+    expect(s01Code).not.toContain('zustand');
+  });
+
+  it('confines the interaction store to one file holding one id', () => {
+    const holders = s02Sources.filter((file) => codeOnly(file.text).includes('zustand'));
+    expect(holders.map((file) => file.path.replaceAll('\\', '/').split('/').at(-1))).toEqual([
+      'studio-interaction.store.ts',
+    ]);
+
+    const store = codeOnly(nth(holders, 0).text);
+    expect(store).toContain('selectedElementId');
+    // No server state, no mutable runtime object, no session identity.
+    for (const forbidden of [
+      'document:',
+      'snapshot',
+      'sessionId',
+      'Blob',
+      'objectUrl',
+      'SVGElement',
+      'DOMRect',
+      'DOMMatrix',
+      'AbortController',
+      'useRef',
+      'persist(',
+    ]) {
+      expect(store).not.toContain(forbidden);
+    }
   });
 
   it('never names a session secret', () => {
@@ -192,8 +268,8 @@ describe('Session identity never reaches the browser', () => {
   });
 });
 
-describe('the S02 handoff boundary', () => {
-  it('creates no editor state container, renderer or history stack', () => {
+describe('the S01 side of the S02 boundary', () => {
+  it('still builds no renderer, stage or history stack of its own', () => {
     for (const s02 of [
       'renderer',
       'Renderer',
@@ -203,22 +279,85 @@ describe('the S02 handoff boundary', () => {
       'historyStack',
       'selectionHandle',
       '<svg',
-      '<canvas',
     ]) {
-      expect(allCode).not.toContain(s02);
+      expect(s01Code).not.toContain(s02);
     }
   });
 
-  it('does not validate or quantize a Design Document', () => {
-    // `@embroidery/design-document` is the single authority and is deliberately
-    // not a Storefront dependency: S01 reads a document at the transport seam
-    // and interprets nothing.
+  it('still does not validate, quantize or interpret a Design Document', () => {
+    // S01 reads a document at the transport seam — an asset id for the preview
+    // — and interprets nothing. `@embroidery/design-document` is now a
+    // Storefront dependency, which makes this rule matter more, not less.
     for (const authority of [
       '@embroidery/design-document',
+      '@embroidery/design-engine',
       'validateDesignDocumentStructure',
       'quantize',
     ]) {
-      expect(allCode).not.toContain(authority);
+      expect(s01Code).not.toContain(authority);
+    }
+  });
+});
+
+describe('exactly one production renderer (APP3-S02)', () => {
+  it('renders SVG natively and never a canvas', () => {
+    // `IMP-D026` / `ADR-APP0-001`: native SVG rendered by React, with no
+    // rendering-engine or interaction-library dependency anywhere.
+    expect(allCode).not.toContain('<canvas');
+    for (const engine of ['konva', 'Konva', 'fabric', 'Fabric', 'pixi', 'PIXI', 'interact.js']) {
+      expect(allCode).not.toContain(engine);
+    }
+  });
+
+  it('opens exactly one <svg> in the whole feature', () => {
+    // Two would be two renderers, whatever they were called.
+    expect(allCode.split('<svg').length - 1).toBe(1);
+  });
+
+  it('keeps geometry in the engine and out of the renderer', () => {
+    expect(s02Code).toContain('@embroidery/design-engine');
+    for (const localGeometry of [
+      'Math.cos',
+      'Math.sin',
+      'Math.atan2',
+      'Math.PI',
+      'multiplyMatrices(',
+      'composeMatrices(',
+      'pxPerMm *',
+      '/ pxPerMm',
+    ]) {
+      expect(s02Code).not.toContain(localGeometry);
+    }
+  });
+
+  it('measures nothing from the DOM', () => {
+    // A selection outline drawn from a layout box drifts from the document the
+    // moment the stage is resized. `APP3-P02`'s bounds are in document space.
+    for (const measurement of [
+      'getBoundingClientRect',
+      'DOMRect',
+      'DOMMatrix',
+      'getBBox',
+      'offsetWidth',
+      'clientWidth',
+    ]) {
+      expect(allCode).not.toContain(measurement);
+    }
+  });
+
+  it('grows no capability a later checkpoint owns', () => {
+    for (const later of [
+      'onPointerMove',
+      'onDragStart',
+      'onDrag',
+      'onWheel',
+      'watermark',
+      'Watermark',
+      'onMouseMove',
+      'undoStack',
+      'reorder',
+    ]) {
+      expect(allCode).not.toContain(later);
     }
   });
 });

@@ -86,10 +86,10 @@ const REAL_OBJECT_BYTES = 10100;
  * generation by the shared `FAMILY` prefix.
  */
 const FAMILY = '019fe70';
-const GENERATION = '2';
+const GENERATION = '3';
 
 /** Every generation ever seeded, so `revert` sweeps the objects of all of them. */
-const GENERATIONS = ['0', '1', '2'];
+const GENERATIONS = ['0', '1', '2', '3'];
 const PREFIX = `${FAMILY}${GENERATION}`;
 const id = (n) => `${PREFIX}-0000-7000-8000-${String(n).padStart(12, '0')}`;
 

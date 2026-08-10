@@ -205,6 +205,12 @@ importers:
       '@embroidery/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@embroidery/design-document':
+        specifier: workspace:*
+        version: link:../../packages/design-document
+      '@embroidery/design-engine':
+        specifier: workspace:*
+        version: link:../../packages/design-engine
       '@embroidery/styles':
         specifier: workspace:*
         version: link:../../packages/styles

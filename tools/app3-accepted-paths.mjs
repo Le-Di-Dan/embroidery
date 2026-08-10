@@ -223,6 +223,29 @@ export const S01_STATUS_LINES = Object.freeze([
   'APP3-S01 = COMPLETE — REVIEW_ACCEPTED',
 ]);
 
+/**
+ * True once `APP3-S02` has delivered the production Studio stage.
+ *
+ * `APP3-S01`'s gate bans a renderer, an `<svg>`, a Zustand store and the Side
+ * background operation anywhere in the Studio feature. Every one of those was a
+ * true statement about the world until S02 legitimately shipped exactly one of
+ * each. The bans are kept and made world-aware against this rather than
+ * deleted: before S02 they still bite, after it they become "exactly one".
+ */
+export function isS02Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S02 = COMPLETE/.test(phase);
+}
+
+/** The status lines `APP3-S02` may legitimately be recorded under. */
+export const S02_STATUS_LINES = Object.freeze([
+  'APP3-S02 = BLOCKED_BY_APP3-S01_CORRECTION_REVIEW',
+  'APP3-S02 = READY — NOT STARTED',
+  'APP3-S02 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-S02 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
 /** The status lines `APP3-B05A` may legitimately be recorded under. */
 export const B05A_STATUS_LINES = Object.freeze([
   'APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05 — NOT STARTED',

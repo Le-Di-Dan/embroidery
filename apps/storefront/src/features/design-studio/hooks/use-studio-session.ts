@@ -3,7 +3,10 @@
 import { useMutation } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
-import type { DesignSessionSnapshotResponse } from '@embroidery/api-client';
+import type {
+  DesignSessionScopeResponse,
+  DesignSessionSnapshotResponse,
+} from '@embroidery/api-client';
 
 import {
   classifyStudioFailure,
@@ -28,6 +31,23 @@ export interface StudioStartFailure {
 export interface StudioSessionState {
   /** The server's snapshot, verbatim. The only Session truth this route has. */
   readonly snapshot: DesignSessionSnapshotResponse | null;
+  /**
+   * The placement scope the bootstrap response carried (`APP3-S02`).
+   *
+   * Held beside the snapshot rather than merged into it. `APP3-B07` returns the
+   * scope on **create**, which resolved it from the public slug and codes, and
+   * omits it on **resume**, which addresses the Session by id alone — the
+   * placement did not change, so the server has nothing new to say about it. A
+   * resumed snapshot therefore arrives without the geometry the stage needs to
+   * draw the garment and the embroidery area.
+   *
+   * Remembering the create response's own scope is not the same as merging
+   * server fields: nothing here invents, extends or advances a value, and the
+   * scope of an open Session is fixed for its lifetime. It is cleared with the
+   * Session it belongs to and replaced whenever a create response brings a new
+   * one.
+   */
+  readonly scope: DesignSessionScopeResponse | null;
   readonly isStarting: boolean;
   readonly startFailure: StudioStartFailure | null;
   readonly isResuming: boolean;
@@ -79,6 +99,7 @@ function isExpiryRefusal(error: unknown): boolean {
  */
 export function useStudioSession(productSlug: string): StudioSessionState {
   const [snapshot, setSnapshot] = useState<DesignSessionSnapshotResponse | null>(null);
+  const [scope, setScope] = useState<DesignSessionScopeResponse | null>(null);
   const [startFailure, setStartFailure] = useState<StudioStartFailure | null>(null);
   const [isExpired, setExpired] = useState(false);
 
@@ -100,6 +121,9 @@ export function useStudioSession(productSlug: string): StudioSessionState {
     retry: false,
     onSuccess: (created) => {
       setSnapshot(created);
+      // Bootstrap is the one response that carries the placement scope, so it is
+      // the one moment it can be captured.
+      setScope(created.scope ?? null);
       setStartFailure(null);
       setExpired(false);
     },
@@ -138,6 +162,7 @@ export function useStudioSession(productSlug: string): StudioSessionState {
 
   return {
     snapshot,
+    scope,
     isStarting: create.isPending,
     startFailure,
     isResuming: resumption.isPending,
@@ -157,6 +182,7 @@ export function useStudioSession(productSlug: string): StudioSessionState {
       // secret and no client-side reactivation; the only way forward is a new
       // explicit bootstrap.
       setSnapshot(null);
+      setScope(null);
       setExpired(false);
       setStartFailure(null);
     },

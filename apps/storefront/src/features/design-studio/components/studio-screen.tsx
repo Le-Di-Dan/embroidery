@@ -13,7 +13,7 @@ import { EMPTY_STUDIO_SELECTION, studioSelectionReducer } from '../model/studio-
 import { previewReferenceOf } from '../model/studio-template';
 import { StudioPlacementPicker } from './studio-placement-picker';
 import { StudioSessionExpired } from './studio-session-expired';
-import { StudioSessionPanel } from './studio-session-panel';
+import { StudioStageScreen } from './studio-stage-screen';
 import { StudioStartActions } from './studio-start-actions';
 import { StudioTemplatePicker } from './studio-template-picker';
 import { StudioTemplatePreview } from './studio-template-preview';
@@ -97,11 +97,17 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
     return <StudioSessionExpired onRestart={session.restart} />;
   }
 
+  // The handover to `APP3-S02`. Once a canonical Session snapshot exists the
+  // bootstrap chain above has done its job, and the stage — not the picker — is
+  // what the customer works in. The Session's own scope travels with it, so a
+  // later change to the pre-bootstrap Side or Area selection cannot retarget an
+  // open Session; nothing on the stage can even see that selection.
   if (session.snapshot !== null) {
     return (
-      <StudioSessionPanel
+      <StudioStageScreen
         isResuming={session.isResuming}
         onResume={session.resume}
+        scope={session.scope}
         snapshot={session.snapshot}
       />
     );

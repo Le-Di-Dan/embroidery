@@ -10,13 +10,18 @@
  *
  * Read-only, cross-platform pure Node.
  */
+import { join, relative } from 'node:path';
+
+import { isS02Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   CONSUMED_OPERATIONS,
   FEATURE,
   code,
+  collect,
   featureCode,
   read,
+  s01FeatureCode,
 } from './check-app3-s01.sources.mjs';
 
 /** Six operations, the approved Axios client, and nothing that bypasses either. */
@@ -30,9 +35,15 @@ export function checkApiBoundary(rootDir, fail) {
     'adminDesignTemplate',
     'publicDesignSessionAutosave',
     'publicDesignSessionAssetCreate',
-    'publicProductSideBackgroundGet',
   ]) {
     if (all.includes(forbidden)) fail(`${FEATURE}: reaches ${forbidden}, which S01 does not own`);
+  }
+  // The Side background belongs to the `APP3-S02` stage. The rule is unchanged
+  // for S01 — the bootstrap chain renders no stage, so it needs no background
+  // bytes — and is asserted against the files S01 owns rather than against a
+  // feature that now legitimately contains one consumer.
+  if (s01FeatureCode(rootDir).includes('publicProductSideBackgroundGet')) {
+    fail(`${FEATURE}: the bootstrap screen reaches publicProductSideBackgroundGet`);
   }
   if (!all.includes('getBrowserApiClient')) {
     fail(`${FEATURE}: does not use the approved browser Axios client`);
@@ -214,9 +225,33 @@ export function checkPreview(rootDir, fail) {
     fail(`${CANONICAL_FILES.templateModel}: the preview asset does not come from the document`);
   }
 
+  /*
+   * The renderer rule, world-aware (`APP3-S02` §47).
+   *
+   * Before S02 the Studio must contain no production renderer at all — that
+   * absence is what proved no earlier checkpoint quietly started one. After it,
+   * the same rule becomes "exactly one": two `<svg>` roots are two renderers
+   * whatever the second is called, and the S01 files are still held to the
+   * original absence. Nothing is deleted; the assertion is made in the world it
+   * is now being made about.
+   *
+   * `<canvas>` stays banned outright in both worlds — `IMP-D026` locks native
+   * SVG — and so do the concerns that still belong to later checkpoints.
+   */
   const all = featureCode(rootDir);
-  for (const s02 of ['<svg', '<canvas', 'renderer', 'viewport', 'undoStack']) {
-    if (all.includes(s02)) fail(`${FEATURE}: builds an APP3-S02 renderer concern (${s02})`);
+  const s01Only = s01FeatureCode(rootDir);
+  const canvases = all.split('<svg').length - 1;
+  const expected = isS02Delivered(rootDir) ? 1 : 0;
+  if (canvases !== expected) {
+    fail(`${FEATURE}: opens ${String(canvases)} <svg> roots, expected exactly ${String(expected)}`);
+  }
+  for (const s01Ban of ['<svg', 'renderer']) {
+    if (s01Only.includes(s01Ban)) {
+      fail(`${FEATURE}: the bootstrap screen builds a renderer concern (${s01Ban})`);
+    }
+  }
+  for (const never of ['<canvas', 'viewport', 'undoStack']) {
+    if (all.includes(never)) fail(`${FEATURE}: builds a concern S01 must never carry (${never})`);
   }
 }
 
@@ -259,9 +294,29 @@ export function checkSession(rootDir, fail) {
     'history.pushState',
     'history.replaceState',
     'useSearchParams',
-    'zustand',
   ]) {
     if (all.includes(persistence)) fail(`${FEATURE}: a Session identity may reach ${persistence}`);
+  }
+  /*
+   * Zustand, world-aware.
+   *
+   * S01's rule was that no store existed at all: its placement selection is a
+   * reducer and its server state is TanStack Query's, so a store could only
+   * have been a duplicate — or somewhere a Session id could come to rest.
+   * `APP3-S02` introduces exactly one, for browser-only interaction state, and
+   * the half of the rule that mattered is unchanged and now asserted directly:
+   * whatever store exists must not be able to hold a Session identity.
+   */
+  if (s01FeatureCode(rootDir).includes('zustand')) {
+    fail(`${FEATURE}: the bootstrap screen holds a Zustand store`);
+  }
+  for (const store of collect(join(rootDir, FEATURE, 'store'), /\.ts$/)) {
+    const source = code(rootDir, relative(rootDir, store).replaceAll('\\', '/'));
+    for (const identity of ['sessionId', 'snapshot', 'secret', 'expiresAt']) {
+      if (source.includes(identity)) {
+        fail(`${relative(rootDir, store)}: a Session identity may reach the interaction store`);
+      }
+    }
   }
   for (const secret of ['secret', '__Host-']) {
     if (all.includes(secret)) fail(`${FEATURE}: names a session secret (${secret})`);
