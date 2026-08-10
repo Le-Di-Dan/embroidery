@@ -136,6 +136,21 @@ const S03_FILES = new Set(
   ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
 );
 
+/**
+ * The file `APP3-S03-C1` added, named exactly, for the same reason once more.
+ *
+ * It is adapter-side: it restores object identity for elements the renderer has
+ * already been given, so it necessarily reads the `APP3-P01` document shape and
+ * the `APP3-P02` graph — both of which the S01 partition is still forbidden to
+ * touch. Listing it here is what keeps that prohibition strict everywhere else
+ * rather than relaxing it feature-wide. Every other rule below still applies to
+ * it through `staticCode` and `allCode`: it may not follow a pointer, measure
+ * the DOM, hold a store, fetch, or compose a matrix.
+ */
+const S03_C1_FILES = new Set(
+  ['renderer/studio-scene-identity.ts'].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
 const interactionSources = sources.filter(
   (file) => S07_FILES.has(file.path) || S03_FILES.has(file.path),
 );
@@ -152,7 +167,11 @@ const s03Code = codeOnly(
 );
 
 const s01Sources = sources.filter(
-  (file) => !S02_FILES.has(file.path) && !S07_FILES.has(file.path) && !S03_FILES.has(file.path),
+  (file) =>
+    !S02_FILES.has(file.path) &&
+    !S07_FILES.has(file.path) &&
+    !S03_FILES.has(file.path) &&
+    !S03_C1_FILES.has(file.path),
 );
 const s07Sources = sources.filter((file) => S07_FILES.has(file.path));
 const s07Code = codeOnly(s07Sources.map((file) => file.text).join('\n'));
@@ -484,7 +503,12 @@ describe('the APP3-S07 viewport', () => {
     const screen = codeOnly(
       sources.find((file) => file.path.endsWith('studio-stage-screen.tsx'))?.text ?? '',
     );
-    expect(screen).toContain('useMemo(() => buildRenderableScene(stageDocument), [stageDocument])');
+    // The dependency list is the rule, not the exact call text: `APP3-S03-C1`
+    // added a second argument (the previous build, offered back for identity
+    // reuse) and the memo is still keyed on the document alone.
+    expect(screen).toMatch(
+      /useMemo\(\s*\(\)\s*=>\s*buildRenderableScene\(stageDocument[^)]*\),\s*\[stageDocument\],?\s*\)/,
+    );
     expect(screen).not.toMatch(/buildRenderableScene[\s\S]{0,200}zoom/);
   });
 

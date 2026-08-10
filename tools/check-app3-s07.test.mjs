@@ -291,8 +291,8 @@ describe('the APP3-S02 scene is untouched by the viewport', () => {
     // Invisible on screen, and costs the entire adapter per zoom click.
     const root = rootWith({
       stageScreen: file('stageScreen').replace(
-        'useMemo(() => buildRenderableScene(stageDocument), [stageDocument])',
-        'useMemo(() => buildRenderableScene(stageDocument), [stageDocument, zoomStep])',
+        'sceneMemo.current),\n    [stageDocument],',
+        'sceneMemo.current),\n    [stageDocument, zoomStep],',
       ),
     });
     assert.ok(mentions(failuresOf(checkSceneUntouched, root), 'memoised on the document alone'));

@@ -477,8 +477,8 @@ describe('the scene and the viewport are unchanged', () => {
   it('refuses the scene memoised on anything but the working document', () => {
     const root = rootWith({
       stageScreen: file('stageScreen').replace(
-        'useMemo(() => buildRenderableScene(stageDocument), [stageDocument])',
-        'useMemo(() => buildRenderableScene(stageDocument), [stageDocument, zoomStep])',
+        'sceneMemo.current),\n    [stageDocument],',
+        'sceneMemo.current),\n    [stageDocument, zoomStep],',
       ),
     });
     assert.ok(

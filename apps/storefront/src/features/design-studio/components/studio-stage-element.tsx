@@ -1,5 +1,7 @@
 'use client';
 
+import { memo } from 'react';
+
 import type { DesignElement } from '@embroidery/design-document';
 
 import { elementLabel } from '../model/studio-stage-label';
@@ -43,8 +45,25 @@ export interface StudioStageElementProps {
  * `<g role="button">` is a real control: focusable, activated by Enter and
  * Space, and labelled. An SVG shape carries none of that on its own, so a stage
  * built from bare shapes would be selectable by pointer only.
+ *
+ * ## Memoized on identity, never on a hand-written comparator (`APP3-S03-C1`)
+ *
+ * A transform gesture replaces the whole document once per frame, so before
+ * `S03-C1` every element in the scene re-rendered to redraw the one being
+ * dragged. The adapter now hands back the *same* `RenderableElement` instance
+ * for an element whose value and whose ancestors' values did not change, so
+ * React's default shallow comparison is enough and is exactly right: everything
+ * this component paints — the matrix, the opacity, the kind, the content, the
+ * controlled family, the label — is reached through that one object, and
+ * `selected` is the only other prop. There is no custom `areEqual` deciding
+ * which fields are worth comparing, because a field left out of one is a stale
+ * element on the stage that nothing would report.
  */
-export function StudioStageElement({ renderable, selected, onSelect }: StudioStageElementProps) {
+export const StudioStageElement = memo(function StudioStageElement({
+  renderable,
+  selected,
+  onSelect,
+}: StudioStageElementProps) {
   const { element } = renderable;
 
   const select = () => {
@@ -78,7 +97,7 @@ export function StudioStageElement({ renderable, selected, onSelect }: StudioSta
       <ElementShape element={element} fontFamily={renderable.fontFamily} />
     </g>
   );
-}
+});
 
 function ElementShape({
   element,

@@ -6,7 +6,7 @@ import type {
   DesignSessionScopeResponse,
   DesignSessionSnapshotResponse,
 } from '@embroidery/api-client';
-import { buildElementGraph, rectToBounds } from '@embroidery/design-engine';
+import { rectToBounds } from '@embroidery/design-engine';
 
 import { useSideBackground } from '../hooks/use-side-background';
 import { useStudioTransform } from '../hooks/use-studio-transform';
@@ -16,7 +16,11 @@ import { elementLabel } from '../model/studio-stage-label';
 import type { StudioAreaLimits, TransformRefusal } from '../model/studio-transform-authority';
 import { STUDIO_TRANSFORM_COPY } from '../model/studio-transform-copy';
 import { zoomAt } from '../model/studio-viewport';
-import { buildRenderableScene, resolveRenderableElement } from '../renderer/studio-scene';
+import {
+  buildRenderableScene,
+  resolveRenderableElement,
+  type StudioSceneMemo,
+} from '../renderer/studio-scene';
 import { useStudioDocumentStore } from '../store/studio-document.store';
 import { useStudioInteractionStore } from '../store/studio-interaction.store';
 import { useStudioViewportStore } from '../store/studio-viewport.store';
@@ -92,11 +96,32 @@ export function StudioStageScreen({
   // alone — never on the viewport, which would rebuild the whole adapter on
   // every zoom step.
   const stageDocument = workingDocument ?? snapshot.document;
-  const result = useMemo(() => buildRenderableScene(stageDocument), [stageDocument]);
-  // One graph per document, shared by the transform chrome and the read-out.
-  // Each of them used to build its own, so a hundred-element scene resolved the
+
+  /*
+   * The previous successful build, offered back to the adapter (`APP3-S03-C1`).
+   *
+   * It is a cache, not a second document: the adapter validates the incoming
+   * payload exactly as before and uses this only to keep the *instances* of
+   * elements whose values are unchanged, so React can skip the ninety-nine
+   * subtrees a one-element drag does not touch. A discarded render can leave a
+   * scene here that was never shown, and that is harmless — reuse is decided by
+   * value equality, so the worst case is reusing an equal answer.
+   */
+  const sceneMemo = useRef<StudioSceneMemo | null>(null);
+  const result = useMemo(
+    () => buildRenderableScene(stageDocument, sceneMemo.current),
+    [stageDocument],
+  );
+  if (result.ok && sceneMemo.current?.scene !== result.scene) {
+    sceneMemo.current = { document: result.document, scene: result.scene };
+  }
+
+  // The document and graph the scene was actually built from — one of each per
+  // frame, shared by the transform chrome and the physical read-out. Each of
+  // them used to build its own graph, so a hundred-element scene resolved the
   // parent graph three times a frame for no new information.
-  const graph = useMemo(() => buildElementGraph(stageDocument), [stageDocument]);
+  const sceneDocument = result.ok ? result.document : null;
+  const graph = result.ok ? result.graph : null;
 
   const background = useSideBackground(
     scope === null ? undefined : { productSlug: scope.productSlug, sideCode: scope.sideCode },
@@ -188,9 +213,12 @@ export function StudioStageScreen({
                 selectedElementId={selectedElementId}
               />
 
-              {transformable === undefined || scope === null ? null : (
+              {transformable === undefined ||
+              scope === null ||
+              sceneDocument === null ||
+              graph === null ? null : (
                 <StudioTransformOverlay
-                  document={stageDocument}
+                  document={sceneDocument}
                   elementId={transformable.id}
                   graph={graph}
                   overlayRef={overlayRef}
@@ -222,9 +250,9 @@ export function StudioStageScreen({
               : `${STUDIO_STAGE_COPY.selectionPrefix}: ${elementLabel(selected.element)}`}
             {transformable === undefined ? null : (
               <span className="studio-stage__hint" data-testid="studio-transform-size">
-                {scope === null
+                {scope === null || sceneDocument === null || graph === null
                   ? STUDIO_TRANSFORM_COPY.physicalSizeUnavailable
-                  : physicalSizeLabel(stageDocument, transformable.id, scope.pxPerMm, graph)}
+                  : physicalSizeLabel(sceneDocument, transformable.id, scope.pxPerMm, graph)}
               </span>
             )}
             {selected !== undefined && selected.element.locked ? (

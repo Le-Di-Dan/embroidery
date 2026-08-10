@@ -38,6 +38,9 @@ export const CANONICAL_FILES = Object.freeze({
   overlay: `${FEATURE}/components/studio-transform-overlay.tsx`,
   // What S03 must leave exactly as it found it.
   scene: `${FEATURE}/renderer/studio-scene.ts`,
+  // What `APP3-S03-C1` adds: identity reuse for the elements a frame did not
+  // change. Adapter-side, so it lives with the renderer rather than the model.
+  renderIdentity: `${FEATURE}/renderer/studio-scene-identity.ts`,
   stage: `${FEATURE}/components/studio-stage.tsx`,
   stageElement: `${FEATURE}/components/studio-stage-element.tsx`,
   stageScreen: `${FEATURE}/components/studio-stage-screen.tsx`,

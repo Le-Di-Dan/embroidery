@@ -87,7 +87,14 @@ export function checkFoundation(rootDir, fail) {
     fail(`${CANONICAL_FILES.viewport}: the viewport transform left the S07 wrapper`);
   }
   const screen = code(rootDir, 'stageScreen');
-  if (!/useMemo\(\(\) => buildRenderableScene\(stageDocument\), \[stageDocument\]\)/.test(screen)) {
+  // The dependency list is the rule. `APP3-S03-C1` passes the previous build in
+  // as a second argument for identity reuse; what must never appear in the list
+  // is the viewport, which would re-run the adapter on every zoom step.
+  if (
+    !/useMemo\(\s*\(\)\s*=>\s*buildRenderableScene\(stageDocument[^)]*\),\s*\[stageDocument\],?\s*\)/.test(
+      screen,
+    )
+  ) {
     fail(`${CANONICAL_FILES.stageScreen}: the scene is not memoised on the working document alone`);
   }
 }

@@ -129,7 +129,14 @@ export function checkSceneUntouched(rootDir, fail) {
   // list re-runs the whole adapter on every zoom step — the exact cost the
   // discrete-step mitigation exists to avoid, and invisible on screen.
   const screen = code(rootDir, 'stageScreen');
-  if (!/useMemo\(\(\) => buildRenderableScene\(stageDocument\), \[stageDocument\]\)/.test(screen)) {
+  // `APP3-S03-C1` added a second argument — the previous build, offered back so
+  // unchanged elements keep their identity. The dependency list is what this
+  // rule is about, and it is still the document alone.
+  if (
+    !/useMemo\(\s*\(\)\s*=>\s*buildRenderableScene\(stageDocument[^)]*\),\s*\[stageDocument\],?\s*\)/.test(
+      screen,
+    )
+  ) {
     fail(`${CANONICAL_FILES.stageScreen}: the scene is not memoised on the document alone`);
   }
   if (/buildRenderableScene[\s\S]{0,200}zoom/.test(screen)) {

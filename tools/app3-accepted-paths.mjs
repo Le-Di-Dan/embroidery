@@ -308,6 +308,10 @@ export function isS03Delivered(rootDir) {
 export const S03_STATUS_LINES = Object.freeze([
   'APP3-S03 = READY — NOT STARTED',
   'APP3-S03 = COMPLETE — REVIEW_DELIVERED',
+  // `APP3-S03-C1` — human review accepted every property but one and returned a
+  // single performance correction, so the checkpoint is delivered again rather
+  // than accepted or rewound.
+  'APP3-S03 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW',
   'APP3-S03 = COMPLETE — REVIEW_ACCEPTED',
 ]);
 

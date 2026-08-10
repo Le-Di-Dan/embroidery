@@ -49,14 +49,22 @@ import {
   checkValidation,
   checkWorkingDocument,
 } from './check-app3-s03-runtime.mjs';
+import {
+  checkElementMemo,
+  checkNoBenchmarkBranch,
+  checkRenderReuse,
+} from './check-app3-s03-reuse.mjs';
 
 export { REPO_ROOT, CANONICAL_FILES, S03_DESIGN_ROWS, LATER_STUDIO_ROWS };
 export {
   checkChrome,
+  checkElementMemo,
   checkFoundation,
   checkGeometryAuthority,
+  checkNoBenchmarkBranch,
   checkNonScope,
   checkPredecessorGates,
+  checkRenderReuse,
   checkValidation,
   checkWorkingDocument,
 };
@@ -205,7 +213,7 @@ export function checkCommandIndex(rootDir, fail) {
   const commands = Object.freeze({
     'CMD-CHECK-APP3-S03': 'node tools/check-app3-s03.mjs',
     'CMD-TEST-APP3-S03': 'node --test tools/check-app3-s03.test.mjs',
-    'CMD-TEST-APP3-S03-STOREFRONT': '--testPathPatterns=studio-transform',
+    'CMD-TEST-APP3-S03-STOREFRONT': 'studio-transform|studio-scene-identity',
     'CMD-BENCH-APP3-S03-TRANSFORMS': 'node tools/bench-app3-s03-transforms.mjs',
   });
   for (const [id, command] of Object.entries(commands)) {
@@ -213,6 +221,12 @@ export function checkCommandIndex(rootDir, fail) {
     if (!index.includes(command)) {
       fail(`${CANONICAL_FILES.index}: ${id} does not carry its command (${command})`);
     }
+  }
+  // `APP3-S03-C1` added a sibling gate suite by responsibility: the first asks
+  // whether the transform still writes what `IMP-D045` says, the second whether
+  // making it fast made it wrong. Both run under the one indexed command.
+  if (!index.includes('node --test tools/check-app3-s03-reuse.test.mjs')) {
+    fail(`${CANONICAL_FILES.index}: CMD-TEST-APP3-S03 does not carry the reuse suite`);
   }
   const manifest = JSON.parse(read(rootDir, 'rootPackage') ?? '{}');
   for (const script of Object.keys(manifest.scripts ?? {})) {
@@ -280,6 +294,9 @@ export function checkApp3S03(rootDir = REPO_ROOT) {
     checkChrome(rootDir, fail);
     checkNonScope(rootDir, fail);
     checkPredecessorGates(rootDir, fail);
+    checkRenderReuse(rootDir, fail);
+    checkElementMemo(rootDir, fail);
+    checkNoBenchmarkBranch(rootDir, fail);
   }
 
   return failures;

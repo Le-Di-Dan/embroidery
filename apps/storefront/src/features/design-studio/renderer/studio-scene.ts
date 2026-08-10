@@ -34,9 +34,11 @@ import {
   resolveEffectiveTransform,
   structuralFinding,
   type Bounds2D,
+  type ElementGraph,
   type Matrix2D,
 } from '@embroidery/design-engine';
 
+import { shareDocumentIdentity, unchangedElementIds } from './studio-scene-identity';
 import { toSvgMatrix } from './studio-svg-matrix';
 
 /**
@@ -95,8 +97,33 @@ export interface RenderableScene {
 }
 
 export type StudioSceneResult =
-  | { readonly ok: true; readonly scene: RenderableScene }
+  | {
+      readonly ok: true;
+      readonly scene: RenderableScene;
+      /**
+       * The document the scene was built from, after `APP3-P01` validation.
+       *
+       * Published so the screen has one document to hand the transform chrome
+       * and the read-out, and so the next build can be compared against this
+       * one. Value-identical to what was passed in.
+       */
+      readonly document: DesignDocument;
+      /** The graph this build already resolved. Building a second cost a frame. */
+      readonly graph: ElementGraph;
+    }
   | { readonly ok: false; readonly failure: StudioSceneFailure };
+
+/**
+ * The previous successful build, offered back so unchanged elements can keep
+ * the objects that already represent them (`APP3-S03-C1`).
+ *
+ * Passing it is optional and changes no output value — only how many of the
+ * output's objects are the same instances as last time.
+ */
+export interface StudioSceneMemo {
+  readonly document: DesignDocument;
+  readonly scene: RenderableScene;
+}
 
 function failed(failure: StudioSceneFailure): StudioSceneResult {
   return { ok: false, failure };
@@ -132,13 +159,24 @@ function controlledFamily(element: DesignElement): string | undefined {
  * has no authoritative transform for *any* element, not merely the contested
  * one, because the contested child may be an ancestor of anything.
  */
-export function buildRenderableScene(payload: unknown): StudioSceneResult {
+export function buildRenderableScene(
+  payload: unknown,
+  previous?: StudioSceneMemo | null,
+): StudioSceneResult {
   const validated = validateDesignDocumentStructure(payload);
   if (!validated.ok) return failed('unreadable-document');
 
-  const document: DesignDocument = validated.value;
+  // Validation builds a fresh object graph every time, so an element the
+  // customer never touched arrives as a new value. Restoring the previous
+  // instance where the *value* is unchanged is what lets the loop below skip
+  // it — and what lets React skip re-rendering it.
+  const document: DesignDocument = shareDocumentIdentity(previous?.document, validated.value);
   const graph = buildElementGraph(document);
   if (structuralFinding(graph) !== undefined) return failed('unresolvable-geometry');
+
+  const reusable = renderablesById(previous);
+  const unchanged =
+    reusable === null ? EMPTY_IDS : unchangedElementIds(previous?.document, document, graph);
 
   const elements: RenderableElement[] = [];
   for (const element of document.elements) {
@@ -146,6 +184,15 @@ export function buildRenderableScene(payload: unknown): StudioSceneResult {
     // every descendant's effective matrix, so drawing one would place its
     // children twice.
     if (element.type === 'group') continue;
+
+    // Neither this element nor any ancestor changed, so `APP3-P02` would
+    // resolve the same matrix and the same stroke-aware bounds it resolved
+    // last frame. Reusing the answer is not an approximation of it.
+    const cached = unchanged.has(element.id) ? reusable?.get(element.id) : undefined;
+    if (cached !== undefined) {
+      elements.push(cached);
+      continue;
+    }
 
     const resolved = resolveEffectiveTransform(graph, element.id);
     if (isGeometryFinding(resolved)) return failed('unresolvable-geometry');
@@ -169,12 +216,24 @@ export function buildRenderableScene(payload: unknown): StudioSceneResult {
 
   return {
     ok: true,
+    document,
+    graph,
     scene: {
       canvasWidthPx: document.placement.canvasWidthPx,
       canvasHeightPx: document.placement.canvasHeightPx,
       elements,
     },
   };
+}
+
+const EMPTY_IDS: ReadonlySet<string> = new Set<string>();
+
+/** The previous build's placed elements, by id. `null` when there was none. */
+function renderablesById(
+  previous: StudioSceneMemo | null | undefined,
+): ReadonlyMap<string, RenderableElement> | null {
+  if (previous === null || previous === undefined) return null;
+  return new Map(previous.scene.elements.map((renderable) => [renderable.id, renderable]));
 }
 
 /**
