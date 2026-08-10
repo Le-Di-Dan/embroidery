@@ -100,6 +100,14 @@ function rootWith(overrides = {}) {
   return root;
 }
 
+/** The phase document with S07 rewound to the world before that checkpoint. */
+function beforeS07() {
+  return file('phase').replace(
+    /\nAPP3-S07 = COMPLETE[^\n]*\n/,
+    '\nAPP3-S07 = READY — NOT STARTED\n',
+  );
+}
+
 /** The phase document with S02 rewound to the world before this checkpoint. */
 function beforeS02() {
   return file('phase').replace(
@@ -605,5 +613,67 @@ describe('the pre-S02 world', () => {
     for (const runtime of ['<svg> roots', 'geometry from the DOM', 'effect cleanup']) {
       assert.ok(!mentions(failures, runtime), `runtime rule fired before S02: ${runtime}`);
     }
+  });
+});
+
+/*
+ * The world-aware half.
+ *
+ * `APP3-S07` legitimately introduced a pointer gesture and one measurement of an
+ * element's own size — both of which S02 banned outright. The bans were narrowed
+ * to exclude the five files S07 added, and never deleted, so these prove the
+ * three ways that narrowing could have become a hole: the gesture arriving in a
+ * file S07 did not introduce, the measurement doing the same, and either of them
+ * arriving before S07 shipped at all.
+ */
+describe('the APP3-S07 evolution did not open a hole', () => {
+  it('refuses a pan gesture in a file APP3-S07 did not introduce', () => {
+    const root = rootWith({
+      stageScreen: file('stageScreen').replace(
+        '<div className="studio-stage">',
+        '<div className="studio-stage" onPointerDown={() => undefined}>',
+      ),
+    });
+    assert.ok(mentions(failuresOf(checkNonScope, root), 'outside the APP3-S07 viewport'));
+  });
+
+  it('refuses an element that follows the pointer, in either world', () => {
+    const root = rootWith({
+      stageElement: file('stageElement').replace(
+        'onKeyDown={(event) => {',
+        'onPointerDown={() => undefined}\n      onKeyDown={(event) => {',
+      ),
+    });
+    assert.ok(mentions(failuresOf(checkNonScope, root), 'APP3-S03'));
+  });
+
+  it('refuses a layout measurement outside the viewport', () => {
+    const root = rootWith({
+      stageScreen: `${file('stageScreen')}\nconst width = node.clientWidth;\n`,
+    });
+    assert.ok(mentions(failuresOf(checkGeometryAuthority, root), 'geometry from the DOM'));
+  });
+
+  it('refuses the viewport gesture arriving before APP3-S07 opened', () => {
+    // The narrowing is conditional on S07 having shipped. Rewinding the phase
+    // line puts the original whole-feature ban back, so a viewport built early
+    // is refused by the same rule that allows it late.
+    const root = rootWith({ phase: beforeS07() });
+    assert.ok(mentions(failuresOf(checkNonScope, root), 'outside the APP3-S07 viewport'));
+    assert.ok(mentions(failuresOf(checkGeometryAuthority, root), 'geometry from the DOM'));
+  });
+
+  it('refuses the zoom design row approved before APP3-S07 opened', () => {
+    const root = rootWith({ phase: beforeS07() });
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-ZOOM-DESKTOP-FIT'));
+  });
+
+  it('still refuses every other later Studio row in the S07 world', () => {
+    const registry = file('registry').replace(
+      /(\| FIG-STUDIO-LAYERS-DESKTOP-DEFAULT \|[^\n]*?)REVIEW_REQUIRED/,
+      '$1APPROVED_FOR_IMPLEMENTATION',
+    );
+    const root = rootWith({ registry });
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'));
   });
 });

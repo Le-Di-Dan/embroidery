@@ -97,7 +97,29 @@ const S02_FILES = new Set(
   ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
 );
 
-const s01Sources = sources.filter((file) => !S02_FILES.has(file.path));
+/**
+ * The files `APP3-S07` added, named exactly, for the same reason.
+ *
+ * S02's own rules — no pointer gesture, no measurement of the browser's layout —
+ * were written when the stage could only draw. The viewport needs one bounded
+ * use of each, so the split grows rather than the rules loosening: everything
+ * outside this list still may not follow a pointer or ask the DOM how big it is.
+ */
+const S07_FILES = new Set(
+  [
+    'components/studio-stage-controls.tsx',
+    'components/studio-stage-viewport.tsx',
+    'model/studio-viewport.ts',
+    'model/studio-viewport-copy.ts',
+    'store/studio-viewport.store.ts',
+  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
+const s01Sources = sources.filter((file) => !S02_FILES.has(file.path) && !S07_FILES.has(file.path));
+const s07Sources = sources.filter((file) => S07_FILES.has(file.path));
+const preS07Sources = sources.filter((file) => !S07_FILES.has(file.path));
+const s07Code = codeOnly(s07Sources.map((file) => file.text).join('\n'));
+const preS07Code = codeOnly(preS07Sources.map((file) => file.text).join('\n'));
 const s02Sources = sources.filter((file) => S02_FILES.has(file.path));
 const s01Code = codeOnly([...s01Sources, ...routeFiles].map((file) => file.text).join('\n'));
 const s02Code = codeOnly(s02Sources.map((file) => file.text).join('\n'));
@@ -333,21 +355,33 @@ describe('exactly one production renderer (APP3-S02)', () => {
   it('measures nothing from the DOM', () => {
     // A selection outline drawn from a layout box drifts from the document the
     // moment the stage is resized. `APP3-P02`'s bounds are in document space.
+    // None of these has an owner and none ever becomes legal, anywhere.
     for (const measurement of [
       'getBoundingClientRect',
       'DOMRect',
       'DOMMatrix',
       'getBBox',
+      'getScreenCTM',
       'offsetWidth',
-      'clientWidth',
+      'getComputedStyle',
     ]) {
       expect(allCode).not.toContain(measurement);
     }
   });
 
+  it('asks the DOM how big an element is only inside the APP3-S07 viewport', () => {
+    // Converting a pointer drag into a pan needs the size of the element the
+    // drag happened on, and nothing else can supply it. It is read during the
+    // gesture and never stored — so it converts an input, and cannot become
+    // geometry. Everywhere else the original ban is untouched.
+    for (const measurement of ['clientWidth', 'clientHeight']) {
+      expect(preS07Code).not.toContain(measurement);
+    }
+    expect(s07Code).toContain('clientWidth');
+  });
+
   it('grows no capability a later checkpoint owns', () => {
     for (const later of [
-      'onPointerMove',
       'onDragStart',
       'onDrag',
       'onWheel',
@@ -358,6 +392,57 @@ describe('exactly one production renderer (APP3-S02)', () => {
       'reorder',
     ]) {
       expect(allCode).not.toContain(later);
+    }
+  });
+
+  it('follows a pointer only inside the APP3-S07 viewport', () => {
+    for (const gesture of ['onPointerDown', 'onPointerMove', 'onPointerUp', 'setPointerCapture']) {
+      expect(preS07Code).not.toContain(gesture);
+    }
+    expect(s07Code).toContain('onPointerMove');
+  });
+});
+
+describe('the APP3-S07 viewport', () => {
+  it('transforms one wrapper and never an element', () => {
+    // The scene stays in document coordinates. If the zoom reached an element's
+    // own transform, every one of `APP3-P02`'s answers would be multiplied by a
+    // number the engine never saw.
+    expect(s07Code).toContain('viewportTransform');
+    expect(s02Code).not.toContain('zoom');
+    expect(s02Code).not.toContain('panXRatio');
+  });
+
+  it('never rebuilds the scene for a viewport change', () => {
+    // `buildRenderableScene` is memoised on the document alone. A viewport in
+    // that dependency list would make every zoom step re-run the adapter, which
+    // is exactly the cost the discrete-step mitigation exists to avoid.
+    const screen = sources.find((file) => file.path.endsWith('studio-stage-screen.tsx'));
+    expect(codeOnly(screen?.text ?? '')).toContain('[snapshot.document]');
+  });
+
+  it('keeps the zoom a finite list rather than a multiplier', () => {
+    expect(s07Code).toContain('ZOOM_STEPS');
+    for (const continuous of ['zoom *=', 'zoom * 1.', 'Math.pow(', '** zoom']) {
+      expect(s07Code).not.toContain(continuous);
+    }
+  });
+
+  it('persists no viewport state anywhere', () => {
+    for (const persistence of ['localStorage', 'sessionStorage', 'persist(', 'document.cookie']) {
+      expect(s07Code).not.toContain(persistence);
+    }
+  });
+
+  it('reaches no API from the viewport', () => {
+    for (const call of ['useQuery', 'useMutation', '@embroidery/api-client']) {
+      expect(s07Code).not.toContain(call);
+    }
+  });
+
+  it('grows no touch gesture, which APP3-S11 owns', () => {
+    for (const touch of ['onTouchStart', 'onTouchMove', 'touches', 'pinch', 'gesturestart']) {
+      expect(allCode).not.toContain(touch);
     }
   });
 });
@@ -382,7 +467,10 @@ describe('the approved responsive and accessibility floor', () => {
   });
 
   it('renders no clickable div', () => {
-    expect(allCode).not.toMatch(/<div[^>]*onClick/);
-    expect(allCode).not.toMatch(/<(span|li)[^>]*onClick/);
+    // `onClick=`, anchored on the `=`. A capture-phase filter (`onClickCapture`)
+    // is deliberately still allowed: it removes a click rather than adding an
+    // affordance, so it needs no role, no name and no tab stop.
+    expect(allCode).not.toMatch(/<div[^>]*onClick=/);
+    expect(allCode).not.toMatch(/<(span|li)[^>]*onClick=/);
   });
 });

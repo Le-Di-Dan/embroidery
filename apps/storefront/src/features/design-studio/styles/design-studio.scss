@@ -494,3 +494,97 @@ $bp-studio-split: 1025px;
   color: styles.$color-text-primary;
   font-size: styles.$font-size-body-m;
 }
+
+// ---------------------------------------------------------------------------
+// Studio viewport — zoom, pan & safe area (APP3-S07)
+//
+// Design source: FIG-STUDIO-ZOOM-DESKTOP-{FIT 609:3, ZOOMED 609:51,
+// SAFEAREAHIDDEN 609:99}, section 11 — 596:17, with FIG-STUDIO-EDITING-TABLET-1024
+// (618:140) as the responsive reference.
+//
+// There is still no geometry in this file. The one transform below is the
+// viewport's, applied to a single wrapper outside the SVG: the scene keeps the
+// document's own coordinate system and no authored number is multiplied by
+// anything. `ADR-APP0-001` measured WebKit re-rasterising the whole SVG on every
+// continuous scale change (41 ms p95 against a 20 ms budget), so the scale here
+// changes only in discrete steps and only on this one element.
+// ---------------------------------------------------------------------------
+
+.studio-stage__viewport {
+  position: relative;
+  // The clip that makes zooming meaningful: above the fitted step the layer is
+  // larger than the frame, and the part outside it must not become page
+  // scrollbars. Both axes, deliberately — `overflow-y` alone still clips x.
+  overflow: hidden;
+  min-width: 0;
+}
+
+.studio-stage__viewport-layer {
+  // The origin the pan bounds are derived from. `translate(P%) scale(Z)` about
+  // the top-left puts the content across [P·W, P·W + Z·W], which is what makes
+  // the legal pan interval exactly [-(Z - 1), 0] and the stage impossible to
+  // drag out of its own frame.
+  transform-origin: 0 0;
+
+  // Promote the scene to its own compositor layer.
+  //
+  // This is the bounded optimization pass the measured WebKit result asked for.
+  // Without it, WebKit re-rasterised the whole SVG on the main thread for every
+  // viewport change and the 100-element scene measured p95 26 ms against the
+  // 20 ms budget in `ADR-APP0-001` §6, with dropped frames; Chromium was
+  // unaffected at 16.7 ms. Declaring the transform up front lets the engine keep
+  // one texture for the scene and move it, instead of discovering the change
+  // per frame.
+  //
+  // It is a hint on **one** element, not on every element: promoting a hundred
+  // of them would trade a main-thread cost for a memory one.
+  will-change: transform;
+}
+
+.studio-stage__pan-hint {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.studio-stage__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: styles.spacing(8);
+}
+
+.studio-stage__control {
+  min-height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-caption;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: not-allowed;
+  }
+
+  // The pressed state of the safe-area toggle carries a visual difference as
+  // well as `aria-pressed`, so the two never disagree.
+  &[aria-pressed='true'] {
+    border-color: styles.$color-status-info;
+  }
+}
+
+.studio-stage__zoom-value {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  // A percentage that changes width would shift the buttons either side of it.
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-stage__legend {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}

@@ -246,6 +246,47 @@ export const S02_STATUS_LINES = Object.freeze([
   'APP3-S02 = COMPLETE — REVIEW_ACCEPTED',
 ]);
 
+/**
+ * True once `APP3-S07` has delivered the Studio viewport.
+ *
+ * Both earlier Studio gates ban something S07 legitimately introduces: `APP3-S01`
+ * bans the word "viewport" anywhere in the feature, and `APP3-S02` bans
+ * `onPointerDown`, `onPointerMove` and every DOM measurement. Each was a true
+ * statement about the world until this checkpoint shipped exactly one bounded
+ * use of each. They keep the assertion and consult this, so the ban still bites
+ * before S07 and becomes "in exactly these files" after it.
+ */
+export function isS07Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S07 = COMPLETE/.test(phase);
+}
+
+/** The status lines `APP3-S07` may legitimately be recorded under. */
+export const S07_STATUS_LINES = Object.freeze([
+  'APP3-S07 = READY — NOT STARTED',
+  'APP3-S07 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-S07 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/**
+ * The Studio files `APP3-S07` adds, relative to the design-studio feature.
+ *
+ * One list, imported by all three Studio gates rather than copied into each.
+ * It exists because the world-aware evolution has to name the **new** files: a
+ * rule scoped to the files S01 or S02 owned would let anything added tomorrow
+ * escape it, which is precisely how a second renderer or a stray pointer handler
+ * would arrive. Everything not on this list — including a file that does not
+ * exist yet — inherits the strict predecessor rules by default.
+ */
+export const S07_FILES = Object.freeze([
+  'components/studio-stage-controls.tsx',
+  'components/studio-stage-viewport.tsx',
+  'model/studio-viewport.ts',
+  'model/studio-viewport-copy.ts',
+  'store/studio-viewport.store.ts',
+]);
+
 /** The status lines `APP3-B05A` may legitimately be recorded under. */
 export const B05A_STATUS_LINES = Object.freeze([
   'APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05 — NOT STARTED',

@@ -29,6 +29,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const CONTAINER = 'embroidery-dev-postgres-1';
 const DB_USER = 'embroidery';
@@ -56,10 +57,10 @@ export function sql(statement) {
 }
 
 /** The existing development placement this run publishes. */
-const PRODUCT_ID = '019fb93e-2b75-71d7-8485-32e76283f99f';
-const PRODUCT_SLUG = 'a03-live-check-redirect';
-const SIDE_ONE = '019fe415-2538-7a33-86d7-b5ac02792b1b';
-const AREA_ONE = '019fe491-1d24-7856-8cc9-ad397c7e4342';
+export const PRODUCT_ID = '019fb93e-2b75-71d7-8485-32e76283f99f';
+export const PRODUCT_SLUG = 'a03-live-check-redirect';
+export const SIDE_ONE = '019fe415-2538-7a33-86d7-b5ac02792b1b';
+export const AREA_ONE = '019fe491-1d24-7856-8cc9-ad397c7e4342';
 const BACKGROUND_ASSET = '019fe413-4e6d-7ba6-9269-713bbf026404';
 
 /**
@@ -324,11 +325,16 @@ function report() {
   );
 }
 
-const command = process.argv[2];
-if (command === 'seed') seed();
-else if (command === 'revert') revert();
-else if (command === 'report') report();
-else {
-  console.error('usage: smoke-app3-s01-fixtures.mjs <seed|revert|report>');
-  process.exitCode = 1;
+// Only when run directly. This module also *exports* the placement it seeds, so
+// that `APP3-S07`'s benchmark fixtures hang off the same Side and Area rather
+// than a second copy of the ids — and an import must not seed anything.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const command = process.argv[2];
+  if (command === 'seed') seed();
+  else if (command === 'revert') revert();
+  else if (command === 'report') report();
+  else {
+    console.error('usage: smoke-app3-s01-fixtures.mjs <seed|revert|report>');
+    process.exitCode = 1;
+  }
 }

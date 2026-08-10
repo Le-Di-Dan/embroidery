@@ -12,6 +12,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { S07_FILES } from './app3-accepted-surface.mjs';
+
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const STOREFRONT = 'apps/storefront';
@@ -174,11 +176,20 @@ export const S02_DESIGN_ROWS = Object.freeze([
   'FIG-STUDIO-STAGE-DESKTOP-EMPTY',
 ]);
 
-/** The feature minus what S02 added, plus the route. Prose stripped. */
+/**
+ * The feature minus what later checkpoints added, plus the route. Prose stripped.
+ *
+ * The exclusion names the files S02 and S07 **introduced**, never the files S01
+ * owned. Everything else — including a file that does not exist yet — is read as
+ * S01's and inherits its strict rules by default, which is the only version of
+ * this rule that a new file cannot walk around.
+ */
 export function s01FeatureCode(rootDir) {
-  const s02 = new Set(S02_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  const later = new Set(
+    [...S02_FILES, ...S07_FILES].map((path) => join(rootDir, FEATURE, ...path.split('/'))),
+  );
   const files = [
-    ...collect(join(rootDir, FEATURE), /\.tsx?$/).filter((path) => !s02.has(path)),
+    ...collect(join(rootDir, FEATURE), /\.tsx?$/).filter((path) => !later.has(path)),
     join(rootDir, CANONICAL_FILES.route),
   ];
   return files

@@ -157,6 +157,19 @@ describe('scoped design approval', () => {
     assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-SHELL-DESKTOP-EMPTY'));
   });
 
+  it('refuses the zoom row approved before APP3-S07 opened', () => {
+    // The narrowing that let `APP3-S07` approve its own rows is conditional on
+    // S07 having shipped. Rewind that line and the original ban is back, so the
+    // row cannot be approved early by rewriting only the registry.
+    const root = rootWith({
+      phase: file('phase').replace(
+        /\nAPP3-S07 = COMPLETE[^\n]*\n/,
+        '\nAPP3-S07 = READY — NOT STARTED\n',
+      ),
+    });
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-ZOOM-DESKTOP-FIT'));
+  });
+
   it('refuses an approval that carries no evidence', () => {
     const root = rootWith({
       registry: file('registry').replace('APP3-S01 §3 operator review', '—'),

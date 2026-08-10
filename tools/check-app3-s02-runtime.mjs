@@ -13,6 +13,7 @@
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
+import { isS07Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   CONSUMED_OPERATION,
@@ -23,41 +24,15 @@ import {
   collect,
   featureCode,
   read,
+  s02FeatureCode,
   storefrontCode,
 } from './check-app3-s02.sources.mjs';
-
-/**
- * Geometry a renderer must never do for itself (`APP3-S02` §11).
- *
- * `IMP-D045` locks rotation about the untransformed local-box centre with scale
- * applied first, column-vector matrices composed parent-outermost, and
- * `px_per_mm` as the sole conversion authority. A second implementation of any
- * of that is indistinguishable from the first until a design is stitched in the
- * wrong place — so the rule is on the *shape* of the code, not on an outcome a
- * fixture might happen to agree with.
- */
-const LOCAL_GEOMETRY = Object.freeze([
-  /Math\.(cos|sin|tan|atan2)\(/,
-  /Math\.PI/,
-  /\*\s*180\s*\/\s*Math/,
-  /rotationDeg\s*\*/,
-  /pxPerMm\s*\*/,
-  /\/\s*pxPerMm/,
-  /composeMatrices\(/,
-  /multiplyMatrices\(/,
-]);
-
-/** Measurements of the browser's layout, which are not the document. */
-const DOM_MEASUREMENT = Object.freeze([
-  'getBoundingClientRect',
-  'DOMRect',
-  'DOMMatrix',
-  'getBBox',
-  'getScreenCTM',
-  'offsetWidth',
-  'clientWidth',
-  'getComputedStyle',
-]);
+import {
+  DOM_MEASUREMENT,
+  LOCAL_GEOMETRY,
+  POINTER_GESTURE,
+  VIEWPORT_MEASUREMENT,
+} from './check-app3-s02-bans.mjs';
 
 /** One native-SVG renderer, no engine, and the adapter boundary that feeds it. */
 export function checkRenderer(rootDir, fail) {
@@ -143,6 +118,14 @@ export function checkGeometryAuthority(rootDir, fail) {
   }
   for (const measurement of DOM_MEASUREMENT) {
     if (all.includes(measurement)) {
+      fail(`${FEATURE}: takes geometry from the DOM (${measurement})`);
+    }
+  }
+  // Narrowed only once S07 exists; before that the original whole-feature
+  // absence is still what is asserted.
+  const measurementScope = isS07Delivered(rootDir) ? s02FeatureCode(rootDir) : all;
+  for (const measurement of VIEWPORT_MEASUREMENT) {
+    if (measurementScope.includes(measurement)) {
       fail(`${FEATURE}: takes geometry from the DOM (${measurement})`);
     }
   }
@@ -303,8 +286,6 @@ export function checkMedia(rootDir, fail) {
 export function checkNonScope(rootDir, fail) {
   const all = featureCode(rootDir);
   const owners = Object.freeze({
-    onPointerMove: 'APP3-S03',
-    onPointerDown: 'APP3-S03',
     onDragStart: 'APP3-S03',
     onDragEnd: 'APP3-S03',
     onMouseMove: 'APP3-S03',
@@ -320,6 +301,22 @@ export function checkNonScope(rootDir, fail) {
   for (const [marker, owner] of Object.entries(owners)) {
     if (all.includes(marker)) {
       fail(`${FEATURE}: carries "${marker}", a capability ${owner} owns`);
+    }
+  }
+
+  // The pan gesture, scoped to the files that may hold it. An element that
+  // could follow a pointer is `APP3-S03` arriving early, whichever checkpoint
+  // is shipping.
+  const gestureScope = isS07Delivered(rootDir) ? s02FeatureCode(rootDir) : all;
+  for (const marker of POINTER_GESTURE) {
+    if (gestureScope.includes(marker)) {
+      fail(`${FEATURE}: carries "${marker}" outside the APP3-S07 viewport`);
+    }
+  }
+  // Whatever else moves, the drawn element itself never follows a pointer.
+  for (const marker of POINTER_GESTURE) {
+    if (code(rootDir, 'stageElement').includes(marker)) {
+      fail(`${CANONICAL_FILES.stageElement}: an element follows the pointer, which is APP3-S03's`);
     }
   }
 

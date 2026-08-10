@@ -12,7 +12,7 @@
  */
 import { join, relative } from 'node:path';
 
-import { isS02Delivered } from './app3-accepted-surface.mjs';
+import { isS02Delivered, isS07Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   CONSUMED_OPERATIONS,
@@ -250,8 +250,22 @@ export function checkPreview(rootDir, fail) {
       fail(`${FEATURE}: the bootstrap screen builds a renderer concern (${s01Ban})`);
     }
   }
-  for (const never of ['<canvas', 'viewport', 'undoStack']) {
+  for (const never of ['<canvas', 'undoStack']) {
     if (all.includes(never)) fail(`${FEATURE}: builds a concern S01 must never carry (${never})`);
+  }
+  /*
+   * The viewport, world-aware.
+   *
+   * S01's rule was that no viewport concern existed anywhere in the feature, and
+   * that was a true statement about the world until `APP3-S07` legitimately
+   * built one. The half that mattered is unchanged: the *bootstrap screen* still
+   * must not carry it, in either world. Only the scope narrows, and only once
+   * S07 has shipped — before that the original whole-feature absence is still
+   * asserted, so a viewport arriving early is still refused.
+   */
+  const viewportScope = isS07Delivered(rootDir) ? s01Only : all;
+  if (viewportScope.includes('viewport')) {
+    fail(`${FEATURE}: builds a concern S01 must never carry (viewport)`);
   }
 }
 

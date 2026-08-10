@@ -13,10 +13,13 @@ import { STUDIO_STAGE_COPY } from '../model/studio-stage-copy';
 import { elementLabel } from '../model/studio-stage-label';
 import { buildRenderableScene, resolveRenderableElement } from '../renderer/studio-scene';
 import { useStudioInteractionStore } from '../store/studio-interaction.store';
+import { useStudioViewportStore } from '../store/studio-viewport.store';
 import { StudioSessionPanel } from './studio-session-panel';
 import { StudioStage } from './studio-stage';
 import { StudioStageBackgroundNotice } from './studio-stage-background-notice';
+import { StudioStageControls } from './studio-stage-controls';
 import { StudioStageUnavailable } from './studio-stage-unavailable';
+import { StudioStageViewport } from './studio-stage-viewport';
 
 export interface StudioStageScreenProps {
   readonly snapshot: DesignSessionSnapshotResponse;
@@ -68,6 +71,9 @@ export function StudioStageScreen({
   const clearSelection = useStudioInteractionStore((state) => state.clearSelection);
   const reconcileSelection = useStudioInteractionStore((state) => state.reconcileSelection);
 
+  const safeAreaVisible = useStudioViewportStore((state) => state.safeAreaVisible);
+  const resetViewport = useStudioViewportStore((state) => state.resetViewport);
+
   const presentIds = useMemo(
     () => (result.ok ? result.scene.elements.map((renderable) => renderable.id) : []),
     [result],
@@ -84,6 +90,13 @@ export function StudioStageScreen({
   // Runtime selection is released when the stage goes away. It is interaction
   // state, not a saved preference, and the store outlives this mount.
   useEffect(() => clearSelection, [clearSelection]);
+
+  // The viewport belongs to one canvas. A zoom and pan carried into a different
+  // Session would point the camera at coordinates that mean something else
+  // there, so the identity of the Session — not the mount — is what resets it.
+  useEffect(() => {
+    resetViewport();
+  }, [resetViewport, snapshot.sessionId]);
 
   const area =
     scope === null
@@ -107,14 +120,25 @@ export function StudioStageScreen({
         <section className="studio-stage__frame" aria-label={STUDIO_STAGE_COPY.stageLabel}>
           <StudioStageBackgroundNotice background={background} hasScope={scope !== null} />
 
-          <StudioStage
-            area={area}
-            backgroundUrl={background.objectUrl}
-            onClearSelection={clearSelection}
-            onSelect={selectElement}
-            scene={result.scene}
-            selectedElementId={selectedElementId}
-          />
+          {/*
+            Hiding the safe area withholds the rectangle from the paint, and
+            does nothing else: `area` is the same `rectToBounds` answer either
+            way, and the Session scope, the document placement and the persisted
+            geometry are untouched. There is no second, locally derived boundary
+            that could disagree with the one `APP3-S02` draws.
+          */}
+          <StudioStageViewport>
+            <StudioStage
+              area={safeAreaVisible ? area : null}
+              backgroundUrl={background.objectUrl}
+              onClearSelection={clearSelection}
+              onSelect={selectElement}
+              scene={result.scene}
+              selectedElementId={selectedElementId}
+            />
+          </StudioStageViewport>
+
+          <StudioStageControls />
 
           {result.scene.elements.length === 0 ? (
             <p className="studio-stage__empty" data-testid="studio-stage-empty" role="status">

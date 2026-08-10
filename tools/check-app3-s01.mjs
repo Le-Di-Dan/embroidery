@@ -37,6 +37,7 @@ import {
   acceptedSurface,
   isS01Delivered,
   isS02Delivered,
+  isS07Delivered,
 } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
@@ -147,11 +148,15 @@ export function checkDesignApproval(rootDir, fail) {
   // The half that makes the approval *scoped*: a blanket Studio approval must
   // fail this gate rather than pass it.
   //
-  // World-aware on the section-06 rows only. `APP3-S02` legitimately approves
-  // its own three frames, so once it has delivered they are no longer evidence
-  // of a blanket approval — while every row belonging to a checkpoint that
-  // still has not opened stays exactly as ruled.
-  const opened = isS02Delivered(rootDir) ? new Set(S02_DESIGN_ROWS) : new Set();
+  // World-aware on the rows whose own checkpoint has opened, and on nothing
+  // else. `APP3-S02` legitimately approves its three section-06 frames and
+  // `APP3-S07` its three section-11 frames, so once each has delivered its rows
+  // stop being evidence of a blanket approval — while every row belonging to a
+  // checkpoint that still has not opened stays exactly as ruled.
+  const opened = new Set([
+    ...(isS02Delivered(rootDir) ? S02_DESIGN_ROWS : []),
+    ...(isS07Delivered(rootDir) ? ['FIG-STUDIO-ZOOM-DESKTOP-FIT'] : []),
+  ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);

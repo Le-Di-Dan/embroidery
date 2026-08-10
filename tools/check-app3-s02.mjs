@@ -26,7 +26,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S02_STATUS_LINES, acceptedSurface, isS02Delivered } from './app3-accepted-surface.mjs';
+import {
+  S02_STATUS_LINES,
+  acceptedSurface,
+  isS02Delivered,
+  isS07Delivered,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   EXPECTED_MIGRATIONS,
@@ -131,9 +136,19 @@ export function checkDesignApproval(rootDir, fail) {
     }
   }
 
-  // The half that makes the approval *scoped*: a blanket Studio approval must
-  // fail this gate rather than pass it.
-  for (const id of LATER_STUDIO_ROWS) {
+  /*
+   * The half that makes the approval *scoped*: a blanket Studio approval must
+   * fail this gate rather than pass it.
+   *
+   * World-aware on the zoom row alone. `FIG-STUDIO-ZOOM-DESKTOP-FIT` stands here
+   * for the checkpoint that owns it, and `APP3-S07` legitimately opened it —
+   * so once S07 has shipped, that one row stops proving anything and the
+   * remaining rows carry the assertion. Transform, layers, text and image are
+   * untouched, which is what keeps "scoped" a real claim rather than a ratchet
+   * that loosens every time a checkpoint lands.
+   */
+  const opened = isS07Delivered(rootDir) ? new Set(['FIG-STUDIO-ZOOM-DESKTOP-FIT']) : new Set();
+  for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }
@@ -260,7 +275,7 @@ function main() {
     return;
   }
   console.log(
-    'check:app3-s02 — exactly one production Studio renderer, native SVG rendered by React with no rendering or interaction engine in the manifest or the source, on exactly the three approved section-06 design rows with every later Studio capability row still unapproved and the 1024 frame still a D01-C1 reference: a renderer adapter that validates the document through APP3-P01 and takes every matrix, bound and font from APP3-P02 and the controlled registry, a stage whose viewBox is the document placement canvas and whose paint order is the element array with no sort or reverse, no geometry taken from the DOM and none reimplemented locally, single-element selection held as one serializable id in one store that can hold no DOM node, blob, session identity or later-checkpoint state and is never persisted or serialized, the one contextual Side background addressed by Product slug and Side code with its object URL revoked in effect cleanup and no placeholderData over a no-store blob, no Session asset route, no B05A shortcut from an open Session, no autosave, no transform mutation, no layer, zoom, pan or watermark capability, and an OpenAPI artifact, generated client, migration count and root-script count all unchanged.',
+    'check:app3-s02 — exactly one production Studio renderer, native SVG rendered by React with no rendering or interaction engine in the manifest or the source, on exactly the three approved section-06 design rows with every later Studio capability row still unapproved and the 1024 frame still a D01-C1 reference: a renderer adapter that validates the document through APP3-P01 and takes every matrix, bound and font from APP3-P02 and the controlled registry, a stage whose viewBox is the document placement canvas and whose paint order is the element array with no sort or reverse, no geometry taken from the DOM and none reimplemented locally, single-element selection held as one serializable id in one store that can hold no DOM node, blob, session identity or later-checkpoint state and is never persisted or serialized, the one contextual Side background addressed by Product slug and Side code with its object URL revoked in effect cleanup and no placeholderData over a no-store blob, no Session asset route, no B05A shortcut from an open Session, no autosave, no transform mutation, and no layer, text, upload, undo or watermark capability — with the pointer gestures and the one element-size measurement a viewport needs confined to the files APP3-S07 introduced and refused everywhere else, and an OpenAPI artifact, generated client, migration count and root-script count all unchanged.',
   );
 }
 
