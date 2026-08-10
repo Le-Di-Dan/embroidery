@@ -141,7 +141,8 @@ describe('entry authority', () => {
   });
 
   it('refuses a next checkpoint recorded complete inside this one', () => {
-    for (const later of ['APP3-S03', 'APP3-S11']) {
+    // S11 only: it needs S03 *and* S07, so S03 shipping does not make it ready.
+    for (const later of ['APP3-S11']) {
       const root = rootWith({
         phase: `${file('phase')}\n${later} = COMPLETE — REVIEW_DELIVERED\n`,
       });
@@ -170,12 +171,15 @@ describe('scoped design approval', () => {
 
   it('refuses a blanket Studio approval', () => {
     const root = rootWith({
+      // A row whose own checkpoint has *not* opened. Transform is no longer
+      // one — `APP3-S03` shipped and approved it — which is exactly why the
+      // assertion moves rather than the rule loosening.
       registry: file('registry').replace(
-        /(\| FIG-STUDIO-TRANSFORM-DESKTOP-MOVE \|[^\n]*?)REVIEW_REQUIRED/,
+        /(\| FIG-STUDIO-LAYERS-DESKTOP-DEFAULT \|[^\n]*?)REVIEW_REQUIRED/,
         '$1APPROVED_FOR_IMPLEMENTATION',
       ),
     });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-TRANSFORM-DESKTOP-MOVE'));
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'));
   });
 
   it('refuses the shared 1024 reference re-attributed to this checkpoint', () => {
@@ -287,8 +291,8 @@ describe('the APP3-S02 scene is untouched by the viewport', () => {
     // Invisible on screen, and costs the entire adapter per zoom click.
     const root = rootWith({
       stageScreen: file('stageScreen').replace(
-        'useMemo(() => buildRenderableScene(snapshot.document), [snapshot.document])',
-        'useMemo(() => buildRenderableScene(snapshot.document), [snapshot.document, zoomStep])',
+        'useMemo(() => buildRenderableScene(stageDocument), [stageDocument])',
+        'useMemo(() => buildRenderableScene(stageDocument), [stageDocument, zoomStep])',
       ),
     });
     assert.ok(mentions(failuresOf(checkSceneUntouched, root), 'memoised on the document alone'));

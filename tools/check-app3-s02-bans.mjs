@@ -21,14 +21,32 @@
  * fixture might happen to agree with.
  */
 export const LOCAL_GEOMETRY = Object.freeze([
-  /Math\.(cos|sin|tan|atan2)\(/,
-  /Math\.PI/,
-  /\*\s*180\s*\/\s*Math/,
+  /Math\.(cos|sin|tan)\(/,
   /rotationDeg\s*\*/,
   /pxPerMm\s*\*/,
   /\/\s*pxPerMm/,
-  /composeMatrices\(/,
   /multiplyMatrices\(/,
+]);
+
+/**
+ * Geometry only an **interaction** may reach for, and only in its own files.
+ *
+ * Three of these sat on the list above as a proxy for "build no second geometry
+ * engine", and the proxy expired the way `APP3-B06B` recorded proxies do.
+ * `composeMatrices` is `APP3-P02`'s own export — composing a frame *with* the
+ * engine is using it, not replacing it — and `Math.atan2` with the degree
+ * conversion turns a **pointer** into an angle, which the engine publishes no
+ * helper for because a document never needs one.
+ *
+ * `Math.cos`, `Math.sin` and `Math.tan` stay on the list above, in every world.
+ * Those three build a rotation matrix, and a second matrix builder is exactly
+ * the thing that agrees with `IMP-D045` on every fixture anyone wrote.
+ */
+export const INTERACTION_GEOMETRY = Object.freeze([
+  /Math\.atan2\(/,
+  /Math\.PI/,
+  /\*\s*180\s*\/\s*Math/,
+  /composeMatrices\(/,
 ]);
 
 /**

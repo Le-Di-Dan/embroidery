@@ -287,6 +287,49 @@ export const S07_FILES = Object.freeze([
   'store/studio-viewport.store.ts',
 ]);
 
+/**
+ * True once `APP3-S03` has delivered the Studio transform controls.
+ *
+ * Three earlier gates ban something S03 legitimately introduces: `APP3-S01`
+ * bans a Zustand store outside the ones it knows about, and `APP3-S02` bans
+ * every pointer gesture, every layout measurement and — as a proxy for "build
+ * no second geometry engine" — `Math.PI`, `Math.atan2` and `composeMatrices(`.
+ * The last of those is `APP3-P02`'s own export, so the proxy was always going
+ * to expire the moment a checkpoint had to *use* the engine to compose a frame.
+ * Each ban is kept and consults this, so it still bites before S03.
+ */
+export function isS03Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S03 = COMPLETE/.test(phase);
+}
+
+/** The status lines `APP3-S03` may legitimately be recorded under. */
+export const S03_STATUS_LINES = Object.freeze([
+  'APP3-S03 = READY — NOT STARTED',
+  'APP3-S03 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-S03 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/**
+ * The Studio files `APP3-S03` adds, relative to the design-studio feature.
+ *
+ * Named for the same reason `S07_FILES` is: the world-aware evolution lists the
+ * **new** files, so anything added later inherits the strict predecessor rules
+ * by default rather than escaping them.
+ */
+export const S03_FILES = Object.freeze([
+  'components/studio-transform-overlay.tsx',
+  'hooks/use-studio-transform.ts',
+  'model/studio-session-key.ts',
+  'model/studio-stage-mapping.ts',
+  'model/studio-transform.ts',
+  'model/studio-transform-authority.ts',
+  'model/studio-transform-copy.ts',
+  'model/studio-transform-handles.ts',
+  'store/studio-document.store.ts',
+]);
+
 /** The status lines `APP3-B05A` may legitimately be recorded under. */
 export const B05A_STATUS_LINES = Object.freeze([
   'APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05 — NOT STARTED',

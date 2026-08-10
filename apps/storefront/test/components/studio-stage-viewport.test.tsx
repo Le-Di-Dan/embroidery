@@ -24,6 +24,7 @@ import {
   ZOOM_STEPS,
   zoomAt,
 } from '../../src/features/design-studio/model/studio-viewport';
+import { useStudioDocumentStore } from '../../src/features/design-studio/store/studio-document.store';
 import { useStudioInteractionStore } from '../../src/features/design-studio/store/studio-interaction.store';
 import { useStudioViewportStore } from '../../src/features/design-studio/store/studio-viewport.store';
 import {
@@ -63,6 +64,7 @@ beforeEach(() => {
   backgroundMock.mockReset();
   backgroundMock.mockRejectedValue(new Error('no background in this fixture'));
   useStudioInteractionStore.setState({ selectedElementId: null });
+  useStudioDocumentStore.getState().reset();
   // Both stores outlive a mount by design, so every case starts fitted.
   useStudioViewportStore.getState().resetViewport();
 });
@@ -73,7 +75,13 @@ function renderStage(
 ) {
   const snapshot = makeStageSnapshot(document);
   const result = renderWithProviders(
-    <StudioStageScreen isResuming={false} onResume={jest.fn()} scope={scope} snapshot={snapshot} />,
+    <StudioStageScreen
+      areaLimits={null}
+      isResuming={false}
+      onResume={jest.fn()}
+      scope={scope}
+      snapshot={snapshot}
+    />,
   );
   // jsdom lays nothing out, so the element a pan is measured against reports
   // zero. These are the sizes the gesture divides by; nothing stores them.
@@ -517,6 +525,7 @@ describe('the viewport belongs to one Session', () => {
 
     rerender(
       <StudioStageScreen
+        areaLimits={null}
         isResuming={false}
         onResume={jest.fn()}
         scope={makeScope()}
@@ -537,6 +546,7 @@ describe('the viewport belongs to one Session', () => {
 
     rerender(
       <StudioStageScreen
+        areaLimits={null}
         isResuming={false}
         onResume={jest.fn()}
         scope={makeScope()}

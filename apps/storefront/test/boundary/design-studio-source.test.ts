@@ -115,11 +115,47 @@ const S07_FILES = new Set(
   ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
 );
 
-const s01Sources = sources.filter((file) => !S02_FILES.has(file.path) && !S07_FILES.has(file.path));
+/**
+ * The files `APP3-S03` added, named exactly, for the same reason again.
+ *
+ * S03 is the first checkpoint that changes a document, so it needs the pointer
+ * gestures S02 banned and the one element measurement S07 opened — plus the
+ * single `Math.atan2` that turns a pointer into an angle. Each stays confined
+ * to these files and refused in every other.
+ */
+const S03_FILES = new Set(
+  [
+    'components/studio-transform-overlay.tsx',
+    'hooks/use-studio-transform.ts',
+    'model/studio-stage-mapping.ts',
+    'model/studio-transform.ts',
+    'model/studio-transform-authority.ts',
+    'model/studio-transform-copy.ts',
+    'model/studio-transform-handles.ts',
+    'store/studio-document.store.ts',
+  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
+const interactionSources = sources.filter(
+  (file) => S07_FILES.has(file.path) || S03_FILES.has(file.path),
+);
+const interactionCode = codeOnly(interactionSources.map((file) => file.text).join('\n'));
+const staticSources = sources.filter(
+  (file) => !S07_FILES.has(file.path) && !S03_FILES.has(file.path),
+);
+const staticCode = codeOnly(staticSources.map((file) => file.text).join('\n'));
+const s03Code = codeOnly(
+  sources
+    .filter((file) => S03_FILES.has(file.path))
+    .map((file) => file.text)
+    .join('\n'),
+);
+
+const s01Sources = sources.filter(
+  (file) => !S02_FILES.has(file.path) && !S07_FILES.has(file.path) && !S03_FILES.has(file.path),
+);
 const s07Sources = sources.filter((file) => S07_FILES.has(file.path));
-const preS07Sources = sources.filter((file) => !S07_FILES.has(file.path));
 const s07Code = codeOnly(s07Sources.map((file) => file.text).join('\n'));
-const preS07Code = codeOnly(preS07Sources.map((file) => file.text).join('\n'));
 const s02Sources = sources.filter((file) => S02_FILES.has(file.path));
 const s01Code = codeOnly([...s01Sources, ...routeFiles].map((file) => file.text).join('\n'));
 const s02Code = codeOnly(s02Sources.map((file) => file.text).join('\n'));
@@ -369,15 +405,15 @@ describe('exactly one production renderer (APP3-S02)', () => {
     }
   });
 
-  it('asks the DOM how big an element is only inside the APP3-S07 viewport', () => {
+  it('asks the DOM how big an element is only where an interaction needs it', () => {
     // Converting a pointer drag into a pan needs the size of the element the
     // drag happened on, and nothing else can supply it. It is read during the
     // gesture and never stored — so it converts an input, and cannot become
     // geometry. Everywhere else the original ban is untouched.
     for (const measurement of ['clientWidth', 'clientHeight']) {
-      expect(preS07Code).not.toContain(measurement);
+      expect(staticCode).not.toContain(measurement);
     }
-    expect(s07Code).toContain('clientWidth');
+    expect(interactionCode).toContain('clientWidth');
   });
 
   it('grows no capability a later checkpoint owns', () => {
@@ -395,11 +431,26 @@ describe('exactly one production renderer (APP3-S02)', () => {
     }
   });
 
-  it('follows a pointer only inside the APP3-S07 viewport', () => {
+  it('follows a pointer only in the viewport and the transform chrome', () => {
+    // The two checkpoints that own a gesture, and nowhere else. The drawn
+    // element itself still never follows a pointer: `APP3-S03` puts the move
+    // surface in the DOM overlay rather than on the SVG node.
     for (const gesture of ['onPointerDown', 'onPointerMove', 'onPointerUp', 'setPointerCapture']) {
-      expect(preS07Code).not.toContain(gesture);
+      expect(staticCode).not.toContain(gesture);
     }
-    expect(s07Code).toContain('onPointerMove');
+    expect(interactionCode).toContain('onPointerMove');
+  });
+
+  it('keeps trigonometry out of everything but the rotation input', () => {
+    // `Math.atan2` turns a pointer vector into an angle, which `APP3-P02`
+    // publishes no helper for because a document never needs one. Every other
+    // trigonometric function stays banned everywhere: a local sine or cosine is
+    // a second matrix engine, and two engines disagree on the rotated cases.
+    for (const trig of ['Math.cos', 'Math.sin', 'Math.tan(']) {
+      expect(allCode).not.toContain(trig);
+    }
+    expect(staticCode).not.toContain('Math.atan2');
+    expect(s03Code).toContain('Math.atan2');
   });
 });
 
@@ -409,16 +460,32 @@ describe('the APP3-S07 viewport', () => {
     // own transform, every one of `APP3-P02`'s answers would be multiplied by a
     // number the engine never saw.
     expect(s07Code).toContain('viewportTransform');
-    expect(s02Code).not.toContain('zoom');
-    expect(s02Code).not.toContain('panXRatio');
+    // The *scene* may not see the viewport. The stage screen legitimately wires
+    // a zoom through to the transform chrome, which has to counter-scale by it;
+    // what must never see it is the adapter, the SVG, the element component and
+    // the selection outline, because those are the things that would multiply
+    // it into a document coordinate.
+    const sceneCode = codeOnly(
+      sources
+        .filter((file) =>
+          /studio-(scene|stage|stage-element|stage-selection)\.tsx?$/.test(file.path),
+        )
+        .map((file) => file.text)
+        .join('\n'),
+    );
+    expect(sceneCode).not.toContain('zoom');
+    expect(sceneCode).not.toContain('panXRatio');
   });
 
   it('never rebuilds the scene for a viewport change', () => {
     // `buildRenderableScene` is memoised on the document alone. A viewport in
     // that dependency list would make every zoom step re-run the adapter, which
     // is exactly the cost the discrete-step mitigation exists to avoid.
-    const screen = sources.find((file) => file.path.endsWith('studio-stage-screen.tsx'));
-    expect(codeOnly(screen?.text ?? '')).toContain('[snapshot.document]');
+    const screen = codeOnly(
+      sources.find((file) => file.path.endsWith('studio-stage-screen.tsx'))?.text ?? '',
+    );
+    expect(screen).toContain('useMemo(() => buildRenderableScene(stageDocument), [stageDocument])');
+    expect(screen).not.toMatch(/buildRenderableScene[\s\S]{0,200}zoom/);
   });
 
   it('keeps the zoom a finite list rather than a multiplier', () => {

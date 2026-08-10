@@ -18,6 +18,7 @@ import { createUser, renderWithProviders, screen, waitFor } from '@embroidery/fr
 
 import { StudioStageScreen } from '../../src/features/design-studio/components/studio-stage-screen';
 import { STUDIO_STAGE_COPY } from '../../src/features/design-studio/model/studio-stage-copy';
+import { useStudioDocumentStore } from '../../src/features/design-studio/store/studio-document.store';
 import { useStudioInteractionStore } from '../../src/features/design-studio/store/studio-interaction.store';
 import { apiFailure, PRODUCT_SLUG } from '../support/studio-fixture';
 import {
@@ -58,6 +59,7 @@ beforeEach(() => {
   createdUrls.length = 0;
   revokedUrls.length = 0;
   useStudioInteractionStore.setState({ selectedElementId: null });
+  useStudioDocumentStore.getState().reset();
 });
 
 function renderStage(
@@ -66,6 +68,7 @@ function renderStage(
 ) {
   return renderWithProviders(
     <StudioStageScreen
+      areaLimits={null}
       isResuming={false}
       onResume={jest.fn()}
       scope={scope}

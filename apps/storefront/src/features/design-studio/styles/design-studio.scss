@@ -588,3 +588,91 @@ $bp-studio-split: 1025px;
   color: styles.$color-text-tertiary;
   font-size: styles.$font-size-caption;
 }
+
+// ---------------------------------------------------------------------------
+// Studio transform controls (APP3-S03)
+//
+// Design source: FIG-STUDIO-TRANSFORM-DESKTOP-{MOVE 606:186, RESIZE 606:256,
+// ROTATE 606:326}, section 07 — 596:13, with FIG-STUDIO-EDITING-TABLET-1024
+// (618:140) as the responsive reference.
+//
+// Still no geometry in this file. Every handle's position is an inline
+// percentage the component derived from APP3-P02, and the only thing declared
+// here is how large a control is and what it looks like. The knob and the hit
+// target are deliberately two different sizes: the tablet reference draws a
+// 16 px knob, and ADR-APP0-001 requires the thing you can actually press to be
+// at least 44 px.
+// ---------------------------------------------------------------------------
+
+.studio-stage__scene {
+  // The box the overlay is measured and positioned against. It is exactly the
+  // SVG's box, because the SVG is the only in-flow child and carries the
+  // document's aspect ratio — which is what makes a document percentage and a
+  // box percentage the same number.
+  position: relative;
+}
+
+.studio-stage__overlay {
+  position: absolute;
+  inset: 0;
+  // Chrome, not a surface. Only the controls inside take the pointer, so a
+  // click on empty stage still reaches the SVG and still clears the selection.
+  pointer-events: none;
+}
+
+.studio-stage__move-surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: move;
+  border: 0;
+  padding: 0;
+  background: transparent;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-status-info;
+    outline-offset: 2px;
+  }
+}
+
+.studio-stage__handle {
+  position: absolute;
+  // The pressable area. `ADR-APP0-001` puts the floor at 44 px and the
+  // component counter-scales by 1/zoom, so this stays 44 px on screen at 400 %
+  // rather than becoming 176 px there and correct nowhere else.
+  width: styles.$size-touch-target-min;
+  height: styles.$size-touch-target-min;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-status-info;
+    outline-offset: -14px;
+  }
+}
+
+.studio-stage__handle-knob {
+  // The visible knob follows the 1024 reference at 16 px. It is decoration:
+  // the button around it is what a pointer or a keyboard actually reaches.
+  width: 16px;
+  height: 16px;
+  border: 1px solid styles.$color-status-info;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.studio-stage__handle--rotate .studio-stage__handle-knob {
+  border-radius: 50%;
+}
+
+.studio-stage__refusal {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+}

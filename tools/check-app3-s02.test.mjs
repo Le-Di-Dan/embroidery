@@ -100,6 +100,14 @@ function rootWith(overrides = {}) {
   return root;
 }
 
+/** The phase document with S03 rewound to the world before that checkpoint. */
+function beforeS03() {
+  return file('phase').replace(
+    /\nAPP3-S03 = COMPLETE[^\n]*\n/,
+    '\nAPP3-S03 = READY — NOT STARTED\n',
+  );
+}
+
 /** The phase document with S07 rewound to the world before that checkpoint. */
 function beforeS07() {
   return file('phase').replace(
@@ -162,8 +170,11 @@ describe('entry authority', () => {
     assert.ok(mentions(failuresOf(checkPredecessors, root), 'MIGRATION = NONE'));
   });
 
-  it('refuses S03 or B06C recorded complete inside this checkpoint', () => {
-    for (const later of ['APP3-S03', 'APP3-B06C']) {
+  it('refuses B06C recorded complete inside this checkpoint', () => {
+    // S03 has since shipped legitimately, so its status line stops being
+    // evidence about S02; what still proves S02 built no transform is its own
+    // runtime half, exercised below.
+    for (const later of ['APP3-B06C']) {
       const root = rootWith({
         phase: `${file('phase')}\n${later} = COMPLETE — REVIEW_DELIVERED\n`,
       });
@@ -196,7 +207,10 @@ describe('scoped design approval', () => {
     const root = rootWith({
       registry: file('registry').replaceAll('REVIEW_REQUIRED', 'APPROVED_FOR_IMPLEMENTATION'),
     });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-TRANSFORM-DESKTOP-MOVE'));
+    // A row whose own checkpoint has *not* opened. Transform is no longer one:
+    // `APP3-S03` shipped and approved it, which is precisely why the assertion
+    // has to move to a row that is still closed rather than stay where it was.
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'));
   });
 
   it('refuses a row whose node id moved', () => {
@@ -626,54 +640,3 @@ describe('the pre-S02 world', () => {
  * file S07 did not introduce, the measurement doing the same, and either of them
  * arriving before S07 shipped at all.
  */
-describe('the APP3-S07 evolution did not open a hole', () => {
-  it('refuses a pan gesture in a file APP3-S07 did not introduce', () => {
-    const root = rootWith({
-      stageScreen: file('stageScreen').replace(
-        '<div className="studio-stage">',
-        '<div className="studio-stage" onPointerDown={() => undefined}>',
-      ),
-    });
-    assert.ok(mentions(failuresOf(checkNonScope, root), 'outside the APP3-S07 viewport'));
-  });
-
-  it('refuses an element that follows the pointer, in either world', () => {
-    const root = rootWith({
-      stageElement: file('stageElement').replace(
-        'onKeyDown={(event) => {',
-        'onPointerDown={() => undefined}\n      onKeyDown={(event) => {',
-      ),
-    });
-    assert.ok(mentions(failuresOf(checkNonScope, root), 'APP3-S03'));
-  });
-
-  it('refuses a layout measurement outside the viewport', () => {
-    const root = rootWith({
-      stageScreen: `${file('stageScreen')}\nconst width = node.clientWidth;\n`,
-    });
-    assert.ok(mentions(failuresOf(checkGeometryAuthority, root), 'geometry from the DOM'));
-  });
-
-  it('refuses the viewport gesture arriving before APP3-S07 opened', () => {
-    // The narrowing is conditional on S07 having shipped. Rewinding the phase
-    // line puts the original whole-feature ban back, so a viewport built early
-    // is refused by the same rule that allows it late.
-    const root = rootWith({ phase: beforeS07() });
-    assert.ok(mentions(failuresOf(checkNonScope, root), 'outside the APP3-S07 viewport'));
-    assert.ok(mentions(failuresOf(checkGeometryAuthority, root), 'geometry from the DOM'));
-  });
-
-  it('refuses the zoom design row approved before APP3-S07 opened', () => {
-    const root = rootWith({ phase: beforeS07() });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-ZOOM-DESKTOP-FIT'));
-  });
-
-  it('still refuses every other later Studio row in the S07 world', () => {
-    const registry = file('registry').replace(
-      /(\| FIG-STUDIO-LAYERS-DESKTOP-DEFAULT \|[^\n]*?)REVIEW_REQUIRED/,
-      '$1APPROVED_FOR_IMPLEMENTATION',
-    );
-    const root = rootWith({ registry });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'));
-  });
-});

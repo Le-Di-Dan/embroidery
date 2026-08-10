@@ -13,7 +13,23 @@
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-import { isS07Delivered } from './app3-accepted-surface.mjs';
+import { S03_FILES, S07_FILES, isS03Delivered, isS07Delivered } from './app3-accepted-surface.mjs';
+
+/**
+ * The code a pointer gesture or a layout measurement must be absent from.
+ *
+ * Each checkpoint opens only its **own** files: with S07 delivered and S03 not,
+ * the viewport's five files are excused and the transform chrome's are not. A
+ * single merged exclusion would have made a gesture legal in a world where
+ * nothing had authorised it.
+ */
+function openedInteractionScope(rootDir, all) {
+  const opened = [
+    ...(isS07Delivered(rootDir) ? S07_FILES : []),
+    ...(isS03Delivered(rootDir) ? S03_FILES : []),
+  ];
+  return opened.length === 0 ? all : s02FeatureCode(rootDir, opened);
+}
 import {
   CANONICAL_FILES,
   CONSUMED_OPERATION,
@@ -29,6 +45,7 @@ import {
 } from './check-app3-s02.sources.mjs';
 import {
   DOM_MEASUREMENT,
+  INTERACTION_GEOMETRY,
   LOCAL_GEOMETRY,
   POINTER_GESTURE,
   VIEWPORT_MEASUREMENT,
@@ -116,6 +133,13 @@ export function checkGeometryAuthority(rootDir, fail) {
       fail(`${FEATURE}: implements geometry the engine owns (${String(local)})`);
     }
   }
+  // Narrowed only once an interaction checkpoint exists to need it.
+  const interactionScope = isS03Delivered(rootDir) ? s02FeatureCode(rootDir, S03_FILES) : all;
+  for (const local of INTERACTION_GEOMETRY) {
+    if (local.test(interactionScope)) {
+      fail(`${FEATURE}: implements geometry the engine owns (${String(local)})`);
+    }
+  }
   for (const measurement of DOM_MEASUREMENT) {
     if (all.includes(measurement)) {
       fail(`${FEATURE}: takes geometry from the DOM (${measurement})`);
@@ -123,7 +147,7 @@ export function checkGeometryAuthority(rootDir, fail) {
   }
   // Narrowed only once S07 exists; before that the original whole-feature
   // absence is still what is asserted.
-  const measurementScope = isS07Delivered(rootDir) ? s02FeatureCode(rootDir) : all;
+  const measurementScope = openedInteractionScope(rootDir, all);
   for (const measurement of VIEWPORT_MEASUREMENT) {
     if (measurementScope.includes(measurement)) {
       fail(`${FEATURE}: takes geometry from the DOM (${measurement})`);
@@ -307,10 +331,10 @@ export function checkNonScope(rootDir, fail) {
   // The pan gesture, scoped to the files that may hold it. An element that
   // could follow a pointer is `APP3-S03` arriving early, whichever checkpoint
   // is shipping.
-  const gestureScope = isS07Delivered(rootDir) ? s02FeatureCode(rootDir) : all;
+  const gestureScope = openedInteractionScope(rootDir, all);
   for (const marker of POINTER_GESTURE) {
     if (gestureScope.includes(marker)) {
-      fail(`${FEATURE}: carries "${marker}" outside the APP3-S07 viewport`);
+      fail(`${FEATURE}: carries "${marker}" outside the viewport and the transform chrome`);
     }
   }
   // Whatever else moves, the drawn element itself never follows a pointer.

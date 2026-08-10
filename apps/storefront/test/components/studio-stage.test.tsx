@@ -18,6 +18,7 @@ import { localMatrix } from '@embroidery/design-engine';
 import { StudioStageScreen } from '../../src/features/design-studio/components/studio-stage-screen';
 import { STUDIO_STAGE_COPY } from '../../src/features/design-studio/model/studio-stage-copy';
 import { toSvgMatrix } from '../../src/features/design-studio/renderer/studio-svg-matrix';
+import { useStudioDocumentStore } from '../../src/features/design-studio/store/studio-document.store';
 import { useStudioInteractionStore } from '../../src/features/design-studio/store/studio-interaction.store';
 import {
   freehandElement,
@@ -55,12 +56,19 @@ beforeEach(() => {
   // The interaction store outlives a mount by design, so each test starts from
   // a known selection rather than from whatever the previous one left.
   useStudioInteractionStore.setState({ selectedElementId: null });
+  useStudioDocumentStore.getState().reset();
 });
 
 function renderStage(document = makeStageDocument([shapeElement('a')]), scope = makeScope()) {
   const snapshot = makeStageSnapshot(document);
   return renderWithProviders(
-    <StudioStageScreen isResuming={false} onResume={jest.fn()} scope={scope} snapshot={snapshot} />,
+    <StudioStageScreen
+      areaLimits={null}
+      isResuming={false}
+      onResume={jest.fn()}
+      scope={scope}
+      snapshot={snapshot}
+    />,
   );
 }
 
@@ -268,10 +276,17 @@ describe('single-element selection', () => {
 
     rerender(
       <StudioStageScreen
+        areaLimits={null}
         isResuming={false}
         onResume={jest.fn()}
         scope={makeScope()}
-        snapshot={makeStageSnapshot(makeStageDocument([shapeElement('a')]))}
+        snapshot={makeStageSnapshot(makeStageDocument([shapeElement('a')]), {
+          // A genuinely replaced document is a different Session. Since
+          // `APP3-S03` the stage draws a working document, and a snapshot that
+          // arrives under the *same* identity must not discard local edits —
+          // so the document underneath the selection changes exactly here.
+          sessionId: 'a-different-session',
+        })}
       />,
     );
 

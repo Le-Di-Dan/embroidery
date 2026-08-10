@@ -129,11 +129,7 @@ export function checkSceneUntouched(rootDir, fail) {
   // list re-runs the whole adapter on every zoom step — the exact cost the
   // discrete-step mitigation exists to avoid, and invisible on screen.
   const screen = code(rootDir, 'stageScreen');
-  if (
-    !/useMemo\(\(\) => buildRenderableScene\(snapshot\.document\), \[snapshot\.document\]\)/.test(
-      screen,
-    )
-  ) {
+  if (!/useMemo\(\(\) => buildRenderableScene\(stageDocument\), \[stageDocument\]\)/.test(screen)) {
     fail(`${CANONICAL_FILES.stageScreen}: the scene is not memoised on the document alone`);
   }
   if (/buildRenderableScene[\s\S]{0,200}zoom/.test(screen)) {

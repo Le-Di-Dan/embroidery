@@ -1,17 +1,23 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import type {
   DesignSessionScopeResponse,
   DesignSessionSnapshotResponse,
 } from '@embroidery/api-client';
-import { rectToBounds } from '@embroidery/design-engine';
+import { buildElementGraph, rectToBounds } from '@embroidery/design-engine';
 
 import { useSideBackground } from '../hooks/use-side-background';
+import { useStudioTransform } from '../hooks/use-studio-transform';
 import { STUDIO_STAGE_COPY } from '../model/studio-stage-copy';
+import { sessionKeyOf } from '../model/studio-session-key';
 import { elementLabel } from '../model/studio-stage-label';
+import type { StudioAreaLimits, TransformRefusal } from '../model/studio-transform-authority';
+import { STUDIO_TRANSFORM_COPY } from '../model/studio-transform-copy';
+import { zoomAt } from '../model/studio-viewport';
 import { buildRenderableScene, resolveRenderableElement } from '../renderer/studio-scene';
+import { useStudioDocumentStore } from '../store/studio-document.store';
 import { useStudioInteractionStore } from '../store/studio-interaction.store';
 import { useStudioViewportStore } from '../store/studio-viewport.store';
 import { StudioSessionPanel } from './studio-session-panel';
@@ -20,6 +26,7 @@ import { StudioStageBackgroundNotice } from './studio-stage-background-notice';
 import { StudioStageControls } from './studio-stage-controls';
 import { StudioStageUnavailable } from './studio-stage-unavailable';
 import { StudioStageViewport } from './studio-stage-viewport';
+import { StudioTransformOverlay, physicalSizeLabel } from './studio-transform-overlay';
 
 export interface StudioStageScreenProps {
   readonly snapshot: DesignSessionSnapshotResponse;
@@ -32,35 +39,64 @@ export interface StudioStageScreenProps {
    * screen can see that selection.
    */
   readonly scope: DesignSessionScopeResponse | null;
+  /**
+   * The Embroidery Area's physical maxima, captured when the Session opened.
+   *
+   * The Session scope carries the safe-area rectangle and the Side's `pxPerMm`
+   * but not `maxWidthMm`/`maxHeightMm`, and `APP3-P02` needs them to rule on
+   * physical size. They come from the public placement manifest `APP3-S01`
+   * already fetched — no new API — and are passed as a value rather than read
+   * live, so a later manifest reconcile cannot change the limits under an open
+   * Session.
+   */
+  readonly areaLimits: StudioAreaLimits | null;
   readonly isResuming: boolean;
   readonly onResume: () => void;
 }
 
 /**
- * The Studio stage screen (`APP3-S02`).
+ * The Studio stage screen (`APP3-S02`, extended by `APP3-S07` and `APP3-S03`).
  *
- * What S01 handed over and what S02 does with it, in one place: the canonical
- * Session snapshot arrives, `APP3-P01` decides whether its document can be
- * read, `APP3-P02` decides where everything lands, the adapter turns both into
- * a scene, and the stage draws it. No step is skipped and none is repeated
- * elsewhere.
+ * The chain is unchanged and still runs in one direction: the canonical Session
+ * snapshot arrives, `APP3-P01` decides whether its document can be read,
+ * `APP3-P02` decides where everything lands, the adapter turns both into a
+ * scene, and the stage draws it.
  *
- * The Session is **not** re-fetched on mount. S01 already holds the snapshot
- * the server returned, and asking again would replace a known-good document
- * with a second copy for no reason — resume exists to check a Session that may
- * have expired, not to load the design.
+ * `APP3-S03` adds one thing to the front of that chain — a **working document**.
+ * It is initialized once from the snapshot and is what the renderer consumes
+ * from then on, so there is exactly one answer to "what is on the stage". The
+ * server snapshot stays an immutable baseline for `APP3-S10`; it never competes
+ * as a second editable scene.
  *
  * Nothing here saves. There is no autosave timer, no `publicDesignSessionAutosave`
- * call and no saving/saved indicator, because S02 makes no document mutation
- * and `APP3-S10` owns persistence.
+ * call and no saving/saved indicator: `APP3-S10` owns persistence, and `S08`
+ * owns history.
  */
 export function StudioStageScreen({
   snapshot,
   scope,
+  areaLimits,
   isResuming,
   onResume,
 }: StudioStageScreenProps) {
-  const result = useMemo(() => buildRenderableScene(snapshot.document), [snapshot.document]);
+  const workingDocument = useStudioDocumentStore((state) => state.document);
+  const initializeDocument = useStudioDocumentStore((state) => state.initialize);
+
+  const sessionKey = sessionKeyOf(snapshot.sessionId, snapshot.revision);
+  useEffect(() => {
+    initializeDocument(sessionKey, snapshot.document);
+  }, [initializeDocument, sessionKey, snapshot.document]);
+
+  // The snapshot until the working document exists, and the working document
+  // from then on. One scene, one source, and the memo depends on the document
+  // alone — never on the viewport, which would rebuild the whole adapter on
+  // every zoom step.
+  const stageDocument = workingDocument ?? snapshot.document;
+  const result = useMemo(() => buildRenderableScene(stageDocument), [stageDocument]);
+  // One graph per document, shared by the transform chrome and the read-out.
+  // Each of them used to build its own, so a hundred-element scene resolved the
+  // parent graph three times a frame for no new information.
+  const graph = useMemo(() => buildElementGraph(stageDocument), [stageDocument]);
 
   const background = useSideBackground(
     scope === null ? undefined : { productSlug: scope.productSlug, sideCode: scope.sideCode },
@@ -73,6 +109,17 @@ export function StudioStageScreen({
 
   const safeAreaVisible = useStudioViewportStore((state) => state.safeAreaVisible);
   const resetViewport = useStudioViewportStore((state) => state.resetViewport);
+  const zoomStep = useStudioViewportStore((state) => state.zoomStep);
+
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const transform = useStudioTransform({
+    document: workingDocument,
+    elementId: selectedElementId,
+    scope,
+    limits: areaLimits,
+    zoom: zoomAt(zoomStep),
+    overlay: overlayRef,
+  });
 
   const presentIds = useMemo(
     () => (result.ok ? result.scene.elements.map((renderable) => renderable.id) : []),
@@ -111,6 +158,10 @@ export function StudioStageScreen({
   const selected = result.ok
     ? resolveRenderableElement(result.scene, selectedElementId)
     : undefined;
+  // Hidden and locked elements keep their geometry and their place in z-order,
+  // and neither may be transformed. Unlocking is `APP3-S04`'s.
+  const transformable =
+    selected !== undefined && selected.visible && !selected.element.locked ? selected : undefined;
 
   return (
     <div className="studio-stage">
@@ -124,18 +175,30 @@ export function StudioStageScreen({
             Hiding the safe area withholds the rectangle from the paint, and
             does nothing else: `area` is the same `rectToBounds` answer either
             way, and the Session scope, the document placement and the persisted
-            geometry are untouched. There is no second, locally derived boundary
-            that could disagree with the one `APP3-S02` draws.
+            geometry are untouched.
           */}
           <StudioStageViewport>
-            <StudioStage
-              area={safeAreaVisible ? area : null}
-              backgroundUrl={background.objectUrl}
-              onClearSelection={clearSelection}
-              onSelect={selectElement}
-              scene={result.scene}
-              selectedElementId={selectedElementId}
-            />
+            <div className="studio-stage__scene">
+              <StudioStage
+                area={safeAreaVisible ? area : null}
+                backgroundUrl={background.objectUrl}
+                onClearSelection={clearSelection}
+                onSelect={selectElement}
+                scene={result.scene}
+                selectedElementId={selectedElementId}
+              />
+
+              {transformable === undefined || scope === null ? null : (
+                <StudioTransformOverlay
+                  document={stageDocument}
+                  elementId={transformable.id}
+                  graph={graph}
+                  overlayRef={overlayRef}
+                  transform={transform}
+                  zoom={zoomAt(zoomStep)}
+                />
+              )}
+            </div>
           </StudioStageViewport>
 
           <StudioStageControls />
@@ -148,20 +211,53 @@ export function StudioStageScreen({
           ) : null}
 
           {/*
-            Selection announced in text, not only by the outline. A coloured
-            rectangle is invisible to a screen reader and to anyone who cannot
-            distinguish it from the artwork underneath, so the selected
-            element's name is stated here as well.
+            Selection, physical size and any refusal, all in text. A coloured
+            rectangle is invisible to a screen reader, a millimetre value cannot
+            be inferred from how large something looks, and a refusal that only
+            manifested as "the element stopped moving" would read as a bug.
           */}
           <p className="studio-stage__selection-status" role="status">
             {selected === undefined
               ? STUDIO_STAGE_COPY.selectionNone
               : `${STUDIO_STAGE_COPY.selectionPrefix}: ${elementLabel(selected.element)}`}
+            {transformable === undefined ? null : (
+              <span className="studio-stage__hint" data-testid="studio-transform-size">
+                {scope === null
+                  ? STUDIO_TRANSFORM_COPY.physicalSizeUnavailable
+                  : physicalSizeLabel(stageDocument, transformable.id, scope.pxPerMm, graph)}
+              </span>
+            )}
+            {selected !== undefined && selected.element.locked ? (
+              <span className="studio-stage__hint" data-testid="studio-transform-locked">
+                {STUDIO_TRANSFORM_COPY.lockedElement}
+              </span>
+            ) : null}
           </p>
+
+          {transform.refusal === null ? null : (
+            <p
+              className="studio-stage__refusal"
+              role="alert"
+              data-testid="studio-transform-refusal"
+            >
+              {refusalCopy(transform.refusal)}
+            </p>
+          )}
         </section>
       ) : (
         <StudioStageUnavailable failure={result.failure} />
       )}
     </div>
   );
+}
+
+function refusalCopy(refusal: TransformRefusal): string {
+  switch (refusal) {
+    case 'outside-embroidery-area':
+      return STUDIO_TRANSFORM_COPY.outsideArea;
+    case 'too-large-for-area':
+      return STUDIO_TRANSFORM_COPY.tooLarge;
+    default:
+      return STUDIO_TRANSFORM_COPY.unreadable;
+  }
 }

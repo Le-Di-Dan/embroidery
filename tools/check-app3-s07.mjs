@@ -27,7 +27,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S07_STATUS_LINES, acceptedSurface, isS07Delivered } from './app3-accepted-surface.mjs';
+import {
+  S07_STATUS_LINES,
+  acceptedSurface,
+  isS03Delivered,
+  isS07Delivered,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   EXPECTED_MIGRATIONS,
@@ -89,9 +94,13 @@ export function checkPredecessors(rootDir, fail) {
   }
   // S03 is the next checkpoint, not part of this one, and S11 is not made ready
   // by S07 alone — it needs S03 as well.
-  for (const later of ['APP3-S03', 'APP3-S11', 'APP3-B06C']) {
-    if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
-      fail(`${CANONICAL_FILES.phase}: ${later} is recorded complete; S07 does not implement it`);
+  // Once a later checkpoint has legitimately shipped, its status line stops
+  // being evidence about this one. S11 stays listed: it needs S03 *and* S07,
+  // so S03 delivering does not make it ready.
+  const later = ['APP3-S11', 'APP3-B06C', ...(isS03Delivered(rootDir) ? [] : ['APP3-S03'])];
+  for (const id of later) {
+    if (new RegExp(`\\n${id} = COMPLETE`).test(phase)) {
+      fail(`${CANONICAL_FILES.phase}: ${id} is recorded complete; S07 does not implement it`);
     }
   }
 }

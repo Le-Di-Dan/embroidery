@@ -30,6 +30,7 @@ import {
   S02_STATUS_LINES,
   acceptedSurface,
   isS02Delivered,
+  isS03Delivered,
   isS07Delivered,
 } from './app3-accepted-surface.mjs';
 import {
@@ -100,9 +101,14 @@ export function checkPredecessors(rootDir, fail) {
   }
   // S03 is the next checkpoint, not part of this one — and B06C is not S02's
   // to deliver merely because an image element cannot show its bytes yet.
-  for (const later of ['APP3-S03', 'APP3-B06C']) {
-    if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
-      fail(`${CANONICAL_FILES.phase}: ${later} is recorded complete; S02 does not implement it`);
+  // Once a later checkpoint has legitimately shipped, its status line stops
+  // being evidence about this one. What still proves S02 did not implement
+  // transforms is its own runtime half: the pointer gestures are refused in
+  // every file S02 owns.
+  const later = ['APP3-B06C', ...(isS03Delivered(rootDir) ? [] : ['APP3-S03'])];
+  for (const id of later) {
+    if (new RegExp(`\\n${id} = COMPLETE`).test(phase)) {
+      fail(`${CANONICAL_FILES.phase}: ${id} is recorded complete; S02 does not implement it`);
     }
   }
 }
@@ -140,14 +146,16 @@ export function checkDesignApproval(rootDir, fail) {
    * The half that makes the approval *scoped*: a blanket Studio approval must
    * fail this gate rather than pass it.
    *
-   * World-aware on the zoom row alone. `FIG-STUDIO-ZOOM-DESKTOP-FIT` stands here
-   * for the checkpoint that owns it, and `APP3-S07` legitimately opened it —
-   * so once S07 has shipped, that one row stops proving anything and the
-   * remaining rows carry the assertion. Transform, layers, text and image are
-   * untouched, which is what keeps "scoped" a real claim rather than a ratchet
-   * that loosens every time a checkpoint lands.
+   * World-aware on exactly the rows whose own checkpoint has opened. Each of
+   * these stands here for the capability that owns it, so once that checkpoint
+   * ships the row stops proving anything and the remaining rows carry the
+   * assertion. Layers, text and image are untouched, which is what keeps
+   * "scoped" a real claim rather than a ratchet that loosens on every landing.
    */
-  const opened = isS07Delivered(rootDir) ? new Set(['FIG-STUDIO-ZOOM-DESKTOP-FIT']) : new Set();
+  const opened = new Set([
+    ...(isS07Delivered(rootDir) ? ['FIG-STUDIO-ZOOM-DESKTOP-FIT'] : []),
+    ...(isS03Delivered(rootDir) ? ['FIG-STUDIO-TRANSFORM-DESKTOP-MOVE'] : []),
+  ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);

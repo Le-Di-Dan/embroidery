@@ -13,7 +13,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S07_FILES } from './app3-accepted-surface.mjs';
+import { S03_FILES, S07_FILES } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -151,17 +151,22 @@ export function featureCode(rootDir) {
 }
 
 /**
- * The feature minus the files `APP3-S07` introduced, prose stripped.
+ * The feature minus the files `APP3-S07` and `APP3-S03` introduced, prose stripped.
  *
  * S02 banned every pointer gesture and every measurement of the browser's
- * layout across the whole feature. S07 legitimately needs one bounded use of
- * each, in the five files it adds — so the bans keep biting everywhere else,
- * and the exclusion names the **new** files rather than the ones S02 owned. A
- * file added tomorrow is therefore governed by the strict rule by default; a
- * list of S02's own files would have let it escape.
+ * layout across the whole feature. The two interaction checkpoints legitimately
+ * need one bounded use of each — S07 for the viewport, S03 for the transform
+ * chrome — so the bans keep biting everywhere else, and the exclusion names the
+ * **new** files rather than the ones S02 owned. A file added tomorrow is
+ * therefore governed by the strict rule by default.
+ *
+ * The exclusion is a **parameter** rather than a constant, because each ban is
+ * opened by its own checkpoint: rewinding S03 alone must put the pointer
+ * gestures back even though S07 is still delivered. A single merged list would
+ * have left them legal in a world where nothing had authorised them.
  */
-export function s02FeatureCode(rootDir) {
-  const later = new Set(S07_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+export function s02FeatureCode(rootDir, openedFiles = [...S07_FILES, ...S03_FILES]) {
+  const later = new Set(openedFiles.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
   return collect(join(rootDir, FEATURE), /\.tsx?$/)
     .filter((path) => !later.has(path))
     .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))

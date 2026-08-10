@@ -21,6 +21,7 @@ import type { DesignElement } from '@embroidery/design-document';
 
 import { StudioStageScreen } from '../../src/features/design-studio/components/studio-stage-screen';
 import { buildRenderableScene } from '../../src/features/design-studio/renderer/studio-scene';
+import { useStudioDocumentStore } from '../../src/features/design-studio/store/studio-document.store';
 import { useStudioInteractionStore } from '../../src/features/design-studio/store/studio-interaction.store';
 import {
   makeScope,
@@ -41,6 +42,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   useStudioInteractionStore.setState({ selectedElementId: null });
+  useStudioDocumentStore.getState().reset();
 });
 
 /**
@@ -85,6 +87,7 @@ function renderScene(count: number) {
     document,
     ...renderWithProviders(
       <StudioStageScreen
+        areaLimits={null}
         isResuming={false}
         onResume={jest.fn()}
         scope={makeScope()}

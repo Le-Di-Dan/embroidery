@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 
 import { useStudioPlacement } from '../hooks/use-studio-placement';
 import { useStudioSession } from '../hooks/use-studio-session';
@@ -10,6 +10,7 @@ import { useTemplatePreview } from '../hooks/use-template-preview';
 import { STUDIO_COPY } from '../model/studio-copy';
 import { codesOf, findArea, findSide, tripleOf } from '../model/studio-placement';
 import { EMPTY_STUDIO_SELECTION, studioSelectionReducer } from '../model/studio-selection';
+import { areaLimitsOf, type StudioAreaLimits } from '../model/studio-transform-authority';
 import { previewReferenceOf } from '../model/studio-template';
 import { StudioPlacementPicker } from './studio-placement-picker';
 import { StudioSessionExpired } from './studio-session-expired';
@@ -81,6 +82,22 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
   const preview = useTemplatePreview(previewReference);
   const session = useStudioSession(productSlug);
 
+  /**
+   * The Area's physical maxima, frozen at the moment the Session opens.
+   *
+   * `APP3-P02` needs `maxWidthMm`/`maxHeightMm` to rule on physical size and the
+   * Session scope does not carry them, so they come from the manifest this
+   * screen already holds — no second request. Recorded only while there is *no*
+   * Session, because once one exists its placement is fixed: a manifest that
+   * reconciles afterwards must not silently change the limits an open design is
+   * being validated against.
+   */
+  const areaLimits = useRef<StudioAreaLimits | null>(null);
+  useEffect(() => {
+    if (session.snapshot !== null) return;
+    areaLimits.current = area === undefined ? null : areaLimitsOf(area);
+  }, [area, session.snapshot]);
+
   if (isLoading) {
     return (
       <p className="studio__status" role="status">
@@ -105,6 +122,7 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
   if (session.snapshot !== null) {
     return (
       <StudioStageScreen
+        areaLimits={areaLimits.current}
         isResuming={session.isResuming}
         onResume={session.resume}
         scope={session.scope}
