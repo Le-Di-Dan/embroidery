@@ -18,7 +18,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { isS05Delivered } from './app3-accepted-surface.mjs';
+import { isS05Delivered, isS06Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -28,6 +28,7 @@ import {
   featureCode,
   preS03Code,
   preS05Code,
+  preS06Code,
   read,
   s03Code,
 } from './check-app3-s03.sources.mjs';
@@ -333,12 +334,25 @@ export function checkNonScope(rootDir, fail) {
     ungroup: 'APP3-S04',
     duplicate: 'APP3-S04',
     publicDesignSessionAutosave: 'APP3-S10',
-    publicDesignSessionAsset: 'APP3-S06',
   });
   for (const [marker, owner] of Object.entries(owners)) {
     if (all.includes(marker)) {
       fail(`${FEATURE}: carries "${marker}", a capability ${owner} owns`);
     }
+  }
+
+  /*
+   * The `APP3-S06` marker, world-aware.
+   *
+   * `publicDesignSessionAsset` was banned feature-wide because no checkpoint
+   * owned the image capability, and that is what proved S03 had not started it.
+   * S06 owns it now, so the ban moves rather than disappearing: every file S06
+   * did not introduce still may not carry it, which keeps the transform chrome a
+   * transform and stops a file added tomorrow inheriting the exception.
+   */
+  const outsideS06 = isS06Delivered(rootDir) ? preS06Code(rootDir) : all;
+  if (outsideS06.includes('publicDesignSessionAsset')) {
+    fail(`${FEATURE}: carries "publicDesignSessionAsset", a capability APP3-S06 owns`);
   }
 
   /*

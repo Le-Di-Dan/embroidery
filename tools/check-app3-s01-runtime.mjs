@@ -12,7 +12,7 @@
  */
 import { join, relative } from 'node:path';
 
-import { isS02Delivered, isS07Delivered } from './app3-accepted-surface.mjs';
+import { isS02Delivered, isS06Delivered, isS07Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   CONSUMED_OPERATIONS,
@@ -30,11 +30,22 @@ export function checkApiBoundary(rootDir, fail) {
   for (const operation of CONSUMED_OPERATIONS) {
     if (!all.includes(operation)) fail(`${FEATURE}: ${operation} is not consumed`);
   }
+  /*
+   * The three Session-asset operations are world-aware (`APP3-S06`).
+   *
+   * They were forbidden feature-wide because no screen owned them, and that is
+   * exactly what stopped an earlier checkpoint quietly starting the image
+   * capability. `APP3-S06` is the screen that owns them, so after it the ban
+   * moves rather than disappearing: the S01 partition still may not reach one
+   * (asserted below through `s01FeatureCode`), and `publicDesignSessionAutosave`
+   * stays forbidden everywhere because `APP3-S10` has not opened.
+   */
+  const sessionAssetOwned = isS06Delivered(rootDir);
   for (const forbidden of [
     'adminProductPlacementGet',
     'adminDesignTemplate',
     'publicDesignSessionAutosave',
-    'publicDesignSessionAssetCreate',
+    ...(sessionAssetOwned ? [] : ['publicDesignSessionAssetCreate']),
   ]) {
     if (all.includes(forbidden)) fail(`${FEATURE}: reaches ${forbidden}, which S01 does not own`);
   }
@@ -44,6 +55,13 @@ export function checkApiBoundary(rootDir, fail) {
   // feature that now legitimately contains one consumer.
   if (s01FeatureCode(rootDir).includes('publicProductSideBackgroundGet')) {
     fail(`${FEATURE}: the bootstrap screen reaches publicProductSideBackgroundGet`);
+  }
+  // The same treatment for the Session-asset operations: the ban moved to the
+  // S01 partition rather than disappearing, so the bootstrap chain still may not
+  // upload, poll or fetch private bytes even now that the feature contains a
+  // screen that may.
+  if (/publicDesignSessionAsset(Create|Get|Status)/.test(s01FeatureCode(rootDir))) {
+    fail(`${FEATURE}: the bootstrap screen reaches a Session asset operation`);
   }
   if (!all.includes('getBrowserApiClient')) {
     fail(`${FEATURE}: does not use the approved browser Axios client`);
@@ -66,9 +84,13 @@ export function checkApiBoundary(rootDir, fail) {
     }
   }
   // An operation on the curated boundary is an invitation to call it. Autosave
-  // is `APP3-S10`'s and customer image upload is `APP3-S06`'s; neither screen
-  // exists, so neither operation may cross yet.
-  for (const withheld of ['publicDesignSessionAutosave', 'publicDesignSessionAssetCreate']) {
+  // is `APP3-S10`'s and that screen still does not exist, so it still may not
+  // cross. Customer image upload was withheld for the same reason and stopped
+  // being withheld when `APP3-S06` delivered the screen that owns it.
+  for (const withheld of [
+    'publicDesignSessionAutosave',
+    ...(sessionAssetOwned ? [] : ['publicDesignSessionAssetCreate']),
+  ]) {
     if (curated.split('\n').some((line) => line.trim().startsWith(withheld))) {
       fail(`${CANONICAL_FILES.curatedClient}: ${withheld} crossed the boundary without a consumer`);
     }

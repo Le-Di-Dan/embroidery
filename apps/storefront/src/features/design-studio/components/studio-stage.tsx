@@ -13,6 +13,15 @@ export interface StudioStageProps {
   readonly area: Bounds2D | null;
   /** A browser object URL for the Side background, or `null`. */
   readonly backgroundUrl: string | null;
+  /**
+   * Object URLs for placed images, by `derivativeId` (`APP3-S06`).
+   *
+   * Keyed by derivative rather than by element because one Asset may be placed
+   * several times and must be fetched once — the same reason `APP3-P01-C1`
+   * counts decoded pixels per unique Asset. An id with no entry has no bytes,
+   * and the element draws the honest placeholder instead.
+   */
+  readonly media: ReadonlyMap<string, string>;
   readonly selectedElementId: string | null;
   readonly onSelect: (elementId: string) => void;
   readonly onClearSelection: () => void;
@@ -51,6 +60,7 @@ export function StudioStage({
   scene,
   area,
   backgroundUrl,
+  media,
   selectedElementId,
   onSelect,
   onClearSelection,
@@ -127,6 +137,11 @@ export function StudioStage({
             key={renderable.id}
             renderable={renderable}
             selected={renderable.id === selectedElementId}
+            mediaUrl={
+              renderable.element.type === 'image'
+                ? (media.get(renderable.element.derivativeId) ?? null)
+                : null
+            }
             onSelect={onSelect}
           />
         ))}

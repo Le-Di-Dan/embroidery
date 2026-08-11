@@ -30,11 +30,19 @@ import {
   type ProcessableFormat,
   type ProcessableMediaType,
 } from '../domain/asset-processing-policy';
+import {
+  requiresFullDecodeVerification,
+  type AssetInspectionLane,
+} from '../domain/asset-inspection-lane';
 import { contradiction } from '../domain/inspection-contradiction';
 import type { InspectedSource } from '../domain/inspection-detail';
 import { assetRejection } from '../domain/processing-rejection';
 import type { AssetSourceFacts } from '../domain/repositories/asset-inspection.repository';
-import { readSourceMetadata, type SourceMetadata } from '../infrastructure/image/sharp-pipeline';
+import {
+  readSourceMetadata,
+  verifyFullDecode,
+  type SourceMetadata,
+} from '../infrastructure/image/sharp-pipeline';
 import {
   ByteLimitExceededError,
   DigestCounterStream,
@@ -48,11 +56,49 @@ const TRANSPOSING_ORIENTATION = 5;
 export class SourceVerificationService {
   constructor(@Inject(OBJECT_STORAGE) private readonly storage: ObjectStoragePort) {}
 
-  async verify(source: AssetSourceFacts, signal: AbortSignal): Promise<InspectedSource> {
+  /**
+   * Verifies the source, and — on a lane that writes no derivative — decodes it.
+   *
+   * The third read is conditional and its condition is derived, not configured:
+   * `requiresFullDecodeVerification` is true exactly when the lane produces no
+   * output, because producing one already decodes every pixel. It runs *last*,
+   * after the policy has admitted the file, so an oversized or wrong-format
+   * image is still rejected with its precise code rather than as a decode
+   * failure — and so nothing decodes an image the policy would have refused.
+   */
+  async verify(
+    source: AssetSourceFacts,
+    lane: AssetInspectionLane,
+    signal: AbortSignal,
+  ): Promise<InspectedSource> {
     const mediaType = this.requireProcessableMediaType(source);
     const byteSize = await this.verifyIntegrity(source, signal);
     const metadata = await this.readMetadata(source, signal);
-    return this.applyPolicy(mediaType, byteSize, source, metadata);
+    const inspected = this.applyPolicy(mediaType, byteSize, source, metadata);
+
+    if (requiresFullDecodeVerification(lane)) {
+      await this.verifyDecodable(source, signal);
+    }
+    return inspected;
+  }
+
+  /**
+   * Read 3 — every pixel, discarded.
+   *
+   * A decode failure here is a property of the file, exactly as it is in
+   * `readMetadata`, so it is a rejection rather than a retry and the native
+   * error is dropped: never logged, never persisted, never attached as a cause.
+   */
+  private async verifyDecodable(source: AssetSourceFacts, signal: AbortSignal): Promise<void> {
+    const stream = await this.openOriginal(source, signal);
+    try {
+      await verifyFullDecode(stream);
+    } catch (error: unknown) {
+      if (isAbort(signal, error)) {
+        throw abortFailure('source decode verification');
+      }
+      throw assetRejection('DECODE_FAILED');
+    }
   }
 
   private requireProcessableMediaType(source: AssetSourceFacts): ProcessableMediaType {

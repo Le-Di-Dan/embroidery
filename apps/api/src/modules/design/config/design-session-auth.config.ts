@@ -35,6 +35,28 @@ export const MIN_PEPPER_LENGTH = 32;
 export interface DesignSessionRateLimits {
   /** PO-07: authorized mutations, 30/minute per session id. */
   readonly mutation: { readonly max: number; readonly windowMs: number };
+  /**
+   * PO-07: bootstrap, resume and read, 60/minute per ephemeral network key.
+   *
+   * A **locked `IMP-D043` PO-07 control**, ruled at `APP3-G03` on 2026-08-04
+   * alongside the other four, and implemented here at `APP3-S06`.
+   *
+   * The delay is worth recording, because the reason for it was a misreading
+   * rather than an omission. `APP3-B06C` shipped the first anonymous Session
+   * *read* route, looked for a read limit, concluded PO-07 defined only four
+   * controls — creation, creation burst, mutation and authorization failure —
+   * and disclosed the absence as `FU-APP3-B06C-READ-RATE-LIMIT-01` rather than
+   * inventing a number. Refusing to invent one was right; the premise was not.
+   * PO-07's own text reads "bootstrap/resume/read **60/minute** per ephemeral
+   * network key", and `docs/09-SECURITY-AND-ABUSE-PREVENTION.md` has carried it
+   * in the locked limits table since the ruling. This object was the thing that
+   * was incomplete, not the decision.
+   *
+   * It bounds what an *authorized* caller may read. Without it, a caller holding
+   * a valid Session credential could probe Asset ids indefinitely, bounded only
+   * by the 122 bits of a UUIDv4 and by every miss being indistinguishable.
+   */
+  readonly read: { readonly max: number; readonly windowMs: number };
   /** PO-07: authorization failures, 10 per 15 minutes per network key and session id. */
   readonly authorizationFailure: { readonly max: number; readonly windowMs: number };
   /** PO-07: session creation, 5/hour per ephemeral network key. */
@@ -55,9 +77,14 @@ export interface DesignSessionAuthConfig {
 
 const MINUTE_MS = 60_000;
 
-/** `IMP-D043` PO-07, verbatim. Not environment-tunable. */
+/**
+ * `IMP-D043` PO-07, verbatim — all **five** controls, not the four this object
+ * carried until `APP3-S06`. None of them is environment-tunable: they are
+ * product rulings, not knobs.
+ */
 const RATE_LIMITS: DesignSessionRateLimits = Object.freeze({
   mutation: { max: 30, windowMs: MINUTE_MS },
+  read: { max: 60, windowMs: MINUTE_MS },
   authorizationFailure: { max: 10, windowMs: 15 * MINUTE_MS },
   creation: { max: 5, windowMs: 60 * MINUTE_MS },
   creationBurst: { max: 2, windowMs: MINUTE_MS },

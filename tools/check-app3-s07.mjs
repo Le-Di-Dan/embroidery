@@ -32,6 +32,7 @@ import {
   acceptedSurface,
   isS03Delivered,
   isS05Delivered,
+  isS06Delivered,
   isS07Delivered,
   isB06CDelivered,
 } from './app3-accepted-surface.mjs';
@@ -50,6 +51,7 @@ import {
   collect,
   read,
   featureCode,
+  preS06Code,
 } from './check-app3-s07.sources.mjs';
 import {
   checkNonScope,
@@ -109,7 +111,10 @@ export function checkPredecessors(rootDir, fail) {
   // checkpoint — the same reasoning the S03 exclusion above already applies. What
   // replaces it is stronger and world-independent: S07 must not *call* the
   // delivery operation, whichever checkpoints exist around it.
-  if (/publicDesignSessionAssetGet|editor-preview/.test(featureCode(rootDir))) {
+  // Scoped to the files S07 owns since `APP3-S06`, the checkpoint that
+  // legitimately calls it; before S06 the scope is the whole feature.
+  const s07Scope = isS06Delivered(rootDir) ? preS06Code(rootDir) : featureCode(rootDir);
+  if (/publicDesignSessionAssetGet|editor-preview/.test(s07Scope)) {
     fail(`${CANONICAL_FILES.phase}: S07 source reaches the APP3-B06C delivery operation`);
   }
 
@@ -156,7 +161,10 @@ export function checkDesignApproval(rootDir, fail) {
   // legitimately approves its three section-09 text rows, so once it has
   // delivered they stop being evidence of a blanket Studio approval. Every row
   // belonging to a checkpoint that still has not opened stays exactly as ruled.
-  const opened = new Set(isS05Delivered(rootDir) ? ['FIG-STUDIO-TEXT-DESKTOP-EDITING'] : []);
+  const opened = new Set([
+    ...(isS05Delivered(rootDir) ? ['FIG-STUDIO-TEXT-DESKTOP-EDITING'] : []),
+    ...(isS06Delivered(rootDir) ? ['FIG-STUDIO-IMAGE-DESKTOP-UPLOADING'] : []),
+  ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
@@ -218,9 +226,14 @@ export function checkImmutability(rootDir, fail) {
     fail(`package.json: ${String(scripts)} root scripts, expected ${String(ROOT_SCRIPTS)}`);
   }
 
-  // The curated boundary is unchanged: S07 consumes no operation at all.
+  // The curated boundary is unchanged: S07 consumes no operation at all. Autosave
+  // still has no screen. Customer image upload was withheld for the same reason
+  // and stopped being withheld when `APP3-S06` delivered the screen that owns it.
   const curated = read(rootDir, 'curatedClient') ?? '';
-  for (const withheld of ['publicDesignSessionAutosave', 'publicDesignSessionAssetCreate']) {
+  for (const withheld of [
+    'publicDesignSessionAutosave',
+    ...(isS06Delivered(rootDir) ? [] : ['publicDesignSessionAssetCreate']),
+  ]) {
     if (curated.split('\n').some((line) => line.trim().startsWith(withheld))) {
       fail(`${CANONICAL_FILES.curatedClient}: ${withheld} crossed the boundary without a consumer`);
     }

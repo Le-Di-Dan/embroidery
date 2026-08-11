@@ -287,12 +287,24 @@ export type {
 // contract, not from a literal a screen could mistype into a request the server
 // would refuse for a reason nobody could see in the diff.
 //
+// `APP3-S06` releases the three Session-asset operations, because the screen
+// that owns them now exists. They are released **together** and only together:
+// an upload that could not be polled would leave the Studio guessing, and a
+// preview without a status would have to poll the binary route as a state
+// machine — which is exactly the misuse `publicDesignSessionAssetStatus` exists
+// to prevent, since the binary route answers one indistinguishable 404 for
+// eleven different private misses.
+//
+// `publicDesignSessionAssetGet` resolves to a `Blob`, like the Template asset
+// and Side background above and for the same reason: the caller turns it into a
+// browser object URL as a purely local rendering handle — never persisted into
+// the design document, never sent back, never a storage address.
+//
 // Deliberately still withheld:
 //
-// - `publicDesignSessionAutosave` and `publicDesignSessionAssetCreate` — S01
-//   bootstraps a session and stops. Autosave is `APP3-S10`'s and customer image
-//   upload is `APP3-S06`'s, and an operation on this boundary is an invitation
-//   to call it before the screen that owns it exists.
+// - `publicDesignSessionAutosave` — persistence is `APP3-S10`'s. S06 edits the
+//   in-memory working document and stops, so exposing autosave here would be an
+//   invitation to save before the screen that owns saving exists.
 // - `publicProductMediaGet`, unchanged: product images are fetched by the
 //   browser from the relative `media[].url` the catalog responses return.
 //
@@ -317,10 +329,18 @@ export {
   publicDesignTemplateAssetGet,
   publicDesignSessionCreate,
   publicDesignSessionResume,
+  publicDesignSessionAssetCreate,
+  publicDesignSessionAssetGet,
+  publicDesignSessionAssetStatus,
 } from './generated/embroidery-api';
 export {
   CreateBlankDesignSessionBodyMode,
   CloneDesignSessionBodyMode,
+  // Re-exported as **values** so the Studio branches on contract states rather
+  // than on string literals a screen could mistype into a comparison that is
+  // simply never true.
+  DesignSessionAssetStatusResponseState,
+  DesignSessionAssetStatusResponseMediaType,
 } from './generated/embroidery-api.schemas';
 export type {
   PublicProductPlacementResponse,
@@ -338,6 +358,9 @@ export type {
   DesignSessionSnapshotResponse,
   DesignSessionScopeResponse,
   DesignSessionLineageResponse,
+  PublicDesignSessionAssetCreateBody,
+  DesignSessionAssetIntakeResponse,
+  DesignSessionAssetStatusResponse,
 } from './generated/embroidery-api.schemas';
 
 // Generated transport types derived from the committed OpenAPI artifact.

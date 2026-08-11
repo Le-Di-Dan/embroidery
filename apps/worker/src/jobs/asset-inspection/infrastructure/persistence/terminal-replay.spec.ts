@@ -6,6 +6,7 @@ import {
   type InspectedSource,
 } from '../../domain/inspection-detail';
 import { AssetInspectionContradictionError } from '../../domain/inspection-contradiction';
+import { CATALOG_INSPECTION_LANE } from '../../domain/asset-inspection-lane';
 import type { DerivativeRowState } from '../../domain/repositories/asset-inspection.repository';
 import {
   verifyAcceptedReplay,
@@ -126,39 +127,53 @@ function expectContradiction(work: () => unknown, reason: RegExp): void {
 
 describe('verifyAcceptedReplay', () => {
   it('returns both deterministic keys for a complete effect', () => {
-    expect(verifyAcceptedReplay(acceptedInspection(), readyRows(), KEYS)).toEqual([
-      KEYS.THUMBNAIL,
-      KEYS.CATALOG_PREVIEW,
-    ]);
+    expect(
+      verifyAcceptedReplay(acceptedInspection(), readyRows(), KEYS, CATALOG_INSPECTION_LANE),
+    ).toEqual([KEYS.THUMBNAIL, KEYS.CATALOG_PREVIEW]);
   });
 
   it('stops when the terminal asset has no inspection', () => {
-    expectContradiction(() => verifyAcceptedReplay([], readyRows(), KEYS), /no inspection/);
+    expectContradiction(
+      () => verifyAcceptedReplay([], readyRows(), KEYS, CATALOG_INSPECTION_LANE),
+      /no inspection/,
+    );
   });
 
   it('stops on duplicate inspections', () => {
     const duplicated = [...acceptedInspection(), ...acceptedInspection()];
 
     expectContradiction(
-      () => verifyAcceptedReplay(duplicated, readyRows(), KEYS),
+      () => verifyAcceptedReplay(duplicated, readyRows(), KEYS, CATALOG_INSPECTION_LANE),
       /duplicate inspections/,
     );
   });
 
   it('stops when the inspection outcome contradicts the asset state', () => {
     expectContradiction(
-      () => verifyAcceptedReplay(rejectedInspection(), readyRows(), KEYS),
+      () => verifyAcceptedReplay(rejectedInspection(), readyRows(), KEYS, CATALOG_INSPECTION_LANE),
       /outcome does not match/,
     );
   });
 
   it('stops on a malformed or foreign-schema detail', () => {
     expectContradiction(
-      () => verifyAcceptedReplay([{ outcome: 'ACCEPTED', detail: '{}' }], readyRows(), KEYS),
+      () =>
+        verifyAcceptedReplay(
+          [{ outcome: 'ACCEPTED', detail: '{}' }],
+          readyRows(),
+          KEYS,
+          CATALOG_INSPECTION_LANE,
+        ),
       /malformed or of an unsupported schema/,
     );
     expectContradiction(
-      () => verifyAcceptedReplay([{ outcome: 'ACCEPTED', detail: null }], readyRows(), KEYS),
+      () =>
+        verifyAcceptedReplay(
+          [{ outcome: 'ACCEPTED', detail: null }],
+          readyRows(),
+          KEYS,
+          CATALOG_INSPECTION_LANE,
+        ),
       /malformed or of an unsupported schema/,
     );
   });
@@ -167,21 +182,39 @@ describe('verifyAcceptedReplay', () => {
     const [thumbnail] = readyRows();
 
     expectContradiction(
-      () => verifyAcceptedReplay(acceptedInspection(), [thumbnail as DerivativeRowState], KEYS),
+      () =>
+        verifyAcceptedReplay(
+          acceptedInspection(),
+          [thumbnail as DerivativeRowState],
+          KEYS,
+          CATALOG_INSPECTION_LANE,
+        ),
       /missing a derivative/,
     );
   });
 
   it('stops when an accepted derivative is not READY', () => {
     expectContradiction(
-      () => verifyAcceptedReplay(acceptedInspection(), readyRows({ status: 'PROCESSING' }), KEYS),
+      () =>
+        verifyAcceptedReplay(
+          acceptedInspection(),
+          readyRows({ status: 'PROCESSING' }),
+          KEYS,
+          CATALOG_INSPECTION_LANE,
+        ),
       /not READY/,
     );
   });
 
   it('stops when a catalog derivative claims a watermark', () => {
     expectContradiction(
-      () => verifyAcceptedReplay(acceptedInspection(), readyRows({ isWatermarked: true }), KEYS),
+      () =>
+        verifyAcceptedReplay(
+          acceptedInspection(),
+          readyRows({ isWatermarked: true }),
+          KEYS,
+          CATALOG_INSPECTION_LANE,
+        ),
       /marked watermarked/,
     );
   });
@@ -193,6 +226,7 @@ describe('verifyAcceptedReplay', () => {
           acceptedInspection(),
           readyRows({ storageKey: 'test/derivatives/elsewhere/THUMBNAIL.webp' }),
           KEYS,
+          CATALOG_INSPECTION_LANE,
         ),
       /not the deterministic key/,
     );
@@ -205,6 +239,7 @@ describe('verifyAcceptedReplay', () => {
           acceptedInspection(),
           readyRows({ checksum: `sha256:${'9'.repeat(64)}` }),
           KEYS,
+          CATALOG_INSPECTION_LANE,
         ),
       /checksum disagrees/,
     );
@@ -214,7 +249,7 @@ describe('verifyAcceptedReplay', () => {
     const rows = [...readyRows(), ...readyRows()];
 
     expectContradiction(
-      () => verifyAcceptedReplay(acceptedInspection(), rows, KEYS),
+      () => verifyAcceptedReplay(acceptedInspection(), rows, KEYS, CATALOG_INSPECTION_LANE),
       /more than one live derivative/,
     );
   });
@@ -231,22 +266,28 @@ describe('verifyAcceptedReplay', () => {
       },
     ];
 
-    expect(verifyAcceptedReplay(acceptedInspection(), rows, KEYS)).toHaveLength(2);
+    expect(
+      verifyAcceptedReplay(acceptedInspection(), rows, KEYS, CATALOG_INSPECTION_LANE),
+    ).toHaveLength(2);
   });
 });
 
 describe('verifyRejectedReplay', () => {
   it('accepts a complete rejected effect', () => {
-    expect(() => verifyRejectedReplay(rejectedInspection(), failedRows())).not.toThrow();
+    expect(() =>
+      verifyRejectedReplay(rejectedInspection(), failedRows(), CATALOG_INSPECTION_LANE),
+    ).not.toThrow();
   });
 
   it('accepts a rejection recorded before any derivative row existed', () => {
-    expect(() => verifyRejectedReplay(rejectedInspection(), [])).not.toThrow();
+    expect(() =>
+      verifyRejectedReplay(rejectedInspection(), [], CATALOG_INSPECTION_LANE),
+    ).not.toThrow();
   });
 
   it('stops when a rejected asset still exposes a READY derivative', () => {
     expectContradiction(
-      () => verifyRejectedReplay(rejectedInspection(), readyRows()),
+      () => verifyRejectedReplay(rejectedInspection(), readyRows(), CATALOG_INSPECTION_LANE),
       /still exposes a READY derivative/,
     );
   });
@@ -262,12 +303,15 @@ describe('verifyRejectedReplay', () => {
       },
     ];
 
-    expectContradiction(() => verifyRejectedReplay(rejectedInspection(), rows), /not FAILED/);
+    expectContradiction(
+      () => verifyRejectedReplay(rejectedInspection(), rows, CATALOG_INSPECTION_LANE),
+      /not FAILED/,
+    );
   });
 
   it('stops when the inspection says the asset was accepted', () => {
     expectContradiction(
-      () => verifyRejectedReplay(acceptedInspection(), failedRows()),
+      () => verifyRejectedReplay(acceptedInspection(), failedRows(), CATALOG_INSPECTION_LANE),
       /outcome does not match/,
     );
   });

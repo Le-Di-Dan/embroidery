@@ -9,8 +9,11 @@ import type {
 import { rectToBounds } from '@embroidery/design-engine';
 
 import { useSideBackground } from '../hooks/use-side-background';
+import { useStudioImage } from '../hooks/use-studio-image';
+import { useStudioImageMedia } from '../hooks/use-studio-image-media';
 import { useStudioTransform } from '../hooks/use-studio-transform';
 import { STUDIO_STAGE_COPY } from '../model/studio-stage-copy';
+import { imageElementOf } from '../model/studio-image-placement';
 import { sessionKeyOf } from '../model/studio-session-key';
 import { elementLabel } from '../model/studio-stage-label';
 import type { StudioAreaLimits, TransformRefusal } from '../model/studio-transform-authority';
@@ -30,6 +33,7 @@ import { StudioStageBackgroundNotice } from './studio-stage-background-notice';
 import { StudioStageControls } from './studio-stage-controls';
 import { StudioStageUnavailable } from './studio-stage-unavailable';
 import { StudioStageViewport } from './studio-stage-viewport';
+import { StudioImagePanel } from './studio-image-panel';
 import { StudioTextPanel } from './studio-text-panel';
 import { StudioTransformOverlay, physicalSizeLabel } from './studio-transform-overlay';
 
@@ -201,6 +205,51 @@ export function StudioStageScreen({
     scope,
   };
 
+  /*
+   * The image capability's controller, owned **here** (`APP3-S06`).
+   *
+   * Above the viewport tier, deliberately. The tier decides which of the image
+   * panel's two mounts renders, so crossing a breakpoint unmounts one and mounts
+   * the other — and a controller owned by the inspector went with it, taking the
+   * Session revision the last upload returned. The next upload then presented
+   * the revision the Session was bootstrapped with, and `APP3-B06B` refused it
+   * `409 CONFLICT`. A real browser found that; no unit test could, because none
+   * of them changes viewport mid-session.
+   *
+   * It writes back through the same `commit` the transform and text capabilities
+   * use, so there is still one answer to "what is on the stage".
+   */
+  const selectedImage = imageElementOf(sceneDocument, selectedElementId);
+  const replaceableImage =
+    selectedImage !== undefined && selectedImage.visible && !selectedImage.locked;
+  const image = useStudioImage({
+    sessionId: snapshot.sessionId,
+    revision: snapshot.revision,
+    document: sceneDocument,
+    scope,
+    limits: areaLimits,
+    replacingElementId: replaceableImage ? selectedElementId : null,
+    commit: commitDocument,
+    onPlaced: selectElement,
+  });
+
+  const imagePanel = {
+    image,
+    replaceable: replaceableImage,
+    sessionId: snapshot.sessionId,
+  };
+
+  /*
+   * The bytes for every image the working document places (`APP3-S06`).
+   *
+   * Driven by the *scene's* document rather than the snapshot's, so an image the
+   * customer just added is fetched immediately and a replaced one stops being
+   * fetched at once. The map is keyed by derivative, so replacing an image
+   * addresses different bytes and the previous object URL is revoked by the
+   * hook's own cleanup rather than lingering under a new media identity.
+   */
+  const imageMedia = useStudioImageMedia(snapshot.sessionId, sceneDocument);
+
   return (
     <div className="studio-stage">
       <StudioSessionPanel isResuming={isResuming} onResume={onResume} snapshot={snapshot} />
@@ -214,7 +263,13 @@ export function StudioStageScreen({
             so the keyboard reaches it in the order the eye does. Only the
             tablet composition puts anything here.
           */}
-          <StudioTextPanel slot="topbar" {...textPanel} />
+          <StudioTextPanel slot="topbar" {...textPanel}>
+            {/* The tablet composition puts the image controls in the *same*
+                inspector drawer (`APP3-S06` §7): one topbar, one trigger, one
+                out-of-flow panel. A second drawer over the same stage edge
+                would be a second drawer system. */}
+            <StudioImagePanel slot="drawer" {...imagePanel} />
+          </StudioTextPanel>
 
           <StudioStageBackgroundNotice background={background} hasScope={scope !== null} />
 
@@ -229,6 +284,7 @@ export function StudioStageScreen({
               <StudioStage
                 area={safeAreaVisible ? area : null}
                 backgroundUrl={background.objectUrl}
+                media={imageMedia.media}
                 onClearSelection={clearSelection}
                 onSelect={selectElement}
                 scene={result.scene}
@@ -266,6 +322,11 @@ export function StudioStageScreen({
             topbar slot above instead, so this one is empty there.
           */}
           <StudioTextPanel slot="body" {...textPanel} />
+
+          {/* The desktop and mobile image mounts (`APP3-S06`). The tablet
+              composition renders in the drawer above instead, so this one is
+              empty there. */}
+          <StudioImagePanel slot="body" {...imagePanel} />
 
           {result.scene.elements.length === 0 ? (
             <p className="studio-stage__empty" data-testid="studio-stage-empty" role="status">

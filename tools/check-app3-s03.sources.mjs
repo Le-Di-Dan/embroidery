@@ -11,7 +11,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S03_FILES, S05_FILES } from './app3-accepted-surface.mjs';
+import { S03_FILES, S05_FILES, S06_FILES } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -156,6 +156,11 @@ export function preS03Code(rootDir) {
  */
 export function preS05Code(rootDir) {
   return featureCodeExcept(rootDir, S05_FILES);
+}
+
+/** The feature minus the files `APP3-S06` introduced. */
+export function preS06Code(rootDir) {
+  return featureCodeExcept(rootDir, S06_FILES);
 }
 
 function featureCodeExcept(rootDir, owned) {

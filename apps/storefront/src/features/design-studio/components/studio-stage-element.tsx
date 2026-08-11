@@ -22,6 +22,19 @@ import type { RenderableElement } from '../renderer/studio-scene';
 export interface StudioStageElementProps {
   readonly renderable: RenderableElement;
   readonly selected: boolean;
+  /**
+   * A browser object URL for this element's editor-safe media, or `null`
+   * (`APP3-S06`).
+   *
+   * `null` covers every reason there are no bytes — not yet fetched, refused,
+   * or no Session at all — because they are the same fact to a renderer: there
+   * is nothing to draw, so the honest empty frame is drawn instead.
+   *
+   * A primitive, deliberately. The element is memoized on prop identity
+   * (`APP3-S03-C1`), and a string compares by value, so a media map rebuilt on
+   * every parent render cannot force a hundred subtrees to re-render.
+   */
+  readonly mediaUrl: string | null;
   readonly onSelect: (elementId: string) => void;
 }
 
@@ -62,6 +75,7 @@ export interface StudioStageElementProps {
 export const StudioStageElement = memo(function StudioStageElement({
   renderable,
   selected,
+  mediaUrl,
   onSelect,
 }: StudioStageElementProps) {
   const { element } = renderable;
@@ -94,7 +108,7 @@ export const StudioStageElement = memo(function StudioStageElement({
         }
       }}
     >
-      <ElementShape element={element} fontFamily={renderable.fontFamily} />
+      <ElementShape element={element} fontFamily={renderable.fontFamily} mediaUrl={mediaUrl} />
     </g>
   );
 });
@@ -102,9 +116,11 @@ export const StudioStageElement = memo(function StudioStageElement({
 function ElementShape({
   element,
   fontFamily,
+  mediaUrl,
 }: {
   readonly element: DesignElement;
   readonly fontFamily: string | null;
+  readonly mediaUrl: string | null;
 }) {
   const { width, height } = element.transform;
 
@@ -127,7 +143,11 @@ function ElementShape({
       );
 
     case 'image':
-      return <ImagePlaceholder width={width} height={height} />;
+      return mediaUrl === null ? (
+        <ImagePlaceholder width={width} height={height} />
+      ) : (
+        <PlacedImage width={width} height={height} href={mediaUrl} />
+      );
 
     case 'shape':
       if (element.shape === 'ellipse') {
@@ -192,12 +212,68 @@ function ElementShape({
 }
 
 /**
+ * The customer's own artwork, in the one SVG scene (`APP3-S06`).
+ *
+ * An `<image>` in the same coordinate system as every other element — not an
+ * HTML `<img>` overlaid on the stage, not a second SVG and not a `<canvas>`.
+ * `IMP-D026` and `ADR-APP0-001` lock native SVG rendered by React as *the*
+ * rendering architecture, and an overlay would need its own transform pipeline
+ * that agreed with `APP3-P02` frame by frame during a drag. It would not.
+ *
+ * The box is the element's own local box, so the transform above places it
+ * exactly where the document says and the selection outline lands on it. The
+ * picture's intrinsic dimensions are **not** consulted: `preserveAspectRatio`
+ * is `none` because the element's box was already built from the canonical
+ * derivative's dimensions and every later resize was ruled on by `APP3-P02`.
+ * Letterboxing here would draw the artwork somewhere other than the rectangle
+ * the customer sized and the engine measured — the stitched result would not
+ * match what they approved.
+ *
+ * The `href` is a `blob:` object URL owned by `useStudioImageMedia` and revoked
+ * by it. It is never written into the document, never sent back and never a
+ * storage address.
+ *
+ * `aria-hidden` on the picture itself: the `<g>` above is the labelled control,
+ * and a nested graphic would announce a second unnamed node inside it.
+ */
+function PlacedImage({
+  width,
+  height,
+  href,
+}: {
+  readonly width: number;
+  readonly height: number;
+  readonly href: string;
+}) {
+  return (
+    <image
+      className="studio-stage__image"
+      href={href}
+      x={0}
+      y={0}
+      width={width}
+      height={height}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      data-testid="studio-stage-image"
+    />
+  );
+}
+
+/**
  * An honest empty frame at the image's real geometry — never a picture.
  *
- * No public route serves a Design Session's own image bytes: `APP3-B06C` is not
- * built, and `APP3-B05A` serves published *Template* assets under an authority
- * a cloned Session does not inherit — clone independence means Template lineage
- * is provenance, not permission. So nothing here fetches storage, builds a URL
+ * Still exactly what is drawn when there are no bytes, and `APP3-S06` narrowed
+ * *when* that is rather than removing it. `APP3-B06C` now serves a Session's own
+ * image bytes and `APP3-S06` repaired the two seams that stopped it working end
+ * to end, so a placed, ready image renders as a picture — but media that is
+ * still loading, that the server refused, or that belongs to no live Session has
+ * no bytes at all, and drawing a stale or borrowed picture for it would be worse
+ * than drawing nothing. `APP3-B05A`'s published *Template* route is still not a
+ * fallback: clone independence means Template lineage is provenance, not
+ * permission.
+ *
+ * So nothing here fetches storage, builds a URL
  * or falls back to another route, and the placeholder is deliberately drawn to
  * look like a placeholder: a customer must never mistake it for their artwork.
  *

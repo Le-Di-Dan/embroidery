@@ -52,4 +52,25 @@ export const studioQueryKeys = {
    */
   sideBackground: (productSlug: string, sideCode: string) =>
     [...studioQueryKeys.all, 'side-background', productSlug, sideCode] as const,
+  /**
+   * One upload's processing state (`APP3-S06`), keyed by Session **and** Asset.
+   *
+   * Both halves, because both address the route. A key naming only the Asset
+   * would let one Session's answer settle into another's cache entry on a
+   * resume — and the answer it would settle as is `READY`, which the Studio acts
+   * on by placing a picture.
+   */
+  sessionAssetStatus: (sessionId: string, assetId: string) =>
+    [...studioQueryKeys.all, 'session-asset-status', sessionId, assetId] as const,
+  /**
+   * The editor-safe bytes of one Session image (`APP3-S06`).
+   *
+   * Keyed by Session, Asset **and** derivative. The derivative is in the key
+   * because a replacement changes it: without it, replacing an image would go on
+   * rendering the previous picture's cached blob under the new media identity,
+   * which is the exact "stale image under a new element" failure the object-URL
+   * lifecycle exists to prevent.
+   */
+  sessionAssetPreview: (sessionId: string, assetId: string, derivativeId: string) =>
+    [...studioQueryKeys.all, 'session-asset-preview', sessionId, assetId, derivativeId] as const,
 } as const;

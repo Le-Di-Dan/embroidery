@@ -13,7 +13,14 @@
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-import { S03_FILES, S07_FILES, isS03Delivered, isS07Delivered } from './app3-accepted-surface.mjs';
+import {
+  S03_FILES,
+  S06_FILES,
+  S07_FILES,
+  isS03Delivered,
+  isS06Delivered,
+  isS07Delivered,
+} from './app3-accepted-surface.mjs';
 
 /**
  * The code a pointer gesture or a layout measurement must be absent from.
@@ -282,21 +289,36 @@ export function checkMedia(rootDir, fail) {
   }
   // Still withheld: an operation on that boundary is an invitation to call it,
   // and neither screen exists.
-  for (const withheld of ['publicDesignSessionAutosave', 'publicDesignSessionAssetCreate']) {
+  // Autosave has no screen and still may not cross. Customer image upload was
+  // withheld for the same reason and stopped being withheld when `APP3-S06`
+  // delivered the screen that owns it.
+  for (const withheld of [
+    'publicDesignSessionAutosave',
+    ...(isS06Delivered(rootDir) ? [] : ['publicDesignSessionAssetCreate']),
+  ]) {
     if (curated.split('\n').some((line) => line.trim().startsWith(withheld))) {
       fail(`${CANONICAL_FILES.curatedClient}: ${withheld} crossed the boundary without a consumer`);
     }
   }
 
   const all = featureCode(rootDir);
-  // `APP3-B06C` does not exist, and `APP3-B05A` is Template authority a cloned
-  // Session does not inherit — so an open stage must reach neither.
-  for (const forbidden of [
-    'publicDesignSessionAsset',
-    'publicProductMediaGet',
-    'adminProductSideBackgroundGet',
-  ]) {
+  /*
+   * The Session-media ban, world-aware (`APP3-S06`).
+   *
+   * It was written when no route served a Design Session's own image bytes, and
+   * it is what proved no earlier checkpoint quietly started the image capability.
+   * `APP3-B06C` built the route and `APP3-S06` is the screen that consumes it, so
+   * the ban moves rather than disappearing: **S02's own files** still may not
+   * reach a Session asset operation, which is what keeps the stage a renderer
+   * rather than a fetcher. `publicProductMediaGet` and the Admin background stay
+   * banned feature-wide — no checkpoint owns either.
+   */
+  const s02Scope = isS06Delivered(rootDir) ? s02FeatureCode(rootDir, S06_FILES) : all;
+  for (const forbidden of ['publicProductMediaGet', 'adminProductSideBackgroundGet']) {
     if (all.includes(forbidden)) fail(`${FEATURE}: reaches ${forbidden}, which S02 does not own`);
+  }
+  if (s02Scope.includes('publicDesignSessionAsset')) {
+    fail(`${FEATURE}: reaches publicDesignSessionAsset, which S02 does not own`);
   }
   if (code(rootDir, 'stageElement').includes('publicDesignTemplateAssetGet')) {
     fail(`${CANONICAL_FILES.stageElement}: uses B05A as a Session media shortcut`);

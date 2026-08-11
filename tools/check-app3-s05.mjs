@@ -36,6 +36,7 @@ import {
   acceptedSurface,
   isS05C1Delivered,
   isS05Delivered,
+  isS06Delivered,
   isS05Mi01Delivered,
 } from './app3-accepted-surface.mjs';
 import {
@@ -154,7 +155,20 @@ export function checkPredecessors(rootDir, fail) {
     }
   }
   // S05 implements none of these, and delivering it makes none of them ready.
-  for (const later of ['APP3-S04', 'APP3-S06', 'APP3-S08', 'APP3-S09', 'APP3-S10', 'APP3-S11']) {
+  //
+  // World-aware on `APP3-S06` alone, and on nothing else. The rule says "S05 did
+  // not implement this", and that stays true once S06 implements it for itself —
+  // what still proves S05 did not is its own runtime half, where every image
+  // marker is refused in every file S05 owns. Every other capability is asserted
+  // exactly as ruled, so a blanket "the Studio is done" still fails here.
+  for (const later of [
+    'APP3-S04',
+    ...(isS06Delivered(rootDir) ? [] : ['APP3-S06']),
+    'APP3-S08',
+    'APP3-S09',
+    'APP3-S10',
+    'APP3-S11',
+  ]) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(`${CANONICAL_FILES.phase}: ${later} is recorded complete; S05 does not implement it`);
     }
@@ -191,9 +205,12 @@ export function checkDesignApproval(rootDir, fail) {
   }
 
   // The half that makes the approval *scoped*: a blanket Studio approval must
-  // fail this gate rather than pass it. Layers, image, undo, watermark,
-  // autosave and mobile all belong to checkpoints that have not opened.
-  for (const id of LATER_STUDIO_ROWS) {
+  // fail this gate rather than pass it. Layers, undo, watermark, autosave and
+  // mobile all belong to checkpoints that have not opened — and the image row
+  // did too, until `APP3-S06` opened the one that owns it. Every other row stays
+  // exactly as ruled.
+  const opened = new Set(isS06Delivered(rootDir) ? ['FIG-STUDIO-IMAGE-DESKTOP-UPLOADING'] : []);
+  for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }

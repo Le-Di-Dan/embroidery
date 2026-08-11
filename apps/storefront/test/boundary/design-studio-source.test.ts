@@ -1,215 +1,38 @@
 /**
  * @jest-environment node
  *
- * Static boundary checks on the Studio bootstrap production source
- * (`APP3-S01`).
+ * Static boundary checks on the Studio production source (`APP3-S01`, extended
+ * by every Studio capability since).
  *
  * These guard rules no rendering test can reach: which operations the feature
  * may touch, that no storage address or raw transport creeps in beside the
  * approved client, that nothing writes a Session identity to browser storage or
- * the URL, that no `APP3-S02` editor state container was created early, and
- * that the responsive floor the approved frames require is in the stylesheet
- * rather than only in a document.
+ * the URL, that exactly one production renderer exists, and that the responsive
+ * floor the approved frames require is in the stylesheet rather than only in a
+ * document.
+ *
+ * The per-checkpoint file partitions live in `../support/design-studio-partitions`
+ * so both boundary suites rule against one answer to "whose file is this".
  */
-import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/**
- * Indexed access that fails loudly when the entry is absent.
- *
- * `noUncheckedIndexedAccess` is on, and an assertion made against a silently
- * `undefined` element would be asserting nothing at all.
- */
-function nth<T>(items: readonly T[], index: number): T {
-  const item = items[index];
-  if (item === undefined) throw new Error(`no entry at index ${String(index)}`);
-  return item;
-}
-
-const SRC = join(__dirname, '..', '..', 'src');
-const FEATURE_DIR = join(SRC, 'features', 'design-studio');
-const ROUTE_DIR = join(SRC, 'app', 'san-pham', '[slug]', 'thiet-ke');
-const STYLESHEET = join(FEATURE_DIR, 'styles', 'design-studio.scss');
-
-/**
- * Comments explain why a rule exists and therefore quote the very things these
- * checks forbid ("never `localStorage`", "no storage key"). Matching against
- * them would make every well-documented file fail its own rule, so the checks
- * run on code only.
- */
-function codeOnly(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '')
-    .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, '');
-}
-
-function collect(dir: string, pattern: RegExp): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...collect(full, pattern));
-    else if (pattern.test(entry.name)) files.push(full);
-  }
-  return files;
-}
-
-const sources = collect(FEATURE_DIR, /\.(ts|tsx)$/).map((path) => ({
-  path,
-  text: readFileSync(path, 'utf8'),
-}));
-const routeFiles = collect(ROUTE_DIR, /\.tsx$/).map((path) => ({
-  path,
-  text: readFileSync(path, 'utf8'),
-}));
-const allCode = codeOnly([...sources, ...routeFiles].map((file) => file.text).join('\n'));
-const scssCode = codeOnly(readFileSync(STYLESHEET, 'utf8'));
-
-/**
- * The files `APP3-S02` added, named exactly.
- *
- * Several rules below were written when the Studio had no stage, and they are
- * the rules that keep it having exactly one. Making them world-aware means
- * splitting the feature rather than loosening the rule: everything S01 owns
- * still may not reach a background operation, hold a store, import a document
- * authority or render an `<svg>`, and the stage may — once.
- *
- * The list is of the S02 files rather than the S01 ones on purpose. A file
- * added tomorrow is not on it, so it inherits the strict S01 rules by default;
- * a list of S01 files would have let a new file escape every one of them.
- */
-const S02_FILES = new Set(
-  [
-    'components/studio-stage.tsx',
-    'components/studio-stage-background-notice.tsx',
-    'components/studio-stage-element.tsx',
-    'components/studio-stage-screen.tsx',
-    'components/studio-stage-selection.tsx',
-    'components/studio-stage-unavailable.tsx',
-    'hooks/use-side-background.ts',
-    'model/studio-stage-copy.ts',
-    'model/studio-stage-label.ts',
-    'renderer/studio-paint.ts',
-    'renderer/studio-scene.ts',
-    'renderer/studio-svg-matrix.ts',
-    'services/studio-background.client.ts',
-    'store/studio-interaction.store.ts',
-  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
-);
-
-/**
- * The files `APP3-S07` added, named exactly, for the same reason.
- *
- * S02's own rules — no pointer gesture, no measurement of the browser's layout —
- * were written when the stage could only draw. The viewport needs one bounded
- * use of each, so the split grows rather than the rules loosening: everything
- * outside this list still may not follow a pointer or ask the DOM how big it is.
- */
-const S07_FILES = new Set(
-  [
-    'components/studio-stage-controls.tsx',
-    'components/studio-stage-viewport.tsx',
-    'model/studio-viewport.ts',
-    'model/studio-viewport-copy.ts',
-    'store/studio-viewport.store.ts',
-  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
-);
-
-/**
- * The files `APP3-S03` added, named exactly, for the same reason again.
- *
- * S03 is the first checkpoint that changes a document, so it needs the pointer
- * gestures S02 banned and the one element measurement S07 opened — plus the
- * single `Math.atan2` that turns a pointer into an angle. Each stays confined
- * to these files and refused in every other.
- */
-const S03_FILES = new Set(
-  [
-    'components/studio-transform-overlay.tsx',
-    'hooks/use-studio-transform.ts',
-    'model/studio-stage-mapping.ts',
-    'model/studio-transform.ts',
-    'model/studio-transform-authority.ts',
-    'model/studio-transform-copy.ts',
-    'model/studio-transform-handles.ts',
-    'store/studio-document.store.ts',
-  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
-);
-
-/**
- * The file `APP3-S03-C1` added, named exactly, for the same reason once more.
- *
- * It is adapter-side: it restores object identity for elements the renderer has
- * already been given, so it necessarily reads the `APP3-P01` document shape and
- * the `APP3-P02` graph — both of which the S01 partition is still forbidden to
- * touch. Listing it here is what keeps that prohibition strict everywhere else
- * rather than relaxing it feature-wide. Every other rule below still applies to
- * it through `staticCode` and `allCode`: it may not follow a pointer, measure
- * the DOM, hold a store, fetch, or compose a matrix.
- */
-const S03_C1_FILES = new Set(
-  ['renderer/studio-scene-identity.ts'].map((path) => join(FEATURE_DIR, ...path.split('/'))),
-);
-
-/**
- * The files `APP3-S05` added, named exactly, for the same reason once more.
- *
- * The text capability is the second thing that changes a document, so every one
- * of these reads the `APP3-P01` authority — the element type, the controlled
- * font registry, the character limits, the structural validator — which the S01
- * partition is still forbidden to touch. Listing them keeps that prohibition
- * strict everywhere else instead of relaxing it feature-wide.
- *
- * Every other rule still applies to them through `staticCode` and `allCode`:
- * they may not follow a pointer, measure the DOM, compose a matrix, open a
- * second `<svg>`, reach a background operation, or name a Session secret. The
- * inspector's form controls are HTML; the artwork is still the one SVG scene.
- */
-const S05_FILES = new Set(
-  [
-    'components/studio-text-controls.tsx',
-    'components/studio-text-drawer.tsx',
-    'components/studio-text-inspector.tsx',
-    'components/studio-text-panel.tsx',
-    'hooks/use-controlled-font.ts',
-    'hooks/use-studio-text.ts',
-    'hooks/use-studio-viewport-tier.ts',
-    'model/studio-font-variant.ts',
-    'model/studio-responsive.ts',
-    'model/studio-text-authority.ts',
-    'model/studio-text-copy.ts',
-    'model/studio-text-fields.ts',
-  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
-);
-
-const interactionSources = sources.filter(
-  (file) => S07_FILES.has(file.path) || S03_FILES.has(file.path),
-);
-const interactionCode = codeOnly(interactionSources.map((file) => file.text).join('\n'));
-const staticSources = sources.filter(
-  (file) => !S07_FILES.has(file.path) && !S03_FILES.has(file.path),
-);
-const staticCode = codeOnly(staticSources.map((file) => file.text).join('\n'));
-const s03Code = codeOnly(
-  sources
-    .filter((file) => S03_FILES.has(file.path))
-    .map((file) => file.text)
-    .join('\n'),
-);
-
-const s01Sources = sources.filter(
-  (file) =>
-    !S02_FILES.has(file.path) &&
-    !S07_FILES.has(file.path) &&
-    !S03_FILES.has(file.path) &&
-    !S03_C1_FILES.has(file.path) &&
-    !S05_FILES.has(file.path),
-);
-const s07Sources = sources.filter((file) => S07_FILES.has(file.path));
-const s07Code = codeOnly(s07Sources.map((file) => file.text).join('\n'));
-const s02Sources = sources.filter((file) => S02_FILES.has(file.path));
-const s01Code = codeOnly([...s01Sources, ...routeFiles].map((file) => file.text).join('\n'));
-const s02Code = codeOnly(s02Sources.map((file) => file.text).join('\n'));
+import {
+  SRC,
+  allCode,
+  codeOnly,
+  collect,
+  interactionCode,
+  nth,
+  routeFiles,
+  s01Code,
+  s02Code,
+  s02Sources,
+  s03Code,
+  s07Code,
+  scssCode,
+  sources,
+  staticCode,
+} from '../support/design-studio-partitions';
 
 describe('the Studio route', () => {
   it('discovers the feature and the single route file', () => {
@@ -265,16 +88,36 @@ describe('the API boundary', () => {
     }
   });
 
-  it('reaches no Admin, autosave, session-asset or media operation', () => {
+  it('reaches no Admin, autosave or public media operation', () => {
+    // `publicDesignSessionAutosave` stays forbidden: persistence is `APP3-S10`'s
+    // and an operation on this boundary is an invitation to call it before the
+    // screen that owns it exists. The three session-asset operations were
+    // forbidden here for exactly the same reason and stopped being so at
+    // `APP3-S06`, which is the screen that owns them — see the rule below, which
+    // is *narrower* than the ban it replaces.
     for (const forbidden of [
       'admin',
       'Admin',
       'publicDesignSessionAutosave',
-      'publicDesignSessionAssetCreate',
       'publicProductMediaGet',
     ]) {
       expect(allCode).not.toContain(forbidden);
     }
+  });
+
+  it('reaches the three session-asset operations from one service file only', () => {
+    // The same shape as the Side-background rule below, and for the same
+    // reason: a capability that may call an operation is not a licence for the
+    // whole feature to call it. One file addresses these, and a component that
+    // acquired the ability to upload or to fetch private bytes directly would
+    // fail here rather than in review.
+    const callers = [...sources, ...routeFiles].filter((file) =>
+      /publicDesignSessionAsset(Create|Get|Status)\(/.test(codeOnly(file.text)),
+    );
+
+    expect(callers.map((file) => file.path.replaceAll('\\', '/').split('/').at(-1))).toEqual([
+      'studio-session-asset.client.ts',
+    ]);
   });
 
   it('keeps the Side background out of the bootstrap screen S01 owns', () => {
@@ -308,15 +151,13 @@ describe('the API boundary', () => {
   });
 
   it('names no storage address, bucket, key or presign', () => {
-    for (const leak of [
-      'storageKey',
-      'bucket',
-      'presign',
-      'amazonaws',
-      'minio',
-      's3://',
-      'derivativeId',
-    ]) {
+    // `derivativeId` left this list at `APP3-S06`, and its departure is not a
+    // relaxation: it is a field of the `APP3-P01` image element — an opaque
+    // identity that grants no access and addresses no object — and the server
+    // re-proves the whole grant on every request. It was on the list only
+    // because no Studio capability had a legitimate reason to name one yet.
+    // Everything that really is a storage address stays.
+    for (const leak of ['storageKey', 'bucket', 'presign', 'amazonaws', 'minio', 's3://']) {
       expect(allCode).not.toContain(leak);
     }
   });

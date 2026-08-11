@@ -240,7 +240,11 @@ describe('asset inspection — recovery and concurrency (live PostgreSQL + MinIO
     expect(await objects(seeded.assetId)).toHaveLength(2);
   });
 
-  it('mutates nothing for an asset that is not private catalog media', async () => {
+  // `APP3-S06` added a second lane, so the fact this asserts is now narrower and
+  // stronger: the kind/classification **pair** is what selects a lane, and this
+  // asset carries `CUSTOMER_UPLOAD` with the catalogue classification — a pair no
+  // delivered checkpoint writes and no lane owns.
+  it('mutates nothing for an asset whose kind and classification match no lane', async () => {
     const seeded = await context.seedAsset(await pngWithAlpha(200, 200), {
       kind: 'CUSTOMER_UPLOAD',
     });

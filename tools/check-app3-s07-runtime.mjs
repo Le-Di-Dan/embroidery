@@ -18,6 +18,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { isS06Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -25,6 +26,7 @@ import {
   code,
   collect,
   featureCode,
+  preS06Code,
   preS07Code,
   read,
   s07Code,
@@ -287,8 +289,16 @@ export function checkNonScope(rootDir, fail) {
   if (all.includes('publicDesignSessionAutosave')) {
     fail(`${FEATURE}: autosaves, which is APP3-S10's`);
   }
-  for (const forbidden of ['publicDesignSessionAsset', 'publicProductMediaGet']) {
-    if (all.includes(forbidden)) fail(`${FEATURE}: reaches ${forbidden}, which S07 does not own`);
+  if (all.includes('publicProductMediaGet')) {
+    fail(`${FEATURE}: reaches publicProductMediaGet, which S07 does not own`);
+  }
+  // The Session-media ban, world-aware (`APP3-S06`). It was written when no
+  // checkpoint owned the image capability; S06 owns it now, so the ban moves to
+  // every file S06 did not introduce rather than disappearing — which is what
+  // keeps the viewport a viewport.
+  const outsideS06 = isS06Delivered(rootDir) ? preS06Code(rootDir) : all;
+  if (outsideS06.includes('publicDesignSessionAsset')) {
+    fail(`${FEATURE}: reaches publicDesignSessionAsset, which S07 does not own`);
   }
 
   // The background query key contains no viewport state, so moving the view

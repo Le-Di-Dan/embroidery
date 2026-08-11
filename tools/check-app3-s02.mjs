@@ -32,8 +32,10 @@ import {
   isS02Delivered,
   isS03Delivered,
   isS05Delivered,
+  isS06Delivered,
   isS07Delivered,
   isB06CDelivered,
+  S06_FILES,
 } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
@@ -50,6 +52,7 @@ import {
   collect,
   read,
   featureCode,
+  s02FeatureCode,
 } from './check-app3-s02.sources.mjs';
 import {
   checkDependencies,
@@ -114,9 +117,14 @@ export function checkPredecessors(rootDir, fail) {
   ];
   // `APP3-B06C` has shipped, so its status line is no longer evidence about this
   // checkpoint — the same reasoning the S03 exclusion above already applies. What
-  // replaces it is stronger and world-independent: S02 must not *call* the
-  // delivery operation, whichever checkpoints exist around it.
-  if (/publicDesignSessionAssetGet|editor-preview/.test(featureCode(rootDir))) {
+  // replaces it is stronger and world-independent: **S02's own files** must not
+  // call the delivery operation, whichever checkpoints exist around it. Scoped to
+  // those files since `APP3-S06`, which is the checkpoint that legitimately calls
+  // it; before S06 the scope is the whole feature and the ban is unchanged.
+  const s02Scope = isS06Delivered(rootDir)
+    ? s02FeatureCode(rootDir, S06_FILES)
+    : featureCode(rootDir);
+  if (/publicDesignSessionAssetGet|editor-preview/.test(s02Scope)) {
     fail(`${CANONICAL_FILES.phase}: S02 source reaches the APP3-B06C delivery operation`);
   }
 
@@ -171,6 +179,7 @@ export function checkDesignApproval(rootDir, fail) {
     ...(isS07Delivered(rootDir) ? ['FIG-STUDIO-ZOOM-DESKTOP-FIT'] : []),
     ...(isS03Delivered(rootDir) ? ['FIG-STUDIO-TRANSFORM-DESKTOP-MOVE'] : []),
     ...(isS05Delivered(rootDir) ? ['FIG-STUDIO-TEXT-DESKTOP-EDITING'] : []),
+    ...(isS06Delivered(rootDir) ? ['FIG-STUDIO-IMAGE-DESKTOP-UPLOADING'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {

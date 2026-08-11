@@ -7,6 +7,7 @@
  * from there and touches none of them until a check is *called*, by which time
  * both modules have finished initialising.
  */
+import { isS06Delivered } from './app3-accepted-surface.mjs';
 import { CANONICAL_FILES, code, read } from './check-app3-b06c.mjs';
 
 /**
@@ -78,23 +79,98 @@ export function checkEligibility(rootDir, fail) {
   const adapter = code(rootDir, 'adapter');
   const policy = code(rootDir, 'policy');
 
-  // The association is a *join*, so a foreign asset is unreachable rather than
-  // fetched and filtered.
-  if (!/\.from\(designSessionAssets\)/.test(adapter)) {
-    fail(`${CANONICAL_FILES.adapter}: the statement does not start from the association`);
+  /*
+   * The grant, world-aware (`APP3-S06`).
+   *
+   * B06C shipped with one grant — the `design_session_assets` association — and
+   * this rule pinned it as the statement's first relation, so a foreign asset was
+   * unreachable rather than fetched and filtered. `APP3-S06` added a second
+   * legitimate grant, because a `CLONE_TEMPLATE` Session's own artwork has no
+   * association and could not render at all.
+   *
+   * What replaces the pin is **not weaker**. The statement must now start from
+   * the *authorized Session row*, which is the thing every grant branch is
+   * correlated to, and both branches must still be present and still be
+   * correlated on both halves of their pair. The property the original rule was
+   * protecting — that a caller cannot address media it has no claim on — is
+   * asserted term by term rather than by one `from()`.
+   */
+  const grantSplit = isS06Delivered(rootDir);
+  const grant = grantSplit ? code(rootDir, 'grant') : adapter;
+
+  if (!grantSplit) {
+    if (!/\.from\(designSessionAssets\)/.test(adapter)) {
+      fail(`${CANONICAL_FILES.adapter}: the statement does not start from the association`);
+    }
+  } else {
+    if (!/\.from\(designSessions\)/.test(adapter)) {
+      fail(`${CANONICAL_FILES.adapter}: the statement does not start from the authorized Session`);
+    }
+    if (!adapter.includes('eq(designSessions.id, lookup.sessionId)')) {
+      fail(`${CANONICAL_FILES.adapter}: the statement is not bound to the authorized Session id`);
+    }
+    if (!adapter.includes('eq(assets.id, lookup.assetId)')) {
+      fail(`${CANONICAL_FILES.adapter}: the statement is not bound to the addressed Asset`);
+    }
+    if (!adapter.includes('sessionMediaGrant()')) {
+      fail(`${CANONICAL_FILES.adapter}: the descriptor requires no Session media grant`);
+    }
+    // The upload branch keeps the lane check *with it* rather than in the shared
+    // `WHERE` — a lane asserted globally would make the document branch
+    // unreachable and the whole repair a silent no-op that every test still
+    // passes.
+    for (const required of [
+      'eq(assets.kind, SESSION_INTAKE_ASSET_KIND)',
+      'eq(assets.classification, SESSION_INTAKE_CLASSIFICATION)',
+      // Correlated on both halves of the pair, so an association belonging to
+      // another Session can never satisfy it.
+      'designSessionAssets.sessionId',
+      'designSessionAssets.assetId',
+      'designSessions.id',
+      'assets.id',
+    ]) {
+      if (!grant.includes(required)) {
+        fail(`${CANONICAL_FILES.grant}: the upload grant does not require ${required}`);
+      }
+    }
+    // The document branch matches the exact (asset, derivative) pair, admits
+    // Template artwork only, and guards the JSONB access — an unguarded
+    // `jsonb_array_elements` on a non-array *errors* rather than granting
+    // nothing, which would turn a malformed document into a 500.
+    for (const required of [
+      'TEMPLATE_ARTWORK_ASSET_KIND',
+      "element ->> 'assetId'",
+      "element ->> 'derivativeId'",
+      'jsonb_typeof',
+    ]) {
+      if (!grant.includes(required)) {
+        fail(`${CANONICAL_FILES.grant}: the document grant does not require ${required}`);
+      }
+    }
+    // Lineage is provenance, never permission: no branch may consult a Template.
+    for (const lineage of ['designTemplates', 'templateId', 'publishedAt', 'templateVersion']) {
+      if (grant.includes(lineage)) {
+        fail(`${CANONICAL_FILES.grant}: a grant branch consults Template lineage (${lineage})`);
+      }
+    }
   }
+
   for (const predicate of [
-    'eq(designSessionAssets.sessionId, lookup.sessionId)',
-    'eq(designSessionAssets.assetId, lookup.assetId)',
     'eq(designSessions.status, LIVE_SESSION_STATE)',
     'gt(designSessions.expiresAt, lookup.at)',
-    'eq(assets.kind, SESSION_INTAKE_ASSET_KIND)',
-    'eq(assets.classification, SESSION_INTAKE_CLASSIFICATION)',
     'eq(assets.status, SESSION_ASSET_DELIVERABLE_STATUS)',
     'isNull(assets.deletedAt)',
     'eq(assetDerivatives.kind, EDITOR_SAFE_DERIVATIVE_KIND)',
     'eq(assetDerivatives.status, EDITOR_SAFE_DERIVATIVE_STATE)',
     'eq(assetDerivatives.isWatermarked, false)',
+    ...(grantSplit
+      ? []
+      : [
+          'eq(designSessionAssets.sessionId, lookup.sessionId)',
+          'eq(designSessionAssets.assetId, lookup.assetId)',
+          'eq(assets.kind, SESSION_INTAKE_ASSET_KIND)',
+          'eq(assets.classification, SESSION_INTAKE_CLASSIFICATION)',
+        ]),
   ]) {
     if (!adapter.includes(predicate)) {
       fail(`${CANONICAL_FILES.adapter}: the descriptor does not require ${predicate}`);

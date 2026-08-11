@@ -57,15 +57,56 @@ export interface SessionAssetCandidate {
   readonly byteSize: number;
 }
 
+/**
+ * How far one of this Session's Assets has got, as the Studio is allowed to
+ * know it (`APP3-S06` §11).
+ *
+ * Three states, and the boundary between them is a *terminal verdict*, not a
+ * pipeline stage. `PROCESSING` means "no verdict yet, or no editor-safe output
+ * yet" and deliberately does not distinguish inspection from normalization: the
+ * Studio shows one "đang xử lý" state for both, and naming the internal stage
+ * would publish the shape of the worker pipeline to an anonymous caller for no
+ * behaviour it could take.
+ *
+ * `READY` carries exactly the `APP3-P01` image-media fields and the quartet that
+ * proves the derivative is completely described. Nothing else: no storage key,
+ * bucket, provider, checksum, source filename, inspection detail, job id, lease
+ * or retry count.
+ */
+export type SessionAssetStatus =
+  | { readonly state: 'PROCESSING' }
+  | {
+      readonly state: 'READY';
+      readonly derivativeId: string;
+      readonly widthPx: number;
+      readonly heightPx: number;
+      readonly mediaType: string;
+      readonly byteSize: number;
+    }
+  | { readonly state: 'REJECTED' };
+
 export interface DesignSessionAssetDeliveryRepository {
   /**
    * The one deliverable object for this exact (Session, Asset) pair, or nothing.
    *
-   * Every term — the association, the Session's own liveness, the Asset lane,
+   * Every term — the grant, the Session's own liveness, the Asset lane,
    * classification, inspection verdict and tombstone, and the derivative's kind,
    * status, watermark flag and canonical quartet — is decided inside this call
    * against one consistent snapshot. Returning `undefined` is the *only* failure
    * shape: the caller cannot learn which term failed, because it is never told.
    */
   findDeliverableCandidate(lookup: SessionAssetLookup): Promise<SessionAssetCandidate | undefined>;
+
+  /**
+   * How far this Session's own Asset has got, or nothing when the Session has no
+   * claim on it at all.
+   *
+   * `undefined` is the same non-enumerating refusal `findDeliverableCandidate`
+   * gives: an unknown Asset, one belonging to another Session and one this
+   * Session never uploaded are indistinguishable from each other. What this adds
+   * over the delivery route is only the ability to distinguish *the states of an
+   * Asset the caller already owns* — which is the whole reason `APP3-B06C`'s 404
+   * must never be used as a status protocol.
+   */
+  findAssetStatus(lookup: SessionAssetLookup): Promise<SessionAssetStatus | undefined>;
 }

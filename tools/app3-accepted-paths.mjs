@@ -433,6 +433,49 @@ export const S05_FILES = Object.freeze([
   'model/studio-text-fields.ts',
 ]);
 
+/**
+ * The Studio files `APP3-S06` adds, relative to the design-studio feature.
+ *
+ * Named for the same reason the three lists above are: the world-aware evolution
+ * lists the **new** files, so anything added later inherits the strict
+ * predecessor rules by default rather than escaping them.
+ *
+ * `studio-stage-element.tsx` is deliberately **absent**. S06 changed it — it now
+ * draws a real `<image>` when there are bytes — but it is `APP3-S02`'s file and
+ * stays under S02's rules, which is what keeps "one native SVG scene, drawn by
+ * one component" a live assertion rather than something a new file could sidestep
+ * by rendering its own.
+ */
+export const S06_FILES = Object.freeze([
+  'components/studio-image-inspector.tsx',
+  'components/studio-image-panel.tsx',
+  'hooks/use-session-asset-status.ts',
+  'hooks/use-studio-image.ts',
+  'hooks/use-studio-image-media.ts',
+  'model/studio-image-authority.ts',
+  'model/studio-image-copy.ts',
+  'model/studio-image-file.ts',
+  'model/studio-image-placement.ts',
+  'model/studio-inspector-copy.ts',
+  'services/studio-session-asset.client.ts',
+]);
+
+/** The four section-10 design rows `APP3-S06` consumes, and their nodes. */
+export const S06_DESIGN_ROWS = Object.freeze({
+  'FIG-STUDIO-IMAGE-DESKTOP-UPLOADING': '608:343',
+  'FIG-STUDIO-IMAGE-DESKTOP-NORMALIZING': '608:393',
+  'FIG-STUDIO-IMAGE-DESKTOP-READY': '608:441',
+  'FIG-STUDIO-IMAGE-DESKTOP-FAILED': '608:503',
+});
+
+/** The status lines `APP3-S06` may legitimately be recorded under. */
+export const S06_STATUS_LINES = Object.freeze([
+  'APP3-S06 = BLOCKED_BY_APP3-B06C_REVIEW_ACCEPTANCE',
+  'APP3-S06 = READY — NOT STARTED',
+  'APP3-S06 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-S06 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
 /** The three section-09 design rows `APP3-S05` consumes, and their nodes. */
 export const S05_DESIGN_ROWS = Object.freeze({
   'FIG-STUDIO-TEXT-DESKTOP-EDITING': '608:176',
@@ -610,6 +653,23 @@ export function isB06CDelivered(rootDir) {
   const path = join(rootDir, PHASE);
   const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
   return /\nAPP3-B06C = COMPLETE/.test(phase);
+}
+
+/**
+ * True once `APP3-S06` has published the Session asset status projection.
+ *
+ * A frontend checkpoint that nevertheless moves the surface, and several gates
+ * freeze a "current surface" that its one narrow read legitimately enlarges. It
+ * also flips two facts every Studio gate before it asserted as absolutes: that
+ * no Storefront file may reach a Session-asset operation, and that the image
+ * placeholder is the *only* thing an image element can draw. Both were true of
+ * the world that wrote them; this is what makes them statements about that world
+ * rather than about every world after it.
+ */
+export function isS06Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S06 = COMPLETE/.test(phase);
 }
 
 /** True once `APP3-P04` has published the shared Session response contract. */

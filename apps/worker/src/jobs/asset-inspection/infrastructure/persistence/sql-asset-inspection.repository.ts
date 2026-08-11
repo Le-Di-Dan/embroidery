@@ -19,7 +19,7 @@ import { Injectable } from '@nestjs/common';
 import { executeRaw, newId, sql } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 
-import { DERIVATIVE_KINDS } from '../../domain/asset-processing-policy';
+import { laneDerivativeKinds, type AssetInspectionLane } from '../../domain/asset-inspection-lane';
 import { contradiction, isContradiction } from '../../domain/inspection-contradiction';
 import type {
   AssetInspectionRepository,
@@ -32,6 +32,7 @@ import type {
 } from '../../domain/repositories/asset-inspection.repository';
 import {
   assertUnchangedSource,
+  laneOf,
   lockAsset,
   lockLiveDerivatives,
   readAsset,
@@ -94,15 +95,19 @@ export class SqlAssetInspectionRepository
       // read-only replay branches, must observe one consistent snapshot.
       this.requireTransaction('prepareOrRecover');
       const asset = await lockAsset(this.db, input.assetId);
+      // Resolved from the locked row, so every branch below — and the whole
+      // attempt that follows — is bound to one reading of the Asset's lane.
+      const lane = laneOf(asset);
 
       switch (asset.status) {
         case 'INSPECTING':
-          return this.prepareDerivatives(asset, input.at);
+          return this.prepareDerivatives(asset, lane, input.at);
         case 'ACCEPTED': {
           const keys = verifyAcceptedReplay(
             await readInspections(this.db, input.assetId),
             await readDerivatives(this.db, input.assetId),
             input.expectedKeys,
+            lane,
           );
           return { kind: 'REPLAY_ACCEPTED', derivativeKeys: keys };
         }
@@ -110,6 +115,7 @@ export class SqlAssetInspectionRepository
           verifyRejectedReplay(
             await readInspections(this.db, input.assetId),
             await readDerivatives(this.db, input.assetId),
+            lane,
           );
           return { kind: 'REPLAY_REJECTED' };
         default:
@@ -140,7 +146,7 @@ export class SqlAssetInspectionRepository
       assertUnchangedSource(asset, input.source);
 
       const live = await lockLiveDerivatives(this.db, input.assetId);
-      for (const kind of DERIVATIVE_KINDS) {
+      for (const kind of laneDerivativeKinds(laneOf(asset))) {
         const row = live.find((entry) => entry.kind === kind);
         if (row === undefined || row.status !== 'PROCESSING') {
           throw contradiction('a prepared derivative is no longer PROCESSING');
@@ -223,18 +229,28 @@ export class SqlAssetInspectionRepository
   }
 
   /**
-   * Inserts or recovers both rows as `PENDING`, then guards each one through
-   * `PENDING → PROCESSING` (§11.4-§11.6).
+   * Inserts or recovers this lane's rows as `PENDING`, then guards each one
+   * through `PENDING → PROCESSING` (§11.4-§11.6).
    *
    * Never inserted directly as `PROCESSING`: LC-06 says a derivative starts
    * `PENDING`, and collapsing the two steps would also collapse the guard that
    * makes a concurrent second attempt lose instead of both proceeding.
+   *
+   * The Session lane owns no derivative, so this loop runs zero times and the
+   * transaction prepares nothing but the decision to proceed. That is the
+   * correct preparation for a lane whose inspection writes no object:
+   * `requiresCleanup` stays false because no earlier attempt of this lane can
+   * have written bytes under the asset's derivative prefix (`APP3-S06`).
    */
-  private async prepareDerivatives(asset: AssetRow, at: Date): Promise<PreparedWork> {
+  private async prepareDerivatives(
+    asset: AssetRow,
+    lane: AssetInspectionLane,
+    at: Date,
+  ): Promise<PreparedWork> {
     const existing = await lockLiveDerivatives(this.db, asset.id);
     let requiresCleanup = false;
 
-    for (const kind of DERIVATIVE_KINDS) {
+    for (const kind of laneDerivativeKinds(lane)) {
       const row = existing.find((entry) => entry.kind === kind);
 
       if (row !== undefined) {
@@ -278,7 +294,7 @@ export class SqlAssetInspectionRepository
 
     // No inspection is appended here (§11.8): an inspection is terminal
     // evidence, and this transaction has decided nothing yet.
-    return { kind: 'PROCESS', source: toSourceFacts(asset), requiresCleanup };
+    return { kind: 'PROCESS', source: toSourceFacts(asset), lane, requiresCleanup };
   }
 
   private async appendInspection(

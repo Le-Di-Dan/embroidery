@@ -11,6 +11,7 @@ import type { TransactionManager } from '@embroidery/persistence';
 import { WorkerJobError } from '../../../runtime/errors/worker-job-error';
 import type { WorkerPolicyService } from '../../../runtime/policy/worker-policy.service';
 import type { WorkerRuntimePolicy } from '../../../runtime/policy/worker-runtime-policy';
+import { CATALOG_INSPECTION_LANE } from '../domain/asset-inspection-lane';
 import { contradiction } from '../domain/inspection-contradiction';
 import { decodeInspectionDetail } from '../domain/inspection-detail.codec';
 import type {
@@ -49,7 +50,12 @@ const POLICY: WorkerRuntimePolicy = {
 };
 
 class RecordingRepository implements AssetInspectionRepository {
-  prepared: PreparedWork = { kind: 'PROCESS', source: sourceFacts(0n, ''), requiresCleanup: false };
+  prepared: PreparedWork = {
+    kind: 'PROCESS',
+    source: sourceFacts(0n, ''),
+    lane: CATALOG_INSPECTION_LANE,
+    requiresCleanup: false,
+  };
   snapshot: ProcessingSnapshot = {
     source: sourceFacts(0n, ''),
     status: 'INSPECTING',
@@ -138,6 +144,7 @@ describe('AssetInspectionUseCase', () => {
     repository.prepared = {
       kind: 'PROCESS',
       source: sourceFacts(BigInt(image.byteSize), image.checksum),
+      lane: CATALOG_INSPECTION_LANE,
       requiresCleanup: false,
     };
     repository.snapshot = {

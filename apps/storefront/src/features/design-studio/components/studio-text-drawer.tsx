@@ -42,15 +42,33 @@
  * order and tab order all agree — no `order` trick placing the control above
  * the stage while leaving it late in the tab sequence.
  *
- * Text is the only content, and there is no tab strip, no layers list, no upload
- * and no history here.
+ * ## The shared drawer (`APP3-S06`)
+ *
+ * `APP3-S05` shipped this with text as its only content. `APP3-S06` adds the
+ * image controls, and adds them *here* rather than in a drawer of their own:
+ * `APP3-D01-C1` draws one right drawer at 1024 and anticipated exactly this
+ * ("layers will later share this drawer"), and a second toggle opening a second
+ * panel over the same stage edge would be a second drawer system — the thing the
+ * tablet composition is shaped to avoid.
+ *
+ * So there is still one topbar, one trigger and one out-of-flow panel; what
+ * changed is that the panel takes sections. The drawer's own name moved with it:
+ * a trigger labelled after text cannot honestly open a panel containing an image
+ * control, so it now names the inspector and each section keeps its own heading.
+ *
+ * There is still no tab strip, no layers list and no history here.
  */
-import { useId, useRef, useState } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 
-import { STUDIO_TEXT_COPY } from '../model/studio-text-copy';
+import { STUDIO_INSPECTOR_COPY } from '../model/studio-inspector-copy';
 import { StudioTextInspector, type StudioTextInspectorProps } from './studio-text-inspector';
 
-export function StudioTextDrawer(props: StudioTextInspectorProps) {
+export interface StudioTextDrawerProps extends StudioTextInspectorProps {
+  /** Further inspector sections, rendered inside the same panel. */
+  readonly children?: ReactNode;
+}
+
+export function StudioTextDrawer({ children, ...props }: StudioTextDrawerProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -77,7 +95,7 @@ export function StudioTextDrawer(props: StudioTextInspectorProps) {
             setOpen((current) => !current);
           }}
         >
-          {open ? STUDIO_TEXT_COPY.drawerClose : STUDIO_TEXT_COPY.drawerOpen}
+          {open ? STUDIO_INSPECTOR_COPY.drawerClose : STUDIO_INSPECTOR_COPY.drawerOpen}
         </button>
       </div>
 
@@ -97,19 +115,20 @@ export function StudioTextDrawer(props: StudioTextInspectorProps) {
         className="studio-drawer"
         data-testid="studio-text-drawer"
         hidden={!open}
-        aria-label={STUDIO_TEXT_COPY.panelLabel}
+        aria-label={STUDIO_INSPECTOR_COPY.panelLabel}
         onKeyDown={(event) => {
           if (event.key === 'Escape') close();
         }}
       >
         <StudioTextInspector {...props} />
+        {children}
         <button
           type="button"
           className="studio-stage__control"
           data-testid="studio-text-drawer-close"
           onClick={close}
         >
-          {STUDIO_TEXT_COPY.drawerClose}
+          {STUDIO_INSPECTOR_COPY.drawerClose}
         </button>
       </section>
     </>

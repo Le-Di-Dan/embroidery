@@ -49,12 +49,43 @@ export interface SessionAssetTestContext {
   seedUpload(sessionId: string, options?: SeedUploadOptions): Promise<SeededUpload>;
   /** Deletes a derivative object, leaving its row behind. */
   removeObject(storageKey: string): Promise<void>;
+  /** Replaces a session's persisted document elements (`APP3-S06` clone grant). */
+  setDocumentElements(sessionId: string, elements: readonly unknown[]): Promise<void>;
   close(): Promise<void>;
 }
 
 /** The delivery address of one Session-owned upload. */
 export function editorPreviewPath(sessionId: string, assetId: string): string {
   return `/api/public/design-sessions/${sessionId}/assets/${assetId}/editor-preview`;
+}
+
+/** The processing-status address of one Session-owned upload (`APP3-S06`). */
+export function assetStatusPath(sessionId: string, assetId: string): string {
+  return `/api/public/design-sessions/${sessionId}/assets/${assetId}/status`;
+}
+
+/**
+ * One image element, as a persisted Session document would carry it.
+ *
+ * The document-reference grant reads `type`, `assetId` and `derivativeId` and
+ * nothing else, so this carries exactly those plus enough shape to be a
+ * recognisable element. It is written straight into `design_document` because
+ * what is under test is the *grant*, not the save path — `APP3-B08` owns that,
+ * and going through it would prove the allowlist rather than the read.
+ */
+export function imageElement(assetId: string, derivativeId: string): Record<string, unknown> {
+  return {
+    id: crypto.randomUUID(),
+    type: 'image',
+    assetId,
+    derivativeId,
+    intrinsicWidthPx: 800,
+    intrinsicHeightPx: 600,
+    visible: true,
+    locked: false,
+    opacity: 1,
+    transform: { x: 0, y: 0, width: 100, height: 75, rotationDeg: 0 },
+  };
 }
 
 export interface SeedSessionOptions {
@@ -97,6 +128,14 @@ export interface SeedUploadOptions {
 
 export interface SeededUpload {
   readonly assetId: string;
+  /**
+   * The derivative row's own id.
+   *
+   * Needed by `APP3-S06`: the document-reference grant matches the **pair**, so
+   * a test proving that an image referenced through the wrong derivative is
+   * refused has to be able to name the right one.
+   */
+  readonly derivativeId: string | null;
   readonly storageKey: string;
   readonly bytes: Buffer;
   readonly path: string;
@@ -149,6 +188,13 @@ export async function createSessionAssetContext(label: string): Promise<SessionA
       seedUpload(exec, storage, sessionId, options),
     removeObject: (storageKey: string) =>
       storage.deleteObject({ bucket: DERIVATIVES_BUCKET, key: storageKey }),
+    setDocumentElements: async (sessionId: string, elements: readonly unknown[]): Promise<void> => {
+      await exec(sql`
+        update design_sessions
+           set design_document = jsonb_set(design_document, '{elements}',
+                                           ${JSON.stringify(elements)}::jsonb, true)
+         where id = ${sessionId}`);
+    },
     close: async () => {
       await api.close();
       await minio.stop();
@@ -249,12 +295,13 @@ async function seedUpload(
           values (${crypto.randomUUID()}, ${options.associateWith ?? sessionId}, ${assetId})`);
   }
 
-  if (options.derivativeKind !== null) {
+  const derivativeId = options.derivativeKind === null ? null : crypto.randomUUID();
+  if (derivativeId !== null) {
     const complete = options.incompleteQuartet !== true;
     await exec(sql`insert into asset_derivatives (id, asset_id, kind, status, storage_key,
                                                   is_watermarked, width_px, height_px, media_type,
                                                   byte_size)
-          values (${crypto.randomUUID()}, ${assetId}, ${options.derivativeKind ?? 'NORMALIZED'},
+          values (${derivativeId}, ${assetId}, ${options.derivativeKind ?? 'NORMALIZED'},
                   ${options.derivativeStatus ?? 'READY'}, ${storageKey},
                   ${options.watermarked ?? false},
                   ${complete ? 800 : null}, ${complete ? 600 : null},
@@ -272,7 +319,7 @@ async function seedUpload(
     });
   }
 
-  return { assetId, storageKey, bytes, path: editorPreviewPath(sessionId, assetId) };
+  return { assetId, derivativeId, storageKey, bytes, path: editorPreviewPath(sessionId, assetId) };
 }
 
 export { DESIGN_SESSION_TEST_ORIGIN };

@@ -31,6 +31,8 @@
  * tablet fills `topbar` and leaves `body` empty; desktop and mobile do the
  * reverse. Nothing renders in both.
  */
+import type { ReactNode } from 'react';
+
 import { useStudioViewportTier } from '../hooks/use-studio-viewport-tier';
 import { STUDIO_TEXT_COPY } from '../model/studio-text-copy';
 import { textElementOf } from '../model/studio-text-fields';
@@ -42,9 +44,19 @@ export type StudioTextSlot = 'topbar' | 'body';
 
 export interface StudioTextPanelProps extends StudioTextInspectorProps {
   readonly slot: StudioTextSlot;
+  /**
+   * Further inspector sections for the **tablet** drawer only (`APP3-S06`).
+   *
+   * They reach the drawer through this mount because the drawer, its topbar and
+   * its single trigger are one accepted composition (`APP3-S05-MI01`), and the
+   * only way to add a section without adding a second trigger is to hand it to
+   * the panel that owns the one there is. Every other tier ignores them: each
+   * capability mounts its own desktop and mobile presentation, in its own slot.
+   */
+  readonly children?: ReactNode;
 }
 
-export function StudioTextPanel({ slot, ...props }: StudioTextPanelProps) {
+export function StudioTextPanel({ slot, children, ...props }: StudioTextPanelProps) {
   const tier = useStudioViewportTier();
 
   // No viewport observed yet — the server render, and the hydration pass that
@@ -55,7 +67,8 @@ export function StudioTextPanel({ slot, ...props }: StudioTextPanelProps) {
   // The tablet composition is the only one with anything above the stage, and
   // all of it is above the stage: the drawer is out of flow, so it follows its
   // own trigger in the DOM and still paints over the frame's right edge.
-  if (tier === 'tablet') return slot === 'topbar' ? <StudioTextDrawer {...props} /> : null;
+  if (tier === 'tablet')
+    return slot === 'topbar' ? <StudioTextDrawer {...props}>{children}</StudioTextDrawer> : null;
   if (slot === 'topbar') return null;
 
   if (tier === 'mobile') {

@@ -10,9 +10,17 @@
  *
  * By the time this service runs, the Session half is already proved: the read
  * guard verified the id+secret pair and attached the authorized context. What is
- * left is the contextual half — that this exact Session owns this exact Asset,
- * through the durable `DESIGN_SESSION_ASSET` association, and that the Asset
- * carries a deliverable editor-safe derivative. One statement decides all of it.
+ * left is the contextual half — that this exact Session has a claim on this exact
+ * Asset, and that the Asset carries a deliverable editor-safe derivative. One
+ * statement decides all of it.
+ *
+ * The claim has two forms since `APP3-S06`: the durable `DESIGN_SESSION_ASSET`
+ * association `APP3-B06B` writes, or an image this Session's own persisted
+ * document already places. The second exists because a `CLONE_TEMPLATE` Session
+ * starts with Template artwork that has no association, and without it the
+ * customer's own starting design would not render. Both are stated in
+ * `design-session-media-grant.sql.ts`, and neither consults a Template's
+ * continuing publication: clone lineage is provenance, never permission.
  *
  * A stream is returned rather than bytes: buffering the object would put a whole
  * customer upload in the heap per concurrent request and destroy the backpressure
@@ -20,12 +28,13 @@
  *
  * ## What this service deliberately does not require
  *
- * It does **not** require the Session's current Design Document to reference the
+ * It does **not** *require* the Session's current Design Document to reference the
  * Asset. `APP3-S06` must upload an image and then preview it *before* it can
  * place it, so a document-membership rule would make the upload → preview → place
  * workflow circular. `APP3-B05A` does carry such a rule, and correctly: a
  * published Template Version is frozen, so its document *is* the grant. A Session
- * document is a live draft, so it is not.
+ * document is a live draft, so it is not — which is why membership is an
+ * *alternative* grant here and never a precondition.
  */
 import { Inject, Injectable } from '@nestjs/common';
 import {

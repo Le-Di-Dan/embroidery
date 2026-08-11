@@ -12,6 +12,7 @@
  */
 import type { AssetDerivativeState } from '@embroidery/database';
 
+import type { AssetInspectionLane } from '../asset-inspection-lane';
 import type { CatalogDerivativeKind } from '../asset-processing-policy';
 import type { InspectedDerivative, InspectedSource } from '../inspection-detail';
 import type { AssetRejectionCode } from '../processing-rejection';
@@ -38,15 +39,22 @@ export interface DerivativeRowState {
 /**
  * What the preparation transaction decided.
  *
- * `PROCESS` means both derivative rows are durably `PROCESSING` and external
- * work may begin. `requiresCleanup` is true when at least one of them already
- * existed — meaning some earlier attempt may have written bytes this attempt is
- * about to replace.
+ * `PROCESS` means every derivative row **this lane owns** is durably
+ * `PROCESSING` and external work may begin — vacuously true, and correct, for
+ * the Session lane, which owns none. `requiresCleanup` is true when at least one
+ * of them already existed, meaning some earlier attempt may have written bytes
+ * this attempt is about to replace.
+ *
+ * The lane travels with the decision rather than being re-derived by the caller.
+ * It was resolved from the row this transaction *locked*, so passing it forward
+ * is what keeps the whole attempt bound to one reading of the Asset's identity;
+ * asking again outside the lock could answer differently.
  */
 export type PreparedWork =
   | {
       readonly kind: 'PROCESS';
       readonly source: AssetSourceFacts;
+      readonly lane: AssetInspectionLane;
       readonly requiresCleanup: boolean;
     }
   | { readonly kind: 'REPLAY_ACCEPTED'; readonly derivativeKeys: readonly string[] }
@@ -92,6 +100,11 @@ export interface PrepareInput {
    * storage composition, not to persistence — and verifying a terminal replay
    * against *computed* keys is what makes "the row points at the object this
    * pipeline would have written" a check rather than an assumption.
+   *
+   * Covers every kind the pipeline can produce, because the lane is not known
+   * until the asset row is locked inside the transaction this input opens. Only
+   * the lane's own kinds are ever consulted, so the Session lane reads none of
+   * them.
    */
   readonly expectedKeys: Readonly<Record<CatalogDerivativeKind, string>>;
 }
@@ -109,10 +122,10 @@ export interface AssetInspectionRepository {
   /** Everything the cleanup and generation steps re-verify against. */
   loadProcessingSnapshot(assetId: string): Promise<ProcessingSnapshot>;
 
-  /** Both derivatives `READY`, one ACCEPTED inspection, asset `ACCEPTED`. */
+  /** The lane's derivatives `READY`, one ACCEPTED inspection, asset `ACCEPTED`. */
   finalizeAccepted(input: FinalizeAcceptedInput): Promise<void>;
 
-  /** Both derivatives `FAILED`, one REJECTED inspection, asset `REJECTED`. */
+  /** Live derivatives `FAILED`, one REJECTED inspection, asset `REJECTED`. */
   finalizeRejected(input: FinalizeRejectedInput): Promise<void>;
 
   /** The raw terminal evidence, for replay verification and diagnosis. */

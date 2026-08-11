@@ -12,16 +12,16 @@ import { executeRaw, sql } from '@embroidery/database';
 import type { AssetDerivativeState } from '@embroidery/database';
 import type { DatabaseExecutorHandle } from '@embroidery/persistence';
 
+import {
+  resolveInspectionLane,
+  type AssetInspectionLane,
+} from '../../domain/asset-inspection-lane';
 import { contradiction } from '../../domain/inspection-contradiction';
 import type {
   AssetSourceFacts,
   DerivativeRowState,
 } from '../../domain/repositories/asset-inspection.repository';
 import type { InspectionRow } from './terminal-replay';
-
-/** The intake contract this handler consumes; anything else is foreign work. */
-const REQUIRED_KIND = 'CATALOG_MEDIA';
-const REQUIRED_CLASSIFICATION = 'PRODUCTION_SENSITIVE';
 
 export interface AssetRow {
   readonly id: string;
@@ -141,21 +141,34 @@ export async function readInspections(
 }
 
 /**
- * Refuses an asset this handler does not own.
+ * Refuses an asset this handler does not own, and says which lane it is.
  *
- * Kind and classification are checked on every read, not just the first: a job
- * that reached a `CUSTOMER_UPLOAD` or a `PUBLIC` asset is pointed at work
- * belonging to a different pipeline with different privacy rules, and the safe
- * answer is to stop rather than to process it under this one's assumptions.
+ * The kind/classification **pair** is resolved on every read, not just the
+ * first, and a pair matching no lane is still a stop: an Asset outside every
+ * declared lane is work belonging to some pipeline with privacy rules this one
+ * cannot know, and processing it under either lane's assumptions is precisely
+ * the mistake the original two-literal check existed to prevent.
+ *
+ * What changed at `APP3-S06` is only the *number* of lanes. `CUSTOMER_UPLOAD` +
+ * `CUSTOMER_PRIVATE` is now a lane this pipeline owns rather than foreign work;
+ * `PUBLIC`, `TEMPLATE_SOURCE`, `PRODUCTION_FILE` and `GALLERY_MEDIA` are refused
+ * exactly as before.
  */
-export function assertOwnedAsset(row: AssetRow | undefined): AssetRow {
+export function laneOf(row: AssetRow | undefined): AssetInspectionLane {
   if (row === undefined) {
     throw contradiction('the asset does not exist');
   }
-  if (row.kind !== REQUIRED_KIND || row.classification !== REQUIRED_CLASSIFICATION) {
-    throw contradiction('the asset is not private catalog media');
+  const lane = resolveInspectionLane(row.kind, row.classification);
+  if (lane === undefined) {
+    throw contradiction('the asset belongs to no inspection lane');
   }
-  return row;
+  return lane;
+}
+
+/** The same refusal, when the caller needs the row rather than the lane. */
+export function assertOwnedAsset(row: AssetRow | undefined): AssetRow {
+  laneOf(row);
+  return row as AssetRow;
 }
 
 /** Every immutable source fact the terminal transaction re-verifies. */

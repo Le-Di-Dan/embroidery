@@ -24,6 +24,7 @@ import {
   B05A_STATUS_LINES,
   acceptedSurface,
   isB06CDelivered,
+  isS06Delivered,
   isS01Delivered,
   publicTemplateAssetPath,
   publicTemplatePaths,
@@ -68,6 +69,7 @@ export const ROUTE = publicTemplateAssetPath();
  * the ban and the exception together.
  */
 const B06C_ROUTE = '/api/public/design-sessions/{sessionId}/assets/{assetId}/editor-preview';
+const S06_STATUS_ROUTE = '/api/public/design-sessions/{sessionId}/assets/{assetId}/status';
 export const OPERATION_ID = 'publicDesignTemplateAsset_get';
 
 export const CANONICAL_FILES = Object.freeze({
@@ -250,7 +252,7 @@ export function checkSurface(rootDir, fail) {
     fail(`${CANONICAL_FILES.openapi}: ${ROUTE} does not answer with a binary body`);
   }
 
-  checkNoGenericAssetApi(document, fail, isB06CDelivered(rootDir));
+  checkNoGenericAssetApi(document, fail, isB06CDelivered(rootDir), isS06Delivered(rootDir));
 
   const client = read(rootDir, 'client') ?? '';
   if (!client.includes('publicDesignTemplateAssetGet')) {
@@ -265,7 +267,7 @@ export function checkSurface(rootDir, fail) {
  * route whose asset segment is not preceded by both a template and a version
  * segment is the generic access this checkpoint exists to refuse.
  */
-function checkNoGenericAssetApi(document, fail, b06cDelivered) {
+function checkNoGenericAssetApi(document, fail, b06cDelivered, s06Delivered) {
   for (const route of Object.keys(document.paths ?? {})) {
     // **Public** only. `APP2` publishes authenticated Admin asset operations by
     // id, and they are a different surface under a different authorization — a
@@ -284,6 +286,11 @@ function checkNoGenericAssetApi(document, fail, b06cDelivered) {
     // rather than by loosening the shape: any *other* Session-shaped asset route,
     // and any route B06C might have grown a second of, still fails here.
     if (b06cDelivered && route === B06C_ROUTE) continue;
+    // `APP3-S06` owns the Session asset *status* projection, under the same
+    // Session credential, for the same reason and by the same rule: the world
+    // is enlarged by naming its one address, never by loosening the shape. A
+    // second status route, or a generic one, still fails here.
+    if (s06Delivered && route === S06_STATUS_ROUTE) continue;
     fail(`${CANONICAL_FILES.openapi}: "${route}" serves an asset outside APP3-B05A's context`);
   }
   for (const route of Object.keys(document.paths ?? {})) {

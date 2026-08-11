@@ -42,8 +42,10 @@ import { PublicDesignSessionAssetController } from './presentation/public-design
 import { DESIGN_SESSION_ASSET_DELIVERY_REPOSITORY } from './domain/repositories/design-session-asset-delivery.repository';
 import { DrizzleDesignSessionAssetDeliveryRepository } from './infrastructure/persistence/drizzle-design-session-asset-delivery.repository';
 import { DesignSessionAssetDeliveryService } from './application/design-session-asset-delivery.service';
+import { DesignSessionAssetStatusService } from './application/design-session-asset-status.service';
 import { DesignSessionReadGuard } from './presentation/guards/design-session-read.guard';
 import { PublicDesignSessionAssetPreviewController } from './presentation/public-design-session-asset-preview.controller';
+import { PublicDesignSessionAssetStatusController } from './presentation/public-design-session-asset-status.controller';
 
 /**
  * CTX-DSN — design templates, sessions, cases, versions and approval
@@ -115,12 +117,14 @@ import { PublicDesignSessionAssetPreviewController } from './presentation/public
       useClass: DrizzleDesignSessionAssetDeliveryRepository,
     },
     DesignSessionAssetDeliveryService,
+    DesignSessionAssetStatusService,
     DesignSessionReadGuard,
   ],
   controllers: [
     PublicDesignSessionController,
     PublicDesignSessionAssetController,
     PublicDesignSessionAssetPreviewController,
+    PublicDesignSessionAssetStatusController,
   ],
   exports: [
     DESIGN_CASE_REPOSITORY,

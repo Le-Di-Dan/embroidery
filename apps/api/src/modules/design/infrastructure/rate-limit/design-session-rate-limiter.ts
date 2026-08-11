@@ -27,6 +27,7 @@ import {
 
 const CREATION_DIMENSION = 'design-session.creation';
 const MUTATION_DIMENSION = 'design-session.mutation';
+const READ_DIMENSION = 'design-session.read';
 const FAILURE_DIMENSION = 'design-session.authorization-failure';
 
 @Injectable()
@@ -61,6 +62,24 @@ export class DesignSessionRateLimiter {
   /** PO-07: 30 authorized mutations per minute, per session id. */
   checkMutation(sessionId: string): RateLimitDecision {
     return this.limiter.check(MUTATION_DIMENSION, sessionId, this.config.rateLimits.mutation);
+  }
+
+  /**
+   * PO-07: bootstrap, resume and read, 60/minute per **ephemeral network key**.
+   *
+   * The fifth locked control, implemented at `APP3-S06`. `APP3-B06C` looked for
+   * it, misread PO-07 as defining only four, and disclosed the absence rather
+   * than inventing a number — the right instinct on a wrong premise.
+   *
+   * Keyed by network rather than by session on purpose. The thing being bounded
+   * is a caller probing Asset ids, and that caller can create Sessions — a
+   * per-session budget would reset every time it made a new one, while the
+   * network key follows it across all of them. It is a wholly separate dimension
+   * from the mutation counter, so previewing images can never exhaust a
+   * customer's ability to save their own work.
+   */
+  checkRead(networkKey: string): RateLimitDecision {
+    return this.limiter.check(READ_DIMENSION, networkKey, this.config.rateLimits.read);
   }
 
   /**

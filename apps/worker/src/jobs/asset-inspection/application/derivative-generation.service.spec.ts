@@ -11,6 +11,7 @@ import {
   CATALOG_PREVIEW_OUTPUT_POLICY,
   THUMBNAIL_OUTPUT_POLICY,
 } from '../domain/asset-processing-policy';
+import { CATALOG_INSPECTION_LANE } from '../domain/asset-inspection-lane';
 import { AssetRejectedError } from '../domain/processing-rejection';
 import type { InspectedSource } from '../domain/inspection-detail';
 import type { AssetSourceFacts } from '../domain/repositories/asset-inspection.repository';
@@ -58,7 +59,10 @@ describe('DerivativeGenerationService', () => {
   }> {
     storage.put('ORIGINALS', ORIGINAL_KEY, image.bytes, image.mediaType);
     const source = facts(image);
-    return { source, inspected: await verification.verify(source, controller.signal) };
+    return {
+      source,
+      inspected: await verification.verify(source, CATALOG_INSPECTION_LANE, controller.signal),
+    };
   }
 
   describe('deterministic keys', () => {
@@ -179,7 +183,7 @@ describe('DerivativeGenerationService', () => {
     const image = await exifRotatedJpeg(200, 100);
     storage.put('ORIGINALS', ORIGINAL_KEY, image.bytes, image.mediaType);
     const source = facts(image);
-    const inspected = await verification.verify(source, controller.signal);
+    const inspected = await verification.verify(source, CATALOG_INSPECTION_LANE, controller.signal);
 
     const result = await generation.generate({
       source,
@@ -197,7 +201,7 @@ describe('DerivativeGenerationService', () => {
     const image = await truncatedPng();
     storage.put('ORIGINALS', ORIGINAL_KEY, image.bytes, image.mediaType);
     const source = facts(image);
-    const inspected = await verification.verify(source, controller.signal);
+    const inspected = await verification.verify(source, CATALOG_INSPECTION_LANE, controller.signal);
 
     await expect(
       generation.generate({

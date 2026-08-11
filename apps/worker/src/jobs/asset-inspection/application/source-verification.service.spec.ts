@@ -5,6 +5,7 @@
  * because the point of these cases is what libvips actually reports, not what a
  * stub was told to say.
  */
+import { CATALOG_INSPECTION_LANE, SESSION_INSPECTION_LANE } from '../domain/asset-inspection-lane';
 import { AssetRejectedError } from '../domain/processing-rejection';
 import { AssetInspectionContradictionError } from '../domain/inspection-contradiction';
 import type { AssetSourceFacts } from '../domain/repositories/asset-inspection.repository';
@@ -50,7 +51,7 @@ describe('SourceVerificationService', () => {
 
   async function verify(image: SyntheticImage, overrides: Partial<AssetSourceFacts> = {}) {
     storage.put('ORIGINALS', KEY, image.bytes, image.mediaType);
-    return service.verify(facts(image, overrides), controller.signal);
+    return service.verify(facts(image, overrides), CATALOG_INSPECTION_LANE, controller.signal);
   }
 
   async function rejectionCodeFor(
@@ -177,7 +178,7 @@ describe('SourceVerificationService', () => {
     storage.put('ORIGINALS', KEY, image.bytes, image.mediaType);
 
     await expect(
-      service.verify(facts(image, { checksum: null }), controller.signal),
+      service.verify(facts(image, { checksum: null }), CATALOG_INSPECTION_LANE, controller.signal),
     ).rejects.toBeInstanceOf(AssetInspectionContradictionError);
   });
 
@@ -195,7 +196,9 @@ describe('SourceVerificationService', () => {
     storage.put('ORIGINALS', KEY, image.bytes, image.mediaType);
     storage.failWith('get', 'PROVIDER_UNAVAILABLE');
 
-    await expect(service.verify(facts(image), controller.signal)).rejects.toMatchObject({
+    await expect(
+      service.verify(facts(image), CATALOG_INSPECTION_LANE, controller.signal),
+    ).rejects.toMatchObject({
       errorClass: 'JOB_DEPENDENCY_UNAVAILABLE',
     });
   });
@@ -205,9 +208,9 @@ describe('SourceVerificationService', () => {
 
     // The row says the object exists, so a store that cannot serve it is
     // lagging or broken — never a reason to record a verdict about the image.
-    await expect(service.verify(facts(image), controller.signal)).rejects.toBeInstanceOf(
-      WorkerJobError,
-    );
+    await expect(
+      service.verify(facts(image), CATALOG_INSPECTION_LANE, controller.signal),
+    ).rejects.toBeInstanceOf(WorkerJobError);
   });
 
   it('treats a stream that dies mid-read as retryable', async () => {
@@ -215,7 +218,9 @@ describe('SourceVerificationService', () => {
     storage.put('ORIGINALS', KEY, image.bytes, image.mediaType);
     storage.midStreamReadFailure = true;
 
-    await expect(service.verify(facts(image), controller.signal)).rejects.toMatchObject({
+    await expect(
+      service.verify(facts(image), CATALOG_INSPECTION_LANE, controller.signal),
+    ).rejects.toMatchObject({
       errorClass: 'JOB_TRANSIENT_FAILURE',
     });
   });
@@ -225,7 +230,9 @@ describe('SourceVerificationService', () => {
     storage.put('ORIGINALS', KEY, image.bytes, image.mediaType);
     controller.abort();
 
-    await expect(service.verify(facts(image), controller.signal)).rejects.toMatchObject({
+    await expect(
+      service.verify(facts(image), CATALOG_INSPECTION_LANE, controller.signal),
+    ).rejects.toMatchObject({
       errorClass: 'JOB_HANDLER_TIMEOUT',
     });
   });
@@ -233,6 +240,70 @@ describe('SourceVerificationService', () => {
   it('reads the original at most twice', async () => {
     await verify(await pngWithAlpha(600, 400));
 
+    expect(storage.calls.filter((call) => call.operation === 'get')).toHaveLength(2);
+  });
+});
+
+/**
+ * The third read, and why the Session lane needs one (`APP3-S06`).
+ *
+ * The catalog lane's pixel-level decode has always been a *side effect* of
+ * generating its two derivatives: `readSourceMetadata` parses the header only.
+ * A lane that writes no derivative therefore loses that check silently — and a
+ * file with a valid PNG header and truncated pixel data was accepted by a
+ * pipeline that had never decoded it. These cases are the proof that the gap is
+ * closed on the lane that has it, and not opened on the lane that does not.
+ */
+describe('SourceVerificationService — Design Session lane', () => {
+  let storage: InMemoryObjectStorage;
+  let service: SourceVerificationService;
+  let controller: AbortController;
+
+  beforeEach(() => {
+    storage = new InMemoryObjectStorage();
+    service = new SourceVerificationService(storage);
+    controller = new AbortController();
+  });
+
+  function verifySession(image: SyntheticImage) {
+    storage.put('ORIGINALS', KEY, image.bytes, image.mediaType);
+    return service.verify(facts(image), SESSION_INSPECTION_LANE, controller.signal);
+  }
+
+  it('accepts a fully decodable session raster', async () => {
+    await expect(verifySession(await pngWithAlpha(120, 80))).resolves.toMatchObject({
+      format: 'png',
+      width: 120,
+      height: 80,
+    });
+  });
+
+  it('rejects a truncated raster the header check cannot catch', async () => {
+    const truncated = await truncatedPng();
+
+    // The same file passes `readSourceMetadata`: its header is a real PNG
+    // header. Only decoding the pixels under `failOn: 'warning'` refuses it.
+    await expect(verifySession(truncated)).rejects.toBeInstanceOf(AssetRejectedError);
+    await expect(verifySession(truncated)).rejects.toMatchObject({
+      rejectionCode: 'DECODE_FAILED',
+    });
+  });
+
+  it('reads the original three times, the third being the decode', async () => {
+    await verifySession(await pngWithAlpha(200, 150));
+
+    expect(storage.calls.filter((call) => call.operation === 'get')).toHaveLength(3);
+  });
+
+  it('leaves an oversized image reported by its own precise code', async () => {
+    // The decode pass runs *after* the policy, so a file the policy refuses is
+    // never decoded and never mislabelled `DECODE_FAILED`.
+    const oversized = await overDimensionLimitPng();
+    storage.put('ORIGINALS', KEY, oversized.bytes, oversized.mediaType);
+
+    await expect(
+      service.verify(facts(oversized), SESSION_INSPECTION_LANE, controller.signal),
+    ).rejects.toMatchObject({ rejectionCode: 'DIMENSION_LIMIT_EXCEEDED' });
     expect(storage.calls.filter((call) => call.operation === 'get')).toHaveLength(2);
   });
 });

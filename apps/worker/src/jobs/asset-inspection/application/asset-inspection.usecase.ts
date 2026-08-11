@@ -21,10 +21,8 @@ import { jobCorrelation } from '../../../runtime/context/job-correlation';
 import { WorkerJobError } from '../../../runtime/errors/worker-job-error';
 import { WorkerPolicyService } from '../../../runtime/policy/worker-policy.service';
 import { OBJECT_STORAGE } from '../../../storage/object-storage.provider';
-import {
-  DERIVATIVE_OUTPUT_POLICIES,
-  type CatalogDerivativeKind,
-} from '../domain/asset-processing-policy';
+import type { CatalogDerivativeKind } from '../domain/asset-processing-policy';
+import type { AssetInspectionLane } from '../domain/asset-inspection-lane';
 import { isContradiction } from '../domain/inspection-contradiction';
 import {
   buildAcceptedDetail,
@@ -112,16 +110,30 @@ export class AssetInspectionUseCase {
       if (prepared.requiresCleanup) {
         await this.purgeRecoveredOutput(assetId, signal);
       }
-      await this.process(prepared.source, signal);
+      await this.process(prepared.source, prepared.lane, signal);
     } catch (error: unknown) {
       await this.handleFailure(context, error, signal);
     }
   }
 
-  /** The successful path: verify, generate both outputs, finalize atomically. */
-  private async process(source: AssetSourceFacts, signal: AbortSignal): Promise<void> {
-    const inspected = await this.verification.verify(source, signal);
-    const derivatives = await this.generateAll(source, inspected, signal);
+  /**
+   * The successful path: verify, generate this lane's outputs, finalize
+   * atomically.
+   *
+   * Verification is the same for every lane, and that is the point of
+   * `APP3-S06`'s repair: a Design Session upload gets the *identical* safe
+   * decode, signature and metadata inspection a catalogue image gets. What the
+   * lane changes is only what is written afterwards — the Session lane writes no
+   * derivative here, because its editor-safe `NORMALIZED` output already belongs
+   * to `APP3-W01A`.
+   */
+  private async process(
+    source: AssetSourceFacts,
+    lane: AssetInspectionLane,
+    signal: AbortSignal,
+  ): Promise<void> {
+    const inspected = await this.verification.verify(source, lane, signal);
+    const derivatives = await this.generateAll(source, inspected, lane, signal);
 
     const detail = encodeInspectionDetail(
       buildAcceptedDetail({ source: inspected, derivatives: derivatives.map(stripKey) }),
@@ -147,10 +159,11 @@ export class AssetInspectionUseCase {
   private async generateAll(
     source: AssetSourceFacts,
     inspected: InspectedSource,
+    lane: AssetInspectionLane,
     signal: AbortSignal,
   ): Promise<GeneratedDerivative[]> {
     const generated: GeneratedDerivative[] = [];
-    for (const policy of DERIVATIVE_OUTPUT_POLICIES) {
+    for (const policy of lane.derivatives) {
       generated.push(await this.generation.generate({ source, inspected, policy, signal }));
     }
     return generated;
@@ -254,6 +267,12 @@ export class AssetInspectionUseCase {
     }
   }
 
+  /**
+   * Every key this pipeline could write, computed before the lane is known —
+   * the asset row is not locked until the preparation transaction opens. The
+   * repository consults only the lane's own kinds, so the Session lane reads
+   * none of these.
+   */
   private expectedKeys(assetId: string): Readonly<Record<CatalogDerivativeKind, string>> {
     return {
       THUMBNAIL: this.generation.derivativeKey(assetId, 'THUMBNAIL'),

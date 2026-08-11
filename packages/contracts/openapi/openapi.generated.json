@@ -1589,6 +1589,59 @@
         ],
         "type": "object"
       },
+      "DesignSessionAssetStatusResponse": {
+        "properties": {
+          "assetId": {
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07",
+            "format": "uuid",
+            "type": "string"
+          },
+          "byteSize": {
+            "description": "Present only when `READY`. The measured size of the editor-safe image.",
+            "example": 51200,
+            "type": "number"
+          },
+          "derivativeId": {
+            "description": "Present only when `READY`. The canonical editor-safe derivative to place in the design document. It is an opaque identity, not a storage reference, and grants no access.",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e09",
+            "format": "uuid",
+            "type": "string"
+          },
+          "heightPx": {
+            "description": "Present only when `READY`. The measured intrinsic height, in pixels.",
+            "example": 800,
+            "type": "number"
+          },
+          "mediaType": {
+            "description": "Present only when `READY`. The editor-safe media type, which is what the preview endpoint serves — never the uploaded original’s type.",
+            "enum": [
+              "image/webp"
+            ],
+            "example": "image/webp",
+            "type": "string"
+          },
+          "state": {
+            "description": "`PROCESSING` while the image is being inspected or normalized, `READY` once an editor-safe image exists, `REJECTED` once inspection has refused the file. `READY` is the only state that carries media fields.",
+            "enum": [
+              "PROCESSING",
+              "READY",
+              "REJECTED"
+            ],
+            "example": "READY",
+            "type": "string"
+          },
+          "widthPx": {
+            "description": "Present only when `READY`. The measured intrinsic width of the editor-safe image, in pixels. It is the only authority for the placed element’s intrinsic size.",
+            "example": 1200,
+            "type": "number"
+          }
+        },
+        "required": [
+          "assetId",
+          "state"
+        ],
+        "type": "object"
+      },
       "DesignSessionLineageResponse": {
         "properties": {
           "templateSlug": {
@@ -8535,6 +8588,214 @@
           }
         },
         "summary": "Get the editor-safe preview of an image uploaded into a design session",
+        "tags": [
+          "publicDesignSessionAsset"
+        ]
+      }
+    },
+    "/api/public/design-sessions/{sessionId}/assets/{assetId}/status": {
+      "get": {
+        "description": "Reports whether an image this session uploaded is still being processed, is ready to place, or was refused by inspection. Private: the per-session HttpOnly cookie is verified on every request, and the session id alone grants nothing. The asset id is subordinate and grants nothing on its own. An unknown asset, an asset belonging to another session and an asset this session never uploaded are one indistinguishable answer. Only the ready state carries media fields, and those are the measured intrinsic dimensions, media type and size of the editor-safe image — never a storage address, a checksum, a filename or anything about how processing is implemented. Reading changes nothing: no revision advances, no cookie is issued or rotated, and the expiry is not extended. Responses are `no-store`, because what is being reported is a state that changes and an authorisation that can end.",
+        "operationId": "publicDesignSessionAsset_status",
+        "parameters": [
+          {
+            "description": "An opaque asset identity uploaded by that session. It is not a storage reference and grants no access on its own.",
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Public Design Session identifier. It selects the cookie that must accompany the request; it is not itself a credential.",
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignSessionAssetStatusResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The current processing state.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed session or asset id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The session could not be authorized.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "A cross-site request. No cookie is read.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "This session has no upload at this address. Returned identically for an unknown asset, an asset belonging to another session, an asset this session never uploaded and a tombstoned one.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many requests.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get the processing state of an image uploaded into a design session",
         "tags": [
           "publicDesignSessionAsset"
         ]

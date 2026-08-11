@@ -6,6 +6,7 @@
  * cap; the import cycle is the same deliberate one the authorization half
  * documents.
  */
+import { isS06Delivered } from './app3-accepted-surface.mjs';
 import { CANONICAL_FILES, code, read } from './check-app3-b06c.mjs';
 
 /** Object storage is opened last, streamed, and torn down with the client. */
@@ -140,11 +141,30 @@ export function checkReadOnly(rootDir, fail) {
   const module = code(rootDir, 'module');
   const port = code(rootDir, 'port');
 
-  // The port has exactly one method, and it is a read. A delivery route holding a
-  // writable repository is one refactor away from writing.
+  /*
+   * Every method on the port is a read, and the count is the world's.
+   *
+   * The rule was "exactly one", which is what made the zero-write guarantee
+   * structural: a delivery route holding a writable repository is one refactor
+   * away from writing. `APP3-S06` added a second — the status projection — and
+   * the guarantee is unchanged, because what actually enforces it is the write
+   * ban below: no method may be named for a write, whatever the count.
+   *
+   * The count is still pinned so a third method cannot appear unnoticed, and
+   * both names are still required, so neither read can be quietly replaced.
+   */
+  const expectedReads = isS06Delivered(rootDir)
+    ? ['findDeliverableCandidate(', 'findAssetStatus(']
+    : ['findDeliverableCandidate('];
   const methods = port.match(/^\s{2}\w+\(/gm) ?? [];
-  if (methods.length !== 1 || !port.includes('findDeliverableCandidate(')) {
-    fail(`${CANONICAL_FILES.port}: declares ${String(methods.length)} methods; expected one read`);
+  if (methods.length !== expectedReads.length) {
+    fail(
+      `${CANONICAL_FILES.port}: declares ${String(methods.length)} methods; expected ` +
+        `${String(expectedReads.length)} read(s)`,
+    );
+  }
+  for (const read of expectedReads) {
+    if (!port.includes(read)) fail(`${CANONICAL_FILES.port}: does not declare ${read}`);
   }
   for (const forbidden of [
     'attachAsset',

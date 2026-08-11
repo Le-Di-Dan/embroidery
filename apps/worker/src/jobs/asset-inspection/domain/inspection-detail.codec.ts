@@ -45,7 +45,22 @@ function isChecksum(value: unknown): value is string {
   return typeof value === 'string' && CHECKSUM_PATTERN.test(value);
 }
 
-export function decodeInspectionDetail(raw: string | null): InspectionDetail | undefined {
+/**
+ * Which derivative kinds an accepted detail must describe, exactly.
+ *
+ * A parameter rather than a constant since `APP3-S06`: an accepted Design
+ * Session upload records **no** derivative, because its lane writes none, and a
+ * decoder that demanded the two catalogue kinds read every one of those records
+ * as malformed — which made a perfectly good terminal state unreplayable.
+ *
+ * The catalogue default keeps the accepted assertions unchanged. The production
+ * caller — the terminal-replay verifier — always passes its lane's own kinds, so
+ * the default is never what decides a live replay.
+ */
+export function decodeInspectionDetail(
+  raw: string | null,
+  expectedKinds: readonly string[] = DERIVATIVE_KINDS,
+): InspectionDetail | undefined {
   if (raw === null || raw === '') {
     return undefined;
   }
@@ -79,7 +94,7 @@ export function decodeInspectionDetail(raw: string | null): InspectionDetail | u
     return decodeRejected(record, processorValue);
   }
   if (record['result'] === 'ACCEPTED') {
-    return decodeAccepted(record, processorValue);
+    return decodeAccepted(record, processorValue, expectedKinds);
   }
   return undefined;
 }
@@ -120,9 +135,10 @@ function decodeRejected(
 function decodeAccepted(
   record: Record<string, unknown>,
   processor: ProcessorValue,
+  expectedKinds: readonly string[],
 ): AcceptedInspectionDetail | undefined {
   const source = decodeSource(record['source']);
-  const derivatives = decodeDerivatives(record['derivatives']);
+  const derivatives = decodeDerivatives(record['derivatives'], expectedKinds);
   if (source === undefined || derivatives === undefined) {
     return undefined;
   }
@@ -178,22 +194,33 @@ function decodeSource(value: unknown): InspectedSource | undefined {
   };
 }
 
-function decodeDerivatives(value: unknown): readonly InspectedDerivative[] | undefined {
-  if (!Array.isArray(value) || value.length !== DERIVATIVE_KINDS.length) {
+/**
+ * Exactly one entry per expected kind — no more, no fewer, none repeated.
+ *
+ * The rule is unchanged; only its *subject* is now the lane's kinds rather than
+ * the catalogue's two. For a lane that owns none, the only record it admits is
+ * an empty array: a Session detail carrying a derivative would be describing an
+ * output its lane never wrote.
+ */
+function decodeDerivatives(
+  value: unknown,
+  expectedKinds: readonly string[],
+): readonly InspectedDerivative[] | undefined {
+  if (!Array.isArray(value) || value.length !== expectedKinds.length) {
     return undefined;
   }
   const decoded: InspectedDerivative[] = [];
   for (const entry of value as unknown[]) {
     const derivative = decodeDerivative(entry);
-    if (derivative === undefined) {
+    if (derivative === undefined || !expectedKinds.includes(derivative.kind)) {
       return undefined;
     }
     decoded.push(derivative);
   }
-  // Exactly one entry per canonical kind — a document with two thumbnails and
-  // no preview would otherwise pass the length check.
+  // A document with two thumbnails and no preview would otherwise pass the
+  // length check.
   const kinds = new Set(decoded.map((entry) => entry.kind));
-  return kinds.size === DERIVATIVE_KINDS.length ? decoded : undefined;
+  return kinds.size === expectedKinds.length ? decoded : undefined;
 }
 
 function decodeDerivative(entry: unknown): InspectedDerivative | undefined {

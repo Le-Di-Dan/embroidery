@@ -56,6 +56,7 @@ const config: DesignSessionAuthConfig = {
     authorizationFailure: { max: 10, windowMs: 900_000 },
     creation: { max: 5, windowMs: 3_600_000 },
     creationBurst: { max: 2, windowMs: 60_000 },
+    read: { max: 60, windowMs: 60_000 },
   },
 };
 

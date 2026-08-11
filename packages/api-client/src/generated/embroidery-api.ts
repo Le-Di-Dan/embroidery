@@ -42,6 +42,7 @@ import type {
   HealthStatusResponse,
   PublicDesignSessionAssetCreate202,
   PublicDesignSessionAssetCreateBody,
+  PublicDesignSessionAssetStatus200,
   PublicDesignSessionAutosave200,
   PublicDesignSessionCreate201,
   PublicDesignSessionResume200,
@@ -557,6 +558,21 @@ export const publicDesignSessionAssetGet = (
 };
 
 /**
+ * Reports whether an image this session uploaded is still being processed, is ready to place, or was refused by inspection. Private: the per-session HttpOnly cookie is verified on every request, and the session id alone grants nothing. The asset id is subordinate and grants nothing on its own. An unknown asset, an asset belonging to another session and an asset this session never uploaded are one indistinguishable answer. Only the ready state carries media fields, and those are the measured intrinsic dimensions, media type and size of the editor-safe image — never a storage address, a checksum, a filename or anything about how processing is implemented. Reading changes nothing: no revision advances, no cookie is issued or rotated, and the expiry is not extended. Responses are `no-store`, because what is being reported is a state that changes and an authorisation that can end.
+ * @summary Get the processing state of an image uploaded into a design session
+ */
+export const publicDesignSessionAssetStatus = (
+  sessionId: string,
+  assetId: string,
+  options?: SecondParameter<typeof apiRequest<PublicDesignSessionAssetStatus200>>,
+) => {
+  return apiRequest<PublicDesignSessionAssetStatus200>(
+    { url: `/api/public/design-sessions/${sessionId}/assets/${assetId}/status`, method: 'GET' },
+    options,
+  );
+};
+
+/**
  * Replaces the working document under optimistic concurrency. The caller presents the revision it last read; a mismatch is refused with 409 rather than merged, and the client must refetch before retrying — a save whose outcome is unknown is never replayed blindly. The stored value is the canonical, quantized document, which is what the response returns. Saving never extends the session lifetime and never issues or rotates a cookie.
  * @summary Autosave the design document of an anonymous session
  */
@@ -819,6 +835,9 @@ export type PublicDesignSessionAssetCreateResult = NonNullable<
 >;
 export type PublicDesignSessionAssetGetResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionAssetGet>>
+>;
+export type PublicDesignSessionAssetStatusResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignSessionAssetStatus>>
 >;
 export type PublicDesignSessionAutosaveResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionAutosave>>

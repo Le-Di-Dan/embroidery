@@ -202,6 +202,18 @@ Protect editor and upload services with:
 | Authorized mutations | 30 / minute | session id |
 | Concurrent mutations | 1 in flight | session id |
 
+**The read limit was ruled here and implemented late** (`APP3-S06`, 2026-08-12).
+`APP3-B06C` shipped the first anonymous Session *read* route, looked for a read
+limit in `IMP-D043` PO-07, concluded it defined only four controls, and disclosed
+the absence as `FU-APP3-B06C-READ-RATE-LIMIT-01` rather than inventing a number.
+Declining to invent one was right; the premise was not — PO-07 rules five, and
+the row above is the fifth. The runtime configuration carried four until
+`APP3-S06` added the fifth, charged **before** authorization so it bounds
+probing rather than only successful reads. Worth stating plainly because the
+shape recurs: a control can be locked in this document and absent from the code
+that enforces it, and a checkpoint reading the code alone will conclude the
+ruling does not exist.
+
 **Autosave is the first operation to spend the mutation budget in bulk**
 (`APP3-B08`, 2026-08-08). It replaces the whole working document under a single
 atomic compare-and-set on the session's `autosave_revision`, so a save that

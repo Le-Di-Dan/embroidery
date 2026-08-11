@@ -33,16 +33,27 @@
  * enumeration oracle: it states how often *this caller* has failed, which is
  * equally true for an id that exists and one that does not.
  *
- * **Disclosed limitation.** No positive read-rate limit is applied. `IMP-D043`
- * PO-07 defines exactly four limits — creation, creation burst, mutation and
- * authorization failure — and none of them is a read limit; inventing a number
- * here would be locking a product ruling nobody made. An *authorized* Session
- * probing random Asset ids is therefore bounded only by the 122 bits of a UUIDv4
- * and by every miss being indistinguishable. Recorded as
- * `FU-APP3-B06C-READ-RATE-LIMIT-01` rather than resolved silently.
+ * ## The read limit (`APP3-S06`, closing `FU-APP3-B06C-READ-RATE-LIMIT-01`)
+ *
+ * `APP3-B06C` shipped this guard with **no** positive read limit and said why:
+ * it read `IMP-D043` PO-07 as defining four controls, none of them a read limit,
+ * and refused to invent a number. Refusing was right; the premise was wrong.
+ * PO-07 rules **five**, and the fifth is "bootstrap/resume/read 60/minute per
+ * ephemeral network key" — locked at `APP3-G03` and carried in the security
+ * document's limits table ever since. What was missing was the implementation,
+ * not the decision, and this applies it.
+ *
+ * It is charged **before** authorization, and therefore on every read attempt
+ * rather than only on successful ones. That is the point: what it bounds is a
+ * caller *probing* Asset ids, and a limit spent only on hits would not bound
+ * probing at all. It is a separate dimension from both the mutation counter and
+ * the authorization-failure budget, so a scene referencing several images can
+ * never exhaust a customer's ability to save their work, and a flood of failures
+ * cannot exhaust a legitimate reader's budget.
  *
  * The guard never writes to the database and never issues a cookie; it may only
- * clear one whose credential is now dead.
+ * clear one whose credential is now dead. The limiter's counters are in-memory
+ * security infrastructure, not durable Session state.
  */
 import { Injectable, type CanActivate, type ExecutionContext } from '@nestjs/common';
 
@@ -88,6 +99,13 @@ export class DesignSessionReadGuard implements CanActivate {
 
     const sessionId = request.params?.[DESIGN_SESSION_ID_PARAM] ?? '';
     const networkKey = this.networkKeys.keyFor(request);
+
+    // Before the credential is examined, so probing spends the budget it is
+    // meant to bound. A refusal here is `429` and reveals nothing about whether
+    // the session or the asset exists.
+    if (!this.limiter.checkRead(networkKey).allowed) {
+      throw designSessionRateLimited();
+    }
 
     const outcome = await this.authorization.authorize(request, sessionId);
 

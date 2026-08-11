@@ -889,3 +889,94 @@ $bp-studio-split: 1025px;
     background: transparent;
   }
 }
+
+// ------------------------------------------------- image capability (APP3-S06)
+//
+// Design source: FIG-STUDIO-IMAGE-DESKTOP-UPLOADING (608:343), -NORMALIZING
+// (608:393), -READY (608:441) and -FAILED (608:503), section 10 (596:16).
+//
+// The inspector reuses the accepted text-inspector presentation rather than
+// inventing a second panel language: same surface, same border, same rhythm.
+// At 1024 it is a section inside the one drawer S05-MI01 already established,
+// so it needs no positioning of its own.
+
+.studio-image {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  // Chrome beside the stage, never over it. The stage stays dominant.
+  min-width: 0;
+}
+
+.studio-image__heading {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+// Visually hidden, never absent and never `display: none`. The native picker,
+// the `accept` filter and keyboard activation all come from a real input that
+// is in the layout; a control drawn over an absent one has none of them.
+//
+// `position: absolute` inside a `min-width: 0` column keeps it out of flow
+// without the 1px-clip trick, which some engines still render as a hairline.
+.studio-image__file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.studio-image__choose {
+  // The accepted control tokens, not new ones: the touch-target minimum is the
+  // same one `APP3-S03` bound its handles to, so a second literal here would be
+  // a second answer to how big a control must be.
+  min-height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-caption;
+  cursor: pointer;
+
+  &:disabled {
+    // Disabled while an upload is in flight, and it says why in the status line
+    // beside it — a control that merely greys out reads as broken.
+    cursor: default;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.studio-image__hint,
+.studio-image__status,
+.studio-image__unavailable {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+// Status is never colour alone: this is a sentence, and colour only reinforces
+// what the words already say.
+.studio-image__refusal {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+}
+
+// The placed artwork. No filter, no blend mode and no opacity of its own: the
+// element's `opacity` is applied by the group above it, and anything else here
+// would be a second appearance authority the document never recorded.
+.studio-stage__image {
+  // Pointer events belong to the labelled `<g>` control that wraps it, so a
+  // click on the picture selects the element rather than landing on the image.
+  pointer-events: none;
+}

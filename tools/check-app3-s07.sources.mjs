@@ -13,7 +13,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S07_FILES } from './app3-accepted-surface.mjs';
+import { S06_FILES, S07_FILES } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -142,6 +142,21 @@ export function preS07Code(rootDir) {
   const later = new Set(S07_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
   return collect(join(rootDir, FEATURE), /\.tsx?$/)
     .filter((path) => !later.has(path))
+    .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
+    .join('\n');
+}
+
+/**
+ * The feature minus the files `APP3-S06` introduced, prose stripped.
+ *
+ * The world-aware scope for the Session-media bans: they were written when no
+ * checkpoint owned the image capability, and they keep biting everywhere S06
+ * did not add a file.
+ */
+export function preS06Code(rootDir) {
+  const owned = new Set(S06_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  return collect(join(rootDir, FEATURE), /\.tsx?$/)
+    .filter((path) => !owned.has(path))
     .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
     .join('\n');
 }

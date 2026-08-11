@@ -930,6 +930,44 @@ export interface DesignSessionAssetIntakeResponse {
   sessionRevision: number;
 }
 
+/**
+ * Present only when `READY`. The editor-safe media type, which is what the preview endpoint serves — never the uploaded original’s type.
+ */
+export type DesignSessionAssetStatusResponseMediaType =
+  (typeof DesignSessionAssetStatusResponseMediaType)[keyof typeof DesignSessionAssetStatusResponseMediaType];
+
+export const DesignSessionAssetStatusResponseMediaType = {
+  'image/webp': 'image/webp',
+} as const;
+
+/**
+ * `PROCESSING` while the image is being inspected or normalized, `READY` once an editor-safe image exists, `REJECTED` once inspection has refused the file. `READY` is the only state that carries media fields.
+ */
+export type DesignSessionAssetStatusResponseState =
+  (typeof DesignSessionAssetStatusResponseState)[keyof typeof DesignSessionAssetStatusResponseState];
+
+export const DesignSessionAssetStatusResponseState = {
+  PROCESSING: 'PROCESSING',
+  READY: 'READY',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface DesignSessionAssetStatusResponse {
+  assetId: string;
+  /** Present only when `READY`. The measured size of the editor-safe image. */
+  byteSize?: number;
+  /** Present only when `READY`. The canonical editor-safe derivative to place in the design document. It is an opaque identity, not a storage reference, and grants no access. */
+  derivativeId?: string;
+  /** Present only when `READY`. The measured intrinsic height, in pixels. */
+  heightPx?: number;
+  /** Present only when `READY`. The editor-safe media type, which is what the preview endpoint serves — never the uploaded original’s type. */
+  mediaType?: DesignSessionAssetStatusResponseMediaType;
+  /** `PROCESSING` while the image is being inspected or normalized, `READY` once an editor-safe image exists, `REJECTED` once inspection has refused the file. `READY` is the only state that carries media fields. */
+  state: DesignSessionAssetStatusResponseState;
+  /** Present only when `READY`. The measured intrinsic width of the editor-safe image, in pixels. It is the only authority for the placed element’s intrinsic size. */
+  widthPx?: number;
+}
+
 export interface DesignSessionLineageResponse {
   /** Public Design Template slug. */
   templateSlug: string;
@@ -1653,6 +1691,10 @@ export type PublicDesignSessionAssetCreateBody = {
 
 export type PublicDesignSessionAssetCreate202 = ApiSuccessResponse & {
   data: DesignSessionAssetIntakeResponse;
+};
+
+export type PublicDesignSessionAssetStatus200 = ApiSuccessResponse & {
+  data: DesignSessionAssetStatusResponse;
 };
 
 export type PublicDesignSessionAutosave200 = ApiSuccessResponse & {

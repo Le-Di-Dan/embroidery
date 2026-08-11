@@ -91,6 +91,7 @@ function build(options: {
       lookups.push(lookup);
       return Promise.resolve(options.candidate);
     },
+    findAssetStatus: () => Promise.resolve(undefined),
   };
 
   const storage = {
@@ -221,6 +222,7 @@ describe('APP3-B06C provider contradiction is 503, never 404', () => {
     } as unknown as ObjectStoragePort;
     const repository: DesignSessionAssetDeliveryRepository = {
       findDeliverableCandidate: () => Promise.resolve(candidate()),
+      findAssetStatus: () => Promise.resolve(undefined),
     };
     const service = new DesignSessionAssetDeliveryService(repository, storage);
 
@@ -282,6 +284,7 @@ describe('APP3-B06C session credential', () => {
         authorizationFailure: { max: 10, windowMs: 900_000 },
         creation: { max: 5, windowMs: 3_600_000 },
         creationBurst: { max: 2, windowMs: 60_000 },
+        read: { max: 60, windowMs: 60_000 },
       },
     };
     const verifier = new DesignSessionSecretVerifier(config);
@@ -350,6 +353,7 @@ describe('APP3-B06C session credential', () => {
         authorizationFailure: { max: 1, windowMs: 1 },
         creation: { max: 1, windowMs: 1 },
         creationBurst: { max: 1, windowMs: 1 },
+        read: { max: 60, windowMs: 60_000 },
       },
     }).digest(value);
   }

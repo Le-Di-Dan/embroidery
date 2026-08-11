@@ -20,7 +20,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { acceptedSurface, isB06CDelivered } from './app3-accepted-surface.mjs';
+import { acceptedSurface, isB06CDelivered, isS06Delivered } from './app3-accepted-surface.mjs';
 import {
   checkAuthorization,
   checkEligibility,
@@ -48,6 +48,8 @@ export const CANONICAL_FILES = Object.freeze({
   rootPackage: 'package.json',
   port: `${DESIGN}/domain/repositories/design-session-asset-delivery.repository.ts`,
   adapter: `${DESIGN}/infrastructure/persistence/drizzle-design-session-asset-delivery.repository.ts`,
+  // The grant predicates, split out at `APP3-S06` when a second branch arrived.
+  grant: `${DESIGN}/infrastructure/persistence/design-session-media-grant.sql.ts`,
   service: `${DESIGN}/application/design-session-asset-delivery.service.ts`,
   policy: `${DESIGN}/domain/design-session-asset-delivery.policy.ts`,
   errors: `${DESIGN}/domain/design-session-asset-delivery.errors.ts`,
@@ -134,9 +136,14 @@ export function checkPredecessors(rootDir, fail) {
       fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
     }
   }
-  // `APP3-S06` is the consumer, not part of this checkpoint. A phase document
-  // claiming it has shipped would be B06C implementing its own consumer.
-  if (/\nAPP3-S06 = COMPLETE/.test(phase)) {
+  // `APP3-S06` is the consumer, not part of this checkpoint — a phase document
+  // claiming it had shipped *while B06C was being delivered* would be B06C
+  // implementing its own consumer. Once S06 has legitimately landed, its status
+  // line stops being evidence about this checkpoint, exactly as every other
+  // "the next thing has not started" rule in this repository resolves. What still
+  // proves B06C did not implement the Studio is unchanged and world-independent:
+  // it adds no Storefront file, which `checkNonScope` asserts directly.
+  if (!isS06Delivered(rootDir) && /\nAPP3-S06 = COMPLETE/.test(phase)) {
     fail(`${CANONICAL_FILES.phase}: APP3-S06 is recorded complete; B06C does not implement it`);
   }
 }
@@ -237,12 +244,22 @@ function checkExactlyOneNewOperation(rootDir, document, fail) {
 
   // No generic asset address, however spelled, and no second Session-asset
   // delivery. The shape is what is banned, not one prefix.
+  // `APP3-S06`'s status projection is a public address carrying an `assetId`, and
+  // it is owned — by the checkpoint that had to add it because this route's
+  // deliberate one-404-for-everything cannot report a processing state. It is
+  // excused by name and only once its own checkpoint has landed; the shape ban
+  // is otherwise untouched, so a *generic* asset address still fails here.
+  const owned = new Set([
+    ROUTE,
+    '/api/public/design-templates/{slug}/versions/{version}/assets/{assetId}',
+    ...(isS06Delivered(rootDir)
+      ? ['/api/public/design-sessions/{sessionId}/assets/{assetId}/status']
+      : []),
+  ]);
   for (const path of paths) {
     if (!path.startsWith('/api/public/')) continue;
     if (!/\{[^}]*[Aa]ssetId\}/.test(path)) continue;
-    if (path === ROUTE) continue;
-    if (path === '/api/public/design-templates/{slug}/versions/{version}/assets/{assetId}')
-      continue;
+    if (owned.has(path)) continue;
     fail(`${CANONICAL_FILES.openapi}: "${path}" is a public asset address no checkpoint owns`);
   }
   for (const path of paths) {

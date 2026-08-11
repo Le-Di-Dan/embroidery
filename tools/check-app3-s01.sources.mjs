@@ -12,7 +12,14 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S03_FILES, S05_FILES, S07_FILES, isS05Delivered } from './app3-accepted-surface.mjs';
+import {
+  S03_FILES,
+  S05_FILES,
+  S06_FILES,
+  S07_FILES,
+  isS05Delivered,
+  isS06Delivered,
+} from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -190,9 +197,13 @@ export const S02_DESIGN_ROWS = Object.freeze([
  */
 export function s01FeatureCode(rootDir) {
   const later = new Set(
-    [...S02_FILES, ...S07_FILES, ...S03_FILES, ...(isS05Delivered(rootDir) ? S05_FILES : [])].map(
-      (path) => join(rootDir, FEATURE, ...path.split('/')),
-    ),
+    [
+      ...S02_FILES,
+      ...S07_FILES,
+      ...S03_FILES,
+      ...(isS05Delivered(rootDir) ? S05_FILES : []),
+      ...(isS06Delivered(rootDir) ? S06_FILES : []),
+    ].map((path) => join(rootDir, FEATURE, ...path.split('/'))),
   );
   const files = [
     ...collect(join(rootDir, FEATURE), /\.tsx?$/).filter((path) => !later.has(path)),

@@ -132,6 +132,49 @@ export async function readSourceMetadata(body: Readable): Promise<SourceMetadata
 }
 
 /**
+ * Decodes every pixel and keeps nothing (`APP3-S06`).
+ *
+ * `readSourceMetadata` parses the *header* and decodes nothing, which is the
+ * right first pass — it lets an oversized or wrong-format file be rejected with
+ * a precise code before anything allocates. But it means a file whose header is
+ * perfectly valid and whose pixel data is truncated, corrupt or malformed passes
+ * it: only an actual decode surfaces that, and under `failOn: 'warning'` it
+ * surfaces as an error rather than as a half-grey image.
+ *
+ * Until `APP3-S06` every lane got that decode for free, because generating a
+ * derivative *is* a full decode. The Design Session lane writes no derivative,
+ * so on that lane the free decode disappeared — and a truncated PNG was accepted
+ * by a pipeline that had only ever read its header. That is a weakening of
+ * content inspection, not an acceptable consequence of the lane, so the decode
+ * is made explicit rather than emergent.
+ *
+ * `stats()` is the bounded way to force it: libvips streams the image to compute
+ * per-channel statistics, so every pixel is decoded under the same locked safety
+ * options while nothing larger than libvips' own working set is held. The
+ * statistics themselves are discarded — this function's only output is whether
+ * it threw.
+ */
+export async function verifyFullDecode(body: Readable): Promise<void> {
+  const decoder = sharp(sharpOptions());
+  // Subscribed before the first byte, for the same reason the probe is: an
+  // unobserved `error` on either side of the pipe reaches the process as an
+  // uncaught exception.
+  const pending = decoder.stats();
+  decoder.on('error', () => undefined);
+  body.on('error', (error: Error) => {
+    decoder.destroy(error);
+  });
+  body.pipe(decoder);
+
+  try {
+    await pending;
+  } finally {
+    body.destroy();
+    decoder.destroy();
+  }
+}
+
+/**
  * The output pipeline for one derivative policy.
  *
  * Order matters and is the policy in code:

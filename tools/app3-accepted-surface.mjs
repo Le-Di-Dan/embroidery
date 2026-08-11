@@ -19,6 +19,22 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-S06` — the Studio image capability. A frontend checkpoint that
+    // nevertheless moves the surface, because the accepted design needs a state
+    // the delivery route deliberately cannot report: `APP3-B06C` answers one
+    // indistinguishable 404 for eleven private misses, so it cannot say whether
+    // an upload is still processing, was rejected, or was never this Session's.
+    // One narrow contextual read closes that, and it publishes **one** component
+    // — the status projection — which is where the 84th schema comes from. Both
+    // numbers are measured from the artifact, not predicted.
+    marker: /\nAPP3-S06 = COMPLETE/,
+    paths: 37,
+    operations: 42,
+    schemas: 84,
+    designSessionRoutes: true,
+    designSessionPaths: 6,
+  },
+  {
     // `APP3-B06C` — the one private Design Session asset delivery, `IMP-D044`
     // PO-06 class 3 and the last of the three. One path, one operation and **no
     // schema**: the response is binary and the request has no body, so there is
@@ -218,6 +234,10 @@ const SESSION_PATHS = Object.freeze([
   // paths it had: the slice below is what makes a half-flipped world impossible
   // to express.
   '/api/public/design-sessions/{sessionId}/assets/{assetId}/editor-preview',
+  // `APP3-S06`. Appended last for the same reason: the slice below is what makes
+  // a half-flipped world impossible to express, so a new path may only ever be
+  // added at the end.
+  '/api/public/design-sessions/{sessionId}/assets/{assetId}/status',
 ]);
 
 export function acceptedSessionPaths(rootDir) {

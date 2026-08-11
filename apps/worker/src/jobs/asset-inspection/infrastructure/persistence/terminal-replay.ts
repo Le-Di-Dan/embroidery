@@ -11,7 +11,7 @@
  */
 import type { DerivativeRowState } from '../../domain/repositories/asset-inspection.repository';
 import type { CatalogDerivativeKind } from '../../domain/asset-processing-policy';
-import { DERIVATIVE_KINDS } from '../../domain/asset-processing-policy';
+import { laneDerivativeKinds, type AssetInspectionLane } from '../../domain/asset-inspection-lane';
 import { contradiction } from '../../domain/inspection-contradiction';
 import { decodeInspectionDetail } from '../../domain/inspection-detail.codec';
 import type { InspectionDetail } from '../../domain/inspection-detail';
@@ -27,6 +27,7 @@ export type ExpectedDerivativeKeys = Readonly<Record<CatalogDerivativeKind, stri
 function requireSoleInspection(
   inspections: readonly InspectionRow[],
   outcome: 'ACCEPTED' | 'REJECTED',
+  lane: AssetInspectionLane,
 ): InspectionDetail {
   if (inspections.length === 0) {
     throw contradiction('terminal asset has no inspection');
@@ -38,7 +39,7 @@ function requireSoleInspection(
   if (only === undefined || only.outcome !== outcome) {
     throw contradiction('inspection outcome does not match the asset state');
   }
-  const detail = decodeInspectionDetail(only.detail);
+  const detail = decodeInspectionDetail(only.detail, laneDerivativeKinds(lane));
   if (detail === undefined || detail.result !== outcome) {
     throw contradiction('inspection detail is malformed or of an unsupported schema');
   }
@@ -48,7 +49,7 @@ function requireSoleInspection(
 /** The single non-FAILED row for a kind, or undefined. */
 function rowFor(
   derivatives: readonly DerivativeRowState[],
-  kind: CatalogDerivativeKind,
+  kind: string,
 ): DerivativeRowState | undefined {
   const matches = derivatives.filter((row) => row.kind === kind && row.status !== 'FAILED');
   if (matches.length > 1) {
@@ -60,18 +61,29 @@ function rowFor(
   return matches[0];
 }
 
+/**
+ * Verifies the accepted effect for **this lane's** derivatives.
+ *
+ * Only the lane's own kinds are examined, which is what lets the Session lane —
+ * whose inspection writes no derivative at all — replay correctly. It also has
+ * to ignore other kinds rather than merely tolerate them: by the time a Session
+ * upload's inspection event is redelivered, `APP3-W01A` may already have written
+ * the `NORMALIZED` derivative, and a loop over every row would read that as an
+ * unexpected derivative on an accepted asset and stop a valid replay.
+ */
 export function verifyAcceptedReplay(
   inspections: readonly InspectionRow[],
   derivatives: readonly DerivativeRowState[],
   expectedKeys: ExpectedDerivativeKeys,
+  lane: AssetInspectionLane,
 ): readonly string[] {
-  const detail = requireSoleInspection(inspections, 'ACCEPTED');
+  const detail = requireSoleInspection(inspections, 'ACCEPTED', lane);
   if (detail.result !== 'ACCEPTED') {
     throw contradiction('accepted asset carries a rejected inspection');
   }
 
   const keys: string[] = [];
-  for (const kind of DERIVATIVE_KINDS) {
+  for (const kind of laneDerivativeKinds(lane)) {
     const row = rowFor(derivatives, kind);
     if (row === undefined) {
       throw contradiction('accepted asset is missing a derivative');
@@ -82,7 +94,7 @@ export function verifyAcceptedReplay(
     if (row.isWatermarked) {
       throw contradiction('catalog derivative is marked watermarked');
     }
-    if (row.storageKey !== expectedKeys[kind]) {
+    if (row.storageKey !== expectedKeys[kind as CatalogDerivativeKind]) {
       throw contradiction('derivative storage key is not the deterministic key');
     }
     const recorded = detail.derivatives.find((entry) => entry.kind === kind);
@@ -97,13 +109,18 @@ export function verifyAcceptedReplay(
 export function verifyRejectedReplay(
   inspections: readonly InspectionRow[],
   derivatives: readonly DerivativeRowState[],
+  lane: AssetInspectionLane,
 ): void {
-  requireSoleInspection(inspections, 'REJECTED');
+  requireSoleInspection(inspections, 'REJECTED', lane);
+  const owned = laneDerivativeKinds(lane);
   for (const row of derivatives) {
+    // Unconditional, and deliberately not narrowed to the lane: a READY
+    // derivative of *any* kind is a resolvable reference to media that was
+    // rejected, whoever wrote it.
     if (row.status === 'READY') {
       throw contradiction('rejected asset still exposes a READY derivative');
     }
-    if ((DERIVATIVE_KINDS as readonly string[]).includes(row.kind) && row.status !== 'FAILED') {
+    if (owned.includes(row.kind) && row.status !== 'FAILED') {
       throw contradiction('rejected asset has a derivative that is not FAILED');
     }
   }

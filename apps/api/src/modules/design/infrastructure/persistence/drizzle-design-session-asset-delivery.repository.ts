@@ -10,15 +10,19 @@
  * open windows in which an expiry or a tombstone could commit, and the earlier
  * answers would have proved nothing about the row finally served.
  *
- * ## The association is a join, not a filter
+ * ## The grant is correlated to the Session, not supplied by the caller
  *
- * The Asset is reached **through** `design_session_assets`, and the join carries
- * both halves of the pair. An Asset that was never associated with this Session,
- * or associated with a different one, is therefore *unreachable* rather than
- * fetched and then rejected — there is no ordering of these predicates in which a
- * foreign row is ever a candidate. `session_id` comes from the authorized Session
- * context, so a caller holding Session A's cookie cannot address Session B's
- * uploads no matter what it puts in the path.
+ * The statement starts from the *authorized* Session row and every grant branch
+ * is correlated to it (`design-session-media-grant.sql.ts`). An Asset this
+ * Session neither uploaded nor already places in its own document is therefore
+ * unreachable rather than fetched and then rejected — there is no ordering of
+ * these predicates in which a foreign row is a candidate. `session_id` comes from
+ * the authorized Session context, so a caller holding Session A's cookie cannot
+ * address Session B's media no matter what it puts in the path.
+ *
+ * `APP3-S06` added the second branch. `APP3-B06C` shipped with the upload
+ * association alone, which meant a `CLONE_TEMPLATE` Session could not render the
+ * artwork its own document was created with.
  *
  * ## Session liveness, re-checked
  *
@@ -40,23 +44,23 @@
 import { Injectable } from '@nestjs/common';
 import { schema } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { and, eq, gt, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNotNull, isNull, type SQL } from 'drizzle-orm';
 
 import type {
   DesignSessionAssetDeliveryRepository,
   SessionAssetCandidate,
   SessionAssetLookup,
+  SessionAssetStatus,
 } from '../../domain/repositories/design-session-asset-delivery.repository';
 import {
   EDITOR_SAFE_DERIVATIVE_KIND,
   EDITOR_SAFE_DERIVATIVE_STATE,
   SESSION_ASSET_DELIVERABLE_STATUS,
-  SESSION_INTAKE_ASSET_KIND,
-  SESSION_INTAKE_CLASSIFICATION,
   isDeliverableSessionAssetMediaType,
 } from '../../domain/design-session-asset-delivery.policy';
+import { sessionMediaGrant, uploadGrant } from './design-session-media-grant.sql';
 
-const { designSessions, designSessionAssets, assets, assetDerivatives } = schema;
+const { designSessions, assets, assetDerivatives } = schema;
 
 /** The one Session state that may be read from at all (`IMP-D043`). */
 const LIVE_SESSION_STATE = 'ACTIVE' as const;
@@ -75,33 +79,29 @@ export class DrizzleDesignSessionAssetDeliveryRepository
   ): Promise<SessionAssetCandidate | undefined> {
     const [row] = await this.db
       .select({
+        derivativeId: assetDerivatives.id,
         storageKey: assetDerivatives.storageKey,
         mediaType: assetDerivatives.mediaType,
         widthPx: assetDerivatives.widthPx,
         heightPx: assetDerivatives.heightPx,
         byteSize: assetDerivatives.byteSize,
       })
-      .from(designSessionAssets)
-      // Both halves of the pair are on the association itself, so the very first
-      // relation in the statement already encodes "this Asset belongs to this
-      // Session". Nothing downstream can widen that.
-      .innerJoin(designSessions, eq(designSessions.id, designSessionAssets.sessionId))
-      .innerJoin(assets, eq(assets.id, designSessionAssets.assetId))
+      // The authorized Session is the first relation, so every grant branch
+      // below is correlated to *this* Session and nothing downstream can widen
+      // it.
+      .from(designSessions)
+      .innerJoin(assets, eq(assets.id, lookup.assetId))
       .innerJoin(assetDerivatives, eq(assetDerivatives.assetId, assets.id))
       .where(
         and(
-          eq(designSessionAssets.sessionId, lookup.sessionId),
-          eq(designSessionAssets.assetId, lookup.assetId),
-          // Liveness, in the same snapshot as the association.
+          eq(designSessions.id, lookup.sessionId),
+          // Liveness, in the same snapshot as the grant.
           eq(designSessions.status, LIVE_SESSION_STATE),
           gt(designSessions.expiresAt, lookup.at),
-          // The anonymous upload lane, re-checked rather than trusted from the
-          // intake that created the association: `APP3-B06B` writes exactly this
-          // pair, so anything else on this route is a row no delivered checkpoint
-          // can produce — catalog media, Template artwork and production-sensitive
-          // assets are all excluded by these two comparisons alone.
-          eq(assets.kind, SESSION_INTAKE_ASSET_KIND),
-          eq(assets.classification, SESSION_INTAKE_CLASSIFICATION),
+          // The Session's claim: its own upload, or an image its own persisted
+          // document already places. The upload branch carries the
+          // `CUSTOMER_UPLOAD`/`CUSTOMER_PRIVATE` lane check with it.
+          sessionMediaGrant(),
           // The parent's inspection verdict, asserted independently of the
           // derivative's readiness. A derivative can be written while the Asset is
           // still `INSPECTING` (`APP2-DB01`), so a route that only checked the
@@ -109,32 +109,134 @@ export class DrizzleDesignSessionAssetDeliveryRepository
           // would keep serving one it later `REJECTED`.
           eq(assets.status, SESSION_ASSET_DELIVERABLE_STATUS),
           isNull(assets.deletedAt),
-          // The one editor-safe derivative, in the only serveable state. The
-          // private `ORIGINAL` is not a candidate here and has no branch that
-          // could select it; neither has `THUMBNAIL`, `CATALOG_PREVIEW`,
-          // `PREVIEW_WATERMARKED` or `MOCKUP`.
-          eq(assetDerivatives.kind, EDITOR_SAFE_DERIVATIVE_KIND),
-          eq(assetDerivatives.status, EDITOR_SAFE_DERIVATIVE_STATE),
-          // INV-22: a watermarked artifact is a customer-facing preview, never an
-          // editor-safe asset.
-          eq(assetDerivatives.isWatermarked, false),
-          // `READY` `NORMALIZED` implies the key and the whole quartet by CHECK,
-          // but this path *reads* every one of those values, so it asserts the
-          // facts it depends on instead of trusting a constraint from a distance.
-          isNotNull(assetDerivatives.storageKey),
-          isNotNull(assetDerivatives.mediaType),
-          isNotNull(assetDerivatives.widthPx),
-          isNotNull(assetDerivatives.heightPx),
-          isNotNull(assetDerivatives.byteSize),
+          eligibleDerivative(),
         ),
       )
       .limit(1);
 
     return row === undefined ? undefined : toCandidate(row);
   }
+
+  /**
+   * How far one of this Session's Assets has got (`APP3-S06` §11).
+   *
+   * Scoped to the **upload** grant alone, and that narrowing is deliberate. A
+   * status projection answers "how is the image I just uploaded progressing";
+   * an image a `CLONE_TEMPLATE` Session already places has no progression to
+   * report, because `APP3-B07` proved it a `READY NORMALIZED` derivative through
+   * `validateDesignDocumentContext` before the Session existed. Admitting the
+   * document branch here would let a caller enumerate the processing state of
+   * media through a second, wider door for no capability the Studio needs.
+   *
+   * The derivative is a **left** join: its absence is the answer for an Asset
+   * that has been accepted but not yet normalized, and an inner join would have
+   * collapsed that into the same silent miss as "you do not own this Asset".
+   * Distinguishing those two is the entire reason this operation exists —
+   * `APP3-B06C` correctly refuses to tell them apart, which is why its 404 is not
+   * a status protocol.
+   */
+  async findAssetStatus(lookup: SessionAssetLookup): Promise<SessionAssetStatus | undefined> {
+    const [row] = await this.db
+      .select({
+        assetStatus: assets.status,
+        derivativeId: assetDerivatives.id,
+        mediaType: assetDerivatives.mediaType,
+        widthPx: assetDerivatives.widthPx,
+        heightPx: assetDerivatives.heightPx,
+        byteSize: assetDerivatives.byteSize,
+      })
+      .from(designSessions)
+      .innerJoin(assets, eq(assets.id, lookup.assetId))
+      .leftJoin(
+        assetDerivatives,
+        and(eq(assetDerivatives.assetId, assets.id), eligibleDerivative()),
+      )
+      .where(
+        and(
+          eq(designSessions.id, lookup.sessionId),
+          eq(designSessions.status, LIVE_SESSION_STATE),
+          gt(designSessions.expiresAt, lookup.at),
+          uploadGrant(),
+          isNull(assets.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    return row === undefined ? undefined : toStatus(row);
+  }
+}
+
+/**
+ * The one editor-safe derivative, in the only serveable state.
+ *
+ * Shared by both reads so "eligible" cannot mean two things. The private
+ * `ORIGINAL` is not a candidate and has no branch that could select it; neither
+ * has `THUMBNAIL`, `CATALOG_PREVIEW`, `PREVIEW_WATERMARKED` or `MOCKUP`.
+ *
+ * `READY` `NORMALIZED` implies the key and the whole quartet by CHECK, but these
+ * paths *read* every one of those values, so they assert the facts they depend
+ * on instead of trusting a constraint from a distance.
+ */
+function eligibleDerivative(): SQL {
+  return and(
+    eq(assetDerivatives.kind, EDITOR_SAFE_DERIVATIVE_KIND),
+    eq(assetDerivatives.status, EDITOR_SAFE_DERIVATIVE_STATE),
+    // INV-22: a watermarked artifact is a customer-facing preview, never an
+    // editor-safe asset.
+    eq(assetDerivatives.isWatermarked, false),
+    isNotNull(assetDerivatives.storageKey),
+    isNotNull(assetDerivatives.mediaType),
+    isNotNull(assetDerivatives.widthPx),
+    isNotNull(assetDerivatives.heightPx),
+    isNotNull(assetDerivatives.byteSize),
+  ) as SQL;
+}
+
+interface StatusRow {
+  readonly assetStatus: string;
+  readonly derivativeId: string | null;
+  readonly mediaType: string | null;
+  readonly widthPx: number | null;
+  readonly heightPx: number | null;
+  readonly byteSize: bigint | null;
+}
+
+/**
+ * The Asset's own state, narrowed to what the Studio may be told.
+ *
+ * `READY` requires the *whole* description, not merely a derivative row: a
+ * measurement missing here would become an `APP3-P01` image element built from a
+ * number nobody measured. Anything short of complete is `PROCESSING`, which is
+ * the truthful answer — the derivative is not usable yet — rather than a `READY`
+ * the Studio would act on.
+ *
+ * Only `REJECTED` is terminal-negative. `DELETION_PENDING`/`DELETED` cannot be
+ * reached here because the tombstone predicate excludes them, and `UPLOADED`
+ * cannot survive the intake transaction, so `PROCESSING` is the correct residue.
+ */
+function toStatus(row: StatusRow): SessionAssetStatus {
+  if (row.assetStatus === 'REJECTED') return { state: 'REJECTED' };
+  if (row.assetStatus !== SESSION_ASSET_DELIVERABLE_STATUS) return { state: 'PROCESSING' };
+
+  const { derivativeId, mediaType, widthPx, heightPx, byteSize } = row;
+  if (derivativeId === null || mediaType === null) return { state: 'PROCESSING' };
+  if (widthPx === null || heightPx === null || byteSize === null) return { state: 'PROCESSING' };
+  if (widthPx <= 0 || heightPx <= 0 || byteSize <= 0n) return { state: 'PROCESSING' };
+  if (!isDeliverableSessionAssetMediaType(mediaType)) return { state: 'PROCESSING' };
+  if (byteSize > BigInt(Number.MAX_SAFE_INTEGER)) return { state: 'PROCESSING' };
+
+  return {
+    state: 'READY',
+    derivativeId,
+    widthPx,
+    heightPx,
+    mediaType,
+    byteSize: Number(byteSize),
+  };
 }
 
 interface CandidateRow {
+  readonly derivativeId: string;
   readonly storageKey: string | null;
   readonly mediaType: string | null;
   readonly widthPx: number | null;
