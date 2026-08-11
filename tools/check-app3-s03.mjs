@@ -28,6 +28,7 @@ import {
   acceptedSurface,
   isS03Delivered,
   isS05Delivered,
+  isB06CDelivered,
 } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
@@ -44,6 +45,7 @@ import {
   TABLET_REFERENCE_ROW,
   collect,
   read,
+  featureCode,
 } from './check-app3-s03.sources.mjs';
 import {
   checkChrome,
@@ -106,7 +108,19 @@ export function checkPredecessors(rootDir, fail) {
   // that stays true once S05 implements it for itself. Every other capability
   // is asserted exactly as ruled, and S05 is only excused once its own status
   // block is present — which the S05 gate is what actually checks.
-  const notImplementedByS03 = ['APP3-S11', 'APP3-S04', 'APP3-B06C'];
+  const notImplementedByS03 = [
+    'APP3-S11',
+    'APP3-S04',
+    ...(isB06CDelivered(rootDir) ? [] : ['APP3-B06C']),
+  ];
+  // `APP3-B06C` has shipped, so its status line is no longer evidence about this
+  // checkpoint — the same reasoning the S03 exclusion above already applies. What
+  // replaces it is stronger and world-independent: S03 must not *call* the
+  // delivery operation, whichever checkpoints exist around it.
+  if (/publicDesignSessionAssetGet|editor-preview/.test(featureCode(rootDir))) {
+    fail(`${CANONICAL_FILES.phase}: S03 source reaches the APP3-B06C delivery operation`);
+  }
+
   if (!isS05Delivered(rootDir)) notImplementedByS03.push('APP3-S05');
   for (const later of notImplementedByS03) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {

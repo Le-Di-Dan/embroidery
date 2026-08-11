@@ -34,6 +34,15 @@ const CONTROLLER_SUFFIX = /Controller$/;
 export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   AdminDesignTemplateAuthoringController: 'adminDesignTemplate',
   AdminDesignTemplateLifecycleController: 'adminDesignTemplate',
+  // `APP3-B06C`. The Session asset domain is served by two classes because upload
+  // and delivery are a mutation and a safe read with different guards, and
+  // because one file carrying both crossed the CLAUDE.md §6 review threshold.
+  // They remain one published domain: `publicDesignSessionAsset_create` and
+  // `publicDesignSessionAsset_get`. Without this entry the delivery class would
+  // mint `publicDesignSessionAssetPreview_get`, letting a file-layout decision
+  // name a public identifier.
+  PublicDesignSessionAssetController: 'publicDesignSessionAsset',
+  PublicDesignSessionAssetPreviewController: 'publicDesignSessionAsset',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

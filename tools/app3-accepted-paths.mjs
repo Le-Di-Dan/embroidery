@@ -597,6 +597,21 @@ export function isB06BDelivered(rootDir) {
   return /\nAPP3-B06B = COMPLETE/.test(phase);
 }
 
+/**
+ * True once `APP3-B06C` has published the private Session asset delivery.
+ *
+ * The third and last `IMP-D044` PO-06 delivery class. Several gates freeze a
+ * "current surface" that this route legitimately enlarges, and one — `APP3-B05A`
+ * — carries a rule that no path may serve an asset outside a Template context.
+ * That rule was true of every path in existence when it was written; it is a
+ * statement about B05A's own surface, and this makes it one again.
+ */
+export function isB06CDelivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-B06C = COMPLETE/.test(phase);
+}
+
 /** True once `APP3-P04` has published the shared Session response contract. */
 export function isP04Delivered(rootDir) {
   const path = join(rootDir, PHASE);

@@ -39,6 +39,11 @@ import { AutosaveDesignSessionUseCase } from './application/autosave-design-sess
 import { SessionDocumentMediaAuthority } from './application/session-document-media.authority';
 import { SessionPlacementResolver } from './application/session-placement.authority';
 import { PublicDesignSessionAssetController } from './presentation/public-design-session-asset.controller';
+import { DESIGN_SESSION_ASSET_DELIVERY_REPOSITORY } from './domain/repositories/design-session-asset-delivery.repository';
+import { DrizzleDesignSessionAssetDeliveryRepository } from './infrastructure/persistence/drizzle-design-session-asset-delivery.repository';
+import { DesignSessionAssetDeliveryService } from './application/design-session-asset-delivery.service';
+import { DesignSessionReadGuard } from './presentation/guards/design-session-read.guard';
+import { PublicDesignSessionAssetPreviewController } from './presentation/public-design-session-asset-preview.controller';
 
 /**
  * CTX-DSN — design templates, sessions, cases, versions and approval
@@ -98,8 +103,25 @@ import { PublicDesignSessionAssetController } from './presentation/public-design
     SessionPlacementResolver,
     SessionDocumentMediaAuthority,
     AutosaveDesignSessionUseCase,
+    // `APP3-B06C` — private Session asset delivery, `IMP-D044` PO-06 class 3.
+    // The delivery repository is a **read-only port** with one method: this route
+    // resolves through it and never through `DESIGN_SESSION_REPOSITORY`, so no
+    // write on that repository is reachable from the GET at all. The read guard
+    // is composed from the `APP3-B06A` primitives already provided above and adds
+    // no new dependency; the storage port and `AssetModule` were already imported
+    // for `APP3-B06B`.
+    {
+      provide: DESIGN_SESSION_ASSET_DELIVERY_REPOSITORY,
+      useClass: DrizzleDesignSessionAssetDeliveryRepository,
+    },
+    DesignSessionAssetDeliveryService,
+    DesignSessionReadGuard,
   ],
-  controllers: [PublicDesignSessionController, PublicDesignSessionAssetController],
+  controllers: [
+    PublicDesignSessionController,
+    PublicDesignSessionAssetController,
+    PublicDesignSessionAssetPreviewController,
+  ],
   exports: [
     DESIGN_CASE_REPOSITORY,
     APPROVAL_SNAPSHOT_REPOSITORY,

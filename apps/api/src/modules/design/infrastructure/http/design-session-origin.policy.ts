@@ -51,6 +51,35 @@ export class DesignSessionOriginPolicy {
       : 'REFUSED';
   }
 
+  /**
+   * The policy for a **safe** request — a GET that changes nothing
+   * (`APP3-B06C`).
+   *
+   * Deliberately not `evaluate`. The rules above exist because a `SameSite=Lax`
+   * cookie accompanies a top-level cross-site POST, and that reasoning is about
+   * *mutation*: applying it to a GET would refuse the one thing the delivery
+   * route exists for. A browser sends **no** `Origin` on a same-origin image
+   * load, so requiring one would mean no `<img>` could ever display a customer's
+   * own upload, and `Sec-Fetch-*` is withheld entirely on a non-trustworthy
+   * origin, so requiring it would break plain-HTTP development.
+   *
+   * What is left is a single, purely additive check: an explicit
+   * `Sec-Fetch-Site: cross-site` is refused. That value is set by the browser and
+   * not by page script, so it cannot be forged from a page. It costs nothing —
+   * a `SameSite=Lax` cookie is not sent on a cross-site subresource load at all,
+   * so such a request could never have authorized anyway — and it means a
+   * cross-site attempt is refused before a cookie is read rather than after.
+   *
+   * An absent header is allowed, and that is not a "missing means fine" branch of
+   * the kind `evaluate` refuses: here the credential itself is doing the work,
+   * and the header is a second signal that may legitimately not exist.
+   */
+  evaluateSafeRead(request: OriginReadableRequest): OriginDecision {
+    const raw = request.headers['sec-fetch-site'];
+    if (typeof raw !== 'string') return 'ALLOWED';
+    return raw.trim().toLowerCase() === 'cross-site' ? 'REFUSED' : 'ALLOWED';
+  }
+
   private hasAllowedOrigin(request: OriginReadableRequest): boolean {
     const raw = request.headers['origin'];
     if (typeof raw !== 'string' || raw === '') {

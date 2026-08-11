@@ -13,6 +13,7 @@
  * needs. Nothing here touches the development stack or its database.
  */
 import { randomBytes } from 'node:crypto';
+import { Readable } from 'node:stream';
 
 import { sql } from '@embroidery/database';
 import type { ObjectStoragePort } from '@embroidery/object-storage';
@@ -30,6 +31,9 @@ import { minioEnv, startDisposableMinio, type DisposableMinio } from './disposab
 /** Every seeded session gets its own secret: `session_secret_hash` is UNIQUE. */
 const SESSION_COOKIE_PREFIX = '__Host-nettheu_ds_';
 
+/** Editor-safe derivatives live here. Private originals are never served. */
+const DERIVATIVES_BUCKET = 'DERIVATIVES' as const;
+
 export interface SessionAssetTestContext {
   readonly api: ApiIntegrationTestContext;
   readonly minio: DisposableMinio;
@@ -41,13 +45,61 @@ export interface SessionAssetTestContext {
   seedSession(options?: SeedSessionOptions): Promise<string>;
   /** The `Cookie` header proving ownership of a seeded session. */
   cookieFor(sessionId: string, secret?: string): string;
+  /** Seeds one already-normalized upload owned by `sessionId` (`APP3-B06C`). */
+  seedUpload(sessionId: string, options?: SeedUploadOptions): Promise<SeededUpload>;
+  /** Deletes a derivative object, leaving its row behind. */
+  removeObject(storageKey: string): Promise<void>;
   close(): Promise<void>;
+}
+
+/** The delivery address of one Session-owned upload. */
+export function editorPreviewPath(sessionId: string, assetId: string): string {
+  return `/api/public/design-sessions/${sessionId}/assets/${assetId}/editor-preview`;
 }
 
 export interface SeedSessionOptions {
   readonly secret?: string;
   readonly status?: string;
   readonly expiresIn?: string;
+}
+
+/**
+ * How an already-normalized Session upload should be seeded (`APP3-B06C`).
+ *
+ * Every field defaults to the shape `APP3-B06B` + `APP3-W01A` actually produce —
+ * a `CUSTOMER_UPLOAD`/`CUSTOMER_PRIVATE` asset that inspection accepted, with one
+ * `READY`, unwatermarked `NORMALIZED` derivative carrying the whole `APP3-DB01`
+ * quartet. Each override exists so a delivery test can break exactly one term and
+ * watch the answer stay the same, which is the only way to prove the misses are
+ * indistinguishable.
+ */
+export interface SeedUploadOptions {
+  readonly bytes?: Buffer;
+  readonly assetKind?: string;
+  readonly classification?: string;
+  readonly assetStatus?: string;
+  readonly deleted?: boolean;
+  readonly derivativeKind?: string | null;
+  readonly derivativeStatus?: string;
+  readonly watermarked?: boolean;
+  readonly mediaType?: string;
+  /** Drops the quartet, leaving a row that is `READY` but not fully described. */
+  readonly incompleteQuartet?: boolean;
+  /** Records a size the object will not have, to force the reconciliation refusal. */
+  readonly recordedByteSize?: number;
+  /** Skips the association row entirely. */
+  readonly associate?: boolean;
+  /** Associates with this session instead of the one being seeded against. */
+  readonly associateWith?: string;
+  /** Skips writing the object, leaving an authorized descriptor with no bytes. */
+  readonly writeObject?: boolean;
+}
+
+export interface SeededUpload {
+  readonly assetId: string;
+  readonly storageKey: string;
+  readonly bytes: Buffer;
+  readonly path: string;
 }
 
 export async function createSessionAssetContext(label: string): Promise<SessionAssetTestContext> {
@@ -93,6 +145,10 @@ export async function createSessionAssetContext(label: string): Promise<SessionA
     },
     cookieFor: (sessionId: string, secret?: string): string =>
       `${SESSION_COOKIE_PREFIX}${sessionId}=${secret ?? secrets.get(sessionId) ?? 'unknown'}`,
+    seedUpload: (sessionId: string, options: SeedUploadOptions = {}) =>
+      seedUpload(exec, storage, sessionId, options),
+    removeObject: (storageKey: string) =>
+      storage.deleteObject({ bucket: DERIVATIVES_BUCKET, key: storageKey }),
     close: async () => {
       await api.close();
       await minio.stop();
@@ -154,6 +210,69 @@ async function seedChain(
                 ${ids.side}, ${ids.area}, '{}'::jsonb, 1, 0, ${options.status ?? 'ACTIVE'},
                 now() + cast(${options.expiresIn ?? '30 days'} as interval), now())`);
   return ids.session;
+}
+
+/**
+ * Seeds one Session upload in the state `APP3-B06B` + `APP3-W01A` leave behind.
+ *
+ * Direct SQL for the same reason `seedChain` uses it: this is *setup* for a
+ * delivery test, and routing it through the intake service and the worker would
+ * make a failure in either read as a delivery failure. The shape is pinned to
+ * what those two really produce, and the accepted intake suite is what proves
+ * they produce it.
+ *
+ * The object is written last, so a fixture that skips it leaves a fully
+ * authorized descriptor pointing at nothing — which is exactly the provider
+ * contradiction the 503 taxonomy exists for.
+ */
+async function seedUpload(
+  exec: (statement: ReturnType<typeof sql>) => Promise<unknown>,
+  storage: ObjectStoragePort,
+  sessionId: string,
+  options: SeedUploadOptions,
+): Promise<SeededUpload> {
+  const assetId = crypto.randomUUID();
+  const bytes = options.bytes ?? Buffer.from(`SESSION-UPLOAD-${assetId}-`.repeat(24), 'utf8');
+  const storageKey = `development/derivatives/${assetId}/NORMALIZED.webp`;
+  const mediaType = options.mediaType ?? 'image/webp';
+
+  await exec(sql`insert into assets (id, kind, classification, storage_key, mime_type, size_bytes,
+                                     status, deleted_at)
+        values (${assetId}, ${options.assetKind ?? 'CUSTOMER_UPLOAD'},
+                ${options.classification ?? 'CUSTOMER_PRIVATE'},
+                ${`sessions/${assetId}/original.png`}, 'image/png', ${bytes.length},
+                ${options.assetStatus ?? 'ACCEPTED'},
+                ${options.deleted === true ? sql`now()` : null})`);
+
+  if (options.associate !== false) {
+    await exec(sql`insert into design_session_assets (id, session_id, asset_id)
+          values (${crypto.randomUUID()}, ${options.associateWith ?? sessionId}, ${assetId})`);
+  }
+
+  if (options.derivativeKind !== null) {
+    const complete = options.incompleteQuartet !== true;
+    await exec(sql`insert into asset_derivatives (id, asset_id, kind, status, storage_key,
+                                                  is_watermarked, width_px, height_px, media_type,
+                                                  byte_size)
+          values (${crypto.randomUUID()}, ${assetId}, ${options.derivativeKind ?? 'NORMALIZED'},
+                  ${options.derivativeStatus ?? 'READY'}, ${storageKey},
+                  ${options.watermarked ?? false},
+                  ${complete ? 800 : null}, ${complete ? 600 : null},
+                  ${complete ? mediaType : null},
+                  ${complete ? (options.recordedByteSize ?? bytes.length) : null})`);
+  }
+
+  if (options.writeObject !== false) {
+    await storage.putObjectStream({
+      bucket: DERIVATIVES_BUCKET,
+      key: storageKey,
+      body: Readable.from([bytes]),
+      contentType: mediaType,
+      contentLengthBytes: bytes.length,
+    });
+  }
+
+  return { assetId, storageKey, bytes, path: editorPreviewPath(sessionId, assetId) };
 }
 
 export { DESIGN_SESSION_TEST_ORIGIN };

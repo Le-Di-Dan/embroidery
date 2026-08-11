@@ -19,6 +19,20 @@ const PHASE = 'docs/implementation/phases/APP3-DESIGN-TEMPLATES-AND-STUDIO.md';
 /** Surfaces in delivery order. The last one the phase records complete wins. */
 const SURFACES = Object.freeze([
   {
+    // `APP3-B06C` — the one private Design Session asset delivery, `IMP-D044`
+    // PO-06 class 3 and the last of the three. One path, one operation and **no
+    // schema**: the response is binary and the request has no body, so there is
+    // no component to publish. 83 is measured from the artifact, not assumed
+    // unchanged — the count happening to match `APP3-B05A`'s is a fact about
+    // this checkpoint publishing no component, not an assumption carried over.
+    marker: /\nAPP3-B06C = COMPLETE/,
+    paths: 36,
+    operations: 41,
+    schemas: 83,
+    designSessionRoutes: true,
+    designSessionPaths: 5,
+  },
+  {
     // `APP3-B05A` — the one anonymous public Template asset delivery. One path,
     // one operation and **no schema**: the response is binary and the request has
     // no body, so there is no component to publish. The count is measured from
@@ -200,6 +214,10 @@ const SESSION_PATHS = Object.freeze([
   '/api/public/design-sessions/{sessionId}/resume',
   '/api/public/design-sessions/{sessionId}/assets',
   '/api/public/design-sessions/{sessionId}/document',
+  // `APP3-B06C`. Last in delivery order, so every earlier world keeps exactly the
+  // paths it had: the slice below is what makes a half-flipped world impossible
+  // to express.
+  '/api/public/design-sessions/{sessionId}/assets/{assetId}/editor-preview',
 ]);
 
 export function acceptedSessionPaths(rootDir) {

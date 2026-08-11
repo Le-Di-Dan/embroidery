@@ -33,6 +33,7 @@ import {
   isS03Delivered,
   isS05Delivered,
   isS07Delivered,
+  isB06CDelivered,
 } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
@@ -48,6 +49,7 @@ import {
   TABLET_REFERENCE_ROW,
   collect,
   read,
+  featureCode,
 } from './check-app3-s02.sources.mjs';
 import {
   checkDependencies,
@@ -106,7 +108,18 @@ export function checkPredecessors(rootDir, fail) {
   // being evidence about this one. What still proves S02 did not implement
   // transforms is its own runtime half: the pointer gestures are refused in
   // every file S02 owns.
-  const later = ['APP3-B06C', ...(isS03Delivered(rootDir) ? [] : ['APP3-S03'])];
+  const later = [
+    ...(isB06CDelivered(rootDir) ? [] : ['APP3-B06C']),
+    ...(isS03Delivered(rootDir) ? [] : ['APP3-S03']),
+  ];
+  // `APP3-B06C` has shipped, so its status line is no longer evidence about this
+  // checkpoint — the same reasoning the S03 exclusion above already applies. What
+  // replaces it is stronger and world-independent: S02 must not *call* the
+  // delivery operation, whichever checkpoints exist around it.
+  if (/publicDesignSessionAssetGet|editor-preview/.test(featureCode(rootDir))) {
+    fail(`${CANONICAL_FILES.phase}: S02 source reaches the APP3-B06C delivery operation`);
+  }
+
   for (const id of later) {
     if (new RegExp(`\\n${id} = COMPLETE`).test(phase)) {
       fail(`${CANONICAL_FILES.phase}: ${id} is recorded complete; S02 does not implement it`);

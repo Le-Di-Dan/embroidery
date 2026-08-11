@@ -8313,6 +8313,233 @@
         ]
       }
     },
+    "/api/public/design-sessions/{sessionId}/assets/{assetId}/editor-preview": {
+      "get": {
+        "description": "Streams the normalized, editor-safe bytes of an image this session uploaded. Private: the per-session HttpOnly cookie is verified on every request, and the session id alone grants nothing. The asset id is subordinate and grants nothing on its own — there is no address that serves an asset outside the session that authorises it, and a cookie for one session can never read another session’s upload. The association, the session liveness, the upload lane, the inspection verdict and the derivative are all re-checked on every request, so an expired session or a withdrawn image stops delivering immediately even for a caller that already knows the address. The uploaded original is never served and there is no parameter that could ask for it. Reading never changes the session: no revision advances, no cookie is issued or rotated, and the expiry is not extended. Responses are never cached — the bytes are immutable but the authorisation around them is not.",
+        "operationId": "publicDesignSessionAsset_get",
+        "parameters": [
+          {
+            "description": "An opaque asset identity uploaded by that session. It is not a storage reference and grants no access on its own.",
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Public Design Session identifier. It selects the cookie that must accompany the request; it is not itself a credential.",
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The editor-safe image: the normalized derivative the asset pipeline produced. Original uploads are never served.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Always `no-store`. The bytes are immutable but the session authorising them is not.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed session or asset id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The session could not be authorized.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "A cross-site request. No cookie is read.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No image is available at this address for this session. Returned identically for an unknown asset, an asset belonging to another session, a missing association, an asset outside the customer-private upload lane, a tombstoned one, one still being inspected, one that inspection rejected, and a derivative that is absent, unready, watermarked or incompletely described.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many failed attempts.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Image storage is temporarily unavailable, or the stored object contradicts the recorded derivative.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get the editor-safe preview of an image uploaded into a design session",
+        "tags": [
+          "publicDesignSessionAsset"
+        ]
+      }
+    },
     "/api/public/design-sessions/{sessionId}/document": {
       "put": {
         "description": "Replaces the working document under optimistic concurrency. The caller presents the revision it last read; a mismatch is refused with 409 rather than merged, and the client must refetch before retrying — a save whose outcome is unknown is never replayed blindly. The stored value is the canonical, quantized document, which is what the response returns. Saving never extends the session lifetime and never issues or rotates a cookie.",

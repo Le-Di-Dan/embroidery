@@ -34,6 +34,10 @@ import { ApiOperation, ApiParam, ApiProduces, ApiResponse, ApiTags } from '@nest
 import type { IncomingMessage } from 'node:http';
 
 import { ENVELOPE_SCHEMA_NAMES } from '../../../openapi/envelope-schema.augmentation';
+import {
+  watchClientDisconnect,
+  type HeaderSettableResponse,
+} from '../../../platform/http-response/client-disconnect';
 import { PublicDesignTemplateAssetService } from '../application/public-design-template-asset.service';
 import {
   PUBLIC_TEMPLATE_ASSET_CACHE_CONTROL,
@@ -56,12 +60,6 @@ const BINARY_CONTENT = Object.fromEntries(
     { schema: { type: 'string', format: 'binary' } },
   ]),
 );
-
-/** Structural types: the controller sets headers without importing Express. */
-interface HeaderSettableResponse {
-  setHeader(name: string, value: string): unknown;
-  readonly writableEnded: boolean;
-}
 
 @ApiTags('publicDesignTemplateAsset')
 @Controller('public/design-templates')
@@ -185,24 +183,4 @@ export class PublicDesignTemplateAssetController {
       length: stream.contentLengthBytes,
     });
   }
-}
-
-/**
- * An `AbortController` tied to the client's connection.
- *
- * The guard on `writableEnded` is what makes this correct rather than noisy:
- * `close` fires on every request, including the ones that completed normally, and
- * aborting after a finished response would report healthy traffic as cancelled.
- */
-function watchClientDisconnect(
-  request: IncomingMessage,
-  response: HeaderSettableResponse,
-): AbortController {
-  const controller = new AbortController();
-  request.once('close', () => {
-    if (!response.writableEnded) {
-      controller.abort();
-    }
-  });
-  return controller;
 }

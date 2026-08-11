@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import {
   B05A_STATUS_LINES,
   acceptedSurface,
+  isB06CDelivered,
   isS01Delivered,
   publicTemplateAssetPath,
   publicTemplatePaths,
@@ -57,6 +58,16 @@ const DESIGN = 'apps/api/src/modules/design';
 
 /** The one operation this checkpoint publishes, and its address. */
 export const ROUTE = publicTemplateAssetPath();
+
+/**
+ * The one Session-credentialed asset address `APP3-B06C` owns.
+ *
+ * Written out rather than derived from the surface list: this gate's job is to
+ * refuse everything it does not recognise, and deriving the exception from the
+ * same registry the artifact is measured against would let a future edit widen
+ * the ban and the exception together.
+ */
+const B06C_ROUTE = '/api/public/design-sessions/{sessionId}/assets/{assetId}/editor-preview';
 export const OPERATION_ID = 'publicDesignTemplateAsset_get';
 
 export const CANONICAL_FILES = Object.freeze({
@@ -239,7 +250,7 @@ export function checkSurface(rootDir, fail) {
     fail(`${CANONICAL_FILES.openapi}: ${ROUTE} does not answer with a binary body`);
   }
 
-  checkNoGenericAssetApi(document, fail);
+  checkNoGenericAssetApi(document, fail, isB06CDelivered(rootDir));
 
   const client = read(rootDir, 'client') ?? '';
   if (!client.includes('publicDesignTemplateAssetGet')) {
@@ -254,7 +265,7 @@ export function checkSurface(rootDir, fail) {
  * route whose asset segment is not preceded by both a template and a version
  * segment is the generic access this checkpoint exists to refuse.
  */
-function checkNoGenericAssetApi(document, fail) {
+function checkNoGenericAssetApi(document, fail, b06cDelivered) {
   for (const route of Object.keys(document.paths ?? {})) {
     // **Public** only. `APP2` publishes authenticated Admin asset operations by
     // id, and they are a different surface under a different authorization — a
@@ -266,8 +277,13 @@ function checkNoGenericAssetApi(document, fail) {
     // the ban is about what the address *is*, not what it is called.
     if (!/\{[^}]*[Aa]ssetId\}/.test(route)) continue;
     if (route === ROUTE) continue;
-    // `APP3-B06C` will own Session asset delivery under a Session credential; it
-    // is neither published nor B05A's, and this gate refuses it here too.
+    // `APP3-B06C` owns Session asset delivery under a Session credential. Until
+    // it was delivered this gate refused that route too, and correctly — an
+    // unpublished route appearing on the surface is exactly what the ban is for.
+    // Now that it exists, the world is enlarged by **naming its one address**
+    // rather than by loosening the shape: any *other* Session-shaped asset route,
+    // and any route B06C might have grown a second of, still fails here.
+    if (b06cDelivered && route === B06C_ROUTE) continue;
     fail(`${CANONICAL_FILES.openapi}: "${route}" serves an asset outside APP3-B05A's context`);
   }
   for (const route of Object.keys(document.paths ?? {})) {

@@ -33,6 +33,7 @@ import {
   isS03Delivered,
   isS05Delivered,
   isS07Delivered,
+  isB06CDelivered,
 } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
@@ -48,6 +49,7 @@ import {
   TABLET_REFERENCE_ROW,
   collect,
   read,
+  featureCode,
 } from './check-app3-s07.sources.mjs';
 import {
   checkNonScope,
@@ -98,7 +100,19 @@ export function checkPredecessors(rootDir, fail) {
   // Once a later checkpoint has legitimately shipped, its status line stops
   // being evidence about this one. S11 stays listed: it needs S03 *and* S07,
   // so S03 delivering does not make it ready.
-  const later = ['APP3-S11', 'APP3-B06C', ...(isS03Delivered(rootDir) ? [] : ['APP3-S03'])];
+  const later = [
+    'APP3-S11',
+    ...(isB06CDelivered(rootDir) ? [] : ['APP3-B06C']),
+    ...(isS03Delivered(rootDir) ? [] : ['APP3-S03']),
+  ];
+  // `APP3-B06C` has shipped, so its status line is no longer evidence about this
+  // checkpoint — the same reasoning the S03 exclusion above already applies. What
+  // replaces it is stronger and world-independent: S07 must not *call* the
+  // delivery operation, whichever checkpoints exist around it.
+  if (/publicDesignSessionAssetGet|editor-preview/.test(featureCode(rootDir))) {
+    fail(`${CANONICAL_FILES.phase}: S07 source reaches the APP3-B06C delivery operation`);
+  }
+
   for (const id of later) {
     if (new RegExp(`\\n${id} = COMPLETE`).test(phase)) {
       fail(`${CANONICAL_FILES.phase}: ${id} is recorded complete; S07 does not implement it`);

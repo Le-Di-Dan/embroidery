@@ -538,6 +538,25 @@ export const publicDesignSessionAssetCreate = (
 };
 
 /**
+ * Streams the normalized, editor-safe bytes of an image this session uploaded. Private: the per-session HttpOnly cookie is verified on every request, and the session id alone grants nothing. The asset id is subordinate and grants nothing on its own — there is no address that serves an asset outside the session that authorises it, and a cookie for one session can never read another session’s upload. The association, the session liveness, the upload lane, the inspection verdict and the derivative are all re-checked on every request, so an expired session or a withdrawn image stops delivering immediately even for a caller that already knows the address. The uploaded original is never served and there is no parameter that could ask for it. Reading never changes the session: no revision advances, no cookie is issued or rotated, and the expiry is not extended. Responses are never cached — the bytes are immutable but the authorisation around them is not.
+ * @summary Get the editor-safe preview of an image uploaded into a design session
+ */
+export const publicDesignSessionAssetGet = (
+  sessionId: string,
+  assetId: string,
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/public/design-sessions/${sessionId}/assets/${assetId}/editor-preview`,
+      method: 'GET',
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Replaces the working document under optimistic concurrency. The caller presents the revision it last read; a mismatch is refused with 409 rather than merged, and the client must refetch before retrying — a save whose outcome is unknown is never replayed blindly. The stored value is the canonical, quantized document, which is what the response returns. Saving never extends the session lifetime and never issues or rotates a cookie.
  * @summary Autosave the design document of an anonymous session
  */
@@ -797,6 +816,9 @@ export type PublicDesignSessionCreateResult = NonNullable<
 >;
 export type PublicDesignSessionAssetCreateResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionAssetCreate>>
+>;
+export type PublicDesignSessionAssetGetResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignSessionAssetGet>>
 >;
 export type PublicDesignSessionAutosaveResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionAutosave>>
