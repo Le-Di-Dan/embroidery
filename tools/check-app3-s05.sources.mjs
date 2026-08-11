@@ -52,6 +52,9 @@ export const CANONICAL_FILES = Object.freeze({
   scene: `${FEATURE}/renderer/studio-scene.ts`,
   stageElement: `${FEATURE}/components/studio-stage-element.tsx`,
   stageScreen: `${FEATURE}/components/studio-stage-screen.tsx`,
+  // `APP3-S07`'s persistent control strip below the stage. Named so the gate can
+  // assert what it must *not* acquire.
+  stageControls: `${FEATURE}/components/studio-stage-controls.tsx`,
 });
 
 export const MIGRATIONS = 'packages/database/migrations';

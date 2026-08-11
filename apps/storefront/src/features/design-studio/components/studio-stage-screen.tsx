@@ -190,12 +190,32 @@ export function StudioStageScreen({
   const transformable =
     selected !== undefined && selected.visible && !selected.element.locked ? selected : undefined;
 
+  // One set of inspector inputs, read by both slots. The two mounts differ only
+  // in where they sit in the frame; giving each its own prop list would let the
+  // topbar and the body drift apart on what they are editing.
+  const textPanel = {
+    commit: commitDocument,
+    document: sceneDocument,
+    elementId: selectedElementId,
+    limits: areaLimits,
+    scope,
+  };
+
   return (
     <div className="studio-stage">
       <StudioSessionPanel isResuming={isResuming} onResume={onResume} snapshot={snapshot} />
 
       {result.ok ? (
         <section className="studio-stage__frame" aria-label={STUDIO_STAGE_COPY.stageLabel}>
+          {/*
+            The Studio topbar (`APP3-S05-MI01`): a control region above the
+            stage, which is where `APP3-D01-C1` puts the tablet inspector's
+            toggle. It is a real first child rather than a reordered later one,
+            so the keyboard reaches it in the order the eye does. Only the
+            tablet composition puts anything here.
+          */}
+          <StudioTextPanel slot="topbar" {...textPanel} />
+
           <StudioStageBackgroundNotice background={background} hasScope={scope !== null} />
 
           {/*
@@ -242,15 +262,10 @@ export function StudioStageScreen({
             Mounted through the panel (`APP3-S05-C1`), which decides where the
             inspector belongs on this viewport: beside the stage at 1440, in the
             `618:140` right drawer at 1024, and nowhere at 390 — mobile text
-            editing is `APP3-S11`'s.
+            editing is `APP3-S11`'s. The tablet composition renders in the
+            topbar slot above instead, so this one is empty there.
           */}
-          <StudioTextPanel
-            commit={commitDocument}
-            document={sceneDocument}
-            elementId={selectedElementId}
-            limits={areaLimits}
-            scope={scope}
-          />
+          <StudioTextPanel slot="body" {...textPanel} />
 
           {result.scene.elements.length === 0 ? (
             <p className="studio-stage__empty" data-testid="studio-stage-empty" role="status">

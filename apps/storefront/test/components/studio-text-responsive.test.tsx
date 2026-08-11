@@ -234,6 +234,72 @@ describe('1024 is the accepted right drawer (APP3-S05-C1 §3, FIG-STUDIO-EDITING
   });
 });
 
+describe('the tablet trigger lives in the Studio topbar (APP3-S05-MI01 §1)', () => {
+  it('renders a topbar above the stage, and puts the trigger inside it', () => {
+    const { container } = renderStage(TABLET);
+    select('t');
+
+    const topbar = screen.getByTestId('studio-stage-topbar');
+    const trigger = screen.getByTestId('studio-text-drawer-trigger');
+    expect(topbar).toContainElement(trigger);
+
+    // Above the stage in the document, not merely painted above it. `order`
+    // would satisfy the eye and leave the keyboard reaching the control last.
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+    expect(
+      topbar.compareDocumentPosition(svg as SVGElement) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('leaves the APP3-S07 control strip below the stage exactly as it was', () => {
+    const { container } = renderStage(TABLET);
+    select('t');
+
+    const strip = screen.getByTestId('studio-stage-controls');
+    expect(strip).not.toContainElement(screen.getByTestId('studio-text-drawer-trigger'));
+    // And the strip is still below the stage, still carrying S07's own controls.
+    const svg = container.querySelector('svg') as SVGElement;
+    expect(strip.compareDocumentPosition(svg) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    for (const control of ['studio-zoom-in', 'studio-zoom-out', 'studio-zoom-fit']) {
+      expect(strip).toContainElement(screen.getByTestId(control));
+    }
+  });
+
+  it('controls the same right drawer from the topbar, and returns focus there', () => {
+    renderStage(TABLET);
+    select('t');
+    const trigger = screen.getByTestId('studio-text-drawer-trigger');
+
+    expect(trigger).toHaveAttribute('aria-controls', screen.getByTestId('studio-text-drawer').id);
+    fireEvent.click(trigger);
+    expect(screen.getByTestId('studio-text-drawer')).toBeVisible();
+
+    fireEvent.keyDown(screen.getByTestId('studio-text-value'), { key: 'Escape' });
+    expect(screen.getByTestId('studio-text-drawer')).not.toBeVisible();
+    expect(trigger).toHaveFocus();
+    // The trigger focus landed on is the topbar one, not a second control.
+    expect(screen.getByTestId('studio-stage-topbar')).toContainElement(
+      document.activeElement as HTMLElement,
+    );
+  });
+
+  it('puts nothing above the stage at 1440 or at 390', () => {
+    renderStage(DESKTOP);
+    select('t');
+    expect(screen.queryByTestId('studio-stage-topbar')).not.toBeInTheDocument();
+
+    screen.getByTestId('studio-text-value');
+  });
+
+  it('renders no topbar and no trigger on a phone', () => {
+    renderStage(MOBILE);
+    select('t');
+    expect(screen.queryByTestId('studio-stage-topbar')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('studio-text-drawer-trigger')).not.toBeInTheDocument();
+  });
+});
+
 describe('390 exposes no text editing surface at all (APP3-S05-C1 §5)', () => {
   it('renders no field, no font control and no drawer', () => {
     renderStage(MOBILE);

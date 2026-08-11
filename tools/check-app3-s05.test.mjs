@@ -559,6 +559,41 @@ describe('the inspector is placed by tier, and the phone gets no editing surface
     );
   });
 
+  it('refuses the trigger moved back into the below-stage control strip', () => {
+    // The `APP3-S05-C1` shape, which human review rejected: a persistent control
+    // outside the drawer, in the strip `APP3-S07` put below the stage. It works.
+    // It is not the approved composition, and no behavioural test can say so.
+    const root = rootWith({
+      drawer: file('drawer').replace('studio-stage__topbar', 'studio-stage__drawer-bar'),
+    });
+    assert.ok(mentions(failuresOf(checkResponsiveComposition, root), 'not in the Studio topbar'));
+  });
+
+  it('refuses a topbar mounted below the stage', () => {
+    // The other half: the class is right, the placement is not. Reordering the
+    // mount is exactly how a topbar quietly becomes a second bottom strip.
+    const screen = file('stageScreen');
+    const mount = '<StudioTextPanel slot="topbar" {...textPanel} />';
+    const root = rootWith({
+      stageScreen: screen
+        .replace(mount, '')
+        .replace(
+          '<StudioTextPanel slot="body"',
+          `${mount}\n          <StudioTextPanel slot="body"`,
+        ),
+    });
+    assert.ok(
+      mentions(failuresOf(checkResponsiveComposition, root), 'not mounted above the stage'),
+    );
+  });
+
+  it('refuses the text trigger added to the APP3-S07 control strip', () => {
+    const root = rootWith({
+      stageControls: `${file('stageControls')}\nconst LEAK = 'studio-text-drawer-trigger';\n`,
+    });
+    assert.ok(mentions(failuresOf(checkResponsiveComposition, root), 'in the below-stage strip'));
+  });
+
   it('refuses a drawer trigger that publishes no relationship to its panel', () => {
     const root = rootWith({
       drawer: file('drawer').replace('aria-controls={panelId}', ''),

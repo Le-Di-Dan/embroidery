@@ -830,11 +830,16 @@ $bp-studio-split: 1025px;
 // tool rail persists, stage width is prioritized, and the inspector becomes a
 // right drawer toggled from the Studio's control strip.
 
-// The row carrying the drawer trigger. It exists only at the tablet tier, and
-// only React renders it there, so no rule has to hide it anywhere else.
-.studio-stage__drawer-bar {
+// The Studio topbar (APP3-S05-MI01): the control region *above* the stage that
+// 618:140 draws, carrying the inspector's toggle. It exists only at the tablet
+// tier, and only React renders it there, so no rule has to hide it elsewhere.
+//
+// It is a row above the stage, not a replacement for the APP3-S07 control strip
+// below it: zoom, fit and the safe-area toggle stay exactly where S07 put them.
+.studio-stage__topbar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: styles.spacing(8);
 }
 

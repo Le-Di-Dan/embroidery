@@ -31,10 +31,12 @@ import { fileURLToPath } from 'node:url';
 import {
   S05_C1_STATUS_LINES,
   S05_DESIGN_ROWS,
+  S05_MI01_STATUS_LINES,
   S05_STATUS_LINES,
   acceptedSurface,
   isS05C1Delivered,
   isS05Delivered,
+  isS05Mi01Delivered,
 } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
@@ -109,6 +111,24 @@ export function checkPredecessors(rootDir, fail) {
       'APP3-S05-C1 TABLET_1024 = RIGHT_DRAWER_OVER_THE_STAGE',
       'APP3-S05-C1 MOBILE_390 = NO_S05_TEXT_SURFACE_APP3-S11_OWNS_IT',
       'APP3-S05-C1 FONT_READINESS = EXACT_FONTID_FONTSTYLE_FONTWEIGHT',
+    ]) {
+      if (!phase.includes(`\n${line}`)) {
+        fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
+      }
+    }
+  }
+  // The final operator intervention, recorded as its own checkpoint.
+  if (isS05Mi01Delivered(rootDir)) {
+    if (!S05_MI01_STATUS_LINES.some((line) => phase.includes(`\n${line}\n`))) {
+      fail(`${CANONICAL_FILES.phase}: APP3-S05-MI01 is not recorded under a legitimate status`);
+    }
+    for (const line of [
+      'APP3-S05-MI01 API_DELTA = 0',
+      // What a reader cannot recompute: that the topbar is above the stage
+      // because the approved composition puts it there, and that APP3-S07's
+      // strip kept every control it had rather than donating one.
+      'APP3-S05-MI01 TOPBAR = FIRST_CHILD_OF_THE_STAGE_FRAME_ABOVE_THE_STAGE',
+      'APP3-S05-MI01 S07_STRIP = UNCHANGED',
     ]) {
       if (!phase.includes(`\n${line}`)) {
         fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
@@ -301,7 +321,7 @@ export function checkApp3S05(rootDir = REPO_ROOT) {
 }
 
 const HEADLINE =
-  'check:app3-s05 — Studio text editing (with the APP3-S05-C1 responsive and font-variant correction) on the unchanged APP3-S02 scene, the APP3-S07 viewport and the APP3-S03 transforms, on exactly the three approved section-09 design rows with every remaining Studio capability row still unapproved: a font picker built from the APP3-P01 controlled registry and nothing else, serving the exact APP3-F01 Inter binaries from the package that owns them with no copy under public and no remote font; loading, ready and unavailable reported honestly and no silent substitution; only the v1 TextElement fields edited, with no invented typography, curve or thread-colour field; every limit and range read from P01 rather than restated; a candidate validated for structure, then complexity, then the controlled variant, then APP3-P02 containment and physical size, with no NFC rewrite, no truncation and no repair; text geometry left to P02 declared boxes with no glyph measurement anywhere; one working Design Document, one native SVG scene and the APP3-S03-C1 identity reuse and memoized element all intact; no autosave, history, layer, upload, watermark or touch editing pulled forward; the inspector placed by viewport tier — beside the stage at 1440, in the accepted 618:140 right drawer over the stage at 1024, and nowhere at all on a phone, where the text editing surfaces belong to APP3-S11; controlled-font readiness asked for the exact fontId, fontStyle and fontWeight with no fallback family in the probe, so a loaded upright never speaks for a missing italic, and a variant the browser could not load never becoming document truth; and an OpenAPI artifact, generated client, migration count and root-script count all unchanged.';
+  'check:app3-s05 — Studio text editing (with the APP3-S05-C1 responsive and font-variant correction) on the unchanged APP3-S02 scene, the APP3-S07 viewport and the APP3-S03 transforms, on exactly the three approved section-09 design rows with every remaining Studio capability row still unapproved: a font picker built from the APP3-P01 controlled registry and nothing else, serving the exact APP3-F01 Inter binaries from the package that owns them with no copy under public and no remote font; loading, ready and unavailable reported honestly and no silent substitution; only the v1 TextElement fields edited, with no invented typography, curve or thread-colour field; every limit and range read from P01 rather than restated; a candidate validated for structure, then complexity, then the controlled variant, then APP3-P02 containment and physical size, with no NFC rewrite, no truncation and no repair; text geometry left to P02 declared boxes with no glyph measurement anywhere; one working Design Document, one native SVG scene and the APP3-S03-C1 identity reuse and memoized element all intact; no autosave, history, layer, upload, watermark or touch editing pulled forward; the inspector placed by viewport tier — beside the stage at 1440, in the accepted 618:140 right drawer over the stage at 1024, toggled from a Studio topbar mounted above the stage rather than from the APP3-S07 control strip below it, and nowhere at all on a phone, where the text editing surfaces belong to APP3-S11; controlled-font readiness asked for the exact fontId, fontStyle and fontWeight with no fallback family in the probe, so a loaded upright never speaks for a missing italic, and a variant the browser could not load never becoming document truth; and an OpenAPI artifact, generated client, migration count and root-script count all unchanged.';
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const failures = checkApp3S05();

@@ -358,6 +358,10 @@ export const S05_STATUS_LINES = Object.freeze([
   // correction was delivered against it.
   'APP3-S05 = COMPLETE — REVIEW_DELIVERED — CORRECTION_REQUIRED',
   'APP3-S05 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW',
+  // `APP3-S05-MI01`: the operator's final intervention, which is not a second
+  // ordinary correction and does not create an `APP3-S05-C2`.
+  'APP3-S05 = COMPLETE — CORRECTION_DELIVERED — FINAL_INTERVENTION_REQUIRED',
+  'APP3-S05 = COMPLETE — CORRECTION_DELIVERED — FINAL_INTERVENTION_DELIVERED_FOR_REVIEW',
   'APP3-S05 = COMPLETE — REVIEW_ACCEPTED',
 ]);
 
@@ -382,7 +386,29 @@ export function isS05C1Delivered(rootDir) {
 export const S05_C1_STATUS_LINES = Object.freeze([
   'APP3-S05-C1 = READY — NOT STARTED',
   'APP3-S05-C1 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-S05-C1 = COMPLETE — REVIEW_DELIVERED — FINAL_INTERVENTION_REQUIRED',
+  'APP3-S05-C1 = COMPLETE — REVIEW_DELIVERED — FINAL_INTERVENTION_APPLIED',
   'APP3-S05-C1 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/**
+ * True once `APP3-S05-MI01` has placed the tablet trigger in the Studio topbar.
+ *
+ * The final operator intervention, recorded as a checkpoint of its own so the
+ * corrected tree cannot be read as the `APP3-S05-C1` delivery human review sent
+ * back over exactly this point.
+ */
+export function isS05Mi01Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S05-MI01 = COMPLETE/.test(phase);
+}
+
+/** The status lines `APP3-S05-MI01` may legitimately be recorded under. */
+export const S05_MI01_STATUS_LINES = Object.freeze([
+  'APP3-S05-MI01 = READY — NOT STARTED',
+  'APP3-S05-MI01 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-S05-MI01 = COMPLETE — REVIEW_ACCEPTED',
 ]);
 
 /**

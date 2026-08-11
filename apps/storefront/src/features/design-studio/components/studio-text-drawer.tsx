@@ -26,17 +26,21 @@
  * text-shaped so S04 can extend the same accepted presentation through its own
  * reviewed slice.
  *
- * ## Where the trigger sits
+ * ## Where the trigger sits (`APP3-S05-MI01`)
  *
- * `APP3-D01-C1` says the drawer is toggled "from the topbar". The accepted
- * implementation has no topbar: `APP3-S07` put the Studio's one persistent
- * control strip — zoom, fit, safe area — *below* the stage, and that placement
- * is accepted. So the trigger joins that strip rather than inventing a second
- * bar above the stage, which would have restructured `APP3-S07`'s markup for a
- * composition no frame draws. What the authority is actually about is satisfied
- * exactly: the toggle is a persistent, always-reachable control outside the
- * panel, never a handle inside the thing it opens. DOM order and visual order
- * agree, so tab order does too.
+ * In the Studio topbar: a control region **above** the stage, which is what
+ * `APP3-D01-C1` draws and what the operator has ruled the word to mean.
+ *
+ * `APP3-S05-C1` put it in `APP3-S07`'s persistent control strip instead, on the
+ * reasoning that the strip was the Studio's only persistent control region and
+ * that the authority was really about the toggle living *outside* the panel.
+ * That reasoning was rejected: trigger placement is part of the approved
+ * composition, and functional equivalence does not substitute for it. The strip
+ * stays exactly where `APP3-S07` put it, with exactly the controls it had.
+ *
+ * The topbar is a real first child of the stage frame, so DOM order, visual
+ * order and tab order all agree — no `order` trick placing the control above
+ * the stage while leaving it late in the tab sequence.
  *
  * Text is the only content, and there is no tab strip, no layers list, no upload
  * and no history here.
@@ -61,7 +65,7 @@ export function StudioTextDrawer(props: StudioTextInspectorProps) {
 
   return (
     <>
-      <div className="studio-stage__drawer-bar">
+      <div className="studio-stage__topbar" data-testid="studio-stage-topbar">
         <button
           type="button"
           ref={trigger}

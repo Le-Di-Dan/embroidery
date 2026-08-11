@@ -123,11 +123,19 @@ export function checkResponsiveComposition(rootDir, fail) {
       fail(`${CANONICAL_FILES.panel}: does not decide the ${tier} composition`);
     }
   }
-  // The mobile branch, read as the file actually orders it. Nothing editable
-  // may be reachable from it — not the inspector, not the drawer, not a field.
+  /*
+   * The mobile branch: from its own test to the desktop fall-through, which is
+   * the last thing the component returns. Nothing editable may be reachable
+   * from it — not the inspector, not the drawer, not a field.
+   *
+   * Read by position rather than by branch order. `APP3-S05-MI01` reordered the
+   * branches so the tablet slot could answer first, and the previous rule ended
+   * this slice at the tablet test — which, after the reorder, made it empty and
+   * stopped reading the mobile branch at all while still passing.
+   */
   const mobile = panel.slice(
     panel.indexOf("tier === 'mobile'"),
-    panel.indexOf("tier === 'tablet'"),
+    panel.lastIndexOf('return <StudioTextInspector'),
   );
   for (const editable of ['StudioTextInspector', 'StudioTextDrawer', 'StudioTextControls']) {
     if (mobile.includes(editable)) {
@@ -153,6 +161,35 @@ export function checkResponsiveComposition(rootDir, fail) {
   }
   if (!/trigger\.current\?\.focus\(\)/.test(drawer)) {
     fail(`${CANONICAL_FILES.drawer}: closing the drawer does not return focus to its trigger`);
+  }
+
+  /*
+   * The trigger is in the Studio **topbar** (`APP3-S05-MI01`).
+   *
+   * `APP3-D01-C1` puts it in a control region above the stage, and trigger
+   * placement is part of the approved composition — a persistent control that
+   * merely lives outside the drawer is not a substitute, which is the reading
+   * `APP3-S05-C1` took and human review rejected. Three facts make it true and
+   * keep it true: the topbar exists, it is mounted **before** the stage, and
+   * `APP3-S07`'s strip below the stage never acquires the trigger.
+   */
+  if (!drawer.includes('studio-stage__topbar')) {
+    fail(`${CANONICAL_FILES.drawer}: the drawer trigger is not in the Studio topbar`);
+  }
+  const topbarAt = screen.indexOf('slot="topbar"');
+  const stageAt = screen.indexOf('<StudioStageViewport');
+  const stripAt = screen.indexOf('<StudioStageControls');
+  const bodyAt = screen.indexOf('slot="body"');
+  if (topbarAt === -1 || stageAt === -1 || topbarAt > stageAt) {
+    fail(`${CANONICAL_FILES.stageScreen}: the Studio topbar is not mounted above the stage`);
+  }
+  if (bodyAt === -1 || stripAt === -1 || bodyAt < stripAt) {
+    fail(`${CANONICAL_FILES.stageScreen}: the desktop inspector left its accepted position`);
+  }
+  // The S07 control strip keeps exactly the controls S07 gave it.
+  const strip = code(rootDir, 'stageControls');
+  if (strip.includes('studio-text-drawer-trigger') || strip.includes('drawerOpen')) {
+    fail(`${CANONICAL_FILES.stageControls}: the text drawer trigger is in the below-stage strip`);
   }
 
   // Out of flow, or it is not a drawer: an in-flow panel resizes the stage, and
