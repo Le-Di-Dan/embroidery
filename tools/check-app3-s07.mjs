@@ -31,6 +31,7 @@ import {
   S07_STATUS_LINES,
   acceptedSurface,
   isS03Delivered,
+  isS05Delivered,
   isS07Delivered,
 } from './app3-accepted-surface.mjs';
 import {
@@ -137,7 +138,12 @@ export function checkDesignApproval(rootDir, fail) {
   // The half that makes the approval *scoped*: every remaining Studio capability
   // belongs to a checkpoint that has not opened, and a blanket approval must
   // fail this gate rather than pass it.
-  for (const id of LATER_STUDIO_ROWS) {
+  // World-aware for the same reason the `APP3-S01` gate is: `APP3-S05`
+  // legitimately approves its three section-09 text rows, so once it has
+  // delivered they stop being evidence of a blanket Studio approval. Every row
+  // belonging to a checkpoint that still has not opened stays exactly as ruled.
+  const opened = new Set(isS05Delivered(rootDir) ? ['FIG-STUDIO-TEXT-DESKTOP-EDITING'] : []);
+  for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }

@@ -59,8 +59,8 @@ const FAMILY = '019fe90';
  * fixture whose document changed needs a new id, or `on conflict do nothing`
  * silently keeps the previous run's geometry.
  */
-const GENERATION = '1';
-const GENERATIONS = ['0', '1'];
+const GENERATION = '2';
+const GENERATIONS = ['0', '1', '2'];
 const PREFIX = `${FAMILY}${GENERATION}`;
 
 /** Room inside the area for the stroke envelope and the rotated cells. */

@@ -31,6 +31,7 @@ import {
   acceptedSurface,
   isS02Delivered,
   isS03Delivered,
+  isS05Delivered,
   isS07Delivered,
 } from './app3-accepted-surface.mjs';
 import {
@@ -149,12 +150,14 @@ export function checkDesignApproval(rootDir, fail) {
    * World-aware on exactly the rows whose own checkpoint has opened. Each of
    * these stands here for the capability that owns it, so once that checkpoint
    * ships the row stops proving anything and the remaining rows carry the
-   * assertion. Layers, text and image are untouched, which is what keeps
-   * "scoped" a real claim rather than a ratchet that loosens on every landing.
+   * assertion. Layers, image, undo, watermark, autosave and mobile are
+   * untouched, which is what keeps "scoped" a real claim rather than a ratchet
+   * that loosens on every landing.
    */
   const opened = new Set([
     ...(isS07Delivered(rootDir) ? ['FIG-STUDIO-ZOOM-DESKTOP-FIT'] : []),
     ...(isS03Delivered(rootDir) ? ['FIG-STUDIO-TRANSFORM-DESKTOP-MOVE'] : []),
+    ...(isS05Delivered(rootDir) ? ['FIG-STUDIO-TEXT-DESKTOP-EDITING'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {

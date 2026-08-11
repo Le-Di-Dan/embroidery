@@ -334,6 +334,53 @@ export const S03_FILES = Object.freeze([
   'store/studio-document.store.ts',
 ]);
 
+/**
+ * True once `APP3-S05` has delivered the Studio text capability.
+ *
+ * Four earlier gates ban something S05 legitimately introduces. `APP3-S01` bans
+ * every use of the `APP3-P01` authority outside the files it knows about, and
+ * `APP3-S01`, `S02`, `S03` and `S07` each assert that the section-09 text row
+ * still belongs to a checkpoint that has not opened — which stops being true the
+ * moment this one does. Each ban is kept and consults this, so all four still
+ * bite before S05.
+ */
+export function isS05Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S05 = COMPLETE/.test(phase);
+}
+
+/** The status lines `APP3-S05` may legitimately be recorded under. */
+export const S05_STATUS_LINES = Object.freeze([
+  'APP3-S05 = READY — NOT STARTED',
+  'APP3-S05 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-S05 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/**
+ * The Studio files `APP3-S05` adds, relative to the design-studio feature.
+ *
+ * Named for the same reason `S07_FILES` and `S03_FILES` are: the world-aware
+ * evolution lists the **new** files, so anything added later inherits the strict
+ * predecessor rules by default rather than escaping them.
+ */
+export const S05_FILES = Object.freeze([
+  'components/studio-text-controls.tsx',
+  'components/studio-text-inspector.tsx',
+  'hooks/use-controlled-font.ts',
+  'hooks/use-studio-text.ts',
+  'model/studio-text-authority.ts',
+  'model/studio-text-copy.ts',
+  'model/studio-text-fields.ts',
+]);
+
+/** The three section-09 design rows `APP3-S05` consumes, and their nodes. */
+export const S05_DESIGN_ROWS = Object.freeze({
+  'FIG-STUDIO-TEXT-DESKTOP-EDITING': '608:176',
+  'FIG-STUDIO-TEXT-DESKTOP-FONTPICKER': '608:231',
+  'FIG-STUDIO-TEXT-DESKTOP-VALIDATION': '608:286',
+});
+
 /** The status lines `APP3-B05A` may legitimately be recorded under. */
 export const B05A_STATUS_LINES = Object.freeze([
   'APP3-B05A = DEFINED — BLOCKED_BY_APP3-B05 — NOT STARTED',

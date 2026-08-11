@@ -37,6 +37,7 @@ import {
   acceptedSurface,
   isS01Delivered,
   isS02Delivered,
+  isS05Delivered,
   isS07Delivered,
 } from './app3-accepted-surface.mjs';
 import {
@@ -156,6 +157,7 @@ export function checkDesignApproval(rootDir, fail) {
   const opened = new Set([
     ...(isS02Delivered(rootDir) ? S02_DESIGN_ROWS : []),
     ...(isS07Delivered(rootDir) ? ['FIG-STUDIO-ZOOM-DESKTOP-FIT'] : []),
+    ...(isS05Delivered(rootDir) ? ['FIG-STUDIO-TEXT-DESKTOP-EDITING'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {

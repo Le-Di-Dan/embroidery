@@ -18,6 +18,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { isS05Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -26,6 +27,7 @@ import {
   collect,
   featureCode,
   preS03Code,
+  preS05Code,
   read,
   s03Code,
 } from './check-app3-s03.sources.mjs';
@@ -330,15 +332,29 @@ export function checkNonScope(rootDir, fail) {
     reorder: 'APP3-S04',
     ungroup: 'APP3-S04',
     duplicate: 'APP3-S04',
-    fontPicker: 'APP3-S05',
-    setFontId: 'APP3-S05',
-    onChangeText: 'APP3-S05',
     publicDesignSessionAutosave: 'APP3-S10',
     publicDesignSessionAsset: 'APP3-S06',
   });
   for (const [marker, owner] of Object.entries(owners)) {
     if (all.includes(marker)) {
       fail(`${FEATURE}: carries "${marker}", a capability ${owner} owns`);
+    }
+  }
+
+  /*
+   * The `APP3-S05` markers, world-aware.
+   *
+   * They were written when nothing in the Studio could edit text, and that is
+   * still the rule they enforce for every file S05 did not introduce — so a
+   * font picker or a text handler appearing anywhere else fails exactly as
+   * before, and a file added tomorrow inherits the strict rule by default. Only
+   * the seven files S05 owns are excluded, and only once the phase records it
+   * delivered.
+   */
+  const outsideS05 = isS05Delivered(rootDir) ? preS05Code(rootDir) : all;
+  for (const marker of ['fontPicker', 'setFontId', 'onChangeText']) {
+    if (outsideS05.includes(marker)) {
+      fail(`${FEATURE}: carries "${marker}", a capability APP3-S05 owns`);
     }
   }
 

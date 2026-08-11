@@ -11,7 +11,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S03_FILES } from './app3-accepted-surface.mjs';
+import { S03_FILES, S05_FILES } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -144,7 +144,22 @@ export function s03Code(rootDir) {
 
 /** The feature minus the files S03 introduced, prose stripped. */
 export function preS03Code(rootDir) {
-  const later = new Set(S03_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  return featureCodeExcept(rootDir, S03_FILES);
+}
+
+/**
+ * The feature minus the files `APP3-S05` introduced, prose stripped.
+ *
+ * The world-aware form of S03's "no text capability" rule. It names the **new**
+ * files rather than the old ones, so anything added later inherits the strict
+ * rule by default instead of escaping it.
+ */
+export function preS05Code(rootDir) {
+  return featureCodeExcept(rootDir, S05_FILES);
+}
+
+function featureCodeExcept(rootDir, owned) {
+  const later = new Set(owned.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
   return collect(join(rootDir, FEATURE), /\.tsx?$/)
     .filter((path) => !later.has(path))
     .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))

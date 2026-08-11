@@ -676,3 +676,142 @@ $bp-studio-split: 1025px;
   color: styles.$color-text-primary;
   font-size: styles.$font-size-caption;
 }
+
+// ---------------------------------------------------- text capability (S05)
+//
+// Design source: FIG-STUDIO-TEXT-DESKTOP-{EDITING,FONTPICKER,VALIDATION}
+// (file BQwqV8GdfUIELvsQDB1UQE, page APP_03, section 09 — 596:15; nodes
+// 608:176, 608:231, 608:286), with the 1024 behaviour taken from the shared
+// responsive reference FIG-STUDIO-EDITING-TABLET-1024 (618:140).
+
+// The one controlled document font (APP3-F01, IMP-D044 PO-10).
+//
+// The family name is `Inter` because that is what the registry publishes for
+// `fontId: inter`, and the renderer paints exactly the registry's family — a
+// generated or aliased name here would simply never match what the stage asks
+// for. The `url()` points at the repository-controlled binary in the package
+// that owns the registry, so the bundler emits *that* file: there is no copy in
+// `public/`, no CDN, no Google Fonts request and no second source of truth that
+// could drift from the SHA-256 APP3-F01 recorded.
+//
+// `font-display: block` rather than `swap`. A swap would paint the design in a
+// substituted face first, and a substituted face has different metrics — the
+// customer would watch their design change shape, having approved neither. The
+// registry's locked policy is REJECT_IF_CONTROLLED_FONT_UNAVAILABLE; blocking
+// is the closest a stylesheet gets to it, and `useControlledFont` states the
+// failure in text when it does not arrive.
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('../../../../../../packages/design-document/assets/fonts/inter/4.1/InterVariable.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('../../../../../../packages/design-document/assets/fonts/inter/4.1/InterVariable-Italic.woff2')
+    format('woff2');
+}
+
+.studio-text {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  // The inspector is chrome beside the stage, never over it: the stage stays
+  // the dominant surface at 1440 and at 1024 alike.
+  min-width: 0;
+}
+
+.studio-text__heading {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.studio-text__fields {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.studio-text__row {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+
+  @media (min-width: $bp-studio-split) {
+    flex-direction: row;
+  }
+}
+
+.studio-text__field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.studio-text__label {
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+}
+
+// The shared Input semantics, applied to real controls. The touch-target
+// minimum is the same one the placement select uses, so the 44px floor holds on
+// every viewport without a second rule.
+.studio-text__select,
+.studio-text__input {
+  min-height: styles.$size-touch-target-min;
+  max-width: 100%;
+  padding: 0 styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+}
+
+.studio-text__textarea {
+  min-height: styles.$size-touch-target-min;
+  max-width: 100%;
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  // Vertical only: a horizontally resizable control inside a narrow column is
+  // how a customer accidentally creates horizontal page overflow.
+  resize: vertical;
+}
+
+.studio-text__hint,
+.studio-text__unavailable,
+.studio-text__font-status {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+// Status is never colour alone: each of these is a sentence, and the colour
+// only reinforces what the words already say.
+.studio-text__font-status--failed,
+.studio-text__refusal {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+}

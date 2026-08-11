@@ -23,7 +23,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S03_STATUS_LINES, acceptedSurface, isS03Delivered } from './app3-accepted-surface.mjs';
+import {
+  S03_STATUS_LINES,
+  acceptedSurface,
+  isS03Delivered,
+  isS05Delivered,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   EXPECTED_MIGRATIONS,
@@ -96,7 +101,14 @@ export function checkPredecessors(rootDir, fail) {
     }
   }
   // S11 needs S03 **and** S07, so S03 delivering does not make it ready.
-  for (const later of ['APP3-S11', 'APP3-S04', 'APP3-S05', 'APP3-B06C']) {
+  //
+  // World-aware on S05 alone: the rule says "S03 did not implement this", and
+  // that stays true once S05 implements it for itself. Every other capability
+  // is asserted exactly as ruled, and S05 is only excused once its own status
+  // block is present — which the S05 gate is what actually checks.
+  const notImplementedByS03 = ['APP3-S11', 'APP3-S04', 'APP3-B06C'];
+  if (!isS05Delivered(rootDir)) notImplementedByS03.push('APP3-S05');
+  for (const later of notImplementedByS03) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(`${CANONICAL_FILES.phase}: ${later} is recorded complete; S03 does not implement it`);
     }
@@ -134,7 +146,14 @@ export function checkDesignApproval(rootDir, fail) {
 
   // Every remaining Studio capability belongs to a checkpoint that has not
   // opened, and a blanket approval must fail this gate rather than pass it.
-  for (const id of LATER_STUDIO_ROWS) {
+  //
+  // World-aware on the rows whose own checkpoint has opened, and on nothing
+  // else. `APP3-S05` legitimately approves its three section-09 text rows, so
+  // once it has delivered they stop being evidence of a blanket approval —
+  // while every row belonging to a checkpoint that still has not opened stays
+  // exactly as ruled.
+  const opened = new Set(isS05Delivered(rootDir) ? ['FIG-STUDIO-TEXT-DESKTOP-EDITING'] : []);
+  for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }

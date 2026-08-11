@@ -30,6 +30,7 @@ import { StudioStageBackgroundNotice } from './studio-stage-background-notice';
 import { StudioStageControls } from './studio-stage-controls';
 import { StudioStageUnavailable } from './studio-stage-unavailable';
 import { StudioStageViewport } from './studio-stage-viewport';
+import { StudioTextInspector } from './studio-text-inspector';
 import { StudioTransformOverlay, physicalSizeLabel } from './studio-transform-overlay';
 
 export interface StudioStageScreenProps {
@@ -85,6 +86,7 @@ export function StudioStageScreen({
 }: StudioStageScreenProps) {
   const workingDocument = useStudioDocumentStore((state) => state.document);
   const initializeDocument = useStudioDocumentStore((state) => state.initialize);
+  const commitDocument = useStudioDocumentStore((state) => state.commit);
 
   const sessionKey = sessionKeyOf(snapshot.sessionId, snapshot.revision);
   useEffect(() => {
@@ -230,6 +232,20 @@ export function StudioStageScreen({
           </StudioStageViewport>
 
           <StudioStageControls />
+
+          {/*
+            The text inspector (`APP3-S05`). It reads the same document the
+            scene was built from and writes back through the same working-
+            document commit the transform gesture uses, so there is still one
+            answer to "what is on the stage".
+          */}
+          <StudioTextInspector
+            commit={commitDocument}
+            document={sceneDocument}
+            elementId={selectedElementId}
+            limits={areaLimits}
+            scope={scope}
+          />
 
           {result.scene.elements.length === 0 ? (
             <p className="studio-stage__empty" data-testid="studio-stage-empty" role="status">

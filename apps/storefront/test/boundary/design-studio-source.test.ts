@@ -151,6 +151,32 @@ const S03_C1_FILES = new Set(
   ['renderer/studio-scene-identity.ts'].map((path) => join(FEATURE_DIR, ...path.split('/'))),
 );
 
+/**
+ * The files `APP3-S05` added, named exactly, for the same reason once more.
+ *
+ * The text capability is the second thing that changes a document, so every one
+ * of these reads the `APP3-P01` authority — the element type, the controlled
+ * font registry, the character limits, the structural validator — which the S01
+ * partition is still forbidden to touch. Listing them keeps that prohibition
+ * strict everywhere else instead of relaxing it feature-wide.
+ *
+ * Every other rule still applies to them through `staticCode` and `allCode`:
+ * they may not follow a pointer, measure the DOM, compose a matrix, open a
+ * second `<svg>`, reach a background operation, or name a Session secret. The
+ * inspector's form controls are HTML; the artwork is still the one SVG scene.
+ */
+const S05_FILES = new Set(
+  [
+    'components/studio-text-controls.tsx',
+    'components/studio-text-inspector.tsx',
+    'hooks/use-controlled-font.ts',
+    'hooks/use-studio-text.ts',
+    'model/studio-text-authority.ts',
+    'model/studio-text-copy.ts',
+    'model/studio-text-fields.ts',
+  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
 const interactionSources = sources.filter(
   (file) => S07_FILES.has(file.path) || S03_FILES.has(file.path),
 );
@@ -171,7 +197,8 @@ const s01Sources = sources.filter(
     !S02_FILES.has(file.path) &&
     !S07_FILES.has(file.path) &&
     !S03_FILES.has(file.path) &&
-    !S03_C1_FILES.has(file.path),
+    !S03_C1_FILES.has(file.path) &&
+    !S05_FILES.has(file.path),
 );
 const s07Sources = sources.filter((file) => S07_FILES.has(file.path));
 const s07Code = codeOnly(s07Sources.map((file) => file.text).join('\n'));
