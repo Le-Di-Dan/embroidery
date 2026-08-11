@@ -29,9 +29,11 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  S05_C1_STATUS_LINES,
   S05_DESIGN_ROWS,
   S05_STATUS_LINES,
   acceptedSurface,
+  isS05C1Delivered,
   isS05Delivered,
 } from './app3-accepted-surface.mjs';
 import {
@@ -47,6 +49,7 @@ import {
   read,
   s05Code,
 } from './check-app3-s05.sources.mjs';
+import { checkResponsiveComposition, checkVariantReadiness } from './check-app3-s05-responsive.mjs';
 import {
   checkArchitecture,
   checkControlledFont,
@@ -62,8 +65,10 @@ export {
   checkControlledFont,
   checkGeometryBoundary,
   checkNonScope,
+  checkResponsiveComposition,
   checkSchemaFidelity,
   checkValidation,
+  checkVariantReadiness,
 };
 
 /** The predecessors a text capability is only meaningful on top of. */
@@ -87,6 +92,28 @@ export function checkPredecessors(rootDir, fail) {
   }
   if (!S05_STATUS_LINES.some((line) => phase.includes(`\n${line}\n`))) {
     fail(`${CANONICAL_FILES.phase}: APP3-S05 is not recorded under a legitimate status`);
+  }
+  // The correction is a checkpoint of its own and is recorded as one, so a tree
+  // carrying the corrected composition cannot be read as the delivery that
+  // human review sent back.
+  if (isS05C1Delivered(rootDir)) {
+    if (!S05_C1_STATUS_LINES.some((line) => phase.includes(`\n${line}\n`))) {
+      fail(`${CANONICAL_FILES.phase}: APP3-S05-C1 is not recorded under a legitimate status`);
+    }
+    for (const line of [
+      'APP3-S05-C1 BACKEND_CHANGE = NONE',
+      'APP3-S05-C1 API_DELTA = 0',
+      // The three facts a reader cannot recompute from the source: that 1024 is
+      // a drawer because D01-C1 draws one, that 390 has no S05 surface because
+      // S11 owns it, and that readiness is asked per variant.
+      'APP3-S05-C1 TABLET_1024 = RIGHT_DRAWER_OVER_THE_STAGE',
+      'APP3-S05-C1 MOBILE_390 = NO_S05_TEXT_SURFACE_APP3-S11_OWNS_IT',
+      'APP3-S05-C1 FONT_READINESS = EXACT_FONTID_FONTSTYLE_FONTWEIGHT',
+    ]) {
+      if (!phase.includes(`\n${line}`)) {
+        fail(`${CANONICAL_FILES.phase}: status block does not record "${line}"`);
+      }
+    }
   }
   if (isS05Delivered(rootDir)) {
     for (const line of [
@@ -262,11 +289,19 @@ export function checkApp3S05(rootDir = REPO_ROOT) {
     checkNonScope(rootDir, fail);
   }
 
+  // The correction's own rules, for the same reason: they read files S05 did
+  // not have, so running them on the delivered-and-sent-back tree would fail it
+  // for not yet containing the answer it was asked for.
+  if (isS05C1Delivered(rootDir)) {
+    checkVariantReadiness(rootDir, fail);
+    checkResponsiveComposition(rootDir, fail);
+  }
+
   return failures;
 }
 
 const HEADLINE =
-  'check:app3-s05 — Studio text editing on the unchanged APP3-S02 scene, the APP3-S07 viewport and the APP3-S03 transforms, on exactly the three approved section-09 design rows with every remaining Studio capability row still unapproved: a font picker built from the APP3-P01 controlled registry and nothing else, serving the exact APP3-F01 Inter binaries from the package that owns them with no copy under public and no remote font; loading, ready and unavailable reported honestly and no silent substitution; only the v1 TextElement fields edited, with no invented typography, curve or thread-colour field; every limit and range read from P01 rather than restated; a candidate validated for structure, then complexity, then the controlled variant, then APP3-P02 containment and physical size, with no NFC rewrite, no truncation and no repair; text geometry left to P02 declared boxes with no glyph measurement anywhere; one working Design Document, one native SVG scene and the APP3-S03-C1 identity reuse and memoized element all intact; no autosave, history, layer, upload, watermark or touch editing pulled forward; and an OpenAPI artifact, generated client, migration count and root-script count all unchanged.';
+  'check:app3-s05 — Studio text editing (with the APP3-S05-C1 responsive and font-variant correction) on the unchanged APP3-S02 scene, the APP3-S07 viewport and the APP3-S03 transforms, on exactly the three approved section-09 design rows with every remaining Studio capability row still unapproved: a font picker built from the APP3-P01 controlled registry and nothing else, serving the exact APP3-F01 Inter binaries from the package that owns them with no copy under public and no remote font; loading, ready and unavailable reported honestly and no silent substitution; only the v1 TextElement fields edited, with no invented typography, curve or thread-colour field; every limit and range read from P01 rather than restated; a candidate validated for structure, then complexity, then the controlled variant, then APP3-P02 containment and physical size, with no NFC rewrite, no truncation and no repair; text geometry left to P02 declared boxes with no glyph measurement anywhere; one working Design Document, one native SVG scene and the APP3-S03-C1 identity reuse and memoized element all intact; no autosave, history, layer, upload, watermark or touch editing pulled forward; the inspector placed by viewport tier — beside the stage at 1440, in the accepted 618:140 right drawer over the stage at 1024, and nowhere at all on a phone, where the text editing surfaces belong to APP3-S11; controlled-font readiness asked for the exact fontId, fontStyle and fontWeight with no fallback family in the probe, so a loaded upright never speaks for a missing italic, and a variant the browser could not load never becoming document truth; and an OpenAPI artifact, generated client, migration count and root-script count all unchanged.';
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const failures = checkApp3S05();

@@ -30,7 +30,7 @@ import { StudioStageBackgroundNotice } from './studio-stage-background-notice';
 import { StudioStageControls } from './studio-stage-controls';
 import { StudioStageUnavailable } from './studio-stage-unavailable';
 import { StudioStageViewport } from './studio-stage-viewport';
-import { StudioTextInspector } from './studio-text-inspector';
+import { StudioTextPanel } from './studio-text-panel';
 import { StudioTransformOverlay, physicalSizeLabel } from './studio-transform-overlay';
 
 export interface StudioStageScreenProps {
@@ -238,8 +238,13 @@ export function StudioStageScreen({
             scene was built from and writes back through the same working-
             document commit the transform gesture uses, so there is still one
             answer to "what is on the stage".
+
+            Mounted through the panel (`APP3-S05-C1`), which decides where the
+            inspector belongs on this viewport: beside the stage at 1440, in the
+            `618:140` right drawer at 1024, and nowhere at 390 — mobile text
+            editing is `APP3-S11`'s.
           */}
-          <StudioTextInspector
+          <StudioTextPanel
             commit={commitDocument}
             document={sceneDocument}
             elementId={selectedElementId}

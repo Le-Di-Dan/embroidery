@@ -18,6 +18,14 @@
 // (FU-A16), so this is feature-local and aligned with the shell's own
 // threshold: 1025+ is the two-column tier, everything below is stacked. The
 // audited Studio frames are 1440 and 390 with nothing drawn between them.
+//
+// APP3-S05-C1: this number is mirrored by `desktopMinPx` in
+// `model/studio-responsive.ts`, which decides what is *rendered* at each tier —
+// the accepted 1440 inspector, the 618:140 tablet drawer, or nothing at all on
+// a phone. The gate compares the two files: a stylesheet and a renderer
+// disagreeing about where desktop begins would style a drawer as a column. The
+// tablet floor has no counterpart here, because no CSS rule depends on it;
+// which composition exists is React's answer, not a media query's.
 $bp-studio-split: 1025px;
 
 .studio-page {
@@ -814,4 +822,65 @@ $bp-studio-split: 1025px;
   margin: 0;
   color: styles.$color-text-primary;
   font-size: styles.$font-size-caption;
+}
+
+// ------------------------------------------- tablet inspector drawer (S05-C1)
+//
+// Design source: FIG-STUDIO-EDITING-TABLET-1024 (618:140, APP3-D01-C1) — the
+// tool rail persists, stage width is prioritized, and the inspector becomes a
+// right drawer toggled from the Studio's control strip.
+
+// The row carrying the drawer trigger. It exists only at the tablet tier, and
+// only React renders it there, so no rule has to hide it anywhere else.
+.studio-stage__drawer-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+// The drawer itself.
+//
+// `position: absolute` is the whole requirement, not a detail of it: an
+// in-flow panel would resize the stage every time the customer opened it, and
+// the SVG's width, its viewBox and every millimetre the overlay derives from
+// them would move with it. Out of flow, the stage's boxes are byte-identical
+// open or closed.
+.studio-drawer {
+  position: absolute;
+  // Anchored to the frame's right edge, top to bottom.
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 1;
+
+  // Never the whole width: the stage stays the dominant surface at 1024, which
+  // is the composition the reference draws. `min()` keeps the drawer inside a
+  // narrow frame instead of overhanging it and scrolling the page sideways.
+  width: min(360px, 100%);
+
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(12);
+  border-inline-start: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+
+  // Taller content scrolls inside the drawer. On the y-axis only — the x-axis
+  // must never scroll, at any viewport.
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  // `hidden` is what closes it, and a display rule would otherwise beat the
+  // attribute and leave a closed drawer painted over the stage.
+  &[hidden] {
+    display: none;
+  }
+
+  // Inside the drawer the inspector is the drawer's contents, not a card on a
+  // page: one border and one padding, contributed by the drawer.
+  .studio-text {
+    border: 0;
+    padding: 0;
+    background: transparent;
+  }
 }

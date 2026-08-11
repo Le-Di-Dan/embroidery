@@ -63,6 +63,15 @@ export type TextRefusal =
   | 'invalid-text'
   | 'unknown-font'
   | 'unsupported-variant'
+  /**
+   * The registry controls this variant, and this browser could not load it
+   * (`APP3-S05-C1`). Distinct from `unsupported-variant`, which is the registry
+   * saying the face does not exist at all: one is a delivery failure the
+   * customer may be able to retry, the other is a face that will never exist.
+   * It is raised before validation rather than by it, because `APP3-P01` rules
+   * on documents and cannot see a browser.
+   */
+  | 'controlled-font-unavailable'
   | 'invalid-value'
   | TransformRefusal;
 

@@ -40,6 +40,13 @@ export const CANONICAL_FILES = Object.freeze({
   inspector: `${FEATURE}/components/studio-text-inspector.tsx`,
   controls: `${FEATURE}/components/studio-text-controls.tsx`,
   styles: `${FEATURE}/styles/design-studio.scss`,
+  // What `APP3-S05-C1` adds: where the inspector goes on each viewport, and
+  // which exact controlled face the browser was asked about.
+  panel: `${FEATURE}/components/studio-text-panel.tsx`,
+  drawer: `${FEATURE}/components/studio-text-drawer.tsx`,
+  responsive: `${FEATURE}/model/studio-responsive.ts`,
+  tier: `${FEATURE}/hooks/use-studio-viewport-tier.ts`,
+  variant: `${FEATURE}/model/studio-font-variant.ts`,
   // What S05 must leave exactly as it found it.
   documentStore: `${FEATURE}/store/studio-document.store.ts`,
   scene: `${FEATURE}/renderer/studio-scene.ts`,

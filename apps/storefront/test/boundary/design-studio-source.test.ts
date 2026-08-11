@@ -168,9 +168,14 @@ const S03_C1_FILES = new Set(
 const S05_FILES = new Set(
   [
     'components/studio-text-controls.tsx',
+    'components/studio-text-drawer.tsx',
     'components/studio-text-inspector.tsx',
+    'components/studio-text-panel.tsx',
     'hooks/use-controlled-font.ts',
     'hooks/use-studio-text.ts',
+    'hooks/use-studio-viewport-tier.ts',
+    'model/studio-font-variant.ts',
+    'model/studio-responsive.ts',
     'model/studio-text-authority.ts',
     'model/studio-text-copy.ts',
     'model/studio-text-fields.ts',

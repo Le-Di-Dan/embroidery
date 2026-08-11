@@ -12,7 +12,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S03_FILES, S07_FILES } from './app3-accepted-surface.mjs';
+import { S03_FILES, S05_FILES, S07_FILES, isS05Delivered } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -179,15 +179,19 @@ export const S02_DESIGN_ROWS = Object.freeze([
 /**
  * The feature minus what later checkpoints added, plus the route. Prose stripped.
  *
- * The exclusion names the files S02, S07 and S03 **introduced**, never the files S01
- * owned. Everything else — including a file that does not exist yet — is read as
- * S01's and inherits its strict rules by default, which is the only version of
- * this rule that a new file cannot walk around.
+ * The exclusion names the files S02, S07, S03 and S05 **introduced**, never the
+ * files S01 owned. Everything else — including a file that does not exist yet —
+ * is read as S01's and inherits its strict rules by default, which is the only
+ * version of this rule that a new file cannot walk around.
+ *
+ * S05's files are excluded only once S05 has delivered, for the same reason the
+ * others are listed at all: before that, a file with one of those names is not a
+ * checkpoint's legitimate work, and the strict rule must still bite.
  */
 export function s01FeatureCode(rootDir) {
   const later = new Set(
-    [...S02_FILES, ...S07_FILES, ...S03_FILES].map((path) =>
-      join(rootDir, FEATURE, ...path.split('/')),
+    [...S02_FILES, ...S07_FILES, ...S03_FILES, ...(isS05Delivered(rootDir) ? S05_FILES : [])].map(
+      (path) => join(rootDir, FEATURE, ...path.split('/')),
     ),
   );
   const files = [

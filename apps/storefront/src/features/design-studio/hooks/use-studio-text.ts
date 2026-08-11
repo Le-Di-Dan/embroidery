@@ -24,13 +24,18 @@
  * draft during render — before any handler can fire — rather than in an effect
  * that runs after the first keystroke of the next element.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { DesignDocument } from '@embroidery/design-document';
+import type { DesignDocument, TextElement } from '@embroidery/design-document';
 import type { DesignSessionScopeResponse } from '@embroidery/api-client';
 
+import {
+  loadControlledVariant,
+  variantShorthand,
+  type ControlledFontVariant,
+} from '../model/studio-font-variant';
 import { ruleOnTextCandidate, type TextRefusal } from '../model/studio-text-authority';
-import { withTextFields, type TextFieldPatch } from '../model/studio-text-fields';
+import { textElementOf, withTextFields, type TextFieldPatch } from '../model/studio-text-fields';
 import type { StudioAreaLimits } from '../model/studio-transform-authority';
 
 export interface UseStudioTextInput {
@@ -49,6 +54,11 @@ export interface UseStudioTextResult {
   readonly draft: string | null;
   readonly refusal: TextRefusal | null;
   readonly composing: boolean;
+  /**
+   * A controlled variant is being fetched for a change the customer asked for
+   * and the document has not accepted yet (`APP3-S05-C1`).
+   */
+  readonly pendingVariant: boolean;
   /** A keystroke or an IME frame. Never reaches the document on its own. */
   readonly changeText: (value: string) => void;
   readonly startComposition: () => void;
@@ -69,6 +79,20 @@ export function useStudioText({
   const [draft, setDraft] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
   const [refusal, setRefusal] = useState<TextRefusal | null>(null);
+  const [pendingVariant, setPendingVariant] = useState(false);
+
+  /**
+   * The identity of the newest font-variant request (`APP3-S05-C1`).
+   *
+   * A font load is the one thing here that finishes *later*, so it is the one
+   * thing that can land in a world that has moved on: a slow italic answering
+   * after the customer chose upright, or after they selected a different
+   * element. Every request carries the counter's value at the moment it started
+   * and writes nothing unless it is still the newest — the bounded, allocation-
+   * free form of cancellation. Nothing about it is stored in Zustand; it is not
+   * state anyone outside this hook can observe.
+   */
+  const request = useRef(0);
 
   // Rebinding to a new selection, during render. React's sanctioned way to
   // adjust state when an input changes, and the only placement that guarantees
@@ -78,6 +102,10 @@ export function useStudioText({
     setDraft(null);
     setComposing(false);
     setRefusal(null);
+    setPendingVariant(false);
+    // The same reset for the request in flight: a variant fetched for the
+    // element the customer just left must not apply to the one they arrived at.
+    request.current += 1;
   }
 
   const rule = useCallback(
@@ -129,12 +157,83 @@ export function useStudioText({
     [rule],
   );
 
+  /**
+   * The newest `rule`, for the one caller that resumes after an `await`.
+   *
+   * A `useCallback` closes over the document it was built with. Everything else
+   * here runs synchronously inside the handler, so the closure is current; a
+   * font request is not, and committing through a stale one would resurrect the
+   * document as it was when the customer opened the picker.
+   */
+  const ruleRef = useRef(rule);
+  useEffect(() => {
+    ruleRef.current = rule;
+  }, [rule]);
+
   const applyPatch = useCallback(
     (patch: TextFieldPatch) => {
-      rule(patch);
+      const variant = requestedVariant(textElementOf(document, elementId), patch);
+      // Not a font change, or a face the registry does not control at all — the
+      // second belongs to `APP3-P01`, which has an exact sentence for it that a
+      // browser probe would replace with the wrong one.
+      if (variant === null) {
+        rule(patch);
+        return;
+      }
+
+      /*
+       * A requested variant becomes document truth only once the browser has
+       * proved it can paint that exact face (`APP3-S05-C1`). Until then the
+       * document keeps the variant it already had — so a failed italic leaves
+       * an upright design rather than a synthesised slant that looks like a
+       * successful choice.
+       */
+      const started = (request.current += 1);
+      setPendingVariant(true);
+      void loadControlledVariant(variant).then((available) => {
+        if (started !== request.current) return;
+        setPendingVariant(false);
+        if (!available) {
+          setRefusal('controlled-font-unavailable');
+          return;
+        }
+        ruleRef.current(patch);
+      });
     },
-    [rule],
+    [document, elementId, rule],
   );
 
-  return { draft, refusal, composing, changeText, startComposition, finishText, applyPatch };
+  return {
+    draft,
+    refusal,
+    composing,
+    pendingVariant,
+    changeText,
+    startComposition,
+    finishText,
+    applyPatch,
+  };
+}
+
+/**
+ * The exact controlled face a patch is asking for, or `null` when the browser
+ * has nothing to be asked.
+ *
+ * The unchanged fields come from the element, because a variant is the triple —
+ * choosing italic on a 700 element requests italic 700, not italic 400.
+ */
+function requestedVariant(
+  element: TextElement | undefined,
+  patch: TextFieldPatch,
+): ControlledFontVariant | null {
+  if (element === undefined) return null;
+  if (patch.fontId === undefined && patch.fontStyle === undefined && patch.fontWeight === undefined)
+    return null;
+
+  const variant: ControlledFontVariant = {
+    fontId: patch.fontId ?? element.fontId,
+    fontStyle: patch.fontStyle ?? element.fontStyle,
+    fontWeight: patch.fontWeight ?? element.fontWeight,
+  };
+  return variantShorthand(variant) === undefined ? null : variant;
 }

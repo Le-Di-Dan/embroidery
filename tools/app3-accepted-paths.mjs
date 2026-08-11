@@ -354,7 +354,35 @@ export function isS05Delivered(rootDir) {
 export const S05_STATUS_LINES = Object.freeze([
   'APP3-S05 = READY — NOT STARTED',
   'APP3-S05 = COMPLETE — REVIEW_DELIVERED',
+  // The two states human review introduced: a correction was asked for, and a
+  // correction was delivered against it.
+  'APP3-S05 = COMPLETE — REVIEW_DELIVERED — CORRECTION_REQUIRED',
+  'APP3-S05 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW',
   'APP3-S05 = COMPLETE — REVIEW_ACCEPTED',
+]);
+
+/**
+ * True once `APP3-S05-C1` has delivered the responsive and font-variant
+ * correction.
+ *
+ * Separate from `isS05Delivered` because the two answer different questions.
+ * `S05` shipping is what makes the text *capability* real, and four earlier
+ * gates consult that. `S05-C1` shipping is what makes the tablet drawer, the
+ * mobile boundary and the variant-aware readiness real — and those rules must
+ * not run against a tree that predates them, or the gate would fail the very
+ * world it was written to accept.
+ */
+export function isS05C1Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S05-C1 = COMPLETE/.test(phase);
+}
+
+/** The status lines `APP3-S05-C1` may legitimately be recorded under. */
+export const S05_C1_STATUS_LINES = Object.freeze([
+  'APP3-S05-C1 = READY — NOT STARTED',
+  'APP3-S05-C1 = COMPLETE — REVIEW_DELIVERED',
+  'APP3-S05-C1 = COMPLETE — REVIEW_ACCEPTED',
 ]);
 
 /**
@@ -366,9 +394,14 @@ export const S05_STATUS_LINES = Object.freeze([
  */
 export const S05_FILES = Object.freeze([
   'components/studio-text-controls.tsx',
+  'components/studio-text-drawer.tsx',
   'components/studio-text-inspector.tsx',
+  'components/studio-text-panel.tsx',
   'hooks/use-controlled-font.ts',
   'hooks/use-studio-text.ts',
+  'hooks/use-studio-viewport-tier.ts',
+  'model/studio-font-variant.ts',
+  'model/studio-responsive.ts',
   'model/studio-text-authority.ts',
   'model/studio-text-copy.ts',
   'model/studio-text-fields.ts',

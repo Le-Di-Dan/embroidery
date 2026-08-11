@@ -11,6 +11,15 @@ import {
   type DesignDocument,
 } from '@embroidery/design-document';
 
+import {
+  fontLoadingAvailable,
+  loadControlledVariant,
+  variantShorthand,
+} from '../../src/features/design-studio/model/studio-font-variant';
+import {
+  STUDIO_TIER_BREAKPOINTS,
+  studioTierFor,
+} from '../../src/features/design-studio/model/studio-responsive';
 import { ruleOnTextCandidate } from '../../src/features/design-studio/model/studio-text-authority';
 import {
   EDITABLE_TEXT_FIELDS,
@@ -301,3 +310,91 @@ describe('geometry stays APP3-P02s (APP3-S05 §17)', () => {
     expect(textElementOf(null, 't')).toBeUndefined();
   });
 });
+
+describe('the readiness probe names one exact face (APP3-S05-C1 §6, §7)', () => {
+  const font = nthFont(0);
+
+  it('carries the requested style and weight, not just the family', () => {
+    expect(variantShorthand({ fontId: font.fontId, fontStyle: 'normal', fontWeight: 400 })).toBe(
+      `normal 400 16px "${font.family}"`,
+    );
+    expect(variantShorthand({ fontId: font.fontId, fontStyle: 'italic', fontWeight: 700 })).toBe(
+      `italic 700 16px "${font.family}"`,
+    );
+  });
+
+  it('makes upright and italic two different requests', () => {
+    const upright = variantShorthand({ fontId: font.fontId, fontStyle: 'normal', fontWeight: 400 });
+    const italic = variantShorthand({ fontId: font.fontId, fontStyle: 'italic', fontWeight: 400 });
+    expect(upright).not.toBe(italic);
+  });
+
+  it('makes two weights two different requests, even from one variable binary', () => {
+    // The registry ships one file for 100..900 today. Readiness is still asked
+    // with the weight the document holds, so the answer stays true the day the
+    // registry ships separate weight files.
+    expect(
+      variantShorthand({ fontId: font.fontId, fontStyle: 'normal', fontWeight: 400 }),
+    ).not.toBe(variantShorthand({ fontId: font.fontId, fontStyle: 'normal', fontWeight: 700 }));
+  });
+
+  it('never names a fallback family', () => {
+    // A fallback makes every probe succeed by matching the fallback — which is
+    // exactly the failure the probe exists to detect.
+    for (const weight of [100, 400, 900]) {
+      const shorthand =
+        variantShorthand({ fontId: font.fontId, fontStyle: 'italic', fontWeight: weight }) ?? '';
+      expect(shorthand).not.toMatch(/,|sans-serif|serif|system-ui|monospace/);
+      expect(shorthand.split('"')).toHaveLength(3);
+    }
+  });
+
+  it('has nothing to ask about a face the registry does not control', () => {
+    // Not a browser question: an unregistered font and an unsupported variant
+    // are APP3-P01 refusals, each with its own sentence.
+    expect(
+      variantShorthand({ fontId: 'not-a-registry-font', fontStyle: 'normal', fontWeight: 400 }),
+    ).toBeUndefined();
+    expect(
+      variantShorthand({ fontId: font.fontId, fontStyle: 'normal', fontWeight: 401.5 }),
+    ).toBeUndefined();
+    expect(
+      variantShorthand({
+        fontId: font.fontId,
+        fontStyle: 'normal',
+        fontWeight: font.maxWeight + 1,
+      }),
+    ).toBeUndefined();
+  });
+
+  it('answers false rather than throwing when there is no font-loading API', async () => {
+    expect(fontLoadingAvailable()).toBe(false);
+    await expect(
+      loadControlledVariant({ fontId: font.fontId, fontStyle: 'normal', fontWeight: 400 }),
+    ).resolves.toBe(false);
+  });
+});
+
+describe('the Studio viewport tiers (APP3-S05-C1 §2, §5)', () => {
+  it('gives each accepted viewport its own composition', () => {
+    expect(studioTierFor(1440)).toBe('desktop');
+    expect(studioTierFor(1024)).toBe('tablet');
+    expect(studioTierFor(390)).toBe('mobile');
+  });
+
+  it('is total, and changes exactly at the published widths', () => {
+    const { tabletMinPx, desktopMinPx } = STUDIO_TIER_BREAKPOINTS;
+    expect(studioTierFor(tabletMinPx - 1)).toBe('mobile');
+    expect(studioTierFor(tabletMinPx)).toBe('tablet');
+    expect(studioTierFor(desktopMinPx - 1)).toBe('tablet');
+    expect(studioTierFor(desktopMinPx)).toBe('desktop');
+    expect(studioTierFor(0)).toBe('mobile');
+  });
+});
+
+/** The registry's nth controlled font, as a value rather than a possibly-undefined index. */
+function nthFont(index: number) {
+  const font = DESIGN_FONT_REGISTRY[index];
+  if (font === undefined) throw new Error('the controlled font registry is empty');
+  return font;
+}

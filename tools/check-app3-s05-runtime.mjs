@@ -87,8 +87,11 @@ export function checkControlledFont(rootDir, fail) {
       fail(`${CANONICAL_FILES.controlledFont}: does not report the ${state} state`);
     }
   }
-  if (!font.includes('document.fonts')) {
-    fail(`${CANONICAL_FILES.controlledFont}: never asks the browser whether the face loaded`);
+  // The browser is asked, somewhere in the capability. *Which* question is asked
+  // is `checkVariantReadiness`'s subject: `APP3-S05-C1` moved the call into the
+  // variant module, so pinning it to the hook would now fail a correct tree.
+  if (!s05Code(rootDir).includes('document.fonts')) {
+    fail(`${FEATURE}: never asks the browser whether the face loaded`);
   }
 }
 
@@ -254,8 +257,11 @@ export function checkArchitecture(rootDir, fail) {
   if (!/buildRenderableScene\(stageDocument,\s*sceneMemo\.current\)/.test(screen)) {
     fail(`${CANONICAL_FILES.stageScreen}: the previous scene build is no longer offered back`);
   }
-  // The inspector writes through the one working document's own commit.
-  if (!screen.includes('StudioTextInspector')) {
+  // The inspector writes through the one working document's own commit. What
+  // the screen mounts moved at `APP3-S05-C1` — the inspector direct before it,
+  // the tier placement authority after — so the rule asks the world it is in
+  // rather than pinning the name S05 shipped with.
+  if (!/StudioText(Inspector|Panel)/.test(screen)) {
     fail(`${CANONICAL_FILES.stageScreen}: the text inspector is not mounted`);
   }
   if (!code(rootDir, 'controller').includes('ruleOnTextCandidate')) {

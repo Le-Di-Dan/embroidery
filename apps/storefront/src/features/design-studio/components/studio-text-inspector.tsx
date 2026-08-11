@@ -53,8 +53,23 @@ export function StudioTextInspector({
   // Both hooks run on every render, whatever the selection is. A hook called
   // only when something is editable would be a conditional hook, and the font
   // question is worth answering before the customer selects anything.
-  const fontState = useControlledFont(element?.fontId ?? null);
+  //
+  // The *exact* variant the selected element names, not its family
+  // (`APP3-S05-C1`): a Session that opens on italic 700 asks for italic 700,
+  // and does not inherit readiness from an upright face another element loaded.
+  const fontState = useControlledFont(
+    element === undefined
+      ? null
+      : {
+          fontId: element.fontId,
+          fontStyle: element.fontStyle,
+          fontWeight: element.fontWeight,
+        },
+  );
   const text = useStudioText({ document, elementId, scope, limits, commit });
+  // One "loading": the element's own face on arrival, and the face a pending
+  // choice is waiting on. They are the same fact to a customer.
+  const loading = text.pendingVariant || fontState === 'loading';
 
   return (
     <section className="studio-text" aria-label={STUDIO_TEXT_COPY.panelLabel}>
@@ -81,7 +96,7 @@ export function StudioTextInspector({
         is polite; "unavailable" is an alert, because from that moment the glyph
         shapes on the stage are not the ones the design will be stitched with.
       */}
-      {fontState === 'loading' && element !== undefined ? (
+      {loading && element !== undefined ? (
         <p
           className="studio-text__font-status"
           data-testid="studio-text-font-loading"
@@ -91,7 +106,7 @@ export function StudioTextInspector({
           {STUDIO_TEXT_COPY.fontLoading}
         </p>
       ) : null}
-      {fontState === 'unavailable' && element !== undefined ? (
+      {!loading && fontState === 'unavailable' && element !== undefined ? (
         <p
           className="studio-text__font-status studio-text__font-status--failed"
           data-testid="studio-text-font-unavailable"
@@ -142,6 +157,8 @@ function refusalCopy(refusal: TextRefusal): string {
       return STUDIO_TEXT_COPY.refusalUnknownFont;
     case 'unsupported-variant':
       return STUDIO_TEXT_COPY.refusalUnsupportedVariant;
+    case 'controlled-font-unavailable':
+      return STUDIO_TEXT_COPY.refusalControlledFontUnavailable;
     case 'invalid-value':
       return STUDIO_TEXT_COPY.refusalInvalidValue;
     case 'outside-embroidery-area':

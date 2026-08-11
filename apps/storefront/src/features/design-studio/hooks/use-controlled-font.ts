@@ -1,84 +1,94 @@
 'use client';
 
 /**
- * Whether the controlled face a text element names is actually available in this
- * browser (`APP3-S05`).
+ * Whether the controlled face a text element actually names is available in this
+ * browser (`APP3-S05`, corrected by `APP3-S05-C1`).
  *
  * ## Why the question has to be asked at all
  *
- * A document stores a `fontId`; `APP3-P01`'s registry turns that into the family
- * name `Inter`; the stage paints `font-family="Inter"`. If the `@font-face` has
- * not loaded, the browser silently substitutes something else — and a substituted
- * face has different metrics, so the design is shown, and later stitched, at a
- * shape the customer never approved with nothing on screen saying so. The
- * registry's own locked policy is `REJECT_IF_CONTROLLED_FONT_UNAVAILABLE`, and a
- * renderer cannot reject a paint; what it can do is tell the truth about it.
+ * A document stores a `fontId`, a `fontStyle` and a `fontWeight`; `APP3-P01`'s
+ * registry turns the id into the family name; the stage paints the family. If
+ * the matching `@font-face` has not loaded, the browser silently substitutes —
+ * a different family, or, for a missing italic, a *synthesised* slant of the
+ * upright one. A substituted or synthesised face has different outlines, so the
+ * design is shown, and later stitched, at a shape the customer never approved
+ * with nothing on screen saying so. The registry's locked policy is
+ * `REJECT_IF_CONTROLLED_FONT_UNAVAILABLE`, and a renderer cannot reject a paint;
+ * what it can do is tell the truth about it.
  *
- * ## Why the CSS Font Loading API
+ * ## Why the exact variant, and not the family
  *
- * It is the browser's own answer to this exact question, it is already present
- * everywhere the Studio runs, and it needs no dependency. `document.fonts.load`
- * returns the faces that matched, so "no face matched" and "the fetch failed"
- * are both observable — which is what makes the third state honest rather than a
- * timeout dressed up as a fact.
+ * `APP3-S05` probed the family, which reports ready as soon as *any* Inter face
+ * loads. The correction asks `studio-font-variant` for the exact style and
+ * weight instead, so a loaded upright never speaks for a missing italic. The
+ * three states are per requested variant, and changing style or weight starts a
+ * new request rather than reusing the previous answer.
  *
- * The `@font-face` itself is declared once in the feature stylesheet, pointing at
- * the repository-controlled binary `APP3-F01` acquired. Nothing here holds a URL,
- * a path or font bytes, and nothing writes any of them into a document.
+ * ## Races
+ *
+ * The requested variant is an effect dependency, so switching selection or
+ * variant tears down the previous effect first. A late answer from a superseded
+ * request finds `cancelled` set and writes nothing — which is what stops a slow
+ * italic failure from marking a fast, successful upright as unavailable.
+ *
+ * The `@font-face` rules themselves are declared once in the feature stylesheet,
+ * pointing at the repository-controlled binaries `APP3-F01` acquired. Nothing
+ * here holds a URL, a path or font bytes, and nothing writes any of them into a
+ * document.
  */
 import { useEffect, useState } from 'react';
 
-import { findControlledFont } from '@embroidery/design-document';
+import {
+  fontLoadingAvailable,
+  loadControlledVariant,
+  type ControlledFontVariant,
+} from '../model/studio-font-variant';
 
 /** The three states `APP3-S05` must show, and no fourth. */
 export type ControlledFontState = 'loading' | 'ready' | 'unavailable';
 
 /**
- * The probe the browser is asked to resolve.
+ * Readiness of the exact variant, or `unavailable` when there is none to ask
+ * about.
  *
- * A `document.fonts.load` shorthand needs a size, and the size is irrelevant to
- * whether a face exists — a variable font covers the whole weight range in one
- * file, so any legal weight resolves the same face.
+ * The three fields are the dependencies rather than the object holding them.
+ * Every caller rebuilds that object each render — it comes from the selected
+ * element — so depending on it would restart the request on every keystroke,
+ * and the panel would flicker back to "loading" while the customer typed.
  */
-const PROBE = Object.freeze({ weight: 400, sizePx: 16 });
-
-export function useControlledFont(fontId: string | null): ControlledFontState {
-  // `findControlledFont` returns the frozen registry entry, so this identity is
-  // stable across renders and is a sound effect dependency.
-  const font = fontId === null ? undefined : findControlledFont(fontId);
+export function useControlledFont(variant: ControlledFontVariant | null): ControlledFontState {
   const [state, setState] = useState<ControlledFontState>(
-    font === undefined ? 'unavailable' : 'loading',
+    variant === null ? 'unavailable' : 'loading',
   );
+  const fontId = variant?.fontId ?? null;
+  const fontStyle = variant?.fontStyle ?? null;
+  const fontWeight = variant?.fontWeight ?? null;
 
   useEffect(() => {
-    if (font === undefined) {
+    if (fontId === null || fontStyle === null || fontWeight === null) {
       setState('unavailable');
       return;
     }
-    const faces = typeof document === 'undefined' ? undefined : document.fonts;
-    if (faces === undefined) {
-      // No font-loading API: the page may still render the face, but this hook
-      // cannot claim it did. Saying "unavailable" over-warns; claiming "ready"
-      // would be the silent substitution the policy exists to prevent.
+    // Nobody to ask. Answered here rather than through the promise, because
+    // there is no request in flight to be "loading" — and a state that arrives
+    // asynchronously when nothing asynchronous happened is a lie about timing.
+    // Saying "unavailable" over-warns; claiming "ready" would be the silent
+    // substitution the policy exists to prevent.
+    if (!fontLoadingAvailable()) {
       setState('unavailable');
       return;
     }
 
     let cancelled = false;
     setState('loading');
-    faces
-      .load(`${String(PROBE.weight)} ${String(PROBE.sizePx)}px "${font.family}"`)
-      .then((matched) => {
-        if (!cancelled) setState(matched.length > 0 ? 'ready' : 'unavailable');
-      })
-      .catch(() => {
-        if (!cancelled) setState('unavailable');
-      });
+    void loadControlledVariant({ fontId, fontStyle, fontWeight }).then((available) => {
+      if (!cancelled) setState(available ? 'ready' : 'unavailable');
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [font]);
+  }, [fontId, fontStyle, fontWeight]);
 
   return state;
 }

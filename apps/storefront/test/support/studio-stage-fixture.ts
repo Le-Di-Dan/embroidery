@@ -178,3 +178,20 @@ export function makeScope(
     ...overrides,
   };
 }
+
+/**
+ * The viewport width the Studio tier authority will read (`APP3-S05-C1`).
+ *
+ * jsdom reports a fixed `innerWidth` that happens to sit in the tablet band, so
+ * a suite that does not say which composition it is testing gets the drawer by
+ * accident. Every Studio suite states its width, and this is the one place that
+ * knows how to set it.
+ */
+export function setViewportWidth(widthPx: number): void {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: widthPx,
+  });
+  window.dispatchEvent(new Event('resize'));
+}

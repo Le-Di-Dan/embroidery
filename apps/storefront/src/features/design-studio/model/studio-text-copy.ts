@@ -24,6 +24,21 @@ export const STUDIO_TEXT_COPY = {
   hiddenElement: 'Đối tượng chữ này đang được ẩn nên chưa thể chỉnh sửa.',
   lockedElement: 'Đối tượng chữ này đang bị khoá nên chưa thể chỉnh sửa.',
 
+  /**
+   * The 390 state (`APP3-S05-C1`).
+   *
+   * It states the fact and promises nothing. Mobile text editing — the bottom
+   * sheet and the touch surfaces around it — belongs to `APP3-S11`, and copy
+   * saying it is "coming" would commit a checkpoint that has not been reviewed.
+   */
+  mobileUnavailable: 'Màn hình này chưa đủ rộng để chỉnh sửa chữ thêu.',
+
+  // The 1024 drawer (APP3-S05-C1, FIG-STUDIO-EDITING-TABLET-1024). The trigger
+  // names the panel it opens rather than an icon, and the drawer carries the
+  // same name, so the two are one thing to a screen reader.
+  drawerOpen: 'Mở bảng thuộc tính chữ',
+  drawerClose: 'Đóng bảng thuộc tính chữ',
+
   textLabel: 'Nội dung chữ',
   textHint: `Tối đa ${String(DESIGN_DOCUMENT_LIMITS.maxCharactersPerTextElement)} ký tự.`,
   /** Code points remaining, counted exactly as `APP3-P01` counts them. */
@@ -58,6 +73,13 @@ export const STUDIO_TEXT_COPY = {
   refusalInvalidText: 'Nội dung chữ này chưa hợp lệ nên chưa được áp dụng.',
   refusalUnknownFont: 'Phông chữ này không nằm trong danh sách được duyệt.',
   refusalUnsupportedVariant: 'Phông chữ này không có kiểu và độ đậm vừa chọn.',
+  /**
+   * The registry has the face and this browser could not load it. Deliberately
+   * a different sentence from the one above: that face does not exist, this one
+   * did not arrive, and only the second is worth trying again.
+   */
+  refusalControlledFontUnavailable:
+    'Chưa tải được kiểu chữ vừa chọn nên thay đổi chưa được áp dụng. Bản thiết kế giữ nguyên kiểu chữ cũ.',
   refusalInvalidValue: `Giá trị chưa hợp lệ. Cỡ chữ nhận từ ${String(DESIGN_DOCUMENT_VALUE_RANGES.minFontSizePx)} đến ${String(DESIGN_DOCUMENT_VALUE_RANGES.maxFontSizePx)}, độ đậm từ ${String(DESIGN_DOCUMENT_VALUE_RANGES.minFontWeight)} đến ${String(DESIGN_DOCUMENT_VALUE_RANGES.maxFontWeight)}.`,
   refusalOutsideArea: 'Sau thay đổi này, đối tượng sẽ nằm ngoài vùng thêu cho phép.',
   refusalTooLarge: 'Sau thay đổi này, đối tượng vượt quá kích thước tối đa của vùng thêu.',

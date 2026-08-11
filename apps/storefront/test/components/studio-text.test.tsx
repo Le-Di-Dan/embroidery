@@ -26,6 +26,7 @@ import {
   makeScope,
   makeStageDocument,
   makeStageSnapshot,
+  setViewportWidth,
   shapeElement,
   textElement,
 } from '../support/studio-stage-fixture';
@@ -79,6 +80,11 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  // The accepted desktop composition, stated rather than inherited. jsdom's own
+  // default width sits in the tablet band, where `APP3-S05-C1` puts the
+  // inspector in a drawer — this suite would then have been quietly testing a
+  // different composition from the one it describes.
+  setViewportWidth(1440);
   backgroundMock.mockReset();
   backgroundMock.mockRejectedValue(new Error('no background in this fixture'));
   useStudioInteractionStore.setState({ selectedElementId: null });
