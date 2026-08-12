@@ -11,13 +11,12 @@ import { rectToBounds } from '@embroidery/design-engine';
 import { useSideBackground } from '../hooks/use-side-background';
 import { useStudioImage } from '../hooks/use-studio-image';
 import { useStudioImageMedia } from '../hooks/use-studio-image-media';
+import { useStudioLayers } from '../hooks/use-studio-layers';
 import { useStudioTransform } from '../hooks/use-studio-transform';
 import { STUDIO_STAGE_COPY } from '../model/studio-stage-copy';
 import { imageElementOf } from '../model/studio-image-placement';
 import { sessionKeyOf } from '../model/studio-session-key';
-import { elementLabel } from '../model/studio-stage-label';
-import type { StudioAreaLimits, TransformRefusal } from '../model/studio-transform-authority';
-import { STUDIO_TRANSFORM_COPY } from '../model/studio-transform-copy';
+import type { StudioAreaLimits } from '../model/studio-transform-authority';
 import { zoomAt } from '../model/studio-viewport';
 import {
   buildRenderableScene,
@@ -31,11 +30,13 @@ import { StudioSessionPanel } from './studio-session-panel';
 import { StudioStage } from './studio-stage';
 import { StudioStageBackgroundNotice } from './studio-stage-background-notice';
 import { StudioStageControls } from './studio-stage-controls';
+import { StudioStageStatus } from './studio-stage-status';
 import { StudioStageUnavailable } from './studio-stage-unavailable';
 import { StudioStageViewport } from './studio-stage-viewport';
 import { StudioImagePanel } from './studio-image-panel';
+import { StudioLayersPanel } from './studio-layers-panel';
 import { StudioTextPanel } from './studio-text-panel';
-import { StudioTransformOverlay, physicalSizeLabel } from './studio-transform-overlay';
+import { StudioTransformOverlay } from './studio-transform-overlay';
 
 export interface StudioStageScreenProps {
   readonly snapshot: DesignSessionSnapshotResponse;
@@ -250,6 +251,23 @@ export function StudioStageScreen({
    */
   const imageMedia = useStudioImageMedia(snapshot.sessionId, sceneDocument);
 
+  /*
+   * The layer capability's controller (`APP3-S04`), owned here for the same
+   * reason the image controller is: the tier decides which of its two mounts
+   * renders, so a controller owned by the panel would be discarded and rebuilt
+   * on every breakpoint crossing. It reads the scene's document and the graph
+   * the scene already resolved — never a second graph — and writes back through
+   * the same `commit` every other capability uses.
+   */
+  const layers = useStudioLayers({
+    clearSelection,
+    commit: commitDocument,
+    document: sceneDocument,
+    graph,
+    select: selectElement,
+    selectedElementId,
+  });
+
   return (
     <div className="studio-stage">
       <StudioSessionPanel isResuming={isResuming} onResume={onResume} snapshot={snapshot} />
@@ -269,6 +287,10 @@ export function StudioStageScreen({
                 out-of-flow panel. A second drawer over the same stage edge
                 would be a second drawer system. */}
             <StudioImagePanel slot="drawer" {...imagePanel} />
+            {/* And the layers, in that same one drawer (`APP3-D01-C1`: "layers
+                merge into that same drawer because 1024 cannot hold three
+                regions"). */}
+            <StudioLayersPanel slot="drawer" layers={layers} />
           </StudioTextPanel>
 
           <StudioStageBackgroundNotice background={background} hasScope={scope !== null} />
@@ -328,6 +350,9 @@ export function StudioStageScreen({
               empty there. */}
           <StudioImagePanel slot="body" {...imagePanel} />
 
+          {/* The desktop and mobile layer mounts (`APP3-S04`). */}
+          <StudioLayersPanel slot="body" layers={layers} />
+
           {result.scene.elements.length === 0 ? (
             <p className="studio-stage__empty" data-testid="studio-stage-empty" role="status">
               {STUDIO_STAGE_COPY.empty}
@@ -335,54 +360,18 @@ export function StudioStageScreen({
             </p>
           ) : null}
 
-          {/*
-            Selection, physical size and any refusal, all in text. A coloured
-            rectangle is invisible to a screen reader, a millimetre value cannot
-            be inferred from how large something looks, and a refusal that only
-            manifested as "the element stopped moving" would read as a bug.
-          */}
-          <p className="studio-stage__selection-status" role="status">
-            {selected === undefined
-              ? STUDIO_STAGE_COPY.selectionNone
-              : `${STUDIO_STAGE_COPY.selectionPrefix}: ${elementLabel(selected.element)}`}
-            {transformable === undefined ? null : (
-              <span className="studio-stage__hint" data-testid="studio-transform-size">
-                {scope === null || sceneDocument === null || graph === null
-                  ? STUDIO_TRANSFORM_COPY.physicalSizeUnavailable
-                  : physicalSizeLabel(sceneDocument, transformable.id, scope.pxPerMm, graph)}
-              </span>
-            )}
-            {selected !== undefined && selected.element.locked ? (
-              <span className="studio-stage__hint" data-testid="studio-transform-locked">
-                {STUDIO_TRANSFORM_COPY.lockedElement}
-              </span>
-            ) : null}
-          </p>
-
-          {transform.refusal === null ? null : (
-            <p
-              className="studio-stage__refusal"
-              role="alert"
-              data-testid="studio-transform-refusal"
-            >
-              {refusalCopy(transform.refusal)}
-            </p>
-          )}
+          <StudioStageStatus
+            document={sceneDocument}
+            graph={graph}
+            refusal={transform.refusal}
+            scope={scope}
+            selected={selected}
+            transformable={transformable}
+          />
         </section>
       ) : (
         <StudioStageUnavailable failure={result.failure} />
       )}
     </div>
   );
-}
-
-function refusalCopy(refusal: TransformRefusal): string {
-  switch (refusal) {
-    case 'outside-embroidery-area':
-      return STUDIO_TRANSFORM_COPY.outsideArea;
-    case 'too-large-for-area':
-      return STUDIO_TRANSFORM_COPY.tooLarge;
-    default:
-      return STUDIO_TRANSFORM_COPY.unreadable;
-  }
 }

@@ -212,6 +212,46 @@ export const S06_FILES = new Set(
   ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
 );
 
+/**
+ * The files `APP3-S04` added, named exactly.
+ *
+ * The layer capability reads the `APP3-P01` authority — the element union, the
+ * structural validator — and it is the first Studio surface that legitimately
+ * carries a **drag**: the approved `608:68` frame draws drag-reorder with a drop
+ * indicator, and until this checkpoint every `onDrag*` in the feature was a
+ * capability a later checkpoint owned. So the ban moves rather than loosening:
+ * a drag outside this list is still forbidden, and inside it is still a native
+ * DOM gesture with no interaction library behind it.
+ *
+ * `studio-stage-status.tsx` is on the list because `APP3-S04` split it out of
+ * `StudioStageScreen` to stay inside the 400-line limit. Its content is
+ * `APP3-S02`/`S03`'s and unchanged; what moved is which file holds it.
+ */
+export const S04_FILES = new Set(
+  [
+    'components/studio-layers-list.tsx',
+    'components/studio-layers-panel.tsx',
+    'components/studio-stage-status.tsx',
+    'hooks/use-studio-layers.ts',
+    'model/studio-layer-copy.ts',
+    'model/studio-layers.ts',
+  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
+export const s04Code = codeOnly(
+  sources
+    .filter((file) => S04_FILES.has(file.path))
+    .map((file) => file.text)
+    .join('\n'),
+);
+
+/** Everything except the layer capability, for the rules a drag must not escape. */
+export const outsideS04Code = codeOnly(
+  [...sources.filter((file) => !S04_FILES.has(file.path)), ...routeFiles]
+    .map((file) => file.text)
+    .join('\n'),
+);
+
 export const interactionSources = sources.filter(
   (file) => S07_FILES.has(file.path) || S03_FILES.has(file.path),
 );
@@ -234,7 +274,8 @@ export const s01Sources = sources.filter(
     !S03_FILES.has(file.path) &&
     !S03_C1_FILES.has(file.path) &&
     !S05_FILES.has(file.path) &&
-    !S06_FILES.has(file.path),
+    !S06_FILES.has(file.path) &&
+    !S04_FILES.has(file.path),
 );
 export const s07Sources = sources.filter((file) => S07_FILES.has(file.path));
 export const s07Code = codeOnly(s07Sources.map((file) => file.text).join('\n'));

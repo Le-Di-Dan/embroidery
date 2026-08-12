@@ -19,6 +19,8 @@ import {
   S07_FILES,
   isS05Delivered,
   isS06Delivered,
+  S04_FILES,
+  isS04Delivered,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -93,6 +95,19 @@ export const LATER_STUDIO_ROWS = Object.freeze([
   'FIG-STUDIO-TEXT-DESKTOP-EDITING',
   'FIG-STUDIO-IMAGE-DESKTOP-UPLOADING',
   'FIG-STUDIO-ZOOM-DESKTOP-FIT',
+  /*
+   * The four rows whose checkpoints have still not opened (`APP3-S04`).
+   *
+   * Added when `APP3-S04` delivered, because at that moment every row above
+   * belonged to a checkpoint that *had* opened and the world-aware exclusion
+   * emptied this rule completely — it still ran, still passed, and asserted
+   * nothing. A blanket-approval rule with no closed row left in it is the
+   * shape of a gate that has quietly stopped being a gate.
+   */
+  'FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY',
+  'FIG-STUDIO-WATERMARK-DESKTOP-LIGHT',
+  'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED',
+  'FIG-STUDIO-MOBILE-LAYERSSHEET',
 ]);
 
 /** The six generated operations S01 owns, and nothing else. */
@@ -203,6 +218,7 @@ export function s01FeatureCode(rootDir) {
       ...S03_FILES,
       ...(isS05Delivered(rootDir) ? S05_FILES : []),
       ...(isS06Delivered(rootDir) ? S06_FILES : []),
+      ...(isS04Delivered(rootDir) ? S04_FILES : []),
     ].map((path) => join(rootDir, FEATURE, ...path.split('/'))),
   );
   const files = [

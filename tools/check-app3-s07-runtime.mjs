@@ -18,7 +18,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { isS06Delivered } from './app3-accepted-surface.mjs';
+import { isS04Delivered, isS06Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -30,6 +30,7 @@ import {
   preS07Code,
   read,
   s07Code,
+  preS04Code,
 } from './check-app3-s07.sources.mjs';
 
 /**
@@ -311,11 +312,23 @@ export function checkNonScope(rootDir, fail) {
     }
   }
 
+  /*
+   * The drag markers moved owner rather than losing their rule (`APP3-S04`).
+   *
+   * `608:68` draws a drag-reorder in the layer panel, so once `APP3-S04` has
+   * delivered the marker is legitimate **in its six files** — and as forbidden
+   * as it ever was in the viewport, the stage and everywhere else, which is what
+   * this rule protects.
+   */
+  const dragScope = isS04Delivered(rootDir) ? preS04Code(rootDir) : all;
+  for (const marker of ['onDragStart', 'onDragEnd', 'draggable']) {
+    if (dragScope.includes(marker)) {
+      fail(`${FEATURE}: carries "${marker}" outside the layer panel that owns it`);
+    }
+  }
+
   const owners = Object.freeze({
-    onDragStart: 'APP3-S03',
-    onDragEnd: 'APP3-S03',
     onMouseMove: 'APP3-S03',
-    draggable: 'APP3-S03',
     resizeHandle: 'APP3-S03',
     rotateHandle: 'APP3-S03',
     onTouchStart: 'APP3-S11',

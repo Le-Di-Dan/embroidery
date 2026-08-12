@@ -392,7 +392,7 @@ describe('the design approval is scoped, in both directions', () => {
     const registry = file('registry');
     const line = registry
       .split('\n')
-      .find((row) => row.startsWith('| FIG-STUDIO-LAYERS-DESKTOP-DEFAULT |'));
+      .find((row) => row.startsWith('| FIG-STUDIO-WATERMARK-DESKTOP-LIGHT |'));
     const root = rootWith({
       registry: registry.replace(
         line,

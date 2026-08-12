@@ -411,14 +411,30 @@ describe('the capabilities S03 must not grow', () => {
     expect(backgroundMock).not.toHaveBeenCalled();
   });
 
-  it('grows no undo, layer, upload or save affordance', () => {
+  it('grows no undo, upload or save affordance', () => {
     const { container } = renderStage();
     select('a');
 
     const markup = container.innerHTML.toLowerCase();
-    for (const absent of ['undo', 'redo', 'hoàn tác', 'đã lưu', 'lớp', 'tải lên', 'watermark']) {
+    for (const absent of ['undo', 'redo', 'hoàn tác', 'đã lưu', 'tải lên', 'watermark']) {
       expect(markup).not.toContain(absent.toLowerCase());
     }
+  });
+
+  /*
+   * The layer panel exists from `APP3-S04` and the transform chrome is not it.
+   *
+   * Scoped to the overlay rather than dropped: the thing this rule was written
+   * to prevent is a capability appearing *on the transform chrome*, and that is
+   * as forbidden as it ever was.
+   */
+  it('puts no layer control on the transform chrome', () => {
+    renderStage();
+    select('a');
+
+    const overlay = screen.getByTestId('studio-transform-move').closest('div');
+    expect(overlay?.querySelector('[data-testid="studio-layer-list"]')).toBeFalsy();
+    expect(screen.getAllByTestId('studio-layer-list')).toHaveLength(1);
   });
 
   it('leaves the drawn element itself free of pointer handlers', () => {

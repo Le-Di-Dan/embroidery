@@ -17,6 +17,7 @@ import { publicProductSideBackgroundGet } from '@embroidery/api-client';
 import { fireEvent, renderWithProviders, screen } from '@embroidery/frontend-testing';
 
 import { StudioStageScreen } from '../../src/features/design-studio/components/studio-stage-screen';
+import { STUDIO_TEXT_COPY } from '../../src/features/design-studio/model/studio-text-copy';
 import type * as StageLabelModule from '../../src/features/design-studio/model/studio-stage-label';
 import * as stageLabel from '../../src/features/design-studio/model/studio-stage-label';
 import { useStudioDocumentStore } from '../../src/features/design-studio/store/studio-document.store';
@@ -334,13 +335,33 @@ describe('the S03-C1 render architecture survives a text edit (APP3-S05 §18)', 
 });
 
 describe('S05 pulls nothing forward (APP3-S05 §19)', () => {
-  it('adds no save, history, layer, upload or watermark control', () => {
+  it('adds no save, history, upload or watermark control', () => {
     renderStage();
     select('t');
 
-    for (const pulled of [/hoàn tác/i, /làm lại/i, /đã lưu/i, /đang lưu/i, /lớp/i, /tải ảnh/i]) {
+    for (const pulled of [/hoàn tác/i, /làm lại/i, /đã lưu/i, /đang lưu/i, /tải ảnh/i]) {
       expect(screen.queryByText(pulled)).not.toBeInTheDocument();
     }
+  });
+
+  /*
+   * The layer ban became a layer *boundary* at `APP3-S04`.
+   *
+   * "No layer control anywhere" was right while there was no layer capability,
+   * and deleting it now would let the text inspector grow one of its own. So the
+   * rule is narrower rather than gone: there is exactly one layer surface, it is
+   * S04's, and the text inspector is not it.
+   */
+  it('grows no layer surface of its own', () => {
+    renderStage();
+    select('t');
+
+    expect(screen.getAllByTestId('studio-layer-list')).toHaveLength(1);
+    expect(
+      screen
+        .getByRole('region', { name: STUDIO_TEXT_COPY.panelLabel })
+        .querySelector('[data-testid="studio-layer-list"]'),
+    ).toBeNull();
   });
 
   it('calls no API for a text edit', () => {

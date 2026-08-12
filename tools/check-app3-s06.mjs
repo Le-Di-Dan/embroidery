@@ -37,7 +37,14 @@ import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S06_STATUS_LINES, acceptedSurface, isS06Delivered } from './app3-accepted-surface.mjs';
+import {
+  S04_DESIGN_ROWS,
+  S06_STATUS_LINES,
+  acceptedSurface,
+  isS04Delivered,
+  isS06Delivered,
+} from './app3-accepted-surface.mjs';
+
 import {
   CANONICAL_FILES,
   EXPECTED_MIGRATIONS,
@@ -68,6 +75,9 @@ import {
   checkPolling,
   checkRenderer,
 } from './check-app3-s06-frontend.mjs';
+
+/** The three section-08 rows APP3-S04 owns, by id. */
+const S04_LAYER_ROWS = Object.keys(S04_DESIGN_ROWS);
 
 export { REPO_ROOT, CANONICAL_FILES, S06_DESIGN_ROWS, LATER_STUDIO_ROWS };
 export { checkClonedMediaGrant, checkInspectionLane, checkReadLimit, checkStatusProjection };
@@ -137,7 +147,11 @@ export function checkPredecessors(rootDir, fail) {
   }
 
   // S06 implements none of these, and delivering it makes none of them ready.
-  for (const later of ['APP3-S04', 'APP3-S08', 'APP3-S09', 'APP3-S10', 'APP3-S11']) {
+  // World-aware on APP3-S04: "S06 did not implement this" stays true once S04
+  // implements it for itself, and the S04 gate is what checks that.
+  const notImplementedByS06 = ['APP3-S08', 'APP3-S09', 'APP3-S10', 'APP3-S11'];
+  if (!isS04Delivered(rootDir)) notImplementedByS06.push('APP3-S04');
+  for (const later of notImplementedByS06) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(`${CANONICAL_FILES.phase}: ${later} is recorded complete; S06 does not implement it`);
     }
@@ -177,7 +191,13 @@ export function checkDesignApproval(rootDir, fail) {
   // fail this gate rather than pass it. The mobile image sheet is in this list
   // deliberately — it is the same *capability* and a different checkpoint, and
   // approving the desktop rows must not carry it along.
-  for (const id of LATER_STUDIO_ROWS) {
+  // World-aware on the rows whose own checkpoint has opened, and on nothing
+  // else. `APP3-S04` legitimately approves its three section-08 frames, so once
+  // it has delivered they stop being evidence of a blanket approval — while
+  // every row belonging to a checkpoint that still has not opened stays exactly
+  // as ruled.
+  const opened = new Set(isS04Delivered(rootDir) ? S04_LAYER_ROWS : []);
+  for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }

@@ -197,10 +197,12 @@ const c = Math.cos(1);
 
   it('still refuses every other later Studio row in the S07 world', () => {
     const registry = file('registry').replace(
-      /(\| FIG-STUDIO-LAYERS-DESKTOP-DEFAULT \|[^\n]*?)REVIEW_REQUIRED/,
+      /(\| FIG-STUDIO-WATERMARK-DESKTOP-LIGHT \|[^\n]*?)REVIEW_REQUIRED/,
       '$1APPROVED_FOR_IMPLEMENTATION',
     );
     const root = rootWith({ registry });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'));
+    assert.ok(
+      mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-WATERMARK-DESKTOP-LIGHT'),
+    );
   });
 });

@@ -20,6 +20,7 @@ import {
   isS03Delivered,
   isS06Delivered,
   isS07Delivered,
+  isS04Delivered,
 } from './app3-accepted-surface.mjs';
 
 /**
@@ -49,6 +50,7 @@ import {
   read,
   s02FeatureCode,
   storefrontCode,
+  preS04Code,
 } from './check-app3-s02.sources.mjs';
 import {
   DOM_MEASUREMENT,
@@ -331,11 +333,24 @@ export function checkMedia(rootDir, fail) {
 /** The capabilities S02 must not grow, each named with its real owner. */
 export function checkNonScope(rootDir, fail) {
   const all = featureCode(rootDir);
+  /*
+   * The drag markers moved owner rather than losing their rule (`APP3-S04`).
+   *
+   * They were attributed to `APP3-S03` because a drag on the stage was the only
+   * drag anyone could imagine. `608:68` draws a drag-reorder in the layer panel,
+   * so once `APP3-S04` has delivered the marker is legitimate **in its six
+   * files** — and as forbidden as it ever was everywhere else, which is what
+   * this rule was written to protect.
+   */
+  const dragScope = isS04Delivered(rootDir) ? preS04Code(rootDir) : all;
+  for (const marker of ['onDragStart', 'onDragEnd', 'draggable']) {
+    if (dragScope.includes(marker)) {
+      fail(`${FEATURE}: carries "${marker}" outside the layer panel that owns it`);
+    }
+  }
+
   const owners = Object.freeze({
-    onDragStart: 'APP3-S03',
-    onDragEnd: 'APP3-S03',
     onMouseMove: 'APP3-S03',
-    draggable: 'APP3-S03',
     resizeHandle: 'APP3-S03',
     onWheel: 'APP3-S07',
     onTouchMove: 'APP3-S11',

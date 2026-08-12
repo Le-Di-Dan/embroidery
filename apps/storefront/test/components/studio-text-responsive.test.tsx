@@ -540,13 +540,38 @@ describe('the correction pulls nothing forward (APP3-S05-C1 §13, §14)', () => 
     expect(client.publicDesignSessionResume).not.toHaveBeenCalled();
   });
 
-  it('adds no history, layer, upload or save control to the drawer', () => {
+  it('adds no history, upload or save control to the drawer', () => {
     renderStage(TABLET);
     select('t');
     fireEvent.click(screen.getByTestId('studio-text-drawer-trigger'));
 
-    for (const pulled of [/hoàn tác/i, /làm lại/i, /đã lưu/i, /đang lưu/i, /lớp/i, /tải ảnh/i]) {
+    for (const pulled of [/hoàn tác/i, /làm lại/i, /đã lưu/i, /đang lưu/i, /tải ảnh/i]) {
       expect(screen.queryByText(pulled)).not.toBeInTheDocument();
     }
+  });
+
+  /*
+   * The layers are *in* the drawer at 1024, and that is the accepted design
+   * (`APP3-D01-C1`: "layers merge into that same drawer because 1024 cannot hold
+   * three regions"). What must stay impossible is a **second** drawer, so the
+   * rule counts panels and triggers rather than forbidding the word.
+   */
+  it('keeps the layer panel inside the one accepted drawer', () => {
+    renderStage(TABLET);
+    select('t');
+
+    // Closed, the drawer is `hidden`: the subtree stays in the DOM so
+    // `aria-controls` resolves, but it is out of the accessibility tree and out
+    // of the tab order — so no layer control is reachable before the one
+    // trigger is used.
+    expect(screen.getByTestId('studio-text-drawer')).toHaveAttribute('hidden');
+    expect(screen.queryByRole('button', { name: /Chọn lớp/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('studio-text-drawer-trigger'));
+
+    const drawer = screen.getByTestId('studio-text-drawer');
+    expect(drawer.querySelectorAll('[data-testid="studio-layer-list"]')).toHaveLength(1);
+    expect(screen.getAllByTestId('studio-stage-topbar')).toHaveLength(1);
+    expect(screen.getAllByTestId('studio-text-drawer')).toHaveLength(1);
   });
 });

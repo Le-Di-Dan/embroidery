@@ -23,11 +23,13 @@ import {
   collect,
   interactionCode,
   nth,
+  outsideS04Code,
   routeFiles,
   s01Code,
   s02Code,
   s02Sources,
   s03Code,
+  s04Code,
   s07Code,
   scssCode,
   sources,
@@ -309,17 +311,35 @@ describe('exactly one production renderer (APP3-S02)', () => {
   });
 
   it('grows no capability a later checkpoint owns', () => {
-    for (const later of [
-      'onDragStart',
-      'onDrag',
-      'onWheel',
-      'watermark',
-      'Watermark',
-      'onMouseMove',
-      'undoStack',
-      'reorder',
-    ]) {
+    for (const later of ['onWheel', 'watermark', 'Watermark', 'onMouseMove', 'undoStack']) {
       expect(allCode).not.toContain(later);
+    }
+  });
+
+  /*
+   * The drag moved into the world rather than out of the rule (`APP3-S04`).
+   *
+   * `608:68` draws drag-reorder with a drop indicator, so the layer panel has a
+   * legitimate `onDragStart`. Deleting the ban would have let the next
+   * checkpoint put a drag on the stage, the inspector or the viewport, which is
+   * the thing it was written to prevent — so it is now scoped to the files that
+   * own the gesture, and everything else is as forbidden as it was.
+   */
+  it('drags only in the layer panel, and only with native DOM events', () => {
+    for (const gesture of ['onDragStart', 'onDrag', 'draggable']) {
+      expect(outsideS04Code).not.toContain(gesture);
+    }
+    expect(s04Code).toContain('onDragStart');
+    expect(s04Code).toContain('onDrop');
+    // No interaction library behind it, here or anywhere.
+    for (const library of [
+      'react-dnd',
+      'dnd-kit',
+      'interact.js',
+      'sortablejs',
+      'react-beautiful',
+    ]) {
+      expect(allCode).not.toContain(library);
     }
   });
 

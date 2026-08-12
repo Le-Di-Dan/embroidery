@@ -13,7 +13,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S03_FILES, S07_FILES } from './app3-accepted-surface.mjs';
+import { S03_FILES, S04_FILES, S07_FILES } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -72,6 +72,13 @@ export const LATER_STUDIO_ROWS = Object.freeze([
   'FIG-STUDIO-TEXT-DESKTOP-EDITING',
   'FIG-STUDIO-IMAGE-DESKTOP-UPLOADING',
   'FIG-STUDIO-ZOOM-DESKTOP-FIT',
+  // The rows whose checkpoints have still not opened (added at `APP3-S04`,
+  // when every row above had become one an opened checkpoint owns and the
+  // world-aware exclusion emptied this rule completely).
+  'FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY',
+  'FIG-STUDIO-WATERMARK-DESKTOP-LIGHT',
+  'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED',
+  'FIG-STUDIO-MOBILE-LAYERSSHEET',
 ]);
 
 /**
@@ -176,6 +183,21 @@ export function s02FeatureCode(rootDir, openedFiles = [...S07_FILES, ...S03_FILE
 /** Every Storefront production source file, prose stripped. Used for import bans. */
 export function storefrontCode(rootDir) {
   return collect(join(rootDir, `${STOREFRONT}/src`), /\.tsx?$/)
+    .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
+    .join('\n');
+}
+
+/**
+ * Every Studio source **except** the six files `APP3-S04` added.
+ *
+ * The scope a rule needs once a capability it was written before has legitimate
+ * ownership of a marker: the ban is kept and the owner's own files are the only
+ * place it may appear.
+ */
+export function preS04Code(rootDir) {
+  const owned = new Set(S04_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  return collect(join(rootDir, FEATURE), /\.tsx?$/)
+    .filter((path) => !owned.has(path))
     .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
     .join('\n');
 }

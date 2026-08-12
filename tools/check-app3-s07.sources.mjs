@@ -13,7 +13,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S06_FILES, S07_FILES } from './app3-accepted-surface.mjs';
+import { S04_FILES, S06_FILES, S07_FILES } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -164,4 +164,19 @@ export function preS06Code(rootDir) {
 /** Only the files S07 introduced, prose stripped. */
 export function s07Code(rootDir) {
   return S07_FILES.map((path) => code(rootDir, `${FEATURE}/${path}`)).join('\n');
+}
+
+/**
+ * Every Studio source **except** the six files `APP3-S04` added.
+ *
+ * The scope a rule needs once a capability it was written before has legitimate
+ * ownership of a marker: the ban is kept and the owner's own files are the only
+ * place it may appear.
+ */
+export function preS04Code(rootDir) {
+  const owned = new Set(S04_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  return collect(join(rootDir, FEATURE), /\.tsx?$/)
+    .filter((path) => !owned.has(path))
+    .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
+    .join('\n');
 }

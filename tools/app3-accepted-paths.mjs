@@ -460,6 +460,29 @@ export const S06_FILES = Object.freeze([
   'services/studio-session-asset.client.ts',
 ]);
 
+/**
+ * The files `APP3-S04` added, named exactly.
+ *
+ * Shared so every predecessor gate that has to become world-aware about the
+ * layer capability names the same six files rather than each keeping its own
+ * idea of whose code a drag belongs to.
+ */
+export const S04_FILES = Object.freeze([
+  'components/studio-layers-list.tsx',
+  'components/studio-layers-panel.tsx',
+  'components/studio-stage-status.tsx',
+  'hooks/use-studio-layers.ts',
+  'model/studio-layer-copy.ts',
+  'model/studio-layers.ts',
+]);
+
+/** The three section-08 design rows `APP3-S04` consumes, and their nodes. */
+export const S04_DESIGN_ROWS = Object.freeze({
+  'FIG-STUDIO-LAYERS-DESKTOP-DEFAULT': '608:3',
+  'FIG-STUDIO-LAYERS-DESKTOP-REORDER': '608:68',
+  'FIG-STUDIO-LAYERS-DESKTOP-EMPTY': '608:136',
+});
+
 /** The four section-10 design rows `APP3-S06` consumes, and their nodes. */
 export const S06_DESIGN_ROWS = Object.freeze({
   'FIG-STUDIO-IMAGE-DESKTOP-UPLOADING': '608:343',
@@ -673,6 +696,13 @@ export function isS06Delivered(rootDir) {
   const path = join(rootDir, PHASE);
   const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
   return /\nAPP3-S06 = COMPLETE/.test(phase);
+}
+
+/** True once `APP3-S04` has delivered the layer capability. */
+export function isS04Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S04 = COMPLETE/.test(phase);
 }
 
 /** True once `APP3-P04` has published the shared Session response contract. */

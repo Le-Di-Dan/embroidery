@@ -882,8 +882,11 @@ $bp-studio-split: 1025px;
   }
 
   // Inside the drawer the inspector is the drawer's contents, not a card on a
-  // page: one border and one padding, contributed by the drawer.
-  .studio-text {
+  // page: one border and one padding, contributed by the drawer. The layer
+  // panel (`APP3-S04`) is a section of the same one panel and follows the same
+  // rule, so the drawer never reads as a stack of cards.
+  .studio-text,
+  .studio-layers {
     border: 0;
     padding: 0;
     background: transparent;
@@ -979,4 +982,156 @@ $bp-studio-split: 1025px;
   // Pointer events belong to the labelled `<g>` control that wraps it, so a
   // click on the picture selects the element rather than landing on the image.
   pointer-events: none;
+}
+
+// -------------------------------------------------- layer capability (APP3-S04)
+//
+// Design source: FIG-STUDIO-LAYERS-DESKTOP-DEFAULT (608:3), -REORDER (608:68)
+// and -EMPTY (608:136), section 08 — 596:14.
+//
+// The panel reuses the accepted inspector presentation rather than introducing a
+// second surface language: same border, radius, spacing and control tokens the
+// text and image inspectors already bind. At 1024 it is a section of the one
+// `618:140` right drawer, and the drawer's own rules below already strip the
+// border there — so nothing here is tier-aware.
+//
+// No colour literal, and no `z-index` anywhere: z-order is the document's
+// element array, and a CSS stacking number in a layer panel is exactly how a
+// second, divergent order gets born.
+.studio-layers {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+}
+
+.studio-layers__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.studio-layers__title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.studio-layers__note,
+.studio-layers__hint,
+.studio-layers__reason,
+.studio-layers__status,
+.studio-layers__unavailable {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.studio-layers__list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-layers__item {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(4);
+  border: 1px solid transparent;
+  border-radius: styles.$radius-input;
+
+  &[data-selected='true'] {
+    border-color: styles.$color-border-primary;
+    background: styles.$color-surface-secondary;
+  }
+
+  // The row being dragged, and the row a drop would land on. The indicator is a
+  // top border rather than an inserted node, so the list's height never changes
+  // mid-gesture and nothing reflows under the pointer.
+  &[data-dragging='true'] {
+    opacity: 0.6;
+  }
+
+  &[data-drop='true'] {
+    border-top-color: styles.$color-text-primary;
+  }
+}
+
+.studio-layers__select {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(4);
+  // The same touch-target minimum `APP3-S03` bound its handles to. A second
+  // literal here would be a second answer to how big a control must be.
+  min-height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(4);
+  border: 0;
+  border-radius: styles.$radius-button;
+  background: transparent;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-caption;
+  text-align: left;
+  cursor: pointer;
+}
+
+.studio-layers__type {
+  color: styles.$color-text-tertiary;
+}
+
+.studio-layers__name {
+  // A long text layer is cut by the model, not by CSS: a visually clipped label
+  // still reads in full to a screen reader, which is the opposite of what the
+  // bounded label exists for.
+  min-width: 0;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// State in text as well as styling, so it is never colour-only.
+.studio-layers__flag {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.studio-layers__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: styles.spacing(4);
+}
+
+.studio-layers__control {
+  min-height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-caption;
+  cursor: pointer;
+
+  &:disabled {
+    // Disabled at a stacking boundary, and the reason is real text beside it.
+    cursor: default;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.studio-layers__empty {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
 }

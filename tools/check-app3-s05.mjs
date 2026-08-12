@@ -37,6 +37,7 @@ import {
   isS05C1Delivered,
   isS05Delivered,
   isS06Delivered,
+  isS04Delivered,
   isS05Mi01Delivered,
 } from './app3-accepted-surface.mjs';
 import {
@@ -162,7 +163,7 @@ export function checkPredecessors(rootDir, fail) {
   // marker is refused in every file S05 owns. Every other capability is asserted
   // exactly as ruled, so a blanket "the Studio is done" still fails here.
   for (const later of [
-    'APP3-S04',
+    ...(isS04Delivered(rootDir) ? [] : ['APP3-S04']),
     ...(isS06Delivered(rootDir) ? [] : ['APP3-S06']),
     'APP3-S08',
     'APP3-S09',
@@ -209,7 +210,13 @@ export function checkDesignApproval(rootDir, fail) {
   // mobile all belong to checkpoints that have not opened — and the image row
   // did too, until `APP3-S06` opened the one that owns it. Every other row stays
   // exactly as ruled.
-  const opened = new Set(isS06Delivered(rootDir) ? ['FIG-STUDIO-IMAGE-DESKTOP-UPLOADING'] : []);
+  const opened = new Set([
+    ...(isS06Delivered(rootDir) ? ['FIG-STUDIO-IMAGE-DESKTOP-UPLOADING'] : []),
+    ...(isS04Delivered(rootDir)
+      ? ['FIG-STUDIO-LAYERS-DESKTOP-REORDER', 'FIG-STUDIO-LAYERS-DESKTOP-DEFAULT']
+      : []),
+    ...(isS04Delivered(rootDir) ? ['FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'] : []),
+  ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
