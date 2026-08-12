@@ -112,7 +112,7 @@ export function checkPredecessors(rootDir, fail) {
     for (const line of [
       // The facts a reader cannot recompute from the source: that the decode was
       // a *finding* rather than a design choice, that the document grant is
-      // narrowed on purpose, that the read limit is not a PO-07 value, and that
+      // narrowed on purpose, that the read limit is a PO-07 value, and that
       // the two follow-ups this checkpoint closed really closed.
       'APP3-S06 REPAIR_A_DECODE = FULL_DECODE_ON_A_LANE_WITH_NO_DERIVATIVE',
       'APP3-S06 REPAIR_A_OUTPUT = NO_DERIVATIVE',
@@ -394,8 +394,11 @@ const HEADLINE =
   'rejection reasons or the worker; a delivery grant of two branches where the customer-private ' +
   'lane stays inside the upload branch and the document branch admits TEMPLATE_SOURCE only, so a ' +
   'document reference can never reach another customer’s upload and no branch consults Template ' +
-  'lineage; a 60/minute read limit charged before authorization and labelled as the APP3-S06 ruling ' +
-  'it is rather than a PO-07 value; intrinsic dimensions taken only from the server’s measurement ' +
+  'lineage; a 60/minute read limit charged before authorization and attributed to the IMP-D043 ' +
+  'PO-07 control it has always been; an initial image box constructed from the tighter of the ' +
+  'Embroidery Area rectangle and the Area’s own physical maxima, so a maximum smaller than the ' +
+  'rectangle places a smaller picture instead of inserting nothing; intrinsic dimensions taken ' +
+  'only from the server’s measurement ' +
   'with no naturalWidth, getBBox or Blob inspection anywhere; the status projection polled and the ' +
   'binary route never polled as a state machine; object URLs keyed by derivative, runtime-only and ' +
   'revoked on cleanup; one native SVG scene where a ready image is an <image> and everything else ' +

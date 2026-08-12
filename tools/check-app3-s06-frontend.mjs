@@ -81,6 +81,7 @@ export function checkImageAuthority(rootDir, fail) {
   if (!/Math\.min\(\s*1,/.test(placement)) {
     fail(`${CANONICAL_FILES.placement}: the initial placement may upscale`);
   }
+  checkInitialSizeConstruction(placement, code(rootDir, 'imageHook'), fail);
   // Replacement keeps the element, its z-order and its transform.
   if (!/\.\.\.element,\s*assetId: media\.assetId/.test(placement)) {
     fail(`${CANONICAL_FILES.placement}: a replacement does not keep the existing element`);
@@ -100,6 +101,90 @@ export function checkImageAuthority(rootDir, fail) {
     if (replace.includes(forbidden)) {
       fail(`${CANONICAL_FILES.placement}: a replacement re-places or removes the element`);
     }
+  }
+}
+
+/**
+ * The initial box is **constructed** from every limit that applies (`APP3-S06-C1`).
+ *
+ * The shape this rejects is the one that shipped: an initial placement fitted to
+ * the Embroidery Area rectangle alone, leaving `APP3-P02` to refuse it whenever
+ * the Area's millimetre maximum was the tighter bound. That refusal is correct
+ * and useless — nothing is inserted, so the advice to resize with `APP3-S03`
+ * names an element that does not exist.
+ *
+ * Ruled mechanically, on the `initialImageTransform` body rather than the file,
+ * because `withReplacedImage` deliberately does none of this and a file-wide
+ * rule would be satisfied by the wrong function.
+ */
+function checkInitialSizeConstruction(placement, imageHook, fail) {
+  const from = placement.indexOf('export function initialImageTransform');
+  const to = placement.indexOf('export function withNewImage');
+  const label = `${CANONICAL_FILES.placement}: the initial placement`;
+  if (from < 0 || to < 0 || to < from) {
+    fail(`${label} is not a distinct rule`);
+    return;
+  }
+  const initial = placement.slice(from, to);
+
+  // The physical maxima participate in the size, through P02's own conversion.
+  if (!/mmToPx\(/.test(initial)) {
+    fail(`${label} does not convert a physical maximum through APP3-P02`);
+  }
+  for (const axis of ['maxWidthMm', 'maxHeightMm']) {
+    if (!initial.includes(axis)) fail(`${label} is not bounded by ${axis}`);
+  }
+  // And so does the Area rectangle: the tighter of the two decides.
+  for (const axis of ['boundWidthPx', 'boundHeightPx']) {
+    if (!initial.includes(axis)) fail(`${label} is not bounded by ${axis}`);
+  }
+  // One `Math.min` per axis bound plus the intrinsic cap. Fewer means an axis
+  // is decided by one authority rather than the tighter of both.
+  if ((initial.match(/Math\.min\(/g) ?? []).length < 3) {
+    fail(`${label} does not take the tighter of the rectangle and the physical maximum`);
+  }
+  // Centred in the Area on both axes.
+  for (const origin of ['boundXPx', 'boundYPx']) {
+    if (!initial.includes(origin)) fail(`${label} is not centred on ${origin}`);
+  }
+
+  /*
+   * No second px↔mm implementation, anywhere in the file.
+   *
+   * `IMP-D045` PO-10 makes `product_sides.px_per_mm` the sole scale authority. A
+   * local constant here would be a screen-shaped opinion about physical size,
+   * and the failure mode is a logo stitched at the wrong size on a garment —
+   * discovered on the garment.
+   */
+  for (const forked of [/const\s+\w*px_?per_?mm\w*\s*=/i, /25\.4/, /\b96\b/, /devicePixelRatio/]) {
+    if (forked.test(placement)) {
+      fail(`${CANONICAL_FILES.placement}: a second px↔mm scale (${String(forked)})`);
+    }
+  }
+
+  /*
+   * The construction is still only a candidate.
+   *
+   * Deriving a valid size does not excuse the final ruling — that is what makes
+   * this a construction and not a clamp. The hook must refuse a null derivation
+   * outright and put everything else through `ruleOnImageCandidate`.
+   */
+  if (!/=== null\) return \{ ok: false/.test(imageHook)) {
+    fail(`${CANONICAL_FILES.imageHook}: an impossible placement is not refused`);
+  }
+  if (!/ruleOnImageCandidate\(/.test(imageHook)) {
+    fail(`${CANONICAL_FILES.imageHook}: a constructed placement is committed unvalidated`);
+  }
+  /*
+   * The hook may refuse on its own. It may never accept on its own.
+   *
+   * Ruled as the absence of a fabricated success rather than the presence of a
+   * call, because a call is still there when only *one* of the two paths is
+   * validated — which is exactly what "the helper believes the candidate is
+   * valid, so skip the final check" looks like in a diff.
+   */
+  if (/return \{ ok: true/.test(imageHook)) {
+    fail(`${CANONICAL_FILES.imageHook}: a placement is accepted without APP3-P02`);
   }
 }
 

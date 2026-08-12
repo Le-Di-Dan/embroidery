@@ -331,13 +331,14 @@ function place(
   }
 
   const elementId = crypto.randomUUID();
-  return ruleOnImageCandidate(
-    withNewImage(document, elementId, media, scope),
-    elementId,
-    media,
-    scope,
-    limits,
-  );
+  // `null` means the authority admits no positive box at all — a degenerate Area
+  // or an unusable scale, not merely an Area tighter than its own rectangle,
+  // which `APP3-S06-C1` places at the smaller valid size. Nothing is inserted,
+  // and the refusal is the one the customer already understands.
+  const candidate = withNewImage(document, elementId, media, scope, limits);
+  if (candidate === null) return { ok: false, refusal: 'too-large-for-area' };
+
+  return ruleOnImageCandidate(candidate, elementId, media, scope, limits);
 }
 
 function mediaOf(ready: {

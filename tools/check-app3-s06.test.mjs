@@ -19,7 +19,9 @@
  *   of the probing it exists to bound;
  * - the preview query key stripped of its derivative, so a replacement renders
  *   the previous picture under the new media identity;
- * - intrinsic dimensions taken from a decoded `<img>`.
+ * - intrinsic dimensions taken from a decoded `<img>`;
+ * - the initial box fitted to the Embroidery Area rectangle alone, so an Area
+ *   whose millimetre maximum is tighter accepts an upload and inserts nothing.
  *
  * Every one of those passes a happy-path integration test.
  *
@@ -513,8 +515,73 @@ describe('the Studio capability', () => {
   });
 
   it('refuses an initial placement that may upscale', () => {
-    const placement = replacing('placement', 'Math.min(\n    1,\n', 'Math.min(\n    Infinity,\n');
+    const placement = replacing(
+      'placement',
+      'Math.min(1, maxWidthPx',
+      'Math.min(Infinity, maxWidthPx',
+    );
     assert.ok(mentions(run(checkImageAuthority, { placement }), 'may upscale'));
+  });
+
+  /*
+   * The `APP3-S06-C1` mutations. Each removes one bound from the *construction*
+   * and leaves a capability that still works everywhere the Area rectangle is
+   * the tighter limit — which is every fixture the checkpoint shipped with. The
+   * defect appears only on an Area whose maximum is smaller than its rectangle,
+   * as an upload that succeeds and inserts nothing.
+   */
+  it('refuses an initial placement unbounded by the physical width maximum', () => {
+    const placement = without('placement', 'area.maxWidthMm');
+    assert.ok(mentions(run(checkImageAuthority, { placement }), 'not bounded by maxWidthMm'));
+  });
+
+  it('refuses an initial placement unbounded by the physical height maximum', () => {
+    const placement = without('placement', 'area.maxHeightMm');
+    assert.ok(mentions(run(checkImageAuthority, { placement }), 'not bounded by maxHeightMm'));
+  });
+
+  it('refuses an initial placement that never converts millimetres', () => {
+    // The whole pre-C1 shape: the rectangle alone decides, and P02 is left to
+    // refuse whatever that produces.
+    const placement = replacing('placement', 'mmToPx(maxMm, pxPerMm)', 'Number.POSITIVE_INFINITY');
+    assert.ok(mentions(run(checkImageAuthority, { placement }), 'does not convert'));
+  });
+
+  it('refuses an axis decided by one authority instead of the tighter of both', () => {
+    const placement = replacing(
+      'placement',
+      'const maxWidthPx = Math.min(scope.boundWidthPx, physicalWidthPx);',
+      'const maxWidthPx = scope.boundWidthPx;',
+    );
+    assert.ok(mentions(run(checkImageAuthority, { placement }), 'tighter of the rectangle'));
+  });
+
+  it('refuses a constructed box that is not centred in the area', () => {
+    const placement = replacing(
+      'placement',
+      'x: scope.boundXPx + downToGrid((scope.boundWidthPx - width) / 2),',
+      'x: 0,',
+    );
+    assert.ok(mentions(run(checkImageAuthority, { placement }), 'not centred on boundXPx'));
+  });
+
+  it('refuses a second px↔mm scale in the placement rule', () => {
+    const placement = `${file('placement')}\nconst PX_PER_MM = 3.7795;\n`;
+    assert.ok(mentions(run(checkImageAuthority, { placement }), 'second px↔mm scale'));
+  });
+
+  it('refuses a construction that is trusted instead of validated', () => {
+    const imageHook = replacing(
+      'imageHook',
+      'return ruleOnImageCandidate(candidate, elementId, media, scope, limits);',
+      'return { ok: true, document: candidate, elementId };',
+    );
+    assert.ok(mentions(run(checkImageAuthority, { imageHook }), 'without APP3-P02'));
+  });
+
+  it('refuses an impossible placement that is not refused', () => {
+    const imageHook = without('imageHook', '=== null) return { ok: false');
+    assert.ok(mentions(run(checkImageAuthority, { imageHook }), 'is not refused'));
   });
 
   it('refuses a replacement that re-places the element', () => {

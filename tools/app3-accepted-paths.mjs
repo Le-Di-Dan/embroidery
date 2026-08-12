@@ -473,6 +473,9 @@ export const S06_STATUS_LINES = Object.freeze([
   'APP3-S06 = BLOCKED_BY_APP3-B06C_REVIEW_ACCEPTANCE',
   'APP3-S06 = READY — NOT STARTED',
   'APP3-S06 = COMPLETE — REVIEW_DELIVERED',
+  // Human review found one product-semantics defect and returned the checkpoint
+  // for `APP3-S06-C1`; the capability itself stayed accepted.
+  'APP3-S06 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW',
   'APP3-S06 = COMPLETE — REVIEW_ACCEPTED',
 ]);
 
