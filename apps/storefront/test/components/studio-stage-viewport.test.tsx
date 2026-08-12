@@ -498,14 +498,35 @@ describe('the viewport touches no network and no later capability', () => {
     expect(backgroundMock).toHaveBeenCalledTimes(1);
   });
 
-  it('grows no transform handle, watermark, history or save affordance', () => {
+  it('grows no transform handle, history or save affordance', () => {
     const { container } = renderStage();
     for (let n = 0; n < 2; n += 1) fireEvent.click(screen.getByTestId('studio-zoom-in'));
 
     const markup = container.innerHTML;
-    for (const absent of ['handle', 'watermark', 'undo', 'redo', 'Hoàn tác', 'Đã lưu']) {
+    for (const absent of ['handle', 'undo', 'redo', 'Hoàn tác', 'Đã lưu']) {
       expect(markup.toLowerCase()).not.toContain(absent.toLowerCase());
     }
+  });
+
+  /*
+   * The watermark exists from `APP3-S09`, and the viewport is not it.
+   *
+   * The rule was "no watermark anywhere" while S09 had not opened. Now the test
+   * asserts the thing it was really protecting: there is exactly one watermark,
+   * the viewport does not build it, and — the property this suite is uniquely
+   * placed to check — it is a **sibling** of the transformed layer, so zoom and
+   * pan cannot carry it off the visible preview.
+   */
+  it('keeps the one watermark outside its transformed layer', () => {
+    renderStage();
+    for (let n = 0; n < 2; n += 1) fireEvent.click(screen.getByTestId('studio-zoom-in'));
+
+    const marks = screen.getAllByTestId('studio-watermark');
+    expect(marks).toHaveLength(1);
+    expect(screen.getByTestId('studio-stage-viewport-layer').contains(marks[0] ?? null)).toBe(
+      false,
+    );
+    expect(screen.getByTestId('studio-stage-viewport').contains(marks[0] ?? null)).toBe(true);
   });
 });
 

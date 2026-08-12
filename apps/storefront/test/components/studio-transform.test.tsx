@@ -416,9 +416,25 @@ describe('the capabilities S03 must not grow', () => {
     select('a');
 
     const markup = container.innerHTML.toLowerCase();
-    for (const absent of ['undo', 'redo', 'hoàn tác', 'đã lưu', 'tải lên', 'watermark']) {
+    for (const absent of ['undo', 'redo', 'hoàn tác', 'đã lưu', 'tải lên']) {
       expect(markup).not.toContain(absent.toLowerCase());
     }
+  });
+
+  /*
+   * The watermark exists from `APP3-S09`, and the transform chrome is not it.
+   *
+   * Scoped rather than dropped: what this rule was written to prevent is a
+   * capability appearing *on the transform overlay*, and that is as forbidden as
+   * it ever was.
+   */
+  it('puts no watermark on the transform chrome', () => {
+    renderStage();
+    select('a');
+
+    const overlay = screen.getByTestId('studio-transform-move').closest('div');
+    expect(overlay?.querySelector('[data-testid="studio-watermark"]')).toBeFalsy();
+    expect(screen.getAllByTestId('studio-watermark')).toHaveLength(1);
   });
 
   /*

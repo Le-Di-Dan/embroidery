@@ -238,6 +238,37 @@ export const S04_FILES = new Set(
   ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
 );
 
+/**
+ * The files `APP3-S09` added, named exactly.
+ *
+ * The runtime watermark is the first thing in the feature that may legitimately
+ * contain the word — every earlier checkpoint was forbidden it outright, and
+ * those bans are kept and scoped rather than deleted: a watermark outside these
+ * four files is still a capability arriving in the wrong checkpoint.
+ */
+export const S09_FILES = new Set(
+  [
+    'components/studio-stage-watermark.tsx',
+    'hooks/use-studio-watermark-token.ts',
+    'model/studio-watermark.ts',
+    'model/studio-watermark-copy.ts',
+  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
+export const s09Code = codeOnly(
+  sources
+    .filter((file) => S09_FILES.has(file.path))
+    .map((file) => file.text)
+    .join('\n'),
+);
+
+/** Everything except the watermark, for the rules a watermark must not escape. */
+export const outsideS09Code = codeOnly(
+  [...sources.filter((file) => !S09_FILES.has(file.path)), ...routeFiles]
+    .map((file) => file.text)
+    .join('\n'),
+);
+
 export const s04Code = codeOnly(
   sources
     .filter((file) => S04_FILES.has(file.path))
@@ -275,7 +306,8 @@ export const s01Sources = sources.filter(
     !S03_C1_FILES.has(file.path) &&
     !S05_FILES.has(file.path) &&
     !S06_FILES.has(file.path) &&
-    !S04_FILES.has(file.path),
+    !S04_FILES.has(file.path) &&
+    !S09_FILES.has(file.path),
 );
 export const s07Sources = sources.filter((file) => S07_FILES.has(file.path));
 export const s07Code = codeOnly(s07Sources.map((file) => file.text).join('\n'));

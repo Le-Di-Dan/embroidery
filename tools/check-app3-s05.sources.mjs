@@ -17,6 +17,7 @@ import {
   S05_STATUS_LINES,
   acceptedSurface,
   isS05Delivered,
+  S09_FILES,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -118,4 +119,18 @@ export function featureCode(rootDir) {
 /** Only the files S05 introduced, prose stripped. */
 export function s05Code(rootDir) {
   return S05_FILES.map((path) => code(rootDir, `${FEATURE}/${path}`)).join('\n');
+}
+
+/**
+ * Every Studio source **except** the four files `APP3-S09` added.
+ *
+ * The scope a rule needs once the runtime watermark exists: the ban is kept and
+ * the watermark's own files are the only place it may appear.
+ */
+export function preS09Code(rootDir) {
+  const owned = new Set(S09_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  return collect(join(rootDir, FEATURE), /\.tsx?$/)
+    .filter((path) => !owned.has(path))
+    .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\\\', '/')))
+    .join('\n');
 }

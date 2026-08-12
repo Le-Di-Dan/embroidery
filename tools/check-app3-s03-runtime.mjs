@@ -18,7 +18,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { isS05Delivered, isS06Delivered } from './app3-accepted-surface.mjs';
+import { isS05Delivered, isS06Delivered, isS09Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -29,6 +29,7 @@ import {
   preS03Code,
   preS05Code,
   preS06Code,
+  preS09Code,
   read,
   s03Code,
 } from './check-app3-s03.sources.mjs';
@@ -329,12 +330,26 @@ export function checkNonScope(rootDir, fail) {
     undoStack: 'APP3-S08',
     redoStack: 'APP3-S08',
     commandHistory: 'APP3-S08',
-    watermark: 'APP3-S09',
     reorder: 'APP3-S04',
     ungroup: 'APP3-S04',
     duplicate: 'APP3-S04',
     publicDesignSessionAutosave: 'APP3-S10',
   });
+  /*
+   * The watermark moved owner rather than losing its rule (`APP3-S09`).
+   *
+   * It was banned feature-wide while S09 had not opened. It now has, so the
+   * mark is legitimate in its four files — and as forbidden as ever in the
+   * stage, the viewport and the transform chrome, which is what this rule was
+   * written to protect.
+   */
+  const watermarkScope = isS09Delivered(rootDir) ? preS09Code(rootDir) : all;
+  for (const construction of ['studio-watermark__', 'mintWatermarkToken', 'watermarkTiles(']) {
+    if (watermarkScope.includes(construction)) {
+      fail(`${FEATURE}: builds a watermark outside the four files APP3-S09 owns`);
+    }
+  }
+
   for (const [marker, owner] of Object.entries(owners)) {
     if (all.includes(marker)) {
       fail(`${FEATURE}: carries "${marker}", a capability ${owner} owns`);

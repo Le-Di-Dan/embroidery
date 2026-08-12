@@ -40,8 +40,10 @@ import { fileURLToPath } from 'node:url';
 import {
   S04_DESIGN_ROWS,
   S06_STATUS_LINES,
+  S09_DESIGN_ROWS,
   acceptedSurface,
   isS04Delivered,
+  isS09Delivered,
   isS06Delivered,
 } from './app3-accepted-surface.mjs';
 
@@ -149,7 +151,8 @@ export function checkPredecessors(rootDir, fail) {
   // S06 implements none of these, and delivering it makes none of them ready.
   // World-aware on APP3-S04: "S06 did not implement this" stays true once S04
   // implements it for itself, and the S04 gate is what checks that.
-  const notImplementedByS06 = ['APP3-S08', 'APP3-S09', 'APP3-S10', 'APP3-S11'];
+  const notImplementedByS06 = ['APP3-S08', 'APP3-S10', 'APP3-S11'];
+  if (!isS09Delivered(rootDir)) notImplementedByS06.push('APP3-S09');
   if (!isS04Delivered(rootDir)) notImplementedByS06.push('APP3-S04');
   for (const later of notImplementedByS06) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
@@ -196,7 +199,10 @@ export function checkDesignApproval(rootDir, fail) {
   // it has delivered they stop being evidence of a blanket approval — while
   // every row belonging to a checkpoint that still has not opened stays exactly
   // as ruled.
-  const opened = new Set(isS04Delivered(rootDir) ? S04_LAYER_ROWS : []);
+  const opened = new Set([
+    ...(isS04Delivered(rootDir) ? S04_LAYER_ROWS : []),
+    ...(isS09Delivered(rootDir) ? S09_DESIGN_ROWS : []),
+  ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);

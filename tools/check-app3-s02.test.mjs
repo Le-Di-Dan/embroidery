@@ -210,9 +210,7 @@ describe('scoped design approval', () => {
     // A row whose own checkpoint has *not* opened. Transform is no longer one:
     // `APP3-S03` shipped and approved it, which is precisely why the assertion
     // has to move to a row that is still closed rather than stay where it was.
-    assert.ok(
-      mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-WATERMARK-DESKTOP-LIGHT'),
-    );
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'));
   });
 
   it('refuses a row whose node id moved', () => {
@@ -553,11 +551,13 @@ describe('the capabilities S02 must not grow', () => {
     assert.ok(mentions(failuresOf(checkNonScope, root), 'APP3-S07'));
   });
 
-  it('refuses a runtime watermark', () => {
+  it('refuses a second watermark built outside the files APP3-S09 owns', () => {
+    // The word is legitimate from S09; **building** one here is not.
     const root = rootWith({
-      [`${FEATURE}/components/studio-watermark.tsx`]: 'export const watermark = () => null;',
+      [`${FEATURE}/components/studio-second-watermark.tsx`]:
+        "export const mark = 'studio-watermark__rogue';",
     });
-    assert.ok(mentions(failuresOf(checkNonScope, root), 'APP3-S09'));
+    assert.ok(mentions(failuresOf(checkNonScope, root), 'builds a watermark outside'));
   });
 
   it('refuses a document mutation', () => {

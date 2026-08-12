@@ -169,14 +169,14 @@ describe('predecessors and status', () => {
 
   it('rejects a bare COMPLETE that reads as though grouping shipped', () => {
     const phase = file('phase').replace(
-      'APP3-S04 = COMPLETE — REVIEW_DELIVERED — GROUP_BLOCKED',
-      'APP3-S04 = COMPLETE — REVIEW_DELIVERED',
+      'APP3-S04 = COMPLETE — REVIEW_ACCEPTED — GROUP_DEFERRED_BY_AUTHORITY',
+      'APP3-S04 = COMPLETE — REVIEW_ACCEPTED',
     );
     assert.ok(mentions(run(checkPredecessors, { phase }), 'legitimate status'));
   });
 
   it('refuses a later Studio capability recorded complete', () => {
-    for (const later of ['APP3-S08', 'APP3-S09', 'APP3-S11']) {
+    for (const later of ['APP3-S08', 'APP3-S10', 'APP3-S11']) {
       const phase = `${file('phase')}\n${later} = COMPLETE — REVIEW_DELIVERED\n`;
       assert.ok(mentions(run(checkPredecessors, { phase }), later), later);
     }

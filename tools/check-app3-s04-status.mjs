@@ -21,5 +21,7 @@ export function s04StatusLines() {
     'APP3-S04 = READY — NOT STARTED',
     'APP3-S04 = COMPLETE — REVIEW_DELIVERED — GROUP_BLOCKED',
     'APP3-S04 = COMPLETE — REVIEW_ACCEPTED — GROUP_BLOCKED',
+    // Human review accepted the checkpoint and renamed the deferral.
+    'APP3-S04 = COMPLETE — REVIEW_ACCEPTED — GROUP_DEFERRED_BY_AUTHORITY',
   ];
 }

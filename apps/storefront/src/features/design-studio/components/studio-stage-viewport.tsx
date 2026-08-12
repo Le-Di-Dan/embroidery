@@ -11,6 +11,17 @@ const PAN_THRESHOLD_PX = 3;
 
 export interface StudioStageViewportProps {
   readonly children: ReactNode;
+  /**
+   * Chrome that belongs to the **viewport box**, not to the transformed layer
+   * (`APP3-S09`).
+   *
+   * The distinction is the whole reason this prop exists rather than another
+   * child: everything in `children` is inside the zoom-and-pan transform and
+   * moves with the artwork, while this is a sibling of that transform and
+   * therefore covers what is on screen at any zoom or pan. The runtime
+   * watermark is the only thing that needs it, and it needs it exactly.
+   */
+  readonly overlay?: ReactNode;
 }
 
 /**
@@ -54,7 +65,7 @@ export interface StudioStageViewportProps {
  * click and still clears, and a real drag swallows the trailing click in the
  * capture phase so panning cannot silently deselect.
  */
-export function StudioStageViewport({ children }: StudioStageViewportProps) {
+export function StudioStageViewport({ children, overlay }: StudioStageViewportProps) {
   const zoomStep = useStudioViewportStore((state) => state.zoomStep);
   const panXRatio = useStudioViewportStore((state) => state.panXRatio);
   const panYRatio = useStudioViewportStore((state) => state.panYRatio);
@@ -142,6 +153,10 @@ export function StudioStageViewport({ children }: StudioStageViewportProps) {
       >
         {children}
       </div>
+
+      {/* Outside the transform, inside the clip: covers the visible viewport at
+          every zoom step and every pan offset, and never escapes the frame. */}
+      {overlay}
 
       {zoomStep === FIT_STEP ? null : (
         <p className="studio-stage__pan-hint" data-testid="studio-stage-pan-hint">

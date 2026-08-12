@@ -379,11 +379,13 @@ describe('nothing a later checkpoint owns arrives early', () => {
     assert.ok(mentions(failuresOf(checkNonScope, root), 'APP3-S11 touch'));
   });
 
-  it('refuses a watermark', () => {
+  it('refuses the text inspector building a watermark', () => {
+    // The word became legitimate at `APP3-S09`; **building** the mark in the
+    // text capability's own files did not.
     const root = rootWith({
-      copy: `${file('copy')}\nexport const watermark = true;\n`,
+      copy: `${file('copy')}\nexport const rogue = 'studio-watermark__mark';\n`,
     });
-    assert.ok(mentions(failuresOf(checkNonScope, root), 'APP3-S09 watermark'));
+    assert.ok(mentions(failuresOf(checkNonScope, root), 'builds a watermark outside'));
   });
 });
 
@@ -392,7 +394,7 @@ describe('the design approval is scoped, in both directions', () => {
     const registry = file('registry');
     const line = registry
       .split('\n')
-      .find((row) => row.startsWith('| FIG-STUDIO-WATERMARK-DESKTOP-LIGHT |'));
+      .find((row) => row.startsWith('| FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED |'));
     const root = rootWith({
       registry: registry.replace(
         line,

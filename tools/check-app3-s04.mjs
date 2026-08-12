@@ -28,6 +28,7 @@
  *
  * Read-only, cross-platform pure Node. Independent of the completion report.
  */
+import { isS09Delivered } from './app3-accepted-paths.mjs';
 import { isS04Delivered, s04StatusLines } from './check-app3-s04-status.mjs';
 import {
   CANONICAL_FILES,
@@ -76,7 +77,7 @@ const PREDECESSORS = [
 ];
 
 /** Studio capability rows that must not be recorded complete by this checkpoint. */
-const LATER_ROWS = ['APP3-S08', 'APP3-S09', 'APP3-S10', 'APP3-S11'];
+const LATER_ROWS = ['APP3-S08', 'APP3-S10', 'APP3-S11'];
 
 export function checkPredecessors(rootDir, fail) {
   const phase = read(rootDir, 'phase') ?? '';
@@ -89,7 +90,10 @@ export function checkPredecessors(rootDir, fail) {
   if (!s04StatusLines().some((line) => phase.includes(`\n${line}\n`))) {
     fail(`${CANONICAL_FILES.phase}: APP3-S04 is not recorded under a legitimate status`);
   }
-  for (const later of LATER_ROWS) {
+  // World-aware on APP3-S09: "S04 did not implement this" stays true once S09
+  // implements it for itself, and the S09 gate is what checks that.
+  const later_rows = isS09Delivered(rootDir) ? LATER_ROWS : [...LATER_ROWS, 'APP3-S09'];
+  for (const later of later_rows) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(
         `${CANONICAL_FILES.phase}: ${later} is recorded complete by a checkpoint that is not it`,

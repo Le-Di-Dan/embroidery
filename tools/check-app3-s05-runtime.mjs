@@ -23,9 +23,11 @@ import {
   code,
   collect,
   featureCode,
+  preS09Code,
   read,
   s05Code,
 } from './check-app3-s05.sources.mjs';
+import { isS09Delivered } from './app3-accepted-surface.mjs';
 
 /** The font picker is the controlled registry, and can be nothing else. */
 export function checkControlledFont(rootDir, fail) {
@@ -276,12 +278,25 @@ export function checkArchitecture(rootDir, fail) {
 /** Nothing a later checkpoint owns arrived early. */
 export function checkNonScope(rootDir, fail) {
   const feature = featureCode(rootDir);
+
+  /*
+   * The watermark moved owner rather than losing its rule (`APP3-S09`).
+   *
+   * It was banned feature-wide while S09 had not opened. The rule is now on the
+   * **construction** rather than the word, so the text inspector may not build
+   * one and the composition may still mount the one S09 owns.
+   */
+  const watermarkScope = isS09Delivered(rootDir) ? preS09Code(rootDir) : feature;
+  for (const construction of ['studio-watermark__', 'mintWatermarkToken', 'watermarkTiles(']) {
+    if (watermarkScope.includes(construction)) {
+      fail(`${FEATURE}: builds a watermark outside the four files APP3-S09 owns`);
+    }
+  }
   const forbidden = Object.freeze({
     'APP3-S10 autosave': ['publicDesignSessionAutosave', 'autosave', 'setInterval('],
     'APP3-S08 history': ['undoStack', 'redoStack', 'historyStack', 'pushHistory'],
     'APP3-S04 layers': ['reorderElement', 'moveLayer', 'toggleLock', 'toggleVisibility'],
     'APP3-S06 upload': ['uploadAsset', 'FormData', 'publicDesignSessionAssetUpload'],
-    'APP3-S09 watermark': ['watermark'],
     'APP3-S11 touch': ['bottomSheet', 'touchAction', 'onTouchStart'],
   });
   for (const [owner, needles] of Object.entries(forbidden)) {

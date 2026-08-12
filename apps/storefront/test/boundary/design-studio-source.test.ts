@@ -24,6 +24,7 @@ import {
   interactionCode,
   nth,
   outsideS04Code,
+  outsideS09Code,
   routeFiles,
   s01Code,
   s02Code,
@@ -31,6 +32,7 @@ import {
   s03Code,
   s04Code,
   s07Code,
+  s09Code,
   scssCode,
   sources,
   staticCode,
@@ -311,9 +313,30 @@ describe('exactly one production renderer (APP3-S02)', () => {
   });
 
   it('grows no capability a later checkpoint owns', () => {
-    for (const later of ['onWheel', 'watermark', 'Watermark', 'onMouseMove', 'undoStack']) {
+    for (const later of ['onWheel', 'onMouseMove', 'undoStack']) {
       expect(allCode).not.toContain(later);
     }
+  });
+
+  /*
+   * The watermark moved into the world rather than out of the rule (`APP3-S09`).
+   *
+   * `watermark` was banned feature-wide while `APP3-S09` had not opened. It now
+   * has, so the word is legitimate in its four files — and deleting the ban
+   * would let the stage, the viewport or an inspector grow a second watermark,
+   * which is the thing it was written to prevent.
+   */
+  it('builds a watermark only in the four files APP3-S09 owns', () => {
+    // The composition may **mount** one; nothing outside may **build** one. So
+    // the rule is on the markup and the mint, not on the word: a second
+    // watermark would need its own class names or its own token.
+    for (const construction of ['studio-watermark__', 'mintWatermarkToken', 'watermarkTiles(']) {
+      expect(outsideS09Code).not.toContain(construction);
+    }
+    expect(s09Code).toContain('studio-watermark__');
+    // And it is still one overlay, not a second renderer.
+    expect(s09Code).not.toContain('<svg');
+    expect(s09Code).not.toContain('<canvas');
   });
 
   /*

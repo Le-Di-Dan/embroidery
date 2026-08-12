@@ -186,9 +186,7 @@ describe('scoped design approval', () => {
     const root = rootWith({
       registry: file('registry').replaceAll('REVIEW_REQUIRED', 'APPROVED_FOR_IMPLEMENTATION'),
     });
-    assert.ok(
-      mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-WATERMARK-DESKTOP-LIGHT'),
-    );
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'));
   });
 
   it('refuses the S02 stage rows approved before S02 opened', () => {

@@ -30,6 +30,7 @@ import {
   isS05Delivered,
   isS06Delivered,
   isS04Delivered,
+  isS09Delivered,
   isB06CDelivered,
 } from './app3-accepted-surface.mjs';
 import {
@@ -184,6 +185,7 @@ export function checkDesignApproval(rootDir, fail) {
       ? ['FIG-STUDIO-LAYERS-DESKTOP-REORDER', 'FIG-STUDIO-LAYERS-DESKTOP-DEFAULT']
       : []),
     ...(isS04Delivered(rootDir) ? ['FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'] : []),
+    ...(isS09Delivered(rootDir) ? ['FIG-STUDIO-WATERMARK-DESKTOP-LIGHT'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {

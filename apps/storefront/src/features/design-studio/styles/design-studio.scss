@@ -1135,3 +1135,80 @@ $bp-studio-split: 1025px;
   color: styles.$color-text-secondary;
   font-size: styles.$font-size-caption;
 }
+
+// ---------------------------------------------- runtime watermark (APP3-S09)
+//
+// Design source: FIG-STUDIO-WATERMARK-DESKTOP-LIGHT (609:263), -DARK (609:299),
+// -MOBILE-DEFAULT (609:335) and FIG-STUDIO-WATERMARK-POLICY (609:371),
+// section 13 — 596:19.
+//
+// `APP3-D01` §I.4 records the two approved treatments exactly: ink at ~13 % over
+// light imagery and white at ~22 % over dark. Both are bound tokens rather than
+// literals — a legibility fix that left a raw ink value behind is precisely what
+// `APP3-D01-C1` had to repair in the design file, and repeating it here would
+// reintroduce the same defect in code.
+//
+// The layer is a sibling of the S07 viewport transform, so it covers the visible
+// viewport at every zoom step and pan offset and is clipped by the viewport's own
+// `overflow: hidden`. It scales with nothing and moves with nothing.
+.studio-watermark {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+
+  // Chrome, and not even that: it takes no pointer, no focus and no selection.
+  // The architectural guarantee is that it is not in the document at all — this
+  // only stops it swallowing a click meant for the artwork underneath.
+  pointer-events: none;
+  user-select: none;
+
+  // The whole pattern turns as one, so the marks run diagonally across the
+  // preview. `docs/05-DESIGN-STUDIO-SPEC.md` §10 asks for a watermark that is
+  // hard to crop out, and a diagonal one cannot be cropped along its own edge.
+  transform: rotate(var(--studio-watermark-angle, -30deg));
+  // Over-drawn beyond the box so the rotated corners are covered rather than
+  // bare, which is where a crop would start.
+  transform-origin: 50% 50%;
+}
+
+.studio-watermark__mark {
+  position: absolute;
+  // The two passes stack exactly, offset by the hairline below.
+  display: block;
+  white-space: nowrap;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.studio-watermark__text {
+  display: block;
+}
+
+// The dark-imagery pass, underneath: white at the approved opacity. It is what
+// reads when the customer's photograph is dark.
+.studio-watermark__text--dark {
+  color: styles.$color-surface-primary;
+  opacity: 0.22;
+}
+
+// The light-imagery pass, on top: ink at the approved opacity, offset by one
+// pixel so the pair reads as an embossed mark on mid-tone imagery instead of
+// cancelling out.
+.studio-watermark__text--light {
+  position: absolute;
+  inset-block-start: -1px;
+  inset-inline-start: -1px;
+  color: styles.$color-text-primary;
+  opacity: 0.13;
+}
+
+// The policy note. Real text, outside the aria-hidden pattern, saying only what
+// is true: the preview is marked and there is no download. Nothing here claims
+// a screenshot can be prevented, because it cannot.
+.studio-watermark__policy {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}

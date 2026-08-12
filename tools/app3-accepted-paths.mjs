@@ -705,6 +705,35 @@ export function isS04Delivered(rootDir) {
   return /\nAPP3-S04 = COMPLETE/.test(phase);
 }
 
+/** True once `APP3-S09` has delivered the runtime watermark. */
+export function isS09Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S09 = COMPLETE/.test(phase);
+}
+
+/**
+ * The files `APP3-S09` added, named exactly.
+ *
+ * Shared so every predecessor gate that has to become world-aware about the
+ * watermark names the same four files rather than each keeping its own idea of
+ * where a watermark may legitimately live.
+ */
+export const S09_FILES = Object.freeze([
+  'components/studio-stage-watermark.tsx',
+  'hooks/use-studio-watermark-token.ts',
+  'model/studio-watermark.ts',
+  'model/studio-watermark-copy.ts',
+]);
+
+/** The four section-13 design rows `APP3-S09` consumes. */
+export const S09_DESIGN_ROWS = Object.freeze([
+  'FIG-STUDIO-WATERMARK-DESKTOP-LIGHT',
+  'FIG-STUDIO-WATERMARK-DESKTOP-DARK',
+  'FIG-STUDIO-WATERMARK-MOBILE-DEFAULT',
+  'FIG-STUDIO-WATERMARK-POLICY',
+]);
+
 /** True once `APP3-P04` has published the shared Session response contract. */
 export function isP04Delivered(rootDir) {
   const path = join(rootDir, PHASE);

@@ -18,7 +18,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { isS04Delivered, isS06Delivered } from './app3-accepted-surface.mjs';
+import { isS04Delivered, isS06Delivered, isS09Delivered } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -31,6 +31,7 @@ import {
   read,
   s07Code,
   preS04Code,
+  preS09Code,
 } from './check-app3-s07.sources.mjs';
 
 /**
@@ -335,10 +336,24 @@ export function checkNonScope(rootDir, fail) {
     onTouchMove: 'APP3-S11',
     pinch: 'APP3-S11',
     gesturestart: 'APP3-S11',
-    watermark: 'APP3-S09',
     undoStack: 'APP3-S08',
     redoStack: 'APP3-S08',
   });
+  /*
+   * The watermark moved owner rather than losing its rule (`APP3-S09`).
+   *
+   * It was banned feature-wide while S09 had not opened. It now has, so the
+   * mark is legitimate in its four files — and as forbidden as ever in the
+   * stage, the viewport and the transform chrome, which is what this rule was
+   * written to protect.
+   */
+  const watermarkScope = isS09Delivered(rootDir) ? preS09Code(rootDir) : all;
+  for (const construction of ['studio-watermark__', 'mintWatermarkToken', 'watermarkTiles(']) {
+    if (watermarkScope.includes(construction)) {
+      fail(`${FEATURE}: builds a watermark outside the four files APP3-S09 owns`);
+    }
+  }
+
   for (const [marker, owner] of Object.entries(owners)) {
     if (all.includes(marker)) {
       fail(`${FEATURE}: carries "${marker}", a capability ${owner} owns`);

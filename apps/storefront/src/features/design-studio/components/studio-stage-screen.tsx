@@ -12,6 +12,7 @@ import { useSideBackground } from '../hooks/use-side-background';
 import { useStudioImage } from '../hooks/use-studio-image';
 import { useStudioImageMedia } from '../hooks/use-studio-image-media';
 import { useStudioLayers } from '../hooks/use-studio-layers';
+import { useStudioWatermarkToken } from '../hooks/use-studio-watermark-token';
 import { useStudioTransform } from '../hooks/use-studio-transform';
 import { STUDIO_STAGE_COPY } from '../model/studio-stage-copy';
 import { imageElementOf } from '../model/studio-image-placement';
@@ -31,6 +32,7 @@ import { StudioStage } from './studio-stage';
 import { StudioStageBackgroundNotice } from './studio-stage-background-notice';
 import { StudioStageControls } from './studio-stage-controls';
 import { StudioStageStatus } from './studio-stage-status';
+import { StudioStageWatermark, StudioWatermarkNotice } from './studio-stage-watermark';
 import { StudioStageUnavailable } from './studio-stage-unavailable';
 import { StudioStageViewport } from './studio-stage-viewport';
 import { StudioImagePanel } from './studio-image-panel';
@@ -251,6 +253,9 @@ export function StudioStageScreen({
    */
   const imageMedia = useStudioImageMedia(snapshot.sessionId, sceneDocument);
 
+  // Minted once per Studio runtime, never persisted, never sent (`APP3-S09`).
+  const watermarkToken = useStudioWatermarkToken();
+
   /*
    * The layer capability's controller (`APP3-S04`), owned here for the same
    * reason the image controller is: the tier decides which of its two mounts
@@ -301,7 +306,10 @@ export function StudioStageScreen({
             way, and the Session scope, the document placement and the persisted
             geometry are untouched.
           */}
-          <StudioStageViewport>
+          {/* The runtime watermark (`APP3-S09`) rides the viewport box rather
+              than the transformed layer, so it covers what is on screen at any
+              zoom or pan. It is not in the document and cannot be. */}
+          <StudioStageViewport overlay={<StudioStageWatermark token={watermarkToken} />}>
             <div className="studio-stage__scene">
               <StudioStage
                 area={safeAreaVisible ? area : null}
@@ -330,6 +338,9 @@ export function StudioStageScreen({
           </StudioStageViewport>
 
           <StudioStageControls />
+
+          {/* The policy note (`609:371`), as real text beside the stage. */}
+          <StudioWatermarkNotice />
 
           {/*
             The text inspector (`APP3-S05`). It reads the same document the
