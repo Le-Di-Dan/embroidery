@@ -34,7 +34,9 @@ import { after, describe, it } from 'node:test';
 
 import {
   checkApp3S08,
+  checkBaselineCopy,
   checkBounded,
+  checkControlPlacement,
   checkCoalescing,
   checkCommandIndex,
   checkDesignApproval,
@@ -49,10 +51,27 @@ import {
   checkOwnership,
   checkPanel,
   checkPredecessors,
+  checkProjection,
   checkSafeLabels,
   checkShortcuts,
 } from './check-app3-s08.mjs';
-import { CANONICAL_FILES, FEATURE, REPO_ROOT, read } from './check-app3-s08.sources.mjs';
+import {
+  CANONICAL_FILES,
+  FEATURE,
+  REPO_ROOT,
+  S08_DESIGN_ROWS,
+  read,
+} from './check-app3-s08.sources.mjs';
+
+/**
+ * The exact status line the phase currently records `APP3-S08` under.
+ *
+ * Named once rather than spelled out at each mutation site: it has changed twice
+ * already (delivery, then `APP3-S08-C1`), and each time a spelled-out target
+ * turned a mutation's `.replace` into a silent no-op — the mutation then passed
+ * by mutating nothing, which is the failure this suite exists to catch.
+ */
+const S08_STATUS_LINE = '\nAPP3-S08 = COMPLETE — REVIEW_DELIVERED — CORRECTED_BY_APP3-S08-C1\n';
 
 const temporaries = [];
 after(() => {
@@ -76,6 +95,7 @@ function baseRoot() {
     'tools/check-app3-s08.sources.mjs',
     'apps/storefront/test/unit/studio-history-model.test.ts',
     'apps/storefront/test/components/studio-history.test.tsx',
+    'apps/storefront/test/components/studio-history-integration.test.tsx',
   ]) {
     const target = join(base, relative);
     mkdirSync(dirname(target), { recursive: true });
@@ -147,8 +167,8 @@ describe('predecessors and status', () => {
   it('rejects a later capability recorded complete here', () => {
     for (const later of ['APP3-S10', 'APP3-S11']) {
       const phase = file('phase').replace(
-        '\nAPP3-S08 = COMPLETE — REVIEW_DELIVERED\n',
-        `\nAPP3-S08 = COMPLETE — REVIEW_DELIVERED\n${later} = COMPLETE — REVIEW_DELIVERED\n`,
+        S08_STATUS_LINE,
+        `${S08_STATUS_LINE}${later} = COMPLETE — REVIEW_DELIVERED\n`,
       );
       assert.ok(mentions(run(checkPredecessors, { phase }), later), later);
     }
@@ -163,10 +183,7 @@ describe('predecessors and status', () => {
   });
 
   it('rejects a status the checkpoint may not be recorded under', () => {
-    const phase = file('phase').replace(
-      '\nAPP3-S08 = COMPLETE — REVIEW_DELIVERED\n',
-      '\nAPP3-S08 = SELF_ACCEPTED\n',
-    );
+    const phase = file('phase').replace(S08_STATUS_LINE, '\nAPP3-S08 = SELF_ACCEPTED\n');
     assert.ok(mentions(run(checkPredecessors, { phase }), 'legitimate status'));
   });
 
@@ -197,7 +214,23 @@ describe('design approval', () => {
   });
 
   it('rejects a row approved without this checkpoint as its evidence', () => {
-    const registry = file('registry').replaceAll('APP3-S08 §4 operator review', '—');
+    /*
+     * The whole evidence cell, not one sentence of it.
+     *
+     * `APP3-S08-C1` appended the live node read to the same cell, so a mutation
+     * that removed only the original sentence left `APP3-S08` behind inside
+     * `APP3-S08-C1` and the rule went on passing — the mutation mutated
+     * nothing. Rewriting the two rows' evidence outright is what the rule is
+     * actually about.
+     */
+    const registry = file('registry')
+      .split('\n')
+      .map((line) =>
+        Object.keys(S08_DESIGN_ROWS).some((id) => line.startsWith(`| ${id} |`))
+          ? line.replaceAll('APP3-S08', 'APP3-D01')
+          : line,
+      )
+      .join('\n');
     assert.ok(mentions(run(checkDesignApproval, { registry }), 'no APP3-S08 approval evidence'));
   });
 
@@ -304,7 +337,7 @@ describe('the bound', () => {
   });
 
   it('rejects copy implying an unlimited history', () => {
-    const copy = replacing('copy', 'Chỉ giữ ${String(limit)} thay đổi', 'Giữ toàn bộ lịch sử');
+    const copy = replacing('copy', 'Lịch sử giới hạn ${String(limit)} bước', 'Giữ toàn bộ lịch sử');
     assert.ok(mentions(run(checkBounded, { copy }), 'unlimited history'));
   });
 
@@ -484,16 +517,6 @@ describe('the panel', () => {
     assert.deepEqual(run(checkPanel), []);
   });
 
-  it('rejects a control that is not a real disabled button', () => {
-    const list = replacing('list', 'disabled={!canUndo}', 'aria-disabled={!canUndo}');
-    assert.ok(mentions(run(checkPanel, { list }), 'not really disabled'));
-  });
-
-  it('rejects a disabled control with no stated reason', () => {
-    const list = without('list', 'aria-describedby');
-    assert.ok(mentions(run(checkPanel, { list }), 'states no reason'));
-  });
-
   it('rejects unapproved time travel in the list', () => {
     const list = replacing(
       'list',
@@ -501,11 +524,6 @@ describe('the panel', () => {
       '<button type="button" onClick={() => undefined}>{row.label}</button>',
     );
     assert.ok(mentions(run(checkPanel, { list }), 'time travel'));
-  });
-
-  it('rejects an undone row distinguished by colour alone', () => {
-    const list = without('list', 'undoneFlag');
-    assert.ok(mentions(run(checkPanel, { list }), 'colour alone'));
   });
 
   it('rejects an APP3-S11 mobile surface delivered early', () => {
@@ -520,6 +538,186 @@ describe('the panel', () => {
       '<StudioTextDrawer />',
     );
     assert.ok(mentions(run(checkPanel, { panels }), 'second drawer'));
+  });
+
+  it('rejects the mobile controls pulled forward into the rail', () => {
+    const rail = `${file('rail')}\nconst sheet = () => <div className="bottom-sheet" />;\n`;
+    assert.ok(mentions(run(checkPanel, { rail }), 'APP3-S11'));
+  });
+});
+
+/**
+ * Where the controls sit (`APP3-S08-C1` §7, §8, §15).
+ *
+ * The defect human review found was not that undo was missing — it worked — but
+ * that it was in the wrong surface. Every mutation here is a way of putting it
+ * back where the delivered checkpoint had it.
+ */
+describe('the control placement', () => {
+  it('accepts the corrected placement', () => {
+    assert.deepEqual(run(checkControlPlacement), []);
+  });
+
+  it('rejects a control moved out of the tool rail', () => {
+    for (const control of ['studio-history-undo', 'studio-history-redo']) {
+      const rail = file('rail').replaceAll(control, 'studio-history-elsewhere');
+      assert.ok(mentions(run(checkControlPlacement, { rail }), control), control);
+    }
+  });
+
+  it('rejects the controls duplicated in the history panel', () => {
+    const list = replacing(
+      'list',
+      '<h2 className="studio-history__heading">{STUDIO_HISTORY_COPY.title}</h2>',
+      '<button type="button" data-testid="studio-history-undo" onClick={undo} />',
+    );
+    assert.ok(mentions(run(checkControlPlacement, { list }), 'duplicated'));
+  });
+
+  it('rejects redo drawn before undo', () => {
+    const rail = file('rail')
+      .replaceAll('studio-history-undo', 'TEMP')
+      .replaceAll('studio-history-redo', 'studio-history-undo')
+      .replaceAll('TEMP', 'studio-history-redo');
+    assert.ok(mentions(run(checkControlPlacement, { rail }), 'immediately follow'));
+  });
+
+  it('rejects a control that is not a real disabled button', () => {
+    const rail = replacing('rail', 'disabled={!canUndo}', 'aria-disabled={!canUndo}');
+    assert.ok(mentions(run(checkControlPlacement, { rail }), 'not really disabled'));
+  });
+
+  it('rejects a disabled control with no stated reason', () => {
+    const rail = without('rail', 'aria-describedby');
+    assert.ok(mentions(run(checkControlPlacement, { rail }), 'states no reason'));
+  });
+
+  it('rejects the controls collapsing into the drawer at 1024', () => {
+    // `618:140`: the left tool rail stays and is always visible.
+    const rail = replacing('rail', "tier === null || tier === 'mobile'", "tier !== 'desktop'");
+    assert.ok(mentions(run(checkControlPlacement, { rail }), 'persist'));
+  });
+
+  it('rejects the rail mounted from the tablet drawer composition', () => {
+    const panels = `${file('panels')}\nconst extra = () => <StudioHistoryRail />;\n`;
+    assert.ok(mentions(run(checkControlPlacement, { panels }), 'tablet drawer'));
+  });
+
+  it('rejects the shortcut hint folded back into the panel', () => {
+    const list = `${file('list')}\nconst hint = () => STUDIO_HISTORY_COPY.shortcutHeading;\n`;
+    assert.ok(mentions(run(checkControlPlacement, { list }), 'folded back'));
+  });
+});
+
+/** The baseline row and the one current marker (`APP3-S08-C1` §3, §4, §15). */
+describe('the projection', () => {
+  it('accepts the corrected projection', () => {
+    assert.deepEqual(run(checkProjection), []);
+  });
+
+  it('rejects the baseline UI row removed', () => {
+    const list = without('list', 'studio-history-baseline');
+    assert.ok(mentions(run(checkProjection, { list }), 'baseline row'));
+  });
+
+  it('rejects a projection that publishes no baseline at all', () => {
+    const model = without('model', "key: 'baseline'");
+    assert.ok(mentions(run(checkProjection, { model }), 'no baseline row'));
+  });
+
+  it('rejects the baseline made undoable', () => {
+    // Undo depth stops being the cursor alone the moment the baseline counts.
+    const model = replacing('model', 'history.cursor > 0', 'history.cursor >= 0');
+    assert.ok(mentions(run(checkProjection, { model }), 'undo depth'));
+  });
+
+  it('rejects a missing current marker at either end', () => {
+    for (const [from, needle] of [
+      ['current: history.cursor === 0', 'marker at the start'],
+      ['current: index === history.cursor - 1', 'marker at cursor - 1'],
+    ]) {
+      const model = file('model').replaceAll(from, 'current: false');
+      assert.ok(mentions(run(checkProjection, { model }), needle), needle);
+    }
+  });
+
+  it('rejects more than one row claiming to be current', () => {
+    const model = replacing('model', 'current: index === history.cursor - 1', 'current: true');
+    assert.ok(mentions(run(checkProjection, { model }), 'marker at cursor - 1'));
+  });
+
+  it('rejects the future rows hidden after an undo', () => {
+    for (const [key, mutated] of [
+      [
+        'model',
+        file('model').replace(
+          '...history.entries.map',
+          '...history.entries.slice(0, history.cursor).map',
+        ),
+      ],
+      ['list', file('list').replace('{rows.map(', '{rows.filter((row) => row.current).map(')],
+    ]) {
+      assert.ok(mentions(run(checkProjection, { [key]: mutated }), 'rows'), key);
+    }
+  });
+
+  it('rejects the per-row applied status restored', () => {
+    const list = replacing(
+      'list',
+      '{row.label}',
+      '{row.label}{row.applied ? STUDIO_HISTORY_COPY.appliedFlag : null}',
+    );
+    assert.ok(mentions(run(checkProjection, { list }), 'per-row status'));
+  });
+
+  it('rejects the bare undone status returning as a published label', () => {
+    const copy = replacing('copy', "currentBadge: 'hiện tại'", "undoneFlag: 'Đã hoàn tác'");
+    assert.ok(mentions(run(checkProjection, { copy }), 'per-row status'));
+  });
+
+  it('accepts the live-region sentence that legitimately begins with it', () => {
+    // `Đã hoàn tác: ${label}.` announces one undo; it is not a row label. A
+    // substring ban would fail here, which is why the rule matches whole values.
+    assert.ok(file('copy').includes('Đã hoàn tác:'));
+    assert.deepEqual(run(checkProjection), []);
+  });
+});
+
+/** What the baseline row is allowed to say (`APP3-S08-C1` §5). */
+describe('the baseline copy', () => {
+  it('accepts the delivered baseline', () => {
+    assert.deepEqual(run(checkBaselineCopy), []);
+  });
+
+  it('rejects a slug or a version reaching the row as a name', () => {
+    for (const identity of ['templateSlug', 'templateVersion']) {
+      const model = `${file('model')}\nexport const shown = (l: { ${identity}: string }) => l.${identity};\n`;
+      assert.ok(mentions(run(checkBaselineCopy, { model }), identity), identity);
+    }
+  });
+
+  it('rejects a second bound on the name', () => {
+    const model = replacing('model', 'LABEL_MAX_LENGTH', '24');
+    assert.ok(mentions(run(checkBaselineCopy, { model }), 'second limit'));
+  });
+
+  it('rejects a blank baseline that invents its own label', () => {
+    const copy = replacing('copy', 'STUDIO_COPY.startBlank', "'Thiết kế mới'");
+    assert.ok(mentions(run(checkBaselineCopy, { copy }), 'invents its own label'));
+  });
+
+  it('rejects a name not proved to be this Session lineage', () => {
+    const bootstrap = replacing(
+      'bootstrap',
+      'detail.detail?.slug === lineage.templateSlug',
+      'detail.detail !== undefined',
+    );
+    assert.ok(mentions(run(checkBaselineCopy, { bootstrap }), "this Session's"));
+  });
+
+  it('rejects a second Template read added to decorate the row', () => {
+    const bootstrap = `${file('bootstrap')}\nconst extra = useTemplateDetail(undefined, null);\n`;
+    assert.ok(mentions(run(checkBaselineCopy, { bootstrap }), 'second Template read'));
   });
 });
 

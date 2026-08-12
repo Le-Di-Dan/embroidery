@@ -273,6 +273,12 @@ export const S08_FILES = new Set(
   [
     'components/studio-history-list.tsx',
     'components/studio-history-panel.tsx',
+    // APP3-S08-C1 split the one panel into the surfaces the live frames draw:
+    // the controls in the persistent rail, the hint in its own box. A partition
+    // that still named only the old file would hand the new ones to S01, whose
+    // own rules would then fail on a viewport read that is legitimately S08's.
+    'components/studio-history-rail.tsx',
+    'components/studio-history-shortcuts.tsx',
     'components/studio-stage-panels.tsx',
     'hooks/use-studio-history.ts',
     'hooks/use-studio-history-shortcuts.ts',

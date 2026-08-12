@@ -149,6 +149,19 @@ export function checkBounded(rootDir, fail) {
   if (!list.includes('MAX_HISTORY_ENTRIES')) {
     fail(`${CANONICAL_FILES.list}: the panel does not state the bound`);
   }
+  /*
+   * The bound sentence is the frame's own words, with the number interpolated.
+   *
+   * Both halves are asserted around the interpolation, so a sentence rewritten
+   * away from `609:147` fails even when it still contains a number — and the
+   * number still comes from the constant, so the copy cannot drift from the
+   * limit it describes.
+   */
+  for (const half of ['Lịch sử giới hạn ', ' bước gần nhất trong phiên này.']) {
+    if (!publishedStrings(copy).includes(half)) {
+      fail(`${CANONICAL_FILES.copy}: the approved bound sentence was rewritten`);
+    }
+  }
   // `APP3-D01`'s directive for this section: do not imply an infinite history.
   for (const claim of ['vô hạn', 'không giới hạn', 'toàn bộ lịch sử', 'mọi thay đổi']) {
     if (publishedStrings(copy).includes(claim)) {
@@ -168,6 +181,22 @@ export function checkBounded(rootDir, fail) {
  * Prose is excluded on purpose: a gate that read comments fires on the docblock
  * that honestly explains why a claim is forbidden.
  */
+/**
+ * The same strings, as a list of whole values rather than one joined blob.
+ *
+ * `publishedStrings` answers "does this text appear anywhere"; this answers "is
+ * this the entire value of some entry", which is the only form in which a rule
+ * about a *label* can be stated without also hitting a sentence that happens to
+ * begin with it.
+ */
+function publishedValues(source) {
+  const stripped = source.replaceAll(/\/\*[\s\S]*?\*\//g, '').replaceAll(/(^|[^:])\/\/.*$/gm, '$1');
+  return [
+    ...[...stripped.matchAll(/'([^'\n]*)'/g)].map((match) => match[1] ?? ''),
+    ...[...stripped.matchAll(/`([^`]*)`/g)].map((match) => match[1] ?? ''),
+  ];
+}
+
 function publishedStrings(source) {
   const stripped = source.replaceAll(/\/\*[\s\S]*?\*\//g, '').replaceAll(/(^|[^:])\/\/.*$/gm, '$1');
   return [
@@ -361,11 +390,45 @@ export function checkShortcuts(rootDir, fail) {
   }
 }
 
-/** The panel: real buttons, stated reasons, an informational list, no S11 sheet. */
-export function checkPanel(rootDir, fail) {
+/**
+ * Where the two controls live (`APP3-S08-C1` §7, §8).
+ *
+ * The live `609:147` and `609:209` draw a persistent left tool rail carrying
+ * Undo at `y=132` and Redo at `y=188`, and `618:140` keeps that rail visible at
+ * 1024 in its own callout. The delivered `APP3-S08` put them in the history
+ * panel's header instead, on a disclosed engineering placement made without the
+ * nodes. So this rules on the placement itself, not merely on the controls
+ * existing somewhere.
+ */
+export function checkControlPlacement(rootDir, fail) {
+  const rail = code(rootDir, 'rail');
   const list = code(rootDir, 'list');
-  const panel = code(rootDir, 'panel');
+  const panels = code(rootDir, 'panels');
+  const screen = code(rootDir, 'screen');
 
+  for (const control of ['studio-history-undo', 'studio-history-redo']) {
+    if (!rail.includes(control)) {
+      fail(`${CANONICAL_FILES.rail}: "${control}" is not in the persistent tool rail`);
+    }
+    if (list.includes(control)) {
+      fail(`${CANONICAL_FILES.list}: "${control}" is duplicated in the history panel`);
+    }
+  }
+  // Redo immediately after Undo, which is the order the frames draw and the
+  // order the keyboard therefore reaches them in.
+  const undoAt = rail.indexOf('studio-history-undo');
+  const redoAt = rail.indexOf('studio-history-redo');
+  if (undoAt < 0 || redoAt <= undoAt) {
+    fail(`${CANONICAL_FILES.rail}: redo does not immediately follow undo`);
+  }
+  // No control of any kind in the panel: a second pair for one command is how a
+  // customer comes to believe the two do different things.
+  if (list.includes('<button') || list.includes('onClick')) {
+    fail(`${CANONICAL_FILES.list}: the history panel carries a control`);
+  }
+  if (!rail.includes('type="button"')) {
+    fail(`${CANONICAL_FILES.rail}: a control is not a real button`);
+  }
   /*
    * `disabled`, not `aria-disabled`. The distinction is the whole rule: an
    * `aria-disabled` button is still focusable and still fires its handler, so a
@@ -375,17 +438,169 @@ export function checkPanel(rootDir, fail) {
    * *contains* `disabled={!canUndo}` — a plain substring rule passed the
    * mutation that made exactly that substitution.
    */
-  if (!list.includes('type="button"')) {
-    fail(`${CANONICAL_FILES.list}: a control is not a real button`);
-  }
   for (const required of ['canUndo', 'canRedo']) {
-    if (!new RegExp(`(^|[\\s{])disabled=\\{!${required}\\}`, 'm').test(list)) {
-      fail(`${CANONICAL_FILES.list}: the ${required} control is not really disabled`);
+    if (!new RegExp(`(^|[\\s{])disabled=\\{!${required}\\}`, 'm').test(rail)) {
+      fail(`${CANONICAL_FILES.rail}: the ${required} control is not really disabled`);
     }
   }
-  if (!list.includes('aria-describedby')) {
-    fail(`${CANONICAL_FILES.list}: a disabled control states no reason`);
+  if (!rail.includes('aria-describedby')) {
+    fail(`${CANONICAL_FILES.rail}: a disabled control states no reason`);
   }
+  /*
+   * The rail persists at 1024. `618:140` says so in terms — *thanh công cụ trái
+   * giữ nguyên và luôn hiện* — so the only tier it stands down for is mobile,
+   * and the exact guard is what a "controls drawer-only at 1024" change has to
+   * break. It is also never mounted from the drawer composition.
+   */
+  if (!rail.includes("tier === null || tier === 'mobile'")) {
+    fail(`${CANONICAL_FILES.rail}: the rail does not persist at every tier that edits`);
+  }
+  if (panels.includes('StudioHistoryRail')) {
+    fail(`${CANONICAL_FILES.panels}: the controls were moved into the tablet drawer`);
+  }
+  if (!screen.includes('<StudioHistoryRail')) {
+    fail(`${CANONICAL_FILES.screen}: the persistent tool rail is not mounted in the stage frame`);
+  }
+  // The hint is its own box below the panel (`609:147` y=444), not a paragraph
+  // inside it, and it offers nothing to press.
+  const shortcuts = code(rootDir, 'shortcuts-panel');
+  if (shortcuts.includes('<button') || shortcuts.includes('onClick')) {
+    fail(`${CANONICAL_FILES['shortcuts-panel']}: the shortcut hint is not informational`);
+  }
+  if (list.includes('shortcutUndo') || list.includes('shortcutHeading')) {
+    fail(`${CANONICAL_FILES.list}: the shortcut hint was folded back into the panel`);
+  }
+}
+
+/**
+ * The projection the approved frames draw (`APP3-S08-C1` §3, §4).
+ *
+ * `609:209` is the *Nothing to Undo* state and its panel is **not** empty: it
+ * carries one non-undoable baseline row with the current marker on it. That is
+ * presentation over an engine that is still mechanically empty, and the two must
+ * not be allowed to merge — a baseline that became an entry would be an undo
+ * step into a document nothing produced.
+ */
+export function checkProjection(rootDir, fail) {
+  const model = code(rootDir, 'model');
+  const list = code(rootDir, 'list');
+  const copy = read(rootDir, 'copy') ?? '';
+
+  // Exactly one current marker, computed from one cursor. Both halves are
+  // required: dropping either is how a projection ends up with none or two.
+  if (!model.includes('current: history.cursor === 0')) {
+    fail(`${CANONICAL_FILES.model}: the baseline does not own the marker at the start`);
+  }
+  if (!model.includes('current: index === history.cursor - 1')) {
+    fail(`${CANONICAL_FILES.model}: no action row owns the marker at cursor - 1`);
+  }
+  if (!model.includes("key: 'baseline'") || !model.includes('baseline: true')) {
+    fail(`${CANONICAL_FILES.model}: the projection carries no baseline row`);
+  }
+  // The engine is untouched by the projection: the baseline is not an entry, so
+  // undo depth is still the cursor and nothing else.
+  if (!/canUndo\(history[^)]*\)[\s\S]{0,80}history\.cursor > 0/.test(model)) {
+    fail(`${CANONICAL_FILES.model}: undo depth is no longer the cursor alone`);
+  }
+  const projection = model.slice(model.indexOf('export function historyRowsOf'));
+  const projectionBody = projection.slice(0, projection.indexOf('export function historyLabel'));
+  for (const dropped of ['.filter(', '.slice(']) {
+    if (projectionBody.includes(dropped)) {
+      fail(`${CANONICAL_FILES.model}: the projection drops rows a redo would return to`);
+    }
+  }
+  if (list.includes('.filter(')) {
+    fail(`${CANONICAL_FILES.list}: the panel hides rows the projection published`);
+  }
+  if (!list.includes('studio-history-baseline') || !list.includes('row.baseline')) {
+    fail(`${CANONICAL_FILES.list}: the panel does not draw the baseline row`);
+  }
+  if (!list.includes('currentBadge')) {
+    fail(`${CANONICAL_FILES.list}: the current position is not stated in words`);
+  }
+  // The delivered per-row applied/undone status is not what the frames draw:
+  // only the current position is marked, and every other row is just a row.
+  for (const removed of ['appliedFlag', 'undoneFlag', 'row.applied']) {
+    if (list.includes(removed) || model.includes(removed)) {
+      fail(`${FEATURE}: "${removed}" restores a per-row status the approved frames do not draw`);
+    }
+  }
+  /*
+   * The two bare per-row statuses, matched as **whole published values**.
+   *
+   * A substring ban would fire on `Đã hoàn tác: ${label}.` — the live-region
+   * sentence that announces an undo, which is legitimate and unrelated: it says
+   * what just happened, once, rather than labelling every row. That is the
+   * ban-a-word-and-hit-the-honest-use failure `APP3-B06B`, `APP3-B06C`,
+   * `APP3-S06`, `APP3-S04`, `APP3-S09` and `APP3-S08` have each recorded, and
+   * it fired here on the first run of this rule.
+   */
+  for (const claim of ['Đang áp dụng', 'Đã hoàn tác']) {
+    if (publishedValues(copy).includes(claim)) {
+      fail(`${CANONICAL_FILES.copy}: "${claim}" is a per-row status the frames do not carry`);
+    }
+  }
+}
+
+/**
+ * What the baseline row is allowed to say (`APP3-S08-C1` §5).
+ *
+ * The Figma string quotes an example Template name. A resumed Session carries a
+ * slug and a version and no name at all, and rendering either as though it were
+ * a display name would publish a technical identity as provenance.
+ */
+export function checkBaselineCopy(rootDir, fail) {
+  const model = code(rootDir, 'model');
+  const owned = s08Code(rootDir);
+  const copy = read(rootDir, 'copy') ?? '';
+
+  if (!model.includes('baselineLabelOf')) {
+    fail(`${CANONICAL_FILES.model}: nothing decides what the baseline row says`);
+  }
+  for (const identity of ['templateSlug', 'templateVersion', 'publishedVersion', 'sessionId']) {
+    if (owned.includes(identity)) {
+      fail(`${FEATURE}: "${identity}" could reach the baseline row as though it were a name`);
+    }
+  }
+  // Bounded by the layer panel's own limit rather than by a second number.
+  if (!model.includes('LABEL_MAX_LENGTH')) {
+    fail(`${CANONICAL_FILES.model}: the baseline name is bounded by a second limit`);
+  }
+  // The blank-start row reuses the accepted `APP3-S01` label rather than
+  // inventing a second sentence that could later disagree with the button the
+  // customer pressed to get here.
+  if (!copy.includes('STUDIO_COPY.startBlank')) {
+    fail(`${CANONICAL_FILES.copy}: the blank baseline invents its own label`);
+  }
+  for (const required of ['baselineClone', 'baselineGeneric']) {
+    if (!copy.includes(required)) {
+      fail(`${CANONICAL_FILES.copy}: no ${required} sentence exists`);
+    }
+  }
+  /*
+   * The name comes from data the bootstrap already holds, never from a request
+   * made to decorate a row.
+   *
+   * The slug comparison is the structural form of that: it can only be written
+   * against a Template detail this runtime already fetched to draw the picker's
+   * preview, and it is also what stops a name that came from a *different*
+   * Template being presented as this Session's provenance. One detail read, the
+   * one `APP3-S01` already made.
+   */
+  const bootstrap = code(rootDir, 'bootstrap');
+  if (!bootstrap.includes('detail.detail?.slug === lineage.templateSlug')) {
+    fail(`${CANONICAL_FILES.bootstrap}: the baseline name is not proved to be this Session's`);
+  }
+  if ((bootstrap.match(/useTemplateDetail\(/g) ?? []).length !== 1) {
+    fail(`${CANONICAL_FILES.bootstrap}: a second Template read was added to decorate a row`);
+  }
+}
+
+/** The panel's compositions, and nothing that belongs to `APP3-S11`. */
+export function checkPanel(rootDir, fail) {
+  const list = code(rootDir, 'list');
+  const panel = code(rootDir, 'panel');
+
   // Informational: `APP3-S08` §14 forbids inferring arbitrary time travel from
   // the presence of a list.
   const listBlock = list.slice(list.indexOf('<ol'), list.indexOf('</ol>'));
@@ -394,10 +609,6 @@ export function checkPanel(rootDir, fail) {
       fail(`${CANONICAL_FILES.list}: the history list offers unapproved time travel`);
     }
   }
-  // State as text, never colour alone.
-  if (!list.includes('appliedFlag') || !list.includes('undoneFlag')) {
-    fail(`${CANONICAL_FILES.list}: an undone row is distinguished by colour alone`);
-  }
   // The three compositions, and nothing that belongs to `APP3-S11`.
   for (const tier of ["tier === 'tablet'", "tier === 'mobile'", 'tier === null']) {
     if (!panel.includes(tier)) {
@@ -405,8 +616,8 @@ export function checkPanel(rootDir, fail) {
     }
   }
   for (const early of ['BottomSheet', 'bottom-sheet', 'onTouchStart', 'touchmove']) {
-    if (panel.includes(early)) {
-      fail(`${CANONICAL_FILES.panel}: "${early}" is an APP3-S11 surface delivered early`);
+    if (s08Code(rootDir).includes(early)) {
+      fail(`${FEATURE}: "${early}" is an APP3-S11 surface delivered early`);
     }
   }
   // One drawer, still. A second over the same stage edge would be a second
@@ -493,6 +704,7 @@ export function checkFileSizes(rootDir, fail) {
   for (const path of [
     'apps/storefront/test/unit/studio-history-model.test.ts',
     'apps/storefront/test/components/studio-history.test.tsx',
+    'apps/storefront/test/components/studio-history-integration.test.tsx',
   ]) {
     const lines = (read(rootDir, path) ?? '').split('\n').length;
     if (lines > TEST_LIMIT) {

@@ -7,12 +7,16 @@
  * `APP3-S06` reused, and deliberately the same *decision* rather than a fourth
  * one:
  *
- * - **desktop** — the 1440 presentation the two approved `APP3-S08` frames draw,
- *   in flow beside the stage.
+ * - **desktop** — the 1440 presentation the two approved `APP3-S08` frames draw:
+ *   the history panel beside the stage and, below it, the shortcut hint as its
+ *   own box (`609:147` puts them at `y=120` and `y=444`).
  * - **tablet** — inside the accepted `618:140` right drawer, as one more section
- *   of the one inspector panel. A second drawer over the same stage edge would
- *   be the second drawer system the tablet composition exists to avoid, and the
- *   keyboard path to undo is unaffected by which region the buttons sit in.
+ *   of the one inspector panel. The *controls* do not move into the drawer —
+ *   `618:140`'s own callout keeps the left tool rail permanently visible, and
+ *   `StudioHistoryRail` renders there at this tier too. What shares the drawer
+ *   is the detail: the rows, the marker and the bound. A second drawer over the
+ *   same stage edge would be the second drawer system the tablet composition
+ *   exists to avoid.
  * - **mobile** — nothing that edits. `APP3-S11` owns the mobile editing surfaces
  *   and every touch affordance around them, and at 390 there is currently no way
  *   to change the document at all — so an undo control there would be a button
@@ -25,6 +29,7 @@
 import { useStudioViewportTier } from '../hooks/use-studio-viewport-tier';
 import { STUDIO_HISTORY_COPY } from '../model/studio-history-copy';
 import { StudioHistoryList, type StudioHistoryListProps } from './studio-history-list';
+import { StudioHistoryShortcuts } from './studio-history-shortcuts';
 
 /**
  * Where in the stage frame this mount sits.
@@ -48,7 +53,14 @@ export function StudioHistoryPanel({ slot, history }: StudioHistoryPanelProps) {
   // controls on a phone until hydration replaced them.
   if (tier === null) return null;
 
-  if (tier === 'tablet') return slot === 'drawer' ? <StudioHistoryList {...history} /> : null;
+  if (tier === 'tablet') {
+    return slot === 'drawer' ? (
+      <>
+        <StudioHistoryList {...history} />
+        <StudioHistoryShortcuts />
+      </>
+    ) : null;
+  }
   if (slot === 'drawer') return null;
 
   if (tier === 'mobile') {
@@ -63,5 +75,10 @@ export function StudioHistoryPanel({ slot, history }: StudioHistoryPanelProps) {
     );
   }
 
-  return <StudioHistoryList {...history} />;
+  return (
+    <>
+      <StudioHistoryList {...history} />
+      <StudioHistoryShortcuts />
+    </>
+  );
 }

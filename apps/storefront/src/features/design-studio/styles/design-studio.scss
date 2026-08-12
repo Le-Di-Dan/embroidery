@@ -368,16 +368,34 @@ $bp-studio-split: 1025px;
   min-width: 0;
 }
 
+// APP3-S08-C1: a two-column grid rather than a single column, because 609:147
+// and 609:209 put a persistent tool rail down the left of the frame with every
+// other surface beside it. `auto` is what makes the rail cost nothing when it
+// is absent: React does not render it at 390, the track collapses to zero, and
+// the spacing is the rail's own margin rather than a grid gap that would survive
+// it. Nothing else in the frame moved — every existing child still occupies the
+// full width of the second column, in the order it was already in.
 .studio-stage__frame {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(8);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  row-gap: styles.spacing(8);
+  align-content: start;
   padding: styles.spacing(12);
   border: 1px solid styles.$color-border-primary;
   border-radius: styles.$radius-sm;
   background: styles.$color-background-secondary;
   min-width: 0;
+
+  > * {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  > .studio-history-rail {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
 }
 
 // The SVG scales its own coordinate system, so the frame only has to give it a
@@ -887,7 +905,8 @@ $bp-studio-split: 1025px;
   // rule, so the drawer never reads as a stack of cards.
   .studio-text,
   .studio-layers,
-  .studio-history {
+  .studio-history,
+  .studio-history-shortcuts {
     border: 0;
     padding: 0;
     background: transparent;
@@ -1168,33 +1187,80 @@ $bp-studio-split: 1025px;
   color: styles.$color-text-primary;
 }
 
-.studio-history__controls {
+// The persistent left tool rail (APP3-S08-C1). 609:147 draws it at w=72 with
+// 52x44 controls; 618:140 keeps it visible at 1024 with 48x48 touch targets and
+// says so in its own callout. One size satisfies both — 48 is at or above every
+// approved minimum — so there is one control rule here rather than a tier-aware
+// pair that could disagree with the tier that decides what renders.
+$size-studio-rail-control: 48px;
+
+.studio-history-rail {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: styles.spacing(8);
+  // The gap to the stage belongs to the rail, not to the grid: a grid gap would
+  // still be there at 390, where React renders no rail at all.
+  margin-inline-end: styles.spacing(12);
 }
 
-.studio-history__control {
+.studio-history-rail__control {
+  // Never below the shared touch-target minimum APP3-S03 bound its handles to.
+  width: $size-studio-rail-control;
+  height: $size-studio-rail-control;
+  min-width: styles.$size-touch-target-min;
   min-height: styles.$size-touch-target-min;
-  padding: 0 styles.spacing(12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid styles.$color-border-primary;
   border-radius: styles.$radius-button;
   background: styles.$color-surface-primary;
   color: styles.$color-text-primary;
   font-family: inherit;
-  font-size: styles.$font-size-caption;
+  font-size: styles.$font-size-body-m;
   cursor: pointer;
 
   &:disabled {
-    // Disabled at either end of the history, and the reason is real text below.
+    // Disabled at either end of the history, and the reason is real text a
+    // screen reader reaches through `aria-describedby`.
     cursor: default;
     color: styles.$color-text-tertiary;
   }
 }
 
-.studio-history__reason,
-.studio-history__shortcuts,
+// Visually hidden, never absent and never `display: none`: the sentence is what
+// `aria-describedby` points at, and a 72px rail has no room to draw it.
+.studio-history-rail__reason {
+  position: absolute;
+  margin: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+// The shortcut hint, its own box below the history panel (609:147 y=444).
+.studio-history-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+}
+
+.studio-history-shortcuts__heading {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-secondary;
+}
+
+.studio-history-shortcuts__keys,
+.studio-history-shortcuts__mobile,
 .studio-history__bound,
 .studio-history__announcement,
 .studio-history__unavailable {
@@ -1203,7 +1269,7 @@ $bp-studio-split: 1025px;
   font-size: styles.$font-size-caption;
 }
 
-.studio-history__key {
+.studio-history-shortcuts__key {
   padding: 0 styles.spacing(4);
   border: 1px solid styles.$color-border-primary;
   border-radius: styles.$radius-input;
@@ -1231,10 +1297,12 @@ $bp-studio-split: 1025px;
   min-width: 0;
 }
 
-.studio-history__row--undone {
-  // An undone row is still readable and still says so in words. The state is
-  // carried by `.studio-history__state`, never by this colour alone.
-  color: styles.$color-text-tertiary;
+.studio-history__row--current {
+  // The row the design is currently at. The position is carried by the
+  // `hiện tại` badge in words; this border is emphasis on top of that, never
+  // the only way to tell.
+  border-color: styles.$color-border-primary;
+  color: styles.$color-text-primary;
 }
 
 .studio-history__label {
@@ -1243,17 +1311,11 @@ $bp-studio-split: 1025px;
   font-size: styles.$font-size-caption;
 }
 
-.studio-history__state {
+.studio-history__badge {
   flex: none;
-  color: styles.$color-text-tertiary;
-  font-size: styles.$font-size-caption;
-}
-
-.studio-history__empty {
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(4);
-  margin: 0;
+  padding: 0 styles.spacing(4);
+  border-radius: styles.$radius-input;
+  background: styles.$color-background-secondary;
   color: styles.$color-text-secondary;
   font-size: styles.$font-size-caption;
 }

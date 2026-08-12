@@ -716,14 +716,23 @@ export function isS08Delivered(rootDir) {
  * The files `APP3-S08` added, named exactly.
  *
  * Shared so every predecessor gate that has to become world-aware about undo
- * names the same seven files rather than each keeping its own idea of where a
+ * names the same nine files rather than each keeping its own idea of where a
  * past and a future may legitimately live. The one working-document store is
  * deliberately not on the list: `APP3-S08` §5 puts the stacks *beside* the one
  * current document rather than in a controller with a current of its own.
+ *
+ * `APP3-S08-C1` added the last two. The live `609:147` and `618:140` put the
+ * controls in a persistent left tool rail and the shortcut hint in its own box,
+ * so the one delivered panel became three surfaces — and a list that still named
+ * only the old file handed the new ones to `APP3-S01`, whose own rules then
+ * failed on a viewport read that is legitimately the rail's. The same
+ * one-file-becomes-two failure `APP3-B04A` recorded.
  */
 export const S08_FILES = Object.freeze([
   'components/studio-history-list.tsx',
   'components/studio-history-panel.tsx',
+  'components/studio-history-rail.tsx',
+  'components/studio-history-shortcuts.tsx',
   'components/studio-stage-panels.tsx',
   'hooks/use-studio-history.ts',
   'hooks/use-studio-history-shortcuts.ts',

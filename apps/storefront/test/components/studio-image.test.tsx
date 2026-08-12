@@ -140,6 +140,7 @@ function renderStage(document = makeStageDocument([textElement('t')])) {
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={makeStageSnapshot(document)}
+      templateName={null}
     />,
   );
 }

@@ -120,6 +120,22 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
   // later change to the pre-bootstrap Side or Area selection cannot retarget an
   // open Session; nothing on the stage can even see that selection.
   if (session.snapshot !== null) {
+    /*
+     * The cloned Template's display name, for the `APP3-S08-C1` baseline row.
+     *
+     * From the detail this screen already fetched to draw the preview — no
+     * second request, and none is made on a resume either. The slug is matched
+     * against the Session's own lineage rather than assumed: the detail query
+     * is keyed on the *selection*, and a name that did not come from the
+     * Template this Session was actually cloned from would be a confident lie
+     * on a row a customer reads as provenance.
+     */
+    const lineage = session.snapshot.lineage;
+    const clonedName =
+      lineage !== undefined && detail.detail?.slug === lineage.templateSlug
+        ? detail.detail.name
+        : null;
+
     return (
       <StudioStageScreen
         areaLimits={areaLimits.current}
@@ -127,6 +143,7 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
         onResume={session.resume}
         scope={session.scope}
         snapshot={session.snapshot}
+        templateName={clonedName}
       />
     );
   }

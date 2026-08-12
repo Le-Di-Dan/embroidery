@@ -102,6 +102,7 @@ function renderStage(document = scene) {
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={makeStageSnapshot(document)}
+      templateName={null}
     />,
   );
 }

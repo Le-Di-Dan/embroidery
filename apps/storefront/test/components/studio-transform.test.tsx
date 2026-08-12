@@ -93,6 +93,7 @@ function renderStage(
       onResume={jest.fn()}
       scope={scope}
       snapshot={snapshot}
+      templateName={null}
     />,
   );
   return { ...result, snapshot };
@@ -432,9 +433,9 @@ describe('the capabilities S03 must not grow', () => {
     const { container } = renderStage();
     select('a');
 
-    expect(container.querySelectorAll('[data-testid="studio-history-controls"]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-testid="studio-history-rail"]')).toHaveLength(1);
     const overlay = screen.getByTestId('studio-transform-move').closest('div');
-    expect(overlay?.querySelector('[data-testid="studio-history-controls"]')).toBeFalsy();
+    expect(overlay?.querySelector('[data-testid="studio-history-rail"]')).toBeFalsy();
     expect(overlay?.innerHTML.toLowerCase()).not.toContain('hoàn tác');
   });
 
@@ -501,6 +502,7 @@ describe('the working document belongs to one Session', () => {
         onResume={jest.fn()}
         scope={makeScope()}
         snapshot={snapshot}
+        templateName={null}
       />,
     );
 
@@ -521,6 +523,7 @@ describe('the working document belongs to one Session', () => {
         snapshot={makeStageSnapshot(makeStageDocument([shapeElement('a', { transform: INSIDE })]), {
           sessionId: 'a-different-session',
         })}
+        templateName={null}
       />,
     );
 

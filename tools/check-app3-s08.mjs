@@ -41,8 +41,10 @@ import {
   read,
 } from './check-app3-s08.sources.mjs';
 import {
+  checkBaselineCopy,
   checkBounded,
   checkCoalescing,
+  checkControlPlacement,
   checkCommandIndex,
   checkDomainHistory,
   checkEntryContents,
@@ -55,13 +57,16 @@ import {
   checkOneCurrentDocument,
   checkOwnership,
   checkPanel,
+  checkProjection,
   checkSafeLabels,
   checkShortcuts,
 } from './check-app3-s08-runtime.mjs';
 
 export {
+  checkBaselineCopy,
   checkBounded,
   checkCoalescing,
+  checkControlPlacement,
   checkCommandIndex,
   checkDomainHistory,
   checkEntryContents,
@@ -74,6 +79,7 @@ export {
   checkOneCurrentDocument,
   checkOwnership,
   checkPanel,
+  checkProjection,
   checkSafeLabels,
   checkShortcuts,
 };
@@ -100,6 +106,9 @@ const STATUS_LINES = [
   'APP3-S08 = BLOCKED_BY_APP3-S09_REVIEW_ACCEPTANCE',
   'APP3-S08 = READY — NOT STARTED',
   'APP3-S08 = COMPLETE — REVIEW_DELIVERED',
+  // The human-review verdict, and the form it takes once the correction ships.
+  'APP3-S08 = COMPLETE — REVIEW_DELIVERED — CORRECTION_REQUIRED',
+  'APP3-S08 = COMPLETE — REVIEW_DELIVERED — CORRECTED_BY_APP3-S08-C1',
   'APP3-S08 = COMPLETE — REVIEW_ACCEPTED',
 ];
 
@@ -172,6 +181,58 @@ export function checkPredecessors(rootDir, fail) {
   }
 }
 
+/**
+ * The correction's own record (`APP3-S08-C1`).
+ *
+ * Read from the phase status, never from the completion report: a gate that took
+ * a report's prose as product truth would pass on the strength of a claim rather
+ * than of a fact. Each line below states something a reader cannot recompute
+ * from the source — most of all that the baseline row is projection, which the
+ * code shows but does not explain.
+ */
+export function checkCorrection(rootDir, fail) {
+  const phase = read(rootDir, 'phase') ?? '';
+  if (!/\nAPP3-S08-C1 = /.test(phase)) return;
+
+  for (const line of [
+    'APP3-S08-C1 FIGMA_READ = LIVE_NODES_609_147_AND_609_209_AND_618_140',
+    'APP3-S08-C1 DEFECT_1 = CONTROLS_WERE_IN_THE_PANEL_HEADER',
+    'APP3-S08-C1 DEFECT_2 = PER_ROW_APPLIED_UNDONE_STATUS',
+    'APP3-S08-C1 RAIL_SCOPE = UNDO_AND_REDO_ONLY',
+    'APP3-S08-C1 ENGINE = UNCHANGED',
+    'APP3-S08-C1 CURRENT_MARKER = EXACTLY_ONE_BY_CONSTRUCTION',
+    'APP3-S08-C1 FUTURE_ROWS = VISIBLE',
+    'APP3-S08-C1 BASELINE_COPY = LINEAGE_GATED_DISPLAY_NAME_ONLY',
+    'APP3-S08-C1 BASELINE_GENERIC_COPY = PRESENTATION_FALLBACK_FOR_RUNTIME_WITHOUT_DISPLAY_NAME',
+    'APP3-S08-C1 MOBILE = ZERO_S08_CONTROLS_AT_390',
+    'APP3-S08-C1 SHELL = ONE_GRID_COLUMN_ADDED',
+    'APP3-S08-C1 PERFORMANCE = PERFORMANCE_RESULT_REUSED_FROM_APP3_S08',
+    'APP3-S08-C1 MIGRATION = NONE',
+    'APP3-S08-C1 DEPENDENCY = NONE',
+  ]) {
+    if (!phase.includes(`\n${line}`)) {
+      fail(`${CANONICAL_FILES.phase}: "${line}" is not recorded`);
+    }
+  }
+  // The follow-up the correction closed, and the one it opened rather than
+  // taking silently.
+  if (
+    !/\nFU-APP3-S08-DESIGN-READ-01 = COMPLETE — CLOSED_BY_HUMAN_REVIEW_LIVE_FIGMA_READ/.test(phase)
+  ) {
+    fail(`${CANONICAL_FILES.phase}: the design-read follow-up is not closed by the live read`);
+  }
+  if (!/\nFU-APP3-STUDIO-TOOL-RAIL-01 = OPEN/.test(phase)) {
+    fail(`${CANONICAL_FILES.phase}: the deferred tool-rail composition is not recorded as open`);
+  }
+  // The transform budget stays this correction's non-scope.
+  if (!/\nFU-APP3-TRANSFORM-BUDGET-01 = OPEN — NONBLOCKING/.test(phase)) {
+    fail(`${CANONICAL_FILES.phase}: the transform-budget follow-up was closed by this correction`);
+  }
+  if (!/\nAPP3-S10 = BLOCKED_BY_APP3-S08-C1_REVIEW_ACCEPTANCE/.test(phase)) {
+    fail(`${CANONICAL_FILES.phase}: APP3-S10 is not blocked on this correction's acceptance`);
+  }
+}
+
 /** Exactly the two section-12 rows, approved, and nothing else released. */
 export function checkDesignApproval(rootDir, fail) {
   const registry = read(rootDir, 'registry') ?? '';
@@ -211,6 +272,7 @@ export function checkDesignApproval(rootDir, fail) {
 
 export function checkApp3S08(rootDir, fail) {
   checkPredecessors(rootDir, fail);
+  checkCorrection(rootDir, fail);
   checkDesignApproval(rootDir, fail);
   checkCommandIndex(rootDir, fail);
   checkImmutability(rootDir, fail);
@@ -230,6 +292,9 @@ export function checkApp3S08(rootDir, fail) {
   checkExcludedState(rootDir, fail);
   checkShortcuts(rootDir, fail);
   checkPanel(rootDir, fail);
+  checkControlPlacement(rootDir, fail);
+  checkProjection(rootDir, fail);
+  checkBaselineCopy(rootDir, fail);
   checkSafeLabels(rootDir, fail);
   checkOwnership(rootDir, fail);
 }
@@ -254,8 +319,17 @@ const HEADLINE =
   'viewport and no watermark token; nothing persisted to localStorage, sessionStorage, IndexedDB, ' +
   'a cookie or the URL and a new Session clearing both stacks; exactly two keyboard combinations ' +
   'bound on keydown, standing down for an already-answered event and for every editable field so ' +
-  'the platform keeps its own text undo, with the listener removed on unmount; real buttons with ' +
-  'stated reasons, an informational list with no unapproved time travel, state carried as text, ' +
+  'the platform keeps its own text undo, with the listener removed on unmount; the two controls ' +
+  'as real, really disabled buttons with stated reasons in the persistent left tool rail 609:147 ' +
+  'and 618:140 draw and nowhere else, no duplicate pair in the history panel, the shortcut hint ' +
+  'as its own informational box, and the rail persisting at 1024 rather than collapsing into the ' +
+  'drawer; a baseline display row that is projection and never an entry, so a fresh runtime is ' +
+  'still zero entries at cursor zero with undo disabled, exactly one current marker computed from ' +
+  'the one cursor, the rows a redo would return to still visible, and no per-row applied or ' +
+  'undone status anywhere; a baseline naming the Template only from a display name APP3-S01 ' +
+  'already fetched and proved against this Session lineage, never a slug, a version or an id, ' +
+  'bounded by the layer panel own limit and reached without a second Template read; an ' +
+  'informational list with no unapproved time travel, ' +
   'no group action, no APP3-S11 mobile sheet and still one drawer at 1024; and an OpenAPI ' +
   'artifact, generated client, migration count, dependency set and root-script count all unchanged.';
 

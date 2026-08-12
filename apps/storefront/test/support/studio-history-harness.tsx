@@ -109,15 +109,32 @@ export function installStudioHistoryHarness(): void {
   });
 }
 
-export function renderStage(document = scene, sessionId?: string) {
-  const snapshot = makeStageSnapshot(document);
+/** How a Session that was cloned from a published Template arrives (`APP3-B07`). */
+export const LINEAGE = Object.freeze({ templateSlug: 'hoa-sen-co-dien', templateVersion: 3 });
+
+export interface RenderStageOptions {
+  readonly sessionId?: string;
+  /** Present only for a clone, exactly as `APP3-B07` sets it. */
+  readonly lineage?: typeof LINEAGE;
+  /** The display name `APP3-S01` already held, or `null` on a resume. */
+  readonly templateName?: string | null;
+}
+
+export function renderStage(document = scene, options: RenderStageOptions = {}) {
+  const base = makeStageSnapshot(document);
+  const snapshot = {
+    ...base,
+    ...(options.sessionId === undefined ? {} : { sessionId: options.sessionId }),
+    ...(options.lineage === undefined ? {} : { lineage: options.lineage }),
+  };
   return renderWithProviders(
     <StudioStageScreen
       areaLimits={null}
       isResuming={false}
       onResume={jest.fn()}
       scope={makeScope()}
-      snapshot={sessionId === undefined ? snapshot : { ...snapshot, sessionId }}
+      snapshot={snapshot}
+      templateName={options.templateName ?? null}
     />,
   );
 }
@@ -133,6 +150,7 @@ export function rerenderStage(
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={{ ...makeStageSnapshot(scene), sessionId }}
+      templateName={null}
     />,
   );
 }
@@ -190,7 +208,14 @@ export async function tick(times = 1) {
 
 export const entries = () => useStudioDocumentStore.getState().history.entries;
 export const cursor = () => useStudioDocumentStore.getState().history.cursor;
+/** The action rows only. The baseline is projection, not an entry. */
 export const rows = () => screen.queryAllByTestId('studio-history-row');
+export const baselineRow = () => screen.getByTestId('studio-history-baseline');
+/** Every projected row that claims to be the current position. Must be one. */
+export const currentRows = () =>
+  [...screen.getByTestId('studio-history-list').querySelectorAll('li')].filter(
+    (node) => node.getAttribute('data-current') === 'true',
+  );
 export const undoButton = () => screen.getByTestId('studio-history-undo');
 export const redoButton = () => screen.getByTestId('studio-history-redo');
 export const stored = (id: string) =>

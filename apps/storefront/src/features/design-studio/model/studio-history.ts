@@ -42,6 +42,7 @@
 import { canonicalizeDesignDocument, type DesignDocument } from '@embroidery/design-document';
 
 import { STUDIO_HISTORY_COPY } from './studio-history-copy';
+import { LABEL_MAX_LENGTH } from './studio-layers';
 
 /**
  * How many actions one Studio runtime retains.
@@ -95,8 +96,63 @@ export interface StudioHistoryEntry {
 export interface StudioHistoryRow {
   readonly key: string;
   readonly label: string;
-  /** Whether this action is currently part of the design, or has been undone. */
-  readonly applied: boolean;
+  /**
+   * The position the design is currently at (`hiện tại`).
+   *
+   * Exactly one row of a projection carries it, by construction rather than by
+   * discipline: `historyRowsOf` computes it from one cursor, so two current
+   * markers and none are both unrepresentable.
+   */
+  readonly current: boolean;
+  /** The non-undoable starting point. Never an entry, and never undo depth. */
+  readonly baseline: boolean;
+}
+
+/**
+ * Where the design started, as the approved frames present it.
+ *
+ * `609:209` draws a *Nothing to Undo* panel that is not empty: it carries one
+ * non-undoable row naming where the design came from, with the current marker on
+ * it. So this is a **presentation projection** and nothing more — it adds no
+ * entry, moves no cursor and changes no undo depth. The engine still starts at
+ * `entries.length === 0` and `cursor === 0`.
+ */
+export interface StudioHistoryOrigin {
+  /** Whether the Session was cloned from a published Template (`APP3-B07`). */
+  readonly cloned: boolean;
+  /**
+   * The Template's customer-facing display name, or `null`.
+   *
+   * `null` on a blank start, and also on a resume — the Session snapshot's
+   * lineage carries a slug and a version and no name at all, and neither is a
+   * display name. Nothing here fetches one: a history row is not a reason to
+   * make a request.
+   */
+  readonly templateName: string | null;
+}
+
+export const BLANK_ORIGIN: StudioHistoryOrigin = Object.freeze({
+  cloned: false,
+  templateName: null,
+});
+
+/**
+ * What the baseline row says.
+ *
+ * The clone sentence quotes the Template's own display name, bounded by exactly
+ * the length the layer panel bounds a layer name to — one bound, one place. A
+ * clone whose name this runtime never saw falls back to a generic sentence
+ * rather than to the slug or the version: `APP3-S08-C1` §5 forbids rendering a
+ * technical identity as though it were a name, and a slug is one.
+ */
+export function baselineLabelOf(origin: StudioHistoryOrigin): string {
+  if (!origin.cloned) return STUDIO_HISTORY_COPY.baselineBlank;
+  const name = origin.templateName?.trim() ?? '';
+  if (name === '') return STUDIO_HISTORY_COPY.baselineGeneric;
+  const points = [...name];
+  const bounded =
+    points.length <= LABEL_MAX_LENGTH ? name : `${points.slice(0, LABEL_MAX_LENGTH).join('')}…`;
+  return STUDIO_HISTORY_COPY.baselineClone(bounded);
 }
 
 export interface StudioHistoryState {
@@ -173,21 +229,36 @@ export function redoTarget(history: StudioHistoryState): StudioHistoryEntry | nu
 }
 
 /**
- * The panel's rows, newest first.
+ * The panel's rows: the baseline, then the actions in the order they happened.
  *
- * The list reads the way the customer thinks about it — the thing they just did
- * is at the top — while the array underneath stays oldest-first, because that is
- * the order the cursor indexes. Reversing once here is the whole difference, and
- * the cursor is never reversed to make the list easier.
+ * Oldest first, which is what `609:147` draws — past rows, the row carrying
+ * `hiện tại`, then the rows a redo would return to. The delivered `APP3-S08`
+ * reversed this on its own reasoning; the live frames settle it, and the array
+ * underneath is already in this order, so the projection now reverses nothing
+ * and the cursor indexes it directly.
+ *
+ * The future is **rendered**, not hidden. A customer who undid three steps can
+ * see the three they can come back to; dropping them would make redo a control
+ * with no visible referent.
  */
-export function historyRowsOf(history: StudioHistoryState): readonly StudioHistoryRow[] {
-  return history.entries
-    .map((entry, index) => ({
+export function historyRowsOf(
+  history: StudioHistoryState,
+  baselineLabel: string,
+): readonly StudioHistoryRow[] {
+  return [
+    {
+      key: 'baseline',
+      label: baselineLabel,
+      current: history.cursor === 0,
+      baseline: true,
+    },
+    ...history.entries.map((entry, index) => ({
       key: String(entry.seq),
       label: historyLabel(entry.action),
-      applied: index < history.cursor,
-    }))
-    .reverse();
+      current: index === history.cursor - 1,
+      baseline: false,
+    })),
+  ];
 }
 
 /** What one action is called, in the customer's terms. Never an identifier. */

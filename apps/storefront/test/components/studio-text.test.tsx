@@ -102,6 +102,7 @@ function renderStage(document = scene) {
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={makeStageSnapshot(document)}
+      templateName={null}
     />,
   );
 }
@@ -356,9 +357,13 @@ describe('S05 pulls nothing forward (APP3-S05 §19)', () => {
     renderStage();
     select('t');
 
-    expect(screen.getAllByTestId('studio-history-controls')).toHaveLength(1);
+    // One rail and one list, both `APP3-S08`'s, and the text inspector is
+    // neither. The anchor moved with the controls at `APP3-S08-C1`; the rule
+    // did not weaken.
+    expect(screen.getAllByTestId('studio-history-rail')).toHaveLength(1);
+    expect(screen.getAllByTestId('studio-history-list')).toHaveLength(1);
     const inspector = screen.getByTestId('studio-text-value').closest('section');
-    expect(inspector?.querySelector('[data-testid="studio-history-controls"]')).toBeFalsy();
+    expect(inspector?.querySelector('[data-testid="studio-history-rail"]')).toBeFalsy();
     expect(inspector?.querySelector('[data-testid="studio-history-list"]')).toBeFalsy();
   });
 

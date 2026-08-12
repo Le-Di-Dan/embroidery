@@ -17,12 +17,14 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { STUDIO_HISTORY_COPY } from '../model/studio-history-copy';
 import {
+  baselineLabelOf,
   canRedo,
   canUndo,
   historyLabel,
   historyRowsOf,
   redoTarget,
   undoTarget,
+  type StudioHistoryOrigin,
   type StudioHistoryRow,
 } from '../model/studio-history';
 import { useStudioDocumentStore } from '../store/studio-document.store';
@@ -37,7 +39,7 @@ export interface UseStudioHistoryResult {
   readonly redo: () => void;
 }
 
-export function useStudioHistory(): UseStudioHistoryResult {
+export function useStudioHistory(origin: StudioHistoryOrigin): UseStudioHistoryResult {
   const history = useStudioDocumentStore((state) => state.history);
   const undoDocument = useStudioDocumentStore((state) => state.undo);
   const redoDocument = useStudioDocumentStore((state) => state.redo);
@@ -72,8 +74,13 @@ export function useStudioHistory(): UseStudioHistoryResult {
    * fifty rows inside the frame budget `ADR-APP0-001` §6 froze, for a list that
    * cannot have changed. This is the same cost `APP3-S03-C1` measured and
    * removed for the scene: a hundred React subtrees rebuilt for one drag.
+   *
+   * The baseline label is a second dependency and a stable one: it is derived
+   * from where the Session came from, which cannot change while the Session is
+   * open, so it never invalidates this memo mid-gesture.
    */
-  const rows = useMemo(() => historyRowsOf(history), [history]);
+  const baseline = baselineLabelOf(origin);
+  const rows = useMemo(() => historyRowsOf(history, baseline), [history, baseline]);
 
   return {
     rows,

@@ -68,6 +68,7 @@ function renderStage(document = makeStageDocument([shapeElement('a')]), scope = 
       onResume={jest.fn()}
       scope={scope}
       snapshot={snapshot}
+      templateName={null}
     />,
   );
 }
@@ -287,6 +288,7 @@ describe('single-element selection', () => {
           // so the document underneath the selection changes exactly here.
           sessionId: 'a-different-session',
         })}
+        templateName={null}
       />,
     );
 

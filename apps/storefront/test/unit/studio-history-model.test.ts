@@ -13,9 +13,12 @@
  */
 import type { DesignDocument } from '@embroidery/design-document';
 
+import { STUDIO_COPY } from '../../src/features/design-studio/model/studio-copy';
 import {
+  BLANK_ORIGIN,
   EMPTY_HISTORY,
   MAX_HISTORY_ENTRIES,
+  baselineLabelOf,
   canRedo,
   canUndo,
   historyLabel,
@@ -122,21 +125,61 @@ describe('the bound (APP3-S08 §6)', () => {
   });
 });
 
-describe('what a row says (APP3-S08 §14, §17)', () => {
-  it('reads newest first and marks what is currently applied', () => {
+describe('what a row says (APP3-S08 §14, §17; APP3-S08-C1 §4)', () => {
+  const BASELINE = 'Mở từ mẫu “Hoa sen cổ điển”';
+
+  function twoActions() {
     const first = recordAction(EMPTY_HISTORY, entry(1, base, movedBy(base, 10)));
-    const second = recordAction(first, {
+    return recordAction(first, {
       seq: 2,
       action: REORDER,
       before: movedBy(base, 10),
       after: movedBy(base, 20),
     });
-    const undone = { entries: second.entries, cursor: 1 };
+  }
 
-    const rows = historyRowsOf(undone);
-    expect(rows.map((row) => row.applied)).toEqual([false, true]);
-    expect(rows[0]?.label).toContain('thứ tự');
-    expect(rows[1]?.label).toContain('Di chuyển');
+  it('reads oldest first, from the baseline, exactly as 609:147 draws it', () => {
+    const rows = historyRowsOf(twoActions(), BASELINE);
+
+    expect(rows.map((row) => row.label)).toEqual([
+      BASELINE,
+      expect.stringContaining('Di chuyển'),
+      expect.stringContaining('thứ tự'),
+    ]);
+    expect(rows[0]?.baseline).toBe(true);
+    expect(rows.slice(1).every((row) => !row.baseline)).toBe(true);
+  });
+
+  it('marks the baseline current when nothing has been done yet', () => {
+    const rows = historyRowsOf(EMPTY_HISTORY, BASELINE);
+
+    // The engine is genuinely empty; the row is projection.
+    expect(EMPTY_HISTORY.entries).toHaveLength(0);
+    expect(EMPTY_HISTORY.cursor).toBe(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ baseline: true, current: true });
+  });
+
+  it('marks the action at cursor - 1, and exactly one row anywhere', () => {
+    const state = twoActions();
+
+    for (const cursor of [0, 1, 2]) {
+      const rows = historyRowsOf({ entries: state.entries, cursor }, BASELINE);
+      expect(rows.filter((row) => row.current)).toHaveLength(1);
+      expect(rows.findIndex((row) => row.current)).toBe(cursor);
+    }
+  });
+
+  it('keeps the rows a redo would return to visible after an undo', () => {
+    const state = twoActions();
+
+    const rows = historyRowsOf({ entries: state.entries, cursor: 1 }, BASELINE);
+
+    // Three rows still, with the marker in the middle: one past, one current,
+    // one future. Hiding the future would leave redo pointing at nothing.
+    expect(rows).toHaveLength(3);
+    expect(rows[1]?.current).toBe(true);
+    expect(rows[2]?.current).toBe(false);
   });
 
   it('names no identifier, and falls back rather than inventing one', () => {
@@ -153,8 +196,44 @@ describe('what a row says (APP3-S08 §14, §17)', () => {
     for (let n = 0; n < MAX_HISTORY_ENTRIES + 3; n += 1) {
       state = recordAction(state, entry(n + 1, base, movedBy(base, n)));
     }
-    const keys = historyRowsOf(state).map((row) => row.key);
+    const keys = historyRowsOf(state, 'Bắt đầu').map((row) => row.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe('what the baseline row is allowed to say (APP3-S08-C1 §5)', () => {
+  const SLUG = 'hoa-sen-co-dien';
+
+  it('quotes the Template display name on a clone that has one', () => {
+    expect(baselineLabelOf({ cloned: true, templateName: 'Hoa sen cổ điển' })).toBe(
+      'Mở từ mẫu “Hoa sen cổ điển”',
+    );
+  });
+
+  it('uses the accepted blank-start label on a blank Session', () => {
+    expect(baselineLabelOf(BLANK_ORIGIN)).toBe(STUDIO_COPY.startBlank);
+    expect(baselineLabelOf({ cloned: false, templateName: 'ignored' })).toBe(
+      STUDIO_COPY.startBlank,
+    );
+  });
+
+  it('never renders a slug, a version or an id as though it were a name', () => {
+    // The resume case: `APP3-B07` lineage carries a slug and a version and no
+    // display name at all.
+    for (const templateName of [null, '', '   ']) {
+      const label = baselineLabelOf({ cloned: true, templateName });
+      expect(label).toBe('Mở từ mẫu có sẵn');
+      expect(label).not.toContain(SLUG);
+      expect(label).not.toMatch(/[0-9a-f]{8}-/);
+      expect(label).not.toMatch(/\d/);
+    }
+  });
+
+  it('bounds a hostile name to the same length a layer name is bounded to', () => {
+    const label = baselineLabelOf({ cloned: true, templateName: 'A'.repeat(400) });
+
+    expect([...label].length).toBeLessThan(60);
+    expect(label).toContain('…');
   });
 });
 

@@ -49,7 +49,7 @@ import type { ElementGraph } from '@embroidery/design-engine';
 import { STUDIO_LAYER_COPY } from './studio-layer-copy';
 
 /** How far a text label may run before it stops being a label. */
-const LABEL_MAX_LENGTH = 32;
+export const LABEL_MAX_LENGTH = 32;
 
 /** Which restack a row can still do. Both false at a boundary, or when nested. */
 export interface LayerMoves {

@@ -355,7 +355,7 @@ describe('the keyboard path (APP3-S08 §14)', () => {
 
 describe('the Session boundary and the responsive compositions (APP3-S08 §15, §16)', () => {
   it('starts a different Session with nothing to undo', () => {
-    const view = renderStage(scene, 'session-one');
+    const view = renderStage(scene, { sessionId: 'session-one' });
     select('a');
     drag('studio-transform-move', [[60, 0]]);
     expect(entries()).toHaveLength(1);
@@ -381,24 +381,51 @@ describe('the Session boundary and the responsive compositions (APP3-S08 §15, �
     expect(screen.getAllByTestId('studio-history-undo')[0]).toBeDisabled();
   });
 
-  it('puts the one history surface inside the one drawer at 1024', () => {
+  it('keeps the controls in the persistent rail at 1024, not in the drawer', () => {
+    setViewportWidth(1024);
+    renderStage();
+
+    // `618:140`: "Thanh công cụ trái giữ nguyên và luôn hiện." The rail is
+    // there before the drawer is opened, and the controls are in it.
+    const rail = screen.getByTestId('studio-history-rail');
+    expect(rail).toContainElement(undoButton());
+    expect(rail).toContainElement(redoButton());
+    expect(screen.queryByTestId('studio-text-drawer')?.contains(undoButton())).not.toBe(true);
+  });
+
+  it('shares the one existing drawer for the history detail at 1024', () => {
     setViewportWidth(1024);
     renderStage();
     fireEvent.click(screen.getByTestId('studio-text-drawer-trigger'));
 
-    expect(screen.getAllByTestId('studio-history-controls')).toHaveLength(1);
+    // One drawer, still — the history list is a section of it, never a second
+    // drawer over the same stage edge.
     expect(screen.getAllByTestId('studio-text-drawer')).toHaveLength(1);
+    expect(screen.getAllByTestId('studio-history-list')).toHaveLength(1);
     expect(
-      screen.getByTestId('studio-text-drawer').querySelector('[data-testid="studio-history-list"]'),
-    ).toBeDefined();
+      screen.getByTestId('studio-text-drawer').contains(screen.getByTestId('studio-history-list')),
+    ).toBe(true);
   });
 
   it('renders no undo surface at all at 390', () => {
     setViewportWidth(390);
     renderStage();
 
-    expect(screen.queryByTestId('studio-history-controls')).toBeNull();
+    expect(screen.queryByTestId('studio-history-rail')).toBeNull();
+    expect(screen.queryByTestId('studio-history-undo')).toBeNull();
+    expect(screen.queryByTestId('studio-history-redo')).toBeNull();
     expect(screen.queryByTestId('studio-history-list')).toBeNull();
+    expect(screen.queryByTestId('studio-history-shortcuts')).toBeNull();
     expect(screen.getByTestId('studio-history-mobile-notice')).toBeInTheDocument();
+  });
+
+  it('delivers no APP3-S11 bottom sheet or touch affordance early', () => {
+    for (const width of [1440, 1024, 390]) {
+      setViewportWidth(width);
+      const view = renderStage();
+      expect(screen.queryByTestId('studio-history-sheet')).toBeNull();
+      expect(document.querySelector('[class*="bottom-sheet"]')).toBeNull();
+      view.unmount();
+    }
   });
 });

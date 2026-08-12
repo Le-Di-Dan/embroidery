@@ -14,7 +14,10 @@
  * action, the document object is compared by identity, and the network is
  * counted rather than trusted.
  */
-import { publicProductSideBackgroundGet } from '@embroidery/api-client';
+import {
+  publicProductSideBackgroundGet,
+  type DesignSessionSnapshotResponse,
+} from '@embroidery/api-client';
 import { fireEvent, renderWithProviders, screen, waitFor } from '@embroidery/frontend-testing';
 
 import { StudioStageScreen } from '../../src/features/design-studio/components/studio-stage-screen';
@@ -69,20 +72,24 @@ beforeEach(() => {
   useStudioViewportStore.getState().resetViewport();
 });
 
+/** The screen under one snapshot. Named once, so a rerender cannot drift. */
+const stage = (snapshot: DesignSessionSnapshotResponse, scope = makeScope()) => (
+  <StudioStageScreen
+    areaLimits={null}
+    isResuming={false}
+    onResume={jest.fn()}
+    scope={scope}
+    snapshot={snapshot}
+    templateName={null}
+  />
+);
+
 function renderStage(
   document = makeStageDocument([shapeElement('a'), textElement('b')]),
   scope = makeScope(),
 ) {
   const snapshot = makeStageSnapshot(document);
-  const result = renderWithProviders(
-    <StudioStageScreen
-      areaLimits={null}
-      isResuming={false}
-      onResume={jest.fn()}
-      scope={scope}
-      snapshot={snapshot}
-    />,
-  );
+  const result = renderWithProviders(stage(snapshot, scope));
   // jsdom lays nothing out, so the element a pan is measured against reports
   // zero. These are the sizes the gesture divides by; nothing stores them.
   const node = screen.getByTestId('studio-stage-viewport');
@@ -512,7 +519,7 @@ describe('the viewport touches no network and no later capability', () => {
     for (const absent of ['handle', 'Đã lưu']) {
       expect(container.innerHTML.toLowerCase()).not.toContain(absent.toLowerCase());
     }
-    expect(strip.querySelector('[data-testid="studio-history-controls"]')).toBeFalsy();
+    expect(strip.querySelector('[data-testid="studio-history-rail"]')).toBeFalsy();
     expect(strip.innerHTML.toLowerCase()).not.toContain('hoàn tác');
   });
 
@@ -553,15 +560,11 @@ describe('the viewport belongs to one Session', () => {
     pan(-100, -100);
 
     rerender(
-      <StudioStageScreen
-        areaLimits={null}
-        isResuming={false}
-        onResume={jest.fn()}
-        scope={makeScope()}
-        snapshot={makeStageSnapshot(makeStageDocument([shapeElement('a')]), {
+      stage(
+        makeStageSnapshot(makeStageDocument([shapeElement('a')]), {
           sessionId: 'a-different-session',
-        })}
-      />,
+        }),
+      ),
     );
 
     expect(transform()).toBe('translate(0.0000%, 0.0000%) scale(1)');
@@ -573,15 +576,7 @@ describe('the viewport belongs to one Session', () => {
     fireEvent.click(screen.getByTestId('studio-zoom-in'));
     const zoomed = transform();
 
-    rerender(
-      <StudioStageScreen
-        areaLimits={null}
-        isResuming={false}
-        onResume={jest.fn()}
-        scope={makeScope()}
-        snapshot={snapshot}
-      />,
-    );
+    rerender(stage(snapshot));
 
     expect(transform()).toBe(zoomed);
   });

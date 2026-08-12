@@ -21,6 +21,11 @@ export const CANONICAL_FILES = Object.freeze({
   shortcuts: `${FEATURE}/hooks/use-studio-history-shortcuts.ts`,
   list: `${FEATURE}/components/studio-history-list.tsx`,
   panel: `${FEATURE}/components/studio-history-panel.tsx`,
+  /** The persistent left tool rail the live 609:147 and 618:140 draw. */
+  rail: `${FEATURE}/components/studio-history-rail.tsx`,
+  /** The shortcut hint, its own box below the panel (609:147 y=444). */
+  'shortcuts-panel': `${FEATURE}/components/studio-history-shortcuts.tsx`,
+  bootstrap: `${FEATURE}/components/studio-screen.tsx`,
   panels: `${FEATURE}/components/studio-stage-panels.tsx`,
   store: `${FEATURE}/store/studio-document.store.ts`,
   transform: `${FEATURE}/hooks/use-studio-transform.ts`,
@@ -51,7 +56,13 @@ export const LATER_DESIGN_ROWS = Object.freeze([
 ]);
 
 /**
- * The seven files the history capability lives in, relative to the feature.
+ * The nine files the history capability lives in, relative to the feature.
+ *
+ * `APP3-S08-C1` added two: the live frames put the controls in a persistent left
+ * tool rail and the shortcut hint in its own box, so the one delivered panel
+ * became three surfaces. A list that still named only the old file would leave
+ * the new ones outside every ownership rule below — the failure `APP3-B04A`
+ * recorded when one controller became two.
  *
  * The one working-document store is deliberately **not** on this list and
  * deliberately allowed to hold the past and the future: `APP3-S08` §5 requires
@@ -61,6 +72,8 @@ export const LATER_DESIGN_ROWS = Object.freeze([
 export const S08_FILES = Object.freeze([
   'components/studio-history-list.tsx',
   'components/studio-history-panel.tsx',
+  'components/studio-history-rail.tsx',
+  'components/studio-history-shortcuts.tsx',
   'components/studio-stage-panels.tsx',
   'hooks/use-studio-history.ts',
   'hooks/use-studio-history-shortcuts.ts',

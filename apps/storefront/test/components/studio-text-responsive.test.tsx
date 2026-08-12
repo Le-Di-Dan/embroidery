@@ -124,6 +124,7 @@ function renderStage(width: number, document = scene) {
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={makeStageSnapshot(document)}
+      templateName={null}
     />,
   );
 }
@@ -562,8 +563,12 @@ describe('the correction pulls nothing forward (APP3-S05-C1 §13, §14)', () => 
     fireEvent.click(screen.getByTestId('studio-text-drawer-trigger'));
 
     const drawer = screen.getByTestId('studio-text-drawer');
-    expect(screen.getAllByTestId('studio-history-controls')).toHaveLength(1);
-    expect(drawer.querySelector('[data-testid="studio-history-controls"]')).toBeTruthy();
+    // `APP3-S08-C1`: the history *detail* is the drawer section; the controls
+    // moved to the persistent rail `618:140` keeps visible. One of each, and
+    // neither is a second drawer.
+    expect(screen.getAllByTestId('studio-history-list')).toHaveLength(1);
+    expect(drawer.contains(screen.getByTestId('studio-history-list'))).toBe(true);
+    expect(drawer.contains(screen.getByTestId('studio-history-rail'))).toBe(false);
     expect(screen.getAllByTestId('studio-text-drawer')).toHaveLength(1);
   });
 

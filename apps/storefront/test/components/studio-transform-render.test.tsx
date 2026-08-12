@@ -115,6 +115,7 @@ function renderStage(document = flatScene) {
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={makeStageSnapshot(document)}
+      templateName={null}
     />,
   );
 }

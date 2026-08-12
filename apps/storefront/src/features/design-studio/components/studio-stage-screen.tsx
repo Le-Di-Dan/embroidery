@@ -29,6 +29,7 @@ import {
 import { useStudioDocumentStore } from '../store/studio-document.store';
 import { useStudioInteractionStore } from '../store/studio-interaction.store';
 import { useStudioViewportStore } from '../store/studio-viewport.store';
+import { StudioHistoryRail } from './studio-history-rail';
 import { StudioSessionPanel } from './studio-session-panel';
 import { StudioStage } from './studio-stage';
 import { StudioStageBackgroundNotice } from './studio-stage-background-notice';
@@ -64,6 +65,15 @@ export interface StudioStageScreenProps {
   readonly areaLimits: StudioAreaLimits | null;
   readonly isResuming: boolean;
   readonly onResume: () => void;
+  /**
+   * The display name of the Template this Session was cloned from, or `null`.
+   *
+   * Presentation only, from data `APP3-S01` already holds — no request is made
+   * for it, and `null` is a legitimate answer on a blank start and on a resume.
+   * It reaches one history row and nothing else: never the document, the hash or
+   * a save.
+   */
+  readonly templateName: string | null;
 }
 
 /**
@@ -78,12 +88,9 @@ export interface StudioStageScreenProps {
  * It is initialized once from the snapshot and is what the renderer consumes
  * from then on, so there is exactly one answer to "what is on the stage". The
  * server snapshot stays an immutable baseline for `APP3-S10`; it never competes
- * as a second editable scene.
- *
- * `APP3-S08` adds a second thing to the front of that chain — a bounded past and
- * future *beside* the working document, in the same store. It is not a second
- * scene: an undo writes the one working document, and the renderer consumes it
- * exactly as it consumes an edit.
+ * as a second editable scene. `APP3-S08` adds a bounded past and future *beside*
+ * it, in the same store — not a second scene: an undo writes the one working
+ * document, and the renderer consumes it exactly as it consumes an edit.
  *
  * Nothing here saves. There is no autosave timer, no `publicDesignSessionAutosave`
  * call and no saving/saved indicator: `APP3-S10` owns persistence, and an undo
@@ -95,6 +102,7 @@ export function StudioStageScreen({
   areaLimits,
   isResuming,
   onResume,
+  templateName,
 }: StudioStageScreenProps) {
   const workingDocument = useStudioDocumentStore((state) => state.document);
   const initializeDocument = useStudioDocumentStore((state) => state.initialize);
@@ -214,18 +222,17 @@ export function StudioStageScreen({
   };
 
   /*
-   * The image capability's controller, owned **here** (`APP3-S06`).
+   * Every capability controller is owned **here**, above the viewport tier.
    *
-   * Above the viewport tier, deliberately. The tier decides which of the image
-   * panel's two mounts renders, so crossing a breakpoint unmounts one and mounts
-   * the other — and a controller owned by the inspector went with it, taking the
-   * Session revision the last upload returned. The next upload then presented
-   * the revision the Session was bootstrapped with, and `APP3-B06B` refused it
-   * `409 CONFLICT`. A real browser found that; no unit test could, because none
-   * of them changes viewport mid-session.
+   * The tier decides which of a panel's two mounts renders, so crossing a
+   * breakpoint unmounts one and mounts the other — and a controller owned by a
+   * panel goes with it. `APP3-S06` found that in a real browser: the image
+   * controller lost the Session revision the last upload returned, the next
+   * upload presented the bootstrap revision, and `APP3-B06B` refused it
+   * `409 CONFLICT`. The same discard would take the customer's undo stack.
    *
-   * It writes back through the same `commit` the transform and text capabilities
-   * use, so there is still one answer to "what is on the stage".
+   * All of them write back through the same `commit` the transform gesture
+   * uses, so there is still one answer to "what is on the stage".
    */
   const selectedImage = imageElementOf(sceneDocument, selectedElementId);
   const replaceableImage =
@@ -262,28 +269,21 @@ export function StudioStageScreen({
   const watermarkToken = useStudioWatermarkToken();
 
   /*
-   * The history capability's controller (`APP3-S08`), owned here for the same
-   * reason the image and layer controllers are: the tier decides which of its
-   * two mounts renders, so a controller owned by a panel would be discarded and
-   * rebuilt on every breakpoint crossing — and the customer's undo stack would
-   * go with it.
+   * The history capability's controller (`APP3-S08`).
    *
    * It reads the past and future from the same store that holds the one working
    * document, so an undo cannot produce a second answer to "what is on the
    * stage". The keyboard path is bound once, on the window, and stands down for
    * editable fields so the platform's own text undo keeps working inside them.
+   *
+   * `APP3-B07` sets lineage only on a clone, which is exactly what the baseline
+   * row asks. The slug and version travelling with it are not names.
    */
-  const history = useStudioHistory();
+  const history = useStudioHistory({ cloned: snapshot.lineage !== undefined, templateName });
   useStudioHistoryShortcuts({ undo: history.undo, redo: history.redo });
 
-  /*
-   * The layer capability's controller (`APP3-S04`), owned here for the same
-   * reason the image controller is: the tier decides which of its two mounts
-   * renders, so a controller owned by the panel would be discarded and rebuilt
-   * on every breakpoint crossing. It reads the scene's document and the graph
-   * the scene already resolved — never a second graph — and writes back through
-   * the same `commit` every other capability uses.
-   */
+  // The layer capability's controller (`APP3-S04`). It reads the scene's
+  // document and the graph the scene already resolved — never a second graph.
   const layers = useStudioLayers({
     clearSelection,
     commit: commitDocument,
@@ -299,13 +299,18 @@ export function StudioStageScreen({
 
       {result.ok ? (
         <section className="studio-stage__frame" aria-label={STUDIO_STAGE_COPY.stageLabel}>
-          {/*
-            The Studio topbar (`APP3-S05-MI01`): a control region above the
-            stage, which is where `APP3-D01-C1` puts the tablet inspector's
-            toggle. It is a real first child rather than a reordered later one,
-            so the keyboard reaches it in the order the eye does. Only the
-            tablet composition puts anything here.
-          */}
+          {/* The persistent left tool rail (`609:147`, `618:140`), the frame's
+              first child so the keyboard reaches it in the order the eye does. */}
+          <StudioHistoryRail
+            canRedo={history.canRedo}
+            canUndo={history.canUndo}
+            redo={history.redo}
+            undo={history.undo}
+          />
+
+          {/* The Studio topbar (`APP3-S05-MI01`): the control region above the
+              stage where `APP3-D01-C1` puts the tablet inspector's toggle. Only
+              the tablet composition puts anything here. */}
           <StudioStagePanels
             region="topbar"
             history={history}
@@ -358,15 +363,10 @@ export function StudioStageScreen({
           {/* The policy note (`609:371`), as real text beside the stage. */}
           <StudioWatermarkNotice />
 
-          {/*
-            The capability panels (`APP3-S05`, `S06`, `S04`, `S08`). Each reads
-            the same document the scene was built from and writes back through
-            the same working-document commit the transform gesture uses, so there
-            is still one answer to "what is on the stage".
-
-            The tablet composition renders them in the topbar region above
-            instead, so this one is empty there.
-          */}
+          {/* The capability panels (`APP3-S05`, `S06`, `S04`, `S08`), each
+              reading the scene's document and writing back through the one
+              commit. The tablet composition renders them in the topbar region
+              above instead, so this one is empty there. */}
           <StudioStagePanels
             region="body"
             history={history}
