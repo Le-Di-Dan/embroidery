@@ -12,6 +12,7 @@ import type { DesignDocument, DesignElementTransform } from '@embroidery/design-
 import type { DesignSessionScopeResponse } from '@embroidery/api-client';
 import { buildElementGraph, type Vector2D } from '@embroidery/design-engine';
 
+import { layerLabel } from '../model/studio-layers';
 import { screenDeltaToDocument, type StageMapping } from '../model/studio-stage-mapping';
 import {
   type StudioAreaLimits,
@@ -37,6 +38,8 @@ interface ActiveGesture {
   readonly kind: TransformGestureKind;
   readonly handle: ResizeHandleId | undefined;
   readonly elementId: string;
+  /** What the history row will call this. The layer panel's bounded name, never an id. */
+  readonly label: string;
   readonly originXPx: number;
   readonly originYPx: number;
   readonly startTransform: DesignElementTransform;
@@ -90,6 +93,12 @@ export interface StudioTransformOptions {
 export function useStudioTransform(options: StudioTransformOptions): StudioTransformApi {
   const { document, elementId, scope, limits, zoom, overlay } = options;
   const commit = useStudioDocumentStore((state) => state.commit);
+  // One gesture is one thing the customer did (`APP3-S08` §10). The pointer
+  // frames between these two calls update the working document and append no
+  // history; the close appends exactly one entry, and none at all when the drag
+  // ended where it started or every frame of it was refused.
+  const beginAction = useStudioDocumentStore((state) => state.beginAction);
+  const endAction = useStudioDocumentStore((state) => state.endAction);
 
   const gesture = useRef<ActiveGesture | null>(null);
   const pending = useRef<{ x: number; y: number } | null>(null);
@@ -99,13 +108,17 @@ export function useStudioTransform(options: StudioTransformOptions): StudioTrans
 
   // Everything the frame callback reads, kept current without re-binding the
   // pointer handlers mid-gesture.
-  const latest = useRef({ commit, scope, limits });
-  latest.current = { commit, scope, limits };
+  const latest = useRef({ commit, scope, limits, endAction });
+  latest.current = { commit, scope, limits, endAction };
 
   useEffect(() => {
     return () => {
       if (frame.current !== null) cancelAnimationFrame(frame.current);
       frame.current = null;
+      // A gesture the stage was unmounted in the middle of still ended: whatever
+      // the last valid frame committed is the design now, so it is one entry
+      // rather than an open action nothing will ever close.
+      if (gesture.current !== null) latest.current.endAction();
       gesture.current = null;
       pending.current = null;
     };
@@ -136,7 +149,10 @@ export function useStudioTransform(options: StudioTransformOptions): StudioTrans
       liveLimits,
     );
     if (outcome.ok) {
-      liveCommit(outcome.document);
+      // Inside the open gesture, so this appends nothing however many frames a
+      // drag takes. The snapshot the entry will carry was captured once, at
+      // `pointerdown`, and no allocation happens on this path.
+      liveCommit(outcome.document, { kind: active.kind, label: active.label });
       setRefusal(null);
     } else {
       setRefusal(outcome.refusal);
@@ -163,10 +179,12 @@ export function useStudioTransform(options: StudioTransformOptions): StudioTrans
     if (node === null) return;
 
     event.stopPropagation();
+    const label = layerLabel(element);
     gesture.current = {
       kind,
       handle,
       elementId,
+      label,
       originXPx: event.clientX,
       originYPx: event.clientY,
       startTransform: element.transform,
@@ -184,6 +202,8 @@ export function useStudioTransform(options: StudioTransformOptions): StudioTrans
       },
     };
     pending.current = null;
+    // The baseline, captured once. Everything until `pointerup` is one entry.
+    beginAction({ kind, label });
     setRefusal(null);
     setIsTransforming(true);
     if (typeof event.currentTarget.setPointerCapture === 'function') {
@@ -216,6 +236,9 @@ export function useStudioTransform(options: StudioTransformOptions): StudioTrans
       pending.current = null;
       if (frame.current !== null) cancelAnimationFrame(frame.current);
       frame.current = null;
+      // The gesture boundary. One entry if the design changed between
+      // `pointerdown` and here, and none if it did not.
+      endAction();
       setIsTransforming(false);
       const node = event.currentTarget;
       if (typeof node.hasPointerCapture === 'function' && node.hasPointerCapture(event.pointerId)) {

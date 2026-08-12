@@ -30,8 +30,10 @@ import {
   s02Code,
   s02Sources,
   s03Code,
+  S08_FILES,
   s04Code,
   s07Code,
+  s08Code,
   s09Code,
   scssCode,
   sources,
@@ -173,6 +175,7 @@ describe('Session identity never reaches the browser', () => {
       'localStorage',
       'sessionStorage',
       'document.cookie',
+      'indexedDB',
       'history.pushState',
       'history.replaceState',
       'useSearchParams',
@@ -249,6 +252,63 @@ describe('the S01 side of the S02 boundary', () => {
       'quantize',
     ]) {
       expect(s01Code).not.toContain(authority);
+    }
+  });
+});
+
+/*
+ * The history ban, kept and narrowed at `APP3-S08`.
+ *
+ * Every earlier checkpoint refused the words feature-wide, and that was right
+ * while nothing owned a past. Deleting the rule now would let any file build a
+ * second stack; scoping it to the construction keeps the ban exactly as strict
+ * everywhere it was ever meaningful.
+ *
+ * The one working-document store is deliberately outside the S08 list and
+ * deliberately allowed: `APP3-S08` §5 requires the past and future to live
+ * *beside* the one current document rather than in a controller with a current
+ * of its own, so the store is where they belong.
+ */
+describe('one bounded history, and only where APP3-S08 put it', () => {
+  const DOCUMENT_STORE = join(
+    SRC,
+    'features',
+    'design-studio',
+    'store',
+    'studio-document.store.ts',
+  );
+  const outside = codeOnly(
+    sources
+      .filter((file) => !S08_FILES.has(file.path) && file.path !== DOCUMENT_STORE)
+      .map((file) => file.text)
+      .join('\n'),
+  );
+
+  it('builds a history nowhere but the S08 files', () => {
+    for (const construction of [
+      'MAX_HISTORY_ENTRIES',
+      'recordAction',
+      'historyRowsOf',
+      'undoStack',
+      'redoStack',
+      'historyStack',
+      'pushHistory',
+    ]) {
+      expect(outside).not.toContain(construction);
+    }
+  });
+
+  it('holds nothing but documents and bounded metadata in an entry', () => {
+    // A history entry is two `APP3-P01` documents, a bounded label and a number.
+    // Anything mutable in it would outlive the render that made it.
+    for (const forbidden of ['Blob', 'createObjectURL', 'SVGElement', 'ElementGraph', 'DOMRect']) {
+      expect(s08Code).not.toContain(forbidden);
+    }
+  });
+
+  it('sends nothing when history moves', () => {
+    for (const call of ['publicDesignSessionAutosave', 'axios', 'fetch(']) {
+      expect(s08Code).not.toContain(call);
     }
   });
 });

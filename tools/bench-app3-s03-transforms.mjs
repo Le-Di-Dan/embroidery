@@ -198,9 +198,30 @@ async function run() {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
 
+  /*
+   * An optional scene filter (`--scene=L`).
+   *
+   * The default is unchanged: all three sizes, because the question S03 asked is
+   * whether cost scales with the scene and skipping the middle leaves it
+   * unanswered. A *later* checkpoint that only touched the gesture seam needs a
+   * bounded sanity run instead, and one scene is one Session rather than three —
+   * which is what lets a before/after comparison fit inside the `IMP-D043` PO-07
+   * cap rather than defeating it.
+   */
+  const scene = process.argv.find((argument) => argument.startsWith('--scene='))?.split('=')[1];
+  const sizes = Object.keys(SCENE_ELEMENT_COUNTS).filter(
+    (size) => scene === undefined || size === scene,
+  );
+  if (sizes.length === 0) {
+    console.error(
+      `unknown scene "${String(scene)}"; expected one of ${Object.keys(SCENE_ELEMENT_COUNTS).join(', ')}`,
+    );
+    process.exit(1);
+  }
+
   const runs = [];
   let opened = 0;
-  for (const size of Object.keys(SCENE_ELEMENT_COUNTS)) {
+  for (const size of sizes) {
     if (opened > 0) {
       console.log(`  (waiting ${String(CREATION_PAUSE_MS / 1000)}s for the PO-07 burst window)`);
       await new Promise((resolve) => setTimeout(resolve, CREATION_PAUSE_MS));

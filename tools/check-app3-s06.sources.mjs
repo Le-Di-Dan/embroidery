@@ -77,6 +77,7 @@ export const CANONICAL_FILES = Object.freeze({
   stage: `${FEATURE}/components/studio-stage.tsx`,
   stageElement: `${FEATURE}/components/studio-stage-element.tsx`,
   stageScreen: `${FEATURE}/components/studio-stage-screen.tsx`,
+  stagePanels: `${FEATURE}/components/studio-stage-panels.tsx`,
   documentStore: `${FEATURE}/store/studio-document.store.ts`,
   textDrawer: `${FEATURE}/components/studio-text-drawer.tsx`,
   textPanel: `${FEATURE}/components/studio-text-panel.tsx`,
@@ -161,4 +162,17 @@ export function featureCode(rootDir) {
 export function openapi(rootDir) {
   const raw = read(rootDir, 'openapi');
   return raw === undefined ? undefined : JSON.parse(raw);
+}
+
+/**
+ * The stage screen **and** the composition file it mounts.
+ *
+ * `APP3-S08` moved the panel mounts out of `StudioStageScreen` into
+ * `StudioStagePanels` to stay inside the 400-line limit. The rules below are
+ * about *where each capability is mounted*, which is still one decision — so
+ * they read the pair rather than one file. A rule anchored to a single path dies
+ * the moment one file becomes two (`APP3-B04A`); this is the same repair.
+ */
+export function compositionCode(rootDir) {
+  return `${code(rootDir, 'stageScreen')}\n${code(rootDir, 'stagePanels')}`;
 }

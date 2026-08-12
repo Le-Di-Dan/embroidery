@@ -43,6 +43,7 @@ import {
   S09_DESIGN_ROWS,
   acceptedSurface,
   isS04Delivered,
+  isS08Delivered,
   isS09Delivered,
   isS06Delivered,
 } from './app3-accepted-surface.mjs';
@@ -151,7 +152,8 @@ export function checkPredecessors(rootDir, fail) {
   // S06 implements none of these, and delivering it makes none of them ready.
   // World-aware on APP3-S04: "S06 did not implement this" stays true once S04
   // implements it for itself, and the S04 gate is what checks that.
-  const notImplementedByS06 = ['APP3-S08', 'APP3-S10', 'APP3-S11'];
+  const notImplementedByS06 = ['APP3-S10', 'APP3-S11'];
+  if (!isS08Delivered(rootDir)) notImplementedByS06.push('APP3-S08');
   if (!isS09Delivered(rootDir)) notImplementedByS06.push('APP3-S09');
   if (!isS04Delivered(rootDir)) notImplementedByS06.push('APP3-S04');
   for (const later of notImplementedByS06) {
@@ -202,6 +204,7 @@ export function checkDesignApproval(rootDir, fail) {
   const opened = new Set([
     ...(isS04Delivered(rootDir) ? S04_LAYER_ROWS : []),
     ...(isS09Delivered(rootDir) ? S09_DESIGN_ROWS : []),
+    ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {

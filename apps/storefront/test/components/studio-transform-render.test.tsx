@@ -214,14 +214,18 @@ describe('a transform frame renders the element it changed and nothing else', ()
     labelCalls.length = 0;
 
     act(() => {
-      useStudioDocumentStore.getState().commit({
-        ...groupedScene,
-        elements: groupedScene.elements.map((element) =>
-          element.id === 'g'
-            ? { ...element, transform: { ...element.transform, x: element.transform.x + 20 } }
-            : element,
-        ),
-      });
+      useStudioDocumentStore.getState().commit(
+        {
+          ...groupedScene,
+          elements: groupedScene.elements.map((element) =>
+            element.id === 'g'
+              ? { ...element, transform: { ...element.transform, x: element.transform.x + 20 } }
+              : element,
+          ),
+        },
+        // Every commit names itself to `APP3-S08`. This one is a move.
+        { kind: 'move', label: null },
+      );
     });
 
     expect(persisted('child')?.x).toBe(150);

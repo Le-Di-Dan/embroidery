@@ -216,8 +216,8 @@ describe('validation is P01s, and never rewrites the customers text', () => {
   it('refuses an NFC rewrite on the write path', () => {
     const root = rootWith({
       controller: file('controller').replace(
-        'rule({ text: value })',
-        "rule({ text: value.normalize('NFC') })",
+        "rule({ text: value }, 'text-edit')",
+        "rule({ text: value.normalize('NFC') }, 'text-edit')",
       ),
     });
     assert.ok(mentions(failuresOf(checkValidation, root), 'normalized on the write path'));
@@ -226,8 +226,8 @@ describe('validation is P01s, and never rewrites the customers text', () => {
   it('refuses a truncation that repairs an over-long candidate', () => {
     const root = rootWith({
       controller: file('controller').replace(
-        'rule({ text: value })',
-        'rule({ text: value.slice(0, 500) })',
+        "rule({ text: value }, 'text-edit')",
+        "rule({ text: value.slice(0, 500) }, 'text-edit')",
       ),
     });
     assert.ok(mentions(failuresOf(checkValidation, root), 'repaired instead of refused'));
@@ -347,9 +347,11 @@ describe('the architecture S05 inherited is the one it leaves', () => {
 describe('nothing a later checkpoint owns arrives early', () => {
   it('refuses an autosave call', () => {
     const root = rootWith({
+      // The commit carries `APP3-S08`'s action now, so the mutation anchors on
+      // the opening of the call rather than on the shape S05 shipped with.
       controller: file('controller').replace(
-        'commit(outcome.document);',
-        'commit(outcome.document);\n      void publicDesignSessionAutosave();',
+        'commit(outcome.document, {',
+        'void publicDesignSessionAutosave();\n      commit(outcome.document, {',
       ),
     });
     assert.ok(mentions(failuresOf(checkNonScope, root), 'APP3-S10 autosave'));
@@ -554,7 +556,9 @@ describe('the inspector is placed by tier, and the phone gets no editing surface
     // The regression that restores one composition on every viewport, and the
     // exact shape `APP3-S05` shipped with.
     const root = rootWith({
-      stageScreen: file('stageScreen').replace('<StudioTextPanel', '<StudioTextInspector'),
+      // The mount lives in the composition file since `APP3-S08`; a mutation
+      // still aimed at the screen would replace nothing and prove nothing.
+      stagePanels: file('stagePanels').replace('<StudioTextPanel', '<StudioTextInspector'),
     });
     assert.ok(
       mentions(failuresOf(checkResponsiveComposition, root), 'mounted past the tier authority'),
@@ -574,15 +578,11 @@ describe('the inspector is placed by tier, and the phone gets no editing surface
   it('refuses a topbar mounted below the stage', () => {
     // The other half: the class is right, the placement is not. Reordering the
     // mount is exactly how a topbar quietly becomes a second bottom strip.
-    const screen = file('stageScreen');
-    const mount = '<StudioTextPanel slot="topbar" {...textPanel} />';
+    // The screen names the region it mounts; renaming that marker is the same
+    // regression in the world `APP3-S08` left behind — a topbar the frame no
+    // longer places above the stage.
     const root = rootWith({
-      stageScreen: screen
-        .replace(mount, '')
-        .replace(
-          '<StudioTextPanel slot="body"',
-          `${mount}\n          <StudioTextPanel slot="body"`,
-        ),
+      stageScreen: file('stageScreen').replace('region="topbar"', 'region="body-early"'),
     });
     assert.ok(
       mentions(failuresOf(checkResponsiveComposition, root), 'not mounted above the stage'),

@@ -40,6 +40,10 @@ export interface StudioTextControlsProps {
   readonly onStartComposition: () => void;
   readonly onFinishText: (value: string) => void;
   readonly onPatch: (patch: TextFieldPatch) => void;
+  /** The text box gained the caret: one edit session begins (`APP3-S08`). */
+  readonly onBeginEdit: () => void;
+  /** It lost the caret: the session ends, and becomes at most one history entry. */
+  readonly onEndEdit: () => void;
 }
 
 const ALIGN_LABELS: Readonly<Record<TextAlign, string>> = Object.freeze({
@@ -61,6 +65,8 @@ export function StudioTextControls({
   onStartComposition,
   onFinishText,
   onPatch,
+  onBeginEdit,
+  onEndEdit,
 }: StudioTextControlsProps) {
   const ids = useId();
   const value = draft ?? element.text;
@@ -81,6 +87,7 @@ export function StudioTextControls({
           onChange={(event) => {
             onChangeText(event.target.value);
           }}
+          onFocus={onBeginEdit}
           onCompositionStart={onStartComposition}
           onCompositionEnd={(event) => {
             // The composed result is on the element, not in the React value:
@@ -90,7 +97,11 @@ export function StudioTextControls({
             onFinishText(event.currentTarget.value);
           }}
           onBlur={(event) => {
+            // The value first, then the boundary: closing the session before the
+            // last committed characters had landed would leave them outside the
+            // entry they belong to.
             onFinishText(event.currentTarget.value);
+            onEndEdit();
           }}
         />
         <p className="studio-text__hint" id={`${ids}-text-hint`}>

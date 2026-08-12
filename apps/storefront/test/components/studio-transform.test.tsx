@@ -411,14 +411,31 @@ describe('the capabilities S03 must not grow', () => {
     expect(backgroundMock).not.toHaveBeenCalled();
   });
 
-  it('grows no undo, upload or save affordance', () => {
+  it('grows no upload or save affordance', () => {
     const { container } = renderStage();
     select('a');
 
     const markup = container.innerHTML.toLowerCase();
-    for (const absent of ['undo', 'redo', 'hoàn tác', 'đã lưu', 'tải lên']) {
+    for (const absent of ['đã lưu', 'tải lên']) {
       expect(markup).not.toContain(absent.toLowerCase());
     }
+  });
+
+  /*
+   * Undo exists from `APP3-S08`, and the transform chrome is not it.
+   *
+   * Scoped rather than dropped, exactly as the watermark rule below was: what
+   * this rule was written to prevent is a capability appearing *on the transform
+   * overlay*, and that is as forbidden as it ever was.
+   */
+  it('puts no undo affordance on the transform chrome', () => {
+    const { container } = renderStage();
+    select('a');
+
+    expect(container.querySelectorAll('[data-testid="studio-history-controls"]')).toHaveLength(1);
+    const overlay = screen.getByTestId('studio-transform-move').closest('div');
+    expect(overlay?.querySelector('[data-testid="studio-history-controls"]')).toBeFalsy();
+    expect(overlay?.innerHTML.toLowerCase()).not.toContain('hoàn tác');
   });
 
   /*

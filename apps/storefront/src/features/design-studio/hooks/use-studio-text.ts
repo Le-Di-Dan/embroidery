@@ -34,16 +34,19 @@ import {
   variantShorthand,
   type ControlledFontVariant,
 } from '../model/studio-font-variant';
+import type { StudioHistoryAction } from '../model/studio-history';
+import { layerLabel } from '../model/studio-layers';
 import { ruleOnTextCandidate, type TextRefusal } from '../model/studio-text-authority';
 import { textElementOf, withTextFields, type TextFieldPatch } from '../model/studio-text-fields';
 import type { StudioAreaLimits } from '../model/studio-transform-authority';
+import { useStudioDocumentStore } from '../store/studio-document.store';
 
 export interface UseStudioTextInput {
   readonly document: DesignDocument | null;
   readonly elementId: string | null;
   readonly scope: DesignSessionScopeResponse | null;
   readonly limits: StudioAreaLimits | null;
-  readonly commit: (document: DesignDocument) => void;
+  readonly commit: (document: DesignDocument, action: StudioHistoryAction) => void;
 }
 
 export interface UseStudioTextResult {
@@ -66,6 +69,16 @@ export interface UseStudioTextResult {
   readonly finishText: (value: string) => void;
   /** A discrete control — font, style, weight, size, alignment. */
   readonly applyPatch: (patch: TextFieldPatch) => void;
+  /**
+   * The caret entered the text box: the start of one edit session (`APP3-S08`).
+   *
+   * Everything typed until it leaves is one thing the customer did, so the
+   * keystrokes and IME frames between these two calls append no history and the
+   * boundary appends one entry.
+   */
+  readonly beginEdit: () => void;
+  /** The caret left it, or the selection changed. The session's other end. */
+  readonly endEdit: () => void;
 }
 
 export function useStudioText({
@@ -80,6 +93,8 @@ export function useStudioText({
   const [composing, setComposing] = useState(false);
   const [refusal, setRefusal] = useState<TextRefusal | null>(null);
   const [pendingVariant, setPendingVariant] = useState(false);
+  const beginAction = useStudioDocumentStore((state) => state.beginAction);
+  const endAction = useStudioDocumentStore((state) => state.endAction);
 
   /**
    * The identity of the newest font-variant request (`APP3-S05-C1`).
@@ -109,7 +124,7 @@ export function useStudioText({
   }
 
   const rule = useCallback(
-    (patch: TextFieldPatch): boolean => {
+    (patch: TextFieldPatch, kind: 'text-edit' | 'text-format'): boolean => {
       if (document === null || elementId === null || scope === null) return false;
       const outcome = ruleOnTextCandidate(
         withTextFields(document, elementId, patch),
@@ -122,7 +137,13 @@ export function useStudioText({
         return false;
       }
       setRefusal(null);
-      commit(outcome.document);
+      // A `text-edit` lands inside the open session and appends nothing; a
+      // `text-format` is a discrete control and is one entry on its own.
+      const element = textElementOf(document, elementId);
+      commit(outcome.document, {
+        kind,
+        label: element === undefined ? null : layerLabel(element),
+      });
       return true;
     },
     [commit, document, elementId, limits, scope],
@@ -136,7 +157,7 @@ export function useStudioText({
       // committing one would write "Vieejt" into the design on the way to
       // "Việt". Outside a composition every keystroke is a completed value, so
       // it is ruled on immediately and the stage stays in step with the field.
-      if (!composing && rule({ text: value })) setDraft(null);
+      if (!composing && rule({ text: value }, 'text-edit')) setDraft(null);
     },
     [composing, rule],
   );
@@ -152,7 +173,7 @@ export function useStudioText({
       // A committed value needs no draft: the document becomes the field's
       // source again. A refused one keeps it, so the customer can correct what
       // they actually typed rather than watching it revert.
-      if (rule({ text: value })) setDraft(null);
+      if (rule({ text: value }, 'text-edit')) setDraft(null);
     },
     [rule],
   );
@@ -177,7 +198,7 @@ export function useStudioText({
       // second belongs to `APP3-P01`, which has an exact sentence for it that a
       // browser probe would replace with the wrong one.
       if (variant === null) {
-        rule(patch);
+        rule(patch, 'text-format');
         return;
       }
 
@@ -197,11 +218,31 @@ export function useStudioText({
           setRefusal('controlled-font-unavailable');
           return;
         }
-        ruleRef.current(patch);
+        ruleRef.current(patch, 'text-format');
       });
     },
     [document, elementId, rule],
   );
+
+  /*
+   * The edit session's two ends (`APP3-S08` §11).
+   *
+   * A deterministic boundary rather than a debounce timer: the session opens
+   * when the caret enters the text box and closes when it leaves or when the
+   * selection changes, so what becomes one history entry is what the customer
+   * would describe as one edit — not whatever happened to fall inside an
+   * arbitrary interval. An IME composition cannot straddle it, because a
+   * composition happens entirely inside a focused field.
+   */
+  const beginEdit = useCallback(() => {
+    const element = textElementOf(document, elementId);
+    beginAction({ kind: 'text-edit', label: element === undefined ? null : layerLabel(element) });
+  }, [beginAction, document, elementId]);
+
+  // Leaving the element is a boundary as much as leaving the field is: a session
+  // left open across a selection change would fold the next element's first edit
+  // into this element's entry.
+  useEffect(() => endAction, [elementId, endAction]);
 
   return {
     draft,
@@ -212,6 +253,8 @@ export function useStudioText({
     startComposition,
     finishText,
     applyPatch,
+    beginEdit,
+    endEdit: endAction,
   };
 }
 

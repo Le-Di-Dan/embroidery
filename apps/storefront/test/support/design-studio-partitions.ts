@@ -255,6 +255,46 @@ export const S09_FILES = new Set(
   ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
 );
 
+/**
+ * The files `APP3-S08` added, named exactly.
+ *
+ * Undo and redo are the first thing in the feature that may legitimately hold a
+ * past and a future. Every earlier checkpoint was forbidden the words outright,
+ * and those bans are kept and scoped rather than deleted: a history stack
+ * outside these files is still a capability arriving in the wrong checkpoint,
+ * and the S01 partition still may not build one at all.
+ *
+ * `studio-stage-panels.tsx` is on the list because `APP3-S08` split it out of
+ * `StudioStageScreen` to stay inside the 400-line limit. Its content is the
+ * composition `APP3-S05-MI01` established and later checkpoints extended; what
+ * moved is which file holds it.
+ */
+export const S08_FILES = new Set(
+  [
+    'components/studio-history-list.tsx',
+    'components/studio-history-panel.tsx',
+    'components/studio-stage-panels.tsx',
+    'hooks/use-studio-history.ts',
+    'hooks/use-studio-history-shortcuts.ts',
+    'model/studio-history.ts',
+    'model/studio-history-copy.ts',
+  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
+export const s08Code = codeOnly(
+  sources
+    .filter((file) => S08_FILES.has(file.path))
+    .map((file) => file.text)
+    .join('\n'),
+);
+
+/** Everything except the history capability, for the rules a past must not escape. */
+export const outsideS08Code = codeOnly(
+  [...sources.filter((file) => !S08_FILES.has(file.path)), ...routeFiles]
+    .map((file) => file.text)
+    .join('\n'),
+);
+
 export const s09Code = codeOnly(
   sources
     .filter((file) => S09_FILES.has(file.path))
@@ -307,6 +347,7 @@ export const s01Sources = sources.filter(
     !S05_FILES.has(file.path) &&
     !S06_FILES.has(file.path) &&
     !S04_FILES.has(file.path) &&
+    !S08_FILES.has(file.path) &&
     !S09_FILES.has(file.path),
 );
 export const s07Sources = sources.filter((file) => S07_FILES.has(file.path));

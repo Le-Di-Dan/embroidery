@@ -224,7 +224,12 @@ export function checkCandidatePipeline(rootDir, fail) {
   if (!/if \(!structure\.ok\)/.test(hook)) {
     fail(`${CANONICAL_FILES.hook}: a refused candidate is committed anyway`);
   }
-  if (!/commit\(structure\.value\)/.test(hook)) {
+  // The document committed is the *validated* one, whatever else the call now
+  // carries. `APP3-S08` added a second argument — the action the entry is named
+  // after — and a rule pinned to the exact call shape would have read "the
+  // committed document is not the validated one" about a call that still
+  // commits exactly `structure.value`.
+  if (!/commit\(structure\.value[,)]/.test(hook)) {
     fail(`${CANONICAL_FILES.hook}: the committed document is not the validated one`);
   }
   // Nothing here is sent, saved, timed or remembered.

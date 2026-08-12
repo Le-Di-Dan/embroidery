@@ -314,10 +314,10 @@ describe('a candidate is quantized, measured, then blocked or committed', () => 
 
   it('refuses a commit that is not gated on the outcome', () => {
     const root = rootWith({
-      gesture: file('gesture').replace(
-        'if (outcome.ok) {\n      liveCommit(outcome.document);',
-        'if (true) {\n      liveCommit(outcome.document);',
-      ),
+      // The guard alone. Pinning the commit line with it stopped matching when
+      // `APP3-S08` gave the call a second argument, and a mutation whose
+      // `replace` silently finds nothing proves nothing.
+      gesture: file('gesture').replace('if (outcome.ok) {', 'if (true) {'),
     });
     assert.ok(mentions(failuresOf(checkValidation, root), 'was not ruled valid'));
   });
@@ -333,9 +333,12 @@ describe('a candidate is quantized, measured, then blocked or committed', () => 
 describe('one runtime-only working document', () => {
   it('refuses a re-initialize that discards local edits', () => {
     const root = rootWith({
+      // `APP3-S08` gave the else branch the history to clear as well, so the
+      // guard is now a multi-line ternary. The mutation removes the guard
+      // rather than matching one formatting of it.
       documentStore: file('documentStore').replace(
-        'set((state) => (state.sessionKey === sessionKey ? state : { sessionKey, document }));',
-        'set({ sessionKey, document });',
+        'state.sessionKey === sessionKey',
+        'state.sessionKey === null',
       ),
     });
     assert.ok(mentions(failuresOf(checkWorkingDocument, root), 'discards local edits'));

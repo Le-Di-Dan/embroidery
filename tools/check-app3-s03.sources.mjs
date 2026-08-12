@@ -11,7 +11,14 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S03_FILES, S05_FILES, S06_FILES, S09_FILES } from './app3-accepted-surface.mjs';
+import {
+  S03_FILES,
+  S04_FILES,
+  S05_FILES,
+  S06_FILES,
+  S08_FILES,
+  S09_FILES,
+} from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -176,11 +183,26 @@ function featureCodeExcept(rootDir, owned) {
  *
  * The scope a rule needs once the runtime watermark exists: the ban is kept and
  * the watermark's own files are the only place it may appear.
+ *
+ * It reuses `featureCodeExcept` rather than repeating it. The copy it replaced
+ * separated path segments with `replaceAll('\\\\', '/')` — two backslashes,
+ * not one — which is a no-op on a POSIX path and would have left this rule
+ * reading nothing on Linux CI. Repaired at `APP3-S08`, where the same helper was
+ * needed again.
  */
 export function preS09Code(rootDir) {
-  const owned = new Set(S09_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
-  return collect(join(rootDir, FEATURE), /\.tsx?$/)
-    .filter((path) => !owned.has(path))
-    .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\\\', '/')))
-    .join('\n');
+  return featureCodeExcept(rootDir, S09_FILES);
+}
+
+/**
+ * Every Studio source **except** the files `APP3-S08` and `APP3-S04` own.
+ *
+ * The scope the restack ban needs once undo exists: `reorder` was banned
+ * feature-wide because no checkpoint owned a z-order command, and it is still
+ * exactly that rule for every file neither of those two introduced. `APP3-S04`
+ * issues the command and `APP3-S08` names the entry after it; anywhere else a
+ * restack is still a capability arriving in the wrong checkpoint.
+ */
+export function preRestackCode(rootDir) {
+  return featureCodeExcept(rootDir, [...S04_FILES, ...S08_FILES]);
 }

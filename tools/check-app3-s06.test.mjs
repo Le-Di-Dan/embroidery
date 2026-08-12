@@ -191,8 +191,14 @@ describe('predecessors', () => {
     assert.ok(mentions(run(checkPredecessors, { phase }), 'Template intake follow-up'));
   });
 
+  /*
+   * `APP3-S08` left this list when human review accepted it: the rule is
+   * world-aware on it now, exactly as it already was on `APP3-S09`. The two
+   * capabilities that genuinely have not opened are still asserted, so a blanket
+   * "the Studio is done" still fails here.
+   */
   it('refuses a later Studio capability recorded complete', () => {
-    for (const later of ['APP3-S08', 'APP3-S10', 'APP3-S11']) {
+    for (const later of ['APP3-S10', 'APP3-S11']) {
       const phase = `${file('phase')}\n${later} = COMPLETE — REVIEW_DELIVERED\n`;
       assert.ok(mentions(run(checkPredecessors, { phase }), later), later);
     }

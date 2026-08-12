@@ -17,6 +17,7 @@ import { join, relative } from 'node:path';
 
 import {
   CANONICAL_FILES,
+  compositionCode,
   CONTROLLED_FONT_ASSETS,
   FEATURE,
   STOREFRONT,
@@ -263,7 +264,7 @@ export function checkArchitecture(rootDir, fail) {
   // the screen mounts moved at `APP3-S05-C1` — the inspector direct before it,
   // the tier placement authority after — so the rule asks the world it is in
   // rather than pinning the name S05 shipped with.
-  if (!/StudioText(Inspector|Panel)/.test(screen)) {
+  if (!/StudioText(Inspector|Panel)/.test(screen + compositionCode(rootDir))) {
     fail(`${CANONICAL_FILES.stageScreen}: the text inspector is not mounted`);
   }
   if (!code(rootDir, 'controller').includes('ruleOnTextCandidate')) {

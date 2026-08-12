@@ -18,7 +18,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { isS05Delivered, isS06Delivered, isS09Delivered } from './app3-accepted-surface.mjs';
+import {
+  isS04Delivered,
+  isS05Delivered,
+  isS06Delivered,
+  isS08Delivered,
+  isS09Delivered,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -28,6 +34,7 @@ import {
   featureCode,
   preS03Code,
   preS05Code,
+  preRestackCode,
   preS06Code,
   preS09Code,
   read,
@@ -113,7 +120,11 @@ export function checkWorkingDocument(rootDir, fail) {
   }
   // `initialize` on the same key must be a no-op, or a re-render silently
   // discards whatever the customer just did.
-  if (!/state\.sessionKey === sessionKey \? state :/.test(store)) {
+  //
+  // Whitespace-tolerant: `APP3-S08` gave the else branch more to do — it now
+  // clears the past and the future too — and the formatter broke the ternary
+  // across lines, which a single-line regex read as the guard being gone.
+  if (!/state\.sessionKey === sessionKey\s*\?\s*state\s*:/.test(store)) {
     fail(`${CANONICAL_FILES.documentStore}: re-initializing discards local edits`);
   }
   // A Session identity may not come to rest in a store (`APP3-S01`).
@@ -261,9 +272,12 @@ export function checkValidation(rootDir, fail) {
       fail(`${FEATURE}: repairs an invalid candidate (${String(repair)})`);
     }
   }
-  // The commit path is gated on the outcome, not merely informed by it.
+  // The commit path is gated on the outcome, not merely informed by it. The
+  // commit may now carry a second argument — `APP3-S08`'s action — and what this
+  // rule is about is that the *only* thing committed inside the `ok` branch is
+  // `outcome.document`.
   const gesture = code(rootDir, 'gesture');
-  if (!/if \(outcome\.ok\) \{\s*liveCommit\(outcome\.document\);/.test(gesture)) {
+  if (!/if \(outcome\.ok\) \{\s*liveCommit\(outcome\.document[,)]/.test(gesture)) {
     fail(`${CANONICAL_FILES.gesture}: commits a candidate that was not ruled valid`);
   }
 }
@@ -330,7 +344,6 @@ export function checkNonScope(rootDir, fail) {
     undoStack: 'APP3-S08',
     redoStack: 'APP3-S08',
     commandHistory: 'APP3-S08',
-    reorder: 'APP3-S04',
     ungroup: 'APP3-S04',
     duplicate: 'APP3-S04',
     publicDesignSessionAutosave: 'APP3-S10',
@@ -365,6 +378,21 @@ export function checkNonScope(rootDir, fail) {
    * did not introduce still may not carry it, which keeps the transform chrome a
    * transform and stops a file added tomorrow inheriting the exception.
    */
+  /*
+   * The restack marker, world-aware.
+   *
+   * `reorder` was banned feature-wide because no checkpoint owned a z-order
+   * command, and that is what proved S03 had not started one. `APP3-S04` issues
+   * the command and `APP3-S08` names its history entry after it, so the ban
+   * moves rather than disappearing: every file neither of those two introduced
+   * still may not carry it, and a file added tomorrow inherits the strict rule.
+   */
+  const outsideRestack =
+    isS04Delivered(rootDir) && isS08Delivered(rootDir) ? preRestackCode(rootDir) : all;
+  if (outsideRestack.includes('reorder')) {
+    fail(`${FEATURE}: carries "reorder", a capability APP3-S04 owns`);
+  }
+
   const outsideS06 = isS06Delivered(rootDir) ? preS06Code(rootDir) : all;
   if (outsideS06.includes('publicDesignSessionAsset')) {
     fail(`${FEATURE}: carries "publicDesignSessionAsset", a capability APP3-S06 owns`);

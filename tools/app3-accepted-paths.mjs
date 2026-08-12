@@ -705,6 +705,38 @@ export function isS04Delivered(rootDir) {
   return /\nAPP3-S04 = COMPLETE/.test(phase);
 }
 
+/** True once `APP3-S08` has delivered undo and redo. */
+export function isS08Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S08 = COMPLETE/.test(phase);
+}
+
+/**
+ * The files `APP3-S08` added, named exactly.
+ *
+ * Shared so every predecessor gate that has to become world-aware about undo
+ * names the same seven files rather than each keeping its own idea of where a
+ * past and a future may legitimately live. The one working-document store is
+ * deliberately not on the list: `APP3-S08` §5 puts the stacks *beside* the one
+ * current document rather than in a controller with a current of its own.
+ */
+export const S08_FILES = Object.freeze([
+  'components/studio-history-list.tsx',
+  'components/studio-history-panel.tsx',
+  'components/studio-stage-panels.tsx',
+  'hooks/use-studio-history.ts',
+  'hooks/use-studio-history-shortcuts.ts',
+  'model/studio-history.ts',
+  'model/studio-history-copy.ts',
+]);
+
+/** The two section-12 design rows `APP3-S08` consumes, and their nodes. */
+export const S08_DESIGN_ROWS = Object.freeze({
+  'FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY': '609:147',
+  'FIG-STUDIO-UNDO-DESKTOP-DISABLED': '609:209',
+});
+
 /** True once `APP3-S09` has delivered the runtime watermark. */
 export function isS09Delivered(rootDir) {
   const path = join(rootDir, PHASE);

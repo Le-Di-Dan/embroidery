@@ -43,6 +43,8 @@ import {
   type StudioImageMedia,
 } from '../model/studio-image-authority';
 import { ruleOnImageFile, type ImageFileRefusal } from '../model/studio-image-file';
+import type { StudioHistoryAction } from '../model/studio-history';
+import { layerLabel } from '../model/studio-layers';
 import { withNewImage, withReplacedImage } from '../model/studio-image-placement';
 import type { StudioAreaLimits } from '../model/studio-transform-authority';
 import { uploadSessionImage } from '../services/studio-session-asset.client';
@@ -63,7 +65,7 @@ export interface UseStudioImageInput {
   readonly limits: StudioAreaLimits | null;
   /** The element a replacement targets, or `null` for a new placement. */
   readonly replacingElementId: string | null;
-  readonly commit: (document: DesignDocument) => void;
+  readonly commit: (document: DesignDocument, action: StudioHistoryAction) => void;
   readonly onPlaced: (elementId: string) => void;
 }
 
@@ -202,7 +204,21 @@ export function useStudioImage({
     const outcome = place(verdict, current, liveDocument, liveScope, liveLimits);
     if (outcome.ok) {
       setFailure(null);
-      inputs.current.commit(outcome.document);
+      /*
+       * One entry per successful placement or replacement (`APP3-S08` §12).
+       *
+       * The upload, the inspection and the polling that preceded it are not
+       * history: nothing about the *design* changed until this line. And the
+       * entry holds documents, so undoing it removes an element and never
+       * touches the durable Asset the upload created — an undo that deleted
+       * stored bytes would be a destructive server action behind a control the
+       * customer reasonably expects to be free.
+       */
+      const replaced = replacedElement(liveDocument, current.replacingElementId);
+      inputs.current.commit(outcome.document, {
+        kind: current.replacingElementId === null ? 'image-place' : 'image-replace',
+        label: replaced,
+      });
       inputs.current.onPlaced(outcome.elementId);
       return;
     }
@@ -289,6 +305,20 @@ export function useStudioImage({
       setFailure(null);
     }, []),
   };
+}
+
+/**
+ * What the replaced layer was called, for the history row.
+ *
+ * The name is read from the document *before* the replacement, because after it
+ * the row would be named after the picture that arrived rather than the one the
+ * customer would be putting back. `null` for a new placement: nothing was
+ * replaced, and the row says so in its own words.
+ */
+function replacedElement(document: DesignDocument, elementId: string | null): string | null {
+  if (elementId === null) return null;
+  const element = document.elements.find((candidate) => candidate.id === elementId);
+  return element === undefined ? null : layerLabel(element);
 }
 
 /** Whether an answer ends the wait. Both terminal states do; nothing else. */

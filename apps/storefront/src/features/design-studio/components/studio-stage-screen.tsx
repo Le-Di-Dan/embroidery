@@ -9,6 +9,8 @@ import type {
 import { rectToBounds } from '@embroidery/design-engine';
 
 import { useSideBackground } from '../hooks/use-side-background';
+import { useStudioHistory } from '../hooks/use-studio-history';
+import { useStudioHistoryShortcuts } from '../hooks/use-studio-history-shortcuts';
 import { useStudioImage } from '../hooks/use-studio-image';
 import { useStudioImageMedia } from '../hooks/use-studio-image-media';
 import { useStudioLayers } from '../hooks/use-studio-layers';
@@ -35,9 +37,7 @@ import { StudioStageStatus } from './studio-stage-status';
 import { StudioStageWatermark, StudioWatermarkNotice } from './studio-stage-watermark';
 import { StudioStageUnavailable } from './studio-stage-unavailable';
 import { StudioStageViewport } from './studio-stage-viewport';
-import { StudioImagePanel } from './studio-image-panel';
-import { StudioLayersPanel } from './studio-layers-panel';
-import { StudioTextPanel } from './studio-text-panel';
+import { StudioStagePanels } from './studio-stage-panels';
 import { StudioTransformOverlay } from './studio-transform-overlay';
 
 export interface StudioStageScreenProps {
@@ -80,9 +80,14 @@ export interface StudioStageScreenProps {
  * server snapshot stays an immutable baseline for `APP3-S10`; it never competes
  * as a second editable scene.
  *
+ * `APP3-S08` adds a second thing to the front of that chain — a bounded past and
+ * future *beside* the working document, in the same store. It is not a second
+ * scene: an undo writes the one working document, and the renderer consumes it
+ * exactly as it consumes an edit.
+ *
  * Nothing here saves. There is no autosave timer, no `publicDesignSessionAutosave`
- * call and no saving/saved indicator: `APP3-S10` owns persistence, and `S08`
- * owns history.
+ * call and no saving/saved indicator: `APP3-S10` owns persistence, and an undo
+ * calls no operation at all.
  */
 export function StudioStageScreen({
   snapshot,
@@ -257,6 +262,21 @@ export function StudioStageScreen({
   const watermarkToken = useStudioWatermarkToken();
 
   /*
+   * The history capability's controller (`APP3-S08`), owned here for the same
+   * reason the image and layer controllers are: the tier decides which of its
+   * two mounts renders, so a controller owned by a panel would be discarded and
+   * rebuilt on every breakpoint crossing — and the customer's undo stack would
+   * go with it.
+   *
+   * It reads the past and future from the same store that holds the one working
+   * document, so an undo cannot produce a second answer to "what is on the
+   * stage". The keyboard path is bound once, on the window, and stands down for
+   * editable fields so the platform's own text undo keeps working inside them.
+   */
+  const history = useStudioHistory();
+  useStudioHistoryShortcuts({ undo: history.undo, redo: history.redo });
+
+  /*
    * The layer capability's controller (`APP3-S04`), owned here for the same
    * reason the image controller is: the tier decides which of its two mounts
    * renders, so a controller owned by the panel would be discarded and rebuilt
@@ -286,17 +306,13 @@ export function StudioStageScreen({
             so the keyboard reaches it in the order the eye does. Only the
             tablet composition puts anything here.
           */}
-          <StudioTextPanel slot="topbar" {...textPanel}>
-            {/* The tablet composition puts the image controls in the *same*
-                inspector drawer (`APP3-S06` §7): one topbar, one trigger, one
-                out-of-flow panel. A second drawer over the same stage edge
-                would be a second drawer system. */}
-            <StudioImagePanel slot="drawer" {...imagePanel} />
-            {/* And the layers, in that same one drawer (`APP3-D01-C1`: "layers
-                merge into that same drawer because 1024 cannot hold three
-                regions"). */}
-            <StudioLayersPanel slot="drawer" layers={layers} />
-          </StudioTextPanel>
+          <StudioStagePanels
+            region="topbar"
+            history={history}
+            image={imagePanel}
+            layers={layers}
+            text={textPanel}
+          />
 
           <StudioStageBackgroundNotice background={background} hasScope={scope !== null} />
 
@@ -343,26 +359,21 @@ export function StudioStageScreen({
           <StudioWatermarkNotice />
 
           {/*
-            The text inspector (`APP3-S05`). It reads the same document the
-            scene was built from and writes back through the same working-
-            document commit the transform gesture uses, so there is still one
-            answer to "what is on the stage".
+            The capability panels (`APP3-S05`, `S06`, `S04`, `S08`). Each reads
+            the same document the scene was built from and writes back through
+            the same working-document commit the transform gesture uses, so there
+            is still one answer to "what is on the stage".
 
-            Mounted through the panel (`APP3-S05-C1`), which decides where the
-            inspector belongs on this viewport: beside the stage at 1440, in the
-            `618:140` right drawer at 1024, and nowhere at 390 — mobile text
-            editing is `APP3-S11`'s. The tablet composition renders in the
-            topbar slot above instead, so this one is empty there.
+            The tablet composition renders them in the topbar region above
+            instead, so this one is empty there.
           */}
-          <StudioTextPanel slot="body" {...textPanel} />
-
-          {/* The desktop and mobile image mounts (`APP3-S06`). The tablet
-              composition renders in the drawer above instead, so this one is
-              empty there. */}
-          <StudioImagePanel slot="body" {...imagePanel} />
-
-          {/* The desktop and mobile layer mounts (`APP3-S04`). */}
-          <StudioLayersPanel slot="body" layers={layers} />
+          <StudioStagePanels
+            region="body"
+            history={history}
+            image={imagePanel}
+            layers={layers}
+            text={textPanel}
+          />
 
           {result.scene.elements.length === 0 ? (
             <p className="studio-stage__empty" data-testid="studio-stage-empty" role="status">

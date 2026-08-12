@@ -22,6 +22,7 @@ import type { DesignSessionScopeResponse } from '@embroidery/api-client';
 
 import { useControlledFont } from '../hooks/use-controlled-font';
 import { useStudioText } from '../hooks/use-studio-text';
+import type { StudioHistoryAction } from '../model/studio-history';
 import type { TextRefusal } from '../model/studio-text-authority';
 import { STUDIO_TEXT_COPY } from '../model/studio-text-copy';
 import { textElementOf } from '../model/studio-text-fields';
@@ -34,7 +35,7 @@ export interface StudioTextInspectorProps {
   readonly elementId: string | null;
   readonly scope: DesignSessionScopeResponse | null;
   readonly limits: StudioAreaLimits | null;
-  readonly commit: (document: DesignDocument) => void;
+  readonly commit: (document: DesignDocument, action: StudioHistoryAction) => void;
 }
 
 const REFUSAL_IDS = 'studio-text-refusal';
@@ -80,7 +81,9 @@ export function StudioTextInspector({
           describedBy={text.refusal === null ? undefined : REFUSAL_IDS}
           draft={text.draft}
           element={element}
+          onBeginEdit={text.beginEdit}
           onChangeText={text.changeText}
+          onEndEdit={text.endEdit}
           onFinishText={text.finishText}
           onPatch={text.applyPatch}
           onStartComposition={text.startComposition}

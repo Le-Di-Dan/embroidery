@@ -886,7 +886,8 @@ $bp-studio-split: 1025px;
   // panel (`APP3-S04`) is a section of the same one panel and follows the same
   // rule, so the drawer never reads as a stack of cards.
   .studio-text,
-  .studio-layers {
+  .studio-layers,
+  .studio-history {
     border: 0;
     padding: 0;
     background: transparent;
@@ -1128,6 +1129,127 @@ $bp-studio-split: 1025px;
 }
 
 .studio-layers__empty {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+// ------------------------------------------------ undo / redo history (APP3-S08)
+//
+// Design source: FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY (609:147) and
+// FIG-STUDIO-UNDO-DESKTOP-DISABLED (609:209), section 12 (596:18).
+//
+// The panel is one more section of the same inspector column at 1440 and one
+// more section of the same `618:140` drawer at 1024 — the drawer's own rules
+// above already strip the border there, so nothing here is tier-aware. At 390
+// it is not rendered at all; the mobile surfaces are `APP3-S11`'s.
+//
+// No colour literal, and no fixed height on the list: the bound is what limits
+// it, and a scroll container sized in pixels would hide rows at a text size the
+// customer chose.
+.studio-history {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+}
+
+.studio-history__heading {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.studio-history__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: styles.spacing(8);
+}
+
+.studio-history__control {
+  min-height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-caption;
+  cursor: pointer;
+
+  &:disabled {
+    // Disabled at either end of the history, and the reason is real text below.
+    cursor: default;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.studio-history__reason,
+.studio-history__shortcuts,
+.studio-history__bound,
+.studio-history__announcement,
+.studio-history__unavailable {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.studio-history__key {
+  padding: 0 styles.spacing(4);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  color: styles.$color-text-secondary;
+  white-space: nowrap;
+}
+
+.studio-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-history__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: styles.spacing(8);
+  padding: styles.spacing(4);
+  border: 1px solid transparent;
+  border-radius: styles.$radius-input;
+  min-width: 0;
+}
+
+.studio-history__row--undone {
+  // An undone row is still readable and still says so in words. The state is
+  // carried by `.studio-history__state`, never by this colour alone.
+  color: styles.$color-text-tertiary;
+}
+
+.studio-history__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: styles.$font-size-caption;
+}
+
+.studio-history__state {
+  flex: none;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.studio-history__empty {
   display: flex;
   flex-direction: column;
   gap: styles.spacing(4);

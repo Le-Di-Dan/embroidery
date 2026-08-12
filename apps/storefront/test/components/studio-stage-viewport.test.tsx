@@ -498,14 +498,22 @@ describe('the viewport touches no network and no later capability', () => {
     expect(backgroundMock).toHaveBeenCalledTimes(1);
   });
 
-  it('grows no transform handle, history or save affordance', () => {
+  /*
+   * The save and handle bans are unchanged. The undo ban became an undo
+   * *boundary* at `APP3-S08`, scoped rather than dropped exactly as the
+   * watermark rule below was: the accepted `APP3-S07` strip is zoom, fit and
+   * the safe-area toggle, and a history control in it belongs to another region.
+   */
+  it('grows no transform handle or save affordance, and no undo in its strip', () => {
     const { container } = renderStage();
     for (let n = 0; n < 2; n += 1) fireEvent.click(screen.getByTestId('studio-zoom-in'));
+    const strip = screen.getByTestId('studio-stage-controls');
 
-    const markup = container.innerHTML;
-    for (const absent of ['handle', 'undo', 'redo', 'Hoàn tác', 'Đã lưu']) {
-      expect(markup.toLowerCase()).not.toContain(absent.toLowerCase());
+    for (const absent of ['handle', 'Đã lưu']) {
+      expect(container.innerHTML.toLowerCase()).not.toContain(absent.toLowerCase());
     }
+    expect(strip.querySelector('[data-testid="studio-history-controls"]')).toBeFalsy();
+    expect(strip.innerHTML.toLowerCase()).not.toContain('hoàn tác');
   });
 
   /*

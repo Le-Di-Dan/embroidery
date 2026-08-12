@@ -28,13 +28,18 @@
  *
  * No autosave, no timer, no saved indicator, no `publicDesignSessionAutosave`,
  * and no refetch of anything. A restack, a hide and a lock are edits to the
- * working document exactly as a transform is; `APP3-S10` owns persistence and
- * `APP3-S08` owns history. The network delta of every command here is zero.
+ * working document exactly as a transform is; `APP3-S10` owns persistence. The
+ * network delta of every command here is zero.
+ *
+ * Each of the three does name itself to `APP3-S08` when it commits, and that is
+ * still not a save: the entry is two in-memory documents and a bounded label,
+ * held for this browser tab and this Session only.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { validateDesignDocumentStructure, type DesignDocument } from '@embroidery/design-document';
 import type { ElementGraph } from '@embroidery/design-engine';
 
+import type { StudioHistoryAction } from '../model/studio-history';
 import { STUDIO_LAYER_COPY } from '../model/studio-layer-copy';
 import {
   layerRowsOf,
@@ -50,7 +55,7 @@ export interface UseStudioLayersInput {
   /** The graph the scene already built. Never a second one built here. */
   readonly graph: ElementGraph | null;
   readonly selectedElementId: string | null;
-  readonly commit: (document: DesignDocument) => void;
+  readonly commit: (document: DesignDocument, action: StudioHistoryAction) => void;
   readonly select: (elementId: string) => void;
   readonly clearSelection: () => void;
 }
@@ -98,14 +103,16 @@ export function useStudioLayers({
    * control that would have issued it is already disabled with a reason.
    */
   const apply = useCallback(
-    (candidate: DesignDocument | null, spoken: string): boolean => {
+    (candidate: DesignDocument | null, spoken: string, action: StudioHistoryAction): boolean => {
       if (candidate === null) return false;
       const structure = validateDesignDocumentStructure(candidate);
       if (!structure.ok) {
         setAnnouncement(STUDIO_LAYER_COPY.refused);
         return false;
       }
-      commit(structure.value);
+      // One command, one entry (`APP3-S08` §12). A candidate the authority
+      // refused never reaches here, so a refusal appends nothing.
+      commit(structure.value, action);
       setAnnouncement(spoken);
       return true;
     },
@@ -120,11 +127,13 @@ export function useStudioLayers({
   const step = useCallback(
     (elementId: string, direction: 'up' | 'down') => {
       if (document === null) return;
+      const label = labelOf(elementId);
       const spoken =
-        direction === 'up'
-          ? STUDIO_LAYER_COPY.movedUp(labelOf(elementId))
-          : STUDIO_LAYER_COPY.movedDown(labelOf(elementId));
-      apply(withElementStepped(document, elementId, direction, graph), spoken);
+        direction === 'up' ? STUDIO_LAYER_COPY.movedUp(label) : STUDIO_LAYER_COPY.movedDown(label);
+      apply(withElementStepped(document, elementId, direction, graph), spoken, {
+        kind: 'reorder',
+        label,
+      });
     },
     [apply, document, graph, labelOf],
   );
@@ -136,6 +145,7 @@ export function useStudioLayers({
       const committed = apply(
         withElementVisible(document, elementId, visible),
         visible ? STUDIO_LAYER_COPY.shown(label) : STUDIO_LAYER_COPY.hidden(label),
+        { kind: visible ? 'show' : 'hide', label },
       );
       // A hidden element is not selectable (`APP3-S02` §15), so a selection left
       // on one would be a selection the stage refuses to honour — and the
@@ -157,6 +167,7 @@ export function useStudioLayers({
       apply(
         withElementLocked(document, elementId, locked),
         locked ? STUDIO_LAYER_COPY.locked(label) : STUDIO_LAYER_COPY.unlocked(label),
+        { kind: locked ? 'lock' : 'unlock', label },
       );
     },
     [apply, document, labelOf],
@@ -191,9 +202,14 @@ export function useStudioLayers({
       const moving = draggingId;
       endDrag();
       if (moving === null || document === null) return;
+      const label = labelOf(moving);
       apply(
         withElementMovedTo(document, moving, elementId, graph),
-        STUDIO_LAYER_COPY.moved(labelOf(moving)),
+        STUDIO_LAYER_COPY.moved(label),
+        {
+          kind: 'reorder',
+          label,
+        },
       );
     },
     [apply, document, draggingId, endDrag, graph, labelOf],

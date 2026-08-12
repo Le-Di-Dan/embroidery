@@ -15,7 +15,7 @@
  *
  * Read-only, cross-platform pure Node.
  */
-import { CANONICAL_FILES, code, read } from './check-app3-s05.sources.mjs';
+import { CANONICAL_FILES, code, compositionCode, read } from './check-app3-s05.sources.mjs';
 
 /**
  * Readiness is asked per *variant*, never per family (`APP3-S05-C1`).
@@ -88,7 +88,7 @@ export function checkVariantReadiness(rootDir, fail) {
    */
   const controller = code(rootDir, 'controller');
   const refusalAt = controller.indexOf("setRefusal('controlled-font-unavailable')");
-  const commitAt = controller.indexOf('ruleRef.current(patch)');
+  const commitAt = controller.indexOf('ruleRef.current(patch,');
   if (!controller.includes('loadControlledVariant')) {
     fail(`${CANONICAL_FILES.controller}: a font variant is committed without being loaded`);
   }
@@ -142,9 +142,16 @@ export function checkResponsiveComposition(rootDir, fail) {
       fail(`${CANONICAL_FILES.panel}: an editing surface is rendered at the mobile tier`);
     }
   }
-  // The stage screen mounts the placement authority, not the inspector direct —
-  // a direct mount would restore the single composition on every viewport.
-  const screen = code(rootDir, 'stageScreen');
+  /*
+   * The stage screen mounts the placement authority, not the inspector direct —
+   * a direct mount would restore the single composition on every viewport.
+   *
+   * Read across the *composition*: `APP3-S08` moved the panel mounts into
+   * `StudioStagePanels` to keep the screen inside its line limit, and a rule
+   * pinned to one path would have read "not mounted" about a mount that simply
+   * lives in the other half of the same decision (`APP3-B04A`).
+   */
+  const screen = compositionCode(rootDir);
   if (!screen.includes('StudioTextPanel')) {
     fail(`${CANONICAL_FILES.stageScreen}: the tier placement authority is not mounted`);
   }
@@ -176,10 +183,14 @@ export function checkResponsiveComposition(rootDir, fail) {
   if (!drawer.includes('studio-stage__topbar')) {
     fail(`${CANONICAL_FILES.drawer}: the drawer trigger is not in the Studio topbar`);
   }
-  const topbarAt = screen.indexOf('slot="topbar"');
-  const stageAt = screen.indexOf('<StudioStageViewport');
-  const stripAt = screen.indexOf('<StudioStageControls');
-  const bodyAt = screen.indexOf('slot="body"');
+  // The order is still asserted on the *screen*, because the frame's order is
+  // the screen's decision. Only the marker changed: the screen names the region
+  // it is mounting rather than the slot each panel reads.
+  const frame = code(rootDir, 'stageScreen');
+  const topbarAt = frame.indexOf('region="topbar"');
+  const stageAt = frame.indexOf('<StudioStageViewport');
+  const stripAt = frame.indexOf('<StudioStageControls');
+  const bodyAt = frame.indexOf('region="body"');
   if (topbarAt === -1 || stageAt === -1 || topbarAt > stageAt) {
     fail(`${CANONICAL_FILES.stageScreen}: the Studio topbar is not mounted above the stage`);
   }

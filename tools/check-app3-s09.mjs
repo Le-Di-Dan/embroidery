@@ -29,6 +29,7 @@
  *
  * Read-only, cross-platform pure Node. Independent of the completion report.
  */
+import { isS08Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   LATER_DESIGN_ROWS,
@@ -106,7 +107,12 @@ export function checkPredecessors(rootDir, fail) {
   if (!STATUS_LINES.some((line) => phase.includes(`\n${line}\n`))) {
     fail(`${CANONICAL_FILES.phase}: APP3-S09 is not recorded under a legitimate status`);
   }
-  for (const later of LATER_ROWS) {
+  // World-aware on `APP3-S08` for the same reason every predecessor is: "S09
+  // did not implement this" stays true once S08 implements it for itself.
+  const stillLaterRows = isS08Delivered(rootDir)
+    ? LATER_ROWS.filter((row) => row !== 'APP3-S08')
+    : LATER_ROWS;
+  for (const later of stillLaterRows) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(
         `${CANONICAL_FILES.phase}: ${later} is recorded complete by a checkpoint that is not it`,
@@ -171,7 +177,10 @@ export function checkDesignApproval(rootDir, fail) {
     fail(`${CANONICAL_FILES.registry}: the 1024 reference was re-attributed to APP3-S09`);
   }
 
-  for (const later of LATER_DESIGN_ROWS) {
+  const stillLater = isS08Delivered(rootDir)
+    ? LATER_DESIGN_ROWS.filter((row) => row !== 'FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY')
+    : LATER_DESIGN_ROWS;
+  for (const later of stillLater) {
     const row = rowOf(later);
     if (row !== undefined && row.includes('APPROVED_FOR_IMPLEMENTATION')) {
       fail(`${CANONICAL_FILES.registry}: ${later} belongs to a later checkpoint and is approved`);

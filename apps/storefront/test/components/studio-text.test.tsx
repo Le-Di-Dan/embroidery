@@ -335,13 +335,31 @@ describe('the S03-C1 render architecture survives a text edit (APP3-S05 §18)', 
 });
 
 describe('S05 pulls nothing forward (APP3-S05 §19)', () => {
-  it('adds no save, history, upload or watermark control', () => {
+  it('adds no save, upload or watermark control', () => {
     renderStage();
     select('t');
 
-    for (const pulled of [/hoàn tác/i, /làm lại/i, /đã lưu/i, /đang lưu/i, /tải ảnh/i]) {
+    for (const pulled of [/đã lưu/i, /đang lưu/i, /tải ảnh/i]) {
       expect(screen.queryByText(pulled)).not.toBeInTheDocument();
     }
+  });
+
+  /*
+   * The history ban became a history *boundary* at `APP3-S08`.
+   *
+   * "No undo control anywhere" was right while there was no history capability,
+   * and deleting it now would let the text inspector grow one of its own. So the
+   * rule is narrower rather than gone: there is exactly one undo surface, it is
+   * S08's, and the text inspector is not it.
+   */
+  it('grows no history surface of its own', () => {
+    renderStage();
+    select('t');
+
+    expect(screen.getAllByTestId('studio-history-controls')).toHaveLength(1);
+    const inspector = screen.getByTestId('studio-text-value').closest('section');
+    expect(inspector?.querySelector('[data-testid="studio-history-controls"]')).toBeFalsy();
+    expect(inspector?.querySelector('[data-testid="studio-history-list"]')).toBeFalsy();
   });
 
   /*

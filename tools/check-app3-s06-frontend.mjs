@@ -22,7 +22,13 @@
  *
  * Read-only, cross-platform pure Node.
  */
-import { CANONICAL_FILES, code, featureCode, read } from './check-app3-s06.sources.mjs';
+import {
+  CANONICAL_FILES,
+  code,
+  compositionCode,
+  featureCode,
+  read,
+} from './check-app3-s06.sources.mjs';
 
 /** The document is built from the server's measurements, and from nothing else. */
 export function checkImageAuthority(rootDir, fail) {
@@ -345,7 +351,7 @@ export function checkComposition(rootDir, fail) {
   if (!/\{children\}/.test(drawer)) {
     fail(`${CANONICAL_FILES.textDrawer}: the accepted drawer takes no further sections`);
   }
-  if (!/<StudioImagePanel slot="drawer"/.test(screen)) {
+  if (!/<StudioImagePanel slot="drawer"/.test(screen + compositionCode(rootDir))) {
     fail(`${CANONICAL_FILES.stageScreen}: the tablet image controls are not in the one drawer`);
   }
 

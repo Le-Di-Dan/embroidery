@@ -540,14 +540,31 @@ describe('the correction pulls nothing forward (APP3-S05-C1 §13, §14)', () => 
     expect(client.publicDesignSessionResume).not.toHaveBeenCalled();
   });
 
-  it('adds no history, upload or save control to the drawer', () => {
+  it('adds no upload or save control to the drawer', () => {
     renderStage(TABLET);
     select('t');
     fireEvent.click(screen.getByTestId('studio-text-drawer-trigger'));
 
-    for (const pulled of [/hoàn tác/i, /làm lại/i, /đã lưu/i, /đang lưu/i, /tải ảnh/i]) {
+    for (const pulled of [/đã lưu/i, /đang lưu/i, /tải ảnh/i]) {
       expect(screen.queryByText(pulled)).not.toBeInTheDocument();
     }
+  });
+
+  /*
+   * Undo is *in* the drawer at 1024, for the same reason the layers are
+   * (`APP3-D01-C1`: 1024 "cannot hold three regions"). So the rule is that there
+   * is exactly one of it and it is inside the one drawer — not that it is
+   * absent, which stopped being true at `APP3-S08`.
+   */
+  it('puts the one history surface inside the same single drawer', () => {
+    renderStage(TABLET);
+    select('t');
+    fireEvent.click(screen.getByTestId('studio-text-drawer-trigger'));
+
+    const drawer = screen.getByTestId('studio-text-drawer');
+    expect(screen.getAllByTestId('studio-history-controls')).toHaveLength(1);
+    expect(drawer.querySelector('[data-testid="studio-history-controls"]')).toBeTruthy();
+    expect(screen.getAllByTestId('studio-text-drawer')).toHaveLength(1);
   });
 
   /*
