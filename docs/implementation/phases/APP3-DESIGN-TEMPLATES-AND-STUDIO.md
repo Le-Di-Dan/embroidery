@@ -4353,8 +4353,12 @@ APP3-E01-C1 VALIDATION = IMPACT_BASED — the changed modules' own suite (10/10)
 APP3-E01 = COMPLETE — CORRECTION_DELIVERED_FOR_REVIEW
 APP3-X01 = BLOCKED_BY_APP3-E01-C1_REVIEW_ACCEPTANCE
 NEXT_RECOMMENDED_CHECKPOINT = APP3-X01_AFTER_APP3-E01-C1_ACCEPTANCE
-APP3-E01 = READY — NOT STARTED
-APP3-X01 = BLOCKED_BY_APP3-E01
+
+APP3-E01-C1 = COMPLETE — REVIEW_ACCEPTED
+APP3-E01 = COMPLETE — REVIEW_ACCEPTED
+APP3-X01 = COMPLETE — DELIVERED_FOR_REVIEW
+APP3 = COMPLETE — PASS_WITH_FOLLOW_UPS — DELIVERED_FOR_REVIEW
+APP3-X01 STALE_DUPLICATES_REMOVED = APP3-E01 APP3-X01 — two planning lines ("APP3-E01 = READY — NOT STARTED", "APP3-X01 = BLOCKED_BY_APP3-E01") sat BELOW the blocks that superseded them, because later blocks were appended above them rather than at the end. Any reader or gate resolving this register by position read them as the current word. Removed here, and replaced by the single fenced register in §10.1 — the same disclosure APP3-G08 made for the stale B07/B08 lines
 APP3-D01 = COMPLETE — REVIEW_ACCEPTED
 APP3-D01-C1 = COMPLETE — REVIEW_ACCEPTED
 APP3-D01-C1 CAUSE = TWO_IMPLEMENTATION_READINESS_GAPS_FOUND_AT_HUMAN_REVIEW
@@ -4723,3 +4727,33 @@ contacts object storage. `node tools/check-app3-db01.mjs` asserts that, and
 
 Audit: [`audits/APP3_PRE_IMPLEMENTATION_AUDIT.md`](../audits/APP3_PRE_IMPLEMENTATION_AUDIT.md).
 Report: [`reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md`](../reports/APP3-PRE-IMPLEMENTATION-AUDIT-COMPLETION-REPORT.md).
+
+### 10.1 APP3 closure register
+
+Everything above this heading is the phase's working record, kept as written.
+This block is the **current word**, and it is the only place `APP3-X01`'s gate
+reads a status from.
+
+The distinction is not bookkeeping. §10 grew as append-only prose in which later
+blocks were sometimes inserted *above* earlier ones, so at `APP3-X01` entry the
+last `APP3-E01 =` line in the file still read `READY — NOT STARTED` and the last
+`APP3-X01 =` line still read `BLOCKED_BY_APP3-E01` — two superseded planning
+lines that any positional reading would have taken as current. The register
+below carries exactly one line per key, and `node tools/check-app3-closure.mjs`
+fails on a duplicate rather than picking one. Ambiguity is removed, not
+resolved.
+
+```text
+APP3 = COMPLETE — PASS_WITH_FOLLOW_UPS — DELIVERED_FOR_REVIEW
+APP3-X01 = COMPLETE — DELIVERED_FOR_REVIEW
+APP3-E01 = COMPLETE — REVIEW_ACCEPTED
+APP3-E01-C1 = COMPLETE — REVIEW_ACCEPTED
+FU-APP3-UPLOAD-REVISION-SEAM-01 = COMPLETE — CLOSED_BY_APP3-E01-C1
+APP4 = READY_FOR_PRE_IMPLEMENTATION_AUDIT
+```
+
+The closure verdict, the checkpoint matrix, the correction reconciliation, the
+follow-up owners and the frozen artifacts are in
+[`reports/APP3-CLOSURE-MATRIX.md`](../reports/APP3-CLOSURE-MATRIX.md).
+
+`APP3-X01` = `CMD-CHECK-APP3-CLOSURE` + `CMD-TEST-APP3-CLOSURE`.
