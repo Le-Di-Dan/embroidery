@@ -179,6 +179,18 @@ mutation(
 );
 
 mutation(
+  'the closure checkpoint must still record itself, un-accepted',
+  (root) =>
+    edit(root, 'matrix', (text) =>
+      text.replace(
+        '| `APP3-X01` | `COMPLETE — DELIVERED_FOR_REVIEW` |',
+        '| `APP3-X01` | `COMPLETE — REVIEW_ACCEPTED` |',
+      ),
+    ),
+  /does not record APP3-X01 as delivered for review/,
+);
+
+mutation(
   'a ruled-out checkpoint on disk is not closed over',
   (root) => writeFileSync(join(root, REPORT_DIR, 'APP3-E01-C2-COMPLETION-REPORT.md'), ''),
   /APP3-E01-C2 was ruled out but has a completion report/,

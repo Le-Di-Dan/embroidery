@@ -20,6 +20,9 @@ export const CANONICAL_FILES = Object.freeze({
 
 export const REPORT_DIR = 'docs/implementation/reports';
 
+/** The checkpoint that performs the closure, and therefore cannot accept itself. */
+export const CLOSURE_CHECKPOINT = 'APP3-X01';
+
 /**
  * The closure register: the block in the phase plan that carries the CURRENT
  * word for every key closure depends on.

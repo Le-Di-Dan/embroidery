@@ -39,6 +39,7 @@ import { checkArtifacts } from './check-app3-closure-artifacts.mjs';
 import {
   CANONICAL_FILES,
   CAPABILITIES,
+  CLOSURE_CHECKPOINT,
   EMPTY_OWNERS,
   FORBIDDEN_CHECKPOINTS,
   NOT_DELIVERED,
@@ -154,12 +155,21 @@ export function checkCheckpoints(root, fail) {
 
   const rows = rowsOf(matrix, /^\d+$/);
   const recorded = new Map(rows.map((cells) => [cells[1].replaceAll('`', ''), cells]));
-  const onDisk = reportsFor(root, 'APP3').map(checkpointOf).filter(Boolean);
+  // The closure checkpoint is excluded from its own accepted table by
+  // construction: it is not accepted — it is delivered for the review that
+  // decides — and its second commit is the one that adds the report being read
+  // here. It must still be recorded, as an explicitly unaccepted row, below.
+  const onDisk = reportsFor(root, 'APP3')
+    .map(checkpointOf)
+    .filter((id) => id !== undefined && id !== CLOSURE_CHECKPOINT);
 
   for (const id of onDisk) {
     if (!recorded.has(id)) {
       fail(`${id} has a completion report but no closure-matrix row`);
     }
+  }
+  if (!new RegExp(`\`${CLOSURE_CHECKPOINT}\`[^\\n]*DELIVERED_FOR_REVIEW`).test(matrix)) {
+    fail(`the closure matrix does not record ${CLOSURE_CHECKPOINT} as delivered for review`);
   }
   for (const [id, cells] of recorded) {
     if (!onDisk.includes(id)) {
