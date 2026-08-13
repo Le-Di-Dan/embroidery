@@ -252,7 +252,26 @@ function seed() {
         product_side_id, embroidery_area_id)
       values ('${template}', '${TEMPLATE_NAMES[index].replaceAll("'", "''")}', '${slug}',
         'PUBLISHED', 1, '${PRODUCT_ID}', '${SIDE_ONE}', '${AREA_ONE}')
-      on conflict (id) do nothing;
+      -- Restores the state this seed intends, exactly as the Side and Area
+      -- inserts above already do. FU-APP3-S01-FIXTURE-IDEMPOTENCY-01, closed by
+      -- APP3-E01.
+      --
+      -- revert ARCHIVES rather than deletes, because a published version is a
+      -- frozen row the database refuses to remove: that is right and stays. But
+      -- paired with "do nothing", a second seed found the row already present
+      -- and left it ARCHIVED, so the fixture reported 14 Templates while every
+      -- public read saw none. Two accepted runs back to back needed manual SQL
+      -- between them, which is what "not idempotent" means.
+      --
+      -- This changes the FIXTURE lifecycle and nothing else: no production
+      -- Template lifecycle rule is touched, and the rows it restores are ones
+      -- this fixture family owns.
+      on conflict (id) do update
+        set status = 'PUBLISHED',
+            archived_at = null,
+            current_version = 1,
+            name = excluded.name,
+            slug = excluded.slug;
 
       insert into design_template_versions (id, design_template_id, version, design_document,
         document_schema_version, published_at)

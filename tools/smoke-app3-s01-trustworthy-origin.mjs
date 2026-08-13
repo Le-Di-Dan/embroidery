@@ -46,8 +46,23 @@ const PROJECT = 'embroidery-dev';
 const BASE_COMPOSE = join(REPO_ROOT, 'infrastructure/compose/docker-compose.dev.yml');
 const ENV_FILE = join(REPO_ROOT, '.env');
 
-/** The trustworthy origin this run serves the Storefront on. */
-export const TRUSTWORTHY_ORIGIN = 'http://localhost';
+/**
+ * The trustworthy origin this run serves the Storefront on.
+ *
+ * `http://localhost` by default, and overridable by `S01_TRUSTWORTHY_ORIGIN`
+ * (`APP3-E01`). Still exactly **one exact origin**: the allow-list is pointed at
+ * the origin the run's browser really uses, never widened to accept more than
+ * one. `APP3-E01` needs that because its isolated client identities reach the
+ * gateway through a hop container published on another loopback port — the
+ * browser's origin is then `http://localhost:8091`, which is a different origin
+ * and which the API refuses `403` until it is told the truth. Pointing the guard
+ * at the truth is what `APP2-E01` did for the staff allow-list; weakening it to
+ * a wildcard is what neither does.
+ *
+ * A port is only ever added on loopback, so the origin stays potentially
+ * trustworthy by definition and nothing about the policy changes.
+ */
+export const TRUSTWORTHY_ORIGIN = process.env.S01_TRUSTWORTHY_ORIGIN ?? 'http://localhost';
 
 function posix(path) {
   return path.replaceAll('\\', '/');

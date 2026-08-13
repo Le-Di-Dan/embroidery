@@ -432,8 +432,39 @@ describe('the ephemeral network key', () => {
     expect(normalizeAddress('   ')).toBe('unknown');
   });
 
-  it('takes the left-most forwarded entry, not one a client appended', () => {
-    const gateway = keys.keyFor({ headers: { 'x-forwarded-for': '203.0.113.4, 10.0.0.9' } });
-    expect(gateway).toBe(keys.keyFor({ headers: { 'x-forwarded-for': '203.0.113.4' } }));
+  /*
+   * The entry the **trusted hop** wrote, which is the last one (`APP3-E01`).
+   *
+   * This test used to assert the left-most entry, on the assumption that the
+   * gateway replaces `X-Forwarded-For`. It appends — `CP0.3` uses nginx's
+   * `$proxy_add_x_forwarded_for` — so the left-most entry is whatever the
+   * *client* sent, and the assertion was encoding the bypass rather than
+   * catching it. `APP3-E01` measured the consequence end to end: with the burst
+   * exhausted the same caller was refused `429`, and one further request
+   * carrying its own `X-Forwarded-For` was allowed `201`.
+   */
+  it('takes the entry the trusted hop appended, not one the client chose', () => {
+    // What the gateway produces for a client that sent nothing.
+    const honest = keys.keyFor({ headers: { 'x-forwarded-for': '10.0.0.9' } });
+    // What it produces for the same client sending a forged left-most entry.
+    const forged = keys.keyFor({ headers: { 'x-forwarded-for': '203.0.113.4, 10.0.0.9' } });
+    expect(forged).toBe(honest);
+  });
+
+  it('gives a caller no way to mint a fresh bucket from its own header', () => {
+    const real = '10.0.0.9';
+    const keysFor = (client: string) =>
+      keys.keyFor({ headers: { 'x-forwarded-for': `${client}, ${real}` } });
+    // Every forged prefix lands in the one bucket the real hop determines.
+    const minted = new Set([keysFor('1.2.3.4'), keysFor('5.6.7.8'), keysFor('9.9.9.9')]);
+    expect(minted.size).toBe(1);
+    expect([...minted][0]).toBe(keys.keyFor({ headers: { 'x-forwarded-for': real } }));
+  });
+
+  it('falls back to the socket when the header is absent or empty', () => {
+    const socket = { remoteAddress: '10.0.0.9' };
+    const fromSocket = keys.keyFor({ headers: {}, socket });
+    expect(keys.keyFor({ headers: { 'x-forwarded-for': '  ' }, socket })).toBe(fromSocket);
+    expect(keys.keyFor({ headers: { 'x-forwarded-for': ' , ' }, socket })).toBe(fromSocket);
   });
 });

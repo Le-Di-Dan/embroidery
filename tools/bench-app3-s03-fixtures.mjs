@@ -162,7 +162,17 @@ function seed() {
         product_side_id, embroidery_area_id)
       values ('${template}', 'S03 benchmark ${size} (${String(count)})', '${templateSlug(size)}',
         'PUBLISHED', 1, '${PRODUCT_ID}', '${SIDE_ONE}', '${AREA_ONE}')
-      on conflict (id) do nothing
+      -- Restores the state this seed intends. The same defect the APP3-S01
+      -- fixture carried and APP3-E01 closed: revert ARCHIVES rather than
+      -- deletes, so paired with "do nothing" a second seed left every benchmark
+      -- Template archived and the run had no scene to open. Fixture lifecycle
+      -- only; no production Template lifecycle rule is touched.
+      on conflict (id) do update
+        set status = 'PUBLISHED',
+            archived_at = null,
+            current_version = 1,
+            name = excluded.name,
+            slug = excluded.slug
     `);
     sqlStdin(`
       insert into design_template_versions (id, design_template_id, version, design_document,
