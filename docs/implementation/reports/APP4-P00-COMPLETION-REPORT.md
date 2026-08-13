@@ -12,16 +12,21 @@
 
 ## A. Verdict
 
-**`PASS_WITH_ROUTED_DECISIONS`**
+**`PASS`** — after `APP4-P00-C1`. The first draft carried
+`PASS_WITH_ROUTED_DECISIONS`; the single routed item is now Product-Owner
+accepted (§G), so the decision ledger is empty.
 
 APP4 was reconciled against the delivered APP0–APP3 and DB7 baseline. The
 twelve candidate slices in the phase brief were re-sliced into **17 execution
 checkpoints**. Four candidates did not survive contact with the baseline and
-were deleted, folded or split for reasons recorded in the audit §E. One decision
-is routed to the Product Owner and blocks no APP4 checkpoint.
+were deleted, folded or split for reasons recorded in the audit §E.
+
+Product Owner review of the first draft found a genuine internal contradiction
+in the secret-delivery and secure-link transport architecture. It is corrected
+in **§M — `P00-C1`**, which is the only correction applied to this checkpoint.
 
 Migration verdict: **`NO_APP4_MIGRATION`** — every APP4 invariant is expressible
-against the delivered schema (audit §C.1).
+against the delivered schema (audit §C.1), and the correction adds none.
 
 ---
 
@@ -228,34 +233,32 @@ proof. Full matrix: audit §H. Summary of owners:
 
 ## G. TRUE_PO_DECISION ledger
 
-One entry.
+**Empty.**
 
-### `APP4-PO-001` — Notification channel and provider (`IMP-O006`)
+### `APP4-PO-001` — Notification channel and provider (`IMP-O006`) — **`PO_ACCEPTED / NON_BLOCKING`**
 
-- **Exact missing decision:** which concrete email/SMS provider and which
-  delivery channels APP4 uses.
-- **Why existing authority cannot resolve it:** `IMP-O006` is explicitly open
-  with owner APP4; ADR-DB2-003 r4 and the phase brief both leave the provider
-  unchosen; no repository pattern or ADR selects a vendor. It is material rather
-  than cosmetic because the provider observes the OTP in transit.
-- **Recommended option (the default this manifest adopts):** select **no**
-  external provider in APP4. Ship `NotificationChannelPort` plus a recording
-  development adapter that performs no external call. `IMP-O006` stays open with
-  its existing due condition — "before production notification delivery" —
-  which APP4 does not perform.
-- **Alternatives:** (a) lock a provider now via a dedicated decision checkpoint
-  and ADR — rejected as premature, since no APP4 exit-gate item requires real
-  delivery and the choice is better made against APP12's production
-  constraints; (b) a direct SMTP adapter — rejected as a provider choice wearing
-  a protocol's name, routing the OTP through an unreviewed path.
-- **Exact blocked future checkpoint:** **none in APP4.** The first blocked work
-  is production notification delivery in **APP12**.
+The Product Owner accepted the recommended option at `APP4-P00-C1`. This is no
+longer an unresolved APP4 decision and no APP4 checkpoint awaits it.
+
+- **Accepted decision:** APP4 selects **no external provider**; it ships the
+  provider-neutral `NotificationChannelPort` plus a recording development
+  adapter that performs no external call.
+- **What remains recorded:** `IMP-O006` keeps its existing production due
+  condition — "before production notification delivery" — which APP4 does not
+  perform. The first work that cannot proceed without a concrete provider is
+  production notification delivery in **APP12**. That is a future-phase
+  follow-up against a future due condition, not an open APP4 item.
+- **Interaction with `P00-C1`:** the encrypted delivery envelope is
+  provider-neutral by construction — it terminates at `NotificationChannelPort`.
+  Choosing a provider later changes the adapter behind the port and nothing
+  about the carrier, the key authority or the secret-lifetime rules.
 
 No other candidate met the four-level test. Policy durations, attempt limits,
-resend cooldowns and route slugs are all resolvable at level 4 — conservative,
-reversible and scope-minimizing — and are locked in `APP4-G01`, where a wrong
-value is corrected by appending a policy-configuration version rather than by
-changing code.
+resend cooldowns, route slugs and the envelope-key configuration shape are all
+resolvable at level 4 — conservative, reversible and scope-minimizing — and are
+locked in `APP4-G01`, where a wrong value is corrected by appending a
+policy-configuration version rather than by changing code. No production key
+value is invented or committed.
 
 ---
 
@@ -268,6 +271,8 @@ that, per `VALIDATION_GOVERNANCE.md` §3.
 |---|---|---|---|
 | 1 | `pnpm exec prettier --check docs/implementation/audits/APP4_PHASE_ENTRY_AUDIT.md docs/implementation/reports/APP4-P00-COMPLETION-REPORT.md docs/implementation/10-MASTER-APPLICATION-ROADMAP.md` | The repository enforces Prettier repository-wide; these three files are the entire change set | **PASS** — `Checking formatting... All matched files use Prettier code style!` |
 | 2 | `node tools/check-report-secrets.mjs` | This checkpoint adds a committed completion report; the gate exists precisely because a report once recorded a live credential | **PASS** — `Secret-disclosure check passed (445 document(s), 2686 tracked file(s)).` |
+| 3 | `pnpm exec prettier --check` over the three files changed by `APP4-P00-C1` | Same reason as row 1; the correction edited all three files after row 1 ran, so row 1 no longer covered them | see §H.2 |
+| 4 | `node tools/check-report-secrets.mjs` (second run) | **Required by the correction.** The audit and report now discuss secret transport, envelope contents and a key configuration name at length — exactly the shape this gate exists to police — and both files changed after run 2 | see §H.2 |
 
 **Not run, and why:** no unit, integration, E2E, API, worker or frontend suite;
 no repository typecheck; no OpenAPI generation or `check:api-client`; no DB
@@ -276,12 +281,33 @@ schema, no contract and no generated artifact, so none of those validations has
 any change to react to. **No full regression was executed.** No successful
 command was rerun.
 
-### H.1 Note
+### H.1 Note (P00)
 
 Command 1 was re-run once against this report alone after its results were
 written back into §H — a new change to a changed file, not a repeat of a
 successful command. Command 2 scans the whole documentation set by design and
 was run once.
+
+### H.2 Note (P00-C1)
+
+`APP4-P00-C1` changed documentation only: the audit, this report and the APP4
+roadmap row. Rows 3 and 4 each ran **once**, after the correction's final edit,
+so each covers the committed content. Neither is a repeat of a successful run —
+every file both commands cover changed after runs 1 and 2. Results are recorded
+in §H.3.
+
+**Not run for the correction, and why:** no unit, integration, E2E, API, worker
+or frontend suite; no typecheck; no OpenAPI generation or generated-client
+check; no DB manifest or migration check; no global chain. The correction
+changed no source, schema, contract or generated artifact, so none of those has
+anything to react to. **No validation chain was restarted.**
+
+### H.3 Recorded results (P00-C1)
+
+| # | Result |
+|---|---|
+| 3 | **PASS** — `Checking formatting... All matched files use Prettier code style!` |
+| 4 | **PASS** — `Secret-disclosure check passed (447 document(s), 2688 tracked file(s)).` The count rose from 445/2686 because P00 committed two new documents. |
 
 ---
 
@@ -289,12 +315,24 @@ was run once.
 
 | File | Change |
 |---|---|
+**P00:**
+
+| File | Change |
+|---|---|
 | `docs/implementation/audits/APP4_PHASE_ENTRY_AUDIT.md` | **new** — authoritative APP4 reconciliation and 17-checkpoint execution manifest |
 | `docs/implementation/reports/APP4-P00-COMPLETION-REPORT.md` | **new** — this report |
-| `docs/implementation/10-MASTER-APPLICATION-ROADMAP.md` | APP4 status row split out of the `APP4–APP12` block and set to `AUDITED — PASS_WITH_ROUTED_DECISIONS` with evidence links |
+| `docs/implementation/10-MASTER-APPLICATION-ROADMAP.md` | APP4 status row split out of the `APP4–APP12` block, with evidence links |
+
+**P00-C1:**
+
+| File | Change |
+|---|---|
+| `docs/implementation/audits/APP4_PHASE_ENTRY_AUDIT.md` | Verdict `PASS`; new §C.7 (contradiction, both rulings, authority clearance); `APP4-G01`/`B01`/`W01`/`B03`/`B05`/`B06`/`S02` scope and verification corrected; §F.1 two dependency edges; §G items 1/4/5 restated and 9/10 added; §H invariants 3a–3d and 13a added; §J `PO_ACCEPTED / NON_BLOCKING` |
+| `docs/implementation/reports/APP4-P00-COMPLETION-REPORT.md` | Verdict `PASS`; §G ledger emptied; new §M; §H rows 3–4 and §H.2–H.3 |
+| `docs/implementation/10-MASTER-APPLICATION-ROADMAP.md` | APP4 status row → `AUDITED — PASS`, correction summarized |
 
 No runtime source, schema, migration, OpenAPI document, generated client,
-worker or UI file was touched.
+worker or UI file was touched by either P00 or P00-C1.
 
 ---
 
@@ -309,7 +347,10 @@ Planning checkpoints are committed in this repository (APP2/APP3 precedent:
 ```
 
 Parent: `aa577f3` (`docs(app3): record phase closure evidence`). Three files,
-all Markdown (§I). Working tree clean after the commit. **Nothing was pushed.**
+all Markdown (§I).
+
+`APP4-P00-C1` adds one further documentation commit on the same branch. All
+files Markdown; working tree clean after it. **Nothing was pushed at any point.**
 
 ---
 
@@ -332,6 +373,28 @@ all Markdown (§I). Working tree clean after the commit. **Nothing was pushed.**
 
 Stop conditions 1–5 were each evaluated; **none was met**.
 
+### K.1 `APP4-P00-C1` acceptance
+
+| Criterion | Status |
+|---|---|
+| Asynchronous OTP delivery possible without persisting plaintext code | Met — §M.2; envelope on the transient outbox row, hash only in the challenge |
+| Asynchronous secure-link delivery possible without persisting plaintext token | Met — §M.2; `APP4-B05` enqueues the raw token only inside the envelope |
+| Outbox remains the only worker queue | Met — no queue added; `claimBatch` still has no production caller |
+| Notification intent/attempt persistence remains secret-free | Met — §M.5.1; the envelope never enters `params` |
+| Retries deliver the same secret without regenerating business state | Met — invariant 13a; E01 item 9 |
+| Verification resend semantically distinct from transport retry | Met — `APP4-G01` item 11; `APP4-B03`; E01 item 10 |
+| Secure-link browser transport concrete and executable | Met — audit §F `APP4-S02`, five ordered steps |
+| Token never in server-visible path or query | Met — invariant 3c; `APP4-B06` gate asserts no token path/query parameter |
+| Fragment stripped before analytics or unrelated client activity | Met — invariant 3d |
+| API receives the token only in the POST body | Met — `APP4-B06` |
+| No new schema, migration, queue or provider | Met — §M.5.3 |
+| `APP4-PO-001` accepted and non-blocking | Met — §G |
+| Report verdict `PASS` | Met — §A |
+| Validation change-impact-only | Met — §H rows 3–4, §H.2 |
+
+Correction stop conditions 1–4 were each checked against the repository;
+**none was met** (§M.2, audit §C.7.3).
+
 ---
 
 ## L. Recommended next checkpoint
@@ -342,13 +405,151 @@ It is safe to start now because the reconciliation above proves nothing it
 depends on is missing: every table and repository it configures is delivered,
 the policy-configuration store exists and holds no APP4 keys, and the two
 rulings it records — the grant↔request dependency and the outbox-versus-intent
-queue — are derived from delivered code rather than proposed by it. It writes no
-runtime code, so it cannot destabilize the closed APP3 baseline, and it supplies
-every value that `APP4-P01` through `APP4-W01` would otherwise be forced to
-invent inside an implementation checkpoint.
+queue — are derived from delivered code rather than proposed by it. `APP4-P00-C1`
+strengthens rather than changes this: the correction adds five authority items to
+`APP4-G01` (§M.6) that must be settled before any envelope is written or any
+fragment bootstrap is coded. It writes no runtime code, so it cannot destabilize
+the closed APP3 baseline, and it supplies every value that `APP4-P01` through
+`APP4-W01` would otherwise be forced to invent inside an implementation
+checkpoint.
 
 `APP4-D01` may begin in parallel as soon as `APP4-G01` has locked the route
 slugs.
 
+---
+
+## M. `P00-C1` — Secret delivery transport reconciliation
+
+The single allowed correction for `APP4-P00`. It corrects the **authority
+model**, not the runtime: no crypto, worker, API, UI, schema, migration or
+provider code was written.
+
+### M.1 The contradiction found
+
+Product Owner review identified two coupled contradictions in the first draft.
+
+**Contradiction 1 — asynchronous notification had no secret carrier.** The
+manifest simultaneously required: `APP4-B03` mints a raw code; only `code_hash`
+is persisted; `notification_intents.params` is structurally secret-free;
+delivery happens **later, in another process**, by the outbox-driven worker; and
+`APP4-E01` proves the real code reaches the recording adapter. Those cannot all
+hold — a CSPRNG secret persisted only as a hash and excluded from the only
+record the worker reads is unreconstructable by that worker. The identical
+defect applied to the secure-link token in `APP4-B05`.
+
+**Contradiction 2 — a clickable secure link had no browser transport.**
+`APP4-B06` said the token is "never in a URL" while `APP4-S02` read it "from the
+link". A link the customer clicks must carry the token somehow; the absolute
+rule made the phase's critical journey undeliverable.
+
+### M.2 Adopted architecture — encrypted transient delivery envelope
+
+Audit §C.7.2. The raw secret travels to the worker inside a versioned,
+authenticated, encrypted envelope carried by the **existing** outbox event
+payload. The issuer mints the plaintext once, persists only the hash, creates a
+secret-free intent, and seals the plaintext into the envelope written to
+`outbox_events.payload` **in the same transaction as the business write**. The
+worker decrypts only after claiming the job and holds plaintext in memory only
+until `NotificationChannelPort` returns. A transport retry re-sends the same
+envelope; a business resend is a separate verification operation that mints a
+new challenge.
+
+Authority clearance — all four stop conditions checked, **none met** (audit
+§C.7.3):
+
+| Checked | Finding |
+|---|---|
+| Outbox payload contract forbids encrypted opaque material? | **No.** ADR-DB4-004 rule 4 scopes redaction-by-construction to columns 6 and 8 only — `payment_provider_events.redacted_payload` and `notification_intents.params` — **not** column 4, `outbox_events.payload`. Rule 5 (payloads read whole, never queried by field) suits ciphertext natively; rule 6's "small by construction" is satisfied. |
+| Worker runtime needs a schema change? | **No.** `outbox_events` already pairs `payload` with `payload_schema_version`, and the repository already versions payloads per event type (`ASSET_INSPECTION_PAYLOAD_VERSION`, `ASSET_NORMALIZATION_EVENT_SCHEMA_VERSION`, `PRODUCT_PUBLICATION_PAYLOAD_VERSION`). Rule 8 already assigns payload-format migration to versioned consumers. |
+| A locked ADR forbids client-side URL fragments? | **No.** `09-SECURITY` §9 does say "never placed in a URL, query, fragment, …", but that sentence is scoped explicitly to the **anonymous Design Session credential** (`APP3-G03` / IMP-D043), a cookie-borne credential with its own transport ruling. It governs no other secret. Recorded because it reads as absolute out of context. §2 requires only that secure links be unguessable and revocable/expiring — both preserved. |
+| An existing crypto/key authority conflicts? | **No.** The established convention is a runtime **HMAC pepper** for hashing (`DESIGN_SESSION_SECRET_PEPPER`: env var, empty in `.env.example`, minimum length, fail-closed at config load). It is a hashing pepper, not an AEAD key; reusing it would violate the ruling's separation requirement. Its *shape* is reused; the key is separate. |
+
+No AEAD primitive exists anywhere in the repository (no `createCipheriv`, no
+`aes-256-gcm`, no wrapper), so ruling item 6 applies: a **narrow APP4
+abstraction over `node:crypto` (AES-256-GCM)**. **No third-party crypto package.**
+
+The transaction pattern that makes the enqueue recoverable already exists and is
+cited rather than invented: `apps/api/src/modules/asset/application/upload-transactions.service.ts`
+performs the business write and `outbox.append` inside one
+`transactions.runInTransaction(...)`. **There is no dual-write.**
+
+### M.3 Adopted architecture — URL-fragment secure link
+
+Audit §C.7.4. The link takes the form
+`https://<storefront>/<secure-link-route>#t=<opaque-token>` (slug still an
+`APP4-G01` item). A fragment is never transmitted to the origin, so no
+Storefront server log and no Nginx access log can hold the token. `APP4-S02`
+reads it locally, strips it with `history.replaceState` **before** any analytics
+or third-party activity, holds it in one ephemeral variable, `POST`s it in the
+request **body**, and discards it. It is never written to Zustand, TanStack
+Query cache data, `localStorage`, `sessionStorage`, cookies, persisted state,
+analytics or logs.
+
+The inaccurate absolute rule is replaced by the precise four-part rule: never in
+a server-visible path or query; never in server/proxy access logs; allowed only
+in the client-side fragment of the outbound link; removed immediately at
+bootstrap. **No token-bearing query parameter or path segment is introduced.**
+
+### M.4 Affected manifest sections
+
+| Section | Change |
+|---|---|
+| Audit §A, header | Verdict `PASS`; `[C1]` marker convention |
+| Audit §C.6 | Notes the review-found contradiction, routed to §C.7 |
+| Audit §C.7 (new) | The contradiction, both rulings, and the four-part authority clearance |
+| Audit §F `APP4-G01` | Adds five authority items (7–11): envelope format/version, key configuration, secret-lifetime rules, fragment transport, retry-vs-resend; gate assertions extended |
+| Audit §F `APP4-B01` | Owns the envelope shape and the AEAD abstraction; `params` restated as secret-free; prerequisite `APP4-G01` added |
+| Audit §F `APP4-W01` | Decrypt-after-claim, same-envelope retry, no-plaintext-sink list, gate assertions extended |
+| Audit §F `APP4-B03` | Four-step atomic issue path in one transaction, citing the existing pattern; resend restated as a business operation |
+| Audit §F `APP4-B05` | Token returned once; raw token only inside the envelope; fragment message form; never in `params` |
+| Audit §F `APP4-B06` | "Never in a URL" replaced by the precise rule; body-only intake; gate asserts no token path/query parameter |
+| Audit §F `APP4-S02` | Explicit five-step fragment bootstrap and its browser-level assertions |
+| Audit §F.1 | **Two dependency edges added** — `APP4-B03` and `APP4-B05` now depend on `APP4-B01` for the envelope format. No checkpoint added, removed, merged or re-scoped; no endpoint count changed. |
+| Audit §G | E01 items 1, 4 and 5 restated; items 9 and 10 added (retry reuses the secret; resend is visibly different) |
+| Audit §H | Invariants **3a, 3b, 3c, 3d, 13a** added; the original fourteen unchanged — 19 total, all owned |
+| Audit §J | `APP4-PO-001` marked `PO_ACCEPTED / NON_BLOCKING`; ledger empty |
+| Report §A, §G, §M | Verdict, ledger, this section |
+| Roadmap APP4 row | Status `AUDITED — PASS`; correction summarized |
+
+### M.5 Required confirmations
+
+1. **The notification intent remains secret-free.** `notification_intents.params`
+   carries redacted typed references only (`ChallengeId`, `GrantId`). The
+   encrypted envelope is written to `outbox_events.payload` and **never** to
+   `params`. ADR-DB2-003 rule 2 and ADR-DB4-004 rule 4 are honoured, not
+   loosened — the correction relies on the fact that neither rule governs
+   column 4.
+2. **Plaintext is never persisted or logged.** It exists only in issuer memory,
+   sealed inside envelope ciphertext, in worker memory after a successful claim,
+   and in the one outbound message. It is barred from `notification_intents`,
+   `notification_delivery_attempts`, `background_job_attempts`, audit rows,
+   application logs, error messages and completion reports — with named owners
+   and proofs at invariants 3a, 3b, 3c and 3d.
+3. **No schema or migration was added.** `NO_APP4_MIGRATION` stands. No new
+   column, no escrow table, no queue. The outbox remains the only worker queue,
+   and `NotificationIntentRepository.claimBatch` still gets no production caller.
+4. **`APP4-PO-001` is Product-Owner accepted and non-blocking** (§G). The
+   TRUE_PO_DECISION ledger is empty and the report verdict is `PASS`.
+5. **No runtime code was written.** No crypto, worker, API route, UI, schema,
+   migration, OpenAPI document, generated client or provider adapter changed.
+   `git show --stat` for both correction commits lists Markdown only.
+
+### M.6 Next checkpoint after correction
+
+**`APP4-G01`** — unchanged by the correction, and now carrying five additional
+authority items (envelope format and version, envelope-key configuration,
+secret-lifetime rules, fragment transport, retry-versus-resend). It remains the
+right first checkpoint precisely because `P00-C1` added obligations that must be
+settled *before* `APP4-B01` writes an envelope format or `APP4-S02` writes a
+bootstrap.
+
+### M.7 Validation run for the correction
+
+See §H rows 3 and 4. Both are documentation-scope commands; no test, typecheck,
+contract, generated-client or database validation was run, because the
+correction changed no file any of them covers.
+
+---
+
 **APP4-C01 and all runtime implementation remain not started, pending Product
-Owner review of this report.**
+Owner review of this corrected report.**

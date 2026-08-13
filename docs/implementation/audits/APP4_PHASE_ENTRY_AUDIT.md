@@ -5,7 +5,11 @@
 - Entry HEAD: `aa577f3e6e7da31a7acb42de12219b84f86b7708` (branch `production`, clean)
 - Entry state: APP0 `COMPLETE`, APP1 `COMPLETE — PASS_WITH_FOLLOW_UPS`,
   APP2 `COMPLETE`, APP3 `COMPLETE — PASS_WITH_FOLLOW_UPS` (closed at `APP3-X01`)
-- Verdict: **`PASS_WITH_ROUTED_DECISIONS`**
+- Verdict: **`PASS`** (corrected by `APP4-P00-C1`; the first draft was
+  `PASS_WITH_ROUTED_DECISIONS`)
+- Corrections applied: **`APP4-P00-C1`** — secret-delivery and secure-link
+  transport architecture (§C.7). Sections carrying corrected text are marked
+  **[C1]**.
 - Scope of this checkpoint: planning and reconciliation only. No runtime code,
   no schema, no OpenAPI, no generated client, no worker, no UI.
 
@@ -43,8 +47,16 @@ checkpoints**, and the re-slice is driven by five findings, not by preference:
    **`NEW`**, delivered as one package (`APP4-D01`) before any APP4 frontend
    checkpoint.
 
-One decision is routed to the Product Owner (notification channel/provider,
-`IMP-O006`) with a recommended default that blocks **no** APP4 checkpoint.
+**[C1]** A sixth finding was raised in Product Owner review of the first draft
+and is resolved in §C.7: the manifest required a raw secret to be delivered
+asynchronously by a worker while forbidding every carrier that could reach it,
+and it forbade the very URL form a clickable secure link needs. Both are
+corrected by the Product Owner's **encrypted transient delivery envelope** and
+**URL-fragment link carrier** rulings, neither of which adds a schema change, a
+queue, an escrow table or a third-party dependency.
+
+The one previously routed decision — notification channel/provider, `IMP-O006` —
+is now **`PO_ACCEPTED / NON_BLOCKING`** (§J). The decision ledger is empty.
 
 ---
 
@@ -180,13 +192,130 @@ config-reversible defaults (§F).
 
 ### C.6 Contradictions
 
-**None found.** One apparent contradiction was checked and resolved by
-precedence: the phase brief's candidate `APP4-C01` ("customer/contact
-create/read/update operations") versus ADR-DB2-001 Option A. The ADR is higher
-in the source-of-truth order and is a locked product/database decision; the
-phase brief's candidate list is explicitly "planning slices, not an execution
-batch" and explicitly requires re-slicing. Resolved by deleting the candidate,
-not by reopening the ADR (§E).
+One apparent contradiction was checked and resolved by precedence: the phase
+brief's candidate `APP4-C01` ("customer/contact create/read/update operations")
+versus ADR-DB2-001 Option A. The ADR is higher in the source-of-truth order and
+is a locked product/database decision; the phase brief's candidate list is
+explicitly "planning slices, not an execution batch" and explicitly requires
+re-slicing. Resolved by deleting the candidate, not by reopening the ADR (§E).
+
+A second, internal contradiction was found in Product Owner review of the first
+P00 draft and is resolved in §C.7 by `APP4-P00-C1`.
+
+### C.7 Secret carrier and secure-link transport — `APP4-P00-C1`
+
+#### C.7.1 The contradiction
+
+The first draft of this manifest required all of the following at once: a raw
+code minted in `APP4-B03`; only `code_hash` persisted; notification intent
+`params` structurally secret-free; delivery performed **later, in another
+process**, by the outbox-driven worker; and `APP4-E01` proving the real code
+reaches the recording adapter. Those cannot all hold. A CSPRNG secret that is
+persisted only as a hash and excluded from the only record the worker reads is
+**unreconstructable by that worker**, so asynchronous delivery had no carrier.
+The identical defect applied to the secure-link token in `APP4-B05`.
+
+Coupled to it: `APP4-B06` said the token is "never in a URL" while `APP4-S02`
+read it "from the link". A link the customer clicks must carry the token
+somehow; the absolute rule made the journey undeliverable.
+
+#### C.7.2 Ruling A — encrypted transient delivery envelope (Product Owner)
+
+The raw secret travels to the worker inside a **versioned, authenticated,
+encrypted delivery envelope carried by the existing outbox event payload**.
+
+1. The issuing application service mints the plaintext exactly once.
+2. Only the existing hash lands in the authoritative table
+   (`contact_verification_challenges.code_hash`,
+   `secure_access_grants.token_hash`).
+3. The notification intent is created **without any plaintext secret material**;
+   `notification_intents.params` remains redacted typed references only.
+4. The plaintext is serialized **only** into the encrypted envelope, written to
+   `outbox_events.payload` in the **same transaction** as the business write.
+5. The persisted payload carries ciphertext, nonce/IV, authentication tag and
+   non-secret metadata. It never carries the plaintext.
+6. Envelope contents are the minimum needed to deliver: secret kind and envelope
+   version, notification-intent reference, the channel/recipient reference the
+   handler needs, the one raw code or token, and issued-at/expiry metadata only
+   where it is required to reject stale delivery work.
+7. The worker decrypts **only after** it has successfully claimed the outbox
+   job, and holds the plaintext in memory only long enough to render and hand to
+   `NotificationChannelPort`.
+8. The decrypted secret is never written to `notification_intents`,
+   `notification_delivery_attempts`, `background_job_attempts`, audit rows,
+   application logs, error messages or completion reports.
+9. **Transport retry reuses the same envelope.** A retry never mints a different
+   secret, because the hash already persisted is the one the customer must be
+   able to answer.
+10. **A business resend is a different operation.** Resending a verification
+    challenge (`APP4-B03`) issues a *new* challenge and code under the `APP4-G01`
+    cooldown and is not a transport retry. `APP4-G01` owns the distinction.
+11. Terminal delivery failure records classification and metadata only, leaving
+    no plaintext residue.
+12. The development recording adapter may expose the decrypted value **inside
+    dev/test process memory only**, as the controlled sink focused integration
+    and E2E tests read. It writes no production table and no normal log.
+
+#### C.7.3 Ruling A — authority clearance
+
+Each stop condition the correction named was checked against the repository and
+**none is met**:
+
+| Checked | Finding |
+|---|---|
+| Does the outbox payload contract forbid opaque encrypted material? | **No.** ADR-DB4-004 rule 4 scopes redaction-by-construction to columns **6** (`payment_provider_events.redacted_payload`) and **8** (`notification_intents.params`) — *not* to column 4, `outbox_events.payload`. Rule 5 requires JSONB payloads be read whole and never queried by field, which ciphertext satisfies natively; rule 6's "small by construction" is satisfied by a 32-byte secret plus nonce and tag. |
+| Can the worker runtime carry a versioned envelope without a schema change? | **Yes.** `outbox_events` already pairs `payload` with `payload_schema_version` (ADR-DB4-004 rule 1), and the repository already versions payloads per event type (`ASSET_INSPECTION_PAYLOAD_VERSION`, `ASSET_NORMALIZATION_EVENT_SCHEMA_VERSION`, `PRODUCT_PUBLICATION_PAYLOAD_VERSION`). Rule 8 already assigns payload-format migration to versioned consumers in the owning module. **No schema change, no new column, no escrow table.** |
+| Does a locked ADR forbid a client-side URL fragment for secure-link bootstrap? | **No.** `docs/09-SECURITY-AND-ABUSE-PREVENTION.md` §9 does contain "never placed in a URL, query, fragment, …", but that sentence is scoped explicitly to the **anonymous Design Session credential** (`APP3-G03` / IMP-D043), a cookie-borne credential with its own transport ruling. It governs no other secret. Recorded here because the sentence reads as absolute out of context and a future reader could misapply it. §2 of the same document states only that secure links must be unguessable and revocable/expiring — both preserved. |
+| Does an existing crypto/key-management authority conflict? | **No.** The established convention is a runtime **HMAC pepper** for hashing (`DESIGN_SESSION_SECRET_PEPPER`: env var, empty in `.env.example`, minimum length enforced, fail-closed at config load). It is a hashing pepper, not an AEAD key, so reusing it would violate the ruling's separation requirement. The convention's *shape* is reused; the key is separate. |
+
+No authenticated-encryption primitive exists anywhere in the repository
+(no `createCipheriv`, no `aes-256-gcm`, no AEAD wrapper). Ruling A item 6
+therefore applies: `APP4-W01`'s prerequisite is a **narrow APP4 infrastructure
+abstraction over the Node standard library** (`node:crypto`, AES-256-GCM). **No
+third-party crypto package is added.**
+
+The transaction pattern that makes step 4 recoverable already exists and is not
+invented here: `apps/api/src/modules/asset/application/upload-transactions.service.ts`
+performs the business write and `outbox.append` inside one
+`transactions.runInTransaction(...)`. There is **no dual-write**: either the
+challenge/grant row and its delivery envelope both commit, or neither does.
+Because the outbox row is transient and cleaned after dispatch, the ciphertext
+does not accumulate as an archive.
+
+#### C.7.4 Ruling B — secure-link token travels in the URL fragment (Product Owner)
+
+Canonical conceptual form — the route slug remains an `APP4-G01` item:
+
+```text
+https://<storefront>/<secure-link-route>#t=<opaque-token>
+```
+
+The absolute rule "the token is never in a URL" is **replaced** by the precise
+rule:
+
+- **never** in a server-visible URL path or query;
+- **never** in server, gateway or proxy access logs;
+- **allowed** only in the client-side fragment of the outbound secure link,
+  which is the transport;
+- **removed** immediately during Storefront bootstrap.
+
+Browser semantics, owned by `APP4-S02`:
+
+1. A fragment is not transmitted to the origin, so the token never reaches the
+   Storefront server, the Nginx gateway or any access log.
+2. The bootstrap reads the fragment locally.
+3. It strips the fragment via `history.replaceState` **before** any analytics,
+   beacon, third-party script or unrelated client activity runs on that route.
+4. The raw token lives in one ephemeral local variable, for the time it takes to
+   call `POST /public/secure-links/resolve`.
+5. The token reaches the API only in the request **body**.
+6. It is never written to Zustand, TanStack Query cache data, `localStorage`,
+   `sessionStorage`, cookies, persisted React/Next state, analytics or logs.
+7. The variable is discarded once resolution succeeds or fails.
+8. The API never echoes the raw token, and the non-enumerating failure contract
+   is unchanged.
+
+No token-bearing query parameter or path segment is introduced.
 
 ---
 
@@ -272,15 +401,45 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
   5. Storefront route slugs for verification and secure-link landing, and the
      Admin support route, recorded in the decision register.
   6. The §C.4 two-queue ruling and the §C.2 grant↔request ruling.
-- **Out of scope:** any runtime code, any endpoint, any provider choice.
+  7. **[C1] Encrypted delivery-envelope format and version** (§C.7.2): the
+     envelope's field set, its version discriminator carried in
+     `outbox_events.payload_schema_version`, the AEAD construction
+     (`node:crypto` AES-256-GCM — no third-party crypto package), and the rule
+     that the envelope is written to `outbox_events.payload` only and **never**
+     to `notification_intents.params`.
+  8. **[C1] Envelope encryption-key configuration authority.** A dedicated
+     configuration key — recommended name `NOTIFICATION_DELIVERY_ENVELOPE_KEY` —
+     following the established pepper convention in shape only: declared empty
+     in `.env.example`, required length and encoding stated, **fail-closed** at
+     config load in any runtime that issues or delivers encrypted envelopes, and
+     **structurally separate from every hashing/HMAC pepper**
+     (`DESIGN_SESSION_SECRET_PEPPER` is a hashing pepper and must not be reused).
+     **No production key value is invented or committed** (CLAUDE.md §8a).
+  9. **[C1] Secret-lifetime and redaction rules:** where plaintext may exist
+     (issuer memory, envelope ciphertext, worker memory after claim, one
+     outbound message), and the exhaustive list of sinks it may never reach
+     (§C.7.2 item 8).
+  10. **[C1] Secure-link fragment transport and bootstrap rules** (§C.7.4),
+      including the replacement of the inaccurate "never in a URL" rule with the
+      precise four-part rule, and the ordering requirement that fragment
+      stripping precede any analytics or third-party activity.
+  11. **[C1] Transport retry versus business resend.** Retry re-sends the same
+      envelope and mints nothing; resend issues a new challenge and code under
+      the cooldown. Both terms are defined here so `APP4-B03`, `APP4-W01` and
+      `APP4-B08` cannot drift.
+- **Out of scope:** any runtime code, any endpoint, any provider choice, any key
+  value.
 - **Code areas:** `docs/implementation/*`, `docs/adr/backend/ADR-APP4-001-*`,
   `docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md`,
-  `tools/check-app4-g01.mjs` (+ its `.test.mjs`), policy seed data.
+  `tools/check-app4-g01.mjs` (+ its `.test.mjs`), policy seed data,
+  `.env.example` (empty key declaration only).
 - **Endpoints:** 0. **Prerequisites:** none. **Design:** `NONE`.
 - **Verification:** `node tools/check-app4-g01.mjs` — asserts every named key
   exists with a value, that the anti-enumeration contract names exactly one
-  status code, that `claimBatch` has no non-test caller, and that no APP4 doc
-  contains a literal code/token value; plus `pnpm format:check` on changed files.
+  status code, that `claimBatch` has no non-test caller, that the envelope key
+  is declared empty in `.env.example` and is not the session pepper, and that no
+  APP4 doc contains a literal code, token or key value; plus `pnpm format:check`
+  on changed files.
 - **Acceptance:** every value later checkpoints need is readable from
   configuration or a decision-register row; the gate fails if one is missing.
 - **Stop if:** a required value is a genuine business decision with no
@@ -338,18 +497,28 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
   derivation (source event + recipient + template) collapsing duplicates onto
   one intent via `createIdempotent`; redacted typed parameter construction
   (`ChallengeId`/`GrantId` references only); `recipient_masked` from `APP4-P01`;
-  correlation-ID propagation.
-- **Out of scope:** channel adapters, delivery, retry, rendering, Admin surface.
+  correlation-ID propagation. **[C1]** Owns the producer-side handoff shape: the
+  encrypted delivery envelope (`APP4-G01` §7) written into
+  `outbox_events.payload` beside the intent reference, and the AEAD abstraction
+  over `node:crypto` that seals it. **`notification_intents.params` remains
+  structurally secret-free** — the envelope never enters that column.
+- **Out of scope:** channel adapters, delivery, retry, decryption, rendering,
+  Admin surface.
 - **Code areas:** `apps/api/src/modules/notification/application/`,
+  `apps/api/src/modules/notification/infrastructure/crypto/`,
   `notification.module.ts`, `bootstrap/app.module.ts`.
-- **Endpoints:** 0. **Prerequisites:** `APP4-P01`. **Design:** `NONE`.
+- **Endpoints:** 0. **Prerequisites:** `APP4-P01`, `APP4-G01`. **Design:** `NONE`.
 - **Verification:** module-scoped integration tests — duplicate outbox event
   yields one intent (`replay` outcome); `params` structurally cannot carry a
-  code or token; masked recipient never equals the raw value; contract gate
-  `node tools/check-app4-b01.mjs`.
+  code or token; masked recipient never equals the raw value; **[C1]** a sealed
+  envelope round-trips, a tampered ciphertext or tag fails authentication rather
+  than decrypting, and the persisted payload contains no plaintext substring of
+  the secret; contract gate `node tools/check-app4-b01.mjs`.
 - **Acceptance:** an intent exists for a business event with no secret in any
-  persisted column.
-- **Stop if:** a template reference would require a rendered body — it must not.
+  persisted column, and the only place delivery material exists is the sealed
+  envelope on the transient outbox row.
+- **Stop if:** a template reference would require a rendered body — it must not;
+  or the envelope would have to be written to `params` — it must not.
 
 ---
 
@@ -359,22 +528,34 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
 - **Purpose:** One cohesive worker responsibility — deliver a pending intent.
 - **Scope:** Register a `notification.delivery` job kind in the existing
   `JobHandlerRegistry`; claim through `WorkerJobQueueRepository` (§C.4);
-  a provider-neutral `NotificationChannelPort`; a **recording dev adapter** that
-  performs no external call; append a `notification_delivery_attempts` row per
-  try with `outcome` and a bounded `error_class`; bounded retry using the
-  existing `retry-schedule`; `FAILED_TERMINAL` → intent `FAILED` and dead-letter
-  visibility; duplicate-safe (a replayed job never double-sends a delivered
-  intent).
-- **Out of scope:** any real provider or SDK; templates as content; HTTP.
+  **[C1] decrypt the delivery envelope only after the claim succeeds**, holding
+  plaintext in worker memory only until the send returns; a provider-neutral
+  `NotificationChannelPort`; a **recording dev adapter** that performs no
+  external call and exposes the decrypted value only in dev/test process memory;
+  append a `notification_delivery_attempts` row per try with `outcome` and a
+  bounded `error_class`; bounded retry using the existing `retry-schedule`;
+  **[C1] a transport retry re-reads and re-decrypts the same envelope and mints
+  no new secret** (§C.7.2 items 9–10); `FAILED_TERMINAL` → intent `FAILED` and
+  dead-letter visibility with safe metadata only; duplicate-safe (a replayed job
+  never double-sends a delivered intent).
+- **Out of scope:** any real provider or SDK; templates as content; HTTP;
+  minting or re-minting any secret; issuing a replacement challenge or grant.
 - **Code areas:** `apps/worker/src/jobs/notification-delivery/`.
-- **Endpoints:** 0. **Prerequisites:** `APP4-B01`. **Design:** `NONE`.
+- **Endpoints:** 0. **Prerequisites:** `APP4-B01`, `APP4-G01`. **Design:** `NONE`.
 - **Verification:** worker-scoped integration tests — retryable failure
   re-leases and increments attempts, terminal failure stops and is observable,
-  a replayed claim after `SATISFIED` sends nothing; `node tools/check-app4-w01.mjs`
-  asserting no provider SDK import and no plaintext code/token in job logs.
-- **Acceptance:** delivery outcome is readable from data, not from logs.
+  a replayed claim after `SATISFIED` sends nothing; **[C1]** two consecutive
+  transport attempts deliver the *identical* secret and leave the challenge/grant
+  row untouched; a decrypt failure is a bounded `error_class`, never an error
+  message carrying ciphertext or key material; `node tools/check-app4-w01.mjs`
+  asserting no provider SDK import, no third-party crypto dependency, and that
+  the decrypted value appears in no log line, attempt row, `background_job_attempts`
+  row or audit record.
+- **Acceptance:** delivery outcome is readable from data, not from logs, and the
+  plaintext secret exists nowhere outside worker memory and the outbound message.
 - **Stop if:** a provider decision is demanded — it is not; the port plus the
-  recording adapter satisfy the phase exit gate (§I).
+  recording adapter satisfy the phase exit gate (§I). Stop also if delivery would
+  require regenerating the secret — that is a business resend owned by `APP4-B03`.
 
 ---
 
@@ -406,20 +587,42 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
 - **Context / owner:** Customer module — public surface.
 - **Purpose:** Issue an opaque code to a contact target, safely and rate-limited.
 - **Scope:** `POST /public/verification/challenges` and
-  `POST /public/verification/challenges/{challengeId}/resend`; opaque code
-  issuance (`APP4-P01`); `code_hash` only; CST-007 single-open-challenge
-  handling (mark stale `EXPIRED`, insert, treat 23505 as the concurrent-issuer
-  loss, CC-17); issuance rate limit and resend cooldown from `APP4-G01`;
-  optional `session_id` binding to an APP3 design session; emit the outbox event
-  `APP4-B01` consumes; responses carry a challenge id and expiry, never a code.
-- **Out of scope:** code submission, customer creation, grants.
+  `POST /public/verification/challenges/{challengeId}/resend`; CST-007
+  single-open-challenge handling (mark stale `EXPIRED`, insert, treat 23505 as
+  the concurrent-issuer loss, CC-17); issuance rate limit and resend cooldown
+  from `APP4-G01`; optional `session_id` binding to an APP3 design session;
+  responses carry a challenge id and expiry, never a code.
+
+  **[C1] The atomic issue path.** All four steps run inside one
+  `transactions.runInTransaction(...)`, following the existing outbox pattern in
+  `apps/api/src/modules/asset/application/upload-transactions.service.ts`
+  (business write + `outbox.append` in a single transaction). **There is no
+  dual-write and none is invented:**
+  1. mint the raw code (`APP4-P01`);
+  2. persist **only** `code_hash` on the challenge;
+  3. create the secret-free notification intent (`APP4-B01`);
+  4. append the outbox event whose payload carries the **encrypted delivery
+     envelope** holding that one raw code.
+
+  Either all four commit or none does, so a challenge can never exist with no
+  way to deliver its code, and a delivery envelope can never exist for a
+  challenge that was rolled back. The raw code leaves the request only through
+  the sealed envelope.
+
+  **[C1] Resend is a business operation, not a transport retry.** The resend
+  endpoint issues a *new* challenge and a *new* code under the `APP4-G01`
+  cooldown. It never re-sends an existing envelope; `APP4-W01` owns that.
+- **Out of scope:** code submission, customer creation, grants, transport retry.
 - **Endpoints:** **2**. **Prerequisites:** `APP4-B01`, `APP4-P01`, `APP4-G01`.
   **Design:** `NONE` (contract only; the screen is `APP4-S01`).
 - **Verification:** module integration tests + `node tools/check-app4-b03-contract.mjs`;
-  assertions that no response, log line or audit record contains the code.
+  assertions that no response, log line or audit record contains the code;
+  **[C1]** a forced failure after step 2 leaves no challenge row, and the
+  persisted outbox payload contains no plaintext substring of the code.
 - **Acceptance:** a code reaches the recording adapter and nowhere else.
 - **Stop if:** the response would have to distinguish "target unknown" —
-  it must not.
+  it must not; or the four steps cannot share one transaction with existing
+  infrastructure — they can, per the cited pattern.
 
 ---
 
@@ -453,23 +656,41 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
 - **Context / owner:** Customer module — internal application core.
 - **Purpose:** The grant lifecycle, with no public surface (§C.2).
 - **Scope:** A `SecureGrantIssuer` port + service: mint an opaque token
-  (`APP4-P01`), persist the hash only, set `expires_at` from
+  (`APP4-P01`), **persist the hash only**, set `expires_at` from
   `grant.standard`; reissue rotates the token and supersedes the prior grant
   (`REVOKED`, reason `superseded`) inside one transaction so CST-009 holds;
   revoke with a mandatory reason; a `StepUpWindow` service over
   `hasRecentCompleted`; audit issue / reissue / revoke.
+
+  **[C1] Token handling.** The raw token is returned **once** to the authorized
+  in-process caller (APP5 at submission). When the caller also requests
+  notification, the raw token is placed **only** inside the encrypted delivery
+  envelope, appended to the outbox in the same transaction as the grant write —
+  the same pattern `APP4-B03` uses. The raw token is **never** written to
+  `notification_intents.params` and never to any other persisted column.
+  `APP4-G01` §7 owns the envelope's `secret kind` discriminator that tells the
+  worker it is rendering a secure link rather than a code.
+
+  **[C1] Message form.** The secure-link message renders the **fragment** form
+  `https://<storefront>/<secure-link-route>#t=<token>` (§C.7.4). The rendered
+  URL exists only in the outbound message; no server-visible path or query ever
+  carries the token.
 - **Out of scope:** any HTTP endpoint; action-scope enumeration (§C.3);
-  Custom Request creation.
-- **Endpoints:** 0. **Prerequisites:** `APP4-B04`, `APP4-P01`.
-  **Design:** `NONE`.
+  Custom Request creation; delivery itself.
+- **Endpoints:** 0. **Prerequisites:** `APP4-B04`, `APP4-P01`, `APP4-B01`,
+  `APP4-G01`. **Design:** `NONE`.
 - **Verification:** module integration tests using the DB7 `order-fixture` to
   seed a `custom_requests` row — concurrent reissue leaves exactly one `ACTIVE`
   grant; a revoked grant carries a reason; the raw token is returned once and
-  never persisted; `node tools/check-app4-b05.mjs` asserting no token column
-  write outside the hashing path.
-- **Acceptance:** APP5 can issue a grant by calling one port method.
+  never persisted; **[C1]** the intent row and its `params` contain no plaintext
+  substring of the token, while the sealed outbox envelope round-trips to it;
+  `node tools/check-app4-b05.mjs` asserting no token column write outside the
+  hashing path and no token write into `params`.
+- **Acceptance:** APP5 can issue a grant by calling one port method, and a
+  deliverable secure link exists without any plaintext token at rest.
 - **Stop if:** a caller wants a per-action scope column — it is additive and
-  out of phase.
+  out of phase; or a caller wants the raw token persisted for later resend —
+  reissue rotates the token instead (ADR-DB3-004 r6).
 
 ---
 
@@ -477,20 +698,25 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
 
 - **Context / owner:** Customer module — the phase's highest-risk public surface.
 - **Purpose:** Resolve a valid link, and be silent about every other case.
-- **Scope:** One endpoint,
-  `POST /public/secure-links/resolve` (token in the body, never in a URL, never
-  logged); `resolveActive` under the caller's request; a single identical
-  failure response for absent / expired / revoked / superseded / wrong-target /
-  wrong-purpose; no timing or body difference between them; constant response
-  shape; rate limiting; audit of use.
+- **Scope:** One endpoint, `POST /public/secure-links/resolve`. **[C1] The token
+  is accepted in the request body only.** The absolute rule "never in a URL" is
+  replaced by the precise `APP4-G01` rule (§C.7.4): never in a server-visible
+  path or query, never in a server/gateway/proxy access log, allowed only in the
+  client-side fragment of the outbound link, stripped at bootstrap. The API
+  never echoes the raw token. `resolveActive` under the caller's request; a
+  single identical failure response for absent / expired / revoked / superseded /
+  wrong-target / wrong-purpose; no timing or body difference between them;
+  constant response shape; rate limiting; audit of use.
 - **Out of scope:** consuming the grant for a business action; issuing;
-  revoking; any APP5/APP6/APP7 action.
+  revoking; any APP5/APP6/APP7 action; any `GET` form that would put the token
+  in a path or query.
 - **Endpoints:** **1**. **Prerequisites:** `APP4-B05`, `APP4-G01`.
   **Design:** `NONE` (the screen is `APP4-S02`).
 - **Verification:** module integration tests covering all six rejection causes
   producing byte-identical responses; `node tools/check-app4-b06-contract.mjs`
-  asserting exactly one documented failure status; a log-scan assertion that the
-  token never appears.
+  asserting exactly one documented failure status **and** that no APP4 route
+  declares a token path parameter or query parameter; a log-scan assertion that
+  the token appears in no application or gateway access log.
 - **Acceptance:** an attacker probing a leaked link learns nothing.
 - **Stop if:** a product requirement demands a distinguishable "expired"
   message — route it, do not weaken the contract unilaterally.
@@ -565,18 +791,39 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
 
 - **Context / owner:** Storefront.
 - **Purpose:** The customer half of `APP4-B06`.
-- **Scope:** The secure-link route locked at `APP4-G01`; token read from the
-  link and exchanged server-side; the valid state renders only what the grant
-  authorizes at `REQUEST_ACCESS` granularity; the single indistinguishable
-  rejection state; the token never enters client state, history or analytics.
+- **Scope:** The secure-link route locked at `APP4-G01`, and **[C1] the fragment
+  bootstrap** (§C.7.4), which is the checkpoint's defining behaviour and runs in
+  this exact order:
+  1. read the token from the `#t=` fragment locally — it was never sent to the
+     origin, so no Storefront server log or Nginx access log can hold it;
+  2. **immediately** strip the fragment with `history.replaceState`, before any
+     analytics, beacon, third-party script or unrelated client work runs on this
+     route;
+  3. hold the raw token in **one ephemeral local variable** — never Zustand,
+     never TanStack Query cache data, never `localStorage`/`sessionStorage`,
+     never a cookie, never persisted React/Next state, never an analytics event;
+  4. `POST /public/secure-links/resolve` with the token in the **body**;
+  5. discard the variable once resolution succeeds or fails.
+
+  The valid state then renders only what the grant authorizes at
+  `REQUEST_ACCESS` granularity; the single indistinguishable rejection state is
+  unchanged.
 - **Out of scope:** request/quotation/payment content (APP5–APP7); step-up
-  action wiring.
-- **Prerequisites:** `APP4-D01`, `APP4-B06`. **Design:** depends on `APP4-D01`.
+  action wiring; any token-bearing query parameter or path segment.
+- **Prerequisites:** `APP4-D01`, `APP4-B06`, `APP4-G01`.
+  **Design:** depends on `APP4-D01`.
 - **Verification:** component tests for both states + a scoped runtime check;
-  an assertion that the rejection view is identical for every cause.
-- **Acceptance:** the rejection view cannot be used to distinguish causes.
+  an assertion that the rejection view is identical for every cause; **[C1]** a
+  browser-level assertion that after bootstrap `location.hash` is empty and the
+  history entry carries no token, that no storage key or query-cache entry
+  contains it, and that no network request other than the resolve `POST` fires
+  before stripping.
+- **Acceptance:** the rejection view cannot be used to distinguish causes, and a
+  customer who clicks the link ends on a clean URL with the token gone from the
+  address bar and from history.
 - **Stop if:** the valid state has nothing to render because APP5 owns the
-  content — render the authorized shell and record the seam.
+  content — render the authorized shell and record the seam; or a design or
+  analytics requirement would run a script before stripping — it must not.
 
 ---
 
@@ -623,19 +870,25 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
 ### F.1 Dependency graph
 
 ```text
-APP4-G01 ─┬─> APP4-D01 ─────────────────┬─> APP4-S01
-          │                             ├─> APP4-S02
-          │                             └─> APP4-A01
-          └─> APP4-P01 ─┬─> APP4-B01 ─> APP4-W01 ─> APP4-B08 ─┐
-                        │                                     │
-                        ├─> APP4-B02 ─┐                       │
-                        │             │                       │
-                        └─> APP4-B03 ─┴─> APP4-B04 ─> APP4-B05 ┼─> APP4-B07
-                                                        │      │
-                                                        └─> APP4-B06 ─> APP4-S02
-                                                                       │
-  APP4-S01, APP4-S02, APP4-A01, APP4-B06, APP4-B08 ────────────────────┴─> APP4-E01 ─> APP4-X01
+APP4-G01 ─┬─> APP4-D01 ──────────────┬─> APP4-S01
+          │                          ├─> APP4-S02
+          │                          └─> APP4-A01
+          └─> APP4-P01 ─┬─> APP4-B01 ─┬─> APP4-W01 ─> APP4-B08
+                        │             │
+                        │             ├─> APP4-B03 ─> APP4-B04 ─> APP4-B05 ─┬─> APP4-B06 ─> APP4-S02
+                        │             │                     ▲               │
+                        │             └─────────────────────┼───────────────┘
+                        └─> APP4-B02 ──────────────────────┘        └─> APP4-B07
+
+  APP4-S01, APP4-S02, APP4-A01, APP4-B07, APP4-B08 ──> APP4-E01 ──> APP4-X01
 ```
+
+**[C1] Two dependency edges were added** — the only boundary change the
+correction required. `APP4-B03` and `APP4-B05` now both depend on `APP4-B01`,
+because each enqueues an encrypted delivery envelope and `APP4-B01` owns the
+envelope format and the AEAD abstraction that seals it. `APP4-G01` was already
+an ancestor of everything. **No checkpoint was added, removed, merged or
+re-scoped, and no endpoint count changed.**
 
 ### F.2 Endpoint budget
 
@@ -657,22 +910,39 @@ Every backend checkpoint is within 1–3 endpoints; none approaches the cap.
 
 **Must prove, in one run, across API + worker + both frontends:**
 
-1. A challenge is issued to a contact target; the code exists only in the
-   recording channel adapter.
+1. A challenge is issued to a contact target. **[C1]** The code plaintext is
+   absent from `contact_verification_challenges`, from every log line and from
+   the E01 report, yet the worker decrypts the delivery envelope after claiming
+   the outbox job and the real code arrives at the recording adapter.
 2. A notification intent is created exactly once for that challenge, with no
    code in `params`, and is delivered by the worker with an attempt row.
 3. Submitting the correct code verifies the challenge and creates exactly one
    customer with one verified, primary contact.
 4. A secure grant is issued for that customer against a **fixture-seeded**
-   `custom_requests` row, and its notification intent is delivered.
-5. The valid secure link resolves in the browser and renders the authorized
-   shell.
+   `custom_requests` row. **[C1]** The token plaintext is absent from
+   `secure_access_grants`, from `notification_intents.params`, from every log
+   line and from the E01 report, yet the worker decrypts it and the recording
+   adapter receives a message carrying the **fragment** form
+   `…/<secure-link-route>#t=<token>`.
+5. **[C1]** A browser starts from that fragment-bearing link, strips the
+   fragment before any other client activity, `POST`s the token in the body, and
+   ends on a clean URL with no token in the address bar, in history, or in any
+   browser storage. The valid state renders the authorized shell.
 6. Each of **invalid, expired, replayed-after-revocation, revoked, superseded
    and wrong-purpose** usage returns the identical rejection, and the Storefront
    renders the identical view.
 7. An operator sees the verification status, revokes the grant, and observes
    the previously valid link stop resolving.
 8. A forced terminal delivery failure is visible in Admin and retryable.
+9. **[C1] A transport retry re-sends the same secret.** A forced retryable
+   failure followed by a successful attempt delivers the *identical* code or
+   token, and the `contact_verification_challenges` / `secure_access_grants` row
+   is byte-identical before and after — no new challenge, no new grant, no
+   rotated token.
+10. **[C1] A business resend is visibly different.** Calling the `APP4-B03`
+    resend endpoint produces a *new* challenge with a *new* code and a new
+    envelope, under the `APP4-G01` cooldown — proving retry and resend are not
+    the same operation.
 
 **Must not include:** request submission as a business action, design review,
 quotation acceptance, payment initiation, or any APP5/APP6/APP7 state
@@ -688,6 +958,10 @@ repository fixture and is explicitly labelled scaffolding in the E01 report.
 | 1 | Opaque verification codes | `APP4-P01`, `APP4-B03` | CSPRNG entropy assertion; `code_hash` only; no code in any response |
 | 2 | Opaque secure-link tokens | `APP4-P01`, `APP4-B05` | `token_hash` only (CST-008); raw token returned once, never persisted |
 | 3 | No plaintext token/code logging | `APP4-G01`, `APP4-B03`, `APP4-B06`, `APP4-W01` | Gate scan of logs, audit rows, notification `params` and reports |
+| 3a | **[C1]** Transient delivery secret encrypted at rest | `APP4-G01` (format, key, fail-closed), `APP4-B01` (seal), `APP4-B03`/`APP4-B05` (enqueue in the business transaction) | Persisted `outbox_events.payload` contains ciphertext + nonce + tag and no plaintext substring; a tampered tag fails authentication; `notification_intents.params` never carries the envelope |
+| 3b | **[C1]** Decrypt lifetime is worker-only and post-claim | `APP4-W01` | Decryption happens only after a successful claim; plaintext reaches no attempt row, `background_job_attempts` row, audit record, log line or error message |
+| 3c | **[C1]** Secure-link token carried only in the client-side fragment | `APP4-G01` (rule), `APP4-B05` (renders the fragment form), `APP4-B06` (body-only intake) | No APP4 route declares a token path or query parameter; the token appears in no application or gateway access log |
+| 3d | **[C1]** Fragment removed before analytics or any other client activity | `APP4-S02` | Browser assertion: `location.hash` empty and history clean after bootstrap; no network request other than the resolve `POST` fires first; token in no storage or query cache |
 | 4 | Expiry | `APP4-G01` (values), `APP4-B04`, `APP4-B06` | Expired challenge unanswerable pre-sweep; expired grant unresolvable |
 | 5 | Attempt / rate limiting | `APP4-B03` (issuance, resend), `APP4-B04` (attempts) | Lockout derived from `contact_verification_attempts`; no invented counter |
 | 6 | Replay / consumption | `APP4-B04` (challenge single-use), `APP4-B06` (post-revocation replay) | Verified challenge cannot be re-answered; revoked token stops resolving |
@@ -698,10 +972,17 @@ repository fixture and is explicitly labelled scaffolding in the E01 report.
 | 11 | Non-enumerating public errors | `APP4-G01` (contract), `APP4-B06`, `APP4-S02` | Six causes → byte-identical response and identical view |
 | 12 | Idempotent notification processing | `APP4-B01`, `APP4-W01` | Duplicate outbox → one intent (CST-047); replayed claim after `SATISFIED` sends nothing |
 | 13 | Bounded retry | `APP4-W01` | Attempt count reaches the configured bound and stops |
+| 13a | **[C1]** Transport retry and business resend are semantically separate | `APP4-G01` (definitions), `APP4-W01` (retry mints nothing), `APP4-B03` (resend mints a new challenge) | Two transport attempts deliver the identical secret with the source row unchanged; a resend produces a new challenge, code and envelope under the cooldown |
 | 14 | Terminal failure observability | `APP4-W01`, `APP4-B08` | `FAILED_TERMINAL` attempt + `FAILED` intent visible and retryable in Admin |
 
 Cross-cutting: **audit** (INV-14) is written by `APP4-B02` (link/attach),
 `APP4-B04` (verification outcome) and `APP4-B05` (issue/reissue/revoke).
+
+**[C1]** The original fourteen invariants are unchanged. `APP4-P00-C1` adds five
+— 3a, 3b, 3c, 3d and 13a — covering the encrypted transient secret, the
+worker-only decrypt lifetime, the fragment-only link carrier, fragment removal
+before analytics, and the retry-versus-resend separation. **19 invariants, all
+owned.**
 
 ---
 
@@ -717,35 +998,36 @@ Cross-cutting: **audit** (INV-14) is written by `APP4-B02` (link/attach),
 
 ---
 
-## J. Routed decisions
+## J. Decisions
 
-### `APP4-PO-001` — Notification channel and provider (`IMP-O006`)
+### `APP4-PO-001` — Notification channel and provider (`IMP-O006`) — **`PO_ACCEPTED / NON_BLOCKING`**
 
-- **Missing decision:** which concrete email/SMS provider and which channels
-  APP4 delivers through.
-- **Why existing authority cannot resolve it:** `IMP-O006` is open with owner
-  **APP4**; ADR-DB2-003 r4 and the phase brief both explicitly leave the provider
-  unchosen; no ADR, repository pattern or default selects a vendor. Choosing
-  wrongly matters because an SMS/email provider observes the OTP in transit — a
-  material security semantic, not a naming preference.
-- **Recommended default (adopted unless the PO directs otherwise):** APP4
-  selects **no external provider**. It ships `NotificationChannelPort` plus a
-  recording development adapter that performs no external call.
-  `IMP-O006` stays open, its due date unchanged — "before production
-  notification delivery", which APP4 does not perform.
-- **Alternatives (materially distinct):** (a) lock a provider now via a
-  dedicated `APP4-DEC-NOTIFY` decision checkpoint and ADR — rejected as
-  premature, since nothing in APP4's exit gate requires real delivery and the
-  choice is cheaper to make against APP12's production constraints;
-  (b) ship a direct SMTP adapter — rejected: it is a provider choice wearing a
-  protocol's name, and it moves the OTP through an unreviewed path.
-- **Blocked future checkpoint:** **none in APP4.** The first checkpoint that
-  cannot proceed without it is production notification delivery in **APP12**.
+- **Status:** **Resolved for APP4** by the Product Owner at `APP4-P00-C1`. This
+  is no longer an open APP4 decision and no APP4 checkpoint awaits it.
+- **Decision as accepted:** APP4 selects **no external provider**. It ships
+  `NotificationChannelPort` plus a recording development adapter that performs
+  no external call.
+- **What remains:** `IMP-O006` stays recorded against its existing production
+  due condition — "before production notification delivery", which APP4 does not
+  perform. The first work that cannot proceed without a concrete provider is
+  production notification delivery in **APP12**. That is a future-phase
+  follow-up, not an unresolved APP4 decision.
+- **Why this was the recommendation:** locking a provider now was premature —
+  nothing in APP4's exit gate requires real delivery, and the choice is better
+  made against APP12's production constraints. A direct SMTP adapter was
+  rejected as a provider choice wearing a protocol's name, moving the OTP
+  through an unreviewed path.
+- **Bearing on `APP4-P00-C1`:** the encrypted delivery envelope (§C.7.2) is
+  provider-neutral by construction — it terminates at `NotificationChannelPort`,
+  so selecting a provider later changes the adapter behind the port and nothing
+  about the carrier, the key authority or the secret-lifetime rules.
 
-No other item met the TRUE_PO_DECISION test. Policy durations, attempt limits
-and route slugs are all resolvable at level 4 (conservative, reversible,
+No item met the TRUE_PO_DECISION test after this acceptance; the ledger is
+empty. Policy durations, attempt limits, route slugs and the envelope-key
+configuration shape are all resolvable at level 4 (conservative, reversible,
 scope-minimizing) and are locked in `APP4-G01`, where a wrong value is corrected
-by appending a policy-configuration version rather than by changing code.
+by appending a policy-configuration version rather than by changing code. No
+production key value is invented or committed anywhere in this manifest.
 
 ---
 
