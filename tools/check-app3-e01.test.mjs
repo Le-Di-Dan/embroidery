@@ -231,12 +231,18 @@ mutation(
   /without an attribution/,
 );
 
+/*
+ * The finding's CURRENT word is the last line in which this checkpoint speaks,
+ * which is now `APP3-E01-C1`'s closure rather than `APP3-E01`'s block. Both
+ * cases mutate that line: mutating the superseded one would leave the gate green
+ * and the case would be proving nothing.
+ */
 mutation(
   'the blocking finding is softened so closure could step over it',
   'phase',
   (source) =>
     source.replace(
-      'FU-APP3-UPLOAD-REVISION-SEAM-01 = OPEN — BLOCKS_X01',
+      'FU-APP3-UPLOAD-REVISION-SEAM-01 = COMPLETE — CLOSED_BY_APP3-E01-C1',
       'FU-APP3-UPLOAD-REVISION-SEAM-01 = OPEN — NONBLOCKING',
     ),
   /no longer blocks closure/,
@@ -245,8 +251,7 @@ mutation(
 mutation(
   'the blocking finding keeps its status but loses its measured refusal',
   'phase',
-  (source) =>
-    source.replace(/statusCode":409/g, 'statusCode":200').replace(/refuses it 409/, 'refuses it'),
+  (source) => source.replaceAll('409', 'a refusal'),
   /names no measured refusal/,
 );
 
@@ -313,4 +318,76 @@ mutation(
   'index',
   (source) => source.replace('`CMD-JOURNEY-APP3-E01`', '`CMD-JOURNEY-APP3-E02`'),
   /CMD-JOURNEY-APP3-E01 is not registered/,
+);
+
+/* --------------------------------------------- the revision seam (APP3-E01-C1) */
+
+mutation(
+  'the revision B06B returned stops reaching the authority',
+  'imageHook',
+  (source) =>
+    source.replace('sessionRevision.adopt(sessionId, accepted.sessionRevision);', 'void accepted;'),
+  /not handed to the authority/,
+);
+
+mutation(
+  'a save stops presenting the authority and guesses its own revision',
+  'autosaveHook',
+  (source) =>
+    source.replace('expectedRevision: sessionRevision.read(),', 'expectedRevision: revision,'),
+  /does not present the authority/,
+);
+
+mutation(
+  'the image capability grows a private revision copy back',
+  'imageHook',
+  (source) =>
+    source.replace(
+      'const [pending, setPending]',
+      'const [localRevision] = useState(0);\n  const [pending, setPending]',
+    ),
+  /private revision copy has come back/,
+);
+
+mutation(
+  'the autosave loop grows a private revision copy back',
+  'autosaveHook',
+  (source) =>
+    source.replace(
+      'const streak = useRef',
+      'const serverRevision = useRef(revision);\n  const streak = useRef',
+    ),
+  /private revision copy has come back/,
+);
+
+mutation(
+  'the authority lets an older answer lower the revision',
+  'revisionAuthority',
+  (source) => source.replace('if (next <= current.current) return;', ''),
+  /can move backward/,
+);
+
+mutation(
+  'the authority accepts a revision measured against another Session',
+  'revisionAuthority',
+  (source) => source.replace('if (forSession !== bound.current.sessionId) return;', ''),
+  /another Session's revision can be adopted/,
+);
+
+mutation(
+  'only one capability is given the authority',
+  'stageScreen',
+  (source) => source.replace('    sessionRevision,\n    onExpired,', '    onExpired,'),
+  /not shared by both capabilities/,
+);
+
+mutation(
+  'the cross-capability proof is reduced to one half again',
+  'seamProof',
+  (source) =>
+    source.replace(
+      'is the one the next autosave presents, and the save is accepted',
+      'uploads a file',
+    ),
+  /seam proof/,
 );

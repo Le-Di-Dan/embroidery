@@ -45,11 +45,20 @@ import { sameDocument } from '../model/studio-history';
 import { sessionKeyOf } from '../model/studio-session-key';
 import { attemptSave, readLatestSnapshot } from '../services/studio-autosave.client';
 import { useStudioDocumentStore } from '../store/studio-document.store';
+import type { StudioSessionRevision } from './use-studio-session-revision';
 
 export interface UseStudioAutosaveInput {
   readonly sessionId: string;
   /** The revision the bootstrap or resume response carried. Never incremented here. */
   readonly revision: number;
+  /**
+   * The Studio's one Session-revision authority (`APP3-E01-C1`).
+   *
+   * Not this loop's private memory: `APP3-B06B` mutates the same Session, and a
+   * save that presented a revision an upload had already superseded was the
+   * false conflict `FU-APP3-UPLOAD-REVISION-SEAM-01` describes.
+   */
+  readonly sessionRevision: StudioSessionRevision;
   /** The Session is gone. The screen, not this hook, decides what to show. */
   readonly onExpired: () => void;
 }
@@ -71,7 +80,7 @@ export interface UseStudioAutosaveResult {
 }
 
 export function useStudioAutosave(input: UseStudioAutosaveInput): UseStudioAutosaveResult {
-  const { sessionId, revision, onExpired } = input;
+  const { sessionId, revision, sessionRevision, onExpired } = input;
 
   const [state, setState] = useState<StudioSaveState>('CLEAN');
   const [failure, setFailure] = useState<StudioSaveFailure | null>(null);
@@ -83,7 +92,6 @@ export function useStudioAutosave(input: UseStudioAutosaveInput): UseStudioAutos
   // document every pointer frame, and a dirty streak held in state would
   // re-render the stage sixty times a second to store a timestamp nothing draws.
   const stateRef = useRef<StudioSaveState>('CLEAN');
-  const serverRevision = useRef(revision);
   const streak = useRef<StudioDirtyStreak | null>(null);
   const inFlight = useRef<StudioSaveInFlight | null>(null);
   const attempt = useRef(0);
@@ -170,7 +178,7 @@ export function useStudioAutosave(input: UseStudioAutosaveInput): UseStudioAutos
       }
 
       const latest = read.snapshot;
-      serverRevision.current = latest.revision;
+      sessionRevision.adopt(sessionId, latest.revision);
       latestServer.current = { document: latest.document, revision: latest.revision };
 
       if (cause === 'conflict') {
@@ -212,7 +220,7 @@ export function useStudioAutosave(input: UseStudioAutosaveInput): UseStudioAutos
         schedule();
       }
     },
-    [clearTimer, enter, onExpired, schedule, scheduleRetry, sessionId],
+    [clearTimer, enter, onExpired, schedule, scheduleRetry, sessionId, sessionRevision],
   );
 
   // ------------------------------------------------------------------ the save
@@ -224,7 +232,10 @@ export function useStudioAutosave(input: UseStudioAutosaveInput): UseStudioAutos
 
     const sent: StudioSaveInFlight = {
       submitted: document,
-      expectedRevision: serverRevision.current,
+      // Read at the moment the request is composed, from the authority every
+      // Session mutation reports to — so an upload that advanced the Session a
+      // second ago is already accounted for here.
+      expectedRevision: sessionRevision.read(),
     };
     inFlight.current = sent;
     // This save owns everything dirty up to this instant. An edit arriving while
@@ -240,7 +251,7 @@ export function useStudioAutosave(input: UseStudioAutosaveInput): UseStudioAutos
       if (!mounted.current) return;
 
       if (result.kind === 'ok') {
-        serverRevision.current = result.snapshot.revision;
+        sessionRevision.adopt(sessionId, result.snapshot.revision);
         attempt.current = 0;
         setFailure(null);
         setLastSavedAt(Date.now());
@@ -281,7 +292,16 @@ export function useStudioAutosave(input: UseStudioAutosaveInput): UseStudioAutos
       setRetryPending(false);
       enter('ERROR_PAUSED');
     })();
-  }, [clearTimer, enter, onExpired, reconcileNow, schedule, scheduleRetry, sessionId]);
+  }, [
+    clearTimer,
+    enter,
+    onExpired,
+    reconcileNow,
+    schedule,
+    scheduleRetry,
+    sessionId,
+    sessionRevision,
+  ]);
 
   runSaveRef.current = runSave;
 
@@ -311,7 +331,8 @@ export function useStudioAutosave(input: UseStudioAutosaveInput): UseStudioAutos
   // A different Session is a different loop. Nothing carries over: not the
   // revision, not the dirty streak, not the retry ladder and not the conflict.
   useEffect(() => {
-    serverRevision.current = revision;
+    // The revision itself is reset by the authority, which owns it and does so
+    // during render — before any handler here could present the old one.
     latestServer.current = null;
     streak.current = null;
     attempt.current = 0;
@@ -361,14 +382,14 @@ export function useStudioAutosave(input: UseStudioAutosaveInput): UseStudioAutos
     useStudioDocumentStore
       .getState()
       .adoptServerBranch(sessionKeyOf(sessionId, latest.revision), latest.document);
-    serverRevision.current = latest.revision;
+    sessionRevision.adopt(sessionId, latest.revision);
     streak.current = null;
     attempt.current = 0;
     setFailure(null);
     setRetryPending(false);
     setLastSavedAt(Date.now());
     enter('CLEAN');
-  }, [clearTimer, enter, sessionId]);
+  }, [clearTimer, enter, sessionId, sessionRevision]);
 
   const keepLocal = useCallback(() => {
     if (latestServer.current === null) return;

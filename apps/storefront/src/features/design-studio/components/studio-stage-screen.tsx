@@ -18,6 +18,7 @@ import { useStudioHistoryShortcuts } from '../hooks/use-studio-history-shortcuts
 import { useStudioImage } from '../hooks/use-studio-image';
 import { useStudioImageMedia } from '../hooks/use-studio-image-media';
 import { useStudioLayers } from '../hooks/use-studio-layers';
+import { useStudioSessionRevision } from '../hooks/use-studio-session-revision';
 import { useStudioUnsavedWarning } from '../hooks/use-studio-unsaved-warning';
 import { useStudioWatermarkToken } from '../hooks/use-studio-watermark-token';
 import { useStudioTransform } from '../hooks/use-studio-transform';
@@ -221,12 +222,19 @@ export function StudioStageScreen({
   // panel goes with it: `APP3-S06` lost the Session revision that way and the
   // next upload was refused `409 CONFLICT`. The same discard would take the undo
   // stack, an in-flight save, and now an open sheet.
+  // Both Session mutations are compare-and-set on the same number, so exactly
+  // one thing here knows it (`APP3-E01-C1`). While each capability kept its own
+  // copy, an upload advanced the Session and the next autosave still presented
+  // the pre-upload revision — a `409`, and a conflict shown to a customer who
+  // had one tab open (`FU-APP3-UPLOAD-REVISION-SEAM-01`).
+  const sessionRevision = useStudioSessionRevision(snapshot.sessionId, snapshot.revision);
+
   const selectedImage = imageElementOf(sceneDocument, selectedElementId);
   const replaceableImage =
     selectedImage !== undefined && selectedImage.visible && !selectedImage.locked;
   const image = useStudioImage({
     sessionId: snapshot.sessionId,
-    revision: snapshot.revision,
+    sessionRevision,
     document: sceneDocument,
     scope,
     limits: areaLimits,
@@ -258,6 +266,7 @@ export function StudioStageScreen({
   const save = useStudioAutosave({
     sessionId: snapshot.sessionId,
     revision: snapshot.revision,
+    sessionRevision,
     onExpired,
   });
   useStudioUnsavedWarning(hasUnsavedWork(save.state));

@@ -17,12 +17,19 @@
  * is replacing an element, and the last refusal. None of it is document state,
  * none of it is a server replica, and none of it survives the component.
  *
- * ## The local revision
+ * ## The revision belongs to the Session, not to this hook
  *
- * `APP3-B06B` returns the Session revision after the upload, and it is kept —
- * the next mutation must present it or be refused as stale. Keeping it is not
- * saving: S06 still calls no autosave, sets no timer and shows no saved
- * indicator. `APP3-S10` owns persistence.
+ * `APP3-B06B` advances the Session revision as part of the upload and returns
+ * the new one. It is reported to the Studio's one revision authority, because
+ * the *next* mutation may well be `APP3-S10`'s autosave rather than another
+ * upload — and while this hook kept it privately, that save presented the
+ * pre-upload revision and was refused `409`, showing a customer with one tab
+ * open a conflict with nobody (`FU-APP3-UPLOAD-REVISION-SEAM-01`, closed by
+ * `APP3-E01-C1`).
+ *
+ * Reporting it is not saving: S06 still calls no autosave, sets no timer, marks
+ * nothing clean and shows no saved indicator. `APP3-S10` owns persistence, and
+ * the document becomes dirty only when the image element is actually inserted.
  *
  * ## One Asset per attempt
  *
@@ -49,6 +56,7 @@ import { withNewImage, withReplacedImage } from '../model/studio-image-placement
 import type { StudioAreaLimits } from '../model/studio-transform-authority';
 import { uploadSessionImage } from '../services/studio-session-asset.client';
 import { useSessionAssetStatus } from './use-session-asset-status';
+import type { StudioSessionRevision } from './use-studio-session-revision';
 
 /** Every way the capability can refuse, in one closed set. */
 export type StudioImageFailure =
@@ -59,7 +67,8 @@ export type StudioImagePhase = 'idle' | 'uploading' | 'processing';
 
 export interface UseStudioImageInput {
   readonly sessionId: string | null;
-  readonly revision: number;
+  /** The Studio's one Session-revision authority, shared with `APP3-S10`. */
+  readonly sessionRevision: StudioSessionRevision;
   readonly document: DesignDocument | null;
   readonly scope: DesignSessionScopeResponse | null;
   readonly limits: StudioAreaLimits | null;
@@ -83,8 +92,6 @@ export interface UseStudioImageResult {
    * tell half of them something untrue about their own design.
    */
   readonly failedReplacement: boolean;
-  /** The Session revision this client currently believes. */
-  readonly revision: number;
   readonly chooseFile: (file: File) => void;
   readonly dismissFailure: () => void;
 }
@@ -97,7 +104,7 @@ interface PendingUpload {
 
 export function useStudioImage({
   sessionId,
-  revision,
+  sessionRevision,
   document,
   scope,
   limits,
@@ -110,7 +117,6 @@ export function useStudioImage({
   const [failure, setFailure] = useState<StudioImageFailure | null>(null);
   const [failedReplacement, setFailedReplacement] = useState(false);
   const [pending, setPending] = useState<PendingUpload | null>(null);
-  const [localRevision, setLocalRevision] = useState(revision);
   const [placedAssetId, setPlacedAssetId] = useState<string | null>(null);
 
   /**
@@ -124,16 +130,6 @@ export function useStudioImage({
    * for a font request.
    */
   const attempt = useRef(0);
-
-  // The Session's revision is the server's; a new snapshot supersedes whatever
-  // an upload left here. Adjusted during render, which is React's sanctioned way
-  // to react to a changed input and the only placement that guarantees no
-  // handler can send a superseded revision.
-  const [boundRevision, setBoundRevision] = useState(revision);
-  if (boundRevision !== revision) {
-    setBoundRevision(revision);
-    setLocalRevision(revision);
-  }
 
   // A Session change abandons everything in flight: an upload belongs to the
   // Session it was made against, and a status answer for one must never place a
@@ -268,7 +264,7 @@ export function useStudioImage({
       void uploadSessionImage({
         sessionId,
         file,
-        expectedRevision: localRevision,
+        expectedRevision: sessionRevision.read(),
         idempotencyKey,
         onProgress: (fraction) => {
           if (started !== attempt.current) return;
@@ -277,9 +273,11 @@ export function useStudioImage({
       })
         .then((accepted) => {
           if (started !== attempt.current) return;
-          // The revision the server reports after the upload, kept so the next
-          // mutation is not refused as stale. Not a save.
-          setLocalRevision(accepted.sessionRevision);
+          // The revision the server reports after the upload, reported to the
+          // authority so the next mutation — an autosave as readily as another
+          // upload — is not refused as stale. Not a save: nothing is marked
+          // clean, no history is touched and no document changes here.
+          sessionRevision.adopt(sessionId, accepted.sessionRevision);
           setProgress(null);
           setPhase('processing');
           setPending({ assetId: accepted.assetId, replacingElementId: replacing });
@@ -291,7 +289,7 @@ export function useStudioImage({
           setFailure('upload-failed');
         });
     },
-    [localRevision, replacingElementId, sessionId],
+    [replacingElementId, sessionId, sessionRevision],
   );
 
   return {
@@ -299,7 +297,6 @@ export function useStudioImage({
     progress,
     failure,
     failedReplacement,
-    revision: localRevision,
     chooseFile,
     dismissFailure: useCallback(() => {
       setFailure(null);

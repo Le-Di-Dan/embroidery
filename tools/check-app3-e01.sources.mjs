@@ -29,6 +29,13 @@ export const CANONICAL_FILES = Object.freeze({
   proxyHeaders: 'infrastructure/nginx/templates/includes/proxy-headers.conf.template',
   // The follow-up investigations `APP3-E01` owns.
   retryInvestigation: `${STOREFRONT}/test/components/studio-autosave-retry.test.tsx`,
+  // The seam `APP3-E01-C1` repaired: one Session-revision authority, reported to
+  // by both capabilities that mutate a Session.
+  revisionAuthority: `${FEATURE}/hooks/use-studio-session-revision.ts`,
+  imageHook: `${FEATURE}/hooks/use-studio-image.ts`,
+  autosaveHook: `${FEATURE}/hooks/use-studio-autosave.ts`,
+  stageScreen: `${FEATURE}/components/studio-stage-screen.tsx`,
+  seamProof: `${STOREFRONT}/test/components/studio-upload-revision-seam.test.tsx`,
   // The harness `APP3-E01` adds.
   runners: 'tools/smoke-app3-e01-runners.mjs',
   journey: 'tools/smoke-app3-e01-journey.mjs',
@@ -68,6 +75,8 @@ export const OWNED_FOLLOW_UPS = Object.freeze([
 /** Every disposition a follow-up may carry. Anything else is invented closure. */
 export const DISPOSITIONS = Object.freeze([
   'COMPLETE — CLOSED_BY_APP3-E01',
+  // The one follow-up `APP3-E01` raised as blocking and `APP3-E01-C1` repaired.
+  'COMPLETE — CLOSED_BY_APP3-E01-C1',
   'OPEN — NONBLOCKING',
   'OPEN_NONBLOCKING_PHASE_DEBT',
   // A budget measured and missed. Distinct from `OPEN — NONBLOCKING`, which is a

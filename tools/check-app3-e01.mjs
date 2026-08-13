@@ -231,11 +231,36 @@ export function checkFollowUps(rootDir, fail) {
    * downgraded it to `OPEN — NONBLOCKING` would let `APP3-X01` close the phase
    * over it, so the disposition is asserted here and the reproduction with it.
    */
-  const seam = currentLine('FU-APP3-UPLOAD-REVISION-SEAM-01') ?? '';
-  // Anchored to the DISPOSITION, not to any occurrence of the word: the line
-  // also explains why it blocks, so a substring test stays true after the
-  // status itself has been downgraded. The mutation test caught exactly that.
-  if (!/^FU-APP3-UPLOAD-REVISION-SEAM-01 = OPEN — BLOCKS_X01\b/.test(seam)) {
+  /*
+   * The defect blocks closure until it is actually repaired.
+   *
+   * Anchored to the DISPOSITION, not to any occurrence of the word: the line
+   * also explains why it blocked, so a substring test stays true after the
+   * status itself has been downgraded. The mutation test caught exactly that.
+   *
+   * Two words are legitimate and no third is. Before `APP3-E01-C1` the finding
+   * blocks `APP3-X01`; after it, it is closed BY that correction — and
+   * `checkRevisionSeam` below then requires the code that earned the closure, so
+   * the word cannot be written without the fix behind it.
+   */
+  /*
+   * Read as the LAST row, not as the last row naming this checkpoint.
+   *
+   * `currentLine` is right for a register where other checkpoints also speak,
+   * but it has a hole this finding cannot afford: a row edited so that it no
+   * longer names the checkpoint becomes invisible, and the rule silently falls
+   * back to the superseded row above it — which still says BLOCKS_X01 and is
+   * still green. The mutation test caught exactly that. For the one finding that
+   * decides whether a phase may close, the current word is simply the last thing
+   * written about it.
+   */
+  const seamRows = phase
+    .split('\n')
+    .filter((row) => row.startsWith('FU-APP3-UPLOAD-REVISION-SEAM-01 ='));
+  const seam = seamRows.at(-1) ?? '';
+  const blocking = /^FU-APP3-UPLOAD-REVISION-SEAM-01 = OPEN — BLOCKS_X01\b/.test(seam);
+  const closed = /^FU-APP3-UPLOAD-REVISION-SEAM-01 = COMPLETE — CLOSED_BY_APP3-E01-C1\b/.test(seam);
+  if (!blocking && !closed) {
     fail(`${CANONICAL_FILES.phase}: the upload revision-seam defect no longer blocks closure`);
   }
   if (!/409/.test(seam)) {
@@ -262,6 +287,87 @@ export function checkFollowUps(rootDir, fail) {
       if (!needed.test(budget)) {
         fail(`${CANONICAL_FILES.phase}: the transform budget is disposed of without ${why}`);
       }
+    }
+  }
+}
+
+/**
+ * The revision seam `APP3-E01-C1` repaired (`FU-APP3-UPLOAD-REVISION-SEAM-01`).
+ *
+ * Both Session mutations are compare-and-set on one number: `APP3-B08` autosave
+ * and `APP3-B06B` upload. The defect was structural rather than arithmetic —
+ * each capability kept its **own** copy of the bootstrap revision and advanced
+ * only that, so an upload left the next save presenting a superseded revision:
+ * `409`, and a customer with one tab open shown a conflict with nobody.
+ *
+ * The rule is therefore about ownership, not about a call. It asserts there is
+ * one authority, that both capabilities read and report to it, that neither has
+ * grown a private copy back, and that the revision cannot move backward when an
+ * older response lands last. Restoring any private copy is exactly how the
+ * defect returns, and it is the mutation these rules are written against.
+ */
+export function checkRevisionSeam(rootDir, fail) {
+  const authority = code(rootDir, 'revisionAuthority');
+  const image = code(rootDir, 'imageHook');
+  const save = code(rootDir, 'autosaveHook');
+  const screen = code(rootDir, 'stageScreen');
+
+  if (authority === '') {
+    fail(`${CANONICAL_FILES.revisionAuthority}: the Session-revision authority is missing`);
+    return;
+  }
+  // Monotonic: an older answer landing last may not lower the revision.
+  if (!/next <= current\.current/.test(authority)) {
+    fail(`${CANONICAL_FILES.revisionAuthority}: the revision can move backward`);
+  }
+  // Owned by a Session: a response for one may not raise the revision of another.
+  if (!/forSession !== bound\.current\.sessionId/.test(authority)) {
+    fail(`${CANONICAL_FILES.revisionAuthority}: another Session's revision can be adopted`);
+  }
+
+  // The handoff itself: what B06B returned reaches the authority S10 reads.
+  if (!/sessionRevision\.adopt\(sessionId, accepted\.sessionRevision\)/.test(image)) {
+    fail(`${CANONICAL_FILES.imageHook}: the revision B06B returned is not handed to the authority`);
+  }
+  if (!/expectedRevision: sessionRevision\.read\(\)/.test(image)) {
+    fail(`${CANONICAL_FILES.imageHook}: an upload does not present the authority's revision`);
+  }
+  if (!/expectedRevision: sessionRevision\.read\(\)/.test(save)) {
+    fail(`${CANONICAL_FILES.autosaveHook}: a save does not present the authority's revision`);
+  }
+  if (!/sessionRevision\.adopt\(sessionId, result\.snapshot\.revision\)/.test(save)) {
+    fail(`${CANONICAL_FILES.autosaveHook}: a save's own revision is not handed to the authority`);
+  }
+
+  // No second copy, in either capability. `serverRevision`/`localRevision` were
+  // the two private replicas the defect consisted of.
+  for (const [key, source, replica] of [
+    ['imageHook', image, /localRevision/],
+    ['autosaveHook', save, /const serverRevision = useRef/],
+  ]) {
+    if (replica.test(source)) {
+      fail(`${CANONICAL_FILES[key]}: a private revision copy has come back`);
+    }
+  }
+
+  // One authority, created once, above the tier that swaps panels.
+  if (!/useStudioSessionRevision\(snapshot\.sessionId, snapshot\.revision\)/.test(screen)) {
+    fail(`${CANONICAL_FILES.stageScreen}: the Studio does not own one Session-revision authority`);
+  }
+  if ((screen.match(/sessionRevision,/g) ?? []).length < 2) {
+    fail(`${CANONICAL_FILES.stageScreen}: the authority is not shared by both capabilities`);
+  }
+
+  // And the proof, cross-capability by construction: the suites that each
+  // proved one half both passed while the customer's save was refused.
+  const proof = read(rootDir, 'seamProof') ?? '';
+  for (const required of [
+    'is the one the next autosave presents, and the save is accepted',
+    'is presented by the next upload too, so an upload after a save is not stale',
+    'never moves the revision backward when an older answer lands last',
+  ]) {
+    if (!proof.includes(required)) {
+      fail(`${CANONICAL_FILES.seamProof}: the seam proof "${required}" is gone`);
     }
   }
 }
@@ -338,6 +444,7 @@ export function checkApp3E01(rootDir, fail) {
   checkCapacityMechanism(rootDir, fail);
   checkFixtureIdempotency(rootDir, fail);
   checkFollowUps(rootDir, fail);
+  checkRevisionSeam(rootDir, fail);
   checkRetryInvestigation(rootDir, fail);
   checkCommandIndex(rootDir, fail);
   checkImmutability(rootDir, fail);
@@ -350,7 +457,10 @@ const SUMMARY =
   'regression present; Session capacity taken from assigned runner addresses rather than from a ' +
   'forged header or a real wait; Template fixtures that restore the state they seed, so two ' +
   'accepted runs need no manual SQL; every follow-up this checkpoint owns carrying a recognised ' +
-  'disposition, and no closure claimed without the measurement that earned it; the S10 retry ' +
+  'disposition, and no closure claimed without the measurement that earned it; one shared ' +
+  'Session-revision authority that both APP3-B06B uploads and APP3-S10 saves report to and read ' +
+  'from, monotonic and owned by its Session, with neither capability keeping a private copy; ' +
+  'the S10 retry ' +
   'investigation reading its verdict off an injected-time timeline; and an unchanged artifact ' +
   'set of 37 paths / 42 operations / 84 schemas, 34 migrations and 30 root scripts.';
 
