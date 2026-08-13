@@ -12,9 +12,18 @@
 
 ## A. Verdict
 
-**`PASS`** — after `APP4-P00-C1`. The first draft carried
-`PASS_WITH_ROUTED_DECISIONS`; the single routed item is now Product-Owner
-accepted (§G), so the decision ledger is empty.
+**`PASS — CLOSED_AFTER_MANDATORY_DIRECTIVE`**
+
+History — there is no `APP4-P00-C2` and none was created:
+
+```text
+initial P00
+→ APP4-P00-C1 (the single allowed correction)
+→ mandatory closure directive (prescriptive, not a correction)
+```
+
+The first draft carried `PASS_WITH_ROUTED_DECISIONS`; the single routed item is
+Product-Owner accepted (§G), so the decision ledger is empty.
 
 APP4 was reconciled against the delivered APP0–APP3 and DB7 baseline. The
 twelve candidate slices in the phase brief were re-sliced into **17 execution
@@ -23,10 +32,14 @@ were deleted, folded or split for reasons recorded in the audit §E.
 
 Product Owner review of the first draft found a genuine internal contradiction
 in the secret-delivery and secure-link transport architecture. It is corrected
-in **§M — `P00-C1`**, which is the only correction applied to this checkpoint.
+in **§M — `P00-C1`**, the only correction applied to this checkpoint. A residual
+defect surviving that correction — `APP4-B08`'s incomplete manual-replay
+contract against locked APP2 dead-letter authority — is closed by the
+prescriptive directive recorded in **§N**.
 
 Migration verdict: **`NO_APP4_MIGRATION`** — every APP4 invariant is expressible
-against the delivered schema (audit §C.1), and the correction adds none.
+against the delivered schema (audit §C.1); neither the correction nor the
+closure adds one.
 
 ---
 
@@ -273,6 +286,9 @@ that, per `VALIDATION_GOVERNANCE.md` §3.
 | 2 | `node tools/check-report-secrets.mjs` | This checkpoint adds a committed completion report; the gate exists precisely because a report once recorded a live credential | **PASS** — `Secret-disclosure check passed (445 document(s), 2686 tracked file(s)).` |
 | 3 | `pnpm exec prettier --check` over the three files changed by `APP4-P00-C1` | Same reason as row 1; the correction edited all three files after row 1 ran, so row 1 no longer covered them | see §H.2 |
 | 4 | `node tools/check-report-secrets.mjs` (second run) | **Required by the correction.** The audit and report now discuss secret transport, envelope contents and a key configuration name at length — exactly the shape this gate exists to police — and both files changed after run 2 | see §H.2 |
+| 5 | `pnpm exec prettier --check` over the files changed by the mandatory closure | Repository-wide Prettier enforcement; the closure edited the audit and this report after run 3 | see §H.4 |
+| 6 | `node tools/check-report-secrets.mjs` (third run) | **Required by the directive.** The closure adds a full section on encrypted envelope copying and replay; both covered files changed after run 4 | see §H.4 |
+| 7 | `git diff --check` | Required by the directive; catches whitespace errors and conflict markers in the staged Markdown | see §H.4 |
 
 **Not run, and why:** no unit, integration, E2E, API, worker or frontend suite;
 no repository typecheck; no OpenAPI generation or `check:api-client`; no DB
@@ -309,6 +325,29 @@ anything to react to. **No validation chain was restarted.**
 | 3 | **PASS** — `Checking formatting... All matched files use Prettier code style!` |
 | 4 | **PASS** — `Secret-disclosure check passed (447 document(s), 2688 tracked file(s)).` The count rose from 445/2686 because P00 committed two new documents. |
 
+### H.4 Note and results (mandatory closure)
+
+The closure changed documentation only: the audit and this report. Rows 5–7 each
+ran **once**, after the closure's final edit. None repeats a successful run —
+every file rows 5 and 6 cover changed after rows 3 and 4.
+
+| # | Result |
+|---|---|
+| 5 | **PASS** — `Checking formatting... All matched files use Prettier code style!` |
+| 6 | **PASS** — `Secret-disclosure check passed (447 document(s), 2688 tracked file(s)).` |
+| 7 | **PASS** — no output; no whitespace error or conflict marker. |
+
+**Not run for the closure, and why:** no unit, API, worker, database-integration
+or E2E test; no typecheck; no build; no OpenAPI or API-client generation or
+check; no DB manifest; no Figma check; no `pnpm quality`; no repository-wide
+chain. The closure changed no source, schema, contract, generated artifact or
+design registry entry, so none has anything to react to. **No chain was
+restarted.** The roadmap row was updated for verdict consistency and is covered
+by rows 5 and 7; the repository has no roadmap-specific consistency checker that
+a status-row edit would trigger (`tools/check-app2-closure.mjs` and
+`tools/check-app3-closure.mjs` are phase-closure gates for APP2/APP3, not APP4
+planning documents).
+
 ---
 
 ## I. Files changed
@@ -331,26 +370,49 @@ anything to react to. **No validation chain was restarted.**
 | `docs/implementation/reports/APP4-P00-COMPLETION-REPORT.md` | Verdict `PASS`; §G ledger emptied; new §M; §H rows 3–4 and §H.2–H.3 |
 | `docs/implementation/10-MASTER-APPLICATION-ROADMAP.md` | APP4 status row → `AUDITED — PASS`, correction summarized |
 
+**Mandatory closure:**
+
+| File | Change |
+|---|---|
+| `docs/implementation/audits/APP4_PHASE_ENTRY_AUDIT.md` | Verdict `PASS — CLOSED_AFTER_MANDATORY_DIRECTIVE`; new §C.8 (residual defect, three contracts, replay transaction, DB3 lifecycle realignment, non-secret linkage, eligibility, duplicate safety, shared package, four stop-condition clearances); `APP4-G01` items 11–16; `APP4-B01`, `APP4-W01`, `APP4-B08` scope/code-areas/verification; §F.1 note; §G items 11–18; §H invariants 14a–14f |
+| `docs/implementation/reports/APP4-P00-COMPLETION-REPORT.md` | Verdict and history; new §N; §H rows 5–7 and §H.4; §I; §J commit table and final state; §K.2 |
+| `docs/implementation/10-MASTER-APPLICATION-ROADMAP.md` | APP4 status row → `AUDITED — PASS — CLOSED_AFTER_MANDATORY_DIRECTIVE`, closure summarized |
+
 No runtime source, schema, migration, OpenAPI document, generated client,
-worker or UI file was touched by either P00 or P00-C1.
+worker, package manifest or UI file was touched by P00, P00-C1 or the closure.
+`packages/notification-delivery` is **planned**, not created.
 
 ---
 
 ## J. Git status and commits
 
 Planning checkpoints are committed in this repository (APP2/APP3 precedent:
-`docs(app3): …`). This checkpoint produced one documentation commit on
-`production`:
+`docs(app3): …`). All commits are on `production`, all Markdown-only.
 
-```text
-2044a31  docs(app4): reconcile APP4 phase entry and lock the execution manifest
-```
+| Stage | Commit | Subject |
+|---|---|---|
+| P00 (initial) | `2044a31ec9f408ab80ffd1eb363acb07afce4d63` | `docs(app4): reconcile APP4 phase entry and lock the execution manifest` |
+| P00 (evidence) | `108e488e3090bcacab27bfd2a2d73798393a93ce` | `docs(app4): record APP4-P00 commit evidence` |
+| **P00-C1** | `096806c86c12cf7dae83e1f50c6c9d35bf7e9acd` | `docs(app4): correct APP4 secret-delivery and secure-link transport` |
+| **Mandatory closure** | `__CLOSURE_COMMIT__` | `docs(app4): close APP4-P00 with dead-letter replay and shared envelope authority` |
+| Closure evidence | final HEAD, §J.1 | `docs(app4): record APP4-P00 closure commit evidence` |
 
-Parent: `aa577f3` (`docs(app3): record phase closure evidence`). Three files,
-all Markdown (§I).
+Parent of the first commit: `aa577f3e6e7da31a7acb42de12219b84f86b7708`
+(`docs(app3): record phase closure evidence`).
 
-`APP4-P00-C1` adds one further documentation commit on the same branch. All
-files Markdown; working tree clean after it. **Nothing was pushed at any point.**
+A commit cannot contain its own hash, so the closure commit's hash is written by
+the one-line evidence commit that follows it — the same two-step the initial P00
+used. The regress terminates at the evidence commit, whose hash is the final
+HEAD recorded below.
+
+### J.1 Final state
+
+| Item | Value |
+|---|---|
+| Final HEAD | `__FINAL_HEAD__` |
+| Branch | `production` |
+| Working tree | clean |
+| Pushed | **no** — nothing was pushed at any stage |
 
 ---
 
@@ -394,6 +456,36 @@ Stop conditions 1–5 were each evaluated; **none was met**.
 
 Correction stop conditions 1–4 were each checked against the repository;
 **none was met** (§M.2, audit §C.7.3).
+
+### K.2 Mandatory-closure acceptance
+
+| Criterion | Status |
+|---|---|
+| 1. `DEAD_LETTER` never reset to `PENDING`, automatically or manually | Met — §N.4; invariant 14a; B08 gate asserts no `UPDATE` on `outbox_events` |
+| 2. Admin retry creates a new outbox event | Met — §N.3 step 6 |
+| 3. New event copies the same envelope without decrypting | Met — §N.3 step 5; invariant 14b; byte-identical ciphertext proves a copy |
+| 4. Old terminal row unchanged as evidence | Met — §N.3 step 8; E01 item 14 compares every column |
+| 5. New row has fresh identity and attempt lifecycle | Met — §N.4; new `job_key` → attempts restart at 1 without a CST-049 collision |
+| 6. Lifecycle move + new event append are atomic | Met — §N.3, one transaction |
+| 7. Duplicate/concurrent retries produce one replay event | Met — §N.7; invariant 14d; E01 item 16 |
+| 8. Server-queryable non-secret outbox↔intent linkage using existing fields | Met — §N.5; `aggregate_kind`/`aggregate_id`; invariant 14c |
+| 9. No ciphertext JSON query needed | Met — §N.5; ADR-DB4-004 rule 5 honoured |
+| 10. Replay refused when the source challenge/grant is invalid | Met — §N.6; invariant 14e; E01 item 17 |
+| 11. Refusal routes to business resend/reissue, not reconstruction | Met — §N.6; `REISSUE_REQUIRED` → `APP4-B03`/`APP4-B05` |
+| 12. Automatic retry, Admin replay and business resend/reissue are three distinct contracts | Met — §N.6 table; locked at `APP4-G01` item 11 |
+| 13. One shared envelope codec across API and worker | Met — §N.8; invariant 14f |
+| 14. No API↔worker cross-import | Met — §N.8; B01 gate asserts the package declares no `apps/*` dependency |
+| 15. No third-party crypto dependency | Met — §N.8; `node:crypto` only |
+| 16. No schema, migration, new queue, escrow or provider | Met — §N.10 |
+| 17. P00-C1 exact commit hash present | Met — §J, `096806c86c12cf7dae83e1f50c6c9d35bf7e9acd` |
+| 18. Mandatory-closure exact commit hash present | Met — §J, with final HEAD at §J.1 |
+| 19. Final verdict `PASS — CLOSED_AFTER_MANDATORY_DIRECTIVE` | Met — §A |
+| 20. Validation documentation-scope only | Met — §H rows 5–7, §H.4 |
+
+Closure stop conditions 1–4 were each checked against the repository;
+**none was met** (§N.9, audit §C.8.9). One prescribed step met locked DB3
+authority and was realigned rather than applied silently or used as a stop
+(§N.4).
 
 ---
 
@@ -551,5 +643,196 @@ correction changed no file any of them covers.
 
 ---
 
-**APP4-C01 and all runtime implementation remain not started, pending Product
-Owner review of this corrected report.**
+## N. P00 Mandatory Closure — Dead-letter manual replay and shared envelope authority
+
+Prescriptive Product Owner directive, **not** a second correction. No
+`APP4-P00-C2` identifier was created. Documentation and authority only.
+
+### N.1 Residual defect found after C1
+
+`P00-C1` closed **automatic** transport retry: the worker re-leases the same
+outbox row and re-delivers the same sealed envelope. It left the **manual** path
+incomplete. `APP4-B08` still said an operator could "retry a `FAILED` intent" by
+"re-enqueueing through the outbox path" — which cannot happen as written.
+
+### N.2 Why APP2 `DEAD_LETTER` authority made B08 incomplete
+
+Under the locked APP2 job runtime (`IMP-D029`, `ADR-APP2-002`), automatic
+terminal failure leaves the source outbox row in `DEAD_LETTER`. That status sits
+outside IDX-088's claimable predicate, so **nothing ever claims it again**.
+APP2 deliberately deferred manual replay to a later approved checkpoint, and
+`APP4-B08` is that checkpoint — so APP4 had to define the contract and had not.
+
+### N.3 Selected manual replay state machine
+
+Audit §C.8.3. One transaction, for an authorized Admin replay:
+
+1. lock/read the intent; require it terminal-failed;
+2. resolve the terminal source outbox event via the **non-secret linkage**
+   (§N.5) — never by querying ciphertext;
+3. require that event's status to be `DEAD_LETTER`;
+4. verify the underlying secret is still eligible (§N.6);
+5. copy the envelope ciphertext and `payload_schema_version` **byte-identically**
+   — **the API never decrypts**;
+6. append **one** new `PENDING` outbox event with a new id and a fresh attempt
+   counter;
+7. create the **new `PENDING` notification intent** under a derived replay
+   `intent_key`, linked to the origin (§N.4);
+8. leave the old `DEAD_LETTER` row and the origin intent untouched;
+9. audit the replay.
+
+### N.4 Old-row / new-row identity semantics
+
+**The `DEAD_LETTER` row is never reset, reactivated or mutated** — not by the
+worker, not by Admin, not by an operator script. It is terminal evidence, its
+attempt count already equals the automatic retry limit, and, decisively,
+`job_key` **is the outbox event id**
+(`worker-job-queue.repository.ts`: `jobKey: guard.outboxEventId.toString()`).
+Reusing that identity would collide with CST-049
+`uq_background_job_attempts__kind_key_attempt` and destroy the monotonicity of
+`(job_kind, job_key, attempt_no)`. A new outbox row yields a new `job_key` and a
+clean attempt sequence from 1.
+
+**One prescribed step met locked authority and was realigned, not applied
+silently.** The directive's step 8 called for transitioning the existing intent
+`FAILED → PENDING/QUEUED`. `docs/database/DB3_NOTIFICATION_LIFECYCLE_SPEC.md` §1
+declares `FAILED` terminal and enumerates six transitions with **no
+`FAILED→PENDING`**, and §3 rule 2 is explicit and locked: *"manual resend =
+**new intent** (audited), không reopen intent cũ."*
+
+Stop condition 3 required **both** that no legal transition exists **and** that
+no existing state can represent replay without a migration. The first half
+holds; the second does not — a **new intent row in `PENDING`** represents it
+exactly, needs no migration, and is the form DB3 itself prescribes. So this was
+not a stop, and the realignment is reported here rather than made quietly
+(CLAUDE.md §2).
+
+It is also the only version that **functions**. The retry budget derives from
+`countAttempts(intentId)` over `notification_delivery_attempts`, which is keyed
+to the intent. A reopened intent would re-enter delivery already at or beyond
+the bound and terminal-fail on its first attempt, so the replay would never
+deliver. A new intent gets a clean budget. The directive's own §2.1 reasoning —
+terminal evidence, unambiguous attempt monotonicity — applies identically one
+level up.
+
+Every acceptance item survives: old `DEAD_LETTER` row terminal and unchanged;
+exactly one new `PENDING` outbox row; byte-identical ciphertext never decrypted;
+lifecycle move and outbox append in one transaction; duplicates collapse to one
+replay.
+
+### N.5 Non-secret notification-intent linkage
+
+The envelope is encrypted and ADR-DB4-004 rule 5 forbids querying JSONB
+internals, so the delivery event needs a queryable, non-secret path back to its
+intent. The outbox already has one — the REL-104 polymorphic reference:
+
+```text
+aggregate_kind = NOTIFICATION_INTENT
+aggregate_id   = notification_intent.id
+```
+
+`aggregate_kind` carries **no CHECK**; the closed set is the application guard
+`OUTBOX_AGGREGATE_KINDS` in `packages/persistence/src/platform/outbox-event-store.ts`,
+enforced at write time (G-DB7-47). Extending it follows the exact precedent
+APP2-B03 set when it added `PRODUCT`, whose in-source comment records the rule:
+*"this list is the G-DB7-47 write-time guard, not a schema constraint — no
+migration."* The store's own contract fits: the aggregate id's existence "is
+guaranteed by the enclosing transaction, which also wrote the aggregate row",
+and the intent is written in that transaction. `BACKGROUND_JOB_KINDS` already
+contains `NOTIFICATION_DELIVERY`, so the worker side needs no constant change.
+
+**No column added. No ciphertext ever queried.**
+
+### N.6 Lifecycle eligibility rules
+
+Transport replay copies an existing sealed secret, so it is allowed only while
+that secret is usable. Refuse when the challenge is expired, completed,
+invalidated, superseded or otherwise unanswerable; refuse when the grant is
+expired, revoked, superseded or otherwise inactive. A refusal returns an
+Admin-safe conflict with `REISSUE_REQUIRED` semantics and routes the operator to
+the **business** path — `APP4-B03` resend for a new code, `APP4-B05` reissue for
+a new token — never to secret reconstruction, which is impossible anyway since
+only the hash is persisted.
+
+Three contracts, locked as distinct terms at `APP4-G01`:
+
+```text
+automatic transport retry  = same outbox row  + same envelope
+Admin manual replay        = new outbox row   + same envelope, while eligible
+business resend / reissue  = new outbox row   + new secret + new envelope
+```
+
+### N.7 Duplicate Admin retry rule
+
+Exactly one caller wins the guarded lifecycle move; the winner appends exactly
+one new outbox row and one new intent. A losing or duplicate caller appends
+nothing and receives the canonical current state rather than silently creating a
+second delivery. No attempt counter is reset. Existing guarded-transition and
+idempotency mechanisms are reused — **no new global idempotency framework**.
+
+### N.8 Shared `packages/notification-delivery` ownership
+
+`P00-C1` had placed the sealing abstraction under
+`apps/api/src/modules/notification/infrastructure/crypto/`, but `APP4-W01` must
+open the same format from `apps/worker` — which would force an app-to-app import
+or a duplicated AES-GCM implementation and duplicated version constants. A
+drifted envelope version is an undeliverable notification.
+
+Ownership moves to **`@embroidery/notification-delivery`** at
+`packages/notification-delivery`, owning **only** the envelope schema and type,
+the version constant, the secret-kind discriminator, the `node:crypto`
+AES-256-GCM seal/open implementation, the shared key parsing/validation helper,
+and focused unit tests. It owns no notification persistence, worker runtime,
+HTTP, provider SDK, template, repository, policy lookup or database access.
+`apps/api` seals through it; `apps/worker` opens through it; **no app-to-app
+import; no third-party crypto dependency.**
+
+`REPOSITORY_STRUCTURE.md` permits and in fact requires this: packages are
+created "only when real cross-application reuse exists" — two applications
+sharing one wire format is exactly that — and "a new workspace package requires
+a clear owner, purpose, and consumer list", all three stated above. Introduced
+by `APP4-B01`, consumed unchanged by `APP4-W01`, boundary locked by `APP4-G01`.
+
+### N.9 Closure stop conditions — all four checked, none met
+
+| Checked | Finding |
+|---|---|
+| 1. `outbox_events` lacks a non-secret linkage to the intent? | **No.** `aggregate_kind` + `aggregate_id` (REL-104), no CHECK, application-guard set with a same-shape extension precedent. |
+| 2. Schema prevents a second delivery event for the same intent? | **No.** Sequence primary key; apart from the status CHECK, `outbox_events` carries no uniqueness at all. |
+| 3. No legal terminal→queued transition **and** no state can represent replay without a migration? | **Half met, so not met.** No `FAILED→PENDING` exists and DB3 §3 rule 2 forbids reopening — but a new intent in `PENDING` represents replay with no migration, and is what DB3 prescribes. Resolved in §N.4. |
+| 4. Workspace governance forbids `packages/notification-delivery`? | **No.** It conditions a new package on real cross-application reuse plus owner/purpose/consumers; all satisfied. |
+
+### N.10 Confirmations
+
+- **No runtime, schema, migration or provider was implemented.** No
+  `packages/notification-delivery` code, no AES-GCM runtime, no API or worker
+  code, no B08 controller or service, no policy seed values, no `.env.example`
+  edit, no OpenAPI, no generated client, no UI, no Figma, no schema, no
+  migration, no new queue, no provider adapter.
+- **`NO_APP4_MIGRATION` stands.** No column, index or CHECK changes. The one
+  source-level change the closure anticipates —
+  `OUTBOX_AGGREGATE_KINDS += 'NOTIFICATION_INTENT'` — is an application constant
+  with an explicit no-migration precedent, and it is **planned in `APP4-B01`,
+  not performed here**.
+- **The outbox remains the only worker queue**; no escrow table;
+  `NotificationIntentRepository.claimBatch` still has no production caller.
+- **APP2 authority was not amended.** No historical APP2 document was edited and
+  no `DEAD_LETTER` row was touched in any spike; no spike was run.
+- **Checkpoint graph unchanged** — 17 checkpoints, 10 endpoints, no edge added
+  or removed by the closure (audit §F.1).
+
+### N.11 Sections changed by the closure
+
+Audit: header and §A (verdict, history); new §C.8; `APP4-G01` items 11–16;
+`APP4-B01` (shared package, linkage, code areas, gate); `APP4-W01` (shared
+package, same-row retry, `DEAD_LETTER`); `APP4-B08` (full replay contract,
+eligibility, `REISSUE_REQUIRED`, gate); §F.1 note; §G items 11–18; §H invariants
+14a–14f (25 total). Report: §A, this §N, §H rows 5–6, §I, §J, §K.2.
+
+---
+
+`APP4-P00` is **closed**: `PASS — CLOSED_AFTER_MANDATORY_DIRECTIVE`.
+
+**`APP4-G01` runtime and configuration implementation has not begun**, and all
+APP4 runtime implementation remains not started, pending Product Owner review of
+this closed report.

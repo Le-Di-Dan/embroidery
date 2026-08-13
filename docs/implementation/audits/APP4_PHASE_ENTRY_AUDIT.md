@@ -5,11 +5,14 @@
 - Entry HEAD: `aa577f3e6e7da31a7acb42de12219b84f86b7708` (branch `production`, clean)
 - Entry state: APP0 `COMPLETE`, APP1 `COMPLETE — PASS_WITH_FOLLOW_UPS`,
   APP2 `COMPLETE`, APP3 `COMPLETE — PASS_WITH_FOLLOW_UPS` (closed at `APP3-X01`)
-- Verdict: **`PASS`** (corrected by `APP4-P00-C1`; the first draft was
-  `PASS_WITH_ROUTED_DECISIONS`)
-- Corrections applied: **`APP4-P00-C1`** — secret-delivery and secure-link
-  transport architecture (§C.7). Sections carrying corrected text are marked
-  **[C1]**.
+- Verdict: **`PASS — CLOSED_AFTER_MANDATORY_DIRECTIVE`**
+- History: initial P00 → **`APP4-P00-C1`** (the single correction) →
+  **mandatory closure directive** (prescriptive, not a correction; no
+  `APP4-P00-C2` exists)
+- Corrections applied: `APP4-P00-C1` — secret-delivery and secure-link transport
+  architecture (§C.7). Sections carrying corrected text are marked **[C1]**.
+- Closure applied: dead-letter manual replay and shared envelope authority
+  (§C.8). Sections carrying closure text are marked **[MD]**.
 - Scope of this checkpoint: planning and reconciliation only. No runtime code,
   no schema, no OpenAPI, no generated client, no worker, no UI.
 
@@ -54,6 +57,15 @@ and it forbade the very URL form a clickable secure link needs. Both are
 corrected by the Product Owner's **encrypted transient delivery envelope** and
 **URL-fragment link carrier** rulings, neither of which adds a schema change, a
 queue, an escrow table or a third-party dependency.
+
+**[MD]** A seventh finding closed the phase entry: `APP4-B08`'s "retry a failed
+intent" was incomplete against locked APP2 worker authority, because automatic
+terminal failure leaves the outbox row in `DEAD_LETTER`, which is never
+claimable, and APP2 deferred manual replay to a later approved checkpoint —
+`APP4-B08` **is** that checkpoint. The Product Owner prescribed the manual
+replay state machine and a shared envelope codec package; both are applied in
+§C.8. One prescribed step collides with a locked DB3 lifecycle rule and is
+realigned to it in §C.8.4 rather than applied silently.
 
 The one previously routed decision — notification channel/provider, `IMP-O006` —
 is now **`PO_ACCEPTED / NON_BLOCKING`** (§J). The decision ledger is empty.
@@ -317,6 +329,216 @@ Browser semantics, owned by `APP4-S02`:
 
 No token-bearing query parameter or path segment is introduced.
 
+### C.8 Dead-letter manual replay and shared envelope authority — mandatory closure **[MD]**
+
+#### C.8.1 The residual defect
+
+`APP4-P00-C1` made **automatic** transport retry work: the same outbox row is
+re-leased and the same sealed envelope is re-delivered. It did not close the
+**manual** path. `APP4-B08` still said an operator could "retry a `FAILED`
+intent" by "re-enqueueing through the outbox path", which is incomplete against
+locked APP2 worker authority:
+
+- automatic terminal failure leaves the source outbox row `DEAD_LETTER`;
+- `DEAD_LETTER` is outside IDX-088's claimable predicate and is **never**
+  automatically claimed;
+- APP2 deferred manual replay to a later approved checkpoint, and `APP4-B08`
+  **is** that checkpoint.
+
+So APP4 must define the manual replay contract, and the Product Owner
+prescribed it.
+
+#### C.8.2 Three distinct contracts — locked vocabulary
+
+`APP4-G01` locks these as three separate terms that no later checkpoint may
+conflate:
+
+| Term | Outbox row | Envelope | Secret | Owner |
+|---|---|---|---|---|
+| **Automatic transport retry** | the **same** `PENDING` row, re-leased | the same sealed envelope | unchanged | `APP4-W01` |
+| **Admin manual transport replay** | the old `DEAD_LETTER` row stays untouched; a **new** `PENDING` row is appended | the **byte-identical** ciphertext copied without decryption | unchanged, and only while still eligible | `APP4-B08` |
+| **Business resend / reissue** | a new `PENDING` row | a **new** envelope | a **new** code or rotated token | `APP4-B03` (resend), `APP4-B05` (reissue) |
+
+#### C.8.3 The manual replay transaction
+
+The old `DEAD_LETTER` row is **never** reset, reactivated or mutated. It is
+immutable terminal evidence, its attempt count already equals the automatic
+retry limit, and — decisively — `job_key` **is the outbox event id**
+(`worker-job-queue.repository.ts`: `jobKey: guard.outboxEventId.toString()`), so
+reusing that identity would collide with CST-049
+`uq_background_job_attempts__kind_key_attempt` and destroy the monotonicity of
+`(job_kind, job_key, attempt_no)`. A new outbox row yields a new `job_key` and a
+clean attempt sequence starting at 1.
+
+For an authorized Admin retry, inside **one** transaction:
+
+1. lock/read the notification intent;
+2. require the intent to be in the terminal failed state;
+3. resolve the terminal source outbox event through the **non-secret linkage**
+   (§C.8.5) — never by querying ciphertext;
+4. require the source event's status to be `DEAD_LETTER`;
+5. verify the underlying business secret is **still eligible** (§C.8.6);
+6. copy the opaque envelope **bytes/JSON structure and `payload_schema_version`
+   exactly** from the terminal source event — **the API never decrypts**;
+7. append a **new** `PENDING` outbox event: new event id, fresh attempt counter,
+   same delivery event type, same ciphertext, same aggregate linkage;
+8. carry the notification lifecycle forward per §C.8.4;
+9. commit steps 7 and 8 together;
+10. leave the old `DEAD_LETTER` row unchanged.
+
+No plaintext code or token is reconstructed, re-rendered, persisted or logged at
+any point. `packages/notification-delivery` is imported by the API for
+**sealing** only; the API has no reason to open an envelope and `APP4-B08` must
+not.
+
+#### C.8.4 Lifecycle realignment — the one prescribed step that met locked authority
+
+The directive's step 8 prescribed transitioning the existing intent
+`FAILED → PENDING/QUEUED`. That collides with locked DB3 authority:
+
+`docs/database/DB3_NOTIFICATION_LIFECYCLE_SPEC.md` §1 declares `FAILED`
+**terminal** and enumerates six transitions — TR-NTF-01 `(create)→PENDING`,
+TR-NTF-02 `PENDING→PROCESSING`, TR-NTF-03 `PROCESSING→SATISFIED`, TR-NTF-04
+`PROCESSING→PENDING`, TR-NTF-05 `PROCESSING→FAILED`, TR-NTF-06
+`PENDING→CANCELLED`. **There is no `FAILED→PENDING`.** §3 rule 2 is explicit and
+locked: *"exhausted → FAILED + dead-letter; manual resend = **new intent**
+(audited), không reopen intent cũ"* — manual resend is a new intent; do not
+reopen the old one.
+
+Stop condition 3 required **both** that no legal transition exists **and** that
+no existing state can represent manual replay without a migration. The first
+half holds; the second does not — a **new intent row in `PENDING`** represents
+it exactly, needs no migration, and is the form DB3 itself prescribes. So this
+is not a stop. Step 8 is realigned rather than applied verbatim, and the
+realignment is reported here rather than made silently (CLAUDE.md §2).
+
+**Step 8 as executed:** the manual replay appends a **new notification intent**
+in `PENDING`, carrying the same template reference, channel, masked recipient
+and redacted params, under a derived replay `intent_key` (CST-047 makes the
+original key unavailable). The original `FAILED` intent is **not** reopened; it
+is linked as the replay's origin through the same non-secret reference
+mechanism and stays terminal evidence, exactly as the old `DEAD_LETTER` row
+does one level down.
+
+This is also the only version that **functions**. The retry budget is derived
+from `NotificationIntentRepository.countAttempts(intentId)` over
+`notification_delivery_attempts`, which is keyed to the intent. A reopened
+intent would re-enter delivery with its attempt count already at or beyond the
+bound, so the worker would terminal-fail on the first attempt and the replay
+would never deliver. A new intent gets a clean budget. The directive's own
+reasoning for §2.1 — terminal evidence, unambiguous attempt monotonicity —
+applies identically one level up, so following DB3 makes the architecture more
+internally consistent, not less.
+
+Every acceptance item survives: the old `DEAD_LETTER` row stays terminal and
+unchanged; exactly one new `PENDING` outbox row is appended; the ciphertext is
+byte-identical and never decrypted; the lifecycle move and the outbox append
+commit in one transaction; duplicate calls produce one replay (§C.8.7).
+
+#### C.8.5 Non-secret linkage — existing fields, no new column
+
+The envelope is encrypted and ADR-DB4-004 rule 5 forbids querying JSONB
+internals, so the delivery event needs a server-queryable, non-secret path back
+to its intent. The outbox already has one — the REL-104 polymorphic reference:
+
+```text
+aggregate_kind = NOTIFICATION_INTENT
+aggregate_id   = notification_intent.id
+```
+
+`aggregate_kind` has **no CHECK constraint**; the closed set is the application
+guard `OUTBOX_AGGREGATE_KINDS` in
+`packages/persistence/src/platform/outbox-event-store.ts`, validated at write
+time (G-DB7-47). Adding `NOTIFICATION_INTENT` to that constant follows the exact
+precedent APP2-B03 set when it added `PRODUCT`, whose in-source comment records
+the rule: *"`aggregate_kind` is open text with no CHECK by design (REL-104 is
+polymorphic), so this list is the G-DB7-47 write-time guard, not a schema
+constraint — no migration."* The store's contract also fits precisely: the id's
+existence "is guaranteed by the enclosing transaction, which also wrote the
+aggregate row", and the intent is written in that same transaction.
+
+**No column is added. No ciphertext is ever queried.** `APP4-G01` locks the
+mapping, `APP4-B01` writes it on every delivery event, `APP4-B08` reads it to
+resolve the terminal source event.
+
+`BACKGROUND_JOB_KINDS` already contains `NOTIFICATION_DELIVERY`, so the worker
+side needs no constant change at all.
+
+#### C.8.6 Replay eligibility — transport replay never outlives its secret
+
+Manual replay copies an existing sealed secret, so it is permitted only while
+that secret is still usable.
+
+- **Verification challenge** — refuse if the challenge is expired, completed,
+  invalidated, superseded or otherwise no longer answerable. Delivering a code
+  that can no longer be entered is worse than refusing.
+- **Secure grant** — refuse if the grant is expired, revoked, superseded or
+  otherwise inactive. Re-delivering a dead link teaches an attacker nothing and
+  helps the customer not at all.
+
+A refusal returns an Admin-safe conflict result with the semantics
+`REISSUE_REQUIRED` (exact code per repository error conventions, locked at
+`APP4-G01`). It routes the operator to the **business** path — `APP4-B03` for a
+new verification code, `APP4-B05` reissue for a new token — and **never** to
+secret reconstruction, which is impossible by construction anyway: only the
+hash is persisted.
+
+#### C.8.7 Duplicate and concurrent Admin retry
+
+Manual replay is idempotent. Exactly one caller wins the guarded lifecycle move
+on the origin intent; the winner appends exactly one new outbox row. A losing or
+duplicate caller appends nothing and receives the canonical current state rather
+than silently creating a second delivery. No new global idempotency framework is
+introduced — the guarded-transition and idempotency mechanisms already in the
+repository are reused. The old row's attempt counter is never reset.
+
+#### C.8.8 Shared envelope codec — `packages/notification-delivery`
+
+`APP4-P00-C1` placed the sealing abstraction under
+`apps/api/src/modules/notification/infrastructure/crypto/`, but `APP4-W01` must
+open the same format from `apps/worker`. That would force an app-to-app import
+or a duplicated AES-GCM implementation and duplicated version constants — API
+and worker would drift, and a drifted envelope version is an undeliverable
+notification.
+
+**Ownership moves to one shared workspace package,
+`@embroidery/notification-delivery` at `packages/notification-delivery`.**
+
+It owns **only**: the delivery-envelope schema and type; the envelope version
+constant; the secret-kind discriminator; the AEAD seal/open implementation over
+`node:crypto` AES-256-GCM; the key parsing/validation helper both processes
+need; and focused unit tests.
+
+It owns **nothing** else — no notification-intent persistence, no worker
+runtime, no HTTP, no provider SDK, no templates or business rendering, no
+customer/grant repositories, no policy lookup, no database access.
+
+`apps/api` imports it to **seal**. `apps/worker` imports it to **open**. **No
+app-to-app import.** **No third-party crypto dependency.**
+
+This is permitted and in fact required by workspace governance:
+`REPOSITORY_STRUCTURE.md` states packages are created "only when real
+cross-application reuse exists" — two applications sharing one wire format is
+exactly that — and that "a new workspace package requires a clear owner,
+purpose, and consumer list", all three of which are stated above. Stop
+condition 4 is **not** met.
+
+The package is introduced by `APP4-B01`, which owns the producer-side envelope
+contract; `APP4-W01` consumes it unchanged. `APP4-G01` locks the boundary and
+the envelope/key authority before `APP4-B01` starts.
+
+#### C.8.9 Closure stop conditions — all four checked, none met
+
+| Checked | Finding |
+|---|---|
+| 1. Does `outbox_events` lack a non-secret linkage capable of identifying the intent? | **No.** `aggregate_kind` + `aggregate_id` (REL-104) are exactly that, with no CHECK to widen and an application-level closed set whose extension has a same-shape precedent (`PRODUCT`, APP2-B03). |
+| 2. Does the schema prevent a second delivery event for the same intent? | **No.** `outbox_events` carries a sequence primary key and, apart from the status CHECK, no uniqueness at all — no constraint on `(aggregate_kind, aggregate_id, event_type)`. A replay row is representable. |
+| 3. Is there no legal terminal→queued transition **and** no existing state able to represent replay without a migration? | **Half met, so not met.** `FAILED` is terminal with no `FAILED→PENDING` transition, and DB3 §3 rule 2 forbids reopening the old intent — but a **new intent in `PENDING`** represents manual replay with no migration, and is the form DB3 itself prescribes. Resolved in §C.8.4. |
+| 4. Does workspace governance forbid `packages/notification-delivery`? | **No.** `REPOSITORY_STRUCTURE.md` conditions a new package on real cross-application reuse plus a stated owner, purpose and consumer list. All are satisfied (§C.8.8). |
+
+**Still true after closure:** `NO_APP4_MIGRATION`; the outbox remains the only
+worker queue; no escrow table; no provider; no schema, column or index change.
+
 ---
 
 ## D. Design audit
@@ -423,10 +645,33 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
       including the replacement of the inaccurate "never in a URL" rule with the
       precise four-part rule, and the ordering requirement that fragment
       stripping precede any analytics or third-party activity.
-  11. **[C1] Transport retry versus business resend.** Retry re-sends the same
-      envelope and mints nothing; resend issues a new challenge and code under
-      the cooldown. Both terms are defined here so `APP4-B03`, `APP4-W01` and
-      `APP4-B08` cannot drift.
+  11. **[C1]/[MD] Three delivery contracts, locked as separate terms** (§C.8.2):
+      **automatic transport retry** (same outbox row, same envelope, mints
+      nothing), **Admin manual transport replay** (new outbox row, byte-identical
+      ciphertext, only while the source secret is still eligible) and **business
+      resend/reissue** (new secret, new envelope). Defined here so `APP4-B03`,
+      `APP4-B05`, `APP4-W01` and `APP4-B08` cannot drift.
+  12. **[MD] The `DEAD_LETTER` manual replay contract** (§C.8.3), including the
+      absolute rule that a `DEAD_LETTER` row is **never** reset, reactivated or
+      mutated — by an automatic path, an Admin path or an operator script.
+  13. **[MD] The non-secret outbox↔intent linkage** (§C.8.5): the exact existing
+      field mapping (`aggregate_kind = NOTIFICATION_INTENT`,
+      `aggregate_id = notification_intent.id`), locked after source inspection,
+      plus the extension of the `OUTBOX_AGGREGATE_KINDS` application guard —
+      **no column, no CHECK, no migration**, following the APP2-B03 `PRODUCT`
+      precedent. No ciphertext is ever queried to discover an intent id.
+  14. **[MD] Manual replay eligibility** against current challenge/grant state
+      (§C.8.6), and the `REISSUE_REQUIRED` result semantics — exact code per
+      repository error conventions — that route a refusal to the business path
+      rather than to secret reconstruction.
+  15. **[MD] The lifecycle form of manual replay** (§C.8.4): a **new notification
+      intent** in `PENDING` with a derived replay `intent_key`, never a reopen of
+      the terminal one, per the locked DB3 §3 rule 2.
+  16. **[MD] Shared package ownership:** `packages/notification-delivery`
+      (`@embroidery/notification-delivery`) is the single authority for the
+      envelope schema, version constant, secret-kind discriminator and AEAD
+      implementation, sealed by `apps/api` and opened by `apps/worker`, with no
+      app-to-app import and no third-party crypto dependency (§C.8.8).
 - **Out of scope:** any runtime code, any endpoint, any provider choice, any key
   value.
 - **Code areas:** `docs/implementation/*`, `docs/adr/backend/ADR-APP4-001-*`,
@@ -499,21 +744,36 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
   (`ChallengeId`/`GrantId` references only); `recipient_masked` from `APP4-P01`;
   correlation-ID propagation. **[C1]** Owns the producer-side handoff shape: the
   encrypted delivery envelope (`APP4-G01` §7) written into
-  `outbox_events.payload` beside the intent reference, and the AEAD abstraction
-  over `node:crypto` that seals it. **`notification_intents.params` remains
-  structurally secret-free** — the envelope never enters that column.
+  `outbox_events.payload`. **`notification_intents.params` remains structurally
+  secret-free** — the envelope never enters that column.
+
+  **[MD] Creates `packages/notification-delivery`** (`@embroidery/notification-delivery`)
+  and seals through it — the envelope schema, version constant, secret-kind
+  discriminator and `node:crypto` AES-256-GCM implementation live there, **not**
+  in `apps/api`, because `APP4-W01` opens the same format from `apps/worker`
+  (§C.8.8). **[MD]** Writes the **non-secret linkage** on every delivery outbox
+  event — `aggregate_kind = NOTIFICATION_INTENT`,
+  `aggregate_id = notification_intent.id` — and extends the
+  `OUTBOX_AGGREGATE_KINDS` application guard accordingly (§C.8.5).
 - **Out of scope:** channel adapters, delivery, retry, decryption, rendering,
-  Admin surface.
-- **Code areas:** `apps/api/src/modules/notification/application/`,
-  `apps/api/src/modules/notification/infrastructure/crypto/`,
-  `notification.module.ts`, `bootstrap/app.module.ts`.
+  Admin surface; any notification persistence, HTTP, provider SDK, template,
+  repository, policy lookup or database access **inside** the shared package.
+- **Code areas:** `packages/notification-delivery/` (new),
+  `packages/persistence/src/platform/outbox-event-store.ts` (one constant entry),
+  `apps/api/src/modules/notification/application/`, `notification.module.ts`,
+  `bootstrap/app.module.ts`.
 - **Endpoints:** 0. **Prerequisites:** `APP4-P01`, `APP4-G01`. **Design:** `NONE`.
 - **Verification:** module-scoped integration tests — duplicate outbox event
   yields one intent (`replay` outcome); `params` structurally cannot carry a
   code or token; masked recipient never equals the raw value; **[C1]** a sealed
   envelope round-trips, a tampered ciphertext or tag fails authentication rather
   than decrypting, and the persisted payload contains no plaintext substring of
-  the secret; contract gate `node tools/check-app4-b01.mjs`.
+  the secret; **[MD]** every delivery event carries the intent linkage and is
+  resolvable by it without reading `payload`; contract gate
+  `node tools/check-app4-b01.mjs`, extended to assert that
+  `packages/notification-delivery` declares no dependency on `apps/*`,
+  `@embroidery/persistence` or `@embroidery/database`, and that no AES-GCM
+  implementation exists outside it.
 - **Acceptance:** an intent exists for a business event with no secret in any
   persisted column, and the only place delivery material exists is the sealed
   envelope on the transient outbox row.
@@ -529,15 +789,22 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
 - **Scope:** Register a `notification.delivery` job kind in the existing
   `JobHandlerRegistry`; claim through `WorkerJobQueueRepository` (§C.4);
   **[C1] decrypt the delivery envelope only after the claim succeeds**, holding
-  plaintext in worker memory only until the send returns; a provider-neutral
+  plaintext in worker memory only until the send returns — **[MD] opening it
+  through `@embroidery/notification-delivery`, the same package `APP4-B01` seals
+  with, so exactly one AEAD implementation and one version constant exist across
+  both processes; `apps/worker` imports no `apps/api` code**; a provider-neutral
   `NotificationChannelPort`; a **recording dev adapter** that performs no
   external call and exposes the decrypted value only in dev/test process memory;
   append a `notification_delivery_attempts` row per try with `outcome` and a
   bounded `error_class`; bounded retry using the existing `retry-schedule`;
   **[C1] a transport retry re-reads and re-decrypts the same envelope and mints
-  no new secret** (§C.7.2 items 9–10); `FAILED_TERMINAL` → intent `FAILED` and
-  dead-letter visibility with safe metadata only; duplicate-safe (a replayed job
-  never double-sends a delivered intent).
+  no new secret** (§C.7.2 items 9–10) — the **same outbox row** is re-leased,
+  never a new one; `FAILED_TERMINAL` or an exhausted budget → attempt
+  `FAILED_TERMINAL`, intent terminal-failed (TR-NTF-05) and **[MD] the source
+  outbox row left in `DEAD_LETTER`, where it stays as immutable terminal
+  evidence** — the worker never resets it and neither does anything else
+  (§C.8.3); duplicate-safe (a replayed job never double-sends a delivered
+  intent).
 - **Out of scope:** any real provider or SDK; templates as content; HTTP;
   minting or re-minting any secret; issuing a replacement challenge or grant.
 - **Code areas:** `apps/worker/src/jobs/notification-delivery/`.
@@ -748,20 +1015,55 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
 ### `APP4-B08` — Admin notification delivery operations
 
 - **Context / owner:** Notification module — Admin surface.
-- **Purpose:** Answer "was it sent, and why did it fail?" and retry.
+- **Purpose:** Answer "was it sent, and why did it fail?" and perform manual
+  transport replay. **[MD] This checkpoint owns the manual-replay policy APP2
+  deferred to a later approved checkpoint** (§C.8.1).
 - **Scope:** `GET /admin/notification-intents` (filter by status; masked
-  recipient; template reference) and
-  `POST /admin/notification-intents/{intentId}/retry` (re-enqueue a `FAILED`
-  intent through the same outbox path; idempotent; never re-renders a secret).
+  recipient; template reference; attempt timeline) and
+  `POST /admin/notification-intents/{intentId}/replay`.
+
+  **[MD] The replay operation, exactly** (§C.8.3–§C.8.7), in **one**
+  transaction:
+  1. lock/read the intent; require it terminal-failed;
+  2. resolve the terminal source outbox event through the **non-secret linkage**
+     (`aggregate_kind = NOTIFICATION_INTENT`, `aggregate_id = intent.id`) —
+     **never** by querying `payload`;
+  3. require the source event's status to be `DEAD_LETTER`;
+  4. verify the underlying secret is still eligible — challenge not expired,
+     completed, invalidated or superseded; grant active, unexpired, unrevoked,
+     unsuperseded (§C.8.6);
+  5. copy the envelope ciphertext and `payload_schema_version` **byte-identically**
+     from the terminal source event — **the API never decrypts**;
+  6. append **one** new `PENDING` outbox event: new id, fresh attempt counter,
+     same delivery event type, same ciphertext, same aggregate linkage;
+  7. create the **new `PENDING` notification intent** under a derived replay
+     `intent_key`, linked to the origin intent (§C.8.4) — the terminal intent is
+     **not** reopened, per locked DB3 §3 rule 2;
+  8. leave the old `DEAD_LETTER` row and the origin intent **unchanged**;
+  9. audit the replay (actor, origin intent, new intent, reason).
+
+  Ineligible source secret → an Admin-safe conflict with `REISSUE_REQUIRED`
+  semantics, routing the operator to `APP4-B03` resend or `APP4-B05` reissue.
+  Duplicate or concurrent calls → exactly one replay through the guarded
+  transition; the loser receives the canonical current state and appends nothing.
 - **Out of scope:** message bodies, provider consoles, campaign concepts,
-  customer-visible surfaces.
-- **Endpoints:** **2**. **Prerequisites:** `APP4-W01`.
+  customer-visible surfaces; **[MD]** decrypting any envelope; minting any
+  secret; mutating, resetting or re-claiming a `DEAD_LETTER` row; resetting any
+  attempt counter; introducing a new idempotency framework.
+- **Endpoints:** **2**. **Prerequisites:** `APP4-W01`, `APP4-G01`.
   **Design:** `NONE` (the screen is `APP4-A01`).
-- **Verification:** module integration tests — retry on a `SATISFIED` intent is
-  refused; retry is idempotent; attempts list shows `error_class` and never a
-  provider body; `node tools/check-app4-b08-contract.mjs`.
-- **Acceptance:** terminal failure is visible and recoverable from the Admin app.
-- **Stop if:** retry would need to reconstruct a code — it must re-derive
+- **Verification:** module integration tests — replay on a `SATISFIED` intent is
+  refused; attempts list shows `error_class` and never a provider body;
+  **[MD]** replay appends exactly one new outbox row whose `payload` is
+  byte-identical to the terminal source row's; the old `DEAD_LETTER` row is
+  unchanged in every column; two concurrent replays produce exactly one new row;
+  an expired challenge and a revoked grant each yield `REISSUE_REQUIRED` with no
+  new row; `node tools/check-app4-b08-contract.mjs` asserting the module imports
+  no `open`/decrypt symbol from `@embroidery/notification-delivery` and issues no
+  `UPDATE` against `outbox_events`.
+- **Acceptance:** terminal failure is visible and recoverable from the Admin app
+  without any plaintext secret existing in the API process at any moment.
+- **Stop if:** replay would need to reconstruct a code — it must re-derive
   nothing; a verification code is re-issued through `APP4-B03`, never resent.
 
 ---
@@ -890,6 +1192,13 @@ envelope format and the AEAD abstraction that seals it. `APP4-G01` was already
 an ancestor of everything. **No checkpoint was added, removed, merged or
 re-scoped, and no endpoint count changed.**
 
+**[MD] The mandatory closure changed no edge and no count.** It moved code
+ownership (the envelope codec from `apps/api` into
+`packages/notification-delivery`, still introduced by `APP4-B01` and still
+consumed by `APP4-W01`) and it specified `APP4-B08`'s existing second endpoint,
+which was already counted. **17 checkpoints, 10 endpoints, unchanged.** The only
+edits were to code areas, scope text and verification strategy.
+
 ### F.2 Endpoint budget
 
 | Checkpoint | Endpoints | Cap |
@@ -943,6 +1252,29 @@ Every backend checkpoint is within 1–3 endpoints; none approaches the cap.
     resend endpoint produces a *new* challenge with a *new* code and a new
     envelope, under the `APP4-G01` cooldown — proving retry and resend are not
     the same operation.
+11. **[MD] Automatic retry uses the same outbox row.** Across a retryable
+    failure and the following attempt, the outbox event **id** is unchanged and
+    the `payload` is byte-identical.
+12. **[MD] Terminal failure produces `DEAD_LETTER`.** A forced terminal failure
+    leaves the source outbox row in `DEAD_LETTER` and the intent terminal-failed.
+13. **[MD] Admin replay creates a new outbox event id** carrying a
+    **byte-identical** encrypted payload and the same
+    `payload_schema_version` — proving the ciphertext was copied, not re-sealed,
+    and therefore never decrypted.
+14. **[MD] The old `DEAD_LETTER` row is unchanged** after replay — every column,
+    including `attempt_count`, `status`, `last_error` and `dispatched_at`,
+    compared before and after.
+15. **[MD] The source challenge/grant is unchanged** after replay — no new code,
+    no rotated token, no lifecycle move on the origin record.
+16. **[MD] Concurrent Admin replays append exactly one event.** Two simultaneous
+    replay calls yield one new outbox row and one new intent; the loser returns
+    the canonical current state.
+17. **[MD] A stale source secret refuses replay.** An expired challenge and a
+    revoked grant each return `REISSUE_REQUIRED`, append no outbox row, and
+    create no intent.
+18. **[MD] Business resend/reissue is observably different from replay** — it
+    produces a new secret and a **new** envelope whose ciphertext differs from
+    the terminal row's, closing the three-contract distinction end to end.
 
 **Must not include:** request submission as a business action, design review,
 quotation acceptance, payment initiation, or any APP5/APP6/APP7 state
@@ -973,6 +1305,12 @@ repository fixture and is explicitly labelled scaffolding in the E01 report.
 | 12 | Idempotent notification processing | `APP4-B01`, `APP4-W01` | Duplicate outbox → one intent (CST-047); replayed claim after `SATISFIED` sends nothing |
 | 13 | Bounded retry | `APP4-W01` | Attempt count reaches the configured bound and stops |
 | 13a | **[C1]** Transport retry and business resend are semantically separate | `APP4-G01` (definitions), `APP4-W01` (retry mints nothing), `APP4-B03` (resend mints a new challenge) | Two transport attempts deliver the identical secret with the source row unchanged; a resend produces a new challenge, code and envelope under the cooldown |
+| 14a | **[MD]** Terminal evidence is immutable across manual replay | `APP4-G01` (rule), `APP4-W01` (leaves `DEAD_LETTER`), `APP4-B08` (never mutates it) | Every column of the old `DEAD_LETTER` row compared before and after replay; the B08 gate asserts no `UPDATE` against `outbox_events`; the origin intent stays terminal |
+| 14b | **[MD]** Manual replay never decrypts | `APP4-B08` | Byte-identical ciphertext and `payload_schema_version` on the new row proves a copy, not a re-seal; the gate asserts the module imports no `open`/decrypt symbol |
+| 14c | **[MD]** Stable non-secret intent↔outbox linkage | `APP4-G01` (mapping), `APP4-B01` (writes it), `APP4-B08` (reads it) | Every delivery event resolves to its intent through `aggregate_kind`/`aggregate_id` without reading `payload`; no query touches ciphertext; no column added |
+| 14d | **[MD]** Duplicate/concurrent Admin replay is safe | `APP4-B08` | Two simultaneous replays produce exactly one new outbox row and one new intent; the loser appends nothing and no attempt counter is reset |
+| 14e | **[MD]** Replay eligibility tracks the secret's current lifecycle | `APP4-G01` (rule), `APP4-B08` (enforcement) | An expired/completed/superseded challenge and an expired/revoked/superseded grant each yield `REISSUE_REQUIRED` with no row appended, routing to `APP4-B03`/`APP4-B05` |
+| 14f | **[MD]** One envelope codec across API and worker | `APP4-G01` (boundary), `APP4-B01` (seals), `APP4-W01` (opens) | `@embroidery/notification-delivery` is the only AES-GCM implementation and the only envelope-version constant; gates assert no app-to-app import, no third-party crypto dependency, and no AEAD code outside the package |
 | 14 | Terminal failure observability | `APP4-W01`, `APP4-B08` | `FAILED_TERMINAL` attempt + `FAILED` intent visible and retryable in Admin |
 
 Cross-cutting: **audit** (INV-14) is written by `APP4-B02` (link/attach),
@@ -981,8 +1319,13 @@ Cross-cutting: **audit** (INV-14) is written by `APP4-B02` (link/attach),
 **[C1]** The original fourteen invariants are unchanged. `APP4-P00-C1` adds five
 — 3a, 3b, 3c, 3d and 13a — covering the encrypted transient secret, the
 worker-only decrypt lifetime, the fragment-only link carrier, fragment removal
-before analytics, and the retry-versus-resend separation. **19 invariants, all
-owned.**
+before analytics, and the retry-versus-resend separation.
+
+**[MD]** The mandatory closure adds six more — 14a–14f — covering immutable
+terminal evidence, replay without decryption, the non-secret intent↔outbox
+linkage, duplicate-replay safety, replay eligibility against the secret's
+current lifecycle, and single-authority envelope codec ownership. Nothing was
+deleted. **25 invariants, all owned.**
 
 ---
 
