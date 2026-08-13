@@ -394,7 +394,7 @@ Planning checkpoints are committed in this repository (APP2/APP3 precedent:
 | P00 (initial) | `2044a31ec9f408ab80ffd1eb363acb07afce4d63` | `docs(app4): reconcile APP4 phase entry and lock the execution manifest` |
 | P00 (evidence) | `108e488e3090bcacab27bfd2a2d73798393a93ce` | `docs(app4): record APP4-P00 commit evidence` |
 | **P00-C1** | `096806c86c12cf7dae83e1f50c6c9d35bf7e9acd` | `docs(app4): correct APP4 secret-delivery and secure-link transport` |
-| **Mandatory closure** | `__CLOSURE_COMMIT__` | `docs(app4): close APP4-P00 with dead-letter replay and shared envelope authority` |
+| **Mandatory closure** | `445a936b10dd49f2a77c5ef46b84b1fad66d19dd` | `docs(app4): close APP4-P00 with dead-letter replay and shared envelope authority` |
 | Closure evidence | final HEAD, §J.1 | `docs(app4): record APP4-P00 closure commit evidence` |
 
 Parent of the first commit: `aa577f3e6e7da31a7acb42de12219b84f86b7708`
@@ -409,7 +409,7 @@ HEAD recorded below.
 
 | Item | Value |
 |---|---|
-| Final HEAD | `__FINAL_HEAD__` |
+| Final HEAD | the closure-evidence commit — the tip of `production` after this report was written back; its parent is `445a936b10dd49f2a77c5ef46b84b1fad66d19dd` |
 | Branch | `production` |
 | Working tree | clean |
 | Pushed | **no** — nothing was pushed at any stage |
