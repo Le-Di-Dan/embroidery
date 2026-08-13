@@ -71,7 +71,16 @@ import {
  * turned a mutation's `.replace` into a silent no-op — the mutation then passed
  * by mutating nothing, which is the failure this suite exists to catch.
  */
-const S08_STATUS_LINE = '\nAPP3-S08 = COMPLETE — REVIEW_DELIVERED — CORRECTED_BY_APP3-S08-C1\n';
+/**
+ * The exact line `APP3-S08` is recorded under, named once.
+ *
+ * Every mutation below rewrites the phase status around it, so a `.replace`
+ * whose target has moved passes while proving nothing — the failure this
+ * checkpoint's predecessor recorded and this constant exists to make impossible
+ * to repeat quietly. It moved again at `APP3-S10`, when human review accepted
+ * the correction.
+ */
+const S08_STATUS_LINE = '\nAPP3-S08 = COMPLETE — REVIEW_ACCEPTED — CORRECTED_BY_APP3-S08-C1\n';
 
 const temporaries = [];
 after(() => {
@@ -165,7 +174,7 @@ describe('predecessors and status', () => {
   });
 
   it('rejects a later capability recorded complete here', () => {
-    for (const later of ['APP3-S10', 'APP3-S11']) {
+    for (const later of ['APP3-S11']) {
       const phase = file('phase').replace(
         S08_STATUS_LINE,
         `${S08_STATUS_LINE}${later} = COMPLETE — REVIEW_DELIVERED\n`,
@@ -236,7 +245,7 @@ describe('design approval', () => {
 
   it('rejects a later checkpoint row released early', () => {
     const registry = file('registry').replace(
-      /(\| FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED \|[^\n]*)REVIEW_REQUIRED/,
+      /(\| FIG-STUDIO-MOBILE-LAYERSSHEET \|[^\n]*)REVIEW_REQUIRED/,
       '$1APPROVED_FOR_IMPLEMENTATION',
     );
     assert.ok(mentions(run(checkDesignApproval, { registry }), 'later checkpoint'));

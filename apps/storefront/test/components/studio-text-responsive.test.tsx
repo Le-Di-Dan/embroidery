@@ -2,22 +2,21 @@
  * Where the text inspector goes, and which face it asked the browser about
  * (`APP3-S05-C1`).
  *
- * The two things human review sent `APP3-S05` back for. Both are failures that
- * leave a working editor behind, which is why they need a rendered tree rather
- * than a source rule:
+ * The two things human review sent `APP3-S05` back for. Both leave a working
+ * editor behind, which is why they need a rendered tree rather than a source
+ * rule:
  *
- * - **Composition.** `FIG-STUDIO-EDITING-TABLET-1024` (`618:140`) draws a right
- *   drawer over the stage at 1024, and no editing surface at all on a phone —
- *   that is `APP3-S11`'s. A panel stacked under the stage looks reasonable and
- *   is a different composition; a CSS-hidden phone inspector looks absent and is
+ * - **Composition.** `618:140` draws a right drawer over the stage at 1024 and
+ *   no editing surface at all on a phone — that is `APP3-S11`'s. A panel stacked
+ *   under the stage is a different composition; a CSS-hidden phone inspector is
  *   still focusable and still submittable.
  * - **Font readiness.** A family probe answers `ready` as soon as any Inter face
  *   arrives, so a missing italic binary reads as success and the browser
  *   synthesises a slant nobody audited. The probe has to name the exact triple.
  *
  * `document.fonts` does not exist in jsdom, so the font half installs a
- * controllable one. That is the seam under test: what the capability *asks*, and
- * what it does with each answer.
+ * controllable one: what the capability *asks*, and what it does with each
+ * answer.
  */
 import { act } from 'react';
 
@@ -121,6 +120,7 @@ function renderStage(width: number, document = scene) {
     <StudioStageScreen
       areaLimits={null}
       isResuming={false}
+      onExpired={jest.fn()}
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={makeStageSnapshot(document)}
@@ -154,6 +154,11 @@ describe('1440 keeps the accepted desktop composition (APP3-S05-C1 §3)', () => 
 
     expect(screen.getByTestId('studio-text-value')).toBeVisible();
     expect(screen.queryByTestId('studio-text-drawer')).not.toBeInTheDocument();
+    // A rule about the **trigger** since `APP3-S10`: "no topbar outside 1024"
+    // was right while the toggle was its only reason to exist, and the save chip
+    // now shares that one region at every tier. The inspector is in flow here,
+    // so no trigger may open a second copy of it.
+    expect(screen.getAllByTestId('studio-stage-topbar')).toHaveLength(1);
     expect(screen.queryByTestId('studio-text-drawer-trigger')).not.toBeInTheDocument();
   });
 });
@@ -285,19 +290,11 @@ describe('the tablet trigger lives in the Studio topbar (APP3-S05-MI01 §1)', ()
     );
   });
 
-  it('puts nothing above the stage at 1440 or at 390', () => {
-    renderStage(DESKTOP);
-    select('t');
-    expect(screen.queryByTestId('studio-stage-topbar')).not.toBeInTheDocument();
-
-    screen.getByTestId('studio-text-value');
-  });
-
-  it('renders no topbar and no trigger on a phone', () => {
+  it('renders no trigger and no drawer on a phone', () => {
     renderStage(MOBILE);
     select('t');
-    expect(screen.queryByTestId('studio-stage-topbar')).not.toBeInTheDocument();
     expect(screen.queryByTestId('studio-text-drawer-trigger')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('studio-text-drawer')).not.toBeInTheDocument();
   });
 });
 
@@ -541,22 +538,25 @@ describe('the correction pulls nothing forward (APP3-S05-C1 §13, §14)', () => 
     expect(client.publicDesignSessionResume).not.toHaveBeenCalled();
   });
 
+  // Scoped at `APP3-S10`, not dropped: the save state exists and is deliberately
+  // *outside* the drawer, because a decision about losing unsaved work may not
+  // sit behind a toggle.
   it('adds no upload or save control to the drawer', () => {
     renderStage(TABLET);
     select('t');
     fireEvent.click(screen.getByTestId('studio-text-drawer-trigger'));
+    const drawer = screen.getByTestId('studio-text-drawer');
 
-    for (const pulled of [/đã lưu/i, /đang lưu/i, /tải ảnh/i]) {
-      expect(screen.queryByText(pulled)).not.toBeInTheDocument();
+    for (const pulled of ['đã lưu', 'đang lưu', 'tải ảnh']) {
+      expect(drawer.innerHTML.toLowerCase()).not.toContain(pulled);
     }
+    expect(drawer.querySelector('[data-testid="studio-save-chip"]')).toBeFalsy();
   });
 
-  /*
-   * Undo is *in* the drawer at 1024, for the same reason the layers are
-   * (`APP3-D01-C1`: 1024 "cannot hold three regions"). So the rule is that there
-   * is exactly one of it and it is inside the one drawer — not that it is
-   * absent, which stopped being true at `APP3-S08`.
-   */
+  // Undo is *in* the drawer at 1024, for the same reason the layers are
+  // (`APP3-D01-C1`: 1024 "cannot hold three regions"). The rule is that there is
+  // exactly one of it inside the one drawer — not that it is absent, which
+  // stopped being true at `APP3-S08`.
   it('puts the one history surface inside the same single drawer', () => {
     renderStage(TABLET);
     select('t');
@@ -572,12 +572,9 @@ describe('the correction pulls nothing forward (APP3-S05-C1 §13, §14)', () => 
     expect(screen.getAllByTestId('studio-text-drawer')).toHaveLength(1);
   });
 
-  /*
-   * The layers are *in* the drawer at 1024, and that is the accepted design
-   * (`APP3-D01-C1`: "layers merge into that same drawer because 1024 cannot hold
-   * three regions"). What must stay impossible is a **second** drawer, so the
-   * rule counts panels and triggers rather than forbidding the word.
-   */
+  // The layers are *in* the drawer at 1024 and that is the accepted design
+  // ("layers merge into that same drawer"). What must stay impossible is a
+  // **second** drawer, so the rule counts panels rather than banning a word.
   it('keeps the layer panel inside the one accepted drawer', () => {
     renderStage(TABLET);
     select('t');

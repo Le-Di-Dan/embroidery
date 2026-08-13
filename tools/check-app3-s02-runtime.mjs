@@ -17,11 +17,13 @@ import {
   S03_FILES,
   S06_FILES,
   S07_FILES,
+  S10_FILES,
   isS03Delivered,
   isS06Delivered,
   isS07Delivered,
   isS04Delivered,
   isS09Delivered,
+  isS10Delivered,
 } from './app3-accepted-surface.mjs';
 
 /**
@@ -291,14 +293,16 @@ export function checkMedia(rootDir, fail) {
   if (!curated.includes(CONSUMED_OPERATION)) {
     fail(`${CANONICAL_FILES.curatedClient}: ${CONSUMED_OPERATION} is not exported to consumers`);
   }
-  // Still withheld: an operation on that boundary is an invitation to call it,
-  // and neither screen exists.
-  // Autosave has no screen and still may not cross. Customer image upload was
-  // withheld for the same reason and stopped being withheld when `APP3-S06`
-  // delivered the screen that owns it.
+  // Still withheld: an operation on that boundary is an invitation to call it
+  // before the screen that owns it exists. Customer image upload stopped being
+  // withheld at `APP3-S06` and autosave at `APP3-S10`, each on exactly the terms
+  // its withholding stated — the condition is satisfied, not relaxed.
   for (const withheld of [
-    'publicDesignSessionAutosave',
+    ...(isS10Delivered(rootDir) ? [] : ['publicDesignSessionAutosave']),
     ...(isS06Delivered(rootDir) ? [] : ['publicDesignSessionAssetCreate']),
+    // The product-image route has never had a consumer and still does not: the
+    // browser loads those from the relative URL the catalog responses carry.
+    'publicProductMediaGet',
   ]) {
     if (curated.split('\n').some((line) => line.trim().startsWith(withheld))) {
       fail(`${CANONICAL_FILES.curatedClient}: ${withheld} crossed the boundary without a consumer`);
@@ -327,7 +331,13 @@ export function checkMedia(rootDir, fail) {
   if (code(rootDir, 'stageElement').includes('publicDesignTemplateAssetGet')) {
     fail(`${CANONICAL_FILES.stageElement}: uses B05A as a Session media shortcut`);
   }
-  if (all.includes('publicDesignSessionAutosave')) {
+  // The autosave ban, world-aware for the same reason and in the same shape:
+  // **S02's own files** still may not save, which is what keeps the stage a
+  // renderer rather than a persister.
+  const savingScope = isS10Delivered(rootDir)
+    ? s02FeatureCode(rootDir, [...S07_FILES, ...S03_FILES, ...S10_FILES])
+    : all;
+  if (savingScope.includes('publicDesignSessionAutosave')) {
     fail(`${FEATURE}: autosaves, which is APP3-S10's`);
   }
 }

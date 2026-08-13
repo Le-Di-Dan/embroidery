@@ -22,6 +22,7 @@
  *
  * Read-only, cross-platform pure Node.
  */
+import { isS10Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   code,
@@ -363,8 +364,15 @@ export function checkComposition(rootDir, fail) {
       fail(`${CANONICAL_FILES.imageInspector}: carries "${forbidden}", which S06 does not own`);
     }
   }
-  if (all.includes('publicDesignSessionAutosave')) {
+  // World-aware from `APP3-S10`. What this protected is unchanged and is now
+  // asserted where it belongs: the **image capability** saves nothing itself.
+  if (!isS10Delivered(rootDir) && all.includes('publicDesignSessionAutosave')) {
     fail('the Studio autosaves, which is APP3-S10’s');
+  }
+  for (const owned of ['imageHook', 'service', 'imageInspector']) {
+    if (code(rootDir, owned).includes('publicDesignSessionAutosave')) {
+      fail(`${CANONICAL_FILES[owned]}: the image capability saves the document itself`);
+    }
   }
   // No fabricated progress: a percentage is shown only when the transport
   // reported a real total.

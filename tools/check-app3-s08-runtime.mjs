@@ -11,6 +11,7 @@
  */
 import { join } from 'node:path';
 
+import { isS10Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -19,6 +20,7 @@ import {
   collect,
   featureCode,
   outsideS08Code,
+  outsideS10Code,
   read,
   s08Code,
 } from './check-app3-s08.sources.mjs';
@@ -301,8 +303,16 @@ export function checkNoSideEffects(rootDir, fail) {
 /** Nothing about the history survives a reload. */
 export function checkNoPersistence(rootDir, fail) {
   const feature = featureCode(rootDir);
+  /*
+   * `localStorage` became world-aware at `APP3-S10`, which keeps the non-secret
+   * Session id `APP3-G03` allows. What this rule protects is unchanged: the
+   * **history** may not outlive its runtime, and it is asserted below against
+   * the entries, the cursor and the documents themselves. Every other store
+   * stays banned feature-wide.
+   */
+  const historyScope = isS10Delivered(rootDir) ? outsideS10Code(rootDir) : feature;
   for (const store of [
-    'localStorage',
+    ...(isS10Delivered(rootDir) ? [] : ['localStorage']),
     'sessionStorage',
     'indexedDB',
     'IDBDatabase',
@@ -313,6 +323,16 @@ export function checkNoPersistence(rootDir, fail) {
   ]) {
     if (feature.includes(store)) {
       fail(`${FEATURE}: "${store}" would make a local history outlive its runtime`);
+    }
+  }
+  // Narrower than the ban it replaces: browser storage stays forbidden to every
+  // file outside `APP3-S10`, and what S10 stores may not be a history.
+  if (historyScope.includes('localStorage')) {
+    fail(`${FEATURE}: "localStorage" would make a local history outlive its runtime`);
+  }
+  for (const stored of ['entries', 'cursor', 'StudioHistoryEntry']) {
+    if (new RegExp(`setItem\\([^)]*${stored}`).test(feature)) {
+      fail(`${FEATURE}: the history is written to browser storage (${stored})`);
     }
   }
   /*

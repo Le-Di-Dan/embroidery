@@ -396,7 +396,10 @@ describe('the design approval is scoped, in both directions', () => {
     const registry = file('registry');
     const line = registry
       .split('\n')
-      .find((row) => row.startsWith('| FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED |'));
+      // Retargeted at `APP3-S10`: the autosave row is legitimately approved now,
+      // so approving it would prove nothing. The mobile stage row's checkpoint
+      // genuinely has not opened.
+      .find((row) => row.startsWith('| FIG-STUDIO-MOBILE-STAGE-SELECTED |'));
     const root = rootWith({
       registry: registry.replace(
         line,
@@ -565,14 +568,23 @@ describe('the inspector is placed by tier, and the phone gets no editing surface
     );
   });
 
-  it('refuses the trigger moved back into the below-stage control strip', () => {
-    // The `APP3-S05-C1` shape, which human review rejected: a persistent control
-    // outside the drawer, in the strip `APP3-S07` put below the stage. It works.
-    // It is not the approved composition, and no behavioural test can say so.
+  it('refuses the trigger moved back out of the Studio topbar', () => {
+    /*
+     * The `APP3-S05-C1` shape, which human review rejected: a persistent control
+     * outside the drawer, in the strip `APP3-S07` put below the stage. It works.
+     * It is not the approved composition, and no behavioural test can say so.
+     *
+     * `APP3-S10` moved the wrapper out of the drawer and into the frame, so the
+     * mutation moved with it: the frame must still mount the drawer's region
+     * *inside* the one topbar, and severing that is the same regression.
+     */
     const root = rootWith({
-      drawer: file('drawer').replace('studio-stage__topbar', 'studio-stage__drawer-bar'),
+      stageScreen: file('stageScreen').replace(
+        '<StudioStageTopbar save={save}>',
+        '<div className="studio-stage__second-bar">',
+      ),
     });
-    assert.ok(mentions(failuresOf(checkResponsiveComposition, root), 'not in the Studio topbar'));
+    assert.ok(mentions(failuresOf(checkResponsiveComposition, root), 'inside the Studio topbar'));
   });
 
   it('refuses a topbar mounted below the stage', () => {

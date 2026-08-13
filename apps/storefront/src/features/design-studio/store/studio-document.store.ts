@@ -25,10 +25,30 @@
  *
  * ## Runtime only
  *
- * Nothing here is sent, saved or restored. No autosave call, no timer, no
- * `localStorage`, `sessionStorage`, `IndexedDB`, URL or cookie: `APP3-S10` owns
- * persistence, conflict and resume. A working document — or a history — that
- * quietly survived a reload would be a save nobody reviewed.
+ * Nothing here is sent, saved or restored, and that is unchanged by `APP3-S10`:
+ * no timer, no request, no `localStorage`, `sessionStorage`, `IndexedDB`, URL or
+ * cookie lives in this store. `APP3-S10` owns the autosave loop and calls it from
+ * a controller above; what it added *here* is two seams for the other direction —
+ * a document arriving **from** the server — because a store that could only be
+ * written by the customer would have forced a save response to be replayed as
+ * though the customer had made it.
+ *
+ * ## The two server-origin seams
+ *
+ * - `reconcile` — the server accepted this exact document and returned its
+ *   canonical form. Not a history entry: the customer did nothing, so there is
+ *   nothing to undo. The past and the future are left exactly as they were.
+ * - `adoptServerBranch` — the working document is being *replaced* by an
+ *   authoritative one: a resume the customer accepted, or the latest server
+ *   document after a conflict. The local past described a branch that no longer
+ *   leads to what is on screen, so it is discarded rather than kept — an undo
+ *   that reached back into a discarded branch would restore a design the
+ *   customer explicitly chose to abandon.
+ *
+ * Neither is reachable from an editing capability. Both are unconditional, which
+ * `initialize` deliberately is not: a resume can legitimately return the *same*
+ * revision, and a key-guarded write would then silently ignore the authoritative
+ * document it was given.
  *
  * ## What may be in here
  *
@@ -87,6 +107,20 @@ export interface StudioDocumentState {
   readonly openAction: OpenAction | null;
   /** Mints the stable row key. Bounded metadata, never an element identity. */
   readonly nextSeq: number;
+  /**
+   * How many times the working document has been written, and which of those
+   * writes came from the server (`APP3-S10`).
+   *
+   * The autosave controller has to answer one question the document alone cannot:
+   * *did the customer change this, or did a save response?* Comparing document
+   * identities cannot tell them apart — both produce a new object — so a
+   * server-origin write records its own serial, and a controller comparing the
+   * two knows whether the latest write is something to save.
+   *
+   * Counters, not documents. Nothing renders them and nothing persists them.
+   */
+  readonly documentSerial: number;
+  readonly serverSerial: number;
   readonly initialize: (sessionKey: string, document: DesignDocument) => void;
   /**
    * Replaces the working document with an already-validated candidate.
@@ -103,6 +137,10 @@ export interface StudioDocumentState {
   readonly undo: () => void;
   readonly redo: () => void;
   readonly reset: () => void;
+  /** Adopts the canonical form of a document the server just accepted. */
+  readonly reconcile: (document: DesignDocument) => void;
+  /** Replaces the working document and its whole past with an authoritative one. */
+  readonly adoptServerBranch: (sessionKey: string, document: DesignDocument) => void;
 }
 
 export const useStudioDocumentStore = create<StudioDocumentState>()((set, get) => ({
@@ -111,6 +149,8 @@ export const useStudioDocumentStore = create<StudioDocumentState>()((set, get) =
   history: EMPTY_HISTORY,
   openAction: null,
   nextSeq: 1,
+  documentSerial: 0,
+  serverSerial: 0,
 
   initialize: (sessionKey, document) => {
     set((state) =>
@@ -120,26 +160,33 @@ export const useStudioDocumentStore = create<StudioDocumentState>()((set, get) =
           // new baseline and there is nothing behind it: an undo that reached
           // back into the previous Session would restore coordinates that mean
           // something else on this one.
-          { sessionKey, document, history: EMPTY_HISTORY, openAction: null },
+          //
+          // The snapshot came from the server, so the write is recorded as a
+          // server-origin one. A bootstrap counted as an edit would autosave the
+          // document straight back to the revision it was just read from.
+          serverWrite(state, { sessionKey, document, history: EMPTY_HISTORY, openAction: null }),
     );
   },
 
   commit: (document, action) => {
     set((state) => {
       const open = state.openAction;
+      const serial = state.documentSerial + 1;
       // A commit from a *different* capability while a gesture or a text session
       // is open closes that one on its own terms first, rather than folding an
       // unrelated action into it.
-      if (open !== null && open.action.kind === action.kind) return { document };
+      if (open !== null && open.action.kind === action.kind)
+        return { document, documentSerial: serial };
 
       const before = state.document;
-      if (before === null) return { document, openAction: null };
+      if (before === null) return { document, openAction: null, documentSerial: serial };
 
       const closed = open === null ? state.history : closeOpen(state, open);
       const seq = seqAfter(state, closed);
       return {
         document,
         openAction: null,
+        documentSerial: serial,
         nextSeq: seq + 1,
         history: recordAction(closed, { seq, action, before, after: document }),
       };
@@ -181,6 +228,9 @@ export const useStudioDocumentStore = create<StudioDocumentState>()((set, get) =
       document: entry.before,
       history: { entries: state.history.entries, cursor: state.history.cursor - 1 },
       openAction: null,
+      // An undo changes the working document, so it is a document mutation the
+      // autosave loop must see. `APP3-S10` §23: undo and redo are dirty.
+      documentSerial: state.documentSerial + 1,
     });
   },
 
@@ -192,18 +242,64 @@ export const useStudioDocumentStore = create<StudioDocumentState>()((set, get) =
       document: entry.after,
       history: { entries: state.history.entries, cursor: state.history.cursor + 1 },
       openAction: null,
+      documentSerial: state.documentSerial + 1,
     });
   },
 
   reset: () => {
-    set({
-      sessionKey: null,
-      document: null,
-      history: EMPTY_HISTORY,
-      openAction: null,
+    set((state) =>
+      serverWrite(state, {
+        sessionKey: null,
+        document: null,
+        history: EMPTY_HISTORY,
+        openAction: null,
+      }),
+    );
+  },
+
+  reconcile: (document) => {
+    set((state) => {
+      // Only when the canonical form actually differs. `APP3-P01` quantizes on
+      // the way in, so the usual answer is that it does not — and rewriting the
+      // document with an equal value would re-render the whole scene for nothing.
+      if (state.document !== null && sameDocument(state.document, document)) return state;
+      // The history is untouched on purpose. The customer performed no action, so
+      // there is nothing to undo; `entries[cursor - 1].after` is now the
+      // pre-canonical form of this document, and an undo from here still restores
+      // the state before the customer's last action, which is what undo means.
+      return serverWrite(state, { document });
     });
   },
+
+  adoptServerBranch: (sessionKey, document) => {
+    set((state) =>
+      serverWrite(state, {
+        sessionKey,
+        document,
+        // The past described a branch the customer has just abandoned. Keeping it
+        // would let one undo resurrect a design they explicitly replaced.
+        history: EMPTY_HISTORY,
+        openAction: null,
+      }),
+    );
+  },
 }));
+
+/**
+ * A write the server originated, stamped so the autosave loop does not read it
+ * back as something the customer did.
+ *
+ * Both counters move together. A controller comparing them sees equality and
+ * knows the newest write was not an edit — which is what keeps a save response
+ * from scheduling the save that would send it straight back.
+ */
+function serverWrite(
+  state: Pick<StudioDocumentState, 'documentSerial'>,
+  patch: Partial<StudioDocumentState>,
+): Partial<StudioDocumentState> {
+  const serial = state.documentSerial + 1;
+  return { ...patch, documentSerial: serial, serverSerial: serial };
+}
 
 /**
  * The next unused sequence number, given what closing an action actually did.

@@ -21,8 +21,10 @@ import {
   isS06Delivered,
   S04_FILES,
   S08_FILES,
+  S10_FILES,
   isS04Delivered,
   isS08Delivered,
+  isS10Delivered,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -222,6 +224,7 @@ export function s01FeatureCode(rootDir) {
       ...(isS06Delivered(rootDir) ? S06_FILES : []),
       ...(isS04Delivered(rootDir) ? S04_FILES : []),
       ...(isS08Delivered(rootDir) ? S08_FILES : []),
+      ...(isS10Delivered(rootDir) ? S10_FILES : []),
     ].map((path) => join(rootDir, FEATURE, ...path.split('/'))),
   );
   const files = [

@@ -33,6 +33,7 @@
  *
  * Read-only, cross-platform pure Node. Independent of the completion report.
  */
+import { isS10Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   LATER_DESIGN_ROWS,
@@ -99,7 +100,7 @@ const PREDECESSORS = [
 ];
 
 /** Studio capability rows that must not be recorded complete by this checkpoint. */
-const LATER_ROWS = ['APP3-S10', 'APP3-S11'];
+const LATER_ROWS = ['APP3-S11'];
 
 /** The statuses `APP3-S08` may legitimately be recorded under. */
 const STATUS_LINES = [
@@ -110,6 +111,9 @@ const STATUS_LINES = [
   'APP3-S08 = COMPLETE — REVIEW_DELIVERED — CORRECTION_REQUIRED',
   'APP3-S08 = COMPLETE — REVIEW_DELIVERED — CORRECTED_BY_APP3-S08-C1',
   'APP3-S08 = COMPLETE — REVIEW_ACCEPTED',
+  // Human review accepted the correction, so the accepted form carries the same
+  // provenance the delivered one did.
+  'APP3-S08 = COMPLETE — REVIEW_ACCEPTED — CORRECTED_BY_APP3-S08-C1',
 ];
 
 export function isS08Delivered(rootDir) {
@@ -139,7 +143,9 @@ export function checkPredecessors(rootDir, fail) {
   if (!STATUS_LINES.some((line) => phase.includes(`\n${line}\n`))) {
     fail(`${CANONICAL_FILES.phase}: APP3-S08 is not recorded under a legitimate status`);
   }
-  for (const later of LATER_ROWS) {
+  // World-aware on `APP3-S10`: "S08 did not implement saving" stays true once
+  // S10 implements it for itself, and the S10 gate is what checks that.
+  for (const later of [...LATER_ROWS, ...(isS10Delivered(rootDir) ? [] : ['APP3-S10'])]) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(
         `${CANONICAL_FILES.phase}: ${later} is recorded complete by a checkpoint that is not it`,
@@ -228,7 +234,19 @@ export function checkCorrection(rootDir, fail) {
   if (!/\nFU-APP3-TRANSFORM-BUDGET-01 = OPEN — NONBLOCKING/.test(phase)) {
     fail(`${CANONICAL_FILES.phase}: the transform-budget follow-up was closed by this correction`);
   }
-  if (!/\nAPP3-S10 = BLOCKED_BY_APP3-S08-C1_REVIEW_ACCEPTANCE/.test(phase)) {
+  /*
+   * S10 was blocked on this correction's acceptance, and then it was accepted.
+   *
+   * The rule is kept and made world-aware rather than deleted: before human
+   * review it is what stopped the next checkpoint starting, and after it the
+   * *record* of that acceptance is what must survive. A gate that simply dropped
+   * the rule would let the sequencing be rewritten later with nothing to catch
+   * it.
+   */
+  const s10Released =
+    /\nAPP3-S08-C1 = COMPLETE — REVIEW_ACCEPTED/.test(phase) &&
+    /\nS08_CARRY_FORWARD_RECONCILIATION_OWNER = APP3-S10/.test(phase);
+  if (!s10Released && !/\nAPP3-S10 = BLOCKED_BY_APP3-S08-C1_REVIEW_ACCEPTANCE/.test(phase)) {
     fail(`${CANONICAL_FILES.phase}: APP3-S10 is not blocked on this correction's acceptance`);
   }
 }
@@ -262,7 +280,12 @@ export function checkDesignApproval(rootDir, fail) {
     fail(`${CANONICAL_FILES.registry}: the 1024 reference was re-attributed to APP3-S08`);
   }
 
-  for (const later of LATER_DESIGN_ROWS) {
+  // World-aware for the same reason the status rows are: the autosave row stops
+  // being evidence of a blanket approval once the checkpoint that owns it opens.
+  const stillLater = LATER_DESIGN_ROWS.filter(
+    (row) => !(isS10Delivered(rootDir) && row === 'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'),
+  );
+  for (const later of stillLater) {
     const row = rowOf(later);
     if (row !== undefined && row.includes('APPROVED_FOR_IMPLEMENTATION')) {
       fail(`${CANONICAL_FILES.registry}: ${later} belongs to a later checkpoint and is approved`);

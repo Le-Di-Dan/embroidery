@@ -848,17 +848,156 @@ $bp-studio-split: 1025px;
 // tool rail persists, stage width is prioritized, and the inspector becomes a
 // right drawer toggled from the Studio's control strip.
 
-// The Studio topbar (APP3-S05-MI01): the control region *above* the stage that
-// 618:140 draws, carrying the inspector's toggle. It exists only at the tablet
-// tier, and only React renders it there, so no rule has to hide it elsewhere.
+// The one Studio topbar (APP3-S05-MI01, shared by APP3-S10): the control region
+// *above* the stage that 618:140 draws. It carried only the tablet inspector's
+// toggle; APP3-S10 puts the save chip in it at every tier, which is why the
+// region is now rendered by the frame rather than by the drawer.
 //
 // It is a row above the stage, not a replacement for the APP3-S07 control strip
 // below it: zoom, fit and the safe-area toggle stay exactly where S07 put them.
+//
+// Deliberately **not** positioned. The drawer is a child of this row at 1024 and
+// is absolutely positioned against the stage frame; a `position` here would make
+// this its containing block and pull a full-height drawer into a toolbar.
 .studio-stage__topbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: styles.spacing(8);
+}
+
+// The save chip (APP3-S10, 610:3 / 610:41).
+//
+// Every state has a word as well as a colour, so the chip is legible without
+// colour perception; the tone modifiers only change how quickly it is noticed.
+.studio-save-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: styles.spacing(4);
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  margin: 0;
+}
+
+.studio-save-chip__state {
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+}
+
+.studio-save-chip__at {
+  color: styles.$color-text-tertiary;
+}
+
+.studio-save-chip--saved {
+  border-color: styles.$color-status-success;
+}
+
+.studio-save-chip--saving,
+.studio-save-chip--dirty {
+  border-color: styles.$color-status-info;
+}
+
+.studio-save-chip--offline,
+.studio-save-chip--conflict {
+  border-color: styles.$color-status-warning;
+}
+
+.studio-save-chip--failed {
+  border-color: styles.$color-status-error;
+}
+
+// The save-state surface (APP3-S10). One region, in the frame's own column,
+// above the stage at every tier — never inside the drawer, because two of its
+// four states ask the customer to decide whether unsaved work survives.
+.studio-save {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+
+  // Focus lands here when a decision appears, so the outline has to be visible
+  // on a container that is not otherwise interactive.
+  &:focus-visible {
+    outline: 2px solid styles.$color-status-info;
+    outline-offset: 2px;
+  }
+}
+
+.studio-save--decision {
+  border-color: styles.$color-status-warning;
+}
+
+.studio-save__heading {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.studio-save__body {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.studio-save__note {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-tertiary;
+}
+
+.studio-save__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: styles.spacing(8);
+  margin-block-start: styles.spacing(4);
+}
+
+// The resume prompt (APP3-S10, 610:159) and the two-action expiry state
+// (610:201). Both sit on the bootstrap route rather than the stage, so they
+// borrow the same card shape the rest of that route already uses.
+.studio-resume {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.studio-resume__heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+}
+
+.studio-resume__body,
+.studio-resume__status {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.studio-resume__actions,
+.studio-expired__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.studio-expired__eyebrow {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-status-warning;
 }
 
 // The drawer itself.

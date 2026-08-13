@@ -29,7 +29,7 @@
  *
  * Read-only, cross-platform pure Node. Independent of the completion report.
  */
-import { isS08Delivered } from './app3-accepted-paths.mjs';
+import { isS08Delivered, isS10Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   LATER_DESIGN_ROWS,
@@ -109,9 +109,11 @@ export function checkPredecessors(rootDir, fail) {
   }
   // World-aware on `APP3-S08` for the same reason every predecessor is: "S09
   // did not implement this" stays true once S08 implements it for itself.
-  const stillLaterRows = isS08Delivered(rootDir)
-    ? LATER_ROWS.filter((row) => row !== 'APP3-S08')
-    : LATER_ROWS;
+  const opened = new Set([
+    ...(isS08Delivered(rootDir) ? ['APP3-S08'] : []),
+    ...(isS10Delivered(rootDir) ? ['APP3-S10'] : []),
+  ]);
+  const stillLaterRows = LATER_ROWS.filter((row) => !opened.has(row));
   for (const later of stillLaterRows) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(
@@ -177,9 +179,11 @@ export function checkDesignApproval(rootDir, fail) {
     fail(`${CANONICAL_FILES.registry}: the 1024 reference was re-attributed to APP3-S09`);
   }
 
-  const stillLater = isS08Delivered(rootDir)
-    ? LATER_DESIGN_ROWS.filter((row) => row !== 'FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY')
-    : LATER_DESIGN_ROWS;
+  const openedRows = new Set([
+    ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
+    ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
+  ]);
+  const stillLater = LATER_DESIGN_ROWS.filter((row) => !openedRows.has(row));
   for (const later of stillLater) {
     const row = rowOf(later);
     if (row !== undefined && row.includes('APPROVED_FOR_IMPLEMENTATION')) {

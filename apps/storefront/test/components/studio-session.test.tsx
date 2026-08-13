@@ -17,6 +17,7 @@ import {
 import { createUser, renderWithProviders, screen, waitFor } from '@embroidery/frontend-testing';
 
 import { StudioScreen } from '../../src/features/design-studio/components/studio-screen';
+import { STUDIO_SAVE_COPY } from '../../src/features/design-studio/model/studio-autosave-copy';
 import { STUDIO_COPY } from '../../src/features/design-studio/model/studio-copy';
 import {
   apiFailure,
@@ -236,7 +237,18 @@ describe('resume and expiry', () => {
     expect(nth(resumeMock.mock.calls, 0)).toHaveLength(2);
   });
 
-  it('never persists the Session id or a secret anywhere in the browser', async () => {
+  /*
+   * Scoped at `APP3-S10`, on the terms `APP3-G03` sets.
+   *
+   * "Nothing at all in the browser" was right while no accepted authority
+   * allowed anything to be kept. `APP3-G03` allows exactly one thing — the
+   * **non-secret Session id**, under a namespaced key — and `APP3-S10` is the
+   * checkpoint that keeps it so a design survives a reload. What this rule was
+   * always protecting is unchanged and asserted more strictly than before: the
+   * secret, the document and the revision reach no browser storage, no cookie
+   * and no URL.
+   */
+  it('persists the non-secret Session id and nothing else', async () => {
     resumeMock.mockResolvedValue(envelopeOf(makeSnapshot()));
     const user = await openSession();
     await user.click(screen.getByRole('button', { name: STUDIO_COPY.resume }));
@@ -244,11 +256,34 @@ describe('resume and expiry', () => {
       expect(resumeMock).toHaveBeenCalled();
     });
 
-    expect(window.localStorage.length).toBe(0);
+    // One key, named after the placement, holding the id verbatim.
+    expect(window.localStorage.length).toBe(1);
+    const key = nth([window.localStorage.key(0) ?? ''], 0);
+    expect(key).toBe(`embroidery.studio.session:${PRODUCT_SLUG}:mat-truoc:nguc-trai`);
+    expect(window.localStorage.getItem(key)).toBe('22222222-2222-4222-8222-222222222222');
+
+    // Everything else is still forbidden, and the whole store is searched for
+    // the values that would matter rather than only the one key inspected.
+    const stored = JSON.stringify(window.localStorage);
+    for (const forbidden of ['elements', 'revision', 'expiresAt', 'secret']) {
+      expect(stored).not.toContain(forbidden);
+    }
     expect(window.sessionStorage.length).toBe(0);
     expect(window.location.search).toBe('');
     expect(window.location.hash).toBe('');
     expect(document.cookie).toBe('');
+  });
+
+  it('forgets the handle when the Session is refused as expired', async () => {
+    resumeMock.mockRejectedValue(apiFailure(401));
+    const user = await openSession();
+    expect(window.localStorage.length).toBe(1);
+
+    await user.click(screen.getByRole('button', { name: STUDIO_COPY.resume }));
+    await screen.findByText(STUDIO_SAVE_COPY.expiredHeading);
+
+    // A dead Session must not be offered again after a reload.
+    expect(window.localStorage.length).toBe(0);
   });
 
   it('shows the expired state when resume is refused with 401', async () => {
@@ -257,7 +292,7 @@ describe('resume and expiry', () => {
 
     await user.click(screen.getByRole('button', { name: STUDIO_COPY.resume }));
 
-    expect(await screen.findByText(STUDIO_COPY.expiredHeading)).toBeInTheDocument();
+    expect(await screen.findByText(STUDIO_SAVE_COPY.expiredHeading)).toBeInTheDocument();
     // One way forward, and it is an explicit new start. Nothing revives the
     // dead Session and nothing replays create by itself.
     expect(screen.getByRole('button', { name: STUDIO_COPY.expiredRestart })).toBeInTheDocument();
@@ -273,7 +308,7 @@ describe('resume and expiry', () => {
     await waitFor(() => {
       expect(resumeMock).toHaveBeenCalled();
     });
-    expect(screen.queryByText(STUDIO_COPY.expiredHeading)).not.toBeInTheDocument();
+    expect(screen.queryByText(STUDIO_SAVE_COPY.expiredHeading)).not.toBeInTheDocument();
     expect(screen.getByText(STUDIO_COPY.readyHeading)).toBeInTheDocument();
   });
 
@@ -281,7 +316,7 @@ describe('resume and expiry', () => {
     resumeMock.mockRejectedValue(apiFailure(401));
     const user = await openSession();
     await user.click(screen.getByRole('button', { name: STUDIO_COPY.resume }));
-    await screen.findByText(STUDIO_COPY.expiredHeading);
+    await screen.findByText(STUDIO_SAVE_COPY.expiredHeading);
 
     await user.click(screen.getByRole('button', { name: STUDIO_COPY.expiredRestart }));
 

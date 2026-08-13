@@ -35,6 +35,7 @@ import {
   isS06Delivered,
   isS04Delivered,
   isS08Delivered,
+  isS10Delivered,
   isS09Delivered,
   isS07Delivered,
   isB06CDelivered,
@@ -186,6 +187,7 @@ export function checkDesignApproval(rootDir, fail) {
     ...(isS04Delivered(rootDir) ? ['FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'] : []),
     ...(isS09Delivered(rootDir) ? ['FIG-STUDIO-WATERMARK-DESKTOP-LIGHT'] : []),
     ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
+    ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {

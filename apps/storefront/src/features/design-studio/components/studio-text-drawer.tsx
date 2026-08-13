@@ -83,21 +83,27 @@ export function StudioTextDrawer({ children, ...props }: StudioTextDrawerProps) 
 
   return (
     <>
-      <div className="studio-stage__topbar" data-testid="studio-stage-topbar">
-        <button
-          type="button"
-          ref={trigger}
-          className="studio-stage__control"
-          data-testid="studio-text-drawer-trigger"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => {
-            setOpen((current) => !current);
-          }}
-        >
-          {open ? STUDIO_INSPECTOR_COPY.drawerClose : STUDIO_INSPECTOR_COPY.drawerOpen}
-        </button>
-      </div>
+      {/*
+        The trigger, rendered straight into the shared topbar this component is
+        mounted inside (`APP3-S10`). It used to bring its own `.studio-stage__topbar`
+        wrapper, because at `APP3-S05-MI01` it was the only thing in that region;
+        the save chip now shares it at every tier, so the region is owned one
+        level up and there is still exactly one of it. The button itself — its
+        state, label, `aria-expanded` and `aria-controls` — is unchanged.
+      */}
+      <button
+        type="button"
+        ref={trigger}
+        className="studio-stage__control"
+        data-testid="studio-text-drawer-trigger"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => {
+          setOpen((current) => !current);
+        }}
+      >
+        {open ? STUDIO_INSPECTOR_COPY.drawerClose : STUDIO_INSPECTOR_COPY.drawerOpen}
+      </button>
 
       {/*
         Always in the document, `hidden` when closed. `aria-controls` has to

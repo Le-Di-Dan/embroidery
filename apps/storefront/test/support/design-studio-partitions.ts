@@ -287,6 +287,48 @@ export const S08_FILES = new Set(
   ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
 );
 
+/**
+ * The files `APP3-S10` added, named exactly.
+ *
+ * Autosave is the first thing in the feature that may legitimately **write** —
+ * to the server, and to browser storage. Every earlier checkpoint was forbidden
+ * both outright, and those bans are kept and scoped rather than deleted: an
+ * autosave call or a `localStorage` write outside this list is still a
+ * capability arriving in the wrong checkpoint, and the S01 partition still may
+ * not interpret a Design Document at all.
+ *
+ * `studio-session-expired.tsx` is deliberately **not** on the list. It is
+ * `APP3-S01`'s file, extended here with the second approved action and the
+ * frame's own copy; it still renders no document, holds no store and calls
+ * nothing, so it keeps the strict S01 rules rather than escaping them.
+ */
+export const S10_FILES = new Set(
+  [
+    'components/studio-resume-prompt.tsx',
+    'components/studio-save-chip.tsx',
+    'components/studio-save-state.tsx',
+    'components/studio-stage-topbar.tsx',
+    'hooks/use-studio-autosave.ts',
+    'hooks/use-studio-resume.ts',
+    'hooks/use-studio-unsaved-warning.ts',
+    'model/studio-autosave.ts',
+    'model/studio-autosave-copy.ts',
+    'model/studio-resume-handle.ts',
+    'model/studio-resume-scope.ts',
+    'services/studio-autosave.client.ts',
+  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
+export const s10Sources = sources.filter((file) => S10_FILES.has(file.path));
+export const s10Code = codeOnly(s10Sources.map((file) => file.text).join('\n'));
+
+/** Everything except the autosave capability, for the rules a save must not escape. */
+export const outsideS10Code = codeOnly(
+  [...sources.filter((file) => !S10_FILES.has(file.path)), ...routeFiles]
+    .map((file) => file.text)
+    .join('\n'),
+);
+
 export const s08Code = codeOnly(
   sources
     .filter((file) => S08_FILES.has(file.path))
@@ -354,7 +396,8 @@ export const s01Sources = sources.filter(
     !S06_FILES.has(file.path) &&
     !S04_FILES.has(file.path) &&
     !S08_FILES.has(file.path) &&
-    !S09_FILES.has(file.path),
+    !S09_FILES.has(file.path) &&
+    !S10_FILES.has(file.path),
 );
 export const s07Sources = sources.filter((file) => S07_FILES.has(file.path));
 export const s07Code = codeOnly(s07Sources.map((file) => file.text).join('\n'));

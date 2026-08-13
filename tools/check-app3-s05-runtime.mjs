@@ -25,10 +25,11 @@ import {
   collect,
   featureCode,
   preS09Code,
+  preS10Code,
   read,
   s05Code,
 } from './check-app3-s05.sources.mjs';
-import { isS09Delivered } from './app3-accepted-surface.mjs';
+import { isS09Delivered, isS10Delivered } from './app3-accepted-surface.mjs';
 
 /** The font picker is the controlled registry, and can be nothing else. */
 export function checkControlledFont(rootDir, fail) {
@@ -245,9 +246,19 @@ export function checkArchitecture(rootDir, fail) {
   if (documentStores.length !== 1) {
     fail(`${FEATURE}: ${String(documentStores.length)} stores hold a Design Document, expected 1`);
   }
-  // No browser persistence, no second draft that could outlive the tab.
+  /*
+   * No browser persistence, no second draft that could outlive the tab.
+   *
+   * `localStorage` is world-aware from `APP3-S10`: `APP3-G03` allows the
+   * non-secret Session id under a namespaced key, and S10 is the checkpoint that
+   * keeps it. What this rule protects is unchanged — a **text draft** may not
+   * outlive the tab — so it is asserted against every file S10 did not
+   * introduce, and the other three stay banned feature-wide.
+   */
+  const draftScope = isS10Delivered(rootDir) ? preS10Code(rootDir) : feature;
   for (const persisted of ['localStorage', 'sessionStorage', 'indexedDB', 'document.cookie']) {
-    if (feature.includes(persisted)) {
+    const scope = persisted === 'localStorage' ? draftScope : feature;
+    if (scope.includes(persisted)) {
       fail(`${FEATURE}: the text capability persists a draft (${persisted})`);
     }
   }
@@ -294,7 +305,6 @@ export function checkNonScope(rootDir, fail) {
     }
   }
   const forbidden = Object.freeze({
-    'APP3-S10 autosave': ['publicDesignSessionAutosave', 'autosave', 'setInterval('],
     'APP3-S08 history': ['undoStack', 'redoStack', 'historyStack', 'pushHistory'],
     'APP3-S04 layers': ['reorderElement', 'moveLayer', 'toggleLock', 'toggleVisibility'],
     'APP3-S06 upload': ['uploadAsset', 'FormData', 'publicDesignSessionAssetUpload'],
@@ -305,6 +315,31 @@ export function checkNonScope(rootDir, fail) {
       if (feature.includes(needle)) {
         fail(`${FEATURE}: ${owner} arrived early (${needle})`);
       }
+    }
+  }
+  // Autosave, world-aware from `APP3-S10`. The rule stays exactly what it was
+  // for every file S10 did not introduce, so the text capability still saves
+  // nothing and a file added tomorrow inherits the strict version.
+  const savingScope = isS10Delivered(rootDir) ? preS10Code(rootDir) : feature;
+  /*
+   * The needles are mechanical facts, not the word.
+   *
+   * Before S10 the bare word `autosave` was a fair proxy, because nothing could
+   * legitimately carry it. Now the stage screen *mounts* the loop, so its import
+   * of `useStudioAutosave` contains the word while being exactly the composition
+   * this checkpoint is supposed to have — a ban on the word would fire on the
+   * honest mount and prove nothing. What may not appear outside S10's own files
+   * is the operation, the request helpers that wrap it, and an interval.
+   */
+  for (const needle of [
+    'publicDesignSessionAutosave',
+    'saveSessionDocument(',
+    'attemptSave(',
+    'setInterval(',
+    ...(isS10Delivered(rootDir) ? [] : ['autosave']),
+  ]) {
+    if (savingScope.includes(needle)) {
+      fail(`${FEATURE}: APP3-S10 autosave arrived early (${needle})`);
     }
   }
 }

@@ -186,7 +186,7 @@ describe('scoped design approval', () => {
     const root = rootWith({
       registry: file('registry').replaceAll('REVIEW_REQUIRED', 'APPROVED_FOR_IMPLEMENTATION'),
     });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'));
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-MOBILE-LAYERSSHEET'));
   });
 
   it('refuses the S02 stage rows approved before S02 opened', () => {
@@ -268,9 +268,17 @@ describe('the API boundary', () => {
     assert.ok(mentions(failuresOf(checkApiBoundary, root), 'storage address'));
   });
 
-  it('refuses an autosave operation crossing the curated boundary', () => {
+  /*
+   * Autosave crossed at `APP3-S10`, which is the screen that owns saving.
+   *
+   * The rule is about **withholding until a consumer exists**, not about
+   * autosave, so the mutation is retargeted at an operation that still has none
+   * rather than deleted — otherwise the next operation to cross early would do
+   * so unopposed.
+   */
+  it('refuses an operation with no consumer crossing the curated boundary', () => {
     const root = rootWith({
-      curatedClient: `${file('curatedClient')}\nexport {\n  publicDesignSessionAutosave,\n} from './generated/embroidery-api';\n`,
+      curatedClient: `${file('curatedClient')}\nexport {\n  publicProductMediaGet,\n} from './generated/embroidery-api';\n`,
     });
     assert.ok(mentions(failuresOf(checkApiBoundary, root), 'without a consumer'));
   });

@@ -137,6 +137,7 @@ function renderStage(document = makeStageDocument([textElement('t')])) {
     <StudioStageScreen
       areaLimits={null}
       isResuming={false}
+      onExpired={jest.fn()}
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={makeStageSnapshot(document)}
@@ -402,7 +403,16 @@ describe('object URLs stay runtime-only (APP3-S06 §18)', () => {
 });
 
 describe('nothing is pulled forward (APP3-S06 §2)', () => {
-  it('never calls autosave, whatever the customer does', async () => {
+  /*
+   * Scoped at `APP3-S10`, which delivered the autosave loop this rule predates.
+   *
+   * The thing it was written to prevent is unchanged and still asserted: placing
+   * an image does not itself save. What changed is that the document it placed is
+   * now saved *later*, by the one loop that owns saving, on the cadence that loop
+   * owns — so the assertion is made at the moment of placement rather than
+   * forever.
+   */
+  it('never saves from the image capability itself', async () => {
     uploadMock.mockResolvedValue(accepted());
     statusMock.mockResolvedValue(status('READY'));
     renderStage();
@@ -411,7 +421,6 @@ describe('nothing is pulled forward (APP3-S06 §2)', () => {
     await waitFor(() => {
       expect(placedImages()).toHaveLength(1);
     });
-    await tick(3);
 
     expect(autosaveMock).not.toHaveBeenCalled();
   });
@@ -433,7 +442,10 @@ describe('responsive composition (APP3-S06 §7)', () => {
     renderStage();
 
     expect(screen.getByTestId('studio-image-choose')).toBeInTheDocument();
-    expect(screen.queryByTestId('studio-stage-topbar')).not.toBeInTheDocument();
+    // The topbar exists at every tier from `APP3-S10` (it carries the save
+    // chip); what must not exist at 1440 is the drawer trigger, because the
+    // controls are already in flow.
+    expect(screen.queryByTestId('studio-text-drawer-trigger')).not.toBeInTheDocument();
   });
 
   it('puts it in the one accepted drawer at 1024, behind the one trigger', () => {

@@ -12,7 +12,12 @@
  */
 import { join, relative } from 'node:path';
 
-import { isS02Delivered, isS06Delivered, isS07Delivered } from './app3-accepted-surface.mjs';
+import {
+  isS02Delivered,
+  isS06Delivered,
+  isS07Delivered,
+  isS10Delivered,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   CONSUMED_OPERATIONS,
@@ -36,15 +41,21 @@ export function checkApiBoundary(rootDir, fail) {
    * They were forbidden feature-wide because no screen owned them, and that is
    * exactly what stopped an earlier checkpoint quietly starting the image
    * capability. `APP3-S06` is the screen that owns them, so after it the ban
-   * moves rather than disappearing: the S01 partition still may not reach one
-   * (asserted below through `s01FeatureCode`), and `publicDesignSessionAutosave`
-   * stays forbidden everywhere because `APP3-S10` has not opened.
+   * moves rather than disappearing: the S01 partition still may not reach one,
+   * asserted below through `s01FeatureCode`.
+   *
+   * `publicDesignSessionAutosave` went the same way at `APP3-S10`, the screen
+   * that owns saving. The condition the ban stated is satisfied rather than
+   * relaxed: S01 still may not save, and the rule below proves it against the S01
+   * partition instead of against a feature that now contains one legitimate
+   * saver.
    */
   const sessionAssetOwned = isS06Delivered(rootDir);
+  const savingOwned = isS10Delivered(rootDir);
   for (const forbidden of [
     'adminProductPlacementGet',
     'adminDesignTemplate',
-    'publicDesignSessionAutosave',
+    ...(savingOwned ? [] : ['publicDesignSessionAutosave']),
     ...(sessionAssetOwned ? [] : ['publicDesignSessionAssetCreate']),
   ]) {
     if (all.includes(forbidden)) fail(`${FEATURE}: reaches ${forbidden}, which S01 does not own`);
@@ -62,6 +73,11 @@ export function checkApiBoundary(rootDir, fail) {
   // screen that may.
   if (/publicDesignSessionAsset(Create|Get|Status)/.test(s01FeatureCode(rootDir))) {
     fail(`${FEATURE}: the bootstrap screen reaches a Session asset operation`);
+  }
+  // And the same again for saving: the bootstrap chain edits no document, so it
+  // still may not persist one now that a screen exists which may.
+  if (s01FeatureCode(rootDir).includes('publicDesignSessionAutosave')) {
+    fail(`${FEATURE}: the bootstrap screen reaches publicDesignSessionAutosave`);
   }
   if (!all.includes('getBrowserApiClient')) {
     fail(`${FEATURE}: does not use the approved browser Axios client`);
@@ -83,13 +99,14 @@ export function checkApiBoundary(rootDir, fail) {
       fail(`${CANONICAL_FILES.curatedClient}: ${operation} is not exported to consumers`);
     }
   }
-  // An operation on the curated boundary is an invitation to call it. Autosave
-  // is `APP3-S10`'s and that screen still does not exist, so it still may not
-  // cross. Customer image upload was withheld for the same reason and stopped
-  // being withheld when `APP3-S06` delivered the screen that owns it.
+  // An operation on the curated boundary is an invitation to call it, so each
+  // stays behind it until the screen that owns it exists. Image upload crossed
+  // at `APP3-S06` and autosave at `APP3-S10`, each on its own stated condition;
+  // the product-image route has never had a consumer and still does not.
   for (const withheld of [
-    'publicDesignSessionAutosave',
+    ...(savingOwned ? [] : ['publicDesignSessionAutosave']),
     ...(sessionAssetOwned ? [] : ['publicDesignSessionAssetCreate']),
+    'publicProductMediaGet',
   ]) {
     if (curated.split('\n').some((line) => line.trim().startsWith(withheld))) {
       fail(`${CANONICAL_FILES.curatedClient}: ${withheld} crossed the boundary without a consumer`);
@@ -322,9 +339,22 @@ export function checkSession(rootDir, fail) {
     fail(`${CANONICAL_FILES.sessionHook}: expiry is not bound to the 401 B07 actually answers`);
   }
 
+  /*
+   * `localStorage` is world-aware from `APP3-S10`.
+   *
+   * S01 forbade it outright because no accepted authority allowed anything to be
+   * kept, and that ban is what stopped a Session id being stashed and called
+   * resume. `APP3-G03` allows exactly one thing — the **non-secret Session id**,
+   * under a namespaced key — and `APP3-S10` is the checkpoint that keeps it. So
+   * the ban narrows to everything outside that checkpoint's files, and every
+   * other entry on this list stays forbidden feature-wide, `document.cookie`
+   * most of all: the secret is `HttpOnly` and this code may not go looking.
+   */
   const all = featureCode(rootDir);
+  const savedIdOwned = isS10Delivered(rootDir);
+  const outsideS10 = s01FeatureCode(rootDir);
   for (const persistence of [
-    'localStorage',
+    ...(savedIdOwned ? [] : ['localStorage']),
     'sessionStorage',
     'document.cookie',
     'history.pushState',
@@ -332,6 +362,12 @@ export function checkSession(rootDir, fail) {
     'useSearchParams',
   ]) {
     if (all.includes(persistence)) fail(`${FEATURE}: a Session identity may reach ${persistence}`);
+  }
+  // Narrower than the ban it replaces: the bootstrap chain still stores nothing,
+  // and a document, revision or expiry may not be stored even by the checkpoint
+  // that may store an id.
+  if (savedIdOwned && outsideS10.includes('localStorage')) {
+    fail(`${FEATURE}: localStorage is written outside the APP3-S10 resume handle`);
   }
   /*
    * Zustand, world-aware.

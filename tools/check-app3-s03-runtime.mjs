@@ -24,6 +24,7 @@ import {
   isS06Delivered,
   isS08Delivered,
   isS09Delivered,
+  isS10Delivered,
 } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
@@ -37,6 +38,7 @@ import {
   preRestackCode,
   preS06Code,
   preS09Code,
+  preS10Code,
   read,
   s03Code,
 } from './check-app3-s03.sources.mjs';
@@ -346,7 +348,6 @@ export function checkNonScope(rootDir, fail) {
     commandHistory: 'APP3-S08',
     ungroup: 'APP3-S04',
     duplicate: 'APP3-S04',
-    publicDesignSessionAutosave: 'APP3-S10',
   });
   /*
    * The watermark moved owner rather than losing its rule (`APP3-S09`).
@@ -367,6 +368,20 @@ export function checkNonScope(rootDir, fail) {
     if (all.includes(marker)) {
       fail(`${FEATURE}: carries "${marker}", a capability ${owner} owns`);
     }
+  }
+
+  /*
+   * The autosave marker, world-aware (`APP3-S10`).
+   *
+   * `publicDesignSessionAutosave` was banned feature-wide because no checkpoint
+   * owned saving, and that is what proved S03 had not started it. S10 owns it
+   * now, so the ban moves rather than disappearing: every file S10 did not
+   * introduce still may not carry it, which keeps the transform gesture a
+   * gesture and stops a file added tomorrow inheriting the exception.
+   */
+  const outsideSaving = isS10Delivered(rootDir) ? preS10Code(rootDir) : all;
+  if (outsideSaving.includes('publicDesignSessionAutosave')) {
+    fail(`${FEATURE}: carries "publicDesignSessionAutosave", a capability APP3-S10 owns`);
   }
 
   /*

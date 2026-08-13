@@ -175,11 +175,11 @@ describe('scoped design approval', () => {
       // one — `APP3-S03` shipped and approved it — which is exactly why the
       // assertion moves rather than the rule loosening.
       registry: file('registry').replace(
-        /(\| FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED \|[^\n]*?)REVIEW_REQUIRED/,
+        /(\| FIG-STUDIO-MOBILE-STAGE-SELECTED \|[^\n]*?)REVIEW_REQUIRED/,
         '$1APPROVED_FOR_IMPLEMENTATION',
       ),
     });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'));
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-MOBILE-STAGE-SELECTED'));
   });
 
   it('refuses the shared 1024 reference re-attributed to this checkpoint', () => {
@@ -412,11 +412,18 @@ describe('the capabilities the viewport must not grow', () => {
     assert.ok(mentions(failuresOf(checkNonScope, root), 'depends on the viewport'));
   });
 
-  it('refuses autosave called from a viewport effect', () => {
+  /*
+   * Saving exists from `APP3-S10`, and the viewport is still not it.
+   *
+   * The feature-wide ban became world-aware there, so this asserts the half that
+   * never stopped being true: the files `APP3-S07` owns reach no server at all —
+   * not a query, not a mutation, not a client.
+   */
+  it('refuses the viewport reaching the network', () => {
     const root = rootWith({
-      viewport: `${file('viewport')}\nvoid publicDesignSessionAutosave;\n`,
+      viewport: `${file('viewport')}\nimport { useMutation } from '@tanstack/react-query';\n`,
     });
-    assert.ok(mentions(failuresOf(checkNonScope, root), 'autosaves'));
+    assert.ok(mentions(failuresOf(checkNonScope, root), 'reaches the network'));
   });
 
   it('refuses a touch gesture arriving before APP3-S11', () => {

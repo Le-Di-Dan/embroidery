@@ -65,6 +65,7 @@ function renderStage(document = makeStageDocument([shapeElement('a')]), scope = 
     <StudioStageScreen
       areaLimits={null}
       isResuming={false}
+      onExpired={jest.fn()}
       onResume={jest.fn()}
       scope={scope}
       snapshot={snapshot}
@@ -279,6 +280,7 @@ describe('single-element selection', () => {
       <StudioStageScreen
         areaLimits={null}
         isResuming={false}
+        onExpired={jest.fn()}
         onResume={jest.fn()}
         scope={makeScope()}
         snapshot={makeStageSnapshot(makeStageDocument([shapeElement('a')]), {

@@ -65,8 +65,13 @@ export const STUDIO_COPY = {
 
   resume: 'Kiểm tra phiên hiện tại',
   resuming: 'Đang kiểm tra phiên…',
-  expiredHeading: 'Phiên thiết kế đã kết thúc',
-  expiredBody: 'Phiên thiết kế này không còn hiệu lực. Bạn có thể bắt đầu một phiên mới từ đầu.',
+  /**
+   * `APP3-S10` owns the expiry surface, and its heading and body are `610:201`'s
+   * own words in `STUDIO_SAVE_COPY`. The two sentences that used to live here
+   * were removed rather than left beside them: two ways of saying "this Session
+   * is over" is how the screen and its tests end up asserting different things.
+   * The action label stays, because it is the same action.
+   */
   expiredRestart: 'Bắt đầu phiên mới',
 
   statusBusy: 'Đang xử lý',

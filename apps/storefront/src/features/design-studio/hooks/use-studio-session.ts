@@ -52,9 +52,21 @@ export interface StudioSessionState {
   readonly startFailure: StudioStartFailure | null;
   readonly isResuming: boolean;
   readonly isExpired: boolean;
+  /** A resume that failed for a reason that was **not** expiry (`APP3-S10`). */
+  readonly hasResumeFailed: boolean;
   readonly startBlank: (codes: StudioPlacementCodes) => void;
   readonly startClone: (codes: StudioPlacementCodes, templateSlug: string) => void;
   readonly resume: () => void;
+  /**
+   * Resumes a Session this runtime is not holding (`APP3-S10`).
+   *
+   * The id comes from the non-secret resume handle; the browser attaches the
+   * `HttpOnly` cookie by itself, which is why there is still no secret argument
+   * and still nothing that reads one.
+   */
+  readonly resumeById: (sessionId: string) => void;
+  /** The Session was refused as invalid by a later call, not by resume. */
+  readonly expire: () => void;
   /** Discards the dead session so the visitor can start again explicitly. */
   readonly restart: () => void;
 }
@@ -82,14 +94,15 @@ function isExpiryRefusal(error: unknown): boolean {
  * same-origin request by itself, which is why resume takes no secret argument.
  *
  * So the id lives in this component's state for as long as the route is
- * mounted, and nowhere else: not in `localStorage`, not in `sessionStorage`,
- * not in the URL, not in a Zustand store. The secret is never touched at all —
- * `HttpOnly` means this code could not read it even if it tried, and scanning
- * for it is forbidden outright.
+ * mounted, and — until `APP3-S10` — nowhere else. The secret is never touched at
+ * all: `HttpOnly` means this code could not read it even if it tried, and
+ * scanning for it is forbidden outright.
  *
- * Resume across a full page reload would need a persistence or URL contract
- * that no accepted authority provides. S01 does not invent one; that path
- * belongs to `APP3-S10`, which owns resume and expiry UX.
+ * `APP3-S10` added the one persistence `APP3-G03` allows, and it is not held
+ * here: the **non-secret Session id** under a placement-namespaced key, owned by
+ * `studio-resume-handle.ts` and read by the screen above. Nothing about this
+ * hook's own memory changed, and no Zustand store, URL or cookie carries a
+ * Session identity even now.
  *
  * ## Blank and Clone never substitute for one another
  *
@@ -132,6 +145,8 @@ export function useStudioSession(productSlug: string): StudioSessionState {
     },
   });
 
+  const [hasResumeFailed, setResumeFailed] = useState(false);
+
   const resumption = useMutation({
     mutationFn: (sessionId: string) => {
       const controller = new AbortController();
@@ -139,13 +154,18 @@ export function useStudioSession(productSlug: string): StudioSessionState {
     },
     retry: false,
     onSuccess: (resumed) => {
+      setResumeFailed(false);
       // The returned snapshot replaces the held one wholesale. Nothing merges
       // fields, extends `expiresAt` or advances `revision`: the API decides
       // both, and a client that adjusted either would be inventing state.
       setSnapshot(resumed);
     },
     onError: (error) => {
+      // Expiry is permanent and everything else is not. A 503 or a dropped
+      // connection must not be reported as "your design is gone" — and must not
+      // discard the resume handle that still points at a live Session.
       if (isExpiryRefusal(error)) setExpired(true);
+      else setResumeFailed(true);
     },
   });
 
@@ -167,6 +187,7 @@ export function useStudioSession(productSlug: string): StudioSessionState {
     startFailure,
     isResuming: resumption.isPending,
     isExpired,
+    hasResumeFailed,
     startBlank: (codes) => {
       start('blank', codes);
     },
@@ -177,6 +198,14 @@ export function useStudioSession(productSlug: string): StudioSessionState {
       if (snapshot === null || resumption.isPending) return;
       resumption.mutate(snapshot.sessionId);
     },
+    resumeById: (sessionId) => {
+      if (resumption.isPending) return;
+      setResumeFailed(false);
+      resumption.mutate(sessionId);
+    },
+    expire: () => {
+      setExpired(true);
+    },
     restart: () => {
       // The dead Session is discarded rather than revived. There is no grace
       // secret and no client-side reactivation; the only way forward is a new
@@ -184,6 +213,7 @@ export function useStudioSession(productSlug: string): StudioSessionState {
       setSnapshot(null);
       setScope(null);
       setExpired(false);
+      setResumeFailed(false);
       setStartFailure(null);
     },
   };

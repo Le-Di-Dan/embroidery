@@ -31,6 +31,7 @@ import {
   isS06Delivered,
   isS04Delivered,
   isS08Delivered,
+  isS10Delivered,
   isS09Delivered,
   isB06CDelivered,
 } from './app3-accepted-surface.mjs';
@@ -188,6 +189,7 @@ export function checkDesignApproval(rootDir, fail) {
     ...(isS04Delivered(rootDir) ? ['FIG-STUDIO-LAYERS-DESKTOP-DEFAULT'] : []),
     ...(isS09Delivered(rootDir) ? ['FIG-STUDIO-WATERMARK-DESKTOP-LIGHT'] : []),
     ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
+    ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
@@ -247,12 +249,12 @@ export function checkImmutability(rootDir, fail) {
     fail(`package.json: root scripts moved, expected ${String(ROOT_SCRIPTS)}`);
   }
 
-  // The curated boundary is unchanged: S03 consumes no operation at all. Autosave
-  // still has no screen. Customer image upload was withheld for the same reason
-  // and stopped being withheld when `APP3-S06` delivered the screen that owns it.
+  // The curated boundary is unchanged: S03 consumes no operation at all. Each
+  // withholding lasts exactly as long as its stated condition — image upload
+  // until `APP3-S06`, autosave until `APP3-S10` — and neither was relaxed early.
   const curated = read(rootDir, 'curatedClient') ?? '';
   for (const withheld of [
-    'publicDesignSessionAutosave',
+    ...(isS10Delivered(rootDir) ? [] : ['publicDesignSessionAutosave']),
     ...(isS06Delivered(rootDir) ? [] : ['publicDesignSessionAssetCreate']),
   ]) {
     if (curated.split('\n').some((line) => line.trim().startsWith(withheld))) {

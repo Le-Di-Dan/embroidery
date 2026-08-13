@@ -18,6 +18,7 @@ import {
   S06_FILES,
   S08_FILES,
   S09_FILES,
+  S10_FILES,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -205,4 +206,15 @@ export function preS09Code(rootDir) {
  */
 export function preRestackCode(rootDir) {
   return featureCodeExcept(rootDir, [...S04_FILES, ...S08_FILES]);
+}
+
+/**
+ * Every Studio source **except** the files `APP3-S10` owns.
+ *
+ * The scope the autosave ban needs once saving exists: it was banned
+ * feature-wide because no checkpoint owned persistence, and it is still exactly
+ * that rule for every file S10 did not introduce.
+ */
+export function preS10Code(rootDir) {
+  return featureCodeExcept(rootDir, S10_FILES);
 }

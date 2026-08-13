@@ -18,6 +18,7 @@ import {
   acceptedSurface,
   isS05Delivered,
   S09_FILES,
+  S10_FILES,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -52,6 +53,7 @@ export const CANONICAL_FILES = Object.freeze({
   documentStore: `${FEATURE}/store/studio-document.store.ts`,
   scene: `${FEATURE}/renderer/studio-scene.ts`,
   stageElement: `${FEATURE}/components/studio-stage-element.tsx`,
+  stageTopbar: FEATURE + '/components/studio-stage-topbar.tsx',
   stageScreen: `${FEATURE}/components/studio-stage-screen.tsx`,
   stagePanels: `${FEATURE}/components/studio-stage-panels.tsx`,
   // `APP3-S07`'s persistent control strip below the stage. Named so the gate can
@@ -129,9 +131,24 @@ export function s05Code(rootDir) {
  * the watermark's own files are the only place it may appear.
  */
 export function preS09Code(rootDir) {
-  const owned = new Set(S09_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  return featureCodeExcept(rootDir, S09_FILES);
+}
+
+/**
+ * Every Studio source **except** the twelve files `APP3-S10` added.
+ *
+ * The scope the autosave and browser-storage rules need once saving exists: both
+ * are kept exactly as written for every file S10 did not introduce, so the text
+ * capability still saves nothing and keeps no draft that outlives the tab.
+ */
+export function preS10Code(rootDir) {
+  return featureCodeExcept(rootDir, S10_FILES);
+}
+
+function featureCodeExcept(rootDir, owned) {
+  const skip = new Set(owned.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
   return collect(join(rootDir, FEATURE), /\.tsx?$/)
-    .filter((path) => !owned.has(path))
+    .filter((path) => !skip.has(path))
     .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\\\', '/')))
     .join('\n');
 }

@@ -210,7 +210,7 @@ describe('scoped design approval', () => {
     // A row whose own checkpoint has *not* opened. Transform is no longer one:
     // `APP3-S03` shipped and approved it, which is precisely why the assertion
     // has to move to a row that is still closed rather than stay where it was.
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'));
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-MOBILE-LAYERSSHEET'));
   });
 
   it('refuses a row whose node id moved', () => {
@@ -496,14 +496,19 @@ describe('the one media path', () => {
     assert.ok(mentions(failuresOf(checkMedia, root), 'not exported to consumers'));
   });
 
-  it('refuses autosave or session-asset operations crossing without a screen', () => {
+  /*
+   * Autosave crossed at `APP3-S10`, which owns saving. The rule is about
+   * withholding an operation until its screen exists, so the mutation moves to
+   * one that still has no screen rather than being deleted.
+   */
+  it('refuses an operation crossing without a screen', () => {
     const root = rootWith({
       curatedClient: file('curatedClient').replace(
         '  publicProductSideBackgroundGet,',
-        '  publicProductSideBackgroundGet,\n  publicDesignSessionAutosave,',
+        '  publicProductSideBackgroundGet,\n  publicProductMediaGet,',
       ),
     });
-    assert.ok(mentions(failuresOf(checkMedia, root), 'publicDesignSessionAutosave'));
+    assert.ok(mentions(failuresOf(checkMedia, root), 'publicProductMediaGet'));
   });
 
   it('refuses B05A used as a Session media shortcut', () => {

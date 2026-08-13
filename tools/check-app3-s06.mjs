@@ -44,6 +44,7 @@ import {
   acceptedSurface,
   isS04Delivered,
   isS08Delivered,
+  isS10Delivered,
   isS09Delivered,
   isS06Delivered,
 } from './app3-accepted-surface.mjs';
@@ -152,8 +153,9 @@ export function checkPredecessors(rootDir, fail) {
   // S06 implements none of these, and delivering it makes none of them ready.
   // World-aware on APP3-S04: "S06 did not implement this" stays true once S04
   // implements it for itself, and the S04 gate is what checks that.
-  const notImplementedByS06 = ['APP3-S10', 'APP3-S11'];
+  const notImplementedByS06 = ['APP3-S11'];
   if (!isS08Delivered(rootDir)) notImplementedByS06.push('APP3-S08');
+  if (!isS10Delivered(rootDir)) notImplementedByS06.push('APP3-S10');
   if (!isS09Delivered(rootDir)) notImplementedByS06.push('APP3-S09');
   if (!isS04Delivered(rootDir)) notImplementedByS06.push('APP3-S04');
   for (const later of notImplementedByS06) {
@@ -205,6 +207,7 @@ export function checkDesignApproval(rootDir, fail) {
     ...(isS04Delivered(rootDir) ? S04_LAYER_ROWS : []),
     ...(isS09Delivered(rootDir) ? S09_DESIGN_ROWS : []),
     ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
+    ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
@@ -319,8 +322,9 @@ export function checkImmutability(rootDir, fail) {
     }
   }
 
-  // The three curated operations crossed the boundary together, and autosave
-  // did not: `APP3-S10` still has no screen.
+  // The three curated operations crossed the boundary together. Autosave stayed
+  // behind until `APP3-S10` delivered the screen that owns saving — the exact
+  // condition its withholding stated, satisfied rather than relaxed.
   const curated = read(rootDir, 'curatedClient') ?? '';
   if (isS06Delivered(rootDir)) {
     for (const operation of [
@@ -333,8 +337,18 @@ export function checkImmutability(rootDir, fail) {
       }
     }
   }
-  if (curated.split('\n').some((line) => line.trim().startsWith('publicDesignSessionAutosave'))) {
-    fail(`${CANONICAL_FILES.curatedClient}: autosave crossed the boundary without a consumer`);
+  const withheld = [
+    ...(isS10Delivered(rootDir) ? [] : ['publicDesignSessionAutosave']),
+    // No screen fetches a product image through the client: the browser loads
+    // them from the relative `media[].url` the catalog responses already carry.
+    'publicProductMediaGet',
+  ];
+  for (const operation of withheld) {
+    if (curated.split('\n').some((line) => line.trim().startsWith(operation))) {
+      fail(
+        `${CANONICAL_FILES.curatedClient}: ${operation} crossed the boundary without a consumer`,
+      );
+    }
   }
 }
 

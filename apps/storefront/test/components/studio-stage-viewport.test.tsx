@@ -77,6 +77,7 @@ const stage = (snapshot: DesignSessionSnapshotResponse, scope = makeScope()) => 
   <StudioStageScreen
     areaLimits={null}
     isResuming={false}
+    onExpired={jest.fn()}
     onResume={jest.fn()}
     scope={scope}
     snapshot={snapshot}
@@ -516,9 +517,10 @@ describe('the viewport touches no network and no later capability', () => {
     for (let n = 0; n < 2; n += 1) fireEvent.click(screen.getByTestId('studio-zoom-in'));
     const strip = screen.getByTestId('studio-stage-controls');
 
-    for (const absent of ['handle', 'Đã lưu']) {
-      expect(container.innerHTML.toLowerCase()).not.toContain(absent.toLowerCase());
-    }
+    expect(container.innerHTML.toLowerCase()).not.toContain('handle');
+    // The save state exists from `APP3-S10` and is not the viewport's. Scoped
+    // rather than dropped: the strip S07 owns still carries no save affordance.
+    expect(strip.innerHTML.toLowerCase()).not.toContain('đã lưu');
     expect(strip.querySelector('[data-testid="studio-history-rail"]')).toBeFalsy();
     expect(strip.innerHTML.toLowerCase()).not.toContain('hoàn tác');
   });

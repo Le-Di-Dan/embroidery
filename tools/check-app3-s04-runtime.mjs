@@ -13,6 +13,7 @@
 import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
+import { isS10Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -246,8 +247,14 @@ export function checkCandidatePipeline(rootDir, fail) {
       fail(`${CANONICAL_FILES.hook}: a layer action reaches "${persisted}"`);
     }
   }
-  if (all.includes('publicDesignSessionAutosave')) {
+  // World-aware from `APP3-S10`, which owns saving. The rule this was written to
+  // enforce is unchanged and now asserted where it belongs: a **layer command**
+  // still saves nothing, which is checked above against the hook itself.
+  if (!isS10Delivered(rootDir) && all.includes('publicDesignSessionAutosave')) {
     fail(`${FEATURE}: autosave is APP3-S10's and is called here`);
+  }
+  if (code(rootDir, 'hook').includes('publicDesignSessionAutosave')) {
+    fail(`${CANONICAL_FILES.hook}: a layer action saves the document itself`);
   }
 }
 

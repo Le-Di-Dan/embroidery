@@ -131,6 +131,7 @@ export function renderStage(document = scene, options: RenderStageOptions = {}) 
     <StudioStageScreen
       areaLimits={null}
       isResuming={false}
+      onExpired={jest.fn()}
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={snapshot}
@@ -147,6 +148,7 @@ export function rerenderStage(
     <StudioStageScreen
       areaLimits={null}
       isResuming={false}
+      onExpired={jest.fn()}
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={{ ...makeStageSnapshot(scene), sessionId }}

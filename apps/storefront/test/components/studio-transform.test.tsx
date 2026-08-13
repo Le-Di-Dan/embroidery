@@ -90,6 +90,7 @@ function renderStage(
     <StudioStageScreen
       areaLimits={areaLimits}
       isResuming={false}
+      onExpired={jest.fn()}
       onResume={jest.fn()}
       scope={scope}
       snapshot={snapshot}
@@ -412,14 +413,18 @@ describe('the capabilities S03 must not grow', () => {
     expect(backgroundMock).not.toHaveBeenCalled();
   });
 
+  /*
+   * Scoped at `APP3-S10`, exactly as the undo rule below was at `APP3-S08`: the
+   * save state is a delivered capability with its own region, and what this rule
+   * protects is that it did not appear **on the transform chrome**.
+   */
   it('grows no upload or save affordance', () => {
     const { container } = renderStage();
     select('a');
 
-    const markup = container.innerHTML.toLowerCase();
-    for (const absent of ['đã lưu', 'tải lên']) {
-      expect(markup).not.toContain(absent.toLowerCase());
-    }
+    expect(container.innerHTML.toLowerCase()).not.toContain('tải lên');
+    const overlay = screen.getByTestId('studio-transform-overlay');
+    expect(overlay.innerHTML.toLowerCase()).not.toContain('đã lưu');
   });
 
   /*
@@ -499,6 +504,7 @@ describe('the working document belongs to one Session', () => {
       <StudioStageScreen
         areaLimits={null}
         isResuming={false}
+        onExpired={jest.fn()}
         onResume={jest.fn()}
         scope={makeScope()}
         snapshot={snapshot}
@@ -518,6 +524,7 @@ describe('the working document belongs to one Session', () => {
       <StudioStageScreen
         areaLimits={null}
         isResuming={false}
+        onExpired={jest.fn()}
         onResume={jest.fn()}
         scope={makeScope()}
         snapshot={makeStageSnapshot(makeStageDocument([shapeElement('a', { transform: INSIDE })]), {

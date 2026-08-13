@@ -25,6 +25,7 @@ import {
   nth,
   outsideS04Code,
   outsideS09Code,
+  outsideS10Code,
   routeFiles,
   s01Code,
   s02Code,
@@ -35,6 +36,7 @@ import {
   s07Code,
   s08Code,
   s09Code,
+  s10Code,
   scssCode,
   sources,
   staticCode,
@@ -94,21 +96,29 @@ describe('the API boundary', () => {
     }
   });
 
-  it('reaches no Admin, autosave or public media operation', () => {
-    // `publicDesignSessionAutosave` stays forbidden: persistence is `APP3-S10`'s
-    // and an operation on this boundary is an invitation to call it before the
-    // screen that owns it exists. The three session-asset operations were
-    // forbidden here for exactly the same reason and stopped being so at
-    // `APP3-S06`, which is the screen that owns them — see the rule below, which
-    // is *narrower* than the ban it replaces.
-    for (const forbidden of [
-      'admin',
-      'Admin',
-      'publicDesignSessionAutosave',
-      'publicProductMediaGet',
-    ]) {
+  it('reaches no Admin or public media operation', () => {
+    // `publicDesignSessionAutosave` left this list at `APP3-S10`, on the exact
+    // terms it was put on it: persistence was forbidden here until the screen
+    // that owns saving existed. It now does, so the ban becomes the narrower
+    // one-file rule below — the same evolution the three session-asset
+    // operations went through at `APP3-S06`.
+    for (const forbidden of ['admin', 'Admin', 'publicProductMediaGet']) {
       expect(allCode).not.toContain(forbidden);
     }
+  });
+
+  it('reaches autosave from one service file only', () => {
+    // The one **write** in the feature. A capability that may save is not a
+    // licence for every panel to save: one file addresses the operation, and a
+    // component that acquired the ability to persist a document directly — with
+    // a revision it chose for itself — would fail here rather than in review.
+    const callers = [...sources, ...routeFiles].filter((file) =>
+      /publicDesignSessionAutosave\(/.test(codeOnly(file.text)),
+    );
+
+    expect(callers.map((file) => file.path.replaceAll('\\', '/').split('/').at(-1))).toEqual([
+      'studio-autosave.client.ts',
+    ]);
   });
 
   it('reaches the three session-asset operations from one service file only', () => {
@@ -170,7 +180,12 @@ describe('the API boundary', () => {
 });
 
 describe('Session identity never reaches the browser', () => {
-  it('writes no storage, cookie or URL', () => {
+  it('writes no storage, cookie or URL outside the one resume handle', () => {
+    // `localStorage` left the outright ban at `APP3-S10`, which is the
+    // checkpoint `APP3-G03` allows to keep the **non-secret Session id** so a
+    // design survives a reload. Everything else on this list stays banned
+    // everywhere, `document.cookie` most of all: the Session secret is
+    // `HttpOnly`, this code cannot read it, and it may not try.
     for (const persistence of [
       'localStorage',
       'sessionStorage',
@@ -181,7 +196,48 @@ describe('Session identity never reaches the browser', () => {
       'useSearchParams',
       'searchParams',
     ]) {
-      expect(allCode).not.toContain(persistence);
+      expect(outsideS10Code).not.toContain(persistence);
+    }
+    // Narrower than the ban it replaces: only the handle module touches storage,
+    // and `sessionStorage`, cookies and the URL stay forbidden even to it.
+    for (const persistence of [
+      'sessionStorage',
+      'document.cookie',
+      'indexedDB',
+      'history.pushState',
+      'history.replaceState',
+      'searchParams',
+    ]) {
+      expect(s10Code).not.toContain(persistence);
+    }
+  });
+
+  it('touches browser storage from the resume-handle module only', () => {
+    const holders = sources.filter((file) => codeOnly(file.text).includes('localStorage'));
+
+    expect(holders.map((file) => file.path.replaceAll('\\', '/').split('/').at(-1))).toEqual([
+      'studio-resume-handle.ts',
+    ]);
+  });
+
+  it('stores nothing but a Session id under a placement-namespaced key', () => {
+    const handle = codeOnly(
+      nth(
+        sources.filter((file) => file.path.endsWith('studio-resume-handle.ts')),
+        0,
+      ).text,
+    );
+
+    // What is written: one value, and it is the id the caller passed.
+    expect(handle).toContain('store.setItem(resumeHandleKey(scope), sessionId)');
+    // The key carries the whole placement, so a handle cannot be found under a
+    // Product, Side or Area it was not written for.
+    expect(handle).toContain('scope.productSlug');
+    expect(handle).toContain('scope.sideCode');
+    expect(handle).toContain('scope.areaCode');
+    // What is never written: the document, the revision, the expiry or a secret.
+    for (const forbidden of ['document', 'revision', 'expiresAt', 'secret', 'cookie']) {
+      expect(handle).not.toContain(forbidden);
     }
   });
 

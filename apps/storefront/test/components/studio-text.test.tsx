@@ -99,6 +99,7 @@ function renderStage(document = scene) {
     <StudioStageScreen
       areaLimits={null}
       isResuming={false}
+      onExpired={jest.fn()}
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={makeStageSnapshot(document)}
@@ -336,12 +337,18 @@ describe('the S03-C1 render architecture survives a text edit (APP3-S05 §18)', 
 });
 
 describe('S05 pulls nothing forward (APP3-S05 §19)', () => {
-  it('adds no save, upload or watermark control', () => {
+  /*
+   * Scoped at `APP3-S10`. The save state is a delivered capability and lives in
+   * the Studio's own topbar and state region; what this rule protects is that
+   * the **text inspector** did not grow one of its own.
+   */
+  it('adds no save, upload or watermark control to the inspector', () => {
     renderStage();
     select('t');
+    const inspector = screen.getByRole('region', { name: STUDIO_TEXT_COPY.panelLabel });
 
-    for (const pulled of [/đã lưu/i, /đang lưu/i, /tải ảnh/i]) {
-      expect(screen.queryByText(pulled)).not.toBeInTheDocument();
+    for (const pulled of ['đã lưu', 'đang lưu', 'tải ảnh']) {
+      expect(inspector.innerHTML.toLowerCase()).not.toContain(pulled);
     }
   });
 

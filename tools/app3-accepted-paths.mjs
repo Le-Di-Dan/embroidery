@@ -775,6 +775,52 @@ export const S09_DESIGN_ROWS = Object.freeze([
   'FIG-STUDIO-WATERMARK-POLICY',
 ]);
 
+export function isS10Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S10 = COMPLETE/.test(phase);
+}
+
+/**
+ * The files `APP3-S10` added, named exactly.
+ *
+ * Shared so every predecessor gate that has to become world-aware about saving
+ * names the same twelve files rather than each keeping its own idea of where a
+ * save, a retry or a browser-storage write may legitimately live. Every one of
+ * those gates was written to say "this capability has not opened yet", and each
+ * stays true of *its own* checkpoint: the ban does not disappear when S10 ships,
+ * it narrows to everything outside this list.
+ *
+ * `components/studio-session-expired.tsx` is deliberately absent. It is
+ * `APP3-S01`'s file, extended by S10 with the second approved action and the
+ * frame's own copy; it saves nothing, stores nothing and calls nothing, so it
+ * keeps the strict predecessor rules rather than escaping them.
+ */
+export const S10_FILES = Object.freeze([
+  'components/studio-resume-prompt.tsx',
+  'components/studio-save-chip.tsx',
+  'components/studio-save-state.tsx',
+  'components/studio-stage-topbar.tsx',
+  'hooks/use-studio-autosave.ts',
+  'hooks/use-studio-resume.ts',
+  'hooks/use-studio-unsaved-warning.ts',
+  'model/studio-autosave.ts',
+  'model/studio-autosave-copy.ts',
+  'model/studio-resume-handle.ts',
+  'model/studio-resume-scope.ts',
+  'services/studio-autosave.client.ts',
+]);
+
+/** The six section-14 design rows `APP3-S10` consumes, and their nodes. */
+export const S10_DESIGN_ROWS = Object.freeze({
+  'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED': '610:3',
+  'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVING': '610:41',
+  'FIG-STUDIO-AUTOSAVE-DESKTOP-OFFLINE': '610:77',
+  'FIG-STUDIO-AUTOSAVE-DESKTOP-CONFLICT': '610:118',
+  'FIG-STUDIO-AUTOSAVE-DESKTOP-RESUME': '610:159',
+  'FIG-STUDIO-AUTOSAVE-DESKTOP-EXPIRED': '610:201',
+});
+
 /** True once `APP3-P04` has published the shared Session response contract. */
 export function isP04Delivered(rootDir) {
   const path = join(rootDir, PHASE);

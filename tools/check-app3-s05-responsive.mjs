@@ -15,6 +15,7 @@
  *
  * Read-only, cross-platform pure Node.
  */
+import { isS10Delivered } from './app3-accepted-paths.mjs';
 import { CANONICAL_FILES, code, compositionCode, read } from './check-app3-s05.sources.mjs';
 
 /**
@@ -180,7 +181,26 @@ export function checkResponsiveComposition(rootDir, fail) {
    * keep it true: the topbar exists, it is mounted **before** the stage, and
    * `APP3-S07`'s strip below the stage never acquires the trigger.
    */
-  if (!drawer.includes('studio-stage__topbar')) {
+  /*
+   * The wrapper moved at `APP3-S10` and the rule moved with it, unweakened.
+   *
+   * S05-MI01 had the drawer bring its own `.studio-stage__topbar`, because the
+   * trigger was the only thing in that region. `APP3-S10` puts the save chip
+   * there at every tier, so the region is owned one level up — and there is
+   * still exactly **one** of it, still above the stage, still holding this
+   * trigger. Before S10 the drawer must carry it; after, the topbar component
+   * must, and the frame must mount the drawer's region inside that component.
+   */
+  if (isS10Delivered(rootDir)) {
+    if (!code(rootDir, 'stageTopbar').includes('studio-stage__topbar')) {
+      fail(`${CANONICAL_FILES.stageTopbar}: the one Studio topbar region is gone`);
+    }
+    // `[\s>]` after the name, so a component merely *starting* with it — a second
+    // bar called `StudioStageTopbarSomethingElse` — is not read as this one.
+    if (!/<StudioStageTopbar[\s>][\s\S]{0,400}region="topbar"/.test(code(rootDir, 'stageScreen'))) {
+      fail(`${CANONICAL_FILES.stageScreen}: the drawer trigger is not inside the Studio topbar`);
+    }
+  } else if (!drawer.includes('studio-stage__topbar')) {
     fail(`${CANONICAL_FILES.drawer}: the drawer trigger is not in the Studio topbar`);
   }
   // The order is still asserted on the *screen*, because the frame's order is

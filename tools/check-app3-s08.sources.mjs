@@ -10,6 +10,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { S10_FILES } from './app3-accepted-paths.mjs';
+
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const FEATURE = 'apps/storefront/src/features/design-studio';
@@ -133,6 +135,21 @@ export function outsideS08Code(rootDir) {
     ...S08_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))),
     join(rootDir, FEATURE, 'store', 'studio-document.store.ts'),
   ]);
+  return collect(join(rootDir, FEATURE), /\.tsx?$/)
+    .filter((path) => !owned.has(path))
+    .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
+    .join('\n');
+}
+
+/**
+ * Every Studio source **except** the twelve files `APP3-S10` added.
+ *
+ * The scope the browser-storage rule needs once one checkpoint may legitimately
+ * keep a non-secret Session id: the ban is kept everywhere else, so a history
+ * still cannot outlive its runtime.
+ */
+export function outsideS10Code(rootDir) {
+  const owned = new Set(S10_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
   return collect(join(rootDir, FEATURE), /\.tsx?$/)
     .filter((path) => !owned.has(path))
     .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))

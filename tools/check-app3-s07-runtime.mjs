@@ -18,7 +18,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { isS04Delivered, isS06Delivered, isS09Delivered } from './app3-accepted-surface.mjs';
+import {
+  isS04Delivered,
+  isS06Delivered,
+  isS09Delivered,
+  isS10Delivered,
+} from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
   FEATURE,
@@ -288,7 +293,9 @@ export function checkNonScope(rootDir, fail) {
       fail(`${FEATURE}: the viewport reaches the network (${call})`);
     }
   }
-  if (all.includes('publicDesignSessionAutosave')) {
+  // World-aware from `APP3-S10`. The half that mattered is unchanged and is
+  // asserted above against `s07Code`: the viewport reaches no server at all.
+  if (!isS10Delivered(rootDir) && all.includes('publicDesignSessionAutosave')) {
     fail(`${FEATURE}: autosaves, which is APP3-S10's`);
   }
   if (all.includes('publicProductMediaGet')) {

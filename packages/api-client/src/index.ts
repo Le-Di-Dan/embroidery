@@ -300,11 +300,19 @@ export type {
 // browser object URL as a purely local rendering handle — never persisted into
 // the design document, never sent back, never a storage address.
 //
+// `APP3-S10` releases `publicDesignSessionAutosave`, on exactly the terms the
+// withholding stated: persistence was withheld until the screen that owns saving
+// existed, and it now does. The condition is satisfied rather than relaxed —
+// every predecessor's gate still asserts that *its* screens call nothing here,
+// and S10's own gate asserts that the only caller is its autosave service.
+//
+// It is the one **write** in this allowlist. `APP3-B08` guards it with
+// compare-and-set on a revision the client may only ever have *read*: a
+// mismatch is refused `409` with zero write, so the operation cannot be misused
+// into a silent overwrite even by a caller that wanted to.
+//
 // Deliberately still withheld:
 //
-// - `publicDesignSessionAutosave` — persistence is `APP3-S10`'s. S06 edits the
-//   in-memory working document and stops, so exposing autosave here would be an
-//   invitation to save before the screen that owns saving exists.
 // - `publicProductMediaGet`, unchanged: product images are fetched by the
 //   browser from the relative `media[].url` the catalog responses return.
 //
@@ -329,6 +337,7 @@ export {
   publicDesignTemplateAssetGet,
   publicDesignSessionCreate,
   publicDesignSessionResume,
+  publicDesignSessionAutosave,
   publicDesignSessionAssetCreate,
   publicDesignSessionAssetGet,
   publicDesignSessionAssetStatus,
@@ -355,6 +364,7 @@ export type {
   CreateDesignSessionBody,
   CreateBlankDesignSessionBody,
   CloneDesignSessionBody,
+  AutosaveDesignSessionBody,
   DesignSessionSnapshotResponse,
   DesignSessionScopeResponse,
   DesignSessionLineageResponse,

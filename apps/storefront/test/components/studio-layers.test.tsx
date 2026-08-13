@@ -99,6 +99,7 @@ function renderStage(document = scene) {
     <StudioStageScreen
       areaLimits={null}
       isResuming={false}
+      onExpired={jest.fn()}
       onResume={jest.fn()}
       scope={makeScope()}
       snapshot={makeStageSnapshot(document)}

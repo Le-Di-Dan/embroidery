@@ -3,16 +3,19 @@
 import { useEffect, useReducer, useRef } from 'react';
 
 import { useStudioPlacement } from '../hooks/use-studio-placement';
+import { useStudioResume } from '../hooks/use-studio-resume';
 import { useStudioSession } from '../hooks/use-studio-session';
 import { useTemplateDetail } from '../hooks/use-template-detail';
 import { useTemplateList } from '../hooks/use-template-list';
 import { useTemplatePreview } from '../hooks/use-template-preview';
 import { STUDIO_COPY } from '../model/studio-copy';
 import { codesOf, findArea, findSide, tripleOf } from '../model/studio-placement';
+import { resumedScopeOf } from '../model/studio-resume-scope';
 import { EMPTY_STUDIO_SELECTION, studioSelectionReducer } from '../model/studio-selection';
 import { areaLimitsOf, type StudioAreaLimits } from '../model/studio-transform-authority';
 import { previewReferenceOf } from '../model/studio-template';
 import { StudioPlacementPicker } from './studio-placement-picker';
+import { StudioResumePrompt } from './studio-resume-prompt';
 import { StudioSessionExpired } from './studio-session-expired';
 import { StudioStageScreen } from './studio-stage-screen';
 import { StudioStartActions } from './studio-start-actions';
@@ -82,6 +85,34 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
   const preview = useTemplatePreview(previewReference);
   const session = useStudioSession(productSlug);
 
+  /*
+   * The resume handle for the placement currently on screen (`APP3-S10`).
+   *
+   * Namespaced by `product → side → area`, so it is found only under the exact
+   * placement it was written for: a Session opened on one Area is not offered as
+   * the resumable design of another, where its coordinates would mean something
+   * else. `undefined` until the placement chain resolves, which is also the
+   * moment the namespace can first be composed.
+   */
+  const resume = useStudioResume(productSlug, codes?.sideCode, codes?.areaCode);
+  const { forget: forgetSession, remember: rememberSession } = resume;
+
+  // A Session that exists is a Session worth remembering — created or resumed,
+  // and only ever its **id**. Writing it here rather than at the create call
+  // covers both, and covers a resume that returned a Session this browser had
+  // stopped holding.
+  const openSessionId = session.snapshot?.sessionId ?? null;
+  useEffect(() => {
+    if (openSessionId !== null) rememberSession(openSessionId);
+  }, [openSessionId, rememberSession]);
+
+  // A dead Session must not be offered again after a reload. The handle for this
+  // placement — and no other — is dropped the moment the server refuses it.
+  const sessionExpired = session.isExpired;
+  useEffect(() => {
+    if (sessionExpired) forgetSession();
+  }, [forgetSession, sessionExpired]);
+
   /**
    * The Area's physical maxima, frozen at the moment the Session opens.
    *
@@ -111,7 +142,19 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
   }
 
   if (session.isExpired) {
-    return <StudioSessionExpired onRestart={session.restart} />;
+    // Both ways forward return to the accepted `APP3-S01` start path; neither
+    // opens a Session by itself, and nothing tries to revive the dead one.
+    return (
+      <StudioSessionExpired
+        onPickTemplate={() => {
+          // Back to the picker with nothing chosen, so "chọn mẫu khác" really is
+          // a fresh choice rather than the same screen under a second label.
+          session.restart();
+          dispatch({ type: 'clear-template' });
+        }}
+        onRestart={session.restart}
+      />
+    );
   }
 
   // The handover to `APP3-S02`. Once a canonical Session snapshot exists the
@@ -136,14 +179,50 @@ export function StudioScreen({ productSlug, productName }: StudioScreenProps) {
         ? detail.detail.name
         : null;
 
+    /*
+     * The placement geometry, for a Session that was resumed rather than created.
+     *
+     * `APP3-B07` returns `scope` on create and omits it on resume, so a Session
+     * reopened from a stored handle after a full reload arrives without the
+     * geometry the stage draws from. It is composed from the manifest this screen
+     * already holds — the same rows the server itself resolved — and only for the
+     * placement the handle was namespaced to, which is the placement on screen.
+     * Nothing is computed, scaled or defaulted: every field is copied.
+     */
+    const stageScope =
+      session.scope ??
+      (side === undefined || area === undefined ? null : resumedScopeOf(productSlug, side, area));
+
     return (
       <StudioStageScreen
         areaLimits={areaLimits.current}
         isResuming={session.isResuming}
+        onExpired={session.expire}
         onResume={session.resume}
-        scope={session.scope}
+        scope={stageScope}
         snapshot={session.snapshot}
         templateName={clonedName}
+      />
+    );
+  }
+
+  /*
+   * The approved resume state (`APP3-S10`, `610:159`).
+   *
+   * Shown *before* the picker, and before anything is opened: a stored handle
+   * says a Session exists on this placement, not that the customer wants to be
+   * back inside it. Neither answer is taken for them.
+   */
+  if (resume.offered && resume.handle !== null) {
+    const handle = resume.handle;
+    return (
+      <StudioResumePrompt
+        hasFailed={session.hasResumeFailed}
+        isResuming={session.isResuming}
+        onContinue={() => {
+          session.resumeById(handle);
+        }}
+        onRestart={resume.forget}
       />
     );
   }

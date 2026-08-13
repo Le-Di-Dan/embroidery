@@ -28,7 +28,7 @@
  *
  * Read-only, cross-platform pure Node. Independent of the completion report.
  */
-import { isS08Delivered, isS09Delivered } from './app3-accepted-paths.mjs';
+import { isS08Delivered, isS09Delivered, isS10Delivered } from './app3-accepted-paths.mjs';
 import { isS04Delivered, s04StatusLines } from './check-app3-s04-status.mjs';
 import {
   CANONICAL_FILES,
@@ -77,7 +77,7 @@ const PREDECESSORS = [
 ];
 
 /** Studio capability rows that must not be recorded complete by this checkpoint. */
-const LATER_ROWS = ['APP3-S10', 'APP3-S11'];
+const LATER_ROWS = ['APP3-S11'];
 
 export function checkPredecessors(rootDir, fail) {
   const phase = read(rootDir, 'phase') ?? '';
@@ -96,6 +96,7 @@ export function checkPredecessors(rootDir, fail) {
     ...LATER_ROWS,
     ...(isS09Delivered(rootDir) ? [] : ['APP3-S09']),
     ...(isS08Delivered(rootDir) ? [] : ['APP3-S08']),
+    ...(isS10Delivered(rootDir) ? [] : ['APP3-S10']),
   ];
   for (const later of later_rows) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
@@ -160,9 +161,11 @@ export function checkDesignApproval(rootDir, fail) {
     fail(`${CANONICAL_FILES.registry}: the 1024 reference was re-attributed to APP3-S04`);
   }
 
-  const stillLater = isS08Delivered(rootDir)
-    ? LATER_DESIGN_ROWS.filter((row) => row !== 'FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY')
-    : LATER_DESIGN_ROWS;
+  const opened = new Set([
+    ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
+    ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
+  ]);
+  const stillLater = LATER_DESIGN_ROWS.filter((row) => !opened.has(row));
   for (const later of stillLater) {
     const row = registry.split('\n').find((line) => line.startsWith(`| ${later} |`));
     if (row !== undefined && row.includes('APPROVED_FOR_IMPLEMENTATION')) {

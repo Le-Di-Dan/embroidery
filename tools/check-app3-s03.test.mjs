@@ -180,11 +180,11 @@ describe('scoped design approval', () => {
   it('refuses a blanket Studio approval', () => {
     const root = rootWith({
       registry: file('registry').replace(
-        /(\| FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED \|[^\n]*?)REVIEW_REQUIRED/,
+        /(\| FIG-STUDIO-MOBILE-STAGE-SELECTED \|[^\n]*?)REVIEW_REQUIRED/,
         '$1APPROVED_FOR_IMPLEMENTATION',
       ),
     });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'));
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-MOBILE-STAGE-SELECTED'));
   });
 
   it('refuses the shared 1024 reference re-attributed to this checkpoint', () => {

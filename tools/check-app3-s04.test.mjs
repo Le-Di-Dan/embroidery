@@ -182,7 +182,7 @@ describe('predecessors and status', () => {
    * "the Studio is done" still fails here.
    */
   it('refuses a later Studio capability recorded complete', () => {
-    for (const later of ['APP3-S10', 'APP3-S11']) {
+    for (const later of ['APP3-S11']) {
       const phase = `${file('phase')}\n${later} = COMPLETE — REVIEW_DELIVERED\n`;
       assert.ok(mentions(run(checkPredecessors, { phase }), later), later);
     }
