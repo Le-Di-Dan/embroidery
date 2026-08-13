@@ -301,8 +301,15 @@ worker or UI file was touched.
 ## J. Git status and commits
 
 Planning checkpoints are committed in this repository (APP2/APP3 precedent:
-`docs(app3): …`). This checkpoint produces one documentation commit on
-`production`. **Nothing is pushed.**
+`docs(app3): …`). This checkpoint produced one documentation commit on
+`production`:
+
+```text
+2044a31  docs(app4): reconcile APP4 phase entry and lock the execution manifest
+```
+
+Parent: `aa577f3` (`docs(app3): record phase closure evidence`). Three files,
+all Markdown (§I). Working tree clean after the commit. **Nothing was pushed.**
 
 ---
 
