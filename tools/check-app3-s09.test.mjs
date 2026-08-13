@@ -173,7 +173,7 @@ describe('predecessors and status', () => {
    * "the Studio is done" still fails here.
    */
   it('refuses a later Studio capability recorded complete', () => {
-    for (const later of ['APP3-S11']) {
+    for (const later of ['APP3-E01']) {
       const phase = `${file('phase')}\n${later} = COMPLETE — REVIEW_DELIVERED\n`;
       assert.ok(mentions(run(checkPredecessors, { phase }), later), later);
     }
@@ -249,10 +249,14 @@ describe('the overlay is anchored to the viewport', () => {
 
   it('refuses the mark moved inside the transformed layer', () => {
     // The mutation that looks perfect at fit and is gone at 400 % with a pan.
+    //
+    // Retargeted at `APP3-S11`: the element gained a second prop and Prettier
+    // broke it across lines, so the old single-line anchor would `.replace`
+    // nothing and this case would pass against an unmodified file.
     const screen = replacing(
       'screen',
-      '<StudioStageViewport overlay={<StudioStageWatermark token={watermarkToken} />}>',
-      '<StudioStageViewport>',
+      'overlay={<StudioStageWatermark token={watermarkToken} />}',
+      '',
     );
     assert.ok(mentions(run(checkViewportAnchored, { screen }), 'overlay slot'));
   });

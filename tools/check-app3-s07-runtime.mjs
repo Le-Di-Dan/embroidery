@@ -23,6 +23,7 @@ import {
   isS06Delivered,
   isS09Delivered,
   isS10Delivered,
+  isS11Delivered,
 } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
@@ -37,6 +38,7 @@ import {
   s07Code,
   preS04Code,
   preS09Code,
+  preS11Code,
 } from './check-app3-s07.sources.mjs';
 
 /**
@@ -283,6 +285,9 @@ export function checkViewportState(rootDir, fail) {
 }
 
 /** The document, the network and the capabilities a viewport must not touch. */
+/** The markers `APP3-S11` legitimately owns once it has opened. */
+const MOVED_TO_S11 = new Set(['pinch', 'gesturestart']);
+
 export function checkNonScope(rootDir, fail) {
   const all = featureCode(rootDir);
   const s07 = s07Code(rootDir);
@@ -361,8 +366,20 @@ export function checkNonScope(rootDir, fail) {
     }
   }
 
+  /*
+   * The touch markers moved owner rather than losing their rule (`APP3-S11`).
+   *
+   * Each was banned feature-wide while S11 had not opened. It now has, so a
+   * pinch is legitimate in the eleven files that checkpoint owns — and as
+   * forbidden as ever everywhere else, which is what this rule was written to
+   * protect. `onTouchStart` and `onTouchMove` stay banned even inside S11: the
+   * arbitration is built on Pointer Events, and a second input model beside it
+   * has its own capture rules and its own way of losing a contact.
+   */
+  const touchScope = isS11Delivered(rootDir) ? preS11Code(rootDir) : all;
   for (const [marker, owner] of Object.entries(owners)) {
-    if (all.includes(marker)) {
+    const scope = MOVED_TO_S11.has(marker) ? touchScope : all;
+    if (scope.includes(marker)) {
       fail(`${FEATURE}: carries "${marker}", a capability ${owner} owns`);
     }
   }
@@ -401,9 +418,24 @@ export function checkSafeArea(rootDir, fail) {
   if (!screen.includes('rectToBounds(')) {
     fail(`${CANONICAL_FILES.stageScreen}: the safe area is not taken from the engine`);
   }
+  /*
+   * The safe-area derivation ban, world-aware (`APP3-S11`).
+   *
+   * `inset` was banned across the feature because the embroidery area is the
+   * persisted rectangle and nothing may compute a second one from it. That is
+   * unchanged everywhere the rule was written about — and `APP3-S11` uses the
+   * word for something else entirely: the **keyboard inset**, a measurement of
+   * how far the on-screen keyboard covers the window, which is not a boundary,
+   * not derived from the area and never reaches a document.
+   *
+   * So the scope narrows to everything outside the eleven files S11 owns rather
+   * than the ban being dropped: a second area boundary computed in the stage,
+   * the viewport or an inspector still fails exactly as before.
+   */
   const all = featureCode(rootDir);
+  const areaScope = isS11Delivered(rootDir) ? preS11Code(rootDir) : all;
   for (const derived of [/inset/i, /margin[A-Z]/, /shrinkBy/, /padArea/]) {
-    if (derived.test(all)) {
+    if (derived.test(areaScope)) {
       fail(`${FEATURE}: derives a second safe-area boundary (${String(derived)})`);
     }
   }

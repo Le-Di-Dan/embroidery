@@ -29,6 +29,17 @@ export const RESIZE_HANDLES: readonly ResizeHandleId[] = Object.freeze([
 ]);
 
 /**
+ * The four the mobile stage draws (`APP3-S11`, `610:242`).
+ *
+ * Corners only, and it is a subset rather than a second set: `610:242` draws
+ * ~22 px knobs at the four corners of a selected element and no edge or rotate
+ * affordance. `APP3-S11` §8 forbids reproducing all eight desktop handles
+ * automatically, and a mid-edge knob on a phone would sit under the fingertip
+ * that is already holding the element.
+ */
+export const CORNER_HANDLES: readonly ResizeHandleId[] = Object.freeze(['nw', 'ne', 'se', 'sw']);
+
+/**
  * Where each handle sits in the local box, as a fraction of width and height.
  *
  * A fraction rather than a coordinate so the same table works for every element

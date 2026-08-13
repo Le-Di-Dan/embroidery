@@ -142,7 +142,7 @@ describe('entry authority', () => {
 
   it('refuses a next checkpoint recorded complete inside this one', () => {
     // S11 only: it needs S03 *and* S07, so S03 shipping does not make it ready.
-    for (const later of ['APP3-S11']) {
+    for (const later of ['APP3-E01']) {
       const root = rootWith({
         phase: `${file('phase')}\n${later} = COMPLETE — REVIEW_DELIVERED\n`,
       });
@@ -175,11 +175,11 @@ describe('scoped design approval', () => {
       // one — `APP3-S03` shipped and approved it — which is exactly why the
       // assertion moves rather than the rule loosening.
       registry: file('registry').replace(
-        /(\| FIG-STUDIO-MOBILE-STAGE-SELECTED \|[^\n]*?)REVIEW_REQUIRED/,
+        /(\| FIG-APP3-HANDOFF-DEPENDENCY \|[^\n]*?)REVIEW_REQUIRED/,
         '$1APPROVED_FOR_IMPLEMENTATION',
       ),
     });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-MOBILE-STAGE-SELECTED'));
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-APP3-HANDOFF-DEPENDENCY'));
   });
 
   it('refuses the shared 1024 reference re-attributed to this checkpoint', () => {
@@ -426,14 +426,24 @@ describe('the capabilities the viewport must not grow', () => {
     assert.ok(mentions(failuresOf(checkNonScope, root), 'reaches the network'));
   });
 
-  it('refuses a touch gesture arriving before APP3-S11', () => {
+  /*
+   * A second input model, still refused — in every world.
+   *
+   * Before `APP3-S11` this proved "no touch gesture has arrived yet". S11 has
+   * now arrived, and the rule it left behind is narrower rather than gone: the
+   * arbitration is built on Pointer Events, so the Touch Events API is refused
+   * everywhere including inside S11's own files. A viewport that grew an
+   * `onTouchStart` would be a second capture model beside the one that decides
+   * which finger owns the design.
+   */
+  it('refuses the Touch Events API, which is a second input model', () => {
     const root = rootWith({
       viewport: file('viewport').replace(
         'onPointerDown={handlePointerDown}',
         'onTouchStart={() => undefined}\n      onPointerDown={handlePointerDown}',
       ),
     });
-    assert.ok(mentions(failuresOf(checkNonScope, root), 'APP3-S11'));
+    assert.ok(mentions(failuresOf(checkNonScope, root), 'onTouchStart'));
   });
 
   it('refuses a pan that does not refuse a touch pointer', () => {

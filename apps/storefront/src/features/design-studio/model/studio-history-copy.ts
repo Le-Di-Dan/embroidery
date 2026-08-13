@@ -114,12 +114,12 @@ export const STUDIO_HISTORY_COPY = {
   undone: (label: string) => `Đã hoàn tác: ${label}.`,
   redone: (label: string) => `Đã làm lại: ${label}.`,
 
-  /**
-   * Mobile.
+  /*
+   * There is no "this screen is too small" sentence any more.
    *
-   * `APP3-S11` owns the mobile editing surfaces, so 390 renders nothing that
-   * edits. This sentence promises nothing: no "sắp có", and no disabled control
-   * implying a button that will work later.
+   * One stood here until `APP3-S11` shipped the approved mobile surface for this
+   * capability. Keeping it would leave a false statement in the product for the
+   * first person who renders it by mistake, so it was removed rather than left
+   * unreferenced.
    */
-  mobileUnavailable: 'Hoàn tác cần màn hình lớn hơn.',
 } as const;

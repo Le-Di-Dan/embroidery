@@ -44,7 +44,9 @@ import {
   acceptedSurface,
   isS04Delivered,
   isS08Delivered,
+  foreignApprovals,
   isS10Delivered,
+  isS11Delivered,
   isS09Delivered,
   isS06Delivered,
 } from './app3-accepted-surface.mjs';
@@ -153,7 +155,7 @@ export function checkPredecessors(rootDir, fail) {
   // S06 implements none of these, and delivering it makes none of them ready.
   // World-aware on APP3-S04: "S06 did not implement this" stays true once S04
   // implements it for itself, and the S04 gate is what checks that.
-  const notImplementedByS06 = ['APP3-S11'];
+  const notImplementedByS06 = isS11Delivered(rootDir) ? ['APP3-E01'] : ['APP3-S11', 'APP3-E01'];
   if (!isS08Delivered(rootDir)) notImplementedByS06.push('APP3-S08');
   if (!isS10Delivered(rootDir)) notImplementedByS06.push('APP3-S10');
   if (!isS09Delivered(rootDir)) notImplementedByS06.push('APP3-S09');
@@ -208,11 +210,31 @@ export function checkDesignApproval(rootDir, fail) {
     ...(isS09Delivered(rootDir) ? S09_DESIGN_ROWS : []),
     ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
     ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
+    ...(isS11Delivered(rootDir)
+      ? ['FIG-STUDIO-MOBILE-STAGE-SELECTED', 'FIG-STUDIO-MOBILE-IMAGESHEET']
+      : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }
+  }
+
+  /*
+   * The guard that does not empty itself.
+   *
+   * The rule above is world-aware, and `APP3-S11` is where that catches up with
+   * it: with section 15 released there is no Studio row left belonging to an
+   * unopened checkpoint, so the loop runs over nothing and asserts nothing —
+   * exactly the failure `APP3-S04` recorded once already.
+   *
+   * A blanket approval was never really "a later row is approved". It is "a row
+   * was released by a checkpoint that did not own it", and that stays checkable
+   * forever: this checkpoint may be the approval evidence for its own rows and
+   * for no others.
+   */
+  for (const claimed of foreignApprovals(registry, 'APP3-S06', Object.keys(S06_DESIGN_ROWS))) {
+    fail(`${CANONICAL_FILES.registry}: ${claimed} was approved as APP3-S06 evidence`);
   }
 }
 

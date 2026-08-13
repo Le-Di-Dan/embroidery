@@ -31,9 +31,19 @@ import { STUDIO_SAVE_COPY } from '../model/studio-autosave-copy';
 
 export interface StudioSaveStateProps {
   readonly save: UseStudioAutosaveResult;
+  /**
+   * The conflict decision is drawn somewhere else at this tier (`APP3-S11`).
+   *
+   * True only at 390, where `610:514` places the same decision in a bottom sheet.
+   * The decision, its two actions and everything behind them stay `APP3-S10`'s —
+   * what moves is where it appears, and this flag is what stops it appearing
+   * twice. Two surfaces asking the same question with the same two buttons is how
+   * a customer comes to believe they are two different questions.
+   */
+  readonly suppressConflict?: boolean | undefined;
 }
 
-export function StudioSaveState({ save }: StudioSaveStateProps) {
+export function StudioSaveState({ save, suppressConflict = false }: StudioSaveStateProps) {
   const headingId = useId();
   const region = useRef<HTMLElement | null>(null);
 
@@ -59,6 +69,7 @@ export function StudioSaveState({ save }: StudioSaveStateProps) {
   // chip still reports the failure and the navigation warning is still armed.
   if (decision && save.dismissed) return null;
   if (save.state === 'EXPIRED') return null;
+  if (conflict && suppressConflict) return null;
 
   const content = conflict
     ? {

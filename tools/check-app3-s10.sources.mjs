@@ -10,7 +10,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S10_DESIGN_ROWS, S10_FILES } from './app3-accepted-paths.mjs';
+import { S10_DESIGN_ROWS, S10_FILES, S11_FILES } from './app3-accepted-paths.mjs';
 
 export { S10_DESIGN_ROWS, S10_FILES };
 
@@ -75,6 +75,10 @@ export const LATER_DESIGN_ROWS = Object.freeze([
   'FIG-STUDIO-MOBILE-TEXTSHEET',
   'FIG-STUDIO-MOBILE-IMAGESHEET',
   'FIG-STUDIO-MOBILE-CONFLICT',
+  // Never excluded, whatever ships: no Studio capability checkpoint consumes
+  // this handoff annotation, so a blanket approval still moves it and the rule
+  // above still has something to catch.
+  'FIG-APP3-HANDOFF-DEPENDENCY',
 ]);
 
 export function read(rootDir, key) {
@@ -150,4 +154,18 @@ export function publishedValues(source) {
     ...[...stripped.matchAll(/'([^'\n]*)'/g)].map((match) => match[1] ?? ''),
     ...[...stripped.matchAll(/`([^`]*)`/g)].map((match) => match[1] ?? ''),
   ];
+}
+
+/**
+ * Every Studio source **except** the files `APP3-S11` owns.
+ *
+ * The scope the mobile ban needs once that checkpoint has opened: the ban is
+ * kept, and the mobile capability's own files are the only place it may appear.
+ */
+export function preS11Code(rootDir) {
+  const owned = new Set(S11_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  return collect(join(rootDir, FEATURE), /\.tsx?$/)
+    .filter((path) => !owned.has(path))
+    .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
+    .join('\n');
 }

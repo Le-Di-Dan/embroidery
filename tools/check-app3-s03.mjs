@@ -31,7 +31,9 @@ import {
   isS06Delivered,
   isS04Delivered,
   isS08Delivered,
+  foreignApprovals,
   isS10Delivered,
+  isS11Delivered,
   isS09Delivered,
   isB06CDelivered,
 } from './app3-accepted-surface.mjs';
@@ -115,6 +117,10 @@ export function checkPredecessors(rootDir, fail) {
   // is asserted exactly as ruled, and S05 is only excused once its own status
   // block is present — which the S05 gate is what actually checks.
   const notImplementedByS03 = [
+    // The next capability none of these checkpoints implements. It replaces
+    // `APP3-S11` here now that S11 has legitimately opened: a guard whose whole
+    // list belongs to opened checkpoints asserts nothing.
+    'APP3-E01',
     'APP3-S11',
     'APP3-S04',
     ...(isB06CDelivered(rootDir) ? [] : ['APP3-B06C']),
@@ -136,6 +142,11 @@ export function checkPredecessors(rootDir, fail) {
   // this", and that stays true once S04 implements it for itself.
   const s04At = notImplementedByS03.indexOf('APP3-S04');
   if (s04At >= 0 && isS04Delivered(rootDir)) notImplementedByS03.splice(s04At, 1);
+  // World-aware on `APP3-S11`, for the reason the lines above it are: the rule
+  // says "this checkpoint did not implement mobile touch", and that stays true
+  // once S11 implements it for itself. The S11 gate is what checks that.
+  const s11At = notImplementedByS03.indexOf('APP3-S11');
+  if (s11At >= 0 && isS11Delivered(rootDir)) notImplementedByS03.splice(s11At, 1);
   for (const later of notImplementedByS03) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(`${CANONICAL_FILES.phase}: ${later} is recorded complete; S03 does not implement it`);
@@ -190,11 +201,31 @@ export function checkDesignApproval(rootDir, fail) {
     ...(isS09Delivered(rootDir) ? ['FIG-STUDIO-WATERMARK-DESKTOP-LIGHT'] : []),
     ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
     ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
+    ...(isS11Delivered(rootDir)
+      ? ['FIG-STUDIO-MOBILE-STAGE-SELECTED', 'FIG-STUDIO-MOBILE-TRANSFORMSHEET']
+      : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }
+  }
+
+  /*
+   * The guard that does not empty itself.
+   *
+   * The rule above is world-aware, and `APP3-S11` is where that catches up with
+   * it: with section 15 released there is no Studio row left belonging to an
+   * unopened checkpoint, so the loop runs over nothing and asserts nothing —
+   * exactly the failure `APP3-S04` recorded once already.
+   *
+   * A blanket approval was never really "a later row is approved". It is "a row
+   * was released by a checkpoint that did not own it", and that stays checkable
+   * forever: this checkpoint may be the approval evidence for its own rows and
+   * for no others.
+   */
+  for (const claimed of foreignApprovals(registry, 'APP3-S03', Object.keys(S03_DESIGN_ROWS))) {
+    fail(`${CANONICAL_FILES.registry}: ${claimed} was approved as APP3-S03 evidence`);
   }
 
   const tablet = registry.split('\n').find((row) => row.startsWith(`| ${TABLET_REFERENCE_ROW} |`));

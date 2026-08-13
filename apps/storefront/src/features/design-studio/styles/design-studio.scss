@@ -1535,3 +1535,342 @@ $size-studio-rail-control: 48px;
   color: styles.$color-text-tertiary;
   font-size: styles.$font-size-caption;
 }
+
+// ------------------------------------- mobile controls & sheets (APP3-S11)
+//
+// Design source: FIG-STUDIO-MOBILE-{STAGE-SELECTED 610:242, TRANSFORMSHEET
+// 610:294, LAYERSSHEET 610:353, TEXTSHEET 610:409, IMAGESHEET 610:465,
+// CONFLICT 610:514}, section 15 — 596:21. Frame 390x844.
+//
+// None of this is a media query. React decides which composition exists
+// (`model/studio-responsive.ts`), so these rules only describe surfaces that are
+// already mobile-only by construction — which is what keeps a CSS-hidden mobile
+// toolbar from being tab-reachable on a desktop.
+
+// 610:242 draws five 60x56 targets in an 84px-tall bar. 56 is above the shared
+// 44px minimum, so the drawn height is used as-is rather than raised.
+$size-studio-mobile-target: 56px;
+
+// The gesture contract 610:242 prints beside the stage. Real text, not a
+// tooltip: a customer who cannot see the affordance still needs to be told the
+// canvas answers two fingers.
+.studio-mobile-hint {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.studio-mobile-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(8);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.studio-mobile-toolbar__control {
+  flex: 1 1 0;
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  height: $size-studio-mobile-target;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  cursor: pointer;
+
+  // The open tool, marked by more than colour: the pressed state is in the
+  // accessibility tree as well, so this is the visual half of a stated fact.
+  &[aria-pressed='true'] {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-surface-secondary;
+  }
+
+  &:disabled {
+    cursor: default;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+// Visually hidden, never `display: none`: each sentence is what an
+// `aria-describedby` on a disabled control points at.
+.studio-mobile-toolbar__reason {
+  position: absolute;
+  margin: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+// The one sheet, shared by all five approved mobile surfaces.
+.studio-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.studio-sheet__scrim {
+  position: absolute;
+  inset: 0;
+  // The canonical design-system scrim. Never a literal black alpha: two overlays
+  // at 40 and 45 percent is exactly the drift the token exists to stop.
+  background: styles.$color-overlay-scrim;
+}
+
+.studio-sheet__panel {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  // Never taller than the visible viewport, and scrollable inside itself: a
+  // sheet that grew past the screen would put its own actions out of reach.
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border-start-start-radius: styles.$radius-lg;
+  border-start-end-radius: styles.$radius-lg;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+.studio-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}
+
+.studio-sheet__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.studio-sheet__close {
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  cursor: pointer;
+}
+
+.studio-sheet__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.studio-sheet__body-text,
+.studio-sheet__note {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.studio-sheet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+// 610:294 — three read-outs, each between a decrement and an increment.
+.studio-transform-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.studio-transform-sheet__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+}
+
+.studio-transform-sheet__label {
+  font-size: styles.$font-size-body-m;
+}
+
+.studio-transform-sheet__control {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(8);
+}
+
+.studio-transform-sheet__step {
+  // The frame's own note promises 44px on every control here, so it is bound to
+  // the shared token rather than to a number typed twice.
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.studio-transform-sheet__value {
+  min-width: styles.spacing(64);
+  text-align: center;
+  font-size: styles.$font-size-body-m;
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-transform-sheet__refusal {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-status-error;
+}
+
+.studio-transform-sheet__note,
+.studio-transform-sheet__unavailable {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// 610:353 — rows with a ⋮⋮ handle, and the two step buttons beside it that keep
+// reordering available without a drag.
+.studio-layers-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.studio-layers-sheet__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.studio-layers-sheet__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(8);
+  padding: styles.spacing(8);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+
+  &[data-selected='true'] {
+    border-color: styles.$color-border-secondary;
+  }
+
+  // Where a drop would land, drawn on the row it would land on.
+  &[data-drop='true'] {
+    border-block-start: 2px solid styles.$color-border-secondary;
+  }
+
+  &[data-dragging='true'] {
+    opacity: 0.6;
+  }
+}
+
+.studio-layers-sheet__select {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(8);
+  min-height: styles.$size-touch-target-min;
+  border: 0;
+  background: none;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  text-align: start;
+  cursor: pointer;
+}
+
+.studio-layers-sheet__badge {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.studio-layers-sheet__controls {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(4);
+}
+
+.studio-layers-sheet__step,
+.studio-layers-sheet__handle {
+  min-width: styles.$size-touch-target-min;
+  min-height: styles.$size-touch-target-min;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.studio-layers-sheet__handle {
+  // The handle is the only thing on the row that starts a reorder gesture, so it
+  // is the only thing that takes the pointer away from the browser. Scrolling
+  // the list by dragging a row still works, which is why the suppression is here
+  // and not on the list.
+  touch-action: none;
+}
+
+.studio-layers-sheet__hint {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// The stage surface itself, while the mobile arbitration is bound to it.
+//
+// Scoped to the attribute the mobile composition sets rather than to a media
+// query or to the class: the browser's own pan and pinch are suppressed exactly
+// where the Studio answers them, and the page outside the stage keeps scrolling
+// normally. A global `touch-action: none` would take the customer's ability to
+// scroll the page away for the whole route.
+// `touch-action` is **not inherited**, so the container alone is not enough: the
+// move surface and the corner knobs are separate elements, and a browser that
+// still owns the gesture on them withholds every `pointermove` while it decides
+// whether the contact was a scroll — then cancels it. A real phone finds that
+// and a desktop pointer never does.
+//
+// The descendant selector is still scoped to the stage while the arbitration is
+// bound to it, so the page outside keeps scrolling normally.
+.studio-stage__viewport[data-touch='true'],
+.studio-stage__viewport[data-touch='true'] * {
+  touch-action: none;
+}

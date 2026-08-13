@@ -22,9 +22,11 @@ import {
   S04_FILES,
   S08_FILES,
   S10_FILES,
+  S11_FILES,
   isS04Delivered,
   isS08Delivered,
   isS10Delivered,
+  isS11Delivered,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -112,6 +114,17 @@ export const LATER_STUDIO_ROWS = Object.freeze([
   'FIG-STUDIO-WATERMARK-DESKTOP-LIGHT',
   'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED',
   'FIG-STUDIO-MOBILE-LAYERSSHEET',
+  /*
+   * The row that keeps this rule from emptying itself (`APP3-S11`).
+   *
+   * Every *capability* row above now belongs to a checkpoint that has opened, so
+   * a world-aware exclusion would leave the list empty — the failure `APP3-S04`
+   * recorded once already, where a rule still ran, still passed, and asserted
+   * nothing. This is a handoff annotation: no Studio capability checkpoint
+   * consumes it, so it must stay `REVIEW_REQUIRED` for all of them, and a
+   * blanket approval still moves it.
+   */
+  'FIG-APP3-HANDOFF-DEPENDENCY',
 ]);
 
 /** The six generated operations S01 owns, and nothing else. */
@@ -225,6 +238,7 @@ export function s01FeatureCode(rootDir) {
       ...(isS04Delivered(rootDir) ? S04_FILES : []),
       ...(isS08Delivered(rootDir) ? S08_FILES : []),
       ...(isS10Delivered(rootDir) ? S10_FILES : []),
+      ...(isS11Delivered(rootDir) ? S11_FILES : []),
     ].map((path) => join(rootDir, FEATURE, ...path.split('/'))),
   );
   const files = [

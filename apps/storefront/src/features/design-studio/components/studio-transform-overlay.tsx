@@ -16,13 +16,21 @@ import {
 
 import { documentToPercent, handleCounterScale } from '../model/studio-stage-mapping';
 import { STUDIO_TRANSFORM_COPY } from '../model/studio-transform-copy';
-import { RESIZE_HANDLES, handleLocalPoint } from '../model/studio-transform-handles';
+import {
+  CORNER_HANDLES,
+  RESIZE_HANDLES,
+  handleLocalPoint,
+} from '../model/studio-transform-handles';
+import { STUDIO_MOBILE_COPY } from '../model/studio-mobile-copy';
 import { elementFrames, rotationAnchors } from '../model/studio-transform';
 import type { StudioTransformApi } from '../hooks/use-studio-transform';
 
 /** How far the rotate affordance sits beyond the top edge, in document units. */
 const ROTATE_OFFSET_RATIO = 0.05;
 const MIN_ROTATE_OFFSET_PX = 8;
+
+/** Every mobile corner knob opens the one sheet, so they share one name. */
+const sheetLabel = STUDIO_MOBILE_COPY.transform.open;
 
 export interface StudioTransformOverlayProps {
   readonly document: DesignDocument;
@@ -32,6 +40,18 @@ export interface StudioTransformOverlayProps {
   readonly zoom: number;
   readonly transform: StudioTransformApi;
   readonly overlayRef: RefObject<HTMLDivElement | null>;
+  /**
+   * Open the mobile transform sheet (`APP3-S11`), or `undefined` off mobile.
+   *
+   * `610:242` draws four ~22 px corner handles on a selected element and no
+   * rotate affordance, and `610:294` is the sheet that resizes and rotates. So at
+   * this tier a corner handle is the **way to that sheet** rather than a drag
+   * target: nothing in the approved annotations authorizes direct corner-handle
+   * resize by touch, and a 22 px knob dragged by a fingertip is a resize the
+   * customer cannot aim. The rotate handle is not drawn at all — inventing a
+   * touch rotation affordance is explicitly out of scope.
+   */
+  readonly onOpenSheet?: (() => void) | undefined;
 }
 
 /**
@@ -65,6 +85,7 @@ export function StudioTransformOverlay({
   zoom,
   transform,
   overlayRef,
+  onOpenSheet,
 }: StudioTransformOverlayProps) {
   const frames = elementFrames(graph, elementId);
   const element = document.elements.find((candidate) => candidate.id === elementId);
@@ -112,30 +133,39 @@ export function StudioTransformOverlay({
         onPointerDown={transform.beginMove}
       />
 
-      {RESIZE_HANDLES.map((handle) => (
+      {(onOpenSheet === undefined ? RESIZE_HANDLES : CORNER_HANDLES).map((handle) => (
         <HandleButton
           key={handle}
           className="studio-stage__handle"
           testId={`studio-transform-handle-${handle}`}
-          label={STUDIO_TRANSFORM_COPY.resize(handle)}
+          label={onOpenSheet === undefined ? STUDIO_TRANSFORM_COPY.resize(handle) : sheetLabel}
           position={percent(
             transformPoint(frames.effective, handleLocalPoint(handle, width, height)),
           )}
           counterScale={counterScale}
-          onPointerDown={(event) => {
-            transform.beginResize(handle, event);
-          }}
+          onClick={onOpenSheet}
+          onPointerDown={
+            onOpenSheet === undefined
+              ? (event) => {
+                  transform.beginResize(handle, event);
+                }
+              : undefined
+          }
         />
       ))}
 
-      <HandleButton
-        className="studio-stage__handle studio-stage__handle--rotate"
-        testId="studio-transform-rotate"
-        label={STUDIO_TRANSFORM_COPY.rotate}
-        position={percent(rotatePoint)}
-        counterScale={counterScale}
-        onPointerDown={transform.beginRotate}
-      />
+      {/* No rotate affordance on touch: `610:242` draws none, and a rotation
+          gesture nobody approved is not one to invent. Rotation is in the sheet. */}
+      {onOpenSheet === undefined ? (
+        <HandleButton
+          className="studio-stage__handle studio-stage__handle--rotate"
+          testId="studio-transform-rotate"
+          label={STUDIO_TRANSFORM_COPY.rotate}
+          position={percent(rotatePoint)}
+          counterScale={counterScale}
+          onPointerDown={transform.beginRotate}
+        />
+      ) : null}
     </div>
   );
 }
@@ -146,7 +176,9 @@ interface HandleButtonProps {
   readonly label: string;
   readonly position: { readonly left: number; readonly top: number };
   readonly counterScale: number;
-  readonly onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
+  readonly onPointerDown?: ((event: React.PointerEvent<HTMLElement>) => void) | undefined;
+  /** The mobile knobs are ordinary buttons: they open a sheet, they do not drag. */
+  readonly onClick?: (() => void) | undefined;
 }
 
 function HandleButton({
@@ -156,6 +188,7 @@ function HandleButton({
   position,
   counterScale,
   onPointerDown,
+  onClick,
 }: HandleButtonProps) {
   const style: CSSProperties = {
     left: pct(position.left),
@@ -169,6 +202,7 @@ function HandleButton({
       style={style}
       aria-label={label}
       data-testid={testId}
+      onClick={onClick}
       onPointerDown={onPointerDown}
     >
       {/* The visible knob. The button around it is the ≥44 px hit target. */}

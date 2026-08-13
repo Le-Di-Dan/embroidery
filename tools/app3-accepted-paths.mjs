@@ -821,6 +821,95 @@ export const S10_DESIGN_ROWS = Object.freeze({
   'FIG-STUDIO-AUTOSAVE-DESKTOP-EXPIRED': '610:201',
 });
 
+export function isS11Delivered(rootDir) {
+  const path = join(rootDir, PHASE);
+  const phase = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  return /\nAPP3-S11 = COMPLETE/.test(phase);
+}
+
+/**
+ * The files `APP3-S11` added, named exactly.
+ *
+ * Shared so every predecessor gate that has to become world-aware about touch
+ * names the same eleven files rather than each keeping its own idea of where a
+ * pinch, a bottom sheet or a 44 px mobile target may legitimately live. Every
+ * one of those gates was written to say "this capability has not opened yet",
+ * and each stays true of *its own* checkpoint: the ban does not disappear when
+ * S11 ships, it narrows to everything outside this list.
+ *
+ * Four files `APP3-S11` **changed** are deliberately absent —
+ * `studio-stage-screen.tsx`, `studio-stage-viewport.tsx`,
+ * `studio-transform-overlay.tsx` and `hooks/use-studio-transform.ts`. They are
+ * `APP3-S02`, `S07` and `S03` files that each gained exactly one seam, and they
+ * keep their own checkpoint's rules rather than escaping into a newer set.
+ */
+export const S11_FILES = Object.freeze([
+  'components/studio-layers-sheet.tsx',
+  'components/studio-mobile-surface.tsx',
+  'components/studio-mobile-toolbar.tsx',
+  'components/studio-sheet.tsx',
+  'components/studio-transform-sheet.tsx',
+  'hooks/use-keyboard-inset.ts',
+  'hooks/use-studio-mobile-sheets.ts',
+  'hooks/use-studio-touch-gestures.ts',
+  'model/studio-mobile-copy.ts',
+  'model/studio-mobile-transform.ts',
+  'model/studio-touch.ts',
+]);
+
+/** The six section-15 design rows `APP3-S11` consumes, and their nodes. */
+export const S11_DESIGN_ROWS = Object.freeze({
+  'FIG-STUDIO-MOBILE-STAGE-SELECTED': '610:242',
+  'FIG-STUDIO-MOBILE-TRANSFORMSHEET': '610:294',
+  'FIG-STUDIO-MOBILE-LAYERSSHEET': '610:353',
+  'FIG-STUDIO-MOBILE-TEXTSHEET': '610:409',
+  'FIG-STUDIO-MOBILE-IMAGESHEET': '610:465',
+  'FIG-STUDIO-MOBILE-CONFLICT': '610:514',
+});
+
+/**
+ * The rows a checkpoint's own approval evidence may name, and no others.
+ *
+ * ## Why this exists at all
+ *
+ * Every Studio gate carries a rule of the form "rows belonging to a checkpoint
+ * that has not opened must still be `REVIEW_REQUIRED`". It is the anti-blanket-
+ * approval guard, and it was always world-aware: as each checkpoint opened, its
+ * row left the list. `APP3-S04` recorded what that costs — a world-aware rule
+ * whose every row now belongs to an opened checkpoint has **emptied itself**. It
+ * still runs, still passes, and asserts nothing.
+ *
+ * `APP3-S11` is the checkpoint where that happens for the whole phase: with
+ * section 15 released there is no Studio row left that belongs to an unopened
+ * checkpoint. So the guard changes shape rather than quietly expiring.
+ *
+ * ## The shape it changes to
+ *
+ * A blanket approval is not really "a later row is approved" — it is "a row was
+ * released **by a checkpoint that did not own it**". That is written down in the
+ * registry, in each row's approval-evidence column, and it stays checkable
+ * forever: a checkpoint may appear as the evidence for its own rows and for
+ * nothing else.
+ *
+ * Returns the ids this checkpoint has wrongly claimed.
+ */
+export function foreignApprovals(registry, checkpointId, ownRows) {
+  const owned = new Set(ownRows);
+  const claimed = [];
+  for (const line of registry.split('\n')) {
+    if (!line.startsWith('| FIG-')) continue;
+    const cells = line.split('|');
+    const id = (cells[1] ?? '').trim();
+    // The approval-evidence cell. Counted from the end — `-1` is the empty
+    // string after the row's closing pipe and `-2` is the date — so a registry
+    // that gains a column on the left does not silently shift this read.
+    const evidence = (cells.at(-3) ?? '').trim();
+    if (!evidence.includes(checkpointId)) continue;
+    if (!owned.has(id)) claimed.push(id);
+  }
+  return claimed;
+}
+
 /** True once `APP3-P04` has published the shared Session response contract. */
 export function isP04Delivered(rootDir) {
   const path = join(rootDir, PHASE);

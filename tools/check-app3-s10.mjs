@@ -32,6 +32,7 @@
  *
  * Read-only, cross-platform pure Node. Independent of the completion report.
  */
+import { foreignApprovals, isS11Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   LATER_DESIGN_ROWS,
@@ -84,8 +85,14 @@ const PREDECESSORS = [
   'APP3-S09',
 ];
 
-/** Studio capability rows that must not be recorded complete by this checkpoint. */
-const LATER_ROWS = ['APP3-S11'];
+/**
+ * Studio capability rows that must not be recorded complete by this checkpoint.
+ *
+ * `APP3-S11` leaves the list world-awarely once it opens — the rule says "S10 did
+ * not implement mobile touch", and that stays true once S11 implements it for
+ * itself. `APP3-E01` replaces it so the guard never runs over an empty list.
+ */
+const LATER_ROWS = ['APP3-S11', 'APP3-E01'];
 
 /** The statuses `APP3-S10` may legitimately be recorded under. */
 const STATUS_LINES = [
@@ -133,7 +140,9 @@ export function checkPredecessors(rootDir, fail) {
   if (!STATUS_LINES.some((line) => phase.includes(`\n${line}\n`))) {
     fail(`${CANONICAL_FILES.phase}: APP3-S10 is not recorded under a legitimate status`);
   }
-  for (const later of LATER_ROWS) {
+  for (const later of LATER_ROWS.filter(
+    (row) => !(row === 'APP3-S11' && isS11Delivered(rootDir)),
+  )) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(
         `${CANONICAL_FILES.phase}: ${later} is recorded complete by a checkpoint that is not it`,
@@ -213,13 +222,38 @@ export function checkDesignApproval(rootDir, fail) {
     fail(`${CANONICAL_FILES.registry}: the 1024 reference was re-attributed to APP3-S10`);
   }
 
-  // Every `APP3-S11` row stays unapproved. They are the mobile capability, which
-  // is exactly the one this checkpoint must not start.
-  for (const later of LATER_DESIGN_ROWS) {
+  /*
+   * Every `APP3-S11` row stays unapproved — until S11 itself opens.
+   *
+   * The rule was written to stop this checkpoint starting the mobile capability,
+   * and it still says exactly that: what changes is that a row released by the
+   * checkpoint that owns it is no longer evidence about this one.
+   *
+   * The handoff annotation is never excluded, whatever ships. No Studio
+   * capability checkpoint consumes it, so a blanket approval still moves it and
+   * this rule still catches one — which is what stops the loop emptying itself
+   * the moment section 15 was released.
+   */
+  const mobileOpened = isS11Delivered(rootDir);
+  for (const later of LATER_DESIGN_ROWS.filter(
+    (row) => !(mobileOpened && row.startsWith('FIG-STUDIO-MOBILE')),
+  )) {
     const row = rowOf(later);
     if (row !== undefined && row.includes('APPROVED_FOR_IMPLEMENTATION')) {
-      fail(`${CANONICAL_FILES.registry}: ${later} belongs to APP3-S11 and is approved`);
+      fail(`${CANONICAL_FILES.registry}: ${later} belongs to a later checkpoint and is approved`);
     }
+  }
+
+  /*
+   * The guard that does not empty itself.
+   *
+   * A blanket approval was never really "a later row is approved". It is "a row
+   * was released by a checkpoint that did not own it", and that stays checkable
+   * forever: this checkpoint may be the approval evidence for its own six rows
+   * and for no others.
+   */
+  for (const claimed of foreignApprovals(registry, 'APP3-S10', Object.keys(S10_DESIGN_ROWS))) {
+    fail(`${CANONICAL_FILES.registry}: ${claimed} was approved as APP3-S10 evidence`);
   }
 }
 

@@ -563,10 +563,10 @@ describe('the APP3-S07 viewport', () => {
     }
   });
 
-  it('grows no touch gesture, which APP3-S11 owns', () => {
-    for (const touch of ['onTouchStart', 'onTouchMove', 'touches', 'pinch', 'gesturestart']) {
-      expect(allCode).not.toContain(touch);
-    }
+  // One input model, S11 included; where the touch ban narrowed is ruled there.
+  it('grows no second input model, in any checkpoint', () => {
+    for (const l of ['onTouchStart', 'onTouchMove', 'gesturestart', 'TouchList'])
+      expect(allCode).not.toContain(l);
   });
 });
 

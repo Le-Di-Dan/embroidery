@@ -210,7 +210,7 @@ describe('scoped design approval', () => {
     // A row whose own checkpoint has *not* opened. Transform is no longer one:
     // `APP3-S03` shipped and approved it, which is precisely why the assertion
     // has to move to a row that is still closed rather than stay where it was.
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-MOBILE-LAYERSSHEET'));
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-APP3-HANDOFF-DEPENDENCY'));
   });
 
   it('refuses a row whose node id moved', () => {

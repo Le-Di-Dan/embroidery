@@ -10,6 +10,7 @@
  */
 import { join } from 'node:path';
 
+import { isS11Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   DEBOUNCE_MS,
@@ -25,6 +26,7 @@ import {
   collect,
   featureCode,
   outsideS10Code,
+  preS11Code,
   publishedValues,
   read,
   s10Code,
@@ -354,8 +356,27 @@ export function checkNonScope(rootDir, fail) {
   const all = featureCode(rootDir);
   const store = code(rootDir, 'documentStore');
 
-  for (const mobile of ['bottomSheet', 'BottomSheet', 'onTouchStart', 'onTouchMove', 'pinch']) {
-    if (all.includes(mobile))
+  /*
+   * The mobile ban, world-aware (`APP3-S11`).
+   *
+   * Written as "this capability has not opened yet", which was a true statement
+   * about the world until S11 opened. The half that matters is unchanged: a
+   * bottom sheet or a pinch anywhere *outside* the eleven files S11 owns is
+   * still a capability arriving in the wrong checkpoint, and the autosave loop,
+   * the save chip and the resume handle still may not grow one.
+   *
+   * The two Touch Events markers stay banned everywhere, S11 included: the
+   * arbitration is built on Pointer Events, and a second input model beside it
+   * has its own capture rules and its own way of losing a contact.
+   */
+  const mobileScope = isS11Delivered(rootDir) ? preS11Code(rootDir) : all;
+  for (const legacy of ['onTouchStart', 'onTouchMove']) {
+    if (all.includes(legacy)) {
+      fail(`${FEATURE}: a second input model beside Pointer Events (${legacy})`);
+    }
+  }
+  for (const mobile of ['bottomSheet', 'BottomSheet', 'pinch']) {
+    if (mobileScope.includes(mobile))
       fail(`${FEATURE}: an APP3-S11 mobile surface arrived early (${mobile})`);
   }
   // The server-origin seams exist, are unconditional, and are not history.

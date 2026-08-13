@@ -153,9 +153,9 @@ describe('entry authority', () => {
 
   it('refuses S11 recorded complete, which needs S07 as well', () => {
     const root = rootWith({
-      phase: `${file('phase')}\nAPP3-S11 = COMPLETE — REVIEW_DELIVERED\n`,
+      phase: `${file('phase')}\nAPP3-E01 = COMPLETE — REVIEW_DELIVERED\n`,
     });
-    assert.ok(mentions(failuresOf(checkPredecessors, root), 'APP3-S11'));
+    assert.ok(mentions(failuresOf(checkPredecessors, root), 'APP3-E01'));
   });
 });
 
@@ -180,11 +180,11 @@ describe('scoped design approval', () => {
   it('refuses a blanket Studio approval', () => {
     const root = rootWith({
       registry: file('registry').replace(
-        /(\| FIG-STUDIO-MOBILE-STAGE-SELECTED \|[^\n]*?)REVIEW_REQUIRED/,
+        /(\| FIG-APP3-HANDOFF-DEPENDENCY \|[^\n]*?)REVIEW_REQUIRED/,
         '$1APPROVED_FOR_IMPLEMENTATION',
       ),
     });
-    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-STUDIO-MOBILE-STAGE-SELECTED'));
+    assert.ok(mentions(failuresOf(checkDesignApproval, root), 'FIG-APP3-HANDOFF-DEPENDENCY'));
   });
 
   it('refuses the shared 1024 reference re-attributed to this checkpoint', () => {
@@ -430,10 +430,10 @@ describe('the approved DOM chrome', () => {
 describe('the capabilities S03 must not grow', () => {
   it('refuses a touch transform, which APP3-S11 owns', () => {
     const root = rootWith({
-      gesture: file('gesture').replace(
-        "if (event.pointerType === 'touch' || event.button !== 0) return;",
-        '',
-      ),
+      // Retargeted at `APP3-S11`: the guard is now two statements, and the old
+      // one-line anchor would `.replace` nothing — a mutation that changes no
+      // file still passes while proving nothing.
+      gesture: file('gesture').replace("if (event.pointerType === 'touch' && !touch) return;", ''),
     });
     assert.ok(mentions(failuresOf(checkNonScope, root), 'a touch pointer is not refused'));
   });

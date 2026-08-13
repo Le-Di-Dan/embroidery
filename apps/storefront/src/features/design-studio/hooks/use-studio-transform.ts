@@ -57,6 +57,18 @@ export interface StudioTransformApi {
   readonly beginRotate: (event: ReactPointerEvent<HTMLElement>) => void;
   readonly onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
   readonly onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
+  /**
+   * Ends an open gesture without a pointer event (`APP3-S11`).
+   *
+   * The arbitration needs this when a **second finger** lands during an element
+   * drag: the drag is over, but no `pointerup` has been delivered for the first
+   * touch and none will be until the customer lifts it. The semantics are the
+   * accepted unmount semantics, unchanged — whatever the last valid frame
+   * committed is the design now, so the open action closes into exactly one
+   * entry, or none if the drag never changed anything. Nothing is half
+   * committed, because every frame committed a whole valid document or none.
+   */
+  readonly cancelGesture: () => void;
 }
 
 export interface StudioTransformOptions {
@@ -67,6 +79,17 @@ export interface StudioTransformOptions {
   readonly zoom: number;
   /** The overlay node, read only for its untransformed layout size. */
   readonly overlay: RefObject<HTMLDivElement | null>;
+  /**
+   * Whether a **touch** may drive a gesture here (`APP3-S11`).
+   *
+   * Off everywhere except the mobile composition, and it is a capability rather
+   * than a second code path: a touch drag produces the same candidate, through
+   * the same `APP3-P02` validation, closing the same single `APP3-S08` action.
+   * What the flag decides is only whether the pointer is allowed to start one —
+   * because on a tier with no touch arbitration above it, a touch drag would
+   * take the page's own scroll away from the customer.
+   */
+  readonly touch?: boolean | undefined;
 }
 
 /**
@@ -91,7 +114,7 @@ export interface StudioTransformOptions {
  * is what stands.
  */
 export function useStudioTransform(options: StudioTransformOptions): StudioTransformApi {
-  const { document, elementId, scope, limits, zoom, overlay } = options;
+  const { document, elementId, scope, limits, zoom, overlay, touch = false } = options;
   const commit = useStudioDocumentStore((state) => state.commit);
   // One gesture is one thing the customer did (`APP3-S08` §10). The pointer
   // frames between these two calls update the working document and append no
@@ -164,9 +187,12 @@ export function useStudioTransform(options: StudioTransformOptions): StudioTrans
     handle: ResizeHandleId | undefined,
     event: ReactPointerEvent<HTMLElement>,
   ) {
-    // Mouse and pen only. `APP3-S11` owns touch, and a touch drag here would
-    // both pre-empt that checkpoint and take the page's scroll away.
-    if (event.pointerType === 'touch' || event.button !== 0) return;
+    // Mouse and pen always; touch only where `APP3-S11`'s arbitration is above
+    // this hook to decide that one finger means the element and two mean the
+    // viewport. `event.button` is `0` for a touch contact as well as for the
+    // primary mouse button, so the same test serves both.
+    if (event.pointerType === 'touch' && !touch) return;
+    if (event.button !== 0) return;
     if (document === null || elementId === null || scope === null) return;
 
     const element = document.elements.find((candidate) => candidate.id === elementId);
@@ -229,6 +255,15 @@ export function useStudioTransform(options: StudioTransformOptions): StudioTrans
       // One update per painted frame. A pointer can outrun the compositor, and
       // recomputing per event would validate a document nobody ever sees.
       frame.current ??= requestAnimationFrame(apply);
+    },
+    cancelGesture: () => {
+      if (gesture.current === null) return;
+      gesture.current = null;
+      pending.current = null;
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      frame.current = null;
+      endAction();
+      setIsTransforming(false);
     },
     onPointerUp: (event) => {
       if (gesture.current === null) return;

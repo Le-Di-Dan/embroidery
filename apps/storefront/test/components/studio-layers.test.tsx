@@ -393,15 +393,36 @@ describe('what S04 does not do (APP3-S04 §26, §27, §32)', () => {
 });
 
 describe('responsive boundaries (APP3-S04 §5)', () => {
-  it('renders nothing that edits layers at 390', () => {
+  /*
+   * The 390 boundary moved with the world (`APP3-S11`).
+   *
+   * The layer *panel* still renders nothing at this tier, and the reorder
+   * controls are still absent until a surface that owns them is opened — but the
+   * reason changed. Reordering is no longer unavailable at 390; it lives in the
+   * approved sheet `610:353`, behind the toolbar's own control.
+   */
+  it('renders nothing that edits layers in the panel at 390', () => {
     setViewportWidth(390);
     renderStage();
 
     expect(screen.queryByTestId('studio-layer-list')).not.toBeInTheDocument();
-    expect(screen.getByTestId('studio-layers-mobile-notice')).toBeInTheDocument();
-    // Not merely hidden: an off-screen list would still be focusable and its
-    // buttons would still fire, which is the S11 surface shipped early.
+    // The sentence that said 390 could not reorder layers is gone: it would now
+    // be false.
+    expect(screen.queryByTestId('studio-layers-mobile-notice')).not.toBeInTheDocument();
+    // Not merely hidden: a closed sheet renders no list at all, so nothing is
+    // focusable and no button can fire.
     expect(screen.queryByRole('button', { name: /Đưa lớp/ })).not.toBeInTheDocument();
+  });
+
+  it('reorders from the approved mobile sheet at 390, one entry per drop', () => {
+    setViewportWidth(390);
+    renderStage();
+
+    fireEvent.click(screen.getByTestId('studio-mobile-layers'));
+    expect(screen.getByTestId('studio-mobile-layers-sheet')).toBeInTheDocument();
+    // The keyboard path `APP3-S04` §9 requires is in the sheet too: a drag may
+    // never be the only way to restack.
+    expect(screen.getAllByRole('button', { name: /Đưa lớp/ }).length).toBeGreaterThan(0);
   });
 
   it('uses the one accepted drawer at 1024, and no second one', () => {

@@ -635,9 +635,18 @@ export function checkPanel(rootDir, fail) {
       fail(`${CANONICAL_FILES.panel}: the ${tier} composition is missing`);
     }
   }
+  /*
+   * Nothing belonging to the mobile capability, inside `APP3-S08`'s own files.
+   *
+   * Scoped to `s08Code` from the start, so `APP3-S11` shipping changes nothing
+   * here: the rule was never "no bottom sheet exists in the repository", it was
+   * "the history capability did not grow one". S11 has its own eleven files and
+   * this list is not among them, so a sheet or a touch handler appearing in the
+   * history panel or the rail is still a surface in the wrong checkpoint.
+   */
   for (const early of ['BottomSheet', 'bottom-sheet', 'onTouchStart', 'touchmove']) {
     if (s08Code(rootDir).includes(early)) {
-      fail(`${FEATURE}: "${early}" is an APP3-S11 surface delivered early`);
+      fail(`${FEATURE}: "${early}" is a mobile surface inside the history capability`);
     }
   }
   // One drawer, still. A second over the same stage edge would be a second

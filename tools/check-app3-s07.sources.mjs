@@ -13,7 +13,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { S04_FILES, S06_FILES, S07_FILES, S09_FILES } from './app3-accepted-surface.mjs';
+import { S04_FILES, S06_FILES, S07_FILES, S09_FILES, S11_FILES } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -78,6 +78,17 @@ export const LATER_STUDIO_ROWS = Object.freeze([
   'FIG-STUDIO-WATERMARK-DESKTOP-LIGHT',
   'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED',
   'FIG-STUDIO-MOBILE-STAGE-SELECTED',
+  /*
+   * The row that keeps this rule from emptying itself (`APP3-S11`).
+   *
+   * Every *capability* row above now belongs to a checkpoint that has opened, so
+   * a world-aware exclusion would leave the list empty — the failure `APP3-S04`
+   * recorded once already, where a rule still ran, still passed, and asserted
+   * nothing. This is a handoff annotation: no Studio capability checkpoint
+   * consumes it, so it must stay `REVIEW_REQUIRED` for all of them, and a
+   * blanket approval still moves it.
+   */
+  'FIG-APP3-HANDOFF-DEPENDENCY',
 ]);
 
 /** The shared responsive reference, owned by `APP3-D01-C1` and not by S07. */
@@ -192,5 +203,20 @@ export function preS09Code(rootDir) {
   return collect(join(rootDir, FEATURE), /\.tsx?$/)
     .filter((path) => !owned.has(path))
     .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\\\', '/')))
+    .join('\n');
+}
+
+/**
+ * Every Studio source **except** the files `APP3-S11` owns.
+ *
+ * The scope the touch ban needs once mobile exists: a pinch was banned
+ * feature-wide because no checkpoint owned a touch gesture, and it stays exactly
+ * that rule for every file S11 did not introduce.
+ */
+export function preS11Code(rootDir) {
+  const owned = new Set(S11_FILES.map((path) => join(rootDir, FEATURE, ...path.split('/'))));
+  return collect(join(rootDir, FEATURE), /\.tsx?$/)
+    .filter((path) => !owned.has(path))
+    .map((path) => code(rootDir, relative(rootDir, path).replaceAll('\\', '/')))
     .join('\n');
 }

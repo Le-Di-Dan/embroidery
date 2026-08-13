@@ -19,6 +19,7 @@ import {
   S08_FILES,
   S09_FILES,
   S10_FILES,
+  S11_FILES,
 } from './app3-accepted-surface.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -87,6 +88,17 @@ export const LATER_STUDIO_ROWS = Object.freeze([
   'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED',
   'FIG-STUDIO-MOBILE-STAGE-SELECTED',
   'FIG-STUDIO-MOBILE-TRANSFORMSHEET',
+  /*
+   * The row that keeps this rule from emptying itself (`APP3-S11`).
+   *
+   * Every *capability* row above now belongs to a checkpoint that has opened, so
+   * a world-aware exclusion would leave the list empty — the failure `APP3-S04`
+   * recorded once already, where a rule still ran, still passed, and asserted
+   * nothing. This is a handoff annotation: no Studio capability checkpoint
+   * consumes it, so it must stay `REVIEW_REQUIRED` for all of them, and a
+   * blanket approval still moves it.
+   */
+  'FIG-APP3-HANDOFF-DEPENDENCY',
 ]);
 
 export const TABLET_REFERENCE_ROW = 'FIG-STUDIO-EDITING-TABLET-1024';
@@ -193,6 +205,17 @@ function featureCodeExcept(rootDir, owned) {
  */
 export function preS09Code(rootDir) {
   return featureCodeExcept(rootDir, S09_FILES);
+}
+
+/**
+ * Every Studio source **except** the files `APP3-S11` owns.
+ *
+ * The scope the touch ban needs once mobile exists: a pinch was banned
+ * feature-wide because no checkpoint owned a touch gesture, and it is still
+ * exactly that rule for every file S11 did not introduce.
+ */
+export function preS11Code(rootDir) {
+  return featureCodeExcept(rootDir, S11_FILES);
 }
 
 /**

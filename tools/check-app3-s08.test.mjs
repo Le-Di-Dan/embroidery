@@ -174,7 +174,7 @@ describe('predecessors and status', () => {
   });
 
   it('rejects a later capability recorded complete here', () => {
-    for (const later of ['APP3-S11']) {
+    for (const later of ['APP3-E01']) {
       const phase = file('phase').replace(
         S08_STATUS_LINE,
         `${S08_STATUS_LINE}${later} = COMPLETE — REVIEW_DELIVERED\n`,
@@ -245,7 +245,7 @@ describe('design approval', () => {
 
   it('rejects a later checkpoint row released early', () => {
     const registry = file('registry').replace(
-      /(\| FIG-STUDIO-MOBILE-LAYERSSHEET \|[^\n]*)REVIEW_REQUIRED/,
+      /(\| FIG-APP3-HANDOFF-DEPENDENCY \|[^\n]*)REVIEW_REQUIRED/,
       '$1APPROVED_FOR_IMPLEMENTATION',
     );
     assert.ok(mentions(run(checkDesignApproval, { registry }), 'later checkpoint'));
@@ -535,9 +535,9 @@ describe('the panel', () => {
     assert.ok(mentions(run(checkPanel, { list }), 'time travel'));
   });
 
-  it('rejects an APP3-S11 mobile surface delivered early', () => {
+  it('rejects a mobile surface inside the history capability', () => {
     const panel = `${file('panel')}\nconst sheet = () => <div onTouchStart={undefined} />;\n`;
-    assert.ok(mentions(run(checkPanel, { panel }), 'APP3-S11'));
+    assert.ok(mentions(run(checkPanel, { panel }), 'onTouchStart'));
   });
 
   it('rejects a second drawer beside the accepted one', () => {
@@ -551,7 +551,7 @@ describe('the panel', () => {
 
   it('rejects the mobile controls pulled forward into the rail', () => {
     const rail = `${file('rail')}\nconst sheet = () => <div className="bottom-sheet" />;\n`;
-    assert.ok(mentions(run(checkPanel, { rail }), 'APP3-S11'));
+    assert.ok(mentions(run(checkPanel, { rail }), 'bottom-sheet'));
   });
 });
 

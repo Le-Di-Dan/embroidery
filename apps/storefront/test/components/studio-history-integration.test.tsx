@@ -407,7 +407,15 @@ describe('the Session boundary and the responsive compositions (APP3-S08 §15, �
     ).toBe(true);
   });
 
-  it('renders no undo surface at all at 390', () => {
+  /*
+   * The 390 boundary moved with the world (`APP3-S11`).
+   *
+   * The rail, the list and the shortcut hint are still absent — none of them is
+   * drawn by any of the six approved mobile frames. What exists now is the
+   * toolbar's own `↶` and `↷` from `610:242`, driving the same controller, and
+   * there is still no mobile history *list* because no frame draws one.
+   */
+  it('renders undo only in the mobile toolbar at 390', () => {
     setViewportWidth(390);
     renderStage();
 
@@ -416,7 +424,10 @@ describe('the Session boundary and the responsive compositions (APP3-S08 §15, �
     expect(screen.queryByTestId('studio-history-redo')).toBeNull();
     expect(screen.queryByTestId('studio-history-list')).toBeNull();
     expect(screen.queryByTestId('studio-history-shortcuts')).toBeNull();
-    expect(screen.getByTestId('studio-history-mobile-notice')).toBeInTheDocument();
+    expect(screen.queryByTestId('studio-history-mobile-notice')).toBeNull();
+
+    expect(screen.getByTestId('studio-mobile-undo')).toBeInTheDocument();
+    expect(screen.getByTestId('studio-mobile-redo')).toBeInTheDocument();
   });
 
   it('delivers no APP3-S11 bottom sheet or touch affordance early', () => {

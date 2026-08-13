@@ -35,7 +35,9 @@ import {
   isS06Delivered,
   isS04Delivered,
   isS08Delivered,
+  foreignApprovals,
   isS10Delivered,
+  isS11Delivered,
   isS09Delivered,
   isS07Delivered,
   isB06CDelivered,
@@ -107,7 +109,13 @@ export function checkPredecessors(rootDir, fail) {
   // being evidence about this one. S11 stays listed: it needs S03 *and* S07,
   // so S03 delivering does not make it ready.
   const later = [
-    'APP3-S11',
+    // The next capability none of these checkpoints implements. It replaces
+    // `APP3-S11` here now that S11 has legitimately opened: a guard whose whole
+    // list belongs to opened checkpoints asserts nothing.
+    'APP3-E01',
+    // World-aware since `APP3-S11` shipped: the rule says "S07 did not implement
+    // mobile touch", and that stays true once S11 implements it for itself.
+    ...(isS11Delivered(rootDir) ? [] : ['APP3-S11']),
     ...(isB06CDelivered(rootDir) ? [] : ['APP3-B06C']),
     ...(isS03Delivered(rootDir) ? [] : ['APP3-S03']),
   ];
@@ -172,11 +180,29 @@ export function checkDesignApproval(rootDir, fail) {
     ...(isS09Delivered(rootDir) ? ['FIG-STUDIO-WATERMARK-DESKTOP-LIGHT'] : []),
     ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
     ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
+    ...(isS11Delivered(rootDir) ? ['FIG-STUDIO-MOBILE-STAGE-SELECTED'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }
+  }
+
+  /*
+   * The guard that does not empty itself.
+   *
+   * The rule above is world-aware, and `APP3-S11` is where that catches up with
+   * it: with section 15 released there is no Studio row left belonging to an
+   * unopened checkpoint, so the loop runs over nothing and asserts nothing —
+   * exactly the failure `APP3-S04` recorded once already.
+   *
+   * A blanket approval was never really "a later row is approved". It is "a row
+   * was released by a checkpoint that did not own it", and that stays checkable
+   * forever: this checkpoint may be the approval evidence for its own rows and
+   * for no others.
+   */
+  for (const claimed of foreignApprovals(registry, 'APP3-S07', Object.keys(S07_DESIGN_ROWS))) {
+    fail(`${CANONICAL_FILES.registry}: ${claimed} was approved as APP3-S07 evidence`);
   }
 
   // The 1024 frame draws a zoom control *and* the whole S02–S11 editing surface.

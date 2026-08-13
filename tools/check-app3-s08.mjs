@@ -33,7 +33,7 @@
  *
  * Read-only, cross-platform pure Node. Independent of the completion report.
  */
-import { isS10Delivered } from './app3-accepted-paths.mjs';
+import { foreignApprovals, isS10Delivered, isS11Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   LATER_DESIGN_ROWS,
@@ -99,8 +99,16 @@ const PREDECESSORS = [
   'APP3-S09',
 ];
 
-/** Studio capability rows that must not be recorded complete by this checkpoint. */
-const LATER_ROWS = ['APP3-S11'];
+/**
+ * Studio capability rows that must not be recorded complete by this checkpoint.
+ *
+ * Empty since `APP3-S11` shipped: every Studio capability after `APP3-S08` now
+ * belongs to a checkpoint that has opened, so each is excluded world-awarely at
+ * the loop below rather than listed here. The constant stays because the next
+ * unopened capability belongs in it, and because an empty list read at the call
+ * site is honest about there being none.
+ */
+const LATER_ROWS = ['APP3-E01'];
 
 /** The statuses `APP3-S08` may legitimately be recorded under. */
 const STATUS_LINES = [
@@ -145,7 +153,11 @@ export function checkPredecessors(rootDir, fail) {
   }
   // World-aware on `APP3-S10`: "S08 did not implement saving" stays true once
   // S10 implements it for itself, and the S10 gate is what checks that.
-  for (const later of [...LATER_ROWS, ...(isS10Delivered(rootDir) ? [] : ['APP3-S10'])]) {
+  for (const later of [
+    ...LATER_ROWS,
+    ...(isS10Delivered(rootDir) ? [] : ['APP3-S10']),
+    ...(isS11Delivered(rootDir) ? [] : ['APP3-S11']),
+  ]) {
     if (new RegExp(`\\n${later} = COMPLETE`).test(phase)) {
       fail(
         `${CANONICAL_FILES.phase}: ${later} is recorded complete by a checkpoint that is not it`,
@@ -282,14 +294,33 @@ export function checkDesignApproval(rootDir, fail) {
 
   // World-aware for the same reason the status rows are: the autosave row stops
   // being evidence of a blanket approval once the checkpoint that owns it opens.
-  const stillLater = LATER_DESIGN_ROWS.filter(
-    (row) => !(isS10Delivered(rootDir) && row === 'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'),
-  );
+  const opened = new Set([
+    ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
+    ...(isS11Delivered(rootDir) ? ['FIG-STUDIO-MOBILE-LAYERSSHEET'] : []),
+  ]);
+  const stillLater = LATER_DESIGN_ROWS.filter((row) => !opened.has(row));
   for (const later of stillLater) {
     const row = rowOf(later);
     if (row !== undefined && row.includes('APPROVED_FOR_IMPLEMENTATION')) {
       fail(`${CANONICAL_FILES.registry}: ${later} belongs to a later checkpoint and is approved`);
     }
+  }
+
+  /*
+   * The guard that does not empty itself.
+   *
+   * The rule above is world-aware, and `APP3-S11` is where that catches up with
+   * it: with section 15 released there is no Studio row left belonging to an
+   * unopened checkpoint, so the loop runs over nothing and asserts nothing —
+   * exactly the failure `APP3-S04` recorded once already.
+   *
+   * A blanket approval was never really "a later row is approved". It is "a row
+   * was released by a checkpoint that did not own it", and that stays checkable
+   * forever: this checkpoint may be the approval evidence for its own rows and
+   * for no others.
+   */
+  for (const claimed of foreignApprovals(registry, 'APP3-S08', Object.keys(S08_DESIGN_ROWS))) {
+    fail(`${CANONICAL_FILES.registry}: ${claimed} was approved as APP3-S08 evidence`);
   }
 }
 

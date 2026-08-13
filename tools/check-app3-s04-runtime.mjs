@@ -36,10 +36,19 @@ export function checkOneOrder(rootDir, fail) {
       fail(`${FEATURE}: a second z-order representation ("${invented}")`);
     }
   }
-  // Nor in the stylesheet: a CSS stacking number on a layer row is the same
-  // second order wearing different clothes.
-  if (/z-index/.test(code(rootDir, 'styles').replaceAll(/\.studio-drawer[\s\S]*?\n}/g, ''))) {
-    fail(`${CANONICAL_FILES.styles}: a z-index outside the accepted drawer`);
+  /*
+   * Nor in the stylesheet: a CSS stacking number on a layer row is the same
+   * second order wearing different clothes.
+   *
+   * Two surfaces are excused because neither is a *layer* order: the accepted
+   * `618:140` drawer, and — since `APP3-S11` — the mobile bottom sheet, which
+   * covers the whole stage by design and needs to sit above it. Both are chrome
+   * stacking, and the rule that matters is untouched: nothing that draws an
+   * element may carry one, so a `z-index` on a layer row still fails.
+   */
+  const chrome = /\.studio-(drawer|sheet)[\s\S]*?\n}/g;
+  if (/z-index/.test(code(rootDir, 'styles').replaceAll(chrome, ''))) {
+    fail(`${CANONICAL_FILES.styles}: a z-index outside the accepted drawer or sheet`);
   }
 
   // The renderer still paints the array as it stands.

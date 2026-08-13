@@ -17,17 +17,17 @@
  *   is the detail: the rows, the marker and the bound. A second drawer over the
  *   same stage edge would be the second drawer system the tablet composition
  *   exists to avoid.
- * - **mobile** — nothing that edits. `APP3-S11` owns the mobile editing surfaces
- *   and every touch affordance around them, and at 390 there is currently no way
- *   to change the document at all — so an undo control there would be a button
- *   with nothing to undo, delivered ahead of the checkpoint that owns it.
+ * - **mobile** — nothing here. `APP3-S11`'s bottom toolbar (`610:242`) carries
+ *   `↶` and `↷`, driving this same controller, and the six approved mobile
+ *   frames draw no history *list* — so there is none, rather than a panel
+ *   invented to fill the tier. The sentence that used to stand here said 390 had
+ *   no way to change the document at all, and it would now be false.
  *
  * The tier decides what is *rendered*, not what is visible. A CSS-hidden panel
- * is still focusable and its buttons still fire, so hiding one would leave the
- * S11 surface in place and merely out of sight.
+ * is still focusable and its buttons still fire, so a media query would leave
+ * two undo controls live at once.
  */
 import { useStudioViewportTier } from '../hooks/use-studio-viewport-tier';
-import { STUDIO_HISTORY_COPY } from '../model/studio-history-copy';
 import { StudioHistoryList, type StudioHistoryListProps } from './studio-history-list';
 import { StudioHistoryShortcuts } from './studio-history-shortcuts';
 
@@ -63,17 +63,9 @@ export function StudioHistoryPanel({ slot, history }: StudioHistoryPanelProps) {
   }
   if (slot === 'drawer') return null;
 
-  if (tier === 'mobile') {
-    return (
-      <p
-        className="studio-history__unavailable"
-        data-testid="studio-history-mobile-notice"
-        role="status"
-      >
-        {STUDIO_HISTORY_COPY.mobileUnavailable}
-      </p>
-    );
-  }
+  // Nothing here at 390 any more: `APP3-S11`'s bottom toolbar carries undo and
+  // redo (`610:242`), driving this same controller.
+  if (tier === 'mobile') return null;
 
   return (
     <>

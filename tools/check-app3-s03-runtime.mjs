@@ -25,6 +25,7 @@ import {
   isS08Delivered,
   isS09Delivered,
   isS10Delivered,
+  isS11Delivered,
 } from './app3-accepted-surface.mjs';
 import {
   CANONICAL_FILES,
@@ -38,6 +39,7 @@ import {
   preRestackCode,
   preS06Code,
   preS09Code,
+  preS11Code,
   preS10Code,
   read,
   s03Code,
@@ -336,6 +338,9 @@ export function checkChrome(rootDir, fail) {
   }
 }
 
+/** The markers `APP3-S11` legitimately owns once it has opened. */
+const MOVED_TO_S11 = new Set(['pinch', 'gesturestart']);
+
 /** The capabilities S03 must not grow, each named with its real owner. */
 export function checkNonScope(rootDir, fail) {
   const all = featureCode(rootDir);
@@ -364,8 +369,20 @@ export function checkNonScope(rootDir, fail) {
     }
   }
 
+  /*
+   * The touch markers moved owner rather than losing their rule (`APP3-S11`).
+   *
+   * Each was banned feature-wide while S11 had not opened. It now has, so a
+   * pinch is legitimate in the eleven files that checkpoint owns — and as
+   * forbidden as ever everywhere else, which is what this rule was written to
+   * protect. `onTouchStart` and `onTouchMove` stay banned even inside S11: the
+   * arbitration is built on Pointer Events, and a second input model beside it
+   * has its own capture rules and its own way of losing a contact.
+   */
+  const touchScope = isS11Delivered(rootDir) ? preS11Code(rootDir) : all;
   for (const [marker, owner] of Object.entries(owners)) {
-    if (all.includes(marker)) {
+    const scope = MOVED_TO_S11.has(marker) ? touchScope : all;
+    if (scope.includes(marker)) {
       fail(`${FEATURE}: carries "${marker}", a capability ${owner} owns`);
     }
   }
@@ -430,9 +447,23 @@ export function checkNonScope(rootDir, fail) {
     }
   }
 
-  // A touch pointer is refused explicitly, rather than by omission.
-  if (!code(rootDir, 'gesture').includes("pointerType === 'touch'")) {
+  /*
+   * A touch pointer is decided explicitly, rather than by omission.
+   *
+   * Before `APP3-S11` this read "refused"; the file said so and the rule checked
+   * it. S11 opened the seam, so what must be true now is stronger rather than
+   * weaker: the guard still exists, and it is still a **decision** rather than an
+   * absence — a touch may start a gesture only where an arbitration above this
+   * hook has said one finger means the element. A hook that simply stopped
+   * mentioning `pointerType` would let a touch drag start on a desktop, take the
+   * page's scroll away, and never be arbitrated at all.
+   */
+  const gesture = code(rootDir, 'gesture');
+  if (!gesture.includes("pointerType === 'touch'")) {
     fail(`${CANONICAL_FILES.gesture}: a touch pointer is not refused, which is APP3-S11's`);
+  }
+  if (isS11Delivered(rootDir) && !/pointerType === 'touch' && !touch/.test(gesture)) {
+    fail(`${CANONICAL_FILES.gesture}: a touch pointer is not gated on the APP3-S11 capability`);
   }
   // Locked and hidden elements are not transformable.
   const screen = code(rootDir, 'stageScreen');

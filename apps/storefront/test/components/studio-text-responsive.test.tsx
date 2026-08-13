@@ -317,21 +317,18 @@ describe('390 exposes no text editing surface at all (APP3-S05-C1 §5)', () => {
     }
   });
 
-  it('states the fact, without promising the APP3-S11 capability that owns it', () => {
+  /*
+   * The 390 boundary moved with the world (`APP3-S11`).
+   *
+   * The notice is gone rather than reworded: it said this tier could not edit
+   * text, and `610:409` now does. What the rule above still guarantees is that
+   * this **panel** renders no field at 390 — the editing surface is the sheet,
+   * and what it does when opened is ruled in the S11 suite beside it.
+   */
+  it('renders no mobile notice, because the capability now exists', () => {
     renderStage(MOBILE);
     select('t');
 
-    const notice = screen.getByTestId('studio-text-mobile-notice');
-    expect(notice).toHaveAttribute('role', 'status');
-    // No "coming soon", and nothing naming a sheet, a tab or a touch gesture.
-    for (const promised of [/sắp/i, /sẽ có/i, /vuốt/i, /chạm/i]) {
-      expect(notice.textContent ?? '').not.toMatch(promised);
-    }
-  });
-
-  it('says nothing at all when the selection is not text', () => {
-    renderStage(MOBILE);
-    select('s');
     expect(screen.queryByTestId('studio-text-mobile-notice')).not.toBeInTheDocument();
   });
 });

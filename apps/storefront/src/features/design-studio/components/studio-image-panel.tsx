@@ -12,17 +12,16 @@
  *   `APP3-S05-MI01`'s and are reused rather than duplicated; a second toggle
  *   opening a second panel over the same stage edge would be the second drawer
  *   system the tablet composition exists to avoid.
- * - **mobile** — nothing that edits. Mobile image tooling — the bottom sheet
- *   `FIG-STUDIO-MOBILE-IMAGESHEET` draws and the touch surfaces around it —
- *   belongs to `APP3-S11`, and shipping a file picker at 390 would be that
- *   checkpoint's capability delivered early and unreviewed.
+ * - **mobile** — nothing here. `APP3-S11` renders this same inspector at 390
+ *   inside `FIG-STUDIO-MOBILE-IMAGESHEET` (`610:465`), reached from the mobile
+ *   toolbar. This mount is empty at that tier because the surface that does the
+ *   work is somewhere else in the frame; the sentence that used to stand here
+ *   said the screen was not wide enough to add an image, and it would now be
+ *   false.
  *
  * The tier decides what is *rendered*, not what is visible. A CSS-hidden file
- * input is still focusable and still opens a picker, so hiding one would leave
- * the S11 surface in place and merely out of sight.
- *
- * At mobile what remains is a sentence saying so, and it promises nothing: no
- * "sắp có", no disabled control implying a button that will work later.
+ * input is still focusable and still opens a picker, so a media query would
+ * leave two pickers live at once.
  *
  * ## The controller is owned above this switch
  *
@@ -34,7 +33,6 @@
  * `StudioStageScreen`, above every tier, and arrives here as a prop.
  */
 import { useStudioViewportTier } from '../hooks/use-studio-viewport-tier';
-import { STUDIO_IMAGE_COPY } from '../model/studio-image-copy';
 import { StudioImageInspector, type StudioImageInspectorProps } from './studio-image-inspector';
 
 /**
@@ -61,17 +59,10 @@ export function StudioImagePanel({ slot, ...props }: StudioImagePanelProps) {
   if (tier === 'tablet') return slot === 'drawer' ? <StudioImageInspector {...props} /> : null;
   if (slot === 'drawer') return null;
 
-  if (tier === 'mobile') {
-    return (
-      <p
-        className="studio-image__unavailable"
-        data-testid="studio-image-mobile-notice"
-        role="status"
-      >
-        {STUDIO_IMAGE_COPY.mobileUnavailable}
-      </p>
-    );
-  }
+  // Nothing here at 390 any more: `APP3-S11` renders this same inspector inside
+  // the approved image sheet (`610:465`), so a notice saying the tier cannot add
+  // an image would now be false.
+  if (tier === 'mobile') return null;
 
   return <StudioImageInspector {...props} />;
 }

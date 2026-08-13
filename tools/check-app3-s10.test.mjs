@@ -67,7 +67,17 @@ const mentions = (failures, needle) => failures.some((f) => f.includes(needle));
  * target has moved passes while proving nothing — the failure `APP3-S08-C1`
  * recorded three times over, and the reason this is a constant.
  */
-const S10_STATUS_LINE = '\nAPP3-S10 = COMPLETE — REVIEW_DELIVERED\n';
+/**
+ * The line the phase currently records `APP3-S10` under.
+ *
+ * It moved to the accepted form when human review accepted the checkpoint, and
+ * these mutations replace it — so a constant left on the delivered wording would
+ * `.replace` nothing, and every case built on it would assert against an
+ * unmodified file while still passing. That silent no-op is the failure
+ * `APP3-S10` itself recorded three times; this is the same trap one checkpoint
+ * later.
+ */
+const S10_STATUS_LINE = '\nAPP3-S10 = COMPLETE — REVIEW_ACCEPTED\n';
 
 let base;
 function baseRoot() {
@@ -156,9 +166,9 @@ describe('predecessors and status', () => {
   it('refuses a later Studio capability recorded complete', () => {
     const phase = file('phase').replace(
       S10_STATUS_LINE,
-      `${S10_STATUS_LINE}APP3-S11 = COMPLETE — REVIEW_DELIVERED\n`,
+      `${S10_STATUS_LINE}APP3-E01 = COMPLETE — REVIEW_DELIVERED\n`,
     );
-    assert.ok(mentions(run(checkPredecessors, { phase }), 'APP3-S11'));
+    assert.ok(mentions(run(checkPredecessors, { phase }), 'APP3-E01'));
   });
 
   it('refuses a status the checkpoint may not be recorded under', () => {
@@ -189,7 +199,7 @@ describe('predecessors and status', () => {
       // `replaceAll`: the roadmap reconciliation quotes both lines in prose
       // above the status block, and a `replace` would rewrite the quotation and
       // leave the line the gate actually reads untouched.
-      const phase = file('phase').replaceAll(owner, owner.replace('APP3-S10', 'APP3-S11'));
+      const phase = file('phase').replaceAll(owner, owner.replace('APP3-S10', 'APP3-E01'));
       assert.ok(mentions(run(checkPredecessors, { phase }), owner), owner);
     }
   });
@@ -231,7 +241,7 @@ describe('design approval stays scoped', () => {
     // mobile row: every desktop row now belongs to an opened checkpoint, so one
     // of those would be caught for a reason that had stopped being true.
     const registry = file('registry').replaceAll('REVIEW_REQUIRED', 'APPROVED_FOR_IMPLEMENTATION');
-    assert.ok(mentions(run(checkDesignApproval, { registry }), 'FIG-STUDIO-MOBILE-CONFLICT'));
+    assert.ok(mentions(run(checkDesignApproval, { registry }), 'FIG-APP3-HANDOFF-DEPENDENCY'));
   });
 
   it('refuses the 1024 reference re-attributed to this checkpoint', () => {

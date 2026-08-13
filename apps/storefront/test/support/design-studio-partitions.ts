@@ -319,6 +319,47 @@ export const S10_FILES = new Set(
   ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
 );
 
+/**
+ * The files `APP3-S11` added, named exactly.
+ *
+ * Touch is the first thing in the feature allowed to drive a gesture from a
+ * finger, and the mobile sheets are the first editing surfaces at 390. Every
+ * earlier checkpoint was forbidden both, and those bans are kept and **scoped**
+ * rather than deleted: a `pointerType === 'touch'` path or a bottom sheet
+ * outside this list is still a capability arriving in the wrong checkpoint.
+ *
+ * Four files are deliberately **not** on the list even though `APP3-S11`
+ * changed them — `studio-stage-screen.tsx`, `studio-stage-viewport.tsx`,
+ * `studio-transform-overlay.tsx` and `use-studio-transform.ts`. They are S02,
+ * S07 and S03 files that gained one seam each, and they keep their own
+ * checkpoint's rules rather than escaping into a newer, looser set.
+ */
+export const S11_FILES = new Set(
+  [
+    'components/studio-layers-sheet.tsx',
+    'components/studio-mobile-surface.tsx',
+    'components/studio-mobile-toolbar.tsx',
+    'components/studio-sheet.tsx',
+    'components/studio-transform-sheet.tsx',
+    'hooks/use-keyboard-inset.ts',
+    'hooks/use-studio-mobile-sheets.ts',
+    'hooks/use-studio-touch-gestures.ts',
+    'model/studio-mobile-copy.ts',
+    'model/studio-mobile-transform.ts',
+    'model/studio-touch.ts',
+  ].map((path) => join(FEATURE_DIR, ...path.split('/'))),
+);
+
+export const s11Sources = sources.filter((file) => S11_FILES.has(file.path));
+export const s11Code = codeOnly(s11Sources.map((file) => file.text).join('\n'));
+
+/** Everything except the mobile capability, for the rules a finger must not escape. */
+export const outsideS11Code = codeOnly(
+  [...sources.filter((file) => !S11_FILES.has(file.path)), ...routeFiles]
+    .map((file) => file.text)
+    .join('\n'),
+);
+
 export const s10Sources = sources.filter((file) => S10_FILES.has(file.path));
 export const s10Code = codeOnly(s10Sources.map((file) => file.text).join('\n'));
 
@@ -371,12 +412,20 @@ export const outsideS04Code = codeOnly(
     .join('\n'),
 );
 
+/**
+ * The checkpoints that own a gesture — and only those.
+ *
+ * `APP3-S07` owns pan and zoom, `APP3-S03` owns the element transform, and
+ * `APP3-S11` owns touch. The partition grew by one checkpoint rather than the
+ * ban being lifted: a `setPointerCapture` or a `clientWidth` read anywhere else
+ * in the feature is still a second gesture engine, and still fails.
+ */
 export const interactionSources = sources.filter(
-  (file) => S07_FILES.has(file.path) || S03_FILES.has(file.path),
+  (file) => S07_FILES.has(file.path) || S03_FILES.has(file.path) || S11_FILES.has(file.path),
 );
 export const interactionCode = codeOnly(interactionSources.map((file) => file.text).join('\n'));
 export const staticSources = sources.filter(
-  (file) => !S07_FILES.has(file.path) && !S03_FILES.has(file.path),
+  (file) => !S07_FILES.has(file.path) && !S03_FILES.has(file.path) && !S11_FILES.has(file.path),
 );
 export const staticCode = codeOnly(staticSources.map((file) => file.text).join('\n'));
 export const s03Code = codeOnly(
@@ -397,7 +446,8 @@ export const s01Sources = sources.filter(
     !S04_FILES.has(file.path) &&
     !S08_FILES.has(file.path) &&
     !S09_FILES.has(file.path) &&
-    !S10_FILES.has(file.path),
+    !S10_FILES.has(file.path) &&
+    !S11_FILES.has(file.path),
 );
 export const s07Sources = sources.filter((file) => S07_FILES.has(file.path));
 export const s07Code = codeOnly(s07Sources.map((file) => file.text).join('\n'));

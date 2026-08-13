@@ -35,7 +35,9 @@ import {
   isS06Delivered,
   isS04Delivered,
   isS08Delivered,
+  foreignApprovals,
   isS10Delivered,
+  isS11Delivered,
   isS09Delivered,
   isS07Delivered,
   isB06CDelivered,
@@ -188,11 +190,29 @@ export function checkDesignApproval(rootDir, fail) {
     ...(isS09Delivered(rootDir) ? ['FIG-STUDIO-WATERMARK-DESKTOP-LIGHT'] : []),
     ...(isS08Delivered(rootDir) ? ['FIG-STUDIO-UNDO-DESKTOP-MIDHISTORY'] : []),
     ...(isS10Delivered(rootDir) ? ['FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED'] : []),
+    ...(isS11Delivered(rootDir) ? ['FIG-STUDIO-MOBILE-LAYERSSHEET'] : []),
   ]);
   for (const id of LATER_STUDIO_ROWS.filter((row) => !opened.has(row))) {
     if (rowStatus(registry, id) !== 'REVIEW_REQUIRED') {
       fail(`${CANONICAL_FILES.registry}: ${id} belongs to a checkpoint that has not opened`);
     }
+  }
+
+  /*
+   * The guard that does not empty itself.
+   *
+   * The rule above is world-aware, and `APP3-S11` is where that catches up with
+   * it: with section 15 released there is no Studio row left belonging to an
+   * unopened checkpoint, so the loop runs over nothing and asserts nothing —
+   * exactly the failure `APP3-S04` recorded once already.
+   *
+   * A blanket approval was never really "a later row is approved". It is "a row
+   * was released by a checkpoint that did not own it", and that stays checkable
+   * forever: this checkpoint may be the approval evidence for its own rows and
+   * for no others.
+   */
+  for (const claimed of foreignApprovals(registry, 'APP3-S02', Object.keys(S02_DESIGN_ROWS))) {
+    fail(`${CANONICAL_FILES.registry}: ${claimed} was approved as APP3-S02 evidence`);
   }
 
   // The 1024 frame is a responsive reference across S02–S11. Re-attributing it

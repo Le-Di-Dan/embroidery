@@ -22,6 +22,23 @@ export interface StudioStageViewportProps {
    * watermark is the only thing that needs it, and it needs it exactly.
    */
   readonly overlay?: ReactNode;
+  /**
+   * The `APP3-S11` touch arbitration, or `undefined` off mobile.
+   *
+   * Bound here rather than on the stage or the overlay because this is the one
+   * node **every** touch on the design passes through — including a touch that
+   * lands on a selected element, and including the second finger of a pinch that
+   * lands anywhere at all. Arbitration that could not see both fingers would have
+   * to guess which gesture it was in.
+   */
+  readonly touch?:
+    | {
+        readonly onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
+        readonly onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
+        readonly onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
+        readonly onPointerCancel: (event: ReactPointerEvent<HTMLElement>) => void;
+      }
+    | undefined;
 }
 
 /**
@@ -65,7 +82,7 @@ export interface StudioStageViewportProps {
  * click and still clears, and a real drag swallows the trailing click in the
  * capture phase so panning cannot silently deselect.
  */
-export function StudioStageViewport({ children, overlay }: StudioStageViewportProps) {
+export function StudioStageViewport({ children, overlay, touch }: StudioStageViewportProps) {
   const zoomStep = useStudioViewportStore((state) => state.zoomStep);
   const panXRatio = useStudioViewportStore((state) => state.panXRatio);
   const panYRatio = useStudioViewportStore((state) => state.panYRatio);
@@ -132,10 +149,31 @@ export function StudioStageViewport({ children, overlay }: StudioStageViewportPr
       className="studio-stage__viewport"
       data-stage-surface="true"
       data-testid="studio-stage-viewport"
+      // The mouse and pen path is untouched; the touch path is a second listener
+      // beside it, and each ignores the pointer types the other owns.
+      data-touch={touch === undefined ? undefined : 'true'}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={endPan}
       onPointerCancel={endPan}
+      /*
+       * The touch arbitration runs in the **capture** phase.
+       *
+       * `APP3-S03` calls `stopPropagation()` when a gesture starts on the move
+       * surface, which is right — the stage must not also treat that press as a
+       * click on empty canvas. But it means a finger that lands on an element
+       * never bubbles here, so a bubble-phase listener would count one touch
+       * when two are down: the second finger would look like the first, and a
+       * pinch that began on the artwork would silently stay an element drag.
+       *
+       * Capture sees every contact before any handler can stop it, which is what
+       * makes "one finger is the design, two are the camera" a fact about the
+       * fingers rather than about where they happened to land.
+       */
+      onPointerDownCapture={touch?.onPointerDown}
+      onPointerMoveCapture={touch?.onPointerMove}
+      onPointerUpCapture={touch?.onPointerUp}
+      onPointerCancelCapture={touch?.onPointerCancel}
       onClickCapture={(event) => {
         // A drag ends with a click the browser synthesises anyway. Letting it
         // through would make every pan clear the selection.

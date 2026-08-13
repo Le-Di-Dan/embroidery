@@ -25,14 +25,14 @@ export const STUDIO_IMAGE_COPY = {
   drawerOpen: 'Mở bảng ảnh thiết kế',
   drawerClose: 'Đóng bảng ảnh thiết kế',
 
-  /**
-   * The 390 state.
+  /*
+   * There is no "this screen is too small" sentence any more.
    *
-   * It states the fact and promises nothing. Mobile image editing — the bottom
-   * sheet and the touch surfaces around it — belongs to `APP3-S11`, and copy
-   * saying it is "coming" would commit a checkpoint nobody has reviewed.
+   * One stood here until `APP3-S11` shipped the approved mobile surface for this
+   * capability. Keeping it would leave a false statement in the product for the
+   * first person who renders it by mistake, so it was removed rather than left
+   * unreferenced.
    */
-  mobileUnavailable: 'Màn hình này chưa đủ rộng để thêm ảnh vào bản thiết kế.',
 
   chooseLabel: 'Chọn ảnh từ máy',
   replaceLabel: 'Thay ảnh khác',

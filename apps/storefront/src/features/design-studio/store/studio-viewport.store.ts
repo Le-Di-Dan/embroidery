@@ -36,6 +36,7 @@ import {
   type StudioViewport,
   canZoomIn,
   canZoomOut,
+  clampStep,
   normalizeViewport,
   panBy,
 } from '../model/studio-viewport';
@@ -53,6 +54,17 @@ export interface StudioViewportState extends StudioViewport {
   readonly zoomOut: () => void;
   /** Back to the canonical fitted view. The one recovery the design draws. */
   readonly fitViewport: () => void;
+  /**
+   * Lands on one of the frozen steps directly (`APP3-S11`).
+   *
+   * A pinch does not walk the list one step at a time — a fast spread crosses
+   * three boundaries in as many frames — so it needs to say which step it has
+   * reached rather than how many times to press a button. What it may *not* do
+   * is propose a scale: the argument is an index, `clampStep` is what receives
+   * it, and `normalizeViewport` re-clamps the pan for the new zoom exactly as
+   * the two button paths do.
+   */
+  readonly setZoomStep: (zoomStep: number) => void;
   readonly panByPixels: (
     deltaXPx: number,
     deltaYPx: number,
@@ -92,6 +104,16 @@ export const useStudioViewportStore = create<StudioViewportState>()((set) => ({
   },
   fitViewport: () => {
     set(FITTED_VIEWPORT);
+  },
+  setZoomStep: (zoomStep) => {
+    set((state) => {
+      const next = clampStep(zoomStep);
+      // The same value is the same viewport. Returning a fresh object every
+      // pinch frame would re-render the whole transformed layer sixty times for
+      // a gesture that spends most of its frames between two boundaries.
+      if (next === state.zoomStep) return state;
+      return normalizeViewport({ ...state, zoomStep: next });
+    });
   },
   panByPixels: (deltaXPx, deltaYPx, widthPx, heightPx) => {
     set((state) => panBy(state, deltaXPx, deltaYPx, widthPx, heightPx));

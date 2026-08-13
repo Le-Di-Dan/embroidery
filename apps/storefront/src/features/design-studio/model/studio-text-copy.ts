@@ -24,14 +24,14 @@ export const STUDIO_TEXT_COPY = {
   hiddenElement: 'Đối tượng chữ này đang được ẩn nên chưa thể chỉnh sửa.',
   lockedElement: 'Đối tượng chữ này đang bị khoá nên chưa thể chỉnh sửa.',
 
-  /**
-   * The 390 state (`APP3-S05-C1`).
+  /*
+   * There is no "this screen is too small" sentence any more.
    *
-   * It states the fact and promises nothing. Mobile text editing — the bottom
-   * sheet and the touch surfaces around it — belongs to `APP3-S11`, and copy
-   * saying it is "coming" would commit a checkpoint that has not been reviewed.
+   * One stood here until `APP3-S11` shipped the approved mobile surface for this
+   * capability. Keeping it would leave a false statement in the product for the
+   * first person who renders it by mistake, so it was removed rather than left
+   * unreferenced.
    */
-  mobileUnavailable: 'Màn hình này chưa đủ rộng để chỉnh sửa chữ thêu.',
 
   // The 1024 drawer (APP3-S05-C1, FIG-STUDIO-EDITING-TABLET-1024). The trigger
   // names the panel it opens rather than an icon, and the drawer carries the

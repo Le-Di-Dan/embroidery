@@ -462,21 +462,36 @@ describe('responsive composition (APP3-S06 §7)', () => {
     );
   });
 
-  it('renders no image editing surface at all at 390', () => {
+  /*
+   * The 390 boundary moved with the world (`APP3-S11`).
+   *
+   * Until that checkpoint shipped, this tier rendered a sentence saying the
+   * screen was too small and no picker at all. The picker now exists at 390 —
+   * inside `610:465` — so the rule is not deleted but narrowed: this **panel**
+   * still renders nothing, because the surface that does the work is the sheet,
+   * and the sheet is closed until the customer opens it.
+   */
+  it('renders no image editing surface in the panel at 390', () => {
     setViewportWidth(390);
     renderStage(makeStageDocument([imageElement('img')]));
 
     // Not hidden — absent. A CSS-hidden file input still opens a picker.
     expect(screen.queryByTestId('studio-image-file')).not.toBeInTheDocument();
     expect(screen.queryByTestId('studio-image-choose')).not.toBeInTheDocument();
-    expect(screen.getByTestId('studio-image-mobile-notice')).toHaveTextContent('chưa đủ rộng');
+    // And the sentence that said the tier could not do this is gone, because it
+    // would now be false.
+    expect(screen.queryByTestId('studio-image-mobile-notice')).not.toBeInTheDocument();
   });
 
-  it('promises no S11 capability in the mobile notice', () => {
+  it('opens the approved image sheet from the mobile toolbar at 390', () => {
     setViewportWidth(390);
     renderStage(makeStageDocument([imageElement('img')]));
 
-    const notice = screen.getByTestId('studio-image-mobile-notice').textContent ?? '';
-    for (const promise of ['sắp', 'sẽ có', 'cập nhật']) expect(notice).not.toContain(promise);
+    fireEvent.click(screen.getByTestId('studio-mobile-image'));
+
+    // The same inspector the desktop panel renders, in the sheet `610:465`
+    // draws — one upload path, not a second one built for phones.
+    expect(screen.getByTestId('studio-mobile-image-sheet')).toBeInTheDocument();
+    expect(screen.getByTestId('studio-image-choose')).toBeInTheDocument();
   });
 });

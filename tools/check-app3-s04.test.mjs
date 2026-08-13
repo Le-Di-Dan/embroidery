@@ -182,7 +182,7 @@ describe('predecessors and status', () => {
    * "the Studio is done" still fails here.
    */
   it('refuses a later Studio capability recorded complete', () => {
-    for (const later of ['APP3-S11']) {
+    for (const later of ['APP3-E01']) {
       const phase = `${file('phase')}\n${later} = COMPLETE — REVIEW_DELIVERED\n`;
       assert.ok(mentions(run(checkPredecessors, { phase }), later), later);
     }
@@ -451,10 +451,13 @@ describe('composition', () => {
   });
 
   it('refuses a mobile surface that is hidden rather than not rendered', () => {
+    // Retargeted at `APP3-S11`: the mobile branch became a single `return null`
+    // when the approved sheet took the tier over, so the old block anchor would
+    // `.replace` nothing and this case would pass against an unmodified file.
     const panel = replacing(
       'panel',
-      "if (tier === 'mobile') {",
-      "if (tier === 'never') {\n    return <div aria-hidden=\"true\" />;\n  }\n  if (tier === 'mobile') {",
+      "if (tier === 'mobile') return null;",
+      'if (tier === \'mobile\') return <div aria-hidden="true" />;',
     );
     assert.ok(mentions(run(checkComposition, { panel }), 'hidden rather than not rendered'));
   });

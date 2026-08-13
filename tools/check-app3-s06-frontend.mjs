@@ -22,7 +22,7 @@
  *
  * Read-only, cross-platform pure Node.
  */
-import { isS10Delivered } from './app3-accepted-paths.mjs';
+import { isS10Delivered, isS11Delivered } from './app3-accepted-paths.mjs';
 import {
   CANONICAL_FILES,
   code,
@@ -329,9 +329,27 @@ export function checkComposition(rootDir, fail) {
   if (!/useStudioViewportTier\(\)/.test(panel)) {
     fail(`${CANONICAL_FILES.imagePanel}: the composition is not decided by viewport tier`);
   }
-  // Mobile renders nothing that edits — absent, not hidden. A CSS-hidden file
-  // input still opens a picker.
-  if (!/tier === 'mobile'/.test(panel) || !/studio-image-mobile-notice/.test(panel)) {
+  /*
+   * The 390 boundary, world-aware (`APP3-S11`).
+   *
+   * The rule was "this panel renders a notice at mobile and nothing that edits",
+   * and the notice half was only ever true while no checkpoint owned a mobile
+   * image surface. `APP3-S11` now does — inside `610:465` — so a sentence saying
+   * the screen is too small would be false, and asserting its presence would be
+   * asserting a lie.
+   *
+   * The half that mattered is unchanged and is what stays: this **panel** must
+   * still render nothing editable at 390, decided by tier rather than by CSS,
+   * because a hidden file input still opens a picker.
+   */
+  if (!/tier === 'mobile'/.test(panel)) {
+    fail(`${CANONICAL_FILES.imagePanel}: the 390 boundary is not decided by tier`);
+  }
+  const mobileBranch = /tier === 'mobile'[\s\S]{0,200}/.exec(panel)?.[0] ?? '';
+  const expected = isS11Delivered(rootDir)
+    ? /return null/.test(mobileBranch)
+    : /studio-image-mobile-notice/.test(panel);
+  if (!expected) {
     fail(`${CANONICAL_FILES.imagePanel}: the 390 boundary is not a notice`);
   }
   if (/hidden=|display: none/.test(panel)) {

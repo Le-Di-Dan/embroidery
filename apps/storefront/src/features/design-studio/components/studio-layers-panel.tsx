@@ -14,16 +14,17 @@
  *   So there is still one topbar, one trigger and one out-of-flow panel; a
  *   second drawer over the same stage edge would be the second drawer system the
  *   tablet composition exists to avoid.
- * - **mobile** — nothing that edits. The mobile layer bottom sheet is
- *   `APP3-S11`'s, and shipping a drag-reorder list at 390 would be that
- *   checkpoint's capability delivered early and unreviewed.
+ * - **mobile** — nothing here. `APP3-S11` drives this same controller at 390
+ *   from the approved layer sheet `610:353`, whose rows carry the `⋮⋮` handle
+ *   that frame draws. This mount is empty at that tier because the surface that
+ *   does the work is somewhere else in the frame; the sentence that used to
+ *   stand here said 390 could not reorder layers, and it would now be false.
  *
  * The tier decides what is *rendered*, not what is visible. A CSS-hidden list is
- * still focusable and its buttons still fire, so hiding one would leave the S11
- * surface in place and merely out of sight.
+ * still focusable and its buttons still fire, so a media query would leave two
+ * reorder surfaces live at once.
  */
 import { useStudioViewportTier } from '../hooks/use-studio-viewport-tier';
-import { STUDIO_LAYER_COPY } from '../model/studio-layer-copy';
 import { StudioLayersList, type StudioLayersListProps } from './studio-layers-list';
 
 /**
@@ -50,17 +51,10 @@ export function StudioLayersPanel({ slot, ...props }: StudioLayersPanelProps) {
   if (tier === 'tablet') return slot === 'drawer' ? <StudioLayersList {...props} /> : null;
   if (slot === 'drawer') return null;
 
-  if (tier === 'mobile') {
-    return (
-      <p
-        className="studio-layers__unavailable"
-        data-testid="studio-layers-mobile-notice"
-        role="status"
-      >
-        {STUDIO_LAYER_COPY.mobileUnavailable}
-      </p>
-    );
-  }
+  // Nothing here at 390 any more: `APP3-S11` renders the approved layer sheet
+  // (`610:353`) from the bottom toolbar, so the sentence that said the tier could
+  // not do this would now be false.
+  if (tier === 'mobile') return null;
 
   return <StudioLayersList {...props} />;
 }

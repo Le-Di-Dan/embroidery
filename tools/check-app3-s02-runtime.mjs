@@ -18,12 +18,14 @@ import {
   S06_FILES,
   S07_FILES,
   S10_FILES,
+  S11_FILES,
   isS03Delivered,
   isS06Delivered,
   isS07Delivered,
   isS04Delivered,
   isS09Delivered,
   isS10Delivered,
+  isS11Delivered,
 } from './app3-accepted-surface.mjs';
 
 /**
@@ -34,10 +36,21 @@ import {
  * single merged exclusion would have made a gesture legal in a world where
  * nothing had authorised it.
  */
+/**
+ * The feature minus the checkpoints that legitimately own a gesture.
+ *
+ * Three of them now: `APP3-S07` owns pan and zoom, `APP3-S03` owns the element
+ * transform, and `APP3-S11` owns touch. Each entered this list when it opened,
+ * and the rule it narrows is unchanged — an element that can follow a pointer
+ * anywhere *else* is still a second gesture engine, whichever checkpoint is
+ * shipping. Deleting the exclusion instead would let the stage or an inspector
+ * grow one.
+ */
 function openedInteractionScope(rootDir, all) {
   const opened = [
     ...(isS07Delivered(rootDir) ? S07_FILES : []),
     ...(isS03Delivered(rootDir) ? S03_FILES : []),
+    ...(isS11Delivered(rootDir) ? S11_FILES : []),
   ];
   return opened.length === 0 ? all : s02FeatureCode(rootDir, opened);
 }

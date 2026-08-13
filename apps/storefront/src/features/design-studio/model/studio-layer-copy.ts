@@ -68,12 +68,12 @@ export const STUDIO_LAYER_COPY = {
   typeFreehand: 'Nét vẽ tay',
   typeGroup: 'Nhóm',
 
-  /**
-   * Mobile.
+  /*
+   * There is no "this screen is too small" sentence any more.
    *
-   * `APP3-S11` owns the mobile layer bottom sheet and every touch surface around
-   * it, so 390 renders nothing that edits. This sentence promises nothing: no
-   * "sắp có", and no disabled control implying a button that will work later.
+   * One stood here until `APP3-S11` shipped the approved mobile surface for this
+   * capability. Keeping it would leave a false statement in the product for the
+   * first person who renders it by mistake, so it was removed rather than left
+   * unreferenced.
    */
-  mobileUnavailable: 'Sắp xếp lớp cần màn hình lớn hơn.',
 } as const;

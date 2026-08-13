@@ -79,6 +79,17 @@ export const LATER_STUDIO_ROWS = Object.freeze([
   'FIG-STUDIO-WATERMARK-DESKTOP-LIGHT',
   'FIG-STUDIO-AUTOSAVE-DESKTOP-SAVED',
   'FIG-STUDIO-MOBILE-LAYERSSHEET',
+  /*
+   * The row that keeps this rule from emptying itself (`APP3-S11`).
+   *
+   * Every *capability* row above now belongs to a checkpoint that has opened, so
+   * a world-aware exclusion would leave the list empty — the failure `APP3-S04`
+   * recorded once already, where a rule still ran, still passed, and asserted
+   * nothing. This is a handoff annotation: no Studio capability checkpoint
+   * consumes it, so it must stay `REVIEW_REQUIRED` for all of them, and a
+   * blanket approval still moves it.
+   */
+  'FIG-APP3-HANDOFF-DEPENDENCY',
 ]);
 
 /**

@@ -399,7 +399,7 @@ describe('the design approval is scoped, in both directions', () => {
       // Retargeted at `APP3-S10`: the autosave row is legitimately approved now,
       // so approving it would prove nothing. The mobile stage row's checkpoint
       // genuinely has not opened.
-      .find((row) => row.startsWith('| FIG-STUDIO-MOBILE-STAGE-SELECTED |'));
+      .find((row) => row.startsWith('| FIG-APP3-HANDOFF-DEPENDENCY |'));
     const root = rootWith({
       registry: registry.replace(
         line,
@@ -453,8 +453,11 @@ describe('the pre-S05 world still bites', () => {
   });
 
   it('refuses a later checkpoint recorded complete', () => {
+    // Retargeted twice by the world: `APP3-S06`, then `APP3-S11`, each became
+    // legitimately complete and stopped being evidence about this checkpoint.
+    // `APP3-E01` is the next capability `APP3-S05` does not implement.
     const root = rootWith({
-      phase: `${file('phase')}\nAPP3-S06 = COMPLETE — REVIEW_DELIVERED\n`,
+      phase: `${file('phase')}\nAPP3-E01 = COMPLETE — REVIEW_DELIVERED\n`,
     });
     assert.ok(mentions(failuresOf(checkPredecessors, root), 'S05 does not implement it'));
   });
@@ -543,8 +546,12 @@ describe('the inspector is placed by tier, and the phone gets no editing surface
   it('refuses an editing surface rendered at the mobile tier', () => {
     const root = rootWith({
       panel: file('panel').replace(
-        'if (textElementOf(props.document, props.elementId) === undefined) return null;',
-        'return <StudioTextInspector {...props} />;',
+        // Retargeted at `APP3-S11`: the mobile branch is now a single
+        // `return null`, so the old anchor would replace nothing. The marker the
+        // rule slices on is kept — deleting it would move the slice rather than
+        // put an editing surface inside it.
+        "if (tier === 'mobile') return null;",
+        "if (tier === 'mobile') return <StudioTextInspector {...props} />;",
       ),
     });
     assert.ok(

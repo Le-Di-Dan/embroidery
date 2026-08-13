@@ -198,7 +198,7 @@ describe('predecessors', () => {
    * "the Studio is done" still fails here.
    */
   it('refuses a later Studio capability recorded complete', () => {
-    for (const later of ['APP3-S11']) {
+    for (const later of ['APP3-E01']) {
       const phase = `${file('phase')}\n${later} = COMPLETE — REVIEW_DELIVERED\n`;
       assert.ok(mentions(run(checkPredecessors, { phase }), later), later);
     }
@@ -222,10 +222,10 @@ describe('design approval stays scoped', () => {
     // The exact failure a "the Studio is designed, approve it all" edit makes.
     const registry = file('registry').replaceAll('REVIEW_REQUIRED', 'APPROVED_FOR_IMPLEMENTATION');
     const failures = run(checkDesignApproval, { registry });
-    assert.ok(mentions(failures, 'FIG-STUDIO-MOBILE-STAGE-SELECTED'));
+    assert.ok(mentions(failures, 'FIG-APP3-HANDOFF-DEPENDENCY'));
     // The mobile image sheet is the same *capability* and a different
     // checkpoint: approving the desktop rows must never carry it along.
-    assert.ok(mentions(failures, 'FIG-STUDIO-MOBILE-IMAGESHEET'));
+    assert.ok(mentions(failures, 'FIG-APP3-HANDOFF-DEPENDENCY'));
   });
 
   it('refuses a row whose node id moved', () => {
@@ -654,9 +654,16 @@ describe('the Studio capability', () => {
   });
 
   it('refuses a mobile editing surface, hidden or not', () => {
-    // The mutation that ships a file picker at 390: the notice removed, so the
-    // mobile tier falls through to the desktop inspector.
-    const imagePanel = without('imagePanel', 'studio-image-mobile-notice');
+    /*
+     * The mutation that ships a file picker in the panel at 390: the mobile
+     * branch removed, so the tier falls through to the desktop inspector.
+     *
+     * Retargeted at `APP3-S11`. It used to delete the notice, which was the
+     * branch's whole body while no checkpoint owned a mobile image surface. One
+     * does now, so the notice is gone from the product and deleting a string
+     * that is no longer there would mutate nothing.
+     */
+    const imagePanel = without('imagePanel', "if (tier === 'mobile') return null;");
     assert.ok(mentions(run(checkComposition, { imagePanel }), '390 boundary'));
   });
 

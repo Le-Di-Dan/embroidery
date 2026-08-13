@@ -10,6 +10,9 @@ import { rectToBounds } from '@embroidery/design-engine';
 
 import { useSideBackground } from '../hooks/use-side-background';
 import { useStudioAutosave } from '../hooks/use-studio-autosave';
+import { useStudioMobileSheets } from '../hooks/use-studio-mobile-sheets';
+import { useStudioTouchGestures } from '../hooks/use-studio-touch-gestures';
+import { useStudioViewportTier } from '../hooks/use-studio-viewport-tier';
 import { useStudioHistory } from '../hooks/use-studio-history';
 import { useStudioHistoryShortcuts } from '../hooks/use-studio-history-shortcuts';
 import { useStudioImage } from '../hooks/use-studio-image';
@@ -33,6 +36,7 @@ import { useStudioDocumentStore } from '../store/studio-document.store';
 import { useStudioInteractionStore } from '../store/studio-interaction.store';
 import { useStudioViewportStore } from '../store/studio-viewport.store';
 import { StudioHistoryRail } from './studio-history-rail';
+import { StudioMobileSurface } from './studio-mobile-surface';
 import { StudioSaveState } from './studio-save-state';
 import { StudioSessionPanel } from './studio-session-panel';
 import { StudioStageTopbar } from './studio-stage-topbar';
@@ -49,34 +53,29 @@ import { StudioTransformOverlay } from './studio-transform-overlay';
 export interface StudioStageScreenProps {
   readonly snapshot: DesignSessionSnapshotResponse;
   /**
-   * The placement `APP3-B07` resolved when the Session was opened.
-   *
-   * Session scope, never the picker's. A later change to the pre-bootstrap Side
-   * or Area selection cannot retarget an open Session, because nothing on this
-   * screen can see that selection.
+   * The placement `APP3-B07` resolved when the Session was opened. Session
+   * scope, never the picker's: a later change to the pre-bootstrap Side or Area
+   * selection cannot retarget an open Session, because nothing here sees it.
    */
   readonly scope: DesignSessionScopeResponse | null;
   /**
    * The Embroidery Area's physical maxima, captured when the Session opened. The
-   * scope carries no `maxWidthMm`/`maxHeightMm` and `APP3-P02` needs them, so
-   * they come from the manifest `APP3-S01` already fetched — no new API — and are
-   * passed as a value, so a later reconcile cannot change them under an open
-   * Session.
+   * scope carries none and `APP3-P02` needs them, so they come from the manifest
+   * `APP3-S01` already fetched — no new API — as a value, so a later reconcile
+   * cannot change them under an open Session.
    */
   readonly areaLimits: StudioAreaLimits | null;
   readonly isResuming: boolean;
   readonly onResume: () => void;
   /**
-   * The display name of the Template this Session was cloned from, or `null`.
-   * Presentation only, from data `APP3-S01` already holds — no request is made
-   * for it, and it reaches one history row and nothing else: never the document,
-   * the hash or a save.
+   * The Template this Session was cloned from, or `null`. Presentation only,
+   * from data `APP3-S01` already holds: it reaches one history row and nothing
+   * else — never the document, the hash or a save.
    */
   readonly templateName: string | null;
   /**
    * The Session was refused as no longer valid, mid-edit (`APP3-S10`). Raised by
-   * the autosave loop; the screen above owns what replaces the Studio. Nothing
-   * here decides a Session is dead, and nothing here tries to revive one.
+   * the autosave loop; the screen above owns what replaces the Studio.
    */
   readonly onExpired: () => void;
 }
@@ -91,10 +90,13 @@ export interface StudioStageScreenProps {
  * bounded past and future beside that — not a second scene.
  *
  * `APP3-S10` adds the other direction: a saved document can come **back** —
- * canonicalized by the server, replaced by a resume, or replaced by the customer
- * choosing the server's version after a conflict. All three arrive through the
- * store's server-origin seams, so there is still one current document and none
- * of them is a history entry.
+ * canonicalized, resumed, or chosen over the local one after a conflict. All
+ * three arrive through the store's server-origin seams, so there is still one
+ * current document and none of them is a history entry.
+ *
+ * `APP3-S11` adds a third way in and not a fourth chain: a finger reaches the
+ * same `APP3-S03` gesture the mouse does, and the mobile sheets drive the same
+ * controllers. What is new is arbitration and a composition.
  */
 export function StudioStageScreen({
   snapshot,
@@ -114,20 +116,13 @@ export function StudioStageScreen({
     initializeDocument(sessionKey, snapshot.document);
   }, [initializeDocument, sessionKey, snapshot.document]);
 
-  // The snapshot until the working document exists, and the working document
-  // from then on. One scene, one source; the memo depends on the document alone,
-  // never on the viewport, which would rebuild the adapter on every zoom step.
+  // The snapshot until the working document exists, then the working document.
+  // The memo depends on the document alone, never on the viewport.
   const stageDocument = workingDocument ?? snapshot.document;
 
-  /*
-   * The previous successful build, offered back to the adapter (`APP3-S03-C1`).
-   *
-   * A cache, not a second document: the adapter validates the incoming payload
-   * exactly as before and uses this only to keep the *instances* of elements
-   * whose values are unchanged, so React skips the ninety-nine subtrees a
-   * one-element drag does not touch. Reuse is by value equality, so a scene left
-   * by a discarded render is at worst an equal answer.
-   */
+  // The previous successful build, offered back to the adapter (`APP3-S03-C1`).
+  // A cache, not a second document: it keeps the *instances* of unchanged
+  // elements, so React skips the subtrees a one-element drag does not touch.
   const sceneMemo = useRef<StudioSceneMemo | null>(null);
   const result = useMemo(
     () => buildRenderableScene(stageDocument, sceneMemo.current),
@@ -137,9 +132,8 @@ export function StudioStageScreen({
     sceneMemo.current = { document: result.document, scene: result.scene };
   }
 
-  // The document and graph the scene was actually built from — one of each per
-  // frame, shared by the transform chrome and the physical read-out, which each
-  // used to build their own and resolved the parent graph three times a frame.
+  // The document and graph the scene was built from — one of each per frame,
+  // shared by the chrome, the read-out and the mobile sheets.
   const sceneDocument = result.ok ? result.document : null;
   const graph = result.ok ? result.graph : null;
 
@@ -156,6 +150,13 @@ export function StudioStageScreen({
   const resetViewport = useStudioViewportStore((state) => state.resetViewport);
   const zoomStep = useStudioViewportStore((state) => state.zoomStep);
 
+  // The composition this viewport gets (`APP3-S11`), read here because two
+  // things above the panels depend on it: whether a touch may drive a
+  // transform, and where the conflict decision is drawn.
+  const tier = useStudioViewportTier();
+  const mobile = tier === 'mobile';
+  const sheets = useStudioMobileSheets();
+
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const transform = useStudioTransform({
     document: workingDocument,
@@ -164,7 +165,10 @@ export function StudioStageScreen({
     limits: areaLimits,
     zoom: zoomAt(zoomStep),
     overlay: overlayRef,
+    touch: mobile,
   });
+  // One finger is the design, two are the camera (`610:242`).
+  const touch = useStudioTouchGestures({ enabled: mobile, transform });
 
   const presentIds = useMemo(
     () => (result.ok ? result.scene.elements.map((renderable) => renderable.id) : []),
@@ -172,20 +176,16 @@ export function StudioStageScreen({
   );
 
   // A selection is a reference into a document that can be replaced underneath
-  // it — by a resume, a conflict resolution, or a document this build stops
-  // being able to read. An id pointing at nothing must resolve to no selection
-  // rather than a stale outline, so this runs against every scene.
+  // it, so an id pointing at nothing must resolve to no selection.
   useEffect(() => {
     reconcileSelection(presentIds);
   }, [presentIds, reconcileSelection]);
 
-  // Runtime selection is released when the stage goes away: interaction state,
-  // not a saved preference, and the store outlives this mount.
+  // Runtime selection is released when the stage goes away; the store outlives it.
   useEffect(() => clearSelection, [clearSelection]);
 
-  // The viewport belongs to one canvas: a zoom and pan carried into a different
-  // Session would point the camera at coordinates that mean something else, so
-  // the Session's identity — not the mount — is what resets it.
+  // The viewport belongs to one canvas: a zoom carried into a different Session
+  // would point the camera at coordinates that mean something else there.
   useEffect(() => {
     resetViewport();
   }, [resetViewport, snapshot.sessionId]);
@@ -203,13 +203,11 @@ export function StudioStageScreen({
   const selected = result.ok
     ? resolveRenderableElement(result.scene, selectedElementId)
     : undefined;
-  // Hidden and locked elements keep their geometry and z-order, and neither may
-  // be transformed. Unlocking is `APP3-S04`'s.
+  // Hidden and locked elements may not be transformed. Unlocking is `APP3-S04`'s.
   const transformable =
     selected !== undefined && selected.visible && !selected.element.locked ? selected : undefined;
 
-  // One set of inspector inputs, read by both slots: giving each its own prop
-  // list would let the topbar and the body drift apart on what they edit.
+  // One set of inspector inputs, read by every slot and by the mobile sheets.
   const textPanel = {
     commit: commitDocument,
     document: sceneDocument,
@@ -218,13 +216,11 @@ export function StudioStageScreen({
     scope,
   };
 
-  /*
-   * Every capability controller is owned **here**, above the viewport tier.
-   * Crossing a breakpoint swaps a panel's two mounts, and a controller owned by a
-   * panel goes with it: `APP3-S06` lost the Session revision that way and
-   * `APP3-B06B` refused the next upload `409 CONFLICT`. The same discard would
-   * take the undo stack and, since `APP3-S10`, an in-flight save.
-   */
+  // Every capability controller is owned **here**, above the viewport tier.
+  // Crossing a breakpoint swaps a panel's mounts, and a controller owned by a
+  // panel goes with it: `APP3-S06` lost the Session revision that way and the
+  // next upload was refused `409 CONFLICT`. The same discard would take the undo
+  // stack, an in-flight save, and now an open sheet.
   const selectedImage = imageElementOf(sceneDocument, selectedElementId);
   const replaceableImage =
     selectedImage !== undefined && selectedImage.visible && !selectedImage.locked;
@@ -245,36 +241,20 @@ export function StudioStageScreen({
     sessionId: snapshot.sessionId,
   };
 
-  // The bytes for every image the working document places (`APP3-S06`). Driven
-  // by the *scene's* document, so a just-added image is fetched immediately and
-  // a replaced one stops being fetched at once; keyed by derivative, so the
-  // previous object URL is revoked by the hook's own cleanup.
+  // The bytes for every image the working document places (`APP3-S06`), keyed
+  // by derivative so the previous object URL is revoked by the hook's cleanup.
   const imageMedia = useStudioImageMedia(snapshot.sessionId, sceneDocument);
 
   // Minted once per Studio runtime, never persisted, never sent (`APP3-S09`).
   const watermarkToken = useStudioWatermarkToken();
-  /*
-   * The history capability's controller (`APP3-S08`). It reads the past and
-   * future from the same store that holds the one working document, so an undo
-   * cannot produce a second answer to "what is on the stage". The keyboard path
-   * is bound once, on the window, and stands down for editable fields.
-   *
-   * `APP3-B07` sets lineage only on a clone, which is what the baseline row
-   * asks. The slug and version travelling with it are not names.
-   */
+  // The history controller (`APP3-S08`), reading the past and future from the
+  // store that holds the one working document. One controller, three surfaces.
   const history = useStudioHistory({ cloned: snapshot.lineage !== undefined, templateName });
   useStudioHistoryShortcuts({ undo: history.undo, redo: history.redo });
 
-  /*
-   * The autosave loop (`APP3-S10`), owned here for the same reason every other
-   * controller is: a loop owned by a panel would be discarded — with its
-   * in-flight request, its revision and its conflict — the first time the
-   * customer rotated a tablet.
-   *
-   * It starts from the snapshot's revision and uses only revisions the server
-   * returned afterwards. Undo and redo reach it as document mutations, because
-   * that is what they are.
-   */
+  // The autosave loop (`APP3-S10`), owned here for the same reason: a loop owned
+  // by a panel would be discarded — with its in-flight request, its revision and
+  // its conflict — the first time the customer rotated a tablet.
   const save = useStudioAutosave({
     sessionId: snapshot.sessionId,
     revision: snapshot.revision,
@@ -282,8 +262,7 @@ export function StudioStageScreen({
   });
   useStudioUnsavedWarning(hasUnsavedWork(save.state));
 
-  // The layer capability's controller (`APP3-S04`). It reads the scene's
-  // document and the graph the scene already resolved — never a second graph.
+  // The layer controller (`APP3-S04`), reading the graph the scene resolved.
   const layers = useStudioLayers({
     clearSelection,
     commit: commitDocument,
@@ -300,7 +279,7 @@ export function StudioStageScreen({
       {result.ok ? (
         <section className="studio-stage__frame" aria-label={STUDIO_STAGE_COPY.stageLabel}>
           {/* The persistent left tool rail (`609:147`, `618:140`), first child so
-              the keyboard reaches it in the order the eye does. */}
+              the keyboard reaches it in the order the eye does. Nothing at 390. */}
           <StudioHistoryRail
             canRedo={history.canRedo}
             canUndo={history.canUndo}
@@ -322,15 +301,18 @@ export function StudioStageScreen({
 
           {/* What the save is doing, and any decision the customer owes
               (`APP3-S10`). Above the stage at every tier, never inside the
-              drawer: a choice about losing work may not be behind a toggle. */}
-          <StudioSaveState save={save} />
+              drawer: a choice about losing work may not be behind a toggle. At
+              390 the conflict half of it is drawn by `610:514` instead. */}
+          <StudioSaveState save={save} suppressConflict={mobile} />
 
           <StudioStageBackgroundNotice background={background} hasScope={scope !== null} />
 
-          {/* Hiding the safe area withholds the rectangle from the paint and
-              nothing else. The watermark (`APP3-S09`) rides the viewport box, not
-              the transformed layer, and is not in the document. */}
-          <StudioStageViewport overlay={<StudioStageWatermark token={watermarkToken} />}>
+          {/* The watermark (`APP3-S09`) rides the viewport box, not the
+              transformed layer, and is not in the document. */}
+          <StudioStageViewport
+            overlay={<StudioStageWatermark token={watermarkToken} />}
+            touch={mobile ? touch : undefined}
+          >
             <div className="studio-stage__scene">
               <StudioStage
                 area={safeAreaVisible ? area : null}
@@ -350,6 +332,13 @@ export function StudioStageScreen({
                   document={sceneDocument}
                   elementId={transformable.id}
                   graph={graph}
+                  onOpenSheet={
+                    mobile
+                      ? () => {
+                          sheets.show('transform');
+                        }
+                      : undefined
+                  }
                   overlayRef={overlayRef}
                   transform={transform}
                   zoom={zoomAt(zoomStep)}
@@ -363,9 +352,8 @@ export function StudioStageScreen({
           {/* The policy note (`609:371`), as real text beside the stage. */}
           <StudioWatermarkNotice />
 
-          {/* The capability panels (`APP3-S05`, `S06`, `S04`, `S08`). The tablet
-              composition renders them in the topbar region above, so this one is
-              empty there. */}
+          {/* The capability panels. The tablet composition renders them in the
+              topbar region above, and the mobile one in its sheets below. */}
           <StudioStagePanels
             region="body"
             history={history}
@@ -373,6 +361,19 @@ export function StudioStageScreen({
             layers={layers}
             text={textPanel}
           />
+
+          {/* The 390 composition (`APP3-S11`), mounted only at this tier. */}
+          {mobile ? (
+            <StudioMobileSurface
+              graph={graph}
+              history={history}
+              image={imagePanel}
+              layers={layers}
+              save={save}
+              sheets={sheets}
+              text={textPanel}
+            />
+          ) : null}
 
           {result.scene.elements.length === 0 ? (
             <p className="studio-stage__empty" data-testid="studio-stage-empty" role="status">
