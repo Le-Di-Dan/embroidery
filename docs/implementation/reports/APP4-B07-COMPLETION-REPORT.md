@@ -534,7 +534,7 @@ the delivered suite was out of scope for this checkpoint.
 
 Committed on `production`, **not pushed**. Working tree clean at exit.
 
-Implementation commit: `<recorded in the evidence commit below>`.
+Implementation commit: `3cd6351` — `feat(app4): give operators masked customer support and grant revocation`. 34 files, +5198/−44. Not pushed; `origin/production` is unchanged.
 
 ---
 
