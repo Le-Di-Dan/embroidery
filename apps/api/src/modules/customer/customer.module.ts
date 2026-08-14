@@ -8,6 +8,10 @@ import { IssueVerificationChallengeUseCase } from './application/issue-verificat
 import { ReadVerificationChallengeStatus } from './application/read-verification-challenge-status.query';
 import { ResendVerificationChallengeUseCase } from './application/resend-verification-challenge.use-case';
 import { ResolveOrCreateVerifiedCustomer } from './application/resolve-or-create-verified-customer.service';
+import { SecureGrantAuditRecorder } from './application/secure-grant-audit.recorder';
+import { SecureGrantIssuer } from './application/secure-grant.issuer';
+import { SecureGrantNotifier } from './application/secure-grant.notifier';
+import { StepUpWindow } from './application/step-up-window.service';
 import { SubmitVerificationAttemptUseCase } from './application/submit-verification-attempt.use-case';
 import { VerificationChallengeIssuer } from './application/verification-challenge.issuer';
 import { VerificationOutcomeAuditRecorder } from './application/verification-outcome-audit.recorder';
@@ -20,6 +24,8 @@ import { VerificationCodeMinter } from './infrastructure/crypto/verification-cod
 import { DrizzleCustomerRepository } from './infrastructure/persistence/drizzle-customer.repository';
 import { DrizzleSecureAccessGrantRepository } from './infrastructure/persistence/drizzle-secure-access-grant.repository';
 import { DrizzleVerificationChallengeRepository } from './infrastructure/persistence/drizzle-verification-challenge.repository';
+import { SecureGrantPolicyReader } from './infrastructure/policy/secure-grant-policy.reader';
+import { SecureLinkTokenMinter } from './infrastructure/crypto/secure-link-token.minter';
 import { VerificationPolicyReader } from './infrastructure/policy/verification-policy.reader';
 import { PublicVerificationController } from './presentation/public-verification.controller';
 
@@ -54,6 +60,15 @@ import { PublicVerificationController } from './presentation/public-verification
  * that seals a delivery envelope — B03 hands it the raw code and never seals
  * itself. The peppers arrive through `App4SecretPepperProvider`, which validates
  * lazily rather than in a factory, for the reason recorded on that class.
+ *
+ * `APP4-B05` adds the AGG-04 half — grant issue, reissue, revoke and the step-up
+ * window — and adds **no controller**. That is the checkpoint's defining
+ * property: an "issue a grant" route would be a way to mint a customer's only
+ * credential for a request from outside any authorized business action
+ * (`APP4_PHASE_ENTRY_AUDIT` §C.2). The capabilities are exported for the
+ * in-process callers that will own those actions instead. It needs no new
+ * import: the grant repository, the audit repository, the notification seam and
+ * the peppers were all already here.
  */
 @Module({
   imports: [DatabaseModule, AuditModule, NotificationModule],
@@ -77,6 +92,12 @@ import { PublicVerificationController } from './presentation/public-verification
     VerificationOutcomeAuditRecorder,
     SubmitVerificationAttemptUseCase,
     ReadVerificationChallengeStatus,
+    SecureGrantPolicyReader,
+    SecureLinkTokenMinter,
+    SecureGrantAuditRecorder,
+    SecureGrantNotifier,
+    SecureGrantIssuer,
+    StepUpWindow,
   ],
   // The application capabilities are exported; the recorder, the clock, the
   // minter and the policy reader are not — they are this module's own machinery,
@@ -86,6 +107,15 @@ import { PublicVerificationController } from './presentation/public-verification
     VERIFICATION_CHALLENGE_REPOSITORY,
     SECURE_ACCESS_GRANT_REPOSITORY,
     ResolveOrCreateVerifiedCustomer,
+    // `APP4-B05`'s two internal capabilities. A future APP5 submission calls
+    // `SecureGrantIssuer.issue` and an APP6/APP7 sensitive action asks
+    // `StepUpWindow` — neither composes a token issuer, a repository and a
+    // notification use case itself (§18). The recorder, the notifier, the
+    // minter and the policy reader stay unexported: they are this module's own
+    // machinery, and a caller that could reach the notifier could deliver a
+    // token without a grant.
+    SecureGrantIssuer,
+    StepUpWindow,
   ],
 })
 export class CustomerModule {}

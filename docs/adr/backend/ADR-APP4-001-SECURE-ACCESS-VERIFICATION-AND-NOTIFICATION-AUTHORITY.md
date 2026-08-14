@@ -607,6 +607,40 @@ Rules:
 **No token-bearing query parameter or path segment may be introduced, and there
 is no query-param fallback.**
 
+### 11.0 The `<storefront-origin>` placeholder — resolved (`APP4-B05` addendum)
+
+Added at `APP4-B05` by approved narrow Product Owner authority, after the
+checkpoint's pre-implementation audit proved no canonical Storefront-origin
+authority existed anywhere in the repository. It resolves the placeholder above
+and locks nothing else.
+
+```text
+STOREFRONT_PUBLIC_ORIGIN is the canonical public browser origin for absolute
+APP4 secure links. It is fail-closed, has no default, and secure tokens appear
+only in URL fragments.
+```
+
+Semantics: **the absolute public browser origin customers use to reach the
+Storefront.** It is explicitly **not** `STOREFRONT_HOST` (a bare gateway
+hostname with no scheme), not `INTERNAL_API_BASE_URL` (the API's compose-network
+address), not a CSRF allowlist (`DESIGN_SESSION_ALLOWED_ORIGINS`,
+`STAFF_ALLOWED_ORIGINS`), not a staff origin and not a gateway upstream address.
+Promoting any of those into this role is forbidden: an unrelated operational
+change would then silently repoint every secure link that goes out.
+
+Validation — absolute URL; `https:` or `http:` only; scheme and host present; no
+username or password; no query; no fragment; no application path other than `/`;
+normalized without a trailing `/` before composition. **No default and no
+fallback**; a missing or malformed value fails closed at the secure-link
+rendering boundary. No production domain appears in source; example values exist
+in tests only.
+
+Ownership — public configuration, not credential material, so it is absent from
+`.env-ignore`. It is wired only into the process that renders: the worker. The
+API never mints the final URL. The raw token stays inside the existing decrypted
+worker-local scope and the absolute fragment URL is composed only immediately
+before the outbound channel sink, is never persisted and is never logged.
+
 ### 11.1 Relationship to `09-SECURITY-AND-ABUSE-PREVENTION.md` §9
 
 That document contains the sentence "never placed in a URL, query, fragment, …".
@@ -745,6 +779,9 @@ it, but neither restates it.
 | `secure_link.transport` | `URL_FRAGMENT` |
 | `secure_link.fragmentParameter` | `#t=` |
 | `secure_link.landingUrlForm` | `https://<storefront-origin>/truy-cap#t=<opaque-token>` |
+| `secure_link.originConfig` | `STOREFRONT_PUBLIC_ORIGIN` |
+| `secure_link.originDefault` | `NONE_FAIL_CLOSED` |
+| `secure_link.originRenderedBy` | `WORKER` |
 | `secure_link.queryOrPathCarrier` | `FORBIDDEN` |
 | `secure_link.fragmentStripApi` | `history.replaceState` |
 | `secure_link.fragmentStripOrdering` | `BEFORE_ANY_ANALYTICS_OR_THIRD_PARTY` |

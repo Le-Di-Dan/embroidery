@@ -51,6 +51,7 @@ import {
   WORKER_RUNTIME_POLICY_SCHEMA_VERSION,
 } from '../../../runtime/policy/worker-runtime-policy';
 import { applyOfflineObjectStorageEnv } from '../../../runtime/tests/offline-object-storage-env';
+import { STOREFRONT_PUBLIC_ORIGIN_ENV } from '../config/storefront-origin.config';
 import { NOTIFICATION_DELIVERY_EVENT_TYPE } from '../domain/notification-delivery.payload';
 import {
   NOTIFICATION_DELIVERY_POLICY_KEY,
@@ -75,6 +76,16 @@ export const RUNTIME_POLICY: WorkerRuntimePolicy = {
 
 /** The `APP4-G01` values, as published. Restated by no production file. */
 export const DELIVERY_POLICY_VALUE = { maxAttempts: 3, retryDelaysSeconds: [60, 300] };
+
+/**
+ * The Storefront origin these suites render links against (`APP4-B05`).
+ *
+ * A `.invalid` host, reserved by RFC 2606 and resolvable by nothing: the value
+ * has to look like a real origin for the composition to be meaningful, and must
+ * not be a domain anybody could register. It is a test value, which is the only
+ * place IMP-D050 permits an example origin to exist.
+ */
+export const TEST_STOREFRONT_ORIGIN = 'https://storefront.test.invalid';
 
 /**
  * A synthetic key, generated per run.
@@ -113,11 +124,16 @@ export async function startNotificationWorker(
     url: process.env['DATABASE_URL'],
     env: process.env['NODE_ENV'],
     key: process.env[NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV],
+    origin: process.env[STOREFRONT_PUBLIC_ORIGIN_ENV],
   };
   const { raw, key } = syntheticEnvelopeKey();
   process.env['DATABASE_URL'] = disposable.url;
   process.env['NODE_ENV'] = 'test';
   process.env[NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV] = raw;
+  // `APP4-B05`: a `SECURE_LINK_TOKEN` delivery composes an absolute link and
+  // fails closed without this. Set for every suite so the one secure-link case
+  // renders, and restored on close like the key beside it.
+  process.env[STOREFRONT_PUBLIC_ORIGIN_ENV] = TEST_STOREFRONT_ORIGIN;
   const restoreStorageEnv = applyOfflineObjectStorageEnv();
 
   let moduleRef: TestingModule;
@@ -179,6 +195,7 @@ export async function startNotificationWorker(
       restore('DATABASE_URL', previous.url);
       restore('NODE_ENV', previous.env);
       restore(NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV, previous.key);
+      restore(STOREFRONT_PUBLIC_ORIGIN_ENV, previous.origin);
       await disposable.drop();
     },
   };

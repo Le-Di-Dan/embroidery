@@ -25,6 +25,7 @@
  */
 import { randomBytes } from 'node:crypto';
 
+import type { TestingModuleBuilder } from '@nestjs/testing';
 import { newId } from '@embroidery/database';
 import { sql } from 'drizzle-orm';
 import { PolicyConfigurationRepository, TransactionManager } from '@embroidery/persistence';
@@ -115,14 +116,34 @@ export interface VerificationTestContext extends PersistenceTestContext {
   readonly requestId: string;
   /** Runs `work` with a request context bound, as an HTTP request would. */
   inRequest<T>(work: () => Promise<T>): Promise<T>;
-  /** Publishes a policy value, replacing whatever is current. */
+  /** Publishes a `verification.challenge` value, replacing whatever is current. */
   publishPolicy(value: Record<string, unknown>): Promise<void>;
+  /**
+   * Publishes any policy key through its canonical versioned path.
+   *
+   * Added by `APP4-B05`, which needs `secure_grant` published the same way. One
+   * publisher rather than two: the ceremony — ensure an admin, `ensureKey`,
+   * `publishVersion` inside one transaction — is what must not drift, and the
+   * key is the only thing that differs.
+   */
+  publishPolicyFor(
+    configKey: string,
+    value: Record<string, unknown>,
+    description: string,
+  ): Promise<void>;
 }
 
 export interface StartOptions {
   readonly label: string;
   /** Omit to exercise the unpublished-policy path. */
   readonly policy?: Record<string, unknown> | undefined;
+  /**
+   * Further provider overrides, applied on top of the clock and code minter.
+   *
+   * Added by `APP4-B05` so its suites can script the token minter without
+   * booting a second container.
+   */
+  readonly configure?: ((builder: TestingModuleBuilder) => TestingModuleBuilder) | undefined;
 }
 
 export async function createVerificationContext(
@@ -144,35 +165,45 @@ export async function createVerificationContext(
   const base = await createPersistenceTestContext(
     options.label,
     [RequestContextModule, AuditContextModule, CustomerModule],
-    (builder) =>
-      builder
+    (builder) => {
+      const configured = builder
         .overrideProvider(VerificationClock)
         .useValue(clock)
         .overrideProvider(VerificationCodeMinter)
-        .useValue(minter),
+        .useValue(minter);
+      return options.configure === undefined ? configured : options.configure(configured);
+    },
   );
 
   const requestContext = base.get<RequestContextService>(RequestContextService);
   const requestId = `b03-${newId()}`;
 
-  const publishPolicy = async (value: Record<string, unknown>): Promise<void> => {
+  const publishPolicyFor = async (
+    configKey: string,
+    value: Record<string, unknown>,
+    description: string,
+  ): Promise<void> => {
     const adminId = await ensureAdmin(base);
     const policies = base.get<PolicyConfigurationRepository>(PolicyConfigurationRepository);
     await base.get<TransactionManager>(TransactionManager).runInTransaction(async () => {
-      await policies.ensureKey(
-        VERIFICATION_CHALLENGE_POLICY_KEY,
-        'Verification challenge policy (APP4-G01).',
-      );
+      await policies.ensureKey(configKey, description);
       await policies.publishVersion({
-        configKey: VERIFICATION_CHALLENGE_POLICY_KEY,
+        configKey,
         value,
         valueSchemaVersion: 1,
         effectiveFrom: new Date('2020-01-01T00:00:00.000Z'),
         createdByAdminId: adminId,
-        reason: 'APP4-B03 integration fixture.',
+        reason: 'APP4 integration fixture.',
       });
     });
   };
+
+  const publishPolicy = (value: Record<string, unknown>): Promise<void> =>
+    publishPolicyFor(
+      VERIFICATION_CHALLENGE_POLICY_KEY,
+      value,
+      'Verification challenge policy (APP4-G01).',
+    );
 
   if (options.policy !== undefined) {
     await publishPolicy(options.policy);
@@ -188,6 +219,7 @@ export async function createVerificationContext(
     requestId,
     inRequest: <T>(work: () => Promise<T>): Promise<T> => requestContext.run({ requestId }, work),
     publishPolicy,
+    publishPolicyFor,
     close: async (): Promise<void> => {
       await base.close();
       restore(NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV, previous.envelope);

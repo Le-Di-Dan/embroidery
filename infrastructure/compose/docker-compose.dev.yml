@@ -269,6 +269,11 @@ services:
       # anchor; the worker hashes nothing and reads neither.
       <<: [*object-storage-env, *app4-secret-env]
       NODE_ENV: development
+      # APP4-B05 renders the absolute secure link immediately before the
+      # outbound channel call, so the worker — and only the worker — needs the
+      # public Storefront origin. No default: an unset value fails closed at
+      # that rendering boundary rather than minting a link to a guessed host.
+      STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-}
       # Reach the database over the compose network (never the host mapping).
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
       CHOKIDAR_USEPOLLING: 'true'

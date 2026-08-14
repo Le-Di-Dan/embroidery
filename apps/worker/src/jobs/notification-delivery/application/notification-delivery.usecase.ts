@@ -22,9 +22,15 @@
  */
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TransactionManager } from '@embroidery/persistence';
-import { openDeliveryEnvelope, type DeliveryEnvelope } from '@embroidery/notification-delivery';
+import {
+  openDeliveryEnvelope,
+  type DeliveryEnvelope,
+  type DeliverySecretKind,
+} from '@embroidery/notification-delivery';
 
 import { WorkerDeliveryEnvelopeKeyProvider } from '../config/delivery-envelope-key.provider';
+import { StorefrontPublicOriginProvider } from '../config/storefront-origin.provider';
+import { renderSecureLinkUrl } from '../domain/secure-link.renderer';
 import {
   NOTIFICATION_CHANNEL_PORT,
   isNotificationChannel,
@@ -43,6 +49,16 @@ import {
   type NotificationDeliveryRepository,
 } from '../domain/repositories/notification-delivery.repository';
 import { NotificationDeliveryPolicyService } from '../infrastructure/policy/notification-delivery-policy.service';
+
+/**
+ * The envelope discriminator that means "this secret is a link, not a code"
+ * (`APP4-G01` §7).
+ *
+ * `satisfies` rather than a bare string: the set lives in
+ * `@embroidery/notification-delivery`, and a typo here would silently render no
+ * link for every secure grant while every test about codes kept passing.
+ */
+const SECURE_LINK_TOKEN = 'SECURE_LINK_TOKEN' satisfies DeliverySecretKind;
 
 export interface DeliveryRequest {
   /** The current intent id, from `outbox_events.aggregate_id`. */
@@ -64,6 +80,7 @@ export class NotificationDeliveryUseCase {
     private readonly channel: NotificationChannelPort,
     private readonly policies: NotificationDeliveryPolicyService,
     private readonly envelopeKey: WorkerDeliveryEnvelopeKeyProvider,
+    private readonly storefrontOrigin: StorefrontPublicOriginProvider,
   ) {}
 
   async deliver(request: DeliveryRequest): Promise<void> {
@@ -127,9 +144,14 @@ export class NotificationDeliveryUseCase {
       return;
     }
 
-    const failure: NotificationDeliveryFailure = result.retryable
-      ? 'NOTIFICATION_TRANSPORT_UNAVAILABLE'
-      : 'NOTIFICATION_TRANSPORT_REJECTED';
+    // A named failure wins over the transport axis: the send never happened, so
+    // reporting it as a transport refusal would file the wrong evidence.
+    const failure: NotificationDeliveryFailure =
+      'failure' in result
+        ? result.failure
+        : result.retryable
+          ? 'NOTIFICATION_TRANSPORT_UNAVAILABLE'
+          : 'NOTIFICATION_TRANSPORT_REJECTED';
     const terminal = !result.retryable || lastAttempt;
 
     await this.settle(
@@ -197,8 +219,32 @@ export class NotificationDeliveryUseCase {
    * propagating: an exception's message is provider text, and the only thing
    * this path is allowed to learn from it is that the send did not report
    * success.
+   *
+   * The secure link is composed **here**, in the statement before the channel
+   * call, and that position is the requirement rather than a convenience
+   * (`APP4-B05` §13). The token is already decrypted and worker-local at this
+   * point; rendering earlier would carry a token-bearing URL through the
+   * settlement and evidence paths, and rendering in the adapter would put URL
+   * composition behind a seam a future provider replaces.
    */
-  private async send(opened: OpenedDelivery): Promise<DeliveryResult> {
+  private async send(opened: OpenedDelivery): Promise<AttemptOutcome> {
+    let secureLinkUrl: string | undefined;
+    try {
+      secureLinkUrl = this.renderSecureLink(opened);
+    } catch {
+      // Returned rather than thrown, so it settles through the same evidence
+      // path as a transport refusal. A throw here would escape `attempt` after
+      // `beginProcessing` had already run, leaving an intent in `PROCESSING`
+      // with no attempt row explaining why — the one failure mode this class is
+      // arranged to make impossible. The cause is dropped, as everywhere else on
+      // this path.
+      return {
+        outcome: 'FAILED',
+        retryable: true,
+        failure: 'NOTIFICATION_LINK_ORIGIN_UNAVAILABLE',
+      };
+    }
+
     try {
       return await this.channel.send({
         channel: opened.channel,
@@ -207,10 +253,25 @@ export class NotificationDeliveryUseCase {
         secret: opened.secret,
         issuedAt: opened.issuedAt,
         expiresAt: opened.expiresAt,
+        ...(secureLinkUrl === undefined ? {} : { secureLinkUrl }),
       });
     } catch {
       return { outcome: 'FAILED', retryable: true };
     }
+  }
+
+  /**
+   * The fragment-form link for a `SECURE_LINK_TOKEN`, and nothing for a code.
+   *
+   * The origin is required only on this branch, so a deployment that has never
+   * configured one still delivers verification codes normally — the fail-closed
+   * boundary is the link, not the worker.
+   */
+  private renderSecureLink(opened: OpenedDelivery): string | undefined {
+    if (opened.secretKind !== SECURE_LINK_TOKEN) {
+      return undefined;
+    }
+    return renderSecureLinkUrl(this.storefrontOrigin.require(), opened.secret);
   }
 
   /** The atomic durable effect: the evidence row and the intent state together. */
@@ -233,6 +294,22 @@ export class NotificationDeliveryUseCase {
     );
   }
 }
+
+/**
+ * What one send attempt produced.
+ *
+ * The port's own `DeliveryResult`, widened by the failures this class can decide
+ * *before* reaching the transport — currently only the missing link origin. The
+ * extra member carries its own class because "the send did not succeed" and
+ * "there was no send" are different facts on an operator's timeline.
+ */
+type AttemptOutcome =
+  | DeliveryResult
+  | {
+      readonly outcome: 'FAILED';
+      readonly retryable: boolean;
+      readonly failure: NotificationDeliveryFailure;
+    };
 
 /** The decrypted delivery, alive only for the duration of one attempt. */
 interface OpenedDelivery {

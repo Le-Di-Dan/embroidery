@@ -38,6 +38,15 @@ export interface RecordedDelivery {
   readonly secret: string;
   readonly issuedAt: Date;
   readonly expiresAt: Date;
+  /**
+   * The composed secure link, for a `SECURE_LINK_TOKEN` delivery (`APP4-B05`).
+   *
+   * This array is the one authorized outbound sink, so recording the link is
+   * what makes "the customer receives the fragment form, and never a query or a
+   * path" a provable claim rather than an assertion about code nobody observed.
+   * It is memory-only like everything else here.
+   */
+  readonly secureLinkUrl: string | undefined;
 }
 
 @Injectable()
@@ -58,6 +67,7 @@ export class RecordingNotificationChannelAdapter implements NotificationChannelP
       secret: delivery.secret,
       issuedAt: delivery.issuedAt,
       expiresAt: delivery.expiresAt,
+      secureLinkUrl: delivery.secureLinkUrl,
     });
 
     return Promise.resolve(result);

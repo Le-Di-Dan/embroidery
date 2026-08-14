@@ -40,6 +40,19 @@ export interface NotificationDelivery {
   readonly secret: string;
   readonly issuedAt: Date;
   readonly expiresAt: Date;
+  /**
+   * The composed secure link, present only for `SECURE_LINK_TOKEN` (`APP4-B05`).
+   *
+   * Optional rather than a second required field, and that is what keeps
+   * verification-code delivery unchanged: a code has no link, and an adapter
+   * rendering `undefined` into a message would be worse than one that never saw
+   * the field. `secret` stays the raw token in both cases — this is the token
+   * *placed in its transport form*, not a second secret.
+   *
+   * An adapter sends this string; it must not reassemble a URL of its own, and
+   * must not move the token into a query or path (`ADR-APP4-001` §11).
+   */
+  readonly secureLinkUrl?: string | undefined;
 }
 
 /**

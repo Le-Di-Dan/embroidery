@@ -38,6 +38,15 @@ export const NOTIFICATION_DELIVERY_FAILURES = [
   'NOTIFICATION_INTENT_UNRESOLVABLE',
   /** The retry policy is missing or malformed, so nothing may be sent. */
   'NOTIFICATION_POLICY_UNAVAILABLE',
+  /**
+   * `STOREFRONT_PUBLIC_ORIGIN` is unset or malformed, so no secure link can be
+   * composed (`APP4-B05`).
+   *
+   * Additive and reached only by `SECURE_LINK_TOKEN` deliveries: a verification
+   * code needs no origin and never consults one, so this class cannot change
+   * what happens to any delivery that existed before it.
+   */
+  'NOTIFICATION_LINK_ORIGIN_UNAVAILABLE',
 ] as const;
 
 export type NotificationDeliveryFailure = (typeof NOTIFICATION_DELIVERY_FAILURES)[number];
@@ -48,10 +57,14 @@ export type NotificationDeliveryFailure = (typeof NOTIFICATION_DELIVERY_FAILURES
  * `NOTIFICATION_POLICY_UNAVAILABLE` is retryable on purpose: an unconfigured
  * budget is an operator's omission, and dead-lettering a deliverable secret
  * because of it would destroy work that a published policy would have completed.
+ * `NOTIFICATION_LINK_ORIGIN_UNAVAILABLE` is retryable for exactly that reason —
+ * a missing `STOREFRONT_PUBLIC_ORIGIN` is one `docker compose up` away from
+ * being fixed, and the grant it would have delivered is already committed.
  */
 const RETRYABLE: ReadonlySet<NotificationDeliveryFailure> = new Set([
   'NOTIFICATION_TRANSPORT_UNAVAILABLE',
   'NOTIFICATION_POLICY_UNAVAILABLE',
+  'NOTIFICATION_LINK_ORIGIN_UNAVAILABLE',
 ]);
 
 /**
@@ -65,6 +78,7 @@ const RETRYABLE: ReadonlySet<NotificationDeliveryFailure> = new Set([
 const WORKER_CLASS: Readonly<Record<NotificationDeliveryFailure, WorkerErrorClass>> = {
   NOTIFICATION_TRANSPORT_UNAVAILABLE: 'JOB_DEPENDENCY_UNAVAILABLE',
   NOTIFICATION_POLICY_UNAVAILABLE: 'JOB_DEPENDENCY_UNAVAILABLE',
+  NOTIFICATION_LINK_ORIGIN_UNAVAILABLE: 'JOB_DEPENDENCY_UNAVAILABLE',
   NOTIFICATION_TRANSPORT_REJECTED: 'JOB_INVARIANT_VIOLATION',
   NOTIFICATION_ENVELOPE_UNREADABLE: 'JOB_PAYLOAD_INVALID',
   NOTIFICATION_MATERIAL_EXPIRED: 'JOB_INVARIANT_VIOLATION',

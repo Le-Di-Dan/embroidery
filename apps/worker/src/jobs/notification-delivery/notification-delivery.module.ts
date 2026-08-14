@@ -24,6 +24,7 @@ import { WorkerRuntimeModule } from '../../runtime/worker-runtime.module';
 import { JobHandlerRegistry } from '../../runtime/registry/job-handler.registry';
 import { NotificationDeliveryUseCase } from './application/notification-delivery.usecase';
 import { WorkerDeliveryEnvelopeKeyProvider } from './config/delivery-envelope-key.provider';
+import { StorefrontPublicOriginProvider } from './config/storefront-origin.provider';
 import { NOTIFICATION_CHANNEL_PORT } from './domain/channel/notification-channel.port';
 import { NOTIFICATION_DELIVERY_REPOSITORY } from './domain/repositories/notification-delivery.repository';
 import { RecordingNotificationChannelAdapter } from './infrastructure/channel/recording-notification-channel.adapter';
@@ -39,6 +40,7 @@ import { NotificationDeliveryHandler } from './notification-delivery.handler';
     { provide: NOTIFICATION_CHANNEL_PORT, useExisting: RecordingNotificationChannelAdapter },
     NotificationDeliveryPolicyService,
     WorkerDeliveryEnvelopeKeyProvider,
+    StorefrontPublicOriginProvider,
     NotificationDeliveryUseCase,
     NotificationDeliveryHandler,
   ],

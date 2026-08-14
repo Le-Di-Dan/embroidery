@@ -10,6 +10,7 @@ import { executeRaw, newId, sql } from '@embroidery/database';
 
 import {
   DELIVERY_POLICY_VALUE,
+  TEST_STOREFRONT_ORIGIN,
   seedDelivery,
   startNotificationWorker,
   type NotificationWorkerContext,
@@ -75,7 +76,7 @@ describe('APP4-W01 notification delivery — success paths', () => {
     expect(await secretAppears(context.disposable, secret)).toEqual([]);
   });
 
-  it('delivers an SMS secure-link token as the raw token', async () => {
+  it('delivers an SMS secure-link token as the raw token, in the fragment form', async () => {
     const secret = `synthetic-${newId()}`;
     const seeded = await seedDelivery(context, {
       secret,
@@ -91,10 +92,43 @@ describe('APP4-W01 notification delivery — success paths', () => {
       secretKind: 'SECURE_LINK_TOKEN',
       secret,
     });
+
+    // `APP4-B05` §13 — the outbound message carries the absolute fragment form,
+    // composed from `STOREFRONT_PUBLIC_ORIGIN` at the sink.
+    const link = context.adapter.records()[0]?.secureLinkUrl ?? '';
+    expect(link).toBe(`${TEST_STOREFRONT_ORIGIN}/truy-cap#t=${secret}`);
+
+    // The token sits *after* the `#`, and the part a server would ever see
+    // carries neither the token nor any parameter. This is the assertion that
+    // fails if a future edit moves the carrier to `?t=` or a path segment: the
+    // link would still contain the token and still "work" in a browser.
+    const [beforeFragment, fragment] = link.split('#');
+    expect(beforeFragment).toBe(`${TEST_STOREFRONT_ORIGIN}/truy-cap`);
+    expect(beforeFragment).not.toContain(secret);
+    expect(beforeFragment).not.toContain('?');
+    expect(fragment).toBe(`t=${secret}`);
+
     expect(await deliveryAttempts(context.disposable, seeded.intentId)).toEqual([
       { channel: 'SMS', outcome: 'DELIVERED', errorClass: null, providerMessageRef: null },
     ]);
+    // Neither the token nor the rendered URL reached any column. `secretAppears`
+    // scans for the token itself, which the link contains as a substring, so one
+    // sweep covers both.
     expect(await secretAppears(context.disposable, secret)).toEqual([]);
+  });
+
+  it('renders no link for a verification code, leaving code delivery unchanged', async () => {
+    // The regression guard for the §13 rule "do not alter verification-code
+    // delivery semantics": the renderer is reached only by the secure-link
+    // discriminator, so a code delivery neither composes a URL nor consults the
+    // origin — and would keep working with the variable unset.
+    const secret = `synthetic-${newId()}`;
+    await seedDelivery(context, { secret });
+
+    await context.runOnce();
+
+    expect(context.adapter.records()[0]?.secretKind).toBe('VERIFICATION_CODE');
+    expect(context.adapter.records()[0]?.secureLinkUrl).toBeUndefined();
   });
 
   it('sends nothing a second time when the intent is already SATISFIED', async () => {
