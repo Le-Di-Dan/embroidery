@@ -7,7 +7,7 @@
  * joins two customers rather than failing loudly.
  */
 import { normalizeEmail } from './normalize-email';
-import { normalizePhone } from './normalize-phone';
+import { normalizePhone, parsePhone } from './normalize-phone';
 import { maskContact, MASK_RUN } from './mask-contact';
 import type { ContactNormalization } from './contact-value';
 
@@ -97,12 +97,19 @@ describe('normalizePhone', () => {
     ['+14155550123', '+14155550123'],
     ['+442071838750', '+442071838750'],
     ['+81312345678', '+81312345678'],
+    ['+35020012345', '+35020012345'],
+    ['+37120123456', '+37120123456'],
+    ['+998901234567', '+998901234567'],
   ])('preserves the explicit country code of %s', (input, expected) => {
     expect(normalized(normalizePhone(input))).toBe(expected);
   });
 
-  it('treats a 00 prefix as an explicit country code, not a Vietnamese trunk call', () => {
-    expect(normalized(normalizePhone('0014155550123'))).toBe('+14155550123');
+  it.each([
+    ['0014155550123', '+14155550123'],
+    ['0084912345678', '+84912345678'],
+    ['00350 20012345', '+35020012345'],
+  ])('treats the 00 prefix in %s as an explicit country code', (input, expected) => {
+    expect(normalized(normalizePhone(input))).toBe(expected);
   });
 
   it('keeps the as-entered value separately for display', () => {
@@ -166,31 +173,68 @@ describe('maskContact — email', () => {
 });
 
 describe('maskContact — phone', () => {
-  it('preserves the country code and the final four digits only', () => {
+  /**
+   * Every calling-code length, with two different three-digit codes so the
+   * implementation cannot pass by special-casing one of them.
+   *
+   * `APP4-P01-C1` exists because the previous version guessed this split and
+   * masked a digit of the country code itself for every three-digit code.
+   */
+  const CASES: ReadonlyArray<[string, string]> = [
+    ['+14155550123', '1'], // 1-digit: US
+    ['+79123456789', '7'], // 1-digit: RU
+    ['+84912345678', '84'], // 2-digit: VN
+    ['+442071838750', '44'], // 2-digit: GB
+    ['+35020012345', '350'], // 3-digit: GI
+    ['+37120123456', '371'], // 3-digit: LV
+    ['+998901234567', '998'], // 3-digit: UZ
+  ];
+
+  it('renders the locked example exactly', () => {
     expect(maskContact('PHONE', '+84912345678')).toBe('+84 ***** 5678');
   });
 
-  it('treats zone 1 and zone 7 as single-digit country codes', () => {
-    expect(maskContact('PHONE', '+14155550123')).toBe('+1 ****** 0123');
-    expect(maskContact('PHONE', '+79123456789')).toBe('+7 ****** 6789');
+  it.each(CASES)('exposes the complete country calling code of %s', (e164, callingCode) => {
+    const parsed = parsePhone(e164);
+    expect(parsed?.countryCallingCode).toBe(callingCode);
+    expect(maskContact('PHONE', e164).startsWith(`+${callingCode} `)).toBe(true);
   });
 
-  it('hides every intermediate digit', () => {
-    const masked = maskContact('PHONE', '+84912345678');
-    expect(masked).not.toContain('9123');
-    expect(masked.replace(/[^\d]/g, '')).toBe('845678');
+  it.each(CASES)('exposes only the final four national digits of %s', (e164) => {
+    const parsed = parsePhone(e164);
+    const national = parsed?.nationalNumber ?? '';
+    expect(maskContact('PHONE', e164).endsWith(national.slice(-4))).toBe(true);
   });
 
-  it('never returns the full normalized number', () => {
-    for (const number of ['+84912345678', '+14155550123', '+442071838750']) {
-      expect(maskContact('PHONE', number)).not.toBe(number);
-    }
+  it.each(CASES)('leaks no earlier national digit of %s', (e164, callingCode) => {
+    const parsed = parsePhone(e164);
+    const national = parsed?.nationalNumber ?? '';
+    const masked = maskContact('PHONE', e164);
+    // Everything the output may contain: the calling code and the last four.
+    expect(masked.replace(/[^\d]/g, '')).toBe(`${callingCode}${national.slice(-4)}`);
+    // The hidden prefix must be exactly as long as the digits it replaces.
+    expect(masked.split(' ')[1]).toBe('*'.repeat(national.length - 4));
   });
 
-  it('withholds everything when the value is too short to mask safely', () => {
-    // Country code + at least one hidden digit + four visible digits.
-    expect(maskContact('PHONE', '+845678')).toBe(MASK_RUN);
+  it.each(CASES)('never returns the full normalized value for %s', (e164) => {
+    const masked = maskContact('PHONE', e164);
+    expect(masked).not.toBe(e164);
+    expect(masked.replace(/[^\d+]/g, '')).not.toBe(e164);
+  });
+
+  it('withholds everything for a value that is not canonical E.164', () => {
     expect(maskContact('PHONE', '84912345678')).toBe(MASK_RUN);
     expect(maskContact('PHONE', '+84 912 345 678')).toBe(MASK_RUN);
+    expect(maskContact('PHONE', '+0912345678')).toBe(MASK_RUN);
+    expect(maskContact('PHONE', '')).toBe(MASK_RUN);
+  });
+
+  it('withholds everything for a well-shaped but unparseable number', () => {
+    // Structurally E.164, but no country claims calling code 999.
+    expect(maskContact('PHONE', '+9991234567890')).toBe(MASK_RUN);
+  });
+
+  it('withholds everything when the national number is too short to mask', () => {
+    expect(maskContact('PHONE', '+845678')).toBe(MASK_RUN);
   });
 });

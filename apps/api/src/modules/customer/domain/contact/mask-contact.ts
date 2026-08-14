@@ -12,6 +12,8 @@
  */
 import type { ContactKind } from '@embroidery/database';
 
+import { parsePhone } from './normalize-phone';
+
 /** The run of characters standing in for everything withheld. */
 export const MASK_RUN = '***';
 
@@ -69,39 +71,49 @@ function maskEmail(normalizedValue: string): string {
 }
 
 /**
- * E.164 → country code, a masked middle, and the final four digits.
+ * The shape a stored `normalized_value` must have before it is worth parsing.
  *
- * Splitting the country code from the national number is the part that normally
- * needs a full ITU table, which this repository does not have. The rule used
- * instead is the E.164 zone structure: zones **1** and **7** are single-digit
- * codes, everything else is treated as two digits.
+ * The masker's input contract is the **normalized** value, so a raw or
+ * partly-formatted number is refused here rather than quietly parsed. Without
+ * this guard `+84 912 345 678` and `84912345678` would both parse and mask
+ * successfully, which would make "pass the normalized value" advice rather than
+ * a contract.
+ */
+const E164_PATTERN = /^\+[1-9]\d{1,14}$/;
+
+/**
+ * E.164 → the exact country calling code, a masked national prefix, and the
+ * final four national digits.
  *
- * That is exact for `+84`, which is the only code this product issues by
- * default, and for every other one- and two-digit code. For a three-digit code
- * it reveals one digit **fewer** than the true country code — and that direction
- * is the safe one: the missing digit falls into the masked middle, so the mask
- * can under-disclose but never over-disclose. A table-driven split can replace
- * this the day a phone library is adopted, with no change to the contract.
+ * **Corrected by `APP4-P01-C1`.** The previous version guessed the country-code
+ * length from the E.164 zone — one digit for zones 1 and 7, two otherwise — and
+ * therefore masked one digit *of the country code itself* for every three-digit
+ * code (`+350`, `+371`, `+998`). The acceptance criterion is "preserve the
+ * country code", and a guess that is usually right does not satisfy it.
+ *
+ * The split now comes from `libphonenumber-js` via the shared `parsePhone`, so
+ * `countryCallingCode` and `nationalNumber` are the library's exact values for
+ * every calling-code length. The four visible digits are the last four of the
+ * **national number**, never of the E.164 string — for a country whose national
+ * number is shorter than four digits those would not be the same thing.
  */
 function maskPhone(normalizedValue: string): string {
-  if (!normalizedValue.startsWith('+')) {
+  if (!E164_PATTERN.test(normalizedValue)) {
     return MASK_RUN;
   }
-  const digits = normalizedValue.slice(1);
-  if (!/^\d+$/.test(digits)) {
-    return MASK_RUN;
-  }
-
-  const countryCodeLength = digits.startsWith('1') || digits.startsWith('7') ? 1 : 2;
-  // Every digit must still be accounted for: country code, at least one masked
-  // digit, and the four visible ones. Anything shorter is withheld entirely
-  // rather than published with a too-short middle.
-  if (digits.length < countryCodeLength + 1 + PHONE_VISIBLE_DIGITS) {
+  const parsed = parsePhone(normalizedValue);
+  if (parsed === undefined) {
     return MASK_RUN;
   }
 
-  const countryCode = digits.slice(0, countryCodeLength);
-  const visible = digits.slice(-PHONE_VISIBLE_DIGITS);
-  const hiddenCount = digits.length - countryCodeLength - PHONE_VISIBLE_DIGITS;
-  return `+${countryCode} ${PHONE_MASK_GLYPH.repeat(hiddenCount)} ${visible}`;
+  const national = parsed.nationalNumber;
+  // Country code, at least one masked digit, and the four visible ones. Anything
+  // shorter is withheld entirely rather than published with no masked middle.
+  if (national.length <= PHONE_VISIBLE_DIGITS) {
+    return MASK_RUN;
+  }
+
+  const visible = national.slice(-PHONE_VISIBLE_DIGITS);
+  const hidden = PHONE_MASK_GLYPH.repeat(national.length - PHONE_VISIBLE_DIGITS);
+  return `+${parsed.countryCallingCode} ${hidden} ${visible}`;
 }
