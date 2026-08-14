@@ -18,6 +18,7 @@ import { NotificationModule } from '../modules/notification/notification.module'
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
+import { PolicyModule } from '../platform/policy/policy.module';
 import { RequestContextModule } from '../platform/request-context/request-context.module';
 import { ValidationModule } from '../platform/validation/validation.module';
 
@@ -28,6 +29,10 @@ import { ValidationModule } from '../platform/validation/validation.module';
     AuditContextModule,
     HttpResponseModule,
     ValidationModule,
+    // APP4-B01-C1 — publishes the APP4-G01 policy dataset. Composed so the
+    // `staff-bootstrap` CLI, which boots this module, can reach it with the
+    // Admin id it just resolved. Publishes nothing on its own at startup.
+    PolicyModule,
     HealthModule,
     IdentityModule,
     AssetIntakeModule,

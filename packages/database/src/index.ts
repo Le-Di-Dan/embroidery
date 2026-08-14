@@ -169,3 +169,17 @@ export type {
   VerificationChallengeState,
   VerificationPurpose,
 } from './schema/index';
+
+// APP4-B01-C1 — the G01 policy dataset reader. The JSON in `seed/` stays the
+// single value source; this exposes it without restating a number.
+export {
+  APP4_POLICY_DATASET_FILE,
+  APP4_POLICY_KEYS,
+  loadApp4PolicyDataset,
+  seedFolderFrom,
+} from './seed/app4-policy-dataset';
+export type {
+  App4PolicyConfiguration,
+  App4PolicyDataset,
+  App4PolicyKey,
+} from './seed/app4-policy-dataset';

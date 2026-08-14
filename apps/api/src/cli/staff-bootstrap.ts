@@ -22,6 +22,7 @@ import {
   BootstrapStaffUseCase,
   type EnsureBootstrapOutcome,
 } from '../modules/identity/application/bootstrap-staff.use-case';
+import { PublishApp4PolicyUseCase } from '../platform/policy/publish-app4-policy.use-case';
 import {
   STATUS_EXIT_CODE,
   decideBootstrapPreflight,
@@ -71,6 +72,15 @@ async function runEnsure(): Promise<number> {
     const useCase = app.get(BootstrapStaffUseCase);
     // `credentials` is defined whenever preflight allowed us to proceed.
     const result = await useCase.ensure(inspection.credentials!);
+    // APP4-B01-C1. Gated on a real resolved Admin id, not on the outcome name:
+    // `policy_configuration_versions.created_by_admin_id` is NOT NULL, and the
+    // mismatch/not-active outcomes carry no id to attribute a version to. This
+    // is the repository's one admin-bearing bootstrap path, which is why
+    // publication lives here rather than in the worker. Idempotent — a rerun
+    // with an unchanged dataset publishes nothing.
+    if (result.adminId !== undefined) {
+      await app.get(PublishApp4PolicyUseCase).publish(result.adminId);
+    }
     return report(ENSURE_OUTCOME_STATUS[result.outcome], `staff ${result.outcome}`, result.adminId);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

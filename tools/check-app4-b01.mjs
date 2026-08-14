@@ -22,6 +22,8 @@ import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { checkPolicyPublication } from './check-app4-b01-policy.mjs';
+
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const PACKAGE_DIR = 'packages/notification-delivery';
@@ -386,6 +388,9 @@ export function checkApp4B01(rootDir = REPO_ROOT) {
   checkComposition(rootDir, fail);
   checkIntake(rootDir, fail);
   checkNoLiterals(rootDir, fail);
+  // APP4-B01-C1 — the publication seam, kept in its own half because it is its
+  // own responsibility rather than to chase a line limit.
+  checkPolicyPublication(rootDir, stripComments, fail);
 
   return failures;
 }

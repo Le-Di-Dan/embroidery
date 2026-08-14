@@ -7,11 +7,25 @@
 
 ## A. Verdict
 
-**`PASS`**
+**`PASS_AFTER_C1`**
 
 One notification-intake capability, one shared envelope package, one guard entry,
-one module composition. **0 HTTP endpoints, 0 migrations, 0 providers.** No stop
+one module composition — and, after `APP4-B01-C1`, the APP4 policy dataset
+actually published. **0 HTTP endpoints, 0 migrations, 0 providers.** No stop
 condition was met.
+
+### A.1 What `APP4-B01-C1` corrected
+
+The first delivery reported the `APP4-G01` policy-publication hand-off **open**
+and routed it to `APP4-W01`. Acceptance criterion 28 offers two outcomes —
+publication resolved, or evidence that existing runtime already owns it — and
+B01's own evidence ruled out the second, so routing it onward satisfied neither.
+
+`APP4-B01-C1` closes it on the API bootstrap path, using the Admin identity
+`staff-bootstrap` already resolves. **Nothing about the envelope, the intent, the
+outbox linkage or the crypto changed**: `packages/notification-delivery`,
+`request-notification.use-case.ts`, the notification domain and
+`outbox-event-store.ts` are byte-identical to the first delivery. See §G.
 
 ---
 
@@ -187,40 +201,99 @@ contract field and the guard entry says so.
 
 ---
 
-## G. Policy publication handoff
+## G. Policy publication handoff — **closed by `APP4-B01-C1`**
 
-**The G01 dataset was NOT published by this checkpoint.** Recorded plainly rather
-than claimed, with the evidence that led there.
+**The G01 dataset is published by this checkpoint, on the API bootstrap path.**
 
-`ADR-APP4-001` §1.1 named "`APP4-B01`'s bootstrap path" as the publishing caller.
-On inspection that hand-off does not land here, for three measured reasons:
+### G.1 What the first delivery got wrong
 
-1. **B01 does not create the capability.** `PolicyConfigurationRepository` is
-   provided by `DatabaseModule` and has been reachable since APP2. A grep for
-   non-test callers of `ensureKey`/`publishVersion` returns **none** — the
-   matches in `apps/api` are `AgreementRepository.publishVersion` and
-   `DesignTemplateRepository.publishVersion`, different methods on different
-   repositories. Composing `NotificationModule` changes nothing about that
-   reachability, so B01 is **not** "the first runtime composition point capable"
-   in §16's sense; every checkpoint since APP2 was equally capable.
-2. **B01 reads no policy value.** `notification.delivery.maxAttempts` and
-   `retryDelaysSeconds` are first consumed by **`APP4-W01`**;
-   `verification.challenge` by `APP4-B03`/`B04`. Publishing here would ship a
-   publisher with no consumer.
-3. **Publishing needs an admin identity, and its only existing authority is a
-   separate one-shot CLI.** `policy_configuration_versions.created_by_admin_id`
-   is `NOT NULL` FK to `admin_accounts`, and the delivered admin-bearing path is
-   `apps/api/src/cli/staff-bootstrap.ts` — a Compose one-shot service, not normal
-   API startup. §16 forbids inventing an admin identity mechanism, and a second
-   bootstrap CLI reading a JSON dataset out of another workspace package's
-   non-exported directory is the widening §16 also forbids.
+B01 originally reported the seam **open** and routed ownership to `APP4-W01`. Its
+three supporting observations were each accurate — B01 creates no new
+publication capability, reads no policy value, and publication needs an Admin
+identity — but the conclusion drawn from them was not. Acceptance criterion 28
+allows exactly two outcomes: publication resolved here, or evidence that an
+existing runtime already owns it. B01's own §G established the second is false,
+which leaves only the first. "Routed to a later checkpoint" is a third option the
+criterion does not offer, and unilaterally reassigning a `G01` hand-off is not a
+resolution of it.
 
-**No existing runtime mechanism publishes it either** — there is no seed runner,
-no `db:seed` script and no bootstrap that touches `policy_configurations`.
+The Admin-identity observation also pointed the *opposite* way once followed
+through: `APP4-W01` is a worker, holds no Admin identity at all, and would have
+had to invent one — a far larger change than publishing from the path that
+already resolves an Admin.
 
-**Routed to `APP4-W01`**, the first checkpoint that actually reads a published
-value and therefore the first with a reason to publish one. The seam stays
-explicitly open; it is not closed by assertion.
+### G.2 Ownership
+
+| Concern | Owner |
+|---|---|
+| Value source | `packages/database/seed/app4-policy-configuration.seed.json` — unchanged, still the only one |
+| Dataset reader | `packages/database/src/seed/app4-policy-dataset.ts` — reads and validates shape, restates no value |
+| Publisher | `apps/api/src/platform/policy/publish-app4-policy.use-case.ts` |
+| Trigger | `apps/api/src/cli/staff-bootstrap.ts`, immediately after the Admin is created or reused |
+| Admin attribution | the id that CLI just resolved, passed in |
+
+The reader follows the delivered `migrationsFolderFrom` precedent exactly —
+the caller resolves its own `package.json` path, the package does the path
+arithmetic — which is why it works from both CommonJS and ESM. Adding
+`"./package.json": "./package.json"` to the database package's `exports` was
+required to make `require.resolve('@embroidery/database/package.json')` work;
+`run-migrations.ts` had documented that exact call since DB7-CP1, so the export
+was already assumed and simply missing.
+
+### G.3 The four keys
+
+Published through `PolicyConfigurationRepository.ensureKey` → `currentValue` →
+`publishVersion`, no raw SQL, at `value_schema_version = 1`:
+
+```text
+verification.challenge
+secure_grant
+notification.delivery
+secure_link.resolve
+```
+
+**No value was modified, and no value is restated anywhere in source** — the
+checker asserts that seven APP4 policy field names appear in the dataset and in
+no production TypeScript file.
+
+### G.4 Idempotency, and why `ensureKey` alone is not enough
+
+`ensureKey` makes the *key* idempotent; `publishVersion` **always appends**. A
+bootstrap that runs on every container start would therefore accumulate one
+identical version per boot. So each key is compared before it is published:
+publish only when no version exists, or when the stored value or schema version
+differs from the dataset.
+
+The comparison canonicalizes with sorted keys, because the stored value has
+round-tripped through JSONB and key order is not guaranteed to survive — an
+order-sensitive compare would republish an identical value on every boot, which
+is precisely the accumulation being prevented.
+
+**Drift is corrected by appending**, never by mutating history:
+`policy_configuration_versions` is immutable by design (DB4), and a snapshot
+referencing an old version must keep its meaning forever.
+
+### G.5 Evidence
+
+From the live-database suite (§I):
+
+- **First run** — four keys published, each at version 1, each value equal to the
+  dataset field for field, each readable back through
+  `PolicyConfigurationRepository.currentValue`.
+- **Second run** — all four report `unchanged`; the version rows are identical to
+  the first run's.
+- **Three consecutive runs** — still exactly four version rows, which is the
+  "bootstrap on every boot" case stated directly.
+- **Drift** — a fixture version with a different value is corrected by appending
+  version 2; version 1 survives unchanged and the current pointer moves.
+- **Schema drift** — a stored version differing only in `value_schema_version` is
+  also republished.
+- **Attribution** — every published row carries the bootstrap Admin id.
+- **Isolation** — an unrelated `worker.runtime` key is left untouched.
+
+No runtime fallback constant was added anywhere: `APP4-W01` and every other
+consumer must read policy from the store, and the checker asserts no production
+file restates a policy value.
 
 ---
 
@@ -267,6 +340,30 @@ each a mutation that survived:
 
 All three were fixed in the checker. No test was weakened to make a gate pass.
 
+### H.2 `APP4-B01-C1` — the publication half
+
+Added as `tools/check-app4-b01-policy.mjs` and called from the B01 gate. Split
+because it is a **separate responsibility** — the B01 half proves the envelope
+and the intake, this one proves the dataset reaches `policy_configurations` —
+not to chase a line limit. It reuses the B01 half's `stripComments` rather than
+re-implementing it, so both read code the same way.
+
+It asserts: the dataset exists exactly once with all four keys at schema version
+1; no second APP4 dataset file; one publisher that uses
+`PolicyConfigurationRepository` with `ensureKey`, `currentValue` **and**
+`publishVersion` and issues no raw SQL; the publisher reads the dataset and takes
+an Admin id rather than resolving one; `staff-bootstrap` calls it with the
+resolved id; no worker production file publishes policy; no `seed` script was
+added to the root manifest; the migration count is unchanged; and — the one that
+matters most — **no production TypeScript file restates any of seven APP4 policy
+field names**, because a copied constant is the failure that silently creates a
+second source of truth.
+
+Fourteen mutation cases cover those, including one honesty case: worker **test
+contexts** legitimately seed `worker.runtime` for their own suites, and the first
+run of this half flagged all three of them. Scoped to production source, exactly
+as §H.1 taught.
+
 ---
 
 ## I. Focused tests
@@ -276,10 +373,13 @@ All three were fixed in the checker. No test was weakened to make a gate pass.
 | `packages/notification-delivery/test/unit/delivery-envelope.spec.ts` | 33 | key accepted/missing/blank/malformed-base64/wrong-length, error naming the variable not the value, `loadEnvelopeKey` from an injected map; round trip for both secret kinds; version and algorithm stamped; 96-bit nonce; fresh nonce across five seals; outer shape leaking none of secret, recipient, kind, channel or timestamps; unknown secret kind refused; short random source refused; tampered ciphertext, auth tag and nonce all rejected; wrong key rejected; unsupported version and algorithm rejected before key material is touched; six malformed-envelope shapes |
 | `apps/api/src/modules/notification/domain/notification-intent-key.spec.ts` | 10 | determinism, SHA-256 hex shape, a different key for each of the four tuple components, no recipient or source id in the output, no randomness, delimiter-collision resistance, version prefix |
 | `apps/api/src/modules/notification/tests/integration/notification-intake.integration.spec.ts` | 9 | one intent + one `PENDING` event; the linkage resolving the intent relationally; secret-free intent with masked recipient and correlation id; outbox payload carrying no plaintext; duplicate collapsing to one of each; three "different tuple → different notification" cases; a secure-link token through the same intake |
-| `tools/check-app4-b01.test.mjs` | 29 | mutation cases, plus the two honesty cases in §H.1 |
+| `apps/api/src/platform/policy/tests/publish-app4-policy.integration.spec.ts` | 8 | **`APP4-B01-C1`** — four keys published at version 1 from the dataset; readable through the repository; identical rerun appends nothing; three consecutive boots still leave four rows; value drift appends a correcting version with history intact; schema-version drift republishes; every row attributed to the bootstrap Admin; an unrelated key untouched |
+| `tools/check-app4-b01.test.mjs` | 44 (29 → 44 at C1) | mutation cases, plus the two honesty cases in §H.1 and fourteen publication cases in §H.2 |
 
-**Total: 81 focused tests, all passing.** Every secret and key in them is
-synthetic; none appears in this report.
+**Total: 104 focused tests, all passing** (81 at first delivery; the correction
+added 8 publication cases and 15 gate mutations, and changed no envelope or
+intake test). Every secret and key in them is synthetic; none appears in this
+report.
 
 The integration suite uses `createPersistenceTestContext` with
 `[RequestContextModule, NotificationModule]` — the smallest harness that proves
@@ -346,6 +446,46 @@ Every rerun below followed a change to a file that command covers.
   it was fixed because a regex that works by accident is a trap, and command 3
   was re-run afterwards.
 
+### J.2 `APP4-B01-C1` validation — a separate, narrower pass
+
+The B01 chain above was **not** restarted. Only what the correction touched was
+run:
+
+| # | Command | Why | Result |
+|---|---|---|---|
+| C1 | `pnpm --filter @embroidery/database exec tsc --noEmit` | The dataset reader is new TypeScript in that package. | **PASS** |
+| C2 | `pnpm --filter @embroidery/database build` | The API resolves the package through `dist`; the new export must be there. | built |
+| C3 | `pnpm --filter @embroidery/api exec tsc --noEmit` | The publisher, the module and the CLI change. Ran twice — see J.3. | **PASS** |
+| C4 | `pnpm --filter @embroidery/api exec jest --runInBand --testPathPatterns="publish-app4-policy"` | The only new suite. Ran twice — see J.3. | **PASS** 8/8 |
+| C5 | `node tools/check-app4-b01.mjs` | The gate now includes the publication half. Ran twice — see J.3. | **PASS** |
+| C6 | `node --test tools/check-app4-b01.test.mjs` | Its mutation tests, extended by 15. | **PASS** 44/44 |
+| C7 | `pnpm --filter @embroidery/database exec eslint src/seed src/index.ts` | Scoped lint for the changed database files. | **PASS** |
+| C8 | `pnpm --filter @embroidery/api exec eslint src/platform/policy src/cli/staff-bootstrap.ts src/bootstrap/app.module.ts` | Scoped lint for the changed API files. | **PASS** |
+| C9 | `pnpm exec prettier --check <9 changed paths>` / `--write <3 files>` | Changed TS, JSON and `.mjs`. | **PASS** after the write |
+| C10 | `node tools/check-report-secrets.mjs` | Run once after the final report edit. | **PASS** |
+| C11 | `git diff --cached --check` | Whitespace safety. | clean |
+
+**Deliberately not re-run:** the `@embroidery/notification-delivery` unit suite
+and the notification-intake integration suite. The correction changed **no file
+either one imports** — the envelope package, the intake use case, the
+notification domain and `outbox-event-store.ts` are untouched — so re-running
+them would be the reassurance repeat the directive forbids, and their pass state
+from the first delivery still describes the committed code.
+
+### J.3 Correction reruns
+
+- **C3** ran twice: the first failed because `result.adminId` is
+  `string | undefined` for the mismatch and not-active outcomes. Fixed by gating
+  on a resolved id rather than on the outcome name, which is the more honest
+  guard anyway — those outcomes have no Admin to attribute a version to.
+- **C4** ran twice: the first failed with
+  `Cannot find module '@embroidery/database/package.json'`. Node's exports
+  gating blocked the subpath, so `"./package.json": "./package.json"` was added
+  to the package's `exports`. That call had been documented in
+  `run-migrations.ts` since DB7-CP1 — the export was assumed and never added.
+- **C5** ran twice: the first flagged three worker **test contexts** that seed
+  `worker.runtime`. Scoped to production source (§H.2).
+
 ---
 
 ## K. Files changed
@@ -393,6 +533,34 @@ Untouched: every schema file, every migration, the OpenAPI artifact, the
 generated client, the worker, both frontends, `.env.example`, the ADR, the design
 index, and every `APP4-P01` primitive.
 
+### K.2 `APP4-B01-C1` files
+
+**Created (4)**
+
+- `packages/database/src/seed/app4-policy-dataset.ts` — the dataset reader
+- `apps/api/src/platform/policy/publish-app4-policy.use-case.ts`
+- `apps/api/src/platform/policy/policy.module.ts`
+- `apps/api/src/platform/policy/tests/publish-app4-policy.integration.spec.ts`
+- `tools/check-app4-b01-policy.mjs`
+
+**Modified (6)**
+
+- `packages/database/package.json` — one `exports` entry, `./package.json`
+- `packages/database/src/index.ts` — re-exports the reader
+- `apps/api/src/bootstrap/app.module.ts` — `PolicyModule` composed
+- `apps/api/src/cli/staff-bootstrap.ts` — publishes after the Admin resolves
+- `tools/check-app4-b01.mjs` — calls the publication half
+- `tools/check-app4-b01.test.mjs` — 15 more mutation cases
+
+**Deliberately untouched by the correction**, and verified so:
+`packages/notification-delivery/**`,
+`apps/api/src/modules/notification/application/request-notification.use-case.ts`,
+`apps/api/src/modules/notification/domain/**`,
+`packages/persistence/src/platform/outbox-event-store.ts`. The envelope schema,
+AES-GCM, key parser, secret kinds, `NotificationRequest`, the intent key,
+duplicate-intent behaviour, the outbox linkage, `OUTBOX_AGGREGATE_KINDS` and the
+`NotificationModule` composition are all exactly as B01 delivered them.
+
 ### K.1 File sizes
 
 Measured, not estimated:
@@ -420,17 +588,22 @@ silently ignored.
 | Item | Value |
 |---|---|
 | Branch | `production` |
-| Entry HEAD | `78bb90c59aee72392a1babe8f1946d0ec9ff2383` |
-| Implementation commit | `e9bdbc3dddc00e3ce920e6060b5db82706a07bf3` |
-| Subject | `feat(app4): add notification intent intake and the shared delivery envelope` |
-| Evidence commit | `docs(app4): record APP4-B01 commit evidence` — substitutes the hash above and changes nothing else |
-| Final HEAD | the evidence commit, the second of the two |
-| Working tree after both commits | clean |
+| B01 entry HEAD | `78bb90c59aee72392a1babe8f1946d0ec9ff2383` |
+| B01 implementation | `e9bdbc3dddc00e3ce920e6060b5db82706a07bf3` — `feat(app4): add notification intent intake and the shared delivery envelope` |
+| B01 evidence | `31db2d900f6dafbea08e7042876dbbdba1a06f3e` — `docs(app4): record APP4-B01 commit evidence` |
+| **C1 entry HEAD** | `31db2d900f6dafbea08e7042876dbbdba1a06f3e` |
+| **C1 correction** | `__C1_COMMIT__` — `fix(app4): publish the APP4 policy dataset from the staff-bootstrap path` |
+| **C1 evidence** | `docs(app4): record APP4-B01-C1 commit evidence` — substitutes the hash above and changes nothing else |
+| Final HEAD | the C1 evidence commit, the last of the four |
+| Working tree after all commits | clean |
 | Pushed | **no** |
 
-A commit cannot contain its own hash, so the implementation commit's hash is
+A commit cannot contain its own hash, so each implementation commit's hash is
 written by the one-line evidence commit that follows it — the convention
 `APP4-P00`, `G01`, `D01` and `P01` all used.
+
+The two B01 commits are **left in place**, not amended: the open seam and its
+closure are both part of the record.
 
 ---
 
@@ -480,7 +653,7 @@ checkpoint that should resolve the publication seam in §G.
 | 25 | `claimBatch` still has no production caller | **MET** — gate assertion 16 |
 | 26 | Correlation propagates through existing fields | **MET** — asserted in the integration suite |
 | 27 | Atomic intent + outbox creation | **MET** — §F.6 |
-| 28 | Policy handoff truthfully resolved | **MET** — §G: **not published here**, with evidence, routed to W01 |
+| 28 | Policy handoff truthfully resolved | **MET after `APP4-B01-C1`** — published here from the staff-bootstrap path, §G. **Not met at first delivery**, which routed it to W01 instead, §G.1 |
 | 29 | No channel port / adapter / worker added | **MET** — gate assertion 29 |
 | 30 | No HTTP/OpenAPI/client/schema/UI change | **MET** — §K |
 | 31 | Focused package tests pass | **MET** — 33/33 |
@@ -504,3 +677,46 @@ checkpoint that should resolve the publication seam in §G.
 | 3 | The outbox producer cannot carry the envelope plus the linkage | **Not met.** `outbox_events` already pairs `payload` with `payload_schema_version`, and `aggregate_kind`/`aggregate_id` are existing columns with no CHECK. `ADR-DB4-004` rule 4 scopes redaction-by-construction to columns 6 and 8, not to column 4. |
 | 4 | Package architecture prevents both apps importing one package | **Not met.** `@embroidery/object-storage` is already consumed by both `apps/api` and `apps/worker`; this package follows its shape exactly. |
 | 5 | A locked runtime crypto mechanism conflicts with the envelope authority | **Not met.** The only established convention is `IMP-D043`'s peppered HMAC — a hashing primitive, not an AEAD. No `createCipheriv` existed anywhere before this checkpoint, which the gate now asserts stays true outside the package. |
+
+### O.1 `APP4-B01-C1` stop condition
+
+The correction had exactly one: *a locked repository contract proves the
+staff-bootstrap flow cannot expose or reuse its resolved Admin id for policy
+publication without changing authentication or customer semantics.*
+
+**Not met.** `BootstrapStaffUseCase.ensure` already returns `{ outcome, adminId }`
+and `staff-bootstrap.ts` already prints that id in its result line, so the value
+was in hand before this correction and nothing about authentication changed to
+obtain it. The publisher receives it as a parameter and resolves no Admin of its
+own — no `findFirst`, no `limit(1)`, no environment variable, no synthetic
+account. The only adjustment was gating on `adminId !== undefined`, because the
+mismatch and not-active outcomes carry no id to attribute a version to.
+
+---
+
+## P. `APP4-B01-C1` acceptance criteria
+
+| # | Criterion | Status |
+|---|---|---|
+| 1 | The G01 dataset stays the single value source | **MET** — §G.2; gate asserts no restatement in production source |
+| 2 | The API bootstrap path owns publication | **MET** — §G.2 |
+| 3 | The existing staff-bootstrap Admin id is reused | **MET** — §G.2, §O.1 |
+| 4 | All four keys published through `PolicyConfigurationRepository` | **MET** — §G.3 |
+| 5 | Publication uses `value_schema_version = 1` | **MET** — §G.3, asserted in the suite and the gate |
+| 6 | Identical rerun appends zero versions | **MET** — §G.5, incl. a three-boot case |
+| 7 | Drift appends, never mutates history | **MET** — §G.4, §G.5 |
+| 8 | No arbitrary Admin lookup introduced | **MET** — §O.1; gate asserts it |
+| 9 | No worker-side publication | **MET** — gate assertion 8 |
+| 10 | No worker policy fallback constants | **MET** — gate asserts no restated value in any production file |
+| 11 | No generic seed framework | **MET** — one reader for one dataset; gate rejects a `seed` root script |
+| 12 | No schema or migration | **MET** — migration count still 34 |
+| 13 | No G01 policy value changed | **MET** — the dataset file is untouched |
+| 14 | B01 envelope/intent/outbox behaviour unchanged | **MET** — §K.2 |
+| 15 | Focused publication tests pass | **MET** — 8/8 |
+| 16 | B01 checker and its tests pass | **MET** — gate clean, 44/44 |
+| 17 | Required typechecks pass | **MET** — database and API, §J.2 |
+| 18 | Validation change-impact-only | **MET** — §J.2, incl. the two suites deliberately not re-run |
+| 19 | Report removes the W01 re-route | **MET** — §G rewritten, §A.1, criterion 28 |
+| 20 | Working tree clean | **MET** — §L |
+| 21 | Nothing pushed | **MET** — §L |
+| 22 | Next checkpoint remains `APP4-W01` | **MET** — §M |
