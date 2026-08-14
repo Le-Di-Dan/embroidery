@@ -387,15 +387,18 @@ OpenAPI artifact, no generated client, no package manifest, no lockfile, no root
 |---|---|
 | Branch | `production` |
 | Entry HEAD | `a4ac4fd125e7e02bf03f8037b535f2906517383a` |
-| Commit | `__G01_COMMIT__` |
+| Commit | `297d44011204b5810f9688c29b425d83e17030c0` |
 | Subject | `docs(app4): lock APP4-G01 secure-access, verification and notification authority` |
-| Final HEAD | `__FINAL_HEAD__` |
-| Working tree after commit | clean |
+| Evidence commit | `docs(app4): record APP4-G01 commit evidence` — substitutes the hash above for its placeholder and changes nothing else |
+| Final HEAD | the evidence commit, the second and last of the two |
+| Working tree after both commits | clean |
 | Pushed | **no** |
 
-A commit cannot contain its own hash, so the placeholders above are replaced by
-the one-line evidence commit that follows — the same two-step `APP4-P00` used,
-and the regress terminates there.
+A commit cannot contain its own hash, so the authority commit's hash is written
+by the one-line evidence commit that follows it — the same two-step `APP4-P00`
+used, and the regress terminates there. The final HEAD is therefore named rather
+than hashed: writing its own hash into itself is the one thing no commit can do.
+Recover it with `git rev-parse HEAD`.
 
 ---
 
