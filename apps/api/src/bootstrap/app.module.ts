@@ -12,6 +12,7 @@ import { CatalogPublicMediaModule } from '../modules/catalog/catalog-public-medi
 import { CatalogPublicSideBackgroundModule } from '../modules/catalog/catalog-public-side-background.module';
 import { CatalogPublicModule } from '../modules/catalog/catalog-public.module';
 import { CatalogPublicationModule } from '../modules/catalog/catalog-publication.module';
+import { CustomerModule } from '../modules/customer/customer.module';
 import { HealthModule } from '../modules/health/health.module';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
@@ -71,6 +72,13 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // last because nothing else depends on it, and registration order cannot
     // matter for a module with no controller.
     NotificationModule,
+    // APP4-B02 — customer identity. Also **no route**: a customer exists only as
+    // a side effect of a successful verification (`ADR-DB2-001` Option A), so the
+    // resolution capability is exported for `APP4-B04` to call inside its own
+    // transaction. Composed here because the module now has an application layer
+    // to compose; the DB7 repositories it also provides were reachable by nothing
+    // until this line existed.
+    CustomerModule,
   ],
 })
 export class AppModule {}
