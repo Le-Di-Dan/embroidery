@@ -2,6 +2,7 @@ import type { Server } from 'node:http';
 
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import type { TestingModuleBuilder } from '@nestjs/testing';
 import { CleanupStack } from '@embroidery/test-utils';
 import {
   createDisposableDatabase,
@@ -64,6 +65,15 @@ export function assertDisposableName(name: string, persistent: string): void {
  */
 export async function createApiIntegrationContext(
   label: string,
+  /**
+   * Optional provider overrides, applied before `compile()`.
+   *
+   * Added by `APP4-B06`, whose limiter suite replaces the platform rate
+   * limiter's clock so a sixty-second window is provable without waiting one.
+   * Optional and applied only when supplied, so every existing suite compiles
+   * exactly the graph it always did.
+   */
+  configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder,
 ): Promise<ApiIntegrationTestContext> {
   const cleanup = new CleanupStack();
   const database = await createDisposableDatabase(label);
@@ -86,10 +96,10 @@ export async function createApiIntegrationContext(
   const logs = new RecordingLogSink();
 
   try {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+    const builder = Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(LOG_SINK)
-      .useValue(logs)
-      .compile();
+      .useValue(logs);
+    const moduleRef = await (configure === undefined ? builder : configure(builder)).compile();
 
     const app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix(GLOBAL_ROUTE_PREFIX);

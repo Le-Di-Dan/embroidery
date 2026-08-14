@@ -504,3 +504,50 @@ describe('APP4-B03 — policy and behaviour', () => {
     assert.ok(mentions(failures, 'target comes from the source'));
   });
 });
+
+/**
+ * `APP4-B06` reconciliation guards.
+ *
+ * B03's grant-route ban was relaxed to admit one authorized path, and its
+ * directory sweep now excludes B06's five files. These prove the relaxation is
+ * exactly that narrow: every other grant shape still fails, and B03's *own*
+ * files are still swept for the rules the exclusion might look like it loosened.
+ */
+describe('APP4-B03 — the APP4-B06 reconciliation stays narrow', () => {
+  it('still rejects a grant route that is not the authorized resolver', () => {
+    const document = JSON.parse(real(CANONICAL_FILES.openapi));
+    document.paths['/api/public/secure-links/issue'] = { post: {} };
+    const failures = checkApp4B03Contract(
+      rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(document) }),
+    );
+    assert.ok(mentions(failures, 'grants have no public surface'));
+  });
+
+  it('still rejects a GET form of the authorized resolver', () => {
+    const document = JSON.parse(real(CANONICAL_FILES.openapi));
+    document.paths['/api/public/secure-links/resolve'].get = { operationId: 'x_get' };
+    const failures = checkApp4B03Contract(
+      rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(document) }),
+    );
+    assert.ok(mentions(failures, 'APP4-B06 owns one POST'));
+  });
+
+  it('still refuses a B03 file that reaches for a grant', () => {
+    // The exclusion covers B06's files only. B03's own must not gain a grant
+    // read just because a sibling directory now legitimately has one.
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.request,
+      'import { z } from',
+      'const target = SECURE_ACCESS_GRANT;\nimport { z } from',
+    );
+    assert.ok(mentions(failures, 'touches a grant'));
+  });
+
+  it('fails when an exempted APP4-B06 file does not exist', () => {
+    const dir = rootWith();
+    rmSync(
+      join(dir, 'apps/api/src/modules/customer/presentation/public-secure-link.controller.ts'),
+    );
+    assert.ok(mentions(checkApp4B03Contract(dir), 'exempted as APP4-B06 source'));
+  });
+});

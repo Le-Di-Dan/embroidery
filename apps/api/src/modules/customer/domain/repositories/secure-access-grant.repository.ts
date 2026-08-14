@@ -77,6 +77,37 @@ export interface SecureAccessGrantRepository {
     now: Date,
   ): Promise<SecureAccessGrant | undefined>;
 
+  /**
+   * Resolves a live grant from its token digest **alone** (`APP4-B06`).
+   *
+   * Added because the public resolver has nothing else. A secure link carries an
+   * opaque token and no identifiers, so {@link resolveActive} — which requires
+   * the customer, the request and the scope up front — cannot serve it. The two
+   * ways to make it fit would both be worse than a second read: accepting the
+   * target from the caller would let anyone holding a token assert *whose* grant
+   * it is, and dropping the predicates would discard the binding entirely.
+   *
+   * So the binding is **read from the row instead of supplied to the query**.
+   * That is not a weakening of G-DB7-38/39: `token_hash` is globally unique
+   * (CST-008), so a digest identifies at most one grant, and the customer and
+   * request this returns are the persisted ones the grant was issued against. A
+   * caller cannot influence them, which is a stronger guarantee than checking a
+   * pair it was handed.
+   *
+   * `scopeKind` stays an argument rather than a constant here, exactly as it is
+   * on {@link resolveActive}: the one legal value is business authority
+   * (ADR-DB3-004 r1) and belongs to the application layer, not to persistence.
+   *
+   * Read-only, and returns nothing rather than throwing for every failing
+   * reason — unknown digest, expired, revoked, superseded, wrong scope — for the
+   * same non-disclosure reason {@link resolveActive} does.
+   */
+  resolveActiveByTokenDigest(
+    tokenHash: string,
+    scopeKind: GrantScopeKind,
+    now: Date,
+  ): Promise<SecureAccessGrant | undefined>;
+
   findById(id: GrantId): Promise<SecureAccessGrant | undefined>;
   listActiveForRequest(customRequestId: string): Promise<SecureAccessGrant[]>;
 }

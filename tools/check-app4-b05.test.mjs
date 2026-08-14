@@ -519,3 +519,39 @@ describe('no schema and no provider', () => {
     assert.ok(mentions(failures, 'provider SDK'));
   });
 });
+
+/**
+ * `APP4-B06` reconciliation guards.
+ *
+ * B05's "zero published operations" rule was restated to admit the one route
+ * `APP4-B06` owns. These prove B05's own surface is still asserted to be zero:
+ * a grant issue, reissue or revoke route, or a controller for one, still fails.
+ */
+describe('APP4-B05 — the APP4-B06 reconciliation stays narrow', () => {
+  it('still rejects a grant route beside the authorized resolver', () => {
+    const document = JSON.parse(real(CANONICAL_FILES.openapi));
+    document.paths['/api/public/grants/{grantId}/revoke'] = { post: {} };
+    const failures = checkApp4B05(
+      rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(document) }),
+    );
+    assert.ok(mentions(failures, 'B05 publishes none'));
+  });
+
+  it('still rejects a GET form of the authorized resolver', () => {
+    const document = JSON.parse(real(CANONICAL_FILES.openapi));
+    document.paths['/api/public/secure-links/resolve'].get = { operationId: 'x_get' };
+    const failures = checkApp4B05(
+      rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(document) }),
+    );
+    assert.ok(mentions(failures, 'APP4-B06 owns one POST'));
+  });
+
+  it('still rejects a grant controller registered beside the B06 one', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.module,
+      'controllers: [PublicVerificationController, PublicSecureLinkController],',
+      'controllers: [PublicVerificationController, PublicSecureLinkController, AdminGrantController],',
+    );
+    assert.ok(mentions(failures, 'registers a grant controller'));
+  });
+});

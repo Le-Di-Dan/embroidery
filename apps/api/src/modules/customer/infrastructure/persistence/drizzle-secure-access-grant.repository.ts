@@ -146,6 +146,43 @@ export class DrizzleSecureAccessGrantRepository
     });
   }
 
+  /**
+   * The `APP4-B06` public read: one grant, from its digest alone.
+   *
+   * The predicate set is deliberately the same as {@link resolveActive}'s minus
+   * the two target columns — status, expiry and scope are all still enforced,
+   * and the customer and request come back *from* the row. Written as one
+   * fixed-shape query for the same reason: a load-then-compare would branch, and
+   * a branch is a timing and behaviour difference between "no such token" and
+   * "expired".
+   *
+   * `limit(1)` is belt-and-braces over CST-008, which already makes `token_hash`
+   * unique — it costs nothing and means a future index change cannot silently
+   * turn this into a multi-row read.
+   */
+  async resolveActiveByTokenDigest(
+    tokenHash: string,
+    scopeKind: GrantScopeKind,
+    now: Date,
+  ): Promise<SecureAccessGrant | undefined> {
+    return this.run('resolveActiveByTokenDigest', async () => {
+      const [row] = await this.db
+        .select()
+        .from(secureAccessGrants)
+        .where(
+          and(
+            eq(secureAccessGrants.tokenHash, tokenHash),
+            eq(secureAccessGrants.scopeKind, scopeKind),
+            eq(secureAccessGrants.status, 'ACTIVE'),
+            gt(secureAccessGrants.expiresAt, now),
+          ),
+        )
+        .limit(1);
+
+      return row === undefined ? undefined : toDomain(row);
+    });
+  }
+
   async findById(id: GrantId): Promise<SecureAccessGrant | undefined> {
     return this.run('findById', async () => {
       const [row] = await this.db

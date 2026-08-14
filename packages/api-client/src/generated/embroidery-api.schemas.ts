@@ -1455,6 +1455,17 @@ export interface ReplaceProductPlacementBody {
   sides: ReplacePlacementSideBody[];
 }
 
+/**
+ * Presents a secure-link token for resolution.
+ */
+export interface ResolveSecureLinkBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
 export interface RestoreDesignTemplateBody {
   /**
    * @minimum 0
@@ -1476,6 +1487,25 @@ export interface SaveDesignTemplateDocumentBody {
    * @maximum 9007199254740991
    */
   expectedCurrentVersion: number;
+}
+
+/**
+ * What the grant covers. One value today; a link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead.
+ */
+export type SecureLinkResolutionResponseScopeKind =
+  (typeof SecureLinkResolutionResponseScopeKind)[keyof typeof SecureLinkResolutionResponseScopeKind];
+
+export const SecureLinkResolutionResponseScopeKind = {
+  REQUEST_ACCESS: 'REQUEST_ACCESS',
+} as const;
+
+export interface SecureLinkResolutionResponse {
+  /** The custom request this link grants access to. */
+  customRequestId: string;
+  /** When the link stops working. Absolute, never extended, and enforced on every read — a grant past this instant resolves for nobody whether or not a sweep has run. */
+  expiresAt: string;
+  /** What the grant covers. One value today; a link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead. */
+  scopeKind: SecureLinkResolutionResponseScopeKind;
 }
 
 export interface StaffLoginRequest {
@@ -1842,6 +1872,10 @@ export type PublicProductDetail200 = ApiSuccessResponse & {
 
 export type PublicProductPlacementGet200 = ApiSuccessResponse & {
   data: PublicProductPlacementResponse;
+};
+
+export type PublicSecureLinkResolve200 = ApiSuccessResponse & {
+  data: SecureLinkResolutionResponse;
 };
 
 export type PublicVerificationIssue202 = ApiSuccessResponse & {

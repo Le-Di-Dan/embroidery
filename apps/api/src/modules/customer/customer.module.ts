@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
+import { SlidingWindowRateLimiter } from '../../platform/rate-limit/sliding-window-rate-limiter';
+
 import { AuditModule } from '../audit/audit.module';
 import { NotificationModule } from '../notification/notification.module';
 import { CustomerIdentityAuditRecorder } from './application/customer-identity-audit.recorder';
@@ -8,6 +10,8 @@ import { IssueVerificationChallengeUseCase } from './application/issue-verificat
 import { ReadVerificationChallengeStatus } from './application/read-verification-challenge-status.query';
 import { ResendVerificationChallengeUseCase } from './application/resend-verification-challenge.use-case';
 import { ResolveOrCreateVerifiedCustomer } from './application/resolve-or-create-verified-customer.service';
+import { ResolveSecureLink } from './application/resolve-secure-link.query';
+import { SecureLinkAuditRecorder } from './application/secure-link-audit.recorder';
 import { SecureGrantAuditRecorder } from './application/secure-grant-audit.recorder';
 import { SecureGrantIssuer } from './application/secure-grant.issuer';
 import { SecureGrantNotifier } from './application/secure-grant.notifier';
@@ -25,8 +29,12 @@ import { DrizzleCustomerRepository } from './infrastructure/persistence/drizzle-
 import { DrizzleSecureAccessGrantRepository } from './infrastructure/persistence/drizzle-secure-access-grant.repository';
 import { DrizzleVerificationChallengeRepository } from './infrastructure/persistence/drizzle-verification-challenge.repository';
 import { SecureGrantPolicyReader } from './infrastructure/policy/secure-grant-policy.reader';
+import { SecureLinkPolicyReader } from './infrastructure/policy/secure-link-policy.reader';
 import { SecureLinkTokenMinter } from './infrastructure/crypto/secure-link-token.minter';
+import { PublicNetworkKeyService } from './infrastructure/rate-limit/public-network-key.service';
+import { SecureLinkRateLimiter } from './infrastructure/rate-limit/secure-link-rate-limiter';
 import { VerificationPolicyReader } from './infrastructure/policy/verification-policy.reader';
+import { PublicSecureLinkController } from './presentation/public-secure-link.controller';
 import { PublicVerificationController } from './presentation/public-verification.controller';
 
 /**
@@ -69,10 +77,18 @@ import { PublicVerificationController } from './presentation/public-verification
  * in-process callers that will own those actions instead. It needs no new
  * import: the grant repository, the audit repository, the notification seam and
  * the peppers were all already here.
+ *
+ * `APP4-B06` adds the module's **second controller** and the phase's single
+ * highest-risk public surface: one anonymous POST that exchanges an opaque
+ * secure-link token for the request it opens. It is a separate class from the
+ * verification controller because the route prefix differs and Nest derives an
+ * `operationId` from the class name — folding it in would have renamed four
+ * accepted operations. It reads the same grant repository B05 writes, through a
+ * narrow read-only addition, and shares nothing else with it.
  */
 @Module({
   imports: [DatabaseModule, AuditModule, NotificationModule],
-  controllers: [PublicVerificationController],
+  controllers: [PublicVerificationController, PublicSecureLinkController],
   providers: [
     { provide: CUSTOMER_REPOSITORY, useClass: DrizzleCustomerRepository },
     CustomerIdentityAuditRecorder,
@@ -98,6 +114,14 @@ import { PublicVerificationController } from './presentation/public-verification
     SecureGrantNotifier,
     SecureGrantIssuer,
     StepUpWindow,
+    // `APP4-B06`. The limiter's algorithm is the platform's, provided here so
+    // this module owns its own counters — the same shape `DesignModule` uses.
+    SlidingWindowRateLimiter,
+    SecureLinkRateLimiter,
+    PublicNetworkKeyService,
+    SecureLinkPolicyReader,
+    SecureLinkAuditRecorder,
+    ResolveSecureLink,
   ],
   // The application capabilities are exported; the recorder, the clock, the
   // minter and the policy reader are not — they are this module's own machinery,

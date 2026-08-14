@@ -73,8 +73,26 @@ const ALL_SOURCES = Object.freeze([
 const TTL_SECONDS = 604800;
 const STEP_UP_WINDOW_SECONDS = 900;
 
-/** The entry world, unchanged: `APP4-B05` publishes zero operations. */
-const EXPECTED_OPERATIONS = 46;
+/**
+ * The published operation count.
+ *
+ * 46 while B05 was the newest checkpoint — the entry world, unchanged, because
+ * B05 publishes zero operations. Now 47: `APP4-B06` added exactly one. The
+ * count stays asserted rather than dropped, because what it really guards is
+ * that **B05's own surface is still zero** — an issue, reissue or revoke route
+ * appearing would move this number too.
+ */
+const EXPECTED_OPERATIONS = 47;
+
+/**
+ * The one public path `APP4-B06` owns.
+ *
+ * B05's rule was "no `grant`-or-`secure-link` path exists at all", which was
+ * true at its closure and is stale now. Restated as the current world: this
+ * exact path with this exact verb is B06's, and any *other* grant or
+ * secure-link route still fails — which is the invariant B05 actually needs.
+ */
+const B06_RESOLVE_PATH = '/api/public/secure-links/resolve';
 const MIGRATION_COUNT = 34;
 
 function read(rootDir, key) {
@@ -114,9 +132,16 @@ function checkNoHttpSurface(rootDir, fail) {
     }
   }
 
+  // The module registers no controller that would give *B05* a surface.
+  // `PublicSecureLinkController` is `APP4-B06`'s and is named explicitly, so a
+  // grant issue/reissue/revoke controller appearing here still fails — which is
+  // the invariant, rather than "the word never appears".
   const moduleCode = codeOf(rootDir, 'module');
-  const controllers = /controllers:\s*\[([^\]]*)\]/.exec(moduleCode)?.[1] ?? '';
-  if (/Grant|SecureLink|SecureAccess/i.test(controllers)) {
+  const controllers = (/controllers:\s*\[([^\]]*)\]/.exec(moduleCode)?.[1] ?? '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter((name) => name !== '' && name !== 'PublicSecureLinkController');
+  if (controllers.some((name) => /Grant|SecureLink|SecureAccess/i.test(name))) {
     fail(`${CANONICAL_FILES.module}: registers a grant controller; B05 adds none`);
   }
 
@@ -127,12 +152,19 @@ function checkNoHttpSurface(rootDir, fail) {
   }
   const document = JSON.parse(raw);
   const paths = Object.keys(document.paths ?? {});
-  const grantPaths = paths.filter((path) => /grant|secure-link/i.test(path));
+  const methods = ['get', 'post', 'put', 'patch', 'delete'];
+  const grantPaths = paths.filter(
+    (path) => /grant|secure-link/i.test(path) && path !== B06_RESOLVE_PATH,
+  );
   if (grantPaths.length > 0) {
     fail(`the published surface declares [${grantPaths.join(', ')}]; B05 publishes none`);
   }
-
-  const methods = ['get', 'post', 'put', 'patch', 'delete'];
+  if (paths.includes(B06_RESOLVE_PATH)) {
+    const verbs = methods.filter((method) => document.paths?.[B06_RESOLVE_PATH]?.[method]);
+    if (JSON.stringify(verbs) !== JSON.stringify(['post'])) {
+      fail(`${B06_RESOLVE_PATH} publishes [${verbs.join(', ')}]; APP4-B06 owns one POST`);
+    }
+  }
   const operations = paths.reduce(
     (total, path) =>
       total + methods.filter((method) => document.paths?.[path]?.[method] !== undefined).length,

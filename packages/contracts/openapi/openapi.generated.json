@@ -2880,6 +2880,21 @@
         ],
         "type": "object"
       },
+      "ResolveSecureLinkBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token for resolution.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
       "RestoreDesignTemplateBody": {
         "additionalProperties": false,
         "properties": {
@@ -2920,6 +2935,35 @@
         "required": [
           "expectedCurrentVersion",
           "document"
+        ],
+        "type": "object"
+      },
+      "SecureLinkResolutionResponse": {
+        "properties": {
+          "customRequestId": {
+            "description": "The custom request this link grants access to.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "type": "string"
+          },
+          "expiresAt": {
+            "description": "When the link stops working. Absolute, never extended, and enforced on every read — a grant past this instant resolves for nobody whether or not a sweep has run.",
+            "example": "2026-08-21T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "scopeKind": {
+            "description": "What the grant covers. One value today; a link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead.",
+            "enum": [
+              "REQUEST_ACCESS"
+            ],
+            "example": "REQUEST_ACCESS",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customRequestId",
+          "scopeKind",
+          "expiresAt"
         ],
         "type": "object"
       },
@@ -10479,6 +10523,189 @@
         "summary": "Get one published product side background",
         "tags": [
           "publicProductSideBackground"
+        ]
+      }
+    },
+    "/api/public/secure-links/resolve": {
+      "post": {
+        "description": "Exchanges the opaque token from a secure link for the request it grants access to. The token travels in the request body only — never in a path, query or header — so it never reaches a server or proxy access log, and it is never echoed back. Resolving a link does not consume it: the same link works until it expires or is revoked. Every token that does not open a live grant — unknown, expired, revoked, superseded, or issued for something else — answers with one identical 404, so the response reveals nothing about whether a token ever existed.",
+        "operationId": "publicSecureLink_resolve",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveSecureLinkBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SecureLinkResolutionResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The link is live; here is the request it opens and when it expires.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded or for another target.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many resolve requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Secure-link resolution is not configured.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Resolve a secure-link token",
+        "tags": [
+          "publicSecureLink"
         ]
       }
     },

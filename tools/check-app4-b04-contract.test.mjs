@@ -133,11 +133,40 @@ describe('APP4-B04 — the published surface', () => {
     assert.ok(mentions(failures, 'business operation'));
   });
 
-  it('rejects a third operation anywhere, by count', () => {
+  it('rejects an extra operation anywhere, by count', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.paths['/api/public/health/extra'] = { get: {} };
     });
-    assert.ok(mentions(failures, 'expected 46'));
+    assert.ok(mentions(failures, 'expected 47'));
+  });
+
+  // --- `APP4-B06` reconciliation guards -------------------------------------
+  //
+  // The grant-route ban was relaxed to admit exactly one authorized path. These
+  // three prove the relaxation is that narrow and no wider: the old invariant —
+  // "grants have no public surface" — still fails for every other shape.
+
+  it('still rejects a second secure-link route beside the authorized one', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/public/secure-links/issue'] = { post: {} };
+    });
+    assert.ok(mentions(failures, 'grants have no public surface'));
+  });
+
+  it('still rejects a grant route that is not the resolver', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/public/grants/{grantId}'] = { get: {} };
+    });
+    assert.ok(mentions(failures, 'grants have no public surface'));
+  });
+
+  it('still rejects a GET form of the authorized resolver', () => {
+    // A GET would carry the token in a path or query — the one carrier
+    // ADR-APP4-001 §11 forbids with no fallback.
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/public/secure-links/resolve'].get = { operationId: 'x_get' };
+    });
+    assert.ok(mentions(failures, 'APP4-B06 owns one POST'));
   });
 });
 

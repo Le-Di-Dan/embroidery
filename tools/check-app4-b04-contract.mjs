@@ -31,6 +31,7 @@ import {
   ISSUE_PATH,
   MODULE_DIR,
   RESEND_PATH,
+  SECURE_LINK_RESOLVE_PATH,
   STATUS_PATH,
 } from './check-app4-b03-contract.mjs';
 
@@ -68,8 +69,15 @@ export const B04_SOURCES = Object.freeze([
 /** The closed TBL-007 outcome set. Nothing else may be appended. */
 const ATTEMPT_OUTCOMES = ['MATCH', 'MISMATCH', 'EXPIRED_AT_ENTRY'];
 
-/** The entry world plus exactly B04's two. Measured, not assumed. */
-const EXPECTED_OPERATIONS = 46;
+/**
+ * The published operation count, measured rather than assumed.
+ *
+ * 46 at B04's closure — the entry world plus exactly B04's two. Now 47: the one
+ * `APP4-B06` added. The number is restated rather than removed, because its job
+ * is to catch an *unintended* operation appearing beside B04's pair, and a rule
+ * that stopped counting would stop doing that.
+ */
+const EXPECTED_OPERATIONS = 47;
 const MIGRATION_COUNT = 34;
 
 /** `APP4-G01`'s attempt budget. Lives in the policy store, never in source. */
@@ -140,7 +148,17 @@ function checkPublishedSurface(rootDir, fail) {
   }
 
   // 4, 26 — no grant surface, and no business operation from a later phase.
+  //
+  // `APP4-B06` published one secure-link resolver, so the blanket ban is stated
+  // as the current world: that exact path with that exact verb is authorized,
+  // and everything else matching still fails.
   for (const path of Object.keys(document.paths ?? {})) {
+    if (path === SECURE_LINK_RESOLVE_PATH) {
+      if (JSON.stringify(methodsOf(path)) !== JSON.stringify(['post'])) {
+        fail(`${path} publishes [${methodsOf(path).join(', ')}]; APP4-B06 owns one POST`);
+      }
+      continue;
+    }
     if (/grant|secure-link|step-up|stepup/i.test(path)) {
       fail(`${path} looks like an APP4-B05 grant route; grants have no public surface`);
     }

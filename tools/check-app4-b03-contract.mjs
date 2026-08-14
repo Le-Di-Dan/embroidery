@@ -77,6 +77,31 @@ export const B04_FILES = Object.freeze([
   `${MODULE_DIR}/presentation/public-verification.controller.ts`,
 ]);
 
+/**
+ * `APP4-B06`'s own files, which this gate does not read as B03 source.
+ *
+ * Same footing as {@link B04_FILES} above, and added for the same reason: B03
+ * sweeps whole directories, and B06 delivered the public secure-link resolver
+ * into three of them. Its files legitimately carry `SECURE_ACCESS_GRANT` and a
+ * presentation `code:` field — a grant read is the whole point of the endpoint,
+ * and `SECURE_LINK_UNAVAILABLE` is its published non-enumerating code.
+ *
+ * Excluding them changes nothing about what B03 must still prove: every rule
+ * below still runs against every B03 file, so a code leaking into *B03's* own
+ * presentation shapes, or a B03 file reaching for a grant, still fails. The
+ * mutation suite pins that.
+ */
+export const B06_FILES = Object.freeze([
+  `${MODULE_DIR}/presentation/public-secure-link.controller.ts`,
+  `${MODULE_DIR}/presentation/schemas/secure-link-resolve.request.ts`,
+  `${MODULE_DIR}/presentation/schemas/secure-link-resolution.response.ts`,
+  `${MODULE_DIR}/infrastructure/policy/secure-link-policy.reader.ts`,
+  `${MODULE_DIR}/infrastructure/crypto/secure-link-token.minter.ts`,
+]);
+
+/** The one public route `APP4-B06` publishes. Authorized; every other stays refused. */
+export const SECURE_LINK_RESOLVE_PATH = '/api/public/secure-links/resolve';
+
 export const CANONICAL_FILES = Object.freeze({
   controller: `${MODULE_DIR}/presentation/public-verification.controller.ts`,
   request: `${MODULE_DIR}/presentation/schemas/public-verification.request.ts`,
@@ -154,7 +179,7 @@ function productionSources(rootDir, relative) {
 
 function b03Sources(rootDir) {
   const owned = B03_DIRS.flatMap((dir) => productionSources(rootDir, dir)).filter(
-    (file) => !B04_FILES.includes(file.path),
+    (file) => !B04_FILES.includes(file.path) && !B06_FILES.includes(file.path),
   );
   const application = productionSources(rootDir, `${MODULE_DIR}/application`).filter((file) =>
     B03_APPLICATION_FILES.some((name) => file.path.endsWith(name)),
@@ -169,6 +194,11 @@ function b03Sources(rootDir) {
  * silently exempts nothing today and could be pointed at a B03 file tomorrow.
  */
 function checkExclusionIsReal(rootDir, fail) {
+  for (const relative of B06_FILES) {
+    if (!existsSync(join(rootDir, relative))) {
+      fail(`${relative} is exempted as APP4-B06 source but does not exist`);
+    }
+  }
   for (const relative of B04_FILES) {
     if (!existsSync(join(rootDir, relative))) {
       fail(`${relative} is exempted as APP4-B04 source but does not exist`);
@@ -226,8 +256,23 @@ function checkPublishedContract(rootDir, fail) {
   }
 
   // 3b — nothing beyond verification has grown a grant or step-up endpoint.
-  // `APP4-B05` owns those and has no public surface at all.
+  //
+  // At B03's closure this read "no grant or secure-link route exists", which was
+  // true then and is stale now that `APP4-B06` published exactly one. Stated as
+  // the current world instead: `APP4-B05` still has no public surface, and the
+  // only secure-link route in the document is B06's single POST resolver. A
+  // grant issue/revoke route, a step-up endpoint, a second secure-link path or a
+  // GET form of this one all still fail.
   for (const path of Object.keys(document.paths ?? {})) {
+    if (path === SECURE_LINK_RESOLVE_PATH) {
+      const verbs = ['get', 'post', 'put', 'patch', 'delete'].filter(
+        (method) => document.paths[path][method] !== undefined,
+      );
+      if (JSON.stringify(verbs) !== JSON.stringify(['post'])) {
+        fail(`${path} publishes [${verbs.join(', ')}]; APP4-B06 owns one POST`);
+      }
+      continue;
+    }
     if (/grant|secure-link|step-up|stepup/i.test(path)) {
       fail(`${path} looks like an APP4-B05 route; grants have no public surface`);
     }
