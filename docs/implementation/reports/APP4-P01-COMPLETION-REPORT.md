@@ -378,7 +378,7 @@ limits, with no file near the 300/500 review thresholds.
 |---|---|
 | Branch | `production` |
 | Entry HEAD | `371c9ee2fa358763f18ca1761c93315c542f92e8` |
-| Commit | `__P01_COMMIT__` |
+| Commit | `2e09bf9069768530837d3fdd6fea0ee9e65c1de2` |
 | Subject | `feat(app4): add APP4 contact normalization, masking and opaque-secret primitives` |
 | Evidence commit | `docs(app4): record APP4-P01 commit evidence` — substitutes the hash above and changes nothing else |
 | Final HEAD | the evidence commit, the second and last of the two |
