@@ -5,9 +5,12 @@ import { AuditModule } from '../audit/audit.module';
 import { NotificationModule } from '../notification/notification.module';
 import { CustomerIdentityAuditRecorder } from './application/customer-identity-audit.recorder';
 import { IssueVerificationChallengeUseCase } from './application/issue-verification-challenge.use-case';
+import { ReadVerificationChallengeStatus } from './application/read-verification-challenge-status.query';
 import { ResendVerificationChallengeUseCase } from './application/resend-verification-challenge.use-case';
 import { ResolveOrCreateVerifiedCustomer } from './application/resolve-or-create-verified-customer.service';
+import { SubmitVerificationAttemptUseCase } from './application/submit-verification-attempt.use-case';
 import { VerificationChallengeIssuer } from './application/verification-challenge.issuer';
+import { VerificationOutcomeAuditRecorder } from './application/verification-outcome-audit.recorder';
 import { App4SecretPepperProvider } from './config/app4-secret-pepper.provider';
 import { CUSTOMER_REPOSITORY } from './domain/repositories/customer.repository';
 import { SECURE_ACCESS_GRANT_REPOSITORY } from './domain/repositories/secure-access-grant.repository';
@@ -39,6 +42,13 @@ import { PublicVerificationController } from './presentation/public-verification
  * challenge operations. They are the front of that same flow: a code goes out
  * here, B04 accepts the answer, and only then does the identity half above run.
  *
+ * `APP4-B04` closes that loop on the same controller: submitting an answer and
+ * reading a challenge's state. It needs no new import — the identity service it
+ * calls for a `SUBMISSION` is this module's own, and the audit repository is
+ * already here for `CustomerIdentityAuditRecorder`. `VerificationOutcomeAuditRecorder`
+ * stays unexported for the same reason the identity recorder is: it is this
+ * module's machinery, not a service another context calls.
+ *
  * The one new import is what those operations need and nothing more:
  * `NotificationModule` supplies `RequestNotificationUseCase`, the single seam
  * that seals a delivery envelope — B03 hands it the raw code and never seals
@@ -64,6 +74,9 @@ import { PublicVerificationController } from './presentation/public-verification
     VerificationChallengeIssuer,
     IssueVerificationChallengeUseCase,
     ResendVerificationChallengeUseCase,
+    VerificationOutcomeAuditRecorder,
+    SubmitVerificationAttemptUseCase,
+    ReadVerificationChallengeStatus,
   ],
   // The application capabilities are exported; the recorder, the clock, the
   // minter and the policy reader are not — they are this module's own machinery,

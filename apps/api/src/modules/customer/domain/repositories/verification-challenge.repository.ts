@@ -121,6 +121,25 @@ export interface VerificationChallengeRepository {
 
   findById(id: ChallengeId): Promise<VerificationChallenge | undefined>;
 
+  /**
+   * The stored `code_hash` of one challenge — nothing else.
+   *
+   * Added by `APP4-B04`, and deliberately **not** a field on
+   * {@link VerificationChallenge}. Constant-time comparison is
+   * application-security-owned (TBL-006 header: "Hashing/KDF and constant-time
+   * comparison are application-security-owned, outside DB6"), so the digest has
+   * to reach the application layer — but only the one path that verifies needs
+   * it. Putting it on the domain type would hand the digest to the issue path,
+   * the resend path, the status projection and every future reader, and a
+   * secret that travels everywhere is a secret one of them eventually
+   * serializes.
+   *
+   * There is no lookup *by* hash and there will not be one: a six-digit code
+   * has too little entropy for a hash-keyed read to be anything but an oracle
+   * (TBL-006 — "found by id or by target+purpose, never by hash").
+   */
+  findCodeDigest(id: ChallengeId): Promise<string | undefined>;
+
   // ---------------------------------------------------------------------------
   // `APP4-B03` additions. Four methods, each one something the issue/resend path
   // cannot express with the DB7 surface — not conveniences.

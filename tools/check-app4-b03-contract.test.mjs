@@ -22,6 +22,7 @@ import { dirname, join, sep } from 'node:path';
 import { after, describe, it } from 'node:test';
 
 import {
+  B04_FILES,
   CANONICAL_FILES,
   MODULE_DIR,
   REPO_ROOT,
@@ -96,6 +97,35 @@ describe('APP4-B03 — the repository as it stands', () => {
     assert.deepEqual(checkApp4B03Contract(rootWith({ [CANONICAL_FILES.issuer]: source })), []);
   });
 
+  it('tolerates APP4-B04, which legitimately compares codes and reaches identity', () => {
+    // The neighbouring checkpoint shares two of B03's trees: its refusal table
+    // and its outcome vocabulary live in `domain/verification`, its request and
+    // response schemas in `presentation`. A gate scoped to those directories
+    // rather than to B03's own files would fail on the checkpoint whose entire
+    // job is to compare a submitted code and establish an identity.
+    const outcomes = `${MODULE_DIR}/domain/verification/verification-attempt-outcome.ts`;
+    assert.ok(real(outcomes).includes('MISMATCH'));
+    assert.deepEqual(checkApp4B03Contract(rootWith()), []);
+  });
+
+  it('refuses an exemption that names a file which does not exist', () => {
+    const dir = rootWith();
+    rmSync(join(dir, B04_FILES[0]));
+
+    assert.ok(mentions(checkApp4B03Contract(dir), 'does not exist'));
+  });
+
+  it('still holds B03 rules against a B04 file that strays into B03 territory', () => {
+    // The exemption is a file list, not a licence: B03's own sources are still
+    // read, so a B03 file that starts comparing codes fails exactly as before.
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.issuer,
+      'const code = this.minter.mint();',
+      'const code = this.minter.mint();\n    verifySecretDigest(code);',
+    );
+    assert.ok(mentions(failures, 'that is B04'));
+  });
+
   it('tolerates the B02 identity service, which legitimately reaches the customer', () => {
     // The neighbouring checkpoint lives in the same `application/` directory and
     // exists to touch `CustomerRepository`. A gate scoped to the directory rather
@@ -107,22 +137,47 @@ describe('APP4-B03 — the repository as it stands', () => {
 });
 
 describe('APP4-B03 — the published contract', () => {
-  it('rejects a third verification operation', () => {
+  it('rejects a fifth verification operation', () => {
     const failures = failuresAfterContractEdit((document) => {
-      document.paths['/api/public/verification/challenges/{challengeId}'] = {
-        get: { operationId: 'publicVerification_status' },
+      document.paths['/api/public/verification/challenges/{challengeId}/confirm'] = {
+        post: { operationId: 'publicVerification_confirm' },
       };
     });
     assert.ok(mentions(failures, 'expected exactly'));
   });
 
-  it('rejects a B04 attempt route', () => {
+  it('rejects an uncanonical attempt route even though B04 now exists', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.paths['/api/public/verification/attempts'] = {
         post: { operationId: 'publicVerification_submit' },
       };
     });
-    assert.ok(mentions(failures, 'APP4-B04 route'));
+    assert.ok(mentions(failures, 'expected exactly'));
+  });
+
+  it('rejects dropping a B03 operation from the shared surface', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      delete document.paths['/api/public/verification/challenges/{challengeId}/resend'];
+    });
+    assert.ok(mentions(failures, 'expected exactly'));
+  });
+
+  it('rejects a second method on the status path', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/public/verification/challenges/{challengeId}'].delete = {
+        operationId: 'publicVerification_cancel',
+      };
+    });
+    assert.ok(mentions(failures, 'expected [get]'));
+  });
+
+  it('rejects a B05 grant endpoint', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/public/secure-access/grants'] = {
+        post: { operationId: 'publicSecureAccess_issue' },
+      };
+    });
+    assert.ok(mentions(failures, 'APP4-B05 route'));
   });
 
   it('rejects a renamed issue path', () => {
@@ -184,6 +239,47 @@ describe('APP4-B03 — the published contract', () => {
       delete document.components.schemas.VerificationChallengeResponse;
     });
     assert.ok(mentions(failures, 'not published as a component'));
+  });
+});
+
+describe('APP4-B03 — the controller B04 now shares', () => {
+  it('rejects renaming the class every operationId is derived from', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.controller,
+      'export class PublicVerificationController {',
+      'export class VerificationController {',
+    );
+    assert.ok(mentions(failures, 'renamed or split'));
+  });
+
+  it('rejects removing the resend handler', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.controller,
+      "@Post(':challengeId/resend')",
+      "@Post(':challengeId/reissue')",
+    );
+    assert.ok(mentions(failures, 'resend handler is gone'));
+  });
+
+  it("rejects dropping B03's own failure mapping even while B04's remains", () => {
+    // The plausible mistake: B04 adds its guard, someone folds the two together
+    // and B03's issue path quietly stops translating. A rule that matched the
+    // mapping call anywhere in the file would be satisfied by B04's copy.
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.controller,
+      'private async guard(',
+      'private async guardIssuance(',
+    );
+    assert.ok(mentions(failures, 'bounded failures'));
+  });
+
+  it('rejects sealing or minting from the controller', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.controller,
+      '@Controller(',
+      'const seal = sealDeliveryEnvelope;\n@Controller(',
+    );
+    assert.ok(mentions(failures, 'sealDeliveryEnvelope'));
   });
 });
 

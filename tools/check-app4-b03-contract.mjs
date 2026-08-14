@@ -49,6 +49,34 @@ const B03_APPLICATION_FILES = Object.freeze([
   'resend-verification-challenge.use-case.ts',
 ]);
 
+/**
+ * `APP4-B04`'s own files, which this gate does not read as B03 source.
+ *
+ * Reconciliation, not relaxation. Two of B03's trees — `presentation/` and
+ * `domain/verification/` — are shared with B04 by design: the four operations
+ * answer the same challenges on the same controller, and splitting the
+ * controller would rename B03's published `operationId`s. So the rules that say
+ * "this must not compare a code" or "this must not reach customer identity"
+ * would otherwise fail on the checkpoint whose entire job is to do both — the
+ * same situation `B03_APPLICATION_FILES` already handles for B02's identity
+ * service.
+ *
+ * It is an explicit **file list**, never a pattern: a glob would let any future
+ * file opt out of B03's invariants by choosing a name. Each entry is asserted to
+ * exist, so the list cannot quietly become a hole once a file is renamed away.
+ */
+export const B04_FILES = Object.freeze([
+  `${MODULE_DIR}/presentation/schemas/verification-attempt.request.ts`,
+  `${MODULE_DIR}/presentation/schemas/verification-challenge-status.response.ts`,
+  `${MODULE_DIR}/domain/verification/verification-attempt-outcome.ts`,
+  `${MODULE_DIR}/domain/verification/verification-attempt-http.errors.ts`,
+  `${MODULE_DIR}/domain/verification/challenge-verified-evidence.ts`,
+  // The controller carries both checkpoints' handlers, so it is neither purely
+  // B03's nor purely B04's. Its B03 obligations are asserted directly in
+  // `checkSharedController` rather than through the owned-source sweep.
+  `${MODULE_DIR}/presentation/public-verification.controller.ts`,
+]);
+
 export const CANONICAL_FILES = Object.freeze({
   controller: `${MODULE_DIR}/presentation/public-verification.controller.ts`,
   request: `${MODULE_DIR}/presentation/schemas/public-verification.request.ts`,
@@ -65,6 +93,18 @@ export const CANONICAL_FILES = Object.freeze({
 
 export const ISSUE_PATH = '/api/public/verification/challenges';
 export const RESEND_PATH = '/api/public/verification/challenges/{challengeId}/resend';
+/**
+ * `APP4-B04`'s two authorized paths.
+ *
+ * Named here rather than merely tolerated. At B03's closure this gate asserted
+ * that no attempt or status route existed anywhere, which was correct then and
+ * became stale the moment B04 published them. The replacement is not "allow
+ * anything that looks like B04" — it is an exact four-path world, so an
+ * unauthorized fifth verification route still fails, and a B05 grant endpoint
+ * fails whatever it is called.
+ */
+export const ATTEMPT_PATH = '/api/public/verification/challenges/{challengeId}/attempts';
+export const STATUS_PATH = '/api/public/verification/challenges/{challengeId}';
 export const POLICY_KEY = 'verification.challenge';
 const MIGRATION_COUNT = 34;
 
@@ -113,11 +153,27 @@ function productionSources(rootDir, relative) {
 }
 
 function b03Sources(rootDir) {
-  const owned = B03_DIRS.flatMap((dir) => productionSources(rootDir, dir));
+  const owned = B03_DIRS.flatMap((dir) => productionSources(rootDir, dir)).filter(
+    (file) => !B04_FILES.includes(file.path),
+  );
   const application = productionSources(rootDir, `${MODULE_DIR}/application`).filter((file) =>
     B03_APPLICATION_FILES.some((name) => file.path.endsWith(name)),
   );
   return [...owned, ...application];
+}
+
+/**
+ * The exclusion list names only files that exist.
+ *
+ * Without this a renamed or deleted B04 file would leave a stale entry that
+ * silently exempts nothing today and could be pointed at a B03 file tomorrow.
+ */
+function checkExclusionIsReal(rootDir, fail) {
+  for (const relative of B04_FILES) {
+    if (!existsSync(join(rootDir, relative))) {
+      fail(`${relative} is exempted as APP4-B04 source but does not exist`);
+    }
+  }
 }
 
 function loadOpenApi(rootDir, fail) {
@@ -134,19 +190,18 @@ function checkPublishedContract(rootDir, fail) {
   const document = loadOpenApi(rootDir, fail);
   if (document === undefined) return;
 
-  // 3 — B04's surface does not exist yet. Checked before the path-set
-  // comparison, which returns early: a B04 route would also change that set, and
-  // the more specific failure is the useful one.
-  for (const path of Object.keys(document.paths ?? {})) {
-    if (/attempts|\/verify|challenges\/\{[^}]+\}$/i.test(path)) {
-      fail(`${path} looks like an APP4-B04 route; B03 publishes issue and resend only`);
-    }
-  }
-
+  // 3 — the verification surface is exactly the four authorized operations.
+  //
+  // At B03's closure this rule read "no attempt or status route exists". That
+  // was true then and is stale now that `APP4-B04` published both, so it is
+  // stated as the current world instead: B03's two POSTs, B04's one POST and one
+  // GET, and nothing else. A B05 grant route, a `/verify` alias or a third
+  // method on any of the four still fails, and B03's own pair is still asserted
+  // by name and by verb.
   const verificationPaths = Object.keys(document.paths ?? {}).filter((path) =>
     /verification/i.test(path),
   );
-  const expected = [ISSUE_PATH, RESEND_PATH].sort();
+  const expected = [ISSUE_PATH, RESEND_PATH, ATTEMPT_PATH, STATUS_PATH].sort();
   if (JSON.stringify(verificationPaths.slice().sort()) !== JSON.stringify(expected)) {
     fail(
       `verification paths are [${verificationPaths.join(', ')}]; expected exactly ` +
@@ -156,11 +211,26 @@ function checkPublishedContract(rootDir, fail) {
   }
 
   const methods = ['get', 'post', 'put', 'patch', 'delete'];
-  const operations = verificationPaths.flatMap((path) =>
-    methods.filter((method) => document.paths[path][method] !== undefined),
-  );
-  if (operations.length !== 2 || operations.some((method) => method !== 'post')) {
-    fail(`B03 publishes ${String(operations.length)} verification operation(s); exactly two POSTs`);
+  const methodsOf = (path) =>
+    methods.filter((method) => document.paths[path][method] !== undefined);
+  for (const [path, verbs] of [
+    [ISSUE_PATH, ['post']],
+    [RESEND_PATH, ['post']],
+    [ATTEMPT_PATH, ['post']],
+    [STATUS_PATH, ['get']],
+  ]) {
+    const actual = methodsOf(path);
+    if (JSON.stringify(actual) !== JSON.stringify(verbs)) {
+      fail(`${path} publishes [${actual.join(', ')}]; expected [${verbs.join(', ')}]`);
+    }
+  }
+
+  // 3b — nothing beyond verification has grown a grant or step-up endpoint.
+  // `APP4-B05` owns those and has no public surface at all.
+  for (const path of Object.keys(document.paths ?? {})) {
+    if (/grant|secure-link|step-up|stepup/i.test(path)) {
+      fail(`${path} looks like an APP4-B05 route; grants have no public surface`);
+    }
   }
 
   // 4, 5, 7 — what the response may and must carry.
@@ -394,6 +464,62 @@ function checkBehaviour(rootDir, fail) {
   }
 }
 
+/**
+ * B03's obligations on the controller it now shares with `APP4-B04`.
+ *
+ * The owned-source sweep cannot read this file any more — it legitimately names
+ * `MISMATCH` and imports B04's refusals — so the B03 facts it must still carry
+ * are asserted here by name rather than dropped. This is the reconciliation's
+ * whole cost, and leaving it out is what would turn "the gate no longer fails"
+ * into "the gate no longer checks".
+ */
+function checkSharedController(rootDir, fail) {
+  const controller = stripComments(read(rootDir, 'controller') ?? '');
+  if (controller === '') {
+    fail(`${CANONICAL_FILES.controller} does not exist`);
+    return;
+  }
+
+  // Both B03 handlers are still here, still POSTs, still on the canonical paths.
+  if (!/@Post\(\)/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: the issue handler is gone`);
+  }
+  if (!/@Post\('\:challengeId\/resend'\)/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: the resend handler is gone`);
+  }
+  if (!/@Controller\('public\/verification\/challenges'\)/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: the canonical route prefix changed`);
+  }
+  // One controller, one class name — Nest derives every `operationId` from it,
+  // so a split or a rename silently renames B03's published operations.
+  if (!/export class PublicVerificationController\b/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: the controller class was renamed or split`);
+  }
+  // B03's refusals still travel through the one mapping table, and through
+  // B03's own guard: matching the call anywhere in the file would be satisfied
+  // by B04's guard alone once both live here.
+  if (!/private async guard\([\s\S]*?verificationFailureResponse\(/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: issue and resend no longer map their bounded failures`);
+  }
+  // And nothing in it seals, decrypts, mints or reaches customer identity.
+  for (const needle of [
+    'sealDeliveryEnvelope',
+    'openDeliveryEnvelope',
+    'createCipheriv',
+    'CUSTOMER_REPOSITORY',
+    'CustomerRepository',
+    'issueVerificationCode',
+    'digestSecret',
+  ]) {
+    if (controller.includes(needle)) {
+      fail(`${CANONICAL_FILES.controller}: references ${needle}; that belongs elsewhere`);
+    }
+  }
+  if (/\bcode\b\s*:/.test(controller)) {
+    fail(`${CANONICAL_FILES.controller}: a response shape carries a "code" field`);
+  }
+}
+
 /** 17 — no schema, no migration, and the app boundary holds. */
 function checkNoSchemaChange(rootDir, fail) {
   const migrations = join(rootDir, 'packages/database/migrations');
@@ -420,7 +546,9 @@ export function checkApp4B03Contract(rootDir = REPO_ROOT) {
   const failures = [];
   const fail = (message) => failures.push(message);
 
+  checkExclusionIsReal(rootDir, fail);
   checkPublishedContract(rootDir, fail);
+  checkSharedController(rootDir, fail);
   checkNonEnumeration(rootDir, fail);
   checkPrimitiveReuse(rootDir, fail);
   checkScopeBoundaries(rootDir, fail);
@@ -439,8 +567,12 @@ async function main() {
     return;
   }
   console.log(
-    'check:app4-b03-contract — exactly two public POST operations are published at the ' +
-      'canonical issue and resend paths, with no B04 attempt or status route; the response ' +
+    'check:app4-b03-contract — B03 still publishes exactly its two POST operations at the ' +
+      'canonical issue and resend paths inside a four-operation verification surface whose ' +
+      'other two are the authorized APP4-B04 attempt and status routes, with no grant or ' +
+      'step-up endpoint anywhere and no third method on any path; the shared controller keeps ' +
+      'its class name, prefix, both handlers and its failure mapping and reaches no identity, ' +
+      'mint or envelope; the response ' +
       'carries a challenge id, an expiry and a resend instant and no code, hash, customer or ' +
       'contact field; the purpose set is the locked pair; issuance reaches no customer ' +
       'repository and no refusal names one; the code is minted and digested through P01 and ' +

@@ -217,6 +217,19 @@ export class DrizzleVerificationChallengeRepository
     });
   }
 
+  async findCodeDigest(id: ChallengeId): Promise<string | undefined> {
+    return this.run('findCodeDigest', async () => {
+      // Selects the one column, so a digest never rides along inside a row this
+      // method's caller did not ask for.
+      const [row] = await this.db
+        .select({ codeHash: contactVerificationChallenges.codeHash })
+        .from(contactVerificationChallenges)
+        .where(eq(contactVerificationChallenges.id, id))
+        .limit(1);
+      return row?.codeHash;
+    });
+  }
+
   async lockTarget(
     contactKind: ContactKind,
     normalizedValue: string,

@@ -55,7 +55,9 @@ import type {
   PublicProductListParams,
   PublicProductPlacementGet200,
   PublicVerificationIssue202,
+  PublicVerificationReadStatus200,
   PublicVerificationResend202,
+  PublicVerificationSubmitAttempt200,
   PublishDesignTemplateBody,
   PublishProductBody,
   ReadinessStatusResponse,
@@ -64,6 +66,7 @@ import type {
   SaveDesignTemplateDocumentBody,
   StaffLoginRequest,
   StaffSelfGet200,
+  SubmitVerificationAttemptBody,
   UnpublishDesignTemplateBody,
   UnpublishProductBody,
   UpdateProductBody,
@@ -758,6 +761,40 @@ export const publicVerificationIssue = (
 };
 
 /**
+ * Reports the lifecycle state and the expiry of one challenge, and nothing else — no contact, no purpose, no customer and no attempt history. A challenge whose expiry has passed reads EXPIRED whether or not a sweep has run. This operation writes nothing.
+ * @summary Read the state of a verification challenge
+ */
+export const publicVerificationReadStatus = (
+  challengeId: string,
+  options?: SecondParameter<typeof apiRequest<PublicVerificationReadStatus200>>,
+) => {
+  return apiRequest<PublicVerificationReadStatus200>(
+    { url: `/api/public/verification/challenges/${challengeId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Submits the six-digit code for a live challenge. A correct code consumes the challenge exactly once and, for a SUBMISSION challenge, establishes the verified customer identity in the same transaction. The response never contains the code, the digest, the contact or the customer, and the challenge cannot be answered again.
+ * @summary Answer a verification challenge
+ */
+export const publicVerificationSubmitAttempt = (
+  challengeId: string,
+  submitVerificationAttemptBody: SubmitVerificationAttemptBody,
+  options?: SecondParameter<typeof apiRequest<PublicVerificationSubmitAttempt200>>,
+) => {
+  return apiRequest<PublicVerificationSubmitAttempt200>(
+    {
+      url: `/api/public/verification/challenges/${challengeId}/attempts`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: submitVerificationAttemptBody,
+    },
+    options,
+  );
+};
+
+/**
  * Replaces a live challenge with a new one carrying a new code, after the configured cooldown. The destination and purpose come from the challenge being replaced, so the request carries no body. This is a business reissue, not a delivery retry.
  * @summary Reissue a verification code
  */
@@ -905,6 +942,12 @@ export type PublicProductSideBackgroundGetResult = NonNullable<
 >;
 export type PublicVerificationIssueResult = NonNullable<
   Awaited<ReturnType<typeof publicVerificationIssue>>
+>;
+export type PublicVerificationReadStatusResult = NonNullable<
+  Awaited<ReturnType<typeof publicVerificationReadStatus>>
+>;
+export type PublicVerificationSubmitAttemptResult = NonNullable<
+  Awaited<ReturnType<typeof publicVerificationSubmitAttempt>>
 >;
 export type PublicVerificationResendResult = NonNullable<
   Awaited<ReturnType<typeof publicVerificationResend>>

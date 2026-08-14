@@ -49,6 +49,15 @@ export const AUDIT_TARGET_KINDS = [
   'POLICY_CONFIGURATION',
   'SECURE_ACCESS_GRANT',
   'NOTIFICATION_INTENT',
+  // `APP4-B04` — the target of `verification.challenge.*` (LC-02
+  // `TR-LC02-02`/`-03`/`-04`, `INV-14`). Same footing as `PRODUCT` and
+  // `DESIGN_TEMPLATE` above: `target_kind` is open text with no CHECK by DB4
+  // design, so this list is the application's own G-DB7-46 guard and adding a
+  // kind needs no migration. The target is the **challenge**, not the customer:
+  // an expiry or a lockout has no customer at all, and G-DB7-46 requires the
+  // polymorphic target to have no foreign key precisely so an audit row can
+  // outlive the transient row it describes.
+  'CONTACT_VERIFICATION_CHALLENGE',
 ] as const;
 
 export type AuditTargetKind = (typeof AUDIT_TARGET_KINDS)[number];

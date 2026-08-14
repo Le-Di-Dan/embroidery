@@ -1485,6 +1485,17 @@ export interface StaffLoginRequest {
   password: string;
 }
 
+/**
+ * Answers an open verification challenge.
+ */
+export interface SubmitVerificationAttemptBody {
+  /**
+   * The six-digit code from the message, exactly as received. Sent as a string so a leading zero survives; never echoed back and never stored.
+   * @pattern ^[0-9]{6}$
+   */
+  code: string;
+}
+
 export interface UnpublishDesignTemplateBody {
   /**
    * @minimum 0
@@ -1535,6 +1546,29 @@ export interface VerificationChallengeResponse {
   expiresAt: string;
   /** The earliest instant a resend is accepted for this challenge, derived from the configured cooldown so a client never hard-codes it. */
   resendAvailableAt: string;
+}
+
+/**
+ * The lifecycle state. A challenge whose expiry has passed reads EXPIRED whether or not a sweep has run, so a client is never told to keep waiting on a code that can no longer be answered.
+ */
+export type VerificationChallengeStatusResponseState =
+  (typeof VerificationChallengeStatusResponseState)[keyof typeof VerificationChallengeStatusResponseState];
+
+export const VerificationChallengeStatusResponseState = {
+  ISSUED: 'ISSUED',
+  VERIFIED: 'VERIFIED',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface VerificationChallengeStatusResponse {
+  /** The challenge this state describes. */
+  challengeId: string;
+  /** When the code stops being answerable. Absolute, and never extended. */
+  expiresAt: string;
+  /** The lifecycle state. A challenge whose expiry has passed reads EXPIRED whether or not a sweep has run, so a client is never told to keep waiting on a code that can no longer be answered. */
+  state: VerificationChallengeStatusResponseState;
 }
 
 export type AdminAssetListParams = {
@@ -1812,6 +1846,14 @@ export type PublicProductPlacementGet200 = ApiSuccessResponse & {
 
 export type PublicVerificationIssue202 = ApiSuccessResponse & {
   data: VerificationChallengeResponse;
+};
+
+export type PublicVerificationReadStatus200 = ApiSuccessResponse & {
+  data: VerificationChallengeStatusResponse;
+};
+
+export type PublicVerificationSubmitAttempt200 = ApiSuccessResponse & {
+  data: VerificationChallengeStatusResponse;
 };
 
 export type PublicVerificationResend202 = ApiSuccessResponse & {
