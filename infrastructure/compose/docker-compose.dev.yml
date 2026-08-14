@@ -43,6 +43,28 @@ x-design-session-env: &design-session-env
   DESIGN_SESSION_ALLOWED_ORIGINS: ${DESIGN_SESSION_ALLOWED_ORIGINS:-http://embroidery.local}
   DESIGN_SESSION_COOKIE_SECURE: ${DESIGN_SESSION_COOKIE_SECURE:-false}
 
+# APP4 secret material (ADR-APP4-001 §5.3, §6.2).
+#
+# Three values, three different primitives, and the separation is enforced in
+# code: the two peppers key an HMAC over stored digests, and the envelope key is
+# an AES-256-GCM key. `loadApp4SecretPepperConfig` rejects a pair that reuses one
+# another's value or the envelope key's, so a copy-paste is a startup failure
+# rather than a shared blast radius.
+#
+# No defaults here, for the same reason `DESIGN_SESSION_SECRET_PEPPER` has none:
+# a development default is exactly the unpeppered-equivalent shortcut the ruling
+# forbids. Set them in `.env` — the peppers >= 32 characters, the envelope key a
+# base64 value decoding to exactly 32 bytes.
+#
+# Unset, nothing breaks at boot: both consumers validate at first use, so the API
+# starts and only *issuing* a verification code or *opening* a delivery envelope
+# refuses. That is deliberate — `staff-bootstrap` boots the same `AppModule` and
+# is the command an operator runs to configure the system.
+x-app4-secret-env: &app4-secret-env
+  VERIFICATION_CODE_SECRET_PEPPER: ${VERIFICATION_CODE_SECRET_PEPPER:-}
+  SECURE_LINK_TOKEN_SECRET_PEPPER: ${SECURE_LINK_TOKEN_SECRET_PEPPER:-}
+  NOTIFICATION_DELIVERY_ENVELOPE_KEY: ${NOTIFICATION_DELIVERY_ENVELOPE_KEY:-}
+
 services:
   # Edge gateway — the only public browser entrypoint in normal mode (D-036).
   # Direct application ports are exposed only via docker-compose.debug.yml.
@@ -149,7 +171,7 @@ services:
       dockerfile: infrastructure/docker/api.Dockerfile
       target: dev
     environment:
-      <<: [*object-storage-env, *design-session-env]
+      <<: [*object-storage-env, *design-session-env, *app4-secret-env]
       NODE_ENV: development
       API_PORT: '4000'
       # Reach the database over the compose network (never the host mapping).
@@ -219,7 +241,7 @@ services:
       # instantiates the asset providers and needs the same storage config — and,
       # since APP3-B07 composed DesignModule into AppModule, the same Design
       # Session config. Anything added to AppModule lands here too.
-      <<: [*object-storage-env, *design-session-env]
+      <<: [*object-storage-env, *design-session-env, *app4-secret-env]
       NODE_ENV: development
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
       STAFF_BOOTSTRAP_EMAIL: ${STAFF_BOOTSTRAP_EMAIL:-}
@@ -241,7 +263,11 @@ services:
     environment:
       # The worker verifies the private buckets before it claims anything
       # (APP2-I03), so it needs the same storage configuration as the API.
-      <<: *object-storage-env
+      #
+      # APP4-W01 opens the sealed delivery envelope, so it needs the envelope
+      # key too. The two peppers travel with it only because they share one
+      # anchor; the worker hashes nothing and reads neither.
+      <<: [*object-storage-env, *app4-secret-env]
       NODE_ENV: development
       # Reach the database over the compose network (never the host mapping).
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}

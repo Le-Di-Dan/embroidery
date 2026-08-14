@@ -12,6 +12,8 @@ import { sql } from 'drizzle-orm';
 
 import { createPersistenceTestContext } from '../../../../tests/integration/persistence-test-context';
 import type { PersistenceTestContext } from '../../../../tests/integration/persistence-test-context';
+import { AuditContextModule } from '../../../../platform/audit-context/audit-context.module';
+import { RequestContextModule } from '../../../../platform/request-context/request-context.module';
 import { CustomerModule } from '../../customer.module';
 import { CUSTOMER_REPOSITORY } from '../../domain/repositories/customer.repository';
 import type {
@@ -39,7 +41,14 @@ describe('verification and secure access persistence (integration)', () => {
   let grants: SecureAccessGrantRepository;
 
   beforeAll(async () => {
-    context = await createPersistenceTestContext('cp3-customer-secure', [CustomerModule]);
+    context = await createPersistenceTestContext('cp3-customer-secure', [
+      // The global platform context modules. In production `CustomerModule`
+      // reaches them through `AppModule`; a suite that composes it alone has to
+      // say so, because its application layer correlates by request id.
+      RequestContextModule,
+      AuditContextModule,
+      CustomerModule,
+    ]);
     customers = context.get(CUSTOMER_REPOSITORY);
     challenges = context.get(VERIFICATION_CHALLENGE_REPOSITORY);
     grants = context.get(SECURE_ACCESS_GRANT_REPOSITORY);
@@ -116,6 +125,7 @@ describe('verification and secure access persistence (integration)', () => {
           normalizedValue: value,
           purpose,
           codeHash: 'hash-of-code',
+          issuedAt: new Date(),
           expiresAt: new Date(Date.now() + HOUR_MS),
         }),
       );
@@ -155,6 +165,7 @@ describe('verification and secure access persistence (integration)', () => {
           normalizedValue: 'stale@example.com',
           purpose: 'SUBMISSION',
           codeHash: 'hash',
+          issuedAt: new Date(),
           expiresAt: new Date(Date.now() - HOUR_MS),
         }),
       );
@@ -183,6 +194,7 @@ describe('verification and secure access persistence (integration)', () => {
           normalizedValue: 'late@example.com',
           purpose: 'SUBMISSION',
           codeHash: 'hash',
+          issuedAt: new Date(),
           expiresAt: new Date(Date.now() - 1000),
         }),
       );
@@ -249,6 +261,7 @@ describe('verification and secure access persistence (integration)', () => {
             normalizedValue: 'bad@example.com',
             purpose: 'MYSTERY' as never,
             codeHash: 'hash',
+            issuedAt: new Date(),
             expiresAt: new Date(Date.now() + HOUR_MS),
           }),
         ),

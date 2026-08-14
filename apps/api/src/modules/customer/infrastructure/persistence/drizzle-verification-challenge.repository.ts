@@ -9,9 +9,10 @@ import { notFoundError, schema } from '@embroidery/database';
 import type {
   ContactKind,
   VerificationAttemptOutcome,
+  VerificationChallengeState,
   VerificationPurpose,
 } from '@embroidery/database';
-import { and, count, eq, gt, gte } from 'drizzle-orm';
+import { and, count, eq, gt, gte, lte, sql } from 'drizzle-orm';
 
 import type {
   ChallengeId,
@@ -30,10 +31,23 @@ function toDomain(row: ChallengeRow): VerificationChallenge {
     contactKind: row.contactKind as ContactKind,
     normalizedValue: row.normalizedValue,
     purpose: row.purpose as VerificationPurpose,
+    status: row.status as VerificationChallengeState,
     expiresAt: row.expiresAt,
+    createdAt: row.createdAt,
     verifiedAt: row.verifiedAt ?? undefined,
+    sessionId: row.sessionId ?? undefined,
+    contactPointId: row.contactPointId ?? undefined,
   };
 }
+
+/**
+ * The advisory-lock namespace.
+ *
+ * An arbitrary but fixed 32-bit constant, so the two-key form of
+ * `pg_advisory_xact_lock` cannot collide with a lock some other feature takes on
+ * the same hashed value. `hashtext` gives the second key.
+ */
+const VERIFICATION_LOCK_NAMESPACE = 0x4b03;
 
 @Injectable()
 export class DrizzleVerificationChallengeRepository
@@ -57,6 +71,11 @@ export class DrizzleVerificationChallengeRepository
           codeHash: input.codeHash,
           status: 'ISSUED',
           expiresAt: input.expiresAt,
+          sessionId: input.sessionId ?? null,
+          // Explicit, not `defaultNow()`: one clock owns issuance, expiry, the
+          // resend cooldown and the rate window.
+          createdAt: input.issuedAt,
+          updatedAt: input.issuedAt,
         })
         .returning();
 
@@ -195,6 +214,93 @@ export class DrizzleVerificationChallengeRepository
         .where(eq(contactVerificationChallenges.id, id))
         .limit(1);
       return row === undefined ? undefined : toDomain(row);
+    });
+  }
+
+  async lockTarget(
+    contactKind: ContactKind,
+    normalizedValue: string,
+    purpose: VerificationPurpose,
+  ): Promise<void> {
+    return this.run('lockTarget', async () => {
+      const tx = this.requireTransaction('lockTarget');
+      // The lock key is a hash of the target, never the target itself: advisory
+      // locks are visible in `pg_locks`, and a normalized email as a lock key
+      // would put contact values in an operational view.
+      await tx.execute(sql`
+        SELECT pg_advisory_xact_lock(
+          ${VERIFICATION_LOCK_NAMESPACE},
+          hashtext(${`${contactKind}:${normalizedValue}:${purpose}`})
+        )
+      `);
+    });
+  }
+
+  async expireStale(
+    contactKind: ContactKind,
+    normalizedValue: string,
+    purpose: VerificationPurpose,
+    now: Date,
+  ): Promise<number> {
+    return this.run('expireStale', async () => {
+      const rows = await this.db
+        .update(contactVerificationChallenges)
+        .set({ status: 'EXPIRED', updatedAt: now })
+        .where(
+          and(
+            eq(contactVerificationChallenges.contactKind, contactKind),
+            eq(contactVerificationChallenges.normalizedValue, normalizedValue),
+            eq(contactVerificationChallenges.purpose, purpose),
+            eq(contactVerificationChallenges.status, 'ISSUED'),
+            // `<=` rather than `<`: `resolveOpen` treats a challenge as live
+            // only while `expires_at > now`, so the two must agree about the
+            // instant of expiry or a row could be neither live nor sweepable.
+            lte(contactVerificationChallenges.expiresAt, now),
+          ),
+        )
+        .returning({ id: contactVerificationChallenges.id });
+      return rows.length;
+    });
+  }
+
+  async cancelChallenge(id: ChallengeId): Promise<boolean> {
+    return this.run('cancelChallenge', async () => {
+      const rows = await this.db
+        .update(contactVerificationChallenges)
+        .set({ status: 'CANCELLED', updatedAt: new Date() })
+        .where(
+          and(
+            eq(contactVerificationChallenges.id, id),
+            // Only an open challenge may be cancelled: cancelling a VERIFIED one
+            // would retract evidence, and cancelling an EXPIRED or FAILED one
+            // would rewrite why it ended.
+            eq(contactVerificationChallenges.status, 'ISSUED'),
+          ),
+        )
+        .returning({ id: contactVerificationChallenges.id });
+      return rows.length > 0;
+    });
+  }
+
+  async countIssuedSince(
+    contactKind: ContactKind,
+    normalizedValue: string,
+    purpose: VerificationPurpose,
+    since: Date,
+  ): Promise<number> {
+    return this.run('countIssuedSince', async () => {
+      const [row] = await this.db
+        .select({ total: count() })
+        .from(contactVerificationChallenges)
+        .where(
+          and(
+            eq(contactVerificationChallenges.contactKind, contactKind),
+            eq(contactVerificationChallenges.normalizedValue, normalizedValue),
+            eq(contactVerificationChallenges.purpose, purpose),
+            gte(contactVerificationChallenges.createdAt, since),
+          ),
+        );
+      return row?.total ?? 0;
     });
   }
 }

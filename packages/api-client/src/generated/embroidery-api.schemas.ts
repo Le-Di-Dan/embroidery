@@ -1042,6 +1042,44 @@ export interface HealthStatusResponse {
   uptimeSeconds: number;
 }
 
+/**
+ * Which kind of destination `contact` is.
+ */
+export type IssueVerificationChallengeBodyContactKind =
+  (typeof IssueVerificationChallengeBodyContactKind)[keyof typeof IssueVerificationChallengeBodyContactKind];
+
+export const IssueVerificationChallengeBodyContactKind = {
+  EMAIL: 'EMAIL',
+  PHONE: 'PHONE',
+} as const;
+
+/**
+ * Why the contact is being verified. `SUBMISSION` precedes customer identity; `STEP_UP` re-proves possession for a sensitive action.
+ */
+export type IssueVerificationChallengeBodyPurpose =
+  (typeof IssueVerificationChallengeBodyPurpose)[keyof typeof IssueVerificationChallengeBodyPurpose];
+
+export const IssueVerificationChallengeBodyPurpose = {
+  SUBMISSION: 'SUBMISSION',
+  STEP_UP: 'STEP_UP',
+} as const;
+
+/**
+ * Requests a one-time code for a contact destination and purpose.
+ */
+export interface IssueVerificationChallengeBody {
+  /**
+   * The destination as entered. Normalized server-side by the canonical rules; never echoed back.
+   * @minLength 1
+   * @maxLength 254
+   */
+  contact: string;
+  /** Which kind of destination `contact` is. */
+  contactKind: IssueVerificationChallengeBodyContactKind;
+  /** Why the contact is being verified. `SUBMISSION` precedes customer identity; `STEP_UP` re-proves possession for a sensitive action. */
+  purpose: IssueVerificationChallengeBodyPurpose;
+}
+
 export type PublicCategoryResponseSlug =
   (typeof PublicCategoryResponseSlug)[keyof typeof PublicCategoryResponseSlug];
 
@@ -1490,6 +1528,15 @@ export interface UpdateProductBody {
   name?: string;
 }
 
+export interface VerificationChallengeResponse {
+  /** The open challenge for this destination and purpose. The same value is returned while that challenge stays live. */
+  challengeId: string;
+  /** When the code stops being answerable. Absolute, and never extended. */
+  expiresAt: string;
+  /** The earliest instant a resend is accepted for this challenge, derived from the configured cooldown so a client never hard-codes it. */
+  resendAvailableAt: string;
+}
+
 export type AdminAssetListParams = {
   mediaType?: unknown;
   status?: unknown;
@@ -1761,6 +1808,14 @@ export type PublicProductDetail200 = ApiSuccessResponse & {
 
 export type PublicProductPlacementGet200 = ApiSuccessResponse & {
   data: PublicProductPlacementResponse;
+};
+
+export type PublicVerificationIssue202 = ApiSuccessResponse & {
+  data: VerificationChallengeResponse;
+};
+
+export type PublicVerificationResend202 = ApiSuccessResponse & {
+  data: VerificationChallengeResponse;
 };
 
 export type StaffSelfGet200 = ApiSuccessResponse & {

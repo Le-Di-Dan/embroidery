@@ -9,7 +9,7 @@
  * Test-only.
  */
 import { Test } from '@nestjs/testing';
-import type { TestingModule } from '@nestjs/testing';
+import type { TestingModule, TestingModuleBuilder } from '@nestjs/testing';
 import type { ModuleMetadata } from '@nestjs/common';
 import { TransactionManager } from '@embroidery/persistence';
 import type { DisposableDatabase } from '@embroidery/database/testing';
@@ -36,6 +36,15 @@ export interface PersistenceTestContext {
 export async function createPersistenceTestContext(
   label: string,
   imports: NonNullable<ModuleMetadata['imports']>,
+  /**
+   * Optional provider overrides, applied before `compile()`.
+   *
+   * Added by `APP4-B03`, whose suites replace a clock and a code minter so a
+   * ten-minute expiry and a fifteen-minute rate window are provable without
+   * waiting either out. Optional and applied only when supplied, so every
+   * existing suite compiles the same graph it always did.
+   */
+  configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder,
 ): Promise<PersistenceTestContext> {
   const disposable = await createDisposableDatabase(label);
   const previousUrl = process.env['DATABASE_URL'];
@@ -46,7 +55,8 @@ export async function createPersistenceTestContext(
 
   let moduleRef: TestingModule;
   try {
-    moduleRef = await Test.createTestingModule({ imports }).compile();
+    const builder = Test.createTestingModule({ imports });
+    moduleRef = await (configure === undefined ? builder : configure(builder)).compile();
     await moduleRef.init();
   } catch (error: unknown) {
     // Never leave a database behind when compilation fails: the next run would

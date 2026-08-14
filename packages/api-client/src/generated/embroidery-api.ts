@@ -40,6 +40,7 @@ import type {
   CreateDesignTemplateBody,
   CreateProductBody,
   HealthStatusResponse,
+  IssueVerificationChallengeBody,
   PublicDesignSessionAssetCreate202,
   PublicDesignSessionAssetCreateBody,
   PublicDesignSessionAssetStatus200,
@@ -53,6 +54,8 @@ import type {
   PublicProductList200,
   PublicProductListParams,
   PublicProductPlacementGet200,
+  PublicVerificationIssue202,
+  PublicVerificationResend202,
   PublishDesignTemplateBody,
   PublishProductBody,
   ReadinessStatusResponse,
@@ -736,6 +739,39 @@ export const publicProductSideBackgroundGet = (
 };
 
 /**
+ * Opens a one-time code challenge for a destination and purpose, and hands the code to asynchronous delivery. While a challenge is still live the same one is returned unchanged — use the resend operation to replace it. The response never contains the code, and is identical whether or not the destination already belongs to a customer.
+ * @summary Request a verification code for a contact
+ */
+export const publicVerificationIssue = (
+  issueVerificationChallengeBody: IssueVerificationChallengeBody,
+  options?: SecondParameter<typeof apiRequest<PublicVerificationIssue202>>,
+) => {
+  return apiRequest<PublicVerificationIssue202>(
+    {
+      url: `/api/public/verification/challenges`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: issueVerificationChallengeBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Replaces a live challenge with a new one carrying a new code, after the configured cooldown. The destination and purpose come from the challenge being replaced, so the request carries no body. This is a business reissue, not a delivery retry.
+ * @summary Reissue a verification code
+ */
+export const publicVerificationResend = (
+  challengeId: string,
+  options?: SecondParameter<typeof apiRequest<PublicVerificationResend202>>,
+) => {
+  return apiRequest<PublicVerificationResend202>(
+    { url: `/api/public/verification/challenges/${challengeId}/resend`, method: 'POST' },
+    options,
+  );
+};
+
+/**
  * Returns the minimum safe identity for the authenticated admin: id, email and display name. No credential, session or role data is exposed.
  * @summary Get the current staff identity
  */
@@ -866,6 +902,12 @@ export type PublicProductPlacementGetResult = NonNullable<
 >;
 export type PublicProductSideBackgroundGetResult = NonNullable<
   Awaited<ReturnType<typeof publicProductSideBackgroundGet>>
+>;
+export type PublicVerificationIssueResult = NonNullable<
+  Awaited<ReturnType<typeof publicVerificationIssue>>
+>;
+export type PublicVerificationResendResult = NonNullable<
+  Awaited<ReturnType<typeof publicVerificationResend>>
 >;
 export type StaffSelfGetResult = NonNullable<Awaited<ReturnType<typeof staffSelfGet>>>;
 export type StaffSessionDeleteResult = NonNullable<Awaited<ReturnType<typeof staffSessionDelete>>>;

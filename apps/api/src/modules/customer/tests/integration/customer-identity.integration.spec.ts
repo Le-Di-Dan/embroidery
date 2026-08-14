@@ -13,6 +13,8 @@ import { sql } from 'drizzle-orm';
 
 import { createPersistenceTestContext } from '../../../../tests/integration/persistence-test-context';
 import type { PersistenceTestContext } from '../../../../tests/integration/persistence-test-context';
+import { AuditContextModule } from '../../../../platform/audit-context/audit-context.module';
+import { RequestContextModule } from '../../../../platform/request-context/request-context.module';
 import { CustomerModule } from '../../customer.module';
 import { CUSTOMER_REPOSITORY } from '../../domain/repositories/customer.repository';
 import type {
@@ -26,7 +28,14 @@ describe('customer identity persistence (integration)', () => {
   let customers: CustomerRepository;
 
   beforeAll(async () => {
-    context = await createPersistenceTestContext('cp3-customer-identity', [CustomerModule]);
+    context = await createPersistenceTestContext('cp3-customer-identity', [
+      // The global platform context modules. In production `CustomerModule`
+      // reaches them through `AppModule`; a suite that composes it alone has to
+      // say so, because its application layer correlates by request id.
+      RequestContextModule,
+      AuditContextModule,
+      CustomerModule,
+    ]);
     customers = context.get(CUSTOMER_REPOSITORY);
   }, 120_000);
 
