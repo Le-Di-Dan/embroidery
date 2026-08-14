@@ -1,0 +1,72 @@
+{
+  "seedId": "app4-policy-configuration",
+  "tier": "SYSTEM_REFERENCE",
+  "checkpoint": "APP4-G01",
+  "decisionId": "IMP-D049",
+  "authority": "docs/adr/backend/ADR-APP4-001-SECURE-ACCESS-VERIFICATION-AND-NOTIFICATION-AUTHORITY.md",
+  "purpose": "APP4 business policy values, versioned through policy_configurations / policy_configuration_versions (TBL-076 / TBL-077). Data only: the publishing caller is APP4-B01, and no seed runner is introduced here.",
+  "idempotency": "Upsert by the natural key policy_configurations.config_key (ensureKey), then append one version (publishVersion). Re-running publishes a further identical version rather than mutating an immutable one.",
+  "containsSecrets": false,
+  "configurations": [
+    {
+      "configKey": "verification.challenge",
+      "description": "Contact verification challenge issuance, expiry, attempt and rate policy (APP4-G01).",
+      "valueSchemaVersion": 1,
+      "units": {
+        "ttlSeconds": "seconds",
+        "codeLength": "characters",
+        "codeAlphabet": "enumeration",
+        "maxAttempts": "attempts",
+        "resendCooldownSeconds": "seconds",
+        "rateWindowSeconds": "seconds",
+        "maxIssuesPerTargetPerWindow": "issuances"
+      },
+      "value": {
+        "ttlSeconds": 600,
+        "codeLength": 6,
+        "codeAlphabet": "DECIMAL_DIGITS",
+        "maxAttempts": 5,
+        "resendCooldownSeconds": 60,
+        "rateWindowSeconds": 900,
+        "maxIssuesPerTargetPerWindow": 5
+      }
+    },
+    {
+      "configKey": "secure_grant",
+      "description": "Secure access grant validity and step-up re-verification window (APP4-G01).",
+      "valueSchemaVersion": 1,
+      "units": {
+        "standardTtlSeconds": "seconds",
+        "stepUpWindowSeconds": "seconds"
+      },
+      "value": {
+        "standardTtlSeconds": 604800,
+        "stepUpWindowSeconds": 900
+      }
+    },
+    {
+      "configKey": "notification.delivery",
+      "description": "Automatic notification transport attempt budget and backoff schedule, consumed by the APP2 outbox worker runtime (APP4-G01).",
+      "valueSchemaVersion": 1,
+      "units": {
+        "maxAttempts": "attempts",
+        "retryDelaysSeconds": "seconds"
+      },
+      "value": {
+        "maxAttempts": 3,
+        "retryDelaysSeconds": [60, 300]
+      }
+    },
+    {
+      "configKey": "secure_link.resolve",
+      "description": "Transport-abuse limit on the public secure-link resolve route. Counts requests only and never outcomes, so it cannot become a token-validity oracle (APP4-G01).",
+      "valueSchemaVersion": 1,
+      "units": {
+        "maxRequestsPerIpPerMinute": "requests"
+      },
+      "value": {
+        "maxRequestsPerIpPerMinute": 30
+      }
+    }
+  ]
+}

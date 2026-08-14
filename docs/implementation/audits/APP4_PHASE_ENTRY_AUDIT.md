@@ -690,6 +690,14 @@ Execution order is top to bottom. "Endpoints" counts feature HTTP APIs only
 - **Stop if:** a required value is a genuine business decision with no
   conservative reversible default — record it as a routed decision and continue
   with the rest.
+- **Delivered 2026-08-14 — `COMPLETE` (review pending).** Verdict `PASS`, no
+  routed decision and no stop condition met. All sixteen scope items are locked
+  by `IMP-D049` /
+  [`ADR-APP4-001`](../../adr/backend/ADR-APP4-001-SECURE-ACCESS-VERIFICATION-AND-NOTIFICATION-AUTHORITY.md),
+  whose §14.1 fact table is the machine-checked authority; policy dataset
+  `packages/database/seed/app4-policy-configuration.seed.json`; gate
+  `node tools/check-app4-g01.mjs`. Report:
+  [`../reports/APP4-G01-COMPLETION-REPORT.md`](../reports/APP4-G01-COMPLETION-REPORT.md).
 
 ---
 
@@ -1388,3 +1396,8 @@ cannot destabilize the closed APP3 baseline, and it removes every value that
 the failure mode the charter's §5 and §9 exist to prevent.
 
 `APP4-D01` may begin in parallel once `APP4-G01` has locked the route slugs.
+
+**Update 2026-08-14 — `APP4-G01` is delivered** (`PASS`, review pending; §F).
+The route slugs it owed `APP4-D01` are locked: Storefront `/xac-minh-lien-he`
+and `/truy-cap`, Admin `/support/customer-access`. **The next checkpoint is
+`APP4-D01`.**
