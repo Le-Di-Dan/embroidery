@@ -392,7 +392,7 @@ package manifest, lockfile or root script was touched.
 |---|---|
 | Branch | `production` |
 | Entry HEAD | `0e1b53b433cc92fc7a5d8989b5037399f1ed31d9` |
-| Commit | `__D01_COMMIT__` |
+| Commit | `da5500812bc67e1a35d0157107f0dd2391826f5e` |
 | Subject | `docs(app4): deliver APP4-D01 phase design package and reconcile the Figma registry` |
 | Evidence commit | `docs(app4): record APP4-D01 commit evidence` — substitutes the hash above and changes nothing else |
 | Final HEAD | the evidence commit, the second and last of the two |
