@@ -495,7 +495,7 @@ already split into their own files). Largest test file:
 
 Committed on `production`, **not pushed**. Working tree clean at exit.
 
-See the commit recorded alongside this report for the exact hash and file list.
+Implementation commit: `e2c4b66` — `feat(app4): issue, reissue and revoke secure grants with a step-up window`. 35 files, +4553/−17. Not pushed; `origin/production` is unchanged.
 
 ---
 
