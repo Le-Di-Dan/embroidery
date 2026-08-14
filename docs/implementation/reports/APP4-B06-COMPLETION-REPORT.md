@@ -526,7 +526,7 @@ No schema, no migration, no `.env` write, no frontend, no worker change.
 
 Committed on `production`, **not pushed**. Working tree clean at exit.
 
-Implementation commit: `<recorded in the evidence commit below>`.
+Implementation commit: `7ad1629` — `feat(app4): resolve public secure links without a caller-supplied target`. 30 files, +4222/−17. Not pushed; `origin/production` is unchanged.
 
 ---
 
