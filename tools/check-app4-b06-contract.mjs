@@ -28,7 +28,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { importSpecifiers, stripComments } from './check-app4-b01.mjs';
-import { MODULE_DIR } from './check-app4-b03-contract.mjs';
+import { B07_ADMIN_GRANT_PATHS, MODULE_DIR } from './check-app4-b03-contract.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -83,8 +83,15 @@ const FORBIDDEN_CODES = [
 /** The published abuse limit. It lives in the seed, never in source. */
 const MAX_REQUESTS = 30;
 
-/** The entry world plus exactly B06's one. Measured, not assumed. */
-const EXPECTED_OPERATIONS = 47;
+/**
+ * The entry world plus exactly B06's one — 47 at B06's closure. Now 50, after
+ * `APP4-B07`'s three Admin support operations. Measured, not assumed.
+ *
+ * Restated rather than dropped: the count's job is to catch an operation
+ * appearing *beside* B06's resolver, and a rule that stopped counting would stop
+ * doing that. B06's own surface is still asserted to be exactly one POST below.
+ */
+const EXPECTED_OPERATIONS = 50;
 const MIGRATION_COUNT = 34;
 
 function read(rootDir, key) {
@@ -137,11 +144,21 @@ function checkPublishedSurface(rootDir, fail) {
   }
 
   // 1 — and there is no second secure-link route hiding elsewhere.
-  const linkPaths = Object.keys(document.paths ?? {}).filter((path) =>
-    /secure-link|secure_link|grant/i.test(path),
-  );
-  if (JSON.stringify(linkPaths) !== JSON.stringify([RESOLVE_PATH])) {
-    fail(`the secure-link surface is [${linkPaths.join(', ')}]; expected only ${RESOLVE_PATH}`);
+  //
+  // `APP4-B07` published two authenticated Admin grant routes, which match this
+  // pattern and are not secure-link resolvers. They are authorized by exact
+  // name, so the rule still says what it always said: B06 owns one resolver, and
+  // a second public secure-link route — a GET form, an alias, a `/verify`
+  // variant — still fails.
+  const expectedLinkPaths = [RESOLVE_PATH, ...B07_ADMIN_GRANT_PATHS].sort();
+  const linkPaths = Object.keys(document.paths ?? {})
+    .filter((path) => /secure-link|secure_link|grant/i.test(path))
+    .sort();
+  if (JSON.stringify(linkPaths) !== JSON.stringify(expectedLinkPaths)) {
+    fail(
+      `the secure-link surface is [${linkPaths.join(', ')}]; expected ` +
+        `[${expectedLinkPaths.join(', ')}]`,
+    );
   }
 
   const total = Object.keys(document.paths ?? {}).reduce(

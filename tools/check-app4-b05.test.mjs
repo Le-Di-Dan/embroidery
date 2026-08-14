@@ -121,6 +121,51 @@ describe('no HTTP surface', () => {
     );
     assert.ok(mentions(failures, 'adds none'));
   });
+
+  // --- `APP4-B07` reconciliation guards -------------------------------------
+  //
+  // Two authenticated Admin paths are now authorized by exact name. B05's own
+  // surface is still zero, and these prove the allowlist admits nothing that
+  // would make B05 grow one.
+
+  it('still rejects an Admin grant issue route', () => {
+    const document = JSON.parse(real(CANONICAL_FILES.openapi));
+    document.paths['/api/admin/secure-grants/issue'] = { post: { operationId: 'x_issue' } };
+    const failures = checkApp4B05(
+      rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(document) }),
+    );
+    assert.ok(mentions(failures, 'publishes none'));
+  });
+
+  it('still rejects a global Admin grant listing', () => {
+    const document = JSON.parse(real(CANONICAL_FILES.openapi));
+    document.paths['/api/admin/secure-grants'] = { get: { operationId: 'x_list' } };
+    const failures = checkApp4B05(
+      rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(document) }),
+    );
+    assert.ok(mentions(failures, 'publishes none'));
+  });
+
+  it('rejects a second verb on the authorized Admin revoke path', () => {
+    // A `post` that also accepted `delete`, or a `get` that leaked grant state
+    // onto the mutation route, would be a new operation on an authorized path
+    // rather than a new path — which the allowlist alone would not catch.
+    const document = JSON.parse(real(CANONICAL_FILES.openapi));
+    document.paths['/api/admin/secure-grants/{grantId}/revoke'].get = { operationId: 'x_get' };
+    const failures = checkApp4B05(
+      rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(document) }),
+    );
+    assert.ok(mentions(failures, 'APP4-B07 owns'));
+  });
+
+  it('rejects a second verb on the authorized Admin grant list path', () => {
+    const document = JSON.parse(real(CANONICAL_FILES.openapi));
+    document.paths['/api/admin/customers/{customerId}/grants'].post = { operationId: 'x_issue' };
+    const failures = checkApp4B05(
+      rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(document) }),
+    );
+    assert.ok(mentions(failures, 'APP4-B07 owns'));
+  });
 });
 
 describe('the internal capability', () => {

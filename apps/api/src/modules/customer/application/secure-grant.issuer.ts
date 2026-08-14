@@ -39,6 +39,7 @@ import { isPersistenceError, newId } from '@embroidery/database';
 import type { GrantScopeKind } from '@embroidery/database';
 import { TransactionManager } from '@embroidery/persistence';
 
+import type { AuditActor } from '../../audit/domain/repositories/audit-event.repository';
 import { App4SecretPepperProvider } from '../config/app4-secret-pepper.provider';
 import { digestSecret } from '../domain/secret/app4-secret-digest';
 import { GRANT_SUPERSEDED_REASON, SecureGrantError } from '../domain/grant/secure-grant-outcome';
@@ -194,7 +195,7 @@ export class SecureGrantIssuer {
   }
 
   /**
-   * Withdraws a live grant (`TR-LC03-02`), for `APP4-B07` to expose later.
+   * Withdraws a live grant (`TR-LC03-02`), exposed by `APP4-B07`.
    *
    * Mints nothing, delivers nothing and creates no replacement. A revoked grant
    * is terminal — LC-03 has no `REVOKED → ACTIVE` edge and this class offers no
@@ -206,8 +207,22 @@ export class SecureGrantIssuer {
    * a blank reason as an opaque constraint violation after the audit row had
    * been composed, and "a revoked grant without a reason is not evidence" is a
    * rule worth stating where a caller can read it.
+   *
+   * ### `actor` — added by `APP4-B07`
+   *
+   * An operator-initiated revocation and a customer-flow one are the same
+   * transition over the same row, so they share this method; what differs is who
+   * did it, and the audit trail may not guess. `SecureGrantAuditRecorder` has
+   * carried an optional actor since B05 for exactly this caller, defaulting to
+   * `CUSTOMER` when none is supplied.
+   *
+   * It is a **parameter**, not something this class reads from the request
+   * context. B05's other callers are in-process APP5 business actions with no
+   * Admin bound at all, and a context read would either fabricate an actor for
+   * them or make this method fail outside HTTP. The caller that knows it is an
+   * operator says so; every other path keeps the behaviour it was accepted with.
    */
-  async revoke(grantId: GrantId, reason: string): Promise<void> {
+  async revoke(grantId: GrantId, reason: string, actor?: AuditActor): Promise<void> {
     if (reason.trim() === '') {
       throw new SecureGrantError('GRANT_REVOKE_REASON_REQUIRED');
     }
@@ -225,6 +240,7 @@ export class SecureGrantIssuer {
         customerId: grant.customerId,
         customRequestId: grant.customRequestId,
         reason,
+        ...(actor === undefined ? {} : { actor }),
       });
     });
   }

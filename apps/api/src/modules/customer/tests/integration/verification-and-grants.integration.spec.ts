@@ -459,5 +459,63 @@ describe('verification and secure access persistence (integration)', () => {
       expect(active).toHaveLength(1);
       expect(active[0]?.id).toBe(replacementId);
     });
+
+    /**
+     * `listForCustomer` — the `APP4-B07` Admin support read.
+     *
+     * Placed here, beside the other AGG-04 repository claims, because what it
+     * has to prove is persistence behaviour: that the read is scoped to one
+     * customer, that it does **not** filter by state the way every other read in
+     * this contract does, and that the digest is absent from the returned shape
+     * rather than merely unread by the caller.
+     */
+    it('lists every grant for one customer, whatever its state, and no other customer’s', async () => {
+      const { customer, grant } = await issueGrant('list-a');
+      const secondRequest = await seedRequest(customer.id);
+      const revokedId = newId() as GrantId;
+      await context.inTransaction(async () => {
+        await grants.issue({
+          id: revokedId,
+          customerId: customer.id,
+          customRequestId: secondRequest,
+          tokenHash: 'list-b',
+          scopeKind: 'REQUEST_ACCESS',
+          expiresAt: new Date(Date.now() + HOUR_MS),
+        });
+        await grants.revoke(revokedId, 'operator closed the ticket');
+      });
+      // A grant belonging to somebody else, which must not appear.
+      await issueGrant('list-c');
+
+      const listed = await grants.listForCustomer(customer.id);
+
+      expect(listed.map((row) => row.id).sort()).toEqual([grant.id, revokedId].sort());
+      expect(listed.find((row) => row.id === grant.id)?.status).toBe('ACTIVE');
+      // The revoked row is present, which is the whole difference from
+      // `listActiveForRequest`: an operator needs to see the grant that stopped
+      // working, not only the one that still does.
+      expect(listed.find((row) => row.id === revokedId)?.status).toBe('REVOKED');
+      expect(listed.every((row) => row.customRequestId !== undefined)).toBe(true);
+
+      // Structurally absent, not merely unpublished: the adapter never selects
+      // `token_hash`, so no digest exists on the object to be spread onward.
+      for (const row of listed) {
+        expect(Object.keys(row).sort()).toEqual([
+          'customRequestId',
+          'expiresAt',
+          'id',
+          'scopeKind',
+          'status',
+        ]);
+      }
+      expect(JSON.stringify(listed)).not.toContain('list-a');
+      expect(JSON.stringify(listed)).not.toContain('list-b');
+    });
+
+    it('returns nothing for a customer that has never had a grant', async () => {
+      const customer = await createCustomer('no-grants@example.com');
+
+      await expect(grants.listForCustomer(customer.id)).resolves.toEqual([]);
+    });
   });
 });

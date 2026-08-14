@@ -11,6 +11,8 @@ import type {
   AdminAssetListParams,
   AdminAssetUpload202,
   AdminAssetUploadBody,
+  AdminCustomerSupportDetail200,
+  AdminCustomerSupportGrants200,
   AdminDesignTemplateArchive200,
   AdminDesignTemplateAssignScope200,
   AdminDesignTemplateCreate201,
@@ -65,6 +67,7 @@ import type {
   ReplaceProductPlacementBody,
   ResolveSecureLinkBody,
   RestoreDesignTemplateBody,
+  RevokeSecureGrantBody,
   SaveDesignTemplateDocumentBody,
   StaffLoginRequest,
   StaffSelfGet200,
@@ -126,6 +129,34 @@ export const adminAssetDetail = (
 ) => {
   return apiRequest<AdminAssetDetail200>(
     { url: `/api/admin/assets/${assetId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * The minimum an operator needs to answer "is this Customer verified, which contacts are current, and which one is primary". Contacts are returned masked and only masked — the raw, normalized and display values are never published. Deactivated historical contacts are not listed, and there is no Business Profile, merge history or credential data in the response. This is a read: it changes nothing and writes no audit event.
+ * @summary Get one Customer for support
+ */
+export const adminCustomerSupportDetail = (
+  customerId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminCustomerSupportDetail200>>,
+) => {
+  return apiRequest<AdminCustomerSupportDetail200>(
+    { url: `/api/admin/customers/${customerId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Every secure grant belonging to this Customer, newest first, whatever its state — a revoked or expired grant is what explains a link that stopped working. Scoped to the Customer in the path: there is no global or cross-Customer grant listing. The response carries no token, no token hash, no recipient and no notification data. Read `status` together with `expiresAt`: expiry is enforced on use rather than by a sweep, so a grant stored as ACTIVE past its `expiresAt` is not live.
+ * @summary List one Customer’s secure grants
+ */
+export const adminCustomerSupportGrants = (
+  customerId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminCustomerSupportGrants200>>,
+) => {
+  return apiRequest<AdminCustomerSupportGrants200>(
+    { url: `/api/admin/customers/${customerId}/grants`, method: 'GET' },
     options,
   );
 };
@@ -486,6 +517,26 @@ export const adminProductUnpublish = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: unpublishProductBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Withdraws a live secure grant, killing the link immediately: the token stops resolving in the same transaction the state changes. A reason is mandatory and non-blank — it is stored on the grant and copied into the audit trail, attributed to the authenticated Admin. Revocation is terminal and mints nothing: no replacement grant, no new token and no notification. Restoring access is a fresh issue through the business flow, never a second call here. Revoking a grant that is already revoked or expired is a conflict, not a silent success.
+ * @summary Revoke a secure grant
+ */
+export const adminSecureGrantRevoke = (
+  grantId: unknown,
+  revokeSecureGrantBody: RevokeSecureGrantBody,
+  options?: SecondParameter<typeof apiRequest<void>>,
+) => {
+  return apiRequest<void>(
+    {
+      url: `/api/admin/secure-grants/${grantId}/revoke`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: revokeSecureGrantBody,
     },
     options,
   );
@@ -867,6 +918,12 @@ export const staffSessionCreate = (
 export type AdminAssetListResult = NonNullable<Awaited<ReturnType<typeof adminAssetList>>>;
 export type AdminAssetUploadResult = NonNullable<Awaited<ReturnType<typeof adminAssetUpload>>>;
 export type AdminAssetDetailResult = NonNullable<Awaited<ReturnType<typeof adminAssetDetail>>>;
+export type AdminCustomerSupportDetailResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerSupportDetail>>
+>;
+export type AdminCustomerSupportGrantsResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerSupportGrants>>
+>;
 export type AdminDesignTemplateListResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplateList>>
 >;
@@ -918,6 +975,9 @@ export type AdminProductSideBackgroundGetResult = NonNullable<
 >;
 export type AdminProductUnpublishResult = NonNullable<
   Awaited<ReturnType<typeof adminProductUnpublish>>
+>;
+export type AdminSecureGrantRevokeResult = NonNullable<
+  Awaited<ReturnType<typeof adminSecureGrantRevoke>>
 >;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;

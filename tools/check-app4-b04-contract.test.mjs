@@ -137,7 +137,7 @@ describe('APP4-B04 — the published surface', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.paths['/api/public/health/extra'] = { get: {} };
     });
-    assert.ok(mentions(failures, 'expected 47'));
+    assert.ok(mentions(failures, 'expected 50'));
   });
 
   // --- `APP4-B06` reconciliation guards -------------------------------------
@@ -167,6 +167,41 @@ describe('APP4-B04 — the published surface', () => {
       document.paths['/api/public/secure-links/resolve'].get = { operationId: 'x_get' };
     });
     assert.ok(mentions(failures, 'APP4-B06 owns one POST'));
+  });
+
+  // --- `APP4-B07` reconciliation guards -------------------------------------
+  //
+  // The grant-route ban was relaxed again, to admit two authenticated Admin
+  // paths by exact name. These prove the relaxation is exactly that wide: an
+  // Admin route that mints, a global grant listing and a public grant route all
+  // still fail.
+
+  it('still rejects an Admin grant issue route', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/admin/secure-grants/issue'] = { post: {} };
+    });
+    assert.ok(mentions(failures, 'grants have no public surface'));
+  });
+
+  it('still rejects an Admin grant reissue route on the authorized prefix', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/admin/secure-grants/{grantId}/reissue'] = { post: {} };
+    });
+    assert.ok(mentions(failures, 'grants have no public surface'));
+  });
+
+  it('still rejects a global Admin grant listing', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/admin/secure-grants'] = { get: {} };
+    });
+    assert.ok(mentions(failures, 'grants have no public surface'));
+  });
+
+  it('still rejects a public grant route', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/public/customers/{customerId}/grants'] = { get: {} };
+    });
+    assert.ok(mentions(failures, 'grants have no public surface'));
   });
 });
 

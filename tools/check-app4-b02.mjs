@@ -375,7 +375,19 @@ function checkNoSchemaOrContract(rootDir, fail) {
     return;
   }
   const document = JSON.parse(openapi);
-  const customerPaths = Object.keys(document.paths ?? {}).filter((path) => /customer/i.test(path));
+  // `APP4-B07` published two authenticated Admin customer reads. They are
+  // authorized by exact name, and the rule keeps the meaning it was written
+  // with: **B02** publishes no endpoint, and no *customer-facing* customer route
+  // exists — a public `/api/customers` surface, a create or update route, or a
+  // search would all still fail. ADR-DB2-001 Option A is the reason: a customer
+  // is created by verification, never by a request to a customer endpoint.
+  const authorized = [
+    '/api/admin/customers/{customerId}',
+    '/api/admin/customers/{customerId}/grants',
+  ];
+  const customerPaths = Object.keys(document.paths ?? {})
+    .filter((path) => /customer/i.test(path))
+    .filter((path) => !authorized.includes(path));
   if (customerPaths.length > 0) {
     fail(
       `${CANONICAL_FILES.openapi}: publishes customer path(s) ${customerPaths.join(', ')}; ` +

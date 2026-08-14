@@ -148,6 +148,84 @@
         ],
         "type": "object"
       },
+      "AdminCustomerContactResponse": {
+        "properties": {
+          "kind": {
+            "description": "Whether this contact is an email address or a phone number.",
+            "enum": [
+              "EMAIL",
+              "PHONE"
+            ],
+            "example": "EMAIL",
+            "type": "string"
+          },
+          "maskedValue": {
+            "description": "The masked contact, and the only form of it this API publishes. Deterministic and one-way: the same contact always masks the same way, so an operator can recognise it across screens, and it can never be turned back into an address or a number.",
+            "example": "a***@vidu.com",
+            "type": "string"
+          },
+          "primary": {
+            "description": "Whether this is the Customer’s primary contact — the default destination for a notification. Exactly one contact per Customer carries it.",
+            "example": true,
+            "type": "boolean"
+          },
+          "verified": {
+            "description": "Whether this contact has completed a verification challenge. An unverified contact belongs to the Customer but has never proven reachable, and nothing is delivered to it.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "maskedValue",
+          "verified",
+          "primary"
+        ],
+        "type": "object"
+      },
+      "AdminCustomerDetailResponse": {
+        "properties": {
+          "contacts": {
+            "description": "The Customer’s current contacts, primary first. Deactivated historical contacts are not listed: this is current support visibility, not a contact history.",
+            "items": {
+              "$ref": "#/components/schemas/AdminCustomerContactResponse"
+            },
+            "type": "array"
+          },
+          "customerId": {
+            "description": "The Customer.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "type": "string"
+          },
+          "verifiedAt": {
+            "description": "When this Customer identity was established. A Customer exists only as the result of a successful verification, so the presence of this instant *is* the verification fact — there is no unverified Customer for it to be absent on.",
+            "example": "2026-08-14T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customerId",
+          "verifiedAt",
+          "contacts"
+        ],
+        "type": "object"
+      },
+      "AdminCustomerGrantsResponse": {
+        "properties": {
+          "grants": {
+            "description": "Every grant belonging to this Customer, newest first, whatever its state — a revoked or expired grant is exactly what explains a link that stopped working. Scoped to the Customer in the path; there is no cross-Customer or global grant listing.",
+            "items": {
+              "$ref": "#/components/schemas/AdminSecureGrantResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "grants"
+        ],
+        "type": "object"
+      },
       "AdminDesignTemplateDetailResponse": {
         "properties": {
           "archivedAt": {
@@ -925,6 +1003,52 @@
           "currencyCode",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AdminSecureGrantResponse": {
+        "properties": {
+          "customRequestId": {
+            "description": "The custom request this grant authorises access to. An opaque reference.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6074",
+            "type": "string"
+          },
+          "expiresAt": {
+            "description": "When the link stops working. Absolute and never extended; enforced on every read whatever the stored status says.",
+            "example": "2026-08-21T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "grantId": {
+            "description": "The grant.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "type": "string"
+          },
+          "scopeKind": {
+            "description": "What the grant covers. One value today; a grant carries no per-action scope.",
+            "enum": [
+              "REQUEST_ACCESS"
+            ],
+            "example": "REQUEST_ACCESS",
+            "type": "string"
+          },
+          "status": {
+            "description": "The persisted lifecycle state. Read it together with `expiresAt`: expiry is enforced on every use rather than by a background sweep, so a grant may still be stored as ACTIVE after its `expiresAt` has passed and yet open nothing. ACTIVE **and** `expiresAt` in the future is the only combination that is still live.",
+            "enum": [
+              "ACTIVE",
+              "EXPIRED",
+              "REVOKED"
+            ],
+            "example": "ACTIVE",
+            "type": "string"
+          }
+        },
+        "required": [
+          "grantId",
+          "customRequestId",
+          "scopeKind",
+          "status",
+          "expiresAt"
         ],
         "type": "object"
       },
@@ -2915,6 +3039,22 @@
         ],
         "type": "object"
       },
+      "RevokeSecureGrantBody": {
+        "additionalProperties": false,
+        "description": "Withdraws a live secure grant, with a mandatory reason.",
+        "properties": {
+          "reason": {
+            "description": "Why this grant is being revoked, in the operator’s own words. Mandatory and non-blank: it is copied into the audit trail, which outlives the grant, and a revoked grant without a reason is not evidence.",
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
       "SaveDesignTemplateDocumentBody": {
         "additionalProperties": false,
         "properties": {
@@ -3796,6 +3936,324 @@
         "summary": "Get one product-image asset",
         "tags": [
           "adminAsset"
+        ]
+      }
+    },
+    "/api/admin/customers/{customerId}": {
+      "get": {
+        "description": "The minimum an operator needs to answer \"is this Customer verified, which contacts are current, and which one is primary\". Contacts are returned masked and only masked — the raw, normalized and display values are never published. Deactivated historical contacts are not listed, and there is no Business Profile, merge history or credential data in the response. This is a read: it changes nothing and writes no audit event.",
+        "operationId": "adminCustomerSupport_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminCustomerDetailResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The Customer and their current, masked contacts.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed customer id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such Customer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Get one Customer for support",
+        "tags": [
+          "adminCustomerSupport"
+        ]
+      }
+    },
+    "/api/admin/customers/{customerId}/grants": {
+      "get": {
+        "description": "Every secure grant belonging to this Customer, newest first, whatever its state — a revoked or expired grant is what explains a link that stopped working. Scoped to the Customer in the path: there is no global or cross-Customer grant listing. The response carries no token, no token hash, no recipient and no notification data. Read `status` together with `expiresAt`: expiry is enforced on use rather than by a sweep, so a grant stored as ACTIVE past its `expiresAt` is not live.",
+        "operationId": "adminCustomerSupport_grants",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminCustomerGrantsResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The Customer’s grants.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed customer id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such Customer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "List one Customer’s secure grants",
+        "tags": [
+          "adminCustomerSupport"
         ]
       }
     },
@@ -7870,6 +8328,216 @@
         "summary": "Unpublish a product",
         "tags": [
           "adminProduct"
+        ]
+      }
+    },
+    "/api/admin/secure-grants/{grantId}/revoke": {
+      "post": {
+        "description": "Withdraws a live secure grant, killing the link immediately: the token stops resolving in the same transaction the state changes. A reason is mandatory and non-blank — it is stored on the grant and copied into the audit trail, attributed to the authenticated Admin. Revocation is terminal and mints nothing: no replacement grant, no new token and no notification. Restoring access is a fresh issue through the business flow, never a second call here. Revoking a grant that is already revoked or expired is a conflict, not a silent success.",
+        "operationId": "adminSecureGrant_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grantId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeSecureGrantBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The grant is revoked. No content.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed grant id, or a missing or blank reason.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such secure grant.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The grant is no longer active, so there is nothing to revoke.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The body is not application/json.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Revoke a secure grant",
+        "tags": [
+          "adminSecureGrant"
         ]
       }
     },

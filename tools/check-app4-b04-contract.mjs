@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { importSpecifiers, stripComments } from './check-app4-b01.mjs';
 import {
   ATTEMPT_PATH,
+  B07_ADMIN_GRANT_PATHS,
   ISSUE_PATH,
   MODULE_DIR,
   RESEND_PATH,
@@ -72,12 +73,13 @@ const ATTEMPT_OUTCOMES = ['MATCH', 'MISMATCH', 'EXPIRED_AT_ENTRY'];
 /**
  * The published operation count, measured rather than assumed.
  *
- * 46 at B04's closure — the entry world plus exactly B04's two. Now 47: the one
- * `APP4-B06` added. The number is restated rather than removed, because its job
- * is to catch an *unintended* operation appearing beside B04's pair, and a rule
- * that stopped counting would stop doing that.
+ * 46 at B04's closure — the entry world plus exactly B04's two. Then 47: the one
+ * `APP4-B06` added. Now 50: `APP4-B07`'s three Admin support operations. The
+ * number is restated rather than removed, because its job is to catch an
+ * *unintended* operation appearing beside B04's pair, and a rule that stopped
+ * counting would stop doing that.
  */
-const EXPECTED_OPERATIONS = 47;
+const EXPECTED_OPERATIONS = 50;
 const MIGRATION_COUNT = 34;
 
 /** `APP4-G01`'s attempt budget. Lives in the policy store, never in source. */
@@ -157,6 +159,11 @@ function checkPublishedSurface(rootDir, fail) {
       if (JSON.stringify(methodsOf(path)) !== JSON.stringify(['post'])) {
         fail(`${path} publishes [${methodsOf(path).join(', ')}]; APP4-B06 owns one POST`);
       }
+      continue;
+    }
+    // `APP4-B07`'s two authenticated Admin grant routes. Authorized by name; the
+    // rule is still that grants have no *public* surface.
+    if (B07_ADMIN_GRANT_PATHS.includes(path)) {
       continue;
     }
     if (/grant|secure-link|step-up|stepup/i.test(path)) {

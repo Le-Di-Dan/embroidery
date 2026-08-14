@@ -87,6 +87,77 @@ export interface AdminAssetUploadReceiptResponse {
   status: string;
 }
 
+/**
+ * Whether this contact is an email address or a phone number.
+ */
+export type AdminCustomerContactResponseKind =
+  (typeof AdminCustomerContactResponseKind)[keyof typeof AdminCustomerContactResponseKind];
+
+export const AdminCustomerContactResponseKind = {
+  EMAIL: 'EMAIL',
+  PHONE: 'PHONE',
+} as const;
+
+export interface AdminCustomerContactResponse {
+  /** Whether this contact is an email address or a phone number. */
+  kind: AdminCustomerContactResponseKind;
+  /** The masked contact, and the only form of it this API publishes. Deterministic and one-way: the same contact always masks the same way, so an operator can recognise it across screens, and it can never be turned back into an address or a number. */
+  maskedValue: string;
+  /** Whether this is the Customer’s primary contact — the default destination for a notification. Exactly one contact per Customer carries it. */
+  primary: boolean;
+  /** Whether this contact has completed a verification challenge. An unverified contact belongs to the Customer but has never proven reachable, and nothing is delivered to it. */
+  verified: boolean;
+}
+
+export interface AdminCustomerDetailResponse {
+  /** The Customer’s current contacts, primary first. Deactivated historical contacts are not listed: this is current support visibility, not a contact history. */
+  contacts: AdminCustomerContactResponse[];
+  /** The Customer. */
+  customerId: string;
+  /** When this Customer identity was established. A Customer exists only as the result of a successful verification, so the presence of this instant *is* the verification fact — there is no unverified Customer for it to be absent on. */
+  verifiedAt: string;
+}
+
+/**
+ * What the grant covers. One value today; a grant carries no per-action scope.
+ */
+export type AdminSecureGrantResponseScopeKind =
+  (typeof AdminSecureGrantResponseScopeKind)[keyof typeof AdminSecureGrantResponseScopeKind];
+
+export const AdminSecureGrantResponseScopeKind = {
+  REQUEST_ACCESS: 'REQUEST_ACCESS',
+} as const;
+
+/**
+ * The persisted lifecycle state. Read it together with `expiresAt`: expiry is enforced on every use rather than by a background sweep, so a grant may still be stored as ACTIVE after its `expiresAt` has passed and yet open nothing. ACTIVE **and** `expiresAt` in the future is the only combination that is still live.
+ */
+export type AdminSecureGrantResponseStatus =
+  (typeof AdminSecureGrantResponseStatus)[keyof typeof AdminSecureGrantResponseStatus];
+
+export const AdminSecureGrantResponseStatus = {
+  ACTIVE: 'ACTIVE',
+  EXPIRED: 'EXPIRED',
+  REVOKED: 'REVOKED',
+} as const;
+
+export interface AdminSecureGrantResponse {
+  /** The custom request this grant authorises access to. An opaque reference. */
+  customRequestId: string;
+  /** When the link stops working. Absolute and never extended; enforced on every read whatever the stored status says. */
+  expiresAt: string;
+  /** The grant. */
+  grantId: string;
+  /** What the grant covers. One value today; a grant carries no per-action scope. */
+  scopeKind: AdminSecureGrantResponseScopeKind;
+  /** The persisted lifecycle state. Read it together with `expiresAt`: expiry is enforced on every use rather than by a background sweep, so a grant may still be stored as ACTIVE after its `expiresAt` has passed and yet open nothing. ACTIVE **and** `expiresAt` in the future is the only combination that is still live. */
+  status: AdminSecureGrantResponseStatus;
+}
+
+export interface AdminCustomerGrantsResponse {
+  /** Every grant belonging to this Customer, newest first, whatever its state — a revoked or expired grant is exactly what explains a link that stopped working. Scoped to the Customer in the path; there is no cross-Customer or global grant listing. */
+  grants: AdminSecureGrantResponse[];
+}
+
 export type AdminDesignTemplateDetailResponseStatus =
   (typeof AdminDesignTemplateDetailResponseStatus)[keyof typeof AdminDesignTemplateDetailResponseStatus];
 
@@ -1479,6 +1550,18 @@ export interface RestoreDesignTemplateBody {
   reason: string;
 }
 
+/**
+ * Withdraws a live secure grant, with a mandatory reason.
+ */
+export interface RevokeSecureGrantBody {
+  /**
+   * Why this grant is being revoked, in the operator’s own words. Mandatory and non-blank: it is copied into the audit trail, which outlives the grant, and a revoked grant without a reason is not evidence.
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+}
+
 export interface SaveDesignTemplateDocumentBody {
   /** The full Design Document snapshot to save as the next immutable version. */
   document: DesignDocument;
@@ -1654,6 +1737,14 @@ export type AdminAssetUpload202 = ApiSuccessResponse & {
 
 export type AdminAssetDetail200 = ApiSuccessResponse & {
   data: AdminAssetDetailResponse;
+};
+
+export type AdminCustomerSupportDetail200 = ApiSuccessResponse & {
+  data: AdminCustomerDetailResponse;
+};
+
+export type AdminCustomerSupportGrants200 = ApiSuccessResponse & {
+  data: AdminCustomerGrantsResponse;
 };
 
 export type AdminDesignTemplateListParams = {

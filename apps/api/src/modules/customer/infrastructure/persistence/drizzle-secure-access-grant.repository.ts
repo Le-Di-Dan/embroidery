@@ -4,8 +4,8 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { notFoundError, schema } from '@embroidery/database';
-import type { GrantScopeKind } from '@embroidery/database';
-import { and, eq, gt } from 'drizzle-orm';
+import type { GrantScopeKind, SecureAccessGrantState } from '@embroidery/database';
+import { and, desc, eq, gt } from 'drizzle-orm';
 
 import type { CustomerId } from '../../domain/repositories/customer.repository';
 import type {
@@ -14,6 +14,7 @@ import type {
   IssueGrantInput,
   SecureAccessGrant,
   SecureAccessGrantRepository,
+  SecureAccessGrantSummary,
 } from '../../domain/repositories/secure-access-grant.repository';
 
 const { secureAccessGrants } = schema;
@@ -206,6 +207,54 @@ export class DrizzleSecureAccessGrantRepository
           ),
         );
       return rows.map(toDomain);
+    });
+  }
+
+  /**
+   * The `APP4-B07` Admin support read.
+   *
+   * The column list is explicit, and that is the security property rather than a
+   * style choice: `token_hash` is never selected, so the digest does not exist in
+   * any object this method returns and cannot be spread, logged or serialized by
+   * anything downstream. Every other read here uses `select()` and maps, which is
+   * safe only for as long as the mapper stays correct; this one is safe because
+   * the row has no digest to drop.
+   *
+   * `revoked_at`, `revoke_reason` and `superseded_by_grant_id` are omitted for
+   * the same structural reason — B07 publishes state and expiry, and a column
+   * that never arrives cannot leak into a projection.
+   *
+   * No status predicate: the point of this read is that a revoked or
+   * time-expired grant is still visible. Expiry is *not* applied here either —
+   * unlike `resolveActive`, which must refuse a stale grant, this read must
+   * report one, because "physically ACTIVE but past its expiry" is exactly the
+   * state LC-03 leaves behind and exactly what an operator is trying to see.
+   */
+  async listForCustomer(customerId: CustomerId): Promise<SecureAccessGrantSummary[]> {
+    return this.run('listForCustomer', async () => {
+      const rows = await this.db
+        .select({
+          id: secureAccessGrants.id,
+          customRequestId: secureAccessGrants.customRequestId,
+          scopeKind: secureAccessGrants.scopeKind,
+          status: secureAccessGrants.status,
+          expiresAt: secureAccessGrants.expiresAt,
+          createdAt: secureAccessGrants.createdAt,
+        })
+        .from(secureAccessGrants)
+        .where(eq(secureAccessGrants.customerId, customerId))
+        // `id` is the tie-breaker: two grants minted in one transaction share a
+        // `created_at`, and an ambiguous order renders one operator's table two
+        // different ways for the same data.
+        .orderBy(desc(secureAccessGrants.createdAt), desc(secureAccessGrants.id));
+
+      return rows.map((row) => ({
+        id: row.id as GrantId,
+        customRequestId: row.customRequestId,
+        scopeKind: row.scopeKind as GrantScopeKind,
+        status: row.status as SecureAccessGrantState,
+        expiresAt: row.expiresAt,
+      }));
     });
   }
 }

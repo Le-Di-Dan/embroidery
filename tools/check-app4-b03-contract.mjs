@@ -102,6 +102,29 @@ export const B06_FILES = Object.freeze([
 /** The one public route `APP4-B06` publishes. Authorized; every other stays refused. */
 export const SECURE_LINK_RESOLVE_PATH = '/api/public/secure-links/resolve';
 
+/**
+ * The two `APP4-B07` Admin routes whose names contain "grant".
+ *
+ * Declared here, once, and imported by the `APP4-B04`, `-B05` and `-B06` gates,
+ * which all carry a variant of the same "no grant route" rule. One list rather
+ * than four copies: the rule those gates encode is *"grants have no **public**
+ * surface"*, and it was written when the only way to see that was "no path
+ * matches /grant/". `APP4-B07` published two authenticated Admin routes that
+ * match the pattern and are not public, so the pattern needs an allowlist — and
+ * an allowlist that existed in four places would be four chances for a fifth
+ * route to be quietly added to one of them.
+ *
+ * What stays refused is everything else: an Admin *issue* or *reissue* route, a
+ * global `/api/admin/secure-grants` listing, a step-up endpoint, and any public
+ * grant path whatsoever. `APP4-B07`'s own gate asserts these two exist, carry
+ * the expected verbs and are Admin-protected; these gates only stop treating
+ * them as violations.
+ */
+export const B07_ADMIN_GRANT_PATHS = Object.freeze([
+  '/api/admin/customers/{customerId}/grants',
+  '/api/admin/secure-grants/{grantId}/revoke',
+]);
+
 export const CANONICAL_FILES = Object.freeze({
   controller: `${MODULE_DIR}/presentation/public-verification.controller.ts`,
   request: `${MODULE_DIR}/presentation/schemas/public-verification.request.ts`,
@@ -273,6 +296,13 @@ function checkPublishedContract(rootDir, fail) {
       }
       continue;
     }
+    // `APP4-B07` published two authenticated Admin grant routes. They are
+    // authorized by name, and their guards are B07's gate to assert — the rule
+    // here is still "grants have no *public* surface", which they do not give
+    // them.
+    if (B07_ADMIN_GRANT_PATHS.includes(path)) {
+      continue;
+    }
     if (/grant|secure-link|step-up|stepup/i.test(path)) {
       fail(`${path} looks like an APP4-B05 route; grants have no public surface`);
     }
@@ -291,7 +321,23 @@ function checkPublishedContract(rootDir, fail) {
       fail(`VerificationChallengeResponse has no "${field}"`);
     }
   }
-  const serialized = JSON.stringify(document);
+  // `APP4-B07`'s Admin support surface names a customer, and must: its routes
+  // are *keyed* by the Customer an operator asked for, behind
+  // `AuthenticatedAdminGuard`. Two things are lifted out of the scan by exact
+  // name — the two Admin path items, whose keys and `customerId` path parameter
+  // match the pattern, and the one response component that publishes the field.
+  //
+  // Lifted by name rather than the field being dropped from the ban, so the
+  // invariant this rule exists for — *no anonymous verification response names a
+  // customer* — still holds over every other path and schema in the document,
+  // and `contactPointId`, `codeHash` and `otp` stay refused everywhere including
+  // inside the exempted ones.
+  const scanned = JSON.parse(JSON.stringify(document));
+  for (const path of ['/api/admin/customers/{customerId}', ...B07_ADMIN_GRANT_PATHS]) {
+    delete scanned.paths?.[path];
+  }
+  delete scanned.components?.schemas?.AdminCustomerDetailResponse;
+  const serialized = JSON.stringify(scanned);
   for (const forbidden of ['codeHash', 'code_hash', 'otp', 'customerId', 'contactPointId']) {
     if (new RegExp(`"[^"]*${forbidden}[^"]*"\\s*:`, 'i').test(serialized)) {
       fail(`the published contract carries a "${forbidden}" field`);

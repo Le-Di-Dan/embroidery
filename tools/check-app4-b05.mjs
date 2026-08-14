@@ -27,7 +27,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { importSpecifiers, stripComments } from './check-app4-b01.mjs';
-import { MODULE_DIR } from './check-app4-b03-contract.mjs';
+import { B07_ADMIN_GRANT_PATHS, MODULE_DIR } from './check-app4-b03-contract.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -77,12 +77,17 @@ const STEP_UP_WINDOW_SECONDS = 900;
  * The published operation count.
  *
  * 46 while B05 was the newest checkpoint — the entry world, unchanged, because
- * B05 publishes zero operations. Now 47: `APP4-B06` added exactly one. The
- * count stays asserted rather than dropped, because what it really guards is
- * that **B05's own surface is still zero** — an issue, reissue or revoke route
- * appearing would move this number too.
+ * B05 publishes zero operations. Then 47: `APP4-B06` added exactly one. Now 50:
+ * `APP4-B07` added three. The count stays asserted rather than dropped, because
+ * what it really guards is that **B05's own surface is still zero** — an issue
+ * or reissue route appearing would move this number too.
+ *
+ * B07's revoke route is the one place that needs saying out loud: it is not
+ * B05 growing a surface. B05 still publishes nothing, and B07's controller calls
+ * `SecureGrantIssuer.revoke` rather than reimplementing the transition, which is
+ * what `checkInternalCapability` below still asserts.
  */
-const EXPECTED_OPERATIONS = 47;
+const EXPECTED_OPERATIONS = 50;
 
 /**
  * The one public path `APP4-B06` owns.
@@ -153,11 +158,29 @@ function checkNoHttpSurface(rootDir, fail) {
   const document = JSON.parse(raw);
   const paths = Object.keys(document.paths ?? {});
   const methods = ['get', 'post', 'put', 'patch', 'delete'];
+  // B06's resolver and B07's two Admin routes are the authorized world. Any
+  // *other* grant path — an Admin issue or reissue, a global grant listing, a
+  // public grant route — still fails, which is the invariant B05 needs.
+  const authorized = [B06_RESOLVE_PATH, ...B07_ADMIN_GRANT_PATHS];
   const grantPaths = paths.filter(
-    (path) => /grant|secure-link/i.test(path) && path !== B06_RESOLVE_PATH,
+    (path) => /grant|secure-link/i.test(path) && !authorized.includes(path),
   );
   if (grantPaths.length > 0) {
     fail(`the published surface declares [${grantPaths.join(', ')}]; B05 publishes none`);
+  }
+  // B07 owns one verb on each of its two, and neither may grow an issue or
+  // reissue sibling on the same path.
+  for (const [path, expected] of [
+    [B07_ADMIN_GRANT_PATHS[0], ['get']],
+    [B07_ADMIN_GRANT_PATHS[1], ['post']],
+  ]) {
+    if (!paths.includes(path)) {
+      continue;
+    }
+    const verbs = methods.filter((method) => document.paths?.[path]?.[method] !== undefined);
+    if (JSON.stringify(verbs) !== JSON.stringify(expected)) {
+      fail(`${path} publishes [${verbs.join(', ')}]; APP4-B07 owns [${expected.join(', ')}]`);
+    }
   }
   if (paths.includes(B06_RESOLVE_PATH)) {
     const verbs = methods.filter((method) => document.paths?.[B06_RESOLVE_PATH]?.[method]);

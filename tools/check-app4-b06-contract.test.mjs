@@ -115,14 +115,24 @@ describe('the published surface', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.paths['/api/public/secure-links/peek'] = { post: { operationId: 'x_peek' } };
     });
-    assert.ok(mentions(failures, 'expected only'));
+    assert.ok(mentions(failures, 'the secure-link surface is'));
   });
 
   it('rejects an extra operation anywhere, by count', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.paths['/api/public/health/extra'] = { get: { operationId: 'x_extra' } };
     });
-    assert.ok(mentions(failures, 'expected 47'));
+    assert.ok(mentions(failures, 'expected 50'));
+  });
+
+  // `APP4-B07` reconciliation guard. Two authenticated Admin grant paths joined
+  // the authorized set; a third grant path of any shape still fails, so the
+  // rule still says "B06 owns one resolver and nothing else appeared beside it".
+  it('still rejects an Admin grant route beyond the two authorized ones', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths['/api/admin/secure-grants'] = { get: { operationId: 'x_list' } };
+    });
+    assert.ok(mentions(failures, 'the secure-link surface is'));
   });
 
   it('rejects a token query parameter', () => {

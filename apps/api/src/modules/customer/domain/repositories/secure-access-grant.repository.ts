@@ -14,7 +14,7 @@
  * permitted belongs to the authorization layer, which does not exist yet
  * (G-DB7-44).
  */
-import type { GrantScopeKind } from '@embroidery/database';
+import type { GrantScopeKind, SecureAccessGrantState } from '@embroidery/database';
 
 import type { CustomerId } from './customer.repository';
 
@@ -25,6 +25,35 @@ export interface SecureAccessGrant {
   readonly customerId: CustomerId;
   readonly customRequestId: string;
   readonly scopeKind: GrantScopeKind;
+  readonly expiresAt: Date;
+}
+
+/**
+ * What an operator may see of a grant (`APP4-B07`).
+ *
+ * A separate type from {@link SecureAccessGrant}, and the difference is the
+ * point in both directions.
+ *
+ * It **adds** `status`, because every other read in this file is a live-grant
+ * resolver — status is a predicate there, never a value — while the Admin
+ * support read must show a grant that is no longer live and say so.
+ *
+ * It **omits** `token_hash`, and omits it structurally rather than by
+ * convention: the adapter projects a fixed column list, so the digest is not in
+ * the row that reaches this layer at all. A `SELECT *` plus a mapper would leave
+ * the digest one careless spread away from a response body, and CST-008 makes
+ * that digest the exact lookup key for the credential.
+ *
+ * It also omits `revoked_at`, `revoke_reason` and `superseded_by_grant_id`. An
+ * operator answering "is this link still live?" needs the state and the deadline
+ * (`APP4_PHASE_ENTRY_AUDIT` B07); the reason a *previous* operator typed is
+ * audit-trail content, and the supersession pointer is a second grant's id.
+ */
+export interface SecureAccessGrantSummary {
+  readonly id: GrantId;
+  readonly customRequestId: string;
+  readonly scopeKind: GrantScopeKind;
+  readonly status: SecureAccessGrantState;
   readonly expiresAt: Date;
 }
 
@@ -110,4 +139,28 @@ export interface SecureAccessGrantRepository {
 
   findById(id: GrantId): Promise<SecureAccessGrant | undefined>;
   listActiveForRequest(customRequestId: string): Promise<SecureAccessGrant[]>;
+
+  /**
+   * Every grant belonging to one customer, whatever its state (`APP4-B07`).
+   *
+   * The one read in this contract that is not a live-grant resolver, and the
+   * only one an operator's screen is behind. It exists because the delivered
+   * reads cannot answer the support question: `listActiveForRequest` is keyed by
+   * the *request*, which an operator looking at a customer does not have and
+   * which APP5 owns, and it hides exactly the revoked and expired rows that make
+   * "this link stopped working" explicable.
+   *
+   * Read-only, customer-scoped and unfiltered by state. There is deliberately no
+   * status argument, no date range, no free-text term and no cursor: this is one
+   * customer's grants, not a search. `ix_secure_access_grants__customer_id`
+   * (IDX-107) exists for precisely this access path — DB5 records that it is
+   * required *despite* IDX-008, because IDX-008 is partial over ACTIVE rows and
+   * a customer-wide read must see every status.
+   *
+   * Ordered newest-issued first, deterministically: `created_at` can tie for two
+   * grants minted in one transaction, so `id` breaks it. An unordered list would
+   * let two identical requests render an operator's table in two different
+   * sequences.
+   */
+  listForCustomer(customerId: CustomerId): Promise<SecureAccessGrantSummary[]>;
 }

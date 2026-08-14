@@ -13,6 +13,7 @@ import { CatalogPublicSideBackgroundModule } from '../modules/catalog/catalog-pu
 import { CatalogPublicModule } from '../modules/catalog/catalog-public.module';
 import { CatalogPublicationModule } from '../modules/catalog/catalog-publication.module';
 import { CustomerModule } from '../modules/customer/customer.module';
+import { CustomerAdminSupportModule } from '../modules/customer/customer-admin-support.module';
 import { HealthModule } from '../modules/health/health.module';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
@@ -79,6 +80,14 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // to compose; the DB7 repositories it also provides were reachable by nothing
     // until this line existed.
     CustomerModule,
+    // APP4-B07 — the Admin Customer and secure-grant support surface. A separate
+    // module because `CustomerModule` above is the anonymous public stack and
+    // holds no staff-auth dependency; this one imports `IdentityModule` for the
+    // APP1 guards and `CustomerModule` for the repositories and the B05 grant
+    // lifecycle it delegates every revocation to. Registered after both, though
+    // not for wiring: `admin/customers` and `admin/secure-grants` share a base
+    // path with no other module, so registration order cannot shadow anything.
+    CustomerAdminSupportModule,
   ],
 })
 export class AppModule {}
