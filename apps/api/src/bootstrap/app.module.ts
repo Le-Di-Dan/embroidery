@@ -14,6 +14,7 @@ import { CatalogPublicModule } from '../modules/catalog/catalog-public.module';
 import { CatalogPublicationModule } from '../modules/catalog/catalog-publication.module';
 import { HealthModule } from '../modules/health/health.module';
 import { IdentityModule } from '../modules/identity/identity.module';
+import { NotificationModule } from '../modules/notification/notification.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -59,6 +60,12 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // shadow another. Kept a separate module so the two JSON reads keep their
     // storage-free dependency closure.
     DesignTemplateAssetPublicModule,
+    // APP4-B01 — notification intent intake. It publishes **no route**: it exists
+    // so `APP4-B03`/`APP4-B05` have one place to ask for a delivery, and so the
+    // `PENDING` outbox events `APP4-W01` will claim have a producer. Composed
+    // last because nothing else depends on it, and registration order cannot
+    // matter for a module with no controller.
+    NotificationModule,
   ],
 })
 export class AppModule {}

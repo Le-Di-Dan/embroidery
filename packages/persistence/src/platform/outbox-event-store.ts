@@ -47,6 +47,18 @@ export const OUTBOX_AGGREGATE_KINDS = [
   // with no CHECK by design (REL-104 is polymorphic), so this list is the
   // G-DB7-47 write-time guard, not a schema constraint — no migration.
   'PRODUCT',
+  // `APP4-B01` — the aggregate of `notification.delivery.requested`
+  // (`ADR-APP4-001` §7, IMP-D049 PO-09). Added on the same terms as `PRODUCT`
+  // above: a write-time guard over polymorphic text, **no CHECK and no
+  // migration**.
+  //
+  // `aggregate_id` is the **current** notification intent, which is what makes
+  // the worker able to find its intent without decrypting anything. On an
+  // `APP4-B08` manual replay the ciphertext is copied byte-identically, so the
+  // encrypted `originNotificationIntentId` keeps naming the original failed
+  // intent while this linkage names the new replay intent — they diverge on
+  // purpose, and only this one is the execution identity.
+  'NOTIFICATION_INTENT',
 ] as const;
 
 export type OutboxAggregateKind = (typeof OUTBOX_AGGREGATE_KINDS)[number];
