@@ -3,6 +3,7 @@ import { DatabaseModule } from '@embroidery/persistence';
 
 import { AssetInspectionModule } from '../jobs/asset-inspection/asset-inspection.module';
 import { AssetNormalizationModule } from '../jobs/asset-normalization/asset-normalization.module';
+import { NotificationDeliveryModule } from '../jobs/notification-delivery/notification-delivery.module';
 import { WorkerRuntimeModule } from '../runtime/worker-runtime.module';
 import { WorkerObjectStorageModule } from '../storage/object-storage.module';
 
@@ -33,6 +34,12 @@ import { WorkerObjectStorageModule } from '../storage/object-storage.module';
     WorkerRuntimeModule,
     AssetInspectionModule,
     AssetNormalizationModule,
+    // `NotificationDeliveryModule` (APP4-W01) is the third capability on the
+    // same runtime. It needs no object storage and reads its own published
+    // `notification.delivery` policy; a worker with no such policy simply never
+    // sends, which is the fail-closed state that keeps a secret undelivered
+    // rather than dead-lettered.
+    NotificationDeliveryModule,
   ],
 })
 export class WorkerModule {}

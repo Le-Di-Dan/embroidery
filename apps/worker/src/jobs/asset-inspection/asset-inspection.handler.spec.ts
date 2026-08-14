@@ -91,6 +91,8 @@ describe('AssetInspectionHandler', () => {
       { schemaVersion: 1, assetId: ASSET_ID },
       {
         outboxEventId: 42n,
+        aggregateKind: 'ASSET',
+        aggregateId: ASSET_ID,
         attemptNo: 3,
         workerInstanceId: 'worker-1',
         correlationId: 'corr-1',

@@ -290,6 +290,9 @@ importers:
       '@embroidery/domain-types':
         specifier: workspace:*
         version: link:../../packages/domain-types
+      '@embroidery/notification-delivery':
+        specifier: workspace:*
+        version: link:../../packages/notification-delivery
       '@embroidery/object-storage':
         specifier: workspace:*
         version: link:../../packages/object-storage

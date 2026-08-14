@@ -16,6 +16,7 @@
   "dependencies": {
     "@embroidery/database": "workspace:*",
     "@embroidery/domain-types": "workspace:*",
+    "@embroidery/notification-delivery": "workspace:*",
     "@embroidery/object-storage": "workspace:*",
     "@embroidery/persistence": "workspace:*",
     "@nestjs/common": "^11.1.28",

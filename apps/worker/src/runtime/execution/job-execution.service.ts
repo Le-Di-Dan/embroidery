@@ -184,6 +184,10 @@ export class JobExecutionService {
           validation.payload,
           {
             outboxEventId: job.outboxEventId,
+            // Straight off the claimed row. The runtime reads nothing into it
+            // and derives nothing from it.
+            aggregateKind: job.aggregateKind,
+            aggregateId: job.aggregateId,
             attemptNo: job.attemptNo,
             workerInstanceId,
             correlationId: buildCorrelationId(handler.jobKind, job.outboxEventId, job.attemptNo),
@@ -267,14 +271,23 @@ export class JobExecutionService {
       jobKind: handler.jobKind,
     };
 
-    const disposition = dispositionOf(errorClass, job.attemptNo, policy.maxAttempts);
+    // A handler's published policy may own its own budget and backoff; absent
+    // one, the global `worker.runtime` schedule applies unchanged. Either way
+    // the completion below is the same guarded write — the plan supplies two
+    // numbers, never a second lifecycle.
+    const plan = handler.retryPlan;
+    const maxAttempts = plan?.maxAttempts ?? policy.maxAttempts;
+    const disposition = dispositionOf(errorClass, job.attemptNo, maxAttempts);
 
     const result = await this.transactions.runInTransaction(() =>
       disposition === 'TERMINAL'
         ? this.queue.completeTerminalAttempt({ ...guard, errorClass })
         : this.queue.completeRetryableAttempt({
             ...guard,
-            retryDelayMs: retryDelayMs(job.attemptNo, policy.backoffBaseMs, policy.backoffMaxMs),
+            retryDelayMs:
+              plan === undefined
+                ? retryDelayMs(job.attemptNo, policy.backoffBaseMs, policy.backoffMaxMs)
+                : plan.retryDelayMs(job.attemptNo),
             errorClass,
           }),
     );
