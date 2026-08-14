@@ -421,7 +421,7 @@ silently ignored.
 |---|---|
 | Branch | `production` |
 | Entry HEAD | `78bb90c59aee72392a1babe8f1946d0ec9ff2383` |
-| Implementation commit | `__B01_COMMIT__` |
+| Implementation commit | `e9bdbc3dddc00e3ce920e6060b5db82706a07bf3` |
 | Subject | `feat(app4): add notification intent intake and the shared delivery envelope` |
 | Evidence commit | `docs(app4): record APP4-B01 commit evidence` — substitutes the hash above and changes nothing else |
 | Final HEAD | the evidence commit, the second of the two |
