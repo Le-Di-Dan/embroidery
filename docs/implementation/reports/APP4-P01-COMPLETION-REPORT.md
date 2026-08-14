@@ -511,7 +511,7 @@ file near the 300/500 review thresholds.
 | P01 implementation | `2e09bf9069768530837d3fdd6fea0ee9e65c1de2` — `feat(app4): add APP4 contact normalization, masking and opaque-secret primitives` |
 | P01 evidence | `5fd0fad3c3f9e3dcaac2b5da4a5ce887c2ffe9db` — `docs(app4): record APP4-P01 commit evidence` |
 | **C1 entry HEAD** | `5fd0fad3c3f9e3dcaac2b5da4a5ce887c2ffe9db` |
-| **C1 correction** | `__C1_COMMIT__` — `fix(app4): replace the phone country-code heuristic with exact libphonenumber-js parsing` |
+| **C1 correction** | `8ef463eeaf4a3da207d11159abb460eb3ea8ceaf` — `fix(app4): replace the phone country-code heuristic with exact libphonenumber-js parsing` |
 | **C1 evidence** | `docs(app4): record APP4-P01-C1 commit evidence` — substitutes the hash above and changes nothing else |
 | Final HEAD | the C1 evidence commit, the last of the four |
 | Working tree after all commits | clean |
