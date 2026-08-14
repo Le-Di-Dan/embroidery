@@ -59,6 +59,7 @@ Authority:
 `APP_01` write target: page **`371:3`** in `FIG-FILE-PRODUCT` (APP1 design packages).
 `APP_02` write target: page **`419:3`** in `FIG-FILE-PRODUCT` (APP2 design packages).
 `APP_03` write target: page **`592:3`** in `FIG-FILE-PRODUCT` (APP3 design packages).
+`APP_04` write target: page **`620:3`** in `FIG-FILE-PRODUCT` (APP4 design packages).
 
 ## 4. Screen and state registry
 
@@ -644,6 +645,71 @@ Figma library still needs a manual publish before another file can instance
 `FIG-DS-INPUT`. It does not block code, which consumes the token and component
 semantics rather than a Figma instance.
 
+### 4.10 APP4-D01 — Customer Identity, Verification, Secure Access & Notification (NEW, this checkpoint)
+
+Section **`621:3`** — [APP4-D01 · Customer Identity, Verification, Secure Access & Notification](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=621-3), page **APP_04** (`620:3`).
+
+One top-level Figma section holding **8 named sub-sections** (`00 — APP4 Overview / Flow Map` … `07 — Handoff / Dependency Notes`) and **48 frames**. The single-section anchor matches the `APP1-D01`/`APP2-D01`/`APP3-D01` convention, so this row set has one parent node.
+
+**Pre-draw audit (mandatory, `APP4-D01` §1).** Before any Figma write this registry was searched for APP4-owned rows — contact verification, `/xac-minh-lien-he`, secure-link landing, `/truy-cap`, Admin customer-access support, `/support/customer-access`, `APP4-S01`, `APP4-S02`, `APP4-A01` — and **none existed**. The `APP_04` canvas itself was verified empty (zero children) in the same audit. Outcome: **`NO_EXISTING_APP4_DESIGN`**; nothing was reused, supplemented, repaired or superseded, and no APP1–APP3 node was touched.
+
+Every row enters as `REVIEW_REQUIRED` — `APP4-D01` does not self-approve (§2 rule 4, §8 step 3, §9). **No APP4 frontend checkpoint may start against a `REVIEW_REQUIRED` row**; approval must land first and flip the rows it covers to `APPROVED_FOR_IMPLEMENTATION` with an approval-evidence id, scoped to the checkpoint that consumes them — the pattern `APP3-D01` established.
+
+Sub-section anchors: `00` `621:4` · `01` `621:5` · `02` `621:6` · `03` `621:7` · `04` `621:8` · `05` `621:9` · `06` `621:10` · `07` `621:11`.
+
+Policy values shown on these frames — 10-minute code expiry, six decimal digits, five attempts, 60-second resend cooldown, five issuances per 15 minutes, 7-day grant, 15-minute step-up window, three delivery attempts with 60/300-second backoff — are **read from `ADR-APP4-001` (`IMP-D049`)**, never invented in Figma. The frames render them as illustrative UI copy; the ADR fact table remains the authority.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-VERIFY-CONTACT-DESKTOP-DEFAULT | Storefront | /xac-minh-lien-he | Contact Verification | Contact Entry — Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 623:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=623-3) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CONTACT-DESKTOP-INVALID | Storefront | /xac-minh-lien-he | Contact Verification | Contact Entry — Invalid Input | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 623:27 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=623-27) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CONTACT-DESKTOP-SUBMITTING | Storefront | /xac-minh-lien-he | Contact Verification | Contact Entry — Submitting | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 623:51 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=623-51) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-DESKTOP-SENT | Storefront | /xac-minh-lien-he | Contact Verification | Code Entry — Code Sent | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 623:75 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=623-75) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-DESKTOP-VERIFYING | Storefront | /xac-minh-lien-he | Contact Verification | Code Entry — Verifying | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 623:108 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=623-108) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-DESKTOP-MISMATCH | Storefront | /xac-minh-lien-he | Contact Verification | Code Entry — Code Mismatch | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 625:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=625-3) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-DESKTOP-COOLDOWN | Storefront | /xac-minh-lien-he | Contact Verification | Code Entry — Resend Cooldown | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 625:36 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=625-36) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-DESKTOP-RESENT | Storefront | /xac-minh-lien-he | Contact Verification | Code Entry — Resend Available / Resent | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 625:70 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=625-70) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-DESKTOP-EXPIRED | Storefront | /xac-minh-lien-he | Contact Verification | Challenge Expired | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 625:106 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=625-106) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-DESKTOP-LOCKOUT | Storefront | /xac-minh-lien-he | Contact Verification | Attempt-limit Lockout | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 625:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=625-140) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CONTACT-DESKTOP-RATELIMITED | Storefront | /xac-minh-lien-he | Contact Verification | Rate Limited — Temporarily Unavailable | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 625:173 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=625-173) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-DESKTOP-SUCCESS | Storefront | /xac-minh-lien-he | Contact Verification | Verification Success | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 625:193 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=625-193) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CONTACT-DESKTOP-ERROR | Storefront | /xac-minh-lien-he | Contact Verification | Recoverable Network / Server Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 625:211 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=625-211) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CONTACT-MOBILE-DEFAULT | Storefront | /xac-minh-lien-he | Contact Verification | Contact Entry — Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 628:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=628-3) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-MOBILE-SENT | Storefront | /xac-minh-lien-he | Contact Verification | Code Entry — Code Sent | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 628:25 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=628-25) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-MOBILE-COOLDOWN | Storefront | /xac-minh-lien-he | Contact Verification | Code Entry — Resend Cooldown | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 628:57 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=628-57) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-MOBILE-LOCKOUT | Storefront | /xac-minh-lien-he | Contact Verification | Attempt-limit Lockout | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 628:90 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=628-90) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-VERIFY-CODE-MOBILE-SUCCESS | Storefront | /xac-minh-lien-he | Contact Verification | Verification Success | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 628:121 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=628-121) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-SECURELINK-DESKTOP-BOOTSTRAP | Storefront | /truy-cap | Secure-Link Landing | Bootstrap / Resolving | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 629:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=629-3) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-SECURELINK-DESKTOP-AUTHORIZED | Storefront | /truy-cap | Secure-Link Landing | Valid Grant — Authorized Shell | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 629:20 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=629-20) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-SECURELINK-DESKTOP-UNAVAILABLE | Storefront | /truy-cap | Secure-Link Landing | Unavailable — Single Indistinguishable State | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 629:37 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=629-37) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-SECURELINK-DESKTOP-NETWORKERROR | Storefront | /truy-cap | Secure-Link Landing | Transient Network Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 629:53 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=629-53) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-SECURELINK-MOBILE-AUTHORIZED | Storefront | /truy-cap | Secure-Link Landing | Valid Grant — Authorized Shell | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 629:70 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=629-70) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-SECURELINK-MOBILE-UNAVAILABLE | Storefront | /truy-cap | Secure-Link Landing | Unavailable — Single Indistinguishable State | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 629:87 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=629-87) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-CUSTOMERACCESS-DESKTOP-LOADING | Admin | /support/customer-access | Customer Access Support | Loading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 631:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=631-3) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-CUSTOMERACCESS-DESKTOP-OVERVIEW | Admin | /support/customer-access | Customer Access Support | Customer & Contact Loaded | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 631:45 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=631-45) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-GRANT-DESKTOP-NONE | Admin | /support/customer-access | Secure Grant | No Active Grant | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 631:124 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=631-124) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-GRANT-DESKTOP-ACTIVE | Admin | /support/customer-access | Secure Grant | Active Grant | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 631:189 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=631-189) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-GRANT-DESKTOP-REVOKECONFIRM | Admin | /support/customer-access | Secure Grant | Revoke Confirmation (reason required) | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 631:251 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=631-251) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-GRANT-DESKTOP-REVOKING | Admin | /support/customer-access | Secure Grant | Revoking | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 631:326 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=631-326) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-GRANT-DESKTOP-REVOKED | Admin | /support/customer-access | Secure Grant | Revoke Success | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 632:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=632-3) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-GRANT-DESKTOP-CONFLICT | Admin | /support/customer-access | Secure Grant | Revoke Conflict | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 632:59 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=632-59) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-DELIVERY-DESKTOP-NOFAILURE | Admin | /support/customer-access | Notification Delivery | No Delivery Failure | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 632:108 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=632-108) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-DELIVERY-DESKTOP-TERMINALFAILURE | Admin | /support/customer-access | Notification Delivery | Terminal Failure | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 632:169 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=632-169) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-DELIVERY-DESKTOP-REPLAYCONFIRM | Admin | /support/customer-access | Notification Delivery | Manual Replay Confirmation | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 632:246 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=632-246) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-DELIVERY-DESKTOP-REPLAYING | Admin | /support/customer-access | Notification Delivery | Replay Submitting | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 632:329 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=632-329) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-DELIVERY-DESKTOP-REPLAYED | Admin | /support/customer-access | Notification Delivery | Replay Success | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 633:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=633-3) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-DELIVERY-DESKTOP-REPLAYDUPLICATE | Admin | /support/customer-access | Notification Delivery | Duplicate Replay — Canonical Current State | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 633:86 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=633-86) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-DELIVERY-DESKTOP-REISSUEREQUIRED | Admin | /support/customer-access | Notification Delivery | REISSUE_REQUIRED | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 633:147 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=633-147) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-CUSTOMERACCESS-DESKTOP-LOADERROR | Admin | /support/customer-access | Customer Access Support | Data Load Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 633:226 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=633-226) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-CUSTOMERACCESS-DESKTOP-NOTFOUND | Admin | /support/customer-access | Customer Access Support | Empty / Not Found | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 633:253 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=633-253) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-ADMIN-CUSTOMERACCESS-NARROW-1280 | Admin | /support/customer-access | Customer Access Support | Narrow Desktop Reference | Desktop 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 633:277 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=633-277) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-APP4-OVERVIEW-FLOWMAP | Shared | APP4 phase overview | Flow Map & Surface Ownership | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 634:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=634-3) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-APP4-SECURITY-UX-RULES | Shared | APP4 security UX | Security UX Rules | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 634:38 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=634-38) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-APP4-NON-ENUMERATION | Shared | APP4 security UX | Non-enumeration Contract | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 634:59 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=634-59) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-APP4-RESPONSIVE-REFERENCE | Shared | APP4 responsive reference | Responsive Reference | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 634:103 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=634-103) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-APP4-ACCESSIBILITY-NOTES | Shared | APP4 accessibility | Accessibility Notes | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 634:134 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=634-134) | APP4-D01 | — | — | 2026-08-14 |
+| FIG-APP4-HANDOFF-DEPENDENCY | Shared | APP4 handoff & dependency | Handoff & Backend Dependency | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_04 | 634:154 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=634-154) | APP4-D01 | — | — | 2026-08-14 |
+
 ## 5. IA and user-flow registry
 
 Flow/IA/wireframe nodes are indexed as `REFERENCE_ONLY` — they inform, but do not
@@ -765,13 +831,16 @@ canonical entry exists for any APP1-D01 composite key.
 
 - **Audit date:** 2026-07-25 (APP1-D01; supplemented at APP1-D02), re-audited
   **2026-07-26** (APP2-D01). **Auditor tooling:** Figma MCP plugin API.
-- **Files enumerated:** 2/2 — `FIG-FILE-PRODUCT` (**6 pages** since `BRD0-F01`
-  added `LOGO_SYSTEM`) + `FIG-FILE-DS` (19 pages).
+- **Files enumerated:** 2/2 — `FIG-FILE-PRODUCT` (**8 pages** as measured live at
+  `APP4-D01`; the previous "6 pages" figure predates `APP_03` and `APP_04`) +
+  `FIG-FILE-DS` (19 pages).
 - **Product pages:** Information Architecture (`0:1`), APP_01 (`371:3` — Admin
   APP1-D01 section `375:11` + Storefront APP1-D02 section `405:2224`), **APP_02
-  (`419:3` — APP2-D01 section `423:3`)**, Wireframe (`17:55`, WF01–WF09), User
-  Interface (`166:1457`, UI01–UI05), **LOGO_SYSTEM (`544:2409` — BRD0-F01
-  sections `546:3`–`546:8`, all `REFERENCE_ONLY`, no implementation authority)**.
+  (`419:3` — APP2-D01 section `423:3`)**, **APP_03 (`592:3` — APP3-D01 section
+  `596:3`)**, **APP_04 (`620:3` — APP4-D01 section `621:3`)**, Wireframe
+  (`17:55`, WF01–WF09), User Interface (`166:1457`, UI01–UI05), **LOGO_SYSTEM
+  (`544:2409` — BRD0-F01 sections `546:3`–`546:8`, all `REFERENCE_ONLY`, no
+  implementation authority)**.
 - **DS catalog:** 4 variable collections (Primitives 16 / Color 19 / Spacing 10 /
   Radius 5), 11 text styles, 2 effect styles, component sets across 8 HF01 pages.
 - **Registry coverage:** 16 APP1-D01 rows (12 `APPROVED_FOR_IMPLEMENTATION` +
@@ -802,6 +871,22 @@ canonical entry exists for any APP1-D01 composite key.
   added, **10 `APP2-S02-G01` rows + 4 UI03 draft rows added** — see §4.3.1, §4.4.1 and
   §4.5). The four `APP2-D01` Product Detail rows moved `REVIEW_REQUIRED` →
   `REFERENCE_ONLY`; the total is unchanged by that move.
+  **The "86" above is an APP2-era subtotal and was never updated by `APP3-D01`.**
+  The authoritative live count is whatever `node tools/check-figma-design-index.mjs`
+  measures: **213 registry IDs / 213 node rows / 16 registry tables** as of
+  `APP4-D01`. Prose subtotals are historical; the gate is the count.
+- **`APP4-D01` (2026-08-14):** APP4 design package created on the previously
+  **empty** `APP_04` canvas (`620:3`) as section `621:3` — 8 sub-sections, **48
+  frames**, **48 new registry rows**, all `REVIEW_REQUIRED`. Pre-draw audit
+  outcome `NO_EXISTING_APP4_DESIGN`: the registry carried no APP4 row and the
+  canvas had zero children, so nothing was reused, supplemented, repaired or
+  superseded. Coverage: `APP4-S01` 13 desktop + 5 mobile, `APP4-S02` 4 desktop +
+  2 mobile, `APP4-A01` 17 desktop + 1 narrow-1280 reference, plus 6 shared
+  annotation frames. No APP1–APP3 or BRD0 node was modified (anchors `375:11`,
+  `405:2224`, `423:3`, `529:2224`, `596:3`, `596:23`, `546:3` re-read and
+  unchanged); no DS library file was touched; 0 component instances and 0 new
+  tokens, text styles or components were created — every frame composes existing
+  `Semantic`/`Foundation` variables and `Typography/*` text styles.
 - **Gaps:** GAP-D01 and GAP-D02 are **CLOSED by `APP3-D01-C1`** — `FIG-DS-INPUT` is now a real DS component set (§6.1, `76:29`) and `overlay/scrim` a real DS semantic token (§6.2). Both were repaired in `FIG-FILE-DS` under the operator-approved `D01_C1_DS_REPAIR_AUTHORIZATION` exception, which covered these two and nothing else. New DS assets still require a manual library publish before other files can instance them (`FU-DESIGN-PUBLISH-DS-INPUT-01`). Historical note — GAP-D01 (no DS Input — supplemented for APP2 as `FIG-DS-INPUT-APP2`, DS
   library gap still open), GAP-D02 (no scrim token — still local `ink/900 @45%`).
   The former `FIG-STOREFRONT-NOTFOUND` gap is closed by APP1-D02 (now
