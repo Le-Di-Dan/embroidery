@@ -592,7 +592,7 @@ silently ignored.
 | B01 implementation | `e9bdbc3dddc00e3ce920e6060b5db82706a07bf3` — `feat(app4): add notification intent intake and the shared delivery envelope` |
 | B01 evidence | `31db2d900f6dafbea08e7042876dbbdba1a06f3e` — `docs(app4): record APP4-B01 commit evidence` |
 | **C1 entry HEAD** | `31db2d900f6dafbea08e7042876dbbdba1a06f3e` |
-| **C1 correction** | `__C1_COMMIT__` — `fix(app4): publish the APP4 policy dataset from the staff-bootstrap path` |
+| **C1 correction** | `eefdc82a55cb9e98fbddae82fca281f37b13e718` — `fix(app4): publish the APP4 policy dataset from the staff-bootstrap path` |
 | **C1 evidence** | `docs(app4): record APP4-B01-C1 commit evidence` — substitutes the hash above and changes nothing else |
 | Final HEAD | the C1 evidence commit, the last of the four |
 | Working tree after all commits | clean |
