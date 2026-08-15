@@ -63,3 +63,28 @@ A contact is verified, a purpose-bound secure link is issued and delivered throu
 ## 9. Handoff
 
 APP5 uses verified customer/contact ownership; APP6 and APP7 use secure grants/notifications for review, quotation and payment actions.
+
+---
+
+## Closure reconciliation (`APP4-X01`, 2026-08-15)
+
+APP4 is closed: **`COMPLETE — PASS_WITH_FOLLOW_UPS — DELIVERED_FOR_REVIEW`**. The
+canonical closure record is
+[`reports/APP4-CLOSURE-MATRIX.md`](../reports/APP4-CLOSURE-MATRIX.md); this section
+reconciles only the planning prose above that execution superseded. The original
+entry findings are left as written — they are history.
+
+| Planned above | **Delivered** |
+| --- | --- |
+| Backend split `APP4-C01…C04` | `APP4-B02…B08` |
+| 10 feature endpoints | **11** (the A01 authority unblock added `POST /api/admin/customers/resolve`) |
+| Admin manual transport `/retry` | **`POST /api/admin/notification-intents/{intentId}/replay`** |
+| B07 surface | 4 endpoints, under the backend cap of 5 |
+| Notification→Customer binding | `B05` server-resolved Contact Point → `B01 recipientContactPointId` → `notification_intents.recipient_contact_point_id` (`APP4-A01-C1`) |
+| Cross-layer acceptance | `APP4-E01 = PASS_AFTER_R01_C1` — replan `H01`/`H02`/`R01` + one correction |
+
+Frozen artifacts: OpenAPI 48 paths / 53 operations / 101 schemas
+(`sha256 02bd969c17aa3899209ed563d51c0add30142874fb64ee96294b1009528e8d7b`),
+generated client `ee7ea2af2eb79f2ffc00b6a477167628f32d7995b50ab4e415bffc7bb9c2f90f`,
+**`NO_APP4_MIGRATION`** (34 migrations, latest `0034` is APP3-owned), 48 APP4 Figma
+rows (30 + 18 amended under the A01 authority unblock).
