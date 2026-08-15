@@ -1,0 +1,589 @@
+// Admin customer-access support (`APP4-A01`).
+//
+// Reproduces the 18 approved frames in section `621:8`, as amended under
+// `FIG-APPROVAL-APP4-A01-UNBLOCK-PO-001`: the lookup control above a two-column
+// body, the Customer/contact card on the left, the grant and notification cards
+// on the right, and the two confirmations. Every colour, radius and space is a
+// token — no literal hex, no rgba, and the dialog scrim is the canonical
+// `$color-overlay-scrim`.
+//
+// Class names are prefixed `customer-access*`. The Admin stylesheet is global
+// and unscoped, so a generic `.card`, `.badge` or `.timeline` here would collide
+// with another feature's rules in a way jsdom could never catch — the defect
+// `APP2-A03` recorded.
+//
+// **1440 and 1280 only.** Both approved viewports are desktop (`633:277` is the
+// 1280 reference), and Admin is a desktop surface. The columns collapse below
+// the two-column floor so the screen stays usable if a window is dragged
+// narrower, but no mobile Admin layout is invented here.
+
+@use '@embroidery/styles' as styles;
+
+// The two-column floor from the approved frames: 360px for the Customer card and
+// 744px for the right stack at 1440. Named because the same numbers decide both
+// the grid and the point at which it collapses.
+$customer-access-left-min: 320px;
+$customer-access-right-min: 520px;
+
+.customer-access {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24);
+  // `min-width: 0` rather than `overflow-x`, which computes to `auto` and would
+  // clip the y-axis too.
+  min-width: 0;
+  max-width: 100%;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__subtitle,
+  &__idle {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__idle {
+    padding: styles.spacing(24);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-card;
+    text-align: center;
+  }
+
+  // The polite live region. Visible text would repeat what the button already
+  // says, so it is exposed to assistive technology only — never `display: none`,
+  // which would remove it from the accessibility tree entirely.
+  &__status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  &__columns {
+    display: grid;
+    grid-template-columns: minmax($customer-access-left-min, 360px) minmax(
+        $customer-access-right-min,
+        1fr
+      );
+    gap: styles.spacing(16);
+    align-items: start;
+    min-width: 0;
+  }
+
+  &__left,
+  &__right {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(16);
+    min-width: 0;
+  }
+
+  // Below the two-column floor the grid would force horizontal scrolling on the
+  // document, which the 1280 proof forbids. One column instead.
+  @media (max-width: 1080px) {
+    &__columns {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// The lookup control (approved A01 amendment).
+.customer-access-lookup {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  min-width: 0;
+
+  &__heading {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: styles.spacing(12);
+    min-width: 0;
+  }
+
+  &__kinds {
+    display: flex;
+    align-items: center;
+    gap: styles.spacing(8);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  &__legend {
+    padding: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+  }
+
+  &__kind {
+    display: inline-flex;
+    align-items: center;
+    gap: styles.spacing(4);
+    padding: styles.spacing(8) styles.spacing(12);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-input;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+    cursor: pointer;
+
+    &[data-selected='true'] {
+      background: styles.$color-background-secondary;
+      color: styles.$color-text-primary;
+      font-weight: styles.$font-weight-medium;
+    }
+  }
+
+  &__label {
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+  }
+
+  &__field {
+    flex: 1 1 260px;
+    min-width: 0;
+    padding: styles.spacing(8) styles.spacing(12);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-input;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+    background: styles.$color-surface-primary;
+
+    &[aria-invalid='true'] {
+      border-color: styles.$color-status-error;
+    }
+  }
+
+  &__submit {
+    padding: styles.spacing(8) styles.spacing(16);
+    border: 0;
+    border-radius: styles.$radius-button;
+    background: styles.$color-action-primary;
+    color: styles.$color-surface-primary;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: styles.$color-action-hover;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: progress;
+    }
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__error {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-status-error;
+  }
+}
+
+.customer-access-card {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  min-width: 0;
+
+  &__heading {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__subheading {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    margin: 0;
+  }
+
+  &__row {
+    display: flex;
+    gap: styles.spacing(12);
+    align-items: baseline;
+    font-size: styles.$font-size-body-s;
+    min-width: 0;
+
+    > dt {
+      flex: 0 0 150px;
+      color: styles.$color-text-secondary;
+    }
+
+    > dd {
+      flex: 1 1 auto;
+      margin: 0;
+      min-width: 0;
+      // Identifiers are long and must not push the card wider than its column.
+      overflow-wrap: anywhere;
+      color: styles.$color-text-primary;
+      font-weight: styles.$font-weight-medium;
+    }
+  }
+
+  &__loading,
+  &__empty,
+  &__note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__empty {
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__primary,
+  &__danger {
+    align-self: flex-start;
+    padding: styles.spacing(8) styles.spacing(16);
+    border: 0;
+    border-radius: styles.$radius-button;
+    color: styles.$color-surface-primary;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    cursor: pointer;
+  }
+
+  &__primary {
+    background: styles.$color-action-primary;
+
+    &:hover:not(:disabled) {
+      background: styles.$color-action-hover;
+    }
+  }
+
+  &__danger {
+    background: styles.$color-status-error;
+  }
+}
+
+.customer-access-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &__item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: styles.spacing(8);
+    font-size: styles.$font-size-body-s;
+    min-width: 0;
+  }
+
+  &__kind {
+    flex: 0 0 110px;
+    color: styles.$color-text-secondary;
+  }
+
+  &__value {
+    color: styles.$color-text-primary;
+    font-weight: styles.$font-weight-medium;
+    overflow-wrap: anywhere;
+  }
+}
+
+// Status is never colour alone: every badge carries its own word, and the colour
+// only reinforces it.
+.customer-access-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin: 0;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+
+  &[data-verified='true'],
+  &[data-status='live'] {
+    border-color: styles.$color-status-success;
+    color: styles.$color-status-success;
+  }
+
+  &[data-verified='false'],
+  &[data-status='expired-by-time'],
+  &[data-status='expired'] {
+    border-color: styles.$color-status-warning;
+    color: styles.$color-status-warning;
+  }
+
+  &[data-status='revoked'],
+  &[data-status='failed'] {
+    border-color: styles.$color-status-error;
+    color: styles.$color-status-error;
+  }
+
+  &[data-primary='true'] {
+    border-color: styles.$color-status-info;
+    color: styles.$color-status-info;
+  }
+}
+
+.customer-access-alert {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+
+  &[data-tone='success'] {
+    border-color: styles.$color-status-success;
+  }
+
+  &[data-tone='warning'] {
+    border-color: styles.$color-status-warning;
+  }
+
+  &[data-tone='error'] {
+    border-color: styles.$color-status-error;
+  }
+
+  &[data-tone='info'] {
+    border-color: styles.$color-status-info;
+  }
+
+  > strong {
+    color: styles.$color-text-primary;
+  }
+}
+
+.customer-access-timeline {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: styles.$font-size-caption;
+
+  th,
+  td {
+    padding: styles.spacing(8);
+    text-align: left;
+    border-bottom: 1px solid styles.$color-border-primary;
+  }
+
+  th {
+    background: styles.$color-background-secondary;
+    color: styles.$color-text-secondary;
+    font-weight: styles.$font-weight-medium;
+  }
+
+  td {
+    color: styles.$color-text-primary;
+
+    &[data-outcome='FAILED_TERMINAL'] {
+      color: styles.$color-status-error;
+    }
+
+    &[data-outcome='FAILED_RETRYABLE'] {
+      color: styles.$color-status-warning;
+    }
+
+    &[data-outcome='DELIVERED'] {
+      color: styles.$color-status-success;
+    }
+  }
+}
+
+.customer-access-empty {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  align-items: center;
+  padding: styles.spacing(32) styles.spacing(24);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  text-align: center;
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__body {
+    margin: 0;
+    max-width: 520px;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.customer-access-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  width: min(520px, calc(100vw - #{styles.spacing(32)}));
+  padding: styles.spacing(24);
+  background: styles.$color-surface-primary;
+  border-radius: styles.$radius-card;
+
+  &__backdrop {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: styles.spacing(16);
+    background: styles.$color-overlay-scrim;
+    z-index: 40;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__label {
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  &__reason {
+    width: 100%;
+    padding: styles.spacing(8);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+    resize: vertical;
+
+    &[aria-invalid='true'] {
+      border-color: styles.$color-status-error;
+    }
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__error {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-status-error;
+  }
+
+  &__actions {
+    display: flex;
+    gap: styles.spacing(8);
+    margin-top: styles.spacing(8);
+  }
+
+  &__primary,
+  &__danger,
+  &__secondary {
+    padding: styles.spacing(8) styles.spacing(16);
+    border-radius: styles.$radius-button;
+    border: 0;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: progress;
+    }
+  }
+
+  &__primary {
+    background: styles.$color-action-primary;
+    color: styles.$color-surface-primary;
+  }
+
+  &__danger {
+    background: styles.$color-status-error;
+    color: styles.$color-surface-primary;
+  }
+
+  &__secondary {
+    background: styles.$color-background-secondary;
+    color: styles.$color-text-primary;
+    border: 1px solid styles.$color-border-primary;
+  }
+}

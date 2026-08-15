@@ -1,5 +1,6 @@
 import { AUTHENTICATED_HOME_ROUTE } from '../../../config/routes';
 import { ADMIN_ASSETS_ROUTE, ASSET_COPY } from '../../assets';
+import { ADMIN_CUSTOMER_ACCESS_ROUTE, CUSTOMER_ACCESS_COPY } from '../../customer-access-support';
 import { ADMIN_DESIGN_TEMPLATES_ROUTE, DESIGN_TEMPLATE_COPY } from '../../design-templates';
 import { ADMIN_PRODUCTS_ROUTE, PRODUCT_COPY } from '../../products';
 
@@ -18,9 +19,10 @@ export interface AdminNavItem {
 /**
  * The authenticated shell's primary navigation. `APP2-A01` adds the asset
  * library as the first real business destination, `APP2-A02` adds the product
- * list and `APP3-A02` adds the Design Template list; the label and the route
- * both come from the owning capability, so there is one spelling of each. Order
- * follows the approved Admin frames.
+ * list, `APP3-A02` adds the Design Template list and `APP4-A01` adds customer
+ * access support; the label and the route both come from the owning capability,
+ * so there is one spelling of each. Order follows the approved Admin frames,
+ * which put support last.
  */
 export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
   { id: 'overview', label: 'Tổng quan', href: AUTHENTICATED_HOME_ROUTE },
@@ -30,6 +32,11 @@ export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
     id: 'design-templates',
     label: DESIGN_TEMPLATE_COPY.page.title,
     href: ADMIN_DESIGN_TEMPLATES_ROUTE,
+  },
+  {
+    id: 'customer-access-support',
+    label: CUSTOMER_ACCESS_COPY.page.title,
+    href: ADMIN_CUSTOMER_ACCESS_ROUTE,
   },
 ];
 
