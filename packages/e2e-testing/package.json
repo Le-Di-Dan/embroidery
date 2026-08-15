@@ -14,6 +14,7 @@
     "e2e:smoke": "node scripts/run-e2e.mjs --smoke",
     "e2e:full": "node scripts/run-e2e.mjs --full",
     "e2e:app1": "node scripts/run-e2e.mjs --app1",
+    "e2e:app4": "node scripts/run-e2e.mjs --app4",
     "e2e:headed": "node scripts/run-e2e.mjs --headed",
     "e2e:debug": "node scripts/run-e2e.mjs --debug",
     "e2e:report": "playwright show-report playwright-report",

@@ -35,19 +35,75 @@ const FULL = [
 // @playwright/test installed, no workspace) cannot provide.
 const APP1 = ['app1-admin-chromium', 'app1-storefront-chromium'];
 
+/**
+ * `--app4` (APP4-E01-H01) is not a Playwright mode.
+ *
+ * It starts the lean APP4 topology — PostgreSQL, MinIO and the real API HTTP
+ * process carrying this run's ephemeral APP4 secret material — and runs the H01
+ * runtime smoke as a plain Node child. No browser tier is started because H01 is
+ * forbidden from opening one; the browser projects arrive with `APP4-E01-H02`.
+ */
+async function runApp4Mode({ config, runId, log }) {
+  const { createApp4SecretConfig, app4SecretEnv } =
+    await import('../support/orchestration/config.mjs');
+  const { startApp4Environment } = await import('../support/app4/app4-environment.mjs');
+  const { spawn } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+
+  const app4 = createApp4SecretConfig(runId);
+  const smokePath = fileURLToPath(
+    new URL('../support/app4/app4-runtime.smoke.mjs', import.meta.url),
+  );
+  let env;
+  try {
+    env = await startApp4Environment({ runId, config, app4, log });
+    log(`api ready @ ${env.apiBaseUrl} — running H01 smoke`);
+    const exitCode = await new Promise((resolve, reject) => {
+      const child = spawn(process.execPath, [smokePath], {
+        cwd: config.packageRoot,
+        // The same universe the API process was started with — passed through
+        // the child environment only, never an argument and never logged.
+        env: {
+          ...process.env,
+          ...app4SecretEnv(app4),
+          E2E_RUN_ID: runId,
+          E2E_DATABASE_URL: env.database.url,
+          E2E_APP4_API_BASE_URL: env.apiBaseUrl,
+          E2E_APP4_CODE_PEPPER: app4.verificationCodePepper,
+          E2E_APP4_LINK_PEPPER: app4.secureLinkTokenPepper,
+          E2E_APP4_ENVELOPE_KEY: app4.notificationDeliveryEnvelopeKey,
+          E2E_APP4_STOREFRONT_ORIGIN: app4.storefrontOrigin,
+        },
+        stdio: 'inherit',
+        shell: false,
+      });
+      child.once('error', reject);
+      child.once('exit', (code) => resolve(code ?? 1));
+    });
+    return exitCode;
+  } finally {
+    if (env !== undefined) {
+      log('tearing down APP4 environment');
+      await env.cleanup.run({ logger: log });
+    }
+  }
+}
+
 function parseArgs(argv) {
   const flags = new Set(argv.filter((a) => a.startsWith('--')));
   const runnerArg = argv.find((a) => a.startsWith('--runner='));
   const app1 = flags.has('--app1');
+  // APP4-E01-H01: a non-Playwright mode, so it short-circuits before projects.
+  const app4 = flags.has('--app4');
   const full = flags.has('--full');
-  const mode = app1 ? 'app1' : full ? 'full' : 'smoke';
+  const mode = app4 ? 'app4' : app1 ? 'app1' : full ? 'full' : 'smoke';
   const projects = app1 ? APP1 : full ? FULL : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner = app1 ? 'host' : runnerArg ? runnerArg.split('=')[1] : full ? 'container' : 'host';
   const extraArgs = [];
   if (flags.has('--headed')) extraArgs.push('--headed');
   if (flags.has('--debug')) extraArgs.push('--debug');
-  return { mode, projects, runner, extraArgs, app1 };
+  return { mode, projects, runner, extraArgs, app1, app4 };
 }
 
 function log(message) {
@@ -65,9 +121,16 @@ async function verifyClean(config) {
 }
 
 async function main() {
-  const { mode, projects, runner, extraArgs, app1 } = parseArgs(process.argv.slice(2));
+  const { mode, projects, runner, extraArgs, app1, app4 } = parseArgs(process.argv.slice(2));
   const config = loadE2EConfig();
   const runId = createRunId();
+
+  // APP4-E01-H01 owns its own lean topology and teardown, and starts no browser
+  // tier, so it returns before any Playwright/project machinery below.
+  if (app4) {
+    log(`run ${runId} — mode=app4 (E01 runtime harness smoke)`);
+    process.exit(await runApp4Mode({ config, runId, log }));
+  }
   const adminCredentials = app1 ? createAdminCredentials(runId) : undefined;
   log(`run ${runId} — mode=${mode} runner=${runner} projects=${projects.length}`);
 

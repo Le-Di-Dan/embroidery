@@ -25,10 +25,15 @@ async function readyPredicate(res) {
 }
 
 /**
- * @param {{ config: object, databaseUrl: string, adminOrigins: string }} params
+ * `extraEnv` is merged last: `APP4-E01-H01` uses it to hand this process the
+ * run's ephemeral APP4 secret material, so the API HTTP process seals delivery
+ * envelopes under the same key the in-process E01 contexts open them with. It is
+ * passed through the child's environment only — never an argument, never logged.
+ *
+ * @param {{ config: object, databaseUrl: string, adminOrigins: string, extraEnv?: Record<string, string> }} params
  * @returns {{ start: () => Promise<void>, stop: () => Promise<void>, restart: () => Promise<void>, isRunning: () => boolean, tail: () => string, readinessUrl: string }}
  */
-export function createApiService({ config, databaseUrl, adminOrigins }) {
+export function createApiService({ config, databaseUrl, adminOrigins, extraEnv = {} }) {
   const storage = config.storage;
   const spec = {
     name: 'api',
@@ -65,6 +70,7 @@ export function createApiService({ config, databaseUrl, adminOrigins }) {
       OBJECT_STORAGE_SECRET_ACCESS_KEY: storage.secretAccessKey,
       OBJECT_STORAGE_ORIGINALS_BUCKET: storage.originalsBucket,
       OBJECT_STORAGE_DERIVATIVES_BUCKET: storage.derivativesBucket,
+      ...extraEnv,
     },
   };
   const readinessUrl = `http://localhost:${config.ports.api}/api/health/readiness`;

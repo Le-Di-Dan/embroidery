@@ -33,6 +33,69 @@ export function createAdminCredentials(runId) {
   };
 }
 
+/**
+ * Per-run APP4 secret material for the E01 cross-layer harness (APP4-E01-H01).
+ *
+ * Three values, three different primitives, and `loadApp4SecretPepperConfig`
+ * rejects a pair that reuses another's value — so these are generated
+ * independently rather than derived from one seed. Generated fresh per run and
+ * held only in memory: the development stack deliberately ships no defaults for
+ * them (a development default is the unpeppered-equivalent shortcut the APP4
+ * ruling forbids), and nothing here is ever written to `.env` or a report.
+ *
+ * `storefrontOrigin` is not secret. It is the origin `APP4-B05` renders the
+ * absolute secure link against, and `.invalid` is reserved by RFC 6761 so it can
+ * never resolve — the same choice `APP4-W01`'s own suites make. It is a test
+ * value, the only place IMP-D050 permits an example origin to exist.
+ *
+ * The peppers must clear a 32-character minimum; 24 random bytes as hex is 48.
+ * The envelope key must decode to exactly 32 bytes, so it is exactly 32 random
+ * bytes in base64 — never a literal, which would be a credential in the
+ * repository whether or not anything real were sealed under it.
+ */
+export function createApp4SecretConfig(runId) {
+  return {
+    verificationCodePepper: `e01-code-${runId}-${randomBytes(24).toString('hex')}`,
+    secureLinkTokenPepper: `e01-link-${runId}-${randomBytes(24).toString('hex')}`,
+    notificationDeliveryEnvelopeKey: randomBytes(32).toString('base64'),
+    storefrontOrigin: 'https://storefront.e01.test.invalid',
+    // Not APP4 material, and carried here only because the *real* graph cannot
+    // be built without it: APP3-B07 composed the Design module into `AppModule`,
+    // and anonymous Design Session secrets are verified with a peppered HMAC
+    // that has no unpeppered fallback. Generated per run for the same reason as
+    // the values above — a committed default would be the shortcut the APP3 and
+    // APP4 rulings both forbid.
+    designSessionPepper: `e01-design-${randomBytes(24).toString('hex')}`,
+  };
+}
+
+/**
+ * The APP4 secret material as the process environment every APP4 consumer reads.
+ *
+ * One builder, so the API HTTP process, the API in-process context and the
+ * worker in-process context cannot drift onto different peppers — a mismatch
+ * would surface as an envelope that will not open, which reads like a W01 defect
+ * and is not one.
+ */
+export function app4SecretEnv(app4) {
+  return {
+    VERIFICATION_CODE_SECRET_PEPPER: app4.verificationCodePepper,
+    SECURE_LINK_TOKEN_SECRET_PEPPER: app4.secureLinkTokenPepper,
+    NOTIFICATION_DELIVERY_ENVELOPE_KEY: app4.notificationDeliveryEnvelopeKey,
+    STOREFRONT_PUBLIC_ORIGIN: app4.storefrontOrigin,
+    DESIGN_SESSION_SECRET_PEPPER: app4.designSessionPepper,
+  };
+}
+
+/** The secret values alone — for the leak guard to scan *for*, never to print. */
+export function app4SecretValues(app4) {
+  return [
+    app4.verificationCodePepper,
+    app4.secureLinkTokenPepper,
+    app4.notificationDeliveryEnvelopeKey,
+  ];
+}
+
 function port(env, key, fallback) {
   const raw = env[key];
   return raw === undefined || raw === '' ? fallback : Number(raw);
