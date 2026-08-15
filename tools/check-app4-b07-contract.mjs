@@ -35,13 +35,15 @@ import { MODULE_DIR } from './check-app4-b03-contract.mjs';
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The three canonical routes, under the global API prefix. */
+/** The four canonical routes, under the global API prefix. */
+export const RESOLVE_PATH = '/api/admin/customers/resolve';
 export const DETAIL_PATH = '/api/admin/customers/{customerId}';
 export const GRANTS_PATH = '/api/admin/customers/{customerId}/grants';
 export const REVOKE_PATH = '/api/admin/secure-grants/{grantId}/revoke';
 
 /** Path → the one verb B07 owns on it. A second verb is a new operation. */
 const ROUTE_VERBS = Object.freeze([
+  [RESOLVE_PATH, 'post'],
   [DETAIL_PATH, 'get'],
   [GRANTS_PATH, 'get'],
   [REVOKE_PATH, 'post'],
@@ -84,16 +86,18 @@ export const B07_SOURCES = Object.freeze([
 ]);
 
 /**
- * The entry world (47) plus exactly B07's three — 50 at B07's closure. Now 52,
- * after `APP4-B08`'s Admin notification list and manual replay. Measured, not
- * assumed.
+ * The entry world (47) plus exactly B07's three — 50 at B07's closure. Then 52,
+ * after `APP4-B08`'s Admin notification list and manual replay. Now 53, after
+ * the Product Owner's `APP4-A01` authority unblock added B07's exact-contact
+ * resolver. Measured, not assumed.
  *
  * Restated rather than dropped: the count's job is to catch an operation
- * appearing *beside* B07's three, and a rule that stopped counting would stop
- * doing that. B07's own three routes and their verbs are still asserted by name.
+ * appearing *beside* the ones B07 owns, and a rule that stopped counting would
+ * stop doing that. B07's own four routes and their verbs are still asserted by
+ * name below.
  */
 const B06_BASELINE_OPERATIONS = 47;
-const EXPECTED_OPERATIONS = 52;
+const EXPECTED_OPERATIONS = 53;
 const MIGRATION_COUNT = 34;
 
 /** The exact Admin guard, and the exact security scheme its routes publish. */
@@ -164,7 +168,7 @@ function checkPublishedSurface(rootDir, fail) {
   if (total !== EXPECTED_OPERATIONS) {
     fail(
       `the document publishes ${String(total)} operations; expected ${String(EXPECTED_OPERATIONS)} ` +
-        `— the APP4-B06 baseline of ${String(B06_BASELINE_OPERATIONS)}, plus B07's three, ` +
+        `— the APP4-B06 baseline of ${String(B06_BASELINE_OPERATIONS)}, plus B07's four, ` +
         `plus every operation accepted since`,
     );
   }
@@ -176,11 +180,12 @@ function checkPublishedSurface(rootDir, fail) {
   );
   const unexpected = admin.filter((path) => !owned.includes(path));
   if (unexpected.length > 0) {
-    fail(`the Admin support surface also declares [${unexpected.join(', ')}]; B07 owns three`);
+    fail(`the Admin support surface also declares [${unexpected.join(', ')}]; B07 owns four`);
   }
 
   // 42 — the operation ids are B07's own and collide with no accepted one.
   const expectedIds = {
+    [RESOLVE_PATH]: 'adminCustomerSupport_resolve',
     [DETAIL_PATH]: 'adminCustomerSupport_detail',
     [GRANTS_PATH]: 'adminCustomerSupport_grants',
     [REVOKE_PATH]: 'adminSecureGrant_revoke',
@@ -289,14 +294,33 @@ function checkForbiddenOperations(rootDir, fail) {
     }
   }
 
-  // 10 — the customer controller carries reads only.
+  // 10 — the customer controller still carries no state-changing verb.
+  //
+  // `@Post(` is no longer banned outright: the Product Owner's `APP4-A01` ruling
+  // put the exact-contact resolver on this controller, and it is a POST so a
+  // real person's address never lands in a URL. The rule is therefore narrowed
+  // rather than dropped — the only POST permitted is that one route, by literal
+  // path, and a second one fails here.
   const customerController = codeOf(rootDir, 'customerController');
-  for (const verb of ['@Post(', '@Patch(', '@Put(', '@Delete(']) {
+  for (const verb of ['@Patch(', '@Put(', '@Delete(']) {
     if (customerController.includes(verb)) {
       fail(
         `${CANONICAL_FILES.customerController}: declares ${verb}; the customer surface is read-only`,
       );
     }
+  }
+  const posts = customerController.match(/@Post\(\s*'([^']*)'/g) ?? [];
+  if (posts.length > 1) {
+    fail(
+      `${CANONICAL_FILES.customerController}: declares ${String(posts.length)} @Post routes; ` +
+        `the resolver is the only one`,
+    );
+  }
+  if (posts.length === 1 && !posts[0].includes("'resolve'")) {
+    fail(
+      `${CANONICAL_FILES.customerController}: the only permitted @Post is 'resolve'; ` +
+        `found ${posts[0]}`,
+    );
   }
 
   // 10, 11 — and no B07 file calls a customer write, a merge or an anonymize.
@@ -307,17 +331,105 @@ function checkForbiddenOperations(rootDir, fail) {
     'setPrimaryContact',
     'upsertBusinessProfile',
     'anonymize',
-    'findByVerifiedContact',
   ];
   for (const file of sources(rootDir)) {
     for (const method of writes) {
       if (new RegExp(`\\.${method}\\s*\\(`).test(file.code)) {
-        fail(`${file.path}: calls ${method}; B07 mutates no customer and resolves none by contact`);
+        fail(`${file.path}: calls ${method}; B07 mutates no customer`);
       }
     }
     if (/\bmerge(d)?Into|mergeCustomer|anonymizedAt/i.test(file.code)) {
       fail(`${file.path}: reads merge or anonymization state; both are out of scope`);
     }
+    // The resolver's repository call is authorized in exactly one file. It used
+    // to be banned everywhere; keeping the ban for every *other* B07 file is
+    // what stops a second, looser contact lookup appearing beside it.
+    if (file.path !== CANONICAL_FILES.query && /\.findByVerifiedContact\s*\(/.test(file.code)) {
+      fail(`${file.path}: resolves a customer by contact; only the support query may`);
+    }
+  }
+}
+
+/**
+ * The exact-contact resolver, and the four properties that keep it from being
+ * the search this checkpoint still refuses (Product Owner `APP4-A01` unblock).
+ */
+function checkContactResolver(rootDir, fail) {
+  const document = loadOpenApi(rootDir, fail);
+  const query = codeOf(rootDir, 'query');
+  const request = codeOf(rootDir, 'request');
+  const controller = codeOf(rootDir, 'customerController');
+
+  // 1 — the contact travels in a body, never in the URL. A path or query
+  // parameter on this route would put an address in every access log.
+  if (document !== undefined) {
+    const operation = document.paths?.[RESOLVE_PATH]?.post;
+    if (operation === undefined) {
+      fail(`${RESOLVE_PATH} publishes no POST; the resolver is B07's entry point`);
+    } else {
+      // Path and query are banned outright — those are the URL, and the URL is
+      // what reaches an access log, a browser history entry and a `Referer`.
+      // Headers are left to the platform (`X-Request-ID` is on every operation),
+      // but a header *named* like a contact is refused wherever it appears.
+      for (const parameter of operation.parameters ?? []) {
+        const where = String(parameter.in);
+        const name = String(parameter.name);
+        if (where === 'path' || where === 'query') {
+          fail(
+            `${RESOLVE_PATH} declares the ${where} parameter "${name}"; the contact is body-only`,
+          );
+        }
+        if (/email|phone|contact|term|search|q$/i.test(name)) {
+          fail(
+            `${RESOLVE_PATH} declares the ${where} parameter "${name}"; a contact never leaves the body`,
+          );
+        }
+      }
+      if (operation.requestBody === undefined) {
+        fail(`${RESOLVE_PATH} declares no request body; the contact has nowhere else to go`);
+      }
+    }
+
+    // 7 — the response is one id. A contact in any form, or a customer
+    // projection, would make a miss informative and a hit a second detail read.
+    const resolution = document.components?.schemas?.['AdminCustomerResolutionResponse'];
+    const fields = Object.keys(resolution?.properties ?? {}).sort();
+    if (JSON.stringify(fields) !== JSON.stringify(['customerId'])) {
+      fail(
+        `AdminCustomerResolutionResponse publishes [${fields.join(', ')}]; expected [customerId]`,
+      );
+    }
+  }
+
+  // 4 — P01 normalization, reused. A second normalizer would let an operator
+  // and a customer type the same address and reach different rows.
+  for (const symbol of ['normalizeEmail', 'normalizePhone']) {
+    if (!new RegExp(`\\b${symbol}\\s*\\(`).test(query)) {
+      fail(`${CANONICAL_FILES.query}: does not call ${symbol}; P01 owns normalization`);
+    }
+  }
+  if (/function\s+normalize(Email|Phone|Contact)\b/.test(query)) {
+    fail(`${CANONICAL_FILES.query}: defines its own normalizer; P01 owns normalization`);
+  }
+
+  // 5, 6 — exact matching only. Any of these turns the lookup into a search.
+  for (const [file, code] of [
+    [CANONICAL_FILES.query, query],
+    [CANONICAL_FILES.request, request],
+    [CANONICAL_FILES.customerController, controller],
+  ]) {
+    if (/\b(ilike|like|similarity|to_tsquery|websearch|startsWith|\bLIKE\b)\s*\(/i.test(code)) {
+      fail(`${file}: uses a pattern or fuzzy match; the resolver matches whole values only`);
+    }
+    if (/\b(limit|cursor|offset|page)\s*:/i.test(code)) {
+      fail(`${file}: accepts a paging parameter; the resolver returns one Customer or none`);
+    }
+  }
+
+  // 8 — the submitted value is never returned. The response type has one field,
+  // and the projection is built from the repository result, not from the body.
+  if (/body\.contact\b(?!\s*\))/.test(controller.replace(/resolveByContact\([^)]*\)/g, ''))) {
+    fail(`${CANONICAL_FILES.customerController}: reads body.contact outside the resolver call`);
   }
 }
 
@@ -363,7 +475,12 @@ function checkContactProjection(rootDir, fail) {
     fail('AdminCustomerDetailResponse is not published as a component');
   } else {
     const fields = Object.keys(detail.properties ?? {}).sort();
-    const expected = ['contacts', 'customerId', 'verifiedAt'];
+    // `displayName` joined the projection under the Product Owner's `APP4-A01`
+    // ruling — it is on every approved Customer card, and an operator about to
+    // kill someone's access has to know they have the right person. The list
+    // stays exhaustive so a *second* identity field cannot arrive beside it, and
+    // the Business Profile ban below is untouched.
+    const expected = ['contacts', 'customerId', 'displayName', 'verifiedAt'];
     if (JSON.stringify(fields) !== JSON.stringify(expected)) {
       fail(
         `AdminCustomerDetailResponse publishes [${fields.join(', ')}]; expected [${expected.join(', ')}]`,
@@ -659,9 +776,12 @@ function checkTransportAndClient(rootDir, fail) {
   const controller = codeOf(rootDir, 'customerController');
   const headers =
     controller.match(/@Header\('Cache-Control',\s*ADMIN_SUPPORT_CACHE_CONTROL\)/g) ?? [];
-  if (headers.length !== 2) {
+  // Three now: the two GETs and the resolver. `no-store` matters most on the
+  // resolver, where a cached response would associate a contact with a Customer
+  // id in a shared proxy.
+  if (headers.length !== 3) {
     fail(
-      `${CANONICAL_FILES.customerController}: ${String(headers.length)} of 2 reads set ` +
+      `${CANONICAL_FILES.customerController}: ${String(headers.length)} of 3 reads set ` +
         'Cache-Control from the support policy',
     );
   }
@@ -718,6 +838,7 @@ export function checkApp4B07(rootDir = REPO_ROOT) {
   checkPublishedSurface(rootDir, fail);
   checkAdminAuthorization(rootDir, fail);
   checkForbiddenOperations(rootDir, fail);
+  checkContactResolver(rootDir, fail);
   checkContactProjection(rootDir, fail);
   checkGrantProjection(rootDir, fail);
   checkRevocation(rootDir, fail);
@@ -728,12 +849,16 @@ export function checkApp4B07(rootDir = REPO_ROOT) {
 }
 
 const SUMMARY =
-  'check:app4-b07-contract — exactly three published operations at the canonical Admin customer ' +
-  'detail, customer grants and secure-grant revoke routes, each behind the delivered ' +
-  'AuthenticatedAdminGuard with no second guard, no role model and no session parsing of its own; ' +
-  'no customer list, search or contact lookup, no customer mutation and no merge or anonymization; ' +
+  'check:app4-b07-contract — exactly four published operations at the canonical Admin customer ' +
+  'resolve, customer detail, customer grants and secure-grant revoke routes, each behind the ' +
+  'delivered AuthenticatedAdminGuard with no second guard, no role model and no session parsing ' +
+  'of its own; an exact-contact resolver that takes its contact in the body and never in the ' +
+  'URL, normalizes through P01 rather than a second normalizer, uses no pattern, fuzzy or paged ' +
+  'match and answers with one customerId and nothing else; ' +
+  'no customer list or search surface, no customer mutation and no merge or anonymization; ' +
   'a contact projection of kind, P01 mask, verified and primary with no raw, normalized, display ' +
-  'or source value and no Business Profile; a grant projection of id, request, scope, status and ' +
+  'or source value, and a customer identity of id, verifiedAt and the Customer’s own displayName ' +
+  'with no Business Profile; a grant projection of id, request, scope, status and ' +
   'expiry with no token, hash, digest or ciphertext anywhere in the source, the contract or the ' +
   'generated client; a customer-scoped, read-only, deterministically ordered repository read that ' +
   'never selects the digest; a strict revoke body of one non-blank bounded reason answering 204, ' +

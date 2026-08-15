@@ -65,6 +65,16 @@ export interface AdminNotificationIntentView {
 
 export interface AdminIntentListQuery {
   readonly status?: NotificationIntentState | undefined;
+  /**
+   * Narrows to the notifications explicitly bound to one Customer.
+   *
+   * Passed straight through to the repository, which resolves it through the
+   * persisted contact-point reference. This class derives nothing from it and
+   * compares no projected field against it — in particular it never filters the
+   * page it got back by `recipientMasked`, which would be the mask-inference
+   * `APP4-A01` §8 forbids, wearing the clothes of a Customer filter.
+   */
+  readonly customerId?: string | undefined;
 }
 
 @Injectable()
@@ -77,6 +87,7 @@ export class AdminNotificationIntentQuery {
   async list(query: AdminIntentListQuery): Promise<readonly AdminNotificationIntentView[]> {
     const rows = await this.intents.listForAdmin({
       ...(query.status === undefined ? {} : { status: query.status }),
+      ...(query.customerId === undefined ? {} : { customerId: query.customerId }),
       limit: ADMIN_INTENT_PAGE_SIZE,
     });
 

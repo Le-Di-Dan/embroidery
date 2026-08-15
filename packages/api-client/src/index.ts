@@ -431,6 +431,64 @@ export type {
   SecureLinkResolutionResponse,
 } from './generated/embroidery-api.schemas';
 
+// Admin Customer support and notification delivery (APP4-B07, APP4-B08),
+// consumed by the Admin customer-access support screen (APP4-A01). Exposed here
+// so that feature never deep-imports the generated tree.
+//
+// Five operations, and the shape of the set is the boundary. There is no Admin
+// grant *issue* or *reissue* here and there must not be: revocation mints
+// nothing, and restoring access is a fresh issue through the business flow
+// (`APP4-B05`), which has no HTTP surface at all. There is no customer list,
+// create, update or merge, because none exists to export.
+//
+// `adminCustomerSupportResolve` is the screen's entry point and the one
+// operation that carries a real contact. It takes `ResolveCustomerByContactBody`
+// — a request **body**, never a query parameter — which is what keeps an email
+// or a phone number out of every access log and browser history entry between
+// the operator and the API. The body type is exported so the caller names the
+// wire shape at the transport seam instead of assembling a literal that would
+// compile just as well with the value in the wrong field.
+//
+// Three enums cross as **values**, because the screen branches on each and a
+// mistyped string literal is a comparison that is simply never true:
+// `ResolveCustomerByContactBodyContactKind` (which kind the operator is
+// submitting), `AdminNotificationIntentListStatus` (the screen asks the server
+// for FAILED rather than downloading everything and filtering) and
+// `NotificationReplayResponseOutcome` — the authoritative CREATED/EXISTING the
+// replay states are keyed on, which exists precisely so a client never has to
+// infer a duplicate from timing or a remembered id.
+export {
+  adminCustomerSupportResolve,
+  adminCustomerSupportDetail,
+  adminCustomerSupportGrants,
+  adminSecureGrantRevoke,
+  adminNotificationIntentList,
+  adminNotificationIntentReplay,
+} from './generated/embroidery-api';
+export {
+  ResolveCustomerByContactBodyContactKind,
+  AdminCustomerContactResponseKind,
+  AdminSecureGrantResponseStatus,
+  AdminNotificationIntentListStatus,
+  AdminNotificationIntentResponseStatus,
+  AdminNotificationAttemptResponseOutcome,
+  NotificationReplayResponseOutcome,
+} from './generated/embroidery-api.schemas';
+export type {
+  ResolveCustomerByContactBody,
+  AdminCustomerResolutionResponse,
+  AdminCustomerDetailResponse,
+  AdminCustomerContactResponse,
+  AdminCustomerGrantsResponse,
+  AdminSecureGrantResponse,
+  RevokeSecureGrantBody,
+  AdminNotificationIntentListParams,
+  AdminNotificationIntentListResponse,
+  AdminNotificationIntentResponse,
+  AdminNotificationAttemptResponse,
+  NotificationReplayResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

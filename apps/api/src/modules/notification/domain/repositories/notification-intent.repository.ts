@@ -102,9 +102,27 @@ export interface NotificationDeliveryAttemptRecord {
   readonly errorClass: string | undefined;
 }
 
-/** The Admin list filter. One closed-set status, and nothing else. */
+/**
+ * The Admin list filter: one closed-set status, one Customer, and nothing else.
+ *
+ * `customerId` was added under the Product Owner's `APP4-A01` authority ruling
+ * and is the *only* way this list may be narrowed to a person. It resolves
+ * through the persisted `recipient_contact_point_id` — an explicit foreign
+ * reference to a contact point whose `customer_id` is the one asked for — and
+ * through nothing else. Not the mask, not the template, not the channel, not a
+ * timestamp window: those are recognisable coincidences, not relationships, and
+ * binding on one would attach another customer's delivery failure to this
+ * customer's support screen.
+ *
+ * An intent whose `recipient_contact_point_id` is null therefore never matches.
+ * The column is nullable because an intent may address a destination that is not
+ * yet a contact point (G-DB7-48), and such a row genuinely has no owner to
+ * claim it. That is a truthful gap, not one to be closed by inference.
+ */
 export interface AdminIntentListFilter {
   readonly status?: NotificationIntentState | undefined;
+  /** Binds through `recipient_contact_point_id` → `customer_contact_points.customer_id`. */
+  readonly customerId?: string | undefined;
   readonly limit: number;
 }
 
@@ -151,12 +169,16 @@ export interface NotificationIntentRepository {
   /**
    * The Admin support list (`APP4-B08`).
    *
-   * Optionally filtered by one persisted lifecycle state, newest first, bounded
-   * by the caller's limit. There is deliberately no recipient, customer,
-   * template or free-text search parameter: the masked recipient exists so an
-   * operator can *recognise* a destination, and making it searchable would turn
-   * a support screen into a contact-lookup oracle — the exact outcome masking
-   * was introduced to prevent (`ADR-APP4-001` §2.3).
+   * Optionally filtered by one persisted lifecycle state and one Customer,
+   * newest first, bounded by the caller's limit. There is still deliberately no
+   * recipient, template or free-text search parameter: the masked recipient
+   * exists so an operator can *recognise* a destination, and making it
+   * searchable would turn a support screen into a contact-lookup oracle — the
+   * exact outcome masking was introduced to prevent (`ADR-APP4-001` §2.3).
+   *
+   * The Customer filter is not that. It takes an id the caller already holds and
+   * follows a persisted reference, so it can answer "what failed for this
+   * Customer" without being able to answer "whose is this address".
    */
   listForAdmin(filter: AdminIntentListFilter): Promise<NotificationIntentRecord[]>;
 

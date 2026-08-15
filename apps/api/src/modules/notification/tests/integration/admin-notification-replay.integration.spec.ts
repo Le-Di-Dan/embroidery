@@ -348,8 +348,11 @@ describe('APP4-B08 Admin manual replay (integration)', () => {
       const response = await replay(source.intentId).expect(200);
       const payload = dataOf<ReplayPayload>(response);
 
-      // The HTTP response carries two fields and nothing else.
-      expect(Object.keys(payload).sort()).toEqual(['replayIntentId', 'status']);
+      // The HTTP response carries three fields and nothing else. `outcome`
+      // joined them under the Product Owner's `APP4-A01` ruling — it reports
+      // whether this call created the replay, and carries nothing about the
+      // customer, the message or the secret.
+      expect(Object.keys(payload).sort()).toEqual(['outcome', 'replayIntentId', 'status']);
       const body = JSON.stringify(response.body);
       expect(body).not.toContain(FIXTURE_CODE);
       expect(body).not.toContain(FIXTURE_EMAIL);

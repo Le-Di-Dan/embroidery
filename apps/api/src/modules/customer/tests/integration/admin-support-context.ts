@@ -305,8 +305,9 @@ export function dataOf<T>(response: { readonly body: unknown }): T {
   return (response.body as { readonly data: T }).data;
 }
 
-/** The three canonical routes, under the global API prefix. */
+/** The four canonical routes, under the global API prefix. */
 export const ROUTES = {
+  resolve: () => `/${GLOBAL_ROUTE_PREFIX}/admin/customers/resolve`,
   detail: (customerId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/customers/${customerId}`,
   grants: (customerId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/customers/${customerId}/grants`,
   revoke: (grantId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/secure-grants/${grantId}/revoke`,

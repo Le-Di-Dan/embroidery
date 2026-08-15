@@ -34,6 +34,7 @@ import {
 /** The published support projection, as the wire carries it. */
 interface Detail {
   readonly customerId: string;
+  readonly displayName?: string;
   readonly verifiedAt: string;
   readonly contacts: readonly {
     readonly kind: string;
@@ -163,7 +164,15 @@ describe('APP4-B07 Admin customer support (integration)', () => {
         .expect(200);
 
       const data = dataOf<Detail>(response);
-      expect(Object.keys(data).sort()).toEqual(['contacts', 'customerId', 'verifiedAt']);
+      // `displayName` joined this list under the Product Owner's A01 ruling; the
+      // exhaustive comparison is what keeps a *second* identity field from
+      // arriving unnoticed beside it.
+      expect(Object.keys(data).sort()).toEqual([
+        'contacts',
+        'customerId',
+        'displayName',
+        'verifiedAt',
+      ]);
       expect(Object.keys(data.contacts[0] ?? {}).sort()).toEqual([
         'kind',
         'maskedValue',
@@ -191,6 +200,50 @@ describe('APP4-B07 Admin customer support (integration)', () => {
       ]) {
         expect(body).not.toContain(forbidden);
       }
+    });
+
+    it('publishes the Customer’s own displayName, and no Business Profile beside it', async () => {
+      const { customerId } = await context.seedCustomer();
+      // A Business Profile on the same Customer. If the projection ever reached
+      // for a company name — as a fallback for a missing display name or
+      // otherwise — this row is what it would find.
+      await context.disposable.client.db.execute(
+        sql`insert into business_profiles (id, customer_id, company_name, tax_code)
+            values (${newId()}, ${customerId}, 'Công ty Chỉ Vàng', '0101234567')`,
+      );
+
+      const response = await request(context.server())
+        .get(ROUTES.detail(customerId))
+        .set('Cookie', context.adminCookie())
+        .expect(200);
+
+      const data = dataOf<Detail>(response);
+      expect(data.displayName).toBe('B07 Customer');
+
+      const body = JSON.stringify(response.body);
+      expect(body).not.toContain('Công ty Chỉ Vàng');
+      expect(body).not.toContain('0101234567');
+      // The new field must not have opened a route for a contact value either.
+      expect(body).not.toContain(FIXTURE_EMAIL);
+      expect(body).not.toContain(FIXTURE_PHONE);
+    });
+
+    it('omits displayName entirely when the Customer never supplied one', async () => {
+      const { customerId } = await context.seedCustomer();
+      await context.disposable.client.db.execute(
+        sql`update customers set display_name = null where id = ${customerId}`,
+      );
+
+      const response = await request(context.server())
+        .get(ROUTES.detail(customerId))
+        .set('Cookie', context.adminCookie())
+        .expect(200);
+
+      const data = dataOf<Detail>(response);
+      // Absent, not null and not an empty string: the screen must be able to tell
+      // "no name" from a name that happens to be blank.
+      expect('displayName' in data).toBe(false);
+      expect(data.customerId).toBe(customerId);
     });
 
     it('lists current contacts only and keeps the primary first', async () => {

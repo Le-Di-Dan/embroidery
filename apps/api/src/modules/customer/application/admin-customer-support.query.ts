@@ -1,11 +1,18 @@
 /**
- * The two Admin support reads (`APP4-B07`).
+ * The three Admin support reads (`APP4-B07`).
  *
  * `APP4_PHASE_ENTRY_AUDIT` B07 fixes what an operator may answer: *is this
  * Customer verified, which of their contacts are current and which is primary,
  * and which grants exist or are still potentially live*. This class answers
- * exactly those and holds no capability beyond them — no write, no search, no
- * merge, no anonymization, no notification and no APP5 content.
+ * exactly those and holds no capability beyond them — no write, no merge, no
+ * anonymization, no notification and no APP5 content.
+ *
+ * A third read joins them under the Product Owner's A01 authority ruling:
+ * {@link AdminCustomerSupportQuery.resolveByContact}, which turns one exact
+ * verified contact into the Customer id the other two are addressed by. It is a
+ * *lookup*, not the search this class still refuses — one whole normalized
+ * value, one row or none, no list and no partial match. The distinction is
+ * argued where the method is defined.
  *
  * ### It is a read, and it stays one
  *
@@ -27,6 +34,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { ContactKind } from '@embroidery/database';
 
 import { maskContact } from '../domain/contact/mask-contact';
+import { normalizeEmail } from '../domain/contact/normalize-email';
+import { normalizePhone } from '../domain/contact/normalize-phone';
 import {
   CUSTOMER_REPOSITORY,
   type ContactPoint,
@@ -51,6 +60,8 @@ export interface AdminContactView {
 
 export interface AdminCustomerDetailView {
   readonly customerId: string;
+  /** The Customer's own name, when they supplied one. Never a Business Profile. */
+  readonly displayName: string | undefined;
   /** When this identity came into existence. A Customer exists only verified. */
   readonly verifiedAt: Date;
   readonly contacts: readonly AdminContactView[];
@@ -76,12 +87,16 @@ export class AdminCustomerSupportQuery {
    * `true` documents nothing and invites a future writer to make it meaningful
    * by inventing an unverified state the model forbids.
    *
-   * Deliberately absent: `displayName` — not needed to answer any of the five
-   * B07 questions and it is a contact-adjacent free-text field a customer typed;
-   * `mergedIntoCustomerId` and `anonymizedAt` — merge history and anonymization
-   * are named out of scope; the Business Profile — likewise; and every
-   * credential, session, challenge and grant secret, which have no projection
-   * anywhere in this phase.
+   * `displayName` is published under the Product Owner's A01 authority ruling:
+   * it is on every approved Customer card because an operator has to confirm
+   * they are looking at the right person before killing their access. It is read
+   * from the Customer record this method already loaded — no second query, no
+   * Business Profile join, no fallback to a contact value when it is absent.
+   *
+   * Deliberately absent: `mergedIntoCustomerId` and `anonymizedAt` — merge
+   * history and anonymization are named out of scope; the Business Profile —
+   * likewise; and every credential, session, challenge and grant secret, which
+   * have no projection anywhere in this phase.
    */
   async detail(customerId: CustomerId): Promise<AdminCustomerDetailView> {
     const customer = await this.customers.findById(customerId);
@@ -92,9 +107,69 @@ export class AdminCustomerSupportQuery {
     const contacts = await this.customers.listContactPoints(customerId);
     return {
       customerId: customer.id,
+      displayName: customer.displayName,
       verifiedAt: customer.verifiedAt,
       contacts: contacts.filter(isCurrent).sort(byPrimaryThenKind).map(toContactView),
     };
+  }
+
+  /**
+   * The exact-contact resolver (Product Owner authority unblock, A01).
+   *
+   * The support screen's entry point: an operator has an email or a phone from a
+   * ticket, and needs the id the two reads above are addressed by. It answers
+   * with that id or with nothing.
+   *
+   * ### It is a lookup, not a search
+   *
+   * The submitted value is normalized by `APP4-P01` — the same
+   * `normalizeEmail`/`normalizePhone` the public verification flow uses, called
+   * here rather than reimplemented, because a second normalizer would mean an
+   * operator and a customer could type the same address and reach different
+   * rows. The normalized form is then matched **whole** by
+   * `findByVerifiedContact`, which is an equality lookup on the
+   * `(kind, normalized_value)` uniqueness arbiter. There is no `LIKE`, no
+   * prefix, no trigram, no similarity and no result list anywhere on this path,
+   * and the repository method it calls is the one the returning-customer
+   * identity flow already uses.
+   *
+   * ### Three different misses, one answer
+   *
+   * An unknown contact, an unverified one and a deactivated one are all
+   * `CONTACT_NOT_RESOLVED`. `findByVerifiedContact` matches only rows that are
+   * verified and current, so the other two never reach a branch here that could
+   * distinguish them — and that is the design, not an accident of it.
+   * Distinguishing them would answer *does this address exist in the system*,
+   * which is the enumeration question `ADR-APP4-001` §3 refuses even for an
+   * authenticated operator: staff eyes are not a reason to build an oracle.
+   *
+   * A malformed contact is the same answer for the same reason. It is tempting
+   * to report a shape error, but a caller who learns that `a@b` is malformed and
+   * `a@b.com` is merely unknown has been told something about the second value.
+   * The normalizer's rejection reason therefore stops here.
+   *
+   * ### Nothing is written and nothing is logged
+   *
+   * No transaction, no audit event — a support read is not one of the five
+   * audited grant actions (`ADR-DB3-004` r11) — and the raw and normalized
+   * values never leave this method. They are arguments and locals; nothing
+   * returns them, stores them or passes them to a logger.
+   */
+  async resolveByContact(kind: ContactKind, rawContact: string): Promise<CustomerId> {
+    const normalization =
+      kind === 'EMAIL' ? normalizeEmail(rawContact) : normalizePhone(rawContact);
+    if (!normalization.ok) {
+      throw new AdminSupportError('CONTACT_NOT_RESOLVED');
+    }
+
+    const customer = await this.customers.findByVerifiedContact(
+      kind,
+      normalization.contact.normalized,
+    );
+    if (customer === undefined) {
+      throw new AdminSupportError('CONTACT_NOT_RESOLVED');
+    }
+    return customer.id;
   }
 
   /**

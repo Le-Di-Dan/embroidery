@@ -197,6 +197,11 @@
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
             "type": "string"
           },
+          "displayName": {
+            "description": "What this Customer calls themselves, from the Customer record alone. Absent when they never supplied one — a Customer exists from a verified contact, and a name is not part of that. It is not a Business Profile company name, not derived from a contact, and never a substitute for the identifier: two Customers may share a name.",
+            "example": "Nguyễn Minh An",
+            "type": "string"
+          },
           "verifiedAt": {
             "description": "When this Customer identity was established. A Customer exists only as the result of a successful verification, so the presence of this instant *is* the verification fact — there is no unverified Customer for it to be absent on.",
             "example": "2026-08-14T09:00:00.000Z",
@@ -223,6 +228,19 @@
         },
         "required": [
           "grants"
+        ],
+        "type": "object"
+      },
+      "AdminCustomerResolutionResponse": {
+        "properties": {
+          "customerId": {
+            "description": "The Customer that owns the submitted contact. Exactly one, or a 404 — a verified contact belongs to one Customer by the uniqueness arbiter, so there is no list.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customerId"
         ],
         "type": "object"
       },
@@ -2282,6 +2300,15 @@
       },
       "NotificationReplayResponse": {
         "properties": {
+          "outcome": {
+            "description": "Whether this call created the replay. `CREATED` — it did, and `replayIntentId` names a notification that did not exist a moment ago. `EXISTING` — an identical replay of the same failed delivery was already queued, by an earlier click or by another operator at the same moment, and this call resolved onto it without creating a second. Both mean exactly one replay is queued, and neither means anything was delivered: the worker owns that, and the attempt timeline is where it shows up.",
+            "enum": [
+              "CREATED",
+              "EXISTING"
+            ],
+            "example": "CREATED",
+            "type": "string"
+          },
           "replayIntentId": {
             "description": "The new notification created for this replay. The original stays FAILED and is not reopened; this is the record that will be delivered.",
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
@@ -2298,7 +2325,8 @@
         },
         "required": [
           "replayIntentId",
-          "status"
+          "status",
+          "outcome"
         ],
         "type": "object"
       },
@@ -3139,6 +3167,33 @@
         "required": [
           "expectedUpdatedAt",
           "sides"
+        ],
+        "type": "object"
+      },
+      "ResolveCustomerByContactBody": {
+        "additionalProperties": false,
+        "description": "Resolves one exact, verified, active contact to the Customer that owns it.",
+        "properties": {
+          "contact": {
+            "description": "The contact exactly as the operator typed it. Normalized server-side by the canonical rules and matched whole; never echoed back, never logged and never stored by this operation.",
+            "example": "nguoi.dung@example.com",
+            "maxLength": 254,
+            "minLength": 1,
+            "type": "string"
+          },
+          "contactKind": {
+            "description": "Which kind of destination `contact` is.",
+            "enum": [
+              "EMAIL",
+              "PHONE"
+            ],
+            "example": "EMAIL",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contactKind",
+          "contact"
         ],
         "type": "object"
       },
@@ -4080,6 +4135,188 @@
         "summary": "Get one product-image asset",
         "tags": [
           "adminAsset"
+        ]
+      }
+    },
+    "/api/admin/customers/resolve": {
+      "post": {
+        "description": "Turns one exact contact an operator already holds — from a ticket, a request or a conversation — into the Customer id the support reads are addressed by. The contact is normalized by the canonical rules and matched **whole** against verified, current contacts: this is an equality lookup, not a search. There is no partial, prefix or fuzzy match, no result list and no paging, because a verified contact belongs to exactly one Customer. Unknown, unverified, deactivated and malformed inputs all answer 404 alike — the operation tells you which Customer owns a contact you already know, and never whether a contact exists. The submitted value is never echoed, logged or stored.",
+        "operationId": "adminCustomerSupport_resolve",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveCustomerByContactBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminCustomerResolutionResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The Customer that owns the contact.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed request body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No Customer owns a verified, current contact matching the submitted value. The same answer is given when the contact is unverified, deactivated or malformed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Resolve a Customer by exact contact",
+        "tags": [
+          "adminCustomerSupport"
         ]
       }
     },
@@ -6347,9 +6584,17 @@
     },
     "/api/admin/notification-intents": {
       "get": {
-        "description": "The most recent notifications, newest first, optionally filtered to one lifecycle state. Answers \"was it sent, and why did it fail\" and nothing else: each entry carries the masked destination, the template used, and the append-only attempt timeline with a bounded failure class per attempt. There is no message body, no provider response, no recipient beyond the mask, and no search — the mask exists so an operator can recognise a destination, not look one up.",
+        "description": "The most recent notifications, newest first, optionally filtered to one lifecycle state. Answers \"was it sent, and why did it fail\" and nothing else: each entry carries the masked destination, the template used, and the append-only attempt timeline with a bounded failure class per attempt. There is no message body, no provider response, no recipient beyond the mask, and no search — the mask exists so an operator can recognise a destination, not look one up. Give `customerId` to narrow the list to the notifications addressed to that Customer’s own contacts; notifications sent anywhere else have no owner and never appear under it.",
         "operationId": "adminNotificationIntent_list",
         "parameters": [
+          {
+            "in": "query",
+            "name": "customerId",
+            "required": false,
+            "schema": {
+              "format": "uuid"
+            }
+          },
           {
             "in": "query",
             "name": "status",
@@ -6492,7 +6737,7 @@
     },
     "/api/admin/notification-intents/{intentId}/replay": {
       "post": {
-        "description": "Re-sends an existing notification whose delivery failed terminally. This is a **transport** replay: the original code or link is re-delivered exactly as it was sealed, and nothing new is minted. The original notification stays FAILED and its dead-lettered delivery record is left untouched — a new notification is created instead, with a fresh delivery budget. Replaying twice returns the same replay rather than sending again. If the code or link is no longer valid, the request is refused with `REISSUE_REQUIRED` and the operator must issue a new one through the customer flow.",
+        "description": "Re-sends an existing notification whose delivery failed terminally. This is a **transport** replay: the original code or link is re-delivered exactly as it was sealed, and nothing new is minted. The original notification stays FAILED and its dead-lettered delivery record is left untouched — a new notification is created instead, with a fresh delivery budget. Replaying twice returns the same replay rather than sending again, and `outcome` says which happened: `CREATED` when this call made the replay, `EXISTING` when it resolved onto one that was already queued. If the code or link is no longer valid, the request is refused with `REISSUE_REQUIRED` and the operator must issue a new one through the customer flow.",
         "operationId": "adminNotificationIntent_replay",
         "parameters": [
           {

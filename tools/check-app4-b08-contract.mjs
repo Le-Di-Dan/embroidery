@@ -192,13 +192,35 @@ function checkListProjection(rootDir, fail) {
   const document = loadOpenApi(rootDir, fail);
   if (document === undefined) return;
 
-  // 7 — the filter is one closed-set status and nothing that could search.
+  // 7 — the filter is one closed-set status, one Customer id, and nothing that
+  // could search.
+  //
+  // `customerId` joined the list under the Product Owner's `APP4-A01` ruling. It
+  // is exhaustively listed rather than allowed loosely, because the whole risk
+  // on this endpoint is a *third* filter arriving — and the names banned just
+  // below are the ones that would turn it into a lookup over other people's
+  // messages. A Customer id is not one of those: it is an id the caller already
+  // holds, resolved through a persisted reference rather than a value they typed.
   const parameters = document.paths?.[LIST_PATH]?.get?.parameters ?? [];
   const queryNames = parameters
     .filter((parameter) => String(parameter.in) === 'query')
-    .map((parameter) => String(parameter.name));
-  if (JSON.stringify(queryNames) !== JSON.stringify(['status'])) {
-    fail(`${LIST_PATH} declares query parameters [${queryNames.join(', ')}]; expected [status]`);
+    .map((parameter) => String(parameter.name))
+    .sort();
+  if (JSON.stringify(queryNames) !== JSON.stringify(['customerId', 'status'])) {
+    fail(
+      `${LIST_PATH} declares query parameters [${queryNames.join(', ')}]; ` +
+        `expected [customerId, status]`,
+    );
+  }
+  for (const name of queryNames) {
+    if (/email|phone|contact|recipient|mask|template|term|search|q$/i.test(name)) {
+      fail(`${LIST_PATH} declares the lookup parameter "${name}"; the list takes no such filter`);
+    }
+  }
+  // The Customer filter must be an id, not a free-text field wearing the name.
+  const customerParameter = parameters.find((parameter) => String(parameter.name) === 'customerId');
+  if (customerParameter !== undefined && customerParameter.schema?.format !== 'uuid') {
+    fail(`${LIST_PATH} customerId is not uuid-shaped; a free-text filter here would be a search`);
   }
   const statusParameter = parameters.find((parameter) => String(parameter.name) === 'status');
   const statusEnum = statusParameter?.schema?.enum ?? [];
@@ -295,6 +317,62 @@ function checkListProjection(rootDir, fail) {
   }
 }
 
+/**
+ * The published replay outcome (Product Owner `APP4-A01` unblock).
+ *
+ * The response carries the backend's own created-vs-existing result, so a client
+ * never has to infer a duplicate from elapsed time, a remembered id or the
+ * PENDING status — the three guesses available to a browser, and all three wrong
+ * for a replay raised concurrently by another operator.
+ *
+ * It stays three fields. The outcome is metadata about the *call* — whether a
+ * row was inserted — and a mutation response is exactly where a credential would
+ * otherwise appear, so the exhaustive list is what keeps a fourth field out.
+ */
+function checkReplayOutcome(rootDir, fail) {
+  const document = loadOpenApi(rootDir, fail);
+  if (document !== undefined) {
+    const replay = document.components?.schemas?.NotificationReplayResponse;
+    if (replay === undefined) {
+      fail('NotificationReplayResponse is not published as a component');
+    } else {
+      const fields = Object.keys(replay.properties ?? {}).sort();
+      const expected = ['outcome', 'replayIntentId', 'status'];
+      if (JSON.stringify(fields) !== JSON.stringify(expected)) {
+        fail(
+          `NotificationReplayResponse publishes [${fields.join(', ')}]; ` +
+            `expected [${expected.join(', ')}]`,
+        );
+      }
+      // The enum is inline on the property, which is what the Nest/Swagger
+      // pipeline emits for an `enum:` on `@ApiProperty`.
+      const values = replay.properties?.outcome?.enum ?? [];
+      if (JSON.stringify([...values].sort()) !== JSON.stringify(['CREATED', 'EXISTING'])) {
+        fail(
+          `NotificationReplayResponse.outcome is [${values.join(', ')}]; ` +
+            `expected exactly CREATED and EXISTING`,
+        );
+      }
+    }
+  }
+
+  // The controller maps the use case's own boolean. A projection that derived
+  // the outcome from anything else — a timestamp, a status, a second lookup —
+  // would be the inference this field exists to remove.
+  const controller = codeOf(rootDir, 'controller');
+  if (!/outcome:\s*result\.created\s*\?\s*'CREATED'\s*:\s*'EXISTING'/.test(controller)) {
+    fail(
+      `${CANONICAL_FILES.controller}: does not map the use case's own \`created\` to the ` +
+        `published outcome`,
+    );
+  }
+  for (const forbidden of [/Date\.now\(\)/, /new Date\(/, /createdAt/]) {
+    if (forbidden.test(controller.split('function toReplayPayload')[1] ?? '')) {
+      fail(`${CANONICAL_FILES.controller}: the replay projection reads a clock`);
+    }
+  }
+}
+
 /** 34, 35, 36, 38 — scope boundaries and the generated client. */
 function checkScopeAndClient(rootDir, fail) {
   // 34 — no provider SDK or body anywhere in B08.
@@ -372,6 +450,7 @@ export function checkApp4B08(rootDir = REPO_ROOT) {
   checkPublishedSurface(rootDir, fail);
   checkAdminAuthorization(rootDir, fail);
   checkListProjection(rootDir, fail);
+  checkReplayOutcome(rootDir, fail);
   checkReplayTransaction(rootDir, fail);
   checkSourceLookupAndCopy(rootDir, fail);
   checkNoSecretHandling(rootDir, fail);
@@ -388,9 +467,12 @@ const SUMMARY =
   'notification list and /replay routes with no /retry anywhere, both behind the delivered ' +
   'AuthenticatedAdminGuard plus the APP1 Origin allowlist on the mutation, with no second ' +
   'guard, no role model and no session parsing; a list filtered only by the closed intent ' +
-  'state set, projecting the frozen masked recipient, the template reference and the ordered ' +
+  'state set and a uuid Customer id bound through the persisted contact-point reference, ' +
+  'projecting the frozen masked recipient, the template reference and the ordered ' +
   'attempt timeline with a bounded error class, and carrying no raw recipient, params, ' +
-  'provider body, scheduler internal or envelope field; a replay that locks the origin, ' +
+  'provider body, scheduler internal or envelope field; a replay response of exactly ' +
+  'replayIntentId, PENDING status and the backend’s own CREATED/EXISTING outcome, mapped from ' +
+  'the use case rather than inferred from a clock; a replay that locks the origin, ' +
   'requires it FAILED, resolves the source DEAD_LETTER event through the non-secret aggregate ' +
   'linkage and never through the payload, copies the sealed payload and its schema version ' +
   'verbatim, appends one new PENDING event whose aggregate_id is the new replay intent, and ' +

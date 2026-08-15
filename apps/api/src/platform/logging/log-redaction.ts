@@ -50,6 +50,17 @@ const SENSITIVE_KEYS: ReadonlySet<string> = new Set(
     'sessionid',
     'jwt',
     'bearer',
+    // Not a credential, but the one caller-supplied value in APP4 that names a
+    // real person outside the system. The Admin exact-contact resolver takes it
+    // in a request body and nothing on that path logs it — this entry is the
+    // second line, so that a future `logger.info('resolve', { contact })` is
+    // blanked rather than becoming the contact log the masking exists to
+    // prevent. `contactkind`, `maskedvalue` and `contactpointid` are deliberately
+    // absent: a kind, a one-way mask and an opaque id identify nobody.
+    'contact',
+    'rawcontact',
+    'contactvalue',
+    'normalizedvalue',
   ].map(normalizeKey),
 );
 

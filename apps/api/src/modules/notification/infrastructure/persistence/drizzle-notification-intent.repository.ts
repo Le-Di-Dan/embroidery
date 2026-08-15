@@ -221,19 +221,48 @@ export class DrizzleNotificationIntentRepository
    * transaction render in a stable order. The status predicate is applied only
    * when a filter is given; the closed set it belongs to is validated at the
    * wire, not here.
+   *
+   * ### The Customer predicate is a join, not a comparison
+   *
+   * When `customerId` is given the query inner-joins `customer_contact_points`
+   * on `recipient_contact_point_id` and compares that row's `customer_id`. An
+   * inner join is what makes the null case correct for free: an intent with no
+   * `recipient_contact_point_id` produces no joined row and drops out, which is
+   * exactly the truthful answer — that intent has no persisted owner.
+   *
+   * No FK backs the reference (DEV-DB6-016 / G-DB7-48), so the join is the only
+   * thing that establishes the relationship at read time. Note what is *not*
+   * compared anywhere in here: `recipient_masked`, `template_key`, `channel` and
+   * `created_at` are projected but never predicated on for ownership.
    */
   async listForAdmin(filter: AdminIntentListFilter): Promise<NotificationIntentRecord[]> {
     return this.run('listForAdmin', async () => {
+      const statusPredicate =
+        filter.status === undefined ? undefined : eq(notificationIntents.status, filter.status);
+
+      if (filter.customerId === undefined) {
+        const rows = await this.db
+          .select()
+          .from(notificationIntents)
+          .where(statusPredicate)
+          .orderBy(desc(notificationIntents.createdAt), desc(notificationIntents.id))
+          .limit(filter.limit);
+
+        return rows.map(toRecord);
+      }
+
       const rows = await this.db
-        .select()
+        .select({ intent: notificationIntents })
         .from(notificationIntents)
-        .where(
-          filter.status === undefined ? undefined : eq(notificationIntents.status, filter.status),
+        .innerJoin(
+          customerContactPoints,
+          eq(notificationIntents.recipientContactPointId, customerContactPoints.id),
         )
+        .where(and(statusPredicate, eq(customerContactPoints.customerId, filter.customerId)))
         .orderBy(desc(notificationIntents.createdAt), desc(notificationIntents.id))
         .limit(filter.limit);
 
-      return rows.map(toRecord);
+      return rows.map((row) => toRecord(row.intent));
     });
   }
 

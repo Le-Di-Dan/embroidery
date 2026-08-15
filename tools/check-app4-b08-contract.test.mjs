@@ -209,7 +209,47 @@ describe('the list projection', () => {
         { name: 'recipient', in: 'query', schema: { type: 'string' } },
       ];
     });
-    assert.ok(mentions(failures, 'expected [status]'));
+    // Caught twice over: it is not one of the two permitted names, and its name
+    // is one of the lookup words banned outright.
+    assert.ok(mentions(failures, 'expected [customerId, status]'));
+    assert.ok(mentions(failures, 'the list takes no such filter'));
+  });
+
+  it('rejects a free-text customerId standing in for an id', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      const parameter = document.paths[LIST_PATH].get.parameters.find(
+        (candidate) => candidate.name === 'customerId',
+      );
+      delete parameter.schema.format;
+    });
+    assert.ok(mentions(failures, 'a free-text filter here would be a search'));
+  });
+
+  it('rejects dropping the authoritative replay outcome', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      delete document.components.schemas.NotificationReplayResponse.properties.outcome;
+    });
+    assert.ok(mentions(failures, 'expected [outcome, replayIntentId, status]'));
+  });
+
+  it('rejects a third replay outcome value', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.components.schemas.NotificationReplayResponse.properties.outcome.enum = [
+        'CREATED',
+        'EXISTING',
+        'UNKNOWN',
+      ];
+    });
+    assert.ok(mentions(failures, 'expected exactly CREATED and EXISTING'));
+  });
+
+  it('rejects inferring the replay outcome instead of mapping it', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.controller,
+      "outcome: result.created ? 'CREATED' : 'EXISTING',",
+      "outcome: Date.now() - started < 50 ? 'CREATED' : 'EXISTING',",
+    );
+    assert.ok(mentions(failures, "does not map the use case's own"));
   });
 
   it('rejects a status filter outside the closed state set', () => {

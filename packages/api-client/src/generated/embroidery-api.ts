@@ -13,6 +13,7 @@ import type {
   AdminAssetUploadBody,
   AdminCustomerSupportDetail200,
   AdminCustomerSupportGrants200,
+  AdminCustomerSupportResolve200,
   AdminDesignTemplateArchive200,
   AdminDesignTemplateAssignScope200,
   AdminDesignTemplateCreate201,
@@ -68,6 +69,7 @@ import type {
   PublishProductBody,
   ReadinessStatusResponse,
   ReplaceProductPlacementBody,
+  ResolveCustomerByContactBody,
   ResolveSecureLinkBody,
   RestoreDesignTemplateBody,
   RevokeSecureGrantBody,
@@ -132,6 +134,25 @@ export const adminAssetDetail = (
 ) => {
   return apiRequest<AdminAssetDetail200>(
     { url: `/api/admin/assets/${assetId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Turns one exact contact an operator already holds — from a ticket, a request or a conversation — into the Customer id the support reads are addressed by. The contact is normalized by the canonical rules and matched **whole** against verified, current contacts: this is an equality lookup, not a search. There is no partial, prefix or fuzzy match, no result list and no paging, because a verified contact belongs to exactly one Customer. Unknown, unverified, deactivated and malformed inputs all answer 404 alike — the operation tells you which Customer owns a contact you already know, and never whether a contact exists. The submitted value is never echoed, logged or stored.
+ * @summary Resolve a Customer by exact contact
+ */
+export const adminCustomerSupportResolve = (
+  resolveCustomerByContactBody: ResolveCustomerByContactBody,
+  options?: SecondParameter<typeof apiRequest<AdminCustomerSupportResolve200>>,
+) => {
+  return apiRequest<AdminCustomerSupportResolve200>(
+    {
+      url: `/api/admin/customers/resolve`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: resolveCustomerByContactBody,
+    },
     options,
   );
 };
@@ -332,7 +353,7 @@ export const adminDesignTemplateUnpublish = (
 };
 
 /**
- * The most recent notifications, newest first, optionally filtered to one lifecycle state. Answers "was it sent, and why did it fail" and nothing else: each entry carries the masked destination, the template used, and the append-only attempt timeline with a bounded failure class per attempt. There is no message body, no provider response, no recipient beyond the mask, and no search — the mask exists so an operator can recognise a destination, not look one up.
+ * The most recent notifications, newest first, optionally filtered to one lifecycle state. Answers "was it sent, and why did it fail" and nothing else: each entry carries the masked destination, the template used, and the append-only attempt timeline with a bounded failure class per attempt. There is no message body, no provider response, no recipient beyond the mask, and no search — the mask exists so an operator can recognise a destination, not look one up. Give `customerId` to narrow the list to the notifications addressed to that Customer’s own contacts; notifications sent anywhere else have no owner and never appear under it.
  * @summary List notification deliveries
  */
 export const adminNotificationIntentList = (
@@ -346,7 +367,7 @@ export const adminNotificationIntentList = (
 };
 
 /**
- * Re-sends an existing notification whose delivery failed terminally. This is a **transport** replay: the original code or link is re-delivered exactly as it was sealed, and nothing new is minted. The original notification stays FAILED and its dead-lettered delivery record is left untouched — a new notification is created instead, with a fresh delivery budget. Replaying twice returns the same replay rather than sending again. If the code or link is no longer valid, the request is refused with `REISSUE_REQUIRED` and the operator must issue a new one through the customer flow.
+ * Re-sends an existing notification whose delivery failed terminally. This is a **transport** replay: the original code or link is re-delivered exactly as it was sealed, and nothing new is minted. The original notification stays FAILED and its dead-lettered delivery record is left untouched — a new notification is created instead, with a fresh delivery budget. Replaying twice returns the same replay rather than sending again, and `outcome` says which happened: `CREATED` when this call made the replay, `EXISTING` when it resolved onto one that was already queued. If the code or link is no longer valid, the request is refused with `REISSUE_REQUIRED` and the operator must issue a new one through the customer flow.
  * @summary Replay a failed notification delivery
  */
 export const adminNotificationIntentReplay = (
@@ -949,6 +970,9 @@ export const staffSessionCreate = (
 export type AdminAssetListResult = NonNullable<Awaited<ReturnType<typeof adminAssetList>>>;
 export type AdminAssetUploadResult = NonNullable<Awaited<ReturnType<typeof adminAssetUpload>>>;
 export type AdminAssetDetailResult = NonNullable<Awaited<ReturnType<typeof adminAssetDetail>>>;
+export type AdminCustomerSupportResolveResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerSupportResolve>>
+>;
 export type AdminCustomerSupportDetailResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomerSupportDetail>>
 >;

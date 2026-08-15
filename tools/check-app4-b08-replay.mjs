@@ -76,9 +76,17 @@ export const B08_SOURCES = Object.freeze([
   CANONICAL_FILES.module,
 ]);
 
-/** The B07 world (50) plus exactly B08's two. Measured, not assumed. */
-export const B07_BASELINE_OPERATIONS = 50;
-export const EXPECTED_OPERATIONS = 52;
+/**
+ * The B07 world plus exactly B08's two. Measured, not assumed.
+ *
+ * The B07 baseline moved from 50 to 51 when the Product Owner's `APP4-A01`
+ * authority unblock added B07's exact-contact resolver. B08's own delta is
+ * unchanged and still exactly two — the whole point of restating the baseline
+ * rather than raising the total is that this rule keeps catching a *third* B08
+ * operation.
+ */
+export const B07_BASELINE_OPERATIONS = 51;
+export const EXPECTED_OPERATIONS = 53;
 export const MIGRATION_COUNT = 34;
 
 export const ADMIN_GUARD = 'AuthenticatedAdminGuard';

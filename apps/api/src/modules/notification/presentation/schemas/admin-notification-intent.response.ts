@@ -157,13 +157,35 @@ export class AdminNotificationIntentListResponse {
 }
 
 /**
+ * The two things a replay can have been.
+ *
+ * Published under the Product Owner's `APP4-A01` ruling. The use case has always
+ * known which of these happened — the idempotent create returns it — and the
+ * response used to drop it on the reasoning that idempotency is an
+ * implementation detail. `APP4-A01` showed it is not: the approved support
+ * design has two distinct states, one telling the operator the replay is on its
+ * way and one telling them their click resolved onto a replay that already
+ * existed and created nothing. Without this field a screen can only guess, and
+ * the guesses available — elapsed time, a remembered id, the PENDING status —
+ * are all wrong for the concurrent case, where another operator raised the
+ * replay and this session never saw it.
+ *
+ * It is operational metadata about *this call*, not about the customer, the
+ * message or the secret: it says whether a row was inserted, which the caller
+ * would learn anyway by watching the list.
+ */
+export const REPLAY_OUTCOMES = ['CREATED', 'EXISTING'] as const;
+
+export type ReplayOutcome = (typeof REPLAY_OUTCOMES)[number];
+
+/**
  * What a manual replay returns.
  *
- * The new notification's id and its state, and nothing else. No ciphertext, no
- * source payload, no params, no recipient, no code or token, no digest and no
- * attempt-budget internals — a mutation response is one more place a credential
- * could appear, so it carries the two facts the operator needs to follow the
- * replay and stops.
+ * The new notification's id, its state and whether this call created it —
+ * nothing else. No ciphertext, no source payload, no params, no recipient, no
+ * code or token, no digest and no attempt-budget internals: a mutation response
+ * is one more place a credential could appear, so it carries the three facts the
+ * operator needs to follow the replay and stops.
  */
 export class NotificationReplayResponse {
   @ApiProperty({
@@ -180,6 +202,19 @@ export class NotificationReplayResponse {
     description: 'The replay is queued. A worker picks it up with a fresh attempt budget.',
   })
   status!: 'PENDING';
+
+  @ApiProperty({
+    enum: REPLAY_OUTCOMES,
+    example: 'CREATED',
+    description:
+      'Whether this call created the replay. `CREATED` — it did, and `replayIntentId` names a ' +
+      'notification that did not exist a moment ago. `EXISTING` — an identical replay of the ' +
+      'same failed delivery was already queued, by an earlier click or by another operator at ' +
+      'the same moment, and this call resolved onto it without creating a second. Both mean ' +
+      'exactly one replay is queued, and neither means anything was delivered: the worker ' +
+      'owns that, and the attempt timeline is where it shows up.',
+  })
+  outcome!: ReplayOutcome;
 }
 
 /** The serialized projections. The only place these instants become strings. */
@@ -204,4 +239,5 @@ export interface AdminNotificationIntentListPayload {
 export interface NotificationReplayPayload {
   readonly replayIntentId: string;
   readonly status: 'PENDING';
+  readonly outcome: ReplayOutcome;
 }

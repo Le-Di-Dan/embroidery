@@ -114,9 +114,12 @@ export class AdminNotificationIntentController {
       'the masked destination, the template used, and the append-only attempt timeline with a ' +
       'bounded failure class per attempt. There is no message body, no provider response, no ' +
       'recipient beyond the mask, and no search — the mask exists so an operator can recognise ' +
-      'a destination, not look one up.',
+      'a destination, not look one up. Give `customerId` to narrow the list to the ' +
+      'notifications addressed to that Customer’s own contacts; notifications sent anywhere ' +
+      'else have no owner and never appear under it.',
   })
   @ApiQuery({ name: 'status', required: false, enum: PUBLISHED_INTENT_STATES })
+  @ApiQuery({ name: 'customerId', required: false, format: 'uuid' })
   @ApiResponse({
     status: 200,
     description: 'One bounded page of notifications.',
@@ -130,6 +133,7 @@ export class AdminNotificationIntentController {
     return toListPayload(
       await this.query.list({
         ...(query.status === undefined ? {} : { status: query.status }),
+        ...(query.customerId === undefined ? {} : { customerId: query.customerId }),
       }),
     );
   }
@@ -155,7 +159,9 @@ export class AdminNotificationIntentController {
       'sealed, and nothing new is minted. The original notification stays FAILED and its ' +
       'dead-lettered delivery record is left untouched — a new notification is created ' +
       'instead, with a fresh delivery budget. Replaying twice returns the same replay rather ' +
-      'than sending again. If the code or link is no longer valid, the request is refused with ' +
+      'than sending again, and `outcome` says which happened: `CREATED` when this call made ' +
+      'the replay, `EXISTING` when it resolved onto one that was already queued. If the code ' +
+      'or link is no longer valid, the request is refused with ' +
       '`REISSUE_REQUIRED` and the operator must issue a new one through the customer flow.',
   })
   @ApiParam({ name: 'intentId', format: 'uuid' })
@@ -219,10 +225,24 @@ function toListPayload(
 }
 
 /**
- * The replay projection. Two fields, and `created` is deliberately dropped:
- * whether this call or an earlier one made the replay is an implementation
- * detail of idempotency, and publishing it would invite a client to branch on it.
+ * The replay projection.
+ *
+ * `created` is now published, as `outcome`. It used to be dropped here on the
+ * reasoning that idempotency is an implementation detail a client should not
+ * branch on — but `APP4-A01` has two approved states that differ by exactly this
+ * fact, and a client denied it does not stop branching; it branches on a guess.
+ * The alternatives available to a browser are elapsed time, a remembered id and
+ * the PENDING status, and every one of them is wrong when the duplicate was
+ * raised concurrently by another operator.
+ *
+ * The mapping is total and boolean-to-enum, so there is no third state to
+ * misread. It is still a projection with nowhere to put a payload, an envelope
+ * or a recipient.
  */
 function toReplayPayload(result: ReplayNotificationDeliveryResult): NotificationReplayPayload {
-  return { replayIntentId: result.replayIntentId, status: result.status };
+  return {
+    replayIntentId: result.replayIntentId,
+    status: result.status,
+    outcome: result.created ? 'CREATED' : 'EXISTING',
+  };
 }

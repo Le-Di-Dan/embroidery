@@ -33,6 +33,7 @@ import {
   DETAIL_PATH,
   GRANTS_PATH,
   REPO_ROOT,
+  RESOLVE_PATH,
   REVOKE_PATH,
   checkApp4B07,
 } from './check-app4-b07-contract.mjs';
@@ -120,7 +121,7 @@ describe('the published surface', () => {
         get: { operationId: 'adminCustomerSupport_notifications' },
       };
     });
-    assert.ok(mentions(failures, 'B07 owns three'));
+    assert.ok(mentions(failures, 'B07 owns four'));
   });
 
   it('rejects a second verb on the customer detail route', () => {
@@ -134,7 +135,7 @@ describe('the published surface', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.paths['/api/public/health/extra'] = { get: { operationId: 'x_extra' } };
     });
-    assert.ok(mentions(failures, 'expected 52'));
+    assert.ok(mentions(failures, 'expected 53'));
   });
 
   it('rejects a renamed operation id', () => {
@@ -226,13 +227,16 @@ describe('no search, no mutation, no merge', () => {
     assert.ok(mentions(failures, 'read-only'));
   });
 
-  it('rejects resolving a customer by their contact value', () => {
+  it('rejects a second contact lookup outside the support query', () => {
+    // The resolver's repository call is authorized in exactly one file. Anywhere
+    // else it is a looser lookup growing beside the exact one, which is how a
+    // support screen turns back into a contact oracle.
     const failures = failuresAfterEdit(
-      CANONICAL_FILES.query,
-      'await this.customers.findById(customerId)',
-      "await this.customers.findByVerifiedContact('EMAIL', customerId)",
+      CANONICAL_FILES.customerController,
+      'return guardedAdminSupportOperation(async () => ({',
+      'await this.support.customers?.findByVerifiedContact();\n    return guardedAdminSupportOperation(async () => ({',
     );
-    assert.ok(mentions(failures, 'resolves none by contact'));
+    assert.ok(mentions(failures, 'only the support query may'));
   });
 
   it('rejects reading merge state', () => {
@@ -242,6 +246,74 @@ describe('no search, no mutation, no merge', () => {
       'customerId: customer.id,\n      mergedInto: customer.mergedIntoCustomerId,',
     );
     assert.ok(mentions(failures, 'merge or anonymization state'));
+  });
+});
+
+describe('the exact-contact resolver', () => {
+  it('rejects moving the contact into the query string', () => {
+    // The plausible mistake: a GET "so it can be linked to". The value would
+    // then be in every access log between the browser and the API.
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths[RESOLVE_PATH].post.parameters = [
+        { name: 'contact', in: 'query', schema: { type: 'string' } },
+      ];
+    });
+    assert.ok(mentions(failures, 'the contact is body-only'));
+  });
+
+  it('rejects a contact-named header on the resolver', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.paths[RESOLVE_PATH].post.parameters = [
+        ...(document.paths[RESOLVE_PATH].post.parameters ?? []),
+        { name: 'X-Customer-Email', in: 'header', schema: { type: 'string' } },
+      ];
+    });
+    assert.ok(mentions(failures, 'a contact never leaves the body'));
+  });
+
+  it('rejects echoing the contact back in the resolution', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.components.schemas.AdminCustomerResolutionResponse.properties.maskedValue = {
+        type: 'string',
+      };
+    });
+    assert.ok(mentions(failures, 'expected [customerId]'));
+  });
+
+  it('rejects a second normalizer in the support query', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.query,
+      "kind === 'EMAIL' ? normalizeEmail(rawContact) : normalizePhone(rawContact);",
+      'normalizeContact(kind, rawContact);\nfunction normalizeContact() { return { ok: true }; }',
+    );
+    assert.ok(mentions(failures, 'P01 owns normalization'));
+  });
+
+  it('rejects a pattern match standing in for the equality lookup', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.query,
+      'const customer = await this.customers.findByVerifiedContact(',
+      'const loose = ilike(contacts.normalizedValue, `%${rawContact}%`);\n    const customer = await this.customers.findByVerifiedContact(',
+    );
+    assert.ok(mentions(failures, 'matches whole values only'));
+  });
+
+  it('rejects a paging parameter on the resolver body', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.request,
+      'contact: z',
+      'limit: z.number().optional(),\n    contact: z',
+    );
+    assert.ok(mentions(failures, 'returns one Customer or none'));
+  });
+
+  it('rejects a second POST on the customer controller', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.customerController,
+      "  @Post('resolve')",
+      "  @Post('merge')\n  async merge(): Promise<void> {}\n\n  @Post('resolve')",
+    );
+    assert.ok(mentions(failures, 'the resolver is the only one'));
   });
 });
 
@@ -502,7 +574,7 @@ describe('transport and generated client', () => {
       "  @Get(':customerId')\n  @Header('Cache-Control', ADMIN_SUPPORT_CACHE_CONTROL)",
       "  @Get(':customerId')",
     );
-    assert.ok(mentions(failures, 'of 2 reads set'));
+    assert.ok(mentions(failures, 'of 3 reads set'));
   });
 
   it('rejects a shared-cacheable support policy', () => {

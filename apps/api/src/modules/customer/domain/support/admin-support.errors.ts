@@ -27,6 +27,18 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 export const ADMIN_SUPPORT_FAILURES = [
   /** No `customers` row with that id. */
   'CUSTOMER_NOT_FOUND',
+  /**
+   * The submitted contact resolves to no Customer.
+   *
+   * The one failure in this table that is deliberately *less* specific than the
+   * operator would like, and the exception that proves the rule above. Unknown,
+   * unverified, deactivated and malformed all arrive here, because the finer
+   * answer is not "why did my lookup fail" but "does this address exist in the
+   * system" — and that question is refused whoever asks it (`ADR-APP4-001` §3).
+   * The operator loses nothing they can act on: every one of those answers has
+   * the same next step, which is to check the value against the ticket.
+   */
+  'CONTACT_NOT_RESOLVED',
   /** No `secure_access_grants` row with that id. */
   'GRANT_NOT_FOUND',
   /**
@@ -73,6 +85,11 @@ export function isAdminSupportError(error: unknown): error is AdminSupportError 
 const RESPONSE_OF: Readonly<Record<AdminSupportFailure, () => HttpException>> = {
   CUSTOMER_NOT_FOUND: () =>
     new HttpException({ message: 'No such customer.' }, HttpStatus.NOT_FOUND),
+  // Phrased about the *result*, not the input: "no verified contact matches"
+  // would confirm the value was well-formed, and "malformed" would confirm it
+  // was not. Neither is the operator's business about somebody else's address.
+  CONTACT_NOT_RESOLVED: () =>
+    new HttpException({ message: 'No customer matches that contact.' }, HttpStatus.NOT_FOUND),
   GRANT_NOT_FOUND: () =>
     new HttpException({ message: 'No such secure grant.' }, HttpStatus.NOT_FOUND),
   GRANT_NOT_REVOCABLE: () =>

@@ -114,6 +114,8 @@ export interface AdminCustomerDetailResponse {
   contacts: AdminCustomerContactResponse[];
   /** The Customer. */
   customerId: string;
+  /** What this Customer calls themselves, from the Customer record alone. Absent when they never supplied one — a Customer exists from a verified contact, and a name is not part of that. It is not a Business Profile company name, not derived from a contact, and never a substitute for the identifier: two Customers may share a name. */
+  displayName?: string;
   /** When this Customer identity was established. A Customer exists only as the result of a successful verification, so the presence of this instant *is* the verification fact — there is no unverified Customer for it to be absent on. */
   verifiedAt: string;
 }
@@ -156,6 +158,11 @@ export interface AdminSecureGrantResponse {
 export interface AdminCustomerGrantsResponse {
   /** Every grant belonging to this Customer, newest first, whatever its state — a revoked or expired grant is exactly what explains a link that stopped working. Scoped to the Customer in the path; there is no cross-Customer or global grant listing. */
   grants: AdminSecureGrantResponse[];
+}
+
+export interface AdminCustomerResolutionResponse {
+  /** The Customer that owns the submitted contact. Exactly one, or a 404 — a verified contact belongs to one Customer by the uniqueness arbiter, so there is no list. */
+  customerId: string;
 }
 
 export type AdminDesignTemplateDetailResponseStatus =
@@ -1213,6 +1220,17 @@ export interface IssueVerificationChallengeBody {
 }
 
 /**
+ * Whether this call created the replay. `CREATED` — it did, and `replayIntentId` names a notification that did not exist a moment ago. `EXISTING` — an identical replay of the same failed delivery was already queued, by an earlier click or by another operator at the same moment, and this call resolved onto it without creating a second. Both mean exactly one replay is queued, and neither means anything was delivered: the worker owns that, and the attempt timeline is where it shows up.
+ */
+export type NotificationReplayResponseOutcome =
+  (typeof NotificationReplayResponseOutcome)[keyof typeof NotificationReplayResponseOutcome];
+
+export const NotificationReplayResponseOutcome = {
+  CREATED: 'CREATED',
+  EXISTING: 'EXISTING',
+} as const;
+
+/**
  * The replay is queued. A worker picks it up with a fresh attempt budget.
  */
 export type NotificationReplayResponseStatus =
@@ -1223,6 +1241,8 @@ export const NotificationReplayResponseStatus = {
 } as const;
 
 export interface NotificationReplayResponse {
+  /** Whether this call created the replay. `CREATED` — it did, and `replayIntentId` names a notification that did not exist a moment ago. `EXISTING` — an identical replay of the same failed delivery was already queued, by an earlier click or by another operator at the same moment, and this call resolved onto it without creating a second. Both mean exactly one replay is queued, and neither means anything was delivered: the worker owns that, and the attempt timeline is where it shows up. */
+  outcome: NotificationReplayResponseOutcome;
   /** The new notification created for this replay. The original stays FAILED and is not reopened; this is the record that will be delivered. */
   replayIntentId: string;
   /** The replay is queued. A worker picks it up with a fresh attempt budget. */
@@ -1605,6 +1625,31 @@ export interface ReplaceProductPlacementBody {
 }
 
 /**
+ * Which kind of destination `contact` is.
+ */
+export type ResolveCustomerByContactBodyContactKind =
+  (typeof ResolveCustomerByContactBodyContactKind)[keyof typeof ResolveCustomerByContactBodyContactKind];
+
+export const ResolveCustomerByContactBodyContactKind = {
+  EMAIL: 'EMAIL',
+  PHONE: 'PHONE',
+} as const;
+
+/**
+ * Resolves one exact, verified, active contact to the Customer that owns it.
+ */
+export interface ResolveCustomerByContactBody {
+  /**
+   * The contact exactly as the operator typed it. Normalized server-side by the canonical rules and matched whole; never echoed back, never logged and never stored by this operation.
+   * @minLength 1
+   * @maxLength 254
+   */
+  contact: string;
+  /** Which kind of destination `contact` is. */
+  contactKind: ResolveCustomerByContactBodyContactKind;
+}
+
+/**
  * Presents a secure-link token for resolution.
  */
 export interface ResolveSecureLinkBody {
@@ -1819,6 +1864,10 @@ export type AdminAssetDetail200 = ApiSuccessResponse & {
   data: AdminAssetDetailResponse;
 };
 
+export type AdminCustomerSupportResolve200 = ApiSuccessResponse & {
+  data: AdminCustomerResolutionResponse;
+};
+
 export type AdminCustomerSupportDetail200 = ApiSuccessResponse & {
   data: AdminCustomerDetailResponse;
 };
@@ -1890,6 +1939,7 @@ export type AdminDesignTemplateUnpublish200 = ApiSuccessResponse & {
 };
 
 export type AdminNotificationIntentListParams = {
+  customerId?: unknown;
   status?: AdminNotificationIntentListStatus;
 };
 

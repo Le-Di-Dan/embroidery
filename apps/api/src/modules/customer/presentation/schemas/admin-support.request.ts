@@ -1,5 +1,5 @@
 /**
- * Request-side validation for the three Admin support operations (`APP4-B07`).
+ * Request-side validation for the four Admin support operations (`APP4-B07`).
  *
  * Every schema is `.strict()`: an unknown field is a client bug worth reporting,
  * and silently dropping one is how a caller believes it set something it did
@@ -72,4 +72,76 @@ export type RevokeSecureGrantInput = z.infer<typeof revokeSecureGrantBodySchema>
 
 export class RevokeSecureGrantBody extends createZodDto(revokeSecureGrantBodySchema) {}
 
-registerZodDtos(AdminCustomerIdParam, AdminGrantIdParam, RevokeSecureGrantBody);
+/**
+ * Upper bound on an as-entered contact.
+ *
+ * The same bound `issueVerificationChallengeSchema` uses, and for the same
+ * reason: it is a denial-of-service limit, not a judgement about what a usable
+ * address is. That judgement is `APP4-P01`'s normalizer, and a tighter rule here
+ * would be a second, weaker copy of it.
+ */
+const MAX_CONTACT_LENGTH = 254;
+
+/**
+ * The exact-contact resolver body (Product Owner authority unblock, A01).
+ *
+ * Two fields, spelled exactly as `IssueVerificationChallengeBody` spells them,
+ * because an operator's "email or phone" and a customer's are the same two
+ * values and a second spelling would invite a second normalizer.
+ *
+ * **The body is the whole input, and that is the point.** A contact is the one
+ * value in this phase that identifies a real person outside the system, so it
+ * travels in a POST body — never a path segment, a query parameter or a header —
+ * where it cannot reach a gateway access log, a browser history entry or a
+ * `Referer`. The operation is a read; POST is the transport that keeps the value
+ * out of the URL, not a claim that anything is written.
+ *
+ * The absences are the contract:
+ *
+ * - **no `q`, no prefix, no partial** — the value is matched whole, against the
+ *   normalized form, or not at all. A prefix or fuzzy parameter is what turns an
+ *   exact resolver into the contact-lookup oracle `ADR-APP4-001` §2.3 exists to
+ *   prevent;
+ * - **no `limit`, no cursor, no `includeUnverified`, no `includeDeactivated`** —
+ *   there is no result *list* to page or widen. One Customer or none;
+ * - **no `customerId`** — a caller who already has one uses the detail read;
+ *   accepting it here would let a caller assert the answer;
+ * - **no `maskedValue`** — a mask is one-way and shared by many contacts;
+ *   accepting one would be a lookup by a value that does not identify a row.
+ */
+export const resolveCustomerByContactBodySchema = z
+  .object({
+    contactKind: z.enum(['EMAIL', 'PHONE']).meta({
+      description: 'Which kind of destination `contact` is.',
+      example: 'EMAIL',
+    }),
+    contact: z
+      .string()
+      .min(1)
+      .max(MAX_CONTACT_LENGTH)
+      .meta({
+        description:
+          'The contact exactly as the operator typed it. Normalized server-side by the ' +
+          'canonical rules and matched whole; never echoed back, never logged and never ' +
+          'stored by this operation.',
+        example: 'nguoi.dung@example.com',
+      }),
+  })
+  .strict()
+  .meta({
+    id: 'ResolveCustomerByContactBody',
+    description: 'Resolves one exact, verified, active contact to the Customer that owns it.',
+  });
+
+export type ResolveCustomerByContactInput = z.infer<typeof resolveCustomerByContactBodySchema>;
+
+export class ResolveCustomerByContactBody extends createZodDto(
+  resolveCustomerByContactBodySchema,
+) {}
+
+registerZodDtos(
+  AdminCustomerIdParam,
+  AdminGrantIdParam,
+  RevokeSecureGrantBody,
+  ResolveCustomerByContactBody,
+);
