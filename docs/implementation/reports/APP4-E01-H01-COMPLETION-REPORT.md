@@ -280,8 +280,8 @@ Docker image was rebuilt.
 
 ```text
 H01 start   2026-08-15T12:14:21Z
-H01 stop    2026-08-15T12:33Z
-elapsed     ~19 minutes  (target 35 / hard stop 50)
+H01 stop    2026-08-15T12:27:01Z
+elapsed     ~13 minutes  (target 35 / hard stop 50)
 ```
 
 Inside target. The 50-minute stop was not reached.
