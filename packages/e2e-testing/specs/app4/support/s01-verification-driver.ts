@@ -50,12 +50,32 @@ export function createS01Driver(page: Page) {
       await expect(page.getByRole('heading', { name: S01.contactTitle })).toBeVisible();
     },
 
-    /** The contact-kind control is one radio group covering both kinds. */
+    /**
+     * The contact-kind control is one radio group covering both kinds.
+     *
+     * `force` because the input itself is `visually-hidden` — the approved
+     * design styles its label as the visible control, which is the ordinary
+     * accessible pattern for a segmented choice. The radio is still addressed by
+     * its role and accessible name, so this selects the same element a screen
+     * reader would; only Playwright's visibility gate is bypassed, and the
+     * assertion that follows checks the field the choice reveals.
+     */
     chooseContactKind: (kind: ContactKind) =>
-      page.getByRole('radio', { name: kindLabel(kind), exact: true }).check(),
+      page.getByRole('radio', { name: kindLabel(kind), exact: true }).check({ force: true }),
+
+    /**
+     * The contact field, addressed by its `textbox` role.
+     *
+     * Not `getByLabel`: the contact-kind radio for the same kind carries the
+     * same accessible name ("Email" / "Số điện thoại"), so a label lookup
+     * matches both the radio and the input and fails Playwright's strict mode.
+     * The role is what distinguishes them.
+     */
+    contactField: (kind: ContactKind) =>
+      page.getByRole('textbox', { name: kindLabel(kind), exact: true }),
 
     enterContact: (kind: ContactKind, value: string) =>
-      page.getByLabel(kindLabel(kind), { exact: true }).fill(value),
+      page.getByRole('textbox', { name: kindLabel(kind), exact: true }).fill(value),
 
     submitContact: () => page.getByRole('button', { name: S01.submitContact }).click(),
 

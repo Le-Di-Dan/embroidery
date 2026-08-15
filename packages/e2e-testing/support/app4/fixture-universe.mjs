@@ -61,12 +61,10 @@ export function createSyntheticContact(runId) {
  */
 export async function seedCustomRequestScaffolding(databaseUrl, customerId) {
   const { createDatabaseClient, executeRaw, newId, sql } = requireFromApi('@embroidery/database');
-  const client = createDatabaseClient({
-    url: databaseUrl,
-    poolMax: 2,
-    sslMode: 'disable',
-    statementTimeoutMs: 15_000,
-  });
+  const { evidenceClientConfig } = await import('./db-evidence.mjs');
+  // One client configuration for both helpers: every timeout must be supplied,
+  // or `createDatabaseClient` builds an invalid connection `options` string.
+  const client = createDatabaseClient({ ...evidenceClientConfig(databaseUrl), poolMax: 2 });
   try {
     const customRequestId = newId();
     await executeRaw(

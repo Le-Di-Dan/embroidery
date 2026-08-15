@@ -35,6 +35,27 @@ const requireFromApi = createRequire(join(REPO_ROOT, 'apps', 'api', 'package.jso
 const SENSITIVE_COLUMN = /(hash|digest|cipher|iv|auth_?tag|token|code|secret|pepper)/i;
 
 /**
+ * A complete client configuration for an evidence connection.
+ *
+ * Every field is supplied because `createDatabaseClient` interpolates the two
+ * timeouts into the connection's `options` string. Omitting one does not fall
+ * back to a default — it produces `-c lock_timeout=undefined`, which PostgreSQL
+ * rejects, and the failure surfaces as "Failed query" on the first statement
+ * rather than as a configuration error.
+ */
+export function evidenceClientConfig(databaseUrl) {
+  return {
+    url: databaseUrl,
+    poolMax: 4,
+    sslMode: 'disable',
+    statementTimeoutMs: 15_000,
+    lockTimeoutMs: 5_000,
+    idleTimeoutMs: 10_000,
+    connectionTimeoutMs: 10_000,
+  };
+}
+
+/**
  * Splits a row into the safe fields and a boolean per withheld field.
  *
  * `code_hash: '…'` becomes `hasCodeHash: true`, so a suite can prove a digest
@@ -65,12 +86,7 @@ export function projectSafe(row) {
  */
 export async function createDbEvidence(databaseUrl) {
   const { createDatabaseClient, executeRaw, sql } = requireFromApi('@embroidery/database');
-  const client = createDatabaseClient({
-    url: databaseUrl,
-    poolMax: 4,
-    sslMode: 'disable',
-    statementTimeoutMs: 15_000,
-  });
+  const client = createDatabaseClient(evidenceClientConfig(databaseUrl));
 
   const rows = async (statement) => {
     const result = await executeRaw(client.db, statement);

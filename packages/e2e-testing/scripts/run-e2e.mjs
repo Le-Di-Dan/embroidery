@@ -212,6 +212,12 @@ async function main() {
             E2E_DATABASE_URL: env.database.url,
             // Loopback control seam for the API-unavailability journey (J02).
             E2E_API_CONTROL_URL: env.apiControlUrl,
+            // APP4-E01-H02: the run's universe, so the spec's evidence and
+            // worker helpers join the same database and secret material the API
+            // HTTP process was started with. Child environment only.
+            ...(app4Secrets === undefined
+              ? {}
+              : { E2E_RUN_ID: runId, ...app4SecretEnv(app4Secrets) }),
           }
         : {};
     exitCode =

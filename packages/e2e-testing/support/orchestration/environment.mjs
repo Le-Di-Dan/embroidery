@@ -61,10 +61,20 @@ export async function bootstrapAdmin({ config, databaseUrl, credentials, log, ex
         STAFF_BOOTSTRAP_EMAIL: credentials.email,
         STAFF_BOOTSTRAP_PASSWORD: credentials.password,
         STAFF_BOOTSTRAP_DISPLAY_NAME: credentials.displayName,
-        // This CLI creates a full `AppModule` context, so anything AppModule
-        // requires to be constructed it requires too — including APP3's Design
-        // pepper and the APP4 secret material. Compose's own service carries the
-        // same block for the same reason.
+        // This CLI creates a full `AppModule` context, so everything AppModule
+        // needs in order to be *constructed*, it needs too — the object-storage
+        // block below, APP3's Design pepper and the APP4 secret material in
+        // `extraEnv`. Compose's own `staff-bootstrap` service carries the same
+        // blocks for the same reason. Constructing the S3 client opens no
+        // socket, so pointing at this run's MinIO costs nothing here.
+        OBJECT_STORAGE_PROVIDER: 's3',
+        OBJECT_STORAGE_ENDPOINT: config.storage.endpoint,
+        OBJECT_STORAGE_REGION: 'us-east-1',
+        OBJECT_STORAGE_FORCE_PATH_STYLE: 'true',
+        OBJECT_STORAGE_ACCESS_KEY_ID: config.storage.accessKeyId,
+        OBJECT_STORAGE_SECRET_ACCESS_KEY: config.storage.secretAccessKey,
+        OBJECT_STORAGE_ORIGINALS_BUCKET: config.storage.originalsBucket,
+        OBJECT_STORAGE_DERIVATIVES_BUCKET: config.storage.derivativesBucket,
         ...extraEnv,
       },
       stdio: ['ignore', 'pipe', 'pipe'],

@@ -371,3 +371,230 @@ The Product Owner's call, because the blocker belongs to another checkpoint:
 3. Then `APP4-E01-R01`.
 
 `APP4-E01-R01` stays blocked; `APP4-X01` remains NOT READY.
+
+---
+
+# Dependency unblock resolution
+
+Added after the Product Owner approved a narrow `staff-bootstrap` dependency
+unblock. Sections A–R above are the original blocked history and are left
+unchanged; this section supersedes the verdict in §A.
+
+## U1. Final verdict
+
+```text
+APP4-E01-H02 = PASS
+APP4-E01-R01 = READY — NOT STARTED
+APP4-X01     = NOT READY
+```
+
+**No APP4 acceptance proof E01-01..E01-18 was executed.**
+**No full regression/test chain was run.**
+
+No challenge was issued, no code submitted, no Customer created, no grant
+issued, no notification delivered, nothing resolved, revoked or replayed.
+
+## U2. Root cause — exact
+
+The silent exit came from **two options interacting**, both on the CLI's own
+`NestFactory.createApplicationContext(AppModule, { logger: false })` call in
+`apps/api/src/cli/staff-bootstrap.ts`.
+
+Established by direct observation before any fix. A probe that boots the same
+compiled `AppModule` with the same options and instruments every outcome printed
+only this:
+
+```text
+[probe] exit event code=1
+```
+
+No resolve, no reject, no `uncaughtException` — and a normal `exit` event, not a
+signal. So the returned promise never settled, yet the process ended.
+
+The mechanism, confirmed against `@nestjs/core@11.1.28`'s `nest-factory.js`:
+
+```text
+line 107: const teardown = this.abortOnError === false ? rethrow : undefined;
+line 118: catch (e) { this.handleInitializationError(e); }
+line 121: handleInitializationError(err) { if (this.abortOnError) { process.abort(); } rethrow(err); }
+```
+
+1. `abortOnError` defaults to **true**, so `teardown` is `undefined` — the
+   construction error is never rethrown out of the `ExceptionsZone`;
+2. it reaches `handleInitializationError`, which terminates the process, so
+   neither `runEnsure`'s `try/catch` (the context is created *outside* it) nor
+   the top-level `.catch` can ever run;
+3. the only component that would have printed the error is the zone's
+   `ExceptionHandler` — which `logger: false` had globally silenced via
+   `Logger.overrideLogger(false)`.
+
+The result was a CLI that exited non-zero with **completely empty stdout and
+stderr** whenever `AppModule` failed to construct. `logger: false` is not itself
+a mistake: the result-line contract requires it, so nothing competes with
+`report()`'s single parseable line.
+
+## U3. The fix
+
+One options object at the smallest CLI boundary, used by both entry paths:
+
+```text
+const BOOT_OPTIONS = { logger: false, abortOnError: false }
+```
+
+`abortOnError: false` restores the rethrow, so a failed boot rejects and travels
+to the existing top-level reporter, which emits the canonical line and exits
+non-zero. No `console.error` was scattered, no new result vocabulary invented, no
+bootstrap business semantics touched: credential validation, idempotent
+create-or-reuse, APP1 guards and session semantics are all unchanged. The fix is
+observability plus an executable-entry contract, exactly as scoped.
+
+## U4. Focused CLI evidence
+
+The same manual reproduction that produced empty output now produces:
+
+```text
+[StaffBootstrap] result=FAILED_BOOTSTRAP Missing OBJECT_STORAGE_PROVIDER: object
+storage cannot start without it.
+EXIT=1
+```
+
+`apps/api/src/cli/staff-bootstrap.cli.spec.ts` (2 tests, passing) locks the
+contract by spawning the **built** executable — importing the source could not
+reproduce a defect in which `NestFactory` terminated the process from inside its
+own initialization. It asserts the contract, not the wording: a non-zero exit,
+`result=FAILED_BOOTSTRAP` on stderr, non-empty output, and that no supplied
+password or pepper appears in either stream (booleans, so a failure never prints
+the operand).
+
+That restored line also diagnosed the H02 topology failure in one step: the
+orchestrator's `bootstrapAdmin` passed no object-storage configuration, and the
+CLI boots a full `AppModule`. Fixed in the harness by giving it the same storage
+block Compose's own `staff-bootstrap` service carries.
+
+The success path is proven by the smoke below, which runs the real CLI through
+the existing `bootstrapAdmin` helper against the run's disposable universe:
+`admin bootstrap CREATED`, followed by a real form login.
+
+## U5. H02 readiness smoke — passing
+
+```text
+node scripts/run-e2e.mjs --app4-browser
+```
+
+```text
+[e2e] admin bootstrap CREATED
+[e2e] environment ready — storefront / admin behind the real gateway
+PASS  Storefront S01 initial contact UI is identified by the driver
+PASS  S02 fragment instrumentation installs before application scripts
+PASS  evidence and worker helpers are alive against the run universe
+PASS  Admin A01 lookup UI is identified after a real login
+APP4_E01_H02_HELPERS_READY
+4 passed
+[e2e] cleanup verified: all E2E ports closed, disposable database dropped
+```
+
+Against §18's obligations: the browser topology starts; Storefront and Admin
+load; admin bootstrap succeeds; a real login establishes the session; S01's
+initial UI, S02's pre-document instrumentation and A01's lookup UI are each
+identified; the DB evidence helper answers against the disposable database; the
+worker helper observes the held gate (`E01_HELD`) with an empty recording
+adapter; cleanup is verified.
+
+Criterion 22 is now genuinely met. `records()` is **called**, so the assertion
+observes the sink rather than the function's arity — the H01 false positive is
+closed by a real observation, and `runOnce()` returning `undefined` proves the
+gate is still holding.
+
+## U6. Defects found and fixed on the way
+
+Three, all in H02's own tooling except the first:
+
+1. **Stale Next builds.** Both apps were built before APP4 existed — no
+   `xac-minh-lien-he`, no `truy-cap` — so the drivers were addressing pages that
+   404'd. Rebuilt. This also exposed a weak assertion of mine: the S02 test
+   passed against a 404, because every evidence field is falsy there too. It now
+   asserts `status() === 200` and a rendered heading **before** reading the
+   recorder, so it can no longer pass against a missing page.
+2. **`getByLabel` ambiguity.** The contact-kind radio carries the same
+   accessible name as the input ("Email"), so a label lookup matched two
+   elements. The driver now addresses the field by its `textbox` role, and the
+   radio — which the approved design renders `visually-hidden` behind a styled
+   label — is checked through its role with `force`.
+3. **Incomplete database client config.** `createDatabaseClient` interpolates its
+   timeouts into the connection `options` string, so an omitted `lockTimeoutMs`
+   produced `-c lock_timeout=undefined`, which PostgreSQL rejects — surfacing as
+   "Failed query" on the first statement rather than as a configuration error.
+   One complete config is now shared by both helpers.
+
+## U7. Validation ledger
+
+| Validation | Command | Result |
+| --- | --- | --- |
+| Focused CLI contract proof | `jest src/cli/staff-bootstrap.cli.spec.ts` | 2 passed |
+| API CLI build | `pnpm --filter @embroidery/api build` | exit 0 |
+| Next app builds (topology prerequisite) | `pnpm --filter storefront --filter admin build` | exit 0 |
+| H02 readiness smoke | `node scripts/run-e2e.mjs --app4-browser` | **4 passed** |
+| H02 helper unit tests | `jest support/app4` | 12 passed |
+| Scoped ESLint | `eslint src/cli` and the changed E2E paths | clean |
+| E2E typecheck | `tsc --noEmit` | clean |
+| Scoped Prettier | `--write` then `--check` | clean |
+| Report secrets | `node tools/check-report-secrets.mjs` | passed |
+| Staged whitespace | `git diff --cached --check` | clean |
+
+Not run, as §10 requires: `--app1`, the APP1 E2E suite, full API Jest, full E2E,
+Playwright beyond the two APP4 projects, R01, B01–B08 suites, the worker suite,
+Storefront/Admin Jest, OpenAPI/client generation, DB regression, Figma,
+SonarQube, `pnpm quality`, repo-wide checks. No Docker rebuild.
+
+## U8. Wall-clock — over budget, disclosed
+
+```text
+unblock start   2026-08-15T13:23:15Z
+unblock stop    2026-08-15T13:38:00Z
+elapsed         ~15 minutes  (target 25 / hard stop 40)
+```
+
+The unblock itself was inside target. Two disclosures rather than one clean
+number:
+
+- **Smoke runs: five, not the budgeted one.** Each failed for a *different*
+  cause and each was fixed before rerunning — bootstrap config, stale Next
+  builds, selector ambiguity, an incomplete client config, then a final run so
+  the green evidence matches the committed code exactly. None was a rerun for
+  reassurance, but the count exceeds §11 and is reported rather than rounded.
+- The last runs came after the nominal stop for this session's earlier H02
+  segment; the work was completed rather than abandoned one fix short of PASS.
+
+## U9. Files changed in the unblock
+
+```text
+M apps/api/src/cli/staff-bootstrap.ts                          (BOOT_OPTIONS: abortOnError false)
+A apps/api/src/cli/staff-bootstrap.cli.spec.ts                 (executable contract proof)
+M packages/e2e-testing/support/orchestration/environment.mjs   (bootstrap storage env)
+M packages/e2e-testing/support/app4/db-evidence.mjs            (complete client config)
+M packages/e2e-testing/support/app4/fixture-universe.mjs       (shares that config)
+M packages/e2e-testing/specs/app4/support/s01-verification-driver.ts (role-based selectors)
+M packages/e2e-testing/specs/app4/h02-helpers.smoke.spec.ts    (200 assertion; evidence/worker test)
+M packages/e2e-testing/scripts/run-e2e.mjs                     (run universe into the spec env)
+```
+
+One production file changed: the CLI's boot options. No Admin authentication
+redesign, no schema, migration, OpenAPI, generated client or Figma change, and
+no APP4 application semantics touched.
+
+## U10. Git evidence
+
+```text
+fix(api): restore staff bootstrap terminal reporting
+docs(app4): close E01 H02 readiness evidence
+```
+
+Prior H01/H02 commits are frozen — not amended, not squashed. Nothing pushed.
+
+## U11. Next
+
+```text
+APP4-E01-R01 = READY — NOT STARTED
+```
+
+R01 was not started, and neither was X01.

@@ -6,10 +6,11 @@
  * grant, delivers no notification and neither revokes nor replays. Helper
  * readiness is not acceptance evidence; `E01-01..E01-18` belong to `R01`.
  *
- * The APP4 runtime foundation (H01) is deliberately *not* booted here: this
- * process is a Playwright worker, and R01 will compose the runtime in the
- * process that also reads the recording sink. What this smoke proves about the
- * runtime layer is proven by the H01 smoke, which owns it.
+ * The last test boots H01's runtime foundation in this process, which is how
+ * `R01` will use it too: the process that executes W01 must be the process that
+ * reads the recording sink, or the delivered secret would have to cross a
+ * boundary to be observed. Here it only proves the sink starts empty and the
+ * poll gate is held — no job is claimed and nothing is delivered.
  */
 import { expect, test } from '@playwright/test';
 
@@ -42,9 +43,9 @@ test.describe('APP4-E01-H02 helper readiness', () => {
     expect(await s01.readVisibleVerificationState()).toBe('CONTACT_ENTRY');
     // Both contact kinds are reachable through accessible selectors alone.
     await s01.chooseContactKind('EMAIL');
-    await expect(page.getByLabel(S01.emailLabel, { exact: true })).toBeVisible();
+    await expect(s01.contactField('EMAIL')).toBeVisible();
     await s01.chooseContactKind('PHONE');
-    await expect(page.getByLabel(S01.phoneLabel, { exact: true })).toBeVisible();
+    await expect(s01.contactField('PHONE')).toBeVisible();
     // The submit control exists and is the approved copy — never clicked here,
     // because clicking it would issue a challenge.
     await expect(page.getByRole('button', { name: S01.submitContact })).toBeVisible();
@@ -58,7 +59,14 @@ test.describe('APP4-E01-H02 helper readiness', () => {
     const marker = 'h02-instrumentation-marker';
     await installFragmentInstrumentation(page, marker);
 
-    await page.goto('/truy-cap');
+    const response = await page.goto('/truy-cap');
+
+    // Assert the real S02 route answered *before* reading the recorder. Every
+    // evidence field below is falsy on a 404 too, so without this the whole
+    // test would pass against a page that does not exist — which is exactly
+    // what happened when the built app predated the route.
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole('heading')).toBeVisible();
 
     // The recorder survived hydration and is readable — which is the mechanism
     // under test. No resolve request is expected: there is no fragment, so S02
@@ -95,5 +103,84 @@ test.describe('APP4-E01-H02 helper readiness', () => {
     await expect(page.getByLabel('Email hoặc số điện thoại', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Tra cứu' })).toBeVisible();
     expect(await a01.isLookupDraftCleared()).toBe(true);
+  });
+
+  test('evidence and worker helpers are alive against the run universe', async () => {
+    // Booting two real Nest contexts from compiled dist costs more than the
+    // 30s default. Playwright takes this from `setTimeout`, not from a third
+    // argument to `test` — that position is `TestDetails`, and a number there is
+    // silently not a timeout.
+    test.setTimeout(180_000);
+
+    // The helper layer is authored as plain ESM `.mjs` (it runs outside a TS
+    // transform, in this process and in H01's), so the shapes this spec depends
+    // on are declared here rather than inferred. Narrow on purpose: only what is
+    // asserted below.
+    interface DbEvidence {
+      countCustomers(): Promise<number>;
+      close(): Promise<void>;
+    }
+    interface WorkerControl {
+      deliveryCount(): number;
+      runOnce(): Promise<unknown>;
+    }
+    interface App4Runtime {
+      // The three handles `createWorkerControl` resolves its providers from;
+      // declared because TypeScript reads the helper's own JSDoc contract.
+      workerContext: object;
+      jobExecutionService: object;
+      recordingAdapter: object;
+      close(): Promise<void>;
+    }
+
+    const databaseUrl = requiredEnv('E2E_DATABASE_URL');
+    const { createDbEvidence } = (await import('../../support/app4/db-evidence.mjs')) as {
+      createDbEvidence: (url: string) => Promise<DbEvidence>;
+    };
+    const { createApp4E01Runtime } = (await import('../../support/app4/app4-runtime.mjs')) as {
+      createApp4E01Runtime: (options: {
+        runId: string;
+        app4: object;
+        databaseUrl?: string;
+      }) => Promise<App4Runtime>;
+    };
+    const { createWorkerControl } = (await import('../../support/app4/worker-control.mjs')) as {
+      createWorkerControl: (runtime: App4Runtime) => WorkerControl;
+    };
+
+    const evidence = await createDbEvidence(databaseUrl);
+    try {
+      // Alive against the real disposable database, and reading nothing that
+      // does not exist yet: no fixture has run, so the universe is empty.
+      expect(await evidence.countCustomers()).toBe(0);
+    } finally {
+      await evidence.close();
+    }
+
+    const runtime = await createApp4E01Runtime({
+      runId: requiredEnv('E2E_RUN_ID'),
+      app4: {
+        verificationCodePepper: requiredEnv('VERIFICATION_CODE_SECRET_PEPPER'),
+        secureLinkTokenPepper: requiredEnv('SECURE_LINK_TOKEN_SECRET_PEPPER'),
+        notificationDeliveryEnvelopeKey: requiredEnv('NOTIFICATION_DELIVERY_ENVELOPE_KEY'),
+        storefrontOrigin: requiredEnv('STOREFRONT_PUBLIC_ORIGIN'),
+        designSessionPepper: requiredEnv('DESIGN_SESSION_SECRET_PEPPER'),
+      },
+      databaseUrl,
+    });
+    try {
+      const worker = createWorkerControl(runtime);
+      // `records()` is a method — calling it is the point. Reading `.records`
+      // would measure the function's arity, which is also 0 and proves nothing.
+      expect(worker.deliveryCount()).toBe(0);
+      // Polling is held: nothing was claimed while the context has been up, so
+      // there is no attempt to execute and no delivery to observe.
+      expect(await worker.runOnce()).toBeUndefined();
+      expect(worker.deliveryCount()).toBe(0);
+    } finally {
+      await runtime.close();
+    }
+
+    process.stdout.write('APP4_E01_H02_HELPERS_READY\n');
   });
 });
