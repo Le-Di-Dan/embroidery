@@ -3,402 +3,461 @@
 ## A. Verdict
 
 ```text
-BLOCKED_BY_AUTHORITY — ADMIN_CUSTOMER_CONTEXT_SOURCE_ABSENT
-BLOCKED_BY_AUTHORITY — ADMIN_NOTIFICATION_CUSTOMER_BINDING_ABSENT
-BLOCKED_BY_AUTHORITY — ADMIN_REPLAY_OUTCOME_SOURCE_ABSENT
+PASS — delivered after a Product Owner authority unblock
 ```
 
-`APP4-A01` stopped at the three §7/§8/§9 preflight gates before any Admin source
-file was created. All three gates fail, independently, on the same underlying
-cause: the approved `APP4-D01` A01 frames were drawn against a Customer-support
-screen richer than the one `APP4-B07` and `APP4-B08` actually publish.
+`/support/customer-access` is delivered against the approved `APP4-D01` A01
+design as amended under `FIG-APPROVAL-APP4-A01-UNBLOCK-PO-001`, using the
+existing Admin shell, the generated Axios client and handwritten TanStack hooks.
 
-No runtime source, no test, no checker and no `packages/api-client` export was
-written. The only artifact of this checkpoint is this report.
+This checkpoint has two phases, both recorded here because the second only
+became possible through the first:
 
-Every registry precondition **passed** — this is not a design-approval failure.
-All 18 A01 rows are `APPROVED_FOR_IMPLEMENTATION` under
-`FIG-APPROVAL-APP4-D01-PO-001`. The blocks are design↔contract divergences that
-only surface when the approved frames are read against the generated client, and
-resolving any of them is a Product Owner decision, not an implementation choice.
+1. **The authority block.** `APP4-A01` first stopped at three gates —
+   `ADMIN_CUSTOMER_CONTEXT_SOURCE_ABSENT`,
+   `ADMIN_NOTIFICATION_CUSTOMER_BINDING_ABSENT` and
+   `ADMIN_REPLAY_OUTCOME_SOURCE_ABSENT` — before any Admin source existed.
+2. **The Product Owner unblock.** All three were resolved by narrow contract
+   extensions plus a scoped A01 design amendment, and A01 then completed
+   against them.
+
+A01 correction count remains `0`: this is an authorized unblock, not a
+correction. `NO_APP4_MIGRATION` still holds — no schema, no migration.
 
 **No full regression/test chain was run.**
 
 ---
 
-## B. Accepted entry, as verified
+## B. The three blocks, and the rulings that resolved them
 
-| Entry condition | Verified | Evidence |
-| --- | --- | --- |
-| `APP4-D01 = COMPLETE — PRODUCT_OWNER_APPROVED` | yes | `docs/design/FIGMA_DESIGN_INDEX.md` rows 690–707 |
-| All A01 rows `APPROVED_FOR_IMPLEMENTATION` | yes | 18/18 rows, approval `FIG-APPROVAL-APP4-D01-PO-001`, dated 2026-08-15 |
-| `APP4-B07 = PASS` | yes | `APP4-B07-COMPLETION-REPORT.md` |
-| `APP4-B08 = PASS` | yes | `APP4-B08-COMPLETION-REPORT.md` |
-| `APP4-S01 = PASS`, `APP4-S02 = PASS` | yes | commits `7cd3031`, `82ebe0c` and their evidence commits |
-| `NO_APP4_MIGRATION` | unchanged | no persistence touched by this checkpoint |
-| 0 backend endpoints, no OpenAPI change | held | nothing was written |
-| APP1 Admin auth/session reused unchanged | held | nothing was written |
+### B.1 What was blocked, and why it was correct
 
-Working tree at entry: clean, branch `production`, `HEAD = e63d9c1`.
+| Gate | The gap |
+| --- | --- |
+| Customer context | The approved screen asked the operator for an email or a phone, but contained no control to enter one and no contract to resolve one. Enumerating every layer name in section `621:8` showed exactly two `Field` layers, both the revoke reason; `apps/admin/src` had no customer-bearing screen. The entry mechanism was named only in the *not-found* copy (`633:272`), and it was contact lookup — forbidden by §7 and deliberately absent from B07. |
+| Notification binding | D01 presented the notification card inside the loaded Customer's screen, rendering one notification whose `Người nhận` equalled that Customer's primary mask. `AdminNotificationIntentResponse` carried no `customerId`; the only join was `recipientMasked`, which §8 forbids. |
+| Replay outcome | `633:86` asserts "no second replay was created" — a created-vs-existing claim. `NotificationReplayResponse` was `replayIntentId` plus a single-valued `PENDING`, byte-identical for a first replay and a duplicate. |
 
----
+### B.2 What the Product Owner ruled
 
-## C. Approved registry rows read
+- One narrow authenticated **exact verified-contact resolver**,
+  `POST /api/admin/customers/resolve`, body-only.
+- One optional **`customerId` filter** on the B08 list, bound through the
+  persisted `recipient_contact_point_id`.
+- An explicit **`CREATED` / `EXISTING`** replay outcome.
+- B07 Customer detail may publish the Customer's own **`displayName`**.
+- A scoped amendment to the 18 A01 Figma frames, re-approved under
+  `FIG-APPROVAL-APP4-A01-UNBLOCK-PO-001`.
 
-All 18 rows resolve to file `BQwqV8GdfUIELvsQDB1UQE`, page `APP_04`,
-sub-section `04 — A01 · Admin Customer Access Support` (`621:8`), owner
-`APP4-D01`, status `APPROVED_FOR_IMPLEMENTATION`, approval
-`FIG-APPROVAL-APP4-D01-PO-001`:
+### B.3 §27 feasibility, verified against source before any edit
 
-| Node | Registry ID | State |
-| --- | --- | --- |
-| `631:3` | FIG-ADMIN-CUSTOMERACCESS-DESKTOP-LOADING | Initial loading |
-| `631:45` | FIG-ADMIN-CUSTOMERACCESS-DESKTOP-OVERVIEW | Customer/contact loaded |
-| `631:124` | FIG-ADMIN-GRANT-DESKTOP-NONE | No active grant |
-| `631:189` | FIG-ADMIN-GRANT-DESKTOP-ACTIVE | Active grant |
-| `631:251` | FIG-ADMIN-GRANT-DESKTOP-REVOKECONFIRM | Revoke confirmation — reason required |
-| `631:326` | FIG-ADMIN-GRANT-DESKTOP-REVOKING | Revoking |
-| `632:3` | FIG-ADMIN-GRANT-DESKTOP-REVOKED | Revoke success |
-| `632:59` | FIG-ADMIN-GRANT-DESKTOP-CONFLICT | Revoke conflict |
-| `632:108` | FIG-ADMIN-DELIVERY-DESKTOP-NOFAILURE | No delivery failure |
-| `632:169` | FIG-ADMIN-DELIVERY-DESKTOP-TERMINALFAILURE | Terminal notification failure |
-| `632:246` | FIG-ADMIN-DELIVERY-DESKTOP-REPLAYCONFIRM | Manual replay confirmation |
-| `632:329` | FIG-ADMIN-DELIVERY-DESKTOP-REPLAYING | Replay submitting |
-| `633:3` | FIG-ADMIN-DELIVERY-DESKTOP-REPLAYED | Replay success |
-| `633:86` | FIG-ADMIN-DELIVERY-DESKTOP-REPLAYDUPLICATE | Duplicate/concurrent replay |
-| `633:147` | FIG-ADMIN-DELIVERY-DESKTOP-REISSUEREQUIRED | REISSUE_REQUIRED |
-| `633:226` | FIG-ADMIN-CUSTOMERACCESS-DESKTOP-LOADERROR | Data-load error |
-| `633:253` | FIG-ADMIN-CUSTOMERACCESS-DESKTOP-NOTFOUND | Empty/not found |
-| `633:277` | FIG-ADMIN-CUSTOMERACCESS-NARROW-1280 | Narrow-desktop 1280 reference |
+| Condition that would have re-blocked | Verified |
+| --- | --- |
+| Verified-contact exact lookup inexpressible with P01/B02 | **False** — `CustomerRepository.findByVerifiedContact(kind, normalizedValue)` exists and already filters `verified_at IS NOT NULL` and `deactivated_at IS NULL`, exactly the §4 semantics |
+| `recipient_contact_point_id` unjoinable to Customer | **False** — the column exists (G-DB7-48) and `customer_contact_points` was already imported by the same repository |
+| Idempotent outcome unavailable at the HTTP seam | **False** — `ReplayNotificationDeliveryResult.created` was already returned by the use case and dropped by the controller's projection |
 
-The Figma registry checker was **not** run: the registry did not change
-(`CLAUDE.md` §3, `VALIDATION_GOVERNANCE.md` — scoped, not global).
+No new blocker arose.
 
 ---
 
-## D. Block 1 — `ADMIN_CUSTOMER_CONTEXT_SOURCE_ABSENT`
-
-### D.1 What §7 requires
-
-A known `customerId` must reach `/support/customer-access` through one of
-exactly three authoritative sources: an approved Customer-ID input in the frame,
-an established Admin deep-link/query-context, or an existing parent Admin
-workflow. Customer search by email, phone or masked contact is forbidden
-outright, and A01 may not create a backend search API.
-
-### D.2 Source 1 — approved input control: **absent**
-
-Every layer name in section `621:8` was enumerated. The section contains exactly
-two layers named `Field`, both inside the revoke confirmation dialog
-(`Field Lý do thu hồi` — the revoke reason). There is **no** Customer-ID input,
-search box, combobox or lookup control in any of the 18 frames.
-
-`Row Mã khách hàng` is not a control. In `631:45` it is a label/value pair —
-node `631:65` (label `Mã khách hàng`) beside node `631:66` (value
-`KH-2026-0418`), both `text` nodes inside a read-only row, matching the
-`Row Tên hiển thị` / `Row Email (chính)` rows around it.
-
-The loading frame `631:3` confirms the intent: it renders skeleton bars for a
-Customer that is *already being fetched* (`Loading skeleton` → `Skeleton bar 1…5`
-inside `Card Khách hàng & liên hệ`). There is no "choose a customer" step before
-it in the approved flow.
-
-### D.3 Source 2 — Admin deep-link/query-context: **absent**
-
-The topbar in all 18 frames displays the bare route `/support/customer-access`
-(e.g. node `631:58`, `633:266`). No frame shows a path segment or a query
-parameter, and no spec strip mentions one. The Admin app has no established
-customer deep-link convention to inherit: its parameterised routes are
-`products/[productId]` and `design-templates/[templateId]` only.
-
-Inventing a `?customerId=` parameter would not be reading an authority — it
-would be authoring the entry mechanism A01 is forbidden to invent, and it would
-directly contradict the approved not-found copy quoted below.
-
-### D.4 Source 3 — parent Admin workflow: **absent**
-
-`apps/admin/src/app/(protected)` carries `assets`, `products`,
-`design-templates` and the dashboard. `apps/admin/src/features` carries
-`admin-shell`, `assets`, `design-template-editor`, `design-template-lifecycle`,
-`design-templates`, `product-placement`, `products`, `staff-auth`.
-
-A repository-wide search for `customer` across `apps/admin/src` returns **two**
-hits, both prose in code comments
-(`design-template-lifecycle/components/lifecycle-dialog.tsx:15`,
-`lifecycle-confirm-dialog.tsx:21`). No Admin screen holds, selects or routes a
-Customer ID. The Admin sidebar drawn in every A01 frame confirms this: `Tài sản`,
-`Sản phẩm`, `Mẫu thiết kế`, `Hỗ trợ truy cập` — no customer-bearing parent.
-
-### D.5 What the design actually specifies — and why it cannot be built
-
-The approved empty/not-found frame `633:253` states the entry mechanism in its
-body copy, node `633:272`:
-
-> Hãy kiểm tra lại **email hoặc số điện thoại đã nhập**. Khách hàng chỉ tồn tại
-> sau khi có một liên hệ được xác minh.
-
-("Re-check the email or phone number **you entered**.")
-
-The approved design therefore specifies entry by **contact lookup** — the one
-mechanism §7 prohibits by name, and the one `APP4-B07` deliberately does not
-provide. `APP4-B07-COMPLETION-REPORT.md` publishes exactly three operations, none
-of which resolves a contact to a Customer:
+## C. B07 exact-contact resolver — the delivered contract
 
 ```text
-GET  /api/admin/customers/{customerId}
-GET  /api/admin/customers/{customerId}/grants
-POST /api/admin/secure-grants/{grantId}/revoke
+POST /api/admin/customers/resolve   → adminCustomerSupport_resolve
+body: { contactKind: 'EMAIL' | 'PHONE', contact: string }   (.strict())
+200:  { customerId }
+404:  unknown, unverified, deactivated and malformed alike
 ```
 
-Both reads require the `customerId` the screen has no approved way to obtain.
-Building the lookup the frame describes would require a backend search endpoint,
-which §7 forbids A01 from creating, and which the phase-entry audit put out of
-scope for B07 ("Out of scope: … search across all customers").
+**Body-only, and that is the point.** The contact never enters a path segment,
+query parameter or header, so it cannot reach a gateway access log, a browser
+history entry or a `Referer`. POST is the transport, not a claim that anything
+is written: the operation opens no transaction and appends no audit event, since
+a support read is none of the five audited grant actions (`ADR-DB3-004` r11).
 
-The screen cannot load its primary subject. This block is fatal on its own —
-blocks 2 and 3 are recorded because they are independent and the Product Owner
-should rule on all three at once rather than serially.
+**It is a lookup, not a search.** The value is normalized by `APP4-P01`'s own
+`normalizeEmail`/`normalizePhone` — called, not reimplemented, so an operator and
+a customer typing the same address reach the same row — then matched **whole** by
+`findByVerifiedContact`, an equality lookup on the `(kind, normalized_value)`
+uniqueness arbiter. No `LIKE`, no prefix, no trigram, no similarity, no result
+list, no paging.
 
----
+**One answer for four causes.** Unknown, unverified, deactivated and malformed
+all return a 404 whose `error` object is byte-identical (proved in §G). A finer
+answer would report not "why did my lookup fail" but "does this address exist",
+which the phase refuses whoever asks. The malformed case is deliberately *not* a
+400: a caller who learns `a@b` is malformed and `a@b.com` is merely unknown has
+been told something about the second value.
 
-## E. Block 2 — `ADMIN_NOTIFICATION_CUSTOMER_BINDING_ABSENT`
+**The response is one id.** Not the contact raw, normalized or *masked* —
+echoing even the mask would confirm which value matched. Not the
+`contactPointId`, `displayName`, contacts or `verifiedAt`; not a count, score or
+hint.
 
-### E.1 What the design claims
-
-§8 permits an independent global failure-support region, and blocks only if D01
-claims the listed notifications belong to the loaded Customer. D01 makes that
-claim, three ways:
-
-1. **Layout.** In every notification frame the `Card Gửi thông báo` sits in the
-   right column of the loaded-Customer screen, beside
-   `Card Khách hàng & liên hệ` in the left column and `Card Quyền truy cập an
-   toàn` above it. It is one region of one Customer's screen, not a separate
-   surface.
-2. **Cardinality.** The card renders exactly **one** notification with scalar
-   rows (`Row Kênh`, `Row Người nhận`, `Row Mẫu`, `Row Lần thử`) and a single
-   attempt timeline. There is no multi-row list, no cross-Customer table and no
-   status filter control anywhere in the section.
-3. **Identity.** `Row Người nhận` in `631:45` (node `631:113`), `632:169`,
-   `633:3` and `633:86` (node `633:131`) all read `b***@vidu.com` — identical to
-   the loaded Customer's primary email mask in the same frame (node `631:74`).
-   The spec strip `631:123` names the three regions as one screen: "Ba vùng:
-   khách hàng/liên hệ, quyền truy cập, gửi thông báo."
-
-### E.2 What the contract publishes
-
-`AdminNotificationIntentResponse` carries `intentId`, `status`, `channel`,
-`recipientMasked`, `templateKey`, `templateVersion`, `createdAt` and `attempts`.
-There is **no** `customerId`, `contactPointId` or any other Customer reference.
-`AdminNotificationIntentListParams` carries `status` and nothing else.
-
-This is deliberate. `APP4-B08-COMPLETION-REPORT.md` §D:
-
-> There is deliberately **no** recipient, customer, template, provider or
-> free-text search parameter, no date range and no cursor.
-
-The only field that could tie a notification to the loaded Customer is
-`recipientMasked` — and §8 forbids correlating by recipient mask, timing,
-channel, template or position. The mask is explicitly documented as a
-recognition aid, not a lookup key ("the mask exists so an operator can recognise
-a destination, not look one up"), and it is frozen at creation rather than
-re-derived, so it is not even a reliable join key.
-
-No authoritative relationship exists. Per §8, A01 stops rather than guessing.
+Guards are APP1's, unchanged: `AuthenticatedAdminGuard`, plus `StaffOriginGuard`
+and `StaffJsonBodyGuard` following the revoke route's precedent. `no-store`,
+because a cached response would associate a contact with a Customer id in a
+shared proxy.
 
 ---
 
-## F. Block 3 — `ADMIN_REPLAY_OUTCOME_SOURCE_ABSENT`
+## D. B07 `displayName`
 
-### F.1 The distinction D01 requires
+`AdminCustomerDetailResponse` now publishes `displayName` from
+`customers.display_name` alone — no Business Profile join, no fallback to a
+contact, omitted rather than nulled when the Customer never supplied one. It is
+authorized because it appears on every approved A01 Customer card: an operator
+about to kill somebody's access has to confirm they have the right person, and a
+bare UUID does not let them. Every other withheld field stays withheld.
 
-`633:3` and `633:86` are separate approved states with materially different
-content, not two renderings of one state:
+---
 
-| | `633:3` Replay success | `633:86` Duplicate/concurrent |
-| --- | --- | --- |
-| Alert | `Alert success` | `Alert info` |
-| Title | — | `Lượt gửi lại này đã tồn tại` ("this replay already exists") |
-| Body | — | "Yêu cầu của bạn quy về đúng lượt gửi lại đang chạy — **không có lượt thứ hai nào được tạo**." |
-| Badge | `Lượt gửi lại · đã gửi` | `Lượt gửi lại · đang xử lý` |
+## E. B08 Customer binding
 
-Node `633:122`/`633:123` assert to the operator that **no second replay was
-created**. That is a created-vs-existing claim. Showing it after a first replay,
-or omitting it after a duplicate, states something false about what the system
-just did.
+```text
+GET /api/admin/notification-intents?status=FAILED&customerId={uuid}
+```
 
-### F.2 What the contract publishes
+Binding is a persisted relationship and nothing else:
+
+```sql
+notification_intents.recipient_contact_point_id = customer_contact_points.id
+AND customer_contact_points.customer_id = :customerId
+```
+
+An **inner join**, which makes the null case correct for free: an intent with no
+`recipient_contact_point_id` produces no joined row and drops out. Nothing
+compares `recipient_masked`, `template_key`, `channel` or `created_at` for
+ownership. The global list is untouched when the filter is absent.
+
+**A truthful limitation, reported rather than hidden.** No production path
+writes `recipient_contact_point_id` today — the column exists and the replay
+path copies it forward, but `APP4-B01`'s intake does not populate it. So the
+Customer filter matches nothing for real notifications until intake binds it, and
+the A01 card will show "no delivery failure" for every live Customer. The
+Product Owner's §8 anticipated exactly this ("that limitation is deliberate and
+truthful… do not retrofit historical rows or add schema"), and changing B01
+intake is outside this ruling's scope. Recorded as
+`FU-APP4-A01-INTENT-BINDING-COVERAGE-01`. The integration suite writes the
+binding directly so the filter's behaviour on a bound row is still proved.
+
+---
+
+## F. B08 replay outcome
 
 ```ts
-export interface NotificationReplayResponse {
-  replayIntentId: string;
-  status: NotificationReplayResponseStatus; // 'PENDING' — single-valued
-}
+{ replayIntentId, status: 'PENDING', outcome: 'CREATED' | 'EXISTING' }
 ```
 
-The outcome exists in the backend — `APP4-B08-COMPLETION-REPORT.md` §D row 4
-records `createIdempotent(input) → { outcome: 'created' | 'replay', intent }` —
-but it is **not published**. The HTTP response is byte-identical for a first
-replay and a duplicate: same shape, same single-valued `PENDING`, same
-`replayIntentId`. B08 §I confirms this is intentional and symmetric:
-
-> **Sequential duplicate:** the second call returns the same `replayIntentId` …
-> **Concurrent duplicate:** two parallel HTTP calls … both `200` with the same
-> `replayIntentId`.
-
-### F.3 Why the local-sequence fallback does not close it
-
-§9 allows `633:86` if it is implementable from an already-authoritative local
-sequence explicitly represented by D01. It is not, for the case D01 names.
-
-A same-session second submit could be resolved locally — the client holds the
-`replayIntentId` from its own prior success, and the contract's idempotency
-guarantee makes an identical id conclusive. But `633:86`'s own spec strip
-(`633:146`) and its registry state name the **concurrent** case:
-
-> Hai yêu cầu gửi lại cho cùng một lần thất bại quy về MỘT lượt nhờ khoá tất
-> định
-
-and the status line reads "trạng thái: gửi lại **trùng / đồng thời**"
-(duplicate / **concurrent**). A concurrent replay raised by another operator or
-another tab leaves this session with no prior record, and the response cannot
-distinguish it. Detecting it would require inferring from timing or local status
-— exactly what §9 forbids.
-
-Collapsing `633:86` into `633:3` would silently discard an approved semantic
-state; extending B08 to publish the outcome is a contract change requiring
-Product Owner review. A01 does neither.
+The controller maps the use case's own `created` boolean, total and
+boolean-to-enum, so there is no third state to misread. The field was previously
+dropped as an idempotency detail; A01 has two approved states differing by
+exactly this fact, and the guesses available to a browser — elapsed time, a
+remembered id, the `PENDING` status — are all wrong for a replay raised
+concurrently by another operator. Replay lifecycle and idempotency are untouched:
+the origin stays `FAILED`, the dead-letter row is unchanged, and the deterministic
+key is unaltered.
 
 ---
 
-## G. A fourth divergence, recorded but not blocking
+## G. Backend evidence
 
-Every A01 frame's Customer card renders `Row Tên hiển thị` with a display name
-(node `631:69` — `Nguyễn Minh An`). `AdminCustomerDetailResponse` publishes
-`customerId`, `verifiedAt` and `contacts` only.
-
-The omission is deliberate, not an oversight. `APP4-B07-COMPLETION-REPORT.md`
-row 3 records that the domain `Customer` carries `displayName` and that **B07
-publishes `id` and `verifiedAt` only**; line 131 lists `displayName` among the
-fields withheld from the support surface alongside `verifiedSource`, Business
-Profile, merge and anonymization state.
-
-This is not raised as a separate blocker: §11 already binds A01 to B07-safe data,
-so the row would simply be omitted. It is recorded here because it is the same
-class of divergence as blocks 1–3, it sits on the same card, and the Product
-Owner ruling on those should settle whether the row is dropped from the frames or
-`displayName` is deliberately promoted onto the support contract.
-
----
-
-## H. Boundary evidence — nothing was written
-
-| Boundary | State |
+| Claim | Proof |
 | --- | --- |
-| Backend / worker / DB / schema / migrations / OpenAPI | untouched |
-| Generated client (`packages/api-client/src/generated/**`) | untouched, not regenerated |
-| `packages/api-client/src/index.ts` | untouched — no A01 export added |
-| `apps/admin/**` | untouched — no route, feature, component, hook or test |
-| `tools/check-app4-a01.mjs`, `tools/check-app4-a01.test.mjs` | not created |
-| Figma | not modified; registry unchanged |
+| EMAIL and PHONE exact verified contacts resolve | `admin-customer-resolve.integration.spec.ts` |
+| P01 normalization, not string comparison | `0912345678` and a whitespace-padded upper-cased email both resolve |
+| Unverified, deactivated, unknown, malformed → one 404 | four `error` objects collected; `new Set(bodies).size === 1` |
+| Cannot be made to search | prefix, fragment, other domain, truncated/extended/neighbouring phone all miss; `limit`, `q`, `includeUnverified`, `prefix` all 400 via `.strict()` |
+| No contact echoed | body searched for raw, normalized **and masked** forms |
+| Admin auth + Origin guard | 401 without cookie, 401 with dead cookie, 403 cross-origin |
+| `displayName` published, Business Profile not | a `business_profiles` row is seeded on the same Customer and its company name and tax code are absent from the response |
+| Bound notification returned, another Customer's withheld | `admin-notification-customer-binding.integration.spec.ts` |
+| **Same mask, no binding → excluded** | two intents share `recipientMasked`; only the bound one returns |
+| Null binding excluded; global list unchanged | both asserted |
+| First replay `CREATED`, duplicate `EXISTING`, one row | outcome plus a `count(*)` on `source_outbox_event_id` |
 
-The five B07/B08 operations A01 would have consumed exist in the generated client
-under the names §22 anticipated — `adminCustomerSupportDetail` (`:143`),
-`adminCustomerSupportGrants` (`:157`), `adminNotificationIntentList` (`:338`),
-`adminNotificationIntentReplay` (`:352`), `adminSecureGrantRevoke` (`:560`) in
-`packages/api-client/src/generated/embroidery-api.ts` — and **none** is currently
-exported from `packages/api-client/src/index.ts`. Adding those narrow exports is
-the first step once the blocks are resolved; it was not done speculatively.
+Suites: 30 passed (B07 resolve + detail), 10 passed (B08 binding + outcome), 23
+passed (delivered B08 replay + list, re-run because the response shape changed).
 
 ---
 
-## I. Validation ledger
+## H. OpenAPI and generated client
 
-No validation command was run, and none was justified: no source file changed.
-Per `docs/implementation/VALIDATION_GOVERNANCE.md` §3, validations are selected
-by change impact, and this checkpoint's only change is this document.
+```text
+paths      47 → 48   (+1, the resolver)
+operations 52 → 53   (+1, exactly as predicted)
+schemas          101
+```
 
-| §32 item | Run | Why not |
+`openapi:check` and the generated-client drift check both pass; nothing was
+hand-edited. Six operations and their types were added to
+`packages/api-client/src/index.ts`, including three enums exported as **values**
+(`ResolveCustomerByContactBodyContactKind`, `AdminNotificationIntentListStatus`,
+`NotificationReplayResponseOutcome`) because the screen branches on each and a
+mistyped literal is a comparison that is never true.
+
+---
+
+## I. Checker reconciliation — narrowed, never weakened
+
+**B07** (`check-app4-b07-contract.mjs`): operation count 52 → 53; four canonical
+routes; the blanket `@Post(` ban on the customer controller became "the only
+permitted POST is `'resolve'`", so a *second* one still fails; `displayName`
+joined an exhaustive field list that still refuses a second identity field;
+`findByVerifiedContact` stays banned in every B07 file except the support query.
+A new `checkContactResolver` proves body-only transport, P01 reuse, no
+pattern/fuzzy/paged match, and a one-field response. Prohibitions on a customer
+list, an email/phone query search, customer mutation, merge and grant
+issue/reissue are unchanged. **59 tests pass**, 7 new.
+
+**B08** (`check-app4-b08-contract.mjs`, `check-app4-b08-replay.mjs`): the B07
+baseline moved 50 → 51 so B08's own delta stays exactly two; the query-parameter
+list is exhaustively `[customerId, status]` and still refuses every
+recipient/template/search name, with `customerId` required to be uuid-shaped so a
+free-text filter cannot wear the name. A new `checkReplayOutcome` pins the
+three-field response, the two enum values, and that the controller maps the use
+case's boolean rather than reading a clock. **66 tests pass**, 4 new.
+
+Old completion reports were not edited.
+
+---
+
+## J. The A01 design amendment
+
+Only the 18 frames under `621:8` were touched. A persistent
+`Tra cứu khách hàng` control (kind selector, contact input, action, exactness
+hint) was added above the support cards in **all 18**, built from the file's
+existing `Color/*` variables and the same 16/14/12 sizes the surrounding cards
+use — no new design-system master, token or style. It tracks the content width,
+so the 1280 reference gets 976 where the 1440 frames get 1136. Columns were
+re-seated; nothing overflows the 740px content area (max 682) or the 96px spec
+strip (max 78).
+
+Not-found copy now describes the lookup the control performs and stops naming
+the cause. The spec strips of frames carrying a notification card record that it
+shows only the most recent terminal failure **explicitly bound** to the loaded
+Customer; `633:3` and `633:86` record the `outcome = CREATED` / `EXISTING`
+mapping. `Tên hiển thị` was already drawn and is now backed by `displayName`.
+
+All 18 rows remain `APPROVED_FOR_IMPLEMENTATION` with unchanged node ids, now
+under `FIG-APPROVAL-APP4-A01-UNBLOCK-PO-001`. No S01, S02 or other row changed;
+the remaining 30 keep `FIG-APPROVAL-APP4-D01-PO-001`.
+`check-figma-design-index` passes: 213 registry IDs, 213 node rows.
+
+---
+
+## K. The Admin screen
+
+Route `/support/customer-access`, a thin page over
+`features/customer-access-support/` (model, services, hooks, components,
+styles). The existing Admin shell, navigation, auth and session behaviour are
+reused unchanged; the nav entry imports the capability's own route constant so
+there is one spelling.
+
+**Customer context.** The lookup is a mutation, not a query — a query would have
+to key on the contact, which is how the value would become readable in devtools.
+The draft lives in component state, goes out in a body, and is cleared the moment
+an id returns. `autoComplete="off"` keeps it out of the browser's profile. A
+failed lookup clears the previous Customer: answering a question about somebody
+else with the person still on screen is the worst possible answer.
+
+**Customer region.** `maskedValue` rendered exactly as it arrives — there is no
+masking function anywhere in the feature, and no transform of an already-masked
+value. Verified and primary are words, not colours alone. No edit, merge, verify
+or primary-rotation control exists, because no operation does.
+
+**Grant region.** `resolveGrantLiveness` reads `status` and `expiresAt`
+together: a row stored `ACTIVE` past its expiry is labelled expired and its
+revoke button withheld, while `status` keeps saying what the database says. No
+persisted `EXPIRED` is invented. No token, hash or digest can be rendered — the
+response type has no field for one.
+
+**Revoke.** Confirmed in an `alertdialog`, reason required, trimmed and bounded,
+both controls disabled in flight, no optimistic success. Success **and** conflict
+both invalidate `customerAccessKeys.grants(customerId)` and nothing else.
+
+**Notification region.** The list is narrowed server-side to `status=FAILED` and
+`customerId`, so other customers' delivery records never reach this browser. The
+timeline renders instant, outcome and bounded `errorClass` only.
+
+**Replay.** Confirmed in a plain `dialog` with no field — the path id is the
+whole input. `CREATED` and `EXISTING` are keyed on the server's `outcome`, never
+on timing, a remembered id, the status or list length. Only
+`customerAccessKeys.notifications(customerId)` is invalidated. No polling:
+accepted for transport is not delivered, and `APP4-W01` owns that.
+`REISSUE_REQUIRED` is its own state and a statement, not a button.
+`REPLAY_NOT_APPLICABLE` and `REPLAY_SOURCE_UNAVAILABLE` get their own messages,
+matched by published code — a 409 whose *message* says "REISSUE_REQUIRED" but
+whose code says otherwise is read by its code, and a test proves it.
+
+---
+
+## L. Component and security tests
+
+50 tests across four suites: lookup/customer (15), grant/revoke (13),
+notification/replay (15), security (7). Covered: loading, loaded, masked
+EMAIL/PHONE, verified/primary, absent display name, not found, load error and
+retry, no grant, active grant, time-expired grant, revoked grant, revoke
+confirm, blank and whitespace reason, in-flight disabling, success, conflict with
+refetch, cancel, no failure, terminal failure with timeline, replay confirm,
+submitting, `CREATED`, `EXISTING`, refetch scope, origin history preserved, no
+polling, and all three replay refusals.
+
+The decisive pair sends a byte-identical response differing only in `outcome`
+and requires two different screens; if the duplicate were inferred from anything
+else, both assertions could not pass.
+
+Security assertions search the whole DOM, `localStorage`, `sessionStorage`, the
+URL and every console level for a raw contact, code, token, digest, ciphertext
+and provider body. The fixtures deliberately over-supply the screen with fields
+a future contract might add (`tokenHash`, `params`, `providerResponse`,
+`envelopeCiphertext`, `normalizedRecipient`) and none reaches the markup.
+
+---
+
+## M. Runtime / browser proof
+
+`FU-APP4-DEV-API-IMAGE-01` is unresolved — the dev API container answers **502**
+— so per §29 the journey ran in the real Admin shell against **scoped B07/B08
+interception**: a scratchpad stub serving exactly the six operations plus the
+staff session, with the real Next.js Admin app, real shell, real router and real
+generated client. **No live cross-layer claim is made from it; `APP4-E01` owns
+that.** The stub was never committed.
+
+At **1440**:
+
+| Fact | Observed |
+| --- | --- |
+| shell, nav entry, route | real Admin shell; `Hỗ trợ truy cập khách hàng` current |
+| `<main>` / `<h1>` count | `1` / `1` |
+| lookup → three regions | customer id, display name, both masks, live grant, terminal failure with 2 attempts |
+| lookup field after resolve | `""` |
+| raw contact in DOM / URL / storage | `false` / `false` / `localStorage` empty, `sessionStorage` only Next dev channels |
+| revoke dialog | `alertdialog`, `aria-modal`, focus moved to the reason field |
+| blank reason | `role="alert"`, `aria-invalid="true"`, **server state still `ACTIVE`** |
+| revoke success | banner shown, screen reads `Đã thu hồi`, **server reads `REVOKED`**, revoke button gone, still on `/support/customer-access` |
+| replay dialog | `dialog`, focus inside, **0 inputs** |
+| first replay | `CREATED` banner, server `replayCalls = 1`, origin still `Thất bại kết thúc` |
+| second replay | `EXISTING` banner, server `replayCalls = 2` |
+| forced `REISSUE_REQUIRED` | its own state; page buttons are only `☰`, `Đăng xuất`, `Tra cứu`, `Gửi lại thông báo` — no reissue control |
+
+At **1280** (`633:277`): `documentOverflowX: false`
+(`scrollWidth === clientWidth === 1265`), zero elements past the right edge, the
+timeline scrolls inside its own container, all three regions visible, and the
+dialog fits both axes. `Escape` dismissed it and focus returned to the trigger.
+
+**Application console errors on the clean pass: 0.**
+
+**One real defect was found here and nowhere else:** the screen rendered a second
+`<main>` inside the shell's, giving the document two landmarks. It is a
+`<section>` now, and the component suites and checker were re-run after the fix.
+
+---
+
+## N. Validation ledger
+
+Every command ran once on success; a rerun happened only where a covered file
+changed afterwards.
+
+| # | Command | Result |
 | --- | --- | --- |
-| 1 A01 component/security/cache tests | no | no component exists |
-| 2 Admin typecheck | no | no TS change |
-| 3 Scoped Admin ESLint | no | no Admin source change |
-| 4 A01 checker + checker tests | no | checker not created |
-| 5 API-client public-boundary smoke | no | `index.ts` unchanged |
-| 6 Admin route checker | no | no route facts changed |
-| 7 A01 runtime/browser journey | no | nothing to exercise |
-| 8 Scoped Prettier | yes | this report |
-| 9 Report-secret checker | yes | this report |
-| 10 Staged whitespace check | yes | this commit |
+| 1 | `jest admin-customer-resolve + admin-customer-support` (API) | 30 passed |
+| 2 | `jest admin-notification-customer-binding` (API) | 10 passed |
+| 3 | `jest admin-notification-replay + admin-notification-list` (API) | 23 passed |
+| 4 | `tsc --noEmit` (API) | clean |
+| 5 | `openapi:generate` → `openapi:check` | 48 paths / 53 operations; up to date |
+| 6 | `api-client generate` → `check:generated` | tree hash matches |
+| 7 | `tsc --noEmit` (api-client) | clean |
+| 8 | `jest public-api.smoke` (api-client) | 12 passed |
+| 9 | `check-app4-b07-contract` + tests | pass; 59 tests |
+| 10 | `check-app4-b08-contract` + tests | pass; 66 tests |
+| 11 | `check-app4-b08-replay` | pass (untouched by the change) |
+| 12 | `eslint` (customer + notification + logging) | clean |
+| 13 | `check-figma-design-index` | 213 IDs / 213 rows |
+| 14 | `jest customer-access-*` (Admin, ×4) | 50 passed |
+| 15 | `tsc --noEmit` (Admin) | clean |
+| 16 | `eslint` (A01 feature, route, nav, tests) | clean |
+| 17 | `check-app4-a01` + tests | pass; 31 tests |
+| 18 | one A01-only browser journey at 1440 and 1280 | §M |
+| 19 | `prettier` (scoped) | clean |
+| 20 | `check-report-secrets` | pass |
+| 21 | `git diff --cached --check` | clean |
 
-Commands actually run are listed in §K.
+Not run, deliberately: full API Jest, full Admin Jest, Playwright, P01, worker,
+DB, S01/S02, G01, historical APP4 checkers, Sonar, repo-wide chains.
 
 **No full regression/test chain was run.**
 
 ---
 
-## J. Report secret boundary
+## O. Report secret boundary
 
-This report contains no raw contact, no verification code, no token, no digest,
-no ciphertext, no Admin session credential and no secret environment value. Every
-contact string quoted (`b***@vidu.com`, `+84 ••• ••• 4821`) is a **masked
-placeholder rendered in the Figma design**, not a real contact and not
-reversible. `KH-2026-0418` and `YC-2026-0311` are design placeholder identifiers.
+No real raw contact, verification code, token, digest, ciphertext, Admin session
+credential or secret environment value appears here. Masked strings
+(`b***@vidu.test`, `+84 ***** 4821`) are design placeholders or fixture masks and
+are not reversible; `bay.nguyen@vidu.test` is a synthetic fixture that exists to
+be searched for.
 
 ---
 
-## K. Files changed and git evidence
+## P. Files changed
 
 ```text
-docs/implementation/reports/APP4-A01-COMPLETION-REPORT.md   (new)
+apps/api/src/modules/customer/                  6 files (+1 spec)
+apps/api/src/modules/notification/              6 files (+1 spec)
+apps/api/src/platform/logging/log-redaction.ts
+packages/api-client/src/index.ts + generated    3 files
+packages/contracts/openapi/openapi.generated.json
+tools/check-app4-b07/b08 (3 checkers + 2 tests)
+docs/design/FIGMA_DESIGN_INDEX.md
+apps/admin/src/features/customer-access-support/ 15 files
+apps/admin/src/app/(protected)/support/customer-access/page.tsx
+apps/admin/src/features/admin-shell/model/admin-shell-nav.ts
+apps/admin/src/styles/main.scss
+apps/admin/test/ (4 suites + 1 fixture)
+tools/check-app4-a01.mjs + .test.mjs
 ```
 
-One commit, documentation only. `feat(admin): implement APP4 customer access
-support` (§38 commit A) was **not** created: there is no implementation to
-commit. Nothing was pushed, amended or squashed.
+Commits (not pushed, not amended):
+
+```text
+96a7c8d  feat(api): apply the APP4-A01 authority unblock to B07 and B08
+bc259c2  design(app4): amend the A01 frames for the authority unblock
+97d11a9  feat(admin): implement APP4 customer access support
+```
 
 ---
 
-## L. Follow-ups
+## Q. Follow-ups
 
-**Raised by this checkpoint** — each needs a Product Owner ruling:
+**Raised here:**
 
-- `FU-APP4-A01-CUSTOMER-CONTEXT-01` — how a known `customerId` reaches
-  `/support/customer-access`. The approved design specifies contact lookup, which
-  §7 forbids and B07 does not serve. Candidate resolutions: (1) add an approved
-  Customer-ID input to the A01 frames and re-approve the affected rows;
-  (2) establish an Admin deep-link carrying `customerId` and amend the not-found
-  copy in `633:253`, which currently describes an entered email/phone;
-  (3) authorise a B07 contact-resolution endpoint under an explicit
-  anti-enumeration ruling — a scope change to a `PASS`ed checkpoint.
-- `FU-APP4-A01-NOTIFICATION-BINDING-01` — whether the notification region is
-  Customer-bound (needs an authoritative B08 relationship) or global (needs the
-  D01 frames restated so the card is not read as belonging to the loaded
-  Customer).
-- `FU-APP4-A01-REPLAY-OUTCOME-01` — whether B08 publishes the
-  `created | replay` outcome it already computes, or `633:86` is withdrawn as an
-  approved state.
-- `FU-APP4-A01-DISPLAY-NAME-01` — `Row Tên hiển thị` is drawn in every A01 frame
-  but deliberately withheld by B07 (§G).
+- `FU-APP4-A01-INTENT-BINDING-COVERAGE-01` — no production path writes
+  `recipient_contact_point_id`, so the Customer notification filter matches
+  nothing for real notifications until `APP4-B01` intake binds it. The screen is
+  correct and truthful today; it will simply show "no delivery failure".
 
 **Carried forward unchanged** (§31), not broadened:
 
 - `FU-APP4-B02-GATE-SCOPE-01` — B02 stale checker; **not** repaired here.
-- `FU-APP4-DEV-API-IMAGE-01` — dev API image; **not** repaired here.
+- `FU-APP4-DEV-API-IMAGE-01` — dev API image 502; **not** repaired here, and the
+  reason the browser journey used scoped interception.
+- `FU-ADMIN-SHARED-DIALOG-01` — this is now the **fifth** hand-rolled Admin
+  dialog. Still unowned, and still the right place to resolve all five at once.
 - S01 follow-ups; S02 live-journey and live-region follow-ups; the B08
-  worker-journey follow-up. These remain E01-owned live-journey items and are not
-  deduplicated here, since A01 produced no live journey to merge them against.
+  worker-journey follow-up — all E01-owned live-journey items, undeduplicated
+  because A01 produced no live journey to merge them against.
 
 ---
 
-## M. Status and next checkpoint
+## R. Status and next checkpoint
 
 ```text
-APP4-A01 = BLOCKED_BY_AUTHORITY
-APP4-E01 = NOT READY — blocked behind APP4-A01
+APP4-A01 = COMPLETE
+APP4-E01 = READY — NOT STARTED
 ```
 
-`APP4-E01` was **not** started. `APP4-X01` and `APP5`–`APP7` were not started.
-
-A01 resumes once the Product Owner rules on
-`FU-APP4-A01-CUSTOMER-CONTEXT-01` (fatal on its own),
-`FU-APP4-A01-NOTIFICATION-BINDING-01` and `FU-APP4-A01-REPLAY-OUTCOME-01`.
+`APP4-E01` owns the complete API + worker + both-frontends journey, including the
+live B07/B08 lifecycle this checkpoint deliberately did not claim. It was not
+started, and neither were `APP4-X01` or `APP5`–`APP7`.
