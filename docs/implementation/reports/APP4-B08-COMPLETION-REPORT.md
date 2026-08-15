@@ -685,7 +685,7 @@ answer different questions and share only the file helpers.
 
 Committed on `production`, **not pushed**. Working tree clean at exit.
 
-Implementation commit: `<recorded in the evidence commit below>`.
+Implementation commit: `ec9991a` — `feat(app4): let operators replay a dead-lettered delivery without a new secret`. 41 files, +6408/−39. Not pushed; `origin/production` is unchanged.
 
 ---
 
