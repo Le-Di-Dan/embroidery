@@ -403,6 +403,34 @@ export type {
   VerificationChallengeStatusResponse,
 } from './generated/embroidery-api.schemas';
 
+// Public secure-link resolution (APP4-B06), consumed by the Storefront
+// secure-link landing (APP4-S02). Exposed here so that feature never
+// deep-imports the generated tree.
+//
+// It crosses alone. There is no companion operation and there must not be one:
+// every token that does not open a live grant — unknown, expired, revoked,
+// superseded, wrong target, wrong purpose — answers one identical
+// `404 SECURE_LINK_UNAVAILABLE`, and a second "why did that fail" operation
+// beside it would be the enumeration oracle the collapse exists to prevent
+// (`APP4-G01` PO-04, approved annotation `634:59`).
+//
+// The token travels in `ResolveSecureLinkBody` — a request **body**, never a
+// path segment, query parameter or header — which is what keeps a bearer
+// credential out of every access log between the browser and the API. The type
+// is exported so the caller names the wire shape at the transport seam rather
+// than assembling an object literal that would compile just as well with the
+// token in the wrong field.
+//
+// `SecureLinkResolutionResponseScopeKind` is re-exported as a **value** because
+// the landing page branches on the scope it was granted, and a mistyped string
+// literal is a comparison that is simply never true.
+export { publicSecureLinkResolve } from './generated/embroidery-api';
+export { SecureLinkResolutionResponseScopeKind } from './generated/embroidery-api.schemas';
+export type {
+  ResolveSecureLinkBody,
+  SecureLinkResolutionResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,
