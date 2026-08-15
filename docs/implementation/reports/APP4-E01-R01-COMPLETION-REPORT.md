@@ -2,9 +2,20 @@
 
 ## A. Verdict
 
+> **Superseded by `APP4-E01-R01-C1` — see the reconciliation at the end of this
+> report.** This run's verdict was `PASS`, and every item it lists below was
+> genuinely proved. Two claims in it went further than its evidence did: the B08
+> replay-through-worker follow-up (§R) and the rejection matrix (§J). C1 closed
+> both. The canonical status is now:
+>
+> ```text
+> APP4-E01-R01 = PASS_AFTER_C1   (correction count = 1)
+> APP4-E01     = PASS_AFTER_R01_C1
+> ```
+
 ```text
-APP4-E01-R01 = PASS
-APP4-E01     = PASS
+APP4-E01-R01 = PASS   (as recorded at the time of this run)
+APP4-E01     = PASS   (superseded — see reconciliation)
 APP4-X01     = READY — NOT STARTED
 ```
 
@@ -415,3 +426,79 @@ APP4-X01     = READY — NOT STARTED
 ```
 
 `APP4-X01` was not started, and no APP5/APP6/APP7 work was begun.
+
+---
+
+# Post-C1 reconciliation
+
+Added by `APP4-E01-R01-C1`. The narrative above is left as it was written; this
+section corrects exactly the two claims that outran their evidence.
+
+## X1. Canonical status
+
+```text
+APP4-E01-R01 = PASS_AFTER_C1
+APP4-E01-R01 correction count = 1
+APP4-E01     = PASS_AFTER_R01_C1
+APP4-X01     = READY — NOT STARTED
+```
+
+## X2. §R correction — the B08 replay follow-up
+
+§R closed `B08 replay-through-worker live journey follow-up` citing §M/§N. Those
+sections prove that real B08 **creates** a new PENDING intent, a new PENDING
+outbox event and a byte-identical envelope, and that the origin stays terminal.
+They do not prove the replay event was claimed, opened or delivered — and the
+follow-up asks for `replay → worker claim/open/deliver`. A PENDING row is an
+intention to deliver.
+
+That closure is therefore **not** supported by this run alone. It is supported by
+`APP4-E01-R01-C1` §E/§F, which drove the replay outbox event through the real
+`JobExecutionService`, observed the real recording adapter receive the delivery,
+proved the opened plaintext equals the original terminal delivery's, and saw the
+replay intent settle at `SATISFIED` with its Contact Point binding intact and an
+attempt row appended.
+
+```text
+B08 replay-through-worker live journey follow-up = CLOSED_BY_R01_C1
+```
+
+The other two closures in §R stand on this run's own evidence:
+`FU-APP4-S02-LIVE-JOURNEY-01` (§I) and the A01 live B07/B08 lifecycle follow-up
+(§K/§M).
+
+## X3. §J correction — the rejection matrix
+
+§J proved rejection equivalence for unknown tokens, and §K for a revoked
+previously-valid link. It did not cover an **expired** grant, which is a required
+runtime-reachable cause rather than a conditional one.
+
+`APP4-E01-R01-C1` §H adds it: a grant issued through the real B05 issuer and made
+expired by moving only `expires_at`, resolved through real B06, is
+indistinguishable from an unknown token — same `404`, same
+`SECURE_LINK_UNAVAILABLE`, same message, same semantic body, same content type.
+
+The complete matrix now reads:
+
+| Cause | Where proved |
+| --- | --- |
+| unknown token | R01 §J |
+| revoked grant | R01 §K |
+| expired grant | **C1 §H** |
+| superseded grant | `NOT_REPEATED_IN_C1` (optional; would broaden scope) |
+| wrong target / purpose / scope | `STRUCTURALLY_UNREPRESENTABLE` (R01 §J) |
+
+## X4. What this run still proves on its own
+
+Everything else in this report stands unchanged, including verification issuance
+and exact-once delivery, Customer creation, automatic retry, business resend, the
+real grant and its Customer binding, the fragment bootstrap, Admin lookup and
+revoke, terminal failure visibility, replay transaction creation and envelope
+immutability, concurrent replay collapse, `REISSUE_REQUIRED`, and the persistence
+and browser secret scans.
+
+One latent defect in the shared helper layer was found by C1 and is worth noting
+here: `readNotificationAttempts` queried a non-existent
+`notification_intent_id` column. No assertion in this run called it — attempt
+evidence here came from `listRecent('notification_delivery_attempts')` — so no
+claim above depended on it. It is fixed in C1.
