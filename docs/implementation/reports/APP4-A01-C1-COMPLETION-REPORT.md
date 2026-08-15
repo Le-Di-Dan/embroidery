@@ -245,6 +245,37 @@ argument.
 
 ---
 
+## K.1 Git evidence
+
+```text
+257f17a  fix(api): bind production notifications to their Customer
+```
+
+One commit, carrying the runtime change, both focused suites, the three
+reconciled checkers with their mutation tests, and this report. Not pushed, not
+amended, not squashed.
+
+Its position in the A01 history:
+
+```text
+257f17a  fix(api): bind production notifications to their Customer   ← APP4-A01-C1
+9893dcc  docs(app4): record Admin customer access support evidence
+97d11a9  feat(admin): implement APP4 customer access support
+bc259c2  design(app4): amend the A01 frames for the authority unblock
+96a7c8d  feat(api): apply the APP4-A01 authority unblock to B07 and B08
+1b0e3e4  docs(app4): record APP4-A01 authority block
+```
+
+The three commits below `9893dcc` are the Product Owner authority unblock, which
+is **not** a correction and is not counted as one. `257f17a` is the single and
+final A01 correction; there is no `APP4-A01-C2`.
+
+A later documentation-only commit reconciles the canonical A01 report with this
+one — correction count, the superseded §E limitation and the closed follow-up.
+It changes no runtime source.
+
+---
+
 ## L. Report secret boundary
 
 No raw contact, verification code, token, digest, ciphertext or session

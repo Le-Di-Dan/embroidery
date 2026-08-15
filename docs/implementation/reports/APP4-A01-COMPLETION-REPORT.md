@@ -30,8 +30,18 @@ became possible through the first:
    extensions plus a scoped A01 design amendment, and A01 then completed
    against them.
 
-A01 correction count remains `0`: this is an authorized unblock, not a
-correction. `NO_APP4_MIGRATION` still holds — no schema, no migration.
+```text
+A01 correction count = 1
+APP4-A01-C1 is the single and final correction for A01
+```
+
+The Product Owner unblock above was **not** a correction — it was an authorized
+extension of the contracts, and it is not what the count records. The count
+records `APP4-A01-C1`, which closed the production binding gap this report's §E
+first disclosed. `NO_APP4_MIGRATION` still holds through both: no schema, no
+migration, no endpoint.
+
+**No `APP4-A01-C2` exists and none is permitted.**
 
 **No full regression/test chain was run.**
 
@@ -140,6 +150,12 @@ An **inner join**, which makes the null case correct for free: an intent with no
 compares `recipient_masked`, `template_key`, `channel` or `created_at` for
 ownership. The global list is untouched when the filter is absent.
 
+### E.1 Historical pre-C1 state — superseded by `APP4-A01-C1`
+
+> The paragraph below is the limitation as disclosed at A01 delivery. It is kept
+> verbatim because it is what prompted the correction; it **no longer describes
+> the system**. Read E.2 for the current truth.
+
 **A truthful limitation, reported rather than hidden.** No production path
 writes `recipient_contact_point_id` today — the column exists and the replay
 path copies it forward, but `APP4-B01`'s intake does not populate it. So the
@@ -150,6 +166,22 @@ truthful… do not retrofit historical rows or add schema"), and changing B01
 intake is outside this ruling's scope. Recorded as
 `FU-APP4-A01-INTENT-BINDING-COVERAGE-01`. The integration suite writes the
 binding directly so the filter's behaviour on a bound row is still proved.
+
+### E.2 Current state after `APP4-A01-C1`
+
+`APP4-B05` now supplies the server-resolved primary verified Contact Point id to
+`APP4-B01`, which persists it to `notification_intents.recipient_contact_point_id`.
+**The Customer-filtered notification surface is production-reachable**: a real
+notified grant issuance or reissue is bound to its Customer, a terminal delivery
+failure is returned by the `customerId` + `FAILED` query this screen issues, and
+a manual replay carries the binding forward.
+
+The consequence for this report's §L and §M: the integration suite no longer
+depends on writing the binding itself — `secure-grant-notification-binding.integration.spec.ts`
+creates its intents through `SecureGrantIssuer` and reads the column back.
+
+No schema, no migration, no endpoint and no mask inference were introduced.
+Evidence: `APP4-A01-C1-COMPLETION-REPORT.md`, commit `257f17a`.
 
 ---
 
@@ -440,14 +472,17 @@ bc259c2  design(app4): amend the A01 frames for the authority unblock
 
 ## Q. Follow-ups
 
-**Raised here:**
+**Raised here, and since closed — no longer open:**
 
-- `FU-APP4-A01-INTENT-BINDING-COVERAGE-01` — no production path writes
-  `recipient_contact_point_id`, so the Customer notification filter matches
-  nothing for real notifications until `APP4-B01` intake binds it. The screen is
-  correct and truthful today; it will simply show "no delivery failure".
+- `FU-APP4-A01-INTENT-BINDING-COVERAGE-01` — **`CLOSED_BY_APP4_A01_C1`.** As
+  raised: no production path wrote `recipient_contact_point_id`, so the Customer
+  notification filter matched nothing for real notifications. `APP4-A01-C1`
+  closed it — `APP4-B05` supplies the server-resolved Contact Point id and
+  `APP4-B01` persists it (§E.2). Evidence:
+  `APP4-A01-C1-COMPLETION-REPORT.md`, commit `257f17a`. **Nothing about this item
+  remains outstanding.**
 
-**Carried forward unchanged** (§31), not broadened:
+**Still open, carried forward unchanged** (§31), not broadened:
 
 - `FU-APP4-B02-GATE-SCOPE-01` — B02 stale checker; **not** repaired here.
 - `FU-APP4-DEV-API-IMAGE-01` — dev API image 502; **not** repaired here, and the
@@ -463,10 +498,14 @@ bc259c2  design(app4): amend the A01 frames for the authority unblock
 ## R. Status and next checkpoint
 
 ```text
-APP4-A01 = COMPLETE
-APP4-E01 = READY — NOT STARTED
+APP4-A01   = PASS_AFTER_C1
+APP4-A01-C1 = COMPLETE — the single and final A01 correction
+FU-APP4-A01-INTENT-BINDING-COVERAGE-01 = CLOSED_BY_APP4_A01_C1
+APP4-E01   = READY — NOT STARTED
 ```
 
 `APP4-E01` owns the complete API + worker + both-frontends journey, including the
-live B07/B08 lifecycle this checkpoint deliberately did not claim. It was not
-started, and neither were `APP4-X01` or `APP5`–`APP7`.
+live B07/B08 lifecycle this checkpoint deliberately did not claim. After
+`APP4-A01-C1` it can prove what it must: a terminal delivery failure raised by
+the real B05/B01/W01 path is visible on this screen and replayable from it. It
+was not started, and neither were `APP4-X01` or `APP5`–`APP7`.
