@@ -23,6 +23,13 @@ COPY packages/design-document/package.json packages/design-document/
 COPY packages/design-engine/package.json packages/design-engine/
 COPY packages/domain-types/package.json packages/domain-types/
 COPY packages/eslint-config/package.json packages/eslint-config/
+# APP4-B01 added this package and the API's notification module imports it. A
+# workspace package that is not copied here is not an importer of this install,
+# so pnpm never creates its `node_modules` symlink — and the later `COPY . .`
+# brings the sources without ever linking them. The dev target then fails to
+# compile with `Cannot find module '@embroidery/notification-delivery'`
+# (FU-APP4-DEV-API-IMAGE-01).
+COPY packages/notification-delivery/package.json packages/notification-delivery/
 COPY packages/observability/package.json packages/observability/
 COPY packages/prettier-config/package.json packages/prettier-config/
 COPY packages/styles/package.json packages/styles/
@@ -80,7 +87,7 @@ COPY packages/test-utils/package.json packages/test-utils/
 COPY packages/typescript-config/package.json packages/typescript-config/
 COPY packages/ui/package.json packages/ui/
 COPY packages/validation/package.json packages/validation/
-# The three workspace packages the API loads at RUNTIME must be importers of
+# The four workspace packages the API loads at RUNTIME must be importers of
 # this install, or pnpm never creates their own `node_modules` (APP2-T01-C1).
 # pnpm links in isolated mode: `@nestjs/common` for `@embroidery/persistence`
 # lives at `packages/persistence/node_modules/@nestjs/common`, not at the root.
@@ -88,6 +95,7 @@ COPY packages/validation/package.json packages/validation/
 # workspace dependencies; without it only `apps/api/node_modules` is populated
 # and `dist/main.js` dies on the first `require` out of a workspace package.
 COPY packages/database/package.json packages/database/
+COPY packages/notification-delivery/package.json packages/notification-delivery/
 COPY packages/object-storage/package.json packages/object-storage/
 COPY packages/persistence/package.json packages/persistence/
 RUN pnpm install --frozen-lockfile --prod --filter "@embroidery/api..."
@@ -122,6 +130,11 @@ COPY --from=prod-deps --chown=node:node /app/packages/persistence/node_modules .
 COPY --from=build --chown=node:node /app/packages/object-storage/dist ./packages/object-storage/dist
 COPY --from=build --chown=node:node /app/packages/object-storage/package.json ./packages/object-storage/package.json
 COPY --from=prod-deps --chown=node:node /app/packages/object-storage/node_modules ./packages/object-storage/node_modules
+# APP4-B01: the API seals every delivery envelope through this package, so the
+# runner needs its compiled output. No `node_modules` line — it has no runtime
+# dependency of its own (node:crypto only), exactly like `domain-types`.
+COPY --from=build --chown=node:node /app/packages/notification-delivery/dist ./packages/notification-delivery/dist
+COPY --from=build --chown=node:node /app/packages/notification-delivery/package.json ./packages/notification-delivery/package.json
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://127.0.0.1:4000/api/health || exit 1

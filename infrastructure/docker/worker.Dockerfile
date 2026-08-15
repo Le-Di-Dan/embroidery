@@ -22,6 +22,11 @@ COPY packages/api-client/package.json packages/api-client/
 # leaves their own node_modules uninstalled.
 COPY packages/database/package.json packages/database/
 COPY packages/persistence/package.json packages/persistence/
+# APP4-W01 opens every delivery envelope through this package (APP4-B01). A
+# workspace package missing here is not an importer of this install, so pnpm
+# never links it: the dev target cannot compile against it and the runner
+# resolves a dangling symlink (FU-APP4-DEV-API-IMAGE-01).
+COPY packages/notification-delivery/package.json packages/notification-delivery/
 COPY packages/object-storage/package.json packages/object-storage/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/design-document/package.json packages/design-document/
@@ -90,6 +95,11 @@ COPY packages/api-client/package.json packages/api-client/
 # leaves their own node_modules uninstalled.
 COPY packages/database/package.json packages/database/
 COPY packages/persistence/package.json packages/persistence/
+# APP4-W01 opens every delivery envelope through this package (APP4-B01). A
+# workspace package missing here is not an importer of this install, so pnpm
+# never links it: the dev target cannot compile against it and the runner
+# resolves a dangling symlink (FU-APP4-DEV-API-IMAGE-01).
+COPY packages/notification-delivery/package.json packages/notification-delivery/
 COPY packages/object-storage/package.json packages/object-storage/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/design-document/package.json packages/design-document/
@@ -145,6 +155,11 @@ COPY --from=prod-deps --chown=node:node /app/packages/persistence/node_modules .
 # No `node_modules` line: the package has no runtime dependency of its own.
 COPY --from=build --chown=node:node /app/packages/domain-types/dist ./packages/domain-types/dist
 COPY --from=build --chown=node:node /app/packages/domain-types/package.json ./packages/domain-types/package.json
+# APP4-W01 opens the sealed envelope with this package's codec, so the shipped
+# image needs its compiled output for the same reason `domain-types` above
+# needs its own. No `node_modules` line: it depends only on `node:crypto`.
+COPY --from=build --chown=node:node /app/packages/notification-delivery/dist ./packages/notification-delivery/dist
+COPY --from=build --chown=node:node /app/packages/notification-delivery/package.json ./packages/notification-delivery/package.json
 COPY --from=build --chown=node:node /app/packages/object-storage/dist ./packages/object-storage/dist
 COPY --from=build --chown=node:node /app/packages/object-storage/package.json ./packages/object-storage/package.json
 COPY --from=prod-deps --chown=node:node /app/packages/object-storage/node_modules ./packages/object-storage/node_modules
