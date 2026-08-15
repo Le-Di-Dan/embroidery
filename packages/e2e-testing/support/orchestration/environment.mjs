@@ -47,7 +47,7 @@ function maybeFault(stage) {
  * logged (only the status and admin id).
  * @param {{ config: object, databaseUrl: string, credentials: { email: string, password: string, displayName: string }, log: (msg: string) => void }} params
  */
-export async function bootstrapAdmin({ config, databaseUrl, credentials, log }) {
+export async function bootstrapAdmin({ config, databaseUrl, credentials, log, extraEnv = {} }) {
   const cliPath = join(config.repoRoot, 'apps', 'api', 'dist', 'cli', 'staff-bootstrap.js');
   return await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [cliPath], {
@@ -61,6 +61,11 @@ export async function bootstrapAdmin({ config, databaseUrl, credentials, log }) 
         STAFF_BOOTSTRAP_EMAIL: credentials.email,
         STAFF_BOOTSTRAP_PASSWORD: credentials.password,
         STAFF_BOOTSTRAP_DISPLAY_NAME: credentials.displayName,
+        // This CLI creates a full `AppModule` context, so anything AppModule
+        // requires to be constructed it requires too — including APP3's Design
+        // pepper and the APP4 secret material. Compose's own service carries the
+        // same block for the same reason.
+        ...extraEnv,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -75,7 +80,16 @@ export async function bootstrapAdmin({ config, databaseUrl, credentials, log }) 
         log(`admin bootstrap ${status}`);
         resolve(status);
       } else {
-        reject(new Error(`Admin bootstrap failed (exit ${code}, status ${status}).`));
+        // Include the child's own output, or the failure is unactionable: the
+        // CLI boots a full AppModule and its refusals are configuration
+        // messages. The password is redacted first — the CLI never prints it,
+        // and this guarantees a future one could not either.
+        const safeOutput = out.split(credentials.password).join('***').trim().slice(-1200);
+        reject(
+          new Error(
+            `Admin bootstrap failed (exit ${code}, status ${status}).\nbootstrap output:\n${safeOutput}`,
+          ),
+        );
       }
     });
   });
@@ -93,7 +107,7 @@ export async function bootstrapAdmin({ config, databaseUrl, credentials, log }) 
  * login, session and logout journeys run end-to-end through the gateway.
  * @param {{ runId: string, config: object, log: (msg: string) => void, withAdmin?: { email: string, password: string, displayName: string } }} params
  */
-export async function startEnvironment({ runId, config, log, withAdmin }) {
+export async function startEnvironment({ runId, config, log, withAdmin, withApp4 }) {
   const cleanup = new CleanupStack();
   const projectName = `emb-e2e-${runId}`;
   const cEnv = composeEnv(config);
@@ -153,7 +167,13 @@ export async function startEnvironment({ runId, config, log, withAdmin }) {
     // 3b. Seed the single bootstrap Admin (E01 only) via the accepted CLI.
     if (withAdmin !== undefined) {
       log('bootstrapping admin');
-      await bootstrapAdmin({ config, databaseUrl: database.url, credentials: withAdmin, log });
+      await bootstrapAdmin({
+        config,
+        databaseUrl: database.url,
+        credentials: withAdmin,
+        log,
+        ...(withApp4 === undefined ? {} : { extraEnv: withApp4 }),
+      });
     }
 
     // 4. API host process (built dist; NODE_ENV=test so the local, non-TLS
@@ -161,10 +181,15 @@ export async function startEnvironment({ runId, config, log, withAdmin }) {
     //    lifecycle service so exactly this one process can be stopped/restarted
     //    for the initial server-side dependency-failure journey (E01-C1-J02).
     log('starting api');
+    // `withApp4` (APP4-E01-H02) hands this process the run's ephemeral APP4
+    // secret material, so the browser tier's requests are served by an API that
+    // seals envelopes under the same key the in-process E01 contexts open them
+    // with. Absent, the API env is byte-identical to what it always was.
     const apiService = createApiService({
       config,
       databaseUrl: database.url,
       adminOrigins,
+      ...(withApp4 === undefined ? {} : { extraEnv: withApp4 }),
     });
     await apiService.start();
     cleanup.push('stop api', () => apiService.stop());

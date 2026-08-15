@@ -102,7 +102,10 @@ async function main() {
     // 7. Polling is held: the gate override is what keeps the loop from
     //    claiming, so the proof is that nothing has been claimed or sent while
     //    the context has been up — not a private field read.
-    prove('recording adapter starts empty', runtime.recordingAdapter.records.length === 0);
+    // `records()` is a method, not a property. Reading `.records.length` would
+    // measure the function's arity — which is also 0, so the assertion would
+    // pass while proving nothing about the sink. Call it.
+    prove('recording adapter starts empty', runtime.recordingAdapter.records().length === 0);
 
     // 10, 11. One universe. Not an env comparison — each context is asked, over
     //    its own live pool, which database it is actually connected to. Two

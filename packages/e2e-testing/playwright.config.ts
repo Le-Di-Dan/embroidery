@@ -84,5 +84,20 @@ export default defineConfig({
       testMatch: '**/app1/storefront-*.spec.ts',
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
     },
+    // APP4-E01-H02 helper readiness. Host/Chromium only, like the APP1 E01
+    // projects and for the same reason. Split by base URL: the S01/S02 checks
+    // run against the Storefront, the A01 check against the Admin.
+    {
+      name: 'app4-storefront-chromium',
+      testMatch: '**/app4/h02-helpers.smoke.spec.ts',
+      grepInvert: /Admin A01/,
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
+    {
+      name: 'app4-admin-chromium',
+      testMatch: '**/app4/h02-helpers.smoke.spec.ts',
+      grep: /Admin A01/,
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: ADMIN_URL },
+    },
   ],
 });
