@@ -26,6 +26,7 @@ import {
   intents,
   openChallengeCount,
 } from './verification-issue-queries';
+import { maskContact } from '../../domain/contact/mask-contact';
 import { isVerificationIssueFailure } from '../../domain/verification/verification-issue-outcome';
 import type { VerificationIssueError } from '../../domain/verification/verification-issue-outcome';
 
@@ -210,6 +211,81 @@ describe('APP4-B03 verification challenge issue (integration)', () => {
       expect(await openChallengeCount(context, NORMALIZED_EMAIL, 'SUBMISSION')).toBe(1);
       expect(await openChallengeCount(context, NORMALIZED_EMAIL, 'STEP_UP')).toBe(1);
       expect(await deliveryEvents(context)).toHaveLength(2);
+    });
+  });
+
+  /**
+   * `FU-APP4-S01-MASKED-DESTINATION-01`, resolved by Product Owner ruling.
+   *
+   * The approved `APP4-S01` code-entry screen names the destination the code
+   * went to, so the response carries the canonical `APP4-P01` mask and the
+   * browser never carries the algorithm. What these prove is that it is the
+   * *canonical* mask of the *challenge's own* recipient — a value the response
+   * merely copies — and that nothing else about the contact came with it.
+   */
+  describe('the masked destination', () => {
+    it('is the canonical P01 mask of the normalized EMAIL recipient', async () => {
+      const result = await issue('Nguoi.Dung@Example.com');
+
+      // Compared against the authority rather than a literal, so a change to
+      // the masking rule moves this expectation with it instead of failing here
+      // and being "fixed" by pasting the new string.
+      expect(result.recipientMasked).toBe(maskContact('EMAIL', NORMALIZED_EMAIL));
+      // Masked, not merely present: the normalized value is what must not travel,
+      // and the as-entered casing must not either.
+      expect(result.recipientMasked).not.toBe(NORMALIZED_EMAIL);
+      expect(result.recipientMasked).not.toContain('Nguoi.Dung');
+    });
+
+    it('masks a PHONE recipient from its E.164 form, not the digits typed', async () => {
+      const result = await issue(PHONE, 'PHONE');
+
+      const [event] = await deliveryEvents(context);
+      if (event === undefined) throw new Error('no delivery event');
+      const { normalizedRecipient } = openDeliveryEnvelope(context.envelopeKey, event.payload);
+
+      expect(result.recipientMasked).toBe(maskContact('PHONE', normalizedRecipient));
+      expect(result.recipientMasked).not.toBe(normalizedRecipient);
+      expect(result.recipientMasked).not.toBe(PHONE);
+    });
+
+    it('describes the live challenge on a repeat issue, minting nothing', async () => {
+      const first = await issue(EMAIL);
+      context.clock.advanceSeconds(5);
+
+      const second = await issue(EMAIL);
+
+      // The `ALREADY_OPEN` branch computes the mask from the row it found, so
+      // the second answer must be byte-identical to the first — a mask that
+      // differed would tell a caller its call was the one that created nothing.
+      expect(second.outcome).toBe('ALREADY_OPEN');
+      expect(second.challengeId).toBe(first.challengeId);
+      expect(second.recipientMasked).toBe(first.recipientMasked);
+
+      // Obtaining the mask cost nothing: no code, no challenge, no notification.
+      expect(context.minter.minted).toHaveLength(1);
+      expect(await challengeCount(context)).toBe(1);
+      expect(await intents(context)).toHaveLength(1);
+      expect(await deliveryEvents(context)).toHaveLength(1);
+    });
+
+    it('is the only contact representation the public answer carries', async () => {
+      const result = await issue('Nguoi.Dung@Example.com');
+
+      // The serialized public shape, as the controller would project it.
+      const published = JSON.stringify(result);
+      expect(published).not.toContain(NORMALIZED_EMAIL);
+      expect(published).not.toContain('Nguoi.Dung@Example.com');
+      expect(published).not.toContain(context.minter.last);
+
+      // And the shape itself is closed: four fields, no ownership references.
+      expect(Object.keys(result).sort()).toEqual([
+        'challengeId',
+        'expiresAt',
+        'outcome',
+        'recipientMasked',
+        'resendAvailableAt',
+      ]);
     });
   });
 

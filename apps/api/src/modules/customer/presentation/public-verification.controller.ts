@@ -372,6 +372,9 @@ function toView(issued: VerificationChallengeIssued): VerificationChallengeView 
     challengeId: issued.challengeId,
     expiresAt: issued.expiresAt.toISOString(),
     resendAvailableAt: issued.resendAvailableAt.toISOString(),
+    // Already masked upstream by the one P01 authority; this projection copies
+    // it and must never derive, re-derive or widen it.
+    recipientMasked: issued.recipientMasked,
   };
 }
 

@@ -1735,6 +1735,8 @@ export interface VerificationChallengeResponse {
   challengeId: string;
   /** When the code stops being answerable. Absolute, and never extended. */
   expiresAt: string;
+  /** The destination this challenge targets, in the only form this API publishes it: the canonical deterministic mask. One-way, and computed from the contact supplied in the request rather than from any customer or contact-point lookup, so it discloses nothing about who owns the address. */
+  recipientMasked: string;
   /** The earliest instant a resend is accepted for this challenge, derived from the configured cooldown so a client never hard-codes it. */
   resendAvailableAt: string;
 }

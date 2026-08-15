@@ -25,6 +25,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { ContactKind, VerificationPurpose } from '@embroidery/database';
 import { TransactionManager } from '@embroidery/persistence';
 
+import { maskContact } from '../domain/contact/mask-contact';
 import { normalizeEmail } from '../domain/contact/normalize-email';
 import { normalizePhone } from '../domain/contact/normalize-phone';
 import {
@@ -90,6 +91,11 @@ export class IssueVerificationChallengeUseCase {
           challengeId: live.id,
           expiresAt: live.expiresAt,
           resendAvailableAt: resendAvailableAtOf(policy, live.createdAt),
+          // From the row's own recipient, not from `normalized`. The two are
+          // equal by construction here — `resolveOpen` matched on that exact
+          // target — and masking what the challenge actually stores is what
+          // keeps that an assertion rather than an assumption.
+          recipientMasked: maskContact(live.contactKind, live.normalizedValue),
         };
       }
 

@@ -32,6 +32,7 @@ import type { ContactKind, VerificationPurpose } from '@embroidery/database';
 
 import { RequestNotificationUseCase } from '../../notification/application/request-notification.use-case';
 import { App4SecretPepperProvider } from '../config/app4-secret-pepper.provider';
+import { maskContact } from '../domain/contact/mask-contact';
 import { digestSecret } from '../domain/secret/app4-secret-digest';
 import {
   ISSUED,
@@ -154,6 +155,11 @@ export class VerificationChallengeIssuer {
       challengeId,
       expiresAt,
       resendAvailableAt: resendAvailableAtOf(policy, issuedAt),
+      // The target this issuance just wrote, masked by the one P01 authority.
+      // Because both endpoints issue through this method, a resend's mask
+      // describes the replacement challenge's recipient — which a resend
+      // inherits from its source, never from a request body it does not have.
+      recipientMasked: maskContact(target.contactKind, target.normalizedValue),
     };
   }
 

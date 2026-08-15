@@ -7,10 +7,10 @@
  * "this was new" would learn whether someone else had recently asked for a code
  * for that address.
  *
- * Nothing here carries a code, a digest, a contact value, a customer reference,
- * a SQLSTATE or a constraint name. The refusals describe **the caller's own
- * request** — malformed input, too soon, too many — and never anything about who
- * owns the target (`ADR-APP4-001` §1.3 rule 4).
+ * Nothing here carries a code, a digest, a raw or normalized contact value, a
+ * customer reference, a SQLSTATE or a constraint name. The refusals describe
+ * **the caller's own request** — malformed input, too soon, too many — and never
+ * anything about who owns the target (`ADR-APP4-001` §1.3 rule 4).
  */
 import type { ChallengeId } from '../repositories/verification-challenge.repository';
 
@@ -31,6 +31,25 @@ export interface VerificationChallengeIssued {
   readonly expiresAt: Date;
   /** So a client never hard-codes the cooldown (`APP4-B03` §6). */
   readonly resendAvailableAt: Date;
+  /**
+   * The `APP4-P01` mask of the normalized recipient **this challenge** targets.
+   *
+   * Added by the Product Owner's `FU-APP4-S01-MASKED-DESTINATION-01` ruling: the
+   * approved `APP4-S01` code-entry design shows the destination the code went
+   * to, and the server stays the single masking authority so no browser ever
+   * carries the algorithm.
+   *
+   * It discloses nothing about who owns the target. The caller supplied the
+   * contact in this very request, and `maskContact` is a deterministic one-way
+   * function of the normalized form of that same value — it is computed from the
+   * challenge's own recipient and never from a customer or contact-point lookup,
+   * so an address that belongs to a long-standing customer and one that belongs
+   * to nobody still produce byte-identical responses.
+   *
+   * The **normalized** value itself never travels; this is the only contact
+   * representation any public verification response carries.
+   */
+  readonly recipientMasked: string;
 }
 
 export const VERIFICATION_ISSUE_FAILURES = [

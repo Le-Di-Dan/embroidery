@@ -214,6 +214,101 @@ describe('APP4-B03 — the published contract', () => {
     assert.ok(mentions(failures, 'resendAvailableAt'));
   });
 
+  /*
+   * `FU-APP4-S01-MASKED-DESTINATION-01`. The response now carries one contact
+   * representation, so the rules that matter are the ones proving it is exactly
+   * one, that it is the masked one, and that admitting it reopened nothing.
+   */
+  it('rejects dropping the masked recipient', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      delete document.components.schemas.VerificationChallengeResponse.properties.recipientMasked;
+    });
+    assert.ok(mentions(failures, 'recipientMasked'));
+  });
+
+  it('rejects a raw recipient beside the mask', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.components.schemas.VerificationChallengeResponse.properties.rawRecipient = {
+        type: 'string',
+      };
+    });
+    assert.ok(mentions(failures, 'rawRecipient'));
+  });
+
+  it('rejects a normalized recipient beside the mask', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.components.schemas.VerificationChallengeResponse.properties.normalizedRecipient = {
+        type: 'string',
+      };
+    });
+    assert.ok(mentions(failures, 'normalizedRecipient'));
+  });
+
+  it('rejects a customer id in the response', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.components.schemas.VerificationChallengeResponse.properties.customerId = {
+        type: 'string',
+      };
+    });
+    assert.ok(mentions(failures, 'customerId'));
+  });
+
+  it('rejects a contact point id in the response', () => {
+    const failures = failuresAfterContractEdit((document) => {
+      document.components.schemas.VerificationChallengeResponse.properties.contactPointId = {
+        type: 'string',
+      };
+    });
+    assert.ok(mentions(failures, 'contactPointId'));
+  });
+
+  it('rejects a second, differently-named contact field', () => {
+    // The exact shape the old presence-loop would have accepted: the authorized
+    // mask still present, with an unmasked destination smuggled in beside it.
+    const failures = failuresAfterContractEdit((document) => {
+      document.components.schemas.VerificationChallengeResponse.properties.destination = {
+        type: 'string',
+      };
+    });
+    assert.ok(mentions(failures, 'destination'));
+  });
+
+  it('rejects the mask being produced anywhere but the P01 authority', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.issuer,
+      'recipientMasked: maskContact(target.contactKind, target.normalizedValue),',
+      'recipientMasked: `${target.normalizedValue.slice(0, 1)}***`,',
+    );
+    assert.ok(mentions(failures, 'does not mask the issued target through P01'));
+  });
+
+  it('rejects the already-open answer masking something other than the live challenge', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.issueUseCase,
+      'recipientMasked: maskContact(live.contactKind, live.normalizedValue),',
+      'recipientMasked: maskContact(command.contactKind, normalized),',
+    );
+    assert.ok(mentions(failures, 'does not mask the live'));
+  });
+
+  it('rejects the projection masking instead of copying', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.controller,
+      'recipientMasked: issued.recipientMasked,',
+      'recipientMasked: maskContact("EMAIL", issued.challengeId),',
+    );
+    assert.ok(mentions(failures, 'masks in the projection'));
+  });
+
+  it('rejects a second masking implementation inside B03', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.issuer,
+      'const CHALLENGE_ALREADY_OPEN',
+      'function maskEmail(v) { return v; }\nconst CHALLENGE_ALREADY_OPEN',
+    );
+    assert.ok(mentions(failures, 'implements masking'));
+  });
+
   it('rejects a customer id in the request', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.components.schemas.IssueVerificationChallengeBody.properties.customerId = {

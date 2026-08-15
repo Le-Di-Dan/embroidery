@@ -373,6 +373,36 @@ export type {
   DesignSessionAssetStatusResponse,
 } from './generated/embroidery-api.schemas';
 
+// Public contact-verification operations (APP4-B03, APP4-B04), consumed by the
+// Storefront verification capability (APP4-S01). Exposed here so that feature
+// never deep-imports the generated tree.
+//
+// `publicVerificationReadStatus` is included deliberately: the refusals carry no
+// business error code, so a 422 mismatch and a 422 expired challenge — and a 429
+// lockout and a 429 rate limit — are indistinguishable by code alone. The status
+// read is the only way to resolve an authoritative terminal state after a
+// refusal, and the alternative is parsing human-readable messages.
+export {
+  publicVerificationIssue,
+  publicVerificationResend,
+  publicVerificationSubmitAttempt,
+  publicVerificationReadStatus,
+} from './generated/embroidery-api';
+export {
+  // Values, not just types: the contact kind, the purpose and the lifecycle
+  // state are all things the UI branches on, and a mistyped string literal is a
+  // comparison that is simply never true.
+  IssueVerificationChallengeBodyContactKind,
+  IssueVerificationChallengeBodyPurpose,
+  VerificationChallengeStatusResponseState,
+} from './generated/embroidery-api.schemas';
+export type {
+  IssueVerificationChallengeBody,
+  SubmitVerificationAttemptBody,
+  VerificationChallengeResponse,
+  VerificationChallengeStatusResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

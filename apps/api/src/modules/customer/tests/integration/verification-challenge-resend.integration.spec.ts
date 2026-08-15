@@ -25,6 +25,7 @@ import {
   intents,
   openChallengeCount,
 } from './verification-issue-queries';
+import { maskContact } from '../../domain/contact/mask-contact';
 import { isVerificationIssueFailure } from '../../domain/verification/verification-issue-outcome';
 import type { VerificationIssueError } from '../../domain/verification/verification-issue-outcome';
 import type { ChallengeId } from '../../domain/repositories/verification-challenge.repository';
@@ -163,6 +164,26 @@ describe('APP4-B03 verification resend and rate (integration)', () => {
         normalized_value: EMAIL,
         purpose: 'STEP_UP',
       });
+    });
+
+    it('masks the recipient the replacement inherited, and returns nothing else about it', async () => {
+      // `FU-APP4-S01-MASKED-DESTINATION-01`. A resend has no request body, so the
+      // mask can only describe the recipient the replacement inherited from its
+      // source — which is exactly what makes returning it safe here.
+      const source = await issue(EMAIL);
+      context.clock.advanceSeconds(CHALLENGE_POLICY.resendCooldownSeconds);
+
+      const replacement = await resend(source.challengeId);
+
+      expect(replacement.challengeId).not.toBe(source.challengeId);
+      expect(replacement.recipientMasked).toBe(maskContact('EMAIL', EMAIL));
+      // Same target, so the same mask — the replacement is a new challenge, not
+      // a new destination.
+      expect(replacement.recipientMasked).toBe(source.recipientMasked);
+
+      const published = JSON.stringify(replacement);
+      expect(published).not.toContain(EMAIL);
+      expect(published).not.toContain(context.minter.last);
     });
   });
 

@@ -315,10 +315,44 @@ function checkPublishedContract(rootDir, fail) {
     return;
   }
   const fields = Object.keys(response.properties ?? {});
-  const requiredFields = ['challengeId', 'expiresAt', 'resendAvailableAt'];
-  for (const field of requiredFields) {
-    if (!fields.includes(field)) {
-      fail(`VerificationChallengeResponse has no "${field}"`);
+  /*
+   * The exact published field set, not a subset.
+   *
+   * `recipientMasked` joined it by Product Owner ruling
+   * (`FU-APP4-S01-MASKED-DESTINATION-01`): the approved `APP4-S01` code-entry
+   * screen names the destination, and the server stays the single masking
+   * authority so no browser carries the algorithm.
+   *
+   * Asserted as an equality rather than a presence loop, which is what the
+   * previous version was. That loop would have accepted this field arriving —
+   * and equally a `normalizedContact` or a second, differently-named mask
+   * arriving beside it. The whole point of admitting one contact representation
+   * is that it is *one*, so the set has to be closed for the rule to mean
+   * anything.
+   */
+  const publishedFields = fields.slice().sort();
+  const authorizedFields = ['challengeId', 'expiresAt', 'recipientMasked', 'resendAvailableAt'];
+  if (JSON.stringify(publishedFields) !== JSON.stringify(authorizedFields)) {
+    fail(
+      `VerificationChallengeResponse publishes [${publishedFields.join(', ')}]; expected exactly ` +
+        `[${authorizedFields.join(', ')}]`,
+    );
+  }
+  /*
+   * The mask must be the only contact representation, and must read as a mask.
+   *
+   * A field named for the raw or normalized destination is refused by name even
+   * if someone stored a masked value in it: the name is what the next reader
+   * builds against, and `recipient`/`contact`/`destination` with no masking in
+   * the name is how the unmasked value eventually gets assigned to it.
+   */
+  for (const field of fields) {
+    if (field === 'recipientMasked') continue;
+    if (/recipient|contact|destination|email|phone|address/i.test(field)) {
+      fail(
+        `VerificationChallengeResponse exposes "${field}"; the canonical mask is the only ` +
+          `contact representation this response may carry`,
+      );
     }
   }
   // `APP4-B07`'s Admin support surface names a customer, and must: its routes
@@ -338,7 +372,18 @@ function checkPublishedContract(rootDir, fail) {
   }
   delete scanned.components?.schemas?.AdminCustomerDetailResponse;
   const serialized = JSON.stringify(scanned);
-  for (const forbidden of ['codeHash', 'code_hash', 'otp', 'customerId', 'contactPointId']) {
+  for (const forbidden of [
+    'codeHash',
+    'code_hash',
+    'otp',
+    'customerId',
+    'contactPointId',
+    // Admitting the mask must not become a doorway for the value it masks.
+    'normalizedValue',
+    'normalizedRecipient',
+    'normalizedContact',
+    'rawContact',
+  ]) {
     if (new RegExp(`"[^"]*${forbidden}[^"]*"\\s*:`, 'i').test(serialized)) {
       fail(`the published contract carries a "${forbidden}" field`);
     }
@@ -508,6 +553,51 @@ function checkBehaviour(rootDir, fail) {
     }
   }
 
+  /*
+   * The mask comes from the P01 authority, and B03 owns no masking of its own.
+   *
+   * `FU-APP4-S01-MASKED-DESTINATION-01` admitted the value precisely because one
+   * implementation produces it. A second one here — even a correct one — would
+   * make "the same contact always masks the same way" a coincidence maintained
+   * by hand, and the `notification_intents.recipient_masked` column and this
+   * response would be free to drift apart.
+   */
+  for (const file of b03Sources(rootDir)) {
+    if (/\bmaskEmail\b|\bmaskPhone\b|MASK_RUN\s*=|PHONE_MASK_GLYPH\s*=/.test(file.code)) {
+      fail(`${file.path}: implements masking; P01 maskContact is the only masking authority`);
+    }
+  }
+  // The two sites that construct the outcome each mask through P01, and each
+  // masks the recipient of the challenge it is answering about.
+  const issueUseCase = stripComments(read(rootDir, 'issueUseCase') ?? '');
+  if (
+    !/recipientMasked:\s*maskContact\(live\.contactKind,\s*live\.normalizedValue\)/.test(
+      issueUseCase,
+    )
+  ) {
+    fail(
+      `${CANONICAL_FILES.issueUseCase}: the already-open answer does not mask the live ` +
+        `challenge's own recipient through P01`,
+    );
+  }
+  const issuerSource = stripComments(read(rootDir, 'issuer') ?? '');
+  if (
+    !/recipientMasked:\s*maskContact\(target\.contactKind,\s*target\.normalizedValue\)/.test(
+      issuerSource,
+    )
+  ) {
+    fail(`${CANONICAL_FILES.issuer}: does not mask the issued target through P01`);
+  }
+  // The projection copies; it never derives. A controller that called
+  // `maskContact` itself would be a second place the rule could change.
+  const controllerSource = stripComments(read(rootDir, 'controller') ?? '');
+  if (!/recipientMasked:\s*issued\.recipientMasked/.test(controllerSource)) {
+    fail(`${CANONICAL_FILES.controller}: does not copy the masked recipient from the outcome`);
+  }
+  if (/maskContact\(/.test(controllerSource)) {
+    fail(`${CANONICAL_FILES.controller}: masks in the projection instead of copying the outcome`);
+  }
+
   // 18 — the CST-007 conflict is translated exactly, never by SQLSTATE.
   const issuer = stripComments(read(rootDir, 'issuer') ?? '');
   if (!issuer.includes("'CHALLENGE_ALREADY_OPEN'")) {
@@ -664,8 +754,10 @@ async function main() {
       'step-up endpoint anywhere and no third method on any path; the shared controller keeps ' +
       'its class name, prefix, both handlers and its failure mapping and reaches no identity, ' +
       'mint or envelope; the response ' +
-      'carries a challenge id, an expiry and a resend instant and no code, hash, customer or ' +
-      'contact field; the purpose set is the locked pair; issuance reaches no customer ' +
+      'carries exactly a challenge id, an expiry, a resend instant and the canonical P01 mask ' +
+      'of its own recipient — no code, hash, customer, or raw or normalized contact — and that ' +
+      'mask is produced by the one masking authority and merely copied by the projection; the ' +
+      'purpose set is the locked pair; issuance reaches no customer ' +
       'repository and no refusal names one; the code is minted and digested through P01 and ' +
       'handed to B01, which is the only seam that seals; the challenge stores a digest; the ' +
       'CST-007 arbiter is translated by its catalogued code with no SQLSTATE match; a live ' +
