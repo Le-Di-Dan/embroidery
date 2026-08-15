@@ -74,6 +74,15 @@ export class RequestNotificationUseCase {
         templateKey: input.templateKey,
         templateVersion: input.templateVersion,
         channel: input.channel,
+        // Passed straight through to the existing optional column and used for
+        // nothing else here. It is deliberately absent from `intentKey` above —
+        // the idempotency tuple is the business decision, and adding an
+        // ownership reference to it would make the same decision resolve to two
+        // intents once a caller learned the contact point. It is equally absent
+        // from `params` and from the sealed envelope below.
+        ...(input.recipientContactPointId === undefined
+          ? {}
+          : { recipientContactPointId: input.recipientContactPointId }),
         recipientMasked,
         params: buildIntentParams(input.reference),
         correlationId,

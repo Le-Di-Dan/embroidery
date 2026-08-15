@@ -89,6 +89,15 @@ export class SecureGrantNotifier {
       channel: CHANNEL_OF[target.contactKind],
       contactKind: target.contactKind,
       normalizedRecipient: target.normalizedValue,
+      // The same contact point `resolveTarget` just chose, named by its
+      // persisted id (`APP4-A01-C1`). It comes from the customer's own record,
+      // like the address beside it — there is still no parameter through which a
+      // caller could supply either, so this adds no way to redirect a link.
+      //
+      // Without it the intent has no owner, and `APP4-B08`'s Customer filter —
+      // which joins through this column and refuses to guess from the masked
+      // recipient — cannot show support the delivery that failed.
+      recipientContactPointId: target.id,
       templateKey: SECURE_LINK_TEMPLATE_KEY,
       templateVersion: SECURE_LINK_TEMPLATE_VERSION,
       // The closed reference union carries the grant id and nothing else, so

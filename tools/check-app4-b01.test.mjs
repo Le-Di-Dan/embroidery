@@ -439,4 +439,61 @@ describe('APP4-B01-C1 — the policy publication seam', () => {
   });
 });
 
+/**
+ * `APP4-A01-C1` — the optional ownership reference, and the three places it
+ * must never reach.
+ *
+ * The intent-key case is the one worth writing: adding the contact point to the
+ * idempotency tuple is a *plausible* edit — it reads like making the key more
+ * precise — and it would split one business decision into two intents, sending
+ * a customer their credential twice, only in production and only once callers
+ * started supplying the field.
+ */
+describe('APP4-B01 — the contact-point reference stays out of the tuple', () => {
+  it('catches the contact point entering the intent key', () => {
+    const failures = failuresAfterEdit(
+      'useCase',
+      '      templateVersion: input.templateVersion,\n    });',
+      '      templateVersion: input.templateVersion,\n      recipientContactPointId: input.recipientContactPointId,\n    });',
+    );
+    assert.ok(mentions(failures, 'passes the contact point into the intent key'));
+  });
+
+  it('catches the intent-key derivation growing a contact-point input', () => {
+    const failures = failuresAfterEdit(
+      'intentKey',
+      'export function deriveNotificationIntentKey',
+      'export type ContactPointKeyed = { contactPointId: string };\n\nexport function deriveNotificationIntentKey',
+    );
+    assert.ok(mentions(failures, 'the contact point is part of the idempotency tuple'));
+  });
+
+  it('catches the contact point being sealed into the delivery envelope', () => {
+    const failures = failuresAfterEdit(
+      'useCase',
+      '        normalizedRecipient: input.normalizedRecipient,\n        secret: input.secret,',
+      '        normalizedRecipient: input.normalizedRecipient,\n        recipientContactPointId: input.recipientContactPointId,\n        secret: input.secret,',
+    );
+    assert.ok(mentions(failures, 'seals the contact point into the delivery envelope'));
+  });
+
+  it('catches the field becoming required', () => {
+    const failures = failuresAfterEdit(
+      'request',
+      'readonly recipientContactPointId?: string | undefined;',
+      'readonly recipientContactPointId: string;',
+    );
+    assert.ok(mentions(failures, 'recipientContactPointId is not optional'));
+  });
+
+  it('catches B01 resolving a contact point itself', () => {
+    const failures = failuresAfterEdit(
+      'useCase',
+      'export class RequestNotificationUseCase {',
+      'import { CUSTOMER_REPOSITORY } from "../../customer/domain/repositories/customer.repository";\n\nexport class RequestNotificationUseCase {',
+    );
+    assert.ok(mentions(failures, 'never resolves one'));
+  });
+});
+
 assert.equal(PACKAGE_NAME, '@embroidery/notification-delivery');

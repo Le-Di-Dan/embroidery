@@ -600,3 +600,58 @@ describe('APP4-B05 — the APP4-B06 reconciliation stays narrow', () => {
     assert.ok(mentions(failures, 'registers a grant controller'));
   });
 });
+
+/**
+ * `APP4-A01-C1` — the notification names the contact point B05 resolved.
+ *
+ * The first case is the defect this correction fixed: dropping the binding is
+ * invisible to every B05 assertion — the grant, the token, the envelope and the
+ * audit row are all untouched — and it silently empties the Admin support
+ * screen's notification region for every real customer.
+ *
+ * The rest guard the direction of the danger. B05's whole delivery rule is that
+ * a caller supplies a *customer*, never a destination; a contact-point argument
+ * would be the same redirect surface wearing a new name.
+ */
+describe('the Customer binding on a notified grant', () => {
+  it('catches a notification that binds nothing', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.notifier,
+      '      recipientContactPointId: target.id,',
+      '',
+    );
+    assert.ok(mentions(failures, 'does not bind the notification to the resolved'));
+  });
+
+  it('catches a binding taken from somewhere other than the resolved target', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.notifier,
+      '      recipientContactPointId: target.id,',
+      '      recipientContactPointId: input.customerId,',
+    );
+    assert.ok(mentions(failures, 'does not bind the notification to the resolved'));
+  });
+
+  it('catches a caller-supplied contact point on the notifier input', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.notifier,
+      '  readonly customerId: CustomerId;',
+      '  readonly customerId: CustomerId;\n  readonly contactPointId?: string;',
+    );
+    assert.ok(mentions(failures, 'NotifyGrantInput accepts "contactPointId"'));
+  });
+
+  it('catches a caller-supplied recipient on the issue command', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.issuer,
+      '  readonly notify?: boolean | undefined;',
+      '  readonly notify?: boolean | undefined;\n  readonly recipient?: string;',
+    );
+    assert.ok(mentions(failures, 'IssueGrantCommand accepts "recipient"'));
+  });
+
+  it('catches the primary-verified resolution being dropped', () => {
+    const failures = failuresAfterEdit(CANONICAL_FILES.notifier, 'contact.isPrimary &&', 'true &&');
+    assert.ok(mentions(failures, "no longer resolves the customer's primary verified contact"));
+  });
+});

@@ -3,8 +3,17 @@
 ## A. Verdict
 
 ```text
-PASS — delivered after a Product Owner authority unblock
+PASS_AFTER_C1 — delivered after a Product Owner authority unblock, then corrected
 ```
+
+> **Correction history.** `APP4-A01-C1` closed
+> `FU-APP4-A01-INTENT-BINDING-COVERAGE-01`, the production gap §E below reports:
+> `APP4-B05` now supplies the server-resolved contact point to `APP4-B01`, which
+> persists it, so this screen's Customer-filtered notification region returns
+> real notifications. Nothing else in this report changed, and the account below
+> is left exactly as it was written — including the limitation, which is the
+> thing the correction acted on. See
+> `APP4-A01-C1-COMPLETION-REPORT.md`.
 
 `/support/customer-access` is delivered against the approved `APP4-D01` A01
 design as amended under `FIG-APPROVAL-APP4-A01-UNBLOCK-PO-001`, using the

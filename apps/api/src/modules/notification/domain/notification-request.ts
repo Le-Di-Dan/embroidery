@@ -44,6 +44,28 @@ export interface NotificationRequest {
   readonly contactKind: ContactKind;
   /** The real destination. Masked for storage; sealed for delivery. */
   readonly normalizedRecipient: string;
+  /**
+   * The Customer contact point this notification was addressed to, when the
+   * caller resolved one (`APP4-A01-C1`).
+   *
+   * **Ownership metadata, not a secret and not a destination.** It names a row
+   * the caller already chose; it does not select one. B01 still delivers to
+   * `normalizedRecipient` and would not read this field even if the two
+   * disagreed — resolving a contact point to an address here would make this
+   * module a second delivery-target authority, and it imports no customer
+   * repository precisely so it cannot become one.
+   *
+   * It exists because a notification with no owner cannot be found again. The
+   * `APP4-B08` Customer filter joins through this column, so an intent that
+   * omits it is invisible to the support screen that would otherwise explain
+   * why a customer never received their link.
+   *
+   * **Optional, and legitimately absent.** A verification code sent *before* a
+   * Customer exists has no contact point to name, and inventing one — or
+   * creating a Customer to have one — would be worse than the gap. Absent is a
+   * truthful answer.
+   */
+  readonly recipientContactPointId?: string | undefined;
   readonly templateKey: string;
   readonly templateVersion: number;
   readonly reference: NotificationReference;

@@ -54,6 +54,11 @@ export const CANONICAL_FILES = Object.freeze({
   page: `${ADMIN}/app/(protected)/support/customer-access/page.tsx`,
   index: `${FEATURE_DIR}/index.ts`,
   route: `${FEATURE_DIR}/model/customer-access-route.ts`,
+  // The one producer A01's notification region depends on. Named here — and
+  // only this one — so the gate can prove the binding it consumes is actually
+  // written, without becoming a parser of unrelated notification callers.
+  grantNotifier: 'apps/api/src/modules/customer/application/secure-grant.notifier.ts',
+  notificationRequest: 'apps/api/src/modules/notification/domain/notification-request.ts',
   copy: `${FEATURE_DIR}/model/customer-access-copy.ts`,
   keys: `${FEATURE_DIR}/model/customer-access-keys.ts`,
   failure: `${FEATURE_DIR}/model/customer-access-failure.ts`,
@@ -423,6 +428,33 @@ function checkNotificationRegion(rootDir, fail) {
   }
   if (!/customerId/.test(service)) {
     fail(`${CANONICAL_FILES.service}: does not bind the notification list to the Customer`);
+  }
+
+  // `APP4-A01-C1` — the region is only honest if something writes the binding.
+  //
+  // The previous version of this gate proved the *consumer*: the screen asks for
+  // `customerId`, and B08 joins through the contact point. Both were correct and
+  // the region was empty in production anyway, because no producer ever set the
+  // column. A gate that checks a filter without checking that anything can
+  // satisfy it will pass over a screen that shows nothing, forever.
+  //
+  // So the one producer this region depends on is asserted here, by name. It is
+  // deliberately not a scan of every notification caller: pre-Customer
+  // verification legitimately binds nothing, and a rule that demanded otherwise
+  // would force B03 to invent an owner.
+  const notifier = stripComments(read(rootDir, 'grantNotifier'));
+  if (!/recipientContactPointId:\s*target\.id\b/.test(notifier)) {
+    fail(
+      `${CANONICAL_FILES.grantNotifier}: does not bind its notification to the resolved contact ` +
+        `point; A01's Customer-filtered region would be empty in production`,
+    );
+  }
+  const requestContract = stripComments(read(rootDir, 'notificationRequest'));
+  if (!/recipientContactPointId\?:/.test(requestContract)) {
+    fail(
+      `${CANONICAL_FILES.notificationRequest}: the intake contract carries no optional ` +
+        `recipientContactPointId, so no producer can bind one`,
+    );
   }
 
   const panel = stripped(rootDir, 'notificationPanel');

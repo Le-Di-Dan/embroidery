@@ -88,7 +88,15 @@ const STEP_UP_WINDOW_SECONDS = 900;
  * `SecureGrantIssuer.revoke` rather than reimplementing the transition, which is
  * what `checkInternalCapability` below still asserts.
  */
-const EXPECTED_OPERATIONS = 52;
+/**
+ * The published operation count B05 must not move.
+ *
+ * 53 since the Product Owner's `APP4-A01` unblock added B07's exact-contact
+ * resolver. Restated rather than dropped: the rule's job is to catch **B05**
+ * growing an HTTP surface, and a count that stopped being maintained would stop
+ * doing that. B05 still publishes nothing, and `APP4-A01-C1` adds no operation.
+ */
+const EXPECTED_OPERATIONS = 53;
 
 /**
  * The one public path `APP4-B06` owns.
@@ -237,6 +245,46 @@ function checkInternalCapability(rootDir, fail) {
   );
   if (!importsB01 || !/this\.notifications\.request\(/.test(notifier)) {
     fail(`${CANONICAL_FILES.notifier}: does not use the APP4-B01 notification intake`);
+  }
+
+  // `APP4-A01-C1` — the notification names the contact point B05 itself
+  // resolved, so the Admin support screen can find the delivery again.
+  //
+  // Asserted as `target.id`, not merely "some contact point id is passed": the
+  // whole safety property is that the *resolved* target and the *named* owner
+  // are the same row. A binding taken from anywhere else would let the intent
+  // claim an owner the link was not sent to.
+  if (!/recipientContactPointId:\s*target\.id\b/.test(notifier)) {
+    fail(
+      `${CANONICAL_FILES.notifier}: does not bind the notification to the resolved ` +
+        `contact point (recipientContactPointId: target.id)`,
+    );
+  }
+  // The resolution still happens here, from the customer's own record.
+  if (!/listContactPoints\(/.test(notifier) || !/isPrimary/.test(notifier)) {
+    fail(`${CANONICAL_FILES.notifier}: no longer resolves the customer's primary verified contact`);
+  }
+  // And the caller still cannot choose it. `NotifyGrantInput` takes a customer,
+  // never a destination — an accepted contact point or recipient here would be
+  // exactly the "send this token wherever I say" surface §12 forbids.
+  const notifyInput = /interface NotifyGrantInput\s*\{([\s\S]*?)\n\}/.exec(notifier)?.[1] ?? '';
+  if (notifyInput === '') {
+    fail(`${CANONICAL_FILES.notifier}: no NotifyGrantInput declaration to check`);
+  }
+  for (const forbidden of ['contactPointId', 'recipient', 'address', 'email', 'phone', 'channel']) {
+    if (new RegExp(`\\b${forbidden}`, 'i').test(notifyInput)) {
+      fail(`${CANONICAL_FILES.notifier}: NotifyGrantInput accepts "${forbidden}" from the caller`);
+    }
+  }
+  const issueCommand = /interface IssueGrantCommand[\s\S]*?\n\}/.exec(issuer)?.[0] ?? '';
+  for (const forbidden of ['contactPointId', 'recipient', 'address']) {
+    if (new RegExp(`\\b${forbidden}`, 'i').test(issueCommand)) {
+      fail(`${CANONICAL_FILES.issuer}: IssueGrantCommand accepts "${forbidden}" from the caller`);
+    }
+  }
+  // The binding is a persisted id, never derived from the mask.
+  if (/recipientContactPointId:[^,\n]*(mask|Masked)/i.test(notifier)) {
+    fail(`${CANONICAL_FILES.notifier}: derives the binding from a masked value`);
   }
   // 25, 32 — and B05 never seals or opens an envelope itself.
   for (const file of sources(rootDir, B05_SOURCES)) {

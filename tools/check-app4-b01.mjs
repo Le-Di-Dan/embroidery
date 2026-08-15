@@ -313,6 +313,50 @@ function checkIntake(rootDir, fail) {
     fail(`${CANONICAL_FILES.request}: no single params builder`);
   }
 
+  // `recipientContactPointId` (`APP4-A01-C1`) is ownership metadata B01 accepts
+  // and forwards to the existing optional column. It is *allowed*; what is not
+  // allowed is any of the three places a later edit would naturally put it.
+  //
+  // The intent key is the load-bearing one. Adding an ownership reference to the
+  // idempotency tuple would make one business decision resolve to two intents
+  // the moment a caller learned the contact point — a duplicate delivery of the
+  // same credential, arriving only in production and only for bound callers.
+  const intentKeySource = stripComments(read(rootDir, 'intentKey') ?? '');
+  if (/recipientContactPointId|contactPoint/i.test(intentKeySource)) {
+    fail(`${CANONICAL_FILES.intentKey}: the contact point is part of the idempotency tuple`);
+  }
+  const useCaseSource = stripComments(read(rootDir, 'useCase') ?? '');
+  const keyCall = /deriveNotificationIntentKey\(\{([\s\S]*?)\}\)/.exec(useCaseSource)?.[1] ?? '';
+  if (/contactPoint/i.test(keyCall)) {
+    fail(`${CANONICAL_FILES.useCase}: passes the contact point into the intent key`);
+  }
+  // Nor into the redacted params, nor into the sealed envelope.
+  if (/contactPoint/i.test(/buildIntentParams\([\s\S]*?\)/.exec(useCaseSource)?.[0] ?? '')) {
+    fail(`${CANONICAL_FILES.useCase}: puts the contact point in params`);
+  }
+  const sealCall = /sealDeliveryEnvelope\([\s\S]*?\n\s{6}\}\);/.exec(useCaseSource)?.[0] ?? '';
+  if (/contactPoint/i.test(sealCall)) {
+    fail(`${CANONICAL_FILES.useCase}: seals the contact point into the delivery envelope`);
+  }
+  // It stays optional: B03 delivers a code before a Customer exists, and a
+  // required field here would force that flow to invent an owner.
+  if (!/recipientContactPointId\?:/.test(read(rootDir, 'request') ?? '')) {
+    fail(`${CANONICAL_FILES.request}: recipientContactPointId is not optional`);
+  }
+  // And B01 still resolves nothing itself — the caller names the contact point,
+  // this module never looks one up, so it cannot become a delivery-target
+  // authority beside the one B05 owns.
+  for (const file of sourceFiles(rootDir, 'apps/api/src/modules/notification')) {
+    const path = shown(rootDir, file);
+    if (isTest(path)) continue;
+    const source = stripComments(readFileSync(file, 'utf8'));
+    if (/CUSTOMER_REPOSITORY|CustomerRepository|listContactPoints/.test(source)) {
+      fail(
+        `${path} reads the customer repository; B01 accepts a contact point, never resolves one`,
+      );
+    }
+  }
+
   // 18 — nothing queries the ciphertext to find an intent.
   for (const file of sourceFiles(rootDir, 'apps/api/src/modules/notification')) {
     const source = stripComments(readFileSync(file, 'utf8'));

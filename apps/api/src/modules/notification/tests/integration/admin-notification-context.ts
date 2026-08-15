@@ -123,6 +123,14 @@ export interface AdminNotificationTestContext {
     readonly secret: string;
     readonly secretKind: 'VERIFICATION_CODE' | 'SECURE_LINK_TOKEN';
     readonly templateKey?: string;
+    /**
+     * The owning contact point, passed through the **real** intake
+     * (`APP4-A01-C1`) rather than written to the column afterwards.
+     *
+     * B05 supplies this in production; here it lets a replay suite start from a
+     * genuinely bound origin without reaching into `notification_intents`.
+     */
+    readonly recipientContactPointId?: string;
     /** Omit to leave the intent PENDING and the event PENDING. */
     readonly terminal?: boolean;
     /** Marks the intent SATISFIED instead of FAILED. */
@@ -355,6 +363,7 @@ async function seedTerminalDelivery(
     readonly secret: string;
     readonly secretKind: 'VERIFICATION_CODE' | 'SECURE_LINK_TOKEN';
     readonly templateKey?: string;
+    readonly recipientContactPointId?: string;
     readonly terminal?: boolean;
     readonly satisfied?: boolean;
   },
@@ -366,6 +375,9 @@ async function seedTerminalDelivery(
         channel: 'EMAIL',
         contactKind: 'EMAIL',
         normalizedRecipient: FIXTURE_EMAIL,
+        ...(input.recipientContactPointId === undefined
+          ? {}
+          : { recipientContactPointId: input.recipientContactPointId }),
         templateKey: input.templateKey ?? 'verification.code',
         templateVersion: 1,
         reference: input.reference,

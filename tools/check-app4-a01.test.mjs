@@ -53,6 +53,16 @@ function rootWith(edits = {}) {
       filter: (from) => !from.includes('node_modules') && !from.includes(`${sep}dist`),
     });
   }
+  // The two backend files the gate reads for `APP4-A01-C1`, copied individually
+  // rather than by pulling in all of `apps/api/src`. Without them every
+  // throwaway root would be missing the producer, the binding rules would fire
+  // unconditionally, and their own mutation tests would pass for the wrong
+  // reason — proving nothing while looking green.
+  for (const relative of [CANONICAL_FILES.grantNotifier, CANONICAL_FILES.notificationRequest]) {
+    const target = join(dir, relative);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(join(REPO_ROOT, relative), target);
+  }
   for (const [relative, content] of Object.entries(edits)) {
     const target = join(dir, relative);
     mkdirSync(dirname(target), { recursive: true });
@@ -369,5 +379,33 @@ describe('transport and scope', () => {
       rootWith({ [CANONICAL_FILES.openapi]: JSON.stringify(document) }),
     );
     assert.ok(mentions(failures, 'A01 expects 53'));
+  });
+});
+
+/**
+ * `APP4-A01-C1` — the gate now checks that something can satisfy the filter.
+ *
+ * The first case is the exact defect the original A01 shipped with: every
+ * consumer-side rule passed, and the notification region was empty in
+ * production because no producer wrote the binding. Reverting the producer must
+ * now fail this gate, or the same gap ships again.
+ */
+describe('the production binding behind the Customer-bound region', () => {
+  it('catches the producer no longer binding the notification', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.grantNotifier,
+      '      recipientContactPointId: target.id,',
+      '',
+    );
+    assert.ok(mentions(failures, "A01's Customer-filtered region would be empty in production"));
+  });
+
+  it('catches the intake contract losing the optional reference', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.notificationRequest,
+      'readonly recipientContactPointId?: string | undefined;',
+      '',
+    );
+    assert.ok(mentions(failures, 'no producer can bind one'));
   });
 });
