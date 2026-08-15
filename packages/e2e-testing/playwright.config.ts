@@ -99,5 +99,14 @@ export default defineConfig({
       grep: /Admin A01/,
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: ADMIN_URL },
     },
+    // APP4-E01-R01 canonical acceptance. One serial project on the Storefront
+    // origin; the Admin journeys open their own context against the Admin
+    // origin, because the run is one journey and cannot be split across two
+    // projects without losing the state it accumulates.
+    {
+      name: 'app4-r01-chromium',
+      testMatch: '**/app4/e01-r01.acceptance.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
   ],
 });

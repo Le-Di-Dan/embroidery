@@ -38,6 +38,8 @@ const FULL = [
 const APP1 = ['app1-admin-chromium', 'app1-storefront-chromium'];
 // APP4-E01-H02 helper readiness, host/Chromium for the same reason as APP1.
 const APP4 = ['app4-storefront-chromium', 'app4-admin-chromium'];
+// APP4-E01-R01 canonical acceptance — one serial project.
+const APP4_R01 = ['app4-r01-chromium'];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -99,8 +101,11 @@ function parseArgs(argv) {
   const app1 = flags.has('--app1');
   // APP4-E01-H01: a non-Playwright mode, so it short-circuits before projects.
   const app4 = flags.has('--app4') && !flags.has('--app4-browser');
+  // APP4-E01-R01: the canonical acceptance run — the same topology and env as
+  // the H02 browser tier, a different project.
+  const app4R01 = flags.has('--app4-r01');
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
-  const app4Browser = flags.has('--app4-browser');
+  const app4Browser = flags.has('--app4-browser') || app4R01;
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
@@ -111,7 +116,7 @@ function parseArgs(argv) {
         : full
           ? 'full'
           : 'smoke';
-  const projects = app4Browser ? APP4 : app1 ? APP1 : full ? FULL : SMOKE;
+  const projects = app4R01 ? APP4_R01 : app4Browser ? APP4 : app1 ? APP1 : full ? FULL : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 || app4Browser
@@ -158,7 +163,15 @@ async function main() {
   // journeys use: its A01 readiness check logs in through the real form, and no
   // guard may be bypassed with an injected cookie.
   const adminCredentials = app1 || app4Browser ? createAdminCredentials(runId) : undefined;
-  const app4Secrets = app4Browser ? createApp4SecretConfig(runId) : undefined;
+  // The browser tier overrides one non-secret value: the canonical origin the
+  // API renders secure links against. The generated default is an unresolvable
+  // `.invalid` host — correct for the lean H01 mode, which never opens a
+  // browser, but `APP4-E01-R01` has to *navigate* the delivered link, so here it
+  // must be this run's real gateway origin. Still a per-run test value; IMP-D050
+  // is untouched.
+  const app4Secrets = app4Browser
+    ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
+    : undefined;
   log(`run ${runId} — mode=${mode} runner=${runner} projects=${projects.length}`);
 
   let env;
@@ -217,7 +230,12 @@ async function main() {
             // HTTP process was started with. Child environment only.
             ...(app4Secrets === undefined
               ? {}
-              : { E2E_RUN_ID: runId, ...app4SecretEnv(app4Secrets) }),
+              : {
+                  E2E_RUN_ID: runId,
+                  // R01 composes the real issuer from the API's compiled dist.
+                  E2E_REPO_ROOT: config.repoRoot,
+                  ...app4SecretEnv(app4Secrets),
+                }),
           }
         : {};
     exitCode =

@@ -180,9 +180,79 @@ export async function createDbEvidence(databaseUrl) {
       };
     },
 
+    /**
+     * The rows of one APP4 table, newest last, safely projected.
+     *
+     * Constrained to a fixed allowlist rather than taking SQL: `APP4-E01-R01`
+     * needs "the intent that was just created" and "the outbox event beside it"
+     * without a named id to look them up by, and a generic SQL entry point would
+     * move the evidence contract out of this file. Ordering is by `created_at`
+     * so "the latest" is well defined for a serial acceptance run.
+     */
+    listRecent: async (table, limit = 20) => {
+      if (!LISTABLE_TABLES.has(table)) {
+        throw new Error(`Refusing to list "${table}": not an APP4 evidence table.`);
+      }
+      const statement = sql.raw(
+        `SELECT * FROM ${table} ORDER BY created_at ASC LIMIT ${Number(limit)}`,
+      );
+      return (await rows(statement)).map(projectSafe);
+    },
+
+    /**
+     * Moves one queued row's own due instant to now.
+     *
+     * The single mutation this module performs, and deliberately narrow: it
+     * writes `next_attempt_at`, which is *queue scheduling*, never business
+     * state. `APP4-G01`'s delivery policy retries at 60 and 300 seconds, so a
+     * suite that waited would spend six minutes proving a schedule it can
+     * observe directly — the same technique `APP4-W01`'s own harness uses. The
+     * delay the completion actually wrote is asserted before this is called;
+     * this only stops the clock from being the thing under test.
+     */
+    /**
+     * Backdates one challenge's issuance instant.
+     *
+     * `APP4-G01`'s `resendCooldownSeconds` is measured from `created_at`, so
+     * this is the fixture-timestamp seam that makes a resend eligible without
+     * waiting the cooldown out. It moves *when the challenge was issued*, never
+     * its status, its digest or its expiry — the resend decision itself is
+     * still entirely the application's.
+     */
+    backdateChallenge: async (challengeId, seconds) => {
+      await executeRaw(
+        client.db,
+        sql`
+          UPDATE contact_verification_challenges
+          SET created_at = created_at - make_interval(secs => ${seconds})
+          WHERE id = ${challengeId}
+        `,
+      );
+    },
+
+    makeDueNow: async (eventId) => {
+      await executeRaw(
+        client.db,
+        sql`UPDATE outbox_events SET next_attempt_at = now() WHERE id = ${eventId}`,
+      );
+    },
+
     close: () => client.pool.end(),
   };
 }
+
+/** The tables `listRecent` may read. Nothing else is reachable through it. */
+const LISTABLE_TABLES = new Set([
+  'contact_verification_challenges',
+  'contact_verification_attempts',
+  'customers',
+  'customer_contact_points',
+  'secure_access_grants',
+  'notification_intents',
+  'notification_delivery_attempts',
+  'outbox_events',
+  'audit_events',
+]);
 
 /**
  * An in-memory fingerprint per envelope field.
