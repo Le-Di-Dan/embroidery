@@ -1,0 +1,413 @@
+// Contact verification — feature-scoped styles (APP4-S01).
+//
+// Design source: FIG-VERIFY-* (file BQwqV8GdfUIELvsQDB1UQE, page APP_04,
+// nodes 623:3 · 623:27 · 623:51 · 623:75 · 623:108 · 625:3 · 625:36 · 625:70 ·
+// 625:106 · 625:140 · 625:173 · 625:193 · 625:211 · 628:3 · 628:25 · 628:57 ·
+// 628:90 · 628:121), approved under FIG-APPROVAL-APP4-D01-PO-001.
+//
+// Measured live from the approved frames:
+//   desktop 1440 — card 520 wide, 32 padding, radius 24, gap 20
+//   mobile   390 — card 350 wide inside a 20 gutter, radius 20, gap 16
+//   code box     — 64 x 60, radius 12, gap 10 (desktop)
+//
+// Colour, type, radius and spacing come from @embroidery/styles. The frames use
+// a few steps the shared spacing scale does not define (6, 10, 13, 14, 20); each
+// is a documented local literal, following the APP2-S02 precedent for the same
+// reason — inventing scale steps would change a shared foundation to suit one
+// screen.
+
+@use '@embroidery/styles' as styles;
+
+// The shell widens its content gutter here (storefront-shell.scss `$bp-footer`).
+// Mirrored rather than imported because it is another feature's internal
+// constant; a boundary test asserts the two cannot drift apart.
+$bp-shell-wide: 768px;
+
+// Approved card geometry.
+$card-max: 520px;
+$card-gap: 20px; // no shared step between 16 and 24
+$card-padding: styles.spacing(32);
+$card-padding-mobile: styles.spacing(24);
+
+// Approved field and alert geometry.
+$field-padding-block: 13px; // 623:18 — 45px control height at 16px type
+$field-padding-inline: styles.spacing(16);
+$alert-gap: 6px;
+$alert-padding-block: 14px;
+$alert-padding-inline: styles.spacing(16);
+
+// Approved code-box geometry (623:88).
+$code-box-width: 64px;
+$code-box-height: 60px;
+$code-gap: 10px;
+$code-box-width-mobile: 46px;
+$code-gap-mobile: 8px;
+
+$line-height-snug: 1.35;
+$line-height-body: 1.5;
+
+.contact-verification {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: styles.spacing(24);
+  padding-block: styles.spacing(48);
+
+  &__heading {
+    margin: 0;
+    width: 100%;
+    max-width: $card-max;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    line-height: $line-height-snug;
+    color: styles.$color-text-secondary;
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: $card-gap;
+    width: 100%;
+    max-width: $card-max;
+    padding: $card-padding;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-lg;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__body {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__caption {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  // The masked destination chip (623:83).
+  &__destination {
+    margin: 0;
+    padding: styles.spacing(12) $field-padding-inline;
+    background: styles.$color-background-secondary;
+    border-radius: styles.$radius-sm;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+    // A mask can be long; it must wrap rather than widen the card at 390.
+    overflow-wrap: anywhere;
+  }
+
+  // Contact-kind tabs (623:11), a radio group wearing the drawn pill shape.
+  &__tabs {
+    display: flex;
+    gap: styles.spacing(8);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  &__tab {
+    flex: 1 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: styles.$size-touch-target-min;
+    padding: styles.spacing(8) styles.spacing(16);
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: 999px;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-secondary;
+    cursor: pointer;
+
+    &--active {
+      background: styles.$color-surface-primary;
+      border: 2px solid styles.$color-action-primary;
+      color: styles.$color-text-primary;
+    }
+
+    // The radio is visually hidden, so the label carries its focus ring.
+    &:focus-within {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+  }
+
+  &__label {
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    line-height: $line-height-snug;
+    color: styles.$color-text-secondary;
+  }
+
+  &__input {
+    width: 100%;
+    min-height: styles.$size-touch-target-min;
+    padding: $field-padding-block $field-padding-inline;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+    font-family: inherit;
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-primary;
+
+    &::placeholder {
+      color: styles.$color-text-tertiary;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    // Error is never colour alone: the border thickens and the message below
+    // carries the meaning (634:150).
+    &--invalid {
+      border: 2px solid styles.$color-status-error;
+    }
+  }
+
+  &__help {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__error {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-status-error;
+  }
+
+  // The six-digit field: one real input behind six drawn boxes (623:87).
+  &__code {
+    position: relative;
+  }
+
+  &__code-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    // Transparent rather than hidden: a hidden input cannot be focused by tap
+    // on some mobile browsers, and this must be the tap target.
+    background: transparent;
+    border: 0;
+    color: transparent;
+    caret-color: transparent;
+    font-size: styles.$font-size-heading-s;
+    // The value is drawn by the boxes; the input carries it, not its rendering.
+    letter-spacing: 2em;
+    text-indent: -100vw;
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  &__code-boxes {
+    display: flex;
+    gap: $code-gap;
+  }
+
+  &__code-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: $code-box-width;
+    height: $code-box-height;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+
+    &--invalid {
+      border: 2px solid styles.$color-status-error;
+    }
+  }
+
+  // The focused box follows the caret, so the drawn field shows focus even
+  // though the real input's own ring is suppressed.
+  &__code-input:focus-visible + &__code-boxes &__code-box--active {
+    border: 2px solid styles.$color-action-primary;
+  }
+
+  &__submit {
+    min-height: styles.$size-touch-target-min;
+    padding: styles.spacing(16);
+    background: styles.$color-action-primary;
+    border: 0;
+    border-radius: styles.$radius-sm;
+    font-family: inherit;
+    font-size: styles.$font-size-body-m;
+    // The frames name `Color/Neutral/White`; the shared package publishes that
+    // value as `$color-surface-primary` and defines no separate white token, so
+    // this uses the existing one rather than adding a foundation entry.
+    color: styles.$color-surface-primary;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      background: styles.$color-border-secondary;
+      color: styles.$color-text-tertiary;
+      cursor: not-allowed;
+    }
+  }
+
+  &__resend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $alert-gap;
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+  }
+
+  &__resend-action {
+    min-height: styles.$size-touch-target-min;
+    padding: 0;
+    background: none;
+    border: 0;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-action-primary;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      color: styles.$color-text-tertiary;
+      cursor: not-allowed;
+    }
+  }
+
+  &__resend-note {
+    color: styles.$color-text-tertiary;
+  }
+
+  &__alert {
+    display: flex;
+    flex-direction: column;
+    gap: $alert-gap;
+    padding: $alert-padding-block $alert-padding-inline;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+
+    &--info {
+      border-color: styles.$color-status-info;
+    }
+    &--warn {
+      border-color: styles.$color-status-warning;
+    }
+    &--error {
+      border-color: styles.$color-status-error;
+    }
+    &--success {
+      border-color: styles.$color-status-success;
+    }
+  }
+
+  &__alert-title {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    line-height: $line-height-snug;
+  }
+
+  &__alert--info &__alert-title {
+    color: styles.$color-status-info;
+  }
+  &__alert--warn &__alert-title {
+    color: styles.$color-status-warning;
+  }
+  &__alert--error &__alert-title {
+    color: styles.$color-status-error;
+  }
+  &__alert--success &__alert-title {
+    color: styles.$color-status-success;
+  }
+
+  &__alert-body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+// Mobile 390 (628:3, 628:25). The approved card is 350 wide inside a 20 gutter;
+// the shell already supplies 16, so the feature adds the remaining 4 rather than
+// widening the global shell (the APP2-S02-C1 precedent).
+@media (max-width: #{$bp-shell-wide - 1px}) {
+  .contact-verification {
+    padding-block: styles.spacing(32);
+    padding-inline: styles.spacing(4);
+
+    &__card {
+      gap: styles.spacing(16);
+      padding: $card-padding-mobile;
+    }
+
+    // Six boxes plus five gaps must fit the 302px content band at 390.
+    //
+    // The boxes divide the row rather than carrying a fixed width: a fixed 46px
+    // overflows the band by 6px and is then silently flex-shrunk, which is a
+    // width nobody chose. Dividing it makes the fit exact at 390 and still
+    // correct on the narrower phones below it.
+    &__code-boxes {
+      gap: $code-gap-mobile;
+      width: 100%;
+    }
+
+    &__code-box {
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: $code-box-width-mobile;
+    }
+  }
+}
