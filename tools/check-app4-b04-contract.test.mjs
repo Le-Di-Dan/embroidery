@@ -137,7 +137,7 @@ describe('APP4-B04 — the published surface', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.paths['/api/public/health/extra'] = { get: {} };
     });
-    assert.ok(mentions(failures, 'expected 50'));
+    assert.ok(mentions(failures, 'expected 52'));
   });
 
   // --- `APP4-B06` reconciliation guards -------------------------------------

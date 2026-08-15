@@ -174,6 +174,53 @@ describe('outbox event store (integration)', () => {
     ]);
   });
 
+  /**
+   * `listTerminalEventsForAggregate` — the `APP4-B08` manual-replay source read.
+   *
+   * What it has to prove is persistence behaviour: the lookup is by the
+   * polymorphic linkage and the event type, it returns the payload the diagnostic
+   * read deliberately withholds, and it sees **only** `DEAD_LETTER` rows — a
+   * still-retrying delivery is not a terminal source and must not be replayed.
+   */
+  it('returns only dead-lettered events for the aggregate, with their payload', async () => {
+    const terminalId = newId();
+    const pendingId = newId();
+    const otherTypeId = newId();
+
+    await context.inTransaction(async () => {
+      await outbox.append(event(terminalId));
+      await outbox.append(event(pendingId));
+      await outbox.append({ ...event(otherTypeId), eventType: 'order.cancelled' });
+    });
+    const [terminal] = await outbox.listForAggregate('ORDER', terminalId);
+    await context.inTransaction(() =>
+      outbox.markDeadLetter(terminal?.id as bigint, 'PERMANENT_REJECT'),
+    );
+    // The other two are dead-lettered too, so the filter under test is the
+    // aggregate and the event type rather than the status alone.
+    const [otherType] = await outbox.listForAggregate('ORDER', otherTypeId);
+    await context.inTransaction(() =>
+      outbox.markDeadLetter(otherType?.id as bigint, 'PERMANENT_REJECT'),
+    );
+
+    const found = await outbox.listTerminalEventsForAggregate('ORDER', terminalId, 'order.created');
+
+    expect(found).toHaveLength(1);
+    expect(found[0]?.status).toBe('DEAD_LETTER');
+    // The payload the diagnostic `listForAggregate` does not return.
+    expect(found[0]?.payload).toEqual({ orderId: terminalId });
+    expect(found[0]?.payloadSchemaVersion).toBe(1);
+
+    // A still-pending delivery is not a terminal source.
+    await expect(
+      outbox.listTerminalEventsForAggregate('ORDER', pendingId, 'order.created'),
+    ).resolves.toEqual([]);
+    // Nor is a dead-lettered event of a different type.
+    await expect(
+      outbox.listTerminalEventsForAggregate('ORDER', otherTypeId, 'order.created'),
+    ).resolves.toEqual([]);
+  });
+
   it('rejects a payload mutation via the S24 column-scoped trigger', async () => {
     const id = newId();
     await context.inTransaction(() => outbox.append(event(id)));

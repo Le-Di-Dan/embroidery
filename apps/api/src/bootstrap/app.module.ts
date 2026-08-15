@@ -17,6 +17,7 @@ import { CustomerAdminSupportModule } from '../modules/customer/customer-admin-s
 import { HealthModule } from '../modules/health/health.module';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
+import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -88,6 +89,15 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // not for wiring: `admin/customers` and `admin/secure-grants` share a base
     // path with no other module, so registration order cannot shadow anything.
     CustomerAdminSupportModule,
+    // APP4-B08 — the Admin notification delivery surface and manual transport
+    // replay. A separate module for the same reason the customer one above is:
+    // `NotificationModule` is the anonymous intake path and holds no staff-auth
+    // dependency, and B01's gate asserts that intake reaches no customer or
+    // grant repository. Replay eligibility must reach both, so it is composed
+    // here. Registered after `CustomerModule`, whose challenge and grant ports
+    // it reads, though not for wiring — `admin/notification-intents` shares a
+    // base path with no other module.
+    NotificationAdminModule,
   ],
 })
 export class AppModule {}

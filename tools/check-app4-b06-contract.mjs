@@ -84,14 +84,15 @@ const FORBIDDEN_CODES = [
 const MAX_REQUESTS = 30;
 
 /**
- * The entry world plus exactly B06's one — 47 at B06's closure. Now 50, after
- * `APP4-B07`'s three Admin support operations. Measured, not assumed.
+ * The entry world plus exactly B06's one — 47 at B06's closure. Then 50, after
+ * `APP4-B07`'s three Admin support operations. Now 52, after `APP4-B08`'s Admin
+ * notification list and manual replay. Measured, not assumed.
  *
  * Restated rather than dropped: the count's job is to catch an operation
  * appearing *beside* B06's resolver, and a rule that stopped counting would stop
  * doing that. B06's own surface is still asserted to be exactly one POST below.
  */
-const EXPECTED_OPERATIONS = 50;
+const EXPECTED_OPERATIONS = 52;
 const MIGRATION_COUNT = 34;
 
 function read(rootDir, key) {

@@ -443,6 +443,122 @@
         ],
         "type": "object"
       },
+      "AdminNotificationAttemptResponse": {
+        "properties": {
+          "attemptedAt": {
+            "description": "When this delivery attempt was made.",
+            "example": "2026-08-15T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "channel": {
+            "description": "The transport this attempt used.",
+            "example": "EMAIL",
+            "type": "string"
+          },
+          "errorClass": {
+            "description": "A bounded failure class, present on a failed attempt. Never a provider response body, an exception message or a stack trace — those can quote the recipient or the message.",
+            "example": "CHANNEL_UNAVAILABLE",
+            "type": "string"
+          },
+          "outcome": {
+            "description": "What happened. `FAILED_RETRYABLE` was followed by an automatic retry; `FAILED_TERMINAL` was not, and is what leaves the notification in FAILED.",
+            "enum": [
+              "DELIVERED",
+              "FAILED_RETRYABLE",
+              "FAILED_TERMINAL"
+            ],
+            "example": "FAILED_TERMINAL",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attemptedAt",
+          "channel",
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "AdminNotificationIntentListResponse": {
+        "properties": {
+          "intents": {
+            "description": "One bounded page of notifications, newest first.",
+            "items": {
+              "$ref": "#/components/schemas/AdminNotificationIntentResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "intents"
+        ],
+        "type": "object"
+      },
+      "AdminNotificationIntentResponse": {
+        "properties": {
+          "attempts": {
+            "description": "Every delivery attempt, oldest first. Append-only evidence.",
+            "items": {
+              "$ref": "#/components/schemas/AdminNotificationAttemptResponse"
+            },
+            "type": "array"
+          },
+          "channel": {
+            "description": "The transport this notification uses.",
+            "example": "EMAIL",
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "When the decision to notify was recorded.",
+            "example": "2026-08-15T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "intentId": {
+            "description": "The notification intent.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "type": "string"
+          },
+          "recipientMasked": {
+            "description": "The masked destination, and the only form of it this API publishes. Frozen when the notification was created; never re-derived from a contact record.",
+            "example": "b***@vidu.com",
+            "type": "string"
+          },
+          "status": {
+            "description": "The persisted lifecycle state. FAILED is terminal — it is never reopened; a manual replay creates a new notification instead. Only a FAILED notification can be replayed, and whether it actually can depends on the code or link behind it still being valid.",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "SATISFIED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "example": "FAILED",
+            "type": "string"
+          },
+          "templateKey": {
+            "description": "Which template was used.",
+            "example": "verification.code",
+            "type": "string"
+          },
+          "templateVersion": {
+            "description": "The template version used.",
+            "example": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "intentId",
+          "status",
+          "channel",
+          "recipientMasked",
+          "templateKey",
+          "templateVersion",
+          "createdAt",
+          "attempts"
+        ],
+        "type": "object"
+      },
       "AdminPlacementAreaResponse": {
         "properties": {
           "boundHeightPx": {
@@ -2161,6 +2277,28 @@
           "contactKind",
           "contact",
           "purpose"
+        ],
+        "type": "object"
+      },
+      "NotificationReplayResponse": {
+        "properties": {
+          "replayIntentId": {
+            "description": "The new notification created for this replay. The original stays FAILED and is not reopened; this is the record that will be delivered.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "type": "string"
+          },
+          "status": {
+            "description": "The replay is queued. A worker picks it up with a fresh attempt budget.",
+            "enum": [
+              "PENDING"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          }
+        },
+        "required": [
+          "replayIntentId",
+          "status"
         ],
         "type": "object"
       },
@@ -6198,6 +6336,352 @@
         "summary": "Unpublish a design template",
         "tags": [
           "adminDesignTemplate"
+        ]
+      }
+    },
+    "/api/admin/notification-intents": {
+      "get": {
+        "description": "The most recent notifications, newest first, optionally filtered to one lifecycle state. Answers \"was it sent, and why did it fail\" and nothing else: each entry carries the masked destination, the template used, and the append-only attempt timeline with a bounded failure class per attempt. There is no message body, no provider response, no recipient beyond the mask, and no search — the mask exists so an operator can recognise a destination, not look one up.",
+        "operationId": "adminNotificationIntent_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PENDING",
+                "PROCESSING",
+                "SATISFIED",
+                "FAILED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminNotificationIntentListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "One bounded page of notifications.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown status filter.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "List notification deliveries",
+        "tags": [
+          "adminNotificationIntent"
+        ]
+      }
+    },
+    "/api/admin/notification-intents/{intentId}/replay": {
+      "post": {
+        "description": "Re-sends an existing notification whose delivery failed terminally. This is a **transport** replay: the original code or link is re-delivered exactly as it was sealed, and nothing new is minted. The original notification stays FAILED and its dead-lettered delivery record is left untouched — a new notification is created instead, with a fresh delivery budget. Replaying twice returns the same replay rather than sending again. If the code or link is no longer valid, the request is refused with `REISSUE_REQUIRED` and the operator must issue a new one through the customer flow.",
+        "operationId": "adminNotificationIntent_replay",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "intentId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/NotificationReplayResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The replay notification, queued for delivery.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed notification id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such notification.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`REPLAY_NOT_APPLICABLE` — the notification did not fail delivery, so there is nothing to replay. `REISSUE_REQUIRED` — the code or link it carries has expired, been used, been revoked or been superseded; issue a new one instead. `REPLAY_SOURCE_UNAVAILABLE` — there is no single dead-lettered delivery record to replay from.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Replay a failed notification delivery",
+        "tags": [
+          "adminNotificationIntent"
         ]
       }
     },

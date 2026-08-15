@@ -21,6 +21,40 @@ const { secureAccessGrants } = schema;
 
 type GrantRow = typeof secureAccessGrants.$inferSelect;
 
+/**
+ * The digest-free projection both summary reads select.
+ *
+ * One constant rather than two copies: the security property is *which columns
+ * are named*, and two lists would be two places for `token_hash` to be added to
+ * only one of them.
+ */
+const SUMMARY_COLUMNS = {
+  id: secureAccessGrants.id,
+  customRequestId: secureAccessGrants.customRequestId,
+  scopeKind: secureAccessGrants.scopeKind,
+  status: secureAccessGrants.status,
+  expiresAt: secureAccessGrants.expiresAt,
+  createdAt: secureAccessGrants.createdAt,
+} as const;
+
+type SummaryRow = {
+  readonly id: string;
+  readonly customRequestId: string;
+  readonly scopeKind: string;
+  readonly status: string;
+  readonly expiresAt: Date;
+};
+
+function toSummary(row: SummaryRow): SecureAccessGrantSummary {
+  return {
+    id: row.id as GrantId,
+    customRequestId: row.customRequestId,
+    scopeKind: row.scopeKind as GrantScopeKind,
+    status: row.status as SecureAccessGrantState,
+    expiresAt: row.expiresAt,
+  };
+}
+
 function toDomain(row: GrantRow): SecureAccessGrant {
   return {
     id: row.id as GrantId,
@@ -233,14 +267,7 @@ export class DrizzleSecureAccessGrantRepository
   async listForCustomer(customerId: CustomerId): Promise<SecureAccessGrantSummary[]> {
     return this.run('listForCustomer', async () => {
       const rows = await this.db
-        .select({
-          id: secureAccessGrants.id,
-          customRequestId: secureAccessGrants.customRequestId,
-          scopeKind: secureAccessGrants.scopeKind,
-          status: secureAccessGrants.status,
-          expiresAt: secureAccessGrants.expiresAt,
-          createdAt: secureAccessGrants.createdAt,
-        })
+        .select(SUMMARY_COLUMNS)
         .from(secureAccessGrants)
         .where(eq(secureAccessGrants.customerId, customerId))
         // `id` is the tie-breaker: two grants minted in one transaction share a
@@ -248,13 +275,28 @@ export class DrizzleSecureAccessGrantRepository
         // different ways for the same data.
         .orderBy(desc(secureAccessGrants.createdAt), desc(secureAccessGrants.id));
 
-      return rows.map((row) => ({
-        id: row.id as GrantId,
-        customRequestId: row.customRequestId,
-        scopeKind: row.scopeKind as GrantScopeKind,
-        status: row.status as SecureAccessGrantState,
-        expiresAt: row.expiresAt,
-      }));
+      return rows.map(toSummary);
+    });
+  }
+
+  /**
+   * The `APP4-B08` replay-eligibility read.
+   *
+   * The same explicit, digest-free column list `listForCustomer` selects, for
+   * the same structural reason: nothing this returns has a `token_hash` to leak
+   * into an eligibility decision, a refusal or a log line. No status or expiry
+   * predicate — the caller needs to *see* a revoked or expired grant in order to
+   * refuse the replay and route the operator to a reissue.
+   */
+  async findSummaryById(id: GrantId): Promise<SecureAccessGrantSummary | undefined> {
+    return this.run('findSummaryById', async () => {
+      const [row] = await this.db
+        .select(SUMMARY_COLUMNS)
+        .from(secureAccessGrants)
+        .where(eq(secureAccessGrants.id, id))
+        .limit(1);
+
+      return row === undefined ? undefined : toSummary(row);
     });
   }
 }

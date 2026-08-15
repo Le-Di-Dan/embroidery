@@ -83,9 +83,17 @@ export const B07_SOURCES = Object.freeze([
   CANONICAL_FILES.module,
 ]);
 
-/** The entry world (47) plus exactly B07's three. Measured, not assumed. */
+/**
+ * The entry world (47) plus exactly B07's three — 50 at B07's closure. Now 52,
+ * after `APP4-B08`'s Admin notification list and manual replay. Measured, not
+ * assumed.
+ *
+ * Restated rather than dropped: the count's job is to catch an operation
+ * appearing *beside* B07's three, and a rule that stopped counting would stop
+ * doing that. B07's own three routes and their verbs are still asserted by name.
+ */
 const B06_BASELINE_OPERATIONS = 47;
-const EXPECTED_OPERATIONS = 50;
+const EXPECTED_OPERATIONS = 52;
 const MIGRATION_COUNT = 34;
 
 /** The exact Admin guard, and the exact security scheme its routes publish. */
@@ -156,7 +164,8 @@ function checkPublishedSurface(rootDir, fail) {
   if (total !== EXPECTED_OPERATIONS) {
     fail(
       `the document publishes ${String(total)} operations; expected ${String(EXPECTED_OPERATIONS)} ` +
-        `— the APP4-B06 baseline of ${String(B06_BASELINE_OPERATIONS)} plus exactly B07's three`,
+        `— the APP4-B06 baseline of ${String(B06_BASELINE_OPERATIONS)}, plus B07's three, ` +
+        `plus every operation accepted since`,
     );
   }
 
@@ -469,6 +478,29 @@ function checkGrantProjection(rootDir, fail) {
     if (!/orderBy\(/.test(body)) {
       fail(`${CANONICAL_FILES.repositoryAdapter}: listForCustomer has no deterministic order`);
     }
+  }
+
+  // The digest-free column list, wherever the projection is factored to.
+  //
+  // `APP4-B08` extracted the explicit `select({...})` into a shared
+  // `SUMMARY_COLUMNS` constant so a second summary read could not drift from it.
+  // That is an improvement and it moved the security property out of the method
+  // body, so the rule follows it: scanning only `listForCustomer` would now pass
+  // a `tokenHash` added one line above it.
+  const columns = /const\s+SUMMARY_COLUMNS\s*=\s*\{([\s\S]*?)\n\}/.exec(adapter)?.[1];
+  if (columns !== undefined) {
+    if (/tokenHash|token_hash/i.test(columns)) {
+      fail(`${CANONICAL_FILES.repositoryAdapter}: the summary column list selects the token hash`);
+    }
+    for (const column of ['status', 'expiresAt']) {
+      if (!new RegExp(`\\b${column}\\b`).test(columns)) {
+        fail(`${CANONICAL_FILES.repositoryAdapter}: the summary column list omits "${column}"`);
+      }
+    }
+  } else if (!/select\(\s*\{/.test(body)) {
+    // Neither an inline projection nor the shared constant: a `select()` with no
+    // column list would bring the digest back by default.
+    fail(`${CANONICAL_FILES.repositoryAdapter}: listForCustomer has no explicit column list`);
   }
 }
 

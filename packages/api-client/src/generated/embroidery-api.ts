@@ -23,6 +23,9 @@ import type {
   AdminDesignTemplateRestore200,
   AdminDesignTemplateSaveDocument200,
   AdminDesignTemplateUnpublish200,
+  AdminNotificationIntentList200,
+  AdminNotificationIntentListParams,
+  AdminNotificationIntentReplay200,
   AdminProductArchive200,
   AdminProductCreate201,
   AdminProductDetail200,
@@ -324,6 +327,34 @@ export const adminDesignTemplateUnpublish = (
       headers: { 'Content-Type': 'application/json' },
       data: unpublishDesignTemplateBody,
     },
+    options,
+  );
+};
+
+/**
+ * The most recent notifications, newest first, optionally filtered to one lifecycle state. Answers "was it sent, and why did it fail" and nothing else: each entry carries the masked destination, the template used, and the append-only attempt timeline with a bounded failure class per attempt. There is no message body, no provider response, no recipient beyond the mask, and no search — the mask exists so an operator can recognise a destination, not look one up.
+ * @summary List notification deliveries
+ */
+export const adminNotificationIntentList = (
+  params?: AdminNotificationIntentListParams,
+  options?: SecondParameter<typeof apiRequest<AdminNotificationIntentList200>>,
+) => {
+  return apiRequest<AdminNotificationIntentList200>(
+    { url: `/api/admin/notification-intents`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Re-sends an existing notification whose delivery failed terminally. This is a **transport** replay: the original code or link is re-delivered exactly as it was sealed, and nothing new is minted. The original notification stays FAILED and its dead-lettered delivery record is left untouched — a new notification is created instead, with a fresh delivery budget. Replaying twice returns the same replay rather than sending again. If the code or link is no longer valid, the request is refused with `REISSUE_REQUIRED` and the operator must issue a new one through the customer flow.
+ * @summary Replay a failed notification delivery
+ */
+export const adminNotificationIntentReplay = (
+  intentId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminNotificationIntentReplay200>>,
+) => {
+  return apiRequest<AdminNotificationIntentReplay200>(
+    { url: `/api/admin/notification-intents/${intentId}/replay`, method: 'POST' },
     options,
   );
 };
@@ -950,6 +981,12 @@ export type AdminDesignTemplateAssignScopeResult = NonNullable<
 >;
 export type AdminDesignTemplateUnpublishResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplateUnpublish>>
+>;
+export type AdminNotificationIntentListResult = NonNullable<
+  Awaited<ReturnType<typeof adminNotificationIntentList>>
+>;
+export type AdminNotificationIntentReplayResult = NonNullable<
+  Awaited<ReturnType<typeof adminNotificationIntentReplay>>
 >;
 export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
 export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;

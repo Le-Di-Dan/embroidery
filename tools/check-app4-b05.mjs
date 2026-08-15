@@ -77,17 +77,18 @@ const STEP_UP_WINDOW_SECONDS = 900;
  * The published operation count.
  *
  * 46 while B05 was the newest checkpoint — the entry world, unchanged, because
- * B05 publishes zero operations. Then 47: `APP4-B06` added exactly one. Now 50:
- * `APP4-B07` added three. The count stays asserted rather than dropped, because
- * what it really guards is that **B05's own surface is still zero** — an issue
- * or reissue route appearing would move this number too.
+ * B05 publishes zero operations. Then 47: `APP4-B06` added exactly one. Then 50:
+ * `APP4-B07` added three. Now 52: `APP4-B08` added two. The count stays asserted
+ * rather than dropped, because what it really guards is that **B05's own surface
+ * is still zero** — an issue or reissue route appearing would move this number
+ * too.
  *
  * B07's revoke route is the one place that needs saying out loud: it is not
  * B05 growing a surface. B05 still publishes nothing, and B07's controller calls
  * `SecureGrantIssuer.revoke` rather than reimplementing the transition, which is
  * what `checkInternalCapability` below still asserts.
  */
-const EXPECTED_OPERATIONS = 50;
+const EXPECTED_OPERATIONS = 52;
 
 /**
  * The one public path `APP4-B06` owns.

@@ -6,13 +6,16 @@ import { Injectable } from '@nestjs/common';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
 import type { NotificationDeliveryOutcome, NotificationIntentState } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { and, asc, count, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 
 import type {
+  AdminIntentListFilter,
   CreateIntentInput,
   CreateIntentOutcome,
   IntentId,
+  NotificationDeliveryAttemptRecord,
   NotificationIntent,
+  NotificationIntentRecord,
   NotificationIntentRepository,
 } from '../../domain/repositories/notification-intent.repository';
 
@@ -30,6 +33,32 @@ function toIntent(row: IntentRow): NotificationIntent {
     recipientMasked: row.recipientMasked,
     status: row.status as NotificationIntentState,
     correlationId: row.correlationId,
+  };
+}
+
+/**
+ * The wider `APP4-B08` read model.
+ *
+ * `params` is cast rather than validated here: the column is `jsonb` and its
+ * shape is the application's own `buildIntentParams` contract, so a persistence
+ * adapter asserting a discriminated union would be a second authority over it.
+ * The one caller that reads it — the replay eligibility resolver — parses it
+ * against that contract and fails closed.
+ */
+function toRecord(row: IntentRow): NotificationIntentRecord {
+  return {
+    id: row.id as IntentId,
+    intentKey: row.intentKey,
+    templateKey: row.templateKey,
+    templateVersion: row.templateVersion,
+    channel: row.channel,
+    recipientContactPointId: row.recipientContactPointId ?? undefined,
+    recipientMasked: row.recipientMasked,
+    params: (row.params ?? {}) as Record<string, unknown>,
+    status: row.status as NotificationIntentState,
+    sourceOutboxEventId: row.sourceOutboxEventId ?? undefined,
+    correlationId: row.correlationId,
+    createdAt: row.createdAt,
   };
 }
 
@@ -183,6 +212,95 @@ export class DrizzleNotificationIntentRepository
 
   async findByIntentKey(intentKey: string): Promise<NotificationIntent | undefined> {
     return this.run('findByIntentKey', () => this.loadByKey(intentKey));
+  }
+
+  /**
+   * The `APP4-B08` Admin support list.
+   *
+   * Newest first with `id` as the tie-breaker, so two intents created in one
+   * transaction render in a stable order. The status predicate is applied only
+   * when a filter is given; the closed set it belongs to is validated at the
+   * wire, not here.
+   */
+  async listForAdmin(filter: AdminIntentListFilter): Promise<NotificationIntentRecord[]> {
+    return this.run('listForAdmin', async () => {
+      const rows = await this.db
+        .select()
+        .from(notificationIntents)
+        .where(
+          filter.status === undefined ? undefined : eq(notificationIntents.status, filter.status),
+        )
+        .orderBy(desc(notificationIntents.createdAt), desc(notificationIntents.id))
+        .limit(filter.limit);
+
+      return rows.map(toRecord);
+    });
+  }
+
+  async findById(id: IntentId): Promise<NotificationIntentRecord | undefined> {
+    return this.run('findById', async () => {
+      const [row] = await this.db
+        .select()
+        .from(notificationIntents)
+        .where(eq(notificationIntents.id, id))
+        .limit(1);
+      return row === undefined ? undefined : toRecord(row);
+    });
+  }
+
+  /**
+   * `FOR UPDATE`, deliberately without `SKIP LOCKED`.
+   *
+   * The claim path skips locked rows because a second worker should take
+   * different work. An Admin replay is the opposite: two callers naming the same
+   * intent must serialize so the second sees what the first committed. Skipping
+   * would let both proceed and append two deliveries for one decision.
+   *
+   * @requiresTransaction
+   */
+  async lockById(id: IntentId): Promise<NotificationIntentRecord | undefined> {
+    return this.run('lockById', async () => {
+      const tx = this.requireTransaction('lockById');
+      const [row] = await tx
+        .select()
+        .from(notificationIntents)
+        .where(eq(notificationIntents.id, id))
+        .limit(1)
+        .for('update');
+      return row === undefined ? undefined : toRecord(row);
+    });
+  }
+
+  /**
+   * The attempt timeline, chronological and deterministic.
+   *
+   * `provider_message_ref` is not selected: APP4 ships only the recording
+   * adapter, so the column is always null, and a field that never carries
+   * anything is an invitation to put a provider body in it later.
+   */
+  async listAttempts(id: IntentId): Promise<NotificationDeliveryAttemptRecord[]> {
+    return this.run('listAttempts', async () => {
+      const rows = await this.db
+        .select({
+          attemptedAt: notificationDeliveryAttempts.attemptedAt,
+          channel: notificationDeliveryAttempts.channel,
+          outcome: notificationDeliveryAttempts.outcome,
+          errorClass: notificationDeliveryAttempts.errorClass,
+        })
+        .from(notificationDeliveryAttempts)
+        .where(eq(notificationDeliveryAttempts.intentId, id))
+        .orderBy(
+          asc(notificationDeliveryAttempts.attemptedAt),
+          asc(notificationDeliveryAttempts.id),
+        );
+
+      return rows.map((row) => ({
+        attemptedAt: row.attemptedAt,
+        channel: row.channel,
+        outcome: row.outcome as NotificationDeliveryOutcome,
+        errorClass: row.errorClass ?? undefined,
+      }));
+    });
   }
 
   async countAttempts(id: IntentId): Promise<number> {

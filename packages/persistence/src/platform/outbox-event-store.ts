@@ -244,6 +244,73 @@ export class OutboxEventStore extends DrizzleRepository {
     });
   }
 
+  /**
+   * The terminal source events for one aggregate and event type (`APP4-B08`).
+   *
+   * The Admin manual-replay path needs the opaque payload of the `DEAD_LETTER`
+   * row an exhausted automatic retry left behind, so it can be copied forward
+   * onto a new event **without being decrypted**. `listForAggregate` above
+   * deliberately does not return the payload — it is a diagnostic read — so this
+   * is a separate, narrower method rather than a widening of it.
+   *
+   * ### The lookup is by linkage, never by content
+   *
+   * Every predicate is a plain indexed column: the polymorphic REL-104 reference
+   * (`aggregate_kind`, `aggregate_id`), the event type, and the status. Nothing
+   * here touches `payload`. That is the whole point — ADR-DB4-004 rule 5 forbids
+   * querying JSONB internals, and the payload is an AEAD envelope whose only
+   * intent reference is encrypted lineage, not execution identity (IMP-D049
+   * PO-08). A caller that had to look inside it to find its own row would have
+   * to decrypt, which the API must never do.
+   *
+   * ### It returns a list, and the caller decides
+   *
+   * Returning the payload of "the" terminal row would force this method to pick
+   * one when there is more than one, and a persistence adapter silently choosing
+   * which credential to re-deliver is exactly the decision that belongs to the
+   * application. So every match comes back, ordered, and the caller fails closed
+   * on anything but exactly one.
+   */
+  async listTerminalEventsForAggregate(
+    aggregateKind: OutboxAggregateKind,
+    aggregateId: string,
+    eventType: string,
+  ): Promise<
+    {
+      id: bigint;
+      payload: unknown;
+      payloadSchemaVersion: number;
+      status: OutboxEventState;
+    }[]
+  > {
+    return this.run('listTerminalEventsForAggregate', async () => {
+      const rows = await this.db
+        .select({
+          id: outboxEvents.id,
+          payload: outboxEvents.payload,
+          payloadSchemaVersion: outboxEvents.payloadSchemaVersion,
+          status: outboxEvents.status,
+        })
+        .from(outboxEvents)
+        .where(
+          and(
+            eq(outboxEvents.aggregateKind, aggregateKind),
+            eq(outboxEvents.aggregateId, aggregateId),
+            eq(outboxEvents.eventType, eventType),
+            eq(outboxEvents.status, 'DEAD_LETTER'),
+          ),
+        )
+        .orderBy(asc(outboxEvents.id));
+
+      return rows.map((row) => ({
+        id: row.id,
+        payload: row.payload,
+        payloadSchemaVersion: row.payloadSchemaVersion,
+        status: row.status as OutboxEventState,
+      }));
+    });
+  }
+
   /** Reads events for an aggregate. Diagnostic and test use. */
   async listForAggregate(
     aggregateKind: OutboxAggregateKind,

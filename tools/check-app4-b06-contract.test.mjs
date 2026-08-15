@@ -122,7 +122,7 @@ describe('the published surface', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.paths['/api/public/health/extra'] = { get: { operationId: 'x_extra' } };
     });
-    assert.ok(mentions(failures, 'expected 50'));
+    assert.ok(mentions(failures, 'expected 52'));
   });
 
   // `APP4-B07` reconciliation guard. Two authenticated Admin grant paths joined

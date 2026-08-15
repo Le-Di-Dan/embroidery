@@ -163,4 +163,23 @@ export interface SecureAccessGrantRepository {
    * sequences.
    */
   listForCustomer(customerId: CustomerId): Promise<SecureAccessGrantSummary[]>;
+
+  /**
+   * One grant's state and deadline, by id (`APP4-B08`).
+   *
+   * {@link findById} exists and is not enough: `SecureAccessGrant` carries no
+   * `status`, because every consumer of it so far was a live-grant resolver for
+   * which status was a predicate rather than a value. The manual-replay
+   * eligibility check is the first caller that must distinguish `ACTIVE` from
+   * `REVOKED` for a grant it already has the id of — re-delivering a dead link
+   * helps nobody and teaches an attacker that the id was real.
+   *
+   * Returns the same digest-free summary {@link listForCustomer} does, for the
+   * same structural reason: the adapter projects an explicit column list, so no
+   * object this returns has a `token_hash` to leak into a decision log.
+   *
+   * A superseded grant needs no separate field — B05 revokes the source row
+   * before pointing it at its replacement, so supersession is already `REVOKED`.
+   */
+  findSummaryById(id: GrantId): Promise<SecureAccessGrantSummary | undefined>;
 }

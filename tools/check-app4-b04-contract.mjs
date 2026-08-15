@@ -74,12 +74,13 @@ const ATTEMPT_OUTCOMES = ['MATCH', 'MISMATCH', 'EXPIRED_AT_ENTRY'];
  * The published operation count, measured rather than assumed.
  *
  * 46 at B04's closure — the entry world plus exactly B04's two. Then 47: the one
- * `APP4-B06` added. Now 50: `APP4-B07`'s three Admin support operations. The
- * number is restated rather than removed, because its job is to catch an
- * *unintended* operation appearing beside B04's pair, and a rule that stopped
- * counting would stop doing that.
+ * `APP4-B06` added. Then 50: `APP4-B07`'s three Admin support operations. Now
+ * 52: `APP4-B08`'s Admin notification list and manual replay. The number is
+ * restated rather than removed, because its job is to catch an *unintended*
+ * operation appearing beside B04's pair, and a rule that stopped counting would
+ * stop doing that.
  */
-const EXPECTED_OPERATIONS = 50;
+const EXPECTED_OPERATIONS = 52;
 const MIGRATION_COUNT = 34;
 
 /** `APP4-G01`'s attempt budget. Lives in the policy store, never in source. */

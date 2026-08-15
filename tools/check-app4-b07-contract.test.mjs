@@ -134,7 +134,7 @@ describe('the published surface', () => {
     const failures = failuresAfterContractEdit((document) => {
       document.paths['/api/public/health/extra'] = { get: { operationId: 'x_extra' } };
     });
-    assert.ok(mentions(failures, 'expected 50'));
+    assert.ok(mentions(failures, 'expected 52'));
   });
 
   it('rejects a renamed operation id', () => {
@@ -339,13 +339,25 @@ describe('the grant projection', () => {
     assert.ok(mentions(failures, 'carries a token hash'));
   });
 
-  it('rejects selecting the digest in the repository read', () => {
+  it('rejects selecting the digest in the shared summary column list', () => {
+    // `APP4-B08` factored the projection into `SUMMARY_COLUMNS`, so this is
+    // where a digest would now be added — one line above `listForCustomer`,
+    // where a body-only scan would never see it.
     const failures = failuresAfterEdit(
       CANONICAL_FILES.repositoryAdapter,
-      '          id: secureAccessGrants.id,\n          customRequestId: secureAccessGrants.customRequestId,',
-      '          id: secureAccessGrants.id,\n          tokenHash: secureAccessGrants.tokenHash,\n          customRequestId: secureAccessGrants.customRequestId,',
+      '  id: secureAccessGrants.id,\n  customRequestId: secureAccessGrants.customRequestId,',
+      '  id: secureAccessGrants.id,\n  tokenHash: secureAccessGrants.tokenHash,\n  customRequestId: secureAccessGrants.customRequestId,',
     );
     assert.ok(mentions(failures, 'selects the token hash'));
+  });
+
+  it('rejects a summary column list that drops the state', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.repositoryAdapter,
+      '  status: secureAccessGrants.status,\n',
+      '',
+    );
+    assert.ok(mentions(failures, 'omits "status"'));
   });
 
   it('rejects an unscoped grant read', () => {

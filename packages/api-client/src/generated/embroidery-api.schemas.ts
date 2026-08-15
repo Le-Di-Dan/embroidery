@@ -411,6 +411,67 @@ export interface AdminDesignTemplateListResponse {
 }
 
 /**
+ * What happened. `FAILED_RETRYABLE` was followed by an automatic retry; `FAILED_TERMINAL` was not, and is what leaves the notification in FAILED.
+ */
+export type AdminNotificationAttemptResponseOutcome =
+  (typeof AdminNotificationAttemptResponseOutcome)[keyof typeof AdminNotificationAttemptResponseOutcome];
+
+export const AdminNotificationAttemptResponseOutcome = {
+  DELIVERED: 'DELIVERED',
+  FAILED_RETRYABLE: 'FAILED_RETRYABLE',
+  FAILED_TERMINAL: 'FAILED_TERMINAL',
+} as const;
+
+export interface AdminNotificationAttemptResponse {
+  /** When this delivery attempt was made. */
+  attemptedAt: string;
+  /** The transport this attempt used. */
+  channel: string;
+  /** A bounded failure class, present on a failed attempt. Never a provider response body, an exception message or a stack trace — those can quote the recipient or the message. */
+  errorClass?: string;
+  /** What happened. `FAILED_RETRYABLE` was followed by an automatic retry; `FAILED_TERMINAL` was not, and is what leaves the notification in FAILED. */
+  outcome: AdminNotificationAttemptResponseOutcome;
+}
+
+/**
+ * The persisted lifecycle state. FAILED is terminal — it is never reopened; a manual replay creates a new notification instead. Only a FAILED notification can be replayed, and whether it actually can depends on the code or link behind it still being valid.
+ */
+export type AdminNotificationIntentResponseStatus =
+  (typeof AdminNotificationIntentResponseStatus)[keyof typeof AdminNotificationIntentResponseStatus];
+
+export const AdminNotificationIntentResponseStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SATISFIED: 'SATISFIED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminNotificationIntentResponse {
+  /** Every delivery attempt, oldest first. Append-only evidence. */
+  attempts: AdminNotificationAttemptResponse[];
+  /** The transport this notification uses. */
+  channel: string;
+  /** When the decision to notify was recorded. */
+  createdAt: string;
+  /** The notification intent. */
+  intentId: string;
+  /** The masked destination, and the only form of it this API publishes. Frozen when the notification was created; never re-derived from a contact record. */
+  recipientMasked: string;
+  /** The persisted lifecycle state. FAILED is terminal — it is never reopened; a manual replay creates a new notification instead. Only a FAILED notification can be replayed, and whether it actually can depends on the code or link behind it still being valid. */
+  status: AdminNotificationIntentResponseStatus;
+  /** Which template was used. */
+  templateKey: string;
+  /** The template version used. */
+  templateVersion: number;
+}
+
+export interface AdminNotificationIntentListResponse {
+  /** One bounded page of notifications, newest first. */
+  intents: AdminNotificationIntentResponse[];
+}
+
+/**
  * @nullable
  */
 export type AdminPlacementAreaResponseMaxHeightMm = { [key: string]: unknown } | null;
@@ -1151,6 +1212,23 @@ export interface IssueVerificationChallengeBody {
   purpose: IssueVerificationChallengeBodyPurpose;
 }
 
+/**
+ * The replay is queued. A worker picks it up with a fresh attempt budget.
+ */
+export type NotificationReplayResponseStatus =
+  (typeof NotificationReplayResponseStatus)[keyof typeof NotificationReplayResponseStatus];
+
+export const NotificationReplayResponseStatus = {
+  PENDING: 'PENDING',
+} as const;
+
+export interface NotificationReplayResponse {
+  /** The new notification created for this replay. The original stays FAILED and is not reopened; this is the record that will be delivered. */
+  replayIntentId: string;
+  /** The replay is queued. A worker picks it up with a fresh attempt budget. */
+  status: NotificationReplayResponseStatus;
+}
+
 export type PublicCategoryResponseSlug =
   (typeof PublicCategoryResponseSlug)[keyof typeof PublicCategoryResponseSlug];
 
@@ -1807,6 +1885,29 @@ export type AdminDesignTemplateAssignScope200 = ApiSuccessResponse & {
 
 export type AdminDesignTemplateUnpublish200 = ApiSuccessResponse & {
   data: AdminDesignTemplateDetailResponse;
+};
+
+export type AdminNotificationIntentListParams = {
+  status?: AdminNotificationIntentListStatus;
+};
+
+export type AdminNotificationIntentListStatus =
+  (typeof AdminNotificationIntentListStatus)[keyof typeof AdminNotificationIntentListStatus];
+
+export const AdminNotificationIntentListStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SATISFIED: 'SATISFIED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type AdminNotificationIntentList200 = ApiSuccessResponse & {
+  data: AdminNotificationIntentListResponse;
+};
+
+export type AdminNotificationIntentReplay200 = ApiSuccessResponse & {
+  data: NotificationReplayResponse;
 };
 
 export type AdminProductListParams = {
