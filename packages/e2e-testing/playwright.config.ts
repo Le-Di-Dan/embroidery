@@ -108,5 +108,11 @@ export default defineConfig({
       testMatch: '**/app4/e01-r01.acceptance.spec.ts',
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
     },
+    // APP4-E01-R01-C1 — the correction, independent of the R01 serial spec.
+    {
+      name: 'app4-r01-c1-chromium',
+      testMatch: '**/app4/e01-r01-c1.acceptance.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
   ],
 });

@@ -139,11 +139,14 @@ export async function createDbEvidence(databaseUrl) {
           ORDER BY created_at ASC
         `)
       ).map(projectSafe),
+    // The column is `intent_id` and the order is the row's own sequence `id`;
+    // there is no `notification_intent_id` and no `attempt_number`. Corrected in
+    // `APP4-E01-R01-C1`, which was the first thing to actually call this reader.
     readNotificationAttempts: async (intentId) =>
       (
         await rows(sql`
           SELECT * FROM notification_delivery_attempts
-          WHERE notification_intent_id = ${intentId} ORDER BY attempt_number ASC
+          WHERE intent_id = ${intentId} ORDER BY id ASC
         `)
       ).map(projectSafe),
     readOutboxEvent: (eventId) => one(sql`SELECT * FROM outbox_events WHERE id = ${eventId}`),
@@ -226,6 +229,26 @@ export async function createDbEvidence(databaseUrl) {
           UPDATE contact_verification_challenges
           SET created_at = created_at - make_interval(secs => ${seconds})
           WHERE id = ${challengeId}
+        `,
+      );
+    },
+
+    /**
+     * Moves one grant's expiry into the past, leaving everything else alone.
+     *
+     * An `ACTIVE` row whose `expires_at` has passed is a truthful physical state
+     * in APP4 — `APP4-B07` reports exactly that stale-ACTIVE case rather than
+     * rewriting it — so this fabricates nothing. `status`, `token_hash`,
+     * `scope_kind` and the target are untouched; only the clock moves, which is
+     * the alternative to waiting out a seven-day TTL.
+     */
+    expireGrant: async (grantId, secondsAgo = 3600) => {
+      await executeRaw(
+        client.db,
+        sql`
+          UPDATE secure_access_grants
+          SET expires_at = now() - make_interval(secs => ${secondsAgo})
+          WHERE id = ${grantId}
         `,
       );
     },

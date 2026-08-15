@@ -40,6 +40,8 @@ const APP1 = ['app1-admin-chromium', 'app1-storefront-chromium'];
 const APP4 = ['app4-storefront-chromium', 'app4-admin-chromium'];
 // APP4-E01-R01 canonical acceptance — one serial project.
 const APP4_R01 = ['app4-r01-chromium'];
+// APP4-E01-R01-C1 — the targeted correction, run without the full R01 journey.
+const APP4_R01_C1 = ['app4-r01-c1-chromium'];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -103,9 +105,10 @@ function parseArgs(argv) {
   const app4 = flags.has('--app4') && !flags.has('--app4-browser');
   // APP4-E01-R01: the canonical acceptance run — the same topology and env as
   // the H02 browser tier, a different project.
-  const app4R01 = flags.has('--app4-r01');
+  const app4R01C1 = flags.has('--app4-r01-c1');
+  const app4R01 = flags.has('--app4-r01') && !app4R01C1;
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
-  const app4Browser = flags.has('--app4-browser') || app4R01;
+  const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1;
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
@@ -116,7 +119,17 @@ function parseArgs(argv) {
         : full
           ? 'full'
           : 'smoke';
-  const projects = app4R01 ? APP4_R01 : app4Browser ? APP4 : app1 ? APP1 : full ? FULL : SMOKE;
+  const projects = app4R01C1
+    ? APP4_R01_C1
+    : app4R01
+      ? APP4_R01
+      : app4Browser
+        ? APP4
+        : app1
+          ? APP1
+          : full
+            ? FULL
+            : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 || app4Browser
