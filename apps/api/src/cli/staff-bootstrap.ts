@@ -33,6 +33,30 @@ import {
 const ROTATE_FLAG = '--rotate';
 const LOGGER = 'StaffBootstrap';
 
+/**
+ * How this CLI builds its application context — and why both options matter.
+ *
+ * `logger: false` is required by the result-line contract: it calls
+ * `Logger.overrideLogger(false)`, which globally silences every `Logger`, so the
+ * one parseable `result=` line comes from {@link report} and nothing competes
+ * with it.
+ *
+ * `abortOnError: false` is required so that a *failed* boot is still reportable.
+ * With the NestJS default (`true`), `NestFactory` passes no teardown to its
+ * `ExceptionsZone`, so a construction error is never rethrown — it reaches
+ * `handleInitializationError`, which calls `process.abort()`. The returned
+ * promise then never settles, so neither the `try/catch` below nor the
+ * top-level `.catch` can run, and the only component that would have printed
+ * the error is the `ExceptionHandler` that `logger: false` just silenced.
+ *
+ * The two together produced a CLI that exited non-zero with **completely empty**
+ * stdout and stderr — no status line, no message, nothing to diagnose from —
+ * whenever `AppModule` failed to construct (a missing pepper, an unreachable
+ * database, an invalid storage configuration). `false` restores the rethrow, so
+ * the failure travels to the existing reporter and exits through the contract.
+ */
+const BOOT_OPTIONS = { logger: false, abortOnError: false } as const;
+
 const ENSURE_OUTCOME_STATUS: Record<EnsureBootstrapOutcome, BootstrapStatus> = {
   created: 'CREATED',
   reused: 'REUSED_EXISTING',
@@ -67,7 +91,7 @@ async function runEnsure(): Promise<number> {
     return report(preflight.status, preflight.message);
   }
 
-  const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
+  const app = await NestFactory.createApplicationContext(AppModule, BOOT_OPTIONS);
   try {
     const useCase = app.get(BootstrapStaffUseCase);
     // `credentials` is defined whenever preflight allowed us to proceed.
@@ -99,7 +123,7 @@ async function runRotate(): Promise<number> {
       `Rotate requires all bootstrap variables: missing ${inspection.missing.join(', ')}.`,
     );
   }
-  const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
+  const app = await NestFactory.createApplicationContext(AppModule, BOOT_OPTIONS);
   try {
     const useCase = app.get(BootstrapStaffUseCase);
     const result = await useCase.bootstrap({ ...inspection.credentials, rotate: true });
