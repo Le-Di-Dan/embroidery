@@ -90,7 +90,8 @@ with the three scope corrections noted below.
 | `APP5-G01` | `COMPLETE` | Submission, moderation and intake-abuse authority locked |
 | `APP5-D01` | `COMPLETE` | One APP5 design package registered — 65 nodes, `FIGMA_DESIGN_INDEX.md` §4.11; Product Owner approved 2026-08-16 under `FIG-APPROVAL-APP5-D01-PO-001` |
 | `APP5-B01` | `COMPLETE` | Request submission backend — `POST /api/public/custom-requests` (`publicCustomRequest_submit`); TR-LC11-01 in one transaction |
-| `APP5-B02` | `INCOMPLETE` | **Next** — customer attachment intake; ≤2 endpoints |
+| `APP5-DB01` | `INCOMPLETE` | **Next — added by `APP5-B02`.** Intake-provenance change request + forward-only migration: `assets.uploaded_via_challenge_id` (+ partial index), the fact `G01-D13`'s per-challenge quota and `G01` §7's orphan lifecycle both require |
+| `APP5-B02` | `BLOCKED` | Customer attachment intake — `APP5_B02_PERSISTENT_INTAKE_PROVENANCE_REQUIRED`; awaits `APP5-DB01`. See [`../reports/APP5-B02-COMPLETION-REPORT.md`](../reports/APP5-B02-COMPLETION-REPORT.md) |
 | `APP5-B03` | `INCOMPLETE` | Grant-scoped request status read; 1 endpoint |
 | `APP5-B04` | `INCOMPLETE` | Admin queue & detail; 2 endpoints |
 | `APP5-B05` | `INCOMPLETE` | Admin notes & guarded transitions; 2 endpoints |
@@ -129,6 +130,15 @@ APP5 transitions = TR-LC11-01/02/03/04/10/11 only (05–09 are APP6+)
 design gate = DESIGN_REQUIRED_BEFORE_UI_ONLY (zero APP5 Figma rows today)
 feature endpoints planned = 8
 ```
+
+**Correction (`APP5-B02`, 2026-08-16).** `NO_APP5_MIGRATION expected` held for
+every *request-side* table — `B01` shipped with no migration — but it inventoried
+tables only. It did not cover the *intake-lane* provenance that `APP5-G01` §7
+later locked: `G01-D13`'s bound is scoped to the verification challenge, and no
+column, index or platform store ties a customer upload to one. `APP5-B02` is
+blocked on that gap and `APP5-DB01` is added to close it. Future phase-entry
+audits should schema-check an authority checkpoint's *policy* bounds, not only
+its table inventory.
 
 ### 10.4 Locked cross-context authority (`APP5-G01`, 2026-08-16)
 
