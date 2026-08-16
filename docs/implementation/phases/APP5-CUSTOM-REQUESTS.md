@@ -87,8 +87,8 @@ with the three scope corrections noted below.
 | Checkpoint | Status | Note |
 |---|---|---|
 | `APP5-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation |
-| `APP5-G01` | `INCOMPLETE` | **Next** — submission, moderation and intake-abuse authority |
-| `APP5-D01` | `INCOMPLETE` | One design package; gates all UI checkpoints |
+| `APP5-G01` | `COMPLETE` | Submission, moderation and intake-abuse authority locked |
+| `APP5-D01` | `INCOMPLETE` | **Next** — one design package; gates all UI checkpoints |
 | `APP5-B01` | `INCOMPLETE` | Submission transaction (TR-LC11-01); 1 endpoint |
 | `APP5-B02` | `INCOMPLETE` | Customer attachment intake; ≤2 endpoints |
 | `APP5-B03` | `INCOMPLETE` | Grant-scoped request status read; 1 endpoint |
@@ -129,6 +129,27 @@ APP5 transitions = TR-LC11-01/02/03/04/10/11 only (05–09 are APP6+)
 design gate = DESIGN_REQUIRED_BEFORE_UI_ONLY (zero APP5 Figma rows today)
 feature endpoints planned = 8
 ```
+
+### 10.4 Locked cross-context authority (`APP5-G01`, 2026-08-16)
+
+[`../audits/APP5_G01_SUBMISSION_MODERATION_AUTHORITY.md`](../audits/APP5_G01_SUBMISSION_MODERATION_AUTHORITY.md)
+is the authority every later APP5 checkpoint cites instead of re-deriving
+behaviour. Load-bearing conclusions:
+
+```text
+transition subset  = TR-LC11-01/02/03/04/10/11; TR-LC11-05…09 unavailable
+cancellation       = ADR-DB3-002 stage S1 only, ADMIN-only, no compensation saga
+subject invariant  = catalog XOR customer-owned product, TX/App-enforced (no CHECK)
+request.submit key = the verified SUBMISSION-purpose challenge id
+request code       = REQ- + 10 CSPRNG chars; server-generated; never an authz input
+asset roles        = COP_IMAGE (COP, >=1) + REFERENCE; ATTACHMENT not exposed
+upload lane        = IMP-D048 streamed API lane, authorized by the verified challenge
+notifications      = customer confirmation is the existing grant link; APP5 adds
+                     outbox events only and creates no new notification intent
+audit              = TBL-042 is the history; creation writes no transition row
+```
+
+Fourteen `APP5-G01 DECISION` rules are registered in that document's §12.
 
 Carried to APP6: `design_versions` requires four catalog placement columns
 `NOT NULL`, so a customer-owned-product request cannot hold a design version
