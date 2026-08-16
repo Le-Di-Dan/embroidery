@@ -19,6 +19,7 @@ import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
 import { CustomRequestIntakeModule } from '../modules/order/custom-request-intake.module';
+import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
@@ -111,6 +112,12 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // wiring: `public/custom-request-intake` is a base path no other module
     // claims, and the two share no provider instance.
     CustomRequestIntakeModule,
+    // APP5-B03 — the grant-scoped customer read. Shares the `public/custom-requests`
+    // base path with the submission module, which is safe and deliberate: the two
+    // controllers claim disjoint routes (`POST ''` and `POST 'status'`), and Nest
+    // matches the more specific segment regardless of registration order. Keeping
+    // one base path is what lets both publish the `publicCustomRequest` domain.
+    CustomRequestStatusModule,
   ],
 })
 export class AppModule {}

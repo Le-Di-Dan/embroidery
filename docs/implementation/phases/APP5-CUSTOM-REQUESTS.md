@@ -92,8 +92,8 @@ with the three scope corrections noted below.
 | `APP5-B01` | `COMPLETE` | Request submission backend — `POST /api/public/custom-requests` (`publicCustomRequest_submit`); TR-LC11-01 in one transaction |
 | `APP5-DB01` | `COMPLETE` | Intake provenance persistence — migration `0035_add_app5_intake_provenance`: `assets.uploaded_via_challenge_id` (REL-106, `ON DELETE SET NULL`) + `assets.intake_expires_at`, CST-127/CST-128, quota and due-time indexes. See [`../reports/APP5-DB01-COMPLETION-REPORT.md`](../reports/APP5-DB01-COMPLETION-REPORT.md) |
 | `APP5-B02` | `COMPLETE` | Customer attachment intake — `POST`/`GET /api/public/custom-request-intake/challenges/{challengeId}/assets…` (`publicCustomRequestAsset_upload`, `_status`); challenge-scoped reservation quota and the APP5 orphan sweep. See [`../reports/APP5-B02-COMPLETION-REPORT.md`](../reports/APP5-B02-COMPLETION-REPORT.md) |
-| `APP5-B03` | `INCOMPLETE` | **Next** — grant-scoped request status read; 1 endpoint |
-| `APP5-B04` | `INCOMPLETE` | Admin queue & detail; 2 endpoints |
+| `APP5-B03` | `COMPLETE` | Grant-scoped request status read — `POST /api/public/custom-requests/status` (`publicCustomRequest_status`); the request id comes from the APP4 `REQUEST_ACCESS` grant, never from the caller. See [`../reports/APP5-B03-COMPLETION-REPORT.md`](../reports/APP5-B03-COMPLETION-REPORT.md) |
+| `APP5-B04` | `INCOMPLETE` | **Next** — Admin queue & detail; 2 endpoints |
 | `APP5-B05` | `INCOMPLETE` | Admin notes & guarded transitions; 2 endpoints |
 | `APP5-S01` | `INCOMPLETE` | Request creation & submission screen (absorbs the COP form) |
 | `APP5-S02` | `INCOMPLETE` | Confirmation & grant-scoped status; closes `FU-APP4-S01-SUCCESS-HANDOFF-01` |
@@ -139,6 +139,13 @@ column, index or platform store ties a customer upload to one. `APP5-B02` is
 blocked on that gap and `APP5-DB01` is added to close it. Future phase-entry
 audits should schema-check an authority checkpoint's *policy* bounds, not only
 its table inventory.
+
+**Endpoint budget on track (`APP5-B03`, 2026-08-16).** Four of the eight planned
+APP5 operations are delivered — `publicCustomRequest_submit`,
+`publicCustomRequestAsset_upload`, `publicCustomRequestAsset_status` and
+`publicCustomRequest_status` — leaving two for `B04` and two for `B05`. The whole
+published document is **52 paths / 57 operations**; B03 added exactly one
+operation and reissued none.
 
 **Closed (`APP5-DB01`, 2026-08-16).** Migration `0035_add_app5_intake_provenance`
 adds the missing fact. `NO_APP5_MIGRATION expected` is superseded for the phase:

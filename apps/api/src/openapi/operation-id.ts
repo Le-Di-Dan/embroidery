@@ -46,6 +46,17 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   PublicDesignSessionAssetController: 'publicDesignSessionAsset',
   PublicDesignSessionAssetPreviewController: 'publicDesignSessionAsset',
   PublicDesignSessionAssetStatusController: 'publicDesignSessionAsset',
+  // `APP5-B03`. Submitting a custom request and reading one are the same
+  // published domain; they are two classes because the write needs Design and
+  // the grant issuer while the read needs the secure-link admission and the
+  // catalog subject port, and one module carrying both would boot every
+  // dependency for either. Without this entry the read would mint
+  // `publicCustomRequestStatus_status`, letting the module split name a public
+  // identifier. `PublicCustomRequestAssetController` is deliberately **not**
+  // here: the pre-submission attachment lane is its own domain, not a split of
+  // this one.
+  PublicCustomRequestController: 'publicCustomRequest',
+  PublicCustomRequestStatusController: 'publicCustomRequest',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

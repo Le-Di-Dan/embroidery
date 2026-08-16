@@ -10,6 +10,7 @@ import { IssueVerificationChallengeUseCase } from './application/issue-verificat
 import { ReadVerificationChallengeStatus } from './application/read-verification-challenge-status.query';
 import { ResendVerificationChallengeUseCase } from './application/resend-verification-challenge.use-case';
 import { ResolveOrCreateVerifiedCustomer } from './application/resolve-or-create-verified-customer.service';
+import { AuthorizeSecureLink } from './application/authorize-secure-link.service';
 import { ResolveSecureLink } from './application/resolve-secure-link.query';
 import { SecureLinkAuditRecorder } from './application/secure-link-audit.recorder';
 import { SecureGrantAuditRecorder } from './application/secure-grant-audit.recorder';
@@ -122,6 +123,9 @@ import { PublicVerificationController } from './presentation/public-verification
     SecureLinkPolicyReader,
     SecureLinkAuditRecorder,
     ResolveSecureLink,
+    // `APP5-B03`. Composes the three above in the one order that makes them a
+    // security model, so a second public token surface cannot re-derive it.
+    AuthorizeSecureLink,
   ],
   // The application capabilities are exported; the recorder, the clock, the
   // minter and the policy reader are not — they are this module's own machinery,
@@ -140,6 +144,12 @@ import { PublicVerificationController } from './presentation/public-verification
     // token without a grant.
     SecureGrantIssuer,
     StepUpWindow,
+    // `APP4-B06`'s public admission, exported for `APP5-B03` on the same rule:
+    // a consuming context receives the capability, never the machinery. The
+    // policy reader, the limiter, the network-key service and the resolver stay
+    // unexported — a caller holding the resolver alone could skip the
+    // fail-closed policy read and the abuse budget.
+    AuthorizeSecureLink,
   ],
 })
 export class CustomerModule {}

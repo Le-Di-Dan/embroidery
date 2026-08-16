@@ -51,6 +51,7 @@ import type {
   PublicCustomRequestAssetUpload202,
   PublicCustomRequestAssetUploadBody,
   PublicCustomRequestAssetUploadParams,
+  PublicCustomRequestStatus200,
   PublicCustomRequestSubmit201,
   PublicDesignSessionAssetCreate202,
   PublicDesignSessionAssetCreateBody,
@@ -72,6 +73,7 @@ import type {
   PublicVerificationSubmitAttempt200,
   PublishDesignTemplateBody,
   PublishProductBody,
+  ReadCustomRequestStatusBody,
   ReadinessStatusResponse,
   ReplaceProductPlacementBody,
   ResolveCustomerByContactBody,
@@ -676,6 +678,25 @@ export const publicCustomRequestSubmit = (
 };
 
 /**
+ * Returns the one custom request the presented secure link grants access to. The request is identified by the grant, never by the caller: there is no request id, no request code and no customer identifier in the body, so a link opens exactly the request it was issued for and nothing else. The request code is returned for display and is never accepted as a credential. There is no customer request list. Every token that does not open a live grant — unknown, expired, revoked, superseded, or issued for something else — answers with one identical 404.
+ * @summary Read the request a secure link opens
+ */
+export const publicCustomRequestStatus = (
+  readCustomRequestStatusBody: ReadCustomRequestStatusBody,
+  options?: SecondParameter<typeof apiRequest<PublicCustomRequestStatus200>>,
+) => {
+  return apiRequest<PublicCustomRequestStatus200>(
+    {
+      url: `/api/public/custom-requests/status`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: readCustomRequestStatusBody,
+    },
+    options,
+  );
+};
+
+/**
  * Opens one session on an exact public placement, either empty or cloned from a published Template scoped to that same placement. The session secret is returned only as a host-only, HttpOnly cookie.
  * @summary Open an anonymous design session
  */
@@ -1118,6 +1139,9 @@ export type PublicCustomRequestAssetStatusResult = NonNullable<
 >;
 export type PublicCustomRequestSubmitResult = NonNullable<
   Awaited<ReturnType<typeof publicCustomRequestSubmit>>
+>;
+export type PublicCustomRequestStatusResult = NonNullable<
+  Awaited<ReturnType<typeof publicCustomRequestStatus>>
 >;
 export type PublicDesignSessionCreateResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionCreate>>

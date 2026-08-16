@@ -1426,6 +1426,55 @@
         ],
         "type": "object"
       },
+      "CatalogRequestSubjectResponse": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "CATALOG"
+            ],
+            "example": "CATALOG",
+            "type": "string"
+          },
+          "productId": {
+            "description": "The store product this request is for.",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07",
+            "type": "string"
+          },
+          "productName": {
+            "description": "Absent only when the catalog rows can no longer be resolved as one coherent pair. Reported as missing rather than filled in, so the page never names the wrong product.",
+            "example": "Áo thun cotton",
+            "nullable": true,
+            "type": "object"
+          },
+          "productSlug": {
+            "example": "ao-thun-cotton",
+            "nullable": true,
+            "type": "object"
+          },
+          "productVariantId": {
+            "description": "The variant the quantities are keyed to (`G01-D08`).",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e08",
+            "nullable": true,
+            "type": "object"
+          },
+          "variantColorName": {
+            "description": "The variant colour attribute as stored; variants carry no single name column.",
+            "example": "Trắng",
+            "nullable": true,
+            "type": "object"
+          },
+          "variantSizeLabel": {
+            "example": "L",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "kind",
+          "productId"
+        ],
+        "type": "object"
+      },
       "CloneDesignSessionBody": {
         "additionalProperties": false,
         "properties": {
@@ -1794,6 +1843,97 @@
         ],
         "type": "object"
       },
+      "CustomRequestStatusResponse": {
+        "properties": {
+          "accessExpiresAt": {
+            "description": "When this secure link stops working. Absolute, and never extended by reading.",
+            "example": "2026-08-21T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/RequestAssetResponse"
+            },
+            "type": "array"
+          },
+          "code": {
+            "description": "The human request code, for quoting in a conversation with the workshop. Display only — it never opens the request, and this endpoint does not accept it.",
+            "example": "REQ-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "customerVisibleReason": {
+            "description": "The workshop message written for the customer, present only when the request needs clarification, was rejected or was cancelled. Internal moderation reasons and notes are never returned here.",
+            "example": "Ảnh sản phẩm chưa rõ, xưởng sẽ liên hệ để xin thêm ảnh.",
+            "nullable": true,
+            "type": "object"
+          },
+          "quantities": {
+            "items": {
+              "$ref": "#/components/schemas/RequestQuantityLineResponse"
+            },
+            "type": "array"
+          },
+          "requestId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "type": "string"
+          },
+          "status": {
+            "description": "The current lifecycle state, reported as stored. A request that has moved beyond the intake states is shown in the state it is actually in; this surface offers no action in any of them.",
+            "enum": [
+              "NEW",
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "QUOTED",
+              "QUOTE_ACCEPTED",
+              "DIGITIZING",
+              "DESIGN_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "UNDER_REVIEW",
+            "type": "string"
+          },
+          "subject": {
+            "description": "A store product with its variant, or the customer-owned item described at submission. Exactly one, and never both.",
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CatalogRequestSubjectResponse"
+              },
+              {
+                "$ref": "#/components/schemas/CustomerOwnedRequestSubjectResponse"
+              }
+            ]
+          },
+          "submittedAt": {
+            "description": "When the request was submitted. Creation writes no transition row (`G01-D05`).",
+            "example": "2026-08-16T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "totalQuantity": {
+            "description": "Units across every line. Zero when none were given.",
+            "example": 24,
+            "type": "number"
+          }
+        },
+        "required": [
+          "requestId",
+          "code",
+          "status",
+          "submittedAt",
+          "quantities",
+          "totalQuantity",
+          "assets",
+          "accessExpiresAt"
+        ],
+        "type": "object"
+      },
       "CustomRequestSubmissionResponse": {
         "properties": {
           "code": {
@@ -1817,6 +1957,42 @@
           "requestId",
           "code",
           "status"
+        ],
+        "type": "object"
+      },
+      "CustomerOwnedRequestSubjectResponse": {
+        "properties": {
+          "description": {
+            "example": "Áo khoác cũ, thêu ở lưng.",
+            "nullable": true,
+            "type": "object"
+          },
+          "kind": {
+            "enum": [
+              "CUSTOMER_OWNED"
+            ],
+            "example": "CUSTOMER_OWNED",
+            "type": "string"
+          },
+          "name": {
+            "example": "Áo khoác jean cá nhân",
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "example": "300.00",
+            "nullable": true,
+            "type": "object"
+          },
+          "physicalWidthMm": {
+            "description": "Millimetres, as a decimal string — a `numeric` column is never sent as a float.",
+            "example": "250.00",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "kind",
+          "name"
         ],
         "type": "object"
       },
@@ -3135,6 +3311,21 @@
         ],
         "type": "object"
       },
+      "ReadCustomRequestStatusBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to read the one request it opens.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
       "ReadinessStatusResponse": {
         "properties": {
           "database": {
@@ -3372,6 +3563,53 @@
         "required": [
           "expectedUpdatedAt",
           "sides"
+        ],
+        "type": "object"
+      },
+      "RequestAssetResponse": {
+        "properties": {
+          "assetId": {
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e09",
+            "format": "uuid",
+            "type": "string"
+          },
+          "role": {
+            "description": "What the customer attached this file as.",
+            "enum": [
+              "COP_IMAGE",
+              "REFERENCE"
+            ],
+            "example": "COP_IMAGE",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId",
+          "role"
+        ],
+        "type": "object"
+      },
+      "RequestQuantityLineResponse": {
+        "properties": {
+          "productVariantId": {
+            "description": "Always null on a customer-owned-product line, which has no catalog variant.",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e08",
+            "nullable": true,
+            "type": "object"
+          },
+          "quantity": {
+            "description": "Units for this line, as submitted.",
+            "example": 12,
+            "type": "number"
+          },
+          "sizeLabel": {
+            "example": "L",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "quantity"
         ],
         "type": "object"
       },
@@ -10328,6 +10566,189 @@
           }
         },
         "summary": "Submit a custom request",
+        "tags": [
+          "publicCustomRequest"
+        ]
+      }
+    },
+    "/api/public/custom-requests/status": {
+      "post": {
+        "description": "Returns the one custom request the presented secure link grants access to. The request is identified by the grant, never by the caller: there is no request id, no request code and no customer identifier in the body, so a link opens exactly the request it was issued for and nothing else. The request code is returned for display and is never accepted as a credential. There is no customer request list. Every token that does not open a live grant — unknown, expired, revoked, superseded, or issued for something else — answers with one identical 404.",
+        "operationId": "publicCustomRequest_status",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadCustomRequestStatusBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CustomRequestStatusResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The request this link opens, projected for its customer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded or for another target.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Secure-link resolution is not configured.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read the request a secure link opens",
         "tags": [
           "publicCustomRequest"
         ]

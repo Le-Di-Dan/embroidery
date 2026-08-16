@@ -873,6 +873,66 @@ export interface AutosaveDesignSessionBody {
   expectedRevision: number;
 }
 
+export type CatalogRequestSubjectResponseKind =
+  (typeof CatalogRequestSubjectResponseKind)[keyof typeof CatalogRequestSubjectResponseKind];
+
+export const CatalogRequestSubjectResponseKind = {
+  CATALOG: 'CATALOG',
+} as const;
+
+/**
+ * Absent only when the catalog rows can no longer be resolved as one coherent pair. Reported as missing rather than filled in, so the page never names the wrong product.
+ * @nullable
+ */
+export type CatalogRequestSubjectResponseProductName = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type CatalogRequestSubjectResponseProductSlug = { [key: string]: unknown } | null;
+
+/**
+ * The variant the quantities are keyed to (`G01-D08`).
+ * @nullable
+ */
+export type CatalogRequestSubjectResponseProductVariantId = { [key: string]: unknown } | null;
+
+/**
+ * The variant colour attribute as stored; variants carry no single name column.
+ * @nullable
+ */
+export type CatalogRequestSubjectResponseVariantColorName = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type CatalogRequestSubjectResponseVariantSizeLabel = { [key: string]: unknown } | null;
+
+export interface CatalogRequestSubjectResponse {
+  kind: CatalogRequestSubjectResponseKind;
+  /** The store product this request is for. */
+  productId: string;
+  /**
+   * Absent only when the catalog rows can no longer be resolved as one coherent pair. Reported as missing rather than filled in, so the page never names the wrong product.
+   * @nullable
+   */
+  productName?: CatalogRequestSubjectResponseProductName;
+  /** @nullable */
+  productSlug?: CatalogRequestSubjectResponseProductSlug;
+  /**
+   * The variant the quantities are keyed to (`G01-D08`).
+   * @nullable
+   */
+  productVariantId?: CatalogRequestSubjectResponseProductVariantId;
+  /**
+   * The variant colour attribute as stored; variants carry no single name column.
+   * @nullable
+   */
+  variantColorName?: CatalogRequestSubjectResponseVariantColorName;
+  /** @nullable */
+  variantSizeLabel?: CatalogRequestSubjectResponseVariantSizeLabel;
+}
+
 export type CloneDesignSessionBodyMode =
   (typeof CloneDesignSessionBodyMode)[keyof typeof CloneDesignSessionBodyMode];
 
@@ -1119,6 +1179,131 @@ export interface CustomRequestQuantityLine {
    * @maxLength 50
    */
   sizeLabel?: string;
+}
+
+/**
+ * The workshop message written for the customer, present only when the request needs clarification, was rejected or was cancelled. Internal moderation reasons and notes are never returned here.
+ * @nullable
+ */
+export type CustomRequestStatusResponseCustomerVisibleReason = { [key: string]: unknown } | null;
+
+/**
+ * The current lifecycle state, reported as stored. A request that has moved beyond the intake states is shown in the state it is actually in; this surface offers no action in any of them.
+ */
+export type CustomRequestStatusResponseStatus =
+  (typeof CustomRequestStatusResponseStatus)[keyof typeof CustomRequestStatusResponseStatus];
+
+export const CustomRequestStatusResponseStatus = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * What the customer attached this file as.
+ */
+export type RequestAssetResponseRole =
+  (typeof RequestAssetResponseRole)[keyof typeof RequestAssetResponseRole];
+
+export const RequestAssetResponseRole = {
+  COP_IMAGE: 'COP_IMAGE',
+  REFERENCE: 'REFERENCE',
+} as const;
+
+export interface RequestAssetResponse {
+  assetId: string;
+  /** What the customer attached this file as. */
+  role: RequestAssetResponseRole;
+}
+
+/**
+ * Always null on a customer-owned-product line, which has no catalog variant.
+ * @nullable
+ */
+export type RequestQuantityLineResponseProductVariantId = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type RequestQuantityLineResponseSizeLabel = { [key: string]: unknown } | null;
+
+export interface RequestQuantityLineResponse {
+  /**
+   * Always null on a customer-owned-product line, which has no catalog variant.
+   * @nullable
+   */
+  productVariantId?: RequestQuantityLineResponseProductVariantId;
+  /** Units for this line, as submitted. */
+  quantity: number;
+  /** @nullable */
+  sizeLabel?: RequestQuantityLineResponseSizeLabel;
+}
+
+export type CustomerOwnedRequestSubjectResponseKind =
+  (typeof CustomerOwnedRequestSubjectResponseKind)[keyof typeof CustomerOwnedRequestSubjectResponseKind];
+
+export const CustomerOwnedRequestSubjectResponseKind = {
+  CUSTOMER_OWNED: 'CUSTOMER_OWNED',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CustomerOwnedRequestSubjectResponseDescription = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type CustomerOwnedRequestSubjectResponsePhysicalHeightMm = { [key: string]: unknown } | null;
+
+/**
+ * Millimetres, as a decimal string — a `numeric` column is never sent as a float.
+ * @nullable
+ */
+export type CustomerOwnedRequestSubjectResponsePhysicalWidthMm = { [key: string]: unknown } | null;
+
+export interface CustomerOwnedRequestSubjectResponse {
+  /** @nullable */
+  description?: CustomerOwnedRequestSubjectResponseDescription;
+  kind: CustomerOwnedRequestSubjectResponseKind;
+  name: string;
+  /** @nullable */
+  physicalHeightMm?: CustomerOwnedRequestSubjectResponsePhysicalHeightMm;
+  /**
+   * Millimetres, as a decimal string — a `numeric` column is never sent as a float.
+   * @nullable
+   */
+  physicalWidthMm?: CustomerOwnedRequestSubjectResponsePhysicalWidthMm;
+}
+
+export interface CustomRequestStatusResponse {
+  /** When this secure link stops working. Absolute, and never extended by reading. */
+  accessExpiresAt: string;
+  assets: RequestAssetResponse[];
+  /** The human request code, for quoting in a conversation with the workshop. Display only — it never opens the request, and this endpoint does not accept it. */
+  code: string;
+  /**
+   * The workshop message written for the customer, present only when the request needs clarification, was rejected or was cancelled. Internal moderation reasons and notes are never returned here.
+   * @nullable
+   */
+  customerVisibleReason?: CustomRequestStatusResponseCustomerVisibleReason;
+  quantities: RequestQuantityLineResponse[];
+  requestId: string;
+  /** The current lifecycle state, reported as stored. A request that has moved beyond the intake states is shown in the state it is actually in; this surface offers no action in any of them. */
+  status: CustomRequestStatusResponseStatus;
+  /** A store product with its variant, or the customer-owned item described at submission. Exactly one, and never both. */
+  subject?: CatalogRequestSubjectResponse | CustomerOwnedRequestSubjectResponse | null;
+  /** When the request was submitted. Creation writes no transition row (`G01-D05`). */
+  submittedAt: string;
+  /** Units across every line. Zero when none were given. */
+  totalQuantity: number;
 }
 
 export interface CustomRequestSubmissionResponse {
@@ -1601,6 +1786,17 @@ export interface PublishDesignTemplateBody {
 export interface PublishProductBody {
   /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
   expectedUpdatedAt: string;
+}
+
+/**
+ * Presents a secure-link token to read the one request it opens.
+ */
+export interface ReadCustomRequestStatusBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
 }
 
 export type ReadinessStatusResponseService =
@@ -2228,6 +2424,10 @@ export type PublicCustomRequestAssetStatus200 = ApiSuccessResponse & {
 
 export type PublicCustomRequestSubmit201 = ApiSuccessResponse & {
   data: CustomRequestSubmissionResponse;
+};
+
+export type PublicCustomRequestStatus200 = ApiSuccessResponse & {
+  data: CustomRequestStatusResponse;
 };
 
 export type PublicDesignSessionCreate201 = ApiSuccessResponse & {
