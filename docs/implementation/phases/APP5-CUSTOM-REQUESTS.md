@@ -95,7 +95,8 @@ with the three scope corrections noted below.
 | `APP5-B03` | `COMPLETE` | Grant-scoped request status read — `POST /api/public/custom-requests/status` (`publicCustomRequest_status`); the request id comes from the APP4 `REQUEST_ACCESS` grant, never from the caller. See [`../reports/APP5-B03-COMPLETION-REPORT.md`](../reports/APP5-B03-COMPLETION-REPORT.md) |
 | `APP5-B04` | `COMPLETE` | Admin request queue & detail — `GET /api/admin/custom-requests` (`adminCustomRequest_list`) and `GET /api/admin/custom-requests/{requestId}` (`adminCustomRequest_detail`); read-only, behind APP1's `AuthenticatedAdminGuard`. See [`../reports/APP5-B04-COMPLETION-REPORT.md`](../reports/APP5-B04-COMPLETION-REPORT.md) |
 | `APP5-B05` | `COMPLETE` | Admin moderation notes & guarded transitions — `POST /api/admin/custom-requests/{requestId}/moderation-notes` (`adminCustomRequest_appendNote`) and `POST …/transitions` (`adminCustomRequest_transition`); the APP5 subset as an application-layer restriction, both reason texts, append-only notes and a real competing-transition race. See [`../reports/APP5-B05-COMPLETION-REPORT.md`](../reports/APP5-B05-COMPLETION-REPORT.md) |
-| `APP5-S01` | `INCOMPLETE` | **Next** — Request creation & submission screen (absorbs the COP form) |
+| `APP5-B07` | `INCOMPLETE` | **Next — inserted by `APP5-S01`** — Public catalog variant selection; the public read that lets a Storefront caller obtain a request-selectable `productVariantId`. Blocks `APP5-S01`'s catalog branch and nothing else. See [`../reports/APP5-S01-COMPLETION-REPORT.md`](../reports/APP5-S01-COMPLETION-REPORT.md) |
+| `APP5-S01` | `BLOCKED` | Request creation & submission screen (absorbs the COP form) — **`CATALOG_VARIANT_PUBLIC_READ_REQUIRED`**; waits for `APP5-B07`, then resumes unchanged in product scope |
 | `APP5-S02` | `INCOMPLETE` | Confirmation & grant-scoped status; closes `FU-APP4-S01-SUCCESS-HANDOFF-01` |
 | `APP5-A01` | `INCOMPLETE` | Admin request queue |
 | `APP5-B06` | `INCOMPLETE` | **Inserted by `APP5-B05`** — Admin private request-asset delivery; one authorized binary route for a request-bound `COP_IMAGE`/`REFERENCE`, streamed through the API. Must precede `APP5-A02`; does not block `S01`, `S02` or `A01`. Closes `FU-APP5-B04-COP-ASSET-DELIVERY-01` |
@@ -227,3 +228,52 @@ or correct it.
 Carried to APP6: `design_versions` requires four catalog placement columns
 `NOT NULL`, so a customer-owned-product request cannot hold a design version
 under the current schema.
+
+### 10.6 Catalog branch blocked; `APP5-B07` inserted (`APP5-S01`, 2026-08-16)
+
+`APP5-S01` stopped at its design/contract audit without writing runtime code.
+The approved catalog frames cannot be implemented against the delivered
+platform, and the gap is a missing **public contract**, not a frontend problem:
+
+```text
+required by SubmitCustomRequestBody.catalog  = productId + productVariantId + designSessionId
+obtainable today                              = productId (publicProductPlacementGet)
+                                                designSessionId (APP3 resume handle)
+missing                                       = productVariantId — no public read anywhere
+```
+
+Evidence, from the delivered artefacts rather than from prose:
+
+- the published document is **56 paths**; no path matches `variant`, and no
+  public operation's response schema contains `productVariantId`;
+- `CustomRequestCatalogSubject.productVariantId` is **required**, and
+  `custom_requests.product_variant_id` carries `fk_custom_requests__product_variant_id`
+  `ON DELETE restrict` to `product_variants` (migration `0012`), so a fabricated
+  id is refused by the database rather than merely unvalidated;
+- `APP5-D01` `650:3` draws the variant as *"read-only context from the Studio
+  session"* (`G01-D08`, `G01-D09`), but `design_sessions.product_variant_id` is
+  nullable and **no public design-session use case ever sets it**;
+  `DesignSessionSnapshotResponse` and `DesignSessionScopeResponse` publish no
+  variant, and no `productId` either — only `productSlug`.
+
+This is `APP5-S01` §20 hard-blocker conditions 1 **and** 2 simultaneously: the
+approved design needs a fact no delivered APP3/APP4/APP5 API can provide, and the
+Storefront cannot carry the catalog design-session context into `S01` without a
+new backend contract.
+
+**Routing (Product Owner, 2026-08-16).** `APP5-B07 — Public catalog variant
+selection` is inserted immediately before the `S01` resume. `S01` then resumes
+**unchanged in product scope** — both branches, as `APP5-D01` approved them.
+Explicitly refused as unblocks: shipping a COP-only `S01`, narrowing `S01` to COP
+permanently, relaxing `productVariantId` to optional, deriving a default variant
+without authority, giving `publicProductPlacementGet` variant semantics, and
+mutating the APP3 Design Session to carry a fact it never owned.
+
+`APP5-B07`, like `APP5-B06`, is an **addition** to the eight-operation APP5
+budget rather than a re-slice of it. The budget was for the *request* lane;
+neither Admin private asset delivery nor public variant selection existed in it,
+and recording them as additions keeps the original estimate honest instead of
+retrofitting it. A future phase-entry audit should note the pattern behind both:
+`APP5-R00` inventoried the tables an authority needed but not the **reads a
+frontend would need to satisfy it**, which is how `B06` and `B07` were each found
+by the checkpoint that first tried to consume them.
