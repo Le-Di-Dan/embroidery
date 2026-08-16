@@ -5,7 +5,9 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
 import type { AssetInspectionOutcome } from '@embroidery/database';
-import { and, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+
+import { CHALLENGE_RESERVED_ASSET_STATES } from '../../domain/asset-intake.policy';
 
 import type {
   Asset,
@@ -47,6 +49,8 @@ export class DrizzleAssetRepository extends DrizzleRepository implements AssetRe
           // validation pipeline has accepted it (REQ-ASSET-002).
           status: 'UPLOADED',
           uploadedByCustomerId: input.uploadedByCustomerId ?? null,
+          uploadedViaChallengeId: input.intakeProvenance?.challengeId ?? null,
+          intakeExpiresAt: input.intakeProvenance?.expiresAt ?? null,
         })
         .returning();
 
@@ -80,6 +84,8 @@ export class DrizzleAssetRepository extends DrizzleRepository implements AssetRe
           checksum: input.checksum ?? null,
           status: 'UPLOADED',
           uploadedByCustomerId: input.uploadedByCustomerId ?? null,
+          uploadedViaChallengeId: input.intakeProvenance?.challengeId ?? null,
+          intakeExpiresAt: input.intakeProvenance?.expiresAt ?? null,
         })
         .onConflictDoNothing({ target: assets.id })
         .returning();
@@ -280,6 +286,27 @@ export class DrizzleAssetRepository extends DrizzleRepository implements AssetRe
         .where(and(eq(assetDerivatives.assetId, id), ne(assetDerivatives.status, 'FAILED')));
 
       return toAsset(row);
+    });
+  }
+
+  async countChallengeReservedSlots(challengeId: string): Promise<number> {
+    return this.run('countChallengeReservedSlots', async () => {
+      // The transaction assertion is not ceremony: the count is meaningful only
+      // while the caller holds the challenge row lock, and a count taken outside
+      // one would be a number that was true a moment ago.
+      const tx = this.requireTransaction('countChallengeReservedSlots');
+
+      const [row] = await tx
+        .select({ n: count() })
+        .from(assets)
+        .where(
+          and(
+            eq(assets.uploadedViaChallengeId, challengeId),
+            isNull(assets.deletedAt),
+            inArray(assets.status, [...CHALLENGE_RESERVED_ASSET_STATES]),
+          ),
+        );
+      return row?.n ?? 0;
     });
   }
 

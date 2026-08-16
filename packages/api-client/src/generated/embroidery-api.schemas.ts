@@ -1013,6 +1013,65 @@ export interface CustomRequestAssetBinding {
   role: CustomRequestAssetBindingRole;
 }
 
+export type CustomRequestAssetIntakeResponseMediaType =
+  (typeof CustomRequestAssetIntakeResponseMediaType)[keyof typeof CustomRequestAssetIntakeResponseMediaType];
+
+export const CustomRequestAssetIntakeResponseMediaType = {
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/webp': 'image/webp',
+} as const;
+
+export type CustomRequestAssetIntakeResponseRole =
+  (typeof CustomRequestAssetIntakeResponseRole)[keyof typeof CustomRequestAssetIntakeResponseRole];
+
+export const CustomRequestAssetIntakeResponseRole = {
+  COP_IMAGE: 'COP_IMAGE',
+  REFERENCE: 'REFERENCE',
+} as const;
+
+/**
+ * Inspection has been queued, not completed. The file is not yet usable in a submission.
+ */
+export type CustomRequestAssetIntakeResponseState =
+  (typeof CustomRequestAssetIntakeResponseState)[keyof typeof CustomRequestAssetIntakeResponseState];
+
+export const CustomRequestAssetIntakeResponseState = {
+  INSPECTING: 'INSPECTING',
+} as const;
+
+export interface CustomRequestAssetIntakeResponse {
+  /** Supply this id in the submission once its state reaches ACCEPTED. */
+  assetId: string;
+  /** Server-measured size in bytes. */
+  byteSize: number;
+  mediaType: CustomRequestAssetIntakeResponseMediaType;
+  role: CustomRequestAssetIntakeResponseRole;
+  /** Inspection has been queued, not completed. The file is not yet usable in a submission. */
+  state: CustomRequestAssetIntakeResponseState;
+}
+
+/**
+ * REJECTED is terminal: the file failed inspection or has been removed, and re-uploading is the only way forward.
+ */
+export type CustomRequestAssetStatusResponseState =
+  (typeof CustomRequestAssetStatusResponseState)[keyof typeof CustomRequestAssetStatusResponseState];
+
+export const CustomRequestAssetStatusResponseState = {
+  UPLOADED: 'UPLOADED',
+  INSPECTING: 'INSPECTING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface CustomRequestAssetStatusResponse {
+  assetId: string;
+  /** True exactly when this id would be accepted in a custom-request submission. */
+  bindable: boolean;
+  /** REJECTED is terminal: the file failed inspection or has been removed, and re-uploading is the only way forward. */
+  state: CustomRequestAssetStatusResponseState;
+}
+
 export interface CustomRequestCatalogSubject {
   /**
    * The ACTIVE Design Session to submit. Authorized by its own session cookie, not by this id.
@@ -2137,6 +2196,34 @@ export type AdminProductPublish200 = ApiSuccessResponse & {
 
 export type AdminProductUnpublish200 = ApiSuccessResponse & {
   data: AdminProductPublicationResponse;
+};
+
+export type PublicCustomRequestAssetUploadParams = {
+  /**
+   * COP_IMAGE for a photograph of the customer-owned garment, REFERENCE for supporting imagery. No other role is available.
+   */
+  role: PublicCustomRequestAssetUploadRole;
+};
+
+export type PublicCustomRequestAssetUploadRole =
+  (typeof PublicCustomRequestAssetUploadRole)[keyof typeof PublicCustomRequestAssetUploadRole];
+
+export const PublicCustomRequestAssetUploadRole = {
+  COP_IMAGE: 'COP_IMAGE',
+  REFERENCE: 'REFERENCE',
+} as const;
+
+export type PublicCustomRequestAssetUploadBody = {
+  /** Exactly one image/png, image/jpeg, image/webp image of at most 10485760 bytes. The declared type must match the file signature; SVG, GIF and every other type is refused. */
+  file: Blob;
+};
+
+export type PublicCustomRequestAssetUpload202 = ApiSuccessResponse & {
+  data: CustomRequestAssetIntakeResponse;
+};
+
+export type PublicCustomRequestAssetStatus200 = ApiSuccessResponse & {
+  data: CustomRequestAssetStatusResponse;
 };
 
 export type PublicCustomRequestSubmit201 = ApiSuccessResponse & {

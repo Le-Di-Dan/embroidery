@@ -217,6 +217,21 @@ export class DrizzleVerificationChallengeRepository
     });
   }
 
+  async lockById(id: ChallengeId): Promise<VerificationChallenge | undefined> {
+    return this.run('lockById', async () => {
+      // A `FOR UPDATE` outside a transaction is released the moment the
+      // statement ends, so it would look like serialization and provide none.
+      const tx = this.requireTransaction('lockById');
+      const [row] = await tx
+        .select()
+        .from(contactVerificationChallenges)
+        .where(eq(contactVerificationChallenges.id, id))
+        .limit(1)
+        .for('update');
+      return row === undefined ? undefined : toDomain(row);
+    });
+  }
+
   async findCodeDigest(id: ChallengeId): Promise<string | undefined> {
     return this.run('findCodeDigest', async () => {
       // Selects the one column, so a digest never rides along inside a row this

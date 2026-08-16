@@ -18,6 +18,7 @@ import { HealthModule } from '../modules/health/health.module';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
+import { CustomRequestIntakeModule } from '../modules/order/custom-request-intake.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
@@ -105,6 +106,11 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // order cannot shadow anything: `public/custom-requests` is a base path no
     // other module claims.
     CustomRequestSubmissionModule,
+    // APP5-B02 — the pre-submission customer attachment lane. Registered after
+    // the submission module because it exists to feed it, though not for
+    // wiring: `public/custom-request-intake` is a base path no other module
+    // claims, and the two share no provider instance.
+    CustomRequestIntakeModule,
   ],
 })
 export class AppModule {}

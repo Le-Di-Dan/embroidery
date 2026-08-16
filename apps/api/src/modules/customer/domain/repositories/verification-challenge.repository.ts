@@ -122,6 +122,25 @@ export interface VerificationChallengeRepository {
   findById(id: ChallengeId): Promise<VerificationChallenge | undefined>;
 
   /**
+   * Reads one challenge and holds its row for the rest of the transaction
+   * (`SELECT … FOR UPDATE`). Added by `APP5-B02`.
+   *
+   * `lockTarget` above cannot serve this: it is an advisory lock over a
+   * *(kind, value, purpose)* target and exists because a new challenge has no
+   * row to lock yet. `APP5-B02` has the opposite problem — the challenge
+   * already exists and is the natural arbiter of its own upload quota, so the
+   * row itself is the thing two concurrent uploads must queue behind. Using the
+   * advisory lock here would serialize issuance and intake against each other
+   * for no reason, and would still not be the row an intake decision is about.
+   *
+   * `FOR UPDATE` rather than `FOR SHARE`: two uploads both counting reserved
+   * slots must not proceed concurrently, and a share lock permits exactly that.
+   *
+   * @requiresTransaction
+   */
+  lockById(id: ChallengeId): Promise<VerificationChallenge | undefined>;
+
+  /**
    * The stored `code_hash` of one challenge — nothing else.
    *
    * Added by `APP4-B04`, and deliberately **not** a field on

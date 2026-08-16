@@ -91,8 +91,8 @@ with the three scope corrections noted below.
 | `APP5-D01` | `COMPLETE` | One APP5 design package registered — 65 nodes, `FIGMA_DESIGN_INDEX.md` §4.11; Product Owner approved 2026-08-16 under `FIG-APPROVAL-APP5-D01-PO-001` |
 | `APP5-B01` | `COMPLETE` | Request submission backend — `POST /api/public/custom-requests` (`publicCustomRequest_submit`); TR-LC11-01 in one transaction |
 | `APP5-DB01` | `COMPLETE` | Intake provenance persistence — migration `0035_add_app5_intake_provenance`: `assets.uploaded_via_challenge_id` (REL-106, `ON DELETE SET NULL`) + `assets.intake_expires_at`, CST-127/CST-128, quota and due-time indexes. See [`../reports/APP5-DB01-COMPLETION-REPORT.md`](../reports/APP5-DB01-COMPLETION-REPORT.md) |
-| `APP5-B02` | `INCOMPLETE` | **Next — resume customer attachment intake.** Unblocked by `APP5-DB01`; the entry blocker `APP5_B02_PERSISTENT_INTAKE_PROVENANCE_REQUIRED` is closed. See [`../reports/APP5-B02-COMPLETION-REPORT.md`](../reports/APP5-B02-COMPLETION-REPORT.md) for the reusable pipeline map |
-| `APP5-B03` | `INCOMPLETE` | Grant-scoped request status read; 1 endpoint |
+| `APP5-B02` | `COMPLETE` | Customer attachment intake — `POST`/`GET /api/public/custom-request-intake/challenges/{challengeId}/assets…` (`publicCustomRequestAsset_upload`, `_status`); challenge-scoped reservation quota and the APP5 orphan sweep. See [`../reports/APP5-B02-COMPLETION-REPORT.md`](../reports/APP5-B02-COMPLETION-REPORT.md) |
+| `APP5-B03` | `INCOMPLETE` | **Next** — grant-scoped request status read; 1 endpoint |
 | `APP5-B04` | `INCOMPLETE` | Admin queue & detail; 2 endpoints |
 | `APP5-B05` | `INCOMPLETE` | Admin notes & guarded transitions; 2 endpoints |
 | `APP5-S01` | `INCOMPLETE` | Request creation & submission screen (absorbs the COP form) |

@@ -47,6 +47,10 @@ import type {
   CreateProductBody,
   HealthStatusResponse,
   IssueVerificationChallengeBody,
+  PublicCustomRequestAssetStatus200,
+  PublicCustomRequestAssetUpload202,
+  PublicCustomRequestAssetUploadBody,
+  PublicCustomRequestAssetUploadParams,
   PublicCustomRequestSubmit201,
   PublicDesignSessionAssetCreate202,
   PublicDesignSessionAssetCreateBody,
@@ -610,6 +614,49 @@ export const healthReadiness = (
 };
 
 /**
+ * Streams a single PNG, JPEG or WebP image of at most 10485760 bytes into private storage and queues inspection. Authorized by a verified, unexpired SUBMISSION challenge that has not yet produced a request. The image is never public and is not attached to anything until the request is submitted. Idempotent: repeating the request with the same Idempotency-Key and the same file returns the original result and writes no second object or asset.
+ * @summary Upload one image as custom-request evidence
+ */
+export const publicCustomRequestAssetUpload = (
+  challengeId: string,
+  publicCustomRequestAssetUploadBody: PublicCustomRequestAssetUploadBody,
+  params: PublicCustomRequestAssetUploadParams,
+  options?: SecondParameter<typeof apiRequest<PublicCustomRequestAssetUpload202>>,
+) => {
+  const formData = new FormData();
+  formData.append(`file`, publicCustomRequestAssetUploadBody.file);
+
+  return apiRequest<PublicCustomRequestAssetUpload202>(
+    {
+      url: `/api/public/custom-request-intake/challenges/${challengeId}/assets`,
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      data: formData,
+      params,
+    },
+    options,
+  );
+};
+
+/**
+ * Reports how far inspection has got for one image uploaded under this challenge, and whether it may be referenced in a submission. Answers only for an attachment uploaded by this challenge; anything else is indistinguishable from not existing.
+ * @summary Read the inspection state of one uploaded attachment
+ */
+export const publicCustomRequestAssetStatus = (
+  challengeId: string,
+  assetId: string,
+  options?: SecondParameter<typeof apiRequest<PublicCustomRequestAssetStatus200>>,
+) => {
+  return apiRequest<PublicCustomRequestAssetStatus200>(
+    {
+      url: `/api/public/custom-request-intake/challenges/${challengeId}/assets/${assetId}`,
+      method: 'GET',
+    },
+    options,
+  );
+};
+
+/**
  * Creates one custom request at NEW from a verified SUBMISSION challenge. Exactly one subject is accepted: a catalog product with its ACTIVE design session, or a customer-owned product with at least one accepted COP_IMAGE. The challenge is also the idempotency scope — re-sending the same body replays the same result, and re-using it for a different body is refused. The secure link that opens the request is delivered to the verified contact and never returned here.
  * @summary Submit a custom request
  */
@@ -1063,6 +1110,12 @@ export type AdminSecureGrantRevokeResult = NonNullable<
 >;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
+export type PublicCustomRequestAssetUploadResult = NonNullable<
+  Awaited<ReturnType<typeof publicCustomRequestAssetUpload>>
+>;
+export type PublicCustomRequestAssetStatusResult = NonNullable<
+  Awaited<ReturnType<typeof publicCustomRequestAssetStatus>>
+>;
 export type PublicCustomRequestSubmitResult = NonNullable<
   Awaited<ReturnType<typeof publicCustomRequestSubmit>>
 >;

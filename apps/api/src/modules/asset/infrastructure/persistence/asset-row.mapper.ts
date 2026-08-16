@@ -34,6 +34,8 @@ export function toAsset(row: AssetRow): Asset {
     checksum: row.checksum ?? undefined,
     status: row.status as AssetState,
     uploadedByCustomerId: row.uploadedByCustomerId ?? undefined,
+    uploadedViaChallengeId: row.uploadedViaChallengeId ?? undefined,
+    intakeExpiresAt: row.intakeExpiresAt ?? undefined,
     deletedAt: row.deletedAt ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

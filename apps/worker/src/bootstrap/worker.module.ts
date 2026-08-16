@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
 import { AssetInspectionModule } from '../jobs/asset-inspection/asset-inspection.module';
+import { IntakeCleanupModule } from '../jobs/app5-intake-cleanup/intake-cleanup.module';
 import { AssetNormalizationModule } from '../jobs/asset-normalization/asset-normalization.module';
 import { NotificationDeliveryModule } from '../jobs/notification-delivery/notification-delivery.module';
 import { WorkerRuntimeModule } from '../runtime/worker-runtime.module';
@@ -40,6 +41,12 @@ import { WorkerObjectStorageModule } from '../storage/object-storage.module';
     // sends, which is the fail-closed state that keeps a secret undelivered
     // rather than dead-lettered.
     NotificationDeliveryModule,
+    // `IntakeCleanupModule` (APP5-B02) is the first capability here that is
+    // **not** an outbox handler: an expired, unbound customer upload produces
+    // no event to claim, which is precisely why it needs a sweep. It shares the
+    // clock and the storage client but registers nothing with the handler
+    // registry, so it cannot affect what the poll loop claims.
+    IntakeCleanupModule,
   ],
 })
 export class WorkerModule {}

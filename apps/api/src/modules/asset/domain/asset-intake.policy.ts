@@ -54,3 +54,16 @@ export const ASSET_INSPECTION_EVENT_TYPE = 'asset.inspection.requested';
 
 /** Payload schema version of that event. */
 export const ASSET_INSPECTION_PAYLOAD_VERSION = 1;
+
+/**
+ * The LC-06 states in which an asset still owns, or may still consume, an
+ * `ACCEPTED` outcome (`APP5-B02` §6.1).
+ *
+ * A fact about the asset lifecycle rather than about APP5, which is why it
+ * lives here: `UPLOADED` and `INSPECTING` have not been decided yet and can
+ * still become `ACCEPTED`, so any capacity rule expressed in accepted rows must
+ * count them too. `REJECTED`, `DELETION_PENDING` and `DELETED` are terminal in
+ * the direction that matters — none of them can reach `ACCEPTED` again — so
+ * they release whatever capacity they held.
+ */
+export const CHALLENGE_RESERVED_ASSET_STATES = ['UPLOADED', 'INSPECTING', 'ACCEPTED'] as const;

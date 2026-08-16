@@ -1,332 +1,431 @@
-# APP5-B02 — Customer Attachment Intake
+# APP5-B02 — Completion report
 
-## 1. Verdict
+**Checkpoint.** `APP5-B02` — Customer Attachment Intake. The pre-submission
+upload lane APP5 needs before a request can carry evidence.
+
+**Verdict.**
 
 ```text
-BLOCKED — APP5_B02_PERSISTENT_INTAKE_PROVENANCE_REQUIRED
+APP5-B02 = COMPLETE
 ```
 
-The upload lane itself is buildable from existing components — `IMP-D048`'s
-streamed multipart path, the media-signature and decode controls, the asset
-state machine and the inspection outbox handoff are all present and reusable
-without modification. What is **not** representable in the current schema is the
-one fact the locked `APP5-G01` §7 abuse policy is written in terms of: **which
-verification challenge a customer upload was made under**.
+Human review owns acceptance. Nothing is pushed.
 
-Two independent §5/§9 requirements of this checkpoint depend on that single
-missing fact:
-
-1. **`G01-D13` — max 20 accepted uploads per challenge.** There is no persisted
-   challenge-scoped counter, and no existing column, index or platform store
-   from which a challenge-scoped count can be derived.
-2. **Pre-submission orphan lifecycle.** `G01` §7 states that unbound B02 assets
-   *"expire with their challenge's TTL class"*. An `assets` row carries no
-   challenge reference and no intake expiry, so no sweep — the existing one
-   included — can identify a B02 orphan or decide when it is due.
-
-Per `docs/implementation/08-DATABASE-CHANGE-CONTROL.md` §3, the dependent
-checkpoint stops and a database change request is raised rather than a migration
-being smuggled into a feature checkpoint. **No runtime code, schema, migration,
-contract, generated artifact or Figma node was changed by this checkpoint.**
+> This file supersedes the blocker report of the same name. The earlier run
+> stopped as `APP5_B02_PERSISTENT_INTAKE_PROVENANCE_REQUIRED`; that blocker was
+> closed by `APP5-DB01` and the analysis that produced it is preserved in
+> `APP5-DB01-COMPLETION-REPORT.md` §1.
 
 ---
 
-## 2. Baseline and authority
+## 1. Baseline
 
-| Item | Value |
-| --- | --- |
+| | |
+|---|---|
 | Branch | `production` |
-| HEAD at entry | `0adc7fc` |
+| Entry `HEAD` | `76d1f8877c30c4706ce43a44ba8612c1b4945d6c` (`docs(app5): record the APP5-DB01 commit hash in its report`) |
 | Working tree at entry | clean |
-| HEAD at exit | `0adc7fc` (documentation commit only — §10) |
-| Governing authority | `docs/implementation/audits/APP5_G01_SUBMISSION_MODERATION_AUTHORITY.md` §6, §7 |
-| B01 baseline | `POST /api/public/custom-requests` — `publicCustomRequest_submit`, delivered `a28c3cc` |
-| Latest migration | `0034_add_app3_placement_and_derivative_authority` |
-| Schema / migrations | untouched |
-| Generated artifacts | untouched |
-| Figma | not opened, not read live, not modified |
+| Blocker closed by | `APP5-DB01`, commit `f661da8`, migration `0035_add_app5_intake_provenance` |
+| B01 endpoint baseline | 1 public operation — `POST /api/public/custom-requests` (`publicCustomRequest_submit`) |
 
-### 2.1 Existing intake components audited for reuse
+DB01 delivered `assets.uploaded_via_challenge_id`, `assets.intake_expires_at`,
+CST-127, CST-128, REL-106, `ix_assets__challenge_status__intake_live` and
+`ix_assets__intake_expires_id__live`. None of it was re-audited; all of it is
+consumed.
 
-All of these were read and all are reusable **as-is**; none is the blocker.
+## 2. Endpoint surface
 
-| Component | Path | Verdict |
-| --- | --- | --- |
-| Public streamed session upload (the `IMP-D048` precedent) | `apps/api/src/modules/design/presentation/public-design-session-asset.controller.ts` | reusable shape |
-| Session intake orchestrator | `apps/api/src/modules/design/application/session-asset-intake.service.ts` | reusable shape |
-| Admin intake orchestrator | `apps/api/src/modules/asset/application/asset-intake.service.ts` | reusable shape |
-| Multipart parser | `apps/api/src/modules/asset/infrastructure/http/multipart-upload.parser.ts` | reusable verbatim |
-| Stream validator (size/signature/decode/pixels) | `apps/api/src/modules/asset/infrastructure/http/validated-file.reader.ts` | reusable verbatim |
-| Media signature allowlist | `apps/api/src/modules/asset/domain/media-signature.ts` | reusable verbatim |
-| Tx A / Tx B + inspection dispatch | `apps/api/src/modules/asset/application/upload-transactions.service.ts` | reusable verbatim |
-| Object storage port (no presign operation exists) | `apps/api/src/modules/asset/infrastructure/storage/object-storage.provider.ts` | reusable verbatim |
-| Asset ownership projection | `apps/api/src/modules/asset/domain/repositories/asset.repository.ts` — `uploadedByCustomerId` | reusable verbatim |
-| B01 binder expectations | `apps/api/src/modules/order/application/request-asset-binder.ts` | satisfied by the above |
+Two public operations, both addressed *through* the challenge that authorizes
+them:
 
----
+| Method | Route | Operation id |
+|---|---|---|
+| `POST` | `/api/public/custom-request-intake/challenges/{challengeId}/assets?role=…` | `publicCustomRequestAsset_upload` |
+| `GET` | `/api/public/custom-request-intake/challenges/{challengeId}/assets/{assetId}` | `publicCustomRequestAsset_status` |
 
-## 3. Persistence-capability preflight (§5) — the blocker in detail
+**Why two and not one.** The upload response is necessarily written before the
+inspector has run — Tx B commits `INSPECTING`, and inspection is asynchronous by
+architecture. `APP5-B01` binds only `ACCEPTED` assets. Without the status read a
+customer's client has exactly two options: submit and be refused, or guess. The
+second operation is the smallest thing that removes that, and it is not a list,
+not a delete and not a general asset API.
 
-### 3.1 The exact missing persisted fact
+**Public inputs, in full:** the challenge id (path), the role (query), the file
+(one multipart part), and `Idempotency-Key` (header). There is no `customerId`,
+`requestId`, `storageKey`, `classification`, `assetKind` or inspection field —
+each is either derived from the challenge or fixed by the lane.
 
-> **A durable, challenge-scoped reference from a customer upload back to the
-> `contact_verification_challenges` row that authorized it**, together with the
-> intake expiry that reference implies.
+`role` travels as a query parameter because it participates in the idempotency
+fingerprint and therefore has to be known *before* the first byte is streamed; a
+trailing multipart field cannot guarantee that, and widening the shared parser to
+carry a third variable field would change a code path two shipped lanes already
+depend on.
 
-Concretely, the natural expression is one nullable provenance column on TBL-022
-beside the two that already exist —
+## 3. Provenance
+
+Written in Tx A, inside the transaction that holds the challenge row lock, from
+the locked row — never from the request:
 
 ```text
-assets.uploaded_by_customer_id   -- exists (REL-033, customers edge)
-assets.uploaded_via_session_id   -- exists (REL-033, design_sessions edge, FK added in 0010)
-assets.uploaded_via_challenge_id -- MISSING
+uploaded_by_customer_id   ← ResolveOrCreateVerifiedCustomer(evidence of the challenge)
+uploaded_via_challenge_id ← the authorizing challenge id
+intake_expires_at         ← that challenge's own expires_at
 ```
 
-— plus the partial index that makes the count and the sweep bounded.
+`RegisterAssetInput` takes them as one optional `intakeProvenance` object rather
+than two independent optionals: CST-128 refuses a challenge id with no expiry, so
+separate fields would let a caller build an input the database is guaranteed to
+reject.
 
-### 3.2 Why each existing mechanism cannot enforce `G01-D13`
+Proved in `request-intake.integration.spec.ts`: the persisted row carries
+`CUSTOMER_UPLOAD` / `CUSTOMER_PRIVATE`, a non-null server-derived customer, the
+exact challenge id, and an `intake_expires_at` **compared against the challenge's
+own column** rather than against a recomputed instant — a second clock is the
+defect `APP4-B03` recorded. `uploaded_via_session_id` stays null, so CST-127's
+other lane is empty by construction.
 
-Every mechanism §5 names as acceptable was examined against the actual code and
-schema, not against expectation.
+## 4. Quota
 
-| Candidate mechanism | Actual state | Why it cannot carry the rule |
-| --- | --- | --- |
-| Provenance already on the asset/intake model | `assets` has `uploaded_by_customer_id` and `uploaded_via_session_id` (`packages/database/src/schema/asset/assets.ts:85-86`) | Customer scope is **not** challenge scope: `CST-007` makes at most one *ISSUED* challenge unique per `(contact_kind, normalized_value, purpose)`, so one customer with an EMAIL and a PHONE contact point can hold two concurrent `VERIFIED` `SUBMISSION` challenges. Counting by customer is the customer-wide weakening §2.6 forbids. The session edge is a real FK to `design_sessions` (migration `0010`) and the COP branch has **no session at all** (`G01` §3) — it cannot hold a challenge id without lying about the column |
-| An existing DB-backed rate/quota record keyed by challenge | The only limiter is `SlidingWindowRateLimiter` (`apps/api/src/platform/rate-limit/sliding-window-rate-limiter.ts`) | Its own header states counters are *"in-memory… reset on restart and are not shared across replicas"*. §5 explicitly forbids an in-memory map and process-local state. No rate-limit or quota **table** exists anywhere in the schema |
-| An existing security/abuse allocation store at challenge scope | `IdempotencyAllocationStore` over `idempotency_records` (`packages/persistence/src/platform/idempotency-allocation.ts`) | The store exposes claim / lock / renew / complete only — `IdempotencyStore` adds claim / complete / release / find. **There is no count, group or scan operation, and the columns cannot support one**: `scope_key` is a SHA-256 digest by construction (`asset/domain/idempotency-key.ts` — `buildScopeKey` hashes `staff:{actor}:{key}`), and `ADR-DB1-017` r1 fixes `operation_namespace` as a constant, not a free string. Making the challenge id countable would mean either storing the live submission credential in clear in a table, or adding a second 20-row slot ledger beside the upload's own record — duplicate state, which §5 forbids |
-| Asset ownership metadata **plus** another persisted authority retaining challenge scope | `contact_verification_challenges` (`packages/database/src/schema/customer/contact-verification-challenges.ts`) | The table has no customer column, no counter, no lockout state and no next-attempt timestamp — its own header records that DB4 stores none and *"none is invented"*. Joining customer → contact point → challenge yields the **set** of a customer's challenges; nothing anywhere records which of them an individual asset came through, so the join cannot attribute an upload to a challenge |
-| `contact_verification_attempts` as the counter | `packages/database/src/schema/customer/contact-verification-attempts.ts` | It is challenge-keyed (`IDX-111`), which is why it was checked. It is nonetheless unusable twice over: its `outcome` is a CHECK-enforced closed set `MATCH \| MISMATCH \| EXPIRED_AT_ENTRY` with no upload member, and these rows **are** the GRD-026 rate-limit window — writing upload rows here would corrupt the OTP failure budget it exists to compute |
-| `custom_request_assets` as a pre-binding ledger | `packages/database/src/schema/ordering/custom-request-assets.ts` | `custom_request_id` is `NOT NULL` with a `restrict` FK. A pre-submission row is unrepresentable, which is the correct design — B02 must not create or bind a request (§20) |
-| `audit_events` as the counter | `packages/database/src/schema/audit/audit-events.ts` | `G01` §9.2 bounds APP5's use of this table to guard-failure abuse signals; it is Tier-B log data, not a quota arbiter, and deriving an enforcement decision from a retention-swept log would be exactly the pretence §5 forbids |
+### 4.1 The reserved-slot set
 
-### 3.3 Why the orphan lifecycle fails on the same fact (§9)
+`UPLOADED`, `INSPECTING`, `ACCEPTED` — declared once as
+`CHALLENGE_RESERVED_ASSET_STATES` in the asset policy, because it is a fact about
+LC-06 rather than about APP5.
 
-`G01` §7 defers orphan cleanup to *"the existing scheduled sweep (SE-015) with
-two-phase binary deletion (SE-014)"* and instructs that **APP5 adds no new
-sweep**. Two findings:
+Counting only `ACCEPTED` is unsound and the suite proves it: twenty `INSPECTING`
+rows can all become `ACCEPTED` afterwards, so a check that ignored them would
+admit a twenty-first upload and leave the inspection worker to discover the
+breach with no way to act on it. The invariant enforced is therefore
 
-- **No orphan sweep exists.** The worker ships exactly three jobs —
-  `asset-inspection`, `asset-normalization`, `notification-delivery`
-  (`apps/worker/src/jobs/`). SE-014/SE-015 are specified but not implemented.
-- More importantly, **a future sweep still could not identify a B02 orphan.**
-  With no challenge reference and no intake expiry on the asset row, an unbound
-  `CUSTOMER_UPLOAD` / `CUSTOMER_PRIVATE` asset is indistinguishable from one
-  whose submission is legitimately still in progress. The sweep needs the same
-  column the quota needs.
+```text
+reserved slots per challenge ≤ 20  ⇒  eventual ACCEPTED count ≤ 20
+```
 
-Per §9's instruction, this is reported under the §5 blocker discipline rather
-than resolved by inventing ungoverned cleanup.
+which is strictly stronger than `G01-D13`'s maximum, never weaker.
+`REJECTED`, `DELETION_PENDING` and `DELETED` release their slot — none can reach
+`ACCEPTED` again, and holding capacity against a customer whose file was refused
+would lock them out of their own request.
 
-### 3.4 What is **not** the blocker
+### 4.2 Serialization
 
-Stated explicitly, because §5 rules these out as blockers:
+`ChallengeIntakeAuthorizer.authorizeAndReserve` takes `SELECT … FOR UPDATE` on
+the challenge row (`VerificationChallengeRepository.lockById`, added here),
+re-validates state/purpose/expiry/consumption, then counts through
+`ix_assets__challenge_status__intake_live`. The caller's insert happens under
+that same lock.
 
-- No controller, use case, DTO, module wiring or test file is missing in a way
-  that matters — those are B02's own work and were never the obstacle.
-- Customer **ownership** provenance is fully available: `uploaded_by_customer_id`
-  exists on TBL-022 with its `REL-033` FK, is already accepted by
-  `RegisterAssetInput`, and is already read by B01's `RequestAssetBinder`. §7 of
-  the checkpoint brief is satisfiable today.
-- The media policy, byte/pixel limits, signature and decode controls, the
-  private classification, the inspection handoff and the no-presign transport
-  are all reusable without a single change.
+The challenge row is the lock because the quota is a count, and a count is
+read-then-write. There is no asset row to lock — the row that would breach the
+limit is the one being created — and a counter column would be a second source of
+truth for something the assets already say. `lockTarget` (the APP4 advisory lock)
+is deliberately not reused: it covers a *(kind, value, purpose)* target and exists
+because a new challenge has no row yet; here the row exists and is the natural
+arbiter.
 
-Had `G01-D13` been a customer-scoped or a global bound, B02 would have shipped.
-It is challenge-scoped, and that scope has no persistent home.
+**The check runs twice and only the second one decides.** The pre-stream check
+refuses a hopeless caller before ten megabytes are uploaded; it commits and
+releases its lock before any byte is read, so two callers can both pass it. Tx A
+re-runs it under the lock that inserts the row. That is the arbiter, and it is
+what the race test exercises.
 
-### 3.5 Reconciliation with `APP5-R00`
+One consequence is named rather than hidden: Tx A can refuse *after* the object
+exists. The service then deletes that object — it allocated the key moments
+earlier, nothing references it, and `deleteObject` is idempotent. An orphan with
+no asset row is invisible to the sweep, which finds objects only through rows.
 
-`APP5-R00` recorded the baseline expectation `NO_APP5_MIGRATION expected —
-TBL-037…042 + idempotency_records all exist`. That expectation is **correct for
-what it examined** — every *request-side* table B01 needed does exist, and B01
-shipped with no migration. What R00 did not examine, because the policy did not
-exist yet, was the *intake-lane* provenance that `APP5-G01` §7 subsequently
-locked. `G01` is an authority checkpoint that changed no code and ran no schema
-audit; it set a challenge-scoped bound without confirming a challenge↔asset link
-exists. B02 is the first checkpoint in a position to discover that, and does.
+### 4.3 Evidence
 
-This is a genuine persistence gap under `08-DATABASE-CHANGE-CONTROL.md` §3 step
-5 — **not** a defect in a delivered component and **not** an implementation
-misunderstanding.
+| Claim | Result |
+|---|---|
+| 19 slots held → the twentieth upload is admitted | **PASS** (live count 20 after) |
+| 20 slots held → refused as `REQUEST_INTAKE_QUOTA_REACHED`, **no object written** | **PASS** |
+| 20 `INSPECTING` rows also refuse a twenty-first | **PASS** |
+| a `REJECTED` row releases its slot and the next upload succeeds | **PASS** |
+| a full challenge does not exhaust a different challenge's capacity | **PASS** |
+| two concurrent attempts for the final slot → exactly **one** fulfilled, live count 20, loser gets `REQUEST_INTAKE_QUOTA_REACHED` | **PASS** |
 
----
+The race uses two distinct idempotency keys, so the idempotency arbiter cannot be
+what separates them — the only thing between those two callers and a twenty-first
+reservation is the challenge row lock. The assertion is on the resulting row
+count, not on which caller won: either winner is correct, and asserting one would
+be a flaky test of scheduling.
 
-## 4. Smallest database checkpoint required
+## 5. Upload pipeline
 
-Recommended as **`APP5-DB01`**, following the `APP2-DB01` / `APP3-DB01`
-precedent in the application-era migration log, as its own checkpoint and not
-combined with the feature API implementation (`08-DATABASE-CHANGE-CONTROL.md`
-§4).
+Reused unchanged from `APP2-B01` / `APP3-B06B`; no parallel intake stack, no
+presign, no browser storage credential, no second "complete" call:
 
-| Element | Proposal |
-| --- | --- |
-| Migration | one forward-only migration, `0035_add_app5_intake_provenance` |
-| Column | `assets.uploaded_via_challenge_id` — nullable `idReference`, FK → `contact_verification_challenges.id`, `ON DELETE SET NULL` (the challenge family is hard-TTL-deleted, so this matches the existing `REL-007` and `uploaded_via_session_id` precedents exactly) |
-| Index | one partial index on `(uploaded_via_challenge_id)` restricted to live intake states, serving both the quota count and the orphan sweep |
-| Optional second column | an intake expiry instant, if DB review prefers the orphan due-date to be materialised rather than joined through the challenge |
-| Documentation | `DB4_COLUMN_DICTIONARY.md` (new `COL-TBL022-*` row), `DB4_TABLE_CATALOG.md` TBL-022, the `REL-033` relationship note, and the application-era migration log |
-| Tests | fresh install, upgrade path, no-op/drift, FK and index behaviour, per §4 of the standard |
-| Handoff | unblocks `APP5-B02`; nothing else is waiting on it |
+```text
+parse multipart (openMultipartUpload, REQUEST_INTAKE_LANE)
+  → allowlist the declared type (assertAcceptedMediaType)
+  → durable allocation claim commits            ← before any file byte is read
+  → stream through PassThrough into private storage
+      while consumeValidatedFile counts, hashes and verifies the signature
+  → Tx A: lock challenge, re-authorize, count slots, registerOrRecover (UPLOADED)
+  → Tx B: beginInspection (INSPECTING) + asset.inspection.requested + complete claim
+  → inspector decides ACCEPTED / REJECTED
+```
 
-Two properties this buys that no alternative does: the quota becomes an indexed
-`count(*)` at exact challenge scope that can be taken under the challenge row's
-lock (closing the check-then-act race a derived count cannot), and the orphan
-sweep gains the anchor `G01` §7 already promised it.
+The one deliberate difference from the Session lane: **no normalization event**.
+A customer's evidence photograph is never rendered into a design, so requesting a
+derivative for it would be work with no consumer. Asserted as a count of zero.
 
-**A migration was not written, staged or smuggled into this checkpoint.** The
-proposal above is a change request for review, not an applied change.
+The asset is never marked `ACCEPTED` by intake, and no scanner is called
+synchronously. `state` in the upload response is `INSPECTING` because that is what
+Tx B just committed, not because it is a placeholder.
 
----
+## 6. Cleanup
 
-## 5. Endpoints
+**Owner.** `apps/worker/src/jobs/app5-intake-cleanup/` — `IntakeCleanupUseCase`
+driven by `IntakeCleanupRuntimeService`, a sequential loop on a 300 s interval
+with an abortable sleep and a batch of 100. It registers **no** handler: expiry
+produces no outbox event, which is precisely why a sweep is needed.
 
-**None.** No route, controller, DTO or module was added. The intended surface —
-one streamed multipart operation, with a status read only if the asynchronous
-inspection model required it — was not created, because it cannot be published
-without the enforcement §2.6 makes a precondition of publishing it.
+**Eligibility** (`markExpiredForDeletion`), all required:
 
----
+- `intake_expires_at` set and in the past;
+- live `CUSTOMER_UPLOAD` / `CUSTOMER_PRIVATE`;
+- not already `DELETION_PENDING` or `DELETED`;
+- `NOT EXISTS` a `custom_request_assets` row for the asset.
 
-## 6. Upload pipeline map (as audited)
+`uploaded_via_challenge_id` is deliberately **not** part of eligibility. REL-106
+is `ON DELETE SET NULL` over a hard-TTL-deleted parent, so requiring it would make
+every asset ineligible at exactly the moment its challenge was swept — the moment
+cleanup becomes necessary. The index used is
+`ix_assets__intake_expires_id__live`, whose key order the query's `ORDER BY`
+matches; `FOR UPDATE SKIP LOCKED` lets two replicas divide the backlog.
 
-Recorded so the unblocked run does not re-derive it. Every row is an existing
-component; the two blocked rows are the checkpoint.
+**Two-phase deletion**, the schema's own contract (ADR-DB1-011):
 
-| Concern | Reused / new owner | State |
-| --- | --- | --- |
-| challenge authorization | `VerificationChallengeRepository` + `submit-verification-attempt` identity path (APP4) | available |
-| **quota (20 / challenge)** | — | **BLOCKED — no persisted challenge-scoped counter** |
-| stream validation | `consumeValidatedFile` + `assertAcceptedMediaType` | reusable verbatim |
-| storage | `ObjectStoragePort.putObjectStream` (no presign operation exists on the port) | reusable verbatim |
-| asset row | `AssetRepository.registerOrRecover` (Tx A) | reusable verbatim |
-| ownership | `RegisterAssetInput.uploadedByCustomerId` → `assets.uploaded_by_customer_id` | available |
-| inspection dispatch | `UploadTransactionsService.commitInspectionHandoff` (Tx B) → outbox → `asset-inspection` worker | reusable verbatim |
-| state read | `AssetRepository.findScoped` | available |
-| **orphan cleanup** | SE-014 / SE-015 | **BLOCKED — not implemented, and cannot identify a B02 orphan without the same column** |
+```text
+phase 1  status = DELETION_PENDING, deletion_requested_at stamped   (DB only)
+phase 2  deleteObject → then deleted_at stamped, status = DELETED
+```
 
----
+The object-store call sits *between* two transactions, never inside one: at batch
+100 a stalled bucket inside a transaction is how a slow store becomes a database
+incident. A crash between the call and the write leaves a pending row whose object
+is already gone, which is harmless because `deleteObject` is idempotent.
 
-## 7. G01 compliance matrix
+| Case | Result |
+|---|---|
+| expired + unbound → `DELETED`, object deleted, reason recorded | **PASS** |
+| not expired → untouched | **PASS** |
+| request-bound → untouched even when expired | **PASS** |
+| `CATALOG_MEDIA` / `PRODUCTION_FILE` lanes → untouched | **PASS** |
+| no `intake_expires_at` (every APP1–APP4 asset) → untouched | **PASS** |
+| **challenge hard-deleted, `uploaded_via_challenge_id` now NULL** → still found and swept | **PASS** |
+| store refuses → holds at `DELETION_PENDING`, `deleted_at` still null, next pass finishes it | **PASS** |
+| second pass over a swept row → no-op | **PASS** |
 
-| `G01` §7 control | Satisfiable with today's repository? |
-| --- | --- |
-| Verified, unexpired, `SUBMISSION`-purpose challenge required | yes |
-| No customer account/session introduced | yes |
-| No client-supplied `customerId` | yes |
-| Streamed multipart through the API | yes |
-| No presign / storage credential / upload token | yes — `ObjectStoragePort` exposes no presign operation |
-| Role allowlist `COP_IMAGE` / `REFERENCE`; `ATTACHMENT` refused | yes |
-| JPEG / PNG / WebP only, SVG refused, declared MIME never trusted | yes |
-| 10 MiB / 4096×4096 / 16,777,216 pixels | yes |
-| `CUSTOMER_UPLOAD` + `CUSTOMER_PRIVATE`, never publicly delivered | yes |
-| Not bindable until inspection reaches `ACCEPTED` | yes |
-| Bounded rejection disclosure | yes |
-| No post-submission mutation | yes |
-| **20 accepted uploads per challenge** | **no — §3** |
-| **Orphan expiry at the challenge's TTL class** | **no — §3.3** |
+**This is not SE-014/SE-015.** It sweeps exactly the lane `APP5-B02` created.
+Session assets, catalog media, production files and every other retention
+obligation remain unimplemented — see §12.
 
-Thirteen of fifteen controls are already met by components in the tree. The two
-that are not are the two that need the missing fact, and neither can be claimed
-without pretending.
+## 7. B01 interoperability
 
----
+```text
+B02 upload (role = COP_IMAGE)
+  → asset INSPECTING with full provenance
+  → inspector marks ACCEPTED
+  → SubmitCustomRequestUseCase (real TR-LC11-01, customer-owned-product branch)
+  → custom_request_assets row: (request, asset, COP_IMAGE)
+```
 
-## 8. B01 interoperability
+**PASS.** The COP branch was chosen deliberately: `G01-D10` requires at least one
+`COP_IMAGE`, and until this checkpoint nothing in the system could produce one —
+the COP journey was unsubmittable end to end. That is the gap closed.
 
-Not demonstrated, and deliberately not simulated. The proof §23.7 asks for —
-B02 upload → inspection `ACCEPTED` → B01 submission → asset bound — requires a
-B02 upload to exist. Fabricating the asset row directly and calling that a B02
-interoperability proof would be evidence of the fixture, not of the lane.
+Two negatives in the same suite prove the binder is still the authority rather
+than a formality this lane bypassed: an `INSPECTING` asset is refused, and an
+`ACCEPTED` asset uploaded under a *different* challenge is refused (different
+challenge → different resolved customer → `uploadedByCustomerId` mismatch). Both
+leave zero binding rows.
 
-What *is* established by reading `RequestAssetBinder`: the binder requires
-`kind = CUSTOMER_UPLOAD`, `classification = CUSTOMER_PRIVATE`,
-`status = ACCEPTED`, `deletedAt` unset and
-`uploadedByCustomerId === input.customerId`. Every one of those five is
-producible by the intake path audited in §6 once the lane exists, so B01 imposes
-no additional blocker.
+The provenance survives the binding: the bound row still carries its challenge id
+and intake expiry.
 
----
+## 8. Public errors
 
-## 9. Validation ledger
+Four APP5-owned codes, plus `APP2-B01`'s intake codes mapped verbatim rather than
+re-wrapped — re-coding them would produce a second vocabulary for the same
+failures and one of the two would drift.
+
+| Code | Status | Covers |
+|---|---|---|
+| `REQUEST_INTAKE_NOT_AUTHORIZED` | 401 | unknown, wrong purpose, unverified, expired, already submitted |
+| `REQUEST_INTAKE_ROLE_INVALID` | 403 | anything but `COP_IMAGE` / `REFERENCE` |
+| `REQUEST_INTAKE_QUOTA_REACHED` | 409 | the twenty-slot bound |
+| `REQUEST_INTAKE_ASSET_NOT_FOUND` | 404 | unknown / another customer's / another challenge's attachment |
+
+Five authorization causes reach the caller as one answer; distinguishing them
+would confirm that a guessed challenge id exists. A unit test asserts that no
+message matches `/scan|signature|magic|mime|bucket|storage|s3|sql|constraint|ck_|uq_|assets|challenge id|customer id/i`,
+and that the authorization message does not say *not found*, *unknown*, *expired*
+or *already*. `QUOTA_REACHED` is 409 rather than 429 because a client that backed
+off and retried would never succeed.
+
+## 9. Focused validation ledger
 
 | Command | Impact reason | Result | Reruns |
-| --- | --- | --- | ---: |
-| *(none)* | No runtime, test, contract or generated file was changed, so no validation is justified under `VALIDATION_GOVERNANCE.md` §3 | n/a | 0 |
+|---|---|---|---:|
+| `pnpm --filter @embroidery/api test -- request-intake` | the four suites created here | **48/48**, 4 suites | 4 |
+| `pnpm --filter @embroidery/worker test -- intake-cleanup` | the cleanup suite created here | **8/8** | 2 |
+| `pnpm --filter @embroidery/api openapi:generate` | the public surface changed | 51 paths / 56 operations / 109 schemas | 2 |
+| `pnpm --filter @embroidery/api openapi:check` | freshness | **up to date** | 1 |
+| `pnpm --filter @embroidery/api-client generate` | the artifact changed | 2 files, tree hash `1dc98a5b…` | 1 |
+| `pnpm --filter @embroidery/api-client check:generated` | freshness | **up to date** | 1 |
+| `pnpm --filter @embroidery/api-client typecheck` | generated types changed | **PASS** | 1 |
+| `pnpm --filter @embroidery/api typecheck` | API source changed | **PASS** | 4 |
+| `pnpm --filter @embroidery/worker typecheck` | worker source changed | **PASS** | 3 |
+| `pnpm --filter @embroidery/api lint` | API source changed | **PASS** | 2 |
+| `pnpm --filter @embroidery/worker lint` | worker source changed | **PASS** | 3 |
+| `pnpm format:check` | global control | **PASS** | 1 |
+| `pnpm --filter @embroidery/database build` · `@embroidery/persistence build` | the API resolves the schema package to `dist` (IMP-D018), and DB01's columns had to be visible to it | **PASS** | 1 |
 
-The audit was read-only: `git log` / `git status`, directory listings, targeted
-`grep` and file reads.
+**Explicitly confirmed:**
 
-Explicitly **not** run, and not needed: full Jest, the full API integration
-suite, asset/APP3/APP4 regression, B01's submission group, Playwright/E2E,
-Storefront/Admin tests, DB regression, all-workspace typecheck or build,
-SonarQube, and — per §15 — `tools/check-app3-p03.mjs` or any other historical
-APP3 surface-count gate.
+- **The DB01 suites were not rerun.** Neither `app5-intake-provenance` (20/20) nor
+  `app5-intake-provenance-upgrade` (5/5) was executed in this checkpoint. The
+  migration and schema they prove were not touched.
+- **No historical APP3 gate was run**, including `tools/check-app3-p03.mjs`.
+- **No full regression.** Not run: full Jest, the full API integration suite, the
+  full worker suite, full asset/APP3/APP4 regression, B01's test group, B01's
+  duplicate-submit race, full DB regression, Playwright/E2E, Storefront/Admin
+  tests, all-workspace build, SonarQube, the Figma checker, `pnpm quality`.
 
-No temporary worktree, directory junction, symlinked `node_modules` or
-repository clone was created (§16). The blocker was established by reading the
-schema and the stores directly.
+Reruns are edits followed by re-verification, not repeated identical runs: the
+intake suite reran after the authorizer was split into locking and non-locking
+paths (a status read was taking `FOR UPDATE` for a decision it does not make);
+the binding suite reran three times while its fixture acquired the secrets, the
+grant policy and the request context that `TR-LC11-01` genuinely requires; lint
+reran after `require-await` and `no-unnecessary-type-assertion` findings in test
+doubles. Nothing was backgrounded and nothing was polled.
 
----
+## 10. OpenAPI / client
 
-## 10. OpenAPI / generated client
-
-No generation was run; counts are **0 / 0**. The public API surface is
-unchanged, so `openapi.generated.json` and `packages/api-client` remain fresh
-against `HEAD`. No route, operation id or schema delta exists to review for
-secret or storage disclosure.
-
----
+- **Generations:** OpenAPI 2 (the second after `_read` was renamed `_status`, so
+  the published id matches `publicDesignSessionAsset_status`'s precedent), client
+  1.
+- **Delta:** +2 paths, +2 operations, +2 schemas
+  (`CustomRequestAssetIntakeResponse`, `CustomRequestAssetStatusResponse`);
+  +527 lines in the artifact.
+- **No-private-field review.** The two response schemas publish
+  `assetId, role, state, mediaType, byteSize` and `assetId, state, bindable`.
+  Greps for `storageKey`, `objectKey`, `bucket`, `claimToken` and
+  `contentFingerprint` across the generated client return nothing. The stored
+  idempotency record carries the bucket alias, object key, checksum and content
+  fingerprint because a replay needs them; the projection is where they stop, and
+  a unit test asserts each is absent from the serialized view.
 
 ## 11. Changed files
 
-| Group | Files |
-| --- | --- |
-| Runtime | *(none)* |
-| Tests | *(none)* |
-| Generated | *(none)* |
-| Schema / migrations | *(none)* |
-| Docs | `docs/implementation/reports/APP5-B02-COMPLETION-REPORT.md` (new), `docs/implementation/phases/APP5-CUSTOM-REQUESTS.md` (status row + baseline-expectation correction) |
+**API runtime**
 
----
+- `modules/order/domain/intake/` — `request-intake.policy.ts`,
+  `request-intake.errors.ts`, `request-intake-result.codec.ts`,
+  `request-intake-fingerprint.ts` *(new)*
+- `modules/order/application/intake/` — `challenge-intake.authorizer.ts`,
+  `request-intake-transactions.service.ts`, `request-asset-intake.service.ts`,
+  `request-asset-status.service.ts`, `request-intake-projection.ts` *(new)*
+- `modules/order/presentation/public-custom-request-asset.controller.ts`,
+  `presentation/schemas/request-asset-intake.{request,response}.ts` *(new)*
+- `modules/order/custom-request-intake.module.ts` *(new)*;
+  `bootstrap/app.module.ts` *(registered)*
+- `modules/asset/domain/repositories/asset.repository.ts` — `Asset` gains the two
+  DB01 columns; `RegisterAssetInput` gains `intakeProvenance`; new
+  `countChallengeReservedSlots`
+- `modules/asset/domain/asset-intake.policy.ts` —
+  `CHALLENGE_RESERVED_ASSET_STATES`
+- `modules/asset/infrastructure/persistence/{asset-row.mapper,drizzle-asset.repository}.ts`
+- `modules/customer/domain/repositories/verification-challenge.repository.ts` +
+  `infrastructure/persistence/drizzle-verification-challenge.repository.ts` —
+  `lockById`
+
+**Worker**
+
+- `jobs/app5-intake-cleanup/` — policy, repository port, SQL repository, use
+  case, runtime, module *(new)*
+- `bootstrap/worker.module.ts` — registers the capability
+- `runtime/worker-runtime.module.ts` — exports `WORKER_CLOCK` (one clock per
+  process, so a suite replacing *the* clock replaces all of it)
+
+**Tests**
+
+- `modules/order/domain/intake/request-intake.spec.ts` *(20 cases)*
+- `modules/order/tests/integration/request-intake-context.ts` *(harness)*
+- `modules/order/tests/integration/request-intake.integration.spec.ts` *(19)*
+- `modules/order/tests/integration/request-intake-quota.integration.spec.ts` *(6)*
+- `modules/order/tests/integration/request-intake-binding.integration.spec.ts` *(3)*
+- `jobs/app5-intake-cleanup/tests/intake-cleanup.integration.spec.ts` *(8)*
+- `modules/asset/application/asset-intake-contracts.spec.ts` — its `Asset`
+  fixture gains the two new fields
+
+**Generated**
+
+- `packages/contracts/openapi/openapi.generated.json`
+- `packages/api-client/src/generated/embroidery-api{,.schemas}.ts`
+
+**Docs**
+
+- `docs/implementation/phases/APP5-CUSTOM-REQUESTS.md`
+- `docs/implementation/reports/APP5-B02-COMPLETION-REPORT.md` *(this file,
+  replacing the blocker report)*
+
+No migration, no schema change, no Figma change. Every runtime source file is
+under 400 lines and every test file under 600.
 
 ## 12. Roadmap
 
-| Checkpoint | Status | Note |
-| --- | --- | --- |
-| `APP5-R00` | `COMPLETE` | Phase-entry audit |
-| `APP5-G01` | `COMPLETE` | Submission/moderation/intake authority |
-| `APP5-D01` | `COMPLETE` | Product Owner approved |
-| `APP5-B01` | `COMPLETE` | Request submission backend |
-| `APP5-DB01` | `INCOMPLETE` | **Next — new.** Intake provenance change request + migration (§4) |
-| `APP5-B02` | `BLOCKED` | `APP5_B02_PERSISTENT_INTAKE_PROVENANCE_REQUIRED` — awaits `APP5-DB01` |
-| `APP5-B03` | `INCOMPLETE` | Grant-scoped request status read |
-| `APP5-B04` | `INCOMPLETE` | Admin request queue & detail |
-| `APP5-B05` | `INCOMPLETE` | Admin notes & transitions |
-| `APP5-S01` | `INCOMPLETE` | Request creation & submission |
-| `APP5-S02` | `INCOMPLETE` | Confirmation & status |
-| `APP5-A01` | `INCOMPLETE` | Admin queue |
-| `APP5-A02` | `INCOMPLETE` | Admin detail/moderation |
-| `APP5-E01` | `INCOMPLETE` | Cross-layer acceptance |
-| `APP5-X01` | `INCOMPLETE` | Phase closure |
+```text
+APP5-R00  = COMPLETE   phase-entry audit
+APP5-G01  = COMPLETE   submission / moderation / intake authority
+APP5-D01  = COMPLETE   design package, Product Owner approved
+APP5-B01  = COMPLETE   request submission backend
+APP5-DB01 = COMPLETE   intake provenance persistence
+APP5-B02  = COMPLETE   customer attachment intake
+APP5-B03  = INCOMPLETE **next — grant-scoped request status read**
+APP5-B04  = INCOMPLETE Admin request queue & detail
+APP5-B05  = INCOMPLETE Admin notes & transitions
+APP5-S01  = INCOMPLETE request creation & submission
+APP5-S02  = INCOMPLETE confirmation & status
+APP5-A01  = INCOMPLETE Admin queue
+APP5-A02  = INCOMPLETE Admin detail / moderation
+APP5-E01  = INCOMPLETE cross-layer acceptance
+APP5-X01  = INCOMPLETE phase closure
+```
 
-`APP5-B03` is **not** started, and is not next: it does not depend on B02, but
-the roadmap order stands and B02 is the blocked item awaiting a decision.
+## 13. Residual risks
 
----
+- **The cleanup sweep covers APP5 challenge-intake assets only.** It is
+  explicitly *not* SE-014/SE-015: design-session assets, catalog media,
+  production files and every other retention obligation remain unimplemented,
+  and no claim to the contrary is made anywhere in this checkpoint. The general
+  backlog is still open and still unowned.
+- **Storage orphans are bounded but not zero.** A crash between the object write
+  and Tx A leaves an object with no row, which no sweep can find — the same
+  window `APP2-B01` and `APP3-B06B` already carry, unchanged by this lane. The
+  quota-refusal path deletes its own object explicitly; a process death during
+  that delete does not.
+- **The sweep interval is a constant, not policy.** 300 s and batch 100 live in
+  `intake-cleanup.policy.ts`. If operations later needs them tunable, that is a
+  policy-configuration change, not a code change to this job.
+- **`RequestAssetStatusService` reports `DELETION_PENDING` and `DELETED` as
+  `REJECTED`.** Deliberate — the only decision the answer drives is "may I submit
+  this?", and for both the answer is no, permanently — but it means the public
+  vocabulary is narrower than LC-06 and a future UI cannot distinguish "refused by
+  inspection" from "swept". Recorded so `APP5-S01` decides rather than inherits.
+- **No rate limit on intake beyond the quota.** Twenty uploads per challenge is
+  the only bound; challenge *issuance* is rate-limited by GRD-026 upstream, which
+  is what bounds the total. A per-IP limit would need the distributed limiter
+  APP12 owns, and the in-process one is explicitly not a substitute.
 
-## 13. Residual risks and follow-ups
+## 14. Commit
 
-| Id | Item |
-| --- | --- |
-| `FU-APP5-B02-DB-PROVENANCE-01` | The change request of §4 needs Product Owner / DB review before any migration work. Until it closes, APP5 has no customer upload lane, so the **COP branch is unsubmittable end to end** — `G01-D10` requires ≥1 `COP_IMAGE` and nothing can produce one |
-| `FU-APP5-B02-ORPHAN-SWEEP-01` | SE-014/SE-015 are specified but unimplemented; no orphan sweep exists for any customer upload, including APP3 session assets. Pre-existing, wider than APP5, and recorded here because §9 required checking it |
-| `FU-APP5-B02-R00-BASELINE-01` | `APP5-R00`'s `NO_APP5_MIGRATION expected` baseline is corrected in the phase plan by this checkpoint. Future phase-entry audits should schema-check authority checkpoints' *policy* bounds, not only their table inventory |
-
-No partial implementation, dead code, disabled test or speculative abstraction
-was left in the tree.
+Follows repository convention. **Not pushed.**
 
 ---
 
 ```text
-BLOCKED — APP5_B02_PERSISTENT_INTAKE_PROVENANCE_REQUIRED
+NEXT CHECKPOINT: APP5-B03 — Grant-scoped request status read
 ```

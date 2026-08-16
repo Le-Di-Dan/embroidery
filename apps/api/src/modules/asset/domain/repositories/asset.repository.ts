@@ -40,6 +40,25 @@ export interface Asset {
    * caller and never travels in a response.
    */
   readonly uploadedByCustomerId: string | undefined;
+  /**
+   * The verification challenge that authorized an APP5 pre-submission upload
+   * (REL-106, `APP5-DB01`), when there is one.
+   *
+   * Nullable for two different reasons, and the second is the important one:
+   * every other intake lane simply never sets it, **and** the FK is
+   * `ON DELETE SET NULL` over a hard-TTL-deleted parent — so a row that once
+   * carried a challenge legitimately stops carrying it. Absence therefore means
+   * "not this lane, or the window is long gone", never "never authorized".
+   */
+  readonly uploadedViaChallengeId: string | undefined;
+  /**
+   * When an unbound intake asset stops being worth keeping (`APP5-DB01`).
+   *
+   * Copied from the authoritative challenge expiry at intake and deliberately
+   * **outlives** the challenge row, which is what leaves the cleanup sweep a
+   * due time after the parent is swept.
+   */
+  readonly intakeExpiresAt: Date | undefined;
   readonly deletedAt: Date | undefined;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -85,6 +104,20 @@ export interface RegisterAssetInput {
   /** `sha256:<64 hex>` — the schema's CHECK enforces the shape. */
   readonly checksum?: string | undefined;
   readonly uploadedByCustomerId?: string | undefined;
+  /**
+   * `APP5-B02` intake provenance. Server-derived from the authorizing
+   * challenge — never a client input.
+   *
+   * The two travel together or not at all: CST-128 refuses a challenge id with
+   * no expiry, so offering them as independent optionals would let a caller
+   * build an input the database is guaranteed to reject.
+   */
+  readonly intakeProvenance?:
+    | {
+        readonly challengeId: string;
+        readonly expiresAt: Date;
+      }
+    | undefined;
 }
 
 export interface RegisterDerivativeInput {
@@ -230,6 +263,29 @@ export interface AssetRepository {
     ids: readonly AssetId[],
     filter: Pick<AssetListFilter, 'kind' | 'classification'>,
   ): Promise<Asset[]>;
+
+  /**
+   * How many accepted-capacity slots one verification challenge currently holds
+   * (`APP5-G01 D13`, `APP5-B02` §6).
+   *
+   * Counts live, non-deleted intake rows whose state still **owns or may still
+   * consume** an accepted slot — `UPLOADED`, `INSPECTING` and `ACCEPTED`.
+   * Counting only `ACCEPTED` would be unsound: several `INSPECTING` rows can
+   * all become `ACCEPTED` afterwards, so a check that ignored them would admit
+   * a 21st upload and leave the inspection worker to discover the breach. The
+   * result is therefore an upper bound on the eventual `ACCEPTED` count, which
+   * is a stronger guarantee than G01's maximum, never a weaker one.
+   *
+   * `REJECTED`, `DELETION_PENDING` and `DELETED` release their slot: they can
+   * never reach `ACCEPTED` again, and freeing capacity is what stops a customer
+   * whose files were refused from being locked out of their own request.
+   *
+   * Answered from `ix_assets__challenge_status__intake_live`.
+   *
+   * @requiresTransaction — the count is one half of a check-then-insert, and
+   * the caller must already hold the challenge row lock that serializes it.
+   */
+  countChallengeReservedSlots(challengeId: string): Promise<number>;
 
   /** Live derivatives only — a tombstoned asset's derivatives are not serveable. */
   listDerivatives(assetId: AssetId): Promise<AssetDerivative[]>;

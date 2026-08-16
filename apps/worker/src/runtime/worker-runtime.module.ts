@@ -34,6 +34,16 @@ import { JobHandlerRegistry } from './registry/job-handler.registry';
     JobExecutionService,
     JobPollRuntimeService,
   ],
-  exports: [JobHandlerRegistry, JobPollRuntimeService, WorkerPolicyService, WorkerFatalService],
+  // `WORKER_CLOCK` is exported by `APP5-B02`, whose intake sweep is the first
+  // capability with a schedule of its own. One clock per process rather than a
+  // second binding in that module: the point of an injectable clock is that a
+  // suite can replace *the* clock, and two would make that half-true.
+  exports: [
+    JobHandlerRegistry,
+    JobPollRuntimeService,
+    WorkerPolicyService,
+    WorkerFatalService,
+    WORKER_CLOCK,
+  ],
 })
 export class WorkerRuntimeModule {}
