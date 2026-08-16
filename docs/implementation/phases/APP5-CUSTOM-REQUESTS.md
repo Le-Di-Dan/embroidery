@@ -95,8 +95,8 @@ with the three scope corrections noted below.
 | `APP5-B03` | `COMPLETE` | Grant-scoped request status read — `POST /api/public/custom-requests/status` (`publicCustomRequest_status`); the request id comes from the APP4 `REQUEST_ACCESS` grant, never from the caller. See [`../reports/APP5-B03-COMPLETION-REPORT.md`](../reports/APP5-B03-COMPLETION-REPORT.md) |
 | `APP5-B04` | `COMPLETE` | Admin request queue & detail — `GET /api/admin/custom-requests` (`adminCustomRequest_list`) and `GET /api/admin/custom-requests/{requestId}` (`adminCustomRequest_detail`); read-only, behind APP1's `AuthenticatedAdminGuard`. See [`../reports/APP5-B04-COMPLETION-REPORT.md`](../reports/APP5-B04-COMPLETION-REPORT.md) |
 | `APP5-B05` | `COMPLETE` | Admin moderation notes & guarded transitions — `POST /api/admin/custom-requests/{requestId}/moderation-notes` (`adminCustomRequest_appendNote`) and `POST …/transitions` (`adminCustomRequest_transition`); the APP5 subset as an application-layer restriction, both reason texts, append-only notes and a real competing-transition race. See [`../reports/APP5-B05-COMPLETION-REPORT.md`](../reports/APP5-B05-COMPLETION-REPORT.md) |
-| `APP5-B07` | `INCOMPLETE` | **Next — inserted by `APP5-S01`** — Public catalog variant selection; the public read that lets a Storefront caller obtain a request-selectable `productVariantId`. Blocks `APP5-S01`'s catalog branch and nothing else. See [`../reports/APP5-S01-COMPLETION-REPORT.md`](../reports/APP5-S01-COMPLETION-REPORT.md) |
-| `APP5-S01` | `BLOCKED` | Request creation & submission screen (absorbs the COP form) — **`CATALOG_VARIANT_PUBLIC_READ_REQUIRED`**; waits for `APP5-B07`, then resumes unchanged in product scope |
+| `APP5-B07` | `COMPLETE` | **Inserted by `APP5-S01`** — Public catalog variant selection — `GET /api/public/products/{slug}/variants` (`publicProductVariant_list`); Catalog-owned, anonymous, selection-only, `is_active` eligibility and `display_order, id` ordering. Unblocks `APP5-S01`. See [`../reports/APP5-B07-COMPLETION-REPORT.md`](../reports/APP5-B07-COMPLETION-REPORT.md) |
+| `APP5-S01` | `INCOMPLETE` | **Next — resume** — Request creation & submission screen (absorbs the COP form); `CATALOG_VARIANT_PUBLIC_READ_REQUIRED` closed by `APP5-B07`, so S01 resumes unchanged in product scope |
 | `APP5-S02` | `INCOMPLETE` | Confirmation & grant-scoped status; closes `FU-APP4-S01-SUCCESS-HANDOFF-01` |
 | `APP5-A01` | `INCOMPLETE` | Admin request queue |
 | `APP5-B06` | `INCOMPLETE` | **Inserted by `APP5-B05`** — Admin private request-asset delivery; one authorized binary route for a request-bound `COP_IMAGE`/`REFERENCE`, streamed through the API. Must precede `APP5-A02`; does not block `S01`, `S02` or `A01`. Closes `FU-APP5-B04-COP-ASSET-DELIVERY-01` |
@@ -277,3 +277,26 @@ retrofitting it. A future phase-entry audit should note the pattern behind both:
 `APP5-R00` inventoried the tables an authority needed but not the **reads a
 frontend would need to satisfy it**, which is how `B06` and `B07` were each found
 by the checkpoint that first tried to consume them.
+
+**Closed (`APP5-B07`, 2026-08-16).** `GET /api/public/products/{slug}/variants`
+(`publicProductVariant_list`) publishes the missing fact, and `APP5-S01` is
+unblocked. The operation is **Catalog-owned** — Ordering may not query
+`product_variants` (`BACKEND_CONVENTIONS.md` §10) — and deliberately narrow:
+
+```text
+returns      = productId + [{ productVariantId, colorName, sizeLabel }]
+eligibility  = products PUBLISHED + public category + variants.is_active
+ordering     = display_order, then id (IDX-068's key, made total)
+never        = SKU, price, stock, inventory, is_active, display_order,
+               lifecycle, audit — and no default variant
+empty list   = truthful, not a 404; that product cannot form a catalog request
+```
+
+The published document moves **56 paths / 61 operations / 130 schemas → 57 / 62 /
+132**; B07 added exactly one operation, deleted none and reissued none. No
+migration: `product_variants` (TBL-013) and its `is_active` column already
+existed, and `APP5` still owns exactly the one migration `DB01` added.
+
+`SubmitCustomRequestBody.catalog.productVariantId` remains **required**, and the
+APP3 Design Session was not touched — the variant was never the session's fact to
+carry, which is precisely why the gap could not be closed there.

@@ -2092,6 +2092,28 @@ export interface PublicProductPlacementResponse {
   studioEligible: boolean;
 }
 
+export interface PublicProductVariantResponse {
+  /**
+   * The variant colour attribute exactly as stored, or null. Product Variants carry no name column — DB4 locked two relational attributes instead — so the two labels are published as they are and never joined into an invented variant name.
+   * @nullable
+   */
+  colorName: string | null;
+  /** The exact Product Variant to submit as `catalog.productVariantId` in a custom request. Not a credential: it authorizes nothing on its own, and the submission re-checks that the variant belongs to the product. */
+  productVariantId: string;
+  /**
+   * The size attribute, or null.
+   * @nullable
+   */
+  sizeLabel: string | null;
+}
+
+export interface PublicProductVariantListResponse {
+  /** The Product these variants belong to, to submit as `catalog.productId`. Returned here so a caller assembling a custom-request subject reads one endpoint rather than correlating two. */
+  productId: string;
+  /** Selectable variants in the product’s own display order, then id. Delisted variants are absent. An empty list is a truthful answer and means this published product cannot currently form a catalog custom request — it is not an error and not a missing product. */
+  variants: PublicProductVariantResponse[];
+}
+
 export interface PublishDesignTemplateBody {
   /**
    * @minimum 0
@@ -2967,6 +2989,10 @@ export type PublicProductDetail200 = ApiSuccessResponse & {
 
 export type PublicProductPlacementGet200 = ApiSuccessResponse & {
   data: PublicProductPlacementResponse;
+};
+
+export type PublicProductVariantList200 = ApiSuccessResponse & {
+  data: PublicProductVariantListResponse;
 };
 
 export type PublicSecureLinkResolve200 = ApiSuccessResponse & {

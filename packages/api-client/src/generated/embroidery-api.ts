@@ -72,6 +72,7 @@ import type {
   PublicProductList200,
   PublicProductListParams,
   PublicProductPlacementGet200,
+  PublicProductVariantList200,
   PublicSecureLinkResolve200,
   PublicVerificationIssue202,
   PublicVerificationReadStatus200,
@@ -1011,6 +1012,20 @@ export const publicProductSideBackgroundGet = (
 };
 
 /**
+ * The variants a customer may choose when creating a catalog custom request, with the product id to submit alongside one. Anonymous: no session or cookie is involved, and there is no parameter of any kind — the caller cannot select lifecycle visibility, and delisted variants are excluded by the query itself. Ordered by the product’s own display order then id, so repeated reads agree. An unknown slug, a draft, an archived product and a product without a public category all return the same 404. A published product with no selectable variant returns an empty list rather than a 404: it exists, it simply cannot form a catalog request. Selection only — no SKU, price, stock or inventory is published here, and no variant is marked as a default. Responses are never stored, because publication is re-read on every request and nothing in this system invalidates a cache.
+ * @summary List the selectable variants of a published product
+ */
+export const publicProductVariantList = (
+  slug: unknown,
+  options?: SecondParameter<typeof apiRequest<PublicProductVariantList200>>,
+) => {
+  return apiRequest<PublicProductVariantList200>(
+    { url: `/api/public/products/${slug}/variants`, method: 'GET' },
+    options,
+  );
+};
+
+/**
  * Exchanges the opaque token from a secure link for the request it grants access to. The token travels in the request body only — never in a path, query or header — so it never reaches a server or proxy access log, and it is never echoed back. Resolving a link does not consume it: the same link works until it expires or is revoked. Every token that does not open a live grant — unknown, expired, revoked, superseded, or issued for something else — answers with one identical 404, so the response reveals nothing about whether a token ever existed.
  * @summary Resolve a secure-link token
  */
@@ -1269,6 +1284,9 @@ export type PublicProductPlacementGetResult = NonNullable<
 >;
 export type PublicProductSideBackgroundGetResult = NonNullable<
   Awaited<ReturnType<typeof publicProductSideBackgroundGet>>
+>;
+export type PublicProductVariantListResult = NonNullable<
+  Awaited<ReturnType<typeof publicProductVariantList>>
 >;
 export type PublicSecureLinkResolveResult = NonNullable<
   Awaited<ReturnType<typeof publicSecureLinkResolve>>

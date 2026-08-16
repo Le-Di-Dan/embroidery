@@ -3932,6 +3932,56 @@
         ],
         "type": "object"
       },
+      "PublicProductVariantListResponse": {
+        "properties": {
+          "productId": {
+            "description": "The Product these variants belong to, to submit as `catalog.productId`. Returned here so a caller assembling a custom-request subject reads one endpoint rather than correlating two.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "variants": {
+            "description": "Selectable variants in the product’s own display order, then id. Delisted variants are absent. An empty list is a truthful answer and means this published product cannot currently form a catalog custom request — it is not an error and not a missing product.",
+            "items": {
+              "$ref": "#/components/schemas/PublicProductVariantResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "productId",
+          "variants"
+        ],
+        "type": "object"
+      },
+      "PublicProductVariantResponse": {
+        "properties": {
+          "colorName": {
+            "description": "The variant colour attribute exactly as stored, or null. Product Variants carry no name column — DB4 locked two relational attributes instead — so the two labels are published as they are and never joined into an invented variant name.",
+            "example": "Xanh rêu",
+            "nullable": true,
+            "type": "string"
+          },
+          "productVariantId": {
+            "description": "The exact Product Variant to submit as `catalog.productVariantId` in a custom request. Not a credential: it authorizes nothing on its own, and the submission re-checks that the variant belongs to the product.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "format": "uuid",
+            "type": "string"
+          },
+          "sizeLabel": {
+            "description": "The size attribute, or null.",
+            "example": "M",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "productVariantId",
+          "colorName",
+          "sizeLabel"
+        ],
+        "type": "object"
+      },
       "PublishDesignTemplateBody": {
         "additionalProperties": false,
         "properties": {
@@ -14812,6 +14862,138 @@
         "summary": "Get one published product side background",
         "tags": [
           "publicProductSideBackground"
+        ]
+      }
+    },
+    "/api/public/products/{slug}/variants": {
+      "get": {
+        "description": "The variants a customer may choose when creating a catalog custom request, with the product id to submit alongside one. Anonymous: no session or cookie is involved, and there is no parameter of any kind — the caller cannot select lifecycle visibility, and delisted variants are excluded by the query itself. Ordered by the product’s own display order then id, so repeated reads agree. An unknown slug, a draft, an archived product and a product without a public category all return the same 404. A published product with no selectable variant returns an empty list rather than a 404: it exists, it simply cannot form a catalog request. Selection only — no SKU, price, stock or inventory is published here, and no variant is marked as a default. Responses are never stored, because publication is re-read on every request and nothing in this system invalidates a cache.",
+        "operationId": "publicProductVariant_list",
+        "parameters": [
+          {
+            "description": "The immutable server-owned product slug.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicProductVariantListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The selectable variants of the published product.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The slug is not well formed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No published product is available at that slug.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List the selectable variants of a published product",
+        "tags": [
+          "publicProductVariant"
         ]
       }
     },
