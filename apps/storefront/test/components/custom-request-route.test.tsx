@@ -44,11 +44,19 @@ describe('/yeu-cau/moi', () => {
 });
 
 describe('/yeu-cau/da-gui', () => {
-  it('exists as a destination and renders none of APP5-S02 yet', () => {
-    const { container } = renderWithProviders(<CustomRequestSubmittedPage />);
+  /**
+   * S01's half of the handoff: the destination exists and is reachable with the
+   * query key S01 writes. The confirmation the segment now renders is
+   * `APP5-S02`'s and is proved in its own suite — this only pins that the two
+   * halves still meet.
+   */
+  it('is the destination S01 navigates to, and is kept out of search results', async () => {
+    const element = await CustomRequestSubmittedPage({
+      searchParams: Promise.resolve({ ma: 'REQ-7KM2QD4XVA' }),
+    });
+    renderWithProviders(element);
 
-    expect(container).toBeEmptyDOMElement();
-    // In particular, no request code is echoed here: S02 owns that treatment.
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     expect(submittedMetadata.robots).toEqual({ index: false, follow: false });
   });
 });

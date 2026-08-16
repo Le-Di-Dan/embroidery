@@ -29,12 +29,10 @@ $card-padding: styles.spacing(32);
 $card-padding-mobile: 20px; // 629:75 — not a step on the shared scale
 $card-gap-mobile: styles.spacing(16);
 
-// Approved alert and slot geometry.
+// Approved alert geometry.
 $alert-gap: 6px;
 $alert-padding-block: 14px;
 $alert-padding-inline: styles.spacing(16);
-$slot-padding-block: styles.spacing(24);
-$slot-padding-inline: 20px; // 629:30 — as above
 
 // Approved control geometry (629:48 / 629:63 / 629:65).
 $button-padding-block: 15px;
@@ -96,48 +94,6 @@ $line-height-control: 1.2;
   &__caption {
     margin: 0;
     font-size: styles.$font-size-caption;
-    line-height: $line-height-body;
-    color: styles.$color-text-tertiary;
-  }
-
-  // The verified badge (629:26 / 629:76). Never colour alone — it carries its
-  // own words, and the heading below repeats the meaning in prose (634:150).
-  &__badge {
-    align-self: flex-start;
-    margin: 0;
-    padding: $alert-gap styles.spacing(12);
-    background: styles.$color-background-secondary;
-    border: 1px solid styles.$color-status-success;
-    border-radius: 999px;
-    font-size: styles.$font-size-caption;
-    font-weight: styles.$font-weight-medium;
-    line-height: $line-height-snug;
-    color: styles.$color-status-success;
-  }
-
-  // The APP5 handoff slot (629:30 / 629:80). Dashed on purpose: it reads as an
-  // outline of content that does not exist yet, not as an empty panel that
-  // failed to load.
-  &__slot {
-    display: flex;
-    flex-direction: column;
-    gap: styles.spacing(8);
-    padding: $slot-padding-block $slot-padding-inline;
-    border: 1px dashed styles.$color-border-secondary;
-    border-radius: styles.$radius-md;
-  }
-
-  &__slot-title {
-    margin: 0;
-    font-size: styles.$font-size-body-s;
-    font-weight: styles.$font-weight-medium;
-    line-height: $line-height-snug;
-    color: styles.$color-text-secondary;
-  }
-
-  &__slot-note {
-    margin: 0;
-    font-size: styles.$font-size-body-s;
     line-height: $line-height-body;
     color: styles.$color-text-tertiary;
   }
@@ -252,17 +208,6 @@ $line-height-control: 1.2;
     }
   }
 
-  // The two approved wordings of the authorized card. Exactly one is in the
-  // accessibility tree at any width, because `display: none` removes the other
-  // rather than merely hiding it.
-  &__wide-only {
-    display: none;
-  }
-
-  &__narrow-only {
-    display: inline;
-  }
-
   &__visually-hidden {
     position: absolute;
     width: 1px;
@@ -273,16 +218,6 @@ $line-height-control: 1.2;
     clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
-  }
-
-  @media (min-width: $bp-shell-wide) {
-    &__wide-only {
-      display: inline;
-    }
-
-    &__narrow-only {
-      display: none;
-    }
   }
 }
 

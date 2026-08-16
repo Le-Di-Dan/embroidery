@@ -7,6 +7,7 @@
 @use '@embroidery/styles' as styles;
 
 // Feature styles (each feature owns a leaf stylesheet, composed here).
+@use '../components/responsive-text';
 @use '../features/storefront-shell/styles/storefront-shell';
 @use '../features/storefront-not-found/styles/storefront-not-found';
 @use '../features/product-discovery/styles/product-discovery';
@@ -15,6 +16,8 @@
 @use '../features/contact-verification/styles/contact-verification';
 @use '../features/secure-link-access/styles/secure-link-access';
 @use '../features/custom-request/styles/custom-request';
+@use '../features/custom-request-status/styles/custom-request-status';
+@use '../features/custom-request-confirmation/styles/custom-request-confirmation';
 
 // Browser normalization: predictable box model.
 *,

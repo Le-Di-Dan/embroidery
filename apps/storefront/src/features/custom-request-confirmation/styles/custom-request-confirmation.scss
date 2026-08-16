@@ -1,0 +1,264 @@
+// Submission confirmation — feature-scoped styles (APP5-S02).
+//
+// Design source: FIG-APP5-S02-CONFIRM-DESKTOP (660:3) and
+// FIG-APP5-S02-CONFIRM-MOBILE (660:53), file BQwqV8GdfUIELvsQDB1UQE, page
+// APP_05, approved under FIG-APPROVAL-APP5-D01-PO-001.
+//
+// Measured live from the approved frames:
+//   desktop 1440 — content 100…1340, main column 760, aside 440, gutter 40
+//                  cards radius 24, padding 23, title 24, code 32
+//   mobile   390 — one column, card 358 wide inside a 16 gutter, radius 20,
+//                  padding 15, title 18, code 22
+//
+// Colour, type, radius and spacing come from @embroidery/styles. The frames use
+// a few steps the shared scale does not define; each is a documented local
+// literal, following the APP4-S01 precedent for the same reason — inventing
+// scale steps would change a shared foundation to suit one screen.
+
+@use '@embroidery/styles' as styles;
+
+// Mirrored from storefront-shell.scss, as secure-link-access.scss already does.
+$bp-shell-wide: 768px;
+
+$content-max: 1240px;
+$main-column: 760px;
+$aside-column: 440px;
+$column-gap: 40px; // 660:8 → 660:27 gutter; no step between 32 and 48
+$stack-gap: styles.spacing(24);
+
+$card-padding: 23px; // 660:11 — not a step on the shared scale
+$card-padding-mobile: 15px; // 660:59 — as above
+
+// 660:9 / 660:57 — the success disc.
+$mark-size: 44px;
+$mark-size-mobile: 36px;
+
+// 660:13 / 660:61 — the code is the largest type on the page, deliberately.
+$font-size-code-mobile: 22px;
+$font-size-title-mobile: 18px;
+
+$notice-padding: 19px; // 660:18 — as above
+
+$line-height-snug: 1.35;
+$line-height-body: 1.5;
+
+.request-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: $stack-gap;
+  width: 100%;
+  max-width: $content-max;
+  margin: 0 auto;
+  padding-block: styles.spacing(48);
+
+  &__main,
+  &__aside {
+    display: flex;
+    flex-direction: column;
+    gap: $stack-gap;
+    min-width: 0;
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    padding: $card-padding;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-lg;
+
+    // 660:8 — the confirmation card is bordered in the success colour, and
+    // still says "đã nhận" in words: never colour alone (634:150).
+    &--success {
+      border-color: styles.$color-status-success;
+    }
+  }
+
+  &__headline {
+    display: flex;
+    align-items: center;
+    gap: styles.spacing(16);
+  }
+
+  &__mark {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: $mark-size;
+    height: $mark-size;
+    background: styles.$color-status-success;
+    border-radius: 999px;
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    // The frames name `Color/Neutral/White`; the shared package publishes that
+    // value as `$color-surface-primary` and defines no separate white token.
+    color: styles.$color-surface-primary;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__code-label {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-snug;
+    color: styles.$color-text-tertiary;
+  }
+
+  // 660:13 — plain, selectable text. No link and no button: a control beside an
+  // identifier reads as a way in, and this identifier is not one.
+  &__code {
+    margin: 0;
+    font-size: styles.$font-size-heading-m;
+    font-weight: styles.$font-weight-semibold;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  &__note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  // 660:15 / 660:63 — the state a submission always lands in.
+  &__badge {
+    align-self: flex-start;
+    margin: 0;
+    padding: 6px styles.spacing(16);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-status-info;
+    border-radius: 999px;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-snug;
+    color: styles.$color-status-info;
+  }
+
+  // 660:17 / 660:65 — how the customer gets back in.
+  &__notice {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    padding: $notice-padding;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-md;
+  }
+
+  &__notice-title {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__notice-body {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__card-title {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-regular;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__steps {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    margin: 0;
+    padding-inline-start: 20px; // 660:23 marker indent; not a step on the scale
+  }
+
+  &__step {
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__points {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  // The frames prefix each line with a middot rather than a list bullet.
+  &__point {
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+
+    &::before {
+      content: '· ';
+    }
+  }
+
+  @media (min-width: $bp-shell-wide) {
+    display: grid;
+    grid-template-columns: minmax(0, $main-column) minmax(0, $aside-column);
+    gap: $column-gap;
+    align-items: start;
+  }
+}
+
+// Mobile 390 (660:53). One column, the frames' own order: confirmation, then
+// what happens next, then what is not included.
+@media (max-width: #{$bp-shell-wide - 1px}) {
+  .request-confirmation {
+    padding-block: styles.spacing(32);
+    padding-inline: styles.spacing(4);
+
+    &__card {
+      gap: styles.spacing(8);
+      padding: $card-padding-mobile;
+      border-radius: styles.$radius-md;
+    }
+
+    &__headline {
+      gap: styles.spacing(12);
+    }
+
+    &__mark {
+      width: $mark-size-mobile;
+      height: $mark-size-mobile;
+      font-size: styles.$font-size-body-m;
+    }
+
+    &__title {
+      font-size: $font-size-title-mobile;
+    }
+
+    &__code {
+      font-size: $font-size-code-mobile;
+    }
+
+    &__card-title {
+      font-size: styles.$font-size-body-s;
+      font-weight: styles.$font-weight-medium;
+    }
+
+    &__step,
+    &__point,
+    &__notice-title {
+      font-size: styles.$font-size-caption;
+    }
+  }
+}

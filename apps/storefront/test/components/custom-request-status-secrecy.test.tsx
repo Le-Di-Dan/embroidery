@@ -1,39 +1,46 @@
 /**
  * The secure-link token must exist only in ephemeral component-local memory
- * (`APP4-S02` §7, §23; approved annotation `634:57`).
+ * (`APP5-S02` §5, §20; `APP4-S02` §7, approved annotation `634:57`).
  *
- * These are the assertions that would still pass if the feature were subtly
- * wrong, so each one names the surface it inspects rather than trusting a
- * comment: the TanStack cache, `localStorage`, `sessionStorage`,
- * `document.cookie`, the URL, `history.state`, the rendered DOM and everything
- * written to the console.
+ * Adapted from the `APP4-S02` secrecy proof for the changed `/truy-cap`
+ * consumer: the machinery under test is the same, the call it spends the
+ * credential on is `APP5-B03`. These are the assertions that would still pass
+ * if the feature were subtly wrong, so each one names the surface it inspects
+ * rather than trusting a comment: the TanStack cache, `localStorage`,
+ * `sessionStorage`, `document.cookie`, the URL, `history.state`, the rendered
+ * DOM and everything written to the console.
  *
  * The token literal lives in the fixture and deliberately never appears in the
  * completion report.
  */
-import { publicSecureLinkResolve } from '@embroidery/api-client';
+import { publicCustomRequestStatus } from '@embroidery/api-client';
 import { createTestQueryClient } from '@embroidery/frontend-testing';
 import { fireEvent, renderWithProviders, screen, waitFor } from '@embroidery/frontend-testing';
 import type { QueryClient } from '@tanstack/react-query';
 
-import { SecureLinkQueryProvider } from '../../src/features/secure-link-access/ui/secure-link-query-provider';
-import { SecureLinkScreen } from '../../src/features/secure-link-access/ui/secure-link-screen';
+import { CustomRequestStatusScreen } from '../../src/features/custom-request-status/ui/custom-request-status-screen';
+import { CUSTOM_REQUEST_STATUS_COPY as COPY } from '../../src/features/custom-request-status/model/custom-request-status-copy';
 import { SECURE_LINK_COPY } from '../../src/features/secure-link-access/model/secure-link-copy';
+import { SecureLinkQueryProvider } from '../../src/features/secure-link-access/ui/secure-link-query-provider';
+import { TEST_REQUEST_CODE, makeStatusResponse } from '../support/custom-request-status-fixture';
 import {
   TEST_TOKEN,
   apiFailure,
   envelopeOf,
-  makeGrant,
   navigateToLanding,
   networkFailure,
 } from '../support/secure-link-fixture';
 
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
-  publicSecureLinkResolve: jest.fn(),
+  publicCustomRequestStatus: jest.fn(),
 }));
 
-const resolveMock = publicSecureLinkResolve as jest.MockedFunction<typeof publicSecureLinkResolve>;
+const statusMock = publicCustomRequestStatus as jest.MockedFunction<
+  typeof publicCustomRequestStatus
+>;
+
+const HEADING = COPY.heading.wide.replace('{code}', TEST_REQUEST_CODE);
 
 /** Everything the console was asked to record during a test. */
 const consoleOutput: string[] = [];
@@ -61,7 +68,7 @@ afterEach(() => {
 });
 
 function renderScreen(queryClient: QueryClient = createTestQueryClient()) {
-  return renderWithProviders(<SecureLinkScreen />, { queryClient });
+  return renderWithProviders(<CustomRequestStatusScreen />, { queryClient });
 }
 
 /** Every observable surface, serialised, so one assertion can sweep them all. */
@@ -89,19 +96,19 @@ function observableSurfaces(queryClient: QueryClient, container: HTMLElement): s
   ].join('\n');
 }
 
-describe('APP4-S02 — token secrecy', () => {
-  it('leaves the token in no observable surface after a successful resolution', async () => {
-    resolveMock.mockResolvedValue(envelopeOf(makeGrant()));
+describe('APP5-S02 — token secrecy', () => {
+  it('leaves the token in no observable surface after a successful read', async () => {
+    statusMock.mockResolvedValue(envelopeOf(makeStatusResponse()));
     const queryClient = createTestQueryClient();
 
     const { container } = renderScreen(queryClient);
 
-    await screen.findByText(SECURE_LINK_COPY.authorized.title.wide);
+    await screen.findByText(HEADING);
     expect(observableSurfaces(queryClient, container)).not.toContain(TEST_TOKEN);
   });
 
   it('leaves the token in no observable surface after a definitive refusal', async () => {
-    resolveMock.mockRejectedValue(apiFailure(404, 'SECURE_LINK_UNAVAILABLE'));
+    statusMock.mockRejectedValue(apiFailure(404, 'SECURE_LINK_UNAVAILABLE'));
     const queryClient = createTestQueryClient();
 
     const { container } = renderScreen(queryClient);
@@ -111,7 +118,7 @@ describe('APP4-S02 — token secrecy', () => {
   });
 
   it('leaves the token in no observable surface while a manual retry is available', async () => {
-    resolveMock.mockRejectedValue(networkFailure());
+    statusMock.mockRejectedValue(networkFailure());
     const queryClient = createTestQueryClient();
 
     const { container } = renderScreen(queryClient);
@@ -122,12 +129,12 @@ describe('APP4-S02 — token secrecy', () => {
   });
 
   it('never puts the token into mutation variables', async () => {
-    resolveMock.mockResolvedValue(envelopeOf(makeGrant()));
+    statusMock.mockResolvedValue(envelopeOf(makeStatusResponse()));
     const queryClient = createTestQueryClient();
 
     renderScreen(queryClient);
 
-    await waitFor(() => expect(resolveMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(statusMock).toHaveBeenCalledTimes(1));
     for (const mutation of queryClient.getMutationCache().getAll()) {
       expect(mutation.state.variables).toBeUndefined();
     }
@@ -136,33 +143,36 @@ describe('APP4-S02 — token secrecy', () => {
   /**
    * The route's own provider, not the shared test client.
    *
-   * The tests above render `SecureLinkScreen` against a harness client so the
-   * cache can be inspected; that harness keeps a default `gcTime`, which the
-   * production provider does not. This case mounts what the route actually
-   * mounts, so the `retry: false` / `gcTime: 0` posture the feature ships with
-   * is the one under test — and proves the retained mutation state carries no
-   * credential either way.
+   * The tests above render the screen against a harness client so the cache can
+   * be inspected; that harness keeps a default `gcTime`, which the production
+   * provider does not. This case mounts what the route actually mounts, so the
+   * `retry: false` / `gcTime: 0` posture the feature ships with is the one under
+   * test — and proves the retained mutation state carries no credential either
+   * way.
    */
   it('holds nothing through the route-local provider the page actually mounts', async () => {
-    resolveMock.mockResolvedValue(envelopeOf(makeGrant()));
+    statusMock.mockResolvedValue(envelopeOf(makeStatusResponse()));
 
-    const { container } = renderWithProviders(<SecureLinkQueryProvider />, {
-      queryClient: createTestQueryClient(),
-    });
+    const { container } = renderWithProviders(
+      <SecureLinkQueryProvider>
+        <CustomRequestStatusScreen />
+      </SecureLinkQueryProvider>,
+      { queryClient: createTestQueryClient() },
+    );
 
-    await screen.findByText(SECURE_LINK_COPY.authorized.title.wide);
+    await screen.findByText(HEADING);
     expect(container.innerHTML).not.toContain(TEST_TOKEN);
     expect(window.location.href).not.toContain(TEST_TOKEN);
     expect(consoleOutput.join('\n')).toBe('');
   });
 
   it('retains no mutation data that could carry the token', async () => {
-    resolveMock.mockResolvedValue(envelopeOf(makeGrant()));
+    statusMock.mockResolvedValue(envelopeOf(makeStatusResponse()));
     const queryClient = createTestQueryClient();
 
     renderScreen(queryClient);
 
-    await screen.findByText(SECURE_LINK_COPY.authorized.title.wide);
+    await screen.findByText(HEADING);
     const retained = JSON.stringify(
       queryClient
         .getMutationCache()
@@ -176,18 +186,18 @@ describe('APP4-S02 — token secrecy', () => {
   });
 
   it('writes nothing to storage or cookies', async () => {
-    resolveMock.mockResolvedValue(envelopeOf(makeGrant()));
+    statusMock.mockResolvedValue(envelopeOf(makeStatusResponse()));
 
     renderScreen();
 
-    await screen.findByText(SECURE_LINK_COPY.authorized.title.wide);
+    await screen.findByText(HEADING);
     expect(window.localStorage.length).toBe(0);
     expect(window.sessionStorage.length).toBe(0);
     expect(document.cookie).toBe('');
   });
 
   it('writes nothing to the console, including on the refusal path', async () => {
-    resolveMock.mockRejectedValue(apiFailure(404, 'SECURE_LINK_UNAVAILABLE'));
+    statusMock.mockRejectedValue(apiFailure(404, 'SECURE_LINK_UNAVAILABLE'));
 
     renderScreen();
 
@@ -196,32 +206,32 @@ describe('APP4-S02 — token secrecy', () => {
   });
 
   it('keeps the token out of history state across the whole flow', async () => {
-    resolveMock.mockRejectedValue(networkFailure());
+    statusMock.mockRejectedValue(networkFailure());
 
     renderScreen();
     await screen.findByText(SECURE_LINK_COPY.transientError.title);
     expect(JSON.stringify(window.history.state ?? null)).not.toContain(TEST_TOKEN);
 
-    resolveMock.mockResolvedValue(envelopeOf(makeGrant()));
+    statusMock.mockResolvedValue(envelopeOf(makeStatusResponse()));
     fireEvent.click(screen.getByRole('button', { name: SECURE_LINK_COPY.transientError.retry }));
 
-    await screen.findByText(SECURE_LINK_COPY.authorized.title.wide);
+    await screen.findByText(HEADING);
     expect(JSON.stringify(window.history.state ?? null)).not.toContain(TEST_TOKEN);
     expect(window.location.href).not.toContain(TEST_TOKEN);
   });
 
   it('does not persist anything that would survive a remount', async () => {
-    resolveMock.mockRejectedValue(networkFailure());
+    statusMock.mockRejectedValue(networkFailure());
     const first = renderScreen();
     await screen.findByText(SECURE_LINK_COPY.transientError.title);
     first.unmount();
 
     // The fragment is gone, nothing was persisted, so a fresh mount has no
     // credential to present and must not call the API.
-    resolveMock.mockClear();
+    statusMock.mockClear();
     renderScreen();
 
     await screen.findByText(SECURE_LINK_COPY.unavailable.title);
-    expect(resolveMock).not.toHaveBeenCalled();
+    expect(statusMock).not.toHaveBeenCalled();
   });
 });

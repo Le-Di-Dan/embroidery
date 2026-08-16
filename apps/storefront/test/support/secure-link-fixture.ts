@@ -1,12 +1,13 @@
 /**
- * Fixtures for the `APP4-S02` secure-link landing suites.
+ * Fixtures for the `/truy-cap` secure-link landing suites (`APP4-S02`
+ * machinery, `APP5-S02` consumer).
  *
  * Every value is synthetic. The token used throughout is a fixed test string
  * that exists only here and in the assertions proving it is *absent* from
  * caches, storage, the URL, history state, the DOM and the console. It is
  * deliberately kept out of the completion report.
  */
-import type { ApiSuccessResponse, SecureLinkResolutionResponse } from '@embroidery/api-client';
+import type { ApiSuccessResponse } from '@embroidery/api-client';
 import { AxiosError, AxiosHeaders } from 'axios';
 
 export function envelopeOf<T>(data: T): ApiSuccessResponse & { data: T } {
@@ -30,19 +31,6 @@ export const SHORT_TOKEN = TEST_TOKEN.slice(0, 42);
 
 /** Right length, wrong alphabet: `+` and `/` are base64, not base64url. */
 export const OUT_OF_ALPHABET_TOKEN = `${TEST_TOKEN.slice(0, 41)}+/`;
-
-export const CUSTOM_REQUEST_ID = '2f1c9d64-0f2a-4d1f-9a3e-7c5b8e0d1a22';
-
-export function makeGrant(
-  overrides: Partial<SecureLinkResolutionResponse> = {},
-): SecureLinkResolutionResponse {
-  return {
-    customRequestId: CUSTOM_REQUEST_ID,
-    scopeKind: 'REQUEST_ACCESS',
-    expiresAt: '2026-08-22T09:00:00.000Z',
-    ...overrides,
-  };
-}
 
 /**
  * An Axios error carrying a real API error envelope, which is what

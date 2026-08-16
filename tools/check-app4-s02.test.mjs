@@ -9,10 +9,12 @@
  * strip after the request, adding a `?t=` fallback "for links that lose the
  * fragment", keeping the token in `sessionStorage` so a reload still works,
  * passing it as a mutation variable, clearing it on a transient failure while
- * "tidying up the error path", and softening the unavailable copy into
- * something more helpful. Every one compiles, and most would pass the component
- * suite — the strip-order mutation in particular passes every test that does
- * not sample `location.hash` at call time.
+ * "tidying up the error path", softening the unavailable copy into something
+ * more helpful, and — since `APP5-S02` — resolving the secure link first and
+ * reading the request second, which is the shape a reader reaches for by
+ * default. Every one compiles, and most would pass the component suite: the
+ * strip-order mutation passes every test that does not sample `location.hash`
+ * at call time, and the chained-resolve mutation renders an identical page.
  *
  * One case keeps the gate honest rather than merely strict: `reads code rather
  * than prose` — every file in this feature documents at length what it
@@ -123,8 +125,8 @@ describe('APP4-S02 — the generated-client boundary', () => {
   it('refuses a hand-written endpoint', () => {
     const failures = failuresAfterEdit(
       CANONICAL_FILES.client,
-      'const body = await publicSecureLinkResolve(requestBody, { instance: getBrowserApiClient() });',
-      "const body = (await getBrowserApiClient().post('/api/public/secure-links/resolve', requestBody)).data;",
+      'const body = await publicCustomRequestStatus(requestBody, { instance: getBrowserApiClient() });',
+      "const body = (await getBrowserApiClient().post('/api/public/custom-requests/status', requestBody)).data;",
     );
     assert.ok(mentions(failures, 'hard-codes an API URL'));
   });
@@ -140,7 +142,7 @@ describe('APP4-S02 — the generated-client boundary', () => {
 
   it('refuses an operation that never crossed the curated boundary', () => {
     const source = real(CANONICAL_FILES.apiClientIndex).replace(
-      "export { publicSecureLinkResolve } from './generated/embroidery-api';",
+      "export { publicCustomRequestStatus } from './generated/embroidery-api';",
       '',
     );
     assert.ok(
@@ -191,8 +193,8 @@ describe('APP4-S02 — the fragment carrier', () => {
   it('refuses a component that can reach the carrier', () => {
     const failures = failuresAfterEdit(
       CANONICAL_FILES.authorized,
-      '  const copy = SECURE_LINK_COPY.authorized;',
-      '  const copy = SECURE_LINK_COPY.authorized;\n  const debug = window.location.hash;',
+      '  const presentation = presentationOf(view.status);',
+      '  const presentation = presentationOf(view.status);\n  const debug = window.location.hash;',
     );
     assert.ok(mentions(failures, 'a component reaches the token carrier'));
   });
@@ -316,10 +318,10 @@ describe('APP4-S02 — token lifetime and secrecy', () => {
   it('refuses a success that leaves the token behind', () => {
     const failures = failuresAfterEdit(
       CANONICAL_FILES.controller,
-      `    onSuccess: (grant) => {
+      `    onSuccess: (payload: TPayload) => {
       // A verdict exists and it is favourable; the credential has no further use.
       clearToken();`,
-      `    onSuccess: (grant) => {`,
+      `    onSuccess: (payload: TPayload) => {`,
     );
     assert.ok(mentions(failures, 'a resolved grant does not clear the token'));
   });
@@ -328,7 +330,7 @@ describe('APP4-S02 — token lifetime and secrecy', () => {
     const failures = failuresAfterEdit(
       CANONICAL_FILES.controller,
       `      if (outcome === 'TRANSIENT') {
-        // No verdict was reached, so the token is kept for a manual retry.
+        // No verdict was reached, so the credential is kept for a manual retry.
         dispatch({ type: 'TRANSIENT_FAILURE' });
         return;
       }
@@ -345,8 +347,8 @@ describe('APP4-S02 — token lifetime and secrecy', () => {
   it('refuses a reducer that carries the token', () => {
     const failures = failuresAfterEdit(
       CANONICAL_FILES.state,
-      '  /** Present only in `AUTHORIZED`. */\n  readonly grant?: SecureLinkGrant;',
-      '  readonly grant?: SecureLinkGrant;\n  readonly token?: string;',
+      "  | { readonly status: 'AUTHORIZED'; readonly payload: TPayload }",
+      "  | { readonly status: 'AUTHORIZED'; readonly payload: TPayload; readonly token: string }",
     );
     assert.ok(mentions(failures, 'the reducer state names a token'));
   });
@@ -389,22 +391,40 @@ describe('APP4-S02 — non-enumeration and scope', () => {
     assert.ok(mentions(failures, 'the unavailable card accepts a cause'));
   });
 
-  it('refuses an authorized shell that renders a grant field', () => {
+  it('refuses authorized content that renders an identifier the response carries', () => {
     const failures = failuresAfterEdit(
       CANONICAL_FILES.authorized,
-      '      <p className="secure-link-access__caption">',
-      '      <p>{grant.customRequestId}</p>\n      <p className="secure-link-access__caption">',
+      '        <p className="request-status__submitted">',
+      '        <p>{view.requestId}</p>\n        <p className="request-status__submitted">',
     );
     assert.ok(mentions(failures, 'which no approved frame draws'));
   });
 
-  it('refuses an APP5 commercial concept in a component', () => {
+  it('refuses an APP6+ commercial concept in a component', () => {
     const failures = failuresAfterEdit(
       CANONICAL_FILES.authorized,
-      '      <div className="secure-link-access__slot">',
-      '      <div className="secure-link-access__slot">\n        <button type="button">Thanh toán</button>',
+      '        <p className="request-status__submitted">',
+      '        <button type="button">Checkout</button>\n        <p className="request-status__submitted">',
     );
-    assert.ok(mentions(failures, 'reaches for an APP5+ commercial concept'));
+    assert.ok(mentions(failures, 'reaches for an APP6+ commercial concept'));
+  });
+
+  /**
+   * The architecture ruling, as a mutation.
+   *
+   * Resolving the link first and reading the request second is the shape a
+   * reader reaches for by default, and it is wrong for a reason nothing on
+   * screen reveals: the same token is authorized twice and the same abuse
+   * budget spent twice, for a request id `APP5-B03` resolves for itself.
+   */
+  it('refuses a chained secure-link resolve in front of B03', () => {
+    const failures = failuresAfterEdit(
+      CANONICAL_FILES.client,
+      '  const body = await publicCustomRequestStatus(requestBody, { instance: getBrowserApiClient() });',
+      `  await publicSecureLinkResolve({ token }, { instance: getBrowserApiClient() });
+  const body = await publicCustomRequestStatus(requestBody, { instance: getBrowserApiClient() });`,
+    );
+    assert.ok(mentions(failures, 'chains publicSecureLinkResolve'));
   });
 
   it('refuses a second card owning an h1', () => {

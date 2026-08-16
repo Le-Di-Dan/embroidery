@@ -505,9 +505,8 @@ export type {
 //   or an asset that some other challenge uploaded.
 // - `publicCustomRequestSubmit` (`APP5-B01`) creates the request.
 //
-// Deliberately withheld: `publicCustomRequestStatus` (`APP5-B03`), whose
-// consumer is `APP5-S02` and which is a grant-scoped read, not part of
-// creation — it is released when that screen exists, on its own terms.
+// `publicCustomRequestStatus` (`APP5-B03`) was withheld by `APP5-S01` and is
+// released below, by its own consumer, on its own terms.
 //
 // Two enums cross as **values** because the screen branches on both, and a
 // mistyped string literal is a comparison that is simply never true:
@@ -536,6 +535,59 @@ export type {
   CustomRequestQuantityLine,
   CustomRequestSubmissionResponse,
   SubmitCustomRequestBody,
+} from './generated/embroidery-api.schemas';
+
+// Grant-scoped custom-request status (`APP5-B03`), consumed by the Storefront
+// request-status landing (`APP5-S02`). Exposed here so that feature never
+// deep-imports the generated tree.
+//
+// It crosses **alone**, and the shape of the set is the architecture. B03
+// already runs the whole APP4 authorization chain inside one call — policy,
+// secure-link rate limiter, secure-link resolution, the exact request the grant
+// names, then the customer-safe projection — so the Storefront resolves a
+// secure link and reads a request in a single round trip. A client that called
+// `publicSecureLinkResolve` first and B03 second would authorize the same token
+// twice, spend the same abuse budget twice and hold the raw credential across
+// two flights for no gain. `publicSecureLinkResolve` stays exported above
+// because APP4 owns that contract, not because this screen chains it.
+//
+// The token travels in `ReadCustomRequestStatusBody` — a request **body**,
+// never a path segment, query parameter or header — under the same
+// `^[A-Za-z0-9_-]{43}$` shape `ResolveSecureLinkBody` publishes, which is what
+// lets one fragment parser serve both and keeps a bearer credential out of
+// every access log between the browser and the API. The body type is exported
+// so the caller names the wire shape at the transport seam instead of
+// assembling a literal that would compile just as well with the token in the
+// wrong field.
+//
+// `CustomRequestStatusResponseStatus` crosses as a **value** because the screen
+// branches on the lifecycle state and a mistyped string literal is a comparison
+// that is simply never true. It publishes the **full** LC-11 enum, APP6+ states
+// included, so a request that has moved past intake is still readable: the
+// screen renders those neutrally rather than mapping them onto an APP5 state it
+// would be inventing. `RequestAssetResponseRole` crosses for the same reason.
+//
+// The two subject kinds cross as values as well — `subject` is a union and the
+// discriminant is what tells the two halves apart; comparing it to a hand-typed
+// `'CATALOG'` is the one mistake that would silently render neither branch.
+//
+// No Admin APP5 operation is on this list. The queue, the request detail and
+// the moderation transitions (`APP5-B04`, `APP5-B05`) belong to a different
+// application and are released, if ever, by the Admin screens that consume them.
+export { publicCustomRequestStatus } from './generated/embroidery-api';
+export {
+  CustomRequestStatusResponseStatus,
+  RequestAssetResponseRole,
+  CatalogRequestSubjectResponseKind,
+  CustomerOwnedRequestSubjectResponseKind,
+} from './generated/embroidery-api.schemas';
+export type {
+  ReadCustomRequestStatusBody,
+  CustomRequestStatusResponse,
+  CatalogRequestSubjectResponse,
+  CustomerOwnedRequestSubjectResponse,
+  RequestQuantityLineResponse,
+  RequestAssetResponse,
 } from './generated/embroidery-api.schemas';
 
 // Generated transport types derived from the committed OpenAPI artifact.

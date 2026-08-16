@@ -1,0 +1,30 @@
+// ResponsiveText — the app-shared approved-copy pair.
+//
+// Exactly one half is in the accessibility tree at any width, because
+// `display: none` removes the other rather than merely hiding it. The
+// breakpoint is the Storefront shell's own (storefront-shell.scss
+// `$bp-footer`), mirrored here as every feature sheet already mirrors it.
+
+$bp-shell-wide: 768px;
+
+.responsive-text {
+  &__wide {
+    display: none;
+  }
+
+  &__narrow {
+    display: inline;
+  }
+}
+
+@media (min-width: $bp-shell-wide) {
+  .responsive-text {
+    &__wide {
+      display: inline;
+    }
+
+    &__narrow {
+      display: none;
+    }
+  }
+}

@@ -19,69 +19,25 @@
  * "liên kết không hợp lệ" variant. A missing fragment, a malformed fragment and
  * a definitive 404 all render this same text (§13, §14).
  *
- * ### Why some entries carry two strings
+ * ### Why nothing here describes an authorized link
  *
- * `APP4-D01` drew the authorized card twice, and the two frames do not merely
- * rescale — `629:20` and `629:70` carry **different words**. That divergence is
- * approved design, not an artifact, so it is represented rather than resolved:
- * `wide` is the desktop frame's text, `narrow` is the mobile frame's, and the
- * card renders both inside one element with CSS choosing which is visible. One
- * heading element, two candidate strings — never two headings.
+ * The authorized state is the consumer's. `APP4-D01` drew it as an empty
+ * handoff slot; `APP5-D01` fills that slot with the request itself and states
+ * so explicitly (`661:335` — the resolve step is `APP4-S02`'s, the content is
+ * built only after a valid grant). The three access states below are the ones
+ * that say nothing about what the link opens, and they are the ones this module
+ * still owns.
  *
  * The unavailable card diverges only in type size, so it carries one string per
  * entry; `634:119` states that state keeps its layout at both sizes.
  */
 
-/** A string the approved frames express differently per viewport. */
-export interface ResponsiveCopy {
-  /** Desktop 1440 — `629:20`. */
-  readonly wide: string;
-  /** Mobile 390 — `629:70`. */
-  readonly narrow: string;
-}
-
 export const SECURE_LINK_COPY = {
-  /** `629:9` / `629:10` / `629:16` — bootstrap while B06 resolves. */
+  /** `629:9` / `629:10` / `629:16` — bootstrap while the landing resolves. */
   bootstrap: {
     title: 'Đang mở liên kết an toàn',
     body: 'Vui lòng chờ trong giây lát.',
     caption: 'Không đóng tab trong lúc kiểm tra.',
-  },
-
-  /** `629:26` … `629:33` desktop, `629:76` … `629:83` mobile. */
-  authorized: {
-    badge: {
-      wide: 'Truy cập an toàn đã xác thực',
-      narrow: 'Đã xác thực',
-    },
-    title: {
-      wide: 'Bạn đã vào khu vực riêng',
-      narrow: 'Khu vực riêng của bạn',
-    },
-    body: {
-      wide: 'Liên kết hợp lệ. Đây là khu vực dành riêng cho yêu cầu thêu của bạn.',
-      narrow: 'Liên kết hợp lệ.',
-    },
-    /**
-     * `629:30` / `629:80` — the handoff slot.
-     *
-     * A dashed, explicitly labelled placeholder, and deliberately nothing more.
-     * APP4 authenticates access and builds the frame; the request content,
-     * quotation, design approval and payment all belong to APP5 and later, and
-     * inventing any of them here is the boundary `APP4-P00` §F drew (§12).
-     */
-    slotTitle: {
-      wide: 'Nội dung yêu cầu sẽ hiển thị tại đây',
-      narrow: 'Nội dung yêu cầu (APP5+)',
-    },
-    slotNote: {
-      wide: 'Phần này thuộc APP5 trở đi. APP4 chỉ xác thực quyền truy cập và dựng khung — không hiển thị báo giá, duyệt mẫu hay thanh toán.',
-      narrow: 'APP4 chỉ dựng khung đã xác thực.',
-    },
-    caption: {
-      wide: 'Liên kết này chỉ dành cho bạn. Vui lòng không chia sẻ lại.',
-      narrow: 'Vui lòng không chia sẻ liên kết này.',
-    },
   },
 
   /**
@@ -118,7 +74,6 @@ export const SECURE_LINK_COPY = {
    */
   live: {
     bootstrap: 'Đang kiểm tra liên kết an toàn.',
-    authorized: 'Liên kết hợp lệ. Bạn đã vào khu vực riêng.',
     unavailable: 'Liên kết không sử dụng được.',
     transientError: 'Không kết nối được máy chủ. Bạn có thể thử lại.',
   },

@@ -97,8 +97,8 @@ with the three scope corrections noted below.
 | `APP5-B05` | `COMPLETE` | Admin moderation notes & guarded transitions — `POST /api/admin/custom-requests/{requestId}/moderation-notes` (`adminCustomRequest_appendNote`) and `POST …/transitions` (`adminCustomRequest_transition`); the APP5 subset as an application-layer restriction, both reason texts, append-only notes and a real competing-transition race. See [`../reports/APP5-B05-COMPLETION-REPORT.md`](../reports/APP5-B05-COMPLETION-REPORT.md) |
 | `APP5-B07` | `COMPLETE` | **Inserted by `APP5-S01`** — Public catalog variant selection — `GET /api/public/products/{slug}/variants` (`publicProductVariant_list`); Catalog-owned, anonymous, selection-only, `is_active` eligibility and `display_order, id` ordering. Unblocks `APP5-S01`. See [`../reports/APP5-B07-COMPLETION-REPORT.md`](../reports/APP5-B07-COMPLETION-REPORT.md) |
 | `APP5-S01` | `COMPLETE` | Request creation & submission screen at `/yeu-cau/moi` — subject XOR, catalog branch on `publicProductVariantList` with one explicitly chosen variant, customer-owned branch, embedded APP4 verification, `APP5-B02` uploads gated on `bindable`, review, duplicate-safe `APP5-B01` submission and the `APP5-S02` hand-off. See [`../reports/APP5-S01-COMPLETION-REPORT.md`](../reports/APP5-S01-COMPLETION-REPORT.md) |
-| `APP5-S02` | `INCOMPLETE` | **Next** — Confirmation & grant-scoped status; closes `FU-APP4-S01-SUCCESS-HANDOFF-01`. `APP5-S01` created the `/yeu-cau/da-gui` route boundary as an empty destination and rendered none of its content |
-| `APP5-A01` | `INCOMPLETE` | Admin request queue |
+| `APP5-S02` | `COMPLETE` | Confirmation at `/yeu-cau/da-gui` and grant-scoped single-request status at `/truy-cap` — the request code display-only with no lookup, the APP4 fragment/strip/credential machinery generalised and reused, and `publicCustomRequestStatus` as the **single** status resolution call with `publicSecureLinkResolve` never chained in front of it. Closes `FU-APP4-S01-SUCCESS-HANDOFF-01`. See [`../reports/APP5-S02-COMPLETION-REPORT.md`](../reports/APP5-S02-COMPLETION-REPORT.md) |
+| `APP5-A01` | `INCOMPLETE` | **Next** — Admin request queue |
 | `APP5-B06` | `INCOMPLETE` | **Inserted by `APP5-B05`** — Admin private request-asset delivery; one authorized binary route for a request-bound `COP_IMAGE`/`REFERENCE`, streamed through the API. Must precede `APP5-A02`; does not block `S01`, `S02` or `A01`. Closes `FU-APP5-B04-COP-ASSET-DELIVERY-01` |
 | `APP5-A02` | `INCOMPLETE` | Admin request detail & moderation — **depends on `APP5-B06`** |
 | `APP5-E01` | `INCOMPLETE` | Cross-layer acceptance |
@@ -310,3 +310,33 @@ and the quantity table is scoped beneath the one variant the customer picked.
 as two different business fields — nothing copies, defaults or validates one
 against the other. B07's empty-list answer is rendered as its own catalog state
 and never as `650:187`, which stays reserved for a stale Design Session.
+
+### 10.7 One call resolves the link and reads the request (`APP5-S02`, 2026-08-16)
+
+The Product Owner ruled, before implementation, that `/truy-cap` must **not**
+chain `APP4-B06` in front of `APP5-B03`:
+
+```text
+capture #t=  →  strip fragment  →  clean URL  →  publicCustomRequestStatus  →  status
+```
+
+B03 already performs the whole APP4 authorization chain internally — policy, the
+secure-link rate limiter, secure-link resolution, the exact `customRequestId`
+the grant names, then the customer-safe projection. A `resolve → status` pair
+would authorize the same token twice, spend the same per-IP abuse budget twice,
+hold the raw credential across two flights and add a round trip whose only
+result is a request id B03 resolves for itself and never discloses.
+
+`APP4-B06` stays published and stays exported from the curated api-client
+boundary — APP4 owns that contract; this landing simply does not call it. The
+`check-app4-s02` gate now enforces the absence directly, because the mistake is
+invisible on screen: a chained page renders identically.
+
+**Consequence for the shared machinery.** The fragment reader, the stripper, the
+credential lifetime and the three APP4 access states were generalised over the
+authorized payload rather than copied, so there is exactly one fragment parser,
+one strip and one credential lifetime in the Storefront. `APP4-D01` drew the
+authorized state as an empty handoff slot and `APP5-D01` deliberately reuses
+those frames rather than redrawing them (`FIG-APP5-MATRIX-STATUS` `674:3`,
+`661:335`); the slot is now the request, and the browser-side `APP4-B06` caller
+and its placeholder card were deleted rather than left as a second mount point.

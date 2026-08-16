@@ -1,0 +1,420 @@
+// Grant-scoped request status — feature-scoped styles (APP5-S02).
+//
+// Design source: FIG-APP5-S02-STATUS-* (file BQwqV8GdfUIELvsQDB1UQE, page
+// APP_05, nodes 661:3 · 661:67 · 661:131 · 661:199 · 661:267 · 661:335 ·
+// 661:352), approved under FIG-APPROVAL-APP5-D01-PO-001.
+//
+// Measured live from the approved frames:
+//   desktop 1440 — content 100…1340, main column 760, aside 440, gutter 40
+//                  cards radius 24, padding 23, heading 24, badge pill 34 tall
+//   mobile   390 — one column, card 358 wide inside a 16 gutter, radius 20,
+//                  padding 15, heading 20, thumbs 100 × 70
+//
+// This content mounts *inside* the APP4 `.secure-link-access` section, which is
+// deliberate: APP5-D01 reuses the secure-access frames rather than redrawing
+// them, so the wide/narrow copy switch and the section's own vertical rhythm
+// are already established there and are not duplicated here.
+
+@use '@embroidery/styles' as styles;
+
+// Mirrored from secure-link-access.scss, which mirrors storefront-shell.scss.
+// One breakpoint governs the whole landing; a second would let the copy switch
+// and the layout switch disagree at some width nobody tests.
+$bp-shell-wide: 768px;
+
+// Approved geometry (661:13 / 661:27 / 661:50).
+$content-max: 1240px;
+$main-column: 760px;
+$aside-column: 440px;
+$column-gap: 40px; // 661:27 → 661:50 gutter; no step between 32 and 48
+$card-padding: 23px; // 661:14 — not a step on the shared scale
+$card-padding-mobile: 15px; // 661:362 — as above
+$card-gap: styles.spacing(16);
+$stack-gap: 20px; // 661:27 → 661:50 vertical rhythm; no step between 16 and 24
+
+// Approved badge and rail geometry (661:10, 661:15).
+$badge-padding-block: 6px;
+$badge-padding-inline: styles.spacing(16);
+$dot-size: 26px;
+$dot-size-mobile: 20px;
+$rail-gap: styles.spacing(8);
+
+// Approved thumb geometry (661:39 desktop, 661:386 mobile).
+$thumb-width: 124px;
+$thumb-height: 80px;
+$thumb-width-mobile: 100px;
+$thumb-height-mobile: 70px;
+
+// 20px heading on 661:358 — one step below heading-s and not on the scale.
+$font-size-title-mobile: 20px;
+
+$line-height-snug: 1.35;
+$line-height-body: 1.5;
+
+.request-status {
+  display: flex;
+  flex-direction: column;
+  gap: $stack-gap;
+  width: 100%;
+  max-width: $content-max;
+
+  // 661:6 / 661:355 — the strip that says how this page was reached.
+  &__access-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 13px $card-padding;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+  }
+
+  &__access-title {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__access-expiry {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__headline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: styles.spacing(12);
+  }
+
+  &__title {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+
+    // The heading receives focus when the link opens, so it must show a ring; a
+    // programmatic focus with no visible indicator is a keyboard user losing
+    // their place silently.
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 4px;
+    }
+  }
+
+  // 661:10 / 661:52 — never colour alone (634:150): the pill carries its own
+  // label and every card repeats the meaning in prose.
+  &__badge {
+    align-self: flex-start;
+    margin: 0;
+    padding: $badge-padding-block $badge-padding-inline;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: 999px;
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-snug;
+    color: styles.$color-text-secondary;
+
+    &--info {
+      border-color: styles.$color-status-info;
+      color: styles.$color-status-info;
+    }
+    &--warning {
+      border-color: styles.$color-status-warning;
+      color: styles.$color-status-warning;
+    }
+    &--error {
+      border-color: styles.$color-status-error;
+      color: styles.$color-status-error;
+    }
+    // NEUTRAL keeps the base border and text: an APP6+ state this phase never
+    // drew must not borrow the colour of one it did.
+  }
+
+  &__submitted {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__main,
+  &__aside {
+    display: flex;
+    flex-direction: column;
+    gap: $stack-gap;
+    min-width: 0;
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    padding: $card-padding;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-lg;
+
+    // 661:178 / 661:246 / 661:314 — the workshop's message is bordered in the
+    // state's own colour, and still carries a title and body that say why.
+    &--warning {
+      border-color: styles.$color-status-warning;
+    }
+    &--error {
+      border-color: styles.$color-status-error;
+    }
+  }
+
+  &__card-title {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-regular;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__card-lead {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__card-note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__reason-body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-text-primary;
+    // The workshop writes this freehand; a long word or a pasted URL must wrap
+    // rather than push the card past the viewport.
+    overflow-wrap: anywhere;
+  }
+
+  // 661:15 … 661:25 — the three-step rail. Horizontal where there is room,
+  // stacked on a phone (661:363 … 661:371), which is also the reading order.
+  &__rail {
+    display: flex;
+    flex-direction: column;
+    gap: $rail-gap;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__step {
+    display: flex;
+    align-items: center;
+    gap: styles.spacing(8);
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-snug;
+    color: styles.$color-text-tertiary;
+
+    &--done,
+    &--closed {
+      color: styles.$color-text-primary;
+    }
+  }
+
+  &__step-dot {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: $dot-size;
+    height: $dot-size;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: 999px;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__step--done &__step-dot {
+    background: styles.$color-status-success;
+    border-color: styles.$color-status-success;
+    color: styles.$color-surface-primary;
+  }
+
+  // 661:219 / 661:287 — a rejected or cancelled request reached the last step
+  // too; it is the outcome that differs, not whether the workshop answered.
+  &__step--closed &__step-dot {
+    background: styles.$color-status-error;
+    border-color: styles.$color-status-error;
+    color: styles.$color-surface-primary;
+  }
+
+  // 661:30 … 661:37 — the frozen submission, as label/value pairs.
+  &__facts {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    margin: 0;
+  }
+
+  &__fact {
+    display: flex;
+    gap: styles.spacing(12);
+  }
+
+  &__fact-label {
+    flex: 0 0 auto;
+    width: 170px;
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__fact-value {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+    min-width: 0;
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  // 661:39 … 661:47 — a role label, not an image. APP5 publishes no
+  // customer-facing delivery for a private request asset, so the tile is the
+  // whole truthful rendering rather than a placeholder awaiting artwork.
+  &__thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(16);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__thumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: $thumb-width;
+    height: $thumb-height;
+    padding: styles.spacing(8);
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: 10px; // 661:39 — not a step on the shared scale
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-snug;
+    color: styles.$color-text-tertiary;
+    text-align: center;
+  }
+
+  &__points {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__point {
+    font-size: styles.$font-size-body-s;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+
+    // The frames prefix each line with a middot rather than a list bullet.
+    &::before {
+      content: '· ';
+    }
+  }
+
+  @media (min-width: $bp-shell-wide) {
+    display: grid;
+    grid-template-areas:
+      'access access'
+      'headline headline'
+      'main aside';
+    grid-template-columns: minmax(0, $main-column) minmax(0, $aside-column);
+    gap: $stack-gap $column-gap;
+    align-items: start;
+
+    &__access-bar {
+      grid-area: access;
+    }
+    &__headline {
+      grid-area: headline;
+    }
+    &__main {
+      grid-area: main;
+    }
+    &__aside {
+      grid-area: aside;
+    }
+
+    &__title {
+      flex-basis: auto;
+    }
+
+    &__rail {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: styles.spacing(24);
+    }
+  }
+}
+
+// Mobile 390 (661:352). One column in the frames' own source order, which is
+// also the order the markup already has — the reason card sits directly under
+// the state because that is where a phone reader needs it.
+@media (max-width: #{$bp-shell-wide - 1px}) {
+  .request-status {
+    &__card {
+      gap: styles.spacing(8);
+      padding: $card-padding-mobile;
+      border-radius: styles.$radius-md;
+    }
+
+    &__title {
+      font-size: $font-size-title-mobile;
+    }
+
+    &__card-title {
+      font-size: styles.$font-size-body-s;
+      font-weight: styles.$font-weight-medium;
+    }
+
+    &__card-lead,
+    &__reason-body,
+    &__step,
+    &__fact-label,
+    &__fact-value,
+    &__point {
+      font-size: styles.$font-size-caption;
+    }
+
+    &__fact-label {
+      width: 140px;
+    }
+
+    &__step-dot {
+      width: $dot-size-mobile;
+      height: $dot-size-mobile;
+    }
+
+    &__thumb {
+      width: $thumb-width-mobile;
+      height: $thumb-height-mobile;
+      font-size: 10px; // 661:387 — below the shared caption step
+    }
+  }
+}

@@ -20,8 +20,22 @@
  *   guessing, and guessing right sometimes is what makes it a probe.
  * - **A query fallback.** `?t=` "for links that lose the fragment" — which
  *   writes the credential into every access log the fragment exists to avoid.
- * - **The authorized shell grows content.** A request id here, an expiry
- *   countdown there, and APP4 is rendering APP5.
+ * - **The authorized content grows an identifier.** A request id here, an asset
+ *   id there, and the page has invited a lookup surface for a value the
+ *   customer cannot use and `G01 §5` refuses to authorize.
+ * - **A chained resolve.** `publicSecureLinkResolve` in front of
+ *   `publicCustomRequestStatus` "because that is how you resolve a link". The
+ *   page renders identically and the token is authorized twice, the abuse
+ *   budget spent twice, the credential held across two flights.
+ *
+ * ### Scope, after `APP5-S02`
+ *
+ * The landing is now two features: `secure-link-access` owns the fragment, the
+ * strip, the credential lifetime and the three access states `APP4-D01` drew;
+ * `custom-request-status` fills the authorized slot with the request, which is
+ * what `APP5-D01` asked for when it reused these frames rather than redrawing
+ * them (`661:335`). Every rule below is unchanged and now sweeps both — the
+ * consumer moved, the security contract did not.
  *
  * Assertions read **real source with comments stripped**, the **registry**, and
  * the **generated contract** — never prose and never the completion report.
@@ -42,20 +56,33 @@ export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STOREFRONT = 'apps/storefront/src';
 export const FEATURE_DIR = `${STOREFRONT}/features/secure-link-access`;
 
+/**
+ * The APP5 consumer of the same machinery (`APP5-S02`).
+ *
+ * `APP4-D01` drew the authorized state as an empty handoff slot and `APP5-D01`
+ * reuses these frames rather than redrawing them, so the authorized card is now
+ * APP5's request content and the credential is spent on `APP5-B03`. Every
+ * fragment and token rule below is unchanged and is swept across **both**
+ * directories: the consumer changed, the security contract did not, and a
+ * checker that stopped at the old directory would have stopped checking the
+ * exact file that now holds a live credential.
+ */
+export const STATUS_FEATURE_DIR = `${STOREFRONT}/features/custom-request-status`;
+
 /** The one approved route. */
 export const S02_ROUTE = 'truy-cap';
 
 export const CANONICAL_FILES = Object.freeze({
   page: `${STOREFRONT}/app/${S02_ROUTE}/page.tsx`,
   index: `${FEATURE_DIR}/index.ts`,
-  client: `${FEATURE_DIR}/api/secure-link.client.ts`,
-  controller: `${FEATURE_DIR}/hooks/use-secure-link-resolution.ts`,
+  client: `${STATUS_FEATURE_DIR}/api/custom-request-status.client.ts`,
+  controller: `${FEATURE_DIR}/hooks/use-secure-link-bootstrap.ts`,
   fragment: `${FEATURE_DIR}/model/secure-link-fragment.ts`,
   state: `${FEATURE_DIR}/model/secure-link-state.ts`,
   copy: `${FEATURE_DIR}/model/secure-link-copy.ts`,
-  screen: `${FEATURE_DIR}/ui/secure-link-screen.tsx`,
+  screen: `${FEATURE_DIR}/ui/secure-link-shell.tsx`,
   provider: `${FEATURE_DIR}/ui/secure-link-query-provider.tsx`,
-  authorized: `${FEATURE_DIR}/ui/secure-link-authorized-card.tsx`,
+  authorized: `${STATUS_FEATURE_DIR}/ui/request-status-content.tsx`,
   unavailable: `${FEATURE_DIR}/ui/secure-link-unavailable-card.tsx`,
   errorCard: `${FEATURE_DIR}/ui/secure-link-error-card.tsx`,
   styles: `${FEATURE_DIR}/styles/secure-link-access.scss`,
@@ -65,8 +92,26 @@ export const CANONICAL_FILES = Object.freeze({
   openapi: 'packages/contracts/openapi/openapi.generated.json',
 });
 
-/** The one generated operation S02 is allowed to reach, and the only one. */
-export const REQUIRED_OPERATION = 'publicSecureLinkResolve';
+/**
+ * The one generated operation this landing is allowed to reach.
+ *
+ * `APP5-B03` runs the whole APP4 authorization chain internally — policy, the
+ * secure-link limiter, secure-link resolution, then the customer-safe request
+ * projection — so the landing resolves the link and reads the request in a
+ * single round trip.
+ */
+export const REQUIRED_OPERATION = 'publicCustomRequestStatus';
+
+/**
+ * The operation the landing must **not** reach.
+ *
+ * Chaining `publicSecureLinkResolve` in front of B03 would authorize the same
+ * token twice, spend the same per-IP abuse budget twice and hold the raw
+ * credential across two flights — for a request id B03 resolves for itself and
+ * never discloses. It stays published, because APP4 owns that contract; it is
+ * simply not this landing's to call.
+ */
+export const FORBIDDEN_CHAINED_OPERATION = 'publicSecureLinkResolve';
 
 /** The registry rows this checkpoint consumes; all six must be approved. */
 export const S02_DESIGN_ROWS = Object.freeze([
@@ -107,10 +152,13 @@ function stripped(rootDir, key) {
   return stripComments(read(rootDir, key) ?? '');
 }
 
-/** Every runtime source file the feature owns, comments stripped. */
+/**
+ * Every runtime source file on the credential path, comments stripped.
+ *
+ * Both features, because both are on it: the security machinery lives in one
+ * and the consumer that spends the credential lives in the other.
+ */
 export function featureSources(rootDir) {
-  const base = join(rootDir, FEATURE_DIR);
-  if (!existsSync(base)) return [];
   const files = [];
   const walk = (dir) => {
     for (const entry of readdirSync(dir)) {
@@ -124,7 +172,10 @@ export function featureSources(rootDir) {
       }
     }
   };
-  walk(base);
+  for (const dir of [FEATURE_DIR, STATUS_FEATURE_DIR]) {
+    const base = join(rootDir, dir);
+    if (existsSync(base)) walk(base);
+  }
   const page = join(rootDir, CANONICAL_FILES.page);
   if (existsSync(page)) {
     files.push({ path: CANONICAL_FILES.page, code: stripComments(readFileSync(page, 'utf8')) });
@@ -198,6 +249,17 @@ function checkGeneratedClient(rootDir, fail) {
   const boundary = stripComments(read(rootDir, 'apiClientIndex') ?? '');
   if (!boundary.includes(REQUIRED_OPERATION)) {
     fail(`${CANONICAL_FILES.apiClientIndex}: does not export ${REQUIRED_OPERATION}`);
+  }
+  /*
+   * No chained resolve, anywhere on the credential path. This is the assertion
+   * for the architecture ruling: the failure it guards is invisible on screen —
+   * the page renders identically — so it can only be caught in source or by a
+   * test that counts calls, and both exist.
+   */
+  for (const file of featureSources(rootDir)) {
+    if (file.code.includes(FORBIDDEN_CHAINED_OPERATION)) {
+      fail(`${file.path}: chains ${FORBIDDEN_CHAINED_OPERATION}; B03 authorizes the token itself`);
+    }
   }
   for (const file of featureSources(rootDir)) {
     if (/from '.*generated\//.test(file.code)) {
@@ -469,29 +531,38 @@ function checkNonEnumeration(rootDir, fail) {
   }
 }
 
-/** 26, 27 — the authorized shell renders the frame and nothing beyond it. */
+/** 26, 27 — the authorized content renders the frames and nothing beyond them. */
 function checkAuthorizedShell(rootDir, fail) {
   const authorized = stripped(rootDir, 'authorized');
   /*
-   * The grant's three fields are safe to *hold* and are not drawn on either
+   * The identifiers `APP5-B03` returns are safe to *hold* and are drawn on no
    * approved frame, so none of them is rendered. A card that printed one would
-   * be showing the customer an identifier they cannot use and inviting a
-   * lookup surface for it.
+   * be showing the customer a value they cannot use and inviting a lookup
+   * surface for it — and the request code, the one identifier that *is* drawn,
+   * is display-only and opens nothing (`G01 §5`).
+   *
+   * They do not reach this component at all: the projection drops them at the
+   * hook boundary. The assertion is that the names never come back.
    */
-  for (const field of ['customRequestId', 'expiresAt', 'scopeKind']) {
+  for (const field of ['requestId', 'assetId', 'productId', 'productVariantId', 'productSlug']) {
     if (authorized.includes(field)) {
       fail(`${CANONICAL_FILES.authorized}: renders ${field}, which no approved frame draws`);
     }
   }
   for (const file of componentSources(rootDir)) {
-    if (/quotation|báo giá|thanh toán|payment|deposit|đặt cọc|invoice|checkout/i.test(file.code)) {
-      fail(`${file.path}: reaches for an APP5+ commercial concept`);
+    /*
+     * No component may *name* an APP6+ commercial concept. The approved copy
+     * does name several — to say this page has none of them — and it lives in a
+     * copy module, which is the boundary that keeps the two apart.
+     */
+    if (/quotation|payment|deposit|invoice|checkout/i.test(file.code)) {
+      fail(`${file.path}: reaches for an APP6+ commercial concept`);
     }
     if (/onApprove|onSubmitRequest|useMutation\(/.test(file.code)) {
-      fail(`${file.path}: a component owns a business action; APP4 renders a shell only`);
+      fail(`${file.path}: a component owns a business action; this landing is read-only`);
     }
   }
-  // The slot stays a placeholder: no second operation is called anywhere.
+  // One credential, one call: no second operation is reached anywhere.
   const client = stripped(rootDir, 'client');
   const operations = client.match(/public[A-Z]\w+/g) ?? [];
   if (new Set(operations).size !== 1) {
@@ -512,8 +583,13 @@ function checkNoBackendChange(rootDir, fail) {
   if (secureLinks.length !== 1) {
     fail(`the secure-link surface is ${secureLinks.length} paths; S02 adds none`);
   }
+  // B06 stays published — APP4 owns that contract, and not calling it from this
+  // landing is a client decision, not a contract change.
   if (!paths.includes('/api/public/secure-links/resolve')) {
     fail('the B06 resolver is missing from the published contract');
+  }
+  if (!paths.includes('/api/public/custom-requests/status')) {
+    fail('the B03 status read is missing from the published contract');
   }
   for (const file of featureSources(rootDir)) {
     if (/from '.*apps\/api|from '.*apps\/worker/.test(file.code)) {
@@ -585,8 +661,9 @@ const HEADLINE =
   'fragment under the exact key t and the token shape the generated contract publishes, with no ' +
   'query, path or header carrier, no fallback and no normalization of the credential bytes; ' +
   'captured, then stripped with history.replaceState to a pathname-and-search URL that carries no ' +
-  'fragment, and only then POSTed in the body through the generated publicSecureLinkResolve ' +
-  'exported from the curated api-client boundary — the order proved as straight-line code, with ' +
+  'fragment, and only then POSTed in the body through the generated publicCustomRequestStatus ' +
+  'exported from the curated api-client boundary, with publicSecureLinkResolve never chained in ' +
+  'front of it anywhere on the credential path — the order proved as straight-line code, with ' +
   'the strip unconditional so a malformed fragment is removed too and makes no request; the token ' +
   'held in a ref and passed to a mutation that carries no variables, reset on settlement, cleared ' +
   'on a resolved grant, on a definitive refusal and on unmount, and kept only across a transient ' +
@@ -595,10 +672,11 @@ const HEADLINE =
   'no console, analytics, beacon or third-party script anywhere in the feature; automatic retry ' +
   'disabled on the mutation and on the route-local client, with no timer, poll or query; one ' +
   'unavailable card that accepts no cause and no cause-specific copy, so a 404 and a malformed ' +
-  'fragment are indistinguishable; an authorized shell that draws no grant field, no APP5 ' +
-  'commercial concept and no business action; one h1 per approved state with a polite live region ' +
-  'and no second main, header or footer; and a secure-link surface still one path, so S02 ' +
-  'published none of its own.';
+  'fragment are indistinguishable; authorized content that draws no identifier the response ' +
+  'carries, no APP6+ commercial concept and no business action; one h1 per approved state with a ' +
+  'polite live region and no second main, header or footer; and a secure-link surface still one ' +
+  'path with both the B06 resolver and the B03 status read still published, so neither checkpoint ' +
+  'changed the contract.';
 
 if (process.argv[1]?.endsWith('check-app4-s02.mjs')) {
   const failures = [];
