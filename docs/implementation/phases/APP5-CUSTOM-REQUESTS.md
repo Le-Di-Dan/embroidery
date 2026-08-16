@@ -31,7 +31,14 @@ Design, when required, is delivered as one complete phase package and is not spl
 - Production scheduling.
 - General CRM behavior.
 
-## 6. Candidate engineering checkpoints
+## 6. Candidate engineering checkpoints (SUPERSEDED by `APP5-R00` — see §10)
+
+> **These fifteen slices are the original planning hypothesis and are no longer
+> the execution order.** `APP5-R00` audited every one of them against the
+> delivered repository; the authoritative roadmap is §10 below. This list is
+> retained as history — see
+> [`../audits/APP5_PHASE_ENTRY_AUDIT.md`](../audits/APP5_PHASE_ENTRY_AUDIT.md) §6
+> for the per-checkpoint disposition.
 
 These are planning slices. Execute and review one at a time. Any backend slice remains subject to the maximum of five tightly related HTTP endpoints.
 
@@ -66,3 +73,63 @@ A verified customer submits a request with a valid product/design or customer-ow
 ## 9. Handoff
 
 APP6 creates versioned design review and quotation only from eligible request states.
+
+---
+
+## 10. Audited roadmap (`APP5-R00`, 2026-08-16)
+
+Authority: [`../audits/APP5_PHASE_ENTRY_AUDIT.md`](../audits/APP5_PHASE_ENTRY_AUDIT.md).
+This section supersedes §6 for execution order and scope. §1–§5 and §7–§9 stand,
+with the three scope corrections noted below.
+
+### 10.1 Status table
+
+| Checkpoint | Status | Note |
+|---|---|---|
+| `APP5-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation |
+| `APP5-G01` | `INCOMPLETE` | **Next** — submission, moderation and intake-abuse authority |
+| `APP5-D01` | `INCOMPLETE` | One design package; gates all UI checkpoints |
+| `APP5-B01` | `INCOMPLETE` | Submission transaction (TR-LC11-01); 1 endpoint |
+| `APP5-B02` | `INCOMPLETE` | Customer attachment intake; ≤2 endpoints |
+| `APP5-B03` | `INCOMPLETE` | Grant-scoped request status read; 1 endpoint |
+| `APP5-B04` | `INCOMPLETE` | Admin queue & detail; 2 endpoints |
+| `APP5-B05` | `INCOMPLETE` | Admin notes & guarded transitions; 2 endpoints |
+| `APP5-S01` | `INCOMPLETE` | Request creation & submission screen (absorbs the COP form) |
+| `APP5-S02` | `INCOMPLETE` | Confirmation & grant-scoped status; closes `FU-APP4-S01-SUCCESS-HANDOFF-01` |
+| `APP5-A01` | `INCOMPLETE` | Admin request queue |
+| `APP5-A02` | `INCOMPLETE` | Admin request detail & moderation |
+| `APP5-E01` | `INCOMPLETE` | Cross-layer acceptance |
+| `APP5-X01` | `INCOMPLETE` | Phase closure |
+
+Removed by `APP5-R00`, recorded not deleted: `C01`, `C02`, `C03`, `C04` (the
+repository generates OpenAPI from the implementation, and APP4 already replaced
+its own `C01…C04` with `B02…B08`); original `B02` and the standalone COP slices
+`C01`/`B01`/`S01` (no draft state, and the COP is a request-bound child).
+
+### 10.2 Scope corrections to §4
+
+- **No server-side request draft.** LC-11 begins at `NEW` and
+  `custom_requests.customer_id` is `NOT NULL`; a request exists only after a
+  verified submission. Draft continuity is the APP3 design session.
+- **The customer-owned product is not a standalone aggregate.**
+  `customer_owned_products.custom_request_id` is `NOT NULL` with at most one row
+  per request, and the table has no lifecycle or archive column. "Create/read/
+  update/archive within allowed lifecycle" is withdrawn; the COP is part of the
+  submission payload.
+- **Customer status is grant-scoped, not a list.** No customer account session
+  exists; access is per-request `REQUEST_ACCESS`.
+- **Quantity breakdown** (TBL-039) is added to intake scope — it was absent from
+  §4 and §6 but is a child of the request and an APP6 pricing input.
+
+### 10.3 Baseline expectations
+
+```text
+NO_APP5_MIGRATION expected — TBL-037…042 + idempotency_records all exist
+APP5 transitions = TR-LC11-01/02/03/04/10/11 only (05–09 are APP6+)
+design gate = DESIGN_REQUIRED_BEFORE_UI_ONLY (zero APP5 Figma rows today)
+feature endpoints planned = 8
+```
+
+Carried to APP6: `design_versions` requires four catalog placement columns
+`NOT NULL`, so a customer-owned-product request cannot hold a design version
+under the current schema.
