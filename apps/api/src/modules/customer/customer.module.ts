@@ -21,11 +21,13 @@ import { SubmitVerificationAttemptUseCase } from './application/submit-verificat
 import { VerificationChallengeIssuer } from './application/verification-challenge.issuer';
 import { VerificationOutcomeAuditRecorder } from './application/verification-outcome-audit.recorder';
 import { App4SecretPepperProvider } from './config/app4-secret-pepper.provider';
+import { ADMIN_CUSTOMER_SUMMARY_PORT } from './domain/repositories/admin-customer-summary.port';
 import { CUSTOMER_REPOSITORY } from './domain/repositories/customer.repository';
 import { SECURE_ACCESS_GRANT_REPOSITORY } from './domain/repositories/secure-access-grant.repository';
 import { VERIFICATION_CHALLENGE_REPOSITORY } from './domain/repositories/verification-challenge.repository';
 import { VerificationClock } from './infrastructure/clock/verification-clock';
 import { VerificationCodeMinter } from './infrastructure/crypto/verification-code.minter';
+import { DrizzleAdminCustomerSummaryAdapter } from './infrastructure/persistence/drizzle-admin-customer-summary.adapter';
 import { DrizzleCustomerRepository } from './infrastructure/persistence/drizzle-customer.repository';
 import { DrizzleSecureAccessGrantRepository } from './infrastructure/persistence/drizzle-secure-access-grant.repository';
 import { DrizzleVerificationChallengeRepository } from './infrastructure/persistence/drizzle-verification-challenge.repository';
@@ -92,6 +94,10 @@ import { PublicVerificationController } from './presentation/public-verification
   controllers: [PublicVerificationController, PublicSecureLinkController],
   providers: [
     { provide: CUSTOMER_REPOSITORY, useClass: DrizzleCustomerRepository },
+    // `APP5-B04`. A read-only projection port, bound here because Customer owns
+    // the tables behind it; the Admin request surface consumes the interface and
+    // never `CUSTOMER_REPOSITORY`, whose rows carry unmasked contact values.
+    { provide: ADMIN_CUSTOMER_SUMMARY_PORT, useClass: DrizzleAdminCustomerSummaryAdapter },
     CustomerIdentityAuditRecorder,
     ResolveOrCreateVerifiedCustomer,
     {
@@ -132,6 +138,9 @@ import { PublicVerificationController } from './presentation/public-verification
   // not services other contexts call.
   exports: [
     CUSTOMER_REPOSITORY,
+    // `APP5-B04`'s narrow Admin projection. Exported as the port symbol, so a
+    // consumer receives masked contacts and nothing it could unmask.
+    ADMIN_CUSTOMER_SUMMARY_PORT,
     VERIFICATION_CHALLENGE_REPOSITORY,
     SECURE_ACCESS_GRANT_REPOSITORY,
     ResolveOrCreateVerifiedCustomer,

@@ -87,6 +87,282 @@ export interface AdminAssetUploadReceiptResponse {
   status: string;
 }
 
+export type AdminCatalogSubjectResponseKind =
+  (typeof AdminCatalogSubjectResponseKind)[keyof typeof AdminCatalogSubjectResponseKind];
+
+export const AdminCatalogSubjectResponseKind = {
+  CATALOG: 'CATALOG',
+} as const;
+
+export interface AdminCatalogSubjectResponse {
+  /** The design session the submission came from — server-written provenance (`G01-D09`), shown so an operator can trace where the artwork originated. The session secret and its hash are never read by this surface, and the id alone authorizes nothing. */
+  designSessionId?: string;
+  kind: AdminCatalogSubjectResponseKind;
+  productId: string;
+  /** Absent when the product and variant no longer resolve as one coherent pair. */
+  productName?: string;
+  productSlug?: string;
+  productVariantId?: string;
+  variantColorName?: string;
+  variantSizeLabel?: string;
+}
+
+export type AdminCustomRequestDetailResponseStatus =
+  (typeof AdminCustomRequestDetailResponseStatus)[keyof typeof AdminCustomRequestDetailResponseStatus];
+
+export const AdminCustomRequestDetailResponseStatus = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * What the customer attached this file as.
+ */
+export type AdminRequestAssetResponseRole =
+  (typeof AdminRequestAssetResponseRole)[keyof typeof AdminRequestAssetResponseRole];
+
+export const AdminRequestAssetResponseRole = {
+  COP_IMAGE: 'COP_IMAGE',
+  REFERENCE: 'REFERENCE',
+} as const;
+
+export interface AdminRequestAssetResponse {
+  assetId: string;
+  linkedAt: string;
+  /** Absent when the file has been tombstoned; the association is still listed. */
+  mimeType?: string;
+  /** What the customer attached this file as. */
+  role: AdminRequestAssetResponseRole;
+  /** Bytes, as a decimal string — a `bigint` is never sent as a JSON number. */
+  sizeBytes?: string;
+  /** The asset’s own lifecycle state, as Asset holds it. */
+  status?: string;
+}
+
+export type AdminRequestContactResponseKind =
+  (typeof AdminRequestContactResponseKind)[keyof typeof AdminRequestContactResponseKind];
+
+export const AdminRequestContactResponseKind = {
+  EMAIL: 'EMAIL',
+  PHONE: 'PHONE',
+} as const;
+
+export interface AdminRequestContactResponse {
+  kind: AdminRequestContactResponseKind;
+  /** `APP4-P01`’s deterministic mask. The raw and normalized values never appear. */
+  maskedValue: string;
+  primary: boolean;
+  verified: boolean;
+}
+
+export interface AdminRequestCustomerResponse {
+  /** Current contacts only, masked. Deactivated history is not listed. */
+  contacts: AdminRequestContactResponse[];
+  customerId: string;
+  displayName?: string;
+  /** When this identity came into existence. A customer exists only verified. */
+  verifiedAt: string;
+}
+
+export type AdminRequestModerationNoteResponseKind =
+  (typeof AdminRequestModerationNoteResponseKind)[keyof typeof AdminRequestModerationNoteResponseKind];
+
+export const AdminRequestModerationNoteResponseKind = {
+  SPAM: 'SPAM',
+  REJECT: 'REJECT',
+  PAUSE: 'PAUSE',
+  CLARIFY: 'CLARIFY',
+  NOTE: 'NOTE',
+} as const;
+
+export interface AdminRequestModerationNoteResponse {
+  adminId: string;
+  createdAt: string;
+  kind: AdminRequestModerationNoteResponseKind;
+  note: string;
+  sequence: number;
+}
+
+export interface AdminRequestQuantityLineResponse {
+  /** Always absent on a customer-owned line, which has no catalog variant. */
+  productVariantId?: string;
+  quantity: number;
+  sizeLabel?: string;
+}
+
+export type AdminCustomerOwnedSubjectResponseKind =
+  (typeof AdminCustomerOwnedSubjectResponseKind)[keyof typeof AdminCustomerOwnedSubjectResponseKind];
+
+export const AdminCustomerOwnedSubjectResponseKind = {
+  CUSTOMER_OWNED: 'CUSTOMER_OWNED',
+} as const;
+
+export interface AdminCustomerOwnedSubjectResponse {
+  description?: string;
+  kind: AdminCustomerOwnedSubjectResponseKind;
+  name: string;
+  physicalHeightMm?: string;
+  /** Millimetres, as a decimal string — a `numeric` column is never sent as a float. */
+  physicalWidthMm?: string;
+}
+
+export type AdminRequestTransitionResponseFromStatus =
+  (typeof AdminRequestTransitionResponseFromStatus)[keyof typeof AdminRequestTransitionResponseFromStatus];
+
+export const AdminRequestTransitionResponseFromStatus = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type AdminRequestTransitionResponseToStatus =
+  (typeof AdminRequestTransitionResponseToStatus)[keyof typeof AdminRequestTransitionResponseToStatus];
+
+export const AdminRequestTransitionResponseToStatus = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminRequestTransitionResponse {
+  actorAdminId?: string;
+  actorCustomerId?: string;
+  /** Who moved it: ADMIN, CUSTOMER or SYSTEM. */
+  actorKind: string;
+  /** The text written for the customer, exactly as their status page shows it. */
+  customerVisibleReason?: string;
+  fromStatus: AdminRequestTransitionResponseFromStatus;
+  /** The internal reason recorded with the move. Staff-only, and never the same field as `customerVisibleReason` — the customer surface reads that one and never this. */
+  internalReason?: string;
+  occurredAt: string;
+  /** The append sequence — the order moves were recorded. */
+  sequence: number;
+  toStatus: AdminRequestTransitionResponseToStatus;
+}
+
+export interface AdminCustomRequestDetailResponse {
+  assets: AdminRequestAssetResponse[];
+  code: string;
+  /** Who sent it, with masked contacts. Absent only if the identity row is gone. */
+  customer?: AdminRequestCustomerResponse;
+  /** What the customer wrote at submission, as stored. */
+  customerNote?: string;
+  /** The customer-facing explanation of the current status: the exact text the customer’s own status page shows. Kept as a separate field from `internalReason`, never merged with it. */
+  customerVisibleReason?: string;
+  /** The internal explanation of the **current** status, from the latest move into it — or from `cancelled_reason` when the request is CANCELLED. Staff-only. */
+  internalReason?: string;
+  /** Internal notes, oldest first. Read-only here; `APP5-B05` appends them. */
+  moderationNotes: AdminRequestModerationNoteResponse[];
+  quantities: AdminRequestQuantityLineResponse[];
+  requestId: string;
+  status: AdminCustomRequestDetailResponseStatus;
+  /** A store product with its variant, or the customer-owned item. Never both. */
+  subject?: AdminCatalogSubjectResponse | AdminCustomerOwnedSubjectResponse;
+  submittedAt: string;
+  /** Units across every line. */
+  totalQuantity: number;
+  /** The whole recorded history, oldest first by append sequence. Submission writes no transition row (`G01-D05`), so a request nobody has moderated has an empty history and no synthetic creation entry. */
+  transitions: AdminRequestTransitionResponse[];
+  updatedAt: string;
+}
+
+/**
+ * The current lifecycle state, reported as stored.
+ */
+export type AdminCustomRequestQueueItemResponseStatus =
+  (typeof AdminCustomRequestQueueItemResponseStatus)[keyof typeof AdminCustomRequestQueueItemResponseStatus];
+
+export const AdminCustomRequestQueueItemResponseStatus = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * Which branch of the `APP5-G01` §3 XOR this request is: a store product, or an item the customer already owns. Never both, and never neither.
+ */
+export type AdminCustomRequestQueueItemResponseSubjectKind =
+  (typeof AdminCustomRequestQueueItemResponseSubjectKind)[keyof typeof AdminCustomRequestQueueItemResponseSubjectKind];
+
+export const AdminCustomRequestQueueItemResponseSubjectKind = {
+  CATALOG: 'CATALOG',
+  CUSTOMER_OWNED: 'CUSTOMER_OWNED',
+} as const;
+
+export interface AdminCustomRequestQueueItemResponse {
+  /** The human request code. Display and search only — it never authorizes anything. */
+  code: string;
+  /** The name the customer gave, when they gave one. No contact value appears here. */
+  customerDisplayName?: string;
+  customerId: string;
+  requestId: string;
+  /** The current lifecycle state, reported as stored. */
+  status: AdminCustomRequestQueueItemResponseStatus;
+  /** Which branch of the `APP5-G01` §3 XOR this request is: a store product, or an item the customer already owns. Never both, and never neither. */
+  subjectKind: AdminCustomRequestQueueItemResponseSubjectKind;
+  /** The product name, or the customer-owned item’s name. Absent when the catalog product no longer resolves — reported as missing rather than filled in, so the queue never names a subject the request does not have. */
+  subjectSummary?: string;
+  /** When the request was submitted. Creation writes no transition row (`G01-D05`). */
+  submittedAt: string;
+  /** Units across every quantity line. Zero when the request carries none. */
+  totalQuantity: number;
+}
+
+export type AdminCustomRequestQueueResponseAppliedStatusesItem =
+  (typeof AdminCustomRequestQueueResponseAppliedStatusesItem)[keyof typeof AdminCustomRequestQueueResponseAppliedStatusesItem];
+
+export const AdminCustomRequestQueueResponseAppliedStatusesItem = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminCustomRequestQueueResponse {
+  /** The statuses this page was actually filtered by — the requested ones, or the default triage set when none were named. Echoed so the screen can state what it is showing instead of implying the queue is the whole table. */
+  appliedStatuses: AdminCustomRequestQueueResponseAppliedStatusesItem[];
+  /** True when a further page exists. */
+  hasNext: boolean;
+  items: AdminCustomRequestQueueItemResponse[];
+  /** Opaque keyset cursor for the next page. Absent on the last page. */
+  nextCursor?: string;
+}
+
 /**
  * Whether this contact is an email address or a phone number.
  */
@@ -2221,6 +2497,77 @@ export type AdminAssetUpload202 = ApiSuccessResponse & {
 
 export type AdminAssetDetail200 = ApiSuccessResponse & {
   data: AdminAssetDetailResponse;
+};
+
+export type AdminCustomRequestListParams = {
+  /**
+   * One exact email or phone number. Matched whole against verified, current contacts and never echoed in the response.
+   */
+  contact?: unknown;
+  /**
+   * Required together with `contact`.
+   */
+  contactKind?: AdminCustomRequestListContactKind;
+  submittedTo?: unknown;
+  submittedFrom?: unknown;
+  /**
+   * One whole request code, matched exactly. Case is normalized.
+   */
+  code?: unknown;
+  subjectKind?: AdminCustomRequestListSubjectKind;
+  /**
+   * Repeatable. Defaults to the triage set when omitted.
+   */
+  status?: AdminCustomRequestListStatusItem[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from a previous page.
+   */
+  cursor?: unknown;
+};
+
+export type AdminCustomRequestListContactKind =
+  (typeof AdminCustomRequestListContactKind)[keyof typeof AdminCustomRequestListContactKind];
+
+export const AdminCustomRequestListContactKind = {
+  EMAIL: 'EMAIL',
+  PHONE: 'PHONE',
+} as const;
+
+export type AdminCustomRequestListSubjectKind =
+  (typeof AdminCustomRequestListSubjectKind)[keyof typeof AdminCustomRequestListSubjectKind];
+
+export const AdminCustomRequestListSubjectKind = {
+  CATALOG: 'CATALOG',
+  CUSTOMER_OWNED: 'CUSTOMER_OWNED',
+} as const;
+
+export type AdminCustomRequestListStatusItem =
+  (typeof AdminCustomRequestListStatusItem)[keyof typeof AdminCustomRequestListStatusItem];
+
+export const AdminCustomRequestListStatusItem = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type AdminCustomRequestList200 = ApiSuccessResponse & {
+  data: AdminCustomRequestQueueResponse;
+};
+
+export type AdminCustomRequestDetail200 = ApiSuccessResponse & {
+  data: AdminCustomRequestDetailResponse;
 };
 
 export type AdminCustomerSupportResolve200 = ApiSuccessResponse & {

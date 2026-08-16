@@ -51,6 +51,12 @@ export interface CatalogSubjectReference {
   readonly productVariantId: ProductVariantId;
 }
 
+/** What a queue row calls a catalog subject: the product, without its variant. */
+export interface CatalogProductLabels {
+  readonly productName: string;
+  readonly productSlug: string;
+}
+
 export interface CatalogSubjectPort {
   /**
    * Resolves the labels of one product/variant pair, or nothing.
@@ -61,4 +67,24 @@ export interface CatalogSubjectPort {
    * absence as "the subject cannot be described", never as an error to report.
    */
   findSubjectLabels(reference: CatalogSubjectReference): Promise<CatalogSubjectLabels | undefined>;
+
+  /**
+   * Product labels for a whole page of requests, in one statement (`APP5-B04`
+   * §8, §12).
+   *
+   * A second method rather than a loop over {@link findSubjectLabels}, because
+   * the Admin queue resolves up to a page of subjects at once and calling the
+   * single-pair read per row is exactly the N+1 the checkpoint forbids.
+   *
+   * It answers a deliberately *weaker* question than the pair read: a queue row
+   * says which product a request is for, not which variant, so no variant is
+   * joined and no conjunctive pair rule applies. The detail read keeps using
+   * {@link findSubjectLabels}, where naming the wrong variant would matter.
+   *
+   * Ids absent from the result are products that no longer resolve; the caller
+   * reports the subject as unnamed rather than inventing a placeholder.
+   */
+  findProductLabels(
+    productIds: readonly ProductId[],
+  ): Promise<ReadonlyMap<ProductId, CatalogProductLabels>>;
 }

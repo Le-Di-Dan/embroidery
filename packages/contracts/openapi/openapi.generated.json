@@ -148,6 +148,299 @@
         ],
         "type": "object"
       },
+      "AdminCatalogSubjectResponse": {
+        "properties": {
+          "designSessionId": {
+            "description": "The design session the submission came from — server-written provenance (`G01-D09`), shown so an operator can trace where the artwork originated. The session secret and its hash are never read by this surface, and the id alone authorizes nothing.",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e0a",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "CATALOG"
+            ],
+            "example": "CATALOG",
+            "type": "string"
+          },
+          "productId": {
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07",
+            "format": "uuid",
+            "type": "string"
+          },
+          "productName": {
+            "description": "Absent when the product and variant no longer resolve as one coherent pair.",
+            "example": "Áo thun cotton",
+            "type": "string"
+          },
+          "productSlug": {
+            "example": "ao-thun-cotton",
+            "type": "string"
+          },
+          "productVariantId": {
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e08",
+            "format": "uuid",
+            "type": "string"
+          },
+          "variantColorName": {
+            "example": "Trắng",
+            "type": "string"
+          },
+          "variantSizeLabel": {
+            "example": "L",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "productId"
+        ],
+        "type": "object"
+      },
+      "AdminCustomRequestDetailResponse": {
+        "properties": {
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/AdminRequestAssetResponse"
+            },
+            "type": "array"
+          },
+          "code": {
+            "example": "REQ-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "customer": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminRequestCustomerResponse"
+              }
+            ],
+            "description": "Who sent it, with masked contacts. Absent only if the identity row is gone."
+          },
+          "customerNote": {
+            "description": "What the customer wrote at submission, as stored.",
+            "example": "Mình muốn thêu tên ở ngực trái.",
+            "type": "string"
+          },
+          "customerVisibleReason": {
+            "description": "The customer-facing explanation of the current status: the exact text the customer’s own status page shows. Kept as a separate field from `internalReason`, never merged with it.",
+            "example": "Xưởng cần thêm ảnh rõ hơn của sản phẩm.",
+            "type": "string"
+          },
+          "internalReason": {
+            "description": "The internal explanation of the **current** status, from the latest move into it — or from `cancelled_reason` when the request is CANCELLED. Staff-only.",
+            "example": "Ảnh mờ, không đủ chi tiết để báo giá.",
+            "type": "string"
+          },
+          "moderationNotes": {
+            "description": "Internal notes, oldest first. Read-only here; `APP5-B05` appends them.",
+            "items": {
+              "$ref": "#/components/schemas/AdminRequestModerationNoteResponse"
+            },
+            "type": "array"
+          },
+          "quantities": {
+            "items": {
+              "$ref": "#/components/schemas/AdminRequestQuantityLineResponse"
+            },
+            "type": "array"
+          },
+          "requestId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "NEW",
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "QUOTED",
+              "QUOTE_ACCEPTED",
+              "DIGITIZING",
+              "DESIGN_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "UNDER_REVIEW",
+            "type": "string"
+          },
+          "subject": {
+            "description": "A store product with its variant, or the customer-owned item. Never both.",
+            "discriminator": {
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AdminCatalogSubjectResponse"
+              },
+              {
+                "$ref": "#/components/schemas/AdminCustomerOwnedSubjectResponse"
+              }
+            ]
+          },
+          "submittedAt": {
+            "example": "2026-08-16T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "totalQuantity": {
+            "description": "Units across every line.",
+            "example": 24,
+            "type": "number"
+          },
+          "transitions": {
+            "description": "The whole recorded history, oldest first by append sequence. Submission writes no transition row (`G01-D05`), so a request nobody has moderated has an empty history and no synthetic creation entry.",
+            "items": {
+              "$ref": "#/components/schemas/AdminRequestTransitionResponse"
+            },
+            "type": "array"
+          },
+          "updatedAt": {
+            "example": "2026-08-16T10:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "code",
+          "status",
+          "submittedAt",
+          "updatedAt",
+          "quantities",
+          "totalQuantity",
+          "assets",
+          "transitions",
+          "moderationNotes"
+        ],
+        "type": "object"
+      },
+      "AdminCustomRequestQueueItemResponse": {
+        "properties": {
+          "code": {
+            "description": "The human request code. Display and search only — it never authorizes anything.",
+            "example": "REQ-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "customerDisplayName": {
+            "description": "The name the customer gave, when they gave one. No contact value appears here.",
+            "example": "Nguyễn Bảy",
+            "type": "string"
+          },
+          "customerId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "requestId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "description": "The current lifecycle state, reported as stored.",
+            "enum": [
+              "NEW",
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "QUOTED",
+              "QUOTE_ACCEPTED",
+              "DIGITIZING",
+              "DESIGN_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "NEW",
+            "type": "string"
+          },
+          "subjectKind": {
+            "description": "Which branch of the `APP5-G01` §3 XOR this request is: a store product, or an item the customer already owns. Never both, and never neither.",
+            "enum": [
+              "CATALOG",
+              "CUSTOMER_OWNED"
+            ],
+            "example": "CATALOG",
+            "type": "string"
+          },
+          "subjectSummary": {
+            "description": "The product name, or the customer-owned item’s name. Absent when the catalog product no longer resolves — reported as missing rather than filled in, so the queue never names a subject the request does not have.",
+            "example": "Áo thun cotton",
+            "type": "string"
+          },
+          "submittedAt": {
+            "description": "When the request was submitted. Creation writes no transition row (`G01-D05`).",
+            "example": "2026-08-16T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "totalQuantity": {
+            "description": "Units across every quantity line. Zero when the request carries none.",
+            "example": 24,
+            "type": "number"
+          }
+        },
+        "required": [
+          "requestId",
+          "code",
+          "status",
+          "subjectKind",
+          "customerId",
+          "submittedAt",
+          "totalQuantity"
+        ],
+        "type": "object"
+      },
+      "AdminCustomRequestQueueResponse": {
+        "properties": {
+          "appliedStatuses": {
+            "description": "The statuses this page was actually filtered by — the requested ones, or the default triage set when none were named. Echoed so the screen can state what it is showing instead of implying the queue is the whole table.",
+            "example": [
+              "NEW",
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION"
+            ],
+            "items": {
+              "enum": [
+                "NEW",
+                "UNDER_REVIEW",
+                "NEEDS_CLARIFICATION",
+                "QUOTED",
+                "QUOTE_ACCEPTED",
+                "DIGITIZING",
+                "DESIGN_REVIEW",
+                "APPROVED",
+                "REJECTED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "hasNext": {
+            "description": "True when a further page exists.",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminCustomRequestQueueItemResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "description": "Opaque keyset cursor for the next page. Absent on the last page.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "hasNext",
+          "appliedStatuses"
+        ],
+        "type": "object"
+      },
       "AdminCustomerContactResponse": {
         "properties": {
           "kind": {
@@ -228,6 +521,39 @@
         },
         "required": [
           "grants"
+        ],
+        "type": "object"
+      },
+      "AdminCustomerOwnedSubjectResponse": {
+        "properties": {
+          "description": {
+            "example": "Áo khoác cũ, thêu ở lưng.",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "CUSTOMER_OWNED"
+            ],
+            "example": "CUSTOMER_OWNED",
+            "type": "string"
+          },
+          "name": {
+            "example": "Áo khoác jean cá nhân",
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "example": "300.00",
+            "type": "string"
+          },
+          "physicalWidthMm": {
+            "description": "Millimetres, as a decimal string — a `numeric` column is never sent as a float.",
+            "example": "250.00",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name"
         ],
         "type": "object"
       },
@@ -1137,6 +1463,256 @@
           "currencyCode",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AdminRequestAssetResponse": {
+        "properties": {
+          "assetId": {
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e09",
+            "format": "uuid",
+            "type": "string"
+          },
+          "linkedAt": {
+            "example": "2026-08-16T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "mimeType": {
+            "description": "Absent when the file has been tombstoned; the association is still listed.",
+            "example": "image/png",
+            "type": "string"
+          },
+          "role": {
+            "description": "What the customer attached this file as.",
+            "enum": [
+              "COP_IMAGE",
+              "REFERENCE"
+            ],
+            "example": "COP_IMAGE",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "description": "Bytes, as a decimal string — a `bigint` is never sent as a JSON number.",
+            "example": "204800",
+            "type": "string"
+          },
+          "status": {
+            "description": "The asset’s own lifecycle state, as Asset holds it.",
+            "example": "ACCEPTED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId",
+          "role",
+          "linkedAt"
+        ],
+        "type": "object"
+      },
+      "AdminRequestContactResponse": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "EMAIL",
+              "PHONE"
+            ],
+            "example": "EMAIL",
+            "type": "string"
+          },
+          "maskedValue": {
+            "description": "`APP4-P01`’s deterministic mask. The raw and normalized values never appear.",
+            "example": "b***@vidu.test",
+            "type": "string"
+          },
+          "primary": {
+            "example": true,
+            "type": "boolean"
+          },
+          "verified": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "maskedValue",
+          "verified",
+          "primary"
+        ],
+        "type": "object"
+      },
+      "AdminRequestCustomerResponse": {
+        "properties": {
+          "contacts": {
+            "description": "Current contacts only, masked. Deactivated history is not listed.",
+            "items": {
+              "$ref": "#/components/schemas/AdminRequestContactResponse"
+            },
+            "type": "array"
+          },
+          "customerId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "displayName": {
+            "example": "Nguyễn Bảy",
+            "type": "string"
+          },
+          "verifiedAt": {
+            "description": "When this identity came into existence. A customer exists only verified.",
+            "example": "2026-08-14T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customerId",
+          "verifiedAt",
+          "contacts"
+        ],
+        "type": "object"
+      },
+      "AdminRequestModerationNoteResponse": {
+        "properties": {
+          "adminId": {
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e0b",
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "example": "2026-08-16T10:05:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "SPAM",
+              "REJECT",
+              "PAUSE",
+              "CLARIFY",
+              "NOTE"
+            ],
+            "example": "NOTE",
+            "type": "string"
+          },
+          "note": {
+            "example": "Khách đã gửi thêm ảnh qua Zalo.",
+            "type": "string"
+          },
+          "sequence": {
+            "example": 2,
+            "type": "number"
+          }
+        },
+        "required": [
+          "sequence",
+          "kind",
+          "note",
+          "adminId",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "AdminRequestQuantityLineResponse": {
+        "properties": {
+          "productVariantId": {
+            "description": "Always absent on a customer-owned line, which has no catalog variant.",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e08",
+            "format": "uuid",
+            "type": "string"
+          },
+          "quantity": {
+            "example": 12,
+            "type": "number"
+          },
+          "sizeLabel": {
+            "example": "L",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "AdminRequestTransitionResponse": {
+        "properties": {
+          "actorAdminId": {
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e0b",
+            "format": "uuid",
+            "type": "string"
+          },
+          "actorCustomerId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "actorKind": {
+            "description": "Who moved it: ADMIN, CUSTOMER or SYSTEM.",
+            "example": "ADMIN",
+            "type": "string"
+          },
+          "customerVisibleReason": {
+            "description": "The text written for the customer, exactly as their status page shows it.",
+            "example": "Xưởng cần thêm ảnh rõ hơn của sản phẩm.",
+            "type": "string"
+          },
+          "fromStatus": {
+            "enum": [
+              "NEW",
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "QUOTED",
+              "QUOTE_ACCEPTED",
+              "DIGITIZING",
+              "DESIGN_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "NEW",
+            "type": "string"
+          },
+          "internalReason": {
+            "description": "The internal reason recorded with the move. Staff-only, and never the same field as `customerVisibleReason` — the customer surface reads that one and never this.",
+            "example": "Ảnh mờ, không đủ chi tiết để báo giá.",
+            "type": "string"
+          },
+          "occurredAt": {
+            "example": "2026-08-16T10:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "sequence": {
+            "description": "The append sequence — the order moves were recorded.",
+            "example": 4,
+            "type": "number"
+          },
+          "toStatus": {
+            "enum": [
+              "NEW",
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "QUOTED",
+              "QUOTE_ACCEPTED",
+              "DIGITIZING",
+              "DESIGN_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "UNDER_REVIEW",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sequence",
+          "fromStatus",
+          "toStatus",
+          "actorKind",
+          "occurredAt"
         ],
         "type": "object"
       },
@@ -4631,6 +5207,392 @@
         "summary": "Get one product-image asset",
         "tags": [
           "adminAsset"
+        ]
+      }
+    },
+    "/api/admin/custom-requests": {
+      "get": {
+        "description": "Keyset-paginated, newest first, with a stable `id` tie-breaker so a page boundary cannot repeat or skip a row under concurrent submissions. There is no offset paging and no total count. With no `status` filter the page carries the pre-quotation triage set — NEW, UNDER_REVIEW and NEEDS_CLARIFICATION — and `appliedStatuses` states which ones were used; naming any canonical status explicitly returns it truthfully, including the APP6 states this surface offers no action in. The customer filter is an **exact** contact lookup, normalized by the canonical rules: there is no partial, prefix or fuzzy search, and a contact matching nobody returns an empty page rather than an error.",
+        "operationId": "adminCustomRequest_list",
+        "parameters": [
+          {
+            "description": "One exact email or phone number. Matched whole against verified, current contacts and never echoed in the response.",
+            "in": "query",
+            "name": "contact",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "description": "Required together with `contact`.",
+            "in": "query",
+            "name": "contactKind",
+            "required": false,
+            "schema": {
+              "enum": [
+                "EMAIL",
+                "PHONE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "submittedTo",
+            "required": false,
+            "schema": {
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "submittedFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time"
+            }
+          },
+          {
+            "description": "One whole request code, matched exactly. Case is normalized.",
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "in": "query",
+            "name": "subjectKind",
+            "required": false,
+            "schema": {
+              "enum": [
+                "CATALOG",
+                "CUSTOMER_OWNED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Repeatable. Defaults to the triage set when omitted.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "NEW",
+                  "UNDER_REVIEW",
+                  "NEEDS_CLARIFICATION",
+                  "QUOTED",
+                  "QUOTE_ACCEPTED",
+                  "DIGITIZING",
+                  "DESIGN_REVIEW",
+                  "APPROVED",
+                  "REJECTED",
+                  "CANCELLED"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminCustomRequestQueueResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "One page of requests awaiting triage.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid cursor or filter.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "List custom requests for triage",
+        "tags": [
+          "adminCustomRequest"
+        ]
+      }
+    },
+    "/api/admin/custom-requests/{requestId}": {
+      "get": {
+        "description": "Everything an operator needs to decide the next moderation action: the request root, the customer with masked contacts, the single subject branch — a catalog product with its variant and design-session provenance, or the customer-owned item with its dimensions — the quantity breakdown, the attachment metadata, the full transition history and the internal moderation notes. It is a read: nothing is written, no status moves and no audit event is appended. The internal and customer-visible reasons are separate fields and stay separate. No token, digest, session secret or object-storage key appears anywhere in the response, and no action is offered — `APP5-B05` owns the transitions.",
+        "operationId": "adminCustomRequest_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminCustomRequestDetailResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The request and its moderation evidence.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed request id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such custom request.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Get one custom request with its moderation evidence",
+        "tags": [
+          "adminCustomRequest"
         ]
       }
     },

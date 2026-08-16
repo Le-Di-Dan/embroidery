@@ -8,13 +8,15 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { schema } from '@embroidery/database';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import type {
+  CatalogProductLabels,
   CatalogSubjectLabels,
   CatalogSubjectPort,
   CatalogSubjectReference,
 } from '../../domain/repositories/catalog-subject.port';
+import type { ProductId } from '../../domain/repositories/placement-hierarchy.port';
 
 const { products, productVariants } = schema;
 
@@ -54,6 +56,31 @@ export class DrizzleCatalogSubjectAdapter extends DrizzleRepository implements C
         variantColorName: row.variantColorName ?? undefined,
         variantSizeLabel: row.variantSizeLabel ?? undefined,
       };
+    });
+  }
+
+  /**
+   * One `IN` statement for a whole page, and an empty input short-circuits.
+   *
+   * `inArray` with an empty list compiles to a predicate Drizzle refuses, and
+   * asking the database whether anything matches nothing is a round trip with a
+   * known answer either way.
+   */
+  async findProductLabels(
+    productIds: readonly ProductId[],
+  ): Promise<ReadonlyMap<ProductId, CatalogProductLabels>> {
+    if (productIds.length === 0) {
+      return new Map();
+    }
+    return this.run('findProductLabels', async () => {
+      const rows = await this.db
+        .select({ id: products.id, name: products.name, slug: products.slug })
+        .from(products)
+        .where(inArray(products.id, [...new Set(productIds)]));
+
+      return new Map(
+        rows.map((row) => [row.id as ProductId, { productName: row.name, productSlug: row.slug }]),
+      );
     });
   }
 }

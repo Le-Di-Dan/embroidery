@@ -93,8 +93,8 @@ with the three scope corrections noted below.
 | `APP5-DB01` | `COMPLETE` | Intake provenance persistence — migration `0035_add_app5_intake_provenance`: `assets.uploaded_via_challenge_id` (REL-106, `ON DELETE SET NULL`) + `assets.intake_expires_at`, CST-127/CST-128, quota and due-time indexes. See [`../reports/APP5-DB01-COMPLETION-REPORT.md`](../reports/APP5-DB01-COMPLETION-REPORT.md) |
 | `APP5-B02` | `COMPLETE` | Customer attachment intake — `POST`/`GET /api/public/custom-request-intake/challenges/{challengeId}/assets…` (`publicCustomRequestAsset_upload`, `_status`); challenge-scoped reservation quota and the APP5 orphan sweep. See [`../reports/APP5-B02-COMPLETION-REPORT.md`](../reports/APP5-B02-COMPLETION-REPORT.md) |
 | `APP5-B03` | `COMPLETE` | Grant-scoped request status read — `POST /api/public/custom-requests/status` (`publicCustomRequest_status`); the request id comes from the APP4 `REQUEST_ACCESS` grant, never from the caller. See [`../reports/APP5-B03-COMPLETION-REPORT.md`](../reports/APP5-B03-COMPLETION-REPORT.md) |
-| `APP5-B04` | `INCOMPLETE` | **Next** — Admin queue & detail; 2 endpoints |
-| `APP5-B05` | `INCOMPLETE` | Admin notes & guarded transitions; 2 endpoints |
+| `APP5-B04` | `COMPLETE` | Admin request queue & detail — `GET /api/admin/custom-requests` (`adminCustomRequest_list`) and `GET /api/admin/custom-requests/{requestId}` (`adminCustomRequest_detail`); read-only, behind APP1's `AuthenticatedAdminGuard`. See [`../reports/APP5-B04-COMPLETION-REPORT.md`](../reports/APP5-B04-COMPLETION-REPORT.md) |
+| `APP5-B05` | `INCOMPLETE` | **Next** — Admin notes & guarded transitions; 2 endpoints |
 | `APP5-S01` | `INCOMPLETE` | Request creation & submission screen (absorbs the COP form) |
 | `APP5-S02` | `INCOMPLETE` | Confirmation & grant-scoped status; closes `FU-APP4-S01-SUCCESS-HANDOFF-01` |
 | `APP5-A01` | `INCOMPLETE` | Admin request queue |
@@ -146,6 +146,12 @@ APP5 operations are delivered — `publicCustomRequest_submit`,
 `publicCustomRequest_status` — leaving two for `B04` and two for `B05`. The whole
 published document is **52 paths / 57 operations**; B03 added exactly one
 operation and reissued none.
+
+**Six of eight delivered (`APP5-B04`, 2026-08-16).** The two Admin reads
+`adminCustomRequest_list` and `adminCustomRequest_detail` join the four public
+operations, leaving exactly two for `APP5-B05`. The published document moves
+**52 paths / 57 operations / 115 schemas → 54 / 59 / 126**; B04 added exactly two
+operations, deleted none and reissued none.
 
 **Closed (`APP5-DB01`, 2026-08-16).** Migration `0035_add_app5_intake_provenance`
 adds the missing fact. `NO_APP5_MIGRATION expected` is superseded for the phase:

@@ -19,6 +19,7 @@ import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
 import { CustomRequestIntakeModule } from '../modules/order/custom-request-intake.module';
+import { CustomRequestAdminModule } from '../modules/order/custom-request-admin.module';
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
@@ -118,6 +119,11 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // matches the more specific segment regardless of registration order. Keeping
     // one base path is what lets both publish the `publicCustomRequest` domain.
     CustomRequestStatusModule,
+    // APP5-B04 — the Admin request queue and detail. Registered after the three
+    // public APP5 modules because it reports on what they create, though not for
+    // wiring: `admin/custom-requests` is a base path no other module claims, and
+    // it shares no provider instance with them.
+    CustomRequestAdminModule,
   ],
 })
 export class AppModule {}

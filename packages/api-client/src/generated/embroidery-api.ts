@@ -11,6 +11,9 @@ import type {
   AdminAssetListParams,
   AdminAssetUpload202,
   AdminAssetUploadBody,
+  AdminCustomRequestDetail200,
+  AdminCustomRequestList200,
+  AdminCustomRequestListParams,
   AdminCustomerSupportDetail200,
   AdminCustomerSupportGrants200,
   AdminCustomerSupportResolve200,
@@ -142,6 +145,34 @@ export const adminAssetDetail = (
 ) => {
   return apiRequest<AdminAssetDetail200>(
     { url: `/api/admin/assets/${assetId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Keyset-paginated, newest first, with a stable `id` tie-breaker so a page boundary cannot repeat or skip a row under concurrent submissions. There is no offset paging and no total count. With no `status` filter the page carries the pre-quotation triage set — NEW, UNDER_REVIEW and NEEDS_CLARIFICATION — and `appliedStatuses` states which ones were used; naming any canonical status explicitly returns it truthfully, including the APP6 states this surface offers no action in. The customer filter is an **exact** contact lookup, normalized by the canonical rules: there is no partial, prefix or fuzzy search, and a contact matching nobody returns an empty page rather than an error.
+ * @summary List custom requests for triage
+ */
+export const adminCustomRequestList = (
+  params?: AdminCustomRequestListParams,
+  options?: SecondParameter<typeof apiRequest<AdminCustomRequestList200>>,
+) => {
+  return apiRequest<AdminCustomRequestList200>(
+    { url: `/api/admin/custom-requests`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Everything an operator needs to decide the next moderation action: the request root, the customer with masked contacts, the single subject branch — a catalog product with its variant and design-session provenance, or the customer-owned item with its dimensions — the quantity breakdown, the attachment metadata, the full transition history and the internal moderation notes. It is a read: nothing is written, no status moves and no audit event is appended. The internal and customer-visible reasons are separate fields and stay separate. No token, digest, session secret or object-storage key appears anywhere in the response, and no action is offered — `APP5-B05` owns the transitions.
+ * @summary Get one custom request with its moderation evidence
+ */
+export const adminCustomRequestDetail = (
+  requestId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminCustomRequestDetail200>>,
+) => {
+  return apiRequest<AdminCustomRequestDetail200>(
+    { url: `/api/admin/custom-requests/${requestId}`, method: 'GET' },
     options,
   );
 };
@@ -1059,6 +1090,12 @@ export const staffSessionCreate = (
 export type AdminAssetListResult = NonNullable<Awaited<ReturnType<typeof adminAssetList>>>;
 export type AdminAssetUploadResult = NonNullable<Awaited<ReturnType<typeof adminAssetUpload>>>;
 export type AdminAssetDetailResult = NonNullable<Awaited<ReturnType<typeof adminAssetDetail>>>;
+export type AdminCustomRequestListResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestList>>
+>;
+export type AdminCustomRequestDetailResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestDetail>>
+>;
 export type AdminCustomerSupportResolveResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomerSupportResolve>>
 >;
