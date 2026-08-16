@@ -18,6 +18,7 @@ import { HealthModule } from '../modules/health/health.module';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
+import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -98,6 +99,12 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // it reads, though not for wiring — `admin/notification-intents` shares a
     // base path with no other module.
     NotificationAdminModule,
+    // APP5-B01 — the request submission surface, and the first APP5 route. It
+    // composes the accepted APP2/APP3/APP4 capabilities into the TR-LC11-01
+    // transaction, so it is registered after every module it reads. Registration
+    // order cannot shadow anything: `public/custom-requests` is a base path no
+    // other module claims.
+    CustomRequestSubmissionModule,
   ],
 })
 export class AppModule {}

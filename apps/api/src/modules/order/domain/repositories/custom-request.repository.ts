@@ -54,6 +54,16 @@ export interface SubmitRequestInput {
   readonly productVariantId?: ProductVariantId | undefined;
   readonly breakdown: readonly QuantityBreakdownLine[];
   readonly customerOwnedProduct?: CustomerOwnedProduct | undefined;
+  /**
+   * The APP3 Design Session this submission froze (`APP5-G01` `G01-D09`).
+   *
+   * Added by `APP5-B01`. Provenance with **no FK** — sessions are hard-TTL-
+   * deleted and the request must outlive them (TBL-037 header) — and
+   * **server-set from the session actually submitted, never client-supplied**: a
+   * client value would let a caller attribute their request to someone else's
+   * session. Absent on the COP branch, which has no session at all.
+   */
+  readonly submittedSessionId?: string | undefined;
 }
 
 /**
@@ -113,6 +123,19 @@ export interface CustomRequestRepository {
 
   /** Points the request at a quotation that belongs to it (G-DB7-04). @requiresTransaction */
   setCurrentQuotation(id: CustomRequestId, quotationId: string): Promise<void>;
+
+  /**
+   * Which of these assets are already bound to some request (`APP5-G01` §6).
+   *
+   * Added by `APP5-B01`. `uq_custom_request_assets__request_asset_role` makes a
+   * *repeat* binding impossible, but not a **re-use** of another request's
+   * evidence under a different request id — so the reuse rule needs a read, and
+   * it belongs here because `custom_request_assets` is Ordering's table.
+   *
+   * Returns the subset that is bound, not a boolean per input, so one statement
+   * answers for the whole selection.
+   */
+  findBoundAssetIds(assetIds: readonly string[]): Promise<string[]>;
 
   findById(id: CustomRequestId): Promise<CustomRequest | undefined>;
   findByCode(code: string): Promise<CustomRequest | undefined>;

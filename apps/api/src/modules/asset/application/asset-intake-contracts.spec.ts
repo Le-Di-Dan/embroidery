@@ -34,6 +34,7 @@ function assetAt(index: number, overrides: Partial<Asset> = {}): Asset {
     sizeBytes: 51_200n,
     checksum: CHECKSUM,
     status: 'INSPECTING',
+    uploadedByCustomerId: undefined,
     deletedAt: undefined,
     createdAt: new Date(Date.UTC(2026, 6, 27, 12, 0, index)),
     updatedAt: new Date(Date.UTC(2026, 6, 27, 12, 5, index)),

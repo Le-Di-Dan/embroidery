@@ -6,7 +6,7 @@ import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
 import type { CustomRequestState } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { asc, eq, sum } from 'drizzle-orm';
+import { asc, eq, inArray, sum } from 'drizzle-orm';
 
 import { isLegalRequestTransition } from '../../domain/lifecycle/request-transitions';
 import type {
@@ -80,6 +80,9 @@ export class DrizzleCustomRequestRepository
           productId: input.productId ?? null,
           productVariantId: input.productVariantId ?? null,
           customerNote: input.customerNote ?? null,
+          // `G01-D09` — documented provenance with no FK; the caller passes the
+          // session it just submitted, never a client-supplied value.
+          submittedSessionId: input.submittedSessionId ?? null,
         })
         .returning();
 
@@ -281,6 +284,22 @@ export class DrizzleCustomRequestRepository
         .update(customRequests)
         .set({ currentQuotationId: quotationId, updatedAt: new Date() })
         .where(eq(customRequests.id, id));
+    });
+  }
+
+  async findBoundAssetIds(assetIds: readonly string[]): Promise<string[]> {
+    return this.run('findBoundAssetIds', async () => {
+      if (assetIds.length === 0) {
+        // `inArray` with an empty list is a degenerate predicate; answering
+        // without a round trip is also the honest answer.
+        return [];
+      }
+      const rows = await this.db
+        .selectDistinct({ assetId: customRequestAssets.assetId })
+        .from(customRequestAssets)
+        .where(inArray(customRequestAssets.assetId, [...assetIds]));
+
+      return rows.map((row) => row.assetId);
     });
   }
 

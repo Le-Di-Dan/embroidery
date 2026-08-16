@@ -995,6 +995,82 @@ export interface CurrentStaffResponse {
   id: string;
 }
 
+/**
+ * COP_IMAGE for the customer-owned garment, REFERENCE for inspiration artwork.
+ */
+export type CustomRequestAssetBindingRole =
+  (typeof CustomRequestAssetBindingRole)[keyof typeof CustomRequestAssetBindingRole];
+
+export const CustomRequestAssetBindingRole = {
+  COP_IMAGE: 'COP_IMAGE',
+  REFERENCE: 'REFERENCE',
+} as const;
+
+export interface CustomRequestAssetBinding {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  assetId: string;
+  /** COP_IMAGE for the customer-owned garment, REFERENCE for inspiration artwork. */
+  role: CustomRequestAssetBindingRole;
+}
+
+export interface CustomRequestCatalogSubject {
+  /**
+   * The ACTIVE Design Session to submit. Authorized by its own session cookie, not by this id.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  designSessionId: string;
+  /**
+   * Published Product the request is for.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  productId: string;
+  /**
+   * Exact Product Variant. Required — a request without one cannot be quoted.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  productVariantId: string;
+}
+
+export interface CustomRequestCustomerOwnedProduct {
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  description?: string;
+  /**
+   * What the customer calls the garment they already own.
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @pattern ^\d{1,6}(?:\.\d{1,2})?$ */
+  physicalHeightMm?: string;
+  /** @pattern ^\d{1,6}(?:\.\d{1,2})?$ */
+  physicalWidthMm?: string;
+}
+
+export interface CustomRequestQuantityLine {
+  /**
+   * @maximum 100000
+   * @exclusiveMinimum 0
+   */
+  quantity: number;
+  /**
+   * @minLength 1
+   * @maxLength 50
+   */
+  sizeLabel?: string;
+}
+
+export interface CustomRequestSubmissionResponse {
+  /** Human request code. Quotable to support; never a credential. */
+  code: string;
+  /** The created custom request. */
+  requestId: string;
+  /** LC-11 state. A submission always lands at NEW. */
+  status: string;
+}
+
 export type DatabaseHealthResponseReason =
   (typeof DatabaseHealthResponseReason)[keyof typeof DatabaseHealthResponseReason];
 
@@ -1722,6 +1798,34 @@ export interface StaffLoginRequest {
 }
 
 /**
+ * Submits one custom request. Exactly one subject must be present — a catalog product with its design session, or a customer-owned product.
+ */
+export interface SubmitCustomRequestBody {
+  /**
+   * Already-accepted customer uploads to bind. At least one COP_IMAGE on the customer-owned branch; at most ten per role.
+   * @maxItems 20
+   */
+  assets?: CustomRequestAssetBinding[];
+  /**
+   * Quantity per size. Required on the catalog branch.
+   * @maxItems 50
+   */
+  breakdown?: CustomRequestQuantityLine[];
+  catalog?: CustomRequestCatalogSubject;
+  /**
+   * A VERIFIED, unexpired SUBMISSION-purpose verification challenge. It authorizes the submission and is also its idempotency scope: re-sending the same body replays the same result instead of creating a second request.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  challengeId: string;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  customerNote?: string;
+  customerOwnedProduct?: CustomRequestCustomerOwnedProduct;
+}
+
+/**
  * Answers an open verification challenge.
  */
 export interface SubmitVerificationAttemptBody {
@@ -2033,6 +2137,10 @@ export type AdminProductPublish200 = ApiSuccessResponse & {
 
 export type AdminProductUnpublish200 = ApiSuccessResponse & {
   data: AdminProductPublicationResponse;
+};
+
+export type PublicCustomRequestSubmit201 = ApiSuccessResponse & {
+  data: CustomRequestSubmissionResponse;
 };
 
 export type PublicDesignSessionCreate201 = ApiSuccessResponse & {

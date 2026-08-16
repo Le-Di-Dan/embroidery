@@ -1615,6 +1615,132 @@
         ],
         "type": "object"
       },
+      "CustomRequestAssetBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "role": {
+            "description": "COP_IMAGE for the customer-owned garment, REFERENCE for inspiration artwork.",
+            "enum": [
+              "COP_IMAGE",
+              "REFERENCE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId",
+          "role"
+        ],
+        "type": "object"
+      },
+      "CustomRequestCatalogSubject": {
+        "additionalProperties": false,
+        "properties": {
+          "designSessionId": {
+            "description": "The ACTIVE Design Session to submit. Authorized by its own session cookie, not by this id.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "productId": {
+            "description": "Published Product the request is for.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "productVariantId": {
+            "description": "Exact Product Variant. Required — a request without one cannot be quoted.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productId",
+          "productVariantId",
+          "designSessionId"
+        ],
+        "type": "object"
+      },
+      "CustomRequestCustomerOwnedProduct": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "description": "What the customer calls the garment they already own.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "pattern": "^\\d{1,6}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "physicalWidthMm": {
+            "pattern": "^\\d{1,6}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "CustomRequestQuantityLine": {
+        "additionalProperties": false,
+        "properties": {
+          "quantity": {
+            "exclusiveMinimum": true,
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sizeLabel": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "CustomRequestSubmissionResponse": {
+        "properties": {
+          "code": {
+            "description": "Human request code. Quotable to support; never a credential.",
+            "example": "REQ-7KMPQ3XZ4A",
+            "type": "string"
+          },
+          "requestId": {
+            "description": "The created custom request.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "description": "LC-11 state. A submission always lands at NEW.",
+            "example": "NEW",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "code",
+          "status"
+        ],
+        "type": "object"
+      },
       "DatabaseHealthResponse": {
         "properties": {
           "latencyMs": {
@@ -3376,6 +3502,59 @@
         "required": [
           "email",
           "password"
+        ],
+        "type": "object"
+      },
+      "SubmitCustomRequestBody": {
+        "additionalProperties": false,
+        "description": "Submits one custom request. Exactly one subject must be present — a catalog product with its design session, or a customer-owned product.",
+        "properties": {
+          "assets": {
+            "default": [],
+            "description": "Already-accepted customer uploads to bind. At least one COP_IMAGE on the customer-owned branch; at most ten per role.",
+            "items": {
+              "$ref": "#/components/schemas/CustomRequestAssetBinding"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "breakdown": {
+            "default": [],
+            "description": "Quantity per size. Required on the catalog branch.",
+            "items": {
+              "$ref": "#/components/schemas/CustomRequestQuantityLine"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "catalog": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomRequestCatalogSubject"
+              }
+            ]
+          },
+          "challengeId": {
+            "description": "A VERIFIED, unexpired SUBMISSION-purpose verification challenge. It authorizes the submission and is also its idempotency scope: re-sending the same body replays the same result instead of creating a second request.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "customerNote": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "customerOwnedProduct": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomRequestCustomerOwnedProduct"
+              }
+            ]
+          }
+        },
+        "required": [
+          "challengeId"
         ],
         "type": "object"
       },
@@ -9426,6 +9605,204 @@
         },
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/public/custom-requests": {
+      "post": {
+        "description": "Creates one custom request at NEW from a verified SUBMISSION challenge. Exactly one subject is accepted: a catalog product with its ACTIVE design session, or a customer-owned product with at least one accepted COP_IMAGE. The challenge is also the idempotency scope — re-sending the same body replays the same result, and re-using it for a different body is refused. The secure link that opens the request is delivered to the verified contact and never returned here.",
+        "operationId": "publicCustomRequest_submit",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitCustomRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CustomRequestSubmissionResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The created request, or the replayed result of an earlier identical submission.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SESSION_NOT_AUTHORIZED — the design session credential was not accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Origin or Fetch Metadata refused.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_CONFLICT, or a submission on this challenge is already in flight.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SUBMISSION_SUBJECT_INVALID, CUSTOMER_NOT_VERIFIED, SESSION_EXPIRED or REQUEST_ASSET_NOT_BINDABLE.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Submit a custom request",
+        "tags": [
+          "publicCustomRequest"
         ]
       }
     },

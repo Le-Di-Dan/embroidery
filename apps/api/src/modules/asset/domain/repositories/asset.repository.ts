@@ -30,6 +30,16 @@ export interface Asset {
   readonly sizeBytes: bigint;
   readonly checksum: string | undefined;
   readonly status: AssetState;
+  /**
+   * The customer whose verified upload produced this asset (REL-033), when
+   * there is one — guest and Admin uploads carry none.
+   *
+   * Projected by `APP5-B01`, which may bind an asset to a request only when it
+   * belongs to the customer the submission's verified challenge resolved
+   * (`APP5-G01` §6). Provenance, not a credential: it is never accepted from a
+   * caller and never travels in a response.
+   */
+  readonly uploadedByCustomerId: string | undefined;
   readonly deletedAt: Date | undefined;
   readonly createdAt: Date;
   readonly updatedAt: Date;

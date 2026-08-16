@@ -47,6 +47,7 @@ import type {
   CreateProductBody,
   HealthStatusResponse,
   IssueVerificationChallengeBody,
+  PublicCustomRequestSubmit201,
   PublicDesignSessionAssetCreate202,
   PublicDesignSessionAssetCreateBody,
   PublicDesignSessionAssetStatus200,
@@ -76,6 +77,7 @@ import type {
   SaveDesignTemplateDocumentBody,
   StaffLoginRequest,
   StaffSelfGet200,
+  SubmitCustomRequestBody,
   SubmitVerificationAttemptBody,
   UnpublishDesignTemplateBody,
   UnpublishProductBody,
@@ -608,6 +610,25 @@ export const healthReadiness = (
 };
 
 /**
+ * Creates one custom request at NEW from a verified SUBMISSION challenge. Exactly one subject is accepted: a catalog product with its ACTIVE design session, or a customer-owned product with at least one accepted COP_IMAGE. The challenge is also the idempotency scope — re-sending the same body replays the same result, and re-using it for a different body is refused. The secure link that opens the request is delivered to the verified contact and never returned here.
+ * @summary Submit a custom request
+ */
+export const publicCustomRequestSubmit = (
+  submitCustomRequestBody: SubmitCustomRequestBody,
+  options?: SecondParameter<typeof apiRequest<PublicCustomRequestSubmit201>>,
+) => {
+  return apiRequest<PublicCustomRequestSubmit201>(
+    {
+      url: `/api/public/custom-requests`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: submitCustomRequestBody,
+    },
+    options,
+  );
+};
+
+/**
  * Opens one session on an exact public placement, either empty or cloned from a published Template scoped to that same placement. The session secret is returned only as a host-only, HttpOnly cookie.
  * @summary Open an anonymous design session
  */
@@ -1042,6 +1063,9 @@ export type AdminSecureGrantRevokeResult = NonNullable<
 >;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
+export type PublicCustomRequestSubmitResult = NonNullable<
+  Awaited<ReturnType<typeof publicCustomRequestSubmit>>
+>;
 export type PublicDesignSessionCreateResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionCreate>>
 >;

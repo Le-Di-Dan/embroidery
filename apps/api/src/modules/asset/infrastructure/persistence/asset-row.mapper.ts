@@ -33,6 +33,7 @@ export function toAsset(row: AssetRow): Asset {
     sizeBytes: row.sizeBytes,
     checksum: row.checksum ?? undefined,
     status: row.status as AssetState,
+    uploadedByCustomerId: row.uploadedByCustomerId ?? undefined,
     deletedAt: row.deletedAt ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
