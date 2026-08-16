@@ -1111,6 +1111,25 @@ export interface ApiSuccessResponse {
   success: true;
 }
 
+export type AppendModerationNoteBodyKind =
+  (typeof AppendModerationNoteBodyKind)[keyof typeof AppendModerationNoteBodyKind];
+
+export const AppendModerationNoteBodyKind = {
+  CLARIFY: 'CLARIFY',
+  REJECT: 'REJECT',
+  SPAM: 'SPAM',
+  NOTE: 'NOTE',
+} as const;
+
+export interface AppendModerationNoteBody {
+  kind: AppendModerationNoteBodyKind;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  note: string;
+}
+
 export interface ArchiveDesignTemplateBody {
   /**
    * @minimum 0
@@ -1815,6 +1834,28 @@ export interface IssueVerificationChallengeBody {
   purpose: IssueVerificationChallengeBodyPurpose;
 }
 
+export type ModerationNoteAppendedResponseKind =
+  (typeof ModerationNoteAppendedResponseKind)[keyof typeof ModerationNoteAppendedResponseKind];
+
+export const ModerationNoteAppendedResponseKind = {
+  CLARIFY: 'CLARIFY',
+  REJECT: 'REJECT',
+  SPAM: 'SPAM',
+  NOTE: 'NOTE',
+} as const;
+
+export interface ModerationNoteAppendedResponse {
+  /** The operator, derived from their session. Never accepted from the request. */
+  adminId: string;
+  createdAt: string;
+  kind: ModerationNoteAppendedResponseKind;
+  requestId: string;
+  /** The status the request still has. A note moves nothing and appends no transition, and this field is here so a client can see that rather than assume it. */
+  requestStatus: string;
+  /** The append sequence the database assigned. Notes are append-only: this number never refers to a row that can be edited or removed. */
+  sequence: number;
+}
+
 /**
  * Whether this call created the replay. `CREATED` — it did, and `replayIntentId` names a notification that did not exist a moment ago. `EXISTING` — an identical replay of the same failed delivery was already queued, by an earlier click or by another operator at the same moment, and this call resolved onto it without creating a second. Both mean exactly one replay is queued, and neither means anything was delivered: the worker owns that, and the attempt timeline is where it shows up.
  */
@@ -2231,6 +2272,26 @@ export interface ReplaceProductPlacementBody {
   sides: ReplacePlacementSideBody[];
 }
 
+export type RequestTransitionedResponseToStatus =
+  (typeof RequestTransitionedResponseToStatus)[keyof typeof RequestTransitionedResponseToStatus];
+
+export const RequestTransitionedResponseToStatus = {
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface RequestTransitionedResponse {
+  /** The state the request was in. Read and locked by the server, never sent. */
+  fromStatus: string;
+  /** The note this decision filed, when it filed one. */
+  moderationNoteSequence?: number;
+  occurredAt: string;
+  requestId: string;
+  toStatus: RequestTransitionedResponseToStatus;
+}
+
 /**
  * Which kind of destination `contact` is.
  */
@@ -2365,6 +2426,46 @@ export interface SubmitVerificationAttemptBody {
    * @pattern ^[0-9]{6}$
    */
   code: string;
+}
+
+export type TransitionCustomRequestBodyModerationNoteKind =
+  (typeof TransitionCustomRequestBodyModerationNoteKind)[keyof typeof TransitionCustomRequestBodyModerationNoteKind];
+
+export const TransitionCustomRequestBodyModerationNoteKind = {
+  CLARIFY: 'CLARIFY',
+  REJECT: 'REJECT',
+  SPAM: 'SPAM',
+  NOTE: 'NOTE',
+} as const;
+
+export type TransitionCustomRequestBodyToStatus =
+  (typeof TransitionCustomRequestBodyToStatus)[keyof typeof TransitionCustomRequestBodyToStatus];
+
+export const TransitionCustomRequestBodyToStatus = {
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface TransitionCustomRequestBody {
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  customerVisibleReason?: string;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  internalReason?: string;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  moderationNote?: string;
+  moderationNoteKind?: TransitionCustomRequestBodyModerationNoteKind;
+  toStatus: TransitionCustomRequestBodyToStatus;
 }
 
 export interface UnpublishDesignTemplateBody {
@@ -2568,6 +2669,14 @@ export type AdminCustomRequestList200 = ApiSuccessResponse & {
 
 export type AdminCustomRequestDetail200 = ApiSuccessResponse & {
   data: AdminCustomRequestDetailResponse;
+};
+
+export type AdminCustomRequestAppendNote201 = ApiSuccessResponse & {
+  data: ModerationNoteAppendedResponse;
+};
+
+export type AdminCustomRequestTransition200 = ApiSuccessResponse & {
+  data: RequestTransitionedResponse;
 };
 
 export type AdminCustomerSupportResolve200 = ApiSuccessResponse & {

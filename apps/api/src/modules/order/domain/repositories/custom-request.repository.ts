@@ -84,6 +84,28 @@ export interface TransitionRequestInput {
   readonly reason?: string | undefined;
   readonly customerVisibleReason?: string | undefined;
   readonly correlationId: string;
+  /**
+   * The state the caller judged this move against (`APP5-B05` §6).
+   *
+   * An optimistic-concurrency precondition, **never** an authority and never a
+   * client value: the caller passes back the state it read a moment earlier, and
+   * the row lock below is still what decides. When the locked row no longer
+   * carries it, another actor moderated this request in between and the caller's
+   * validation — which reason texts were required, which note kind explained the
+   * move — was performed against a state the request has left. That is reported
+   * as `STALE_TRANSITION` rather than silently re-applied from the new state.
+   *
+   * Omitted by callers that have no earlier read to defend, whose moves are
+   * judged from the locked state alone.
+   */
+  readonly expectedFrom?: CustomRequestState | undefined;
+}
+
+/** What an appended moderation note turned out to be, once the row existed. */
+export interface AppendedModerationNote {
+  /** TBL-041's identity **is** its append sequence (IDX-137), server-generated. */
+  readonly sequence: number;
+  readonly createdAt: Date;
 }
 
 export const CUSTOM_REQUEST_REPOSITORY = Symbol('CUSTOM_REQUEST_REPOSITORY');
@@ -103,19 +125,31 @@ export interface CustomRequestRepository {
   /** @requiresTransaction */
   attachAsset(id: CustomRequestId, assetId: string, role: string): Promise<void>;
 
-  /** @requiresTransaction */
+  /**
+   * Appends one moderation note. Append-only: there is no edit and no delete,
+   * here or anywhere else in this contract.
+   *
+   * The sequence, the timestamp and the row's identity are all database-owned —
+   * no caller supplies any of them — and the appended values are returned so a
+   * caller can report what it wrote without a second read.
+   *
+   * @requiresTransaction
+   */
   appendModerationNote(
     id: CustomRequestId,
     kind: string,
     note: string,
     adminId: string,
-  ): Promise<void>;
+  ): Promise<AppendedModerationNote>;
 
   /**
    * Moves the request and appends the transition evidence, together.
    *
    * Rejects a move the lifecycle does not permit (G-DB7-25), read under the
-   * request's row lock so the check and the write see the same state.
+   * request's row lock so the check and the write see the same state. On a move
+   * to `CANCELLED` the two reason texts also land on the request root's
+   * `cancelled_reason` / `cancelled_customer_reason` (COL-TBL037-08/09), which
+   * is where a cancellation's explanation is durably kept.
    *
    * @requiresTransaction
    */

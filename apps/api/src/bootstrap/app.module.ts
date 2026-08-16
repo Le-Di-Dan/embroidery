@@ -20,6 +20,7 @@ import { NotificationModule } from '../modules/notification/notification.module'
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
 import { CustomRequestIntakeModule } from '../modules/order/custom-request-intake.module';
 import { CustomRequestAdminModule } from '../modules/order/custom-request-admin.module';
+import { CustomRequestModerationModule } from '../modules/order/custom-request-moderation.module';
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
@@ -124,6 +125,14 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // wiring: `admin/custom-requests` is a base path no other module claims, and
     // it shares no provider instance with them.
     CustomRequestAdminModule,
+    // APP5-B05 — the Admin moderation mutations. Shares the
+    // `admin/custom-requests` base path with the read module, which is safe and
+    // deliberate: the two controllers claim disjoint routes (`GET ''`/`GET
+    // ':requestId'` against `POST ':requestId/moderation-notes'`/`POST
+    // ':requestId/transitions'`). Keeping one base path is what lets both
+    // publish the `adminCustomRequest` domain; keeping two modules is what keeps
+    // the write repository out of the read surface's injector.
+    CustomRequestModerationModule,
   ],
 })
 export class AppModule {}

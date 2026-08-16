@@ -57,6 +57,15 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // this one.
   PublicCustomRequestController: 'publicCustomRequest',
   PublicCustomRequestStatusController: 'publicCustomRequest',
+  // `APP5-B05`. Reading the Admin request surface and moderating it are the same
+  // published domain; they are two classes because the read model's module
+  // deliberately holds no write repository, so a read route cannot reach
+  // `transition()`. Without this entry the mutations would mint
+  // `adminCustomRequestModeration_appendNote`, letting that module boundary name
+  // a public identifier — and `APP5-B04`'s two accepted ids stay untouched
+  // either way, because the read class keeps deriving its own.
+  AdminCustomRequestController: 'adminCustomRequest',
+  AdminCustomRequestModerationController: 'adminCustomRequest',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

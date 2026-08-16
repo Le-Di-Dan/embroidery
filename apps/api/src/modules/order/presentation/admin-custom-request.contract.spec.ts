@@ -92,7 +92,7 @@ describe('APP5-B04 — the published Admin request contract', () => {
     expect(document.paths[DETAIL_PATH]?.['get']?.operationId).toBe('adminCustomRequest_detail');
   });
 
-  it('adds no mutation route anywhere under the Admin request path', () => {
+  it('publishes no mutation on the two read paths, and only B05’s two beneath them', () => {
     const mutations = Object.entries(document.paths)
       .filter(([path]) => path.startsWith('/api/admin/custom-requests'))
       .flatMap(([path, item]) =>
@@ -100,9 +100,15 @@ describe('APP5-B04 — the published Admin request contract', () => {
           .filter((method) => method !== 'get')
           .map((method) => `${method.toUpperCase()} ${path}`),
       );
-    // `APP5-B05` owns every mutation; B04 must not have published a note,
-    // transition or cancel route by accident.
-    expect(mutations).toEqual([]);
+    // Reconciled by `APP5-B05`, which owns every mutation on this surface and
+    // has now published exactly two. The assertion is not relaxed: B04's own two
+    // paths still carry `get` and nothing else (asserted above), and the only
+    // writes anywhere under the prefix are the two named here. A third would
+    // fail, and so would a note edit, a note delete or a per-transition route.
+    expect(mutations.sort()).toEqual([
+      'POST /api/admin/custom-requests/{requestId}/moderation-notes',
+      'POST /api/admin/custom-requests/{requestId}/transitions',
+    ]);
   });
 
   it('declares the queue filters as query parameters and accepts no body', () => {

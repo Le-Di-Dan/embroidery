@@ -1917,6 +1917,30 @@
         ],
         "type": "object"
       },
+      "AppendModerationNoteBody": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "CLARIFY",
+              "REJECT",
+              "SPAM",
+              "NOTE"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "note"
+        ],
+        "type": "object"
+      },
       "ArchiveDesignTemplateBody": {
         "additionalProperties": false,
         "properties": {
@@ -3255,6 +3279,55 @@
         ],
         "type": "object"
       },
+      "ModerationNoteAppendedResponse": {
+        "properties": {
+          "adminId": {
+            "description": "The operator, derived from their session. Never accepted from the request.",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e0b",
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "example": "2026-08-16T10:05:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "CLARIFY",
+              "REJECT",
+              "SPAM",
+              "NOTE"
+            ],
+            "example": "NOTE",
+            "type": "string"
+          },
+          "requestId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "requestStatus": {
+            "description": "The status the request still has. A note moves nothing and appends no transition, and this field is here so a client can see that rather than assume it.",
+            "example": "UNDER_REVIEW",
+            "type": "string"
+          },
+          "sequence": {
+            "description": "The append sequence the database assigned. Notes are append-only: this number never refers to a row that can be edited or removed.",
+            "example": 3,
+            "type": "number"
+          }
+        },
+        "required": [
+          "requestId",
+          "sequence",
+          "kind",
+          "adminId",
+          "createdAt",
+          "requestStatus"
+        ],
+        "type": "object"
+      },
       "NotificationReplayResponse": {
         "properties": {
           "outcome": {
@@ -4189,6 +4262,47 @@
         ],
         "type": "object"
       },
+      "RequestTransitionedResponse": {
+        "properties": {
+          "fromStatus": {
+            "description": "The state the request was in. Read and locked by the server, never sent.",
+            "example": "UNDER_REVIEW",
+            "type": "string"
+          },
+          "moderationNoteSequence": {
+            "description": "The note this decision filed, when it filed one.",
+            "example": 4,
+            "type": "number"
+          },
+          "occurredAt": {
+            "example": "2026-08-16T10:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "requestId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "toStatus": {
+            "enum": [
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "NEEDS_CLARIFICATION",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "fromStatus",
+          "toStatus",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
       "ResolveCustomerByContactBody": {
         "additionalProperties": false,
         "description": "Resolves one exact, verified, active contact to the Customer that owns it.",
@@ -4536,6 +4650,48 @@
           "transform",
           "type",
           "visible"
+        ],
+        "type": "object"
+      },
+      "TransitionCustomRequestBody": {
+        "additionalProperties": false,
+        "properties": {
+          "customerVisibleReason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "internalReason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "moderationNote": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "moderationNoteKind": {
+            "enum": [
+              "CLARIFY",
+              "REJECT",
+              "SPAM",
+              "NOTE"
+            ],
+            "type": "string"
+          },
+          "toStatus": {
+            "enum": [
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "toStatus"
         ],
         "type": "object"
       },
@@ -5591,6 +5747,449 @@
           }
         ],
         "summary": "Get one custom request with its moderation evidence",
+        "tags": [
+          "adminCustomRequest"
+        ]
+      }
+    },
+    "/api/admin/custom-requests/{requestId}/moderation-notes": {
+      "post": {
+        "description": "Records one internal note against a request. The note is **internal**: it is never shown to the customer and never leaves the Admin surface. Notes are append-only — there is no route to edit or remove one, and a changed decision is a new note. This appends nothing else: the request does not move, no transition is recorded and no notification is raised. The operator, the sequence and the timestamp are all derived server-side.",
+        "operationId": "adminCustomRequest_appendNote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppendModerationNoteBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ModerationNoteAppendedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The appended note.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed request id or body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such custom request.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Append an internal moderation note",
+        "tags": [
+          "adminCustomRequest"
+        ]
+      }
+    },
+    "/api/admin/custom-requests/{requestId}/transitions": {
+      "post": {
+        "description": "Performs one moderation decision. The state the request is moving **from** is read and locked by the server and is never sent: give only the target and the justification it requires. Taking a request into review, or back into review after a clarification, needs nothing and carries no message to the customer. Asking for clarification, rejecting and cancelling each require an internal reason and a separate customer-visible reason, and the first two also require a moderation note — `CLARIFY` for a clarification, `REJECT` or `SPAM` for a rejection. The two reason texts stay separate everywhere: only the customer-visible one ever reaches the customer. Cancellation is available only before a request has been quoted. The move, its note and the durable record of it commit together or not at all. If another operator moderated the request first, this is refused with `REQUEST_TRANSITION_STALE` — reload the request and decide again.",
+        "operationId": "adminCustomRequest_transition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransitionCustomRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/RequestTransitionedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The move that was applied.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed request id or body, an unavailable target status, or a missing required `internalReason`, `customerVisibleReason` or moderation note.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such custom request.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`INVALID_TRANSITION` — that move is not available from the state this request is in. `REQUEST_TRANSITION_STALE` — the request was moderated by someone else in the meantime.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Move a custom request through an allowed moderation transition",
         "tags": [
           "adminCustomRequest"
         ]

@@ -11,9 +11,11 @@ import type {
   AdminAssetListParams,
   AdminAssetUpload202,
   AdminAssetUploadBody,
+  AdminCustomRequestAppendNote201,
   AdminCustomRequestDetail200,
   AdminCustomRequestList200,
   AdminCustomRequestListParams,
+  AdminCustomRequestTransition200,
   AdminCustomerSupportDetail200,
   AdminCustomerSupportGrants200,
   AdminCustomerSupportResolve200,
@@ -41,6 +43,7 @@ import type {
   AdminProductPublish200,
   AdminProductUnpublish200,
   AdminProductUpdate200,
+  AppendModerationNoteBody,
   ArchiveDesignTemplateBody,
   ArchiveProductBody,
   AssignDesignTemplateScopeBody,
@@ -88,6 +91,7 @@ import type {
   StaffSelfGet200,
   SubmitCustomRequestBody,
   SubmitVerificationAttemptBody,
+  TransitionCustomRequestBody,
   UnpublishDesignTemplateBody,
   UnpublishProductBody,
   UpdateProductBody,
@@ -173,6 +177,46 @@ export const adminCustomRequestDetail = (
 ) => {
   return apiRequest<AdminCustomRequestDetail200>(
     { url: `/api/admin/custom-requests/${requestId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Records one internal note against a request. The note is **internal**: it is never shown to the customer and never leaves the Admin surface. Notes are append-only — there is no route to edit or remove one, and a changed decision is a new note. This appends nothing else: the request does not move, no transition is recorded and no notification is raised. The operator, the sequence and the timestamp are all derived server-side.
+ * @summary Append an internal moderation note
+ */
+export const adminCustomRequestAppendNote = (
+  requestId: unknown,
+  appendModerationNoteBody: AppendModerationNoteBody,
+  options?: SecondParameter<typeof apiRequest<AdminCustomRequestAppendNote201>>,
+) => {
+  return apiRequest<AdminCustomRequestAppendNote201>(
+    {
+      url: `/api/admin/custom-requests/${requestId}/moderation-notes`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: appendModerationNoteBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Performs one moderation decision. The state the request is moving **from** is read and locked by the server and is never sent: give only the target and the justification it requires. Taking a request into review, or back into review after a clarification, needs nothing and carries no message to the customer. Asking for clarification, rejecting and cancelling each require an internal reason and a separate customer-visible reason, and the first two also require a moderation note — `CLARIFY` for a clarification, `REJECT` or `SPAM` for a rejection. The two reason texts stay separate everywhere: only the customer-visible one ever reaches the customer. Cancellation is available only before a request has been quoted. The move, its note and the durable record of it commit together or not at all. If another operator moderated the request first, this is refused with `REQUEST_TRANSITION_STALE` — reload the request and decide again.
+ * @summary Move a custom request through an allowed moderation transition
+ */
+export const adminCustomRequestTransition = (
+  requestId: unknown,
+  transitionCustomRequestBody: TransitionCustomRequestBody,
+  options?: SecondParameter<typeof apiRequest<AdminCustomRequestTransition200>>,
+) => {
+  return apiRequest<AdminCustomRequestTransition200>(
+    {
+      url: `/api/admin/custom-requests/${requestId}/transitions`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: transitionCustomRequestBody,
+    },
     options,
   );
 };
@@ -1095,6 +1139,12 @@ export type AdminCustomRequestListResult = NonNullable<
 >;
 export type AdminCustomRequestDetailResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestDetail>>
+>;
+export type AdminCustomRequestAppendNoteResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestAppendNote>>
+>;
+export type AdminCustomRequestTransitionResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestTransition>>
 >;
 export type AdminCustomerSupportResolveResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomerSupportResolve>>

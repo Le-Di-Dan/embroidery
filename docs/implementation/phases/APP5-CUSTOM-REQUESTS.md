@@ -94,11 +94,12 @@ with the three scope corrections noted below.
 | `APP5-B02` | `COMPLETE` | Customer attachment intake — `POST`/`GET /api/public/custom-request-intake/challenges/{challengeId}/assets…` (`publicCustomRequestAsset_upload`, `_status`); challenge-scoped reservation quota and the APP5 orphan sweep. See [`../reports/APP5-B02-COMPLETION-REPORT.md`](../reports/APP5-B02-COMPLETION-REPORT.md) |
 | `APP5-B03` | `COMPLETE` | Grant-scoped request status read — `POST /api/public/custom-requests/status` (`publicCustomRequest_status`); the request id comes from the APP4 `REQUEST_ACCESS` grant, never from the caller. See [`../reports/APP5-B03-COMPLETION-REPORT.md`](../reports/APP5-B03-COMPLETION-REPORT.md) |
 | `APP5-B04` | `COMPLETE` | Admin request queue & detail — `GET /api/admin/custom-requests` (`adminCustomRequest_list`) and `GET /api/admin/custom-requests/{requestId}` (`adminCustomRequest_detail`); read-only, behind APP1's `AuthenticatedAdminGuard`. See [`../reports/APP5-B04-COMPLETION-REPORT.md`](../reports/APP5-B04-COMPLETION-REPORT.md) |
-| `APP5-B05` | `INCOMPLETE` | **Next** — Admin notes & guarded transitions; 2 endpoints |
-| `APP5-S01` | `INCOMPLETE` | Request creation & submission screen (absorbs the COP form) |
+| `APP5-B05` | `COMPLETE` | Admin moderation notes & guarded transitions — `POST /api/admin/custom-requests/{requestId}/moderation-notes` (`adminCustomRequest_appendNote`) and `POST …/transitions` (`adminCustomRequest_transition`); the APP5 subset as an application-layer restriction, both reason texts, append-only notes and a real competing-transition race. See [`../reports/APP5-B05-COMPLETION-REPORT.md`](../reports/APP5-B05-COMPLETION-REPORT.md) |
+| `APP5-S01` | `INCOMPLETE` | **Next** — Request creation & submission screen (absorbs the COP form) |
 | `APP5-S02` | `INCOMPLETE` | Confirmation & grant-scoped status; closes `FU-APP4-S01-SUCCESS-HANDOFF-01` |
 | `APP5-A01` | `INCOMPLETE` | Admin request queue |
-| `APP5-A02` | `INCOMPLETE` | Admin request detail & moderation |
+| `APP5-B06` | `INCOMPLETE` | **Inserted by `APP5-B05`** — Admin private request-asset delivery; one authorized binary route for a request-bound `COP_IMAGE`/`REFERENCE`, streamed through the API. Must precede `APP5-A02`; does not block `S01`, `S02` or `A01`. Closes `FU-APP5-B04-COP-ASSET-DELIVERY-01` |
+| `APP5-A02` | `INCOMPLETE` | Admin request detail & moderation — **depends on `APP5-B06`** |
 | `APP5-E01` | `INCOMPLETE` | Cross-layer acceptance |
 | `APP5-X01` | `INCOMPLETE` | Phase closure |
 
@@ -146,6 +147,20 @@ APP5 operations are delivered — `publicCustomRequest_submit`,
 `publicCustomRequest_status` — leaving two for `B04` and two for `B05`. The whole
 published document is **52 paths / 57 operations**; B03 added exactly one
 operation and reissued none.
+
+**Budget spent, and one slice added (`APP5-B05`, 2026-08-16).** The two Admin
+mutations `adminCustomRequest_appendNote` and `adminCustomRequest_transition`
+complete the eight planned APP5 operations — four public, four Admin. The
+published document moves **54 paths / 59 operations / 126 schemas → 56 / 61 /
+130**; B05 added exactly two operations, deleted none and reissued none.
+
+`APP5-B06` is an **addition** to that budget rather than a re-slice of it, and it
+is recorded rather than absorbed: `APP5-B04` found that the Admin detail
+describes attachments but publishes no way to open one, and the approved
+`FIG-APP5-A02-DETAIL-DESKTOP-COP` (`665:115`) is where a customer-owned garment is
+triaged from photographs that are — per `G01-D10` — the only description of the
+physical object in the whole record. A frontend checkpoint must not be left to
+invent that backend capability.
 
 **Six of eight delivered (`APP5-B04`, 2026-08-16).** The two Admin reads
 `adminCustomRequest_list` and `adminCustomRequest_detail` join the four public
