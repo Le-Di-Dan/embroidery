@@ -96,8 +96,8 @@ with the three scope corrections noted below.
 | `APP5-B04` | `COMPLETE` | Admin request queue & detail — `GET /api/admin/custom-requests` (`adminCustomRequest_list`) and `GET /api/admin/custom-requests/{requestId}` (`adminCustomRequest_detail`); read-only, behind APP1's `AuthenticatedAdminGuard`. See [`../reports/APP5-B04-COMPLETION-REPORT.md`](../reports/APP5-B04-COMPLETION-REPORT.md) |
 | `APP5-B05` | `COMPLETE` | Admin moderation notes & guarded transitions — `POST /api/admin/custom-requests/{requestId}/moderation-notes` (`adminCustomRequest_appendNote`) and `POST …/transitions` (`adminCustomRequest_transition`); the APP5 subset as an application-layer restriction, both reason texts, append-only notes and a real competing-transition race. See [`../reports/APP5-B05-COMPLETION-REPORT.md`](../reports/APP5-B05-COMPLETION-REPORT.md) |
 | `APP5-B07` | `COMPLETE` | **Inserted by `APP5-S01`** — Public catalog variant selection — `GET /api/public/products/{slug}/variants` (`publicProductVariant_list`); Catalog-owned, anonymous, selection-only, `is_active` eligibility and `display_order, id` ordering. Unblocks `APP5-S01`. See [`../reports/APP5-B07-COMPLETION-REPORT.md`](../reports/APP5-B07-COMPLETION-REPORT.md) |
-| `APP5-S01` | `INCOMPLETE` | **Next — resume** — Request creation & submission screen (absorbs the COP form); `CATALOG_VARIANT_PUBLIC_READ_REQUIRED` closed by `APP5-B07`, so S01 resumes unchanged in product scope |
-| `APP5-S02` | `INCOMPLETE` | Confirmation & grant-scoped status; closes `FU-APP4-S01-SUCCESS-HANDOFF-01` |
+| `APP5-S01` | `COMPLETE` | Request creation & submission screen at `/yeu-cau/moi` — subject XOR, catalog branch on `publicProductVariantList` with one explicitly chosen variant, customer-owned branch, embedded APP4 verification, `APP5-B02` uploads gated on `bindable`, review, duplicate-safe `APP5-B01` submission and the `APP5-S02` hand-off. See [`../reports/APP5-S01-COMPLETION-REPORT.md`](../reports/APP5-S01-COMPLETION-REPORT.md) |
+| `APP5-S02` | `INCOMPLETE` | **Next** — Confirmation & grant-scoped status; closes `FU-APP4-S01-SUCCESS-HANDOFF-01`. `APP5-S01` created the `/yeu-cau/da-gui` route boundary as an empty destination and rendered none of its content |
 | `APP5-A01` | `INCOMPLETE` | Admin request queue |
 | `APP5-B06` | `INCOMPLETE` | **Inserted by `APP5-B05`** — Admin private request-asset delivery; one authorized binary route for a request-bound `COP_IMAGE`/`REFERENCE`, streamed through the API. Must precede `APP5-A02`; does not block `S01`, `S02` or `A01`. Closes `FU-APP5-B04-COP-ASSET-DELIVERY-01` |
 | `APP5-A02` | `INCOMPLETE` | Admin request detail & moderation — **depends on `APP5-B06`** |
@@ -300,3 +300,13 @@ existed, and `APP5` still owns exactly the one migration `DB01` added.
 `SubmitCustomRequestBody.catalog.productVariantId` remains **required**, and the
 APP3 Design Session was not touched — the variant was never the session's fact to
 carry, which is precisely why the gap could not be closed there.
+
+**Consumed (`APP5-S01`, 2026-08-16).** The resumed checkpoint built the catalog
+branch on `publicProductVariantList` and the Product Owner's locked reading of
+the frame: because B07 marks no variant as a default, `650:3`'s read-only
+"variant comes from the Studio session" context becomes an **explicit chooser**,
+and the quantity table is scoped beneath the one variant the customer picked.
+`product_variants.sizeLabel` and `CustomRequestQuantityLine.sizeLabel` are kept
+as two different business fields — nothing copies, defaults or validates one
+against the other. B07's empty-list answer is rendered as its own catalog state
+and never as `650:187`, which stays reserved for a stale Design Session.

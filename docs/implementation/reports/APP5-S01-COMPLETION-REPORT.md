@@ -3,263 +3,417 @@
 ## Verdict
 
 ```text
+APP5-S01 = COMPLETE
+```
+
+The Storefront capability at `/yeu-cau/moi` creates and submits a custom
+embroidery request on **both** subject branches: a catalog product with one
+explicitly chosen Product Variant and its APP3 Design Session, or a
+customer-owned product with at least one accepted item photo. Contact
+verification is APP4's own flow embedded as step 2; uploads go through
+`APP5-B02` and are gated on its `bindable` flag; submission goes through
+`APP5-B01` and hands off to the `APP5-S02` destination without implementing any
+of it.
+
+---
+
+## 1. Baseline and unblock
+
+**Entry `HEAD`:** `0f0275d` (*feat(app5): publish the selectable variants of a
+public product*).
+
+**The previous S01 verdict was a genuine blocker, and it is preserved here as
+history.** This checkpoint's first attempt stopped at its design-and-contract
+audit with:
+
+```text
 BLOCKED — CATALOG_VARIANT_PUBLIC_READ_REQUIRED
 ```
 
-`APP5-S01` stopped at its design-and-contract audit. The approved catalog branch
-requires a `productVariantId` that **no delivered public API can provide**, and
-every way of proceeding without one either fabricates a value the database will
-refuse or changes a contract this frontend checkpoint has no authority to change.
+`SubmitCustomRequestBody.catalog.productVariantId` was required and **no
+delivered public API produced one**: 56 paths / 23 public, no path matching
+`variant`, no public response schema carrying it, and
+`fk_custom_requests__product_variant_id` is `ON DELETE restrict`, so a fabricated
+id would have failed at insert. The Product Owner refused every workaround — no
+COP-only S01, no optional `productVariantId`, no derived default, no variant
+semantics grafted onto the APP3 session — and inserted a new backend checkpoint
+instead. **Nothing was partially built**, because the subject chooser (`651:3`)
+is the screen's first interaction and half that fork is a screen no approved
+frame draws.
 
-The Product Owner accepted the blocker on 2026-08-16 and routed it to a new
-backend checkpoint:
+**Closed by `APP5-B07` (`COMPLETE`, commit `0f0275d`):**
 
 ```text
-APP5-B07 — Public catalog variant selection
-then APP5-S01 resumes unchanged in product scope
+GET /api/public/products/{slug}/variants
+operationId: publicProductVariant_list   (generated: publicProductVariantList)
+returns:     productId + [{ productVariantId, colorName, sizeLabel }]
 ```
 
-**Nothing was partially implemented.** No Storefront runtime source, no API, no
-worker, no migration, no OpenAPI document, no generated client and no Figma node
-was changed. The COP branch was deliberately **not** built: `S01` is one screen
-whose first interaction is the catalog-XOR-COP chooser (`651:3`), and delivering
-half of that fork would have produced a screen no approved frame draws, plus a
-second review boundary for the half left behind.
+The blocker was **consumed, not re-audited**: this checkpoint read the generated
+operation and its response schema and built the catalog branch on them. No
+question about whether a public variant contract exists was reopened.
+
+**Figma approval evidence used.** `docs/design/FIGMA_DESIGN_INDEX.md` §4.11 was
+read at entry. All 31 `APP5-S01` rows (26 desktop + 5 mobile) are
+`APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP5-D01-PO-001`, file
+`BQwqV8GdfUIELvsQDB1UQE`, page `APP_05`, `Last Verified 2026-08-16`. No Figma
+node was opened for writing, and **no registry row was added, edited or
+promoted** — S01 consumes the registry and does not change it, so
+`CMD-CHECK-FIGMA-DESIGN-INDEX` is not owed
+(`VALIDATION_GOVERNANCE.md` §3: the gate is justified by a *change* to design or
+registry authority).
 
 ---
 
-## 1. Baseline
+## 2. Design traceability
 
-| Fact | Value |
-|---|---|
-| Branch | `production` |
-| Entry HEAD | `5f000989d29d59f3eb914a99a1ca26befbad23b8` — *feat(app5): moderate a custom request with notes and guarded transitions* |
-| Working tree at entry | clean |
-| Accepted predecessors | `APP5-R00`, `G01`, `D01`, `B01`, `DB01`, `B02`, `B03`, `B04`, `B05` = `COMPLETE` |
-| Design authority | `FIG-APPROVAL-APP5-D01-PO-001`, 2026-08-16 |
-| Design gate | released — all 65 `APP5-D01` rows `APPROVED_FOR_IMPLEMENTATION` |
+Every implemented surface maps to an approved node. The registry id is the
+authority; the node id is repeated for readability.
 
-### 1.1 Approved design rows resolved for S01
+| Surface / state | Registry id | Node | Where it is implemented |
+|---|---|---|---|
+| Subject chooser (XOR) | `FIG-APP5-S01-SUBJECT-CHOOSER-DESKTOP` | `651:3` | `ui/subject-chooser.tsx` |
+| Catalog step 1 — default | `FIG-APP5-S01-CATALOG-DESKTOP-DEFAULT` | `650:3` | `ui/catalog-subject-section.tsx` + `ui/variant-selector.tsx` |
+| Catalog step 1 — quantity invalid | `FIG-APP5-S01-CATALOG-DESKTOP-QTYINVALID` | `650:94` | `ui/quantity-breakdown-section.tsx` |
+| Catalog step 1 — design session expired | `FIG-APP5-S01-CATALOG-DESKTOP-SESSIONEXPIRED` | `650:187` | `ui/catalog-subject-section.tsx` (`sessionUnusable`) |
+| COP step 1 — default | `FIG-APP5-S01-COP-DESKTOP-DEFAULT` | `651:40` | `ui/customer-owned-section.tsx` |
+| COP step 1 — validation | `FIG-APP5-S01-COP-DESKTOP-VALIDATION` | `651:138` | `ui/customer-owned-section.tsx` (`showValidation`) |
+| Step 2 — contact entry | `FIG-APP5-S01-VERIFY-DESKTOP-CONTACT` | `652:3` | `ui/verification-step.tsx` → APP4 `ContactEntryCard` |
+| Step 2 — code sent | `FIG-APP5-S01-VERIFY-DESKTOP-CODESENT` | `652:55` | APP4 `CodeEntryCard` |
+| Step 2 — code mismatch | `FIG-APP5-S01-VERIFY-DESKTOP-MISMATCH` | `652:115` | APP4 `CodeEntryCard` (`notice`) |
+| Step 2 — expired / lockout / rate limited | `FIG-APP5-S01-VERIFY-DESKTOP-EXPIRED` | `652:175` | APP4 `VerificationOutcomeCard` |
+| Step 2 — verified, step 3 unlocked | `FIG-APP5-S01-VERIFY-DESKTOP-SUCCESS` | `652:229` | `ui/verification-step.tsx` + `hooks/use-verified-challenge.ts` |
+| Step 3 — empty, COP image required | `FIG-APP5-S01-UPLOAD-DESKTOP-EMPTY` | `654:3` | `ui/upload-role-panel.tsx` |
+| Step 3 — uploading | `FIG-APP5-S01-UPLOAD-DESKTOP-UPLOADING` | `654:66` | `ui/upload-slot-tile.tsx` (`phase: 'UPLOADING'`) |
+| Step 3 — inspection pending | `FIG-APP5-S01-UPLOAD-DESKTOP-INSPECTING` | `654:138` | `ui/upload-slot-tile.tsx` (`INSPECTING`) |
+| Step 3 — accepted + reference | `FIG-APP5-S01-UPLOAD-DESKTOP-ACCEPTED` | `654:214` | `ui/upload-slot-tile.tsx` (`ACCEPTED`) |
+| Step 3 — rejected (three reason classes) | `FIG-APP5-S01-UPLOAD-DESKTOP-REJECTED` | `654:309` | `ui/upload-slot-tile.tsx` + `CUSTOM_REQUEST_COPY.uploadFailure` |
+| Step 3 — cap reached (10 per role) | `FIG-APP5-S01-UPLOAD-DESKTOP-CAP` | `654:397` | `ui/upload-role-panel.tsx` (`capReached` / `quotaReached`) |
+| Step 3 — review & submit | `FIG-APP5-S01-SUBMIT-DESKTOP-REVIEW` | `656:3` | `ui/review-section.tsx` |
+| Step 3 — submitting (duplicate-safe) | `FIG-APP5-S01-SUBMIT-DESKTOP-SUBMITTING` | `656:74` | `ui/submit-panel.tsx` (`isSubmitting`) |
+| Step 3 — uncertain outcome, safe retry | `FIG-APP5-S01-SUBMIT-DESKTOP-UNCERTAIN` | `656:119` | `model/submission-outcome.ts` → `UNCERTAIN` |
+| Step 3 — submission failed | `FIG-APP5-S01-SUBMIT-DESKTOP-FAILED` | `656:166` | `model/submission-outcome.ts` → `FAILED` |
+| Step 3 — idempotent replay | `FIG-APP5-S01-SUBMIT-DESKTOP-REPLAY` | `656:213` | `hooks/use-request-submission.ts` (`onSuccess`) |
+| Loading / context restore | `FIG-APP5-S01-DESKTOP-LOADING` | `656:258` | `ui/catalog-subject-section.tsx` (`LOADING`) + the entry-context effect |
+| Mobile 390 — catalog | `FIG-APP5-S01-CATALOG-MOBILE-DEFAULT` | `658:3` | `styles/custom-request.scss` (base, stacked) |
+| Mobile 390 — COP | `FIG-APP5-S01-COP-MOBILE-DEFAULT` | `658:59` | `styles/custom-request.scss` |
+| Mobile 390 — code sent | `FIG-APP5-S01-VERIFY-MOBILE-CODESENT` | `658:114` | APP4 `contact-verification.scss` (reused) |
+| Mobile 390 — accepted & rejected | `FIG-APP5-S01-UPLOAD-MOBILE-MIXED` | `658:160` | `styles/custom-request.scss` (tile wrap) |
+| Mobile 390 — review & submit | `FIG-APP5-S01-SUBMIT-MOBILE-REVIEW` | `658:222` | `styles/custom-request.scss` |
+| Rule matrices — subject, assets, submit-once, responsive | `673:3` · `673:65` · `673:139` · `674:69` | — | `model/custom-request-flow.ts`, `model/request-asset-slot.ts`, `model/submission-outcome.ts` |
 
-All 28 `S01` rows in `docs/design/FIGMA_DESIGN_INDEX.md` §4.11 were resolved and
-confirmed `APPROVED_FOR_IMPLEMENTATION` under `FIG-APPROVAL-APP5-D01-PO-001`,
-file `BQwqV8GdfUIELvsQDB1UQE`, page `APP_05`, route `/yeu-cau/moi`:
-
-| Section | Nodes |
-|---|---|
-| Subject chooser | `651:3` |
-| Catalog branch — default / quantity-invalid / session-expired | `650:3` · `650:94` · `650:187` |
-| COP branch — default / validation | `651:40` · `651:138` |
-| Verification (step 2) — contact / sent / mismatch / expired / verified | `652:3` · `652:55` · `652:115` · `652:175` · `652:229` |
-| Upload (step 3) — empty / uploading / inspecting / accepted / rejected / cap | `654:3` · `654:66` · `654:138` · `654:214` · `654:309` · `654:397` |
-| Submission — review / submitting / uncertain / failed / replay | `656:3` · `656:74` · `656:119` · `656:166` · `656:213` |
-| Loading / context restore | `656:258` |
-| Mobile 390 — catalog / COP / code-sent / upload-mixed / review | `658:3` · `658:59` · `658:114` · `658:160` · `658:222` |
-
-The registry was **read only**. No row was added, edited or re-approved, and no
-Figma node was opened for modification.
+**One reading of `650:3` is deliberately not literal, and it is the Product
+Owner's locked decision (`APP5-S01` §3.1).** The frame carries the note
+*"product, variant and design come from the Studio session — you enter no code
+here"* and draws the variant as read-only context. `APP5-B07` marks **no variant
+as a default**, so there is nothing for the screen to display read-only; the
+approved section becomes an explicit chooser instead. The frame's actual
+requirement — that the customer types no id — is honoured exactly: the product
+slug, side and area arrive in the URL, the Design Session id is read from APP3's
+own placement-keyed handle, and no id is an editable field anywhere on the
+screen. The Figma registry states that it does not override business, lifecycle
+or database authority, and this is that case.
 
 ---
 
-## 2. The blocker
+## 3. Catalog semantics
 
-### 2.1 What the catalog branch must send
+Stated explicitly, as `APP5-S01` §29 requires:
 
-`SubmitCustomRequestBody.catalog` (`CustomRequestCatalogSubject`, generated
-contract) requires three ids, all `NOT NULL`:
+- **One Product.** `productId` comes from the same `APP5-B07` response that
+  published the variants, never from a second read that could disagree with it.
+- **One explicitly selected real Variant.** The customer must click one option
+  from the published list. `subjectReady()` returns `false` while
+  `selectedVariantId` is `undefined`, and the quantity table is disabled until
+  then.
+- **No default, primary, fallback or first-row Variant.** No `defaultChecked`,
+  no selecting effect, and no function in `model/variant-option.ts` returns "the"
+  variant — `selectionStillEligible()` only answers whether a choice the customer
+  already made survives a refetch.
+- **Quantity breakdown is scoped to that one Variant.**
+  `CustomRequestQuantityLine` is `{ quantity, sizeLabel? }` and carries no
+  variant id; the props of `QuantityBreakdownSection` have nowhere to put one.
+  A second variant per request is unrepresentable rather than merely unrendered.
+- **`product_variants.sizeLabel` is *not* treated as equivalent to
+  `CustomRequestQuantityLine.sizeLabel`.** Nothing copies, defaults, locks,
+  rewrites or validates one against the other. The catalog journey test proves it
+  by choosing the variant labelled `L` and typing `XL` on the quantity line.
+- **An empty variant list is not a stale Design Session.** `variants: []` is a
+  200 about a published product and renders its own in-step treatment with
+  progression disabled and no auto-switch to the COP branch; `650:187` is
+  reserved for a Design Session that is actually missing or unusable. Two
+  independent gates (§6.4), asserted separately.
 
-```text
-productId          — Published Product the request is for
-productVariantId   — "Exact Product Variant. Required — a request without one cannot be quoted."
-designSessionId    — the ACTIVE Design Session to submit
-```
+The four catalog outcomes §17 forbids collapsing are four values of one union in
+`hooks/use-catalog-variants.ts` — `READY`, `EMPTY`, `PRODUCT_UNAVAILABLE`,
+`FAILED` — with the session gate orthogonal to all four. The
+`PRODUCT_UNAVAILABLE` copy says only that the product was not found: draft,
+archived and non-public-category are one indistinguishable answer at the API and
+read identically on screen.
 
-### 2.2 What the Storefront can obtain today
+---
 
-| Field | Obtainable? | From |
+## 4. API usage
+
+Every call goes through a **generated operation**. No path string exists in the
+feature, and no endpoint was hand-written or duplicated.
+
+| Purpose | Generated operation | Checkpoint |
 |---|---|---|
-| `productId` | yes | `publicProductPlacementGet` → `PublicProductPlacementResponse.productId` |
-| `designSessionId` | yes | the APP3 resume handle (`studio-resume-handle.ts`) / session bootstrap |
-| `productVariantId` | **no** | — nothing publishes it |
+| Catalog variant list | `publicProductVariantList` | `APP5-B07` |
+| Issue verification challenge | `publicVerificationIssue` | `APP4-B03` |
+| Resend challenge | `publicVerificationResend` | `APP4-B03` |
+| Submit verification attempt | `publicVerificationSubmitAttempt` | `APP4-B04` |
+| Read challenge status (refusal disambiguation only) | `publicVerificationReadStatus` | `APP4-B04` |
+| Upload one customer image | `publicCustomRequestAssetUpload` | `APP5-B02` |
+| Read one image's inspection state | `publicCustomRequestAssetStatus` | `APP5-B02` |
+| Submit the request | `publicCustomRequestSubmit` | `APP5-B01` |
 
-### 2.3 Evidence that no public read yields a variant
+The four APP4 operations are reached through the existing
+`contact-verification` feature, unchanged — S01 imports its hook and its three
+approved cards rather than re-implementing the flow.
 
-Taken from the delivered artefacts, not from documentation prose:
+**The one thing the generated layer cannot express.** `APP5-B02` requires an
+`Idempotency-Key` header and Orval emits no parameter for it, so it travels
+through the operation's own per-call config (`ApiRequestOptions.config.headers`)
+— the same seam `APP3-B06B`'s session upload already uses. `Content-Type` is
+deliberately left unset there so Axios derives the multipart boundary from the
+`FormData`; a literal `multipart/form-data` would overwrite it with a value that
+has no boundary. The key is minted once per customer action and **reused by every
+retry of that action**, which is what stops one retry from creating a second
+stored asset.
 
-1. **The published document has no variant surface.** Enumerating
-   `packages/contracts/openapi/openapi.generated.json`: **56 paths**, of which 23
-   are public. No path matches `/variant/i`. Enumerating every public operation's
-   response schemas for `productVariantId` returns **zero operations**.
-
-2. **The only schemas carrying `productVariantId` are post-submission reads or
-   the write itself** — `AdminCatalogSubjectResponse`,
-   `AdminRequestQuantityLineResponse`, `CatalogRequestSubjectResponse`,
-   `RequestQuantityLineResponse` and `CustomRequestCatalogSubject`. The first four
-   describe a request that already exists; they cannot inform the submission that
-   creates it.
-
-3. **The catalog read deliberately excludes variants.**
-   `PublicProductDetailResponse` publishes `category`, `description`,
-   `isDisplayOutOfStock`, `media`, `name`, `price`, `seo`, `slug` — no ids at all.
-   `apps/api/src/modules/catalog/presentation/public-product.contract.spec.ts`
-   asserts that `variant` is among the query parameters the public list
-   **must reject**, so the omission is an enforced product decision, not an
-   oversight to be patched from the frontend.
-
-4. **A fabricated id is refused by the database, not merely unvalidated.**
-   `migration 0012_create_request_and_design_case_tables.sql` adds
-   `fk_custom_requests__product_variant_id` and
-   `fk_custom_request_quantity_breakdowns__product_variant_id`, both
-   `REFERENCES product_variants(id) ON DELETE restrict`. Any invented UUID fails
-   at insert.
-
-5. **The design's stated source for the variant does not carry one.**
-   `APP5-D01` §E records `G01-D08` as *"`650:3` shows product **and** variant as
-   read-only context from the Studio session"*, and `G01-D09` as *"`650:3` carries
-   the note 'product, variant and design come from the Studio session — you enter
-   no code here'; no input exists for it."* But:
-   - `design_sessions.product_variant_id` is **nullable**, and no public
-     design-session application service sets it — grepping
-     `apps/api/src/modules/design/application/` for `productVariantId` returns
-     nothing, so every anonymously-created session stores `NULL`;
-   - `DesignSessionSnapshotResponse` and `DesignSessionScopeResponse` publish no
-     `productVariantId` — and no `productId` either, only `productSlug`.
-
-6. **The backend's own coherence check confirms the fact is absent.**
-   `submit-custom-request.use-case.ts` `loadSubmittable()` compares the submitted
-   variant to the session's only when the session has one:
-
-   ```ts
-   (session.productVariantId !== undefined &&
-     session.productVariantId !== subject.productVariantId)
-   ```
-
-   Because public sessions always store `NULL`, that guard is inert for every
-   Storefront-created session — the variant is not derived from the session, it
-   is simply expected to arrive from somewhere that does not exist.
-
-### 2.4 Why this is a §20 hard blocker
-
-`APP5-S01` §20 permits a hard block on three conditions. **Two** are met at once:
-
-| Condition | Met | How |
-|---|---|---|
-| 1 — approved D01 S01 needs data no delivered APP5/APP3/APP4 API can provide | **yes** | §2.3 items 1–3 |
-| 2 — Storefront cannot carry APP3 design-session context into S01 without a new backend contract | **yes** | §2.3 items 5–6 |
-| 3 — APP4 verification cannot produce a `SUBMISSION` challenge | no | APP4-S01 issues `IssueVerificationChallengeBodyPurpose.SUBMISSION` and reaches a verified state; only the *retention* of the verified challenge id needs work, which is ordinary frontend scope |
-
-§20 also requires exhausting current capability before blocking. That was done:
-the whole published document, every public controller, the catalog presentation
-layer, the design-session application layer, the generated client and the
-migration set were each checked for a route to a variant id. There is none.
+**The design-session credential is not in any payload.** `catalog.designSessionId`
+is documented as authorized by the host-only `HttpOnly` session cookie the
+browser attaches to the same-origin submission; nothing in this feature reads or
+could read it.
 
 ---
 
-## 3. Capability audit performed (no code written)
+## 5. Api-client boundary
 
-The audit went beyond the blocking field, so `B07` and the `S01` resume start
-from a known state rather than re-deriving it.
-
-| Area | Finding |
-|---|---|
-| `publicCustomRequestAsset_upload` | Generated as `publicCustomRequestAssetUpload(challengeId, body, params, options)`. The controller marks `Idempotency-Key` **required** (`@ApiHeader … required: true`), but Orval emits no parameter for it — the resume must pass it through `options.config.headers`, which `apiRequest` merges over the request config. |
-| `publicCustomRequestAsset_status` | `CustomRequestAssetStatusResponse` carries `state` (`UPLOADED`/`INSPECTING`/`ACCEPTED`/`REJECTED`) **and** `bindable`, described as "true exactly when this id would be accepted in a submission". `bindable` — not a state comparison — is the correct gate for enabling submit. |
-| `publicCustomRequest_submit` | Needs no idempotency header: the `challengeId` **is** the idempotency scope. No visible key field is therefore required, matching `656:213`. |
-| APP4 verification reuse | `apps/storefront/src/features/contact-verification/` exposes only `VerificationQueryProvider`. More importantly, `verificationReducer`'s `VERIFIED` case sets `challenge: undefined` by design — APP4-S01 had no use for the id and dropping it was deliberate. `S01` needs that id for both B02 and B01, so the resume must add an explicit retained `verifiedChallengeId` rather than reinstate the whole challenge object (nothing downstream may answer it again). In-memory only; §5 forbids `localStorage`. |
-| API-client boundary | The four APP5 public operations are generated but **not** re-exported from `packages/api-client/src/index.ts`. The repository's rule is that features never deep-import the generated tree, so the resume adds re-exports there — a handwritten boundary file, not generated output. |
-| Storefront stack | No Zod and no form library are installed; APP4-S01 validates by hand through a reducer. `S01` follows that precedent rather than introducing a dependency. |
-
-None of this was acted on. It is recorded so the resume does not repeat it.
-
----
-
-## 4. What was explicitly **not** done
-
-| Refused | Why |
-|---|---|
-| Ship a COP-only `S01` | The chooser `651:3` is the screen's first interaction; half a fork is a screen no approved frame draws |
-| Permanently narrow `S01` to COP | Would silently delete approved scope (`650:3`, `650:94`, `650:187`, `658:3`) on a frontend checkpoint's authority |
-| Make `productVariantId` optional | A backend contract change, and `G01-D08` requires the variant because a request without one cannot be quoted |
-| Derive a default/first variant | No authority defines one; it would guess what the customer ordered |
-| Add variant semantics to `publicProductPlacementGet` | Placement answers product → side → area; variants are a different axis |
-| Set `design_sessions.product_variant_id` from the Studio | Mutating APP3 to carry a fact it never owned, to work around a missing read |
-| Implement the variant API here | A backend operation inside a frontend checkpoint, past its review boundary |
-| Use `650:187` ("design session expired") as a permanent fallback | The session has not expired; the copy would misattribute a platform gap to the customer's session |
-
----
-
-## 5. The unblock
+`packages/api-client/src/index.ts` — curated exports added, following the file's
+existing per-checkpoint convention:
 
 ```text
-APP5-B07 — Public catalog variant selection
+operations  publicProductVariantList
+            publicCustomRequestAssetUpload
+            publicCustomRequestAssetStatus
+            publicCustomRequestSubmit
+enums       PublicCustomRequestAssetUploadRole
+            CustomRequestAssetStatusResponseState
+types       PublicProductVariantListResponse · PublicProductVariantResponse
+            CustomRequestAssetIntakeResponse · CustomRequestAssetStatusResponse
+            CustomRequestAssetBinding · CustomRequestCatalogSubject
+            CustomRequestCustomerOwnedProduct · CustomRequestQuantityLine
+            CustomRequestSubmissionResponse · SubmitCustomRequestBody
 ```
 
-One public read that lets an anonymous Storefront caller obtain a
-request-selectable `productVariantId` for a published product, with whatever
-display attributes the approved frames need to render the variant as context
-(`650:3` shows it read-only; `673:3` keys every catalog quantity line to it).
+**Deliberately withheld:** `publicCustomRequestStatus` (`APP5-B03`). Its consumer
+is `APP5-S02` and it is a grant-scoped read, not part of creation — it is
+released when that screen exists, on its own terms. No Admin APP5 operation was
+exported.
 
-Scope notes for whoever executes it — not decisions, and not binding:
+**No generated file was edited and nothing was regenerated.**
+`packages/api-client/src/generated/**` and the committed OpenAPI artifact are
+byte-identical to `HEAD`.
 
-- it is a **read**, and the public catalog is publication-gated, so it must not
-  become a lifecycle-visibility parameter (see the `public-product.contract.spec.ts`
-  rejection list);
-- `CustomRequestQuantityLine` carries only `quantity` + `sizeLabel` and B01 sets
-  the variant server-side from the subject, so `B07` decides how a **size label**
-  relates to a variant — that question is `B07`'s, not `S01`'s;
-- it is an **addition** to the eight-operation APP5 budget, like `APP5-B06`.
+Two Storefront feature boundaries were also widened, consumer-driven and
+read-only:
 
-`APP5-S01` then resumes **unchanged in product scope**: both branches, all 28
-approved rows, no re-approval needed.
+- `features/contact-verification/index.ts` — the flow hook, its type, the three
+  approved cards and the UI-state helpers. The **screen** is still not exported:
+  it owns the `h1` and page layout of its own route, which is exactly what an
+  embedded step must not bring with it.
+- `features/design-studio/index.ts` — `readResumeHandle` and `StudioResumeScope`.
+  The **reader only** — not the writer, not the clearer — so Session ownership
+  stays with APP3. The id authorizes nothing on its own; the `HttpOnly` secret
+  that does is unreadable to both features alike.
 
 ---
 
-## 6. Validation ledger
+## 6. Flow coverage
 
-No runtime source changed, so no test, build, typecheck, lint, generation or gate
-is justified. Running any would produce evidence about code this checkpoint did
-not write.
+```text
+/yeu-cau/moi
+├── subject XOR (651:3) — neither preselected; choosing clears the other branch
+├── CATALOG
+│   ├── placement from the URL (san-pham / mat / vung), no id typed
+│   ├── Design Session from APP3's placement-keyed handle → 650:187 when absent
+│   ├── publicProductVariantList → READY / EMPTY / UNAVAILABLE / FAILED
+│   ├── one explicit variant; withdrawal on refetch returns to step 1
+│   └── quantity breakdown, required, scoped beneath that variant
+├── CUSTOMER_OWNED
+│   ├── name (required), description, width/height mm against the contract pattern
+│   └── quantity breakdown, permitted
+├── step 2 — APP4 verification, embedded
+│   └── verifiedChallengeId retained in S01 flow state
+├── step 3 — APP5-B02 uploads
+│   ├── COP_IMAGE (COP branch, ≥1 bindable required) + REFERENCE (both branches)
+│   ├── ATTACHMENT is not a value of any type here
+│   └── bounded polling: terminal state · 60-attempt budget · unmount · challenge
+├── review (656:3) — labels and masks only, no ids, no quote/payment language
+├── submit — APP5-B01
+└── → /yeu-cau/da-gui?ma=<code>
+```
 
-| Command | Impact reason | Result | Reruns |
+**The retained challenge id, and why it is not a session.** APP4's
+`verificationReducer` clears `challenge` on `VERIFIED` on purpose. S01 observes
+the id while it is on screen and reads it once at the success edge
+(`hooks/use-verified-challenge.ts`); APP4 is untouched — same reducer, same
+actions, same moment of forgetting. The id lives in the S01 flow reducer only:
+no `localStorage`, no `sessionStorage`, no cookie, no URL. It is cleared on
+`VERIFICATION_RESET` and on `FLOW_RESET` after a successful hand-off, so it dies
+with the screen.
+
+**S02 is not implemented.** `/yeu-cau/da-gui` exists as a route module that
+renders nothing and deliberately does not read the `ma` parameter — the code
+treatment, the secure-link explanation and the status entry are `APP5-S02`'s
+frames (`660:3`, `661:*`). A route test asserts the segment renders an empty
+container.
+
+---
+
+## 7. Submission safety
+
+| Requirement | Mechanism |
+|---|---|
+| No double-fire | Two mechanisms. The action is `disabled` while in flight, **and** `useRequestSubmission` refuses a second `submit()` before the first settles via a synchronous ref — `isPending` is state, so two clicks in one tick would both read the pre-render value. |
+| Replay is success | A replay returns the original result with the same request code and a 201, so it arrives in `onSuccess` and is treated as exactly what it is. |
+| Recoverable network failure | Maps to `UNCERTAIN` (`656:119`). Nothing is reset; the retry re-sends the **identical body**, which the challenge-scoped idempotency turns into a replay. Asserted by comparing the two recorded call arguments. |
+| Idempotency conflict | `IDEMPOTENCY_CONFLICT` → `CONFLICT`. No retry control is rendered and **no fresh challenge is issued automatically**; the only action is an explicit "verify again". |
+| Concurrent attempt | `DUPLICATE_OPERATION` → `IN_PROGRESS`, retryable. |
+| No client idempotency key | `SubmitCustomRequestBody` has no such field; the challenge id *is* the scope. No idempotency control is drawn or built. |
+
+Outcomes are mapped from `NormalizedApiError.code` and the HTTP status, never
+from `message`. A 4xx whose body failed to parse still normalizes to the client
+code `MALFORMED_RESPONSE`, so the status is checked **first** — treating that as
+"never happened" would offer a retry for a request the server already rejected.
+
+**Upload rejection privacy (§12).** `AssetSlot.failure` is a union of six bounded
+classes; it is not a string and cannot carry server prose. A test supplies a
+refusal whose message contains `fk_custom_requests__product_variant_id` and
+asserts the whole document body never contains it.
+
+---
+
+## 8. Focused validation ledger
+
+| Command / test | Impact reason | Result | Reruns |
 |---|---|---|---:|
-| `git status --short` | confirm the tree was clean at entry and carries documentation only at exit | PASS — clean at entry; 2 documentation files at exit | 0 |
-| `git rev-parse HEAD` | record the entry baseline | PASS — `5f00098` | 0 |
-| `git diff --check` | documentation changed; catch whitespace defects | PASS — no findings | 0 |
+| `pnpm --filter @embroidery/storefront exec jest --testPathPatterns="custom-request"` (`CMD-TEST-APP5-S01-STOREFRONT`) | The checkpoint's own model, component and route suites | **PASS** — 4 suites / 57 tests | 0 |
+| `npx jest test/unit/custom-request-model.test.ts` | Decision layer, during development | **PASS** — 26 tests | 0 |
+| `npx jest test/components/custom-request-catalog.test.tsx` | Catalog branch, during development | **PASS** — 12 tests | 3 |
+| `npx jest test/components/custom-request-cop.test.tsx` | COP branch, uploads, submit-once | **PASS** — 16 tests | 3 |
+| `npx jest test/components/custom-request-route.test.tsx` | New App Router segments | **PASS** — 3 tests | 0 |
+| `npx tsc --noEmit` (`apps/storefront`) | New feature, new routes, widened feature boundaries | **PASS** (exit 0) | 2 |
+| `npx tsc --noEmit` (`packages/api-client`) | Curated exports changed | **PASS** (exit 0) | 0 |
+| `npx eslint` on the changed Storefront source and test files | Changed frontend files | **PASS** (exit 0) | 2 |
+| `npx eslint packages/api-client/src/index.ts` | Curated boundary changed | **PASS** (exit 0) | 0 |
+| `npx prettier --write` on every changed file | Formatting hygiene | applied; suites and typecheck re-run green afterwards | 0 |
 
-Contract and source reads used as evidence (read-only, no execution):
-`packages/contracts/openapi/openapi.generated.json`,
-`packages/api-client/src/generated/embroidery-api.{ts,schemas.ts}`,
-`packages/api-client/src/index.ts`,
-`packages/api-client/src/clients/api-request.mutator.ts`,
-`apps/api/src/modules/order/presentation/public-custom-request-asset.controller.ts`,
-`apps/api/src/modules/order/application/submit-custom-request.use-case.ts`,
-`apps/api/src/modules/catalog/presentation/public-product.contract.spec.ts`,
-`apps/api/src/modules/design/application/**`,
-`packages/database/migrations/0012_create_request_and_design_case_tables.sql`,
-`apps/storefront/src/features/contact-verification/**`,
-`apps/storefront/src/features/design-studio/model/studio-resume-handle.ts`,
-`docs/design/FIGMA_DESIGN_INDEX.md`,
-`docs/implementation/reports/APP5-D01-COMPLETION-REPORT.md`.
+The three catalog reruns were a Jest hoist-TDZ error in the navigation mock, two
+label collisions between a section's `aria-label` and a field's `<label>`, and a
+missing refetch trigger — each fixed at its cause. Two of those collisions were
+**real accessibility defects**, not test artefacts: the step-1 continue button
+shared its accessible name with the rail's step-2 button, and the two file inputs
+on the COP branch shared one name; both now have distinct copy.
 
-**Not run, and correctly so:** frontend tests, backend tests, DB tests, full
-monorepo Jest, Playwright/E2E, OpenAPI generation, API-client generation, the
-Figma registry checker, historical APP3/APP4 gates, SonarQube, and any
-all-workspace build or typecheck.
+**Explicitly not run**, per `APP5-S01` §22 and `VALIDATION_GOVERNANCE.md` §3 — no
+API runtime, database, worker, OpenAPI document, generated client or Figma
+artefact changed, so none of these is justified:
+
+```text
+APP5-B01/B02/B03/B04/B05 suites · APP5-B07 suite · APP5-DB01 · any backend test
+full Storefront suite · full monorepo Jest · Playwright / E2E · Admin · worker
+DB regression · OpenAPI generation or check · generated-client generation
+Figma registry checker · APP3/APP4 historical gates · SonarQube
+all-workspace build or typecheck
+```
+
+No Storefront production build was run: the new route segments are proved by
+typecheck plus `custom-request-route.test.tsx`, which imports both page modules
+and asserts their metadata and rendered output — the §23 condition for skipping
+the build. No green result was re-run on an unchanged tree.
 
 ---
 
-## 7. Files changed
+## 9. Responsive and accessibility
 
-| File | Change |
-|---|---|
-| `docs/implementation/phases/APP5-CUSTOM-REQUESTS.md` | §10.1 — `APP5-B07` inserted before `S01`; `S01` → `BLOCKED`. New §10.6 recording the blocker, its evidence, the routing decision and the refused unblocks |
-| `docs/implementation/reports/APP5-S01-COMPLETION-REPORT.md` | this report (new) |
+Implemented against `658:3` · `658:59` · `658:114` · `658:160` · `658:222`
+(mobile 390) and the desktop 1440 frames, using the existing Storefront
+breakpoint (`$bp-shell-wide: 768px`, mirrored from the shell exactly as
+`contact-verification.scss` mirrors it) and `@embroidery/styles` tokens. Base
+styles are the mobile stack; the step rail moves beside the content column at the
+breakpoint. Three local literals (10, 14, 20 px) are documented in the sheet,
+following the `APP2-S02` / `APP4-S01` precedent — inventing shared scale steps to
+suit one screen would change a foundation. **No new design-system asset was
+created.**
 
-Documentation only. Zero runtime files.
+Accessibility, asserted by the suites rather than described:
+
+- the subject choice and the variant choice are native radio **groups** in
+  `<fieldset>`/`<legend>` — one tab stop, arrow-key navigation, and a state
+  announced as "n of m" without any ARIA of our own;
+- every field is associated by `<label for>`, with `aria-invalid` and
+  `aria-describedby` pointing at its own error (the layer-naming contract
+  `APP5-D01` §G records for exactly this);
+- upload status is **text first** (`role="status"`), never colour alone, and the
+  file inputs are ordinary keyboard-operable `<input type="file">` with distinct
+  accessible names per role;
+- the submitting state is announced through a polite live region, because the
+  approved frame replaces the button label and a screen reader would otherwise
+  experience a button that simply stopped responding;
+- one `<h1>` for the page and `<h2>`/`<h3>` for sections — the shell keeps the
+  single `main` landmark, and the screen adds no second one.
 
 ---
 
-## 8. Roadmap
+## 10. Files changed
+
+**Added — Storefront feature** (`apps/storefront/src/features/custom-request/`):
+
+```text
+api/custom-request.client.ts
+hooks/use-catalog-variants.ts · use-request-submission.ts
+      use-request-uploads.ts · use-verified-challenge.ts
+model/catalog-entry-context.ts · custom-request-copy.ts · custom-request-flow.ts
+      custom-request-query-keys.ts · customer-owned-draft.ts
+      quantity-breakdown.ts · request-asset-slot.ts · step-readiness.ts
+      submission-outcome.ts · submission-payload.ts · variant-option.ts
+ui/catalog-subject-section.tsx · custom-request-query-provider.tsx
+   custom-request-screen.tsx · customer-owned-section.tsx
+   quantity-breakdown-section.tsx · review-section.tsx · step-rail.tsx
+   subject-chooser.tsx · submit-panel.tsx · upload-role-panel.tsx
+   upload-slot-tile.tsx · variant-selector.tsx · verification-step.tsx
+styles/custom-request.scss
+index.ts
+```
+
+**Added — routes:** `src/app/yeu-cau/moi/page.tsx`,
+`src/app/yeu-cau/da-gui/page.tsx`.
+
+**Added — tests:** `test/unit/custom-request-model.test.ts`,
+`test/components/custom-request-{catalog,cop,route}.test.tsx`,
+`test/support/custom-request-fixture.ts`.
+
+**Modified:** `apps/storefront/src/styles/main.scss` (feature sheet composed),
+`apps/storefront/src/features/contact-verification/index.ts` (flow exports),
+`apps/storefront/src/features/design-studio/index.ts` (resume-handle reader),
+`packages/api-client/src/index.ts` (curated APP5 public exports),
+`docs/implementation/phases/APP5-CUSTOM-REQUESTS.md`,
+`docs/implementation/SCOPED_COMMAND_INDEX.md`, this report.
+
+**Unchanged, and verified so:** API runtime, database and migrations, worker,
+the committed OpenAPI artifact, `packages/api-client/src/generated/**`, and every
+Figma node and registry row.
+
+Largest runtime file: `ui/custom-request-screen.tsx` at 372 lines (limit 400).
+Largest test file: `custom-request-cop.test.tsx` at 391 lines (limit 600).
+
+---
+
+## 11. Roadmap
 
 ```text
 APP5-R00  = COMPLETE
@@ -271,9 +425,9 @@ APP5-B02  = COMPLETE
 APP5-B03  = COMPLETE
 APP5-B04  = COMPLETE
 APP5-B05  = COMPLETE
-APP5-B07  = INCOMPLETE  NEXT
-APP5-S01  = BLOCKED     waits for B07
-APP5-S02  = INCOMPLETE
+APP5-B07  = COMPLETE
+APP5-S01  = COMPLETE
+APP5-S02  = INCOMPLETE  NEXT
 APP5-A01  = INCOMPLETE
 APP5-B06  = INCOMPLETE  before A02
 APP5-A02  = INCOMPLETE
@@ -281,38 +435,56 @@ APP5-E01  = INCOMPLETE
 APP5-X01  = INCOMPLETE
 ```
 
----
-
-## 9. Residual risks
-
-1. **`B07` decides a product question, not only a technical one.** The public
-   catalog deliberately publishes no ids and rejects `variant` as a query
-   parameter. `B07` opens a variant surface for the first time and should say
-   explicitly what a customer may see and select, rather than inheriting the
-   answer from whatever the frame happens to render.
-
-2. **The size-label ↔ variant relationship is unresolved.**
-   `CustomRequestQuantityLine` carries `sizeLabel` and no variant; B01 sets the
-   variant from the subject. If a catalog product's sizes *are* its variants,
-   `650:3`'s per-variant quantity table and the flat breakdown contract describe
-   the same data twice. `B07` should settle it before `S01` renders it.
-
-3. **`650:187` has no cause left once `B07` lands.** It is drawn for a stale or
-   missing design session. It was not repurposed here; the resume should confirm
-   it still has a reachable trigger.
-
-4. **Two APP5 checkpoints have now been discovered by their consumer** — `B06`
-   by `B04`, `B07` by `S01`. Both are reads a frontend needed that no
-   authority-level table inventory would have surfaced. `APP5-X01` should carry
-   this to the APP6 phase-entry audit: audit the **reads a surface will need**,
-   not only the tables and policies it will write.
-
-5. **A verified challenge is short-lived.** Whenever `S01` resumes, the flow
-   holds a verified `SUBMISSION` challenge across contact entry → uploads →
-   review → submit. Its expiry is the real budget for that whole path, and the
-   approved frames cover expiry during verification but should be re-checked for
-   expiry *after* it.
+`APP5-B06` (Admin private request-asset delivery) is carried forward unchanged
+and still precedes `APP5-A02`. It does not affect S01 and was not implemented.
 
 ---
 
-NEXT CHECKPOINT: APP5-B07 — Public catalog variant selection
+## 12. Residual risks
+
+Real, unresolved, and none of them reopens the closed variant contract.
+
+1. **No entry point into the catalog branch exists yet.** `/yeu-cau/moi` reads
+   the placement from `?san-pham=…&mat=…&vung=…`, but nothing links to it: the
+   `APP3` Studio has no "request this design" control, and `APP5-D01` draws none
+   on any S01 frame. Reaching the catalog branch today means arriving with the
+   query string already set. Adding the control would mean changing an APP3
+   surface with no approved frame for it, which is outside this checkpoint.
+   → **`FU-APP5-S01-STUDIO-ENTRY-01`**, for `APP5-E01` to route.
+2. **The COP branch has no entry point either**, for the same reason — no
+   navigation surface links to `/yeu-cau/moi` at all. Same follow-up.
+3. **Upload quota classes are inferred from HTTP status.** `APP5-B02` publishes
+   no distinct business code for a per-challenge quota refusal, so a 429 is shown
+   as the quota class and a 422 as processing-failed. Both are truthful bounded
+   classes and neither leaks server prose, but a customer who has hit the
+   challenge-wide cap may read a slightly generic sentence. Narrowing it needs a
+   backend error code, not a frontend change.
+4. **Polling has no visible "we stopped asking" state.** After the 60-attempt
+   budget (~2 minutes) a slot stops polling and stays on its last known state.
+   The customer can remove and re-upload, but no frame draws an explicit
+   timed-out treatment and none was invented.
+5. **`650:187` is reached from the browser's own storage, not from the server.**
+   A Design Session whose handle is present but which the server has since
+   expired is only discovered at submit, where `SESSION_EXPIRED` maps to the same
+   approved copy. Pre-validating would mean calling
+   `publicDesignSessionResume`, which **rotates the session secret** and would
+   break a Studio tab the customer still has open — so it is deliberately not
+   done.
+6. **The review step shows counts, not thumbnails.** `APP5-B02` publishes no
+   customer-facing binary read for an unbound asset, so accepted images are
+   summarised numerically. `APP5-B06` delivers the Admin-side binary and is not a
+   customer surface.
+
+---
+
+## 13. Commit
+
+```text
+feat(app5): create and submit a custom request from the storefront
+```
+
+Committed on `production`. **Not pushed.**
+
+---
+
+NEXT CHECKPOINT: APP5-S02 — Confirmation & grant-scoped status

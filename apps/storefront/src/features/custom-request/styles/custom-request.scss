@@ -1,0 +1,425 @@
+// Custom request creation — feature-scoped styles (APP5-S01).
+//
+// Design source: FIG-APP5-S01-* (file BQwqV8GdfUIELvsQDB1UQE, page APP_05,
+// nodes 650:3 · 650:94 · 650:187 · 651:3 · 651:40 · 651:138 · 652:3 · 652:55 ·
+// 652:115 · 652:175 · 652:229 · 654:3 · 654:66 · 654:138 · 654:214 · 654:309 ·
+// 654:397 · 656:3 · 656:74 · 656:119 · 656:166 · 656:213 · 656:258; mobile 390
+// 658:3 · 658:59 · 658:114 · 658:160 · 658:222), approved under
+// FIG-APPROVAL-APP5-D01-PO-001.
+//
+// The APP5-D01 catalog frames were rebuilt at 1440x1240 after the package's own
+// visual inspection found the 900-tall versions clipping their content, so the
+// desktop layout below is a two-column rail + content that grows rather than a
+// fixed-height canvas.
+//
+// Colour, type, radius and spacing come from @embroidery/styles. The frames use
+// a few steps the shared spacing scale does not define (10, 14, 20); each is a
+// documented local literal, following the APP2-S02 and APP4-S01 precedent for
+// the same reason — inventing scale steps would change a shared foundation to
+// suit one screen.
+
+@use '@embroidery/styles' as styles;
+
+// The shell widens its content gutter here (storefront-shell.scss `$bp-footer`).
+// Mirrored rather than imported because it is another feature's internal
+// constant, exactly as contact-verification.scss mirrors it.
+$bp-shell-wide: 768px;
+
+$content-max: 760px;
+$rail-width: 240px;
+$section-gap: 20px; // no shared step between 16 and 24
+$field-gap: 10px;
+$tile-gap: 14px;
+
+.custom-request {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding-block: styles.spacing(32);
+  max-width: $content-max;
+  margin-inline: auto;
+
+  &__heading {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__intro {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-secondary;
+  }
+
+  // The step rail. Stacked on mobile (658:3), beside the content once there is
+  // room for both without the content column narrowing below the approved
+  // field width.
+  &__rail {
+    width: 100%;
+  }
+
+  &__rail-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $field-gap;
+  }
+
+  &__rail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__rail-button {
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    text-align: start;
+    font: inherit;
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-secondary;
+    cursor: pointer;
+
+    &[aria-current='step'] {
+      color: styles.$color-text-primary;
+      font-weight: styles.$font-weight-semibold;
+    }
+
+    &:disabled {
+      color: styles.$color-text-tertiary;
+      cursor: not-allowed;
+    }
+  }
+
+  &__rail-hint {
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: $section-gap;
+    padding: styles.spacing(24);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-card;
+  }
+
+  &__section-heading {
+    margin: 0;
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $field-gap;
+  }
+
+  &__legend {
+    padding: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  &__options {
+    display: flex;
+    flex-direction: column;
+    gap: $field-gap;
+  }
+
+  &__option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: styles.spacing(8);
+    align-items: center;
+    padding: styles.spacing(16);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-input;
+    cursor: pointer;
+
+    // The whole card reacts to focus, not only the 16px control inside it: the
+    // radio is the accessible name's owner but the card is what the customer
+    // sees, and a focus ring on the dot alone is easy to lose on a light field.
+    &:focus-within {
+      border-color: styles.$color-action-primary;
+    }
+  }
+
+  &__option-label {
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-primary;
+  }
+
+  &__option-hint {
+    grid-column: 2;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+      font-size: styles.$font-size-body-s;
+      font-weight: styles.$font-weight-medium;
+      color: styles.$color-text-primary;
+    }
+
+    input,
+    textarea {
+      font: inherit;
+      font-size: styles.$font-size-body-m;
+      color: styles.$color-text-primary;
+      padding: styles.spacing(8) styles.spacing(16);
+      border: 1px solid styles.$color-border-secondary;
+      border-radius: styles.$radius-input;
+      background: styles.$color-surface-primary;
+
+      &[aria-invalid='true'] {
+        border-color: styles.$color-status-error;
+      }
+
+      &:disabled {
+        background: styles.$color-background-secondary;
+        color: styles.$color-text-tertiary;
+      }
+    }
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $section-gap;
+
+    > * {
+      flex: 1 1 160px;
+    }
+  }
+
+  &__lines {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $field-gap;
+  }
+
+  &__line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: $field-gap;
+
+    // The quantity table is one variant's breakdown, so a row carries only a
+    // size and a count — there is no third column here and none in the model.
+    > .custom-request__field {
+      flex: 1 1 140px;
+      // `min-width: 0` keeps a long size label from pushing the row wider than
+      // the card, which is what silently caused horizontal scroll on mobile.
+      min-width: 0;
+    }
+  }
+
+  &__total {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  &__tiles {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $tile-gap;
+  }
+
+  &__tile {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 200px;
+    max-width: 260px;
+    padding: styles.spacing(16);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+    background: styles.$color-surface-secondary;
+  }
+
+  &__tile-name {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+    // A long file name is truncated rather than allowed to widen the tile.
+    overflow-wrap: anywhere;
+  }
+
+  &__tile-status {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    // Status is text first. Colour is a second channel, never the only one.
+    color: styles.$color-text-secondary;
+  }
+
+  &__tile-actions {
+    display: flex;
+    gap: styles.spacing(8);
+  }
+
+  &__summary {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+  }
+
+  &__summary-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+
+    dt {
+      min-width: 160px;
+      font-size: styles.$font-size-body-s;
+      color: styles.$color-text-secondary;
+    }
+
+    dd {
+      margin: 0;
+      font-size: styles.$font-size-body-m;
+      color: styles.$color-text-primary;
+    }
+  }
+
+  &__notice {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    padding: styles.spacing(16);
+    border-radius: styles.$radius-sm;
+    background: styles.$color-background-secondary;
+
+    &--blocking {
+      border-inline-start: 4px solid styles.$color-status-warning;
+    }
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__error {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-status-error;
+  }
+
+  &__submit {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(16);
+  }
+
+  &__button {
+    align-self: start;
+    font: inherit;
+    font-size: styles.$font-size-body-m;
+    padding: styles.spacing(8) styles.spacing(24);
+    border-radius: styles.$radius-button;
+    border: 1px solid styles.$color-border-secondary;
+    background: styles.$color-surface-primary;
+    color: styles.$color-text-primary;
+    cursor: pointer;
+
+    &:disabled {
+      color: styles.$color-text-tertiary;
+      cursor: not-allowed;
+    }
+
+    &--primary {
+      background: styles.$color-action-primary;
+      border-color: styles.$color-action-primary;
+      color: styles.$color-surface-primary;
+
+      &:hover:not(:disabled) {
+        background: styles.$color-action-hover;
+        border-color: styles.$color-action-hover;
+      }
+
+      &:disabled {
+        background: styles.$color-border-primary;
+        border-color: styles.$color-border-primary;
+        color: styles.$color-text-tertiary;
+      }
+    }
+
+    &--quiet {
+      padding: 6px styles.spacing(16);
+      font-size: styles.$font-size-body-s;
+    }
+  }
+
+  // Announced, never drawn — the clipping technique the shell already uses.
+  &__visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+// Desktop 1440 (650:3): the rail moves beside the content column.
+@media (min-width: $bp-shell-wide) {
+  .custom-request {
+    display: grid;
+    grid-template-columns: $rail-width minmax(0, 1fr);
+    column-gap: styles.spacing(32);
+    row-gap: styles.spacing(24);
+    max-width: $content-max + $rail-width;
+
+    &__heading,
+    &__intro {
+      grid-column: 1 / -1;
+    }
+
+    &__rail {
+      grid-column: 1;
+      grid-row: 3 / span 20;
+      align-self: start;
+      position: sticky;
+      top: styles.spacing(24);
+    }
+
+    &__section,
+    &__fieldset,
+    &__submit,
+    > .custom-request__button {
+      grid-column: 2;
+    }
+  }
+}

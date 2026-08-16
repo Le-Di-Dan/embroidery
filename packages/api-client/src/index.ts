@@ -489,6 +489,55 @@ export type {
   NotificationReplayResponse,
 } from './generated/embroidery-api.schemas';
 
+// APP5 public custom-request operations, released by their first consumer
+// (`APP5-S01`). This boundary is consumer-driven: `APP5-B01`, `APP5-B02` and
+// `APP5-B07` deliberately left their operations unexported, because an
+// operation on this list is one a screen may reach.
+//
+// Four operations, and the set is bounded on purpose:
+//
+// - `publicProductVariantList` (`APP5-B07`) is the only public read that yields
+//   a `productVariantId`. It publishes no SKU, price or stock and marks no
+//   variant as a default, which is why the screen must make the customer choose
+//   one rather than pick for them.
+// - `publicCustomRequestAssetUpload` / `publicCustomRequestAssetStatus`
+//   (`APP5-B02`) are challenge-scoped: neither addresses a request, a customer
+//   or an asset that some other challenge uploaded.
+// - `publicCustomRequestSubmit` (`APP5-B01`) creates the request.
+//
+// Deliberately withheld: `publicCustomRequestStatus` (`APP5-B03`), whose
+// consumer is `APP5-S02` and which is a grant-scoped read, not part of
+// creation — it is released when that screen exists, on its own terms.
+//
+// Two enums cross as **values** because the screen branches on both, and a
+// mistyped string literal is a comparison that is simply never true:
+// `PublicCustomRequestAssetUploadRole` (the two roles a customer may use —
+// `ATTACHMENT` is internal and is not a member) and
+// `CustomRequestAssetStatusResponseState` (which approved tile is drawn).
+// `bindable`, not this enum, decides what may be submitted.
+export {
+  publicProductVariantList,
+  publicCustomRequestAssetUpload,
+  publicCustomRequestAssetStatus,
+  publicCustomRequestSubmit,
+} from './generated/embroidery-api';
+export {
+  PublicCustomRequestAssetUploadRole,
+  CustomRequestAssetStatusResponseState,
+} from './generated/embroidery-api.schemas';
+export type {
+  PublicProductVariantListResponse,
+  PublicProductVariantResponse,
+  CustomRequestAssetIntakeResponse,
+  CustomRequestAssetStatusResponse,
+  CustomRequestAssetBinding,
+  CustomRequestCatalogSubject,
+  CustomRequestCustomerOwnedProduct,
+  CustomRequestQuantityLine,
+  CustomRequestSubmissionResponse,
+  SubmitCustomRequestBody,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,
