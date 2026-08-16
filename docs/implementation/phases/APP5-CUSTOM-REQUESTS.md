@@ -88,9 +88,9 @@ with the three scope corrections noted below.
 |---|---|---|
 | `APP5-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation |
 | `APP5-G01` | `COMPLETE` | Submission, moderation and intake-abuse authority locked |
-| `APP5-D01` | `COMPLETE` | One APP5 design package registered — 65 nodes, `FIGMA_DESIGN_INDEX.md` §4.11 |
-| `APP5-B01` | `INCOMPLETE` | **Next** — submission transaction (TR-LC11-01); 1 endpoint |
-| `APP5-B02` | `INCOMPLETE` | Customer attachment intake; ≤2 endpoints |
+| `APP5-D01` | `COMPLETE` | One APP5 design package registered — 65 nodes, `FIGMA_DESIGN_INDEX.md` §4.11; Product Owner approved 2026-08-16 under `FIG-APPROVAL-APP5-D01-PO-001` |
+| `APP5-B01` | `COMPLETE` | Request submission backend — `POST /api/public/custom-requests` (`publicCustomRequest_submit`); TR-LC11-01 in one transaction |
+| `APP5-B02` | `INCOMPLETE` | **Next** — customer attachment intake; ≤2 endpoints |
 | `APP5-B03` | `INCOMPLETE` | Grant-scoped request status read; 1 endpoint |
 | `APP5-B04` | `INCOMPLETE` | Admin queue & detail; 2 endpoints |
 | `APP5-B05` | `INCOMPLETE` | Admin notes & guarded transitions; 2 endpoints |
@@ -166,10 +166,12 @@ access states   = NOT redrawn; APP4-D01 629:3/20/37/53/70/87 remain the authorit
 new DS assets   = none (0 components, 0 instances, 0 new tokens or styles)
 ```
 
-**Every UI checkpoint is still gated**: `APP5-S01`, `APP5-S02`, `APP5-A01` and
-`APP5-A02` may not start until a human reviewer promotes the rows they consume to
-`APPROVED_FOR_IMPLEMENTATION` with an approval-evidence id, per §2 and §9 of the
-registry.
+**UI gate released (2026-08-16).** The Product Owner reviewed and approved the
+complete `APP5-D01` package; `APP5-B01` recorded it in the registry, promoting
+all **65** rows `REVIEW_REQUIRED` → `APPROVED_FOR_IMPLEMENTATION` under
+`FIG-APPROVAL-APP5-D01-PO-001` without opening or altering Figma. `APP5-S01`,
+`APP5-S02`, `APP5-A01` and `APP5-A02` may now consume their registered nodes and
+must cite the exact registry ids they build against.
 
 One design decision needs backend confirmation rather than silent inheritance:
 the moderation dialogs treat the **internal reason** and the **customer-visible
