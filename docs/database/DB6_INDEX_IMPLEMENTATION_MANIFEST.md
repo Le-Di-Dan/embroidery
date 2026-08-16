@@ -154,6 +154,18 @@ constraint-created (78 PK + 50 UNIQUE = 128)
 > allocated — neither index was selected from a query plan; both are the physical
 > shape of a stable-identity constraint (IMP-D041), and `APP3-DB01` added no
 > performance index.
+>
+> `APP5-DB01` (migration 0035) added the first application-era **performance**
+> indexes: `ix_assets__challenge_status__intake_live` — the `APP5-G01 D13`
+> per-challenge accepted-upload quota path, leading on
+> `uploaded_via_challenge_id` so one challenge's rows are one contiguous range —
+> and `ix_assets__intake_expires_id__live`, the due-time path the future
+> SE-014/SE-015 orphan sweep needs. A live database now carries **215** physical
+> indexes, of which **48** are partial (13 partial-unique + 35
+> partial-performance). Both predicates are non-volatile: `now()` stays in the
+> query, per S26. No `IDX-*` slot is allocated for either — the DB5 register is
+> the launch access-path catalog, and an application-era index selected by an
+> application-era query does not belong in it.
 
 Four clarifications that the formula depends on:
 

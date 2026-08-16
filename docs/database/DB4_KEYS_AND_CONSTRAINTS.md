@@ -105,6 +105,8 @@ operational records, per the PK column in
 | CST-073 | CK | refunds | status=EXECUTED → transfer_reference NOT NULL | LC-20 | unevidenced refund execution | dir | D7-10 |
 | CST-074 | CK | design_versions | status ∉ {DRAFT} → document_hash NOT NULL · agreement_versions status=PUBLISHED → content_hash & effective_from NOT NULL | GRD-007/008 | unhashed sent/published artifact | dir | D7-07 |
 | CST-126 | CK | asset_derivatives | kind=PREVIEW_WATERMARKED → is_watermarked=true · kind=CATALOG_PREVIEW → is_watermarked=false (`ck_asset_derivatives__watermark_by_kind`; MOCKUP/NORMALIZED/THUMBNAIL unconstrained) | **INV-22 / BR-012** | a customer preview claiming no watermark, or a catalog display copy claiming one | **yes** (APP2-DB01, migration 0032) | D7 (`catalog-preview-derivative.integration.spec.ts`) |
+| CST-127 | CK | assets | one intake lane per row: `not (uploaded_via_session_id is not null and uploaded_via_challenge_id is not null)` (`ck_assets__single_intake_lane`) | **APP5-G01 §7** | one row giving two contradictory answers to which authority admitted the binary, making the per-challenge quota count ambiguous | **yes** (APP5-DB01, migration 0035) | D7 (`app5-intake-provenance.integration.spec.ts`) |
+| CST-128 | CK | assets | challenge lane carries its own due time: `uploaded_via_challenge_id is null or intake_expires_at is not null` (`ck_assets__challenge_intake_requires_expiry`); the reverse implication is deliberately **not** asserted | **APP5-G01 §7** | a challenge-authorized upload with no due time — unreachable by the orphan sweep once its parent is TTL-deleted | **yes** (APP5-DB01, migration 0035) | D7 (`app5-intake-provenance.integration.spec.ts`) |
 
 ## 5. Nullability (required references — D7-07 family)
 

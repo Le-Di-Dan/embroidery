@@ -90,8 +90,8 @@ with the three scope corrections noted below.
 | `APP5-G01` | `COMPLETE` | Submission, moderation and intake-abuse authority locked |
 | `APP5-D01` | `COMPLETE` | One APP5 design package registered — 65 nodes, `FIGMA_DESIGN_INDEX.md` §4.11; Product Owner approved 2026-08-16 under `FIG-APPROVAL-APP5-D01-PO-001` |
 | `APP5-B01` | `COMPLETE` | Request submission backend — `POST /api/public/custom-requests` (`publicCustomRequest_submit`); TR-LC11-01 in one transaction |
-| `APP5-DB01` | `INCOMPLETE` | **Next — added by `APP5-B02`.** Intake-provenance change request + forward-only migration: `assets.uploaded_via_challenge_id` (+ partial index), the fact `G01-D13`'s per-challenge quota and `G01` §7's orphan lifecycle both require |
-| `APP5-B02` | `BLOCKED` | Customer attachment intake — `APP5_B02_PERSISTENT_INTAKE_PROVENANCE_REQUIRED`; awaits `APP5-DB01`. See [`../reports/APP5-B02-COMPLETION-REPORT.md`](../reports/APP5-B02-COMPLETION-REPORT.md) |
+| `APP5-DB01` | `COMPLETE` | Intake provenance persistence — migration `0035_add_app5_intake_provenance`: `assets.uploaded_via_challenge_id` (REL-106, `ON DELETE SET NULL`) + `assets.intake_expires_at`, CST-127/CST-128, quota and due-time indexes. See [`../reports/APP5-DB01-COMPLETION-REPORT.md`](../reports/APP5-DB01-COMPLETION-REPORT.md) |
+| `APP5-B02` | `INCOMPLETE` | **Next — resume customer attachment intake.** Unblocked by `APP5-DB01`; the entry blocker `APP5_B02_PERSISTENT_INTAKE_PROVENANCE_REQUIRED` is closed. See [`../reports/APP5-B02-COMPLETION-REPORT.md`](../reports/APP5-B02-COMPLETION-REPORT.md) for the reusable pipeline map |
 | `APP5-B03` | `INCOMPLETE` | Grant-scoped request status read; 1 endpoint |
 | `APP5-B04` | `INCOMPLETE` | Admin queue & detail; 2 endpoints |
 | `APP5-B05` | `INCOMPLETE` | Admin notes & guarded transitions; 2 endpoints |
@@ -139,6 +139,11 @@ column, index or platform store ties a customer upload to one. `APP5-B02` is
 blocked on that gap and `APP5-DB01` is added to close it. Future phase-entry
 audits should schema-check an authority checkpoint's *policy* bounds, not only
 its table inventory.
+
+**Closed (`APP5-DB01`, 2026-08-16).** Migration `0035_add_app5_intake_provenance`
+adds the missing fact. `NO_APP5_MIGRATION expected` is superseded for the phase:
+APP5 owns exactly one migration, and it is a database-change checkpoint of its
+own, not a smuggled schema edit inside a feature slice.
 
 ### 10.4 Locked cross-context authority (`APP5-G01`, 2026-08-16)
 

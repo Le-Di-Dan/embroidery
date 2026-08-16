@@ -2,12 +2,16 @@
  * TBL-022 `assets` — metadata + internal object-storage reference of one
  * uploaded/authored binary (CTX-AST, AGG-08).
  *
- * Columns: COL-TBL022-01..12 · Constraints: CST-001, CST-017 (IDX-019),
- * CST-060 (LC-06), CST-070 (checksum instance), size CK (COL-TBL022-05)
+ * Columns: COL-TBL022-01..12 (+ `uploaded_via_challenge_id`,
+ * `intake_expires_at` — APP5-DB01) · Constraints: CST-001, CST-017 (IDX-019),
+ * CST-060 (LC-06), CST-070 (checksum instance), size CK (COL-TBL022-05),
+ * CST-127/CST-128 (APP5-DB01 intake lane)
  * Relationships: REL-033 ×2 — → customers (here); → design_sessions
  * (**deferred to G7**, target table does not exist yet; DB4_DB6_HANDOFF §1
- * nullable-ref + follow-up-FK pattern)
- * Indexes: IDX-086, IDX-133 (required, with group); IDX-119 (recommended, S25)
+ * nullable-ref + follow-up-FK pattern); REL-106 →
+ * contact_verification_challenges (APP5-DB01, same deferred-FK mechanism)
+ * Indexes: IDX-086, IDX-133 (required, with group); IDX-119 (recommended, S25);
+ * two APP5-DB01 intake indexes
  * Owner: Asset module. Other contexts hold associations only — this row is
  * the single source of truth for asset metadata.
  *
@@ -84,6 +88,8 @@ export const assets = pgTable(
     status: stateColumn().notNull(),
     uploadedByCustomerId: idReference('uploaded_by_customer_id'),
     uploadedViaSessionId: idReference('uploaded_via_session_id'),
+    uploadedViaChallengeId: idReference('uploaded_via_challenge_id'),
+    intakeExpiresAt: instant('intake_expires_at'),
     deletionRequestedAt: instant('deletion_requested_at'),
     deletionReason: text('deletion_reason'),
     deletedAt: instant('deleted_at'),
@@ -102,6 +108,9 @@ export const assets = pgTable(
       foreignColumns: [customers.id],
     }).onDelete('restrict'),
     // REL-033 (design_sessions edge) is added in G7 when the target exists.
+    // REL-106 (contact_verification_challenges edge) is added by APP5-DB01 in
+    // migration 0035 for the same reason: declaring it here would close the
+    // cycle assets → challenges → design_sessions → product_sides → assets.
     check('ck_assets__status_allowed', stateCheck(t.status, ASSET_STATES)),
     check('ck_assets__kind_allowed', stateCheck(t.kind, ASSET_KINDS)),
     check('ck_assets__classification_allowed', stateCheck(t.classification, ASSET_CLASSIFICATIONS)),
@@ -117,5 +126,35 @@ export const assets = pgTable(
     index('ix_assets__deletion_requested_id__pending')
       .on(t.deletionRequestedAt, t.id)
       .where(sql`${t.status} = 'DELETION_PENDING'`),
+    // APP5-DB01 — an upload arrives through exactly one lane. A row claiming
+    // both a design session and a verification challenge is not a stricter
+    // record, it is two contradictory answers to "who authorized this byte",
+    // and the per-challenge quota counts rows by exactly one of them.
+    check(
+      'ck_assets__single_intake_lane',
+      sql`not (${t.uploadedViaSessionId} is not null and ${t.uploadedViaChallengeId} is not null)`,
+    ),
+    // APP5-DB01 — the challenge lane must carry its own due time. The reverse
+    // implication is deliberately NOT asserted: the challenge family is
+    // hard-TTL-deleted and this FK is `SET NULL`, so an expiry legitimately
+    // outlives the id that produced it. That survival is the whole point of
+    // storing the instant instead of joining for it.
+    check(
+      'ck_assets__challenge_intake_requires_expiry',
+      sql`${t.uploadedViaChallengeId} is null or ${t.intakeExpiresAt} is not null`,
+    ),
+    // APP5-DB01 quota path — `G01-D13` bounds accepted uploads per verification
+    // challenge. Leading key is the challenge so one challenge's rows are one
+    // contiguous range; `status` follows so the ACCEPTED count is answered from
+    // the index alone. The predicate keeps the index to intake rows only.
+    index('ix_assets__challenge_status__intake_live')
+      .on(t.uploadedViaChallengeId, t.status)
+      .where(sql`${t.uploadedViaChallengeId} is not null and ${t.deletedAt} is null`),
+    // APP5-DB01 orphan due-time path — the future SE-014/SE-015 sweep finds
+    // due intake assets by time, not by scanning the table. `now()` stays in
+    // the query, never in the predicate (DB6-S26 volatile-predicate rule).
+    index('ix_assets__intake_expires_id__live')
+      .on(t.intakeExpiresAt, t.id)
+      .where(sql`${t.intakeExpiresAt} is not null and ${t.deletedAt} is null`),
   ],
 );

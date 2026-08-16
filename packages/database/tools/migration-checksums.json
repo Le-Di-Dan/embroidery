@@ -32,5 +32,6 @@
   "0031_add_remaining_launch_indexes.sql": "302ec0838a15ea1ba57f4abcf3d835ee7344edb1139f8859d6e155106953b746",
   "0032_add_catalog_preview_derivative_kind.sql": "1ea3dc3e01479e362f574b2b751685720ac93ebcfb472d871ee7ef814111a495",
   "0033_provision_catalog_draft_categories.sql": "a53236e91faed984499b58625730db3e27f8023df93d3647de3abbba3f5670f9",
-  "0034_add_app3_placement_and_derivative_authority.sql": "ceaed118b5897b4dd2581309a97161d382632d5a91700e95876bebc8e76a16d2"
+  "0034_add_app3_placement_and_derivative_authority.sql": "ceaed118b5897b4dd2581309a97161d382632d5a91700e95876bebc8e76a16d2",
+  "0035_add_app5_intake_provenance.sql": "ce344519f0c2024fe8227009aed430f1cf68e2bb4106c4a731ac0a8475eac136"
 }

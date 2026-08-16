@@ -1,8 +1,8 @@
 /**
  * DB6-S26 — live index inventory checker.
  * Verifies the post-S25 canonical split (DB6_INDEX_IMPLEMENTATION_MANIFEST.md
- * §7, plus APP3-DB01): 213 total / 46 partial (13 partial-unique + 33 partial-performance) /
- * 37 non-partial performance. This is the corrected split, not the stale
+ * §7, plus APP3-DB01 and APP5-DB01): 215 total / 48 partial (13 partial-unique +
+ * 35 partial-performance) / 37 non-partial performance. This is the corrected split, not the stale
  * pre-S25 45/32/38 estimate — do not revert to it.
  * Usage: node db-live-indexes-check.mjs <url>
  */
@@ -16,8 +16,8 @@ const { rows: total } = await client.query(`
   JOIN pg_namespace n ON n.oid = c.relnamespace
   WHERE c.relkind = 'i' AND n.nspname = 'public'
 `);
-note(`total physical indexes: ${total[0].n} / 213`);
-if (total[0].n !== 213) fail(`total physical index count is ${total[0].n}, expected 213`);
+note(`total physical indexes: ${total[0].n} / 215`);
+if (total[0].n !== 215) fail(`total physical index count is ${total[0].n}, expected 215`);
 
 const classify = async (label, expected, where) => {
   const { rows } = await client.query(`
@@ -41,13 +41,13 @@ await classify(
   13,
   `i.indisunique AND NOT i.indisprimary AND i.indpred IS NOT NULL`,
 );
-await classify('partial performance', 33, `NOT i.indisunique AND i.indpred IS NOT NULL`);
+await classify('partial performance', 35, `NOT i.indisunique AND i.indpred IS NOT NULL`);
 await classify(
   'non-partial performance',
   37,
   `NOT i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL`,
 );
-await classify('physical partial (total)', 46, `i.indpred IS NOT NULL`);
+await classify('physical partial (total)', 48, `i.indpred IS NOT NULL`);
 
 // volatile predicate scan — no now()/current_* in any partial predicate
 const { rows: volatile } = await client.query(`

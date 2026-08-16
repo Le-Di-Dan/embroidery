@@ -74,7 +74,7 @@ const ROWS: readonly MetricRow[] = [
   ['business_profiles', 'G3', 4, 0, 3, 7],
   ['customer_contact_points', 'G3', 9, 0, 3, 12],
   // G4 — Asset
-  ['assets', 'G4', 12, 0, 3, 15],
+  ['assets', 'G4', 12, 2, 3, 17],
   ['asset_inspections', 'G4', 4, 0, 2, 6],
   ['asset_derivatives', 'G4', 6, 4, 3, 13],
   // G5 — Catalog

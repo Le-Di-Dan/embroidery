@@ -1040,6 +1040,9 @@ added `code`, `retired_at` and `superseded_by_id` to `product_sides` and
 `embroidery_areas` (IMP-D041 placement retirement authority) and `width_px`,
 `height_px`, `media_type` and `byte_size` to `asset_derivatives` (IMP-D044
 canonical derivative metadata) — ten columns, taking the total from 833 to 843.
+**APP5-DB01** (migration 0035) is the second: `uploaded_via_challenge_id` and
+`intake_expires_at` on `assets` (TBL-022), the challenge-scoped intake
+provenance `APP5-G01 D13` requires — two columns, 843 → **845**.
 
 The seven `×N` COL expansions across G1–G6 (each +N−1 columns):
 
@@ -1065,7 +1068,7 @@ that register on every run.
 | G1 | 3 | 17 | 0 | 17 | 9 | 26 |
 | G2 | 5 | 34 | 3 | 37 | 12 | 49 |
 | G3 | 3 | 18 | 0 | 18 | 9 | 27 |
-| G4 | 3 | 22 | 4 | 26 | 8 | 34 |
+| G4 | 3 | 22 | 6 | 28 | 8 | 36 |
 | G5 | 7 | 52 | 8 | 60 | 21 | 81 |
 | G6 | 2 | 12 | 2 | 14 | 5 | 19 |
 | G7 | 5 | 27 | 6 | 33 | 14 | 47 |
@@ -1081,7 +1084,7 @@ that register on every run.
 | G17 | 5 | 25 | 9 | 34 | 12 | 46 |
 | G18 | 2 | 15 | 1 | 16 | 5 | 21 |
 | G19 | 1 | 9 | 4 | 13 | 2 | 15 |
-| **Total** | **78** | **537** | **103** | **640** | **203** | **843** |
+| **Total** | **78** | **537** | **105** | **642** | **203** | **845** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database

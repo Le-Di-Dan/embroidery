@@ -51,6 +51,32 @@ fingerprint proof). No hand-accumulated figure in this document.
 > `canonical-fingerprint.txt`; this document keeps its DB6-era figures as the
 > historical record.
 
+> **Superseded in part by APP5-DB01** (migration `0035`, application era).
+> Customer intake provenance on TBL-022 `assets` — the fact `APP5-B02` stopped
+> for. Measured on a fresh 35-migration disposable install, and confirmed
+> identical on a second independently built one:
+>
+> | Figure | After `0034` | After `0035` |
+> |---|---|---|
+> | Tables | 78 | **78** (unchanged) |
+> | Columns | 843 | **845** |
+> | PK constraints | 78 | **78** (unchanged) |
+> | FK constraints | 162 | **163** |
+> | UNIQUE constraints | 52 | **52** (unchanged) |
+> | CHECK constraints | 199 | **201** |
+> | Physical indexes | 213 | **215** (partial 46 → **48**) |
+> | Triggers | 34 | **34** (unchanged) |
+> | Fingerprint | `7abf3708…` | **`4c522946b9f0807e58f02c787d509b990c929f8260591b12613859cb89bb7e4c`** |
+>
+> The two columns are `uploaded_via_challenge_id` and `intake_expires_at`; the
+> FK is REL-106 (`ON DELETE SET NULL`); the CHECKs are CST-127
+> (`ck_assets__single_intake_lane`) and CST-128
+> (`ck_assets__challenge_intake_requires_expiry`); the indexes are
+> `ix_assets__challenge_status__intake_live` (the `G01-D13` quota path) and
+> `ix_assets__intake_expires_id__live` (the orphan due-time path). Both are
+> partial and neither predicate is volatile. No trigger, no table and no unique
+> constraint was added, and nothing was backfilled.
+
 ## 1. Tables (78/78)
 
 - 78 unique `TBL-*` IDs, 78 unique physical tables, one owner group each (19 groups,

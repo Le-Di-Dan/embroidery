@@ -55,6 +55,7 @@ Do not combine it with the feature API implementation.
 > | `0032_add_catalog_preview_derivative_kind` | `APP2-DB01` | `CATALOG_PREVIEW` derivative kind + watermark CHECK |
 > | `0033_provision_catalog_draft_categories` | `APP2-B02-G01` | data-only category provisioning |
 > | `0034_add_app3_placement_and_derivative_authority` | `APP3-DB01` | placement stable identity/retirement/protection (IMP-D041) **and** canonical derivative output metadata (IMP-D044), in one forward-only migration |
+> | `0035_add_app5_intake_provenance` | `APP5-DB01` | customer intake provenance on TBL-022 `assets`: `uploaded_via_challenge_id` (REL-106, `ON DELETE SET NULL`) + `intake_expires_at`, CST-127/CST-128 and the two intake indexes — the persisted fact `APP5-B02` stopped for |
 
 ## 5. Compatibility policy
 

@@ -12,7 +12,9 @@ import { connect, report } from './live-db.mjs';
 // CHECK moved 189 -> 190 in APP2-DB01: `ck_asset_derivatives__watermark_by_kind`
 // gives INV-22 its first physical half. The kind CHECK was replaced in place,
 // so it is one added constraint, not a renumbered inventory.
-const EXPECTED = { p: 78, f: 162, u: 52, c: 199 };
+// APP5-DB01 adds two more CHECKs (CST-127 `ck_assets__single_intake_lane`,
+// CST-128 `ck_assets__challenge_intake_requires_expiry`) and one FK (REL-106).
+const EXPECTED = { p: 78, f: 163, u: 52, c: 201 };
 const NAMES = { p: 'PK', f: 'FK', u: 'UNIQUE', c: 'CHECK' };
 
 const client = await connect(process.argv[2]);
@@ -60,13 +62,17 @@ const { rows: relationshipCeiling } = await client.query(`
 // edges — the `superseded_by_id` self-references on `product_sides` and
 // `embroidery_areas` — so the live total is 162. Kept as an explicit sum rather
 // than a new round number: the point of the check is that no *undocumented* edge
-// appears, and collapsing it to "162" would hide which two are accounted for.
+// appears, and collapsing it to one literal would hide which are accounted for.
+// APP5-DB01 adds one more — REL-106, `fk_assets__uploaded_via_challenge_id` —
+// so the live total is 163, and it stays its own named addend for that reason.
 const DB6_RELATIONSHIP_CEILING = 160;
 const APP3_DB01_EDGES = 2;
-const EXPECTED_FKS = DB6_RELATIONSHIP_CEILING + APP3_DB01_EDGES;
+const APP5_DB01_EDGES = 1;
+const EXPECTED_FKS = DB6_RELATIONSHIP_CEILING + APP3_DB01_EDGES + APP5_DB01_EDGES;
 note(
   `relationship ceiling: ${relationshipCeiling[0].n} / ${EXPECTED_FKS} ` +
-    `(${DB6_RELATIONSHIP_CEILING} DEV-DB6-017 + ${APP3_DB01_EDGES} APP3-DB01)`,
+    `(${DB6_RELATIONSHIP_CEILING} DEV-DB6-017 + ${APP3_DB01_EDGES} APP3-DB01` +
+    ` + ${APP5_DB01_EDGES} APP5-DB01)`,
 );
 if (relationshipCeiling[0].n !== EXPECTED_FKS) {
   fail(

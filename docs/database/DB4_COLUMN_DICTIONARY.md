@@ -311,6 +311,8 @@ boolean/no/yes; listed once per table below by ID only.
 | COL-TBL022-10 | deletion_requested_at | timestamptz | yes | yes | tombstone phase 1 |
 | COL-TBL022-11 | deletion_reason | text | yes | yes | [R] admin-decided deletion |
 | COL-TBL022-12 | deleted_at | timestamptz | yes | yes | tombstone final (binary confirmed deleted) |
+| — (APP5-DB01) | uploaded_via_challenge_id | uuid | yes | yes | →contact_verification_challenges (REL-106, `ON DELETE SET NULL`); the challenge that authorized an APP5 pre-submission customer upload. Server-owned, never client-supplied. The scope `APP5-G01 D13`'s "20 accepted uploads per challenge" is counted in — customer scope is **not** equivalent, because CST-007 uniqueness is per `(contact_kind, normalized_value, purpose)` and one customer can hold an EMAIL and a PHONE `VERIFIED SUBMISSION` challenge at once. Mutually exclusive with `uploaded_via_session_id` (CST-127) |
+| — (APP5-DB01) | intake_expires_at | timestamptz | yes | yes | durable due-time anchor for the future orphan sweep, written from the authoritative challenge expiry at intake. Server-owned. Required whenever the challenge lane is used (CST-128) and deliberately **survives** the challenge's hard-TTL deletion — a join-only expiry would vanish with the parent and leave every unbound upload unreachable |
 
 ### TBL-023 `asset_inspections`
 
