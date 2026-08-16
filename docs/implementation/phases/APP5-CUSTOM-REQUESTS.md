@@ -88,8 +88,8 @@ with the three scope corrections noted below.
 |---|---|---|
 | `APP5-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation |
 | `APP5-G01` | `COMPLETE` | Submission, moderation and intake-abuse authority locked |
-| `APP5-D01` | `INCOMPLETE` | **Next** — one design package; gates all UI checkpoints |
-| `APP5-B01` | `INCOMPLETE` | Submission transaction (TR-LC11-01); 1 endpoint |
+| `APP5-D01` | `COMPLETE` | One APP5 design package registered — 65 nodes, `FIGMA_DESIGN_INDEX.md` §4.11 |
+| `APP5-B01` | `INCOMPLETE` | **Next** — submission transaction (TR-LC11-01); 1 endpoint |
 | `APP5-B02` | `INCOMPLETE` | Customer attachment intake; ≤2 endpoints |
 | `APP5-B03` | `INCOMPLETE` | Grant-scoped request status read; 1 endpoint |
 | `APP5-B04` | `INCOMPLETE` | Admin queue & detail; 2 endpoints |
@@ -150,6 +150,34 @@ audit              = TBL-042 is the history; creation writes no transition row
 ```
 
 Fourteen `APP5-G01 DECISION` rules are registered in that document's §12.
+
+### 10.5 Design authority (`APP5-D01`, 2026-08-16)
+
+The APP5 design gate is closed. `FIGMA_DESIGN_INDEX.md` §4.11 registers **65
+nodes** under section `644:3` on page `APP_05` (`641:3`), covering `APP5-S01`,
+`APP5-S02`, `APP5-A01` and `APP5-A02`.
+
+```text
+figma page      = APP_05 641:3 · root section 644:3 · 10 sub-sections · 65 frames
+pre-draw audit  = NO_EXISTING_APP5_DESIGN (zero APP5 rows, empty canvas)
+registry status = all 65 rows REVIEW_REQUIRED — D01 does not self-approve
+routes locked   = /yeu-cau/moi · /yeu-cau/da-gui · /truy-cap · /requests · /requests/{requestId}
+access states   = NOT redrawn; APP4-D01 629:3/20/37/53/70/87 remain the authority
+new DS assets   = none (0 components, 0 instances, 0 new tokens or styles)
+```
+
+**Every UI checkpoint is still gated**: `APP5-S01`, `APP5-S02`, `APP5-A01` and
+`APP5-A02` may not start until a human reviewer promotes the rows they consume to
+`APPROVED_FOR_IMPLEMENTATION` with an approval-evidence id, per §2 and §9 of the
+registry.
+
+One design decision needs backend confirmation rather than silent inheritance:
+the moderation dialogs treat the **internal reason** and the **customer-visible
+text** as two separate required fields on `NEEDS_CLARIFICATION`, `REJECTED` and
+`CANCELLED`. `APP5-G01` §2 marks only `reason` as required (`R`); the second
+field is a UI-level requirement derived from SE-004/SE-012 carrying
+`customer_visible_reason` / `cancelled_customer_reason`. `APP5-B05` must confirm
+or correct it.
 
 Carried to APP6: `design_versions` requires four catalog placement columns
 `NOT NULL`, so a customer-owned-product request cannot hold a design version
