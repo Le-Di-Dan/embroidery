@@ -1,0 +1,396 @@
+// Admin custom-request queue (`APP5-A01`).
+//
+// Reproduces `FIG-APP5-A01-QUEUE-DESKTOP-{DEFAULT,LOADING,EMPTY,FILTEREMPTY,
+// ERROR}` (`662:3`, `662:112`, `662:182`, `662:243`, `662:306`) and the narrow
+// desktop reference `FIG-APP5-A01-QUEUE-NARROW-1280` (`663:9`). Every colour,
+// radius, space and type size is a token: no literal hex and no magic pixel
+// value beyond the two layout thresholds named below.
+//
+// Class names are prefixed `custom-request*` / `custom-requests`. The Admin
+// stylesheet is global and unscoped, so a generic `.table` or `.filters` here
+// would collide with another feature's rules in a way jsdom could never catch.
+
+@use '@embroidery/styles' as styles;
+
+// The 1280 reference keeps every column — nothing is dropped and nothing
+// scrolls sideways (`663:9`) — so the only thing that changes is how much room
+// the flexible columns get. Below the queue's own narrow threshold the subject
+// summary stacks under its kind label rather than competing for width.
+$queue-narrow-desktop: 1360px;
+
+.custom-requests {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.custom-requests__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.custom-requests__subtitle {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-secondary;
+}
+
+// ---------------------------------------------------------------------------
+// Filters
+// ---------------------------------------------------------------------------
+.custom-request-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: styles.spacing(16);
+}
+
+.custom-request-filter {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 220px;
+}
+
+.custom-request-filter__label {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.custom-request-filter__control {
+  height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+}
+
+.custom-request-filters__reset {
+  height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+// ---------------------------------------------------------------------------
+// Effective scope
+// ---------------------------------------------------------------------------
+.custom-request-scope {
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.custom-request-scope__applied {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-weight: styles.$font-weight-medium;
+}
+
+.custom-request-scope__note {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Status badge — colour is a redundant cue, the label carries the meaning
+// ---------------------------------------------------------------------------
+.custom-request-status {
+  display: inline-block;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  // Deliberately *not* `nowrap`. The longest label ("Đã nhận báo giá") is wider
+  // than its 1280 column, and a badge that refuses to wrap pushes the table past
+  // its own box — the status text is the only signal an operator has, so it
+  // wraps rather than being clipped.
+  overflow-wrap: anywhere;
+
+  &--new {
+    border-color: styles.$color-status-info;
+    color: styles.$color-status-info;
+  }
+
+  &--under-review,
+  &--design-review {
+    border-color: styles.$color-action-primary;
+    color: styles.$color-action-primary;
+  }
+
+  &--needs-clarification {
+    border-color: styles.$color-status-warning;
+    color: styles.$color-status-warning;
+  }
+
+  &--approved {
+    border-color: styles.$color-status-success;
+    color: styles.$color-status-success;
+  }
+
+  &--rejected,
+  &--cancelled {
+    border-color: styles.$color-status-error;
+    color: styles.$color-status-error;
+  }
+
+  &--unknown {
+    border-color: styles.$color-status-warning;
+    color: styles.$color-status-warning;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The queue table
+// ---------------------------------------------------------------------------
+.custom-request-collection {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+}
+
+.custom-request-table {
+  width: 100%;
+  border-collapse: collapse;
+  // Fixed layout so the colgroup decides the tracks: at 1280 the columns narrow
+  // rather than the longest subject name pushing the table past the viewport.
+  table-layout: fixed;
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+
+  th,
+  td {
+    padding: styles.spacing(12) styles.spacing(16);
+    border-bottom: 1px solid styles.$color-border-secondary;
+    text-align: left;
+    vertical-align: top;
+    // No column may overflow its track; long values wrap instead.
+    overflow-wrap: anywhere;
+  }
+
+  thead th {
+    color: styles.$color-text-secondary;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-semibold;
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+.custom-request-table__caption {
+  padding-bottom: styles.spacing(8);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  text-align: left;
+}
+
+// The tracks are sized so that at the 1280 reference (`663:9`) every column
+// still holds its content: the detail affordance and the status badge do not
+// wrap, so their columns must be wide enough for the longest label rather than
+// wide enough for the average one. Measured in the browser at 1280 — an
+// eight-percent actions column gave the link 69px for 96px of text, which
+// overflowed the table by exactly that difference.
+.custom-request-table__col--code {
+  width: 13%;
+}
+
+.custom-request-table__col--status {
+  width: 15%;
+}
+
+.custom-request-table__col--subject {
+  width: 20%;
+}
+
+.custom-request-table__col--customer {
+  width: 16%;
+}
+
+.custom-request-table__col--submitted {
+  width: 14%;
+}
+
+.custom-request-table__col--quantity {
+  width: 7%;
+}
+
+.custom-request-table__col--actions {
+  width: 15%;
+}
+
+.custom-request-table__code {
+  color: styles.$color-text-primary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.custom-request-table__subject {
+  display: table-cell;
+}
+
+.custom-request-table__subject-kind {
+  display: block;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.custom-request-table__subject-summary {
+  display: block;
+  color: styles.$color-text-primary;
+}
+
+.custom-request-table__numeric {
+  text-align: right;
+}
+
+.custom-request-table__open {
+  color: styles.$color-action-primary;
+  white-space: nowrap;
+}
+
+@media (max-width: $queue-narrow-desktop) {
+  // Tighter gutters at 1280: the column set is unchanged, only its padding.
+  .custom-request-table th,
+  .custom-request-table td {
+    padding: styles.spacing(8) styles.spacing(12);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Loading, empty, failure
+// ---------------------------------------------------------------------------
+.custom-request-skeleton__status {
+  margin: 0 0 styles.spacing(12);
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-body-s;
+}
+
+.custom-request-skeleton__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.custom-request-skeleton__row {
+  display: flex;
+  gap: styles.spacing(16);
+  padding: styles.spacing(12) 0;
+  border-bottom: 1px solid styles.$color-border-secondary;
+}
+
+.custom-request-skeleton__bar {
+  height: styles.spacing(16);
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+
+  &--code {
+    width: 14%;
+  }
+
+  &--status {
+    width: 13%;
+  }
+
+  &--subject {
+    width: 40%;
+  }
+
+  &--meta {
+    width: 20%;
+  }
+}
+
+.custom-request-collection__empty,
+.custom-request-collection__failure {
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.custom-request-collection__empty-title {
+  margin: 0 0 styles.spacing(4);
+  color: styles.$color-text-primary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.custom-request-collection__failure-title {
+  margin: 0 0 styles.spacing(4);
+  color: styles.$color-status-error;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.custom-request-collection__empty-body,
+.custom-request-collection__failure-body {
+  margin: 0 0 styles.spacing(12);
+  color: styles.$color-text-secondary;
+}
+
+.custom-request-collection__action,
+.custom-request-pagination__action {
+  height: styles.$size-touch-target-min;
+  padding: 0 styles.spacing(16);
+  border: 1px solid styles.$color-action-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:disabled {
+    background: styles.$color-background-secondary;
+    border-color: styles.$color-border-primary;
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+// Visually hidden, still announced: the append confirmation has no place in the
+// layout but must reach a screen reader.
+.custom-request-collection__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+// ---------------------------------------------------------------------------
+// Pagination
+// ---------------------------------------------------------------------------
+.custom-request-pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+}
+
+.custom-request-pagination__error-title {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.custom-request-pagination__error-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}

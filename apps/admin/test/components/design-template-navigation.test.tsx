@@ -35,10 +35,16 @@ it('keeps the list reachable from a future nested template route', () => {
 });
 
 it('does not disturb the existing entries', () => {
+  // Later phases append their own destinations; what this pins is that the
+  // Template entry keeps its position among the ones that came before it.
+  // (`APP4-A01` and `APP5-A01` each added one after it, and the list was left
+  // stale at `APP4-A01` — this assertion was red at `APP5-A01`'s entry HEAD.)
   expect(ADMIN_PRIMARY_NAV.map((item) => item.id)).toEqual([
     'overview',
     'assets',
     'products',
     'design-templates',
+    'custom-requests',
+    'customer-access-support',
   ]);
 });

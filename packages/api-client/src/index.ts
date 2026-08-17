@@ -573,7 +573,9 @@ export type {
 //
 // No Admin APP5 operation is on this list. The queue, the request detail and
 // the moderation transitions (`APP5-B04`, `APP5-B05`) belong to a different
-// application and are released, if ever, by the Admin screens that consume them.
+// application and are released, if ever, by the Admin screens that consume them
+// — see the Admin queue block below, which is exactly that release for one
+// operation and no more.
 export { publicCustomRequestStatus } from './generated/embroidery-api';
 export {
   CustomRequestStatusResponseStatus,
@@ -588,6 +590,36 @@ export type {
   CustomerOwnedRequestSubjectResponse,
   RequestQuantityLineResponse,
   RequestAssetResponse,
+} from './generated/embroidery-api.schemas';
+
+// Admin custom-request queue (`APP5-B04`), consumed by the Admin queue screen
+// (`APP5-A01`). Released consumer-driven and one operation wide.
+//
+// `adminCustomRequest_list` crosses; `adminCustomRequest_detail` and every
+// `APP5-B05` moderation transition deliberately do **not**. A01 is a read-only
+// queue that enters a detail route, so a detail read or a transition reachable
+// from it would be a capability the screen has no approved control for — and
+// exporting them "for completeness" is how a list screen ends up one careless
+// import away from a state change.
+//
+// The three enums cross as **values**, not types: the filter options and the
+// status labels are derived from the contract rather than a hand-kept list that
+// could drift out of step with what the server accepts. The status enums publish
+// the **full** LC-11 set, APP6+ states included, because B04 answers a
+// specifically requested `QUOTED` truthfully — the queue names such a state and
+// offers no action in it, rather than folding it into an APP5 state it is not.
+export { adminCustomRequestList } from './generated/embroidery-api';
+export {
+  AdminCustomRequestListStatusItem,
+  AdminCustomRequestListSubjectKind,
+  AdminCustomRequestQueueItemResponseStatus,
+  AdminCustomRequestQueueItemResponseSubjectKind,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminCustomRequestListParams,
+  AdminCustomRequestQueueResponse,
+  AdminCustomRequestQueueItemResponse,
+  AdminCustomRequestQueueResponseAppliedStatusesItem,
 } from './generated/embroidery-api.schemas';
 
 // Generated transport types derived from the committed OpenAPI artifact.
