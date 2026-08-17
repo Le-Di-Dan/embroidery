@@ -183,6 +183,25 @@ export const adminCustomRequestDetail = (
 };
 
 /**
+ * Streams the validated image a customer submitted as evidence for this request — the COP photograph or a reference. Private: the Admin session cookie is verified on every request, and the asset id grants nothing on its own. There is no address that serves an attachment outside the request it is bound to, so an id lifted from one request cannot be read through another. The association, the role, the upload lane, the inspection verdict and the tombstone are re-checked on every request. What is served is the inspection-approved source the customer uploaded: APP5 produces no normalized derivative of request evidence, and none is generated here. No storage location, provider address or credential of any kind appears in the response, and there is no parameter that could ask for one. Reading changes nothing: no status moves, no transition or note is appended, no retention is extended and the Admin session is not rotated. Responses are never cached — the bytes are immutable but the authorisation around them is not.
+ * @summary Open one attachment submitted with a custom request
+ */
+export const adminCustomRequestAssetGet = (
+  requestId: string,
+  assetId: string,
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/admin/custom-requests/${requestId}/assets/${assetId}/content`,
+      method: 'GET',
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Records one internal note against a request. The note is **internal**: it is never shown to the customer and never leaves the Admin surface. Notes are append-only — there is no route to edit or remove one, and a changed decision is a new note. This appends nothing else: the request does not move, no transition is recorded and no notification is raised. The operator, the sequence and the timestamp are all derived server-side.
  * @summary Append an internal moderation note
  */
@@ -1154,6 +1173,9 @@ export type AdminCustomRequestListResult = NonNullable<
 >;
 export type AdminCustomRequestDetailResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestDetail>>
+>;
+export type AdminCustomRequestAssetGetResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestAssetGet>>
 >;
 export type AdminCustomRequestAppendNoteResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestAppendNote>>

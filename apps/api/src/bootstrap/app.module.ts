@@ -20,6 +20,7 @@ import { NotificationModule } from '../modules/notification/notification.module'
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
 import { CustomRequestIntakeModule } from '../modules/order/custom-request-intake.module';
 import { CustomRequestAdminModule } from '../modules/order/custom-request-admin.module';
+import { CustomRequestAssetDeliveryModule } from '../modules/order/custom-request-asset-delivery.module';
 import { CustomRequestModerationModule } from '../modules/order/custom-request-moderation.module';
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
@@ -133,6 +134,13 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // publish the `adminCustomRequest` domain; keeping two modules is what keeps
     // the write repository out of the read surface's injector.
     CustomRequestModerationModule,
+    // APP5-B06 — the one Admin binary read. Shares the `admin/custom-requests`
+    // base path with the read and moderation modules, which is safe and
+    // deliberate: its single route (`GET ':requestId/assets/:assetId/content'`)
+    // is disjoint from both. It is a third module rather than a third controller
+    // on either because it is the only one that needs an object-storage client,
+    // and neither JSON surface may have one in reach.
+    CustomRequestAssetDeliveryModule,
   ],
 })
 export class AppModule {}

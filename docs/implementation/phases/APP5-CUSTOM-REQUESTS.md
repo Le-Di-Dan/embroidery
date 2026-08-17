@@ -99,8 +99,8 @@ with the three scope corrections noted below.
 | `APP5-S01` | `COMPLETE` | Request creation & submission screen at `/yeu-cau/moi` — subject XOR, catalog branch on `publicProductVariantList` with one explicitly chosen variant, customer-owned branch, embedded APP4 verification, `APP5-B02` uploads gated on `bindable`, review, duplicate-safe `APP5-B01` submission and the `APP5-S02` hand-off. See [`../reports/APP5-S01-COMPLETION-REPORT.md`](../reports/APP5-S01-COMPLETION-REPORT.md) |
 | `APP5-S02` | `COMPLETE` | Confirmation at `/yeu-cau/da-gui` and grant-scoped single-request status at `/truy-cap` — the request code display-only with no lookup, the APP4 fragment/strip/credential machinery generalised and reused, and `publicCustomRequestStatus` as the **single** status resolution call with `publicSecureLinkResolve` never chained in front of it. Closes `FU-APP4-S01-SUCCESS-HANDOFF-01`. See [`../reports/APP5-S02-COMPLETION-REPORT.md`](../reports/APP5-S02-COMPLETION-REPORT.md) |
 | `APP5-A01` | `COMPLETE` | Admin request queue at `/requests` — `adminCustomRequestList` only, the default triage scope stated from the server's `appliedStatuses`, status and subject-kind filters in the URL, opaque keyset continuation, the five approved states and entry into the `APP5-A02` detail route. See [`../reports/APP5-A01-COMPLETION-REPORT.md`](../reports/APP5-A01-COMPLETION-REPORT.md) |
-| `APP5-B06` | `INCOMPLETE` | **Next** — **Inserted by `APP5-B05`** — Admin private request-asset delivery; one authorized binary route for a request-bound `COP_IMAGE`/`REFERENCE`, streamed through the API. Must precede `APP5-A02`; does not block `S01`, `S02` or `A01`. Closes `FU-APP5-B04-COP-ASSET-DELIVERY-01` |
-| `APP5-A02` | `INCOMPLETE` | Admin request detail & moderation — **depends on `APP5-B06`** |
+| `APP5-B06` | `COMPLETE` | **Inserted by `APP5-B05`** — Admin private request-asset delivery — `GET /api/admin/custom-requests/{requestId}/assets/{assetId}/content` (`adminCustomRequestAsset_get`); request-bound `COP_IMAGE`/`REFERENCE` only, the **inspection-approved source** streamed through the API because `APP5-B02` writes no derivative, descriptor-before-storage with zero provider calls on a private miss. Closes `FU-APP5-B04-COP-ASSET-DELIVERY-01`. See [`../reports/APP5-B06-COMPLETION-REPORT.md`](../reports/APP5-B06-COMPLETION-REPORT.md) |
+| `APP5-A02` | `INCOMPLETE` | **Next** — Admin request detail & moderation — **depends on `APP5-B06`** |
 | `APP5-E01` | `INCOMPLETE` | Cross-layer acceptance |
 | `APP5-X01` | `INCOMPLETE` | Phase closure |
 
@@ -154,6 +154,14 @@ mutations `adminCustomRequest_appendNote` and `adminCustomRequest_transition`
 complete the eight planned APP5 operations — four public, four Admin. The
 published document moves **54 paths / 59 operations / 126 schemas → 56 / 61 /
 130**; B05 added exactly two operations, deleted none and reissued none.
+
+**`APP5-B06` delivered (2026-08-17).** One operation,
+`adminCustomRequestAsset_get`, on its own published domain — B04's and B05's four
+ids are untouched. The document moves **57 paths / 62 operations / 132 schemas →
+58 / 63 / 132**: exactly one operation and one path added, no schema added,
+none deleted and none reissued. It serves the **source** object rather than a
+derivative, because `APP5-B02` emits no normalization event and one cannot be
+invented on a read path.
 
 `APP5-B06` is an **addition** to that budget rather than a re-slice of it, and it
 is recorded rather than absorbed: `APP5-B04` found that the Admin detail
