@@ -17,6 +17,7 @@ import {
   createApp4SecretConfig,
   createRunId,
   loadE2EConfig,
+  objectStorageEnv,
 } from '../support/orchestration/config.mjs';
 import { startEnvironment } from '../support/orchestration/environment.mjs';
 import { runContainer, runHost } from '../support/orchestration/playwright-runner.mjs';
@@ -42,6 +43,9 @@ const APP4 = ['app4-storefront-chromium', 'app4-admin-chromium'];
 const APP4_R01 = ['app4-r01-chromium'];
 // APP4-E01-R01-C1 — the targeted correction, run without the full R01 journey.
 const APP4_R01_C1 = ['app4-r01-c1-chromium'];
+// APP5-E01 — the custom-request cross-layer acceptance run. Same topology as the
+// APP4 browser tier, plus this run's object storage for the in-process worker.
+const APP5_E01 = ['app5-e01-chromium'];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -107,29 +111,37 @@ function parseArgs(argv) {
   // the H02 browser tier, a different project.
   const app4R01C1 = flags.has('--app4-r01-c1');
   const app4R01 = flags.has('--app4-r01') && !app4R01C1;
+  // APP5-E01: the same topology and secret material as the APP4 browser tier —
+  // it needs the real verification and notification lanes — so it rides the same
+  // mode with its own project.
+  const app5E01 = flags.has('--app5-e01');
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
-  const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1;
+  const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01;
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
-    : app4Browser
-      ? 'app4-browser'
-      : app1
-        ? 'app1'
-        : full
-          ? 'full'
-          : 'smoke';
-  const projects = app4R01C1
-    ? APP4_R01_C1
-    : app4R01
-      ? APP4_R01
+    : app5E01
+      ? 'app5-e01'
       : app4Browser
-        ? APP4
+        ? 'app4-browser'
         : app1
-          ? APP1
+          ? 'app1'
           : full
-            ? FULL
-            : SMOKE;
+            ? 'full'
+            : 'smoke';
+  const projects = app5E01
+    ? APP5_E01
+    : app4R01C1
+      ? APP4_R01_C1
+      : app4R01
+        ? APP4_R01
+        : app4Browser
+          ? APP4
+          : app1
+            ? APP1
+            : full
+              ? FULL
+              : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 || app4Browser
@@ -142,7 +154,7 @@ function parseArgs(argv) {
   const extraArgs = [];
   if (flags.has('--headed')) extraArgs.push('--headed');
   if (flags.has('--debug')) extraArgs.push('--debug');
-  return { mode, projects, runner, extraArgs, app1, app4, app4Browser };
+  return { mode, projects, runner, extraArgs, app1, app4, app4Browser, app5E01 };
 }
 
 function log(message) {
@@ -160,9 +172,24 @@ async function verifyClean(config) {
 }
 
 async function main() {
-  const { mode, projects, runner, extraArgs, app1, app4, app4Browser } = parseArgs(
+  const { mode, projects, runner, extraArgs, app1, app4, app4Browser, app5E01 } = parseArgs(
     process.argv.slice(2),
   );
+  // APP5-E01 runs on `*.localhost` hostnames instead of `*.embroidery.local`.
+  //
+  // Not cosmetic: Chrome attaches `Sec-Fetch-*` only to *potentially
+  // trustworthy* URLs, and `APP3-B07` refuses a Design Session mutation that
+  // carries no `Sec-Fetch-Site` (IMP-D043 PO-05). On `http://embroidery.local`
+  // the browser sends none, so the catalog branch — which submits a session —
+  // is unreachable there, while in production (HTTPS) it is ordinary. `.localhost`
+  // is in the browser's loopback trustworthy set, so it stands in for the
+  // production origin without terminating TLS in the harness. `localhost` itself
+  // is deliberately not used: the orchestrator probes the gateway's own health
+  // on `http://localhost:<port>`, which must keep reaching the default server.
+  if (app5E01) {
+    process.env['STOREFRONT_HOST'] = process.env['STOREFRONT_HOST'] ?? 'embroidery.localhost';
+    process.env['ADMIN_HOST'] = process.env['ADMIN_HOST'] ?? 'admin.embroidery.localhost';
+  }
   const config = loadE2EConfig();
   const runId = createRunId();
 
@@ -222,7 +249,32 @@ async function main() {
       config,
       log,
       withAdmin: adminCredentials,
-      ...(app4Secrets === undefined ? {} : { withApp4: app4SecretEnv(app4Secrets) }),
+      ...(app4Secrets === undefined
+        ? {}
+        : {
+            withApp4: {
+              ...app4SecretEnv(app4Secrets),
+              // APP5-E01 only, and not secret: `APP3-B07` refuses a session
+              // mutation whose `Origin` is not in this allowlist, and the E2E
+              // API process was never given one — so no run before this one
+              // could open a Design Session at all. The value is this run's own
+              // gateway origin, the same shape `docker-compose.dev.yml` sets.
+              ...(app5E01
+                ? {
+                    DESIGN_SESSION_ALLOWED_ORIGINS: config.baseUrls.storefront,
+                    // The Session cookie is `__Host-` prefixed (IMP-D043 PO-03),
+                    // and every browser rejects a `__Host-` cookie that is not
+                    // `Secure`. `NODE_ENV=test` would otherwise default this to
+                    // false and the cookie would be silently dropped, so the
+                    // catalog branch would be unauthorized for a reason that has
+                    // nothing to do with APP5. The `.localhost` origin above is
+                    // trustworthy, so a Secure cookie is both accepted and sent
+                    // — the same configuration production runs.
+                    DESIGN_SESSION_COOKIE_SECURE: 'true',
+                  }
+                : {}),
+            },
+          }),
     });
     log(
       `environment ready — storefront ${config.baseUrls.storefront} admin ${config.baseUrls.admin}`,
@@ -249,6 +301,11 @@ async function main() {
                   E2E_REPO_ROOT: config.repoRoot,
                   ...app4SecretEnv(app4Secrets),
                 }),
+            // APP5-E01 only: the in-process worker context inspects a real
+            // customer upload, so it must read this run's MinIO rather than the
+            // runtime's unresolvable offline default. The APP4 runs never fetch
+            // an object and are left on that default deliberately.
+            ...(app5E01 ? objectStorageEnv(config.storage) : {}),
           }
         : {};
     exitCode =

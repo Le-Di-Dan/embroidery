@@ -57,19 +57,21 @@ describe('StorefrontShell — navigation & search boundaries', () => {
     }
   });
 
-  it('links only the area that is built and leaves the rest non-interactive', () => {
+  it('links only the areas that are built and leaves the rest non-interactive', () => {
     const { container } = renderShell();
     const nav = screen.getByRole('navigation', { name: 'Điều hướng chính' });
 
-    // Discover is the one built area (APP2-S01, IMP-D038), so it — and only it —
-    // is a real link, pointing at the canonical route.
+    // Two built areas: Discover (APP2-S01, IMP-D038) and the custom request
+    // (APP5-S01). Each is a real link on its canonical route, and nothing else is.
     const links = within(nav).queryAllByRole('link');
-    expect(links).toHaveLength(1);
+    expect(links).toHaveLength(2);
     expect(links[0]).toHaveAccessibleName('Khám phá');
     expect(links[0]).toHaveAttribute('href', '/kham-pha');
+    expect(links[1]).toHaveAccessibleName('Đặt thêu');
+    expect(links[1]).toHaveAttribute('href', '/yeu-cau/moi');
 
     // Every other IA label is still flagged unavailable to assistive tech.
-    for (const label of ['Bộ sưu tập', 'Studio', 'Đặt thêu', 'Nhật ký']) {
+    for (const label of ['Bộ sưu tập', 'Studio', 'Nhật ký']) {
       expect(within(nav).getByText(label).closest('[aria-disabled="true"]')).not.toBeNull();
     }
 
@@ -79,7 +81,7 @@ describe('StorefrontShell — navigation & search boundaries', () => {
       expect(href).not.toBe('#');
       expect(href).not.toBe('');
       // `#main-content` is the skip link's in-page target, not a route.
-      expect(['/', '/kham-pha', '#main-content']).toContain(href);
+      expect(['/', '/kham-pha', '/yeu-cau/moi', '#main-content']).toContain(href);
     }
   });
 

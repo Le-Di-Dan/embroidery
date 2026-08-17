@@ -96,6 +96,30 @@ export function app4SecretValues(app4) {
   ];
 }
 
+/**
+ * This run's object storage, as the environment every storage consumer reads.
+ *
+ * The API HTTP process is configured with these by `api-service.mjs`. They are
+ * exported here because `APP5-E01` needs the *in-process* worker context to read
+ * the same MinIO: APP5 uploads are inspected by the real APP2/APP3 inspection
+ * job, which fetches the original it is judging, and the E01 runtime otherwise
+ * fills in a deliberately unresolvable `.invalid` endpoint. Nothing here is a
+ * deployment credential — both values are this suite's own disposable MinIO
+ * login, generated for a container that is dropped with the run.
+ */
+export function objectStorageEnv(storage) {
+  return {
+    OBJECT_STORAGE_PROVIDER: 's3',
+    OBJECT_STORAGE_ENDPOINT: storage.endpoint,
+    OBJECT_STORAGE_REGION: 'us-east-1',
+    OBJECT_STORAGE_FORCE_PATH_STYLE: 'true',
+    OBJECT_STORAGE_ACCESS_KEY_ID: storage.accessKeyId,
+    OBJECT_STORAGE_SECRET_ACCESS_KEY: storage.secretAccessKey,
+    OBJECT_STORAGE_ORIGINALS_BUCKET: storage.originalsBucket,
+    OBJECT_STORAGE_DERIVATIVES_BUCKET: storage.derivativesBucket,
+  };
+}
+
 function port(env, key, fallback) {
   const raw = env[key];
   return raw === undefined || raw === '' ? fallback : Number(raw);

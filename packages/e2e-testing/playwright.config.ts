@@ -114,5 +114,14 @@ export default defineConfig({
       testMatch: '**/app4/e01-r01-c1.acceptance.spec.ts',
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
     },
+    // APP5-E01 cross-layer acceptance. One serial project on the Storefront
+    // origin, for the same reason as `app4-r01-chromium`: the run is a single
+    // journey chain whose state cannot be split across two projects. The Admin
+    // journey opens its own context against the Admin origin.
+    {
+      name: 'app5-e01-chromium',
+      testMatch: '**/app5/e01.acceptance.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
   ],
 });

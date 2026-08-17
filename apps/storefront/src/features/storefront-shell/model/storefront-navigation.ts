@@ -73,6 +73,20 @@ export function buildStorefrontStudioPath(slug: string): string {
   return `${buildStorefrontProductDetailPath(slug)}/${STOREFRONT_STUDIO_ROUTE_SEGMENT}`;
 }
 
+/**
+ * The canonical custom-request creation route (`APP5-D01` locks the path;
+ * `APP5-S01` built it).
+ *
+ * The approved header already carries the *Đặt thêu* IA item, and the model
+ * above states that the owning phase supplies its `href` once the area exists.
+ * APP5 owns that area, so the item is routed here rather than by inventing a
+ * new call to action on a frame that draws none. A visit with no query string
+ * is the customer-owned-product branch, which is complete on its own; the
+ * catalog branch is still entered from a Studio placement
+ * (`FU-APP5-S01-STUDIO-ENTRY-01`), which this constant does not claim to solve.
+ */
+export const STOREFRONT_CUSTOM_REQUEST_ROUTE = '/yeu-cau/moi';
+
 /** A primary-navigation entry. `route` stays `null` until the area ships. */
 export interface StorefrontNavItem {
   readonly id: string;
@@ -82,10 +96,10 @@ export interface StorefrontNavItem {
 }
 
 /**
- * The approved-header primary navigation (canonical IA labels). Only `discover`
- * has a route: `APP2-S01` built it. The other four areas are not built, so their
- * items stay presentation only. Do not add an `href` here for a route that does
- * not yet exist.
+ * The approved-header primary navigation (canonical IA labels). Two areas are
+ * routed: `discover` (`APP2-S01`) and `commission` (`APP5-S01`). The other three
+ * are not built, so their items stay presentation only. Do not add an `href`
+ * here for a route that does not yet exist.
  *
  * `studio` stays `route: null` after `APP3-S01`, and that is the correct
  * outcome rather than an oversight. S01 built a Studio *per Product*; there is
@@ -95,6 +109,6 @@ export const STOREFRONT_PRIMARY_NAV: readonly StorefrontNavItem[] = [
   { id: 'discover', label: 'Khám phá', route: STOREFRONT_DISCOVER_ROUTE },
   { id: 'collections', label: 'Bộ sưu tập', route: null },
   { id: 'studio', label: 'Studio', route: null },
-  { id: 'commission', label: 'Đặt thêu', route: null },
+  { id: 'commission', label: 'Đặt thêu', route: STOREFRONT_CUSTOM_REQUEST_ROUTE },
   { id: 'journal', label: 'Nhật ký', route: null },
 ];

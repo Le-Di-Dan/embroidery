@@ -18,6 +18,7 @@
     "e2e:app4:browser": "node scripts/run-e2e.mjs --app4-browser",
     "e2e:app4:r01": "node scripts/run-e2e.mjs --app4-r01",
     "e2e:app4:r01c1": "node scripts/run-e2e.mjs --app4-r01-c1",
+    "e2e:app5:e01": "node scripts/run-e2e.mjs --app5-e01",
     "e2e:headed": "node scripts/run-e2e.mjs --headed",
     "e2e:debug": "node scripts/run-e2e.mjs --debug",
     "e2e:report": "playwright show-report playwright-report",

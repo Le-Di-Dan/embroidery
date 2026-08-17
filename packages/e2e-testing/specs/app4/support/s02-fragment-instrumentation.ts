@@ -46,110 +46,125 @@ export interface FragmentSecurityEvidence {
  *
  * The token is passed in so comparisons happen in the page; it is written to
  * no global the application can read back, and no diagnostic ever returns it.
+ *
+ * `requestPathPattern` names the request whose ordering is being measured. It
+ * defaults to APP4's secure-link resolve, so every APP4 call site behaves
+ * exactly as before; `APP5-E01` passes its own, because the APP5 secure link
+ * lands on a page whose first call is the grant-scoped status read and which
+ * deliberately chains no resolve in front of it.
  */
-export async function installFragmentInstrumentation(page: Page, token: string): Promise<void> {
-  await page.addInitScript((needle: string) => {
-    const state = {
-      replaceStateCount: 0,
-      cleaningReplaceStateObserved: false,
-      cleaningReplaceStateAt: -1,
-      requestObserved: false,
-      requestAt: -1,
-      requestMethod: null as string | null,
-      requestPath: null as string | null,
-      hashEmptyAtRequest: false,
-      urlContainsTokenAtRequest: false,
-      historyContainsTokenAtRequest: false,
-      requestUrlContainsToken: false,
-      requestBodyHasTokenField: false,
-      requestBodyKeys: [] as string[],
-    };
-    let sequence = 0;
-    const contains = (value: unknown): boolean =>
-      typeof value === 'string' && value.includes(needle);
+export async function installFragmentInstrumentation(
+  page: Page,
+  token: string,
+  { requestPathPattern = '/secure-links/resolve' } = {},
+): Promise<void> {
+  await page.addInitScript(
+    ([needle, pattern]: [string, string]) => {
+      const watched = new RegExp(pattern);
+      const state = {
+        replaceStateCount: 0,
+        cleaningReplaceStateObserved: false,
+        cleaningReplaceStateAt: -1,
+        requestObserved: false,
+        requestAt: -1,
+        requestMethod: null as string | null,
+        requestPath: null as string | null,
+        hashEmptyAtRequest: false,
+        urlContainsTokenAtRequest: false,
+        historyContainsTokenAtRequest: false,
+        requestUrlContainsToken: false,
+        requestBodyHasTokenField: false,
+        requestBodyKeys: [] as string[],
+      };
+      let sequence = 0;
+      const contains = (value: unknown): boolean =>
+        typeof value === 'string' && value.includes(needle);
 
-    (window as unknown as Record<string, unknown>).__app4FragmentEvidence = state;
+      (window as unknown as Record<string, unknown>).__app4FragmentEvidence = state;
 
-    const originalReplaceState = history.replaceState.bind(history);
-    history.replaceState = function instrumented(this: History, ...args: unknown[]) {
-      const hashBefore = window.location.hash;
-      const result = originalReplaceState(...(args as Parameters<History['replaceState']>));
-      state.replaceStateCount += 1;
-      // The cleaning call is the one that *removes* the token from the hash —
-      // not the first call, which is Next's own hydration replaceState.
-      if (contains(hashBefore) && !contains(window.location.hash)) {
-        state.cleaningReplaceStateObserved = true;
-        state.cleaningReplaceStateAt = sequence++;
-      }
-      return result;
-    } as History['replaceState'];
-
-    const recordRequest = (method: string, url: string, body: unknown): void => {
-      if (!/\/secure-links\/resolve/.test(url)) {
-        return;
-      }
-      state.requestObserved = true;
-      state.requestAt = sequence++;
-      state.requestMethod = method.toUpperCase();
-      try {
-        state.requestPath = new URL(url, window.location.origin).pathname;
-      } catch {
-        state.requestPath = url;
-      }
-      state.requestUrlContainsToken = contains(url);
-      state.hashEmptyAtRequest = window.location.hash === '';
-      state.urlContainsTokenAtRequest = contains(window.location.href);
-      try {
-        state.historyContainsTokenAtRequest = contains(JSON.stringify(history.state ?? null));
-      } catch {
-        state.historyContainsTokenAtRequest = false;
-      }
-      if (typeof body === 'string') {
-        try {
-          const parsed = JSON.parse(body) as Record<string, unknown>;
-          state.requestBodyKeys = Object.keys(parsed);
-          state.requestBodyHasTokenField = contains(parsed['token']);
-        } catch {
-          state.requestBodyKeys = [];
+      const originalReplaceState = history.replaceState.bind(history);
+      history.replaceState = function instrumented(this: History, ...args: unknown[]) {
+        const hashBefore = window.location.hash;
+        const result = originalReplaceState(...(args as Parameters<History['replaceState']>));
+        state.replaceStateCount += 1;
+        // The cleaning call is the one that *removes* the token from the hash —
+        // not the first call, which is Next's own hydration replaceState.
+        if (contains(hashBefore) && !contains(window.location.hash)) {
+          state.cleaningReplaceStateObserved = true;
+          state.cleaningReplaceStateAt = sequence++;
         }
-      }
-    };
+        return result;
+      } as History['replaceState'];
 
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = function instrumentedFetch(input: RequestInfo | URL, init?: RequestInit) {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-      recordRequest(init?.method ?? 'GET', url, init?.body);
-      return originalFetch(input, init);
-    };
+      const recordRequest = (method: string, url: string, body: unknown): void => {
+        if (!watched.test(url)) {
+          return;
+        }
+        state.requestObserved = true;
+        state.requestAt = sequence++;
+        state.requestMethod = method.toUpperCase();
+        try {
+          state.requestPath = new URL(url, window.location.origin).pathname;
+        } catch {
+          state.requestPath = url;
+        }
+        state.requestUrlContainsToken = contains(url);
+        state.hashEmptyAtRequest = window.location.hash === '';
+        state.urlContainsTokenAtRequest = contains(window.location.href);
+        try {
+          state.historyContainsTokenAtRequest = contains(JSON.stringify(history.state ?? null));
+        } catch {
+          state.historyContainsTokenAtRequest = false;
+        }
+        if (typeof body === 'string') {
+          try {
+            const parsed = JSON.parse(body) as Record<string, unknown>;
+            state.requestBodyKeys = Object.keys(parsed);
+            state.requestBodyHasTokenField = contains(parsed['token']);
+          } catch {
+            state.requestBodyKeys = [];
+          }
+        }
+      };
 
-    // Axios — the only approved frontend HTTP client — uses XMLHttpRequest in
-    // the browser, so patching `fetch` alone would observe nothing. These two
-    // are captured as prototype methods on purpose and re-applied with their
-    // original receiver below, which is exactly what `unbound-method` guards
-    // against doing accidentally.
-    /* eslint-disable @typescript-eslint/unbound-method */
-    const originalOpen = XMLHttpRequest.prototype.open;
-    const originalSend = XMLHttpRequest.prototype.send;
-    /* eslint-enable @typescript-eslint/unbound-method */
-    XMLHttpRequest.prototype.open = function instrumentedOpen(
-      this: XMLHttpRequest & { __app4: { method: string; url: string } },
-      method: string,
-      url: string,
-      ...rest: unknown[]
-    ) {
-      this.__app4 = { method, url };
-      return originalOpen.apply(this, [method, url, ...rest] as never);
-    };
-    XMLHttpRequest.prototype.send = function instrumentedSend(
-      this: XMLHttpRequest & { __app4?: { method: string; url: string } },
-      body?: Document | XMLHttpRequestBodyInit | null,
-    ) {
-      if (this.__app4 !== undefined) {
-        recordRequest(this.__app4.method, this.__app4.url, body);
-      }
-      return originalSend.apply(this, [body] as never);
-    };
-  }, token);
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = function instrumentedFetch(input: RequestInfo | URL, init?: RequestInit) {
+        const url =
+          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        recordRequest(init?.method ?? 'GET', url, init?.body);
+        return originalFetch(input, init);
+      };
+
+      // Axios — the only approved frontend HTTP client — uses XMLHttpRequest in
+      // the browser, so patching `fetch` alone would observe nothing. These two
+      // are captured as prototype methods on purpose and re-applied with their
+      // original receiver below, which is exactly what `unbound-method` guards
+      // against doing accidentally.
+      /* eslint-disable @typescript-eslint/unbound-method */
+      const originalOpen = XMLHttpRequest.prototype.open;
+      const originalSend = XMLHttpRequest.prototype.send;
+      /* eslint-enable @typescript-eslint/unbound-method */
+      XMLHttpRequest.prototype.open = function instrumentedOpen(
+        this: XMLHttpRequest & { __app4: { method: string; url: string } },
+        method: string,
+        url: string,
+        ...rest: unknown[]
+      ) {
+        this.__app4 = { method, url };
+        return originalOpen.apply(this, [method, url, ...rest] as never);
+      };
+      XMLHttpRequest.prototype.send = function instrumentedSend(
+        this: XMLHttpRequest & { __app4?: { method: string; url: string } },
+        body?: Document | XMLHttpRequestBodyInit | null,
+      ) {
+        if (this.__app4 !== undefined) {
+          recordRequest(this.__app4.method, this.__app4.url, body);
+        }
+        return originalSend.apply(this, [body] as never);
+      };
+    },
+    [token, requestPathPattern] as [string, string],
+  );
 }
 
 /** Reads the recorded evidence. Booleans, counts and safe names only. */

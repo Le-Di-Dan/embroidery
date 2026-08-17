@@ -30,6 +30,7 @@ import { normalizeApiClientError } from '@embroidery/api-client';
 
 import { readRequestAssetStatus, uploadRequestAsset } from '../api/custom-request.client';
 import { customRequestQueryKeys } from '../model/custom-request-query-keys';
+import { newUploadIdempotencyKey } from '../model/upload-idempotency-key';
 import {
   applyStatus,
   challengeCapReached,
@@ -204,7 +205,11 @@ export function useRequestUploads(challengeId: string | undefined): RequestUploa
           continue;
         }
 
-        pendingRef.current.set(key, { file, role, idempotencyKey: crypto.randomUUID() });
+        pendingRef.current.set(key, {
+          file,
+          role,
+          idempotencyKey: newUploadIdempotencyKey(),
+        });
         const slot: AssetSlot = {
           key,
           role,
