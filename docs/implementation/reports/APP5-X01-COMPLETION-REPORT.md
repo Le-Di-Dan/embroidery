@@ -344,9 +344,9 @@ branch              production
 X01 entry HEAD      9f68d74
 APP5-E01 commit     d098d67
 entry working tree  clean
-final X01 commit    docs(app5): close the phase and route its historical tooling debt
-                    (hash recorded by the follow-up docs commit, as APP5 has done
-                     for every checkpoint)
+final X01 commit    4da8947  docs(app5): close the phase and route its historical tooling debt
+                    (this report's own hash is recorded by the follow-up docs
+                     commit, as APP5 has done for every checkpoint)
 final working tree  clean
 pushed              no
 ```
