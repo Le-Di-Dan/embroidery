@@ -1,0 +1,712 @@
+// Admin custom-request detail and moderation (`APP5-A02`).
+//
+// Reproduces `FIG-APP5-A02-DETAIL-DESKTOP-{CATALOG,COP,LOADING,NOTFOUND}`
+// (`665:3`, `665:115`, `667:3`, `667:30`), the moderation dialogs (`669:3`,
+// `669:60`, `669:119`, `669:173`, `670:3`), the outcome states (`670:46`,
+// `670:104`), the note surface (`670:148`) and the narrow desktop reference
+// `FIG-APP5-A02-DETAIL-NARROW-1280` (`672:3`). Every colour, radius, space and
+// type size is a token: no literal hex and no magic pixel value beyond the one
+// layout threshold named below.
+//
+// Class names are prefixed `request-*` / `moderation-*`. The Admin stylesheet is
+// global and unscoped, so a generic `.panel` or `.timeline` here would collide
+// with another feature's rules in a way jsdom could never catch.
+//
+// The status badge reuses `.custom-request-status` from the queue's stylesheet
+// rather than restating ten status modifiers. That is a shared *visual* contract
+// for one lifecycle enum, and duplicating it is how two screens end up tinting
+// `NEEDS_CLARIFICATION` differently.
+
+@use '@embroidery/styles' as styles;
+
+// At the 1280 reference the two columns stack rather than compress: the
+// evidence tiles and the transition history both need their width to stay
+// readable, and squeezing them side by side is what forces the page to scroll
+// sideways (`672:3` keeps a single scroll axis).
+$detail-single-column: 1200px;
+
+// Two component dimensions the spacing scale does not express. The scale is a
+// rhythm for gaps and padding — approved steps only — and it deliberately has no
+// step at a tile width or a dialog width, so those are stated here as named
+// local values rather than smuggled in as an unapproved `spacing()` argument.
+$evidence-tile-min: 160px;
+$dialog-max-width: 480px;
+
+.request-detail {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.request-detail__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.request-detail__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.request-detail__meta {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-detail__link {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  text-decoration: underline;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Layout
+
+.request-detail__columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: styles.spacing(24);
+
+  @media (max-width: $detail-single-column) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.request-detail__column {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  // Grid children default to `min-width: auto`, which lets a wide table or a
+  // long unbroken id push the column past its track and scroll the page
+  // sideways. `672:3` has one scroll axis.
+  min-width: 0;
+}
+
+.request-detail__panel {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.request-detail__panel-title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+}
+
+.request-detail__subheading {
+  margin: styles.spacing(8) 0 0;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+}
+
+.request-detail__badge {
+  margin: 0;
+  align-self: flex-start;
+  padding: styles.spacing(4) styles.spacing(8);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Definition rows
+
+.request-detail__definitions {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+}
+
+.request-detail__row {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.request-detail__term {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-detail__value {
+  margin: 0;
+  color: styles.$color-text-primary;
+  // The reasons and the customer note are free text an operator or a customer
+  // typed, so a long unbroken run must wrap rather than widen the panel.
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.request-detail__hint {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-detail__note {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.request-detail__note-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+}
+
+.request-detail__note-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+}
+
+// ---------------------------------------------------------------------------
+// Customer contacts
+
+.request-detail__contacts {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.request-detail__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: baseline;
+}
+
+.request-detail__contact-kind {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-detail__contact-value {
+  color: styles.$color-text-primary;
+}
+
+.request-detail__contact-flag {
+  padding: styles.spacing(4) styles.spacing(8);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Quantity
+
+.request-detail__total {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  margin: 0;
+}
+
+.request-detail__total-value {
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+}
+
+.request-detail__table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: styles.spacing(8);
+    text-align: left;
+    border-bottom: 1px solid styles.$color-border-secondary;
+  }
+
+  th {
+    color: styles.$color-text-secondary;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+  }
+}
+
+.request-detail__table-caption {
+  text-align: left;
+  padding-bottom: styles.spacing(8);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Evidence
+
+.request-evidence__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax($evidence-tile-min, 1fr));
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.request-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+}
+
+.request-evidence__frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.spacing(128);
+  padding: styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.request-evidence__image {
+  max-width: 100%;
+  height: auto;
+  border-radius: styles.$radius-sm;
+}
+
+.request-evidence__state {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  text-align: center;
+}
+
+.request-evidence__retry {
+  align-self: flex-start;
+  padding: styles.spacing(4) styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+}
+
+.request-evidence__caption {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.request-evidence__role {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-evidence__meta {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// History and notes
+
+.request-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.request-timeline__entry {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border-left: 2px solid styles.$color-border-secondary;
+  background: styles.$color-surface-secondary;
+  border-radius: styles.$radius-sm;
+}
+
+.request-timeline__headline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  margin: 0;
+}
+
+.request-timeline__sequence {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-timeline__move,
+.request-timeline__kind {
+  color: styles.$color-text-primary;
+}
+
+.request-timeline__meta {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-timeline__note {
+  margin: 0;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.request-timeline__reasons {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Outcomes, loading and failure
+
+.request-detail__outcome {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border-radius: styles.$radius-sm;
+  border-left: 4px solid styles.$color-border-primary;
+  background: styles.$color-surface-secondary;
+}
+
+// The conflict is distinguished by its border weight and its heading text, not
+// by colour alone — the sentence "đã được người khác xử lý" is the signal.
+.request-detail__outcome--conflict {
+  border-left-color: styles.$color-status-warning;
+}
+
+.request-detail__outcome-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+}
+
+.request-detail__outcome-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-detail__failure {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.request-detail__failure-title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+}
+
+.request-detail__failure-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+}
+
+.request-detail__failure-actions {
+  display: flex;
+  gap: styles.spacing(12);
+  align-items: center;
+}
+
+.request-detail__action {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+}
+
+.request-detail__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.request-detail__skeleton-line,
+.request-detail__skeleton-block {
+  display: block;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.request-detail__skeleton-line {
+  height: styles.spacing(16);
+  width: 40%;
+}
+
+.request-detail__skeleton-line--title {
+  height: styles.spacing(24);
+  width: 60%;
+}
+
+.request-detail__skeleton-block {
+  height: styles.spacing(128);
+}
+
+// Visually hidden, still announced: the loading and submitting states are
+// perceivable without seeing the skeleton or the disabled button.
+.request-detail__sr-status,
+.moderation-dialog__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Moderation actions
+
+.moderation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.moderation-actions__button {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: styles.$color-text-tertiary;
+    border-color: styles.$color-border-secondary;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Dialogs
+
+.moderation-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(24);
+  background: styles.$color-overlay-scrim;
+  z-index: 40;
+}
+
+.moderation-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  width: 100%;
+  max-width: $dialog-max-width;
+  // The dialog fits the 1280 reference and scrolls internally rather than
+  // pushing the page: three text areas plus a radio group is taller than a
+  // short viewport, and a dialog that scrolls the document behind it loses the
+  // submit control.
+  max-height: 100%;
+  overflow-y: auto;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.moderation-dialog__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+}
+
+.moderation-dialog__help {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.moderation-dialog__validation,
+.moderation-dialog__failure,
+.moderation-note-form__failure {
+  margin: 0;
+  padding: styles.spacing(8) styles.spacing(12);
+  border-radius: styles.$radius-sm;
+  border-left: 4px solid styles.$color-status-error;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-primary;
+}
+
+.moderation-dialog__failure {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.moderation-dialog__failure-title {
+  margin: 0;
+}
+
+.moderation-dialog__failure-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.moderation-dialog__kinds {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.moderation-dialog__kind {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  color: styles.$color-text-primary;
+}
+
+.moderation-dialog__actions,
+.moderation-note-form__actions {
+  display: flex;
+  gap: styles.spacing(12);
+}
+
+.moderation-dialog__submit,
+.moderation-note-form__submit {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    background: styles.$color-surface-secondary;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.moderation-dialog__dismiss {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Moderation fields
+
+.moderation-field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.moderation-field__label {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.moderation-field__control {
+  padding: styles.spacing(8);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-m;
+  resize: vertical;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    background: styles.$color-surface-secondary;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.moderation-field--error .moderation-field__control {
+  border-color: styles.$color-status-error;
+}
+
+.moderation-field__help {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.moderation-field__error {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+}

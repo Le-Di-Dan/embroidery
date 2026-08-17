@@ -595,12 +595,12 @@ export type {
 // Admin custom-request queue (`APP5-B04`), consumed by the Admin queue screen
 // (`APP5-A01`). Released consumer-driven and one operation wide.
 //
-// `adminCustomRequest_list` crosses; `adminCustomRequest_detail` and every
-// `APP5-B05` moderation transition deliberately do **not**. A01 is a read-only
-// queue that enters a detail route, so a detail read or a transition reachable
-// from it would be a capability the screen has no approved control for — and
-// exporting them "for completeness" is how a list screen ends up one careless
-// import away from a state change.
+// `adminCustomRequest_list` crosses here for the queue. The detail read and the
+// two `APP5-B05` moderation transitions were held back until a screen had an
+// approved control for them — exporting an operation "for completeness" is how a
+// read-only list ends up one careless import away from a state change. They are
+// published in the `APP5-A02` block below, which is the checkpoint that owns
+// those controls; the queue feature still imports only this one operation.
 //
 // The three enums cross as **values**, not types: the filter options and the
 // status labels are derived from the contract rather than a hand-kept list that
@@ -620,6 +620,60 @@ export type {
   AdminCustomRequestQueueResponse,
   AdminCustomRequestQueueItemResponse,
   AdminCustomRequestQueueResponseAppliedStatusesItem,
+} from './generated/embroidery-api.schemas';
+
+// Admin custom-request detail and moderation (`APP5-B04`, `APP5-B05`,
+// `APP5-B06`), consumed by the Admin request detail screen (`APP5-A02`).
+//
+// Four operations, released consumer-driven: the detail read, the private
+// request-asset stream and the two moderation writes. `APP5-B06` deliberately
+// left its curated export to this checkpoint rather than publishing an operation
+// with no screen behind it.
+//
+// The two mutations cross **for the first time**. Until A02 there was no
+// approved control for either, and the queue's boundary note said so explicitly.
+// They stay together with the detail read on purpose: a moderation move is only
+// legible next to the state it moves from, and A02 re-reads the detail after
+// every one of them.
+//
+// `adminCustomRequestAssetGet` returns a `Blob` — the generated operation sets
+// `responseType: 'blob'` itself, so no consumer configures transport to get it.
+//
+// The note and transition **body** types cross as types, and their kind/target
+// enums as **values**: the dialogs derive the offered note kinds from the
+// contract rather than from a hand-kept list that could accept a kind the server
+// refuses. `AdminRequestModerationNoteResponseKind` publishes the full TBL-041
+// set, `PAUSE` included, because a historical note may carry it and the history
+// renders what is stored — the *dialogs* offer the narrower APP5 set.
+export {
+  adminCustomRequestDetail,
+  adminCustomRequestAssetGet,
+  adminCustomRequestAppendNote,
+  adminCustomRequestTransition,
+} from './generated/embroidery-api';
+export {
+  AdminCustomRequestDetailResponseStatus,
+  AdminCatalogSubjectResponseKind,
+  AdminCustomerOwnedSubjectResponseKind,
+  AdminRequestAssetResponseRole,
+  AdminRequestContactResponseKind,
+  AdminRequestModerationNoteResponseKind,
+  AppendModerationNoteBodyKind,
+  TransitionCustomRequestBodyToStatus,
+  TransitionCustomRequestBodyModerationNoteKind,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminCustomRequestDetailResponse,
+  AdminCatalogSubjectResponse,
+  AdminCustomerOwnedSubjectResponse,
+  AdminRequestAssetResponse,
+  AdminRequestContactResponse,
+  AdminRequestCustomerResponse,
+  AdminRequestModerationNoteResponse,
+  AdminRequestQuantityLineResponse,
+  AdminRequestTransitionResponse,
+  AppendModerationNoteBody,
+  TransitionCustomRequestBody,
 } from './generated/embroidery-api.schemas';
 
 // Generated transport types derived from the committed OpenAPI artifact.

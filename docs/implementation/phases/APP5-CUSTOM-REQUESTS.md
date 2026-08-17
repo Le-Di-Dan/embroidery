@@ -54,7 +54,7 @@ These are planning slices. Execute and review one at a time. Any backend slice r
 - **APP5-C04 — Admin request operations contract:** Define queue, detail, add moderation note, and allowed moderation transitions.
 - **APP5-B04 — Admin request operations backend:** Implement filters/queries, transition guards, notes, audit and tests.
 - **APP5-A01 — Admin request queue:** Implement filters, pagination, status and error/empty states.
-- **APP5-A02 — Admin request detail/moderation:** Implement evidence/design/assets, notes and guarded transitions.
+- **APP5-A02 — Admin request detail/moderation:** Implement evidence/design/assets, notes and guarded transitions. **Delivered 2026-08-17.** One open follow-up is carried rather than closed: `FU-APP5-B04-DESIGN-PREVIEW-01` — no authorized Catalog design-session preview exists for this surface, so the screen states that plainly and shows `designSessionId` as provenance only.
 - **APP5-E01 — Request E2E:** Verified customer creates or selects product context, attaches design/assets, submits once despite retry, and Admin triages it through an allowed transition.
 - **APP5-X01 — Phase closure:** Hand accepted requests to APP6 review and quotation.
 
@@ -100,8 +100,8 @@ with the three scope corrections noted below.
 | `APP5-S02` | `COMPLETE` | Confirmation at `/yeu-cau/da-gui` and grant-scoped single-request status at `/truy-cap` — the request code display-only with no lookup, the APP4 fragment/strip/credential machinery generalised and reused, and `publicCustomRequestStatus` as the **single** status resolution call with `publicSecureLinkResolve` never chained in front of it. Closes `FU-APP4-S01-SUCCESS-HANDOFF-01`. See [`../reports/APP5-S02-COMPLETION-REPORT.md`](../reports/APP5-S02-COMPLETION-REPORT.md) |
 | `APP5-A01` | `COMPLETE` | Admin request queue at `/requests` — `adminCustomRequestList` only, the default triage scope stated from the server's `appliedStatuses`, status and subject-kind filters in the URL, opaque keyset continuation, the five approved states and entry into the `APP5-A02` detail route. See [`../reports/APP5-A01-COMPLETION-REPORT.md`](../reports/APP5-A01-COMPLETION-REPORT.md) |
 | `APP5-B06` | `COMPLETE` | **Inserted by `APP5-B05`** — Admin private request-asset delivery — `GET /api/admin/custom-requests/{requestId}/assets/{assetId}/content` (`adminCustomRequestAsset_get`); request-bound `COP_IMAGE`/`REFERENCE` only, the **inspection-approved source** streamed through the API because `APP5-B02` writes no derivative, descriptor-before-storage with zero provider calls on a private miss. Closes `FU-APP5-B04-COP-ASSET-DELIVERY-01`. See [`../reports/APP5-B06-COMPLETION-REPORT.md`](../reports/APP5-B06-COMPLETION-REPORT.md) |
-| `APP5-A02` | `INCOMPLETE` | **Next** — Admin request detail & moderation — **depends on `APP5-B06`** |
-| `APP5-E01` | `INCOMPLETE` | Cross-layer acceptance |
+| `APP5-A02` | `COMPLETE` | Admin request detail & moderation at `/requests/{requestId}` — `APP5-B04` as the single canonical read, `APP5-B06` evidence through ephemeral revoked object URLs, and the `APP5-B05` action matrix restricted to the three states APP5 owns a move from. The two reasons stay separate everywhere; the two `UNDER_REVIEW` moves send only their target; both B05 `409`s re-read and require a new decision with zero resubmit. See [`../reports/APP5-A02-COMPLETION-REPORT.md`](../reports/APP5-A02-COMPLETION-REPORT.md) |
+| `APP5-E01` | `INCOMPLETE` | **Next** — Cross-layer acceptance |
 | `APP5-X01` | `INCOMPLETE` | Phase closure |
 
 Removed by `APP5-R00`, recorded not deleted: `C01`, `C02`, `C03`, `C04` (the
