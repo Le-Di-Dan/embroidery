@@ -102,7 +102,20 @@ with the three scope corrections noted below.
 | `APP5-B06` | `COMPLETE` | **Inserted by `APP5-B05`** — Admin private request-asset delivery — `GET /api/admin/custom-requests/{requestId}/assets/{assetId}/content` (`adminCustomRequestAsset_get`); request-bound `COP_IMAGE`/`REFERENCE` only, the **inspection-approved source** streamed through the API because `APP5-B02` writes no derivative, descriptor-before-storage with zero provider calls on a private miss. Closes `FU-APP5-B04-COP-ASSET-DELIVERY-01`. See [`../reports/APP5-B06-COMPLETION-REPORT.md`](../reports/APP5-B06-COMPLETION-REPORT.md) |
 | `APP5-A02` | `COMPLETE` | Admin request detail & moderation at `/requests/{requestId}` — `APP5-B04` as the single canonical read, `APP5-B06` evidence through ephemeral revoked object URLs, and the `APP5-B05` action matrix restricted to the three states APP5 owns a move from. The two reasons stay separate everywhere; the two `UNDER_REVIEW` moves send only their target; both B05 `409`s re-read and require a new decision with zero resubmit. See [`../reports/APP5-A02-COMPLETION-REPORT.md`](../reports/APP5-A02-COMPLETION-REPORT.md) |
 | `APP5-E01` | `COMPLETE` | Cross-layer acceptance — one serial run (`e2e:app5:e01`) across the real Storefront, API, PostgreSQL, MinIO, inspection worker, notification worker and Admin: navigation entry → customer-owned submission → catalog submission on a real `APP5-B07` variant and `APP3-B07` session → Admin queue/detail/`APP5-B06` evidence/`APP5-B05` moderation → grant-scoped status, with the internal reason never reaching the customer. One integration defect found and corrected (`crypto.randomUUID` is absent off a secure origin, so no upload could start there). See [`../reports/APP5-E01-COMPLETION-REPORT.md`](../reports/APP5-E01-COMPLETION-REPORT.md) |
-| `APP5-X01` | `INCOMPLETE` | **Next** — Phase closure |
+| `APP5-X01` | `COMPLETE` | Phase closure — sixteen canonical checkpoints reconciled, zero blocking follow-ups, ten nonblocking follow-ups routed, the historical APP3 surface-gate debt dispositioned. Verdict `PASS_WITH_FOLLOW_UPS`. See [`../reports/APP5-X01-COMPLETION-REPORT.md`](../reports/APP5-X01-COMPLETION-REPORT.md) and [`../reports/APP5-CLOSURE-MATRIX.md`](../reports/APP5-CLOSURE-MATRIX.md) |
+
+```text
+APP5 = COMPLETE — PASS_WITH_FOLLOW_UPS
+APP5-X01 = COMPLETE
+blocking follow-ups = 0
+```
+
+The **canonical** APP5 checkpoint set is the sixteen rows above plus `X01`. No
+`APP5-B08`, `APP5-D02` or `APP5-S03` exists: the Product Owner cancelled all
+three. `APP5-S03` survives in §6 only as a superseded planning slice, redefined
+by `APP5-R00` into the delivered `APP5-S02`
+([`../audits/APP5_PHASE_ENTRY_AUDIT.md`](../audits/APP5_PHASE_ENTRY_AUDIT.md)
+§6); `B08` and `D02` were never created.
 
 Removed by `APP5-R00`, recorded not deleted: `C01`, `C02`, `C03`, `C04` (the
 repository generates OpenAPI from the implementation, and APP4 already replaced
@@ -348,3 +361,47 @@ authorized state as an empty handoff slot and `APP5-D01` deliberately reuses
 those frames rather than redrawing them (`FIG-APP5-MATRIX-STATUS` `674:3`,
 `661:335`); the slot is now the request, and the browser-side `APP4-B06` caller
 and its placeholder card were deleted rather than left as a second mount point.
+
+---
+
+## 11. Phase closure (`APP5-X01`, 2026-08-17)
+
+```text
+APP5 = COMPLETE — PASS_WITH_FOLLOW_UPS
+runtime acceptance = APP5-E01 — 6 serial tests, 4 journeys, 44 proofs
+blocking follow-ups = 0
+nonblocking follow-ups = 10, all owned
+```
+
+Closure authority: [`../reports/APP5-X01-COMPLETION-REPORT.md`](../reports/APP5-X01-COMPLETION-REPORT.md)
+and the checkpoint-by-checkpoint [`../reports/APP5-CLOSURE-MATRIX.md`](../reports/APP5-CLOSURE-MATRIX.md).
+Where this section and older planning prose in §4/§6 disagree, §10 and the
+closure matrix are the current world.
+
+### 11.1 Exit gate (§8) — closed from accepted evidence
+
+| Gate | Disposition | Evidence |
+|---|---|---|
+| Ownership and duplicate protection pass | CLOSED | `B01` submission transaction keyed on the verified challenge id; `E01` Journey A — one `custom_requests` row, `customer_id` the verified customer, the submit body carrying no `customerId` |
+| Submitted facts are stable | CLOSED | `E01` §3/§4 — subject XOR as persisted, quantity lines scoped, `submitted_session_id` consumed rather than named |
+| Admin transitions obey lifecycle guards | CLOSED | `B05` — the `TR-LC11-01/02/03/04/10/11` subset only, a real competing-transition race; `E01` Journey D |
+| Notifications do not break transaction correctness | CLOSED | `G01` — APP5 writes outbox events only and creates no notification intent; the confirmation is the existing APP4 grant link |
+| E2E passes | CLOSED | `APP5-E01 = COMPLETE_WITH_NONBLOCKING_FOLLOWUPS` |
+
+### 11.2 Handoff to APP6 (§9)
+
+APP6 — Design Review, Approval and Quotation — inherits:
+
+```text
+custom_requests in the APP5-owned LC-11 states, with TR-LC11-05…09 unclaimed
+custom_request_transitions as the audit history, carrying both reason texts
+customer_owned_products as a request-bound child (no standalone lifecycle)
+custom_request_assets — COP_IMAGE / REFERENCE, inspection-approved sources only
+quantity lines (TBL-039) as a pricing input
+the APP4 REQUEST_ACCESS grant already issued per submitted request
+```
+
+Carried from `APP5-D01` and unchanged: `design_versions` requires four catalog
+placement columns `NOT NULL`, so a customer-owned-product request cannot hold a
+design version under the current schema. APP6 must resolve that before it can
+version a COP request's design.
