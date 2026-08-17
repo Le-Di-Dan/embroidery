@@ -12,7 +12,7 @@ client, worker, Storefront or Figma change.
 | --- | --- |
 | Branch | `production` |
 | Entry HEAD | `6b09c04` — `feat(app5): stream a request-bound attachment to an authenticated operator` |
-| Commit | `<filled below>` |
+| Commit | `3f6b800` — `feat(app5): read and moderate one custom request as an operator` |
 | Date | 2026-08-17 |
 
 ---
