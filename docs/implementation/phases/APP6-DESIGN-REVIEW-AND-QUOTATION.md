@@ -148,19 +148,19 @@ APP7 creates deposit obligation/attempt and order conversion only from an eligib
 | Checkpoint | Status | Note |
 |---|---|---|
 | `APP6-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation. `APP6_SCHEMA_DISPOSITION = MIGRATION_REQUIRED`; design gate `DESIGN_REQUIRED_BEFORE_UI_ONLY`. See [`../audits/APP6_PHASE_ENTRY_AUDIT.md`](../audits/APP6_PHASE_ENTRY_AUDIT.md) and [`../reports/APP6-R00-COMPLETION-REPORT.md`](../reports/APP6-R00-COMPLETION-REPORT.md) |
-| `APP6-G01` | `INCOMPLETE` | **Next** — review, approval and quotation authority; the COP design-context ADR and the APP6 policy/agreement dataset |
-| `APP6-DB01` | `INCOMPLETE` | COP design context — forward migration on `design_versions` and `approval_snapshots` |
+| `APP6-G01` | `COMPLETE` | APP6 authority locked (`IMP-D051`). ADR [`../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md`](../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md), authority package [`../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md`](../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md), report [`../reports/APP6-G01-COMPLETION-REPORT.md`](../reports/APP6-G01-COMPLETION-REPORT.md). `DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS` |
+| `APP6-DB01` | `INCOMPLETE` | **Next** — COP design-context forward migration on `design_versions` and `approval_snapshots`; exactly the eight operations in ADR-APP6-001 §4 |
 | `APP6-D01` | `INCOMPLETE` | One APP6 Figma package; zero `APP_06` registry rows exist today |
-| `APP6-B01` | `INCOMPLETE` | Quotation drafting — 2 operations |
+| `APP6-B01` | `INCOMPLETE` | Quotation drafting — 2 operations; also ships the `app6-policy-configuration` dataset reader and publisher (APP4-B01-C1 precedent) |
 | `APP6-B02` | `INCOMPLETE` | Quotation read — 2 operations |
 | `APP6-B03` | `INCOMPLETE` | Quotation send — 1 operation; projects `TR-LC11-05` |
 | `APP6-B04` | `INCOMPLETE` | Customer secure quotation read — 1 operation |
 | `APP6-B05` | `INCOMPLETE` | Quotation acceptance and rejection — 2 operations; projects `TR-LC11-06` |
 | `APP6-B06` | `INCOMPLETE` | Digitizing transition — `TR-LC11-07` under `GRD-005`; 0 new operations |
 | `APP6-B07` | `INCOMPLETE` | Admin submitted-design read — 1 operation; closes `FU-APP5-B04-DESIGN-PREVIEW-01` |
-| `APP6-B08` | `INCOMPLETE` | Design version authoring — 2 operations |
+| `APP6-B08` | `INCOMPLETE` | Design version authoring — 2 operations; also owns the `packages/design-document` COP placement widening (ADR-APP6-001 §3.4) |
 | `APP6-B09` | `INCOMPLETE` | Send version for review — 1 operation; projects `TR-LC11-08` |
-| `APP6-B10` | `INCOMPLETE` | Customer secure review read — 1 operation |
+| `APP6-B10` | `INCOMPLETE` | Customer secure review read — 1 operation; also owns agreement content publication for the required type set (ADR-APP6-001 §6.3, authority §5.4) |
 | `APP6-B11` | `INCOMPLETE` | Approval and revision request — 2 operations; projects `TR-LC11-09` |
 | `APP6-A01` | `INCOMPLETE` | Admin quotation workbench |
 | `APP6-A02` | `INCOMPLETE` | Admin design-case workbench |
@@ -170,11 +170,34 @@ APP7 creates deposit obligation/attempt and order conversion only from an eligib
 | `APP6-X01` | `INCOMPLETE` | Phase closure |
 
 ```text
-APP6 = AUDITED — NOT YET IMPLEMENTED
+APP6 = AUTHORITY LOCKED — NOT YET IMPLEMENTED
 APP6-R00 = COMPLETE
-NEXT CHECKPOINT = APP6-G01
+APP6-G01 = COMPLETE
+APP6 AUTHORITY = LOCKED
+DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS
+NEXT CHECKPOINT = APP6-DB01
 ```
 
+### 11.3 Locked APP6 authority (`APP6-G01`, `IMP-D051`)
+
+The authority package is
+[`../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md`](../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md)
+and the COP design-context ADR is
+[`../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md`](../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md).
+Every later APP6 checkpoint reads them instead of re-deciding. In short:
+
+| Topic | Locked value |
+|---|---|
+| Design context | Catalog **XOR** customer-owned product, on the delivered `order_items` shape; no fabricated or borrowed Catalog row |
+| COP geometry | the formal version’s frozen positive `physical_width_mm`/`physical_height_mm` placement envelope, never `customer_owned_products.physical_*_mm` |
+| `APP6-DB01` contract | `CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS` — eight operations, ADR-APP6-001 §4 |
+| Quotation validity | 7 calendar days from the committed send instant |
+| Effective expiry | `now >= valid_until`, in transaction; the `TR-LC12-05` sweep is never the arbiter |
+| Deposit | 40 % / 60 % as policy authority; APP6 creates no Order, obligation, attempt or collection |
+| Required agreement types | `[PAYMENT_POLICY, RETURN_POLICY]`, as policy configuration |
+| Review rendering | safe document → APP3 native-SVG renderer → `APP3-S09` watermark; no server raster pipeline, no export |
+| Secure access | `REQUEST_ACCESS` reused; no new grant kind or token format; `SECURE_LINK_UNAVAILABLE` for every grant-validity failure |
+| Transitions | four `system` projections stay non-commandable; `DIGITIZING` is the only direct APP6 Admin transition |
 ### 11.2 Removed and superseded checkpoints
 
 | Original | Disposition | Where it went |

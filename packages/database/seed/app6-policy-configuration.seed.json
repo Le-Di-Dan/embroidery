@@ -1,0 +1,47 @@
+{
+  "seedId": "app6-policy-configuration",
+  "tier": "SYSTEM_REFERENCE",
+  "checkpoint": "APP6-G01",
+  "decisionId": "IMP-D051",
+  "authority": "docs/adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md",
+  "purpose": "APP6 business policy values, versioned through policy_configurations / policy_configuration_versions (TBL-076 / TBL-077). Data only: the reader and the publishing caller are APP6-B01, exactly as APP4-G01 shipped its dataset and APP4-B01-C1 shipped the reader and publisher. No seed runner is introduced here.",
+  "idempotency": "Upsert by the natural key policy_configurations.config_key (ensureKey), then append one version (publishVersion) only when the key is missing or the stored value has drifted. Versions are immutable; drift is corrected by appending, never by mutating history.",
+  "containsSecrets": false,
+  "configurations": [
+    {
+      "configKey": "quotation.validity",
+      "description": "How long a sent quotation version stays acceptance-eligible (APP6-G01).",
+      "valueSchemaVersion": 1,
+      "units": {
+        "validityDays": "calendar days"
+      },
+      "value": {
+        "validityDays": 7
+      }
+    },
+    {
+      "configKey": "quotation.deposit",
+      "description": "Deposit and remaining shares of an accepted quotation total (BR-005, D-013/D-014). Policy authority only: APP6 creates no order, obligation, attempt or payment (APP6-G01).",
+      "valueSchemaVersion": 1,
+      "units": {
+        "depositPercent": "percent",
+        "remainingPercent": "percent"
+      },
+      "value": {
+        "depositPercent": 40,
+        "remainingPercent": 60
+      }
+    },
+    {
+      "configKey": "design_approval.agreements",
+      "description": "The agreement types whose effective version a customer must accept at design approval (GRD-008, CON-144). Type set is configuration so business may add or remove one without a schema change (APP6-G01).",
+      "valueSchemaVersion": 1,
+      "units": {
+        "requiredAgreementTypes": "enumeration"
+      },
+      "value": {
+        "requiredAgreementTypes": ["PAYMENT_POLICY", "RETURN_POLICY"]
+      }
+    }
+  ]
+}
