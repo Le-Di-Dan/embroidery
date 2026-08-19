@@ -14,6 +14,11 @@ Expected `NEW/SUPPLEMENT` package for Admin review workbench, secure customer re
 
 Design, when required, is delivered as one complete phase package and is not split into coding checkpoints.
 
+`APP6-R00` confirmed the requirement from the registry: `FIGMA_DESIGN_INDEX.md`
+carries **zero** `APP_06` references, so the disposition is
+`DESIGN_REQUIRED_BEFORE_UI_ONLY` — one package (`APP6-D01`) gates every APP6 UI
+checkpoint and gates no backend checkpoint.
+
 ## 4. In scope
 
 - Design case/version creation and current-version management.
@@ -32,7 +37,25 @@ Design, when required, is delivered as one complete phase package and is not spl
 - Arbitrary post-approval design mutation.
 - Pricing rules not already approved by product/business sources.
 
-## 6. Candidate engineering checkpoints
+Additionally excluded by `APP6-R00`:
+
+- The `TR-LC12-05` quotation-expiry **sweep** (`SE-015` scheduled worker work).
+  `GRD-006` rejects acceptance of an expired version in transaction, so
+  correctness does not depend on it.
+- Customer-initiated cancellation at any stage — routed to `APP9`, which owns
+  the cancellation contract, backend and the LC-21 compensation saga.
+- Inventory soft holds (`TR-LC17-01`) — optional at acceptance per ADR-DB3-001
+  rule 9, and owned by APP8.
+
+## 6. Candidate engineering checkpoints (superseded — historical)
+
+> **Superseded by §7 (`APP6-R00`, 2026-08-19).** This list is retained as
+> planning history. Its four `C0n` contract-only slices describe a step this
+> repository does not have (OpenAPI is published from NestJS decorators inside
+> the checkpoint that owns the endpoint), and it delivers design review **before**
+> quotation — an order `GRD-005` and `TR-LC08-01` make unreachable at runtime.
+> The full audit is in
+> [`../audits/APP6_PHASE_ENTRY_AUDIT.md`](../audits/APP6_PHASE_ENTRY_AUDIT.md) §6.
 
 These are planning slices. Execute and review one at a time. Any backend slice remains subject to the maximum of five tightly related HTTP endpoints.
 
@@ -51,17 +74,122 @@ These are planning slices. Execute and review one at a time. Any backend slice r
 - **APP6-E01 — Review-to-quote E2E:** Admin creates exact design version → customer reviews/approves exact version → Admin sends quote → customer accepts → later edits cannot mutate approved/accepted snapshots.
 - **APP6-X01 — Phase closure:** Close R3 Request and Quote Beta and hand accepted quotation to APP7.
 
-## 7. Critical end-to-end journey
+## 7. Authoritative execution roadmap
 
-An eligible request receives a versioned design, the customer approves exactly that version through a secure grant, Admin creates/sends a versioned quotation, the customer accepts it, and both approved design and accepted quotation remain immutable.
+Locked by `APP6-R00`. One execution order; execute and review **one checkpoint
+at a time**.
 
-## 8. Exit gate
+| Order | Checkpoint | Purpose | Depends on | Main affected area | Predicted HTTP ops | Acceptance focus |
+|---:|---|---|---|---|---:|---|
+| 1 | `APP6-G01` — Review, approval and quotation authority | Lock the COP design-context model (ADR); the APP6-owned LC-11 subset and the projected-vs-commanded rule; `design.approve` / `quotation.accept` idempotency bindings; the required agreement type set, quotation validity duration and deposit percent as a policy dataset; the SE-004/SE-005 mapping; the client-side-render / no-preview-derivative ruling | APP5 closure | Docs + seed data | 0 | Every value traced to a named ADR or specification; nothing invented |
+| 2 | `APP6-DB01` — COP design context | Forward migration: nullable placement + `customer_owned_product_id` + one exactly-one-branch `CHECK` on `design_versions` and `approval_snapshots` | `APP6-G01` | `packages/database` | 0 | A COP request reaches a design version and an approval snapshot with **no fabricated catalog row**; the catalog branch is unchanged |
+| 3 | `APP6-D01` — Design package | One complete Figma package: Admin quotation workbench, Admin design-case workbench, customer secure quotation, customer secure review, plus stale/expired/revoked, loading, error, empty and responsive states | `APP6-G01` | Figma + `FIGMA_DESIGN_INDEX.md` | 0 | Registry rows with exact node IDs; Product Owner approval before any UI checkpoint |
+| 4 | `APP6-B01` — Quotation drafting | Create the quotation header with its first draft version; add a further draft version (`TR-LC12-01`) | `APP6-G01` | `apps/api` quotation | 2 | Staff-guarded; amounts stay strings end to end; a sent version is never repriced |
+| 5 | `APP6-B02` — Quotation read | Version history and one version's detail with its line items | `APP6-B01` | `apps/api` quotation | 2 | Exact money; historical versions remain readable and explainable |
+| 6 | `APP6-B03` — Quotation send | `TR-LC12-02` in one transaction: freeze, validity window, current pointer, supersede the prior sent version, project `TR-LC11-05` (`→ QUOTED`), emit `SE-004 quotation.sent` | `APP6-B02` | `apps/api` quotation + order | 1 | The request reaches `QUOTED` only as a projection of the committed send |
+| 7 | `APP6-B04` — Customer secure quotation read | Grant-scoped read of the current sent version and its breakdown | `APP6-B03` | `apps/api` quotation | 1 | POST with the token in the body; one uniform `404` for every failure cause |
+| 8 | `APP6-B05` — Quotation acceptance and rejection | `TR-LC12-03` / `TR-LC12-06` under GRD-002/003/006; acceptance evidence; `quotation.accept` idempotency; project `TR-LC11-06` (`→ QUOTE_ACCEPTED`) | `APP6-B04` | `apps/api` quotation + order | 2 | CC-05 stale version and CC-06 expiry both fail in transaction; a duplicate accept replays the evidence |
+| 9 | `APP6-B06` — Digitizing transition | `TR-LC11-07` under `GRD-005`, added to the APP5-B05 application-layer target allow-list | `APP6-B05` | `apps/api` order | **0 new** | `GRD-005` rejects a request that is not `QUOTE_ACCEPTED`; the four `system` targets stay unreachable by command |
+| 10 | `APP6-B07` — Admin submitted-design read | Authorised, request-bound read of the submitted Design Session document as the digitizing source. **Closes `FU-APP5-B04-DESIGN-PREVIEW-01`** | `APP6-B06` | `apps/api` design | 1 | No session secret fabricated; `submitted_session_id` stays provenance, never authorization; absence renders as empty, never as an error |
+| 11 | `APP6-B08` — Design version authoring | `TR-LC08-01`: create a DRAFT version on the existing design case, catalog **or** COP branch; list the case's versions with review outcomes | `APP6-DB01`, `APP6-B07` | `apps/api` design | 2 | A COP version carries no catalog row; a catalog version fails loudly rather than substituting a missing variant |
+| 12 | `APP6-B09` — Send version for review | `TR-LC08-02` in one transaction: canonicalize and hash the document, GRD-004 via the partial unique index, supersede the prior version, project `TR-LC11-08` (`→ DESIGN_REVIEW`), emit `SE-004 design.review-ready` | `APP6-B08` | `apps/api` design + order | 1 | CC-03 concurrent send is arbitrated by the partial unique index and mapped to `REVIEW_ALREADY_ACTIVE` |
+| 13 | `APP6-B10` — Customer secure review read | Grant-scoped read of the exact version under review, with the effective agreement set the approval will bind | `APP6-B09` | `apps/api` design | 1 | Exact version only; private originals never exposed; no storage key leaks |
+| 14 | `APP6-B11` — Approval and revision request | `TR-LC08-04` / `TR-LC08-03` under GRD-002/003/007/008; the Approval Snapshot; `design.approve` idempotency; project `TR-LC11-09` (`→ APPROVED`); emit `SE-005 design.approved`. **Stops before APP7's order creation** | `APP6-B10` | `apps/api` design + order | 2 | CC-02 and CC-04 both fail in transaction; a duplicate approval replays the snapshot; a hash mismatch is refused |
+| 15 | `APP6-A01` — Admin quotation workbench | One screen: draft breakdown and adjustment authoring, totals, validity, version history, send | `APP6-D01`, `APP6-B03` | `apps/admin` | 0 | Approved registry rows cited; exact money never becomes a JS number |
+| 16 | `APP6-A02` — Admin design-case workbench | One screen: submitted-design evidence, version list, create version, send for review, review outcome history | `APP6-D01`, `APP6-B09` | `apps/admin` | 0 | Approved registry rows cited; a second concurrent send surfaces `REVIEW_ALREADY_ACTIVE` and forces a re-read |
+| 17 | `APP6-S01` — Customer secure quotation screen | One screen: breakdown, validity, accept, reject, stale, expired, revoked | `APP6-D01`, `APP6-B05` | `apps/storefront` | 0 | Fragment stripped before any request; a stale accept re-reads and requires a new decision |
+| 18 | `APP6-S02` — Customer secure design review screen | One screen: exact-version watermarked preview, effective agreement set, approve, request revision, stale, expired, revoked | `APP6-D01`, `APP6-B11` | `apps/storefront` | 0 | No export path; the terms shown are exactly the ones recorded |
+| 19 | `APP6-E01` — Cross-layer acceptance | One focused run: quote → accept → digitize → version → review → approve, on the catalog **and** COP branches, plus the immutability and stale-version negatives | all preceding | E2E | 0 | Approved design and accepted quotation both remain immutable under a later edit attempt |
+| 20 | `APP6-X01` — Phase closure | Freeze baselines, disposition follow-ups, close R3, hand the accepted quotation and approval snapshot to APP7 | `APP6-E01` | Docs | 0 | Zero blocking follow-ups, or each one owned |
+
+Predicted APP6 HTTP operations: **15 new** (`APP6-B06` adds none). Every backend
+slice is within the 1–3 normal band except `APP6-B01`, `APP6-B02`, `APP6-B05`,
+`APP6-B08` and `APP6-B11` at 2 — all under the hard maximum of five.
+
+### 7.1 Locked transition rule
+
+Of APP6's five LC-11 transitions, **four are `system`**. `QUOTED`,
+`QUOTE_ACCEPTED`, `DESIGN_REVIEW` and `APPROVED` may be reached **only** as a
+projection of the owning aggregate's committed event, inside that event's own
+transaction. No APP6 checkpoint may expose them as an admin-selectable target.
+`TR-LC11-07` (`→ DIGITIZING`) is the only directly commanded APP6 transition and
+is guarded by `GRD-005`.
+
+## 8. Critical end-to-end journey
+
+An eligible request receives a sent quotation, the customer accepts exactly that
+version through a secure grant, the admin digitizes and sends a versioned design,
+the customer approves exactly that version through the same grant with step-up
+re-verification, and both the accepted quotation and the approved design remain
+immutable.
+
+> The original phrasing of this section ran design-first. `ADR-DB3-001` locks
+> Option A — acceptance gates digitizing (`GRD-005`) — and `TR-LC08-01` allows a
+> design version only from `{DIGITIZING, DESIGN_REVIEW}`, so the quotation half
+> necessarily precedes the design half.
+
+## 9. Exit gate
 
 - Exact-version eligibility and snapshot immutability pass.
 - Money is exact and historical versions remain explainable.
 - Secure links reject wrong target/version/purpose.
+- A customer-owned-product request completes the same journey with no fabricated
+  catalog row.
 - E2E passes.
 
-## 9. Handoff
+## 10. Handoff
 
 APP7 creates deposit obligation/attempt and order conversion only from an eligible accepted quotation and approved design.
+
+## 11. Roadmap status
+
+### 11.1 Status table
+
+| Checkpoint | Status | Note |
+|---|---|---|
+| `APP6-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation. `APP6_SCHEMA_DISPOSITION = MIGRATION_REQUIRED`; design gate `DESIGN_REQUIRED_BEFORE_UI_ONLY`. See [`../audits/APP6_PHASE_ENTRY_AUDIT.md`](../audits/APP6_PHASE_ENTRY_AUDIT.md) and [`../reports/APP6-R00-COMPLETION-REPORT.md`](../reports/APP6-R00-COMPLETION-REPORT.md) |
+| `APP6-G01` | `INCOMPLETE` | **Next** — review, approval and quotation authority; the COP design-context ADR and the APP6 policy/agreement dataset |
+| `APP6-DB01` | `INCOMPLETE` | COP design context — forward migration on `design_versions` and `approval_snapshots` |
+| `APP6-D01` | `INCOMPLETE` | One APP6 Figma package; zero `APP_06` registry rows exist today |
+| `APP6-B01` | `INCOMPLETE` | Quotation drafting — 2 operations |
+| `APP6-B02` | `INCOMPLETE` | Quotation read — 2 operations |
+| `APP6-B03` | `INCOMPLETE` | Quotation send — 1 operation; projects `TR-LC11-05` |
+| `APP6-B04` | `INCOMPLETE` | Customer secure quotation read — 1 operation |
+| `APP6-B05` | `INCOMPLETE` | Quotation acceptance and rejection — 2 operations; projects `TR-LC11-06` |
+| `APP6-B06` | `INCOMPLETE` | Digitizing transition — `TR-LC11-07` under `GRD-005`; 0 new operations |
+| `APP6-B07` | `INCOMPLETE` | Admin submitted-design read — 1 operation; closes `FU-APP5-B04-DESIGN-PREVIEW-01` |
+| `APP6-B08` | `INCOMPLETE` | Design version authoring — 2 operations |
+| `APP6-B09` | `INCOMPLETE` | Send version for review — 1 operation; projects `TR-LC11-08` |
+| `APP6-B10` | `INCOMPLETE` | Customer secure review read — 1 operation |
+| `APP6-B11` | `INCOMPLETE` | Approval and revision request — 2 operations; projects `TR-LC11-09` |
+| `APP6-A01` | `INCOMPLETE` | Admin quotation workbench |
+| `APP6-A02` | `INCOMPLETE` | Admin design-case workbench |
+| `APP6-S01` | `INCOMPLETE` | Customer secure quotation screen |
+| `APP6-S02` | `INCOMPLETE` | Customer secure design review screen |
+| `APP6-E01` | `INCOMPLETE` | Focused cross-layer acceptance |
+| `APP6-X01` | `INCOMPLETE` | Phase closure |
+
+```text
+APP6 = AUDITED — NOT YET IMPLEMENTED
+APP6-R00 = COMPLETE
+NEXT CHECKPOINT = APP6-G01
+```
+
+### 11.2 Removed and superseded checkpoints
+
+| Original | Disposition | Where it went |
+|---|---|---|
+| `APP6-C01` | `REMOVE` | Absorbed into `APP6-B07` / `B08` / `B09` |
+| `APP6-C02` | `REMOVE` | Absorbed into `APP6-B10` / `B11` |
+| `APP6-C03` | `REMOVE` | Absorbed into `APP6-B01` / `B02` |
+| `APP6-C04` | `REMOVE` | Absorbed into `APP6-B03` / `B04` / `B05` |
+| `APP6-B01` (old, design review backend) | `SPLIT` + `REORDER` | `APP6-B07`, `APP6-B08`, `APP6-B09` |
+| `APP6-B02` (old, customer review backend) | `SPLIT` | `APP6-B10`, `APP6-B11` |
+| `APP6-B03` (old, quotation backend) | `SPLIT` + `REORDER` | `APP6-B01`, `APP6-B02`, `APP6-B03` |
+| `APP6-B04` (old, quotation send/response) | `SPLIT` (+ partial `DEFER`) | `APP6-B03`, `APP6-B04`, `APP6-B05`; the expiry sweep deferred |
+| `APP6-A01` (old, design workbench) | `KEEP` + `REORDER` | `APP6-A02` |
+| `APP6-A02` (old, quotation editor) | `KEEP` + `REORDER` | `APP6-A01` |
+| `APP6-S01` (old, secure review screen) | `KEEP` + `REORDER` | `APP6-S02` |
+| `APP6-S02` (old, secure quotation screen) | `KEEP` + `REORDER` | `APP6-S01` |
+| `APP6-E01` | `REDEFINE` | Journey reordered to the locked commercial sequence |
+| `APP6-X01` | `KEEP` | Unchanged |
