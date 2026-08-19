@@ -37,6 +37,17 @@ function rootWith(edits = {}) {
   cpSync(join(REPO_ROOT, 'packages/database/migrations'), join(dir, 'packages/database/migrations'), {
     recursive: true,
   });
+  // The `APP6-G01-C1` rules resolve each agreement's canonical source on disk, so
+  // the sources the authority package cites have to be here to be resolvable.
+  for (const relative of [
+    'docs/04-BUSINESS-RULES.md',
+    'docs/06-ORDER-AND-DESIGN-LIFECYCLE.md',
+    'docs/12-DECISION-LOG.md',
+    'docs/adr/database',
+  ]) {
+    mkdirSync(dirname(join(dir, relative)), { recursive: true });
+    cpSync(join(REPO_ROOT, relative), join(dir, relative), { recursive: true });
+  }
   for (const [key, mutate] of Object.entries(edits)) {
     const path = join(dir, CANONICAL_FILES[key]);
     writeFileSync(path, mutate(readFileSync(path, 'utf8')));
@@ -147,6 +158,47 @@ describe('check-app6-g01', () => {
         dataset: (text) => text.replace('"validityDays": 7', '"validityDays": 7,\n        "signingSecret": "x"'),
       },
       'secret-bearing',
+    );
+  });
+
+  it('catches the workflow consent reinstated as a required agreement type', () => {
+    refuses(
+      {
+        dataset: (text) =>
+          text.replace('["PAYMENT_POLICY", "RETURN_POLICY"]', '["PAYMENT_POLICY", "RETURN_POLICY", "DESIGN_APPROVAL_TERMS"]'),
+      },
+      'DESIGN_APPROVAL_TERMS',
+    );
+  });
+
+  it('catches the exact-design separation being deleted', () => {
+    refuses(
+      { authority: (text) => text.replace('exact design approval confirmation  !=  RETURN_POLICY', '') },
+      'RETURN_POLICY',
+    );
+  });
+
+  it('catches agreement content deferred to the Product Owner', () => {
+    refuses(
+      {
+        authority: (text) =>
+          text.replace('| **NORMALIZED** from structured rules — no approved prose exists |', '| Product-Owner-supplied later |'),
+      },
+      'defers agreement content',
+    );
+  });
+
+  it('catches a canonical source that does not exist on disk', () => {
+    refuses(
+      { authority: (text) => text.replace('`docs/04-BUSINESS-RULES.md` BR-004', '`docs/99-NOT-A-FILE.md` BR-004') },
+      'does not exist',
+    );
+  });
+
+  it('catches a required type with no published content block', () => {
+    refuses(
+      { authority: (text) => text.replace('#### 5.6.2 `RETURN_POLICY`', '#### 5.6.2 Return terms') },
+      'no §5.6 content block for RETURN_POLICY',
     );
   });
 

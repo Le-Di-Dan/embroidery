@@ -16,7 +16,8 @@ document **cites** it rather than restating it as a new decision.
 Locked here: COP design-context semantics (ADR-APP6-001); Catalog-versus-COP
 geometry; Approval Snapshot evidence; the five APP6 LC-11 transitions; design
 review rendering; secure-grant reuse; quotation validity and effective expiry;
-the deposit policy handoff; the approval agreement type set and content floor;
+the deposit policy handoff; the approval agreement type set and its canonical
+content;
 idempotency bindings; concurrency and error mappings; event and side-effect
 ownership; and the exact `APP6-DB01` schema handoff.
 
@@ -56,7 +57,7 @@ and specification; APP7 order and payment behaviour.
 | **PO-G01-02** COP geometry is the frozen formal-version envelope | `APPLIED` | ADR-APP6-001 §3.3; `customer_owned_products.physical_*_mm` are nullable and describe the item |
 | **PO-G01-03** COP snapshot uses truthful human evidence | `APPLIED`, with one narrow persisted field pair | ADR-APP6-001 §3.6–§3.7; `approval_snapshots.product_name`/`side_name`/`area_name` are already frozen text, not FKs |
 | **PO-G01-04** Effective quote expiry is independent of the sweep | `APPLIED`; the equality convention is **confirmed against delivered code**, not assumed | §6.3. `now >= expiresAt` is the delivered convention in `submit-verification-attempt.use-case.ts`, `read-verification-challenge-status.query.ts` and `challenge-intake.authorizer.ts` |
-| **PO-G01-05** Minimal approval agreement set | `SUPERSEDED_BY_STRONGER_EXISTING_AUTHORITY` **for the type set**; `APPLIED` **as the content floor** | `DB3_AGREEMENT_ACCEPTANCE_SPEC.md` §2.1 already locks the required set as policy config with a payment + return baseline. §5 |
+| **PO-G01-05** Minimal approval agreement set | **`SUPERSEDED_BY_STRONGER_EXISTING_AUTHORITY`** — for the type set *and* for the content. Corrected by `APP6-G01-C1` | `DB3_AGREEMENT_ACCEPTANCE_SPEC.md` §2.1 already locks the required set as policy config with a payment + return baseline. The workflow consent is **not** a payment or return policy and cannot be published under either type (§5.2); the content comes from accepted policy authority instead (§5.5, §5.6) |
 | **PO-G01-06** Quotation validity | `APPLIED` — no accepted concrete duration exists (`DB4_MONEY_QUANTITY_MEASUREMENT_MODEL.md` records the window as `[cfg]`), so the 7-calendar-day fallback is used | §6.1 |
 | **PO-G01-07** Deposit 40 % is policy handoff only | `APPLIED`, with one clarification: `quotation_versions.deposit_percent`/`deposit_amount`/`remaining_amount` are `NOT NULL` **pricing** columns under CST-064, so APP6 writes the split. It creates no Order, obligation, attempt or collection | §6.4 |
 | **PO-G01-08** Review rendering is client-side | `APPLIED` | §8 |
@@ -117,24 +118,38 @@ design_approval.agreements.requiredAgreementTypes = [PAYMENT_POLICY, RETURN_POLI
 `agreements.agreement_type` carries no `CHECK` (COL-TBL068-01, deliberately
 config-extensible), so this is data, not schema.
 
-### 5.2 What PO-G01-05 still governs — the content floor
+### 5.2 Exact-design confirmation is **not** one of the agreements
 
-PO-G01-05's five semantic points are preserved as the **minimum** each required
-agreement's content must support, and four of them are already enforced
-elsewhere rather than by prose:
+`APP6-G01-C1` corrects an inconsistency in the first attempt, which kept
+PO-G01-05's workflow consent as a "content floor" for the two required
+agreements. That is semantically invalid: the workflow consent is about the
+exact design version, later production reliance, re-approval after a change and
+the absence of payment at approval. **None of that is a payment policy and
+none of it is a return policy**, so it can never be published under
+`PAYMENT_POLICY` or `RETURN_POLICY`, and it cannot satisfy the stronger
+required set.
 
-| PO-G01-05 point | Where it lives |
+```text
+exact design approval confirmation  !=  PAYMENT_POLICY
+exact design approval confirmation  !=  RETURN_POLICY
+```
+
+The confirmation is **approval action semantics**, already enforced by
+mechanism rather than by prose, and no third agreement type is invented to
+store it:
+
+| PO-G01-05 point | Where it is actually enforced |
 |---|---|
-| 1 — consent is to the exact design version shown | **GRD-007**: version id + document hash must match in transaction |
-| 2 — later production may rely on the approved design after APP7 gates | Payment-policy content (`PAYMENT_POLICY`) |
-| 3 — a later design change requires a new version and new approval | **ADR-APP6-001 §3.5** + ADR-DB3-003; `uq_approval_snapshots__version` |
-| 4 — approval collects no payment and creates no order | **ADR-DB3-001 r2/r7**: the order and both obligations are APP7's, guarded by GRD-009 |
+| 1 — consent is to the exact design version shown | **GRD-007**: submitted version id + document hash must match the stored pair, in transaction |
+| 2 — later production may rely on the approved design after APP7 gates | **BR-010** production integrity + **GRD-009** order-creation guard; also stated in `PAYMENT_POLICY` §5.6.1 |
+| 3 — a later design change requires a new version and new approval | **BR-009**, **ADR-DB3-003**, **ADR-APP6-001 §3.5**; `uq_approval_snapshots__version` |
+| 4 — approval collects no payment and creates no order | **ADR-DB3-001 r2/r7**: the Order and both obligations are APP7's, behind GRD-009 |
 | 5 — the exact agreement version is stored in immutable approval evidence | **`approval_snapshot_agreement_acceptances`** + CST-091 |
 
-**No APP6 checkpoint invents legal text.** Agreement content is
-Product-Owner-supplied. If no PO content exists when `APP6-B10` needs an
-effective version, it publishes content limited to the workflow consent above
-and nothing else — no warranty, liability, privacy or unrelated legal term.
+`APP6-S02` may show the confirmation as approval-screen copy — *"you are
+approving this exact design version"* — bound to the version and hash it
+displays. It is never a versioned agreement, is never hashed into the required
+set, and `DESIGN_APPROVAL_TERMS` is **not** reintroduced as a required type.
 
 ### 5.3 Binding rules
 
@@ -153,11 +168,172 @@ and nothing else — no warranty, liability, privacy or unrelated legal term.
 No agreement publication path is delivered. Following the APP4 precedent
 exactly — `APP4-G01` shipped the dataset, `APP4-B01-C1` shipped the reader and
 the publishing use case attached to the one Admin-bearing path — agreement
-content authoring and publication is owned by **`APP6-B10`**, the first
-checkpoint that needs an effective version to return. It adds no HTTP
-operation.
+publication is owned by **`APP6-B10`**, the first checkpoint that needs an
+effective version to return. It adds no HTTP operation.
+
+**Authoring is not deferred with it.** `APP6-G01-C1` locks the canonical
+source and the exact content per type in §5.5 and §5.6, so `APP6-B10` publishes
+what is written there and writes no policy of its own. If accepted policy
+authority changes before B10 runs, B10 republishes from the changed source and
+says so; it never drafts.
 
 ---
+
+### 5.5 Canonical content source per required type
+
+The repository contains **no approved customer-facing policy prose**. The four
+policy pages of `01 §2.1` are a Content-module requirement with no delivered
+content, and `ADR-DB3-002` stage S9 explicitly defers post-delivery returns to
+*"the published return-policy content page"* that does not exist yet.
+
+What the repository does contain is the locked **structured rules**. Under
+PO-G01-C1-05 this checkpoint therefore publishes one minimal, fully
+source-traceable rendering per type, in §5.6. It is deterministic authority
+normalization, not drafting: every normative sentence maps to a named accepted
+rule, and no right, obligation, fee, refund guarantee, warranty, liability
+clause, waiver, cancellation right, payment timing or exception is introduced
+that is not already accepted.
+
+| Agreement type | Canonical source | Disposition |
+|---|---|---|
+| `PAYMENT_POLICY` | `docs/04-BUSINESS-RULES.md` BR-004, BR-005, BR-006, BR-008, BR-010 · `docs/12-DECISION-LOG.md` D-012, D-013, D-014 · `docs/adr/database/ADR-DB3-001-APPROVAL-QUOTATION-ORDERING.md` rules 2, 3, 4, 7, 8 · `docs/06-ORDER-AND-DESIGN-LIFECYCLE.md` §6 · `IMP-D051` PO-03 (validity) · `ck_quotation_versions__currency_vnd` | **NORMALIZED** from structured rules — no approved prose exists |
+| `RETURN_POLICY` | `docs/adr/database/ADR-DB3-002-CANCELLATION-REFUND-POLICY.md` stage matrix S1–S9 and locked mechanics 1–6 · `docs/04-BUSINESS-RULES.md` BR-009 · `docs/06-ORDER-AND-DESIGN-LIFECYCLE.md` §10, §11 · `docs/adr/database/ADR-DB3-004-SECURE-GRANT-AND-REVERIFICATION.md` r4 | **NORMALIZED** from structured rules — no approved prose exists |
+
+Neither source is `TBD`, and neither depends on future unspecified Product
+Owner content.
+
+**One bounded limitation, stated rather than hidden.** `ADR-DB3-002` is
+*"Accepted with Deferred Parameters"*: the default refund **amount** rules per
+stage are `CON-144` policy configuration the business has not signed off
+(`IMP-O008`, owner APP9). §5.6.2 therefore publishes the locked
+**dispositions** — refundable, refundable minus the digitizing-fee line,
+non-refundable — and never a number the repository has not locked, and it
+states that the final amount is the shop's reasoned, recorded decision, which
+is locked mechanic 4. When those values are signed off, a **new** agreement
+version is published; historical approval evidence is untouched (§5.3), and
+future approvals bind the new version.
+
+**Language.** `DB3_AGREEMENT_ACCEPTANCE_SPEC` §2.3 locks MVP single-language
+Vietnamese, so the customer-facing content below is Vietnamese. The trace
+tables are the reviewable mapping.
+
+### 5.6 Canonical content
+
+Each block is the exact content `APP6-B10` publishes as version 1 of its type.
+Publication computes the content hash; the hash is not fixed here, because
+canonicalisation belongs to the publisher (ADR-DB1-012 direction,
+`DB3_AGREEMENT_ACCEPTANCE_SPEC` §1).
+
+#### 5.6.1 `PAYMENT_POLICY` — Chính sách thanh toán
+
+> **P1.** Báo giá do cửa hàng lập thủ công. Các yếu tố tính giá có thể gồm kích
+> thước thực tế, số lượng màu, số mũi ước tính, số lượng sản phẩm, giá sản phẩm
+> nền, phí digitizing, phí vận chuyển và điều chỉnh thủ công.
+>
+> **P2.** Mọi số tiền được tính bằng VND.
+>
+> **P3.** Một báo giá đã gửi có hiệu lực để chấp nhận trong 7 ngày theo lịch kể
+> từ thời điểm cửa hàng gửi. Quá thời hạn này, báo giá không còn chấp nhận được
+> và cần một báo giá mới.
+>
+> **P4.** Việc duyệt mẫu thiết kế **không** thu bất kỳ khoản tiền nào và
+> **không** tự tạo đơn hàng.
+>
+> **P5.** Đơn hàng được tạo sau khi quý khách duyệt đúng phiên bản thiết kế và
+> báo giá đang có hiệu lực đã được chấp nhận. Khi đó phát sinh hai nghĩa vụ
+> thanh toán độc lập: tiền cọc và phần còn lại.
+>
+> **P6.** Tiền cọc bằng **40%** tổng giá trị của báo giá đã được chấp nhận, và
+> chỉ phát sinh sau khi thiết kế được duyệt.
+>
+> **P7.** Phần còn lại bằng **60%** và phải được thanh toán trước khi giao hàng.
+>
+> **P8.** Sản xuất chỉ thực hiện theo đúng phiên bản thiết kế đã được duyệt.
+>
+> **P9.** Nếu sau khi chấp nhận báo giá có thay đổi làm phát sinh báo giá mới,
+> quý khách cần chấp nhận lại báo giá mới. Báo giá đã chấp nhận trước đó được
+> giữ nguyên làm lịch sử.
+>
+> **P10.** Chỉ thao tác duyệt qua liên kết an toàn của cửa hàng mới có giá trị.
+> Tin nhắn Zalo hoặc Messenger không phải là căn cứ xác nhận.
+>
+> **P11.** Chính sách này không quy định phương thức thanh toán cụ thể; cửa
+> hàng thông báo phương thức khi nghĩa vụ thanh toán phát sinh.
+
+| Sentence | Accepted source |
+|---|---|
+| P1 | BR-004 pricing inputs, the accepted list |
+| P2 | `ck_quotation_versions__currency_vnd` (`currency_code = 'VND'`) |
+| P3 | `IMP-D051` PO-03 / `quotation.validity.validityDays = 7`; §6.1, §6.3 |
+| P4 | ADR-DB3-001 r2 and r7 — the Order and both obligations are created at APP7, behind GRD-009 |
+| P5 | ADR-DB3-001 r7, r8; INV-04 two independent obligations; `06 §6` |
+| P6 | BR-005; D-013; ADR-DB3-001 r3, the percentage coming from policy configuration |
+| P7 | BR-006; D-014 |
+| P8 | BR-010 production version integrity |
+| P9 | ADR-DB3-001 r4; INV-02 sent-version immutability |
+| P10 | BR-008; D-012 |
+| P11 | `IMP-O007` — the payment provider is an open decision owned by APP7. The sentence adds no obligation and states only that the method is communicated later |
+
+#### 5.6.2 `RETURN_POLICY` — Chính sách đổi trả và huỷ đơn
+
+> **R1.** Thiết kế đã được duyệt không được chỉnh sửa. Mọi thay đổi sau khi
+> duyệt tạo ra một phiên bản mới và cần được duyệt lại.
+>
+> **R2.** Trước khi cửa hàng gửi báo giá, hoặc sau khi đã gửi nhưng quý khách
+> chưa chấp nhận: có thể huỷ, không phát sinh khoản tiền nào.
+>
+> **R3.** Sau khi chấp nhận báo giá và trước khi duyệt thiết kế: có thể huỷ.
+> Chưa có tiền cọc nên không phát sinh hoàn tiền.
+>
+> **R4.** Sau khi duyệt thiết kế nhưng chưa thanh toán tiền cọc: có thể huỷ.
+> Hai nghĩa vụ thanh toán được huỷ và không phát sinh khoản tiền nào.
+>
+> **R5.** Sau khi tiền cọc đã được xác nhận và trước khi bắt đầu sản xuất: yêu
+> cầu huỷ được cửa hàng xét duyệt thủ công. Mặc định, tiền cọc được hoàn lại
+> sau khi trừ khoản phí digitizing ghi trong báo giá đã chấp nhận.
+>
+> **R6.** Trong khi đang sản xuất: yêu cầu huỷ được xét duyệt thủ công. Mặc
+> định tiền cọc không được hoàn, vì vật tư và công đã được sử dụng.
+>
+> **R7.** Sau khi sản xuất hoàn tất và trước khi thanh toán phần còn lại: mặc
+> định tiền cọc không được hoàn.
+>
+> **R8.** Sau khi đã thanh toán phần còn lại nhưng chưa gửi hàng, việc huỷ chỉ
+> được cửa hàng thực hiện trong trường hợp ngoại lệ.
+>
+> **R9.** Sau khi hàng đã được gửi hoặc đã giao, đơn hàng không thể huỷ. Khiếu
+> nại và đổi trả được cửa hàng xử lý thủ công.
+>
+> **R10.** Mọi lần huỷ đều phải có lý do và được cửa hàng ghi nhận.
+>
+> **R11.** Số tiền hoàn lại cuối cùng là quyết định có ghi rõ lý do của cửa
+> hàng trong khuôn khổ chính sách này. Mọi khoản hoàn tiền đều được lập thành
+> bản ghi hoàn tiền.
+>
+> **R12.** Yêu cầu huỷ của quý khách được gửi qua liên kết an toàn của cửa
+> hàng. Từ giai đoạn sau khi tiền cọc đã được xác nhận trở đi, quý khách cần
+> xác thực lại trước khi gửi yêu cầu.
+
+| Sentence | Accepted source |
+|---|---|
+| R1 | BR-009; ADR-DB3-003; `06 §10` |
+| R2 | ADR-DB3-002 stages **S1**, **S2** |
+| R3 | ADR-DB3-002 stage **S3** |
+| R4 | ADR-DB3-002 stage **S4** |
+| R5 | ADR-DB3-002 stage **S5** + mechanic 2 manual review. Disposition only; the amount rule stays `CON-144` configuration (§5.5) |
+| R6 | ADR-DB3-002 stage **S6** + mechanic 2 |
+| R7 | ADR-DB3-002 stage **S7** |
+| R8 | ADR-DB3-002 stage **S8** — admin-only exceptional |
+| R9 | ADR-DB3-002 stage **S9**; `06 §11` |
+| R10 | ADR-DB3-002 mechanic 1 — a reason is mandatory for every cancellation |
+| R11 | ADR-DB3-002 mechanics 3 and 4 — a Refund Record carries amount, reason and approver; refunds are records, not provider automation |
+| R12 | ADR-DB3-002 mechanic 1; ADR-DB3-004 r4, whose locked sensitive set includes customer-initiated cancellation from S5 onward |
+
+**APP6 builds none of this.** Publishing the return policy is not building
+cancellation: customer-initiated cancellation and the LC-21 compensation saga
+stay routed to APP9 (`APP6-R00` §7), and **no APP6 screen offers a cancellation
+control**. The content states the accepted rules the customer consents to at
+approval; the machinery that executes them belongs to another phase.
 
 ## 6. Quotation policy authority
 

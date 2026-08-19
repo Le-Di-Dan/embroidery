@@ -4,6 +4,8 @@
 
 ```text
 APP6-G01 = COMPLETE
+APP6-G01-C1 = COMPLETE
+CORRECTION = AGREEMENT_AUTHORITY_SEMANTIC_ALIGNMENT
 APP6 AUTHORITY = LOCKED
 NEXT CHECKPOINT = APP6-DB01
 
@@ -73,7 +75,7 @@ accepted source is superseded by this checkpoint.
 | PO-G01-02 COP geometry is the frozen formal-version envelope | `APPLIED` | ADR §3.3; `customer_owned_products.physical_*_mm` are nullable and describe the item |
 | PO-G01-03 truthful COP snapshot evidence | `APPLIED`, with one narrow persisted field pair | ADR §3.6–§3.7; `product_name`/`side_name`/`area_name` are already frozen text (COL-TBL031-06), never FKs |
 | PO-G01-04 effective expiry independent of the sweep | `APPLIED`; the equality convention **confirmed**, not assumed | `now >= expiresAt` is the delivered convention in `submit-verification-attempt.use-case.ts:148`, `read-verification-challenge-status.query.ts:57`, `challenge-intake.authorizer.ts:128` |
-| PO-G01-05 minimal approval agreement set | **`SUPERSEDED_BY_STRONGER_EXISTING_AUTHORITY`** for the type set; `APPLIED` as the content floor | `DB3_AGREEMENT_ACCEPTANCE_SPEC.md` §2.1 already locks the required set as policy config with a payment + return baseline. The prompt itself directs preserving an accepted set |
+| PO-G01-05 minimal approval agreement set | **`SUPERSEDED_BY_STRONGER_EXISTING_AUTHORITY`** — type set **and** content. Corrected by **`APP6-G01-C1`** (§21) | `DB3_AGREEMENT_ACCEPTANCE_SPEC.md` §2.1 already locks the required set as policy config with a payment + return baseline. The workflow consent is neither a payment nor a return policy, so it cannot serve as their content either |
 | PO-G01-06 quotation validity | `APPLIED` — the fallback, because no accepted duration exists (`DB4_MONEY_QUANTITY_MEASUREMENT_MODEL.md` and `DB5_ARCHIVE_RETENTION_INDEXING.md` both record the window as `[cfg]`) | authority §6.1 |
 | PO-G01-07 deposit 40 % is policy handoff only | `APPLIED`, with one clarification | `quotation_versions.deposit_percent`/`deposit_amount`/`remaining_amount` are `NOT NULL` pricing columns under CST-064, so APP6 writes the **split**; it creates no Order, obligation, attempt or collection |
 | PO-G01-08 client-side review rendering | `APPLIED` | authority §8 |
@@ -189,7 +191,8 @@ reversibility limit.
 | Snapshot | `approval_snapshot_agreement_acceptances`: version id + frozen type + content hash + timestamp per type; CST-091 makes it immutable |
 | Later publication | Never mutates historical evidence; withdrawn versions are retained while referenced (ADR-DB1-011); re-consent only through a new approval event (ADR-DB3-003) |
 | Quotation acceptance | Requires no separate terms acceptance — one ceremony at approval |
-| Content | Product-Owner-supplied. **No APP6 checkpoint invents legal text.** If no PO content exists when it is needed, `APP6-B10` publishes only the PO-G01-05 workflow consent and nothing else |
+| Content | **Locked here, not deferred** (§21). No approved customer-facing prose exists in the repository, so each type carries one minimal, sentence-by-sentence source-traceable normalization of accepted authority, published verbatim in the authority package §5.6. No `TBD`, and no dependence on future Product Owner content |
+| Exact-design confirmation | **Not an agreement.** `exact design approval confirmation != PAYMENT_POLICY != RETURN_POLICY`. It is approval-action semantics enforced by GRD-007 and the Approval Snapshot; `DESIGN_APPROVAL_TERMS` is not reintroduced, and no third type is invented to store it |
 | Publication owner | **`APP6-B10`** — no publication path is delivered today; this follows the APP4 precedent exactly (`APP4-G01` shipped the dataset, `APP4-B01-C1` the reader and publisher). It adds no HTTP operation |
 
 ---
@@ -422,6 +425,8 @@ recording rather than quietly patching.
 | `tools/check-app6-g01-authority.mjs` | **A** — gate constants and readers |
 | `tools/check-app6-g01.test.mjs` | **A** — gate mutation tests |
 
+**Changed by `APP6-G01-C1`** (§21): the authority package (§1, §3, §5.2, §5.4, new §5.5–§5.6), `IMP-D051` PO-04, the phase locked-authority summary and status note, `tools/check-app6-g01.mjs` (rule 9), `tools/check-app6-g01.test.mjs` (+5 cases) and this report. **The policy dataset and the ADR were not changed** — the dataset already carried the correct type set, and the ADR never contained the defect.
+
 No runtime application source, no schema file, no migration, no generated
 artifact, no Figma node, no registry row, no root `package.json` script.
 
@@ -468,13 +473,155 @@ ownership note and nothing was removed or reordered.
 |---|---|---|
 | `packages/design-document` COP placement widening (ADR §3.4) | `APP6-B08` | Runtime package change; forbidden at an authority checkpoint |
 | APP6 policy dataset reader + publisher | `APP6-B01` | Runtime code; the `APP4-B01-C1` precedent |
-| Agreement content authoring + publication | `APP6-B10` | Needs an Admin-bearing path; content is Product-Owner-supplied |
+| Agreement **publication** (authoring is done — §21) | `APP6-B10` | Runtime publication needs an Admin-bearing path. `APP6-B10` publishes the authority package §5.6 content verbatim and drafts nothing |
 | The eight schema operations | `APP6-DB01` | Dedicated database-change checkpoint (`08-DATABASE-CHANGE-CONTROL`) |
 | `TR-LC12-05` / `SE-015` expiry sweep | later phase | Deferred at R00; correctness never depends on it |
 
 ---
 
-## 21. Commits
+## 21. APP6-G01-C1 — agreement authority semantic alignment
+
+```text
+APP6-G01-C1 = COMPLETE
+CORRECTION  = AGREEMENT_AUTHORITY_SEMANTIC_ALIGNMENT
+```
+
+### 21.1 The defect
+
+The first attempt was right that `DB3_AGREEMENT_ACCEPTANCE_SPEC` §2.1 is
+stronger authority than the `DESIGN_APPROVAL_TERMS` fallback, and preserved
+`[PAYMENT_POLICY, RETURN_POLICY]`. It was then wrong about the content: it kept
+PO-G01-05's workflow consent as a "content floor" and said `APP6-B10` would
+publish that consent if no Product Owner content existed.
+
+That cannot work. The workflow consent is about the exact design version, later
+production reliance, re-approval after a change, and the absence of payment at
+approval. **None of it is a payment policy and none of it is a return policy**,
+so publishing it under either type would have recorded a customer's consent to
+two agreements whose content was about something else entirely — and GRD-008
+would have verified the hash of it happily.
+
+### 21.2 Required set — unchanged
+
+```text
+required agreement types = [PAYMENT_POLICY, RETURN_POLICY]
+```
+
+Preserved from `DB3_AGREEMENT_ACCEPTANCE_SPEC` §2.1. `DESIGN_APPROVAL_TERMS` is
+**not** reintroduced, and no third type is invented. The policy dataset already
+carried exactly this set and was not changed.
+
+### 21.3 Exact-design confirmation — separated
+
+```text
+exact design approval confirmation  !=  PAYMENT_POLICY
+exact design approval confirmation  !=  RETURN_POLICY
+```
+
+It is approval-action semantics, enforced by **GRD-007** (submitted version id
+and document hash must match the stored pair, in transaction), **BR-009** /
+ADR-DB3-003 for re-approval after a change, **ADR-DB3-001 r2/r7** for the
+absence of payment, and `approval_snapshot_agreement_acceptances` + CST-091 for
+the evidence. `APP6-S02` may show it as approval-screen copy bound to the
+version and hash on screen; it is never a versioned agreement and is never
+hashed into the required set. Authority package §5.2.
+
+### 21.4 Canonical source per type
+
+The repository holds **no approved customer-facing policy prose** — the four
+policy pages of `01 §2.1` are an undelivered Content-module requirement, and
+`ADR-DB3-002` stage S9 itself defers post-delivery returns to a return-policy
+page that does not exist. What it holds is the locked structured rules, so
+PO-G01-C1-05 applies.
+
+| Agreement type | Canonical source | Content disposition |
+|---|---|---|
+| `PAYMENT_POLICY` | `docs/04-BUSINESS-RULES.md` BR-004/005/006/008/010 · `docs/12-DECISION-LOG.md` D-012/013/014 · `ADR-DB3-001` r2/r3/r4/r7/r8 · `docs/06-ORDER-AND-DESIGN-LIFECYCLE.md` §6 · `IMP-D051` PO-03 validity · `ck_quotation_versions__currency_vnd` | **NORMALIZED** — 11 sentences, each mapped to a named rule |
+| `RETURN_POLICY` | `ADR-DB3-002` stage matrix S1–S9 + locked mechanics 1–6 · `docs/04-BUSINESS-RULES.md` BR-009 · `docs/06-ORDER-AND-DESIGN-LIFECYCLE.md` §10, §11 · `ADR-DB3-004` r4 | **NORMALIZED** — 12 sentences, each mapped to a named rule |
+
+Neither is `TBD`. Neither depends on future Product Owner content. Existing
+prose was reused where it existed — it did not — and nothing was rewritten for
+style. The full content and both sentence-by-sentence trace tables are in the
+authority package **§5.5–§5.6**; the customer-facing text is Vietnamese because
+`DB3_AGREEMENT_ACCEPTANCE_SPEC` §2.3 locks MVP single-language `vi`.
+
+**No new semantics were introduced** — no right, obligation, fee, refund
+guarantee, warranty, liability clause, waiver, cancellation right, payment
+timing or exception that accepted authority does not already carry.
+
+### 21.5 One limitation, stated rather than hidden
+
+`ADR-DB3-002` is *"Accepted with Deferred Parameters"*: the default refund
+**amount** rules per stage are `CON-144` configuration the business has not
+signed off (`IMP-O008`, owner APP9). `RETURN_POLICY` therefore publishes the
+locked **dispositions** — refundable, refundable minus the digitizing-fee line,
+non-refundable — plus locked mechanic 4, that the final amount is the shop's
+reasoned and recorded decision. It publishes no number the repository has not
+locked. When the values are signed off, a **new** agreement version is
+published; historical approval evidence is untouched and future approvals bind
+the new version.
+
+Publishing the return policy is **not** building cancellation: customer-
+initiated cancellation and the LC-21 compensation saga stay routed to APP9, and
+no APP6 screen gains a cancellation control.
+
+### 21.6 Unchanged by this correction
+
+Binding rules (§7) are untouched: `APP6-B10` returns the exact effective
+versions with the exact design version; `APP6-B11` submits exact version ids
+and hashes; GRD-008 verifies set and effectiveness in transaction;
+`approval_snapshot_agreement_acceptances` freezes them; later publication never
+mutates historical evidence. `APP6-B10` remains the runtime publication owner —
+it now publishes §5.6 verbatim and drafts nothing. Roadmap ordering is
+unchanged. Nothing outside the agreement-content issue was reopened: the COP
+branch, the placement envelope, `DB01_SCHEMA_CONTRACT`, effective expiry, the
+7-day validity, the 40 % deposit, exact money, the five LC-11 transitions, the
+projection rule, `REQUEST_ACCESS` reuse, the idempotency bindings, the
+concurrency mappings, the render ruling, the APP7 boundary and event ownership
+all stand as accepted.
+
+### 21.7 Focused validation
+
+| Command / check | Changed input / question | Result | Reruns | Why sufficient |
+|---|---|---|---:|---|
+| Targeted read: `docs/04-BUSINESS-RULES.md` BR-004…BR-012, `docs/12-DECISION-LOG.md` D-012/013/014, `docs/06-ORDER-AND-DESIGN-LIFECYCLE.md` §5/§6/§9/§10/§11, `ADR-DB3-002` in full | Does approved customer-facing policy prose exist, and if not what structured rules own the semantics? | No prose; the rules in §21.4 own them | 0 | These are the accepted sources; reading them is the whole question |
+| `grep -ril "chính sách\|return policy\|refund"` over `docs/*.md` and `apps/storefront/src` | Is there publishable prose anywhere to reuse? | Only requirement lists and rules — no page content | 0 | Settles reuse-versus-normalize |
+| `grep` for the conflicting statement across all seven G01 artifacts | Where does the defect actually live? | Authority package and report only. The ADR and the dataset were clean | 0 | Bounded the correction to the minimum |
+| **`node tools/check-app6-g01.mjs`** | Do the corrected artifacts agree, and does every cited canonical source resolve on disk? | **OK** | 0 | Rule 9 was added by this correction and passed first run |
+| **`node --test tools/check-app6-g01.test.mjs`** | Does rule 9 actually reject? | **21/21 pass** — 20 mutations refused, HEAD accepted; 5 cases are new | 1 | The first run failed on the throwaway root lacking the cited sources — a genuine gap in the harness, fixed by copying them, not by weakening the rule |
+| `git diff --check` | Whitespace damage | clean | 0 | Direct |
+
+The five new mutation cases: the workflow consent reinstated as a required
+type; the exact-design separation deleted; content deferred to the Product
+Owner; a canonical source that does not exist on disk; and a required type with
+no published content block.
+
+Nothing else was run. No broad regression, no runtime suite, no OpenAPI or
+client generation, no schema, no migration, no Figma.
+
+### 21.8 Files changed by C1
+
+```text
+M  docs/implementation/audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md
+M  docs/implementation/14-IMPLEMENTATION-DECISION-REGISTER.md   (IMP-D051, PO-04 clause)
+M  docs/implementation/phases/APP6-DESIGN-REVIEW-AND-QUOTATION.md
+M  docs/implementation/reports/APP6-G01-COMPLETION-REPORT.md
+M  tools/check-app6-g01.mjs        (rule 9)
+M  tools/check-app6-g01.test.mjs   (+5 cases, harness sources)
+```
+
+One thing to flag rather than fix here: `tools/check-app6-g01.mjs` is now
+**391 lines** — inside the 400-line hard maximum, past the 300-line review
+threshold. Splitting it is outside this correction’s scope, so the next
+checkpoint that adds a rule to it should split by responsibility first.
+
+Unchanged, because neither carried the defect:
+`docs/adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md` and
+`packages/database/seed/app6-policy-configuration.seed.json`.
+
+---
+
+## 22. Commits
 
 ```text
 docs(app6): lock the APP6 design review, approval and quotation authority
@@ -490,7 +637,7 @@ fc1a346  docs(app6): lock the APP6 design review, approval and quotation authori
 
 ---
 
-## 22. Next checkpoint
+## 23. Next checkpoint
 
 ```text
 NEXT CHECKPOINT: APP6-DB01 — COP design context

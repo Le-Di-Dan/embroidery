@@ -148,7 +148,7 @@ APP7 creates deposit obligation/attempt and order conversion only from an eligib
 | Checkpoint | Status | Note |
 |---|---|---|
 | `APP6-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation. `APP6_SCHEMA_DISPOSITION = MIGRATION_REQUIRED`; design gate `DESIGN_REQUIRED_BEFORE_UI_ONLY`. See [`../audits/APP6_PHASE_ENTRY_AUDIT.md`](../audits/APP6_PHASE_ENTRY_AUDIT.md) and [`../reports/APP6-R00-COMPLETION-REPORT.md`](../reports/APP6-R00-COMPLETION-REPORT.md) |
-| `APP6-G01` | `COMPLETE` | APP6 authority locked (`IMP-D051`). ADR [`../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md`](../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md), authority package [`../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md`](../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md), report [`../reports/APP6-G01-COMPLETION-REPORT.md`](../reports/APP6-G01-COMPLETION-REPORT.md). `DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS` |
+| `APP6-G01` | `COMPLETE` | APP6 authority locked (`IMP-D051`); `APP6-G01-C1` agreement-authority semantic alignment incorporated. ADR [`../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md`](../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md), authority package [`../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md`](../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md), report [`../reports/APP6-G01-COMPLETION-REPORT.md`](../reports/APP6-G01-COMPLETION-REPORT.md). `DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS` |
 | `APP6-DB01` | `INCOMPLETE` | **Next** — COP design-context forward migration on `design_versions` and `approval_snapshots`; exactly the eight operations in ADR-APP6-001 §4 |
 | `APP6-D01` | `INCOMPLETE` | One APP6 Figma package; zero `APP_06` registry rows exist today |
 | `APP6-B01` | `INCOMPLETE` | Quotation drafting — 2 operations; also ships the `app6-policy-configuration` dataset reader and publisher (APP4-B01-C1 precedent) |
@@ -194,7 +194,8 @@ Every later APP6 checkpoint reads them instead of re-deciding. In short:
 | Quotation validity | 7 calendar days from the committed send instant |
 | Effective expiry | `now >= valid_until`, in transaction; the `TR-LC12-05` sweep is never the arbiter |
 | Deposit | 40 % / 60 % as policy authority; APP6 creates no Order, obligation, attempt or collection |
-| Required agreement types | `[PAYMENT_POLICY, RETURN_POLICY]`, as policy configuration |
+| Required agreement types | `[PAYMENT_POLICY, RETURN_POLICY]`, as policy configuration. `DESIGN_APPROVAL_TERMS` is **not** a required type; the exact-design confirmation is GRD-007 approval semantics, not an agreement |
+| Agreement content | Locked, source-traceable, in the authority package §5.5–§5.6: `PAYMENT_POLICY` from BR-004/005/006/008/010 + D-012/013/014 + ADR-DB3-001; `RETURN_POLICY` from the ADR-DB3-002 stage matrix. `APP6-B10` publishes it and drafts nothing |
 | Review rendering | safe document → APP3 native-SVG renderer → `APP3-S09` watermark; no server raster pipeline, no export |
 | Secure access | `REQUEST_ACCESS` reused; no new grant kind or token format; `SECURE_LINK_UNAVAILABLE` for every grant-validity failure |
 | Transitions | four `system` projections stay non-commandable; `DIGITIZING` is the only direct APP6 Admin transition |

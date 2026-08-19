@@ -277,6 +277,70 @@ function checkNegations(rootDir, fail) {
   }
 }
 
+/**
+ * 9 — `APP6-G01-C1`: the agreement authority is semantically closed.
+ *
+ * The defect this catches is not a missing paragraph. It is an approval
+ * ceremony that requires a payment policy and a return policy, and then quietly
+ * satisfies both with a design-approval workflow consent that is neither — so
+ * the customer accepts two agreements they were never shown. Every rule below
+ * is one half of that failure.
+ */
+function checkAgreementContent(rootDir, authority, fail) {
+  if (authority === undefined) return;
+
+  let types = [];
+  try {
+    const configuration = (dataset(rootDir).configurations ?? []).find(
+      (entry) => entry.configKey === 'design_approval.agreements',
+    );
+    types = configuration?.value?.requiredAgreementTypes ?? [];
+  } catch {
+    return; // checkDataset already reported it.
+  }
+  if (types.length === 0) fail('the dataset declares no required agreement type');
+
+  // The fallback may be named as rejected; it may never be a required type.
+  if (types.includes('DESIGN_APPROVAL_TERMS')) {
+    fail('DESIGN_APPROVAL_TERMS is a required agreement type — it is a workflow consent, not a policy');
+  }
+
+  // The workflow consent must be stated as *not* one of the agreements.
+  for (const type of ['PAYMENT_POLICY', 'RETURN_POLICY']) {
+    if (!authority.includes(`exact design approval confirmation  !=  ${type}`)) {
+      fail(`${CANONICAL_FILES.authority} does not separate the exact-design confirmation from ${type}`);
+    }
+  }
+
+  // Content may not be deferred to someone who has not written it.
+  for (const phrase of ['Product-Owner-supplied', 'TBD']) {
+    if (new RegExp(`\\|[^|\\n]*${phrase}[^|\\n]*\\|`).test(authority)) {
+      fail(`${CANONICAL_FILES.authority} defers agreement content ("${phrase}")`);
+    }
+  }
+
+  // Every required type needs a canonical source that exists, and a content block.
+  for (const type of types) {
+    const row = authority
+      .split('\n')
+      .find((line) => line.startsWith(`| \`${type}\` |`) && line.includes('docs/'));
+    if (row === undefined) {
+      fail(`${CANONICAL_FILES.authority} publishes no canonical source row for ${type}`);
+      continue;
+    }
+    const paths = (row.match(/`(docs\/[^`]+\.md)`/g) ?? []).map((match) => match.slice(1, -1));
+    if (paths.length === 0) {
+      fail(`${type} has no repository path as its canonical source`);
+    }
+    for (const path of paths) {
+      if (!existsSync(join(rootDir, path))) fail(`${type} cites a canonical source that does not exist: ${path}`);
+    }
+    if (!new RegExp(`#### 5\\.6\\.\\d \`${type}\``).test(authority)) {
+      fail(`${CANONICAL_FILES.authority} carries no §5.6 content block for ${type}`);
+    }
+  }
+}
+
 /** 8 — the phase roadmap records the checkpoint's own outcome. */
 function checkPhase(rootDir, fail) {
   const phase = read(rootDir, 'phase');
@@ -310,6 +374,7 @@ export function runChecks(rootDir = REPO_ROOT) {
   checkProhibitions(adr, authority, fail);
   checkNegations(rootDir, fail);
   checkPhase(rootDir, fail);
+  checkAgreementContent(rootDir, authority, fail);
   return failures;
 }
 
