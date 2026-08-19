@@ -635,6 +635,12 @@ the established convention.
 fc1a346  docs(app6): lock the APP6 design review, approval and quotation authority
 ```
 
+`APP6-G01-C1`:
+
+```text
+decfe8b  docs(app6): align the APP6 agreement authority with its required type set
+```
+
 ---
 
 ## 23. Next checkpoint
