@@ -75,7 +75,19 @@ function quotationOperations(): { method: string; path: string; operationId: str
       if (!(HTTP_METHODS as readonly string[]).includes(method)) {
         continue;
       }
-      if (path.includes('quotation') && WRITE_METHODS.includes(method) && !path.endsWith('/send')) {
+      // Scoped to `/api/admin/quotations`, which is this file's subject. It read
+      // `path.includes('quotation')` until `APP6-B04` published
+      // `POST /api/public/quotations/current` and `APP6-B05` published the two
+      // customer decisions — three operations in a different published domain,
+      // behind a different credential, that this Admin surface has never made a
+      // claim about. Leaving the wider predicate in place did not make the
+      // assertion stronger: it made it fail for a reason it was not written to
+      // detect, while saying nothing about the Admin routes it exists to freeze.
+      if (
+        path.startsWith('/api/admin/quotations') &&
+        WRITE_METHODS.includes(method) &&
+        !path.endsWith('/send')
+      ) {
         found.push({ method, path, operationId: operation.operationId ?? '' });
       }
     }
@@ -122,9 +134,29 @@ describe('APP6-B01 published surface', () => {
     ]);
   });
 
-  it('publishes no accept, reject, status or expire route', () => {
+  it('publishes the accept and reject as one route each, and neither on this controller', () => {
+    // Narrowed exactly as the `/send` assertion below was narrowed when
+    // `APP6-B03` landed, and for the same reason: the original blanket refusal
+    // was true until `APP6-B05` delivered `TR-LC12-03` and `TR-LC12-06`. The
+    // property worth keeping is that **drafting** still cannot decide — one
+    // accept and one reject exist, both are customer routes behind a secure-link
+    // token, and neither is reachable from this Admin controller.
+    const decisions = Object.keys(document.paths).filter((path) =>
+      /quotations\/(accept|reject)$/.test(path),
+    );
+    expect(decisions.sort()).toEqual([
+      '/api/public/quotations/accept',
+      '/api/public/quotations/reject',
+    ]);
+    for (const path of decisions) {
+      expect(path.startsWith('/api/admin/')).toBe(false);
+    }
+
+    // `status` and `expire` remain forbidden outright: no checkpoint has
+    // delivered either, and a generic state-mutation route is exactly what
+    // `APP6-B05` §4 refuses to publish.
     for (const path of Object.keys(document.paths)) {
-      expect(path).not.toMatch(/quotations.*\/(accept|reject|status|expire)/);
+      expect(path).not.toMatch(/quotations.*\/(status|expire)/);
     }
   });
 

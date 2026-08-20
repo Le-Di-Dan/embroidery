@@ -119,6 +119,33 @@ export interface VerificationChallengeRepository {
     notBefore: Date,
   ): Promise<boolean>;
 
+  /**
+   * The **most recently verified** challenge satisfying the same window
+   * {@link hasRecentCompleted} tests (`APP6-B05`).
+   *
+   * `hasRecentCompleted` answers *whether* a step-up stands. It cannot answer
+   * *which one*, and TBL-053 requires the row: `quotation_acceptances` carries a
+   * `step_up_challenge_id` with a real foreign key, because acceptance evidence
+   * has to name the proof of presence it was authorized by, not merely assert
+   * that one existed at the time.
+   *
+   * Deliberately **not** a widening of `hasRecentCompleted` into an id-returning
+   * method: that predicate is consumed by `StepUpWindow.isSatisfied`, whose
+   * whole contract is a boolean, and callers that only need the boolean must
+   * keep getting a query that reads one column and stops at the first row.
+   *
+   * Ordered by `verified_at` descending so a customer who re-verified twice is
+   * evidenced by the proof that is actually current, with `id` breaking the tie
+   * — two challenges verified in the same millisecond must not make this read
+   * answer differently on two identical calls.
+   */
+  findRecentCompleted(
+    contactKind: ContactKind,
+    normalizedValue: string,
+    purpose: VerificationPurpose,
+    notBefore: Date,
+  ): Promise<VerificationChallenge | undefined>;
+
   findById(id: ChallengeId): Promise<VerificationChallenge | undefined>;
 
   /**

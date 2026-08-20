@@ -218,6 +218,37 @@ export class DrizzleSecureAccessGrantRepository
     });
   }
 
+  async lockActiveByTokenDigest(
+    tokenHash: string,
+    scopeKind: GrantScopeKind,
+    now: Date,
+  ): Promise<SecureAccessGrant | undefined> {
+    return this.run('lockActiveByTokenDigest', async () => {
+      const tx = this.requireTransaction('lockActiveByTokenDigest');
+
+      // The predicate is character-for-character the one `resolveActiveByTokenDigest`
+      // applies. That is deliberate: if the two ever diverged, a sensitive write
+      // would re-check a *different* definition of "live" from the read that
+      // admitted it, and the divergence would only ever show up as an
+      // acceptance that survived a condition the read refuses.
+      const [row] = await tx
+        .select()
+        .from(secureAccessGrants)
+        .where(
+          and(
+            eq(secureAccessGrants.tokenHash, tokenHash),
+            eq(secureAccessGrants.scopeKind, scopeKind),
+            eq(secureAccessGrants.status, 'ACTIVE'),
+            gt(secureAccessGrants.expiresAt, now),
+          ),
+        )
+        .limit(1)
+        .for('update');
+
+      return row === undefined ? undefined : toDomain(row);
+    });
+  }
+
   async findById(id: GrantId): Promise<SecureAccessGrant | undefined> {
     return this.run('findById', async () => {
       const [row] = await this.db

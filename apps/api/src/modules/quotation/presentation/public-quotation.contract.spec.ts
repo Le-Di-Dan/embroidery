@@ -128,7 +128,21 @@ describe('APP6-B04 — the published customer quotation contract', () => {
       path.startsWith('/api/public/quotations'),
     );
 
-    expect(publicQuotationPaths).toEqual([CURRENT_PATH]);
+    // `APP6-B05` added the two customer decisions to this base path. They are
+    // listed rather than the assertion being deleted, because the property this
+    // test exists for is untouched by them: every public quotation route is a
+    // **fixed** sub-path, so there is still no collection, no history read and —
+    // the part that matters — no identified route a caller could walk. That last
+    // one is asserted directly below, where it cannot be lost by adding a name
+    // to a list.
+    expect(publicQuotationPaths.sort()).toEqual([
+      '/api/public/quotations/accept',
+      CURRENT_PATH,
+      '/api/public/quotations/reject',
+    ]);
+    for (const path of publicQuotationPaths) {
+      expect(path).not.toContain('{');
+    }
   });
 
   it('publishes every amount as a string, never a JSON number', () => {

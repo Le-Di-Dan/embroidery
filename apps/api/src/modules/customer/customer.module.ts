@@ -11,11 +11,13 @@ import { ReadVerificationChallengeStatus } from './application/read-verification
 import { ResendVerificationChallengeUseCase } from './application/resend-verification-challenge.use-case';
 import { ResolveOrCreateVerifiedCustomer } from './application/resolve-or-create-verified-customer.service';
 import { AuthorizeSecureLink } from './application/authorize-secure-link.service';
+import { ReauthorizeSecureGrant } from './application/reauthorize-secure-grant.service';
 import { ResolveSecureLink } from './application/resolve-secure-link.query';
 import { SecureLinkAuditRecorder } from './application/secure-link-audit.recorder';
 import { SecureGrantAuditRecorder } from './application/secure-grant-audit.recorder';
 import { SecureGrantIssuer } from './application/secure-grant.issuer';
 import { SecureGrantNotifier } from './application/secure-grant.notifier';
+import { StepUpEvidenceResolver } from './application/step-up-evidence.resolver';
 import { StepUpWindow } from './application/step-up-window.service';
 import { SubmitVerificationAttemptUseCase } from './application/submit-verification-attempt.use-case';
 import { VerificationChallengeIssuer } from './application/verification-challenge.issuer';
@@ -121,6 +123,9 @@ import { PublicVerificationController } from './presentation/public-verification
     SecureGrantNotifier,
     SecureGrantIssuer,
     StepUpWindow,
+    // `APP6-B05`. GRD-003's *evidence*, beside the boolean window: a sensitive
+    // write records the challenge it was authorized by, so it needs the row.
+    StepUpEvidenceResolver,
     // `APP4-B06`. The limiter's algorithm is the platform's, provided here so
     // this module owns its own counters — the same shape `DesignModule` uses.
     SlidingWindowRateLimiter,
@@ -132,6 +137,8 @@ import { PublicVerificationController } from './presentation/public-verification
     // `APP5-B03`. Composes the three above in the one order that makes them a
     // security model, so a second public token surface cannot re-derive it.
     AuthorizeSecureLink,
+    // `APP6-B05`. The in-transaction half of the same model — see the class.
+    ReauthorizeSecureGrant,
   ],
   // The application capabilities are exported; the recorder, the clock, the
   // minter and the policy reader are not — they are this module's own machinery,
@@ -153,12 +160,21 @@ import { PublicVerificationController } from './presentation/public-verification
     // token without a grant.
     SecureGrantIssuer,
     StepUpWindow,
+    // `APP6-B05`'s two additions, on the same rule: a consuming context receives
+    // the capability, never the machinery. `StepUpEvidenceResolver` composes the
+    // customer's contacts, the challenge history and the published window;
+    // `ReauthorizeSecureGrant` composes the pepper, the digest and the locking
+    // resolver. Neither exposes a pepper, a digest, a raw contact value or the
+    // grant repository's write methods, and a caller holding either cannot mint,
+    // revoke or re-scope anything.
+    StepUpEvidenceResolver,
     // `APP4-B06`'s public admission, exported for `APP5-B03` on the same rule:
     // a consuming context receives the capability, never the machinery. The
     // policy reader, the limiter, the network-key service and the resolver stay
     // unexported — a caller holding the resolver alone could skip the
     // fail-closed policy read and the abuse budget.
     AuthorizeSecureLink,
+    ReauthorizeSecureGrant,
   ],
 })
 export class CustomerModule {}

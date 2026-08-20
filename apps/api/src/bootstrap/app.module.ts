@@ -27,6 +27,7 @@ import { CustomRequestSubmissionModule } from '../modules/order/custom-request-s
 import { QuotationDraftingModule } from '../modules/quotation/quotation-drafting.module';
 import { QuotationReadModule } from '../modules/quotation/quotation-read.module';
 import { QuotationSendModule } from '../modules/quotation/quotation-send.module';
+import { CustomerQuotationDecisionModule } from '../modules/quotation/customer-quotation-decision.module';
 import { CustomerQuotationModule } from '../modules/quotation/customer-quotation.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
@@ -168,6 +169,14 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // because it is the only one an unauthenticated caller reaches, and the only
     // one that must hold no transaction manager and no write repository.
     CustomerQuotationModule,
+    // APP6-B05 — the customer's two quotation decisions, on the same
+    // `public/quotations` base path with two distinct sub-paths (`accept`,
+    // `reject`), disjoint from `current` above. A fifth quotation module
+    // because it is the mirror image of the fourth: these are the writes, so it
+    // holds the transaction manager, the idempotency store, the request
+    // repository and the audit repository that the read is defined by not
+    // holding. `CONTROLLER_DOMAIN_KEYS` keeps both publishing `publicQuotation`.
+    CustomerQuotationDecisionModule,
   ],
 })
 export class AppModule {}

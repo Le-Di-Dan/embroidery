@@ -1,6 +1,28 @@
 {
   "components": {
     "schemas": {
+      "AcceptQuotationBody": {
+        "additionalProperties": false,
+        "description": "Accepts the exact quotation version the customer was shown. No quotation, request, customer, grant, verification or amount identifier is accepted: the target comes from the grant and the server’s own pointers, and the re-verification that authorises the acceptance is derived from the grant’s customer.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          },
+          "versionId": {
+            "description": "The exact quotation version this decision is about — the `versionId` the current-quotation read returned. It is checked against the quotation’s own current pointer inside the deciding transaction, so a version that has been superseded by a newer send is refused rather than accepted, and a version belonging to another quotation is refused before anything is written.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "versionId"
+        ],
+        "type": "object"
+      },
       "AddQuotationVersionBody": {
         "additionalProperties": false,
         "properties": {
@@ -4741,6 +4763,98 @@
         ],
         "type": "object"
       },
+      "QuotationAcceptedResponse": {
+        "properties": {
+          "acceptedAt": {
+            "description": "When the acceptance committed. The same instant the evidence row records.",
+            "example": "2026-08-21T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "acceptedTotalAmount": {
+            "description": "Exactly the figure recorded as accepted, in exact `numeric(14,2)` VND and always a string. It is the frozen version’s own total, copied off the row inside the transaction — never recomputed, re-rounded or re-priced.",
+            "example": "1550000.00",
+            "type": "string"
+          },
+          "currencyCode": {
+            "description": "Fixed by the schema; no currency is selectable.",
+            "example": "VND",
+            "type": "string"
+          },
+          "quotationStatus": {
+            "description": "The stored LC-12 header state after the move, read back off the row.",
+            "enum": [
+              "DRAFT",
+              "SENT",
+              "ACCEPTED",
+              "EXPIRED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "ACCEPTED",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "Whether this call re-served an earlier acceptance of the same version instead of performing one. A double submission and a retry after a dropped response both answer `true`, with the identical figures: acceptance is claimed once per version, and no second evidence row, request transition or audit row is ever appended.",
+            "example": false,
+            "type": "boolean"
+          },
+          "requestStatus": {
+            "description": "The custom request’s state after the **same** transaction. It moves as a system projection of the committed acceptance, never as something the caller asked for, and it is read back off the transitioned row rather than assumed.",
+            "enum": [
+              "NEW",
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "QUOTED",
+              "QUOTE_ACCEPTED",
+              "DIGITIZING",
+              "DESIGN_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "QUOTE_ACCEPTED",
+            "type": "string"
+          },
+          "version": {
+            "description": "The version number within this quotation.",
+            "example": 2,
+            "type": "number"
+          },
+          "versionId": {
+            "description": "The exact version that was accepted — the one this request named, re-proved current inside the accepting transaction. Never a version the server substituted.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "versionStatus": {
+            "description": "The stored LC-13 state after the move.",
+            "enum": [
+              "DRAFT",
+              "SENT",
+              "ACCEPTED",
+              "SUPERSEDED",
+              "EXPIRED",
+              "REJECTED",
+              "VOID"
+            ],
+            "example": "ACCEPTED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "versionId",
+          "version",
+          "versionStatus",
+          "quotationStatus",
+          "requestStatus",
+          "acceptedTotalAmount",
+          "currencyCode",
+          "acceptedAt",
+          "replayed"
+        ],
+        "type": "object"
+      },
       "QuotationDraftedResponse": {
         "properties": {
           "currencyCode": {
@@ -4850,6 +4964,62 @@
         ],
         "type": "object"
       },
+      "QuotationRejectedResponse": {
+        "properties": {
+          "quotationStatus": {
+            "description": "The stored LC-12 header state after the move, read back off the row.",
+            "enum": [
+              "DRAFT",
+              "SENT",
+              "ACCEPTED",
+              "EXPIRED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "REJECTED",
+            "type": "string"
+          },
+          "rejectedAt": {
+            "description": "When the rejection committed. Reported from this transaction’s own clock and kept in the audit trail: the version row has `accepted_at`, `superseded_at` and `expired_at` and no rejected timestamp.",
+            "example": "2026-08-21T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "description": "The version number within this quotation.",
+            "example": 2,
+            "type": "number"
+          },
+          "versionId": {
+            "description": "The exact version that was declined — the one this request named.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "versionStatus": {
+            "description": "The stored LC-13 state after the move. This terminal state **is** the record of the decision: there is no rejection evidence table and no rejection idempotency key, so a repeat decision on this version is refused rather than duplicated.",
+            "enum": [
+              "DRAFT",
+              "SENT",
+              "ACCEPTED",
+              "SUPERSEDED",
+              "EXPIRED",
+              "REJECTED",
+              "VOID"
+            ],
+            "example": "REJECTED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "versionId",
+          "version",
+          "versionStatus",
+          "quotationStatus",
+          "rejectedAt"
+        ],
+        "type": "object"
+      },
       "ReadCurrentQuotationBody": {
         "additionalProperties": false,
         "description": "Presents a secure-link token to read the quotation that is current for the request that link already opens. No quotation, version, request or customer identifier is accepted.",
@@ -4908,6 +5078,28 @@
           "service",
           "timestamp",
           "database"
+        ],
+        "type": "object"
+      },
+      "RejectQuotationBody": {
+        "additionalProperties": false,
+        "description": "Declines the exact quotation version the customer was shown. Takes the same two fields as acceptance and no reason text, because the schema keeps no rejection reason. Declining a price does not reject the custom request.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          },
+          "versionId": {
+            "description": "The exact quotation version this decision is about — the `versionId` the current-quotation read returned. It is checked against the quotation’s own current pointer inside the deciding transaction, so a version that has been superseded by a newer send is refused rather than accepted, and a version belonging to another quotation is refused before anything is written.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "versionId"
         ],
         "type": "object"
       },
@@ -17146,6 +17338,231 @@
         ]
       }
     },
+    "/api/public/quotations/accept": {
+      "post": {
+        "description": "Accepts the quotation version the customer was looking at, identified by the `versionId` the current-quotation read returned. The custom request is identified by the grant and never by the caller. Inside one transaction the grant is re-checked under its row lock, a recent re-verification of the customer’s own contact is required, the version must still be the current sent one and still inside its validity window, the acceptance evidence is written, and the custom request moves to QUOTE_ACCEPTED as a system projection. A newer sent version makes an older acceptance fail rather than silently accept the new price. Accepting twice replays the first acceptance and writes nothing. No order, payment or reservation is created.",
+        "operationId": "publicQuotation_accept",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptQuotationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/QuotationAcceptedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed acceptance, or a replay of an earlier identical one.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "REVERIFICATION_REQUIRED — the link is live, but no recent contact re-verification stands for this customer. Resolved by completing a STEP_UP verification and calling again; it is not a statement about the link.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no readable current quotation. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for another target, or the request has simply not been quoted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "QUOTE_VERSION_STALE when a newer version has been sent or the validity window has closed — re-read and decide again; INVALID_TRANSITION when the custom request has left the state an acceptance can move it from; DUPLICATE_OPERATION when another acceptance of this version is still in flight.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Secure-link resolution or the step-up policy is not configured.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Accept the exact quotation version shown by a secure link",
+        "tags": [
+          "publicQuotation"
+        ]
+      }
+    },
     "/api/public/quotations/current": {
       "post": {
         "description": "Returns the quotation version that is current for the one custom request the presented secure link grants access to. The request is identified by the grant, and the version by the request’s and the quotation’s own current pointers — never by the caller: there is no quotation id, version id, request id or customer identifier in the body. A newer sent version makes a later call return that newer version; a superseded one is never served as current. A quotation whose validity has lapsed is still returned in full, flagged `expired`, and is not written to. Every token that does not open a live grant, and every request with no current quotation, answer with one identical 404.",
@@ -17324,6 +17741,210 @@
           }
         },
         "summary": "Read the quotation a secure link opens",
+        "tags": [
+          "publicQuotation"
+        ]
+      }
+    },
+    "/api/public/quotations/reject": {
+      "post": {
+        "description": "Declines the quotation version the customer was looking at. Takes the same two fields as acceptance and requires no re-verification, because declining an offer commits nothing. The version must still be the current sent one; a superseded, already decided or never-sent version is refused and the live offer is left untouched. This moves the quotation only: the custom request is **not** rejected and stays in the quotation stage, where the workshop can send a revised version.",
+        "operationId": "publicQuotation_reject",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectQuotationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/QuotationRejectedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed rejection of that exact version.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the same single answer the acceptance and the read give to every unusable token and unreachable target.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "INVALID_TRANSITION — this version is not one a rejection can start from: it has already been decided, has been superseded by a newer send, or was never sent. A repeat rejection of the same version answers here rather than being duplicated.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Secure-link resolution or the step-up policy is not configured.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Decline the exact quotation version shown by a secure link",
         "tags": [
           "publicQuotation"
         ]

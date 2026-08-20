@@ -137,6 +137,41 @@ export interface SecureAccessGrantRepository {
     now: Date,
   ): Promise<SecureAccessGrant | undefined>;
 
+  /**
+   * The same live-grant resolution as {@link resolveActiveByTokenDigest}, taken
+   * **under the grant row's `FOR UPDATE` lock** (`APP6-B05`, ADR-DB3-004 r9).
+   *
+   * Added because a sensitive write may not act on a pre-transaction
+   * authorization snapshot. `APP6-B05`'s quotation acceptance authorizes through
+   * the public admission first — policy, abuse budget, digest — and then has to
+   * re-establish the *same* facts inside the transaction that writes the
+   * acceptance evidence, because the window between the two is exactly where
+   * CC-16 lives: a revoke that commits in it must win.
+   *
+   * A plain re-read inside the transaction already sees a revoke that committed
+   * **before** it. The lock closes the other half: a revoke arriving *after*
+   * this read blocks on the row until the acceptance transaction ends, rather
+   * than committing beside it. Those two orderings are then the only two
+   * outcomes, and which one happens is decided by which transaction reached the
+   * row first — not by how much work the acceptance had left to do.
+   *
+   * `FOR UPDATE` rather than `FOR SHARE`: the competing writer is
+   * {@link revoke}, an `UPDATE` on this row, and a share lock would let it
+   * proceed concurrently.
+   *
+   * Returns nothing rather than throwing for every failing reason — unknown
+   * digest, expired, revoked, superseded, wrong scope — for the same
+   * non-disclosure reason the two resolvers above do.
+   *
+   * @requiresTransaction — a lock taken outside one is released immediately and
+   * proves nothing.
+   */
+  lockActiveByTokenDigest(
+    tokenHash: string,
+    scopeKind: GrantScopeKind,
+    now: Date,
+  ): Promise<SecureAccessGrant | undefined>;
+
   findById(id: GrantId): Promise<SecureAccessGrant | undefined>;
   listActiveForRequest(customRequestId: string): Promise<SecureAccessGrant[]>;
 

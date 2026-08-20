@@ -5,6 +5,22 @@
  * Internal HTTP contract for the Embroidery Commerce platform API. Generated from NestJS Swagger metadata; the committed artifact is the machine-readable source for the generated TypeScript/Axios client.
  * OpenAPI spec version: 0.1.0
  */
+/**
+ * Accepts the exact quotation version the customer was shown. No quotation, request, customer, grant, verification or amount identifier is accepted: the target comes from the grant and the server’s own pointers, and the re-verification that authorises the acceptance is derived from the grant’s customer.
+ */
+export interface AcceptQuotationBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+  /**
+   * The exact quotation version this decision is about — the `versionId` the current-quotation read returned. It is checked against the quotation’s own current pointer inside the deciding transaction, so a version that has been superseded by a newer send is refused rather than accepted, and a version belonging to another quotation is refused before anything is written.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  versionId: string;
+}
+
 export type AddQuotationVersionBodyLineItemsItemLineKind =
   (typeof AddQuotationVersionBodyLineItemsItemLineKind)[keyof typeof AddQuotationVersionBodyLineItemsItemLineKind];
 
@@ -2509,6 +2525,77 @@ export interface PublishProductBody {
   expectedUpdatedAt: string;
 }
 
+/**
+ * The stored LC-12 header state after the move, read back off the row.
+ */
+export type QuotationAcceptedResponseQuotationStatus =
+  (typeof QuotationAcceptedResponseQuotationStatus)[keyof typeof QuotationAcceptedResponseQuotationStatus];
+
+export const QuotationAcceptedResponseQuotationStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  EXPIRED: 'EXPIRED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The custom request’s state after the **same** transaction. It moves as a system projection of the committed acceptance, never as something the caller asked for, and it is read back off the transitioned row rather than assumed.
+ */
+export type QuotationAcceptedResponseRequestStatus =
+  (typeof QuotationAcceptedResponseRequestStatus)[keyof typeof QuotationAcceptedResponseRequestStatus];
+
+export const QuotationAcceptedResponseRequestStatus = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The stored LC-13 state after the move.
+ */
+export type QuotationAcceptedResponseVersionStatus =
+  (typeof QuotationAcceptedResponseVersionStatus)[keyof typeof QuotationAcceptedResponseVersionStatus];
+
+export const QuotationAcceptedResponseVersionStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  SUPERSEDED: 'SUPERSEDED',
+  EXPIRED: 'EXPIRED',
+  REJECTED: 'REJECTED',
+  VOID: 'VOID',
+} as const;
+
+export interface QuotationAcceptedResponse {
+  /** When the acceptance committed. The same instant the evidence row records. */
+  acceptedAt: string;
+  /** Exactly the figure recorded as accepted, in exact `numeric(14,2)` VND and always a string. It is the frozen version’s own total, copied off the row inside the transaction — never recomputed, re-rounded or re-priced. */
+  acceptedTotalAmount: string;
+  /** Fixed by the schema; no currency is selectable. */
+  currencyCode: string;
+  /** The stored LC-12 header state after the move, read back off the row. */
+  quotationStatus: QuotationAcceptedResponseQuotationStatus;
+  /** Whether this call re-served an earlier acceptance of the same version instead of performing one. A double submission and a retry after a dropped response both answer `true`, with the identical figures: acceptance is claimed once per version, and no second evidence row, request transition or audit row is ever appended. */
+  replayed: boolean;
+  /** The custom request’s state after the **same** transaction. It moves as a system projection of the committed acceptance, never as something the caller asked for, and it is read back off the transitioned row rather than assumed. */
+  requestStatus: QuotationAcceptedResponseRequestStatus;
+  /** The version number within this quotation. */
+  version: number;
+  /** The exact version that was accepted — the one this request named, re-proved current inside the accepting transaction. Never a version the server substituted. */
+  versionId: string;
+  /** The stored LC-13 state after the move. */
+  versionStatus: QuotationAcceptedResponseVersionStatus;
+}
+
 export interface QuotationDraftedResponse {
   /** Fixed by the schema; no currency is selectable. */
   currencyCode: string;
@@ -2541,6 +2628,50 @@ export interface QuotationDraftedResponse {
   versionId: string;
   /** Always `DRAFT` here. Sending is a separate, later action. */
   versionStatus: string;
+}
+
+/**
+ * The stored LC-12 header state after the move, read back off the row.
+ */
+export type QuotationRejectedResponseQuotationStatus =
+  (typeof QuotationRejectedResponseQuotationStatus)[keyof typeof QuotationRejectedResponseQuotationStatus];
+
+export const QuotationRejectedResponseQuotationStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  EXPIRED: 'EXPIRED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The stored LC-13 state after the move. This terminal state **is** the record of the decision: there is no rejection evidence table and no rejection idempotency key, so a repeat decision on this version is refused rather than duplicated.
+ */
+export type QuotationRejectedResponseVersionStatus =
+  (typeof QuotationRejectedResponseVersionStatus)[keyof typeof QuotationRejectedResponseVersionStatus];
+
+export const QuotationRejectedResponseVersionStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  SUPERSEDED: 'SUPERSEDED',
+  EXPIRED: 'EXPIRED',
+  REJECTED: 'REJECTED',
+  VOID: 'VOID',
+} as const;
+
+export interface QuotationRejectedResponse {
+  /** The stored LC-12 header state after the move, read back off the row. */
+  quotationStatus: QuotationRejectedResponseQuotationStatus;
+  /** When the rejection committed. Reported from this transaction’s own clock and kept in the audit trail: the version row has `accepted_at`, `superseded_at` and `expired_at` and no rejected timestamp. */
+  rejectedAt: string;
+  /** The version number within this quotation. */
+  version: number;
+  /** The exact version that was declined — the one this request named. */
+  versionId: string;
+  /** The stored LC-13 state after the move. This terminal state **is** the record of the decision: there is no rejection evidence table and no rejection idempotency key, so a repeat decision on this version is refused rather than duplicated. */
+  versionStatus: QuotationRejectedResponseVersionStatus;
 }
 
 /**
@@ -2585,6 +2716,22 @@ export interface ReadinessStatusResponse {
   service: ReadinessStatusResponseService;
   status: ReadinessStatusResponseStatus;
   timestamp: string;
+}
+
+/**
+ * Declines the exact quotation version the customer was shown. Takes the same two fields as acceptance and no reason text, because the schema keeps no rejection reason. Declining a price does not reject the custom request.
+ */
+export interface RejectQuotationBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+  /**
+   * The exact quotation version this decision is about — the `versionId` the current-quotation read returned. It is checked against the quotation’s own current pointer inside the deciding transaction, so a version that has been superseded by a newer send is refused rather than accepted, and a version belonging to another quotation is refused before anything is written.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  versionId: string;
 }
 
 export interface ReplacePlacementAreaBody {
@@ -3442,8 +3589,16 @@ export type PublicProductVariantList200 = ApiSuccessResponse & {
   data: PublicProductVariantListResponse;
 };
 
+export type PublicQuotationAccept200 = ApiSuccessResponse & {
+  data: QuotationAcceptedResponse;
+};
+
 export type PublicQuotationCurrent200 = ApiSuccessResponse & {
   data: CustomerQuotationResponse;
+};
+
+export type PublicQuotationReject200 = ApiSuccessResponse & {
+  data: QuotationRejectedResponse;
 };
 
 export type PublicSecureLinkResolve200 = ApiSuccessResponse & {

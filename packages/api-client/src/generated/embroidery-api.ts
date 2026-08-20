@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  AcceptQuotationBody,
   AddQuotationVersionBody,
   AdminAssetDetail200,
   AdminAssetList200,
@@ -80,7 +81,9 @@ import type {
   PublicProductListParams,
   PublicProductPlacementGet200,
   PublicProductVariantList200,
+  PublicQuotationAccept200,
   PublicQuotationCurrent200,
+  PublicQuotationReject200,
   PublicSecureLinkResolve200,
   PublicVerificationIssue202,
   PublicVerificationReadStatus200,
@@ -91,6 +94,7 @@ import type {
   ReadCurrentQuotationBody,
   ReadCustomRequestStatusBody,
   ReadinessStatusResponse,
+  RejectQuotationBody,
   ReplaceProductPlacementBody,
   ResolveCustomerByContactBody,
   ResolveSecureLinkBody,
@@ -1157,6 +1161,25 @@ export const publicProductVariantList = (
 };
 
 /**
+ * Accepts the quotation version the customer was looking at, identified by the `versionId` the current-quotation read returned. The custom request is identified by the grant and never by the caller. Inside one transaction the grant is re-checked under its row lock, a recent re-verification of the customer’s own contact is required, the version must still be the current sent one and still inside its validity window, the acceptance evidence is written, and the custom request moves to QUOTE_ACCEPTED as a system projection. A newer sent version makes an older acceptance fail rather than silently accept the new price. Accepting twice replays the first acceptance and writes nothing. No order, payment or reservation is created.
+ * @summary Accept the exact quotation version shown by a secure link
+ */
+export const publicQuotationAccept = (
+  acceptQuotationBody: AcceptQuotationBody,
+  options?: SecondParameter<typeof apiRequest<PublicQuotationAccept200>>,
+) => {
+  return apiRequest<PublicQuotationAccept200>(
+    {
+      url: `/api/public/quotations/accept`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: acceptQuotationBody,
+    },
+    options,
+  );
+};
+
+/**
  * Returns the quotation version that is current for the one custom request the presented secure link grants access to. The request is identified by the grant, and the version by the request’s and the quotation’s own current pointers — never by the caller: there is no quotation id, version id, request id or customer identifier in the body. A newer sent version makes a later call return that newer version; a superseded one is never served as current. A quotation whose validity has lapsed is still returned in full, flagged `expired`, and is not written to. Every token that does not open a live grant, and every request with no current quotation, answer with one identical 404.
  * @summary Read the quotation a secure link opens
  */
@@ -1170,6 +1193,25 @@ export const publicQuotationCurrent = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: readCurrentQuotationBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Declines the quotation version the customer was looking at. Takes the same two fields as acceptance and requires no re-verification, because declining an offer commits nothing. The version must still be the current sent one; a superseded, already decided or never-sent version is refused and the live offer is left untouched. This moves the quotation only: the custom request is **not** rejected and stays in the quotation stage, where the workshop can send a revised version.
+ * @summary Decline the exact quotation version shown by a secure link
+ */
+export const publicQuotationReject = (
+  rejectQuotationBody: RejectQuotationBody,
+  options?: SecondParameter<typeof apiRequest<PublicQuotationReject200>>,
+) => {
+  return apiRequest<PublicQuotationReject200>(
+    {
+      url: `/api/public/quotations/reject`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: rejectQuotationBody,
     },
     options,
   );
@@ -1456,8 +1498,14 @@ export type PublicProductSideBackgroundGetResult = NonNullable<
 export type PublicProductVariantListResult = NonNullable<
   Awaited<ReturnType<typeof publicProductVariantList>>
 >;
+export type PublicQuotationAcceptResult = NonNullable<
+  Awaited<ReturnType<typeof publicQuotationAccept>>
+>;
 export type PublicQuotationCurrentResult = NonNullable<
   Awaited<ReturnType<typeof publicQuotationCurrent>>
+>;
+export type PublicQuotationRejectResult = NonNullable<
+  Awaited<ReturnType<typeof publicQuotationReject>>
 >;
 export type PublicSecureLinkResolveResult = NonNullable<
   Awaited<ReturnType<typeof publicSecureLinkResolve>>

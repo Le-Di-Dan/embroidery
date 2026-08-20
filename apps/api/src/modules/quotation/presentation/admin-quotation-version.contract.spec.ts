@@ -68,7 +68,18 @@ function quotationOperations(
   const found: { method: string; path: string; operationId: string }[] = [];
   for (const [path, item] of Object.entries(document.paths)) {
     for (const [method, operation] of Object.entries(item)) {
-      if (!(HTTP_METHODS as readonly string[]).includes(method) || !path.includes('quotation')) {
+      // Scoped to `/api/admin/quotations`, which is this file's subject. It read
+      // `path.includes('quotation')` until `APP6-B04` published
+      // `POST /api/public/quotations/current` and `APP6-B05` published the two
+      // customer decisions — three operations in a different published domain,
+      // behind a different credential, that this Admin surface has never made a
+      // claim about. Leaving the wider predicate in place did not make the
+      // assertion stronger: it made it fail for a reason it was not written to
+      // detect, while saying nothing about the Admin routes it exists to freeze.
+      if (
+        !(HTTP_METHODS as readonly string[]).includes(method) ||
+        !path.startsWith('/api/admin/quotations')
+      ) {
         continue;
       }
       if (filter(method)) {
@@ -119,8 +130,15 @@ describe('APP6-B02 published read surface', () => {
     const family = quotationOperations();
 
     // Two drafting mutations from `APP6-B01`, two reads from `APP6-B02`, one
-    // send from `APP6-B03`. An accept or a customer surface arriving without its
-    // own checkpoint fails here rather than in review.
+    // send from `APP6-B03`. A sixth **Admin** quotation operation arriving
+    // without its own checkpoint fails here rather than in review.
+    //
+    // The customer surfaces are deliberately outside this count.
+    // `publicQuotation_current`, `_accept` and `_reject` are a different
+    // published domain behind a different credential, and their own contract
+    // suites freeze them; folding them in would make this assertion say "five
+    // Admin operations plus whatever the customer surface grew into", which is
+    // the opposite of what it is for.
     expect(family).toHaveLength(5);
     for (const operation of family) {
       expect(operation.operationId).toMatch(/^adminQuotation_/);

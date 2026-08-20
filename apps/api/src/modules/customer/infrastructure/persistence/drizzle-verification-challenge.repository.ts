@@ -12,7 +12,7 @@ import type {
   VerificationChallengeState,
   VerificationPurpose,
 } from '@embroidery/database';
-import { and, count, eq, gt, gte, lte, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gt, gte, lte, sql } from 'drizzle-orm';
 
 import type {
   ChallengeId,
@@ -203,6 +203,36 @@ export class DrizzleVerificationChallengeRepository
         .limit(1);
 
       return row !== undefined;
+    });
+  }
+
+  async findRecentCompleted(
+    contactKind: ContactKind,
+    normalizedValue: string,
+    purpose: VerificationPurpose,
+    notBefore: Date,
+  ): Promise<VerificationChallenge | undefined> {
+    return this.run('findRecentCompleted', async () => {
+      const [row] = await this.db
+        .select()
+        .from(contactVerificationChallenges)
+        .where(
+          and(
+            eq(contactVerificationChallenges.contactKind, contactKind),
+            eq(contactVerificationChallenges.normalizedValue, normalizedValue),
+            eq(contactVerificationChallenges.purpose, purpose),
+            eq(contactVerificationChallenges.status, 'VERIFIED'),
+            gte(contactVerificationChallenges.verifiedAt, notBefore),
+          ),
+        )
+        // Newest proof first, with a deterministic tie-break: see the port.
+        .orderBy(
+          desc(contactVerificationChallenges.verifiedAt),
+          desc(contactVerificationChallenges.id),
+        )
+        .limit(1);
+
+      return row === undefined ? undefined : toDomain(row);
     });
   }
 

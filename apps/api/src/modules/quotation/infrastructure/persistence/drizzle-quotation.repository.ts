@@ -5,7 +5,7 @@
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { and, asc, desc, eq, gt, isNull, ne, or } from 'drizzle-orm';
+import { and, asc, desc, eq, ne } from 'drizzle-orm';
 
 import type {
   AcceptQuotationInput,
@@ -16,7 +16,9 @@ import type {
   QuotationRepository,
   QuotationVersion,
   QuotationVersionId,
+  RejectQuotationInput,
 } from '../../domain/repositories/quotation.repository';
+import { lockDecisionTarget } from './quotation-decision.lock';
 import { toLineItem, toQuotation, toVersion } from './quotation-row.mapper';
 
 const { quotations, quotationVersions, quotationLineItems, quotationAcceptances } = schema;
@@ -215,23 +217,7 @@ export class DrizzleQuotationRepository extends DrizzleRepository implements Quo
       // G-DB7-20 / GRD-006. All three conditions are re-read here, inside the
       // accepting transaction: the customer may be looking at a page rendered
       // before a newer version superseded this one, or before it expired.
-      const [version] = await tx
-        .select({ version: quotationVersions, currentVersionId: quotations.currentVersionId })
-        .from(quotationVersions)
-        .innerJoin(quotations, eq(quotationVersions.quotationId, quotations.id))
-        .where(
-          and(
-            eq(quotationVersions.id, input.versionId),
-            eq(quotationVersions.status, 'SENT'),
-            // Unexpired: `valid_until` null means no expiry was set.
-            or(
-              isNull(quotationVersions.validUntil),
-              gt(quotationVersions.validUntil, input.acceptedAt),
-            ),
-          ),
-        )
-        .limit(1)
-        .for('update', { of: quotationVersions });
+      const version = await lockDecisionTarget(tx, input.versionId, input.acceptedAt);
 
       if (version === undefined) {
         throw guardViolationError(
@@ -278,6 +264,54 @@ export class DrizzleQuotationRepository extends DrizzleRepository implements Quo
         .where(eq(quotations.id, accepted.quotationId));
 
       return toVersion(accepted);
+    });
+  }
+
+  async reject(input: RejectQuotationInput): Promise<QuotationVersion> {
+    return this.run('reject', async () => {
+      const tx = this.requireTransaction('reject');
+
+      // Same lock and the same containment proof `accept` takes, minus the
+      // validity window: see the port. The current-pointer clause is what stops
+      // a customer holding a stale page from rejecting a version the workshop
+      // already replaced — which would leave the live offer intact but the
+      // quotation header REJECTED.
+      const current = await lockDecisionTarget(tx, input.versionId, undefined);
+
+      if (current === undefined || current.currentVersionId !== input.versionId) {
+        // One code for "not sent", "already rejected", "already accepted",
+        // "superseded" and "no longer current". `APP6-G01` §10 names
+        // INVALID_TRANSITION for the repeat case, and the others are the same
+        // statement about the same row: LC-12 does not permit TR-LC12-06 from
+        // where this version now stands.
+        throw guardViolationError(
+          'QuotationRepository.reject',
+          'INVALID_TRANSITION',
+          'That quotation version can no longer be rejected.',
+        );
+      }
+
+      const [rejected] = await tx
+        .update(quotationVersions)
+        .set({ status: 'REJECTED' })
+        .where(eq(quotationVersions.id, input.versionId))
+        .returning();
+
+      if (rejected === undefined) {
+        throw notFoundError('QuotationRepository.reject', 'That quotation version does not exist.');
+      }
+
+      // The header follows the version (LC-12 `version SENT→REJECTED
+      // (header→REJECTED)`). `current_version_id` is left pointing at the
+      // rejected version: it is still the version this quotation last put in
+      // front of the customer, and clearing it would make the header describe a
+      // quotation that had never been sent.
+      await tx
+        .update(quotations)
+        .set({ status: 'REJECTED', updatedAt: input.rejectedAt })
+        .where(eq(quotations.id, rejected.quotationId));
+
+      return toVersion(rejected);
     });
   }
 

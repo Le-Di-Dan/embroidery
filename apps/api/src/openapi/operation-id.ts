@@ -84,6 +84,16 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   AdminQuotationSendController: 'adminQuotation',
   AdminQuotationController: 'adminQuotation',
   AdminQuotationVersionController: 'adminQuotation',
+  // `APP6-B05`. Accepting and rejecting a quotation join the same published
+  // `publicQuotation` domain as `APP6-B04`'s read. They are a second class
+  // because the read module is *defined* by holding no transaction manager and
+  // no write repository, and these two writes need both — the same split, and
+  // the same reason, as `AdminCustomRequestController` /
+  // `AdminCustomRequestModerationController`. Without this entry the decisions
+  // would mint `publicQuotationDecision_accept`, letting a module boundary name
+  // two public identifiers; with it, `publicQuotation_current` is untouched and
+  // the family reads `_current`, `_accept`, `_reject`.
+  PublicQuotationDecisionController: 'publicQuotation',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

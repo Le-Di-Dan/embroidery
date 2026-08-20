@@ -94,6 +94,27 @@ export interface AcceptQuotationInput {
   readonly acceptedAt: Date;
 }
 
+/**
+ * The customer declining the exact version they were shown (`TR-LC12-06`).
+ *
+ * Deliberately **narrower** than {@link AcceptQuotationInput}. It carries no
+ * `customerId`, no `grantId` and no `stepUpChallengeId`, because rejection
+ * writes no evidence row that would reference them: TBL-053 exists for
+ * acceptance only, and `TR-LC12-06` lists GRD-002 alone — no step-up
+ * (`APP6-G01` §8). The authorization still happens; it simply leaves its record
+ * in the audit trail rather than in a table of its own.
+ *
+ * There is no reason text either. LC-12 marks the reason *optional*, and the
+ * schema provides nowhere to put one: `quotation_versions` has `void_reason`
+ * for `TR-LC12-07` and nothing for a rejection, and `quotations` has no reason
+ * column at all. Inventing a home for it would be a migration this checkpoint
+ * does not own.
+ */
+export interface RejectQuotationInput {
+  readonly versionId: QuotationVersionId;
+  readonly rejectedAt: Date;
+}
+
 export const QUOTATION_REPOSITORY = Symbol('QUOTATION_REPOSITORY');
 
 export interface QuotationRepository {
@@ -124,6 +145,25 @@ export interface QuotationRepository {
    * @requiresTransaction
    */
   accept(input: AcceptQuotationInput): Promise<QuotationVersion>;
+
+  /**
+   * Rejects the exact current version (`TR-LC12-06`).
+   *
+   * The version must still be the quotation's current one **and** `SENT`, both
+   * re-read under this transaction's row lock. Anything else — a superseded
+   * sibling, an already-rejected version, an accepted one, a draft — is refused
+   * as `INVALID_TRANSITION`, which is the same code `APP6-G01` §10 assigns to a
+   * repeat rejection: the version's terminal state *is* the record, so a second
+   * rejection has nothing to add and must not appear to have been accepted.
+   *
+   * Unlike {@link accept} this does **not** test `valid_until`. GRD-006 guards
+   * acceptance, not refusal, and a customer declining an offer that lapsed while
+   * they thought about it is stating something true about a real version. The
+   * quotation ends in the same terminal state either way.
+   *
+   * @requiresTransaction
+   */
+  reject(input: RejectQuotationInput): Promise<QuotationVersion>;
 
   /** @requiresTransaction */
   expire(id: QuotationVersionId, at: Date): Promise<void>;
