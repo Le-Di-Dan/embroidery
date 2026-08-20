@@ -37,7 +37,7 @@ NEXT CHECKPOINT = APP6-B05
 
 The five accepted Admin quotation operation ids were verified unchanged, both by
 reading the delivered controllers and by assertion in the new contract spec
-(§9): `adminQuotation_create`, `adminQuotation_addVersion`,
+(§16): `adminQuotation_create`, `adminQuotation_addVersion`,
 `adminQuotation_versionHistory`, `adminQuotation_versionDetail`,
 `adminQuotation_sendVersion`.
 
@@ -131,7 +131,7 @@ guesses across two routes.
 
 `AuthorizeSecureLink`, `CustomerModule` and every APP4 file were left
 **unmodified**, which is why the APP5-B03 and APP4-B06 suites were not re-run
-(§11).
+(§17).
 
 ## 7. Grant-derived target chain
 
