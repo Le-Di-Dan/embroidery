@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
 import { PublishApp4PolicyUseCase } from './publish-app4-policy.use-case';
+import { PublishApp6PolicyUseCase } from './publish-app6-policy.use-case';
 
 /**
  * Business policy configuration (AGG-23, `APP4-B01-C1`).
@@ -12,10 +13,14 @@ import { PublishApp4PolicyUseCase } from './publish-app4-policy.use-case';
  * runtime fallback constant anywhere.
  *
  * No controller: publication is a bootstrap action, not a request.
+ *
+ * `APP6-B01` added the second publisher here rather than a second module: one
+ * module owning policy publication is the reason a third dataset cannot quietly
+ * acquire its own platform.
  */
 @Module({
   imports: [DatabaseModule],
-  providers: [PublishApp4PolicyUseCase],
-  exports: [PublishApp4PolicyUseCase],
+  providers: [PublishApp4PolicyUseCase, PublishApp6PolicyUseCase],
+  exports: [PublishApp4PolicyUseCase, PublishApp6PolicyUseCase],
 })
 export class PolicyModule {}

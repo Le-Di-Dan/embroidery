@@ -24,6 +24,7 @@ import { CustomRequestAssetDeliveryModule } from '../modules/order/custom-reques
 import { CustomRequestModerationModule } from '../modules/order/custom-request-moderation.module';
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
+import { QuotationDraftingModule } from '../modules/quotation/quotation-drafting.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -141,6 +142,10 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // on either because it is the only one that needs an object-storage client,
     // and neither JSON surface may have one in reach.
     CustomRequestAssetDeliveryModule,
+    // APP6-B01 — the first CTX-QUO HTTP surface: two Admin drafting mutations
+    // on `admin/quotations`. Its own base path, disjoint from every module
+    // above, so registration order cannot make one shadow another.
+    QuotationDraftingModule,
   ],
 })
 export class AppModule {}

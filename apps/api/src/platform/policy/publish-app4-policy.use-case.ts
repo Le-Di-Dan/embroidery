@@ -26,6 +26,8 @@ import { Injectable } from '@nestjs/common';
 import { loadApp4PolicyDataset, type App4PolicyConfiguration } from '@embroidery/database';
 import { PolicyConfigurationRepository, TransactionManager } from '@embroidery/persistence';
 
+import { isPolicyValueCurrent, type PolicyPublicationResult } from './policy-version-comparison';
+
 /**
  * How `@embroidery/database` is located at runtime.
  *
@@ -38,14 +40,13 @@ export type PackageJsonResolver = () => string;
 const resolveDatabasePackageJson: PackageJsonResolver = () =>
   require.resolve('@embroidery/database/package.json');
 
-/** What one key's publication did. */
-export type PolicyPublicationOutcome = 'published' | 'unchanged';
-
-export interface PolicyPublicationResult {
-  readonly configKey: string;
-  readonly outcome: PolicyPublicationOutcome;
-  readonly version: number;
-}
+// The publication result types and the drift comparison moved to
+// `policy-version-comparison.ts` when `APP6-B01` added the second dataset
+// publisher; they are re-exported here so this file stays the APP4 entry point.
+export type {
+  PolicyPublicationOutcome,
+  PolicyPublicationResult,
+} from './policy-version-comparison';
 
 @Injectable()
 export class PublishApp4PolicyUseCase {
@@ -82,7 +83,7 @@ export class PublishApp4PolicyUseCase {
     // lookup, and holding a transaction open across all four keys would serialize
     // a bootstrap step that has no cross-key invariant.
     const current = await this.policies.currentValue(configuration.configKey);
-    if (current !== undefined && isUpToDate(current, configuration)) {
+    if (current !== undefined && isPolicyValueCurrent(current, configuration)) {
       return { configKey: configuration.configKey, outcome: 'unchanged', version: current.version };
     }
 
@@ -104,37 +105,4 @@ export class PublishApp4PolicyUseCase {
 /** A stable, secret-free reason line. Never the value itself. */
 function dataset_reason(configuration: App4PolicyConfiguration): string {
   return `${configuration.configKey} v${String(configuration.valueSchemaVersion)}`;
-}
-
-/**
- * Whether the stored version already matches the dataset.
- *
- * Compares the schema version and the value. `JSON.stringify` over sorted keys
- * is the comparison: the stored value round-tripped through JSONB, so key order
- * is not guaranteed to survive, and an order-sensitive compare would republish
- * an identical value on every boot — the exact accumulation this check exists to
- * prevent.
- */
-function isUpToDate(
-  current: { readonly value: unknown; readonly valueSchemaVersion: number },
-  configuration: App4PolicyConfiguration,
-): boolean {
-  return (
-    current.valueSchemaVersion === configuration.valueSchemaVersion &&
-    canonical(current.value) === canonical(configuration.value)
-  );
-}
-
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(canonical).join(',')}]`;
-  }
-  if (typeof value === 'object' && value !== null) {
-    const record = value as Record<string, unknown>;
-    return `{${Object.keys(record)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`)
-      .join(',')}}`;
-  }
-  return JSON.stringify(value);
 }

@@ -156,9 +156,9 @@ APP7 creates deposit obligation/attempt and order conversion only from an eligib
 | `APP6-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation. `APP6_SCHEMA_DISPOSITION = MIGRATION_REQUIRED`; design gate `DESIGN_REQUIRED_BEFORE_UI_ONLY`. See [`../audits/APP6_PHASE_ENTRY_AUDIT.md`](../audits/APP6_PHASE_ENTRY_AUDIT.md) and [`../reports/APP6-R00-COMPLETION-REPORT.md`](../reports/APP6-R00-COMPLETION-REPORT.md) |
 | `APP6-G01` | `COMPLETE` | APP6 authority locked (`IMP-D051`); `APP6-G01-C1` agreement-authority semantic alignment incorporated. ADR [`../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md`](../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md), authority package [`../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md`](../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md), report [`../reports/APP6-G01-COMPLETION-REPORT.md`](../reports/APP6-G01-COMPLETION-REPORT.md). `DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS` |
 | `APP6-DB01` | `COMPLETE` | COP design context physically represented. Migration `0036_add_app6_cop_design_context` — exactly the eight operations in ADR-APP6-001 §4: four Catalog placement columns made nullable on each table, `customer_owned_product_id` + REL-107/REL-108 (`ON DELETE RESTRICT`), the `design_versions` placement label pair, and CST-129/CST-130/CST-131. No backfill, no new index, no trigger change. 54/54 across three focused integration suites; all six live checkers green at 78/849/165/52/204/215/34; fingerprint `3fd107f2…` reproduced on a second independently built database. Report [`../reports/APP6-DB01-COMPLETION-REPORT.md`](../reports/APP6-DB01-COMPLETION-REPORT.md) |
-| `APP6-D01` | `COMPLETE` | One APP6 Figma package delivered for Product Owner review. The `APP_06` page **already existed** at `678:3` and was empty, so it was reused rather than re-created; root section `681:3`, 11 sub-sections, **56 frames**, **56 new `FIGMA_DESIGN_INDEX.md` rows** (§4.12), all `REVIEW_REQUIRED` with approval evidence `—`. APP4 secure-access states and the APP3-S09 watermark referenced, not redrawn. 0 components, 0 instances, 0 new variables or styles. Gate green at 334/334/18. Report [`../reports/APP6-D01-COMPLETION-REPORT.md`](../reports/APP6-D01-COMPLETION-REPORT.md) |
-| `APP6-B01` | `INCOMPLETE` | **Next** — Quotation drafting — 2 operations; also ships the `app6-policy-configuration` dataset reader and publisher (APP4-B01-C1 precedent) |
-| `APP6-B02` | `INCOMPLETE` | Quotation read — 2 operations |
+| `APP6-D01` | `COMPLETE` | One APP6 Figma package delivered for Product Owner review. The `APP_06` page **already existed** at `678:3` and was empty, so it was reused rather than re-created; root section `681:3`, 11 sub-sections, **56 frames**, **56 new `FIGMA_DESIGN_INDEX.md` rows** (§4.12), all entered `REVIEW_REQUIRED`. **Product Owner passed the complete package**; `APP6-B01` recorded that approval as a documentation preflight — all 56 rows promoted to `APPROVED_FOR_IMPLEMENTATION` under evidence `FIG-APPROVAL-APP6-D01-PO-001`, with no Figma mutation and no `Last Verified` change. APP4 secure-access states and the APP3-S09 watermark referenced, not redrawn. 0 components, 0 instances, 0 new variables or styles. Gate green at 334/334/18. Report [`../reports/APP6-D01-COMPLETION-REPORT.md`](../reports/APP6-D01-COMPLETION-REPORT.md) |
+| `APP6-B01` | `COMPLETE` | Quotation drafting. **2 operations** — `adminQuotation_create` (`POST /api/admin/quotations`) and `adminQuotation_addVersion` (`POST /api/admin/quotations/{quotationId}/versions`); OpenAPI 58→60 paths, 63→65 operations, 132→135 schemas. `TR-LC12-01` only: header + first `DRAFT` version in one transaction, a further `DRAFT` version as an append. Every amount is a string end to end and every derived figure — line total, subtotal, total, deposit/remaining — is computed in exact `bigint` decimal, round-half-up on deposit per DB4, `remaining = total − deposit` so CST-064 holds for every total. Also ships the `app6-policy-configuration` dataset reader and publisher (APP4-B01-C1 precedent): **3 keys** published from the `staff-bootstrap` seam, idempotent, drift appended never rewritten. No migration; the request is never moved and no `quotation.sent` is emitted. 103 focused tests green. Report [`../reports/APP6-B01-COMPLETION-REPORT.md`](../reports/APP6-B01-COMPLETION-REPORT.md) |
+| `APP6-B02` | `INCOMPLETE` | **Next** — Quotation read — 2 operations |
 | `APP6-B03` | `INCOMPLETE` | Quotation send — 1 operation; projects `TR-LC11-05` |
 | `APP6-B04` | `INCOMPLETE` | Customer secure quotation read — 1 operation |
 | `APP6-B05` | `INCOMPLETE` | Quotation acceptance and rejection — 2 operations; projects `TR-LC11-06` |
@@ -176,7 +176,7 @@ APP7 creates deposit obligation/attempt and order conversion only from an eligib
 | `APP6-X01` | `INCOMPLETE` | Phase closure |
 
 ```text
-APP6 = AUTHORITY LOCKED — PERSISTENCE IN PLACE, NO RUNTIME YET
+APP6 = FIRST RUNTIME SLICE DELIVERED
 APP6-R00 = COMPLETE
 APP6-G01 = COMPLETE
 APP6-DB01 = COMPLETE
@@ -184,10 +184,21 @@ APP6 AUTHORITY = LOCKED
 DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS
 APP6 COP DESIGN CONTEXT = PHYSICALLY REPRESENTABLE
 APP6-D01 = COMPLETE
-DESIGN_PACKAGE = DELIVERED_FOR_PRODUCT_OWNER_REVIEW
-SELF_APPROVAL = NO
-UI_IMPLEMENTATION_GATE = BLOCKED_UNTIL_RELEVANT_ROWS_ARE_APPROVED
-NEXT CHECKPOINT = APP6-B01
+APP6-D01 PRODUCT OWNER APPROVAL = RECORDED (FIG-APPROVAL-APP6-D01-PO-001)
+UI_IMPLEMENTATION_GATE = OPEN FOR THE 56 APPROVED APP6-D01 ROWS
+APP6-B01 = COMPLETE
+HTTP OPERATIONS ADDED = 2
+QUOTATION CREATE + FIRST DRAFT = DELIVERED
+TR-LC12-01 ADD DRAFT VERSION = DELIVERED
+APP6 POLICY DATASET READER = DELIVERED
+APP6 POLICY PUBLICATION = DELIVERED
+POLICY KEYS PUBLISHED = 3
+EXACT MONEY = STRING END TO END
+REQUEST PROJECTED TO QUOTED = NO
+QUOTATION.SENT EMITTED = NO
+DATABASE MIGRATION = NONE
+B02/B03/B04/B05 = NOT STARTED
+NEXT CHECKPOINT = APP6-B02
 ```
 
 ### 11.3 Locked APP6 authority (`APP6-G01`, `IMP-D051`)

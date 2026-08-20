@@ -1,6 +1,89 @@
 {
   "components": {
     "schemas": {
+      "AddQuotationVersionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "adjustmentReason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "lineItems": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "maxLength": 500,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "lineKind": {
+                  "enum": [
+                    "PRODUCT",
+                    "EMBROIDERY",
+                    "DIGITIZING_FEE",
+                    "SHIPPING",
+                    "ADJUSTMENT",
+                    "OTHER"
+                  ],
+                  "type": "string"
+                },
+                "quantity": {
+                  "exclusiveMinimum": true,
+                  "maximum": 1000000,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "skuId": {
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                  "type": "string"
+                },
+                "unitPriceAmount": {
+                  "pattern": "^-?\\d{1,12}(?:\\.\\d{1,2})?$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "lineKind",
+                "description",
+                "quantity",
+                "unitPriceAmount"
+              ],
+              "type": "object"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "manualAdjustmentAmount": {
+            "pattern": "^-?\\d{1,12}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "quantityTotal": {
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "shippingFeeAmount": {
+            "pattern": "^-?\\d{1,12}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "stitchCount": {
+            "maximum": 100000000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quantityTotal",
+          "shippingFeeAmount",
+          "lineItems"
+        ],
+        "type": "object"
+      },
       "AdminAssetDetailResponse": {
         "properties": {
           "assetId": {
@@ -2240,6 +2323,95 @@
         ],
         "type": "object"
       },
+      "CreateQuotationDraftBody": {
+        "additionalProperties": false,
+        "properties": {
+          "adjustmentReason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "customRequestId": {
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "lineItems": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "maxLength": 500,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "lineKind": {
+                  "enum": [
+                    "PRODUCT",
+                    "EMBROIDERY",
+                    "DIGITIZING_FEE",
+                    "SHIPPING",
+                    "ADJUSTMENT",
+                    "OTHER"
+                  ],
+                  "type": "string"
+                },
+                "quantity": {
+                  "exclusiveMinimum": true,
+                  "maximum": 1000000,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "skuId": {
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                  "type": "string"
+                },
+                "unitPriceAmount": {
+                  "pattern": "^-?\\d{1,12}(?:\\.\\d{1,2})?$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "lineKind",
+                "description",
+                "quantity",
+                "unitPriceAmount"
+              ],
+              "type": "object"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "manualAdjustmentAmount": {
+            "pattern": "^-?\\d{1,12}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "quantityTotal": {
+            "exclusiveMinimum": true,
+            "maximum": 1000000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "shippingFeeAmount": {
+            "pattern": "^-?\\d{1,12}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "stitchCount": {
+            "maximum": 100000000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "customRequestId",
+          "quantityTotal",
+          "shippingFeeAmount",
+          "lineItems"
+        ],
+        "type": "object"
+      },
       "CurrentStaffResponse": {
         "properties": {
           "displayName": {
@@ -4007,6 +4179,115 @@
         },
         "required": [
           "expectedUpdatedAt"
+        ],
+        "type": "object"
+      },
+      "QuotationDraftedResponse": {
+        "properties": {
+          "currencyCode": {
+            "description": "Fixed by the schema; no currency is selectable.",
+            "example": "VND",
+            "type": "string"
+          },
+          "customRequestId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "type": "string"
+          },
+          "depositAmount": {
+            "description": "The deposit share of the total, rounded half up to a whole đồng.",
+            "example": "620000.00",
+            "type": "string"
+          },
+          "depositPercent": {
+            "description": "The deposit share this version was priced at, read from published policy rather than chosen here. A string: it is `numeric(5,2)`.",
+            "example": "40.00",
+            "type": "string"
+          },
+          "lineItemCount": {
+            "description": "How many priced lines explain the subtotal.",
+            "example": 3,
+            "type": "number"
+          },
+          "manualAdjustmentAmount": {
+            "description": "The manual adjustment applied to the subtotal. May be negative.",
+            "example": "0.00",
+            "type": "string"
+          },
+          "quantityTotal": {
+            "description": "The garment quantity this version prices.",
+            "example": 24,
+            "type": "number"
+          },
+          "quotationCode": {
+            "description": "The stable human-facing code. Read aloud and retyped — never an authorization input.",
+            "example": "QUO-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "quotationId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "quotationStatus": {
+            "description": "The quotation header state. Drafting never advances it.",
+            "example": "DRAFT",
+            "type": "string"
+          },
+          "remainingAmount": {
+            "description": "Total minus deposit — computed by subtraction so the two always sum to the total exactly.",
+            "example": "930000.00",
+            "type": "string"
+          },
+          "shippingFeeAmount": {
+            "description": "Exact `numeric(14,2)` VND, always a string. Never a JSON number.",
+            "example": "50000.00",
+            "type": "string"
+          },
+          "subtotalAmount": {
+            "description": "The sum of the line totals.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "totalAmount": {
+            "description": "Subtotal + adjustment + shipping fee, as the schema requires (CST-064).",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "version": {
+            "description": "The version number the database assigned, one higher than the previous version of this quotation. Version numbers are never reused and earlier versions are never rewritten.",
+            "example": 1,
+            "type": "number"
+          },
+          "versionId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "versionStatus": {
+            "description": "Always `DRAFT` here. Sending is a separate, later action.",
+            "example": "DRAFT",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quotationId",
+          "quotationCode",
+          "customRequestId",
+          "quotationStatus",
+          "versionId",
+          "version",
+          "versionStatus",
+          "currencyCode",
+          "subtotalAmount",
+          "manualAdjustmentAmount",
+          "shippingFeeAmount",
+          "totalAmount",
+          "depositPercent",
+          "depositAmount",
+          "remainingAmount",
+          "quantityTotal",
+          "lineItemCount"
         ],
         "type": "object"
       },
@@ -11412,6 +11693,504 @@
         "summary": "Unpublish a product",
         "tags": [
           "adminProduct"
+        ]
+      }
+    },
+    "/api/admin/quotations": {
+      "post": {
+        "description": "Creates the quotation for one custom request together with its first `DRAFT` version and the priced lines that explain it. The two commit together: there is no quotation without its first version. A request may hold exactly one quotation — a later price is a new **version** of it, not a second quotation.\n\nOnly the lines, the shipping fee and an optional adjustment are priced input. The line totals, the subtotal, the total and the deposit/remaining split are all derived: the split comes from published business policy, not from this request, and the amounts are exact decimal throughout — send them as strings.\n\nThis drafts only. The customer is not told, nothing is sent, no validity window starts and the request itself does not move.",
+        "operationId": "adminQuotation_create",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQuotationDraftBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/QuotationDraftedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The quotation and the first version that were created.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body, or pricing this system cannot quote — a fractional đồng, an amount larger than the column, a total driven below zero, or an adjustment with no reason.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such custom request.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`REQUEST_NOT_QUOTABLE` — the request has not reached review, or has left the lifecycle. `QUOTATION_ALREADY_EXISTS` — it already has one; add a version to that instead.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The deposit policy has not been published, so no split can be derived. Nothing was written.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Create the quotation for a request with its first draft version",
+        "tags": [
+          "adminQuotation"
+        ]
+      }
+    },
+    "/api/admin/quotations/{quotationId}/versions": {
+      "post": {
+        "description": "Re-prices a quotation by adding the next `DRAFT` version with its own priced lines. It is an append: earlier versions — including any that were already sent — are left exactly as they are and stay readable, and there is no route anywhere that edits one. Version numbers are assigned by the server, consecutively, and are never reused.\n\nThe deposit split is read from published policy again for this version, so a version prices under the policy in force when it is drafted.\n\nThis drafts only: it sends nothing, starts no validity window and does not move the custom request.",
+        "operationId": "adminQuotation_addVersion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quotationId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddQuotationVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/QuotationDraftedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The version that was created.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body, or pricing this system cannot quote — a fractional đồng, an amount larger than the column, a total driven below zero, or an adjustment with no reason.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such quotation.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`QUOTATION_NOT_DRAFTABLE` — this quotation is closed to further versions.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The deposit policy has not been published, so no split can be derived. Nothing was written.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Add a further draft version to an existing quotation",
+        "tags": [
+          "adminQuotation"
         ]
       }
     },

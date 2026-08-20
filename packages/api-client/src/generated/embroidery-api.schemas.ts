@@ -5,6 +5,63 @@
  * Internal HTTP contract for the Embroidery Commerce platform API. Generated from NestJS Swagger metadata; the committed artifact is the machine-readable source for the generated TypeScript/Axios client.
  * OpenAPI spec version: 0.1.0
  */
+export type AddQuotationVersionBodyLineItemsItemLineKind =
+  (typeof AddQuotationVersionBodyLineItemsItemLineKind)[keyof typeof AddQuotationVersionBodyLineItemsItemLineKind];
+
+export const AddQuotationVersionBodyLineItemsItemLineKind = {
+  PRODUCT: 'PRODUCT',
+  EMBROIDERY: 'EMBROIDERY',
+  DIGITIZING_FEE: 'DIGITIZING_FEE',
+  SHIPPING: 'SHIPPING',
+  ADJUSTMENT: 'ADJUSTMENT',
+  OTHER: 'OTHER',
+} as const;
+
+export type AddQuotationVersionBodyLineItemsItem = {
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  description: string;
+  lineKind: AddQuotationVersionBodyLineItemsItemLineKind;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
+  quantity: number;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  skuId?: string;
+  /** @pattern ^-?\d{1,12}(?:\.\d{1,2})?$ */
+  unitPriceAmount: string;
+};
+
+export interface AddQuotationVersionBody {
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  adjustmentReason?: string;
+  /**
+   * @minItems 1
+   * @maxItems 200
+   */
+  lineItems: AddQuotationVersionBodyLineItemsItem[];
+  /** @pattern ^-?\d{1,12}(?:\.\d{1,2})?$ */
+  manualAdjustmentAmount?: string;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
+  quantityTotal: number;
+  /** @pattern ^-?\d{1,12}(?:\.\d{1,2})?$ */
+  shippingFeeAmount: string;
+  /**
+   * @minimum 0
+   * @maximum 100000000
+   */
+  stitchCount?: number;
+}
+
 export type AdminAssetDetailResponseClassification =
   (typeof AdminAssetDetailResponseClassification)[keyof typeof AdminAssetDetailResponseClassification];
 
@@ -1341,6 +1398,65 @@ export interface CreateProductBody {
   name: string;
 }
 
+export type CreateQuotationDraftBodyLineItemsItemLineKind =
+  (typeof CreateQuotationDraftBodyLineItemsItemLineKind)[keyof typeof CreateQuotationDraftBodyLineItemsItemLineKind];
+
+export const CreateQuotationDraftBodyLineItemsItemLineKind = {
+  PRODUCT: 'PRODUCT',
+  EMBROIDERY: 'EMBROIDERY',
+  DIGITIZING_FEE: 'DIGITIZING_FEE',
+  SHIPPING: 'SHIPPING',
+  ADJUSTMENT: 'ADJUSTMENT',
+  OTHER: 'OTHER',
+} as const;
+
+export type CreateQuotationDraftBodyLineItemsItem = {
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  description: string;
+  lineKind: CreateQuotationDraftBodyLineItemsItemLineKind;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
+  quantity: number;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  skuId?: string;
+  /** @pattern ^-?\d{1,12}(?:\.\d{1,2})?$ */
+  unitPriceAmount: string;
+};
+
+export interface CreateQuotationDraftBody {
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  adjustmentReason?: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  customRequestId: string;
+  /**
+   * @minItems 1
+   * @maxItems 200
+   */
+  lineItems: CreateQuotationDraftBodyLineItemsItem[];
+  /** @pattern ^-?\d{1,12}(?:\.\d{1,2})?$ */
+  manualAdjustmentAmount?: string;
+  /**
+   * @maximum 1000000
+   * @exclusiveMinimum 0
+   */
+  quantityTotal: number;
+  /** @pattern ^-?\d{1,12}(?:\.\d{1,2})?$ */
+  shippingFeeAmount: string;
+  /**
+   * @minimum 0
+   * @maximum 100000000
+   */
+  stitchCount?: number;
+}
+
 export interface CurrentStaffResponse {
   /** The admin display name, shown in the Admin shell. */
   displayName: string;
@@ -2127,6 +2243,40 @@ export interface PublishProductBody {
   expectedUpdatedAt: string;
 }
 
+export interface QuotationDraftedResponse {
+  /** Fixed by the schema; no currency is selectable. */
+  currencyCode: string;
+  customRequestId: string;
+  /** The deposit share of the total, rounded half up to a whole đồng. */
+  depositAmount: string;
+  /** The deposit share this version was priced at, read from published policy rather than chosen here. A string: it is `numeric(5,2)`. */
+  depositPercent: string;
+  /** How many priced lines explain the subtotal. */
+  lineItemCount: number;
+  /** The manual adjustment applied to the subtotal. May be negative. */
+  manualAdjustmentAmount: string;
+  /** The garment quantity this version prices. */
+  quantityTotal: number;
+  /** The stable human-facing code. Read aloud and retyped — never an authorization input. */
+  quotationCode: string;
+  quotationId: string;
+  /** The quotation header state. Drafting never advances it. */
+  quotationStatus: string;
+  /** Total minus deposit — computed by subtraction so the two always sum to the total exactly. */
+  remainingAmount: string;
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  shippingFeeAmount: string;
+  /** The sum of the line totals. */
+  subtotalAmount: string;
+  /** Subtotal + adjustment + shipping fee, as the schema requires (CST-064). */
+  totalAmount: string;
+  /** The version number the database assigned, one higher than the previous version of this quotation. Version numbers are never reused and earlier versions are never rewritten. */
+  version: number;
+  versionId: string;
+  /** Always `DRAFT` here. Sending is a separate, later action. */
+  versionStatus: string;
+}
+
 /**
  * Presents a secure-link token to read the one request it opens.
  */
@@ -2870,6 +3020,14 @@ export type AdminProductPublish200 = ApiSuccessResponse & {
 
 export type AdminProductUnpublish200 = ApiSuccessResponse & {
   data: AdminProductPublicationResponse;
+};
+
+export type AdminQuotationCreate201 = ApiSuccessResponse & {
+  data: QuotationDraftedResponse;
+};
+
+export type AdminQuotationAddVersion201 = ApiSuccessResponse & {
+  data: QuotationDraftedResponse;
 };
 
 export type PublicCustomRequestAssetUploadParams = {

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  AddQuotationVersionBody,
   AdminAssetDetail200,
   AdminAssetList200,
   AdminAssetListParams,
@@ -43,6 +44,8 @@ import type {
   AdminProductPublish200,
   AdminProductUnpublish200,
   AdminProductUpdate200,
+  AdminQuotationAddVersion201,
+  AdminQuotationCreate201,
   AppendModerationNoteBody,
   ArchiveDesignTemplateBody,
   ArchiveProductBody,
@@ -51,6 +54,7 @@ import type {
   CreateDesignSessionBody,
   CreateDesignTemplateBody,
   CreateProductBody,
+  CreateQuotationDraftBody,
   HealthStatusResponse,
   IssueVerificationChallengeBody,
   PublicCustomRequestAssetStatus200,
@@ -678,6 +682,53 @@ export const adminProductUnpublish = (
 };
 
 /**
+ * Creates the quotation for one custom request together with its first `DRAFT` version and the priced lines that explain it. The two commit together: there is no quotation without its first version. A request may hold exactly one quotation — a later price is a new **version** of it, not a second quotation.
+ *
+ * Only the lines, the shipping fee and an optional adjustment are priced input. The line totals, the subtotal, the total and the deposit/remaining split are all derived: the split comes from published business policy, not from this request, and the amounts are exact decimal throughout — send them as strings.
+ *
+ * This drafts only. The customer is not told, nothing is sent, no validity window starts and the request itself does not move.
+ * @summary Create the quotation for a request with its first draft version
+ */
+export const adminQuotationCreate = (
+  createQuotationDraftBody: CreateQuotationDraftBody,
+  options?: SecondParameter<typeof apiRequest<AdminQuotationCreate201>>,
+) => {
+  return apiRequest<AdminQuotationCreate201>(
+    {
+      url: `/api/admin/quotations`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createQuotationDraftBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Re-prices a quotation by adding the next `DRAFT` version with its own priced lines. It is an append: earlier versions — including any that were already sent — are left exactly as they are and stay readable, and there is no route anywhere that edits one. Version numbers are assigned by the server, consecutively, and are never reused.
+ *
+ * The deposit split is read from published policy again for this version, so a version prices under the policy in force when it is drafted.
+ *
+ * This drafts only: it sends nothing, starts no validity window and does not move the custom request.
+ * @summary Add a further draft version to an existing quotation
+ */
+export const adminQuotationAddVersion = (
+  quotationId: unknown,
+  addQuotationVersionBody: AddQuotationVersionBody,
+  options?: SecondParameter<typeof apiRequest<AdminQuotationAddVersion201>>,
+) => {
+  return apiRequest<AdminQuotationAddVersion201>(
+    {
+      url: `/api/admin/quotations/${quotationId}/versions`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: addQuotationVersionBody,
+    },
+    options,
+  );
+};
+
+/**
  * Withdraws a live secure grant, killing the link immediately: the token stops resolving in the same transaction the state changes. A reason is mandatory and non-blank — it is stored on the grant and copied into the audit trail, attributed to the authenticated Admin. Revocation is terminal and mints nothing: no replacement grant, no new token and no notification. Restoring access is a fresh issue through the business flow, never a second call here. Revoking a grant that is already revoked or expired is a conflict, not a silent success.
  * @summary Revoke a secure grant
  */
@@ -1249,6 +1300,12 @@ export type AdminProductSideBackgroundGetResult = NonNullable<
 >;
 export type AdminProductUnpublishResult = NonNullable<
   Awaited<ReturnType<typeof adminProductUnpublish>>
+>;
+export type AdminQuotationCreateResult = NonNullable<
+  Awaited<ReturnType<typeof adminQuotationCreate>>
+>;
+export type AdminQuotationAddVersionResult = NonNullable<
+  Awaited<ReturnType<typeof adminQuotationAddVersion>>
 >;
 export type AdminSecureGrantRevokeResult = NonNullable<
   Awaited<ReturnType<typeof adminSecureGrantRevoke>>

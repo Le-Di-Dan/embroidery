@@ -183,3 +183,17 @@ export type {
   App4PolicyDataset,
   App4PolicyKey,
 } from './seed/app4-policy-dataset';
+
+// APP6-B01 — the G01 policy dataset reader. Same rule as the APP4 one above:
+// the JSON in `seed/` stays the single value source, and nothing here restates
+// a validity window, a deposit share or an agreement type.
+export {
+  APP6_POLICY_DATASET_FILE,
+  APP6_POLICY_KEYS,
+  loadApp6PolicyDataset,
+} from './seed/app6-policy-dataset';
+export type {
+  App6PolicyConfiguration,
+  App6PolicyDataset,
+  App6PolicyKey,
+} from './seed/app6-policy-dataset';

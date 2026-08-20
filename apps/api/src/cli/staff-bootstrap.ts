@@ -23,6 +23,7 @@ import {
   type EnsureBootstrapOutcome,
 } from '../modules/identity/application/bootstrap-staff.use-case';
 import { PublishApp4PolicyUseCase } from '../platform/policy/publish-app4-policy.use-case';
+import { PublishApp6PolicyUseCase } from '../platform/policy/publish-app6-policy.use-case';
 import {
   STATUS_EXIT_CODE,
   decideBootstrapPreflight,
@@ -104,6 +105,11 @@ async function runEnsure(): Promise<number> {
     // with an unchanged dataset publishes nothing.
     if (result.adminId !== undefined) {
       await app.get(PublishApp4PolicyUseCase).publish(result.adminId);
+      // APP6-B01, same seam and the same resolved Admin. Sequential rather than
+      // concurrent: each publisher opens its own transaction per drifted key,
+      // and racing them would interleave two bootstrap writes for no gain on a
+      // one-shot CLI.
+      await app.get(PublishApp6PolicyUseCase).publish(result.adminId);
     }
     return report(ENSURE_OUTCOME_STATUS[result.outcome], `staff ${result.outcome}`, result.adminId);
   } catch (error: unknown) {
