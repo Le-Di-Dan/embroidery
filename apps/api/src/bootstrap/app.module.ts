@@ -27,6 +27,7 @@ import { CustomRequestSubmissionModule } from '../modules/order/custom-request-s
 import { QuotationDraftingModule } from '../modules/quotation/quotation-drafting.module';
 import { QuotationReadModule } from '../modules/quotation/quotation-read.module';
 import { QuotationSendModule } from '../modules/quotation/quotation-send.module';
+import { CustomerQuotationModule } from '../modules/quotation/customer-quotation.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -160,6 +161,13 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // is a third module because it is the only APP6 surface allowed to move a
     // custom request.
     QuotationSendModule,
+    // APP6-B04 — the customer's grant-scoped quotation read, on its own
+    // `public/quotations` base path. Disjoint from the three Admin quotation
+    // modules above and from every public module before it, so registration
+    // order cannot make one shadow another. It is a fourth quotation module
+    // because it is the only one an unauthenticated caller reaches, and the only
+    // one that must hold no transaction manager and no write repository.
+    CustomerQuotationModule,
   ],
 })
 export class AppModule {}

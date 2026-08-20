@@ -3124,6 +3124,209 @@
         ],
         "type": "object"
       },
+      "CustomerQuotationLineItemResponse": {
+        "properties": {
+          "description": {
+            "example": "Áo polo thêu ngực trái",
+            "type": "string"
+          },
+          "lineKind": {
+            "enum": [
+              "PRODUCT",
+              "EMBROIDERY",
+              "DIGITIZING_FEE",
+              "SHIPPING",
+              "ADJUSTMENT",
+              "OTHER"
+            ],
+            "example": "PRODUCT",
+            "type": "string"
+          },
+          "lineTotalAmount": {
+            "description": "The frozen line total, as recorded. Never recomputed from unit price × quantity.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "position": {
+            "description": "The line’s place in the version, unique within it (CST-037). Sorted ascending.",
+            "example": 1,
+            "type": "number"
+          },
+          "quantity": {
+            "description": "Units this line prices.",
+            "example": 10,
+            "type": "number"
+          },
+          "unitPriceAmount": {
+            "description": "The frozen unit price.",
+            "example": "150000.00",
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "lineKind",
+          "description",
+          "quantity",
+          "unitPriceAmount",
+          "lineTotalAmount"
+        ],
+        "type": "object"
+      },
+      "CustomerQuotationResponse": {
+        "properties": {
+          "accessExpiresAt": {
+            "description": "When the secure link itself stops working — the grant’s expiry, not the quotation’s.",
+            "example": "2026-09-03T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "currencyCode": {
+            "description": "Fixed by the schema; no currency is selectable.",
+            "example": "VND",
+            "type": "string"
+          },
+          "depositAmount": {
+            "description": "The recorded deposit share.",
+            "example": "620000.00",
+            "type": "string"
+          },
+          "depositPercent": {
+            "description": "The deposit share **this version was priced at**, from its own row — not the share published policy carries today. A string: it is `numeric(5,2)`.",
+            "example": "40.00",
+            "type": "string"
+          },
+          "expired": {
+            "description": "Whether the offer has lapsed at the moment of this read. Derived server-side and never stored by this operation: a quotation past `validUntil` is still returned in full, so the expired state is distinct from an unusable secure link. `true` as well when the stored status is already EXPIRED.",
+            "example": false,
+            "type": "boolean"
+          },
+          "lineItems": {
+            "description": "This version’s own frozen lines, ascending by position. Never another version’s.",
+            "items": {
+              "$ref": "#/components/schemas/CustomerQuotationLineItemResponse"
+            },
+            "type": "array"
+          },
+          "manualAdjustmentAmount": {
+            "description": "The manual adjustment applied to the subtotal, as recorded. May be negative. The operator’s internal note explaining it is not part of this response.",
+            "example": "0.00",
+            "type": "string"
+          },
+          "quantityTotal": {
+            "description": "The garment quantity this version prices.",
+            "example": 10,
+            "type": "number"
+          },
+          "quotationCode": {
+            "description": "The human quotation code, for quoting in a conversation with the workshop. Display only — it never opens a quotation, and this endpoint does not accept it.",
+            "example": "QUO-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "quotationStatus": {
+            "description": "The stored state of the quotation this version belongs to.",
+            "enum": [
+              "DRAFT",
+              "SENT",
+              "ACCEPTED",
+              "EXPIRED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "SENT",
+            "type": "string"
+          },
+          "remainingAmount": {
+            "description": "The recorded remainder.",
+            "example": "930000.00",
+            "type": "string"
+          },
+          "sentAt": {
+            "description": "When this version was sent.",
+            "example": "2026-08-20T09:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "shippingFeeAmount": {
+            "description": "Exact `numeric(14,2)` VND, always a string. Never a JSON number.",
+            "example": "50000.00",
+            "type": "string"
+          },
+          "status": {
+            "description": "The stored LC-13 state of this version. Reading it never advances it.",
+            "enum": [
+              "DRAFT",
+              "SENT",
+              "ACCEPTED",
+              "SUPERSEDED",
+              "EXPIRED",
+              "REJECTED",
+              "VOID"
+            ],
+            "example": "SENT",
+            "type": "string"
+          },
+          "subtotalAmount": {
+            "description": "The sum of this version’s line totals, as recorded.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "totalAmount": {
+            "description": "The recorded total. Returned as stored, never recomputed from the parts.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "validFrom": {
+            "description": "When the validity window opened.",
+            "example": "2026-08-20T09:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "validUntil": {
+            "description": "When the offer lapses.",
+            "example": "2026-08-27T09:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "version": {
+            "description": "The version number, consecutive within this quotation (CST-036).",
+            "example": 2,
+            "type": "number"
+          },
+          "versionId": {
+            "description": "The exact version this read resolved from the current pointers. Returned so a later decision can name the version the customer actually saw; a newer send makes a fresh read return a different id, and the older one is never served as current again.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quotationCode",
+          "versionId",
+          "version",
+          "status",
+          "quotationStatus",
+          "currencyCode",
+          "quantityTotal",
+          "subtotalAmount",
+          "manualAdjustmentAmount",
+          "shippingFeeAmount",
+          "totalAmount",
+          "depositPercent",
+          "depositAmount",
+          "remainingAmount",
+          "lineItems",
+          "sentAt",
+          "validFrom",
+          "validUntil",
+          "expired",
+          "accessExpiresAt"
+        ],
+        "type": "object"
+      },
       "DatabaseHealthResponse": {
         "properties": {
           "latencyMs": {
@@ -4644,6 +4847,21 @@
           "remainingAmount",
           "quantityTotal",
           "lineItemCount"
+        ],
+        "type": "object"
+      },
+      "ReadCurrentQuotationBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to read the quotation that is current for the request that link already opens. No quotation, version, request or customer identifier is accepted.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
         ],
         "type": "object"
       },
@@ -16925,6 +17143,189 @@
         "summary": "List the selectable variants of a published product",
         "tags": [
           "publicProductVariant"
+        ]
+      }
+    },
+    "/api/public/quotations/current": {
+      "post": {
+        "description": "Returns the quotation version that is current for the one custom request the presented secure link grants access to. The request is identified by the grant, and the version by the request’s and the quotation’s own current pointers — never by the caller: there is no quotation id, version id, request id or customer identifier in the body. A newer sent version makes a later call return that newer version; a superseded one is never served as current. A quotation whose validity has lapsed is still returned in full, flagged `expired`, and is not written to. Every token that does not open a live grant, and every request with no current quotation, answer with one identical 404.",
+        "operationId": "publicQuotation_current",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadCurrentQuotationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CustomerQuotationResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The quotation this link opens, projected for its customer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no readable current quotation. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for another target, or the request has simply not been quoted yet.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Secure-link resolution is not configured.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read the quotation a secure link opens",
+        "tags": [
+          "publicQuotation"
         ]
       }
     },

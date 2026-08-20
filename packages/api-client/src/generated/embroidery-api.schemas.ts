@@ -1884,6 +1884,114 @@ export interface CustomRequestSubmissionResponse {
   status: string;
 }
 
+export type CustomerQuotationLineItemResponseLineKind =
+  (typeof CustomerQuotationLineItemResponseLineKind)[keyof typeof CustomerQuotationLineItemResponseLineKind];
+
+export const CustomerQuotationLineItemResponseLineKind = {
+  PRODUCT: 'PRODUCT',
+  EMBROIDERY: 'EMBROIDERY',
+  DIGITIZING_FEE: 'DIGITIZING_FEE',
+  SHIPPING: 'SHIPPING',
+  ADJUSTMENT: 'ADJUSTMENT',
+  OTHER: 'OTHER',
+} as const;
+
+export interface CustomerQuotationLineItemResponse {
+  description: string;
+  lineKind: CustomerQuotationLineItemResponseLineKind;
+  /** The frozen line total, as recorded. Never recomputed from unit price × quantity. */
+  lineTotalAmount: string;
+  /** The line’s place in the version, unique within it (CST-037). Sorted ascending. */
+  position: number;
+  /** Units this line prices. */
+  quantity: number;
+  /** The frozen unit price. */
+  unitPriceAmount: string;
+}
+
+/**
+ * The stored state of the quotation this version belongs to.
+ */
+export type CustomerQuotationResponseQuotationStatus =
+  (typeof CustomerQuotationResponseQuotationStatus)[keyof typeof CustomerQuotationResponseQuotationStatus];
+
+export const CustomerQuotationResponseQuotationStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  EXPIRED: 'EXPIRED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The stored LC-13 state of this version. Reading it never advances it.
+ */
+export type CustomerQuotationResponseStatus =
+  (typeof CustomerQuotationResponseStatus)[keyof typeof CustomerQuotationResponseStatus];
+
+export const CustomerQuotationResponseStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  SUPERSEDED: 'SUPERSEDED',
+  EXPIRED: 'EXPIRED',
+  REJECTED: 'REJECTED',
+  VOID: 'VOID',
+} as const;
+
+export interface CustomerQuotationResponse {
+  /** When the secure link itself stops working — the grant’s expiry, not the quotation’s. */
+  accessExpiresAt: string;
+  /** Fixed by the schema; no currency is selectable. */
+  currencyCode: string;
+  /** The recorded deposit share. */
+  depositAmount: string;
+  /** The deposit share **this version was priced at**, from its own row — not the share published policy carries today. A string: it is `numeric(5,2)`. */
+  depositPercent: string;
+  /** Whether the offer has lapsed at the moment of this read. Derived server-side and never stored by this operation: a quotation past `validUntil` is still returned in full, so the expired state is distinct from an unusable secure link. `true` as well when the stored status is already EXPIRED. */
+  expired: boolean;
+  /** This version’s own frozen lines, ascending by position. Never another version’s. */
+  lineItems: CustomerQuotationLineItemResponse[];
+  /** The manual adjustment applied to the subtotal, as recorded. May be negative. The operator’s internal note explaining it is not part of this response. */
+  manualAdjustmentAmount: string;
+  /** The garment quantity this version prices. */
+  quantityTotal: number;
+  /** The human quotation code, for quoting in a conversation with the workshop. Display only — it never opens a quotation, and this endpoint does not accept it. */
+  quotationCode: string;
+  /** The stored state of the quotation this version belongs to. */
+  quotationStatus: CustomerQuotationResponseQuotationStatus;
+  /** The recorded remainder. */
+  remainingAmount: string;
+  /**
+   * When this version was sent.
+   * @nullable
+   */
+  sentAt: string | null;
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  shippingFeeAmount: string;
+  /** The stored LC-13 state of this version. Reading it never advances it. */
+  status: CustomerQuotationResponseStatus;
+  /** The sum of this version’s line totals, as recorded. */
+  subtotalAmount: string;
+  /** The recorded total. Returned as stored, never recomputed from the parts. */
+  totalAmount: string;
+  /**
+   * When the validity window opened.
+   * @nullable
+   */
+  validFrom: string | null;
+  /**
+   * When the offer lapses.
+   * @nullable
+   */
+  validUntil: string | null;
+  /** The version number, consecutive within this quotation (CST-036). */
+  version: number;
+  /** The exact version this read resolved from the current pointers. Returned so a later decision can name the version the customer actually saw; a newer send makes a fresh read return a different id, and the older one is never served as current again. */
+  versionId: string;
+}
+
 export type DatabaseHealthResponseReason =
   (typeof DatabaseHealthResponseReason)[keyof typeof DatabaseHealthResponseReason];
 
@@ -2433,6 +2541,17 @@ export interface QuotationDraftedResponse {
   versionId: string;
   /** Always `DRAFT` here. Sending is a separate, later action. */
   versionStatus: string;
+}
+
+/**
+ * Presents a secure-link token to read the quotation that is current for the request that link already opens. No quotation, version, request or customer identifier is accepted.
+ */
+export interface ReadCurrentQuotationBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
 }
 
 /**
@@ -3321,6 +3440,10 @@ export type PublicProductPlacementGet200 = ApiSuccessResponse & {
 
 export type PublicProductVariantList200 = ApiSuccessResponse & {
   data: PublicProductVariantListResponse;
+};
+
+export type PublicQuotationCurrent200 = ApiSuccessResponse & {
+  data: CustomerQuotationResponse;
 };
 
 export type PublicSecureLinkResolve200 = ApiSuccessResponse & {

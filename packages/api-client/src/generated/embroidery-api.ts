@@ -80,6 +80,7 @@ import type {
   PublicProductListParams,
   PublicProductPlacementGet200,
   PublicProductVariantList200,
+  PublicQuotationCurrent200,
   PublicSecureLinkResolve200,
   PublicVerificationIssue202,
   PublicVerificationReadStatus200,
@@ -87,6 +88,7 @@ import type {
   PublicVerificationSubmitAttempt200,
   PublishDesignTemplateBody,
   PublishProductBody,
+  ReadCurrentQuotationBody,
   ReadCustomRequestStatusBody,
   ReadinessStatusResponse,
   ReplaceProductPlacementBody,
@@ -1155,6 +1157,25 @@ export const publicProductVariantList = (
 };
 
 /**
+ * Returns the quotation version that is current for the one custom request the presented secure link grants access to. The request is identified by the grant, and the version by the request’s and the quotation’s own current pointers — never by the caller: there is no quotation id, version id, request id or customer identifier in the body. A newer sent version makes a later call return that newer version; a superseded one is never served as current. A quotation whose validity has lapsed is still returned in full, flagged `expired`, and is not written to. Every token that does not open a live grant, and every request with no current quotation, answer with one identical 404.
+ * @summary Read the quotation a secure link opens
+ */
+export const publicQuotationCurrent = (
+  readCurrentQuotationBody: ReadCurrentQuotationBody,
+  options?: SecondParameter<typeof apiRequest<PublicQuotationCurrent200>>,
+) => {
+  return apiRequest<PublicQuotationCurrent200>(
+    {
+      url: `/api/public/quotations/current`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: readCurrentQuotationBody,
+    },
+    options,
+  );
+};
+
+/**
  * Exchanges the opaque token from a secure link for the request it grants access to. The token travels in the request body only — never in a path, query or header — so it never reaches a server or proxy access log, and it is never echoed back. Resolving a link does not consume it: the same link works until it expires or is revoked. Every token that does not open a live grant — unknown, expired, revoked, superseded, or issued for something else — answers with one identical 404, so the response reveals nothing about whether a token ever existed.
  * @summary Resolve a secure-link token
  */
@@ -1434,6 +1455,9 @@ export type PublicProductSideBackgroundGetResult = NonNullable<
 >;
 export type PublicProductVariantListResult = NonNullable<
   Awaited<ReturnType<typeof publicProductVariantList>>
+>;
+export type PublicQuotationCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof publicQuotationCurrent>>
 >;
 export type PublicSecureLinkResolveResult = NonNullable<
   Awaited<ReturnType<typeof publicSecureLinkResolve>>
