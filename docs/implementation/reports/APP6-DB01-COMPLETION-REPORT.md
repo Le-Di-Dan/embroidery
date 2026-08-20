@@ -461,7 +461,13 @@ no generated client, no SCSS, no Figma node, no `.env` write.
 
 ## 14. Commits
 
-See §15 for the checkpoint commit. Nothing pushed.
+| Commit | Subject |
+|---|---|
+| `b7b0dfe` | `feat(database): add the APP6 customer-owned-product design context` |
+
+One checkpoint commit. The pre-existing unstaged deletion of
+`beginning_app_development_with_flutter_by_rap_payne.pdf` was deliberately left
+out of it. Nothing pushed.
 
 ## 15. Next checkpoint
 
