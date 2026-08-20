@@ -503,7 +503,7 @@ are untouched.
 ## 16. Commit
 
 ```text
-COMMIT = <recorded below>
+COMMIT = bf7e6fa
 BRANCH = production
 PUSHED = no
 ```
