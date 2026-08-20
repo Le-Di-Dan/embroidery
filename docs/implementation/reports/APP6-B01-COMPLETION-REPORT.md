@@ -487,7 +487,7 @@ reject surface (`APP6-B02`–`B05`). `packages/design-document` is untouched.
 
 ```text
 APP6-B01 = COMPLETE
-COMMIT = recorded below in a follow-up commit (local only — not pushed)
+COMMIT = 1f5ba22 (local only — not pushed)
 NEXT CHECKPOINT = APP6-B02
 ```
 
