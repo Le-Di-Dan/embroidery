@@ -295,17 +295,23 @@ No other file was touched.
 
 ## 10. Working-tree note — the unrelated PDF deletion
 
-`beginning_app_development_with_flutter_by_rap_payne.pdf` remains deleted and was not
-reset, restored, stashed or re-added.
+`beginning_app_development_with_flutter_by_rap_payne.pdf` was never reset, restored,
+stashed, re-added, staged or committed by this checkpoint.
 
-**One observed change, reported rather than acted on.** At session entry the deletion
-was **unstaged** (` D`). It is now **staged** (`D `). Nothing in this checkpoint ran
-`git add`, `git rm` or any index operation against it. Because unstaging it would itself
-be "otherwise modifying" the user's change, it was left exactly as found, and the
-checkpoint commit was made **path-scoped** (`git commit <paths>`) so the staged deletion
-is not swept into it. It remains staged in the index for the user to decide on.
+**Its status changed during the checkpoint, by the user, not by this work.** At session
+entry it was an unstaged deletion (` D`). Partway through it appeared staged (`D `),
+and it was ultimately committed by the user as `1283f78 docs(remove): remote dart pdf`,
+which now sits between the entry HEAD `a4f9212` and this checkpoint's commit. Nothing
+here ran `git add`, `git rm` or any index operation against that path.
 
----
+The checkpoint commit was made **path-scoped** (`git commit -- <the three doc paths>`)
+specifically so that a staged unrelated deletion could not be swept into it. That
+precaution held: the commit contains exactly three files, all of them documentation
+authored by this checkpoint.
+
+The temporary file `figma-oauth-url.tmp.txt` — created only to hand the operator a
+Figma OAuth URL, and never tracked — has been removed by the user. The working tree is
+clean.
 
 ## 11. Completion criteria
 
