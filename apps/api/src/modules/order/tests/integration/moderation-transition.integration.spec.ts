@@ -1,6 +1,11 @@
 /**
  * `APP5-B05` §13 — the guarded moderation transition, end to end.
  *
+ * `APP6-B06`'s `TR-LC11-07` runs through the same route and the same use case
+ * and is proved in `digitizing-transition.integration.spec.ts`, beside this file
+ * rather than inside it: both suites would not fit one file under the 600-line
+ * test limit, and the two cover different targets of one endpoint.
+ *
  * Every transition APP5 exposes is driven through the real route with the real
  * Admin guard, and every refusal is checked for what it left behind rather than
  * only for its status code: a rejected command must leave the root, the history,
@@ -265,8 +270,11 @@ describe('APP5-B05 guarded moderation transition (integration)', () => {
       expect(await counts(seeded.requestId)).toEqual({ transitions: 0, notes: 0, outbox: 0 });
     });
 
-    it.each(['QUOTED', 'QUOTE_ACCEPTED', 'DIGITIZING', 'DESIGN_REVIEW', 'APPROVED'])(
-      'refuses the APP6 target %s at the contract boundary',
+    // `DIGITIZING` is deliberately absent: `APP6-B06` released it as a command
+    // target, and its refusals are GRD-005's, proved in the B06 suite. These
+    // four stay projections no operator may ask for (`APP6-G01` §4.1).
+    it.each(['QUOTED', 'QUOTE_ACCEPTED', 'DESIGN_REVIEW', 'APPROVED'])(
+      'refuses the system-owned APP6 target %s at the contract boundary',
       async (toStatus) => {
         const seeded = await context.seedRequest({ status: 'UNDER_REVIEW' });
         const response = await move(seeded.requestId, {

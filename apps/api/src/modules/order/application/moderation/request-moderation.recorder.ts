@@ -2,12 +2,18 @@
  * The durable business events an APP5 moderation decision leaves
  * (`APP5-G01` §8 rows 3–5, `G01-D05b`).
  *
- * Three of the five moderation targets tell the customer something, and each one
- * gets exactly the outbox intent `DB3_SIDE_EFFECT_OUTBOX_CATALOG.md` names for
- * it. `UNDER_REVIEW` gets none in either direction: taking a request into review
- * — or back into it after a clarification — is an internal move the customer is
- * not notified about, and appending an event nothing consumes would invent a
- * consequence the catalogue does not record.
+ * Three of the five commandable targets tell the customer something, and each
+ * one gets exactly the outbox intent `DB3_SIDE_EFFECT_OUTBOX_CATALOG.md` names
+ * for it. `UNDER_REVIEW` gets none in either direction: taking a request into
+ * review — or back into it after a clarification — is an internal move the
+ * customer is not notified about, and appending an event nothing consumes would
+ * invent a consequence the catalogue does not record.
+ *
+ * `DIGITIZING` (`APP6-B06`, TR-LC11-07) gets none for the same reason.
+ * `DB3_LIFECYCLE_SPECIFICATIONS.md` marks its after-commit column as an
+ * *optional* soft hold and `APP6-G01` §4 records its outbox column as `none`,
+ * so no event vocabulary is minted here — no `request.digitizing-started`, no
+ * notification, nothing a consumer would have to be written for.
  *
  * ### Outbox rows only, no notification intent
  *
@@ -57,6 +63,8 @@ export const MODERATION_EVENT_OF: Readonly<Record<App5TransitionTarget, string |
   REJECTED: 'request.rejected',
   /** SE-012. */
   CANCELLED: 'request.cancelled',
+  /** TR-LC11-07 raises nothing. `APP6-B06` mints no event — see above. */
+  DIGITIZING: undefined,
 };
 
 export interface RecordModerationInput {

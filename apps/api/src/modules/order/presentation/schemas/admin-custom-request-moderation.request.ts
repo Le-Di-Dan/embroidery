@@ -10,12 +10,21 @@
  *
  * ### What the target enum publishes
  *
- * `toStatus` accepts four values. `QUOTED`, `QUOTE_ACCEPTED`, `DIGITIZING`,
- * `DESIGN_REVIEW` and `APPROVED` are canonical LC-11 states that `APP5-B04`
- * reads truthfully, and they are **not** here: APP5 owns no transition into any
- * of them, so the contract refuses one as malformed input before the request is
- * ever read. `NEW` is absent too — a request exists only by being submitted, and
- * nothing moves back into it.
+ * `toStatus` accepts five values: the four `APP5-B05` targets plus
+ * `DIGITIZING`, added by `APP6-B06` for `TR-LC11-07`.
+ *
+ * `QUOTED`, `QUOTE_ACCEPTED`, `DESIGN_REVIEW` and `APPROVED` are canonical
+ * LC-11 states that `APP5-B04` reads truthfully, and they are **not** here:
+ * `APP6-G01` §4.1 reaches each of them only as a projection inside the quotation
+ * or design transaction that causes it, so no operator commands one and the
+ * contract refuses it as malformed input before the request is ever read.
+ * `NEW` is absent too — a request exists only by being submitted, and nothing
+ * moves back into it.
+ *
+ * The enum stays a **narrow command list** and is never replaced by the full
+ * lifecycle vocabulary: the set of states a request can be *in* and the set an
+ * operator may *ask for* are different sets, and conflating them is how the four
+ * projection-only states would become selectable.
  *
  * The **requirement matrix** deliberately does not live here. Which reason texts
  * a target needs and which note kind explains it is decided by

@@ -165,9 +165,12 @@ export class AdminCustomRequestModerationController {
       'the first two also require a moderation note — `CLARIFY` for a clarification, `REJECT` ' +
       'or `SPAM` for a rejection. The two reason texts stay separate everywhere: only the ' +
       'customer-visible one ever reaches the customer. Cancellation is available only before a ' +
-      'request has been quoted. The move, its note and the durable record of it commit ' +
-      'together or not at all. If another operator moderated the request first, this is refused ' +
-      'with `REQUEST_TRANSITION_STALE` — reload the request and decide again.',
+      'request has been quoted. Starting digitizing (`DIGITIZING`) is available only once the ' +
+      'customer has accepted a quotation — there is no override, and a request that has not ' +
+      'been accepted is refused with `QUOTE_NOT_ACCEPTED`. That move needs no justification ' +
+      'and carries no message to the customer. The move, its note and the durable record of it ' +
+      'commit together or not at all. If another operator moderated the request first, this is ' +
+      'refused with `REQUEST_TRANSITION_STALE` — reload the request and decide again.',
   })
   @ApiParam({ name: 'requestId', format: 'uuid' })
   @ApiBody({ type: TransitionCustomRequestBody })
@@ -194,7 +197,9 @@ export class AdminCustomRequestModerationController {
     status: 409,
     description:
       '`INVALID_TRANSITION` — that move is not available from the state this request is in. ' +
-      '`REQUEST_TRANSITION_STALE` — the request was moderated by someone else in the meantime.',
+      '`QUOTE_NOT_ACCEPTED` — digitizing was asked for on a request whose quotation has not ' +
+      'been accepted. `REQUEST_TRANSITION_STALE` — the request was moderated by someone else ' +
+      'in the meantime.',
     schema: ERROR_SCHEMA,
   })
   @ApiResponse({

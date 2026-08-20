@@ -3,10 +3,15 @@
  *
  * Every member is either a rule the operator broke or a state the request is
  * in — never a constraint name, a column, a SQL fragment or a hint that a
- * capability exists somewhere else. In particular nothing here names `QUOTED`,
- * a quotation, a design version or any other APP6 concept: an error message is
- * a place an unreleased surface leaks, and `INVALID_TRANSITION` says what was
- * refused without describing what would have been allowed in a later phase.
+ * capability exists somewhere else. Nothing here names a design version, an
+ * approval or any other **unreleased** APP6 concept: an error message is a place
+ * an unreleased surface leaks, and `INVALID_TRANSITION` says what was refused
+ * without describing what would have been allowed in a later phase.
+ *
+ * `QUOTE_NOT_ACCEPTED` is the one exception, and it is not a leak. `APP6-B06`
+ * releases the digitizing command, so quotation acceptance is a precondition an
+ * operator has to be told about; the code is the canonical GRD-005 name from
+ * `DB3_TRANSITION_GUARD_CATALOG.md` rather than a synonym invented here.
  *
  * The caller is an authenticated operator behind `AuthenticatedAdminGuard`, so
  * the answers may be specific about what *they* typed. They still name no
@@ -19,8 +24,14 @@ import type { ModerationPolicyFailure } from './request-moderation.policy';
 export const MODERATION_FAILURES = [
   /** No `custom_requests` row with that id. */
   'REQUEST_NOT_FOUND',
-  /** The move is not one APP5 offers from the state the request is in. */
+  /** The move is not one this policy offers from the state the request is in. */
   'INVALID_TRANSITION',
+  /**
+   * GRD-005 (ADR-DB3-001 r1) — `DIGITIZING` was commanded on a request whose
+   * quotation has not been accepted. There is no operator override: the only
+   * way forward is a quotation the customer accepts.
+   */
+  'QUOTE_NOT_ACCEPTED',
   /**
    * The request left the state this command was judged against before the lock
    * was granted — another operator moderated it first (`APP5-B05` §6).
@@ -66,7 +77,7 @@ export function isRequestModerationError(error: unknown): error is RequestModera
  * An exhaustive `Record` rather than a switch: adding a failure without giving
  * it a status stops compiling.
  *
- * The two 409s are conflicts about *state*, not about input — the operator's
+ * The three 409s are conflicts about *state*, not about input — the operator's
  * command was well-formed and the request was not in a shape that accepts it.
  * The 400s are all about what the body carried, so a client can fix one by
  * changing what it sends.
@@ -82,6 +93,14 @@ const RESPONSE_OF: Readonly<Record<ModerationFailure, () => HttpException>> = {
       {
         code: 'INVALID_TRANSITION',
         message: 'That status change is not available for this request.',
+      },
+      HttpStatus.CONFLICT,
+    ),
+  QUOTE_NOT_ACCEPTED: () =>
+    new HttpException(
+      {
+        code: 'QUOTE_NOT_ACCEPTED',
+        message: 'Digitizing can start only after the customer has accepted a quotation.',
       },
       HttpStatus.CONFLICT,
     ),

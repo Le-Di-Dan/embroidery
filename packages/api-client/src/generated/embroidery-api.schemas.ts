@@ -2876,6 +2876,7 @@ export const RequestTransitionedResponseToStatus = {
   NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
   REJECTED: 'REJECTED',
   CANCELLED: 'CANCELLED',
+  DIGITIZING: 'DIGITIZING',
 } as const;
 
 export interface RequestTransitionedResponse {
@@ -3042,6 +3043,7 @@ export const TransitionCustomRequestBodyToStatus = {
   NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
   REJECTED: 'REJECTED',
   CANCELLED: 'CANCELLED',
+  DIGITIZING: 'DIGITIZING',
 } as const;
 
 export interface TransitionCustomRequestBody {

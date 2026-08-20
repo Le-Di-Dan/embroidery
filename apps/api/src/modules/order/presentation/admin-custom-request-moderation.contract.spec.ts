@@ -1,5 +1,6 @@
 /**
- * The published `APP5-B05` contract, built in process.
+ * The published `APP5-B05` contract, built in process, plus the one enum
+ * widening `APP6-B06` makes to it.
  *
  * The integration suites prove what the two mutations *do*; this proves what the
  * document *says*, which is the half every generated client depends on. It runs
@@ -139,14 +140,29 @@ describe('APP5-B05 — the published Admin moderation contract', () => {
     expect(schema.additionalProperties).toBe(false);
   });
 
-  it('offers only the four APP5 targets, and no APP6 state', () => {
+  it('offers the four APP5 targets plus DIGITIZING, and no system-owned state', () => {
     const targets = bodySchema(TRANSITIONS_PATH).properties?.['toStatus']?.enum ?? [];
     expect([...targets].sort()).toEqual([
       'CANCELLED',
+      'DIGITIZING',
       'NEEDS_CLARIFICATION',
       'REJECTED',
       'UNDER_REVIEW',
     ]);
+  });
+
+  it('keeps the four system-owned APP6 states out of the published command enum', () => {
+    // `APP6-G01` §4.1. These four are projections written inside the quotation
+    // or design transaction that causes them; publishing one here is the exact
+    // failure `APP6-B06` exists to prevent, and the schema boundary — not the
+    // policy behind it — is where a client's attempt has to die.
+    const targets = bodySchema(TRANSITIONS_PATH).properties?.['toStatus']?.enum ?? [];
+    for (const systemOwned of ['QUOTED', 'QUOTE_ACCEPTED', 'DESIGN_REVIEW', 'APPROVED']) {
+      expect(targets).not.toContain(systemOwned);
+    }
+    // Nor is the enum quietly the whole lifecycle vocabulary.
+    expect(targets).not.toContain('NEW');
+    expect(targets).toHaveLength(5);
   });
 
   it('offers only the four APP5 note kinds, and not PAUSE', () => {
@@ -178,7 +194,7 @@ describe('APP5-B05 — the published Admin moderation contract', () => {
     ]);
   });
 
-  it('names no credential and no APP6 capability anywhere in its components', () => {
+  it('names no credential and no unreleased APP6 capability in its components', () => {
     // B05's own four components, named exactly. `APP5-B04`'s history and note
     // components are deliberately excluded: those publish the whole LC-11
     // vocabulary so a read can report a `QUOTED` request truthfully, which is
@@ -197,8 +213,10 @@ describe('APP5-B05 — the published Admin moderation contract', () => {
     for (const forbidden of FORBIDDEN_IN_B05_SCHEMAS) {
       expect(serialized.toLowerCase()).not.toContain(forbidden.toLowerCase());
     }
-    for (const app6 of ['QUOTED', 'QUOTE_ACCEPTED', 'DIGITIZING', 'DESIGN_REVIEW', 'APPROVED']) {
-      expect(serialized).not.toContain(app6);
+    // `DIGITIZING` is now a released command target and is expected in the
+    // transition body; the four states no operator commands are not.
+    for (const systemOwned of ['QUOTED', 'QUOTE_ACCEPTED', 'DESIGN_REVIEW', 'APPROVED']) {
+      expect(serialized).not.toContain(systemOwned);
     }
   });
 });
