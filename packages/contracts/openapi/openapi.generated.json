@@ -1644,6 +1644,57 @@
         ],
         "type": "object"
       },
+      "AdminQuotationSentResponse": {
+        "properties": {
+          "lineItems": {
+            "description": "The version’s own priced lines, ordered by position and untouched by the send.",
+            "items": {
+              "$ref": "#/components/schemas/AdminQuotationLineItemResponse"
+            },
+            "type": "array"
+          },
+          "quotation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminQuotationHeaderResponse"
+              }
+            ],
+            "description": "The quotation as it stands after the send. `currentVersionId` now names the version below — that pointer is advanced by this transaction and by no other."
+          },
+          "replayed": {
+            "description": "Whether this call replayed an already-sent version. A replay returns the committed result and writes nothing: no re-freeze, no new validity window, no pointer change, no transition and no second notification.",
+            "example": false,
+            "type": "boolean"
+          },
+          "requestStatus": {
+            "description": "The custom request’s state after the transaction. `QUOTED` once a quotation has been sent — reached only as a projection of this send, never as a status a client may set.",
+            "example": "QUOTED",
+            "type": "string"
+          },
+          "requestTransitioned": {
+            "description": "Whether this send projected the `UNDER_REVIEW → QUOTED` transition. `false` when the request was already `QUOTED`: a newer version replaced the customer-current one and no transition was appended, because the request did not move.",
+            "example": true,
+            "type": "boolean"
+          },
+          "version": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminQuotationVersionResponse"
+              }
+            ],
+            "description": "The frozen version. Its amounts are the ones it was drafted with, unchanged by the send; `sentAt`, `validFrom` and `validUntil` are the facts the send added."
+          }
+        },
+        "required": [
+          "quotation",
+          "version",
+          "lineItems",
+          "requestStatus",
+          "requestTransitioned",
+          "replayed"
+        ],
+        "type": "object"
+      },
       "AdminQuotationVersionDetailResponse": {
         "properties": {
           "lineItems": {
@@ -12818,6 +12869,236 @@
           }
         ],
         "summary": "Read one exact quotation version with its priced lines",
+        "tags": [
+          "adminQuotation"
+        ]
+      }
+    },
+    "/api/admin/quotations/{quotationId}/versions/{versionId}/send": {
+      "post": {
+        "description": "Freezes the version named by `versionId` — **that** version, never the latest one — and makes it the price the customer is looking at. One transaction does all of it: the version becomes `SENT` with its validity window, any previously sent version becomes `SUPERSEDED`, the quotation points at this version, the request points at this quotation, and the request moves to `QUOTED` when it was under review. Nothing partial survives a failure.\n\nNothing is re-priced. The lines, the subtotal, the total and the deposit split are the ones the version was drafted with; the send adds `sentAt`, `validFrom` and `validUntil` and touches no amount. The validity window comes from published business policy, not from this request — there is no body, and the operator supplies nothing but the two identifiers in the path.\n\nSending the same version twice is safe and is the intended way to re-issue it: the second call replays, returning the committed result without re-freezing it, moving a date, changing a pointer or notifying the customer again. A version that has been superseded, accepted, rejected, expired or voided cannot be sent — draft a new version instead.",
+        "operationId": "adminQuotation_sendVersion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "versionId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quotationId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminQuotationSentResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The sent version, its lines, and where the request now stands.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed identifier.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`QUOTATION_NOT_FOUND` — no such quotation. `QUOTATION_VERSION_NOT_FOUND` — this quotation has no version with that id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`QUOTATION_VERSION_NOT_SENDABLE` — the version is not a draft and is not the current sent one. `REQUEST_NOT_SENDABLE` — the request is not in a state a quotation can be sent from. `REQUEST_TRANSITION_STALE` — the request changed state first; nothing was written.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The validity policy has not been published. Nothing was written.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Send one exact quotation version to the customer",
         "tags": [
           "adminQuotation"
         ]

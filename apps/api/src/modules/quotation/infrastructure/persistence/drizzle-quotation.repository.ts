@@ -5,7 +5,7 @@
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { and, asc, desc, eq, gt, isNull, or } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNull, ne, or } from 'drizzle-orm';
 
 import type {
   AcceptQuotationInput,
@@ -147,7 +147,14 @@ export class DrizzleQuotationRepository extends DrizzleRepository implements Quo
       }
 
       // Supersede any previously sent version and promote this one, so the
-      // customer only ever has one live price.
+      // customer only ever has one live price (TR-LC12-04).
+      //
+      // `APP6-B03`: every other `SENT` sibling, not the immediately preceding
+      // version number. Drafting is an append (`TR-LC12-01`), so an operator may
+      // revise twice before sending — sending version 4 while version 2 is the
+      // live one left version 2 `SENT` under the old `version - 1` predicate,
+      // and the quotation would have carried two live prices with only one of
+      // them reachable through `current_version_id`.
       await tx
         .update(quotationVersions)
         .set({ status: 'SUPERSEDED', supersededAt: at })
@@ -155,7 +162,7 @@ export class DrizzleQuotationRepository extends DrizzleRepository implements Quo
           and(
             eq(quotationVersions.quotationId, row.quotationId),
             eq(quotationVersions.status, 'SENT'),
-            eq(quotationVersions.version, row.version - 1),
+            ne(quotationVersions.id, row.id),
           ),
         );
 

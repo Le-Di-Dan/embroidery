@@ -46,6 +46,7 @@ import type {
   AdminProductUpdate200,
   AdminQuotationAddVersion201,
   AdminQuotationCreate201,
+  AdminQuotationSendVersion200,
   AdminQuotationVersionDetail200,
   AdminQuotationVersionHistory200,
   AppendModerationNoteBody,
@@ -768,6 +769,25 @@ export const adminQuotationVersionDetail = (
 };
 
 /**
+ * Freezes the version named by `versionId` — **that** version, never the latest one — and makes it the price the customer is looking at. One transaction does all of it: the version becomes `SENT` with its validity window, any previously sent version becomes `SUPERSEDED`, the quotation points at this version, the request points at this quotation, and the request moves to `QUOTED` when it was under review. Nothing partial survives a failure.
+ *
+ * Nothing is re-priced. The lines, the subtotal, the total and the deposit split are the ones the version was drafted with; the send adds `sentAt`, `validFrom` and `validUntil` and touches no amount. The validity window comes from published business policy, not from this request — there is no body, and the operator supplies nothing but the two identifiers in the path.
+ *
+ * Sending the same version twice is safe and is the intended way to re-issue it: the second call replays, returning the committed result without re-freezing it, moving a date, changing a pointer or notifying the customer again. A version that has been superseded, accepted, rejected, expired or voided cannot be sent — draft a new version instead.
+ * @summary Send one exact quotation version to the customer
+ */
+export const adminQuotationSendVersion = (
+  quotationId: unknown,
+  versionId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminQuotationSendVersion200>>,
+) => {
+  return apiRequest<AdminQuotationSendVersion200>(
+    { url: `/api/admin/quotations/${quotationId}/versions/${versionId}/send`, method: 'POST' },
+    options,
+  );
+};
+
+/**
  * Withdraws a live secure grant, killing the link immediately: the token stops resolving in the same transaction the state changes. A reason is mandatory and non-blank — it is stored on the grant and copied into the audit trail, attributed to the authenticated Admin. Revocation is terminal and mints nothing: no replacement grant, no new token and no notification. Restoring access is a fresh issue through the business flow, never a second call here. Revoking a grant that is already revoked or expired is a conflict, not a silent success.
  * @summary Revoke a secure grant
  */
@@ -1351,6 +1371,9 @@ export type AdminQuotationAddVersionResult = NonNullable<
 >;
 export type AdminQuotationVersionDetailResult = NonNullable<
   Awaited<ReturnType<typeof adminQuotationVersionDetail>>
+>;
+export type AdminQuotationSendVersionResult = NonNullable<
+  Awaited<ReturnType<typeof adminQuotationSendVersion>>
 >;
 export type AdminSecureGrantRevokeResult = NonNullable<
   Awaited<ReturnType<typeof adminSecureGrantRevoke>>

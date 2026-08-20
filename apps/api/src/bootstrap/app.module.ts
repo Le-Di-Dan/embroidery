@@ -26,6 +26,7 @@ import { CustomRequestStatusModule } from '../modules/order/custom-request-statu
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
 import { QuotationDraftingModule } from '../modules/quotation/quotation-drafting.module';
 import { QuotationReadModule } from '../modules/quotation/quotation-read.module';
+import { QuotationSendModule } from '../modules/quotation/quotation-send.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -153,6 +154,12 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // them in separate modules is what stops the read surface from holding a
     // transaction manager.
     QuotationReadModule,
+    // APP6-B03 — the Admin quotation send, on the same base path. Its route is
+    // `:quotationId/versions/:versionId/send`, a longer literal path than any
+    // handler in the two modules above, so no ordering makes one shadow it; it
+    // is a third module because it is the only APP6 surface allowed to move a
+    // custom request.
+    QuotationSendModule,
   ],
 })
 export class AppModule {}

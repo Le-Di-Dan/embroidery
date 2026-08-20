@@ -159,8 +159,8 @@ APP7 creates deposit obligation/attempt and order conversion only from an eligib
 | `APP6-D01` | `COMPLETE` | One APP6 Figma package delivered for Product Owner review. The `APP_06` page **already existed** at `678:3` and was empty, so it was reused rather than re-created; root section `681:3`, 11 sub-sections, **56 frames**, **56 new `FIGMA_DESIGN_INDEX.md` rows** (§4.12), all entered `REVIEW_REQUIRED`. **Product Owner passed the complete package**; `APP6-B01` recorded that approval as a documentation preflight — all 56 rows promoted to `APPROVED_FOR_IMPLEMENTATION` under evidence `FIG-APPROVAL-APP6-D01-PO-001`, with no Figma mutation and no `Last Verified` change. APP4 secure-access states and the APP3-S09 watermark referenced, not redrawn. 0 components, 0 instances, 0 new variables or styles. Gate green at 334/334/18. Report [`../reports/APP6-D01-COMPLETION-REPORT.md`](../reports/APP6-D01-COMPLETION-REPORT.md) |
 | `APP6-B01` | `COMPLETE` | Quotation drafting. **2 operations** — `adminQuotation_create` (`POST /api/admin/quotations`) and `adminQuotation_addVersion` (`POST /api/admin/quotations/{quotationId}/versions`); OpenAPI 58→60 paths, 63→65 operations, 132→135 schemas. `TR-LC12-01` only: header + first `DRAFT` version in one transaction, a further `DRAFT` version as an append. Every amount is a string end to end and every derived figure — line total, subtotal, total, deposit/remaining — is computed in exact `bigint` decimal, round-half-up on deposit per DB4, `remaining = total − deposit` so CST-064 holds for every total. Also ships the `app6-policy-configuration` dataset reader and publisher (APP4-B01-C1 precedent): **3 keys** published from the `staff-bootstrap` seam, idempotent, drift appended never rewritten. No migration; the request is never moved and no `quotation.sent` is emitted. 103 focused tests green. Report [`../reports/APP6-B01-COMPLETION-REPORT.md`](../reports/APP6-B01-COMPLETION-REPORT.md) |
 | `APP6-B02` | `COMPLETE` | Quotation read. **2 operations** — `adminQuotation_versionHistory` (`GET /api/admin/quotations/{quotationId}/versions`) and `adminQuotation_versionDetail` (`GET /api/admin/quotations/{quotationId}/versions/{versionId}`); OpenAPI 60→61 paths, 65→67 operations, 135→140 schemas. Read-only throughout: the read module imports no `DatabaseModule`, so no transaction is reachable from either route. History is the whole version list in version order; detail addresses an **exact** version id, proves it belongs to the quotation in the path, and loads that version’s own lines by position — a version of another quotation answers `QUOTATION_VERSION_NOT_FOUND`, the same answer a missing one gets. Every historical fact is projected, never recalculated: `depositPercent` is the share the version was priced at rather than the share policy carries today, and no `Number()` or rounding touches a persisted amount. The AGG-14 version projection was widened to carry the adjustment and its reason, the deposit percent, the stitch count and the lifecycle timestamps — all existing columns, no schema change. Every nullable field publishes an explicit scalar type, so the generated client says `string | null` rather than adding to the `type: object` debt. **42 new focused tests**, and the whole quotation module green at 123 across 7 suites. No migration; `current_quotation_id` untouched. Report [`../reports/APP6-B02-COMPLETION-REPORT.md`](../reports/APP6-B02-COMPLETION-REPORT.md) |
-| `APP6-B03` | `INCOMPLETE` | **Next** — Quotation send — 1 operation; projects `TR-LC11-05` |
-| `APP6-B04` | `INCOMPLETE` | Customer secure quotation read — 1 operation |
+| `APP6-B03` | `COMPLETE` | Quotation send. **1 operation** — `adminQuotation_sendVersion` (`POST /api/admin/quotations/{quotationId}/versions/{versionId}/send`); OpenAPI 61→62 paths, 67→68 operations, 140→141 schemas. `TR-LC12-02` in **one** transaction: freeze the addressed version with its send facts, supersede every other `SENT` sibling, set `quotations.current_version_id`, set `custom_requests.current_quotation_id`, project `TR-LC11-05` `UNDER_REVIEW → QUOTED` with a **system** actor, append the `quotation.sent` audit row and the `SE-004` outbox event. Rollback is proved by injecting a failure at the last write in the transaction: the version, both pointers, the transition, the audit row and the event all disappear together. Validity is read from published `quotation.validity` at the point of use — the suite republishes it at three days and the window follows, so no `7` is hard-coded. Nothing is re-priced: `send` writes no money column and every amount crosses as the persisted string. The request may send only from `UNDER_REVIEW` or `QUOTED`; an already-`QUOTED` request gains **no** self-transition, and no backward or reopening edge is invented for a state beyond it. Re-sending the same version replays with no second event, no new window and no pointer rewrite. The request row is locked before any write, and the concurrent send-versus-cancellation race is proved deterministic on independent connections. **39 new focused tests**, and the whole quotation module green at 163 across 11 suites. No migration; `FU-APP6-B01-CURRENT-QUOTATION-POINTER-01` closed. Report [`../reports/APP6-B03-COMPLETION-REPORT.md`](../reports/APP6-B03-COMPLETION-REPORT.md) |
+| `APP6-B04` | `INCOMPLETE` | **Next** — Customer secure quotation read — 1 operation |
 | `APP6-B05` | `INCOMPLETE` | Quotation acceptance and rejection — 2 operations; projects `TR-LC11-06` |
 | `APP6-B06` | `INCOMPLETE` | Digitizing transition — `TR-LC11-07` under `GRD-005`; 0 new operations |
 | `APP6-B07` | `INCOMPLETE` | Admin submitted-design read — 1 operation; closes `FU-APP5-B04-DESIGN-PREVIEW-01` |
@@ -193,20 +193,31 @@ APP6 POLICY DATASET READER = DELIVERED
 APP6 POLICY PUBLICATION = DELIVERED
 POLICY KEYS PUBLISHED = 3
 APP6-B02 = COMPLETE
-HTTP OPERATIONS ADDED = 2
-QUOTATION FAMILY OPERATIONS = 4
 VERSION HISTORY READ = DELIVERED
 EXACT VERSION DETAIL + LINE ITEMS = DELIVERED
 HISTORICAL VERSIONS = READABLE
 HISTORICAL FACTS = NOT RECALCULATED
-EXACT MONEY = STRING END TO END
 READ SIDE EFFECTS = NONE
-REQUEST PROJECTED TO QUOTED = NO
-QUOTATION.SENT EMITTED = NO
-CURRENT_QUOTATION_POINTER = CARRIED TO B03
+APP6-B03 = COMPLETE
+HTTP OPERATIONS ADDED = 1
+QUOTATION FAMILY OPERATIONS = 5
+TR-LC12-02 = DELIVERED
+VALIDITY POLICY = CONSUMED FROM PUBLISHED DATA
+SENT VERSION = FROZEN / NOT REPRICED
+PRIOR SENT VERSION = SUPERSEDED WHEN APPLICABLE
+QUOTATION CURRENT VERSION POINTER = SET
+REQUEST CURRENT QUOTATION POINTER = SET
+FU-APP6-B01-CURRENT-QUOTATION-POINTER-01 = CLOSED
+TR-LC11-05 = SYSTEM PROJECTION ONLY
+QUOTED ADMIN COMMAND = ABSENT
+SE-004 QUOTATION.SENT = EMITTED ONCE PER NEW SEND
+DUPLICATE SAME-VERSION SEND = REPLAY
+ATOMIC ROLLBACK = PROVED
+REQUEST-STATE RACE = PROVED
+EXACT MONEY = STRING END TO END
 DATABASE MIGRATION = NONE
-B03/B04/B05 = NOT STARTED
-NEXT CHECKPOINT = APP6-B03
+B04/B05 = NOT STARTED
+NEXT CHECKPOINT = APP6-B04
 ```
 
 ### 11.3 Locked APP6 authority (`APP6-G01`, `IMP-D051`)

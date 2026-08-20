@@ -172,6 +172,25 @@ export interface CustomRequestRepository {
   findBoundAssetIds(assetIds: readonly string[]): Promise<string[]>;
 
   findById(id: CustomRequestId): Promise<CustomRequest | undefined>;
+
+  /**
+   * Reads the request under its row lock (`APP6-B03`).
+   *
+   * `findById` answers what the row said a moment ago, which is enough for a
+   * caller that only reports it. A caller whose *own* writes depend on the
+   * request still being in that state needs the state held for the rest of its
+   * transaction — the quotation send transaction freezes a version against it,
+   * and on the already-`QUOTED` branch appends no transition, so it has no
+   * `expectedFrom` precondition to fall back on.
+   *
+   * The lock is the same `FOR UPDATE` `transition()` and `replaceBreakdown()`
+   * take; this exposes it on its own rather than making a caller open with a
+   * write it does not want to perform.
+   *
+   * @requiresTransaction — a lock taken outside one is released immediately and
+   * proves nothing.
+   */
+  lockById(id: CustomRequestId): Promise<CustomRequest | undefined>;
   findByCode(code: string): Promise<CustomRequest | undefined>;
   loadBreakdown(id: CustomRequestId): Promise<QuantityBreakdownLine[]>;
   loadCustomerOwnedProduct(id: CustomRequestId): Promise<CustomerOwnedProduct | undefined>;

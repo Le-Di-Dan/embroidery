@@ -115,20 +115,26 @@ describe('APP6-B02 published read surface', () => {
     ]);
   });
 
-  it('keeps the whole quotation family at four operations under one id domain', () => {
+  it('keeps the whole quotation family at five operations under one id domain', () => {
     const family = quotationOperations();
 
-    // Two drafting mutations from `APP6-B01`, two reads from `APP6-B02`. A send,
-    // an accept or a customer surface arriving without its own checkpoint fails
-    // here rather than in review.
-    expect(family).toHaveLength(4);
+    // Two drafting mutations from `APP6-B01`, two reads from `APP6-B02`, one
+    // send from `APP6-B03`. An accept or a customer surface arriving without its
+    // own checkpoint fails here rather than in review.
+    expect(family).toHaveLength(5);
     for (const operation of family) {
       expect(operation.operationId).toMatch(/^adminQuotation_/);
     }
   });
 
   it('leaves the two accepted APP6-B01 operation ids untouched', () => {
-    const ids = quotationOperations((method) => method === 'post').map((o) => o.operationId);
+    // `APP6-B03`'s send is a third POST in the same published domain and is
+    // excluded here rather than appended: this assertion exists to prove the two
+    // *accepted* ids survive, and its own surface is proved by
+    // `admin-quotation-send.contract.spec.ts`.
+    const ids = quotationOperations((method) => method === 'post')
+      .filter((operation) => !operation.path.endsWith('/send'))
+      .map((operation) => operation.operationId);
 
     // The read controller is a second class in the same published domain, and
     // `CONTROLLER_DOMAIN_KEYS` is what stops that split from renaming these.

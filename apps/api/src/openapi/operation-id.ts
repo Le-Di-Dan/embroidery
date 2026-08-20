@@ -73,6 +73,15 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // `adminQuotationVersion_versionHistory`, letting that module boundary name a
   // public identifier — and `APP6-B01`'s two accepted ids stay untouched either
   // way, because the drafting class keeps deriving its own.
+  // `APP6-B03`. The send joins the same published domain as the drafting and
+  // read classes. It is its own class because its module is the only APP6
+  // surface holding the order repository, the outbox and the audit repository —
+  // a boundary that keeps a read or a draft route from reaching the request
+  // transition. Without this entry the send would mint
+  // `adminQuotationSend_sendVersion`, letting that boundary name a public
+  // identifier; with it, `APP6-B01`'s and `APP6-B02`'s four accepted ids stay
+  // untouched.
+  AdminQuotationSendController: 'adminQuotation',
   AdminQuotationController: 'adminQuotation',
   AdminQuotationVersionController: 'adminQuotation',
 };

@@ -59,7 +59,15 @@ const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const;
 
 const WRITE_METHODS: readonly string[] = ['post', 'put', 'patch', 'delete'];
 
-/** Every mutation published under the quotation resource family. */
+/**
+ * Every **drafting** mutation published under the quotation resource family.
+ *
+ * `APP6-B03` added the send, which is a mutation on this family but not one of
+ * this checkpoint's: it answers `200`, carries no body and has its own contract
+ * suite. Excluding it by path keeps these assertions about the two operations
+ * the Product Owner accepted here, rather than silently widening to whatever the
+ * family grows into.
+ */
 function quotationOperations(): { method: string; path: string; operationId: string }[] {
   const found: { method: string; path: string; operationId: string }[] = [];
   for (const [path, item] of Object.entries(document.paths)) {
@@ -67,7 +75,7 @@ function quotationOperations(): { method: string; path: string; operationId: str
       if (!(HTTP_METHODS as readonly string[]).includes(method)) {
         continue;
       }
-      if (path.includes('quotation') && WRITE_METHODS.includes(method)) {
+      if (path.includes('quotation') && WRITE_METHODS.includes(method) && !path.endsWith('/send')) {
         found.push({ method, path, operationId: operation.operationId ?? '' });
       }
     }
@@ -114,10 +122,23 @@ describe('APP6-B01 published surface', () => {
     ]);
   });
 
-  it('publishes no send, accept, reject or status route', () => {
+  it('publishes no accept, reject, status or expire route', () => {
     for (const path of Object.keys(document.paths)) {
-      expect(path).not.toMatch(/quotations.*\/(send|accept|reject|status|expire)/);
+      expect(path).not.toMatch(/quotations.*\/(accept|reject|status|expire)/);
     }
+  });
+
+  it('publishes the send as exactly one route, and only APP6-B03 owns it', () => {
+    // The original assertion here forbade `/send` outright, which was true until
+    // `APP6-B03` delivered `TR-LC12-02`. It is narrowed rather than deleted: the
+    // property worth keeping is that drafting still cannot send — one send
+    // exists, it is not on this controller, and acceptance still has no route.
+    const sends = Object.keys(document.paths).filter((path) => /quotations.*\/send$/.test(path));
+
+    expect(sends).toEqual(['/api/admin/quotations/{quotationId}/versions/{versionId}/send']);
+    expect(quotationOperations().map((operation) => operation.operationId)).not.toContain(
+      'adminQuotation_sendVersion',
+    );
   });
 
   it('answers both operations with an error contract for every refusal it can give', () => {

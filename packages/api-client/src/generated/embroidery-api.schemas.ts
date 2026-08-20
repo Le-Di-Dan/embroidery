@@ -1218,6 +1218,21 @@ export interface AdminQuotationVersionResponse {
   versionId: string;
 }
 
+export interface AdminQuotationSentResponse {
+  /** The version’s own priced lines, ordered by position and untouched by the send. */
+  lineItems: AdminQuotationLineItemResponse[];
+  /** The quotation as it stands after the send. `currentVersionId` now names the version below — that pointer is advanced by this transaction and by no other. */
+  quotation: AdminQuotationHeaderResponse;
+  /** Whether this call replayed an already-sent version. A replay returns the committed result and writes nothing: no re-freeze, no new validity window, no pointer change, no transition and no second notification. */
+  replayed: boolean;
+  /** The custom request’s state after the transaction. `QUOTED` once a quotation has been sent — reached only as a projection of this send, never as a status a client may set. */
+  requestStatus: string;
+  /** Whether this send projected the `UNDER_REVIEW → QUOTED` transition. `false` when the request was already `QUOTED`: a newer version replaced the customer-current one and no transition was appended, because the request did not move. */
+  requestTransitioned: boolean;
+  /** The frozen version. Its amounts are the ones it was drafted with, unchanged by the send; `sentAt`, `validFrom` and `validUntil` are the facts the send added. */
+  version: AdminQuotationVersionResponse;
+}
+
 export interface AdminQuotationVersionDetailResponse {
   /** This version’s own frozen lines, ordered by position. */
   lineItems: AdminQuotationLineItemResponse[];
@@ -3179,6 +3194,10 @@ export type AdminQuotationAddVersion201 = ApiSuccessResponse & {
 
 export type AdminQuotationVersionDetail200 = ApiSuccessResponse & {
   data: AdminQuotationVersionDetailResponse;
+};
+
+export type AdminQuotationSendVersion200 = ApiSuccessResponse & {
+  data: AdminQuotationSentResponse;
 };
 
 export type PublicCustomRequestAssetUploadParams = {

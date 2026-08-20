@@ -356,6 +356,23 @@ export class DrizzleCustomRequestRepository
     });
   }
 
+  async lockById(id: CustomRequestId): Promise<CustomRequest | undefined> {
+    return this.run('lockById', async () => {
+      const tx = this.requireTransaction('lockById');
+
+      const [row] = await tx
+        .select()
+        .from(customRequests)
+        .where(eq(customRequests.id, id))
+        .limit(1)
+        // The same `FOR UPDATE` the three writing methods above take, taken by
+        // itself so a caller whose decision depends on this state can hold the
+        // row for the rest of its transaction.
+        .for('update');
+      return row === undefined ? undefined : toRequest(row);
+    });
+  }
+
   async findByCode(code: string): Promise<CustomRequest | undefined> {
     return this.run('findByCode', async () => {
       const [row] = await this.db
