@@ -10,8 +10,13 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const EXPECTED_REL_ROWS = 92;
-const EXPECTED_FK_EDGES = 164;
+// DB6 launch declared 92 rows / 164 edges. Application-era database-change
+// checkpoints have added three REL rows since: REL-106 (APP5-DB01) and
+// REL-107/REL-108 (APP6-DB01, the customer-owned-product branch on
+// `design_versions` and `approval_snapshots`). Each expands ×1, so both totals
+// move by the same three.
+const EXPECTED_REL_ROWS = 95;
+const EXPECTED_FK_EDGES = 167;
 
 /**
  * Mandated edges absent from the REL model entirely, each its own deviation

@@ -79,9 +79,9 @@ Four relationship metrics, kept separate and never interchanged:
 
 | Metric | Value |
 |---|---|
-| Relationship ID range | REL-001..105 (105 slots) |
-| Documented REL rows | **92** |
-| Expanded logical FK/reference edges | **164** = 153 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) + 4 documented additions (DEV-DB6-013: approval_snapshots placement refs, planned owner G13) + 2 documented additions (DEV-DB6-014: shipping_fee_acknowledgements grant/challenge, implemented G15) |
+| Relationship ID range | REL-001..108 (108 slots — 105 at DB6 launch, +REL-106 APP5-DB01, +REL-107/108 APP6-DB01) |
+| Documented REL rows | **95** (92 at DB6 launch + 3 application-era: REL-106, REL-107, REL-108) |
+| Expanded logical FK/reference edges | **167** = 156 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) + 4 documented additions (DEV-DB6-013: approval_snapshots placement refs, planned owner G13) + 2 documented additions (DEV-DB6-014: shipping_fee_acknowledgements grant/challenge, implemented G15). The three derived additions beyond DB6 launch are the application-era rows: REL-106 (APP5-DB01), REL-107 and REL-108 (APP6-DB01) |
 | Physical FK target | **160** (corrected G19, DEV-DB6-017 — see note below; not 162) |
 | Implemented physical FK constraints | grows per group (parity gate counts these) |
 
@@ -108,7 +108,7 @@ run:
 | DEV-DB6-012 addition: design_versions placement refs — product/variant/side/area (no REL row exists) | — | 4 |
 | DEV-DB6-013 addition: approval_snapshots placement refs — product/variant/side/area (no REL row exists; planned owner G13) | — | 4 |
 | DEV-DB6-014 addition: shipping_fee_acknowledgements → secure_access_grants / contact_verification_challenges (no REL row exists; implemented G15) | — | 2 |
-| **Total** | **92 rows** | **164** |
+| **Total** | **95 rows** | **167** |
 
 The 26 multi-target rows and their expansions:
 
@@ -163,7 +163,13 @@ with **no REL row at all** (ledger actor refs on TBL-019,
 `design_sessions.submitted_request_id`, and — per DEV-DB6-015 — the bare
 `admin_id`-shaped columns on TBL-046/057/058/062, same class as TBL-041/009)
 carry no FK and are outside both counts. Also updated in §2 header table:
-`REL-001..105 → 92 rows → 164 edges`.
+`REL-001..105 → 92 rows → 164 edges` — the DB6-launch figures. Application-era
+checkpoints have since added three REL rows (REL-106 `APP5-DB01`, REL-107 and
+REL-108 `APP6-DB01`), so the current §2 header table reads
+`REL-001..108 → 95 rows → 167 edges`; `tools/db-metric-check.mjs` re-derives
+both from DB4 on every run. The DEV-DB6-017 narrative above is left at its own
+figures deliberately: it records what was reconciled in July 2026, not what the
+register totals today.
 
 **DB6-C4 addendum (2026-07-19):** DEV-DB6-013 and DEV-DB6-014 were found by
 DB6-C4's pre-G12 relationship-coverage audit, targeting tables not yet
@@ -1043,6 +1049,13 @@ canonical derivative metadata) — ten columns, taking the total from 833 to 843
 **APP5-DB01** (migration 0035) is the second: `uploaded_via_challenge_id` and
 `intake_expires_at` on `assets` (TBL-022), the challenge-scoped intake
 provenance `APP5-G01 D13` requires — two columns, 843 → **845**.
+**APP6-DB01** (migration 0036) is the third: `customer_owned_product_id`,
+`placement_side_label` and `placement_area_label` on `design_versions`
+(TBL-028) and `customer_owned_product_id` on `approval_snapshots` (TBL-031) —
+the customer-owned-product design branch ADR-APP6-001 authorises — four
+columns, 845 → **849**. The same migration drops `NOT NULL` from the four
+Catalog placement columns on both tables; that widens nullability without
+changing any count.
 
 The seven `×N` COL expansions across G1–G6 (each +N−1 columns):
 
@@ -1075,16 +1088,16 @@ that register on every run.
 | G8 | 2 | 12 | 0 | 12 | 5 | 17 |
 | G9 | 7 | 33 | 7 | 40 | 19 | 59 |
 | G10 | 4 | 27 | 0 | 27 | 11 | 38 |
-| G11 | 3 | 20 | 9 | 29 | 6 | 35 |
+| G11 | 3 | 20 | 12 | 32 | 6 | 38 |
 | G12 | 6 | 38 | 2 | 40 | 17 | 57 |
-| G13 | 3 | 20 | 12 | 32 | 6 | 38 |
+| G13 | 3 | 20 | 13 | 33 | 6 | 39 |
 | G14 | 4 | 37 | 10 | 47 | 9 | 56 |
 | G15 | 8 | 71 | 20 | 91 | 20 | 111 |
 | G16 | 5 | 48 | 6 | 54 | 13 | 67 |
 | G17 | 5 | 25 | 9 | 34 | 12 | 46 |
 | G18 | 2 | 15 | 1 | 16 | 5 | 21 |
 | G19 | 1 | 9 | 4 | 13 | 2 | 15 |
-| **Total** | **78** | **537** | **105** | **642** | **203** | **845** |
+| **Total** | **78** | **537** | **109** | **646** | **203** | **849** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database

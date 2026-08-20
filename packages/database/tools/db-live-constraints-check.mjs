@@ -14,7 +14,10 @@ import { connect, report } from './live-db.mjs';
 // so it is one added constraint, not a renumbered inventory.
 // APP5-DB01 adds two more CHECKs (CST-127 `ck_assets__single_intake_lane`,
 // CST-128 `ck_assets__challenge_intake_requires_expiry`) and one FK (REL-106).
-const EXPECTED = { p: 78, f: 163, u: 52, c: 201 };
+// APP6-DB01 adds three CHECKs (CST-129/CST-131 exactly-one placement branch on
+// `design_versions`/`approval_snapshots`, CST-130 the COP placement labels) and
+// two FKs (REL-107/REL-108, both -> `customer_owned_products`).
+const EXPECTED = { p: 78, f: 165, u: 52, c: 204 };
 const NAMES = { p: 'PK', f: 'FK', u: 'UNIQUE', c: 'CHECK' };
 
 const client = await connect(process.argv[2]);
@@ -65,14 +68,17 @@ const { rows: relationshipCeiling } = await client.query(`
 // appears, and collapsing it to one literal would hide which are accounted for.
 // APP5-DB01 adds one more — REL-106, `fk_assets__uploaded_via_challenge_id` —
 // so the live total is 163, and it stays its own named addend for that reason.
+// The APP6-DB01 pair (REL-107/REL-108) is the customer-owned-product branch
+// ADR-APP6-001 opened on `design_versions` and `approval_snapshots`.
 const DB6_RELATIONSHIP_CEILING = 160;
 const APP3_DB01_EDGES = 2;
 const APP5_DB01_EDGES = 1;
-const EXPECTED_FKS = DB6_RELATIONSHIP_CEILING + APP3_DB01_EDGES + APP5_DB01_EDGES;
+const APP6_DB01_EDGES = 2;
+const EXPECTED_FKS = DB6_RELATIONSHIP_CEILING + APP3_DB01_EDGES + APP5_DB01_EDGES + APP6_DB01_EDGES;
 note(
   `relationship ceiling: ${relationshipCeiling[0].n} / ${EXPECTED_FKS} ` +
     `(${DB6_RELATIONSHIP_CEILING} DEV-DB6-017 + ${APP3_DB01_EDGES} APP3-DB01` +
-    ` + ${APP5_DB01_EDGES} APP5-DB01)`,
+    ` + ${APP5_DB01_EDGES} APP5-DB01 + ${APP6_DB01_EDGES} APP6-DB01)`,
 );
 if (relationshipCeiling[0].n !== EXPECTED_FKS) {
   fail(

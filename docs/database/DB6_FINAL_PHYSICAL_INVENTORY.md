@@ -77,6 +77,47 @@ fingerprint proof). No hand-accumulated figure in this document.
 > partial and neither predicate is volatile. No trigger, no table and no unique
 > constraint was added, and nothing was backfilled.
 
+> **Superseded in part by APP6-DB01** (migration `0036`, application era).
+> The customer-owned-product design context on TBL-028 `design_versions` and
+> TBL-031 `approval_snapshots` — the contradiction `APP6-R00` found and
+> ADR-APP6-001 resolves. Measured on a fresh 36-migration disposable install,
+> and confirmed identical on a second independently built one:
+>
+> | Figure | After `0035` | After `0036` |
+> |---|---|---|
+> | Tables | 78 | **78** (unchanged) |
+> | Columns | 845 | **849** |
+> | PK constraints | 78 | **78** (unchanged) |
+> | FK constraints | 163 | **165** |
+> | UNIQUE constraints | 52 | **52** (unchanged) |
+> | CHECK constraints | 201 | **204** |
+> | Physical indexes | 215 | **215** (unchanged; partial stays 48) |
+> | Triggers | 34 | **34** (unchanged) |
+> | Fingerprint | `4c522946…` | **`3fd107f29426e72448eee04661aeb274396fbef3191374788cc345a960dd26f1`** |
+>
+> The four columns are `customer_owned_product_id`, `placement_side_label` and
+> `placement_area_label` on `design_versions` plus `customer_owned_product_id`
+> on `approval_snapshots`; the FKs are REL-107 and REL-108, both
+> `ON DELETE RESTRICT` onto `customer_owned_products`; the CHECKs are CST-129
+> (`ck_design_versions__exactly_one_placement_branch`), CST-130
+> (`ck_design_versions__cop_placement_labels`) and CST-131
+> (`ck_approval_snapshots__exactly_one_placement_branch`).
+>
+> **No index and no trigger was added**, and that is a decision, not an
+> omission. ADR-APP6-001 §4.2 rules a COP access path a later question rather
+> than a correctness one, so no FK-support index was created. Both freeze
+> guards already installed in `0030` are column-blind — `design_versions`
+> carries an *exception list* (`status`, `sent_at`, `approved_at`,
+> `superseded_at`, `voided_at`, `void_reason`) and `approval_snapshots` a
+> row-wide `always`/`reject` — so all four new columns are frozen at the same
+> points as the data they belong to, the day they exist. Extending either
+> trigger's argument list would have *narrowed* a freeze, not widened one.
+>
+> The same migration drops `NOT NULL` from four columns on each table. That
+> widens nullability and changes no count. **Nothing was backfilled**: every
+> pre-existing row is already a complete Catalog row and satisfies its new
+> branch CHECK untouched.
+
 ## 1. Tables (78/78)
 
 - 78 unique `TBL-*` IDs, 78 unique physical tables, one owner group each (19 groups,

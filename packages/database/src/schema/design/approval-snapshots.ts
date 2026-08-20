@@ -9,7 +9,7 @@
  * version), CST-066 instance (dims > 0), CST-070 ×2 (hash format), CST-091
  * (**full reject-mutation trigger candidate, S24** — stronger than
  * CST-090/096: there is no status column here to except, per LC-10
- * exists-or-not)
+ * exists-or-not), CST-131 (exactly one placement branch, APP6-DB01)
  * Relationships: REL-051 (→ design_versions, restrict), REL-052 ×3
  * (→ design_cases, → custom_requests, → customers, restrict), REL-053 ×2
  * (→ secure_access_grants, → contact_verification_challenges, restrict),
@@ -17,7 +17,8 @@
  * `embroidery_area_id` (**DEV-DB6-013** — 4 edges DB4's column dictionary
  * mandates via COL-TBL031-05 and `DB4_COMPLETENESS_MATRIX.md` CON-058..060
  * name TBL-031 explicitly, but the REL model documents nowhere — same class
- * of gap as DEV-DB6-012/`design_versions`)
+ * of gap as DEV-DB6-012/`design_versions`),
+ * REL-108 (→ customer_owned_products, APP6-DB01)
  * Indexes: IDX-025 (constraint-created); IDX-136 (recommended, on
  * `custom_request_id`) → S25, same deferral pattern as IDX-116
  * Owner: Design module.
@@ -28,6 +29,22 @@
  * trigger's own enforcement; there is no legal "status advance" exception
  * the way `design_versions`/`agreement_versions` have, because there is no
  * status to advance.
+ *
+ * **Two placement branches (ADR-APP6-001, `APP6-DB01`).** The four Catalog
+ * placement columns are nullable and a row carries *exactly one* of the complete
+ * quartet (with `customer_owned_product_id` NULL) or `customer_owned_product_id`
+ * (with all four NULL) — CST-131, the same truth table `design_versions` gained
+ * as CST-129, and it rejects a mixed row, a **partial** quartet and a branchless
+ * row alike. A customer-owned product is **never a SKU** (INV-13), so no Catalog
+ * identity is invented to give a COP approval something to point at.
+ *
+ * The branch changes nothing else here. `product_name` freezes
+ * `customer_owned_products.name` — the customer's own description of their item;
+ * `variant_label` is already nullable and stays NULL (a COP has no variant);
+ * `side_name`/`area_name` freeze the labels the approved version carries in
+ * `design_versions.placement_side_label`/`placement_area_label`. All three are
+ * text, not identity, so a truthful COP label fabricates nothing. No column was
+ * added to this table for the labels, and none was needed.
  *
  * `product_name`/`variant_label`/`side_name`/`area_name` (COL-TBL031-06)
  * and `contact_name`/`contact_email`/`contact_phone` (COL-TBL031-09, [PII])
@@ -42,9 +59,11 @@
  * scope validation of the grant is the approval transaction's TX/App
  * concern (GRD-002/003), not a schema-level guarantee.
  *
- * **CST-091 is not yet a database mechanism** — S24 owns the trigger; this
- * group implements the CHECK/FK/index layer only, same honestly-documented
- * gap as CST-090/096.
+ * **CST-091 landed in `0030_add_integrity_triggers.sql`** as a row-wide
+ * `'always'` freeze with an empty exception list and `'reject'` on DELETE, so
+ * `customer_owned_product_id` inherits the identical no-UPDATE/no-DELETE
+ * semantics the day it exists. APP6-DB01 adds no trigger here: a column-scoped
+ * one beside a row-wide one could only weaken it.
  */
 import { sql } from 'drizzle-orm';
 import {
@@ -68,6 +87,7 @@ import { products } from '../catalog/products';
 import { productVariants } from '../catalog/product-variants';
 import { productSides } from '../catalog/product-sides';
 import { embroideryAreas } from '../catalog/embroidery-areas';
+import { customerOwnedProducts } from '../ordering/customer-owned-products';
 import { secureAccessGrants } from '../customer/secure-access-grants';
 import { contactVerificationChallenges } from '../customer/contact-verification-challenges';
 
@@ -81,10 +101,11 @@ export const approvalSnapshots = pgTable(
     customerId: idReference('customer_id').notNull(),
     documentHash: text('document_hash').notNull(),
     previewHash: text('preview_hash'),
-    productId: idReference('product_id').notNull(),
-    productVariantId: idReference('product_variant_id').notNull(),
-    productSideId: idReference('product_side_id').notNull(),
-    embroideryAreaId: idReference('embroidery_area_id').notNull(),
+    productId: idReference('product_id'),
+    productVariantId: idReference('product_variant_id'),
+    productSideId: idReference('product_side_id'),
+    embroideryAreaId: idReference('embroidery_area_id'),
+    customerOwnedProductId: idReference('customer_owned_product_id'),
     productName: text('product_name').notNull(),
     variantLabel: text('variant_label'),
     sideName: text('side_name').notNull(),
@@ -146,6 +167,15 @@ export const approvalSnapshots = pgTable(
       columns: [t.embroideryAreaId],
       foreignColumns: [embroideryAreas.id],
     }).onDelete('restrict'),
+    // REL-108 (ADR-APP6-001 §3.2) — the customer-owned-product branch, the same
+    // edge `design_versions` grew in this migration. `restrict`, like every other
+    // anchor on this table: an approval snapshot whose subject could be deleted
+    // would stop being evidence.
+    foreignKey({
+      name: 'fk_approval_snapshots__customer_owned_product_id',
+      columns: [t.customerOwnedProductId],
+      foreignColumns: [customerOwnedProducts.id],
+    }).onDelete('restrict'),
     // REL-053 — secure-flow evidence (INV-20); purpose/scope stays TX/App.
     foreignKey({
       name: 'fk_approval_snapshots__grant_id',
@@ -171,7 +201,17 @@ export const approvalSnapshots = pgTable(
     ),
     check(
       'ck_approval_snapshots__preview_hash_format',
-      sql`${t.previewHash} is null or ${t.previewHash} ~ '^sha256:[0-9a-f]{64}$'`,
+      sql`${t.previewHash} is null or ${t.previewHash} ~ '^sha256:[0-9a-f]{64}
+`,
+    ),
+    // CST-131 (ADR-APP6-001 §3.2/§4.1) — exactly one placement branch, the same
+    // truth table as CST-129 minus the label clause: the COP branch's human
+    // placement evidence arrives here in the existing frozen `side_name`/
+    // `area_name` copies (COL-TBL031-06), which are already NOT NULL in both
+    // branches and need no second pair of columns.
+    check(
+      'ck_approval_snapshots__exactly_one_placement_branch',
+      sql`(${t.productId} is not null and ${t.productVariantId} is not null and ${t.productSideId} is not null and ${t.embroideryAreaId} is not null and ${t.customerOwnedProductId} is null) or (${t.productId} is null and ${t.productVariantId} is null and ${t.productSideId} is null and ${t.embroideryAreaId} is null and ${t.customerOwnedProductId} is not null)`,
     ),
   ],
 );

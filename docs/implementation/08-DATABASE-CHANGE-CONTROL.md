@@ -56,6 +56,7 @@ Do not combine it with the feature API implementation.
 > | `0033_provision_catalog_draft_categories` | `APP2-B02-G01` | data-only category provisioning |
 > | `0034_add_app3_placement_and_derivative_authority` | `APP3-DB01` | placement stable identity/retirement/protection (IMP-D041) **and** canonical derivative output metadata (IMP-D044), in one forward-only migration |
 > | `0035_add_app5_intake_provenance` | `APP5-DB01` | customer intake provenance on TBL-022 `assets`: `uploaded_via_challenge_id` (REL-106, `ON DELETE SET NULL`) + `intake_expires_at`, CST-127/CST-128 and the two intake indexes — the persisted fact `APP5-B02` stopped for |
+> | `0036_add_app6_cop_design_context` | `APP6-DB01` | the customer-owned-product design branch on TBL-028 `design_versions` and TBL-031 `approval_snapshots` (ADR-APP6-001, IMP-D051): four Catalog placement columns made nullable on each table, `customer_owned_product_id` + REL-107/REL-108 (`ON DELETE RESTRICT`), the `design_versions` placement label pair, and CST-129/CST-130/CST-131 — a COP request reaching a formal version and an approval snapshot with no fabricated Catalog identity (INV-13) |
 
 ## 5. Compatibility policy
 

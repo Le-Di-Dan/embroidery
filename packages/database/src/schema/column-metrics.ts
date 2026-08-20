@@ -111,7 +111,7 @@ const ROWS: readonly MetricRow[] = [
   ['customer_merge_cases', 'G10', 6, 0, 3, 9],
   ['customer_merge_events', 'G10', 5, 0, 2, 7],
   // G11 — Design formal
-  ['design_versions', 'G11', 13, 7, 2, 22],
+  ['design_versions', 'G11', 13, 10, 2, 25],
   ['design_version_assets', 'G11', 2, 0, 2, 4],
   ['design_reviews', 'G11', 5, 2, 2, 9],
   // G12 — Content, gallery, agreement
@@ -122,7 +122,7 @@ const ROWS: readonly MetricRow[] = [
   ['agreements', 'G12', 3, 0, 3, 6],
   ['agreement_versions', 'G12', 9, 2, 2, 13],
   // G13 — Approval
-  ['approval_snapshots', 'G13', 11, 12, 2, 25],
+  ['approval_snapshots', 'G13', 11, 13, 2, 26],
   ['approval_snapshot_thread_colors', 'G13', 4, 0, 2, 6],
   ['approval_snapshot_agreement_acceptances', 'G13', 5, 0, 2, 7],
   // G14 — Quotation

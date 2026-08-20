@@ -149,8 +149,8 @@ APP7 creates deposit obligation/attempt and order conversion only from an eligib
 |---|---|---|
 | `APP6-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation. `APP6_SCHEMA_DISPOSITION = MIGRATION_REQUIRED`; design gate `DESIGN_REQUIRED_BEFORE_UI_ONLY`. See [`../audits/APP6_PHASE_ENTRY_AUDIT.md`](../audits/APP6_PHASE_ENTRY_AUDIT.md) and [`../reports/APP6-R00-COMPLETION-REPORT.md`](../reports/APP6-R00-COMPLETION-REPORT.md) |
 | `APP6-G01` | `COMPLETE` | APP6 authority locked (`IMP-D051`); `APP6-G01-C1` agreement-authority semantic alignment incorporated. ADR [`../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md`](../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md), authority package [`../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md`](../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md), report [`../reports/APP6-G01-COMPLETION-REPORT.md`](../reports/APP6-G01-COMPLETION-REPORT.md). `DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS` |
-| `APP6-DB01` | `INCOMPLETE` | **Next** — COP design-context forward migration on `design_versions` and `approval_snapshots`; exactly the eight operations in ADR-APP6-001 §4 |
-| `APP6-D01` | `INCOMPLETE` | One APP6 Figma package; zero `APP_06` registry rows exist today |
+| `APP6-DB01` | `COMPLETE` | COP design context physically represented. Migration `0036_add_app6_cop_design_context` — exactly the eight operations in ADR-APP6-001 §4: four Catalog placement columns made nullable on each table, `customer_owned_product_id` + REL-107/REL-108 (`ON DELETE RESTRICT`), the `design_versions` placement label pair, and CST-129/CST-130/CST-131. No backfill, no new index, no trigger change. 54/54 across three focused integration suites; all six live checkers green at 78/849/165/52/204/215/34; fingerprint `3fd107f2…` reproduced on a second independently built database. Report [`../reports/APP6-DB01-COMPLETION-REPORT.md`](../reports/APP6-DB01-COMPLETION-REPORT.md) |
+| `APP6-D01` | `INCOMPLETE` | **Next** — one APP6 Figma package; zero `APP_06` registry rows exist today |
 | `APP6-B01` | `INCOMPLETE` | Quotation drafting — 2 operations; also ships the `app6-policy-configuration` dataset reader and publisher (APP4-B01-C1 precedent) |
 | `APP6-B02` | `INCOMPLETE` | Quotation read — 2 operations |
 | `APP6-B03` | `INCOMPLETE` | Quotation send — 1 operation; projects `TR-LC11-05` |
@@ -170,12 +170,14 @@ APP7 creates deposit obligation/attempt and order conversion only from an eligib
 | `APP6-X01` | `INCOMPLETE` | Phase closure |
 
 ```text
-APP6 = AUTHORITY LOCKED — NOT YET IMPLEMENTED
+APP6 = AUTHORITY LOCKED — PERSISTENCE IN PLACE, NO RUNTIME YET
 APP6-R00 = COMPLETE
 APP6-G01 = COMPLETE
+APP6-DB01 = COMPLETE
 APP6 AUTHORITY = LOCKED
 DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS
-NEXT CHECKPOINT = APP6-DB01
+APP6 COP DESIGN CONTEXT = PHYSICALLY REPRESENTABLE
+NEXT CHECKPOINT = APP6-D01
 ```
 
 ### 11.3 Locked APP6 authority (`APP6-G01`, `IMP-D051`)

@@ -378,10 +378,12 @@ boolean/no/yes; listed once per table below by ID only.
 | COL-TBL028-07 | document_hash | text | yes | frz@sent | `sha256:<hex>` (CK format candidate); NOT NULL once sent (CK candidate) — GRD-007 input |
 | COL-TBL028-08 | preview_derivative_id | uuid | yes | yes | →asset_derivatives (watermarked preview) |
 | COL-TBL028-09 | preview_hash | text | yes | frz@sent | derivative binary hash captured at send |
-| COL-TBL028-10 | product_id / product_variant_id / product_side_id / embroidery_area_id | uuid ×4 | no | frz@sent | placement refs (CON-060; 4 columns -10a..-10d) |
+| COL-TBL028-10 | product_id / product_variant_id / product_side_id / embroidery_area_id | uuid ×4 | **yes (APP6-DB01)** | frz@sent | Catalog placement refs (CON-060; 4 columns -10a..-10d). `NOT NULL` until **APP6-DB01** (migration 0036): a customer-owned product holds none of the four (INV-13) and a formal version is still mandatory on its approval path, so the quartet became one of two exclusive branches (CST-129). Complete-or-absent — a partial quartet is rejected |
 | COL-TBL028-11 | physical_width_mm / physical_height_mm | numeric ×2 | no | frz@sent | CK > 0 (2 columns -11a/-11b) |
 | COL-TBL028-12 | sent_at / approved_at / superseded_at / voided_at | timestamptz ×4 | yes | state-scoped | state timestamps = Tier B history (4 columns -12a..-12d) |
 | COL-TBL028-13 | void_reason | text | yes | yes | [R] admin void (draft only) |
+| — (APP6-DB01) | customer_owned_product_id | uuid | yes | frz@sent | →customer_owned_products (REL-107, `ON DELETE RESTRICT`); the customer-owned-product branch of CST-129. Present exactly when the Catalog quartet is absent, never alongside it, and decided once at version creation from whether the request has a `customer_owned_products` row (CST-027). Frozen by the existing CST-090 guard, which is an exception list and so covers new columns without change |
+| — (APP6-DB01) | placement_side_label / placement_area_label | text ×2 | yes | frz@sent | the COP branch's frozen human placement evidence (2 columns). Required and nonblank on that branch, NULL on the Catalog branch (CST-130). They exist because `approval_snapshots.side_name`/`area_name` and `production_specifications.side_name`/`area_name` are `NOT NULL` downstream and the COP branch has no FK to read them through — `customer_owned_products` carries the *item*'s name and description, never the placement (ADR-APP6-001 §3.7). Not enums, not FKs, and never a placeholder such as `"CUSTOM"` |
 
 ### TBL-029 `design_version_assets`
 
@@ -410,13 +412,14 @@ All columns immutable (reject-mutation trigger, INV-01).
 | COL-TBL031-02 | design_case_id / custom_request_id / customer_id | uuid ×3 | no | no | snapshot anchors (3 columns -02a..-02c) |
 | COL-TBL031-03 | document_hash | text | no | no | exact-match evidence (GRD-007, INV-03) |
 | COL-TBL031-04 | preview_hash | text | yes | no | `06 §9` |
-| COL-TBL031-05 | product_id / product_variant_id / product_side_id / embroidery_area_id | uuid ×4 | no | no | refs (4 columns -05a..-05d) |
+| COL-TBL031-05 | product_id / product_variant_id / product_side_id / embroidery_area_id | uuid ×4 | **yes (APP6-DB01)** | no | Catalog placement refs (4 columns -05a..-05d). `NOT NULL` until **APP6-DB01** (migration 0036), for the same reason as COL-TBL028-10: one of two exclusive branches (CST-131), complete or absent |
 | COL-TBL031-06 | product_name / variant_label / side_name / area_name | text ×4 | no/yes/no/no | no | frozen display copies (INV-12; 4 columns -06a..-06d) |
 | COL-TBL031-07 | physical_width_mm / physical_height_mm | numeric ×2 | no | no | CK > 0 |
 | COL-TBL031-08 | quantity_total | integer | no | no | CK > 0 |
 | COL-TBL031-09 | contact_name / contact_email / contact_phone | text ×3 | yes | no | [PII] frozen Contact Snapshot (CON-018); redaction only via break-glass privacy procedure |
 | COL-TBL031-10 | grant_id / step_up_challenge_id | uuid ×2 | no | no | secure-flow + step-up evidence (INV-20, GRD-002/003) |
 | COL-TBL031-11 | approved_at | timestamptz | no | no | |
+| — (APP6-DB01) | customer_owned_product_id | uuid | yes | no | →customer_owned_products (REL-108, `ON DELETE RESTRICT`); the COP branch of CST-131. No label pair is added here: COL-TBL031-06 `side_name`/`area_name` are already the frozen human evidence and the approval transaction copies the version's labels into them. Inherits this table's row-wide CST-091 immutability with no trigger change |
 
 ### TBL-032 `approval_snapshot_thread_colors`
 
