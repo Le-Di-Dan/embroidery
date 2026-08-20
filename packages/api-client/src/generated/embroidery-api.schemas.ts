@@ -1089,6 +1089,149 @@ export interface AdminProductPublicationResponse {
   updatedAt: string;
 }
 
+export interface AdminQuotationHeaderResponse {
+  /**
+   * The version the customer is currently looking at, or `null` while the quotation has never been sent. Advanced only by the send transaction (`APP6-B03`).
+   * @nullable
+   */
+  currentVersionId: string | null;
+  customRequestId: string;
+  /** The stable human-facing code. Read aloud and retyped — never an authorization input. */
+  quotationCode: string;
+  quotationId: string;
+  /** The quotation header state. Reading it never advances it. */
+  quotationStatus: string;
+}
+
+export type AdminQuotationLineItemResponseLineKind =
+  (typeof AdminQuotationLineItemResponseLineKind)[keyof typeof AdminQuotationLineItemResponseLineKind];
+
+export const AdminQuotationLineItemResponseLineKind = {
+  PRODUCT: 'PRODUCT',
+  EMBROIDERY: 'EMBROIDERY',
+  DIGITIZING_FEE: 'DIGITIZING_FEE',
+  SHIPPING: 'SHIPPING',
+  ADJUSTMENT: 'ADJUSTMENT',
+  OTHER: 'OTHER',
+} as const;
+
+export interface AdminQuotationLineItemResponse {
+  description: string;
+  lineKind: AdminQuotationLineItemResponseLineKind;
+  /** The line total as frozen, not quantity × unit price. */
+  lineTotalAmount: string;
+  /** The line’s place in the version, unique within it (CST-037). Sorted ascending. */
+  position: number;
+  quantity: number;
+  /**
+   * A display reference to the catalogue row this line was priced from (REL-069). The frozen description and amounts are the priced facts; this is never re-derived from.
+   * @nullable
+   */
+  skuId: string | null;
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  unitPriceAmount: string;
+}
+
+/**
+ * The LC-13 state of this version at the moment it was read.
+ */
+export type AdminQuotationVersionResponseStatus =
+  (typeof AdminQuotationVersionResponseStatus)[keyof typeof AdminQuotationVersionResponseStatus];
+
+export const AdminQuotationVersionResponseStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  SUPERSEDED: 'SUPERSEDED',
+  EXPIRED: 'EXPIRED',
+  REJECTED: 'REJECTED',
+  VOID: 'VOID',
+} as const;
+
+export interface AdminQuotationVersionResponse {
+  /**
+   * When the customer accepted.
+   * @nullable
+   */
+  acceptedAt: string | null;
+  /**
+   * Why the total was moved off-list, as written at the time. Required by the schema whenever the adjustment is non-zero, and `null` otherwise.
+   * @nullable
+   */
+  adjustmentReason: string | null;
+  /** When this version was drafted. Always present; a version is never backdated. */
+  createdAt: string;
+  /** Fixed by the schema; no currency is selectable. */
+  currencyCode: string;
+  /** Whether the quotation header points at this version. Compared against `currentVersionId` — not inferred from the status — so it is `false` on every version of a quotation that has never been sent. */
+  current: boolean;
+  /** The recorded deposit share. */
+  depositAmount: string;
+  /** The deposit share **this version was priced at**, from its own row — not the share published policy carries today. A string: it is `numeric(5,2)`. */
+  depositPercent: string;
+  /**
+   * When it lapsed unaccepted.
+   * @nullable
+   */
+  expiredAt: string | null;
+  /** The manual adjustment applied to the subtotal. May be negative. */
+  manualAdjustmentAmount: string;
+  /** The garment quantity this version prices. */
+  quantityTotal: number;
+  /** The recorded remainder. */
+  remainingAmount: string;
+  /**
+   * When it was sent, if it was.
+   * @nullable
+   */
+  sentAt: string | null;
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  shippingFeeAmount: string;
+  /** The LC-13 state of this version at the moment it was read. */
+  status: AdminQuotationVersionResponseStatus;
+  /**
+   * The admin-entered stitch count this version was priced with (GAP-10), or `null` when the draft was written without one. Never derived — there is no stitch-count engine.
+   * @nullable
+   */
+  stitchCount: number | null;
+  /** The sum of this version’s line totals, as recorded. */
+  subtotalAmount: string;
+  /**
+   * When a newer sent version replaced this one.
+   * @nullable
+   */
+  supersededAt: string | null;
+  /** The recorded total. Returned as stored, never recomputed from the parts. */
+  totalAmount: string;
+  /**
+   * When the validity window opened. Set by the send transaction, `null` before it.
+   * @nullable
+   */
+  validFrom: string | null;
+  /**
+   * When the offer lapses. `null` on a version that was never sent.
+   * @nullable
+   */
+  validUntil: string | null;
+  /** The version number the database assigned, consecutive within this quotation. Never reused, and earlier versions are never rewritten (CST-036). */
+  version: number;
+  versionId: string;
+}
+
+export interface AdminQuotationVersionDetailResponse {
+  /** This version’s own frozen lines, ordered by position. */
+  lineItems: AdminQuotationLineItemResponse[];
+  quotation: AdminQuotationHeaderResponse;
+  /** The exact version addressed by the path. Never substituted with the current one. */
+  version: AdminQuotationVersionResponse;
+}
+
+export interface AdminQuotationVersionHistoryResponse {
+  quotation: AdminQuotationHeaderResponse;
+  /** Every version of this quotation, oldest first by version number. Not paginated, and never filtered: a superseded or expired version stays in the history exactly as it was. */
+  versions: AdminQuotationVersionResponse[];
+}
+
 /**
  * Stable machine-readable code; branch on this.
  */
@@ -3026,8 +3169,16 @@ export type AdminQuotationCreate201 = ApiSuccessResponse & {
   data: QuotationDraftedResponse;
 };
 
+export type AdminQuotationVersionHistory200 = ApiSuccessResponse & {
+  data: AdminQuotationVersionHistoryResponse;
+};
+
 export type AdminQuotationAddVersion201 = ApiSuccessResponse & {
   data: QuotationDraftedResponse;
+};
+
+export type AdminQuotationVersionDetail200 = ApiSuccessResponse & {
+  data: AdminQuotationVersionDetailResponse;
 };
 
 export type PublicCustomRequestAssetUploadParams = {

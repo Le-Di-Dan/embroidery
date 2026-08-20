@@ -46,6 +46,8 @@ import type {
   AdminProductUpdate200,
   AdminQuotationAddVersion201,
   AdminQuotationCreate201,
+  AdminQuotationVersionDetail200,
+  AdminQuotationVersionHistory200,
   AppendModerationNoteBody,
   ArchiveDesignTemplateBody,
   ArchiveProductBody,
@@ -705,6 +707,24 @@ export const adminQuotationCreate = (
 };
 
 /**
+ * The complete version history, oldest first by version number — the order the database assigned them in, consecutively and without reuse. It is not paginated and nothing is filtered out: a superseded, expired or rejected version stays in the history exactly as it was priced.
+ *
+ * Each entry carries that version’s **own** recorded facts — its amounts, the deposit share it was priced at, its adjustment and the reason for it, and the timestamps it actually reached. Nothing is recalculated and nothing is re-derived from current business policy, so a version drafted under an older deposit split still reads as that split. Amounts are exact decimal strings.
+ *
+ * This is a read. It sends nothing, moves no version, advances no pointer and does not expire an offer whose validity has lapsed.
+ * @summary List every version of one quotation
+ */
+export const adminQuotationVersionHistory = (
+  quotationId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminQuotationVersionHistory200>>,
+) => {
+  return apiRequest<AdminQuotationVersionHistory200>(
+    { url: `/api/admin/quotations/${quotationId}/versions`, method: 'GET' },
+    options,
+  );
+};
+
+/**
  * Re-prices a quotation by adding the next `DRAFT` version with its own priced lines. It is an append: earlier versions — including any that were already sent — are left exactly as they are and stay readable, and there is no route anywhere that edits one. Version numbers are assigned by the server, consecutively, and are never reused.
  *
  * The deposit split is read from published policy again for this version, so a version prices under the policy in force when it is drafted.
@@ -724,6 +744,25 @@ export const adminQuotationAddVersion = (
       headers: { 'Content-Type': 'application/json' },
       data: addQuotationVersionBody,
     },
+    options,
+  );
+};
+
+/**
+ * Returns the version named by `versionId` — **that** version, never the current or the latest one — together with its own frozen lines, ordered by position. A version belonging to a different quotation is not readable through this path: it answers `QUOTATION_VERSION_NOT_FOUND`, the same answer a version that does not exist gets.
+ *
+ * Every figure is the one recorded when the version was drafted: the line totals, the subtotal, the adjustment and its reason, the total, and the deposit split with the percentage it was priced at. None of it is recomputed and none of it is re-read from today’s policy, which is what makes an older version explainable rather than merely present. Amounts are exact decimal strings.
+ *
+ * This is a read, with no effect on the version, the quotation or the request.
+ * @summary Read one exact quotation version with its priced lines
+ */
+export const adminQuotationVersionDetail = (
+  quotationId: unknown,
+  versionId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminQuotationVersionDetail200>>,
+) => {
+  return apiRequest<AdminQuotationVersionDetail200>(
+    { url: `/api/admin/quotations/${quotationId}/versions/${versionId}`, method: 'GET' },
     options,
   );
 };
@@ -1304,8 +1343,14 @@ export type AdminProductUnpublishResult = NonNullable<
 export type AdminQuotationCreateResult = NonNullable<
   Awaited<ReturnType<typeof adminQuotationCreate>>
 >;
+export type AdminQuotationVersionHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof adminQuotationVersionHistory>>
+>;
 export type AdminQuotationAddVersionResult = NonNullable<
   Awaited<ReturnType<typeof adminQuotationAddVersion>>
+>;
+export type AdminQuotationVersionDetailResult = NonNullable<
+  Awaited<ReturnType<typeof adminQuotationVersionDetail>>
 >;
 export type AdminSecureGrantRevokeResult = NonNullable<
   Awaited<ReturnType<typeof adminSecureGrantRevoke>>

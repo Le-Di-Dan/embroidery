@@ -25,6 +25,7 @@ import { CustomRequestModerationModule } from '../modules/order/custom-request-m
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
 import { QuotationDraftingModule } from '../modules/quotation/quotation-drafting.module';
+import { QuotationReadModule } from '../modules/quotation/quotation-read.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -146,6 +147,12 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // on `admin/quotations`. Its own base path, disjoint from every module
     // above, so registration order cannot make one shadow another.
     QuotationDraftingModule,
+    // APP6-B02 — the Admin quotation reads, on the same base path. Two GETs
+    // beside two POSTs: Nest matches on method as well as path, so the read of
+    // `:quotationId/versions` and the append to it never contend, and keeping
+    // them in separate modules is what stops the read surface from holding a
+    // transaction manager.
+    QuotationReadModule,
   ],
 })
 export class AppModule {}

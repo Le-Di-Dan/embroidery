@@ -37,15 +37,25 @@ export interface QuotationVersion {
   readonly version: number;
   readonly status: QuotationVersionState;
   readonly quantityTotal: number;
+  /** COL-TBL051-05 — an admin-entered pricing input (GAP-10), NULL in DRAFT. */
+  readonly stitchCount: number | undefined;
   readonly subtotalAmount: string;
+  readonly manualAdjustmentAmount: string;
+  /** CST-064's [R]: present whenever the adjustment moved the total off-list. */
+  readonly adjustmentReason: string | undefined;
   readonly shippingFeeAmount: string;
   readonly totalAmount: string;
+  readonly depositPercent: string;
   readonly depositAmount: string;
   readonly remainingAmount: string;
   readonly currencyCode: string;
+  readonly validFrom: Date | undefined;
   readonly validUntil: Date | undefined;
   readonly sentAt: Date | undefined;
   readonly acceptedAt: Date | undefined;
+  readonly supersededAt: Date | undefined;
+  readonly expiredAt: Date | undefined;
+  readonly createdAt: Date;
 }
 
 export interface QuotationLineItem {

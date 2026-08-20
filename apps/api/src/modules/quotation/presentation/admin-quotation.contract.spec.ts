@@ -7,11 +7,18 @@
  *
  * Three things are proved, and two of them are absences:
  *
- * 1. the surface is **exactly two** operations — a third APP6 route added later
- *    without its own checkpoint fails here;
+ * 1. the **write** surface is exactly two operations — a third APP6 mutation
+ *    added later without its own checkpoint fails here;
  * 2. every money field is a `string` in the document *and* in the generated
  *    client, so the exact-money rule survives the whole contract path;
  * 3. nothing derived, and no operator identity, is accepted from a client.
+ *
+ * `APP6-B02` added two `GET`s to the same resource family. This file was
+ * narrowed to the mutations it owns rather than widened to count them: the
+ * B01 claim is "drafting publishes two operations and no third", and it stays
+ * true and stays checkable here. The size of the whole `adminQuotation` family
+ * is asserted once, by the newest checkpoint that changed it
+ * (`admin-quotation-version.contract.spec.ts`).
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -50,6 +57,9 @@ const generatedClient = readFileSync(
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const;
 
+const WRITE_METHODS: readonly string[] = ['post', 'put', 'patch', 'delete'];
+
+/** Every mutation published under the quotation resource family. */
 function quotationOperations(): { method: string; path: string; operationId: string }[] {
   const found: { method: string; path: string; operationId: string }[] = [];
   for (const [path, item] of Object.entries(document.paths)) {
@@ -57,7 +67,7 @@ function quotationOperations(): { method: string; path: string; operationId: str
       if (!(HTTP_METHODS as readonly string[]).includes(method)) {
         continue;
       }
-      if (path.includes('quotation')) {
+      if (path.includes('quotation') && WRITE_METHODS.includes(method)) {
         found.push({ method, path, operationId: operation.operationId ?? '' });
       }
     }
@@ -84,17 +94,20 @@ function moneyLeaves(schema: Schema, seen = new Set<Schema>()): [string, Schema]
   return leaves;
 }
 
-const APP6_SCHEMAS = ['CreateQuotationDraftBody', 'AddQuotationVersionBody', 'QuotationDraftedResponse'];
+const APP6_SCHEMAS = [
+  'CreateQuotationDraftBody',
+  'AddQuotationVersionBody',
+  'QuotationDraftedResponse',
+];
 
 describe('APP6-B01 published surface', () => {
-  it('publishes exactly two quotation operations', () => {
+  it('publishes exactly two quotation mutations', () => {
     const operations = quotationOperations();
 
     expect(operations).toHaveLength(2);
-    expect(operations.map((operation) => `${operation.method.toUpperCase()} ${operation.path}`)).toEqual([
-      'POST /api/admin/quotations',
-      'POST /api/admin/quotations/{quotationId}/versions',
-    ]);
+    expect(
+      operations.map((operation) => `${operation.method.toUpperCase()} ${operation.path}`),
+    ).toEqual(['POST /api/admin/quotations', 'POST /api/admin/quotations/{quotationId}/versions']);
     expect(operations.map((operation) => operation.operationId)).toEqual([
       'adminQuotation_create',
       'adminQuotation_addVersion',
@@ -184,8 +197,8 @@ describe('APP6-B01 accepts no derived or authoritative field', () => {
   });
 
   it('accepts no line total: a line total is its unit price times its quantity', () => {
-    const line = document.components.schemas['CreateQuotationDraftBody']?.properties?.['lineItems']
-      ?.items;
+    const line =
+      document.components.schemas['CreateQuotationDraftBody']?.properties?.['lineItems']?.items;
 
     expect(Object.keys(line?.properties ?? {})).not.toContain('lineTotalAmount');
     expect(Object.keys(line?.properties ?? {})).toEqual(

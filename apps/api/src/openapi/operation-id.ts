@@ -66,6 +66,15 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // either way, because the read class keeps deriving its own.
   AdminCustomRequestController: 'adminCustomRequest',
   AdminCustomRequestModerationController: 'adminCustomRequest',
+  // `APP6-B02`. Drafting a quotation and reading its version history are the
+  // same published domain; they are two classes because the read module holds
+  // no pricing, no policy reader and no transaction manager, so a read route
+  // cannot reach `addVersion()`. Without this entry the reads would mint
+  // `adminQuotationVersion_versionHistory`, letting that module boundary name a
+  // public identifier — and `APP6-B01`'s two accepted ids stay untouched either
+  // way, because the drafting class keeps deriving its own.
+  AdminQuotationController: 'adminQuotation',
+  AdminQuotationVersionController: 'adminQuotation',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

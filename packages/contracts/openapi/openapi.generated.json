@@ -1549,6 +1549,311 @@
         ],
         "type": "object"
       },
+      "AdminQuotationHeaderResponse": {
+        "properties": {
+          "currentVersionId": {
+            "description": "The version the customer is currently looking at, or `null` while the quotation has never been sent. Advanced only by the send transaction (`APP6-B03`).",
+            "example": null,
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "customRequestId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "type": "string"
+          },
+          "quotationCode": {
+            "description": "The stable human-facing code. Read aloud and retyped — never an authorization input.",
+            "example": "QUO-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "quotationId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "quotationStatus": {
+            "description": "The quotation header state. Reading it never advances it.",
+            "example": "DRAFT",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quotationId",
+          "quotationCode",
+          "customRequestId",
+          "quotationStatus",
+          "currentVersionId"
+        ],
+        "type": "object"
+      },
+      "AdminQuotationLineItemResponse": {
+        "properties": {
+          "description": {
+            "example": "Áo polo thêu ngực trái",
+            "type": "string"
+          },
+          "lineKind": {
+            "enum": [
+              "PRODUCT",
+              "EMBROIDERY",
+              "DIGITIZING_FEE",
+              "SHIPPING",
+              "ADJUSTMENT",
+              "OTHER"
+            ],
+            "example": "PRODUCT",
+            "type": "string"
+          },
+          "lineTotalAmount": {
+            "description": "The line total as frozen, not quantity × unit price.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "position": {
+            "description": "The line’s place in the version, unique within it (CST-037). Sorted ascending.",
+            "example": 1,
+            "type": "number"
+          },
+          "quantity": {
+            "example": 10,
+            "type": "number"
+          },
+          "skuId": {
+            "description": "A display reference to the catalogue row this line was priced from (REL-069). The frozen description and amounts are the priced facts; this is never re-derived from.",
+            "example": null,
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "unitPriceAmount": {
+            "description": "Exact `numeric(14,2)` VND, always a string. Never a JSON number.",
+            "example": "150000.00",
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "lineKind",
+          "description",
+          "skuId",
+          "quantity",
+          "unitPriceAmount",
+          "lineTotalAmount"
+        ],
+        "type": "object"
+      },
+      "AdminQuotationVersionDetailResponse": {
+        "properties": {
+          "lineItems": {
+            "description": "This version’s own frozen lines, ordered by position.",
+            "items": {
+              "$ref": "#/components/schemas/AdminQuotationLineItemResponse"
+            },
+            "type": "array"
+          },
+          "quotation": {
+            "$ref": "#/components/schemas/AdminQuotationHeaderResponse"
+          },
+          "version": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminQuotationVersionResponse"
+              }
+            ],
+            "description": "The exact version addressed by the path. Never substituted with the current one."
+          }
+        },
+        "required": [
+          "quotation",
+          "version",
+          "lineItems"
+        ],
+        "type": "object"
+      },
+      "AdminQuotationVersionHistoryResponse": {
+        "properties": {
+          "quotation": {
+            "$ref": "#/components/schemas/AdminQuotationHeaderResponse"
+          },
+          "versions": {
+            "description": "Every version of this quotation, oldest first by version number. Not paginated, and never filtered: a superseded or expired version stays in the history exactly as it was.",
+            "items": {
+              "$ref": "#/components/schemas/AdminQuotationVersionResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "quotation",
+          "versions"
+        ],
+        "type": "object"
+      },
+      "AdminQuotationVersionResponse": {
+        "properties": {
+          "acceptedAt": {
+            "description": "When the customer accepted.",
+            "example": null,
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "adjustmentReason": {
+            "description": "Why the total was moved off-list, as written at the time. Required by the schema whenever the adjustment is non-zero, and `null` otherwise.",
+            "example": null,
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "When this version was drafted. Always present; a version is never backdated.",
+            "example": "2026-08-20T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "currencyCode": {
+            "description": "Fixed by the schema; no currency is selectable.",
+            "example": "VND",
+            "type": "string"
+          },
+          "current": {
+            "description": "Whether the quotation header points at this version. Compared against `currentVersionId` — not inferred from the status — so it is `false` on every version of a quotation that has never been sent.",
+            "example": false,
+            "type": "boolean"
+          },
+          "depositAmount": {
+            "description": "The recorded deposit share.",
+            "example": "620000.00",
+            "type": "string"
+          },
+          "depositPercent": {
+            "description": "The deposit share **this version was priced at**, from its own row — not the share published policy carries today. A string: it is `numeric(5,2)`.",
+            "example": "40.00",
+            "type": "string"
+          },
+          "expiredAt": {
+            "description": "When it lapsed unaccepted.",
+            "example": null,
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "manualAdjustmentAmount": {
+            "description": "The manual adjustment applied to the subtotal. May be negative.",
+            "example": "0.00",
+            "type": "string"
+          },
+          "quantityTotal": {
+            "description": "The garment quantity this version prices.",
+            "example": 24,
+            "type": "number"
+          },
+          "remainingAmount": {
+            "description": "The recorded remainder.",
+            "example": "930000.00",
+            "type": "string"
+          },
+          "sentAt": {
+            "description": "When it was sent, if it was.",
+            "example": null,
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "shippingFeeAmount": {
+            "description": "Exact `numeric(14,2)` VND, always a string. Never a JSON number.",
+            "example": "50000.00",
+            "type": "string"
+          },
+          "status": {
+            "description": "The LC-13 state of this version at the moment it was read.",
+            "enum": [
+              "DRAFT",
+              "SENT",
+              "ACCEPTED",
+              "SUPERSEDED",
+              "EXPIRED",
+              "REJECTED",
+              "VOID"
+            ],
+            "example": "DRAFT",
+            "type": "string"
+          },
+          "stitchCount": {
+            "description": "The admin-entered stitch count this version was priced with (GAP-10), or `null` when the draft was written without one. Never derived — there is no stitch-count engine.",
+            "example": 8500,
+            "nullable": true,
+            "type": "number"
+          },
+          "subtotalAmount": {
+            "description": "The sum of this version’s line totals, as recorded.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "supersededAt": {
+            "description": "When a newer sent version replaced this one.",
+            "example": null,
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "totalAmount": {
+            "description": "The recorded total. Returned as stored, never recomputed from the parts.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "validFrom": {
+            "description": "When the validity window opened. Set by the send transaction, `null` before it.",
+            "example": null,
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "validUntil": {
+            "description": "When the offer lapses. `null` on a version that was never sent.",
+            "example": null,
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "version": {
+            "description": "The version number the database assigned, consecutive within this quotation. Never reused, and earlier versions are never rewritten (CST-036).",
+            "example": 1,
+            "type": "number"
+          },
+          "versionId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "versionId",
+          "version",
+          "status",
+          "quantityTotal",
+          "stitchCount",
+          "currencyCode",
+          "subtotalAmount",
+          "manualAdjustmentAmount",
+          "adjustmentReason",
+          "shippingFeeAmount",
+          "totalAmount",
+          "depositPercent",
+          "depositAmount",
+          "remainingAmount",
+          "validFrom",
+          "validUntil",
+          "sentAt",
+          "acceptedAt",
+          "supersededAt",
+          "expiredAt",
+          "createdAt",
+          "current"
+        ],
+        "type": "object"
+      },
       "AdminRequestAssetResponse": {
         "properties": {
           "assetId": {
@@ -11942,6 +12247,163 @@
       }
     },
     "/api/admin/quotations/{quotationId}/versions": {
+      "get": {
+        "description": "The complete version history, oldest first by version number — the order the database assigned them in, consecutively and without reuse. It is not paginated and nothing is filtered out: a superseded, expired or rejected version stays in the history exactly as it was priced.\n\nEach entry carries that version’s **own** recorded facts — its amounts, the deposit share it was priced at, its adjustment and the reason for it, and the timestamps it actually reached. Nothing is recalculated and nothing is re-derived from current business policy, so a version drafted under an older deposit split still reads as that split. Amounts are exact decimal strings.\n\nThis is a read. It sends nothing, moves no version, advances no pointer and does not expire an offer whose validity has lapsed.",
+        "operationId": "adminQuotation_versionHistory",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quotationId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminQuotationVersionHistoryResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The quotation and every version of it.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed identifier.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`QUOTATION_NOT_FOUND` — no such quotation.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "List every version of one quotation",
+        "tags": [
+          "adminQuotation"
+        ]
+      },
       "post": {
         "description": "Re-prices a quotation by adding the next `DRAFT` version with its own priced lines. It is an append: earlier versions — including any that were already sent — are left exactly as they are and stay readable, and there is no route anywhere that edits one. Version numbers are assigned by the server, consecutively, and are never reused.\n\nThe deposit split is read from published policy again for this version, so a version prices under the policy in force when it is drafted.\n\nThis drafts only: it sends nothing, starts no validity window and does not move the custom request.",
         "operationId": "adminQuotation_addVersion",
@@ -12189,6 +12651,173 @@
           }
         ],
         "summary": "Add a further draft version to an existing quotation",
+        "tags": [
+          "adminQuotation"
+        ]
+      }
+    },
+    "/api/admin/quotations/{quotationId}/versions/{versionId}": {
+      "get": {
+        "description": "Returns the version named by `versionId` — **that** version, never the current or the latest one — together with its own frozen lines, ordered by position. A version belonging to a different quotation is not readable through this path: it answers `QUOTATION_VERSION_NOT_FOUND`, the same answer a version that does not exist gets.\n\nEvery figure is the one recorded when the version was drafted: the line totals, the subtotal, the adjustment and its reason, the total, and the deposit split with the percentage it was priced at. None of it is recomputed and none of it is re-read from today’s policy, which is what makes an older version explainable rather than merely present. Amounts are exact decimal strings.\n\nThis is a read, with no effect on the version, the quotation or the request.",
+        "operationId": "adminQuotation_versionDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "versionId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quotationId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminQuotationVersionDetailResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The exact version and its line items.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed identifier.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`QUOTATION_NOT_FOUND` — no such quotation. `QUOTATION_VERSION_NOT_FOUND` — this quotation has no version with that id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Read one exact quotation version with its priced lines",
         "tags": [
           "adminQuotation"
         ]
