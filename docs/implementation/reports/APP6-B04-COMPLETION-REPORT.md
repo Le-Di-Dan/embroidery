@@ -517,7 +517,7 @@ sweep, notifications, Admin quotation UI, Storefront UI, order/payment/inventory
 ## 21. Commit
 
 ```text
-LOCAL COMMIT = recorded in the follow-up docs commit (see git log)
+LOCAL COMMIT = cef99b7
 PUSHED = NO
 NEXT CHECKPOINT = APP6-B05
 ```
