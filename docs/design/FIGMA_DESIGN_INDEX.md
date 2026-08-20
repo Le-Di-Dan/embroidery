@@ -61,6 +61,7 @@ Authority:
 `APP_03` write target: page **`592:3`** in `FIG-FILE-PRODUCT` (APP3 design packages).
 `APP_04` write target: page **`620:3`** in `FIG-FILE-PRODUCT` (APP4 design packages).
 `APP_05` write target: page **`641:3`** in `FIG-FILE-PRODUCT` (APP5 design packages).
+`APP_06` write target: page **`678:3`** in `FIG-FILE-PRODUCT` (APP6 design packages).
 
 ## 4. Screen and state registry
 
@@ -832,6 +833,81 @@ Policy values rendered as UI copy on these frames — ten-image cap per asset ro
 | FIG-APP5-FRAME-INDEX | Shared | APP5 shared specification | Frame Index & State Coverage | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_05 | 675:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=675-3) | APP5-D01 | — | FIG-APPROVAL-APP5-D01-PO-001 | 2026-08-16 |
 | FIG-APP5-HANDOFF-DEPENDENCY | Shared | APP5 handoff & dependency | Handoff & Backend Dependency | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_05 | 674:158 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=674-158) | APP5-D01 | — | FIG-APPROVAL-APP5-D01-PO-001 | 2026-08-16 |
 
+### 4.12 APP6-D01 — Design Review, Approval & Quotation (NEW, this checkpoint)
+
+Section **`681:3`** — [APP6-D01 · Design Review, Approval & Quotation](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=681-3), page **APP_06** (`678:3`).
+
+One top-level Figma section holding **11 named sub-sections** (`00 — APP6 Overview / Flow Map` … `10 — Handoff / Dependency Notes`) and **56 frames**, matching the single-section anchor convention of `APP1-D01`/`APP2-D01`/`APP3-D01`/`APP4-D01`/`APP5-D01`.
+
+**Pre-draw audit (mandatory).** Before any Figma write this registry was searched for every APP6-owned term — `APP6`, `APP_06`, `678:3`, `/requests/{requestId}/quotation`, `/requests/{requestId}/design`, `/truy-cap/bao-gia`, `/truy-cap/duyet-thiet-ke` — and **no row existed**; §4 ended at `4.11 APP5-D01` and §3 listed `APP_01`…`APP_05` write targets only. The live file was then read: the `APP_06` page **already existed** at `678:3` and had **zero children**. Per §2 rule 1 it was **reused, not re-created**, and no duplicate APP6 package exists. Outcome: **`NO_EXISTING_APP6_DESIGN`** — nothing was reused, supplemented, repaired or superseded, and no APP1–APP5 or BRD0 node was touched (anchors `375:11`, `405:2224`, `423:3`, `529:2224`, `596:3`, `596:23`, `621:3`, `644:3`, `546:3` re-read after the package was complete and unchanged).
+
+Every row below entered as `REVIEW_REQUIRED` — `APP6-D01` does **not** self-approve (§2 rule 4, §9). **No APP6 frontend checkpoint may start against a `REVIEW_REQUIRED` row**; a human reviewer must promote the rows their checkpoint consumes, with an approval-evidence id, following the `APP3-D01`/`APP4-D01`/`APP5-D01` precedent.
+
+Sub-section anchors: `00` `681:4` · `01` `681:5` · `02` `681:6` · `03` `681:7` · `04` `681:8` · `05` `681:9` · `06` `681:10` · `07` `681:11` · `08` `681:12` · `09` `681:13` · `10` `681:14`.
+
+Policy values rendered as UI copy on these frames — 7-calendar-day quotation validity, the 40 % / 60 % deposit split, `VND` as the only currency, the six `QUOTATION_LINE_KINDS`, the seven `QUOTATION_VERSION_STATES`, the six `DESIGN_VERSION_STATES`, the required agreement type set `[PAYMENT_POLICY, RETURN_POLICY]` and the verbatim P1–P11 / R1–R12 agreement content — are **read from `APP6-G01`** (`docs/implementation/audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md` §5.6, §6) and `ADR-APP6-001`. No business value was invented in Figma; the mapping is tabulated on `FIG-APP6-MATRIX-MONEY-POLICY` (`719:57`).
+
+**Access-state reuse, deliberately not duplicated.** The secure-link bootstrap, authorized shell and single indistinguishable "unavailable" state remain `APP4-D01` authority (`629:3`, `629:20`, `629:37`, `629:53`, `629:70`, `629:87`). `APP6-S01` and `APP6-S02` reference them rather than redrawing, because a second copy of a security state is a second authority for the same behaviour — the `APP5-D01` ruling, applied unchanged. The runtime watermark is likewise reused from `APP3-S09` (`609:263`, policy `609:371`) at its exact delivered treatment: Inter Medium 13, `Color/Text/Primary` at 13 % node opacity, 18° rotation, 160 × 130 tiling. The mapping is tabulated on `FIG-APP6-REUSE-MAP` (`716:128`).
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-APP6-OVERVIEW-FLOWMAP | Shared | APP6 phase overview | Flow Map & Surface Ownership | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 715:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=715-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-DRAFT-CATALOG-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Draft — Catalog Branch | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 682:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=682-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-DRAFT-COP-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Draft — Customer-Owned Product | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 684:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=684-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-VALIDATION-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Validation Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 684:144 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=684-144) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-LOADING-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Loading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 686:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=686-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-EMPTY-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Empty — No Quotation Yet | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 686:62 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=686-62) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-ERROR-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Load Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 686:104 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=686-104) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-SENT-READONLY-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Sent — Immutable Read-only | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 687:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=687-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-SEND-CONFIRM-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Send Confirmation Dialog | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 687:144 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=687-144) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-SEND-INPROGRESS-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Send In Progress | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 689:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=689-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-ACCEPTED-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Accepted Outcome | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 689:162 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=689-162) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-VERSION-HISTORY-DESKTOP | Admin | /requests/{requestId}/quotation | Quotation Workbench | Version History — Full Lifecycle | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 690:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=690-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A01-NARROW1280 | Admin | /requests/{requestId}/quotation | Quotation Workbench | Sent — Immutable Read-only | Narrow 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 690:92 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=690-92) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-DEFAULT-CATALOG-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Default — Catalog Branch (DIGITIZING) | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 692:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=692-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-EVIDENCE-ABSENT-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Submitted Evidence Absent | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 694:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=694-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-COP-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Customer-Owned Product Branch | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 694:111 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=694-111) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-CREATE-VERSION-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Create DRAFT Version Form | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 695:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=695-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-SEND-REVIEW-CONFIRM-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Send For Review Confirmation | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 695:138 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=695-138) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-REVIEW-ALREADY-ACTIVE-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | REVIEW_ALREADY_ACTIVE Reconciliation | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 695:266 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=695-266) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-SENT-FOR-REVIEW-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Sent For Review — Awaiting Customer | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 696:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=696-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-REVISION-REQUESTED-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Revision Requested | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 696:113 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=696-113) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-APPROVED-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Approved — Immutable Snapshot | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 697:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=697-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-LOADING-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Loading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 698:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=698-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-ERROR-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Load Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 698:63 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=698-63) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-GATE-DESKTOP | Admin | /requests/{requestId}/design | Design-Case Workbench | Gate — Not Yet Digitizing | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 698:97 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=698-97) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-A02-NARROW1280 | Admin | /requests/{requestId}/design | Design-Case Workbench | Default — Catalog Branch (DIGITIZING) | Narrow 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 698:143 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=698-143) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-DEFAULT-DESKTOP | Storefront | /truy-cap/bao-gia | Secure Quotation | Sent — Acceptance Eligible | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 700:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=700-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-STEPUP-DESKTOP | Storefront | /truy-cap/bao-gia | Secure Quotation | Accept — Step-up Required | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 701:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=701-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-ACCEPT-INPROGRESS-DESKTOP | Storefront | /truy-cap/bao-gia | Secure Quotation | Accept In Progress | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 701:88 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=701-88) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-ACCEPTED-DESKTOP | Storefront | /truy-cap/bao-gia | Secure Quotation | Accepted Outcome | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 701:147 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=701-147) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-REJECTED-DESKTOP | Storefront | /truy-cap/bao-gia | Secure Quotation | Rejected Outcome | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 702:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=702-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-STALE-DESKTOP | Storefront | /truy-cap/bao-gia | Secure Quotation | Stale Version | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 702:65 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=702-65) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-EXPIRED-DESKTOP | Storefront | /truy-cap/bao-gia | Secure Quotation | Expired Quotation | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 702:129 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=702-129) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-LOADING-DESKTOP | Storefront | /truy-cap/bao-gia | Secure Quotation | Loading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 703:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=703-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-ERROR-DESKTOP | Storefront | /truy-cap/bao-gia | Secure Quotation | Transient Network Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 703:36 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=703-36) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-DEFAULT-MOBILE | Storefront | /truy-cap/bao-gia | Secure Quotation | Sent — Acceptance Eligible | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 704:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=704-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S01-ACCEPTED-MOBILE | Storefront | /truy-cap/bao-gia | Secure Quotation | Accepted Outcome | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 705:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=705-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-DEFAULT-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Awaiting Approval | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 707:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=707-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-TERMS-REQUIRED-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Terms Not Accepted | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 709:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=709-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-APPROVE-INPROGRESS-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Approve In Progress | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 709:84 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=709-84) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-APPROVED-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Approved Outcome | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 709:164 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=709-164) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-STEPUP-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Approve — Step-up Required | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 710:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=710-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-REVISION-FORM-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Request Revision Form | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 710:109 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=710-109) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-VERSION-MISMATCH-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Version Mismatch | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 710:203 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=710-203) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-AGREEMENT-CONTENT-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Effective Agreement Content | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 711:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=711-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-LOADING-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Loading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 712:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=712-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-ERROR-DESKTOP | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Transient Network Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 712:31 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=712-31) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-DEFAULT-MOBILE | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Awaiting Approval | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 713:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=713-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-S02-APPROVED-MOBILE | Storefront | /truy-cap/duyet-thiet-ke | Secure Design Review | Approved Outcome | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 713:61 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=713-61) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-MATRIX-STATE | Shared | APP6 shared specification | State Coverage Matrix | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 716:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=716-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-MATRIX-RESPONSIVE | Shared | APP6 shared specification | Responsive Coverage Matrix | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 716:82 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=716-82) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-REUSE-MAP | Shared | APP6 shared specification | Reuse Map | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 716:128 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=716-128) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-MATRIX-SECURITY | Shared | APP6 shared specification | Security & Privacy Invariants | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 719:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=719-3) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-MATRIX-MONEY-POLICY | Shared | APP6 shared specification | Money & Policy Authority | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 719:57 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=719-57) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-FRAME-INDEX | Shared | APP6 shared specification | Frame Index & Coverage | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 720:52 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=720-52) | APP6-D01 | — | — | 2026-08-20 |
+| FIG-APP6-HANDOFF-DEPENDENCY | Shared | APP6 handoff & dependency | Handoff & Backend Dependency | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_06 | 720:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=720-3) | APP6-D01 | — | — | 2026-08-20 |
+
 ## 5. IA and user-flow registry
 
 Flow/IA/wireframe nodes are indexed as `REFERENCE_ONLY` — they inform, but do not
@@ -953,13 +1029,14 @@ canonical entry exists for any APP1-D01 composite key.
 
 - **Audit date:** 2026-07-25 (APP1-D01; supplemented at APP1-D02), re-audited
   **2026-07-26** (APP2-D01). **Auditor tooling:** Figma MCP plugin API.
-- **Files enumerated:** 2/2 — `FIG-FILE-PRODUCT` (**8 pages** as measured live at
-  `APP4-D01`; the previous "6 pages" figure predates `APP_03` and `APP_04`) +
-  `FIG-FILE-DS` (19 pages).
+- **Files enumerated:** 2/2 — `FIG-FILE-PRODUCT` (**10 pages** as measured live at
+  `APP6-D01`; 8 at `APP4-D01`, and the previous "6 pages" figure predates `APP_03`
+  and `APP_04`) + `FIG-FILE-DS` (19 pages).
 - **Product pages:** Information Architecture (`0:1`), APP_01 (`371:3` — Admin
   APP1-D01 section `375:11` + Storefront APP1-D02 section `405:2224`), **APP_02
   (`419:3` — APP2-D01 section `423:3`)**, **APP_03 (`592:3` — APP3-D01 section
-  `596:3`)**, **APP_04 (`620:3` — APP4-D01 section `621:3`)**, Wireframe
+  `596:3`)**, **APP_04 (`620:3` — APP4-D01 section `621:3`)**, **APP_05 (`641:3` —
+  APP5-D01 section `644:3`)**, **APP_06 (`678:3` — APP6-D01 section `681:3`)**, Wireframe
   (`17:55`, WF01–WF09), User Interface (`166:1457`, UI01–UI05), **LOGO_SYSTEM
   (`544:2409` — BRD0-F01 sections `546:3`–`546:8`, all `REFERENCE_ONLY`, no
   implementation authority)**.
@@ -1016,6 +1093,24 @@ canonical entry exists for any APP1-D01 composite key.
   promoted to `APPROVED_FOR_IMPLEMENTATION` on 2026-08-16 by the Product
   Owner under `FIG-APPROVAL-APP5-D01-PO-001`, recorded by `APP5-B01`
   without touching Figma (§4.11).
+- **`APP6-D01` (2026-08-20):** APP6 design package created on the **pre-existing but
+  empty** `APP_06` canvas (`678:3`) as section `681:3` — 11 sub-sections, **56
+  frames**, **56 new registry rows**, all `REVIEW_REQUIRED` with approval evidence
+  `—`. The canvas was **reused, not created** (§2 rule 1): it already existed and
+  returned zero children, so no duplicate APP6 package exists. Pre-draw audit outcome
+  `NO_EXISTING_APP6_DESIGN`: the registry carried no APP6 row and §3 listed no
+  `APP_06` write target, so nothing was reused, supplemented, repaired or superseded.
+  Coverage: `APP6-A01` 11 desktop + 1 narrow-1280, `APP6-A02` 12 desktop + 1
+  narrow-1280, `APP6-S01` 9 desktop + 2 mobile, `APP6-S02` 10 desktop + 2 mobile,
+  plus 7 shared specification frames (overview, five matrices, live frame index) and
+  1 handoff frame. The APP4 secure-access states and the APP3-S09 watermark were
+  **referenced, not redrawn**, and are mapped on `FIG-APP6-REUSE-MAP` (`716:128`).
+  No APP1–APP5 or BRD0 node was modified (anchors `375:11`, `405:2224`, `423:3`,
+  `529:2224`, `596:3`, `596:23`, `621:3`, `644:3`, `546:3` re-read after completion
+  and unchanged); no DS library file was touched; **0 component masters, 0 instances,
+  0 new variables, text styles, paint styles or effect styles** (3 collections / 52
+  variables / 11 text styles / 0 effect styles / 0 paint styles measured identically
+  before and after the package).
   Pre-draw audit outcome `NO_EXISTING_APP5_DESIGN`: the registry carried no APP5
   row and the canvas returned zero children, so nothing was reused, supplemented,
   repaired or superseded. Coverage: `APP5-S01` 26 desktop + 5 mobile,

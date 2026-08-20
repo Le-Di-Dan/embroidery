@@ -15,9 +15,15 @@ Expected `NEW/SUPPLEMENT` package for Admin review workbench, secure customer re
 Design, when required, is delivered as one complete phase package and is not split into coding checkpoints.
 
 `APP6-R00` confirmed the requirement from the registry: `FIGMA_DESIGN_INDEX.md`
-carries **zero** `APP_06` references, so the disposition is
+carried **zero** `APP_06` references, so the disposition is
 `DESIGN_REQUIRED_BEFORE_UI_ONLY` — one package (`APP6-D01`) gates every APP6 UI
 checkpoint and gates no backend checkpoint.
+
+`APP6-D01` delivered that package on 2026-08-20: 56 frames under section `681:3`
+on page `APP_06` (`678:3`), registered as 56 `REVIEW_REQUIRED` rows in
+[`../../design/FIGMA_DESIGN_INDEX.md`](../../design/FIGMA_DESIGN_INDEX.md) §4.12.
+The gate is **still closed**: `APP6-A01`, `APP6-A02`, `APP6-S01` and `APP6-S02`
+may not start until a human reviewer promotes the rows their checkpoint consumes.
 
 ## 4. In scope
 
@@ -150,8 +156,8 @@ APP7 creates deposit obligation/attempt and order conversion only from an eligib
 | `APP6-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation. `APP6_SCHEMA_DISPOSITION = MIGRATION_REQUIRED`; design gate `DESIGN_REQUIRED_BEFORE_UI_ONLY`. See [`../audits/APP6_PHASE_ENTRY_AUDIT.md`](../audits/APP6_PHASE_ENTRY_AUDIT.md) and [`../reports/APP6-R00-COMPLETION-REPORT.md`](../reports/APP6-R00-COMPLETION-REPORT.md) |
 | `APP6-G01` | `COMPLETE` | APP6 authority locked (`IMP-D051`); `APP6-G01-C1` agreement-authority semantic alignment incorporated. ADR [`../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md`](../../adr/backend/ADR-APP6-001-CUSTOMER-OWNED-PRODUCT-DESIGN-CONTEXT.md), authority package [`../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md`](../audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md), report [`../reports/APP6-G01-COMPLETION-REPORT.md`](../reports/APP6-G01-COMPLETION-REPORT.md). `DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS` |
 | `APP6-DB01` | `COMPLETE` | COP design context physically represented. Migration `0036_add_app6_cop_design_context` — exactly the eight operations in ADR-APP6-001 §4: four Catalog placement columns made nullable on each table, `customer_owned_product_id` + REL-107/REL-108 (`ON DELETE RESTRICT`), the `design_versions` placement label pair, and CST-129/CST-130/CST-131. No backfill, no new index, no trigger change. 54/54 across three focused integration suites; all six live checkers green at 78/849/165/52/204/215/34; fingerprint `3fd107f2…` reproduced on a second independently built database. Report [`../reports/APP6-DB01-COMPLETION-REPORT.md`](../reports/APP6-DB01-COMPLETION-REPORT.md) |
-| `APP6-D01` | `INCOMPLETE` | **Next** — one APP6 Figma package; zero `APP_06` registry rows exist today |
-| `APP6-B01` | `INCOMPLETE` | Quotation drafting — 2 operations; also ships the `app6-policy-configuration` dataset reader and publisher (APP4-B01-C1 precedent) |
+| `APP6-D01` | `COMPLETE` | One APP6 Figma package delivered for Product Owner review. The `APP_06` page **already existed** at `678:3` and was empty, so it was reused rather than re-created; root section `681:3`, 11 sub-sections, **56 frames**, **56 new `FIGMA_DESIGN_INDEX.md` rows** (§4.12), all `REVIEW_REQUIRED` with approval evidence `—`. APP4 secure-access states and the APP3-S09 watermark referenced, not redrawn. 0 components, 0 instances, 0 new variables or styles. Gate green at 334/334/18. Report [`../reports/APP6-D01-COMPLETION-REPORT.md`](../reports/APP6-D01-COMPLETION-REPORT.md) |
+| `APP6-B01` | `INCOMPLETE` | **Next** — Quotation drafting — 2 operations; also ships the `app6-policy-configuration` dataset reader and publisher (APP4-B01-C1 precedent) |
 | `APP6-B02` | `INCOMPLETE` | Quotation read — 2 operations |
 | `APP6-B03` | `INCOMPLETE` | Quotation send — 1 operation; projects `TR-LC11-05` |
 | `APP6-B04` | `INCOMPLETE` | Customer secure quotation read — 1 operation |
@@ -177,7 +183,11 @@ APP6-DB01 = COMPLETE
 APP6 AUTHORITY = LOCKED
 DB01_SCHEMA_CONTRACT = CORE_XOR_PLUS_DESIGN_VERSION_PLACEMENT_LABELS
 APP6 COP DESIGN CONTEXT = PHYSICALLY REPRESENTABLE
-NEXT CHECKPOINT = APP6-D01
+APP6-D01 = COMPLETE
+DESIGN_PACKAGE = DELIVERED_FOR_PRODUCT_OWNER_REVIEW
+SELF_APPROVAL = NO
+UI_IMPLEMENTATION_GATE = BLOCKED_UNTIL_RELEVANT_ROWS_ARE_APPROVED
+NEXT CHECKPOINT = APP6-B01
 ```
 
 ### 11.3 Locked APP6 authority (`APP6-G01`, `IMP-D051`)
