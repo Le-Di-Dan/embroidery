@@ -72,6 +72,7 @@ import type {
   PublicCustomRequestAssetUploadParams,
   PublicCustomRequestStatus200,
   PublicCustomRequestSubmit201,
+  PublicDesignReviewCurrent200,
   PublicDesignSessionAssetCreate202,
   PublicDesignSessionAssetCreateBody,
   PublicDesignSessionAssetStatus200,
@@ -96,6 +97,7 @@ import type {
   PublicVerificationSubmitAttempt200,
   PublishDesignTemplateBody,
   PublishProductBody,
+  ReadCurrentDesignReviewBody,
   ReadCurrentQuotationBody,
   ReadCustomRequestStatusBody,
   ReadinessStatusResponse,
@@ -985,6 +987,25 @@ export const publicCustomRequestStatus = (
 };
 
 /**
+ * Returns the design version currently awaiting the customer’s decision on the one custom request the presented secure link grants access to, together with the complete effective agreement set an approval will bind. The request is identified by the grant, the design case by the request’s own pointer, and the version by the send that put it in review — never by the caller: there is no version id, case id, request id or customer identifier in the body. A newer draft the workshop is still authoring is never returned; a later legitimate send is visible on the next call. The document is returned exactly as stored, with the hash computed at send. Nothing is written: no acceptance is recorded here, and no step-up re-verification is required to read. Every token that does not open a live grant, and every request with no design awaiting review, answer with one identical 404.
+ * @summary Read the design version a secure link opens for review
+ */
+export const publicDesignReviewCurrent = (
+  readCurrentDesignReviewBody: ReadCurrentDesignReviewBody,
+  options?: SecondParameter<typeof apiRequest<PublicDesignReviewCurrent200>>,
+) => {
+  return apiRequest<PublicDesignReviewCurrent200>(
+    {
+      url: `/api/public/design-reviews/current`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: readCurrentDesignReviewBody,
+    },
+    options,
+  );
+};
+
+/**
  * Opens one session on an exact public placement, either empty or cloned from a published Template scoped to that same placement. The session secret is returned only as a host-only, HttpOnly cookie.
  * @summary Open an anonymous design session
  */
@@ -1543,6 +1564,9 @@ export type PublicCustomRequestSubmitResult = NonNullable<
 >;
 export type PublicCustomRequestStatusResult = NonNullable<
   Awaited<ReturnType<typeof publicCustomRequestStatus>>
+>;
+export type PublicDesignReviewCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignReviewCurrent>>
 >;
 export type PublicDesignSessionCreateResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionCreate>>

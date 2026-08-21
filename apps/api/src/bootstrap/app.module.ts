@@ -32,6 +32,8 @@ import { QuotationReadModule } from '../modules/quotation/quotation-read.module'
 import { QuotationSendModule } from '../modules/quotation/quotation-send.module';
 import { CustomerQuotationDecisionModule } from '../modules/quotation/customer-quotation-decision.module';
 import { CustomerQuotationModule } from '../modules/quotation/customer-quotation.module';
+import { CustomerDesignReviewModule } from '../modules/design/customer-design-review.module';
+import { ContentModule } from '../modules/content/content.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -190,6 +192,18 @@ import { ValidationModule } from '../platform/validation/validation.module';
     CustomRequestSubmittedDesignModule,
     DesignVersionAuthoringModule,
     DesignVersionSendModule,
+    // APP6-B10 — CTX-CNT, composed so the `staff-bootstrap` CLI can reach
+    // `PublishApp6AgreementsUseCase` with the Admin id it just resolved. It
+    // declares no controller, so registering it publishes no route and
+    // publishes nothing at startup on its own.
+    ContentModule,
+    // APP6-B10 — the customer's grant-scoped design review read, on its own
+    // `public/design-reviews` base path. Disjoint from every module before it,
+    // so registration order cannot make one shadow another. Like
+    // `CustomerQuotationModule` it is defined by what it cannot inject: no
+    // transaction manager, no write repository, no storage port and no
+    // agreement publisher.
+    CustomerDesignReviewModule,
   ],
 })
 export class AppModule {}

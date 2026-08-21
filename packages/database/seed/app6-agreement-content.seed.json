@@ -1,0 +1,26 @@
+{
+  "seedId": "app6-agreement-content",
+  "tier": "SYSTEM_REFERENCE",
+  "checkpoint": "APP6-G01-C1",
+  "authority": "docs/implementation/audits/APP6_G01_DESIGN_REVIEW_AND_QUOTATION_AUTHORITY.md §5.5-§5.6",
+  "purpose": "The customer-facing content of every agreement type design approval requires (GRD-008, CON-144). Data only: the reader and the publishing caller are APP6-B10, exactly as APP6-G01 shipped the policy dataset and APP6-B01 shipped its reader and publisher. Content is authority normalization, never drafting — every sentence maps to a named accepted rule in the authority trace tables.",
+  "idempotency": "Per agreement type: ensureAgreement by the natural key agreements.agreement_type, then addVersion + publishVersion only when the type has no current version or the stored content hash, language or status has drifted. Published versions are immutable; drift is corrected by appending a successor and advancing agreements.current_version_id, never by mutating history.",
+  "containsSecrets": false,
+  "language": "vi",
+  "agreements": [
+    {
+      "agreementType": "PAYMENT_POLICY",
+      "name": "Chính sách thanh toán",
+      "language": "vi",
+      "authoritySection": "§5.6.1",
+      "content": "P1. Báo giá do cửa hàng lập thủ công. Các yếu tố tính giá có thể gồm kích thước thực tế, số lượng màu, số mũi ước tính, số lượng sản phẩm, giá sản phẩm nền, phí digitizing, phí vận chuyển và điều chỉnh thủ công.\n\nP2. Mọi số tiền được tính bằng VND.\n\nP3. Một báo giá đã gửi có hiệu lực để chấp nhận trong 7 ngày theo lịch kể từ thời điểm cửa hàng gửi. Quá thời hạn này, báo giá không còn chấp nhận được và cần một báo giá mới.\n\nP4. Việc duyệt mẫu thiết kế không thu bất kỳ khoản tiền nào và không tự tạo đơn hàng.\n\nP5. Đơn hàng được tạo sau khi quý khách duyệt đúng phiên bản thiết kế và báo giá đang có hiệu lực đã được chấp nhận. Khi đó phát sinh hai nghĩa vụ thanh toán độc lập: tiền cọc và phần còn lại.\n\nP6. Tiền cọc bằng 40% tổng giá trị của báo giá đã được chấp nhận, và chỉ phát sinh sau khi thiết kế được duyệt.\n\nP7. Phần còn lại bằng 60% và phải được thanh toán trước khi giao hàng.\n\nP8. Sản xuất chỉ thực hiện theo đúng phiên bản thiết kế đã được duyệt.\n\nP9. Nếu sau khi chấp nhận báo giá có thay đổi làm phát sinh báo giá mới, quý khách cần chấp nhận lại báo giá mới. Báo giá đã chấp nhận trước đó được giữ nguyên làm lịch sử.\n\nP10. Chỉ thao tác duyệt qua liên kết an toàn của cửa hàng mới có giá trị. Tin nhắn Zalo hoặc Messenger không phải là căn cứ xác nhận.\n\nP11. Chính sách này không quy định phương thức thanh toán cụ thể; cửa hàng thông báo phương thức khi nghĩa vụ thanh toán phát sinh."
+    },
+    {
+      "agreementType": "RETURN_POLICY",
+      "name": "Chính sách đổi trả và huỷ đơn",
+      "language": "vi",
+      "authoritySection": "§5.6.2",
+      "content": "R1. Thiết kế đã được duyệt không được chỉnh sửa. Mọi thay đổi sau khi duyệt tạo ra một phiên bản mới và cần được duyệt lại.\n\nR2. Trước khi cửa hàng gửi báo giá, hoặc sau khi đã gửi nhưng quý khách chưa chấp nhận: có thể huỷ, không phát sinh khoản tiền nào.\n\nR3. Sau khi chấp nhận báo giá và trước khi duyệt thiết kế: có thể huỷ. Chưa có tiền cọc nên không phát sinh hoàn tiền.\n\nR4. Sau khi duyệt thiết kế nhưng chưa thanh toán tiền cọc: có thể huỷ. Hai nghĩa vụ thanh toán được huỷ và không phát sinh khoản tiền nào.\n\nR5. Sau khi tiền cọc đã được xác nhận và trước khi bắt đầu sản xuất: yêu cầu huỷ được cửa hàng xét duyệt thủ công. Mặc định, tiền cọc được hoàn lại sau khi trừ khoản phí digitizing ghi trong báo giá đã chấp nhận.\n\nR6. Trong khi đang sản xuất: yêu cầu huỷ được xét duyệt thủ công. Mặc định tiền cọc không được hoàn, vì vật tư và công đã được sử dụng.\n\nR7. Sau khi sản xuất hoàn tất và trước khi thanh toán phần còn lại: mặc định tiền cọc không được hoàn.\n\nR8. Sau khi đã thanh toán phần còn lại nhưng chưa gửi hàng, việc huỷ chỉ được cửa hàng thực hiện trong trường hợp ngoại lệ.\n\nR9. Sau khi hàng đã được gửi hoặc đã giao, đơn hàng không thể huỷ. Khiếu nại và đổi trả được cửa hàng xử lý thủ công.\n\nR10. Mọi lần huỷ đều phải có lý do và được cửa hàng ghi nhận.\n\nR11. Số tiền hoàn lại cuối cùng là quyết định có ghi rõ lý do của cửa hàng trong khuôn khổ chính sách này. Mọi khoản hoàn tiền đều được lập thành bản ghi hoàn tiền.\n\nR12. Yêu cầu huỷ của quý khách được gửi qua liên kết an toàn của cửa hàng. Từ giai đoạn sau khi tiền cọc đã được xác nhận trở đi, quý khách cần xác thực lại trước khi gửi yêu cầu."
+    }
+  ]
+}

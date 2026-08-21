@@ -24,6 +24,7 @@ import {
 } from '../modules/identity/application/bootstrap-staff.use-case';
 import { PublishApp4PolicyUseCase } from '../platform/policy/publish-app4-policy.use-case';
 import { PublishApp6PolicyUseCase } from '../platform/policy/publish-app6-policy.use-case';
+import { PublishApp6AgreementsUseCase } from '../modules/content/application/publish-app6-agreements.use-case';
 import {
   STATUS_EXIT_CODE,
   decideBootstrapPreflight,
@@ -110,6 +111,14 @@ async function runEnsure(): Promise<number> {
       // and racing them would interleave two bootstrap writes for no gain on a
       // one-shot CLI.
       await app.get(PublishApp6PolicyUseCase).publish(result.adminId);
+      // APP6-B10, same seam and the same resolved Admin. Last of the three
+      // because the agreement *content* is what the customer review read
+      // returns while `design_approval.agreements` above decides which types
+      // are required: publishing the policy first means a boot that fails
+      // partway leaves the required set known and its content missing, which
+      // the read fails closed on, rather than content nothing requires.
+      // Idempotent — a rerun with unchanged content publishes nothing.
+      await app.get(PublishApp6AgreementsUseCase).publish(result.adminId);
     }
     return report(ENSURE_OUTCOME_STATUS[result.outcome], `staff ${result.outcome}`, result.adminId);
   } catch (error: unknown) {

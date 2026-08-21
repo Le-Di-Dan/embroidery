@@ -3202,6 +3202,66 @@
         ],
         "type": "object"
       },
+      "CustomerDesignReviewResponse": {
+        "properties": {
+          "accessExpiresAt": {
+            "description": "When the secure link itself stops working. Reading never extends it and never consumes the link.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "agreements": {
+            "description": "The complete effective agreement set an approval will bind, in the published required-type order. Every required type appears exactly once; a set that could not be resolved completely is a 503 rather than a shortened list.",
+            "items": {
+              "$ref": "#/components/schemas/DesignReviewAgreementResponse"
+            },
+            "type": "array"
+          },
+          "designVersionId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "document": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignDocument"
+              }
+            ],
+            "description": "The exact Design Document persisted on the version under review, as stored. Never migrated, re-quantized or rewritten on read: this is the byte content `documentHash` was computed over at send."
+          },
+          "documentHash": {
+            "description": "The hash stored on the version when it was sent — SHA-256 over the canonical (JCS) bytes of the document below. It is read from the row, never recomputed on this read, and it is the exact value `APP6-B11` submits back for `GRD-007`.",
+            "example": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            "type": "string"
+          },
+          "documentSchemaVersion": {
+            "description": "The schema version the stored document is governed by. `1` for a Catalog design and `2` for a customer-owned-product one; both are the same published `DesignDocument` component and neither is converted to the other.",
+            "example": 1,
+            "type": "number"
+          },
+          "sentAt": {
+            "description": "When the workshop sent this version for review.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "description": "Monotonic within the design case.",
+            "example": 2,
+            "type": "number"
+          }
+        },
+        "required": [
+          "designVersionId",
+          "version",
+          "documentSchemaVersion",
+          "documentHash",
+          "sentAt",
+          "document",
+          "agreements",
+          "accessExpiresAt"
+        ],
+        "type": "object"
+      },
       "CustomerOwnedRequestSubjectResponse": {
         "properties": {
           "description": {
@@ -3623,6 +3683,48 @@
           "physicalWidthMm",
           "physicalHeightMm",
           "pxPerMm"
+        ],
+        "type": "object"
+      },
+      "DesignReviewAgreementResponse": {
+        "properties": {
+          "agreementType": {
+            "description": "The agreement type. The set and its order come from the published `design_approval.agreements` policy, so this is configuration rather than a fixed enumeration and a client must not hard-code the members.",
+            "example": "PAYMENT_POLICY",
+            "type": "string"
+          },
+          "agreementVersionId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "type": "string"
+          },
+          "content": {
+            "description": "The customer-visible text of this exact version, as published. Plain text; paragraphs are separated by a blank line.",
+            "type": "string"
+          },
+          "contentHash": {
+            "description": "SHA-256 over the exact content below, stored at publication. `APP6-B11` submits this value back and `GRD-008` refuses any approval whose hashes no longer match.",
+            "example": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            "type": "string"
+          },
+          "language": {
+            "description": "BCP-47 tag of the content. MVP is single-language Vietnamese.",
+            "example": "vi",
+            "type": "string"
+          },
+          "version": {
+            "description": "Monotonic within the agreement. Display and support reference only.",
+            "example": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "agreementVersionId",
+          "agreementType",
+          "version",
+          "contentHash",
+          "language",
+          "content"
         ],
         "type": "object"
       },
@@ -5397,6 +5499,21 @@
           "versionStatus",
           "quotationStatus",
           "rejectedAt"
+        ],
+        "type": "object"
+      },
+      "ReadCurrentDesignReviewBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to read the design version currently awaiting review on the one custom request that link already opens. No design, version, case, request or customer identifier is accepted, and no agreement acceptance is carried.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
         ],
         "type": "object"
       },
@@ -15863,6 +15980,195 @@
         "summary": "Read the request a secure link opens",
         "tags": [
           "publicCustomRequest"
+        ]
+      }
+    },
+    "/api/public/design-reviews/current": {
+      "post": {
+        "description": "Returns the design version currently awaiting the customer’s decision on the one custom request the presented secure link grants access to, together with the complete effective agreement set an approval will bind. The request is identified by the grant, the design case by the request’s own pointer, and the version by the send that put it in review — never by the caller: there is no version id, case id, request id or customer identifier in the body. A newer draft the workshop is still authoring is never returned; a later legitimate send is visible on the next call. The document is returned exactly as stored, with the hash computed at send. Nothing is written: no acceptance is recorded here, and no step-up re-verification is required to read. Every token that does not open a live grant, and every request with no design awaiting review, answer with one identical 404.",
+        "operationId": "publicDesignReview_current",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadCurrentDesignReviewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CustomerDesignReviewResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The design under review and the terms its approval will bind.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Always `no-store`. This body is one customer’s unapproved artwork.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no readable design awaiting review. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for another target, or the workshop has simply not sent a design yet.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Secure-link resolution is not configured, or the required agreement set cannot be resolved completely. Distinct from 404 on purpose: the link is usable and the design is real, so reporting it as unavailable would hide a configuration fault behind a dead-link answer. Names no policy key and no agreement type.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read the design version a secure link opens for review",
+        "tags": [
+          "publicDesignReview"
         ]
       }
     },

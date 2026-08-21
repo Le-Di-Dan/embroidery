@@ -1956,6 +1956,38 @@ export interface CustomRequestSubmissionResponse {
   status: string;
 }
 
+export interface DesignReviewAgreementResponse {
+  /** The agreement type. The set and its order come from the published `design_approval.agreements` policy, so this is configuration rather than a fixed enumeration and a client must not hard-code the members. */
+  agreementType: string;
+  agreementVersionId: string;
+  /** The customer-visible text of this exact version, as published. Plain text; paragraphs are separated by a blank line. */
+  content: string;
+  /** SHA-256 over the exact content below, stored at publication. `APP6-B11` submits this value back and `GRD-008` refuses any approval whose hashes no longer match. */
+  contentHash: string;
+  /** BCP-47 tag of the content. MVP is single-language Vietnamese. */
+  language: string;
+  /** Monotonic within the agreement. Display and support reference only. */
+  version: number;
+}
+
+export interface CustomerDesignReviewResponse {
+  /** When the secure link itself stops working. Reading never extends it and never consumes the link. */
+  accessExpiresAt: string;
+  /** The complete effective agreement set an approval will bind, in the published required-type order. Every required type appears exactly once; a set that could not be resolved completely is a 503 rather than a shortened list. */
+  agreements: DesignReviewAgreementResponse[];
+  designVersionId: string;
+  /** The exact Design Document persisted on the version under review, as stored. Never migrated, re-quantized or rewritten on read: this is the byte content `documentHash` was computed over at send. */
+  document: DesignDocument;
+  /** The hash stored on the version when it was sent — SHA-256 over the canonical (JCS) bytes of the document below. It is read from the row, never recomputed on this read, and it is the exact value `APP6-B11` submits back for `GRD-007`. */
+  documentHash: string;
+  /** The schema version the stored document is governed by. `1` for a Catalog design and `2` for a customer-owned-product one; both are the same published `DesignDocument` component and neither is converted to the other. */
+  documentSchemaVersion: number;
+  /** When the workshop sent this version for review. */
+  sentAt: string;
+  /** Monotonic within the design case. */
+  version: number;
+}
+
 export type CustomerQuotationLineItemResponseLineKind =
   (typeof CustomerQuotationLineItemResponseLineKind)[keyof typeof CustomerQuotationLineItemResponseLineKind];
 
@@ -2900,6 +2932,17 @@ export interface QuotationRejectedResponse {
 }
 
 /**
+ * Presents a secure-link token to read the design version currently awaiting review on the one custom request that link already opens. No design, version, case, request or customer identifier is accepted, and no agreement acceptance is carried.
+ */
+export interface ReadCurrentDesignReviewBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
+/**
  * Presents a secure-link token to read the quotation that is current for the request that link already opens. No quotation, version, request or customer identifier is accepted.
  */
 export interface ReadCurrentQuotationBody {
@@ -3743,6 +3786,10 @@ export type PublicCustomRequestSubmit201 = ApiSuccessResponse & {
 
 export type PublicCustomRequestStatus200 = ApiSuccessResponse & {
   data: CustomRequestStatusResponse;
+};
+
+export type PublicDesignReviewCurrent200 = ApiSuccessResponse & {
+  data: CustomerDesignReviewResponse;
 };
 
 export type PublicDesignSessionCreate201 = ApiSuccessResponse & {

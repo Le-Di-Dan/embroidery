@@ -197,3 +197,17 @@ export type {
   App6PolicyDataset,
   App6PolicyKey,
 } from './seed/app6-policy-dataset';
+
+// APP6-B10 — the G01-C1 agreement-content dataset reader. Same rule again: the
+// JSON in `seed/` stays the single content source, and nothing here restates a
+// sentence, a policy name or the required type set.
+export {
+  APP6_AGREEMENT_CONTENT_DATASET_FILE,
+  APP6_AGREEMENT_CONTENT_TYPES,
+  loadApp6AgreementContentDataset,
+} from './seed/app6-agreement-content-dataset';
+export type {
+  App6AgreementContent,
+  App6AgreementContentDataset,
+  App6AgreementContentType,
+} from './seed/app6-agreement-content-dataset';
