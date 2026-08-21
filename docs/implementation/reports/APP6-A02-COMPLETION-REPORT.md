@@ -5,6 +5,7 @@
 **Route:** `/requests/{requestId}/design`
 **Entry:** `19f17e3` (`APP6-A01-C1`), reachable from `HEAD = 0e22b49`
 **Status:** `COMPLETE`
+**Commit:** `7d031aa` (local only — nothing pushed)
 
 ---
 
