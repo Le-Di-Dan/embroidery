@@ -28,6 +28,8 @@ export interface DesignFixture {
   readonly assetId: string;
   readonly agreementVersionId: string;
   readonly placement: {
+    /** The Catalog branch (`ADR-APP6-001` §3.2) — this fixture seeds a real chain. */
+    branch: 'CATALOG';
     productId: ProductId;
     productVariantId: ProductVariantId;
     productSideId: ProductSideId;
@@ -156,6 +158,7 @@ export async function seedDesignChain(
     assetId,
     agreementVersionId,
     placement: {
+      branch: 'CATALOG',
       productId: productId as ProductId,
       productVariantId: variantId as ProductVariantId,
       productSideId: sideId as ProductSideId,

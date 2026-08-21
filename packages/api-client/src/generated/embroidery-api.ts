@@ -14,6 +14,8 @@ import type {
   AdminAssetUpload202,
   AdminAssetUploadBody,
   AdminCustomRequestAppendNote201,
+  AdminCustomRequestDesignVersionCreate201,
+  AdminCustomRequestDesignVersionList200,
   AdminCustomRequestDetail200,
   AdminCustomRequestList200,
   AdminCustomRequestListParams,
@@ -55,6 +57,7 @@ import type {
   ArchiveDesignTemplateBody,
   ArchiveProductBody,
   AssignDesignTemplateScopeBody,
+  AuthorDesignVersionBody,
   AutosaveDesignSessionBody,
   CreateDesignSessionBody,
   CreateDesignTemplateBody,
@@ -210,6 +213,40 @@ export const adminCustomRequestAssetGet = (
       url: `/api/admin/custom-requests/${requestId}/assets/${assetId}/content`,
       method: 'GET',
       responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
+ * Every formal version of the design case this request points at, oldest first, with the customer decisions actually recorded against each. Superseded and void versions stay visible — a history that hid them could not explain how the current version was arrived at. Review outcomes are read from the review records, never inferred from a version’s status, so a draft and a never-decided version both report none. The design document itself is not included: this is history, not source. It is a read — nothing is written and no lock is taken.
+ * @summary List this request’s design versions with their review outcomes
+ */
+export const adminCustomRequestDesignVersionList = (
+  requestId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminCustomRequestDesignVersionList200>>,
+) => {
+  return apiRequest<AdminCustomRequestDesignVersionList200>(
+    { url: `/api/admin/custom-requests/${requestId}/design-versions`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Appends one new DRAFT version to the design case this request already has — `TR-LC08-01`. The request must be DIGITIZING or DESIGN_REVIEW; there is no override. The design case is resolved from the request’s own pointer and no case id is accepted. The placement branch is derived server-side: a catalog request freezes the authoritative product, variant, side and area, and fails loudly rather than substituting a missing one; a customer-owned-product request freezes its own product id, both agreed placement labels, and the positive embroidery placement envelope supplied here — never the customer item’s own dimensions. History is append-only: no existing version is edited, and a revision is another version. This does not send the version for review, does not move the request, does not compute a document hash and emits no notification.
+ * @summary Create a draft design version on this request’s design case
+ */
+export const adminCustomRequestDesignVersionCreate = (
+  requestId: unknown,
+  authorDesignVersionBody: AuthorDesignVersionBody,
+  options?: SecondParameter<typeof apiRequest<AdminCustomRequestDesignVersionCreate201>>,
+) => {
+  return apiRequest<AdminCustomRequestDesignVersionCreate201>(
+    {
+      url: `/api/admin/custom-requests/${requestId}/design-versions`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: authorDesignVersionBody,
     },
     options,
   );
@@ -1364,6 +1401,12 @@ export type AdminCustomRequestDetailResult = NonNullable<
 >;
 export type AdminCustomRequestAssetGetResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestAssetGet>>
+>;
+export type AdminCustomRequestDesignVersionListResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestDesignVersionList>>
+>;
+export type AdminCustomRequestDesignVersionCreateResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestDesignVersionCreate>>
 >;
 export type AdminCustomRequestAppendNoteResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestAppendNote>>

@@ -22,6 +22,7 @@ import { CustomRequestIntakeModule } from '../modules/order/custom-request-intak
 import { CustomRequestAdminModule } from '../modules/order/custom-request-admin.module';
 import { CustomRequestAssetDeliveryModule } from '../modules/order/custom-request-asset-delivery.module';
 import { CustomRequestSubmittedDesignModule } from '../modules/order/custom-request-submitted-design.module';
+import { DesignVersionAuthoringModule } from '../modules/design/design-version-authoring.module';
 import { CustomRequestModerationModule } from '../modules/order/custom-request-moderation.module';
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
@@ -186,6 +187,7 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // Design port, and neither the two JSON reads nor the two moderation writes
     // may have one in reach.
     CustomRequestSubmittedDesignModule,
+    DesignVersionAuthoringModule,
   ],
 })
 export class AppModule {}

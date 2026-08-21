@@ -4,6 +4,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
+import type { DesignReviewOutcome } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { and, asc, desc, eq } from 'drizzle-orm';
 
@@ -16,6 +17,8 @@ import type {
   DesignCaseRepository,
   DesignVersion,
   DesignVersionId,
+  DesignVersionPlacement,
+  DesignVersionReview,
   RecordReviewInput,
 } from '../../domain/repositories/design-case.repository';
 import { toCase, toVersion } from './design-row.mapper';
@@ -64,12 +67,20 @@ export class DrizzleDesignCaseRepository extends DrizzleRepository implements De
       // G-DB7-13: the four placement columns each have their own FK, and
       // nothing in the schema proves they form one chain. Validated before the
       // insert, inside this transaction.
-      await this.placement.assertValidPlacement({
-        productId: input.placement.productId,
-        productVariantId: input.placement.productVariantId,
-        productSideId: input.placement.productSideId,
-        embroideryAreaId: input.placement.embroideryAreaId,
-      });
+      //
+      // Catalog only. A customer-owned product has no Catalog placement to
+      // reconcile against (ADR-APP6-001 §3.3), and the only way to run this
+      // assertion for one would be to hand it fabricated ids — the exact failure
+      // the ADR exists to prevent. The COP branch's integrity comes from its own
+      // FK to `customer_owned_products` plus CST-129/CST-130 instead.
+      if (input.placement.branch === 'CATALOG') {
+        await this.placement.assertValidPlacement({
+          productId: input.placement.productId,
+          productVariantId: input.placement.productVariantId,
+          productSideId: input.placement.productSideId,
+          embroideryAreaId: input.placement.embroideryAreaId,
+        });
+      }
 
       // Lock the case, then derive the next version number under it. A
       // concurrent second create would still hit
@@ -107,10 +118,7 @@ export class DrizzleDesignCaseRepository extends DrizzleRepository implements De
           status: 'DRAFT',
           designDocument: input.designDocument,
           documentSchemaVersion: input.documentSchemaVersion,
-          productId: input.placement.productId,
-          productVariantId: input.placement.productVariantId,
-          productSideId: input.placement.productSideId,
-          embroideryAreaId: input.placement.embroideryAreaId,
+          ...placementColumns(input.placement),
           physicalWidthMm: input.placement.physicalWidthMm,
           physicalHeightMm: input.placement.physicalHeightMm,
         })
@@ -278,6 +286,34 @@ export class DrizzleDesignCaseRepository extends DrizzleRepository implements De
     });
   }
 
+  async listReviews(caseId: DesignCaseId): Promise<DesignVersionReview[]> {
+    return this.run('listReviews', async () => {
+      // Joined to `design_versions` rather than filtered by a version-id list,
+      // so the case is the scope in SQL: a review row can only be returned if
+      // the version it decided belongs to this case, which is a property of the
+      // statement rather than of whatever ids the caller happened to pass.
+      const rows = await this.db
+        .select({
+          designVersionId: designReviews.designVersionId,
+          outcome: designReviews.outcome,
+          decidedAt: designReviews.decidedAt,
+        })
+        .from(designReviews)
+        .innerJoin(designVersions, eq(designReviews.designVersionId, designVersions.id))
+        .where(eq(designVersions.designCaseId, caseId))
+        // `id` breaks the tie: `design_reviews` has no sequence column, so two
+        // decisions recorded in the same instant would otherwise come back in an
+        // order the database is free to change between calls.
+        .orderBy(asc(designReviews.decidedAt), asc(designReviews.id));
+
+      return rows.map((row) => ({
+        designVersionId: row.designVersionId as DesignVersionId,
+        outcome: row.outcome as DesignReviewOutcome,
+        decidedAt: row.decidedAt,
+      }));
+    });
+  }
+
   async findVersionInReview(caseId: DesignCaseId): Promise<DesignVersion | undefined> {
     return this.run('findVersionInReview', async () => {
       const [row] = await this.db
@@ -295,4 +331,39 @@ export class DrizzleDesignCaseRepository extends DrizzleRepository implements De
       return row === undefined ? undefined : toVersion(row);
     });
   }
+}
+
+/**
+ * The five branch columns, written as whichever branch the input actually is.
+ *
+ * Every column appears on both sides — one carrying a value, the other an
+ * explicit `null` — so a row can never inherit a stale column from the other
+ * branch, and CST-129/CST-130 are satisfied by construction rather than by an
+ * insert that happens to omit the right fields. `physical_width_mm` and
+ * `physical_height_mm` are deliberately *not* here: they are NOT NULL on both
+ * branches, so they belong with the rest of the row.
+ */
+function placementColumns(placement: DesignVersionPlacement): Record<string, string | null> {
+  if (placement.branch === 'CUSTOMER_OWNED') {
+    return {
+      customerOwnedProductId: placement.customerOwnedProductId,
+      productId: null,
+      productVariantId: null,
+      productSideId: null,
+      embroideryAreaId: null,
+      placementSideLabel: placement.sideLabel,
+      placementAreaLabel: placement.areaLabel,
+    };
+  }
+  return {
+    customerOwnedProductId: null,
+    productId: placement.productId,
+    productVariantId: placement.productVariantId,
+    productSideId: placement.productSideId,
+    embroideryAreaId: placement.embroideryAreaId,
+    // NULL on the Catalog branch: the four FKs already carry the identity these
+    // would otherwise duplicate as unverifiable text (CST-130).
+    placementSideLabel: null,
+    placementAreaLabel: null,
+  };
 }

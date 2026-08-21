@@ -33,11 +33,32 @@ import {
   PRODUCT_PLACEMENT_REPOSITORY,
   type ProductPlacementRepository,
 } from '../../catalog/domain/repositories/product-placement.repository';
-import type { DesignSession } from '../domain/repositories/design-session.repository';
+import type {
+  EmbroideryAreaId,
+  ProductId,
+  ProductSideId,
+} from '../../catalog/domain/repositories/placement-hierarchy.port';
 
 export interface SessionPlacementAuthority {
   readonly side: PlacementAuthority;
   readonly area: EmbroideryAreaAuthority;
+}
+
+/**
+ * The three ids a placement is resolved from.
+ *
+ * Narrowed from `DesignSession` to exactly the fields this resolver reads
+ * (`APP6-B08`). `DesignSession` still satisfies it structurally, so every APP3
+ * caller is unchanged and untouched; the widening is what lets `APP6-B08` resolve
+ * the same authority for a **formal** version — whose placement comes from the
+ * submitted session but which is not itself a session — without a second copy of
+ * the retirement, chain and unit-conversion rules below. A second copy is how the
+ * two would eventually disagree about what a retired Area means.
+ */
+export interface PlacementChainReference {
+  readonly productId: ProductId;
+  readonly productSideId: ProductSideId;
+  readonly embroideryAreaId: EmbroideryAreaId;
 }
 
 @Injectable()
@@ -54,7 +75,7 @@ export class SessionPlacementResolver {
    * from that Side — a chain that no longer resolves cannot authorize a save,
    * and inventing geometry for it would be worse than refusing.
    */
-  async resolve(session: DesignSession): Promise<SessionPlacementAuthority | undefined> {
+  async resolve(session: PlacementChainReference): Promise<SessionPlacementAuthority | undefined> {
     const snapshot = await this.placement.findPlacement(session.productId);
     if (snapshot === undefined) return undefined;
 

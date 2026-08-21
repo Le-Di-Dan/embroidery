@@ -18,7 +18,16 @@ import schema from './design-document.schema.json';
 
 /** A JSON Schema node, only as deeply as consumers need to walk it. */
 export interface DesignDocumentSchemaNode {
-  readonly type?: string;
+  /**
+   * A single JSON Schema type, or the array form the generator emits for a
+   * nullable field (`["string", "null"]`, `APP6-B08`).
+   *
+   * Both spellings are the generator's, not a choice made here: widening this
+   * to match is how the typed export keeps describing whatever the types
+   * produce. The API's OpenAPI augmentation is what translates the array form
+   * into 3.0's `nullable` keyword.
+   */
+  readonly type?: string | readonly string[];
   readonly $ref?: string;
   readonly anyOf?: readonly DesignDocumentSchemaNode[];
   readonly items?: DesignDocumentSchemaNode;

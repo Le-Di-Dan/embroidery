@@ -86,7 +86,7 @@ describe('APP6-B07 — the published Admin submitted-design contract', () => {
     expect(operation()?.operationId).toBe(OPERATION_ID);
   });
 
-  it('adds no mutation anywhere under the Admin request prefix beyond B05’s two', () => {
+  it('adds no mutation anywhere under the Admin request prefix beyond the accepted set', () => {
     const mutations = Object.entries(document.paths)
       .filter(([path]) => path.startsWith('/api/admin/custom-requests'))
       .flatMap(([path, item]) =>
@@ -95,9 +95,13 @@ describe('APP6-B07 — the published Admin submitted-design contract', () => {
           .map((method) => `${method.toUpperCase()} ${path}`),
       );
 
-    // Unchanged by B07: it authors no design version, sets no pointer, moves no
-    // session and offers no download or export (§9, §14).
+    // Unchanged by B07 itself: it authors no design version, sets no pointer,
+    // moves no session and offers no download or export (§9, §14). The third
+    // entry is `APP6-B08`'s authoring route, added by that checkpoint — this
+    // assertion freezes the *whole* Admin request mutation surface, so a new
+    // route must be reconciled here deliberately rather than appearing unnoticed.
     expect(mutations.sort()).toEqual([
+      'POST /api/admin/custom-requests/{requestId}/design-versions',
       'POST /api/admin/custom-requests/{requestId}/moderation-notes',
       'POST /api/admin/custom-requests/{requestId}/transitions',
     ]);

@@ -131,8 +131,13 @@ describe('design case persistence (integration)', () => {
 
       const loaded = await cases.loadVersion(version.id);
 
-      expect(loaded?.placement.productSideId).toBe(fixture.placement.productSideId);
-      expect(loaded?.placement.embroideryAreaId).toBe(fixture.placement.embroideryAreaId);
+      // Narrowed rather than cast: the branch tag is the assertion. A Catalog
+      // fixture that came back as the other branch would fail here rather than
+      // silently reading `undefined` out of the wrong shape.
+      expect(loaded?.placement.branch).toBe('CATALOG');
+      if (loaded?.placement.branch !== 'CATALOG') throw new Error('expected the Catalog branch');
+      expect(loaded.placement.productSideId).toBe(fixture.placement.productSideId);
+      expect(loaded.placement.embroideryAreaId).toBe(fixture.placement.embroideryAreaId);
     });
 
     it('rejects an incoherent placement chain before writing (G-DB7-13)', async () => {

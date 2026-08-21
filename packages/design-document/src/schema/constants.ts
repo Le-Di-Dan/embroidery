@@ -7,11 +7,59 @@
  * through validation code.
  */
 
-/** The only document schema version this build writes (ADR-DB1-012 §4). */
+/**
+ * The schema version the **Studio and Template** path writes (ADR-DB1-012 §4).
+ *
+ * Deliberately still `1` after `APP6-B08`. `ADR-APP6-001` §3.4 rule 3 says in as
+ * many words that *"the Catalog/Studio path keeps emitting the version it emits
+ * today"* and that APP3 is not modified, and this constant is how that promise
+ * is kept: `DesignDocumentAuthority`, `TemplateDocumentAuthority` and
+ * `TemplatePublicationAuthority` each pin an incoming document to `=== CURRENT`,
+ * so raising it here would both start emitting v2 into Catalog Sessions and
+ * refuse every already-persisted v1 Session and Template document on its next
+ * save. The widening rides {@link SUPPORTED_DESIGN_DOCUMENT_SCHEMA_VERSIONS}
+ * instead — which is the mechanism §3.4 rule 2 names.
+ *
+ * A useful side effect of leaving it alone: those same three `=== CURRENT` pins
+ * now *reject* a v2 branch-capable document from ever entering a Catalog Session
+ * or Template, with no APP3 edit at all.
+ */
 export const CURRENT_DESIGN_DOCUMENT_SCHEMA_VERSION = 1;
 
-/** Versions this build can read. Backward-read grows this list, never shrinks it. */
-export const SUPPORTED_DESIGN_DOCUMENT_SCHEMA_VERSIONS: readonly number[] = Object.freeze([1]);
+/**
+ * The schema version a **formal Design Version** may use to express placement
+ * absence (`ADR-APP6-001` §3.4, `APP6-B08`).
+ *
+ * v2 differs from v1 in exactly one respect: `placement.productSideId` and
+ * `placement.embroideryAreaId` may be explicit `null`, and they are null
+ * **together or not at all**. That complete pair is the branch —
+ *
+ * ```text
+ * both non-null = Catalog
+ * both null     = customer-owned product
+ * mixed         = invalid
+ * ```
+ *
+ * — so no `branch` discriminator field is added: a second way to say the same
+ * thing is a second thing that can disagree.
+ *
+ * It is not a "newer v1". A v1 document is not stale and is never rewritten into
+ * one of these: a Catalog formal version authored from a v1 submitted Session
+ * document stays v1, byte for byte, and only the customer-owned-product branch —
+ * which could not be written at v1 at all — is authored here.
+ */
+export const BRANCHED_PLACEMENT_DESIGN_DOCUMENT_SCHEMA_VERSION = 2;
+
+/**
+ * Versions this build can read. Backward-read grows this list, never shrinks it.
+ *
+ * Note it is a superset of, not a synonym for, "the version this build writes":
+ * a reader admits both, while each writer picks the one its own branch requires.
+ */
+export const SUPPORTED_DESIGN_DOCUMENT_SCHEMA_VERSIONS: readonly number[] = Object.freeze([
+  CURRENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
+  BRANCHED_PLACEMENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
+]);
 
 /**
  * Document complexity limits (IMP-D044 PO-09).

@@ -691,10 +691,22 @@ export type DesignElement =
 export interface DesignPlacementSnapshot {
   canvasHeightPx: number;
   canvasWidthPx: number;
-  embroideryAreaId: string;
+  /**
+   * The Catalog Embroidery Area, or `null` — see "productSideId" above.
+   * @nullable
+   */
+  embroideryAreaId: string | null;
   physicalHeightMm: number;
   physicalWidthMm: number;
-  productSideId: string;
+  /**
+   * The Catalog Product Side, or `null` on the customer-owned-product branch (`ADR-APP6-001` §3.4, schema version 2 and above).
+   *
+   * `null` is *absence expressed*, never absence implied: the field stays required and a missing key is still rejected. A reader that cannot represent absence must refuse the document rather than coerce the `null` into a lookup, which is why v2 is a distinct schema version rather than a quiet relaxation of v1 — under v1 this is still a required non-empty string and always will be.
+   *
+   * Null together with "embroideryAreaId" or not at all: a half-null pair is invalid in every version.
+   * @nullable
+   */
+  productSideId: string | null;
   pxPerMm: number;
 }
 
@@ -1405,6 +1417,31 @@ export interface AssignDesignTemplateScopeBody {
   productId: string;
   /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
   productSideId: string;
+}
+
+export interface AuthorDesignVersionBody {
+  /** The complete Design Document for this formal version. Validated, quantized and canonicalized by the design-document authority; the stored value is the prepared form, not the object as sent. A catalog version carries schema version 1 with both placement ids present; a customer-owned version carries schema version 2 with both explicitly null. */
+  document: DesignDocument;
+  /**
+   * @maximum 10000
+   * @exclusiveMinimum 0
+   */
+  physicalHeightMm?: number;
+  /**
+   * @maximum 10000
+   * @exclusiveMinimum 0
+   */
+  physicalWidthMm?: number;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  placementAreaLabel?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  placementSideLabel?: string;
 }
 
 export interface AutosaveDesignSessionBody {
@@ -2189,6 +2226,118 @@ export interface DesignSessionSnapshotResponse {
   sessionId: string;
   /** Design Session lifecycle state. */
   status: string;
+}
+
+/**
+ * Derived from the persisted placement, never stored and never accepted from a client.
+ */
+export type DesignVersionResponseBranch =
+  (typeof DesignVersionResponseBranch)[keyof typeof DesignVersionResponseBranch];
+
+export const DesignVersionResponseBranch = {
+  CATALOG: 'CATALOG',
+  CUSTOMER_OWNED: 'CUSTOMER_OWNED',
+} as const;
+
+/**
+ * The decision the customer actually recorded. Never inferred from the version status.
+ */
+export type DesignVersionReviewResponseOutcome =
+  (typeof DesignVersionReviewResponseOutcome)[keyof typeof DesignVersionReviewResponseOutcome];
+
+export const DesignVersionReviewResponseOutcome = {
+  APPROVE: 'APPROVE',
+  REQUEST_REVISION: 'REQUEST_REVISION',
+} as const;
+
+export interface DesignVersionReviewResponse {
+  decidedAt: string;
+  /** The decision the customer actually recorded. Never inferred from the version status. */
+  outcome: DesignVersionReviewResponseOutcome;
+}
+
+/**
+ * LC-08 state. A version created by this endpoint is always `DRAFT`.
+ */
+export type DesignVersionResponseStatus =
+  (typeof DesignVersionResponseStatus)[keyof typeof DesignVersionResponseStatus];
+
+export const DesignVersionResponseStatus = {
+  DRAFT: 'DRAFT',
+  SENT_FOR_REVIEW: 'SENT_FOR_REVIEW',
+  REVISION_REQUESTED: 'REVISION_REQUESTED',
+  APPROVED: 'APPROVED',
+  SUPERSEDED: 'SUPERSEDED',
+  VOID: 'VOID',
+} as const;
+
+export interface DesignVersionResponse {
+  /** @nullable */
+  approvedAt: string | null;
+  /** Derived from the persisted placement, never stored and never accepted from a client. */
+  branch: DesignVersionResponseBranch;
+  /** True when the design case's own current-version pointer names this version. */
+  current: boolean;
+  /** The design-document schema version governing this version. 1 on the catalog branch; 2 on the customer-owned branch, which is the version able to express placement absence. */
+  documentSchemaVersion: number;
+  /**
+   * Catalog branch only.
+   * @nullable
+   */
+  embroideryAreaId: string | null;
+  /**
+   * The version this one continues, or null at the root of the chain. Server-derived from the design case; no request body may name it.
+   * @nullable
+   */
+  parentVersionId: string | null;
+  /** See `physicalWidthMm`. */
+  physicalHeightMm: string;
+  /** Exact `numeric` millimetres, always a string. On the catalog branch these are the Product Side's frozen dimensions; on the customer-owned branch they are this version's embroidery placement envelope — never the customer item’s own dimensions. */
+  physicalWidthMm: string;
+  /**
+   * Customer-owned branch only: the agreed placement area. See the side label.
+   * @nullable
+   */
+  placementAreaLabel: string | null;
+  /**
+   * Customer-owned branch only: the agreed placement side, as frozen human evidence. Null on the catalog branch, where the placement foreign keys carry the identity.
+   * @nullable
+   */
+  placementSideLabel: string | null;
+  /**
+   * Catalog branch only.
+   * @nullable
+   */
+  productId: string | null;
+  /**
+   * Catalog branch only.
+   * @nullable
+   */
+  productSideId: string | null;
+  /**
+   * Catalog branch only.
+   * @nullable
+   */
+  productVariantId: string | null;
+  /** Recorded customer decisions, oldest first. Empty for a draft and for any version nobody has decided on; never populated by inference. */
+  reviews: DesignVersionReviewResponse[];
+  /** @nullable */
+  sentAt: string | null;
+  /** LC-08 state. A version created by this endpoint is always `DRAFT`. */
+  status: DesignVersionResponseStatus;
+  /** Monotonic within the design case, arbitrated by a unique constraint. */
+  version: number;
+  versionId: string;
+}
+
+export interface DesignVersionCreatedResponse {
+  version: DesignVersionResponse;
+}
+
+export interface DesignVersionListResponse {
+  designCaseId: string;
+  /** Every version of this design case, oldest first. Nothing is hidden. */
+  versions: DesignVersionResponse[];
 }
 
 export type HealthStatusResponseService =
@@ -3286,6 +3435,14 @@ export type AdminCustomRequestList200 = ApiSuccessResponse & {
 
 export type AdminCustomRequestDetail200 = ApiSuccessResponse & {
   data: AdminCustomRequestDetailResponse;
+};
+
+export type AdminCustomRequestDesignVersionList200 = ApiSuccessResponse & {
+  data: DesignVersionListResponse;
+};
+
+export type AdminCustomRequestDesignVersionCreate201 = ApiSuccessResponse & {
+  data: DesignVersionCreatedResponse;
 };
 
 export type AdminCustomRequestAppendNote201 = ApiSuccessResponse & {

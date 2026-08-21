@@ -31,10 +31,18 @@
       "type": "object",
       "properties": {
         "productSideId": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The Catalog Product Side, or `null` on the customer-owned-product branch (`ADR-APP6-001` §3.4, schema version 2 and above).\n\n`null` is *absence expressed*, never absence implied: the field stays required and a missing key is still rejected. A reader that cannot represent absence must refuse the document rather than coerce the `null` into a lookup, which is why v2 is a distinct schema version rather than a quiet relaxation of v1 — under v1 this is still a required non-empty string and always will be.\n\nNull together with \"embroideryAreaId\" or not at all: a half-null pair is invalid in every version."
         },
         "embroideryAreaId": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The Catalog Embroidery Area, or `null` — see \"productSideId\" above."
         },
         "canvasWidthPx": {
           "type": "number"

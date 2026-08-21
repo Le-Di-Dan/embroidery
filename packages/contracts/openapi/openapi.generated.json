@@ -2515,6 +2515,45 @@
         ],
         "type": "object"
       },
+      "AuthorDesignVersionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignDocument"
+              }
+            ],
+            "description": "The complete Design Document for this formal version. Validated, quantized and canonicalized by the design-document authority; the stored value is the prepared form, not the object as sent. A catalog version carries schema version 1 with both placement ids present; a customer-owned version carries schema version 2 with both explicitly null."
+          },
+          "physicalHeightMm": {
+            "exclusiveMinimum": true,
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "physicalWidthMm": {
+            "exclusiveMinimum": true,
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "placementAreaLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "placementSideLabel": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "document"
+        ],
+        "type": "object"
+      },
       "AutosaveDesignSessionBody": {
         "additionalProperties": false,
         "properties": {
@@ -3557,6 +3596,8 @@
             "type": "number"
           },
           "embroideryAreaId": {
+            "description": "The Catalog Embroidery Area, or `null` — see \"productSideId\" above.",
+            "nullable": true,
             "type": "string"
           },
           "physicalHeightMm": {
@@ -3566,6 +3607,8 @@
             "type": "number"
           },
           "productSideId": {
+            "description": "The Catalog Product Side, or `null` on the customer-owned-product branch (`ADR-APP6-001` §3.4, schema version 2 and above).\n\n`null` is *absence expressed*, never absence implied: the field stays required and a missing key is still rejected. A reader that cannot represent absence must refuse the document rather than coerce the `null` into a lookup, which is why v2 is a distinct schema version rather than a quiet relaxation of v1 — under v1 this is still a required non-empty string and always will be.\n\nNull together with \"embroideryAreaId\" or not at all: a half-null pair is invalid in every version.",
+            "nullable": true,
             "type": "string"
           },
           "pxPerMm": {
@@ -3845,6 +3888,197 @@
           "expiresAt",
           "documentSchemaVersion",
           "document"
+        ],
+        "type": "object"
+      },
+      "DesignVersionCreatedResponse": {
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/DesignVersionResponse"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "type": "object"
+      },
+      "DesignVersionListResponse": {
+        "properties": {
+          "designCaseId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "versions": {
+            "description": "Every version of this design case, oldest first. Nothing is hidden.",
+            "items": {
+              "$ref": "#/components/schemas/DesignVersionResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "designCaseId",
+          "versions"
+        ],
+        "type": "object"
+      },
+      "DesignVersionResponse": {
+        "properties": {
+          "approvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "branch": {
+            "description": "Derived from the persisted placement, never stored and never accepted from a client.",
+            "enum": [
+              "CATALOG",
+              "CUSTOMER_OWNED"
+            ],
+            "type": "string"
+          },
+          "current": {
+            "description": "True when the design case's own current-version pointer names this version.",
+            "type": "boolean"
+          },
+          "documentSchemaVersion": {
+            "description": "The design-document schema version governing this version. 1 on the catalog branch; 2 on the customer-owned branch, which is the version able to express placement absence.",
+            "example": 1,
+            "type": "number"
+          },
+          "embroideryAreaId": {
+            "description": "Catalog branch only.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "parentVersionId": {
+            "description": "The version this one continues, or null at the root of the chain. Server-derived from the design case; no request body may name it.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "description": "See `physicalWidthMm`.",
+            "example": "80.00",
+            "type": "string"
+          },
+          "physicalWidthMm": {
+            "description": "Exact `numeric` millimetres, always a string. On the catalog branch these are the Product Side's frozen dimensions; on the customer-owned branch they are this version's embroidery placement envelope — never the customer item’s own dimensions.",
+            "example": "120.00",
+            "type": "string"
+          },
+          "placementAreaLabel": {
+            "description": "Customer-owned branch only: the agreed placement area. See the side label.",
+            "example": "Vùng thêu ngực",
+            "nullable": true,
+            "type": "string"
+          },
+          "placementSideLabel": {
+            "description": "Customer-owned branch only: the agreed placement side, as frozen human evidence. Null on the catalog branch, where the placement foreign keys carry the identity.",
+            "example": "Ngực trái",
+            "nullable": true,
+            "type": "string"
+          },
+          "productId": {
+            "description": "Catalog branch only.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "productSideId": {
+            "description": "Catalog branch only.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "productVariantId": {
+            "description": "Catalog branch only.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "reviews": {
+            "description": "Recorded customer decisions, oldest first. Empty for a draft and for any version nobody has decided on; never populated by inference.",
+            "items": {
+              "$ref": "#/components/schemas/DesignVersionReviewResponse"
+            },
+            "type": "array"
+          },
+          "sentAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "description": "LC-08 state. A version created by this endpoint is always `DRAFT`.",
+            "enum": [
+              "DRAFT",
+              "SENT_FOR_REVIEW",
+              "REVISION_REQUESTED",
+              "APPROVED",
+              "SUPERSEDED",
+              "VOID"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "description": "Monotonic within the design case, arbitrated by a unique constraint.",
+            "example": 1,
+            "type": "number"
+          },
+          "versionId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "versionId",
+          "version",
+          "status",
+          "parentVersionId",
+          "documentSchemaVersion",
+          "branch",
+          "productId",
+          "productVariantId",
+          "productSideId",
+          "embroideryAreaId",
+          "placementSideLabel",
+          "placementAreaLabel",
+          "physicalWidthMm",
+          "physicalHeightMm",
+          "current",
+          "sentAt",
+          "approvedAt",
+          "reviews"
+        ],
+        "type": "object"
+      },
+      "DesignVersionReviewResponse": {
+        "properties": {
+          "decidedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "outcome": {
+            "description": "The decision the customer actually recorded. Never inferred from the version status.",
+            "enum": [
+              "APPROVE",
+              "REQUEST_REVISION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "decidedAt"
         ],
         "type": "object"
       },
@@ -7143,6 +7377,395 @@
         "summary": "Open one attachment submitted with a custom request",
         "tags": [
           "adminCustomRequestAsset"
+        ]
+      }
+    },
+    "/api/admin/custom-requests/{requestId}/design-versions": {
+      "get": {
+        "description": "Every formal version of the design case this request points at, oldest first, with the customer decisions actually recorded against each. Superseded and void versions stay visible — a history that hid them could not explain how the current version was arrived at. Review outcomes are read from the review records, never inferred from a version’s status, so a draft and a never-decided version both report none. The design document itself is not included: this is history, not source. It is a read — nothing is written and no lock is taken.",
+        "operationId": "adminCustomRequestDesignVersion_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignVersionListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The design case and its versions.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed request id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such custom request.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "This request has no resolvable design case.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "List this request’s design versions with their review outcomes",
+        "tags": [
+          "adminCustomRequestDesignVersion"
+        ]
+      },
+      "post": {
+        "description": "Appends one new DRAFT version to the design case this request already has — `TR-LC08-01`. The request must be DIGITIZING or DESIGN_REVIEW; there is no override. The design case is resolved from the request’s own pointer and no case id is accepted. The placement branch is derived server-side: a catalog request freezes the authoritative product, variant, side and area, and fails loudly rather than substituting a missing one; a customer-owned-product request freezes its own product id, both agreed placement labels, and the positive embroidery placement envelope supplied here — never the customer item’s own dimensions. History is append-only: no existing version is edited, and a revision is another version. This does not send the version for review, does not move the request, does not compute a document hash and emits no notification.",
+        "operationId": "adminCustomRequestDesignVersion_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorDesignVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignVersionCreatedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The drafted version.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed request id or body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such custom request.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not eligible, or its case/placement no longer resolves.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The placement details or the design document were rejected.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Create a draft design version on this request’s design case",
+        "tags": [
+          "adminCustomRequestDesignVersion"
         ]
       }
     },

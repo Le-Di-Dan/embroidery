@@ -6,7 +6,10 @@
  * does not reject a bad document — it silently rewrites it into a different
  * one, and then hashes that. Each of those is asserted to fail here.
  */
-import { CURRENT_DESIGN_DOCUMENT_SCHEMA_VERSION } from '../schema/constants';
+import {
+  BRANCHED_PLACEMENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
+  CURRENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
+} from '../schema/constants';
 import {
   documentWith,
   emptyDocument,
@@ -44,7 +47,11 @@ describe('schema version', () => {
   });
 
   it('rejects a future schema version loudly', () => {
-    expect(codes({ ...emptyDocument(), schemaVersion: 2 })).toEqual(['UNSUPPORTED_SCHEMA_VERSION']);
+    // v2 is a supported version since `APP6-B08`, so "the next one nobody has
+    // written yet" is v3. The assertion is about the unknown-version rule, not
+    // about the number, and it moves with the supported set rather than
+    // silently becoming a test that a *known* version is rejected.
+    expect(codes({ ...emptyDocument(), schemaVersion: 3 })).toEqual(['UNSUPPORTED_SCHEMA_VERSION']);
   });
 
   it('rejects a non-integer or string schema version', () => {
@@ -256,5 +263,74 @@ describe('purity', () => {
       expect(result.value).not.toBe(payload);
       expect(result.value.elements[0]).not.toBe(payload.elements[0]);
     }
+  });
+});
+
+/**
+ * The `APP6-B08` placement widening (`ADR-APP6-001` §3.4).
+ *
+ * Two properties are load-bearing and both are asserted from the outside, on
+ * whole documents, rather than on the reader in isolation: v1 did not move, and
+ * v2 admits absence only as a **complete pair**.
+ */
+describe('branch-capable placement (schema version 2)', () => {
+  const v2 = (side: unknown, area: unknown): unknown => ({
+    ...emptyDocument(),
+    schemaVersion: BRANCHED_PLACEMENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
+    placement: { ...placement(), productSideId: side, embroideryAreaId: area },
+  });
+
+  it('accepts the Catalog branch — both ids present', () => {
+    const result = validateDesignDocumentStructure(v2('side-1', 'area-1'));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.placement.productSideId).toBe('side-1');
+      expect(result.value.placement.embroideryAreaId).toBe('area-1');
+    }
+  });
+
+  it('accepts the customer-owned-product branch — both ids explicitly null', () => {
+    const result = validateDesignDocumentStructure(v2(null, null));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      // Null, not undefined and not a dropped key: absence survives the rebuild
+      // as a value, which is what lets a consumer branch on it.
+      expect(result.value.placement.productSideId).toBeNull();
+      expect(result.value.placement.embroideryAreaId).toBeNull();
+    }
+  });
+
+  it('rejects a mixed pair in both directions', () => {
+    expect(codes(v2(null, 'area-1'))).toEqual(['INVALID_DOCUMENT']);
+    expect(codes(v2('side-1', null))).toEqual(['INVALID_DOCUMENT']);
+  });
+
+  it('rejects an omitted id — absence must be written down, not implied', () => {
+    const { productSideId: _drop, ...rest } = placement();
+    expect(
+      codes({
+        ...emptyDocument(),
+        schemaVersion: BRANCHED_PLACEMENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
+        placement: rest,
+      }),
+    ).toEqual(['INVALID_DOCUMENT']);
+  });
+
+  it('rejects an empty-string id, exactly as v1 does', () => {
+    expect(codes(v2('', ''))).toEqual(['INVALID_DOCUMENT', 'INVALID_DOCUMENT']);
+  });
+
+  it('leaves v1 unable to express absence', () => {
+    const v1 = (side: unknown, area: unknown): unknown => ({
+      ...emptyDocument(),
+      schemaVersion: CURRENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
+      placement: { ...placement(), productSideId: side, embroideryAreaId: area },
+    });
+    // The whole point of carrying the widening on a new version: a v1 document
+    // that says `null` is malformed today and stays malformed, so no already
+    // persisted v1 document changes meaning and no v1 reader has to learn null.
+    expect(codes(v1(null, null))).toEqual(['INVALID_DOCUMENT', 'INVALID_DOCUMENT']);
+    expect(codes(v1(null, 'area-1'))).toEqual(['INVALID_DOCUMENT']);
+    expect(validateDesignDocumentStructure(v1('side-1', 'area-1')).ok).toBe(true);
   });
 });

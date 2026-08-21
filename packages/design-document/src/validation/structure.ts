@@ -8,6 +8,7 @@
  * deliberately, never about guessing at new ones.
  */
 import {
+  BRANCHED_PLACEMENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
   CURRENT_DESIGN_DOCUMENT_SCHEMA_VERSION,
   SUPPORTED_DESIGN_DOCUMENT_SCHEMA_VERSIONS,
 } from '../schema/constants';
@@ -70,8 +71,37 @@ export function readSchemaVersion(payload: unknown): DesignDocumentResult<number
   return ok(version);
 }
 
+/**
+ * Reads one placement identity under the rules of the declared schema version.
+ *
+ * v1 has exactly one rule and it is the rule it shipped with: a required
+ * non-empty NFC string. `requireString` is called unchanged, so no v1 payload
+ * takes a different path through this function than it did before `APP6-B08` —
+ * that is what "v1 semantics are byte-for-byte authoritative" has to mean in
+ * code, and it is why the version is a branch here rather than a relaxed check.
+ *
+ * From v2 the same field additionally admits explicit `null`. `undefined` and a
+ * missing key are **not** null: absence has to be written down
+ * (`ADR-APP6-001` §3.4), so a document that simply omits the field is as
+ * malformed at v2 as it is at v1.
+ */
+function readPlacementId(
+  raw: Record<string, unknown>,
+  key: string,
+  at: string,
+  version: number,
+  collector: FindingCollector,
+): string | null | undefined {
+  if (version < BRANCHED_PLACEMENT_DESIGN_DOCUMENT_SCHEMA_VERSION) {
+    return requireString(raw, key, at, collector);
+  }
+  if (raw[key] === null) return null;
+  return requireString(raw, key, at, collector);
+}
+
 function readPlacement(
   payload: Record<string, unknown>,
+  version: number,
   collector: FindingCollector,
 ): DesignPlacementSnapshot | undefined {
   const raw = payload.placement;
@@ -82,8 +112,26 @@ function readPlacement(
   rejectUnknownKeys(raw, PLACEMENT_KEYS, '$.placement', collector);
 
   const at = '$.placement';
-  const productSideId = requireString(raw, 'productSideId', at, collector);
-  const embroideryAreaId = requireString(raw, 'embroideryAreaId', at, collector);
+  const productSideId = readPlacementId(raw, 'productSideId', at, version, collector);
+  const embroideryAreaId = readPlacementId(raw, 'embroideryAreaId', at, version, collector);
+
+  // The pair is the branch (`ADR-APP6-001` §3.2/§3.4): both ids present is
+  // Catalog, both absent is a customer-owned product, and one of each is neither.
+  // A half-null placement is not a stricter record, it is an unanswerable one —
+  // the same argument CST-129 makes in SQL about the row this document is
+  // authored onto, made here about the document itself, so the two can never
+  // disagree about which branch a version is on.
+  if (
+    (productSideId === null && typeof embroideryAreaId === 'string') ||
+    (embroideryAreaId === null && typeof productSideId === 'string')
+  ) {
+    collector.invalid(
+      at,
+      '"productSideId" and "embroideryAreaId" must both name a placement or both be null.',
+    );
+    return undefined;
+  }
+
   const canvasWidthPx = requirePositiveInteger(raw, 'canvasWidthPx', at, collector);
   const canvasHeightPx = requirePositiveInteger(raw, 'canvasHeightPx', at, collector);
   const physicalWidthMm = requirePositive(raw, 'physicalWidthMm', at, collector);
@@ -167,7 +215,7 @@ export function validateDesignDocumentStructure(
   const collector = new FindingCollector();
   rejectUnknownKeys(source, ROOT_KEYS, '$', collector);
 
-  const placement = readPlacement(source, collector);
+  const placement = readPlacement(source, version.value, collector);
   const elements = readElements(source, collector);
 
   if (placement === undefined || elements === undefined) {

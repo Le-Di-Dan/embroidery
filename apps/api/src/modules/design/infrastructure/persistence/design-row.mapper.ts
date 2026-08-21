@@ -14,6 +14,7 @@ import type {
   DesignCaseId,
   DesignVersion,
   DesignVersionId,
+  DesignVersionPlacement,
 } from '../../domain/repositories/design-case.repository';
 import type {
   ApprovalSnapshot,
@@ -51,23 +52,55 @@ export function toCase(row: CaseRow): DesignCase {
   };
 }
 
+/**
+ * Reads the row's placement back as whichever branch it actually carries
+ * (CST-129, `ADR-APP6-001` §3.2).
+ *
+ * The COP column is the discriminator, and it is read **first**, because it is
+ * the one column CST-129 guarantees is decisive: on a Catalog row it is NULL and
+ * all four quartet columns are present, on a COP row it is present and all four
+ * are NULL. Branching on `productId` instead would give the same answer today
+ * and a silently wrong one the first time a column is added.
+ *
+ * The non-null assertions on each branch are CST-129 restated in TypeScript, not
+ * optimism: the constraint rejects a partial quartet and a missing label at write
+ * time, so a row that reached this function cannot be missing them. If one ever
+ * were, the branch would surface it as a null in a typed field rather than
+ * inventing a value — which is why nothing here supplies a fallback.
+ */
+function toVersionPlacement(row: VersionRow): DesignVersionPlacement {
+  if (row.customerOwnedProductId !== null) {
+    return {
+      branch: 'CUSTOMER_OWNED',
+      customerOwnedProductId: row.customerOwnedProductId,
+      sideLabel: row.placementSideLabel as string,
+      areaLabel: row.placementAreaLabel as string,
+      physicalWidthMm: row.physicalWidthMm,
+      physicalHeightMm: row.physicalHeightMm,
+    };
+  }
+  return {
+    branch: 'CATALOG',
+    productId: row.productId as ProductId,
+    productVariantId: row.productVariantId as ProductVariantId,
+    productSideId: row.productSideId as ProductSideId,
+    embroideryAreaId: row.embroideryAreaId as EmbroideryAreaId,
+    physicalWidthMm: row.physicalWidthMm,
+    physicalHeightMm: row.physicalHeightMm,
+  };
+}
+
 export function toVersion(row: VersionRow): DesignVersion {
   return {
     id: row.id as DesignVersionId,
     designCaseId: row.designCaseId as DesignCaseId,
     version: row.version,
+    parentVersionId: (row.parentVersionId ?? undefined) as DesignVersionId | undefined,
     status: row.status as DesignVersionState,
     designDocument: row.designDocument,
     documentSchemaVersion: row.documentSchemaVersion,
     documentHash: row.documentHash ?? undefined,
-    placement: {
-      productId: row.productId as ProductId,
-      productVariantId: row.productVariantId as ProductVariantId,
-      productSideId: row.productSideId as ProductSideId,
-      embroideryAreaId: row.embroideryAreaId as EmbroideryAreaId,
-      physicalWidthMm: row.physicalWidthMm,
-      physicalHeightMm: row.physicalHeightMm,
-    },
+    placement: toVersionPlacement(row),
     sentAt: row.sentAt ?? undefined,
     approvedAt: row.approvedAt ?? undefined,
   };

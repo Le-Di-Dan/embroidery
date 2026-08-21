@@ -20,8 +20,23 @@ import type { DesignElement } from './elements';
  * numbers, and `APP3-P02` owns every geometric consequence.
  */
 export interface DesignPlacementSnapshot {
-  readonly productSideId: string;
-  readonly embroideryAreaId: string;
+  /**
+   * The Catalog Product Side, or `null` on the customer-owned-product branch
+   * (`ADR-APP6-001` §3.4, schema version 2 and above).
+   *
+   * `null` is *absence expressed*, never absence implied: the field stays
+   * required and a missing key is still rejected. A reader that cannot represent
+   * absence must refuse the document rather than coerce the `null` into a
+   * lookup, which is why v2 is a distinct schema version rather than a quiet
+   * relaxation of v1 — under v1 this is still a required non-empty string and
+   * always will be.
+   *
+   * Null together with "embroideryAreaId" or not at all: a half-null pair is
+   * invalid in every version.
+   */
+  readonly productSideId: string | null;
+  /** The Catalog Embroidery Area, or `null` — see "productSideId" above. */
+  readonly embroideryAreaId: string | null;
   readonly canvasWidthPx: number;
   readonly canvasHeightPx: number;
   readonly physicalWidthMm: number;

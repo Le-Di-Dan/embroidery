@@ -14,13 +14,16 @@
  *
  *   - `#/definitions/X` → `#/components/schemas/X`, because OpenAPI keeps
  *     component schemas somewhere else;
+ *   - `type: ["string", "null"]` → `type: "string", nullable: true`, because
+ *     3.0 spells nullability with a keyword rather than a type array
+ *     (`APP6-B08`, where the two placement ids became nullable);
  *   - `const: v` → `enum: [v]`, because the document is OpenAPI **3.0.0**, and
  *     `const` is a JSON Schema draft-07 keyword 3.0 does not define. Dropping
  *     it would erase the discriminator that makes the element union readable.
  *
- * Both rewrites are structural: they are applied by walking the tree, never by
- * enumerating the shape. If P01 gains an element kind tomorrow, it appears here
- * with no edit to this file.
+ * All three rewrites are structural: they are applied by walking the tree, never
+ * by enumerating the shape. If P01 gains an element kind tomorrow, it appears
+ * here with no edit to this file.
  *
  * What is deliberately *not* translated is P01's runtime semantics — NFC
  * normalization, non-empty strings, non-zero scale factors, the `fontSizePx`
@@ -81,6 +84,25 @@ function toOpenApiDialect(node: unknown): unknown {
       // 3.0 has no `const`; a single-member `enum` is the exact equivalent and
       // is what keeps each element variant discriminable.
       result['enum'] = [value];
+      continue;
+    }
+    if (key === 'type' && Array.isArray(value) && value.includes('null')) {
+      // 3.0 has no type *array* either: JSON Schema says nullability by adding
+      // `"null"` to the list, while 3.0 says it with the `nullable` keyword
+      // beside a single type. Left untranslated, `APP6-B08`'s
+      // `string | null` placement ids would publish a type OpenAPI does not
+      // define, and the generated client would fall back to an untyped value —
+      // the same class of silent widening `APP3-B08-C1` added this file to end.
+      //
+      // Key-agnostic like every other rewrite here: it reacts to the shape, so a
+      // nullable field added to P01 tomorrow needs no edit.
+      const named = value.filter((entry) => entry !== 'null');
+      // A bare `["null"]` has no 3.0 spelling at all, so the type is dropped
+      // rather than guessed and only `nullable` survives — a schema that says
+      // nothing is honest where one that says "string" would not be.
+      if (named.length === 1) result[key] = named[0];
+      else if (named.length > 1) result[key] = named;
+      result['nullable'] = true;
       continue;
     }
     result[key] = toOpenApiDialect(value);
