@@ -2,6 +2,7 @@
 
 **Status:** `COMPLETE` — delivered for review
 **Predecessor:** `APP6-B09` = `PASS`, commit `4b1bb17`
+**Local commit:** `863765c` (not pushed)
 **Next checkpoint:** `APP6-B11`
 
 ---
