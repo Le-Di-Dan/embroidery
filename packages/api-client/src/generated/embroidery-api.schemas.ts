@@ -1263,6 +1263,25 @@ export interface AdminQuotationVersionHistoryResponse {
   versions: AdminQuotationVersionResponse[];
 }
 
+export interface AdminSubmittedDesignSourceResponse {
+  /** The canonical, quantized Design Document exactly as persisted. */
+  document: DesignDocument;
+  /** The Design Document schema version this document is governed by. */
+  documentSchemaVersion: number;
+  /** The autosave revision the document was frozen at when the customer submitted. */
+  revision: number;
+  /** The exact Design Session the request was submitted from. Provenance, not a credential: no route accepts it and no secret is derivable from it. */
+  sessionId: string;
+}
+
+export interface AdminSubmittedDesignResponse {
+  /**
+   * `null` when the request has no submitted design source — a customer-owned-product request, which has no Design Session by design, or a Catalog request whose session is no longer available. Both are successful reads; neither is reported as an error.
+   * @nullable
+   */
+  submittedDesign: AdminSubmittedDesignSourceResponse | null;
+}
+
 /**
  * Stable machine-readable code; branch on this.
  */
@@ -3271,6 +3290,10 @@ export type AdminCustomRequestDetail200 = ApiSuccessResponse & {
 
 export type AdminCustomRequestAppendNote201 = ApiSuccessResponse & {
   data: ModerationNoteAppendedResponse;
+};
+
+export type AdminCustomRequestSubmittedDesignGet200 = ApiSuccessResponse & {
+  data: AdminSubmittedDesignResponse;
 };
 
 export type AdminCustomRequestTransition200 = ApiSuccessResponse & {

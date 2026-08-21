@@ -2223,6 +2223,59 @@
         ],
         "type": "object"
       },
+      "AdminSubmittedDesignResponse": {
+        "properties": {
+          "submittedDesign": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminSubmittedDesignSourceResponse"
+              }
+            ],
+            "description": "`null` when the request has no submitted design source — a customer-owned-product request, which has no Design Session by design, or a Catalog request whose session is no longer available. Both are successful reads; neither is reported as an error.",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "submittedDesign"
+        ],
+        "type": "object"
+      },
+      "AdminSubmittedDesignSourceResponse": {
+        "properties": {
+          "document": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignDocument"
+              }
+            ],
+            "description": "The canonical, quantized Design Document exactly as persisted."
+          },
+          "documentSchemaVersion": {
+            "description": "The Design Document schema version this document is governed by.",
+            "example": 1,
+            "type": "number"
+          },
+          "revision": {
+            "description": "The autosave revision the document was frozen at when the customer submitted.",
+            "example": 4,
+            "type": "number"
+          },
+          "sessionId": {
+            "description": "The exact Design Session the request was submitted from. Provenance, not a credential: no route accepts it and no secret is derivable from it.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "document",
+          "documentSchemaVersion",
+          "revision"
+        ],
+        "type": "object"
+      },
       "ApiErrorResponse": {
         "description": "Canonical error envelope (D-034). Server faults always carry the generic message; internal detail is never published.",
         "properties": {
@@ -7301,6 +7354,165 @@
         "summary": "Append an internal moderation note",
         "tags": [
           "adminCustomRequest"
+        ]
+      }
+    },
+    "/api/admin/custom-requests/{requestId}/submitted-design": {
+      "get": {
+        "description": "The digitizing source: the Design Session document the customer actually submitted, read from the exact session the request itself records. The operator addresses the request, never a session — no session id is accepted and no Design Session secret is required, fabricated or rotated. A customer-owned-product request has no Design Session by design and answers `200` with `submittedDesign: null`; so does a Catalog request whose pointed session is no longer available. The document is returned exactly as persisted — this is source data, not a rendered preview, and no secret, storage key or customer credential appears anywhere in the response. It is a read: nothing is written, no session state moves and no design version is created.",
+        "operationId": "adminCustomRequestSubmittedDesign_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminSubmittedDesignResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The submitted design source, or an explicit absence.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed request id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such custom request.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Get the design a custom request was submitted from",
+        "tags": [
+          "adminCustomRequestSubmittedDesign"
         ]
       }
     },

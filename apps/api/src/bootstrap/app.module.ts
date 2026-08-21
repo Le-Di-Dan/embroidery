@@ -21,6 +21,7 @@ import { NotificationAdminModule } from '../modules/notification/notification-ad
 import { CustomRequestIntakeModule } from '../modules/order/custom-request-intake.module';
 import { CustomRequestAdminModule } from '../modules/order/custom-request-admin.module';
 import { CustomRequestAssetDeliveryModule } from '../modules/order/custom-request-asset-delivery.module';
+import { CustomRequestSubmittedDesignModule } from '../modules/order/custom-request-submitted-design.module';
 import { CustomRequestModerationModule } from '../modules/order/custom-request-moderation.module';
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
@@ -177,6 +178,14 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // repository and the audit repository that the read is defined by not
     // holding. `CONTROLLER_DOMAIN_KEYS` keeps both publishing `publicQuotation`.
     CustomerQuotationDecisionModule,
+    // APP6-B07 — the Admin submitted-design read. A fourth module on the
+    // `admin/custom-requests` base path, and its single route
+    // (`GET ':requestId/submitted-design'`) is disjoint from every handler in
+    // the three APP5 modules above, so no registration order makes one shadow
+    // another. It is a fourth module because it is the only one holding a
+    // Design port, and neither the two JSON reads nor the two moderation writes
+    // may have one in reach.
+    CustomRequestSubmittedDesignModule,
   ],
 })
 export class AppModule {}

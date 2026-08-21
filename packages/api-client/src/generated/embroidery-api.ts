@@ -17,6 +17,7 @@ import type {
   AdminCustomRequestDetail200,
   AdminCustomRequestList200,
   AdminCustomRequestListParams,
+  AdminCustomRequestSubmittedDesignGet200,
   AdminCustomRequestTransition200,
   AdminCustomerSupportDetail200,
   AdminCustomerSupportGrants200,
@@ -230,6 +231,20 @@ export const adminCustomRequestAppendNote = (
       headers: { 'Content-Type': 'application/json' },
       data: appendModerationNoteBody,
     },
+    options,
+  );
+};
+
+/**
+ * The digitizing source: the Design Session document the customer actually submitted, read from the exact session the request itself records. The operator addresses the request, never a session — no session id is accepted and no Design Session secret is required, fabricated or rotated. A customer-owned-product request has no Design Session by design and answers `200` with `submittedDesign: null`; so does a Catalog request whose pointed session is no longer available. The document is returned exactly as persisted — this is source data, not a rendered preview, and no secret, storage key or customer credential appears anywhere in the response. It is a read: nothing is written, no session state moves and no design version is created.
+ * @summary Get the design a custom request was submitted from
+ */
+export const adminCustomRequestSubmittedDesignGet = (
+  requestId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminCustomRequestSubmittedDesignGet200>>,
+) => {
+  return apiRequest<AdminCustomRequestSubmittedDesignGet200>(
+    { url: `/api/admin/custom-requests/${requestId}/submitted-design`, method: 'GET' },
     options,
   );
 };
@@ -1352,6 +1367,9 @@ export type AdminCustomRequestAssetGetResult = NonNullable<
 >;
 export type AdminCustomRequestAppendNoteResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestAppendNote>>
+>;
+export type AdminCustomRequestSubmittedDesignGetResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestSubmittedDesignGet>>
 >;
 export type AdminCustomRequestTransitionResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestTransition>>
