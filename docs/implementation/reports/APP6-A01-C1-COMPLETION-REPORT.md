@@ -447,8 +447,8 @@ change, no repository file.
 | Fact | Value |
 | --- | --- |
 | A01 implementation commit | `7762543` *feat(app6): deliver APP6-A01 Admin quotation workbench* |
-| C1 commit | `__C1_COMMIT__` *fix(app6): close APP6-A01 browser acceptance* |
-| Final HEAD | `__FINAL_HEAD__` |
+| C1 commit | `19f17e3` *fix(app6): close APP6-A01 browser acceptance* |
+| Final HEAD | `19f17e3` |
 | `git status --porcelain` at completion | **empty** |
 | Pre-existing unrelated changes | **none** |
 | Pushed | **no** |
