@@ -35,6 +35,19 @@ const VERSION_STATUS_LABELS: Readonly<Record<string, string>> = {
   EXPIRED: COPY.versionStatus.EXPIRED,
 };
 
+const REQUEST_STATUS_LABELS: Readonly<Record<string, string>> = {
+  NEW: COPY.requestStatus.NEW,
+  UNDER_REVIEW: COPY.requestStatus.UNDER_REVIEW,
+  NEEDS_CLARIFICATION: COPY.requestStatus.NEEDS_CLARIFICATION,
+  QUOTED: COPY.requestStatus.QUOTED,
+  QUOTE_ACCEPTED: COPY.requestStatus.QUOTE_ACCEPTED,
+  DIGITIZING: COPY.requestStatus.DIGITIZING,
+  DESIGN_REVIEW: COPY.requestStatus.DESIGN_REVIEW,
+  APPROVED: COPY.requestStatus.APPROVED,
+  REJECTED: COPY.requestStatus.REJECTED,
+  CANCELLED: COPY.requestStatus.CANCELLED,
+};
+
 const LINE_KIND_LABELS: Readonly<Record<string, string>> = {
   PRODUCT: COPY.lineKinds.PRODUCT,
   EMBROIDERY: COPY.lineKinds.EMBROIDERY,
@@ -46,6 +59,19 @@ const LINE_KIND_LABELS: Readonly<Record<string, string>> = {
 
 export function presentVersionStatus(status: string): string {
   return VERSION_STATUS_LABELS[status] ?? COPY.versionStatus.unknown;
+}
+
+/**
+ * The request's status as an operator reads it.
+ *
+ * Total, like every other presenter here: a status the contract gains later
+ * degrades to the neutral label rather than reaching the screen as a raw token.
+ * The rail used to render `detail.status` directly, which put `UNDER_REVIEW` on
+ * a Vietnamese screen — the one place on this page a server enum leaked out.
+ */
+export function presentRequestStatus(status: unknown): string {
+  const label = typeof status === 'string' ? REQUEST_STATUS_LABELS[status] : undefined;
+  return label ?? COPY.requestStatus.unknown;
 }
 
 export function presentLineKind(kind: string): string {

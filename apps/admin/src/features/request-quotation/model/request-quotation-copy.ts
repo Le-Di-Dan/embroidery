@@ -36,6 +36,26 @@ export const REQUEST_QUOTATION_COPY = {
     versionDetail: 'Chi tiết phiên bản',
     validity: 'Hiệu lực',
   },
+  /**
+   * Request-status labels, so the context rail never puts a raw `UNDER_REVIEW`
+   * in front of an operator on an otherwise Vietnamese screen. The strings match
+   * the ones `APP5-A02` already renders for the same statuses on the request
+   * detail it links back to — the operator moves between the two screens and a
+   * request must not change its name in transit.
+   */
+  requestStatus: {
+    NEW: 'Mới',
+    UNDER_REVIEW: 'Đang xem xét',
+    NEEDS_CLARIFICATION: 'Cần làm rõ',
+    QUOTED: 'Đã báo giá',
+    QUOTE_ACCEPTED: 'Đã nhận báo giá',
+    DIGITIZING: 'Đang số hoá',
+    DESIGN_REVIEW: 'Duyệt thiết kế',
+    APPROVED: 'Đã duyệt',
+    REJECTED: 'Đã từ chối',
+    CANCELLED: 'Đã huỷ',
+    unknown: 'Không xác định',
+  },
   context: {
     status: 'Trạng thái yêu cầu',
     submittedAt: 'Thời điểm gửi',
@@ -152,6 +172,12 @@ export const REQUEST_QUOTATION_COPY = {
     selectLabel: 'Xem phiên bản này',
   },
   versionStatus: {
+    /**
+     * The version-history column header. The column renders the *version*
+     * status, so it cannot borrow `context.status` — that label names the
+     * request's status, and the two were contradicting each other on screen.
+     */
+    column: 'Trạng thái',
     DRAFT: 'Bản nháp',
     SENT: 'Đã gửi',
     ACCEPTED: 'Đã chấp nhận',

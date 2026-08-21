@@ -7,7 +7,11 @@ import type {
 } from '@embroidery/api-client';
 
 import { REQUEST_QUOTATION_COPY as COPY } from '../model/request-quotation-copy';
-import { presentInstant, type SubjectKind } from '../model/quotation-presentation';
+import {
+  presentInstant,
+  presentRequestStatus,
+  type SubjectKind,
+} from '../model/quotation-presentation';
 
 interface ContextPanelProps {
   readonly detail: AdminCustomRequestDetailResponse;
@@ -35,7 +39,7 @@ export function QuotationRequestContext({ detail, subjectKind }: ContextPanelPro
       <dl className="request-quotation__definitions">
         <div className="request-quotation__definition">
           <dt>{COPY.context.status}</dt>
-          <dd data-testid="quotation-context-status">{detail.status}</dd>
+          <dd data-testid="quotation-context-status">{presentRequestStatus(detail.status)}</dd>
         </div>
         <div className="request-quotation__definition">
           <dt>{COPY.context.submittedAt}</dt>

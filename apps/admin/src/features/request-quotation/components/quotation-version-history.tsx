@@ -59,7 +59,7 @@ export function QuotationVersionHistory({
           <thead>
             <tr>
               <th scope="col">{COPY.lines.position}</th>
-              <th scope="col">{COPY.context.status}</th>
+              <th scope="col">{COPY.versionStatus.column}</th>
               <th scope="col">{COPY.totals.total}</th>
               <th scope="col">{COPY.version.createdAt}</th>
               <th scope="col">{COPY.version.sentAt}</th>

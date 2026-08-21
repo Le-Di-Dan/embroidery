@@ -375,7 +375,12 @@ describe('the request context rail', () => {
     expect(within(context).getByTestId('quotation-subject-catalog')).toHaveTextContent(
       'Áo thun cotton',
     );
-    expect(screen.getByTestId('quotation-context-status')).toHaveTextContent('UNDER_REVIEW');
+    // APP6-A01-C1. This assertion used to expect the raw `UNDER_REVIEW` token,
+    // so it locked in the defect the browser pass found rather than catching it.
+    // It now asserts the operator-facing label *and* that the token is gone.
+    const status = screen.getByTestId('quotation-context-status');
+    expect(status).toHaveTextContent(COPY.requestStatus.UNDER_REVIEW);
+    expect(status.textContent).not.toContain('UNDER_REVIEW');
   });
 
   it('shows the customer-owned subject on the other branch', async () => {

@@ -49,6 +49,7 @@ import {
   isSendable,
   presentInstant,
   presentLineKind,
+  presentRequestStatus,
   presentVersionStatus,
   resolveSelectedVersion,
   subjectKindOf,
@@ -382,6 +383,44 @@ describe('presentation never echoes a raw server token', () => {
     expect(presentVersionStatus('SENT')).toBe(COPY.versionStatus.SENT);
     expect(presentVersionStatus('SOMETHING_NEW')).toBe(COPY.versionStatus.unknown);
     expect(presentVersionStatus('SOMETHING_NEW')).not.toContain('SOMETHING_NEW');
+  });
+
+  // APP6-A01-C1. The browser pass found the rail rendering `detail.status`
+  // straight from the contract, so an operator on a Vietnamese screen was shown
+  // `UNDER_REVIEW`. Every status the request lifecycle can hold is covered here
+  // rather than one sample, because the defect was a missing mapping and a
+  // single-value test is exactly what would have missed it.
+  it('labels every request status the lifecycle can hold', () => {
+    const lifecycle = [
+      'NEW',
+      'UNDER_REVIEW',
+      'NEEDS_CLARIFICATION',
+      'QUOTED',
+      'QUOTE_ACCEPTED',
+      'DIGITIZING',
+      'DESIGN_REVIEW',
+      'APPROVED',
+      'REJECTED',
+      'CANCELLED',
+    ];
+    for (const status of lifecycle) {
+      const label = presentRequestStatus(status);
+      expect(label).not.toBe(status);
+      expect(label).not.toBe(COPY.requestStatus.unknown);
+    }
+  });
+
+  it('degrades an unmapped or non-string request status instead of echoing it', () => {
+    expect(presentRequestStatus('SOMETHING_NEW')).toBe(COPY.requestStatus.unknown);
+    expect(presentRequestStatus('SOMETHING_NEW')).not.toContain('SOMETHING_NEW');
+    expect(presentRequestStatus(undefined)).toBe(COPY.requestStatus.unknown);
+    expect(presentRequestStatus(42)).toBe(COPY.requestStatus.unknown);
+  });
+
+  // The history column renders the *version* status. It was borrowing the
+  // request-status label, so the same page named two different things the same.
+  it('gives the version-history column a label distinct from the request status', () => {
+    expect(COPY.versionStatus.column).not.toBe(COPY.context.status);
   });
 
   it('labels every line kind, including the two the form does not offer', () => {
