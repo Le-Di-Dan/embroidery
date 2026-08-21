@@ -32,6 +32,7 @@ import { QuotationReadModule } from '../modules/quotation/quotation-read.module'
 import { QuotationSendModule } from '../modules/quotation/quotation-send.module';
 import { CustomerQuotationDecisionModule } from '../modules/quotation/customer-quotation-decision.module';
 import { CustomerQuotationModule } from '../modules/quotation/customer-quotation.module';
+import { CustomerDesignDecisionModule } from '../modules/design/customer-design-decision.module';
 import { CustomerDesignReviewModule } from '../modules/design/customer-design-review.module';
 import { ContentModule } from '../modules/content/content.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
@@ -204,6 +205,15 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // transaction manager, no write repository, no storage port and no
     // agreement publisher.
     CustomerDesignReviewModule,
+    // APP6-B11 — the customer's two design decisions, on the same
+    // `public/design-reviews` base path with two distinct sub-paths (`approve`,
+    // `request-revision`), disjoint from `current` above. A second design-review
+    // module because it is the mirror image of the first: these are the writes,
+    // so it holds the transaction manager, the idempotency store, the AGG-10 and
+    // AGG-11 write repositories, the request repository, the audit repository
+    // and the outbox that the read is defined by not holding.
+    // `CONTROLLER_DOMAIN_KEYS` keeps both publishing `publicDesignReview`.
+    CustomerDesignDecisionModule,
   ],
 })
 export class AppModule {}

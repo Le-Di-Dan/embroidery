@@ -55,6 +55,7 @@ import type {
   AdminQuotationVersionDetail200,
   AdminQuotationVersionHistory200,
   AppendModerationNoteBody,
+  ApproveDesignVersionBody,
   ArchiveDesignTemplateBody,
   ArchiveProductBody,
   AssignDesignTemplateScopeBody,
@@ -72,7 +73,9 @@ import type {
   PublicCustomRequestAssetUploadParams,
   PublicCustomRequestStatus200,
   PublicCustomRequestSubmit201,
+  PublicDesignReviewApprove200,
   PublicDesignReviewCurrent200,
+  PublicDesignReviewRequestRevision200,
   PublicDesignSessionAssetCreate202,
   PublicDesignSessionAssetCreateBody,
   PublicDesignSessionAssetStatus200,
@@ -103,6 +106,7 @@ import type {
   ReadinessStatusResponse,
   RejectQuotationBody,
   ReplaceProductPlacementBody,
+  RequestDesignRevisionBody,
   ResolveCustomerByContactBody,
   ResolveSecureLinkBody,
   RestoreDesignTemplateBody,
@@ -987,6 +991,25 @@ export const publicCustomRequestStatus = (
 };
 
 /**
+ * Approves the design version the customer was looking at, identified by the `designVersionId` and `documentHash` the current-review read returned, together with the exact set of terms they accepted. The custom request and the customer are identified by the grant and never by the caller. Inside one transaction the grant is re-checked under its row lock, a recent re-verification of the customer’s own contact is required, the version must still be the one awaiting a decision and must still hash to what was sent, the submitted agreements must be exactly the effective required set, an immutable Approval Snapshot is frozen from the exact version, and the custom request moves to APPROVED as a system projection. Approving twice replays the first approval and writes nothing. No order, payment obligation, reservation or production job is created here: the approval event is the hand-off.
+ * @summary Approve the exact design version shown by a secure link
+ */
+export const publicDesignReviewApprove = (
+  approveDesignVersionBody: ApproveDesignVersionBody,
+  options?: SecondParameter<typeof apiRequest<PublicDesignReviewApprove200>>,
+) => {
+  return apiRequest<PublicDesignReviewApprove200>(
+    {
+      url: `/api/public/design-reviews/approve`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: approveDesignVersionBody,
+    },
+    options,
+  );
+};
+
+/**
  * Returns the design version currently awaiting the customer’s decision on the one custom request the presented secure link grants access to, together with the complete effective agreement set an approval will bind. The request is identified by the grant, the design case by the request’s own pointer, and the version by the send that put it in review — never by the caller: there is no version id, case id, request id or customer identifier in the body. A newer draft the workshop is still authoring is never returned; a later legitimate send is visible on the next call. The document is returned exactly as stored, with the hash computed at send. Nothing is written: no acceptance is recorded here, and no step-up re-verification is required to read. Every token that does not open a live grant, and every request with no design awaiting review, answer with one identical 404.
  * @summary Read the design version a secure link opens for review
  */
@@ -1000,6 +1023,25 @@ export const publicDesignReviewCurrent = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: readCurrentDesignReviewBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Records that the customer wants the design version they were shown changed, with their own description of what to change. Requires the secure link and nothing else — no re-verification, because asking for a change commits nothing — and accepts no terms and no hash. The version must still be the one awaiting a decision; a version that has already been approved or already had a revision requested is refused, because the first decision wins. This moves the design version only: the custom request stays in the design-review stage, no transition is written, and the next draft is authored by the workshop, not here.
+ * @summary Ask for a revision of the exact design version shown by a secure link
+ */
+export const publicDesignReviewRequestRevision = (
+  requestDesignRevisionBody: RequestDesignRevisionBody,
+  options?: SecondParameter<typeof apiRequest<PublicDesignReviewRequestRevision200>>,
+) => {
+  return apiRequest<PublicDesignReviewRequestRevision200>(
+    {
+      url: `/api/public/design-reviews/request-revision`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: requestDesignRevisionBody,
     },
     options,
   );
@@ -1565,8 +1607,14 @@ export type PublicCustomRequestSubmitResult = NonNullable<
 export type PublicCustomRequestStatusResult = NonNullable<
   Awaited<ReturnType<typeof publicCustomRequestStatus>>
 >;
+export type PublicDesignReviewApproveResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignReviewApprove>>
+>;
 export type PublicDesignReviewCurrentResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignReviewCurrent>>
+>;
+export type PublicDesignReviewRequestRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof publicDesignReviewRequestRevision>>
 >;
 export type PublicDesignSessionCreateResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignSessionCreate>>

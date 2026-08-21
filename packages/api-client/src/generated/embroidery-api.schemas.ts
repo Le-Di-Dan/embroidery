@@ -1392,6 +1392,46 @@ export interface AppendModerationNoteBody {
   note: string;
 }
 
+export type ApproveDesignVersionBodyAcceptedAgreementsItem = {
+  /**
+   * The exact agreement version the customer read, as B10 returned it.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  agreementVersionId: string;
+  /**
+   * That version’s `contentHash`, proving the customer’s screen rendered this exact text. Compared with persistence and then discarded in favour of the stored value: an approval may not record a hash of its own choosing.
+   * @pattern ^sha256:[0-9a-f]{64}$
+   */
+  contentHash: string;
+};
+
+/**
+ * Approves the exact design version the customer was shown, together with the terms they accepted. No design case, request, customer, grant, challenge, status, placement, quantity or timestamp is accepted: the target comes from the grant and the server’s own pointers, the re-verification that authorises the approval is derived from the grant’s customer, and every fact the Approval Snapshot freezes is read from persistence.
+ */
+export interface ApproveDesignVersionBody {
+  /**
+   * Every agreement the customer accepted, as ids and content hashes. Must be exactly the effective required set at the moment of approval — no more, no fewer, no duplicates, and each with the content hash persistence holds. The set is re-resolved inside the approval transaction rather than trusted from the earlier read, so terms that changed in between refuse the approval instead of quietly substituting themselves. Array order is not significant.
+   * @minItems 1
+   * @maxItems 20
+   */
+  acceptedAgreements: ApproveDesignVersionBodyAcceptedAgreementsItem[];
+  /**
+   * The `documentHash` the current-review read returned — a fingerprint of the exact artwork the customer looked at, and the whole of GRD-007’s exact-design confirmation. It is compared with the hash stored when the version was sent; a value that differs means the design changed after it was presented, and the approval is refused rather than silently binding the customer to artwork they never reviewed. It is never used as a replacement hash: the stored value is what the Approval Snapshot freezes.
+   * @pattern ^sha256:[0-9a-f]{64}$
+   */
+  documentHash: string;
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+  /**
+   * The exact design version this decision is about — the `designVersionId` the current-review read returned. It is not a locator: the version it names must be the one the grant’s own request and design case already reached, and must still be the version awaiting a decision. A version belonging to another customer’s design case is refused before anything is written, and with the same answer an unusable token gets.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  versionId: string;
+}
+
 export interface ArchiveDesignTemplateBody {
   /**
    * @minimum 0
@@ -2136,6 +2176,106 @@ export interface DatabaseHealthResponse {
   pool: DatabasePoolResponse;
   reason: DatabaseHealthResponseReason;
   status: DatabaseHealthResponseStatus;
+}
+
+/**
+ * The custom request’s state after the approval projected it. A **report** of a system projection, never a command: no field in the request body can ask for it, and the transition is recorded with a system actor because the approval committed.
+ */
+export type DesignApprovedResponseRequestStatus =
+  (typeof DesignApprovedResponseRequestStatus)[keyof typeof DesignApprovedResponseRequestStatus];
+
+export const DesignApprovedResponseRequestStatus = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The stored LC-08 state after the move, read back off the row. An approved version is immutable from here: a later change is a new version, never an edit of this one.
+ */
+export type DesignApprovedResponseVersionStatus =
+  (typeof DesignApprovedResponseVersionStatus)[keyof typeof DesignApprovedResponseVersionStatus];
+
+export const DesignApprovedResponseVersionStatus = {
+  DRAFT: 'DRAFT',
+  SENT_FOR_REVIEW: 'SENT_FOR_REVIEW',
+  REVISION_REQUESTED: 'REVISION_REQUESTED',
+  APPROVED: 'APPROVED',
+  SUPERSEDED: 'SUPERSEDED',
+  VOID: 'VOID',
+} as const;
+
+export interface DesignApprovedResponse {
+  /** The Approval Snapshot this approval froze — the immutable evidence that authorises everything downstream, and the aggregate the `design.approved` event names. Exactly one exists per design version, and it is never updated or deleted. */
+  approvalSnapshotId: string;
+  /** When the approval committed. The same instant the decision record, the snapshot and its agreement acceptances all carry: one clock, so the evidence cannot disagree with itself. */
+  approvedAt: string;
+  /** The document hash the approval is bound to — the value stored when the version was sent, copied into the snapshot. Equal to the `documentHash` submitted, because an approval whose hashes disagreed was refused rather than recorded. */
+  documentHash: string;
+  /** Whether this call re-served an earlier approval of the same version instead of performing one. A double submission and a retry after a dropped response both answer `true`, with the identical snapshot id: approval is claimed once per version, and no second snapshot, acceptance row, request transition, audit row or event is ever appended. */
+  replayed: boolean;
+  /** The custom request’s state after the approval projected it. A **report** of a system projection, never a command: no field in the request body can ask for it, and the transition is recorded with a system actor because the approval committed. */
+  requestStatus: DesignApprovedResponseRequestStatus;
+  /** The version number within this design case. */
+  version: number;
+  /** The exact version that was approved — the one this request named. */
+  versionId: string;
+  /** The stored LC-08 state after the move, read back off the row. An approved version is immutable from here: a later change is a new version, never an edit of this one. */
+  versionStatus: DesignApprovedResponseVersionStatus;
+}
+
+/**
+ * The custom request’s state, which this decision did **not** change. Asking for a revision moves the design version only: the request stays in the design-review stage where the workshop authors and sends the next version, no transition row is written, and there is no self-transition. Published so a screen cannot infer a move that never happened.
+ */
+export type DesignRevisionRequestedResponseRequestStatus =
+  (typeof DesignRevisionRequestedResponseRequestStatus)[keyof typeof DesignRevisionRequestedResponseRequestStatus];
+
+export const DesignRevisionRequestedResponseRequestStatus = {
+  NEW: 'NEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+  QUOTED: 'QUOTED',
+  QUOTE_ACCEPTED: 'QUOTE_ACCEPTED',
+  DIGITIZING: 'DIGITIZING',
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The stored LC-08 state after the move. This state **is** the record of the decision: a second decision on this version is refused rather than duplicated, whichever decision it is.
+ */
+export type DesignRevisionRequestedResponseVersionStatus =
+  (typeof DesignRevisionRequestedResponseVersionStatus)[keyof typeof DesignRevisionRequestedResponseVersionStatus];
+
+export const DesignRevisionRequestedResponseVersionStatus = {
+  DRAFT: 'DRAFT',
+  SENT_FOR_REVIEW: 'SENT_FOR_REVIEW',
+  REVISION_REQUESTED: 'REVISION_REQUESTED',
+  APPROVED: 'APPROVED',
+  SUPERSEDED: 'SUPERSEDED',
+  VOID: 'VOID',
+} as const;
+
+export interface DesignRevisionRequestedResponse {
+  /** When the decision committed. The same instant the decision record carries. */
+  decidedAt: string;
+  /** The custom request’s state, which this decision did **not** change. Asking for a revision moves the design version only: the request stays in the design-review stage where the workshop authors and sends the next version, no transition row is written, and there is no self-transition. Published so a screen cannot infer a move that never happened. */
+  requestStatus: DesignRevisionRequestedResponseRequestStatus;
+  /** The version number within this design case. */
+  version: number;
+  /** The exact version the customer asked to have revised. */
+  versionId: string;
+  /** The stored LC-08 state after the move. This state **is** the record of the decision: a second decision on this version is refused rather than duplicated, whichever decision it is. */
+  versionStatus: DesignRevisionRequestedResponseVersionStatus;
 }
 
 /**
@@ -3136,6 +3276,28 @@ export interface ReplaceProductPlacementBody {
   sides: ReplacePlacementSideBody[];
 }
 
+/**
+ * Asks for a revision of the exact design version the customer was shown. Requires the secure link and nothing else — no re-verification, because asking for a change commits nothing — and accepts no terms, no hash, no status and no identifier the grant already provides. It records the customer’s decision; it does not create the next draft and does not move the custom request.
+ */
+export interface RequestDesignRevisionBody {
+  /**
+   * What the customer wants changed. Required: LC-09 records a revision request with feedback, and a request with no text tells the workshop that something is wrong and nothing about what. Stored as the customer’s own words on the decision record; it never appears in an audit summary or an event payload.
+   * @minLength 1
+   * @maxLength 2000
+   */
+  feedback: string;
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+  /**
+   * The exact design version this decision is about — the `designVersionId` the current-review read returned. It is not a locator: the version it names must be the one the grant’s own request and design case already reached, and must still be the version awaiting a decision. A version belonging to another customer’s design case is refused before anything is written, and with the same answer an unusable token gets.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  versionId: string;
+}
+
 export type RequestTransitionedResponseToStatus =
   (typeof RequestTransitionedResponseToStatus)[keyof typeof RequestTransitionedResponseToStatus];
 
@@ -3788,8 +3950,16 @@ export type PublicCustomRequestStatus200 = ApiSuccessResponse & {
   data: CustomRequestStatusResponse;
 };
 
+export type PublicDesignReviewApprove200 = ApiSuccessResponse & {
+  data: DesignApprovedResponse;
+};
+
 export type PublicDesignReviewCurrent200 = ApiSuccessResponse & {
   data: CustomerDesignReviewResponse;
+};
+
+export type PublicDesignReviewRequestRevision200 = ApiSuccessResponse & {
+  data: DesignRevisionRequestedResponse;
 };
 
 export type PublicDesignSessionCreate201 = ApiSuccessResponse & {

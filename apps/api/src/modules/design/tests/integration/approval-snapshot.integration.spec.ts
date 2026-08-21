@@ -127,6 +127,15 @@ describe('approval snapshot persistence (integration)', () => {
       expect(snapshot.documentHash).toBe(FIXTURE_HASH);
       // The chain is copied from the version, not taken from the caller.
       expect(snapshot.customRequestId).toBe(fixture.customRequestId);
+      // The branch is asserted before the quartet is read. `APP6-DB01` made the
+      // four Catalog columns nullable and CST-131 now admits a second, entirely
+      // NULL-quartet branch, so "the area id came back" is only meaningful once
+      // this row is known to be the Catalog one — and the discriminator is what
+      // the mapper reads to decide, so testing it tests the mapping too.
+      expect(snapshot.placement.branch).toBe('CATALOG');
+      if (snapshot.placement.branch !== 'CATALOG') {
+        throw new Error('Expected a Catalog approval snapshot.');
+      }
       expect(snapshot.placement.embroideryAreaId).toBe(fixture.placement.embroideryAreaId);
       await expect(approvals.listThreadColors(snapshot.id)).resolves.toHaveLength(2);
       await expect(approvals.listAgreementAcceptances(snapshot.id)).resolves.toHaveLength(1);

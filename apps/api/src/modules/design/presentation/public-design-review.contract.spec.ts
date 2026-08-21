@@ -165,7 +165,18 @@ describe('APP6-B10 — the published customer design review contract', () => {
       path.startsWith('/api/public/design-reviews'),
     );
 
-    expect(publicReviewPaths).toEqual([CURRENT_PATH]);
+    // `APP6-B11` added the two decision routes to this base path. They are
+    // named here rather than excluded, so this stays an **exact** set: the
+    // property being defended is not "B10 is the only route" — it never could
+    // be, since LC-08 needs a decision surface — but that every route on this
+    // base path is a fixed literal. A collection read, a review history, or an
+    // identified `/{designVersionId}` would each be an enumeration oracle for
+    // another customer's artwork, and each would fail this assertion.
+    expect(publicReviewPaths.sort()).toEqual([
+      '/api/public/design-reviews/approve',
+      CURRENT_PATH,
+      '/api/public/design-reviews/request-revision',
+    ]);
     for (const path of publicReviewPaths) {
       expect(path).not.toContain('{');
     }

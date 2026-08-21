@@ -103,6 +103,16 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // name a public identifier; with it, B08's two accepted ids stay untouched and
   // the family reads `_create`, `_list`, `_send`.
   AdminCustomRequestDesignVersionSendController: 'adminCustomRequestDesignVersion',
+  // `APP6-B11`. Approving a design and requesting a revision join the same
+  // published `publicDesignReview` domain as `APP6-B10`'s read. They are a
+  // second class because the read module is *defined* by holding no transaction
+  // manager and no write repository, and these two writes need both — the same
+  // split, and the same reason, as `PublicQuotationController` /
+  // `PublicQuotationDecisionController`. Without this entry the decisions would
+  // mint `publicDesignReviewDecision_approve`, letting a module boundary name
+  // two public identifiers; with it, `publicDesignReview_current` is untouched
+  // and the family reads `_current`, `_approve`, `_requestRevision`.
+  PublicDesignReviewDecisionController: 'publicDesignReview',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

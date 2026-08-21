@@ -2455,6 +2455,62 @@
         ],
         "type": "object"
       },
+      "ApproveDesignVersionBody": {
+        "additionalProperties": false,
+        "description": "Approves the exact design version the customer was shown, together with the terms they accepted. No design case, request, customer, grant, challenge, status, placement, quantity or timestamp is accepted: the target comes from the grant and the server’s own pointers, the re-verification that authorises the approval is derived from the grant’s customer, and every fact the Approval Snapshot freezes is read from persistence.",
+        "properties": {
+          "acceptedAgreements": {
+            "description": "Every agreement the customer accepted, as ids and content hashes. Must be exactly the effective required set at the moment of approval — no more, no fewer, no duplicates, and each with the content hash persistence holds. The set is re-resolved inside the approval transaction rather than trusted from the earlier read, so terms that changed in between refuse the approval instead of quietly substituting themselves. Array order is not significant.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "agreementVersionId": {
+                  "description": "The exact agreement version the customer read, as B10 returned it.",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                  "type": "string"
+                },
+                "contentHash": {
+                  "description": "That version’s `contentHash`, proving the customer’s screen rendered this exact text. Compared with persistence and then discarded in favour of the stored value: an approval may not record a hash of its own choosing.",
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "agreementVersionId",
+                "contentHash"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "documentHash": {
+            "description": "The `documentHash` the current-review read returned — a fingerprint of the exact artwork the customer looked at, and the whole of GRD-007’s exact-design confirmation. It is compared with the hash stored when the version was sent; a value that differs means the design changed after it was presented, and the approval is refused rather than silently binding the customer to artwork they never reviewed. It is never used as a replacement hash: the stored value is what the Approval Snapshot freezes.",
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          },
+          "versionId": {
+            "description": "The exact design version this decision is about — the `designVersionId` the current-review read returned. It is not a locator: the version it names must be the one the grant’s own request and design case already reached, and must still be the version awaiting a decision. A version belonging to another customer’s design case is refused before anything is written, and with the same answer an unusable token gets.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "versionId",
+          "documentHash",
+          "acceptedAgreements"
+        ],
+        "type": "object"
+      },
       "ArchiveDesignTemplateBody": {
         "additionalProperties": false,
         "properties": {
@@ -3565,6 +3621,84 @@
         ],
         "type": "object"
       },
+      "DesignApprovedResponse": {
+        "properties": {
+          "approvalSnapshotId": {
+            "description": "The Approval Snapshot this approval froze — the immutable evidence that authorises everything downstream, and the aggregate the `design.approved` event names. Exactly one exists per design version, and it is never updated or deleted.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6075",
+            "format": "uuid",
+            "type": "string"
+          },
+          "approvedAt": {
+            "description": "When the approval committed. The same instant the decision record, the snapshot and its agreement acceptances all carry: one clock, so the evidence cannot disagree with itself.",
+            "example": "2026-08-21T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "documentHash": {
+            "description": "The document hash the approval is bound to — the value stored when the version was sent, copied into the snapshot. Equal to the `documentHash` submitted, because an approval whose hashes disagreed was refused rather than recorded.",
+            "example": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "Whether this call re-served an earlier approval of the same version instead of performing one. A double submission and a retry after a dropped response both answer `true`, with the identical snapshot id: approval is claimed once per version, and no second snapshot, acceptance row, request transition, audit row or event is ever appended.",
+            "example": false,
+            "type": "boolean"
+          },
+          "requestStatus": {
+            "description": "The custom request’s state after the approval projected it. A **report** of a system projection, never a command: no field in the request body can ask for it, and the transition is recorded with a system actor because the approval committed.",
+            "enum": [
+              "NEW",
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "QUOTED",
+              "QUOTE_ACCEPTED",
+              "DIGITIZING",
+              "DESIGN_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "APPROVED",
+            "type": "string"
+          },
+          "version": {
+            "description": "The version number within this design case.",
+            "example": 3,
+            "type": "number"
+          },
+          "versionId": {
+            "description": "The exact version that was approved — the one this request named.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "versionStatus": {
+            "description": "The stored LC-08 state after the move, read back off the row. An approved version is immutable from here: a later change is a new version, never an edit of this one.",
+            "enum": [
+              "DRAFT",
+              "SENT_FOR_REVIEW",
+              "REVISION_REQUESTED",
+              "APPROVED",
+              "SUPERSEDED",
+              "VOID"
+            ],
+            "example": "APPROVED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "versionId",
+          "version",
+          "versionStatus",
+          "approvalSnapshotId",
+          "documentHash",
+          "requestStatus",
+          "approvedAt",
+          "replayed"
+        ],
+        "type": "object"
+      },
       "DesignDocument": {
         "additionalProperties": false,
         "description": "Array order is z-order, bottom first, and JCS preserves it (ADR-DB1-012 §7).",
@@ -3725,6 +3859,65 @@
           "contentHash",
           "language",
           "content"
+        ],
+        "type": "object"
+      },
+      "DesignRevisionRequestedResponse": {
+        "properties": {
+          "decidedAt": {
+            "description": "When the decision committed. The same instant the decision record carries.",
+            "example": "2026-08-21T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "requestStatus": {
+            "description": "The custom request’s state, which this decision did **not** change. Asking for a revision moves the design version only: the request stays in the design-review stage where the workshop authors and sends the next version, no transition row is written, and there is no self-transition. Published so a screen cannot infer a move that never happened.",
+            "enum": [
+              "NEW",
+              "UNDER_REVIEW",
+              "NEEDS_CLARIFICATION",
+              "QUOTED",
+              "QUOTE_ACCEPTED",
+              "DIGITIZING",
+              "DESIGN_REVIEW",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "example": "DESIGN_REVIEW",
+            "type": "string"
+          },
+          "version": {
+            "description": "The version number within this design case.",
+            "example": 3,
+            "type": "number"
+          },
+          "versionId": {
+            "description": "The exact version the customer asked to have revised.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "versionStatus": {
+            "description": "The stored LC-08 state after the move. This state **is** the record of the decision: a second decision on this version is refused rather than duplicated, whichever decision it is.",
+            "enum": [
+              "DRAFT",
+              "SENT_FOR_REVIEW",
+              "REVISION_REQUESTED",
+              "APPROVED",
+              "SUPERSEDED",
+              "VOID"
+            ],
+            "example": "REVISION_REQUESTED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "versionId",
+          "version",
+          "versionStatus",
+          "requestStatus",
+          "decidedAt"
         ],
         "type": "object"
       },
@@ -5829,6 +6022,35 @@
         "required": [
           "assetId",
           "role"
+        ],
+        "type": "object"
+      },
+      "RequestDesignRevisionBody": {
+        "additionalProperties": false,
+        "description": "Asks for a revision of the exact design version the customer was shown. Requires the secure link and nothing else — no re-verification, because asking for a change commits nothing — and accepts no terms, no hash, no status and no identifier the grant already provides. It records the customer’s decision; it does not create the next draft and does not move the custom request.",
+        "properties": {
+          "feedback": {
+            "description": "What the customer wants changed. Required: LC-09 records a revision request with feedback, and a request with no text tells the workshop that something is wrong and nothing about what. Stored as the customer’s own words on the decision record; it never appears in an audit summary or an event payload.",
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          },
+          "versionId": {
+            "description": "The exact design version this decision is about — the `designVersionId` the current-review read returned. It is not a locator: the version it names must be the one the grant’s own request and design case already reached, and must still be the version awaiting a decision. A version belonging to another customer’s design case is refused before anything is written, and with the same answer an unusable token gets.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "versionId",
+          "feedback"
         ],
         "type": "object"
       },
@@ -15983,6 +16205,231 @@
         ]
       }
     },
+    "/api/public/design-reviews/approve": {
+      "post": {
+        "description": "Approves the design version the customer was looking at, identified by the `designVersionId` and `documentHash` the current-review read returned, together with the exact set of terms they accepted. The custom request and the customer are identified by the grant and never by the caller. Inside one transaction the grant is re-checked under its row lock, a recent re-verification of the customer’s own contact is required, the version must still be the one awaiting a decision and must still hash to what was sent, the submitted agreements must be exactly the effective required set, an immutable Approval Snapshot is frozen from the exact version, and the custom request moves to APPROVED as a system projection. Approving twice replays the first approval and writes nothing. No order, payment obligation, reservation or production job is created here: the approval event is the hand-off.",
+        "operationId": "publicDesignReview_approve",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveDesignVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignApprovedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed approval, or a replay of an earlier identical one.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "REVERIFICATION_REQUIRED — the link is live, but no recent contact re-verification stands for this customer. Resolved by completing a STEP_UP verification and calling again; it is not a statement about the link.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no readable design awaiting a decision. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for another target, or the named version belongs to another customer’s design case.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "APPROVAL_VERSION_MISMATCH when the submitted hash is not the stored one or the version is no longer awaiting approval — re-read the design and decide again; TERMS_NOT_ACCEPTED when the submitted agreements are not exactly the current effective set — re-read the terms and confirm again; INVALID_TRANSITION when this version has already been decided or the request has left the state an approval can move it from; DUPLICATE_OPERATION when another approval of this version is still in flight; IDEMPOTENCY_CONFLICT when this version was already approved against different evidence.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Secure-link resolution, the step-up policy, or the required agreement set is not configured, or the approval evidence cannot be resolved. Distinct from 404 on purpose: the link is usable and the design is real, so reporting it as unavailable would hide a configuration fault behind a dead-link answer. Names no policy key, no agreement type and no column.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Approve the exact design version shown by a secure link",
+        "tags": [
+          "publicDesignReview"
+        ]
+      }
+    },
     "/api/public/design-reviews/current": {
       "post": {
         "description": "Returns the design version currently awaiting the customer’s decision on the one custom request the presented secure link grants access to, together with the complete effective agreement set an approval will bind. The request is identified by the grant, the design case by the request’s own pointer, and the version by the send that put it in review — never by the caller: there is no version id, case id, request id or customer identifier in the body. A newer draft the workshop is still authoring is never returned; a later legitimate send is visible on the next call. The document is returned exactly as stored, with the hash computed at send. Nothing is written: no acceptance is recorded here, and no step-up re-verification is required to read. Every token that does not open a live grant, and every request with no design awaiting review, answer with one identical 404.",
@@ -16167,6 +16614,210 @@
           }
         },
         "summary": "Read the design version a secure link opens for review",
+        "tags": [
+          "publicDesignReview"
+        ]
+      }
+    },
+    "/api/public/design-reviews/request-revision": {
+      "post": {
+        "description": "Records that the customer wants the design version they were shown changed, with their own description of what to change. Requires the secure link and nothing else — no re-verification, because asking for a change commits nothing — and accepts no terms and no hash. The version must still be the one awaiting a decision; a version that has already been approved or already had a revision requested is refused, because the first decision wins. This moves the design version only: the custom request stays in the design-review stage, no transition is written, and the next draft is authored by the workshop, not here.",
+        "operationId": "publicDesignReview_requestRevision",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestDesignRevisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignRevisionRequestedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed revision request on that exact version.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no readable design awaiting a decision. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for another target, or the named version belongs to another customer’s design case.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "INVALID_TRANSITION — this version is not one a revision request can start from: it has already been decided, has been superseded by a newer send, or was never sent. A repeat request on the same version answers here rather than being duplicated. This route never answers REVERIFICATION_REQUIRED, APPROVAL_VERSION_MISMATCH or TERMS_NOT_ACCEPTED: none of those guards applies to it.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Secure-link resolution, the step-up policy, or the required agreement set is not configured, or the approval evidence cannot be resolved. Distinct from 404 on purpose: the link is usable and the design is real, so reporting it as unavailable would hide a configuration fault behind a dead-link answer. Names no policy key, no agreement type and no column.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Ask for a revision of the exact design version shown by a secure link",
         "tags": [
           "publicDesignReview"
         ]

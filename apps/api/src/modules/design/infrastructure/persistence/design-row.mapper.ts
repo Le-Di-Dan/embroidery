@@ -19,6 +19,7 @@ import type {
 import type {
   ApprovalSnapshot,
   ApprovalSnapshotId,
+  ApprovalSnapshotPlacement,
 } from '../../domain/repositories/approval-snapshot.repository';
 import type {
   DesignSession,
@@ -106,6 +107,35 @@ export function toVersion(row: VersionRow): DesignVersion {
   };
 }
 
+/**
+ * Reads a frozen approval's placement back as whichever branch it carries
+ * (CST-131, `ADR-APP6-001` §3.2).
+ *
+ * The COP column is the discriminator and is read **first**, for the reason
+ * {@link toVersionPlacement} records: it is the one column CST-131 guarantees is
+ * decisive, and branching on `productId` would give the same answer today and a
+ * silently wrong one the first time a column is added.
+ */
+function toSnapshotPlacement(row: SnapshotRow): ApprovalSnapshotPlacement {
+  if (row.customerOwnedProductId !== null) {
+    return {
+      branch: 'CUSTOMER_OWNED',
+      customerOwnedProductId: row.customerOwnedProductId,
+      physicalWidthMm: row.physicalWidthMm,
+      physicalHeightMm: row.physicalHeightMm,
+    };
+  }
+  return {
+    branch: 'CATALOG',
+    productId: row.productId as ProductId,
+    productVariantId: row.productVariantId as ProductVariantId,
+    productSideId: row.productSideId as ProductSideId,
+    embroideryAreaId: row.embroideryAreaId as EmbroideryAreaId,
+    physicalWidthMm: row.physicalWidthMm,
+    physicalHeightMm: row.physicalHeightMm,
+  };
+}
+
 export function toSnapshot(row: SnapshotRow): ApprovalSnapshot {
   return {
     id: row.id as ApprovalSnapshotId,
@@ -114,14 +144,7 @@ export function toSnapshot(row: SnapshotRow): ApprovalSnapshot {
     customRequestId: row.customRequestId,
     customerId: row.customerId,
     documentHash: row.documentHash,
-    placement: {
-      productId: row.productId as ProductId,
-      productVariantId: row.productVariantId as ProductVariantId,
-      productSideId: row.productSideId as ProductSideId,
-      embroideryAreaId: row.embroideryAreaId as EmbroideryAreaId,
-      physicalWidthMm: row.physicalWidthMm,
-      physicalHeightMm: row.physicalHeightMm,
-    },
+    placement: toSnapshotPlacement(row),
     productName: row.productName,
     sideName: row.sideName,
     areaName: row.areaName,

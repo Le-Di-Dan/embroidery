@@ -94,12 +94,23 @@ export class DrizzleApprovalSnapshotRepository
       // G-DB7-13: the placement frozen into the snapshot is copied from the
       // version, and re-validated here because this row outlives the version's
       // mutability window and authorises production.
-      await this.placement.assertValidPlacement({
-        productId: version.productId as never,
-        productVariantId: version.productVariantId as never,
-        productSideId: version.productSideId as never,
-        embroideryAreaId: version.embroideryAreaId as never,
-      });
+      //
+      // **Catalog branch only**, which is `ADR-APP6-001` §3.3's rule rather than
+      // an omission — the same rule `DesignCaseRepository.createVersion`
+      // already follows. A customer-owned product has no Catalog placement
+      // authority to reconcile against, and running the hierarchy assertion for
+      // it would require fabricating the very ids the ADR exists to prevent:
+      // all four quartet columns are NULL on that branch by CST-129, so the
+      // call could only pass by inventing them.
+      const isCustomerOwned = version.customerOwnedProductId !== null;
+      if (!isCustomerOwned) {
+        await this.placement.assertValidPlacement({
+          productId: version.productId as never,
+          productVariantId: version.productVariantId as never,
+          productSideId: version.productSideId as never,
+          embroideryAreaId: version.embroideryAreaId as never,
+        });
+      }
 
       // G-DB7-16 / GRD-008: an approval with no captured terms is not evidence
       // the customer accepted any.
@@ -120,11 +131,19 @@ export class DrizzleApprovalSnapshotRepository
           customRequestId: designCase.customRequestId,
           customerId: input.customerId,
           documentHash: version.documentHash,
+          // Nullable authority, copied as it stands. APP6 renders no raster and
+          // creates no preview derivative, so this is `NULL` on every APP6 path
+          // — carried through rather than manufactured (`APP6-G01` §8).
           previewHash: version.previewHash,
+          // Both branches are copied straight off the locked version row, which
+          // CST-129 has already proved carries exactly one of them. Nothing here
+          // chooses: CST-131 on this table is the same truth table, so a row the
+          // version satisfied is a row this insert satisfies.
           productId: version.productId,
           productVariantId: version.productVariantId,
           productSideId: version.productSideId,
           embroideryAreaId: version.embroideryAreaId,
+          customerOwnedProductId: version.customerOwnedProductId,
           productName: input.productName,
           variantLabel: input.variantLabel ?? null,
           sideName: input.sideName,
