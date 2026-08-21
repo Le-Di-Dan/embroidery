@@ -53,6 +53,20 @@ export const DESIGN_VERSION_AUTHORING_ERRORS = [
   'PLACEMENT_INPUT_INVALID',
   /** The document is malformed, too complex, or disagrees with its placement. */
   'DOCUMENT_REJECTED',
+  /**
+   * `APP6-A02` §6: the addressed version is not a version of this request's
+   * design case.
+   *
+   * One code for two situations — a version id naming no row at all, and one
+   * naming a row on **another** case — because they must be indistinguishable.
+   * A separate "not yours" refusal would confirm that a guessed id names a real
+   * design version on somebody else's request, which is the enumeration this
+   * route is bound to prevent.
+   *
+   * Raised only by the exact-version read. Nothing authors, sends or decides
+   * against a version reached this way.
+   */
+  'DESIGN_VERSION_NOT_FOUND',
 ] as const;
 
 export type DesignVersionAuthoringErrorCode = (typeof DESIGN_VERSION_AUTHORING_ERRORS)[number];

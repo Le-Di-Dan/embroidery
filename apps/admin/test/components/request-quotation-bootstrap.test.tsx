@@ -30,6 +30,10 @@ import {
 
 import { QuotationWorkbenchScreen } from '../../src/features/request-quotation';
 import { REQUEST_QUOTATION_COPY as COPY } from '../../src/features/request-quotation/model/request-quotation-copy';
+import {
+  presentRequestStatus,
+  UNKNOWN_REQUEST_STATUS_LABEL,
+} from '../../src/shared/presentation/request-status';
 import { makeApiClientError } from '../support/api-error';
 import {
   envelope,
@@ -379,7 +383,7 @@ describe('the request context rail', () => {
     // so it locked in the defect the browser pass found rather than catching it.
     // It now asserts the operator-facing label *and* that the token is gone.
     const status = screen.getByTestId('quotation-context-status');
-    expect(status).toHaveTextContent(COPY.requestStatus.UNDER_REVIEW);
+    expect(status).toHaveTextContent(presentRequestStatus('UNDER_REVIEW'));
     expect(status.textContent).not.toContain('UNDER_REVIEW');
   });
 

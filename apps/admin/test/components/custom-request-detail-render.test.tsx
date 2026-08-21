@@ -21,6 +21,7 @@ import { adminCustomRequestDetail } from '@embroidery/api-client';
 
 import { CustomRequestDetailScreen } from '../../src/features/custom-request-detail';
 import { CUSTOM_REQUEST_DETAIL_COPY as COPY } from '../../src/features/custom-request-detail/model/custom-request-detail-copy';
+import { presentRequestStatus } from '../../src/shared/presentation/request-status';
 import { makeApiClientError } from '../support/api-error';
 import {
   detailEnvelope,
@@ -307,7 +308,7 @@ describe('accessibility', () => {
   it('names the status as text, not by colour alone', async () => {
     render();
     const badge = await screen.findByTestId('request-detail-status');
-    expect(badge).toHaveTextContent(COPY.status.new);
+    expect(badge).toHaveTextContent(presentRequestStatus('NEW'));
     expect(badge).toHaveAttribute('data-status', 'NEW');
   });
 });

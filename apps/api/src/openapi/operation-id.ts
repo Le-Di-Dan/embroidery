@@ -103,6 +103,16 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // name a public identifier; with it, B08's two accepted ids stay untouched and
   // the family reads `_create`, `_list`, `_send`.
   AdminCustomRequestDesignVersionSendController: 'adminCustomRequestDesignVersion',
+  // `APP6-A02`. Reading one exact design version joins the same published domain
+  // as `APP6-B08`'s create and list and `APP6-B09`'s send. It is its own class
+  // because its module is defined by holding no `DESIGN_CASE_REPOSITORY`, no
+  // approval-snapshot repository, no transaction manager and no outbox — the
+  // boundary that lets its suite say this GET cannot author, send, decide,
+  // transition or announce anything. Without this entry the read would mint
+  // `adminCustomRequestDesignVersionDetail_detail`, letting that module boundary
+  // name a public identifier; with it, B08's and B09's three accepted ids stay
+  // untouched and the family reads `_create`, `_list`, `_send`, `_detail`.
+  AdminCustomRequestDesignVersionDetailController: 'adminCustomRequestDesignVersion',
   // `APP6-B11`. Approving a design and requesting a revision join the same
   // published `publicDesignReview` domain as `APP6-B10`'s read. They are a
   // second class because the read module is *defined* by holding no transaction

@@ -15,6 +15,7 @@ import type {
   AdminAssetUploadBody,
   AdminCustomRequestAppendNote201,
   AdminCustomRequestDesignVersionCreate201,
+  AdminCustomRequestDesignVersionDetail200,
   AdminCustomRequestDesignVersionList200,
   AdminCustomRequestDesignVersionSend200,
   AdminCustomRequestDetail200,
@@ -255,6 +256,21 @@ export const adminCustomRequestDesignVersionCreate = (
       headers: { 'Content-Type': 'application/json' },
       data: authorDesignVersionBody,
     },
+    options,
+  );
+};
+
+/**
+ * The exact version named by the path, resolved through this request’s own design-case pointer — no case id is accepted and no global version lookup exists, so a version belonging to another request answers exactly as one that does not exist. The persisted Design Document is returned verbatim, unmigrated and unrewritten, with the hash stored when it was sent (null for a draft that never was; nothing is recomputed). Customer decisions carry the customer’s own recorded words, read from the decision record and never inferred, summarised or taken from an audit entry. An approved version also carries its immutable Approval Snapshot — frozen contacts (masked), frozen product, side, area, dimensions, quantity and accepted agreement hashes — read from the snapshot itself rather than re-resolved from current rows. No session secret, grant, step-up challenge, token, storage key or derivative appears anywhere in the response. It is a read: nothing is written, no lock is taken, no state moves and no event is emitted.
+ * @summary Get one exact design version, with its document, decisions and approval
+ */
+export const adminCustomRequestDesignVersionDetail = (
+  requestId: unknown,
+  versionId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminCustomRequestDesignVersionDetail200>>,
+) => {
+  return apiRequest<AdminCustomRequestDesignVersionDetail200>(
+    { url: `/api/admin/custom-requests/${requestId}/design-versions/${versionId}`, method: 'GET' },
     options,
   );
 };
@@ -1495,6 +1511,9 @@ export type AdminCustomRequestDesignVersionListResult = NonNullable<
 >;
 export type AdminCustomRequestDesignVersionCreateResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestDesignVersionCreate>>
+>;
+export type AdminCustomRequestDesignVersionDetailResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestDesignVersionDetail>>
 >;
 export type AdminCustomRequestDesignVersionSendResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestDesignVersionSend>>

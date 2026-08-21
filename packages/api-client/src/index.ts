@@ -729,6 +729,79 @@ export type {
   AdminQuotationSentResponse,
 } from './generated/embroidery-api.schemas';
 
+// The Admin design-case workbench (`APP6-B07` submitted source, `APP6-B08`
+// authoring and history, `APP6-A02` exact-version detail, `APP6-B09` send),
+// consumed by `APP6-A02`.
+//
+// Five operations, released consumer-driven: until A02 there was no approved
+// control behind any of them, so none crossed. `APP6-B07` and `APP6-B08`
+// deliberately left their curated exports to this checkpoint rather than
+// publishing operations with no screen behind them. They arrive together
+// because the screen is one workbench — a version that could be drafted but
+// never opened, or opened but never sent, is not a deliverable surface.
+//
+// ### The two customer operations are **not** here
+//
+// `publicDesignReview_current`, `_approve` and `_requestRevision` share types
+// with these — `DesignDocument` above all — and none of them crosses. `APP6-B11`
+// owns the customer decision surfaces; an Admin screen that could reach
+// `publicDesignReviewApprove` would be one careless import away from approving a
+// design on the customer's behalf, which is the one thing this workbench must
+// never be able to do. Sharing a type is not a reason to share an operation.
+//
+// ### `adminCustomRequestDesignVersionSend` takes no body
+//
+// The version being sent is named entirely by the path, and there is
+// deliberately no shape a caller could use to send one version while naming
+// another. `AuthorDesignVersionBody` is `.strict()` server-side and carries only
+// the document and the four customer-owned placement facts: the request id, the
+// case id, the branch, the catalog quartet, the status, the version number, the
+// parent and the hash are all server-owned and have no field here to arrive in.
+//
+// ### `document` is the concrete `DesignDocument`
+//
+// Both the detail response and the authoring body reference the single generated
+// `APP3-P01` component, so a document read from one version and posted as the
+// source of the next never passes through an index signature. The
+// `TransportDesignDocument` alias above remains the name for the wire shape;
+// `@embroidery/design-document` remains the authority on structure and
+// validation, and nothing validates a document against these declarations.
+//
+// The version-status, branch and review-outcome enums cross as **values** so the
+// screen derives its action matrix and its labels from the contract rather than
+// from a hand-kept list that could drift from what the server publishes.
+export {
+  adminCustomRequestSubmittedDesignGet,
+  adminCustomRequestDesignVersionList,
+  adminCustomRequestDesignVersionCreate,
+  adminCustomRequestDesignVersionDetail,
+  adminCustomRequestDesignVersionSend,
+} from './generated/embroidery-api';
+export {
+  DesignVersionResponseStatus,
+  DesignVersionResponseBranch,
+  DesignVersionReviewResponseOutcome,
+  DesignVersionDetailResponseStatus,
+  DesignVersionDetailResponseBranch,
+  DesignVersionDetailReviewResponseOutcome,
+  ApprovalEvidenceResponseBranch,
+  DesignVersionSentResponseVersionStatus,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminSubmittedDesignResponse,
+  AdminSubmittedDesignSourceResponse,
+  AuthorDesignVersionBody,
+  DesignVersionResponse,
+  DesignVersionReviewResponse,
+  DesignVersionCreatedResponse,
+  DesignVersionListResponse,
+  DesignVersionDetailResponse,
+  DesignVersionDetailReviewResponse,
+  ApprovalEvidenceResponse,
+  ApprovalAgreementResponse,
+  DesignVersionSentResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

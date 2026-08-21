@@ -38,17 +38,10 @@ export const CUSTOM_REQUEST_DETAIL_COPY = {
     actions: 'Hành động',
   },
   status: {
-    new: 'Mới',
-    underReview: 'Đang xem xét',
-    needsClarification: 'Cần làm rõ',
-    quoted: 'Đã báo giá',
-    quoteAccepted: 'Đã nhận báo giá',
-    digitizing: 'Đang số hoá',
-    designReview: 'Duyệt thiết kế',
-    approved: 'Đã duyệt',
-    rejected: 'Đã từ chối',
-    cancelled: 'Đã huỷ',
-    unknown: 'Không xác định',
+    // The ten status labels and the neutral fallback moved to
+    // `shared/presentation/request-status` (`APP6-A02` §11), which is now the
+    // one place the Admin app spells a request status. Only the section heading
+    // stays here: it names this screen's card, not a status.
     label: 'Trạng thái hiện tại',
   },
   request: {

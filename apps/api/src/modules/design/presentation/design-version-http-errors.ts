@@ -71,6 +71,18 @@ const RESPONSE_OF: Readonly<
       },
       HttpStatus.UNPROCESSABLE_ENTITY,
     ),
+  // `404`, and the same body an unknown request gets in spirit: the operator
+  // addressed something that, as far as this route is concerned, does not
+  // exist. No id they did not type appears, and nothing distinguishes an absent
+  // version from one belonging to another request's design case.
+  DESIGN_VERSION_NOT_FOUND: () =>
+    new HttpException(
+      {
+        code: 'DESIGN_VERSION_NOT_FOUND',
+        message: 'No such design version on this request.',
+      },
+      HttpStatus.NOT_FOUND,
+    ),
   DOCUMENT_REJECTED: (detail) =>
     new HttpException(
       {

@@ -55,6 +55,7 @@ import {
   subjectKindOf,
 } from '../../src/features/request-quotation/model/quotation-presentation';
 import { REQUEST_QUOTATION_COPY as COPY } from '../../src/features/request-quotation/model/request-quotation-copy';
+import { UNKNOWN_REQUEST_STATUS_LABEL } from '../../src/shared/presentation/request-status';
 import { makeApiClientError, makeNetworkError } from '../support/api-error';
 import {
   makeCatalogRequest,
@@ -406,15 +407,15 @@ describe('presentation never echoes a raw server token', () => {
     for (const status of lifecycle) {
       const label = presentRequestStatus(status);
       expect(label).not.toBe(status);
-      expect(label).not.toBe(COPY.requestStatus.unknown);
+      expect(label).not.toBe(UNKNOWN_REQUEST_STATUS_LABEL);
     }
   });
 
   it('degrades an unmapped or non-string request status instead of echoing it', () => {
-    expect(presentRequestStatus('SOMETHING_NEW')).toBe(COPY.requestStatus.unknown);
+    expect(presentRequestStatus('SOMETHING_NEW')).toBe(UNKNOWN_REQUEST_STATUS_LABEL);
     expect(presentRequestStatus('SOMETHING_NEW')).not.toContain('SOMETHING_NEW');
-    expect(presentRequestStatus(undefined)).toBe(COPY.requestStatus.unknown);
-    expect(presentRequestStatus(42)).toBe(COPY.requestStatus.unknown);
+    expect(presentRequestStatus(undefined)).toBe(UNKNOWN_REQUEST_STATUS_LABEL);
+    expect(presentRequestStatus(42)).toBe(UNKNOWN_REQUEST_STATUS_LABEL);
   });
 
   // The history column renders the *version* status. It was borrowing the

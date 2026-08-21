@@ -1397,6 +1397,69 @@ export interface AppendModerationNoteBody {
   note: string;
 }
 
+export interface ApprovalAgreementResponse {
+  acceptedAt: string;
+  /** The agreement type this acceptance was captured for. */
+  agreementType: string;
+  /** The exact content hash `GRD-008` bound the acceptance to. This identifies the accepted agreement version; the publication-side version integer is deliberately not published here, because reading it would mean reaching into the agreements aggregate’s mutable publication state from a card whose premise is frozen evidence. */
+  contentHash: string;
+}
+
+/**
+ * The snapshot’s own placement branch. No catalog identity is fabricated for a customer-owned approval.
+ */
+export type ApprovalEvidenceResponseBranch =
+  (typeof ApprovalEvidenceResponseBranch)[keyof typeof ApprovalEvidenceResponseBranch];
+
+export const ApprovalEvidenceResponseBranch = {
+  CATALOG: 'CATALOG',
+  CUSTOMER_OWNED: 'CUSTOMER_OWNED',
+} as const;
+
+export interface ApprovalEvidenceResponse {
+  /** The agreement versions the customer accepted, as `GRD-008` captured them. */
+  agreements: ApprovalAgreementResponse[];
+  approvedAt: string;
+  /** The placement area, frozen. */
+  areaName: string;
+  /** The snapshot’s own placement branch. No catalog identity is fabricated for a customer-owned approval. */
+  branch: ApprovalEvidenceResponseBranch;
+  /**
+   * The customer’s display name **as frozen at approval**, not as it stands now. `null` when the customer never gave one.
+   * @nullable
+   */
+  customerDisplayName: string | null;
+  /** The document hash frozen into the approval. Equal to the version’s stored hash by construction (`G-DB7-14`/`GRD-007`); nothing recomputes it on read. */
+  documentHash: string;
+  /**
+   * The frozen contact, masked. The full normalized value is never published and never reaches this response type.
+   * @nullable
+   */
+  maskedEmail: string | null;
+  /**
+   * See `maskedEmail`.
+   * @nullable
+   */
+  maskedPhone: string | null;
+  /** See `physicalWidthMm`. */
+  physicalHeightMm: string;
+  /** The frozen embroidery dimensions. On the customer-owned branch these are the version’s placement envelope copied at approval — never the customer item’s own size. */
+  physicalWidthMm: string;
+  /** The product name frozen at approval — the catalog name on the catalog branch, the customer’s own words for their garment on the customer-owned one. A later rename does not rewrite it. */
+  productName: string;
+  /** The request’s quantity total, frozen at approval. */
+  quantityTotal: number;
+  /** Whether the approval committed step-up re-verification evidence. A boolean, because the challenge identifier it is derived from is a credential reference and is never published. */
+  reverified: boolean;
+  /** The placement side, frozen at approval. */
+  sideName: string;
+  /**
+   * Always `null` on the customer-owned branch — not because a variant could not be found, but because a customer-owned product has none.
+   * @nullable
+   */
+  variantLabel: string | null;
+}
+
 export type ApproveDesignVersionBodyAcceptedAgreementsItem = {
   /**
    * The exact agreement version the customer read, as B10 returned it.
@@ -2509,6 +2572,126 @@ export interface DesignVersionResponse {
 
 export interface DesignVersionCreatedResponse {
   version: DesignVersionResponse;
+}
+
+/**
+ * Derived from the persisted placement; never stored, never accepted.
+ */
+export type DesignVersionDetailResponseBranch =
+  (typeof DesignVersionDetailResponseBranch)[keyof typeof DesignVersionDetailResponseBranch];
+
+export const DesignVersionDetailResponseBranch = {
+  CATALOG: 'CATALOG',
+  CUSTOMER_OWNED: 'CUSTOMER_OWNED',
+} as const;
+
+/**
+ * LC-08 state.
+ */
+export type DesignVersionDetailResponseStatus =
+  (typeof DesignVersionDetailResponseStatus)[keyof typeof DesignVersionDetailResponseStatus];
+
+export const DesignVersionDetailResponseStatus = {
+  DRAFT: 'DRAFT',
+  SENT_FOR_REVIEW: 'SENT_FOR_REVIEW',
+  REVISION_REQUESTED: 'REVISION_REQUESTED',
+  APPROVED: 'APPROVED',
+  SUPERSEDED: 'SUPERSEDED',
+  VOID: 'VOID',
+} as const;
+
+/**
+ * The decision the customer actually recorded. Never inferred from the version status.
+ */
+export type DesignVersionDetailReviewResponseOutcome =
+  (typeof DesignVersionDetailReviewResponseOutcome)[keyof typeof DesignVersionDetailReviewResponseOutcome];
+
+export const DesignVersionDetailReviewResponseOutcome = {
+  APPROVE: 'APPROVE',
+  REQUEST_REVISION: 'REQUEST_REVISION',
+} as const;
+
+export interface DesignVersionDetailReviewResponse {
+  decidedAt: string;
+  /**
+   * The customer’s own words, exactly as recorded on the decision. Never an audit summary, an outbox payload or a rephrasing. `null` for an approval and for a revision request that carried no message.
+   * @nullable
+   */
+  feedback: string | null;
+  /** The decision the customer actually recorded. Never inferred from the version status. */
+  outcome: DesignVersionDetailReviewResponseOutcome;
+}
+
+export interface DesignVersionDetailResponse {
+  /**
+   * The immutable Approval Snapshot for this exact version, or `null` when it has never been approved. Every field is read from the snapshot itself, never re-resolved from the current customer, catalog or request rows.
+   * @nullable
+   */
+  approval: ApprovalEvidenceResponse | null;
+  /** @nullable */
+  approvedAt: string | null;
+  /** Derived from the persisted placement; never stored, never accepted. */
+  branch: DesignVersionDetailResponseBranch;
+  /** True when the design case’s own current-version pointer names this version. This is the *current authored* version, which is not the same thing as the version a customer is currently reviewing. */
+  current: boolean;
+  designCaseId: string;
+  /** The Design Document of this exact version, returned exactly as persisted. Nothing is migrated, rewritten or re-canonicalized on read. */
+  document: DesignDocument;
+  /**
+   * The hash stored when the version was sent for review. `null` on a draft that has never been sent — an absence, never a freshly computed digest.
+   * @nullable
+   */
+  documentHash: string | null;
+  /** The design-document schema version governing this version. 1 on the catalog branch; 2 on the customer-owned branch. */
+  documentSchemaVersion: number;
+  /**
+   * Catalog branch only.
+   * @nullable
+   */
+  embroideryAreaId: string | null;
+  /**
+   * The version this one continues, or `null` at the root of the chain.
+   * @nullable
+   */
+  parentVersionId: string | null;
+  /** See `physicalWidthMm`. */
+  physicalHeightMm: string;
+  /** Exact `numeric` millimetres, always a string. On the customer-owned branch this is the version’s embroidery placement envelope, never the customer item’s own dimensions. */
+  physicalWidthMm: string;
+  /**
+   * Customer-owned branch only: the agreed placement area.
+   * @nullable
+   */
+  placementAreaLabel: string | null;
+  /**
+   * Customer-owned branch only: the agreed placement side, as frozen evidence.
+   * @nullable
+   */
+  placementSideLabel: string | null;
+  /**
+   * Catalog branch only.
+   * @nullable
+   */
+  productId: string | null;
+  /**
+   * Catalog branch only.
+   * @nullable
+   */
+  productSideId: string | null;
+  /**
+   * Catalog branch only.
+   * @nullable
+   */
+  productVariantId: string | null;
+  /** Customer decisions on this exact version, oldest first. Empty before any decision; never populated by inference from the version status. */
+  reviews: DesignVersionDetailReviewResponse[];
+  /** @nullable */
+  sentAt: string | null;
+  /** LC-08 state. */
+  status: DesignVersionDetailResponseStatus;
+  /** Monotonic within the design case. */
+  version: number;
+  versionId: string;
 }
 
 export interface DesignVersionListResponse {
@@ -3710,6 +3893,10 @@ export type AdminCustomRequestDesignVersionList200 = ApiSuccessResponse & {
 
 export type AdminCustomRequestDesignVersionCreate201 = ApiSuccessResponse & {
   data: DesignVersionCreatedResponse;
+};
+
+export type AdminCustomRequestDesignVersionDetail200 = ApiSuccessResponse & {
+  data: DesignVersionDetailResponse;
 };
 
 export type AdminCustomRequestDesignVersionSend200 = ApiSuccessResponse & {

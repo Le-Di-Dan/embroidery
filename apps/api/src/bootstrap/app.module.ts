@@ -23,6 +23,7 @@ import { CustomRequestAdminModule } from '../modules/order/custom-request-admin.
 import { CustomRequestAssetDeliveryModule } from '../modules/order/custom-request-asset-delivery.module';
 import { CustomRequestSubmittedDesignModule } from '../modules/order/custom-request-submitted-design.module';
 import { DesignVersionAuthoringModule } from '../modules/design/design-version-authoring.module';
+import { DesignVersionDetailReadModule } from '../modules/design/design-version-detail-read.module';
 import { DesignVersionSendModule } from '../modules/design/design-version-send.module';
 import { CustomRequestModerationModule } from '../modules/order/custom-request-moderation.module';
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
@@ -192,6 +193,7 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // may have one in reach.
     CustomRequestSubmittedDesignModule,
     DesignVersionAuthoringModule,
+    DesignVersionDetailReadModule,
     DesignVersionSendModule,
     // APP6-B10 — CTX-CNT, composed so the `staff-bootstrap` CLI can reach
     // `PublishApp6AgreementsUseCase` with the Admin id it just resolved. It

@@ -36,26 +36,11 @@ export const REQUEST_QUOTATION_COPY = {
     versionDetail: 'Chi tiết phiên bản',
     validity: 'Hiệu lực',
   },
-  /**
-   * Request-status labels, so the context rail never puts a raw `UNDER_REVIEW`
-   * in front of an operator on an otherwise Vietnamese screen. The strings match
-   * the ones `APP5-A02` already renders for the same statuses on the request
-   * detail it links back to — the operator moves between the two screens and a
-   * request must not change its name in transit.
-   */
-  requestStatus: {
-    NEW: 'Mới',
-    UNDER_REVIEW: 'Đang xem xét',
-    NEEDS_CLARIFICATION: 'Cần làm rõ',
-    QUOTED: 'Đã báo giá',
-    QUOTE_ACCEPTED: 'Đã nhận báo giá',
-    DIGITIZING: 'Đang số hoá',
-    DESIGN_REVIEW: 'Duyệt thiết kế',
-    APPROVED: 'Đã duyệt',
-    REJECTED: 'Đã từ chối',
-    CANCELLED: 'Đã huỷ',
-    unknown: 'Không xác định',
-  },
+  // The ten request-status labels used to live here. `APP6-A02` §11 moved them
+  // to `shared/presentation/request-status`, which is now the one place the
+  // Admin app spells a request status — this catalog, `APP5-A02`'s and the
+  // design-case workbench's would otherwise have been three copies of one
+  // vocabulary. Nothing about the wording changed; only its address did.
   context: {
     status: 'Trạng thái yêu cầu',
     submittedAt: 'Thời điểm gửi',

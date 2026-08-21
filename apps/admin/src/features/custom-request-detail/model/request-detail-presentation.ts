@@ -28,35 +28,29 @@ import type {
   AdminRequestTransitionResponse,
 } from '@embroidery/api-client';
 
+import {
+  presentRequestStatusDetail,
+  type RequestStatusPresentation,
+} from '../../../shared/presentation/request-status';
 import { CUSTOM_REQUEST_DETAIL_COPY as COPY } from './custom-request-detail-copy';
 import type { EvidenceFailure } from './custom-request-detail-failure';
 
-const STATUS_LABELS: Readonly<Record<string, string>> = {
-  NEW: COPY.status.new,
-  UNDER_REVIEW: COPY.status.underReview,
-  NEEDS_CLARIFICATION: COPY.status.needsClarification,
-  QUOTED: COPY.status.quoted,
-  QUOTE_ACCEPTED: COPY.status.quoteAccepted,
-  DIGITIZING: COPY.status.digitizing,
-  DESIGN_REVIEW: COPY.status.designReview,
-  APPROVED: COPY.status.approved,
-  REJECTED: COPY.status.rejected,
-  CANCELLED: COPY.status.cancelled,
-};
-
-export interface StatusPresentation {
-  /** The stored value when the contract defines it, else `UNKNOWN`. */
-  readonly token: string;
-  readonly label: string;
-  readonly known: boolean;
-}
-
-export function presentStatus(status: unknown): StatusPresentation {
-  const label = typeof status === 'string' ? STATUS_LABELS[status] : undefined;
-  return label === undefined
-    ? { token: 'UNKNOWN', label: COPY.status.unknown, known: false }
-    : { token: status as string, label, known: true };
-}
+/**
+ * Re-exported from the Admin-shared presenter (`APP6-A02` §11).
+ *
+ * The private ten-status map that used to live here was one of three copies of
+ * the same vocabulary — `APP6-A01` carried the second, and the design-case
+ * workbench would have been the third. It now lives in
+ * `shared/presentation/request-status`, with the same copy and the same neutral
+ * fallback, so a request cannot change its name as an operator moves between
+ * the three screens. The shape this screen consumes is unchanged, so no
+ * component in this feature changed.
+ *
+ * The alias is deliberate: `presentStatus` is what this feature's components
+ * already call, and renaming them would be churn for no behavioural gain.
+ */
+export type StatusPresentation = RequestStatusPresentation;
+export const presentStatus = presentRequestStatusDetail;
 
 /** The two subject branches, as this screen renders them. */
 export type SubjectBranch =

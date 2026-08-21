@@ -1,0 +1,555 @@
+// Admin design-case workbench (`APP6-A02`).
+//
+// Reproduces `FIG-APP6-A02-{DEFAULT-CATALOG,EVIDENCE-ABSENT,COP,CREATE-VERSION,
+// SEND-REVIEW-CONFIRM,REVIEW-ALREADY-ACTIVE,SENT-FOR-REVIEW,REVISION-REQUESTED,
+// APPROVED,LOADING,ERROR,GATE}-DESKTOP` (`692:3`, `694:3`, `694:111`, `695:3`,
+// `695:138`, `695:266`, `696:3`, `696:113`, `697:3`, `698:3`, `698:63`,
+// `698:97`) and the narrow desktop reference `FIG-APP6-A02-NARROW1280`
+// (`698:143`). Every colour, radius, space and type size is a token: no literal
+// hex and no magic pixel value beyond the three named layout constants below.
+//
+// Class names are prefixed `request-design-case__`. The Admin stylesheet is
+// global and unscoped, so a generic `.preview` or `.dialog` here would collide
+// with another feature's rules in a way jsdom could never catch.
+
+@use '@embroidery/styles' as styles;
+
+// `698:143` wraps the context rail below the main column at 1360, the same
+// Admin convention `APP5-A01`, `APP5-A02` and `APP6-A01` follow. Not a spacing
+// step: the scale is a rhythm for gaps and padding, and a breakpoint is neither.
+$design-rail-wrap: 1360px;
+
+// The approved right-rail width at 1440 (`692:3`).
+$design-rail-width: 336px;
+
+// The dialog width, which the spacing scale deliberately has no step for.
+$design-dialog-width: 520px;
+
+.request-design-case {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.request-design-case__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: styles.spacing(16);
+}
+
+.request-design-case__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.request-design-case__section-title {
+  margin: 0 0 styles.spacing(12);
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+}
+
+.request-design-case__notice-title {
+  margin: 0 0 styles.spacing(4);
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.request-design-case__hint {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-design-case__error {
+  margin: styles.spacing(8) 0 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Layout: main column + context rail, rail wraps below at the 1280 reference.
+
+.request-design-case__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) $design-rail-width;
+  gap: styles.spacing(24);
+  align-items: start;
+
+  // Below the wrap point the rail moves under the main column rather than
+  // shrinking it. `minmax(0, 1fr)` on both tracks is what stops a wide table
+  // from forcing the grid — and therefore the page — to scroll horizontally.
+  @media (max-width: $design-rail-wrap) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.request-design-case__main,
+.request-design-case__rail {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+}
+
+.request-design-case__card {
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+}
+
+// ---------------------------------------------------------------------------
+// States: loading (`698:3`), error (`698:63`), gate (`698:97`).
+
+.request-design-case__state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+}
+
+.request-design-case__state-title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+}
+
+// A notice is never colour alone: each carries its own heading and body text,
+// and the tint is a redundant cue.
+.request-design-case__notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(8);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-left: styles.spacing(4) solid styles.$color-status-info;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  color: styles.$color-text-secondary;
+
+  &[data-tone='awaiting'] {
+    border-left-color: styles.$color-status-info;
+  }
+
+  &[data-tone='revision'] {
+    border-left-color: styles.$color-status-warning;
+  }
+
+  &[data-tone='approved'] {
+    border-left-color: styles.$color-status-success;
+  }
+
+  &[data-tone='conflict'] {
+    border-left-color: styles.$color-status-error;
+  }
+
+  &[data-tone='historical'] {
+    border-left-color: styles.$color-border-primary;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Buttons.
+
+.request-design-case__button {
+  display: inline-flex;
+  align-items: center;
+  gap: styles.spacing(4);
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:disabled {
+    cursor: not-allowed;
+    color: styles.$color-text-tertiary;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+}
+
+.request-design-case__button--primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+  }
+
+  &:disabled {
+    border-color: styles.$color-border-primary;
+    background: styles.$color-background-secondary;
+  }
+}
+
+.request-design-case__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: styles.spacing(8);
+  margin-top: styles.spacing(12);
+}
+
+// ---------------------------------------------------------------------------
+// Definition lists, badges.
+
+.request-design-case__definitions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(styles.spacing(96), 1fr));
+  gap: styles.spacing(12);
+  margin: styles.spacing(12) 0 0;
+}
+
+.request-design-case__definition {
+  min-width: 0;
+
+  dt {
+    color: styles.$color-text-secondary;
+    font-size: styles.$font-size-caption;
+  }
+
+  dd {
+    margin: styles.spacing(4) 0 0;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-body-s;
+    // A frozen hash and a long label must wrap inside the rail rather than
+    // widening the grid track and pushing the page sideways.
+    overflow-wrap: anywhere;
+  }
+}
+
+.request-design-case__mono {
+  font-family: ui-monospace, monospace;
+  font-size: styles.$font-size-caption;
+  overflow-wrap: anywhere;
+}
+
+.request-design-case__badge {
+  display: inline-flex;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+}
+
+.request-design-case__panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: styles.spacing(8);
+}
+
+// ---------------------------------------------------------------------------
+// Version history table. It scrolls inside its own frame, per the Admin
+// convention: the page itself never scrolls horizontally at 1280.
+
+.request-design-case__table-frame {
+  overflow-x: auto;
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  max-width: 100%;
+}
+
+.request-design-case__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: styles.$font-size-body-s;
+
+  th,
+  td {
+    padding: styles.spacing(8) styles.spacing(12);
+    text-align: left;
+    border-bottom: 1px solid styles.$color-border-secondary;
+    white-space: nowrap;
+    color: styles.$color-text-primary;
+  }
+
+  thead th {
+    color: styles.$color-text-secondary;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-medium;
+  }
+
+  tbody tr[data-selected='true'] {
+    background: styles.$color-background-secondary;
+  }
+}
+
+.request-design-case__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+// ---------------------------------------------------------------------------
+// The SVG preview and the authoring stage.
+
+.request-design-case__preview {
+  display: block;
+  width: 100%;
+  // The viewBox carries the document's own aspect ratio, so the element scales
+  // with its container and never dictates the page width.
+  height: auto;
+  max-width: 100%;
+  margin-top: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.request-design-case__preview-empty {
+  margin: styles.spacing(12) 0 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-design-case__preview-selection {
+  stroke: styles.$color-action-primary;
+  stroke-width: 2;
+}
+
+.request-design-case__preview-placeholder {
+  stroke: styles.$color-border-primary;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.request-design-case__authoring {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+}
+
+.request-design-case__authoring-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: styles.spacing(8);
+}
+
+.request-design-case__layers {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// ---------------------------------------------------------------------------
+// Customer-owned evidence.
+
+.request-design-case__evidence {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(styles.spacing(96), 1fr));
+  gap: styles.spacing(12);
+  margin: styles.spacing(12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.request-design-case__evidence-item {
+  min-width: 0;
+}
+
+.request-design-case__evidence-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+}
+
+// ---------------------------------------------------------------------------
+// Review history and the approval snapshot.
+
+.request-design-case__reviews {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: styles.spacing(12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.request-design-case__review {
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.request-design-case__review-outcome {
+  margin: 0;
+  font-weight: styles.$font-weight-semibold;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.request-design-case__review-meta {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.request-design-case__feedback {
+  margin: styles.spacing(8) 0 0;
+}
+
+// The customer's own words. Whitespace is preserved so their line breaks
+// survive, and long text wraps rather than widening the card.
+.request-design-case__feedback-body {
+  margin: styles.spacing(4) 0 0;
+  padding: styles.spacing(8) styles.spacing(12);
+  border-left: styles.spacing(4) solid styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.request-design-case__snapshot {
+  margin-top: styles.spacing(16);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-secondary;
+}
+
+.request-design-case__agreements {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: styles.spacing(12) 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    min-width: 0;
+  }
+}
+
+.request-design-case__agreement-type {
+  font-weight: styles.$font-weight-medium;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+// ---------------------------------------------------------------------------
+// Forms and dialogs.
+
+.request-design-case__form {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin-top: styles.spacing(12);
+}
+
+.request-design-case__field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.request-design-case__field-label {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.request-design-case__input {
+  padding: styles.spacing(8);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: styles.$color-status-error;
+  }
+}
+
+.request-design-case__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(24);
+  background: styles.$color-overlay-scrim;
+  z-index: 20;
+}
+
+.request-design-case__dialog {
+  width: min(100%, $design-dialog-width);
+  // The create dialog carries four fields plus a source line; at 1280 with a
+  // short viewport it scrolls inside itself rather than overflowing the page.
+  max-height: 100%;
+  overflow-y: auto;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+.request-design-case__dialog-title {
+  margin: 0 0 styles.spacing(8);
+  font-size: styles.$font-size-heading-s;
+}
+
+.request-design-case__dialog-body {
+  margin: 0 0 styles.spacing(8);
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.request-design-case__dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: styles.spacing(8);
+  margin-top: styles.spacing(16);
+}

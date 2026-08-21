@@ -35,19 +35,6 @@ const VERSION_STATUS_LABELS: Readonly<Record<string, string>> = {
   EXPIRED: COPY.versionStatus.EXPIRED,
 };
 
-const REQUEST_STATUS_LABELS: Readonly<Record<string, string>> = {
-  NEW: COPY.requestStatus.NEW,
-  UNDER_REVIEW: COPY.requestStatus.UNDER_REVIEW,
-  NEEDS_CLARIFICATION: COPY.requestStatus.NEEDS_CLARIFICATION,
-  QUOTED: COPY.requestStatus.QUOTED,
-  QUOTE_ACCEPTED: COPY.requestStatus.QUOTE_ACCEPTED,
-  DIGITIZING: COPY.requestStatus.DIGITIZING,
-  DESIGN_REVIEW: COPY.requestStatus.DESIGN_REVIEW,
-  APPROVED: COPY.requestStatus.APPROVED,
-  REJECTED: COPY.requestStatus.REJECTED,
-  CANCELLED: COPY.requestStatus.CANCELLED,
-};
-
 const LINE_KIND_LABELS: Readonly<Record<string, string>> = {
   PRODUCT: COPY.lineKinds.PRODUCT,
   EMBROIDERY: COPY.lineKinds.EMBROIDERY,
@@ -64,15 +51,14 @@ export function presentVersionStatus(status: string): string {
 /**
  * The request's status as an operator reads it.
  *
- * Total, like every other presenter here: a status the contract gains later
- * degrades to the neutral label rather than reaching the screen as a raw token.
- * The rail used to render `detail.status` directly, which put `UNDER_REVIEW` on
- * a Vietnamese screen — the one place on this page a server enum leaked out.
+ * Re-exported from the Admin-shared presenter (`APP6-A02` §11), which now owns
+ * the ten-status vocabulary this file used to keep privately. The copy and the
+ * neutral fallback are identical, so the defect `APP6-A01-C1` fixed here — the
+ * rail rendering `detail.status` directly and putting `UNDER_REVIEW` on an
+ * otherwise Vietnamese screen — stays fixed, and stays fixed the same way on
+ * `APP5-A02` and on the design-case workbench.
  */
-export function presentRequestStatus(status: unknown): string {
-  const label = typeof status === 'string' ? REQUEST_STATUS_LABELS[status] : undefined;
-  return label ?? COPY.requestStatus.unknown;
-}
+export { presentRequestStatus } from '../../../shared/presentation/request-status';
 
 export function presentLineKind(kind: string): string {
   return LINE_KIND_LABELS[kind] ?? COPY.lineKinds.OTHER;

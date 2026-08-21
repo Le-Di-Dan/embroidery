@@ -2463,6 +2463,134 @@
         ],
         "type": "object"
       },
+      "ApprovalAgreementResponse": {
+        "properties": {
+          "acceptedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "agreementType": {
+            "description": "The agreement type this acceptance was captured for.",
+            "example": "PAYMENT_POLICY",
+            "type": "string"
+          },
+          "contentHash": {
+            "description": "The exact content hash `GRD-008` bound the acceptance to. This identifies the accepted agreement version; the publication-side version integer is deliberately not published here, because reading it would mean reaching into the agreements aggregate’s mutable publication state from a card whose premise is frozen evidence.",
+            "example": "sha256:8f14e45fceea167a5a36dedd4bea2543b6b4a3a1a7f7d2b0f4c8e9d1a2b3c4d5",
+            "type": "string"
+          }
+        },
+        "required": [
+          "agreementType",
+          "contentHash",
+          "acceptedAt"
+        ],
+        "type": "object"
+      },
+      "ApprovalEvidenceResponse": {
+        "properties": {
+          "agreements": {
+            "description": "The agreement versions the customer accepted, as `GRD-008` captured them.",
+            "items": {
+              "$ref": "#/components/schemas/ApprovalAgreementResponse"
+            },
+            "type": "array"
+          },
+          "approvedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "areaName": {
+            "description": "The placement area, frozen.",
+            "example": "Vùng thêu ngực",
+            "type": "string"
+          },
+          "branch": {
+            "description": "The snapshot’s own placement branch. No catalog identity is fabricated for a customer-owned approval.",
+            "enum": [
+              "CATALOG",
+              "CUSTOMER_OWNED"
+            ],
+            "type": "string"
+          },
+          "customerDisplayName": {
+            "description": "The customer’s display name **as frozen at approval**, not as it stands now. `null` when the customer never gave one.",
+            "example": "Nguyễn Thị Mai",
+            "nullable": true,
+            "type": "string"
+          },
+          "documentHash": {
+            "description": "The document hash frozen into the approval. Equal to the version’s stored hash by construction (`G-DB7-14`/`GRD-007`); nothing recomputes it on read.",
+            "example": "sha256:8f14e45fceea167a5a36dedd4bea2543b6b4a3a1a7f7d2b0f4c8e9d1a2b3c4d5",
+            "type": "string"
+          },
+          "maskedEmail": {
+            "description": "The frozen contact, masked. The full normalized value is never published and never reaches this response type.",
+            "example": "m***@vidu.com",
+            "nullable": true,
+            "type": "string"
+          },
+          "maskedPhone": {
+            "description": "See `maskedEmail`.",
+            "example": "+84 ***** 5678",
+            "nullable": true,
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "description": "See `physicalWidthMm`.",
+            "example": "80.00",
+            "type": "string"
+          },
+          "physicalWidthMm": {
+            "description": "The frozen embroidery dimensions. On the customer-owned branch these are the version’s placement envelope copied at approval — never the customer item’s own size.",
+            "example": "120.00",
+            "type": "string"
+          },
+          "productName": {
+            "description": "The product name frozen at approval — the catalog name on the catalog branch, the customer’s own words for their garment on the customer-owned one. A later rename does not rewrite it.",
+            "example": "Áo thun cotton",
+            "type": "string"
+          },
+          "quantityTotal": {
+            "description": "The request’s quantity total, frozen at approval.",
+            "example": 50,
+            "type": "number"
+          },
+          "reverified": {
+            "description": "Whether the approval committed step-up re-verification evidence. A boolean, because the challenge identifier it is derived from is a credential reference and is never published.",
+            "type": "boolean"
+          },
+          "sideName": {
+            "description": "The placement side, frozen at approval.",
+            "example": "Ngực trái",
+            "type": "string"
+          },
+          "variantLabel": {
+            "description": "Always `null` on the customer-owned branch — not because a variant could not be found, but because a customer-owned product has none.",
+            "example": "Trắng / L",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentHash",
+          "approvedAt",
+          "customerDisplayName",
+          "maskedEmail",
+          "maskedPhone",
+          "reverified",
+          "productName",
+          "variantLabel",
+          "sideName",
+          "areaName",
+          "physicalWidthMm",
+          "physicalHeightMm",
+          "quantityTotal",
+          "branch",
+          "agreements"
+        ],
+        "type": "object"
+      },
       "ApproveDesignVersionBody": {
         "additionalProperties": false,
         "description": "Approves the exact design version the customer was shown, together with the terms they accepted. No design case, request, customer, grant, challenge, status, placement, quantity or timestamp is accepted: the target comes from the grant and the server’s own pointers, the re-verification that authorises the approval is derived from the grant’s customer, and every fact the Approval Snapshot freezes is read from persistence.",
@@ -4202,6 +4330,205 @@
         },
         "required": [
           "version"
+        ],
+        "type": "object"
+      },
+      "DesignVersionDetailResponse": {
+        "properties": {
+          "approval": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalEvidenceResponse"
+              }
+            ],
+            "description": "The immutable Approval Snapshot for this exact version, or `null` when it has never been approved. Every field is read from the snapshot itself, never re-resolved from the current customer, catalog or request rows.",
+            "nullable": true,
+            "type": "object"
+          },
+          "approvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "branch": {
+            "description": "Derived from the persisted placement; never stored, never accepted.",
+            "enum": [
+              "CATALOG",
+              "CUSTOMER_OWNED"
+            ],
+            "type": "string"
+          },
+          "current": {
+            "description": "True when the design case’s own current-version pointer names this version. This is the *current authored* version, which is not the same thing as the version a customer is currently reviewing.",
+            "type": "boolean"
+          },
+          "designCaseId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "document": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignDocument"
+              }
+            ],
+            "description": "The Design Document of this exact version, returned exactly as persisted. Nothing is migrated, rewritten or re-canonicalized on read."
+          },
+          "documentHash": {
+            "description": "The hash stored when the version was sent for review. `null` on a draft that has never been sent — an absence, never a freshly computed digest.",
+            "example": "sha256:8f14e45fceea167a5a36dedd4bea2543b6b4a3a1a7f7d2b0f4c8e9d1a2b3c4d5",
+            "nullable": true,
+            "type": "string"
+          },
+          "documentSchemaVersion": {
+            "description": "The design-document schema version governing this version. 1 on the catalog branch; 2 on the customer-owned branch.",
+            "example": 1,
+            "type": "number"
+          },
+          "embroideryAreaId": {
+            "description": "Catalog branch only.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "parentVersionId": {
+            "description": "The version this one continues, or `null` at the root of the chain.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "description": "See `physicalWidthMm`.",
+            "example": "80.00",
+            "type": "string"
+          },
+          "physicalWidthMm": {
+            "description": "Exact `numeric` millimetres, always a string. On the customer-owned branch this is the version’s embroidery placement envelope, never the customer item’s own dimensions.",
+            "example": "120.00",
+            "type": "string"
+          },
+          "placementAreaLabel": {
+            "description": "Customer-owned branch only: the agreed placement area.",
+            "example": "Vùng thêu ngực",
+            "nullable": true,
+            "type": "string"
+          },
+          "placementSideLabel": {
+            "description": "Customer-owned branch only: the agreed placement side, as frozen evidence.",
+            "example": "Ngực trái",
+            "nullable": true,
+            "type": "string"
+          },
+          "productId": {
+            "description": "Catalog branch only.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "productSideId": {
+            "description": "Catalog branch only.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "productVariantId": {
+            "description": "Catalog branch only.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "reviews": {
+            "description": "Customer decisions on this exact version, oldest first. Empty before any decision; never populated by inference from the version status.",
+            "items": {
+              "$ref": "#/components/schemas/DesignVersionDetailReviewResponse"
+            },
+            "type": "array"
+          },
+          "sentAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "description": "LC-08 state.",
+            "enum": [
+              "DRAFT",
+              "SENT_FOR_REVIEW",
+              "REVISION_REQUESTED",
+              "APPROVED",
+              "SUPERSEDED",
+              "VOID"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "description": "Monotonic within the design case.",
+            "example": 1,
+            "type": "number"
+          },
+          "versionId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "versionId",
+          "designCaseId",
+          "version",
+          "status",
+          "parentVersionId",
+          "documentSchemaVersion",
+          "branch",
+          "productId",
+          "productVariantId",
+          "productSideId",
+          "embroideryAreaId",
+          "placementSideLabel",
+          "placementAreaLabel",
+          "physicalWidthMm",
+          "physicalHeightMm",
+          "current",
+          "sentAt",
+          "approvedAt",
+          "documentHash",
+          "document",
+          "reviews",
+          "approval"
+        ],
+        "type": "object"
+      },
+      "DesignVersionDetailReviewResponse": {
+        "properties": {
+          "decidedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "feedback": {
+            "description": "The customer’s own words, exactly as recorded on the decision. Never an audit summary, an outbox payload or a rephrasing. `null` for an approval and for a revision request that carried no message.",
+            "example": "Chữ hơi nhỏ, nhờ anh chị phóng to giúp em.",
+            "nullable": true,
+            "type": "string"
+          },
+          "outcome": {
+            "description": "The decision the customer actually recorded. Never inferred from the version status.",
+            "enum": [
+              "APPROVE",
+              "REQUEST_REVISION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "decidedAt",
+          "feedback"
         ],
         "type": "object"
       },
@@ -8204,6 +8531,194 @@
           }
         ],
         "summary": "Create a draft design version on this request’s design case",
+        "tags": [
+          "adminCustomRequestDesignVersion"
+        ]
+      }
+    },
+    "/api/admin/custom-requests/{requestId}/design-versions/{versionId}": {
+      "get": {
+        "description": "The exact version named by the path, resolved through this request’s own design-case pointer — no case id is accepted and no global version lookup exists, so a version belonging to another request answers exactly as one that does not exist. The persisted Design Document is returned verbatim, unmigrated and unrewritten, with the hash stored when it was sent (null for a draft that never was; nothing is recomputed). Customer decisions carry the customer’s own recorded words, read from the decision record and never inferred, summarised or taken from an audit entry. An approved version also carries its immutable Approval Snapshot — frozen contacts (masked), frozen product, side, area, dimensions, quantity and accepted agreement hashes — read from the snapshot itself rather than re-resolved from current rows. No session secret, grant, step-up challenge, token, storage key or derivative appears anywhere in the response. It is a read: nothing is written, no lock is taken, no state moves and no event is emitted.",
+        "operationId": "adminCustomRequestDesignVersion_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "versionId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignVersionDetailResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The exact design version.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed request or version id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such custom request, or no such design version on it.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "This request has no resolvable design case.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Get one exact design version, with its document, decisions and approval",
         "tags": [
           "adminCustomRequestDesignVersion"
         ]
