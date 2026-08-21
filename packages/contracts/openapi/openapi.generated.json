@@ -350,6 +350,13 @@
             },
             "type": "array"
           },
+          "quotationId": {
+            "description": "The id of this request’s quotation, or `null` when none has ever been created. A locator for `APP6-B02`, carrying no price, version, validity or state. Resolved from the unique request-to-quotation relation, **not** from `current_quotation_id`: that pointer is the customer-current one and `APP6-B03` writes it on send, so it is `null` for a quotation that has only been drafted — the exact case an operator needs to find again.",
+            "example": null,
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "requestId": {
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
             "format": "uuid",
@@ -418,7 +425,8 @@
           "totalQuantity",
           "assets",
           "transitions",
-          "moderationNotes"
+          "moderationNotes",
+          "quotationId"
         ],
         "type": "object"
       },
@@ -7413,7 +7421,7 @@
     },
     "/api/admin/custom-requests/{requestId}": {
       "get": {
-        "description": "Everything an operator needs to decide the next moderation action: the request root, the customer with masked contacts, the single subject branch — a catalog product with its variant and design-session provenance, or the customer-owned item with its dimensions — the quantity breakdown, the attachment metadata, the full transition history and the internal moderation notes. It is a read: nothing is written, no status moves and no audit event is appended. The internal and customer-visible reasons are separate fields and stay separate. No token, digest, session secret or object-storage key appears anywhere in the response, and no action is offered — `APP5-B05` owns the transitions.",
+        "description": "Everything an operator needs to decide the next moderation action: the request root, the customer with masked contacts, the single subject branch — a catalog product with its variant and design-session provenance, or the customer-owned item with its dimensions — the quantity breakdown, the attachment metadata, the full transition history and the internal moderation notes. It is a read: nothing is written, no status moves and no audit event is appended. The internal and customer-visible reasons are separate fields and stay separate. No token, digest, session secret or object-storage key appears anywhere in the response, and no action is offered — `APP5-B05` owns the transitions. The one APP6 field is `quotationId`: a locator saying whether this request has a quotation and where `APP6-B02` can be asked about it, with no price, version or state.",
         "operationId": "adminCustomRequest_detail",
         "parameters": [
           {

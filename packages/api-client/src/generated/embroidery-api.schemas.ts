@@ -349,6 +349,11 @@ export interface AdminCustomRequestDetailResponse {
   /** Internal notes, oldest first. Read-only here; `APP5-B05` appends them. */
   moderationNotes: AdminRequestModerationNoteResponse[];
   quantities: AdminRequestQuantityLineResponse[];
+  /**
+   * The id of this request’s quotation, or `null` when none has ever been created. A locator for `APP6-B02`, carrying no price, version, validity or state. Resolved from the unique request-to-quotation relation, **not** from `current_quotation_id`: that pointer is the customer-current one and `APP6-B03` writes it on send, so it is `null` for a quotation that has only been drafted — the exact case an operator needs to find again.
+   * @nullable
+   */
+  quotationId: string | null;
   requestId: string;
   status: AdminCustomRequestDetailResponseStatus;
   /** A store product with its variant, or the customer-owned item. Never both. */

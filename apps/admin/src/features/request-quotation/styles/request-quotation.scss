@@ -1,0 +1,507 @@
+// Admin quotation workbench (`APP6-A01`).
+//
+// Reproduces `FIG-APP6-A01-{DRAFT-CATALOG,DRAFT-COP,VALIDATION,LOADING,EMPTY,
+// ERROR,SENT-READONLY,SEND-CONFIRM,SEND-INPROGRESS,ACCEPTED,VERSION-HISTORY}
+// -DESKTOP` (`682:3`, `684:3`, `684:144`, `686:3`, `686:62`, `686:104`,
+// `687:3`, `687:144`, `689:3`, `689:162`, `690:3`) and the narrow desktop
+// reference `FIG-APP6-A01-NARROW1280` (`690:92`). Every colour, radius, space
+// and type size is a token: no literal hex and no magic pixel value beyond the
+// three named layout constants below.
+//
+// Class names are prefixed `request-quotation__`. The Admin stylesheet is global
+// and unscoped, so a generic `.totals` or `.dialog` here would collide with
+// another feature's rules in a way jsdom could never catch.
+
+@use '@embroidery/styles' as styles;
+
+// `690:92` wraps the context rail below the main column at 1360, so the two-track
+// grid stops here. Not a spacing step: the scale is a rhythm for gaps and
+// padding, and a breakpoint is neither.
+$quotation-rail-wrap: 1360px;
+
+// The approved right-rail width at 1440 (`682:3`).
+$quotation-rail-width: 336px;
+
+// The dialog width, which the spacing scale deliberately has no step for.
+$quotation-dialog-width: 480px;
+
+.request-quotation {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.request-quotation__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.request-quotation__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.request-quotation__subtitle {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-quotation__link {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  text-decoration: underline;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Layout: main column + context rail, rail wraps below at the 1280 reference.
+
+.request-quotation__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) $quotation-rail-width;
+  gap: styles.spacing(24);
+  align-items: start;
+
+  @media (max-width: $quotation-rail-wrap) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.request-quotation__main,
+.request-quotation__context {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  // Grid children default to `min-width: auto`, which lets a wide table push the
+  // column past its track and scroll the whole page sideways. `690:92` keeps one
+  // scroll axis.
+  min-width: 0;
+}
+
+.request-quotation__context,
+.request-quotation__version,
+.request-quotation__history,
+.request-quotation__form,
+.request-quotation__empty,
+.request-quotation__accepted {
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.request-quotation__section-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+}
+
+.request-quotation__subheading {
+  margin: styles.spacing(16) 0 styles.spacing(8);
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+}
+
+.request-quotation__notice {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Definitions and totals
+
+.request-quotation__definitions,
+.request-quotation__totals {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+}
+
+.request-quotation__definition,
+.request-quotation__total {
+  display: flex;
+  justify-content: space-between;
+  gap: styles.spacing(12);
+
+  dt {
+    color: styles.$color-text-secondary;
+    font-size: styles.$font-size-body-s;
+  }
+
+  dd {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-body-s;
+    text-align: right;
+  }
+}
+
+.request-quotation__total--emphasis {
+  padding-top: styles.spacing(8);
+  border-top: 1px solid styles.$color-border-primary;
+
+  dt,
+  dd {
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+}
+
+.request-quotation__note {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+
+  p {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tables — they scroll inside their own frame, never the page.
+
+.request-quotation__table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.request-quotation__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: styles.$font-size-body-s;
+
+  th,
+  td {
+    padding: styles.spacing(8);
+    border-bottom: 1px solid styles.$color-border-primary;
+    text-align: left;
+    color: styles.$color-text-primary;
+    white-space: nowrap;
+  }
+
+  th {
+    color: styles.$color-text-secondary;
+    font-weight: styles.$font-weight-medium;
+  }
+}
+
+.request-quotation__table-caption {
+  // Available to assistive technology; the visible heading above says the same.
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.request-quotation__badge {
+  display: inline-block;
+  margin-right: styles.spacing(4);
+  padding: styles.spacing(4) styles.spacing(8);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.request-quotation__badge--current {
+  background: styles.$color-status-info;
+  color: styles.$color-surface-primary;
+}
+
+// ---------------------------------------------------------------------------
+// Form
+
+.request-quotation__field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(16);
+}
+
+.request-quotation__field {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  // Without this a flex item refuses to shrink below its content width, which is
+  // how a long field pushes the form past its container.
+  min-width: 0;
+
+  label {
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: styles.spacing(8);
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-input;
+    background: styles.$color-surface-primary;
+    color: styles.$color-text-primary;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    // The Admin design system's minimum interactive target.
+    min-height: styles.spacing(48);
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 1px;
+    }
+
+    &[aria-invalid='true'] {
+      border-color: styles.$color-status-error;
+    }
+  }
+
+  textarea {
+    min-height: styles.spacing(96);
+  }
+}
+
+.request-quotation__field--wide {
+  flex-basis: 100%;
+}
+
+.request-quotation__field-hint {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.request-quotation__field-error {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-caption;
+}
+
+.request-quotation__form {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+}
+
+.request-quotation__form-error {
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-sm;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+
+  p {
+    margin: 0;
+  }
+}
+
+.request-quotation__form-error-title {
+  font-weight: styles.$font-weight-semibold;
+}
+
+.request-quotation__line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+}
+
+.request-quotation__line-legend {
+  padding: 0 styles.spacing(4);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// Buttons
+
+.request-quotation__button {
+  align-self: flex-start;
+  min-height: styles.spacing(48);
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-s;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.request-quotation__button--primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+  }
+}
+
+.request-quotation__button--quiet {
+  min-height: auto;
+  padding: styles.spacing(4) styles.spacing(8);
+  border-color: transparent;
+  color: styles.$color-text-secondary;
+  text-decoration: underline;
+}
+
+// ---------------------------------------------------------------------------
+// Outcome banners, empty, loading, error
+
+.request-quotation__outcome {
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-success;
+  border-radius: styles.$radius-sm;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+
+  p {
+    margin: 0;
+  }
+}
+
+.request-quotation__outcome--alert {
+  border-color: styles.$color-status-warning;
+}
+
+.request-quotation__outcome-title {
+  font-weight: styles.$font-weight-semibold;
+}
+
+.request-quotation__empty,
+.request-quotation__accepted {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+
+  p {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+}
+
+.request-quotation__empty-heading,
+.request-quotation__error-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+}
+
+.request-quotation--loading,
+.request-quotation--error {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.request-quotation__loading-label {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.request-quotation__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.request-quotation__skeleton-bar {
+  height: styles.spacing(16);
+  width: 40%;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+}
+
+.request-quotation__skeleton-bar--wide {
+  width: 100%;
+}
+
+.request-quotation__error-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Send dialog
+
+.request-quotation__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(24);
+  background: styles.$color-overlay-scrim;
+  z-index: 10;
+}
+
+.request-quotation__dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  width: 100%;
+  max-width: $quotation-dialog-width;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.request-quotation__dialog-title {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  color: styles.$color-text-primary;
+}
+
+.request-quotation__dialog-body {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-primary;
+}
+
+.request-quotation__dialog-hint,
+.request-quotation__dialog-pending {
+  margin: 0;
+  font-size: styles.$font-size-caption;
+  color: styles.$color-text-secondary;
+}
+
+.request-quotation__dialog-actions {
+  display: flex;
+  gap: styles.spacing(12);
+  justify-content: flex-end;
+}

@@ -14,10 +14,16 @@
  * and no signed URL. B04 publishes no binary route (§9.4), so an attachment is
  * described — media type, size, state — and never located.
  *
- * **APP6+ business content.** No quotation, price, design version, payment,
- * order or production field, and no `availableActions`: `APP5-B05` owns
- * lifecycle enforcement, and a transition table computed in a read DTO would be
- * a second authority on what is allowed (§11).
+ * **APP6+ business content.** No price, no design version, no payment, no order
+ * or production field, and no `availableActions`: `APP5-B05` owns lifecycle
+ * enforcement, and a transition table computed in a read DTO would be a second
+ * authority on what is allowed (§11).
+ *
+ * The single exception is `quotationId` (`APP6-A01` §4) — a **locator**, not
+ * quotation content. It carries no amount, no version, no validity window and no
+ * state, so this response still describes no quotation; it only says where
+ * `APP6-B02` can be asked about one. That is what makes an unsent DRAFT
+ * rediscoverable after the operator reloads the workbench.
  *
  * The one distinction this file exists to preserve is `internalReason` versus
  * `customerVisibleReason`. They are two properties with two names on every type
@@ -318,6 +324,25 @@ export class AdminCustomRequestDetailResponse {
     description: 'Internal notes, oldest first. Read-only here; `APP5-B05` appends them.',
   })
   moderationNotes!: AdminRequestModerationNoteResponse[];
+
+  // `type: String` with `nullable` is the contract, not decoration. A bare
+  // `string | null` union publishes as `type: object` and the generated client
+  // types it as an index signature — the debt
+  // `FU-APP6-B02-NULLABLE-OBJECT-TYPE-DEBT-01` records. This field is declared
+  // correctly rather than inheriting it.
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    format: 'uuid',
+    example: null,
+    description:
+      'The id of this request’s quotation, or `null` when none has ever been created. A ' +
+      'locator for `APP6-B02`, carrying no price, version, validity or state. Resolved from the ' +
+      'unique request-to-quotation relation, **not** from `current_quotation_id`: that pointer ' +
+      'is the customer-current one and `APP6-B03` writes it on send, so it is `null` for a ' +
+      'quotation that has only been drafted — the exact case an operator needs to find again.',
+  })
+  quotationId!: string | null;
 }
 
 /** The serialized projection. The only place these instants become strings. */
@@ -376,4 +401,6 @@ export interface AdminCustomRequestDetailPayload {
     readonly adminId: string;
     readonly createdAt: string;
   }[];
+  /** `null`, never `undefined`: absence is a published fact, not a missing key. */
+  readonly quotationId: string | null;
 }

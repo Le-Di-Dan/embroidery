@@ -210,7 +210,9 @@ export class AdminCustomRequestController {
       'internal moderation notes. It is a read: nothing is written, no status moves and no ' +
       'audit event is appended. The internal and customer-visible reasons are separate fields ' +
       'and stay separate. No token, digest, session secret or object-storage key appears ' +
-      'anywhere in the response, and no action is offered — `APP5-B05` owns the transitions.',
+      'anywhere in the response, and no action is offered — `APP5-B05` owns the transitions. ' +
+      'The one APP6 field is `quotationId`: a locator saying whether this request has a ' +
+      'quotation and where `APP6-B02` can be asked about it, with no price, version or state.',
   })
   @ApiParam({ name: 'requestId', format: 'uuid' })
   @ApiResponse({
@@ -313,5 +315,9 @@ function toDetailPayload(view: AdminRequestDetailView): AdminCustomRequestDetail
       adminId: note.adminId,
       createdAt: note.createdAt.toISOString(),
     })),
+    // `undefined` becomes an explicit `null`: the field is published as always
+    // present, and a key the serializer dropped would read as "not in this
+    // version of the contract" rather than "this request has no quotation".
+    quotationId: view.quotationId ?? null,
   };
 }

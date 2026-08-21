@@ -676,6 +676,59 @@ export type {
   TransitionCustomRequestBody,
 } from './generated/embroidery-api.schemas';
 
+// The Admin quotation workbench (`APP6-B01` drafting, `APP6-B02` reads,
+// `APP6-B03` send), consumed by `APP6-A01`.
+//
+// Five operations, released consumer-driven: until A01 there was no approved
+// control behind any of them, so none crossed. They arrive together because the
+// screen is one workbench — a draft that could be created but never listed, or
+// listed but never sent, is not a deliverable surface.
+//
+// `adminQuotationSendVersion` takes **no body**. The version being sent is
+// named entirely by the path, and there is deliberately no shape a caller could
+// use to send one version while naming another.
+//
+// ### Every amount crosses as a `string`
+//
+// `APP6-G01` §6.2 forbids a VND amount through an IEEE-754 double, and the
+// generated types honour it because the API publishes `type: String` on each
+// one. Nothing here re-types an amount as a `number`, and no consumer may
+// recompute a total from parts: `lineTotalAmount`, `subtotalAmount`,
+// `totalAmount`, `depositAmount` and `remainingAmount` are server-derived
+// facts, and the two request bodies deliberately have no field for any of them.
+//
+// The two `lineKind` enums cross as **values** so the authoring form offers
+// exactly the kinds the server accepts, rather than a hand-kept list that could
+// drift. `AdminQuotationVersionResponseStatus` crosses for the same reason on
+// the read side: history renders every stored state, superseded and expired
+// included.
+export {
+  adminQuotationCreate,
+  adminQuotationAddVersion,
+  adminQuotationVersionHistory,
+  adminQuotationVersionDetail,
+  adminQuotationSendVersion,
+} from './generated/embroidery-api';
+export {
+  AddQuotationVersionBodyLineItemsItemLineKind,
+  CreateQuotationDraftBodyLineItemsItemLineKind,
+  AdminQuotationLineItemResponseLineKind,
+  AdminQuotationVersionResponseStatus,
+} from './generated/embroidery-api.schemas';
+export type {
+  AddQuotationVersionBody,
+  AddQuotationVersionBodyLineItemsItem,
+  CreateQuotationDraftBody,
+  CreateQuotationDraftBodyLineItemsItem,
+  QuotationDraftedResponse,
+  AdminQuotationHeaderResponse,
+  AdminQuotationVersionResponse,
+  AdminQuotationLineItemResponse,
+  AdminQuotationVersionHistoryResponse,
+  AdminQuotationVersionDetailResponse,
+  AdminQuotationSentResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

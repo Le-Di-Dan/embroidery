@@ -15,12 +15,14 @@
  * (§11). What the response gives instead is the evidence a decision is made
  * from: the current status, and the history of how it got there.
  *
- * ### Six statements, in parallel, none of them a join
+ * ### Parallel statements, none of them a join
  *
- * The root is read first because the rest is addressed by its id; the six child
- * reads then run together. A join would have to be an outer join across five
- * child tables and produce a row set this class would immediately have to
- * de-duplicate — the same trade `loadStructure` makes in Catalog.
+ * The root is read first because the rest is addressed by its id; the child
+ * reads then run together — including the `APP6-A01` §4 quotation locator, which
+ * is one more id lookup keyed on the same row and so costs no extra round trip.
+ * A join would have to be an outer join across five child tables and produce a
+ * row set this class would immediately have to de-duplicate — the same trade
+ * `loadStructure` makes in Catalog.
  */
 import { Inject, Injectable } from '@nestjs/common';
 
@@ -39,6 +41,10 @@ import {
   type AdminCustomerSummary,
   type AdminCustomerSummaryPort,
 } from '../../../customer/domain/repositories/admin-customer-summary.port';
+import {
+  QUOTATION_LOCATOR_PORT,
+  type QuotationLocatorPort,
+} from '../../../quotation/domain/repositories/quotation-locator.port';
 import { adminRequestReadError } from '../../domain/admin/admin-request-read.errors';
 import {
   BINDABLE_ASSET_CLASSIFICATION,
@@ -139,6 +145,16 @@ export interface AdminRequestDetailView {
   readonly assets: readonly AdminRequestAssetView[];
   readonly transitions: readonly AdminRequestTransitionView[];
   readonly moderationNotes: readonly AdminRequestNoteView[];
+  /**
+   * The id of this request’s quotation, or nothing (`APP6-A01` §4).
+   *
+   * A **locator**, not quotation content: it says where `APP6-B02` can be asked,
+   * and nothing about price, version, validity or state. It is populated from
+   * the unique `quotations.custom_request_id` relation rather than from
+   * `custom_requests.current_quotation_id`, which `APP6-B03` only writes on send
+   * and which is therefore NULL for a quotation that has only been drafted.
+   */
+  readonly quotationId: string | undefined;
 }
 
 @Injectable()
@@ -149,6 +165,7 @@ export class ReadAdminRequestDetail {
     @Inject(CATALOG_SUBJECT_PORT) private readonly catalog: CatalogSubjectPort,
     @Inject(ADMIN_CUSTOMER_SUMMARY_PORT) private readonly customers: AdminCustomerSummaryPort,
     @Inject(ASSET_REPOSITORY) private readonly assets: AssetRepository,
+    @Inject(QUOTATION_LOCATOR_PORT) private readonly quotations: QuotationLocatorPort,
   ) {}
 
   async read(requestId: string): Promise<AdminRequestDetailView> {
@@ -157,16 +174,25 @@ export class ReadAdminRequestDetail {
       throw adminRequestReadError('REQUEST_NOT_FOUND');
     }
 
-    const [quantities, customerOwnedProduct, assetLinks, transitions, notes, customer, labels] =
-      await Promise.all([
-        this.requests.loadQuantityLines(row.id),
-        this.requests.loadCustomerOwnedProduct(row.id),
-        this.requests.loadAssetLinks(row.id),
-        this.requests.loadTransitions(row.id),
-        this.requests.loadModerationNotes(row.id),
-        this.customers.findDetailSummary(row.customerId),
-        this.labelsFor(row),
-      ]);
+    const [
+      quantities,
+      customerOwnedProduct,
+      assetLinks,
+      transitions,
+      notes,
+      customer,
+      labels,
+      quotationId,
+    ] = await Promise.all([
+      this.requests.loadQuantityLines(row.id),
+      this.requests.loadCustomerOwnedProduct(row.id),
+      this.requests.loadAssetLinks(row.id),
+      this.requests.loadTransitions(row.id),
+      this.requests.loadModerationNotes(row.id),
+      this.customers.findDetailSummary(row.customerId),
+      this.labelsFor(row),
+      this.quotations.findQuotationIdForRequest(row.id),
+    ]);
 
     const current = findCurrentStatusTransition(transitions, row.status);
     const reasons: AdminRequestReasons = selectCurrentReasons({
@@ -196,6 +222,7 @@ export class ReadAdminRequestDetail {
       assets: await this.describeAssets(assetLinks),
       transitions: transitions.map(toTransitionView),
       moderationNotes: notes.map(toNoteView),
+      quotationId,
     };
   }
 

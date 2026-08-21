@@ -193,7 +193,7 @@ export const adminCustomRequestList = (
 };
 
 /**
- * Everything an operator needs to decide the next moderation action: the request root, the customer with masked contacts, the single subject branch — a catalog product with its variant and design-session provenance, or the customer-owned item with its dimensions — the quantity breakdown, the attachment metadata, the full transition history and the internal moderation notes. It is a read: nothing is written, no status moves and no audit event is appended. The internal and customer-visible reasons are separate fields and stay separate. No token, digest, session secret or object-storage key appears anywhere in the response, and no action is offered — `APP5-B05` owns the transitions.
+ * Everything an operator needs to decide the next moderation action: the request root, the customer with masked contacts, the single subject branch — a catalog product with its variant and design-session provenance, or the customer-owned item with its dimensions — the quantity breakdown, the attachment metadata, the full transition history and the internal moderation notes. It is a read: nothing is written, no status moves and no audit event is appended. The internal and customer-visible reasons are separate fields and stay separate. No token, digest, session secret or object-storage key appears anywhere in the response, and no action is offered — `APP5-B05` owns the transitions. The one APP6 field is `quotationId`: a locator saying whether this request has a quotation and where `APP6-B02` can be asked about it, with no price, version or state.
  * @summary Get one custom request with its moderation evidence
  */
 export const adminCustomRequestDetail = (

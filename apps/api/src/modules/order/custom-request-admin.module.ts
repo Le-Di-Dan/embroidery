@@ -5,6 +5,7 @@ import { AssetModule } from '../asset/asset.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { CustomerModule } from '../customer/customer.module';
 import { IdentityModule } from '../identity/identity.module';
+import { QuotationModule } from '../quotation/quotation.module';
 import { CUSTOM_REQUEST_ADMIN_REPOSITORY } from './domain/repositories/custom-request-admin.repository';
 import { DrizzleCustomRequestAdminRepository } from './infrastructure/persistence/drizzle-custom-request-admin.repository';
 import { ReadAdminRequestDetail } from './application/admin/read-admin-request-detail.query';
@@ -39,12 +40,23 @@ import { AdminCustomRequestController } from './presentation/admin-custom-reques
  *   inside Customer before they cross;
  * - `AssetModule` — `ASSET_REPOSITORY` only, for attachment metadata. Asset
  *   keeps owning the file; Ordering owns the association;
+ * - `QuotationModule` — `QUOTATION_LOCATOR_PORT` only (`APP6-A01` §4): the id of
+ *   the request’s quotation, so the Admin workbench can address `APP6-B02`
+ *   after a reload. Not `QUOTATION_REPOSITORY`, which would make sending and
+ *   accepting reachable from a read module;
  * - `DatabaseModule` — the executor the read adapter is built on.
  *
  * It exports nothing. There are two entry points and both are HTTP operations.
  */
 @Module({
-  imports: [DatabaseModule, IdentityModule, CatalogModule, CustomerModule, AssetModule],
+  imports: [
+    DatabaseModule,
+    IdentityModule,
+    CatalogModule,
+    CustomerModule,
+    AssetModule,
+    QuotationModule,
+  ],
   controllers: [AdminCustomRequestController],
   providers: [
     { provide: CUSTOM_REQUEST_ADMIN_REPOSITORY, useClass: DrizzleCustomRequestAdminRepository },
