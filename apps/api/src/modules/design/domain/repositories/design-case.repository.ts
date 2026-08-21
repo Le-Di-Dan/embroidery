@@ -213,6 +213,43 @@ export interface DesignCaseRepository {
   findByRequest(customRequestId: string): Promise<DesignCase | undefined>;
   findById(id: DesignCaseId): Promise<DesignCase | undefined>;
   loadVersion(id: DesignVersionId): Promise<DesignVersion | undefined>;
+  /**
+   * The same version under a row lock (`APP6-B09`).
+   *
+   * Separate from {@link loadVersion} rather than a boolean on it, the rule
+   * `CustomRequestDesignContextPort` already follows: a read that *could* be
+   * asked to lock is a read that eventually does, and the version list has no
+   * business serialising against every concurrent send.
+   *
+   * The lock is what makes a duplicate send of the **same** version replay
+   * rather than fail. Without it two senders both read `DRAFT`, both reach the
+   * conditional `UPDATE`, and the loser's statement matches no row — a bare
+   * "not a draft" refusal for what is simply the same command issued twice.
+   * Holding the row makes the second sender re-read `SENT_FOR_REVIEW` and take
+   * the replay branch, which is what LC-08's *"resend replays"* means.
+   *
+   * `@requiresTransaction` — a lock taken outside one is released immediately
+   * and proves nothing.
+   */
+  lockVersion(id: DesignVersionId): Promise<DesignVersion | undefined>;
+
+  /**
+   * The case's versions that `TR-LC08-05` supersedes when a new one is sent.
+   *
+   * `REVISION_REQUESTED` only, and the omission of `SENT_FOR_REVIEW` is the
+   * point. LC-08 names both as sources, but the second is unreachable from a
+   * send: GRD-004 refuses the send outright while another version of the case is
+   * still in review, so a `SENT_FOR_REVIEW` sibling ends the transaction before
+   * any supersession is considered. Returning it here would be an invitation to
+   * clear an active review to make a new send fit — exactly what GRD-004 exists
+   * to prevent.
+   *
+   * Ids only: the caller marks rows, and loading whole documents to do it would
+   * pull the entire design thread's artwork through a transaction that needs
+   * none of it.
+   */
+  listRevisionRequestedVersionIds(caseId: DesignCaseId): Promise<DesignVersionId[]>;
+
   listVersions(caseId: DesignCaseId): Promise<DesignVersion[]>;
   /**
    * Every recorded decision across this case's versions, oldest first.

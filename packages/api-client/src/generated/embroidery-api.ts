@@ -16,6 +16,7 @@ import type {
   AdminCustomRequestAppendNote201,
   AdminCustomRequestDesignVersionCreate201,
   AdminCustomRequestDesignVersionList200,
+  AdminCustomRequestDesignVersionSend200,
   AdminCustomRequestDetail200,
   AdminCustomRequestList200,
   AdminCustomRequestListParams,
@@ -247,6 +248,30 @@ export const adminCustomRequestDesignVersionCreate = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: authorDesignVersionBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Freezes the version named by `versionId` — **that** version, never the latest one — and opens the customer’s review of it (`TR-LC08-02`). One transaction does all of it: the stored design document is canonicalized and hashed, the version becomes `SENT_FOR_REVIEW` with that hash and a send instant, any revision-requested predecessor becomes `SUPERSEDED`, and a request that was `DIGITIZING` moves to `DESIGN_REVIEW`. Nothing partial survives a failure.
+ *
+ * There is no request body. The document is read from the version — never supplied — and no caller-provided hash is accepted anywhere. The placement, the branch and the geometry the version was drafted against are re-established before anything is frozen, and a placement that has moved refuses the send rather than being substituted.
+ *
+ * Only one version of a design case may await review at a time. Sending a second one while a review is open is refused with `REVIEW_ALREADY_ACTIVE`; the open review is never cleared to make room for it. Sending the **same** version again is safe and is the intended way to re-issue it: the call replays, returning the committed result without re-hashing it, moving the instant, superseding anything again, moving the request or notifying the customer a second time.
+ *
+ * Nothing is rendered: no preview image is produced, stored or returned, and no secure link or token is issued here.
+ * @summary Send one exact design version to the customer for review
+ */
+export const adminCustomRequestDesignVersionSend = (
+  requestId: unknown,
+  versionId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminCustomRequestDesignVersionSend200>>,
+) => {
+  return apiRequest<AdminCustomRequestDesignVersionSend200>(
+    {
+      url: `/api/admin/custom-requests/${requestId}/design-versions/${versionId}/send`,
+      method: 'POST',
     },
     options,
   );
@@ -1407,6 +1432,9 @@ export type AdminCustomRequestDesignVersionListResult = NonNullable<
 >;
 export type AdminCustomRequestDesignVersionCreateResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestDesignVersionCreate>>
+>;
+export type AdminCustomRequestDesignVersionSendResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomRequestDesignVersionSend>>
 >;
 export type AdminCustomRequestAppendNoteResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestAppendNote>>

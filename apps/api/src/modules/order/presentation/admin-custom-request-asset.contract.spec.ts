@@ -109,7 +109,7 @@ describe('APP5-B06 — the published Admin request-asset contract', () => {
     ]);
   });
 
-  it('adds no mutation anywhere under the Admin request prefix beyond B05’s two', () => {
+  it('adds no mutation of its own anywhere under the Admin request prefix', () => {
     const mutations = Object.entries(document.paths)
       .filter(([path]) => path.startsWith('/api/admin/custom-requests'))
       .flatMap(([path, item]) =>
@@ -119,8 +119,14 @@ describe('APP5-B06 — the published Admin request-asset contract', () => {
       );
 
     // Unchanged by B06: no upload, no replace, no delete, no re-inspect and no
-    // role change on a submitted attachment (§15).
+    // role change on a submitted attachment (§15). The two design entries are
+    // `APP6-B08`'s authoring route and `APP6-B09`'s exact-version send, each
+    // reconciled here deliberately when its checkpoint published it — this list
+    // freezes the whole prefix, so a route that appeared without being named
+    // here would fail.
     expect(mutations.sort()).toEqual([
+      'POST /api/admin/custom-requests/{requestId}/design-versions',
+      'POST /api/admin/custom-requests/{requestId}/design-versions/{versionId}/send',
       'POST /api/admin/custom-requests/{requestId}/moderation-notes',
       'POST /api/admin/custom-requests/{requestId}/transitions',
     ]);

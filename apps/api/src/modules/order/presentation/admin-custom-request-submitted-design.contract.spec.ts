@@ -96,12 +96,15 @@ describe('APP6-B07 — the published Admin submitted-design contract', () => {
       );
 
     // Unchanged by B07 itself: it authors no design version, sets no pointer,
-    // moves no session and offers no download or export (§9, §14). The third
-    // entry is `APP6-B08`'s authoring route, added by that checkpoint — this
-    // assertion freezes the *whole* Admin request mutation surface, so a new
-    // route must be reconciled here deliberately rather than appearing unnoticed.
+    // moves no session and offers no download or export (§9, §14). The design
+    // entries belong to later checkpoints — `APP6-B08`'s authoring route and
+    // `APP6-B09`'s exact-version send — and this assertion freezes the *whole*
+    // Admin request mutation surface, so each was reconciled here deliberately
+    // rather than appearing unnoticed. The send is on the list; a route that
+    // moved a request's status directly would not be.
     expect(mutations.sort()).toEqual([
       'POST /api/admin/custom-requests/{requestId}/design-versions',
+      'POST /api/admin/custom-requests/{requestId}/design-versions/{versionId}/send',
       'POST /api/admin/custom-requests/{requestId}/moderation-notes',
       'POST /api/admin/custom-requests/{requestId}/transitions',
     ]);

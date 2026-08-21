@@ -314,6 +314,36 @@ export class DrizzleDesignCaseRepository extends DrizzleRepository implements De
     });
   }
 
+  async lockVersion(id: DesignVersionId): Promise<DesignVersion | undefined> {
+    return this.run('lockVersion', async () => {
+      const tx = this.requireTransaction('lockVersion');
+      const [row] = await tx
+        .select()
+        .from(designVersions)
+        .where(eq(designVersions.id, id))
+        .limit(1)
+        .for('update');
+      return row === undefined ? undefined : toVersion(row);
+    });
+  }
+
+  async listRevisionRequestedVersionIds(caseId: DesignCaseId): Promise<DesignVersionId[]> {
+    return this.run('listRevisionRequestedVersionIds', async () => {
+      const rows = await this.db
+        .select({ id: designVersions.id })
+        .from(designVersions)
+        .where(
+          and(
+            eq(designVersions.designCaseId, caseId),
+            // The one `TR-LC08-05` source a send may act on; see the port.
+            eq(designVersions.status, 'REVISION_REQUESTED'),
+          ),
+        )
+        .orderBy(asc(designVersions.version));
+      return rows.map((row) => row.id as DesignVersionId);
+    });
+  }
+
   async findVersionInReview(caseId: DesignCaseId): Promise<DesignVersion | undefined> {
     return this.run('findVersionInReview', async () => {
       const [row] = await this.db

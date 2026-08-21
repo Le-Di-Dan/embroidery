@@ -93,7 +93,7 @@ describe('APP6-B08 — the published Admin design-version contract', () => {
     expect(item['get']?.operationId).toBe('adminCustomRequestDesignVersion_list');
   });
 
-  it('adds no send, review, snapshot or design-case route to the design surface', () => {
+  it('adds no review, snapshot or design-case route to the design surface', () => {
     // Scoped to design paths on purpose. `APP6-B03`'s
     // `/api/admin/quotations/{id}/versions/{id}/send` is an accepted quotation
     // route, and matching it here would be this test failing for another
@@ -103,14 +103,27 @@ describe('APP6-B08 — the published Admin design-version contract', () => {
       (path) =>
         path.includes('design-cases') ||
         path.includes('approval-snapshot') ||
-        path.endsWith('/send') ||
         path.endsWith('/review') ||
-        path.includes('/design-versions/'),
+        // `APP6-B09` delivered the exact-version send, so a sub-resource under
+        // `/design-versions/` is no longer forbidden outright — only one is
+        // permitted, and it is asserted by name below.
+        (path.includes('/design-versions/') && path !== `${DESIGN_VERSIONS_PATH}/{versionId}/send`),
     );
-    // `APP6-B09` owns send-for-review, `B10`/`B11` the customer decision, and no
-    // checkpoint publishes a design case or a single version as an addressable
+    // `B10`/`B11` own the customer decision surfaces, and no checkpoint
+    // publishes a design case or an Approval Snapshot as an addressable
     // resource.
     expect(forbidden).toEqual([]);
+  });
+
+  it('leaves the send to APP6-B09, on one path and with one operation', () => {
+    // B08's own claim is unchanged: **this** class publishes two handlers and
+    // its module holds no order write repository and no outbox, so nothing it
+    // exposes can move a request. The send is a different class, a different
+    // module and one operation — asserted here so that a second send route
+    // appearing anywhere would fail a B08 test as well as a B09 one.
+    const sendItem = document.paths[`${DESIGN_VERSIONS_PATH}/{versionId}/send`] ?? {};
+    expect(Object.keys(sendItem)).toEqual(['post']);
+    expect(sendItem['post']?.operationId).toBe('adminCustomRequestDesignVersion_send');
   });
 
   it('addresses the request, never a design case or a version', () => {

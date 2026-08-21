@@ -4082,6 +4082,99 @@
         ],
         "type": "object"
       },
+      "DesignVersionSentResponse": {
+        "properties": {
+          "branch": {
+            "description": "The frozen placement branch, derived from the persisted row. A version can never switch branch at send; a disagreement refuses.",
+            "enum": [
+              "CATALOG",
+              "CUSTOMER_OWNED"
+            ],
+            "type": "string"
+          },
+          "designCaseId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "type": "string"
+          },
+          "documentHash": {
+            "description": "SHA-256 over the canonical (JCS) bytes of the **persisted** document, computed at send and stored on the version. This is the exact value an approval is later bound to (`GRD-007`). No caller-supplied hash is accepted anywhere.",
+            "example": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            "type": "string"
+          },
+          "documentSchemaVersion": {
+            "description": "The stored document’s schema version, unchanged by the send.",
+            "example": 1,
+            "type": "number"
+          },
+          "replayed": {
+            "description": "True when this exact version was already the one awaiting review, so the call replayed the committed result and wrote nothing — no re-hash, no new instant, no transition, no audit row and no notification.",
+            "type": "boolean"
+          },
+          "requestId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6070",
+            "format": "uuid",
+            "type": "string"
+          },
+          "requestStatus": {
+            "description": "The request’s LC-11 state after the send. Reported, never commanded: `DESIGN_REVIEW` is reached only as a projection of this committed send (`TR-LC11-08`), and no request body exists through which a caller could name it.",
+            "enum": [
+              "DESIGN_REVIEW"
+            ],
+            "type": "string"
+          },
+          "requestTransitioned": {
+            "description": "True when this send projected `TR-LC11-08` (the request was `DIGITIZING`). False for a revision send on a request already in `DESIGN_REVIEW`: LC-11 has no self-transition, so no transition row was appended.",
+            "type": "boolean"
+          },
+          "sentAt": {
+            "description": "The committed send instant.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "supersededVersionIds": {
+            "description": "The versions this send marked `SUPERSEDED` under `TR-LC08-05` — revision-requested predecessors on the same design case. Empty when there were none, and always empty on a replay. A version already awaiting review is never superseded to make room: that is `REVIEW_ALREADY_ACTIVE`.",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "description": "Monotonic within the design case.",
+            "example": 1,
+            "type": "number"
+          },
+          "versionId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
+            "format": "uuid",
+            "type": "string"
+          },
+          "versionStatus": {
+            "description": "LC-08 state after the send. Always `SENT_FOR_REVIEW` — a send that could not reach it refuses instead, and nothing partial is committed.",
+            "enum": [
+              "SENT_FOR_REVIEW"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "designCaseId",
+          "versionId",
+          "version",
+          "versionStatus",
+          "requestStatus",
+          "requestTransitioned",
+          "branch",
+          "documentSchemaVersion",
+          "documentHash",
+          "sentAt",
+          "supersededVersionIds",
+          "replayed"
+        ],
+        "type": "object"
+      },
       "FontStyle": {
         "enum": [
           "normal",
@@ -7764,6 +7857,236 @@
           }
         ],
         "summary": "Create a draft design version on this request’s design case",
+        "tags": [
+          "adminCustomRequestDesignVersion"
+        ]
+      }
+    },
+    "/api/admin/custom-requests/{requestId}/design-versions/{versionId}/send": {
+      "post": {
+        "description": "Freezes the version named by `versionId` — **that** version, never the latest one — and opens the customer’s review of it (`TR-LC08-02`). One transaction does all of it: the stored design document is canonicalized and hashed, the version becomes `SENT_FOR_REVIEW` with that hash and a send instant, any revision-requested predecessor becomes `SUPERSEDED`, and a request that was `DIGITIZING` moves to `DESIGN_REVIEW`. Nothing partial survives a failure.\n\nThere is no request body. The document is read from the version — never supplied — and no caller-provided hash is accepted anywhere. The placement, the branch and the geometry the version was drafted against are re-established before anything is frozen, and a placement that has moved refuses the send rather than being substituted.\n\nOnly one version of a design case may await review at a time. Sending a second one while a review is open is refused with `REVIEW_ALREADY_ACTIVE`; the open review is never cleared to make room for it. Sending the **same** version again is safe and is the intended way to re-issue it: the call replays, returning the committed result without re-hashing it, moving the instant, superseding anything again, moving the request or notifying the customer a second time.\n\nNothing is rendered: no preview image is produced, stored or returned, and no secure link or token is issued here.",
+        "operationId": "adminCustomRequestDesignVersion_send",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "versionId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DesignVersionSentResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The frozen version, its hash, and where the request now stands.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed identifier.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`REQUEST_NOT_FOUND` — no such custom request. `DESIGN_VERSION_NOT_FOUND` — this request’s design case has no version with that id; a version belonging to another request gets the same answer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "`REVIEW_ALREADY_ACTIVE` — another version of this design is already awaiting review. `DESIGN_VERSION_NOT_SENDABLE` — the version is not a draft. `DESIGN_VERSION_NOT_CURRENT` — the draft is not the design case’s current version. `REQUEST_NOT_SENDABLE` — the request is not being digitized or reviewed. `REQUEST_TRANSITION_STALE` — the request changed state first; nothing was written. `DESIGN_CASE_UNRESOLVED` / `PLACEMENT_AUTHORITY_UNRESOLVED` / `PLACEMENT_FROZEN_MISMATCH` — the case or the placement no longer resolves to what this version was drafted against, and nothing was substituted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The stored design document was rejected and cannot be frozen.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Send one exact design version to the customer for review",
         "tags": [
           "adminCustomRequestDesignVersion"
         ]

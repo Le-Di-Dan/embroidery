@@ -15,6 +15,14 @@
       "default": "./dist/server/index.js"
     }
   },
+  "//typesVersions": "TypeScript's node10 `moduleResolution` (which apps/api uses, via @embroidery/typescript-config/nestjs.json) does not read `exports`, so `@embroidery/design-document/server` resolves at runtime but not at type-check time. This maps the one subpath to the declaration file `exports` already names. It is a resolution hint only: no source changes, the two entry points stay exactly what `exports` says, and nothing here makes the Node-only hasher reachable from the package root.",
+  "typesVersions": {
+    "*": {
+      "server": [
+        "./dist/server/index.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "clean": "rimraf dist",

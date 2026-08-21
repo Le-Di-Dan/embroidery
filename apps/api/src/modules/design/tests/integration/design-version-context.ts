@@ -27,8 +27,9 @@
 import { randomBytes } from 'node:crypto';
 import type { Server } from 'node:http';
 
-import type { INestApplication } from '@nestjs/common';
+import type { INestApplication, ModuleMetadata } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import type { TestingModuleBuilder } from '@nestjs/testing';
 import { newId } from '@embroidery/database';
 import { createDisposableDatabase, truncateAllTables } from '@embroidery/database/testing';
 import { NOTIFICATION_DELIVERY_ENVELOPE_KEY_ENV } from '@embroidery/notification-delivery';
@@ -45,6 +46,9 @@ import {
   VERIFICATION_CODE_PEPPER_ENV,
 } from '../../../customer/config/app4-secret-pepper.config';
 import { DesignVersionAuthoringModule } from '../../design-version-authoring.module';
+
+/** One entry of a testing module's `imports`, as Nest itself types them. */
+type FeatureModule = NonNullable<ModuleMetadata['imports']>[number];
 
 /** The development cookie name (`cookieSecure` is false outside production). */
 export const ADMIN_COOKIE_NAME = 'adm_session';
@@ -107,6 +111,36 @@ export interface SeededRequest {
   readonly customerOwnedProductId: string | undefined;
 }
 
+/**
+ * One `design_versions` row, written directly (`APP6-B09`).
+ *
+ * Seeded rather than authored through `APP6-B08`'s route because the send suite
+ * boots only the send module: no create route exists in that injector, which is
+ * exactly what lets a test assert the send wrote nothing without also testing
+ * its own restraint. It is also the only way to stand up the states B09 must
+ * refuse — a `SENT_FOR_REVIEW` sibling, a `REVISION_REQUESTED` predecessor, an
+ * `APPROVED` row — none of which any delivered route can produce yet.
+ */
+export interface SeedVersionOptions {
+  readonly designCaseId: string;
+  readonly version: number;
+  readonly document: unknown;
+  readonly documentSchemaVersion: number;
+  readonly status?: string;
+  /** Catalog branch: the frozen quartet. Omit for the customer-owned branch. */
+  readonly placement?: SeededPlacement;
+  readonly customerOwnedProductId?: string;
+  readonly placementSideLabel?: string;
+  readonly placementAreaLabel?: string;
+  readonly physicalWidthMm: number;
+  readonly physicalHeightMm: number;
+  readonly parentVersionId?: string;
+  readonly documentHash?: string;
+  readonly sentAt?: Date;
+  /** Whether to point the design case at this version. Defaults to true. */
+  readonly makeCurrent?: boolean;
+}
+
 export interface DesignVersionTestContext {
   readonly app: INestApplication;
   readonly server: () => Server;
@@ -117,12 +151,36 @@ export interface DesignVersionTestContext {
   seedPlacement(): Promise<SeededPlacement>;
   seedSession(options: SeedSessionOptions): Promise<string>;
   seedRequest(options: SeedRequestOptions): Promise<SeededRequest>;
+  seedVersion(options: SeedVersionOptions): Promise<string>;
   rows<T>(query: SQL): Promise<T[]>;
   count(query: SQL): Promise<number>;
   close(): Promise<void>;
 }
 
-export async function createDesignVersionContext(label: string): Promise<DesignVersionTestContext> {
+export async function createDesignVersionContext(
+  label: string,
+  /**
+   * The feature module under test. Defaults to `APP6-B08`'s authoring module,
+   * so every existing caller is unchanged; `APP6-B09` passes its own send
+   * module. A parameter rather than a second harness because the world these
+   * suites seed — an Admin session, a catalog chain, a submitted session, a
+   * request and its design case — is identical, and a copy of it is how the two
+   * would drift about what a seeded request looks like.
+   */
+  featureModule: FeatureModule = DesignVersionAuthoringModule,
+  /**
+   * One last chance to replace a provider before the module compiles.
+   *
+   * Used by `APP6-B09`'s atomicity suite and nowhere else: proving that a
+   * failure late in the send transaction rolls the whole thing back needs a
+   * failure late in the send transaction, and the honest way to get one is to
+   * make the last collaborator throw. Everything else about the application —
+   * the guards, the routes, the repositories, the transaction boundary — stays
+   * real, which is what makes the rollback the application's rather than the
+   * harness's.
+   */
+  configure: (builder: TestingModuleBuilder) => TestingModuleBuilder = (builder) => builder,
+): Promise<DesignVersionTestContext> {
   const previous = {
     url: process.env['DATABASE_URL'],
     env: process.env['NODE_ENV'],
@@ -140,15 +198,17 @@ export async function createDesignVersionContext(label: string): Promise<DesignV
 
   let app: INestApplication;
   try {
-    const moduleRef = await Test.createTestingModule({
-      imports: [
-        RequestContextModule,
-        AuditContextModule,
-        ValidationModule,
-        HttpResponseModule,
-        DesignVersionAuthoringModule,
-      ],
-    }).compile();
+    const moduleRef = await configure(
+      Test.createTestingModule({
+        imports: [
+          RequestContextModule,
+          AuditContextModule,
+          ValidationModule,
+          HttpResponseModule,
+          featureModule,
+        ],
+      }),
+    ).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix(GLOBAL_ROUTE_PREFIX);
     await app.init();
@@ -292,6 +352,45 @@ export async function createDesignVersionContext(label: string): Promise<DesignV
     return { requestId, designCaseId, customerOwnedProductId };
   };
 
+  const seedVersion = async (options: SeedVersionOptions): Promise<string> => {
+    const versionId = newId();
+    const status = options.status ?? 'DRAFT';
+    // CST-074: a version that has left DRAFT must carry a hash, and one that has
+    // been sent must carry an instant. Supplied by the fixture rather than by
+    // each caller so a seeded `SENT_FOR_REVIEW` or `APPROVED` row is a row the
+    // database would actually have accepted. The digest is synthetic and
+    // deliberately unrelated to the document: nothing under test reads it, and a
+    // real-looking one would invite a test to compare against it.
+    const sent = status !== 'DRAFT';
+    const documentHash = options.documentHash ?? (sent ? `sha256:${'a'.repeat(64)}` : null);
+    const sentAt = options.sentAt ?? (sent ? new Date() : null);
+    await db.execute(sql`
+      insert into design_versions
+        (id, design_case_id, version, parent_version_id, status, design_document,
+         document_schema_version, document_hash, sent_at, product_id, product_variant_id,
+         product_side_id, embroidery_area_id, customer_owned_product_id, placement_side_label,
+         placement_area_label, physical_width_mm, physical_height_mm)
+      values (${versionId}, ${options.designCaseId}, ${options.version},
+              ${options.parentVersionId ?? null}, ${status},
+              ${JSON.stringify(options.document)}::jsonb, ${options.documentSchemaVersion},
+              ${documentHash}, ${sentAt},
+              ${options.placement?.productId ?? null},
+              ${options.placement?.productVariantId ?? null},
+              ${options.placement?.productSideId ?? null},
+              ${options.placement?.embroideryAreaId ?? null},
+              ${options.customerOwnedProductId ?? null},
+              ${options.placementSideLabel ?? null}, ${options.placementAreaLabel ?? null},
+              ${String(options.physicalWidthMm)}, ${String(options.physicalHeightMm)})
+    `);
+    if (options.makeCurrent !== false) {
+      await db.execute(sql`
+        update design_cases set current_version_id = ${versionId}
+         where id = ${options.designCaseId}
+      `);
+    }
+    return versionId;
+  };
+
   return {
     app,
     server: () => app.getHttpServer() as Server,
@@ -305,6 +404,7 @@ export async function createDesignVersionContext(label: string): Promise<DesignV
     seedPlacement,
     seedSession,
     seedRequest,
+    seedVersion,
     rows: async <T>(query: SQL): Promise<T[]> => {
       const result = await db.execute(query);
       return result.rows as T[];
@@ -414,4 +514,7 @@ export function codeOf(response: { readonly body: unknown }): string | undefined
 export const ROUTE = {
   designVersions: (requestId: string): string =>
     `/${GLOBAL_ROUTE_PREFIX}/admin/custom-requests/${requestId}/design-versions`,
+  /** `APP6-B09` — the exact-version send. */
+  send: (requestId: string, versionId: string): string =>
+    `/${GLOBAL_ROUTE_PREFIX}/admin/custom-requests/${requestId}/design-versions/${versionId}/send`,
 } as const;

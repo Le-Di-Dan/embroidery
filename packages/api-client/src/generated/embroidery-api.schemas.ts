@@ -2340,6 +2340,63 @@ export interface DesignVersionListResponse {
   versions: DesignVersionResponse[];
 }
 
+/**
+ * The frozen placement branch, derived from the persisted row. A version can never switch branch at send; a disagreement refuses.
+ */
+export type DesignVersionSentResponseBranch =
+  (typeof DesignVersionSentResponseBranch)[keyof typeof DesignVersionSentResponseBranch];
+
+export const DesignVersionSentResponseBranch = {
+  CATALOG: 'CATALOG',
+  CUSTOMER_OWNED: 'CUSTOMER_OWNED',
+} as const;
+
+/**
+ * The request’s LC-11 state after the send. Reported, never commanded: `DESIGN_REVIEW` is reached only as a projection of this committed send (`TR-LC11-08`), and no request body exists through which a caller could name it.
+ */
+export type DesignVersionSentResponseRequestStatus =
+  (typeof DesignVersionSentResponseRequestStatus)[keyof typeof DesignVersionSentResponseRequestStatus];
+
+export const DesignVersionSentResponseRequestStatus = {
+  DESIGN_REVIEW: 'DESIGN_REVIEW',
+} as const;
+
+/**
+ * LC-08 state after the send. Always `SENT_FOR_REVIEW` — a send that could not reach it refuses instead, and nothing partial is committed.
+ */
+export type DesignVersionSentResponseVersionStatus =
+  (typeof DesignVersionSentResponseVersionStatus)[keyof typeof DesignVersionSentResponseVersionStatus];
+
+export const DesignVersionSentResponseVersionStatus = {
+  SENT_FOR_REVIEW: 'SENT_FOR_REVIEW',
+} as const;
+
+export interface DesignVersionSentResponse {
+  /** The frozen placement branch, derived from the persisted row. A version can never switch branch at send; a disagreement refuses. */
+  branch: DesignVersionSentResponseBranch;
+  designCaseId: string;
+  /** SHA-256 over the canonical (JCS) bytes of the **persisted** document, computed at send and stored on the version. This is the exact value an approval is later bound to (`GRD-007`). No caller-supplied hash is accepted anywhere. */
+  documentHash: string;
+  /** The stored document’s schema version, unchanged by the send. */
+  documentSchemaVersion: number;
+  /** True when this exact version was already the one awaiting review, so the call replayed the committed result and wrote nothing — no re-hash, no new instant, no transition, no audit row and no notification. */
+  replayed: boolean;
+  requestId: string;
+  /** The request’s LC-11 state after the send. Reported, never commanded: `DESIGN_REVIEW` is reached only as a projection of this committed send (`TR-LC11-08`), and no request body exists through which a caller could name it. */
+  requestStatus: DesignVersionSentResponseRequestStatus;
+  /** True when this send projected `TR-LC11-08` (the request was `DIGITIZING`). False for a revision send on a request already in `DESIGN_REVIEW`: LC-11 has no self-transition, so no transition row was appended. */
+  requestTransitioned: boolean;
+  /** The committed send instant. */
+  sentAt: string;
+  /** The versions this send marked `SUPERSEDED` under `TR-LC08-05` — revision-requested predecessors on the same design case. Empty when there were none, and always empty on a replay. A version already awaiting review is never superseded to make room: that is `REVIEW_ALREADY_ACTIVE`. */
+  supersededVersionIds: string[];
+  /** Monotonic within the design case. */
+  version: number;
+  versionId: string;
+  /** LC-08 state after the send. Always `SENT_FOR_REVIEW` — a send that could not reach it refuses instead, and nothing partial is committed. */
+  versionStatus: DesignVersionSentResponseVersionStatus;
+}
+
 export type HealthStatusResponseService =
   (typeof HealthStatusResponseService)[keyof typeof HealthStatusResponseService];
 
@@ -3443,6 +3500,10 @@ export type AdminCustomRequestDesignVersionList200 = ApiSuccessResponse & {
 
 export type AdminCustomRequestDesignVersionCreate201 = ApiSuccessResponse & {
   data: DesignVersionCreatedResponse;
+};
+
+export type AdminCustomRequestDesignVersionSend200 = ApiSuccessResponse & {
+  data: DesignVersionSentResponse;
 };
 
 export type AdminCustomRequestAppendNote201 = ApiSuccessResponse & {

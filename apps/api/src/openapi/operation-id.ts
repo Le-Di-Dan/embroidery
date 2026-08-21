@@ -94,6 +94,15 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // two public identifiers; with it, `publicQuotation_current` is untouched and
   // the family reads `_current`, `_accept`, `_reject`.
   PublicQuotationDecisionController: 'publicQuotation',
+  // `APP6-B09`. Sending a design version joins the same published domain as
+  // `APP6-B08`'s create and list. It is its own class because B08's module is
+  // defined by holding no order write repository and no outbox — the boundary
+  // that lets its suite say an authoring route cannot move a request — while the
+  // send needs both. Without this entry the send would mint
+  // `adminCustomRequestDesignVersionSend_send`, letting that module boundary
+  // name a public identifier; with it, B08's two accepted ids stay untouched and
+  // the family reads `_create`, `_list`, `_send`.
+  AdminCustomRequestDesignVersionSendController: 'adminCustomRequestDesignVersion',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */
