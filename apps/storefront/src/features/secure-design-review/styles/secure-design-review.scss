@@ -1,0 +1,617 @@
+// Secure design review — feature-scoped styles (APP6-S02).
+//
+// Design source: FIG-APP6-S02-* (file BQwqV8GdfUIELvsQDB1UQE, page APP_06,
+// nodes 707:3 · 709:3 · 709:84 · 709:164 · 710:3 · 710:109 · 710:203 · 711:3 ·
+// 712:3 · 712:31 · 713:3 · 713:61), approved under FIG-APPROVAL-APP6-D01-PO-001.
+//
+// Measured from the approved frames:
+//   desktop 1440 — card 960 wide, 32 padding, radius 24; preview frame 4:3 with
+//                  a 1px border and radius 16; agreement blocks 20 gap; buttons
+//                  49 tall
+//   mobile   390 — card 350 wide inside a 20 gutter, 16 padding; preview keeps
+//                  its ratio at full width; buttons 52 tall, full width
+//   dialog       — 560 wide, 32 padding, radius 24, over a scrim
+//
+// Colour, type, radius and spacing come from @embroidery/styles. The frames use
+// a few steps the shared scale does not define (6, 14, 18, 20, 49, 52); each is
+// a documented local literal, following the APP4-S02 and APP6-S01 precedent —
+// inventing scale steps would change a shared foundation to suit one screen.
+//
+// This content mounts *inside* the APP4 `.secure-link-access` section, which is
+// deliberate: APP6-D01 reuses the secure-access frames rather than redrawing
+// them, so the section's centring and vertical rhythm are already established
+// there and are not duplicated here.
+
+@use 'sass:color';
+@use '@embroidery/styles' as styles;
+
+// Mirrored from secure-link-access.scss, which mirrors storefront-shell.scss.
+$bp-shell-wide: 768px;
+
+// Approved card geometry (707:9 / 713:8).
+$card-max: 960px;
+$card-padding: styles.spacing(32);
+$card-padding-mobile: styles.spacing(16);
+$stack-gap: 20px; // 707:12 → 707:13 → 707:14 rhythm; no step between 16 and 24
+$stack-gap-tight: styles.spacing(12);
+
+// Approved badge geometry (707:11).
+$badge-padding-block: 6px;
+$badge-padding-inline: styles.spacing(16);
+
+// Approved preview frame (707:40).
+$preview-ratio: 4 / 3;
+$preview-padding: styles.spacing(16);
+
+// Approved agreement block geometry (711:3).
+$block-padding: 15px;
+$block-gap: styles.spacing(8);
+
+// Approved control geometry (707:55 desktop, 713:45 mobile). The mobile height
+// is the one that matters: 52 is the approved touch target and must not shrink.
+$button-height: 49px;
+$button-height-mobile: 52px;
+$button-gap: styles.spacing(16);
+
+// Approved dialog geometry (710:8).
+$dialog-max: 560px;
+$dialog-padding: styles.spacing(32);
+$dialog-padding-mobile: 20px;
+$dialog-gap: 18px; // no shared step between 16 and 24
+
+// Watermark treatment, reproduced from the delivered APP3-S09 runtime
+// (609:263) rather than re-measured: the mark a customer sees here must be the
+// same mark the Studio shows them on the same artwork.
+$watermark-font-size: 13px;
+$watermark-ink-opacity: 0.13;
+$watermark-light-opacity: 0.22;
+$watermark-hairline: 1px;
+
+$line-height-snug: 1.35;
+$line-height-body: 1.5;
+
+.secure-design-review {
+  display: flex;
+  flex-direction: column;
+  gap: $stack-gap;
+  width: 100%;
+  max-width: $card-max;
+  padding: $card-padding-mobile;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+
+  @media (min-width: $bp-shell-wide) {
+    padding: $card-padding;
+  }
+
+  &__visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  &__badge {
+    align-self: flex-start;
+    margin: 0;
+    padding: $badge-padding-block $badge-padding-inline;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-lg;
+    background: styles.$color-background-secondary;
+    color: styles.$color-text-secondary;
+    font-size: 14px;
+    line-height: $line-height-snug;
+  }
+
+  &__title {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: 24px;
+    line-height: $line-height-snug;
+
+    @media (min-width: $bp-shell-wide) {
+      font-size: 32px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 4px;
+    }
+  }
+
+  &__subtitle,
+  &__note,
+  &__section-intro {
+    margin: 0;
+    color: styles.$color-text-secondary;
+    font-size: 14px;
+    line-height: $line-height-body;
+  }
+
+  &__section-title {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: 18px;
+    line-height: $line-height-snug;
+  }
+
+  // The stored document hash and the snapshot id: long, opaque, and read
+  // character by character when they are read at all.
+  &__hash {
+    margin: 0;
+    overflow-wrap: anywhere;
+    color: styles.$color-text-secondary;
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  // ---------------------------------------------------------------- preview
+
+  &__preview {
+    display: flex;
+    flex-direction: column;
+    gap: $block-gap;
+  }
+
+  // The clipping context for the watermark: `position: relative` here and
+  // `overflow: hidden` are what keep the rotated, over-drawn pattern inside the
+  // frame instead of across the card.
+  &__preview-frame {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: $preview-ratio;
+    padding: $preview-padding;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-md;
+    background: styles.$color-background-secondary;
+  }
+
+  &__preview-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    // The artwork is a picture, not a control: no selection, no caret, no drag.
+    user-select: none;
+  }
+
+  &__preview-image-frame {
+    fill: styles.$color-background-primary;
+    stroke: styles.$color-border-secondary;
+    stroke-dasharray: 4 4;
+    stroke-width: 1;
+  }
+
+  &__preview-image-label {
+    fill: styles.$color-text-tertiary;
+  }
+
+  &__preview-failure {
+    margin: 0;
+    color: styles.$color-status-error;
+    font-size: 16px;
+    line-height: $line-height-body;
+  }
+
+  &__preview-failure-note {
+    margin: 0;
+    color: styles.$color-text-secondary;
+    font-size: 14px;
+    line-height: $line-height-body;
+  }
+
+  // -------------------------------------------------------------- watermark
+
+  &__watermark {
+    position: absolute;
+    inset: 0;
+    // Never swallows a click meant for the artwork beneath it.
+    pointer-events: none;
+    transform: rotate(var(--secure-design-review-watermark-angle, -30deg));
+  }
+
+  &__watermark-mark {
+    position: absolute;
+    white-space: nowrap;
+  }
+
+  &__watermark-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-family: styles.$font-family-primary;
+    font-size: $watermark-font-size;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+
+    // The white pass sits beneath, offset by a hairline, so the pair reads on
+    // dark artwork and on light without any pixel ever being sampled.
+    &--light {
+      transform: translate($watermark-hairline, $watermark-hairline);
+      color: styles.$color-surface-primary;
+      opacity: $watermark-light-opacity;
+    }
+
+    &--dark {
+      color: styles.$color-text-primary;
+      opacity: $watermark-ink-opacity;
+    }
+  }
+
+  &__watermark-policy {
+    margin: 0;
+    color: styles.$color-text-secondary;
+    font-size: 13px;
+    line-height: $line-height-body;
+  }
+
+  // ------------------------------------------------------- exact version
+
+  &__exact,
+  &__agreements,
+  &__outcome {
+    display: flex;
+    flex-direction: column;
+    gap: $stack-gap-tight;
+    padding: $block-padding;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-md;
+    background: styles.$color-surface-secondary;
+  }
+
+  &__exact-facts,
+  &__outcome-facts {
+    display: flex;
+    flex-direction: column;
+    gap: $block-gap;
+    margin: 0;
+
+    dt {
+      color: styles.$color-text-primary;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    dd {
+      margin: 0;
+      color: styles.$color-text-secondary;
+      font-size: 14px;
+      line-height: $line-height-body;
+    }
+  }
+
+  // ------------------------------------------------------------ agreements
+
+  &__agreement {
+    display: flex;
+    flex-direction: column;
+    gap: $block-gap;
+    padding: $block-padding;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+    background: styles.$color-surface-primary;
+  }
+
+  &__agreement-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $block-gap;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  &__agreement-title {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: 16px;
+    line-height: $line-height-snug;
+  }
+
+  &__agreement-meta {
+    margin: 0;
+    color: styles.$color-text-tertiary;
+    font-size: 13px;
+  }
+
+  // The published policy text. Scrolls inside its own box so a long body never
+  // pushes the consent control off the fold and never widens the page.
+  &__agreement-content {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: styles.$spacing-base;
+  }
+
+  &__agreement-paragraph {
+    margin: 0 0 $block-gap;
+    color: styles.$color-text-primary;
+    font-size: 14px;
+    line-height: $line-height-body;
+    white-space: pre-line;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__agreement-consent {
+    display: flex;
+    gap: $block-gap;
+    align-items: flex-start;
+    // A comfortable target on touch without inventing a scale step.
+    min-height: $button-height-mobile;
+    padding: styles.spacing(8) 0;
+    color: styles.$color-text-primary;
+    font-size: 14px;
+    line-height: $line-height-body;
+    cursor: pointer;
+
+    input {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      flex: none;
+      accent-color: styles.$color-action-primary;
+    }
+  }
+
+  // ---------------------------------------------------------------- alerts
+
+  &__alert {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    padding: $block-padding;
+    border: 1px solid styles.$color-border-secondary;
+    border-left-width: 4px;
+    border-radius: styles.$radius-sm;
+    background: styles.$color-background-secondary;
+
+    &--info {
+      border-left-color: styles.$color-status-info;
+    }
+
+    &--warning {
+      border-left-color: styles.$color-status-warning;
+    }
+
+    &--error {
+      border-left-color: styles.$color-status-error;
+    }
+  }
+
+  &__alert-title {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: $line-height-snug;
+  }
+
+  &__alert-body {
+    margin: 0;
+    color: styles.$color-text-secondary;
+    font-size: 14px;
+    line-height: $line-height-body;
+  }
+
+  // --------------------------------------------------------------- outcome
+
+  &__outcome-title {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: 18px;
+    line-height: $line-height-snug;
+  }
+
+  &__outcome-terms-title {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  &__outcome-terms ul {
+    margin: styles.spacing(4) 0 0;
+    padding-left: styles.spacing(16);
+  }
+
+  &__outcome-note,
+  &__outcome-scope {
+    margin: 0;
+    color: styles.$color-text-secondary;
+    font-size: 14px;
+    line-height: $line-height-body;
+  }
+
+  // --------------------------------------------------------------- actions
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: $button-gap;
+
+    @media (min-width: $bp-shell-wide) {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  // The reason the approve control is unavailable (709:3). Real text, so it can
+  // be pointed at by `aria-describedby` and read by anyone.
+  &__actions-reason {
+    flex-basis: 100%;
+    margin: 0;
+    color: styles.$color-status-warning;
+    font-size: 14px;
+    line-height: $line-height-body;
+
+    @media (min-width: $bp-shell-wide) {
+      order: 1;
+    }
+  }
+
+  &__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: $button-height-mobile;
+    padding: 0 styles.spacing(24);
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-button;
+    background: styles.$color-surface-primary;
+    color: styles.$color-text-primary;
+    font-family: inherit;
+    font-size: 16px;
+    cursor: pointer;
+
+    @media (min-width: $bp-shell-wide) {
+      min-height: $button-height;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    &--primary {
+      border-color: transparent;
+      background: styles.$color-action-primary;
+      color: styles.$color-surface-primary;
+
+      &:hover:not(:disabled) {
+        background: styles.$color-action-hover;
+      }
+
+      &:active:not(:disabled) {
+        background: styles.$color-action-active;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------- dialog
+
+  &__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: styles.spacing(16);
+    overflow-y: auto;
+    background: styles.$color-overlay-scrim;
+  }
+
+  &__dialog {
+    display: flex;
+    flex-direction: column;
+    gap: $dialog-gap;
+    width: 100%;
+    max-width: $dialog-max;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: $dialog-padding-mobile;
+    border-radius: styles.$radius-card;
+    background: styles.$color-surface-primary;
+
+    @media (min-width: $bp-shell-wide) {
+      padding: $dialog-padding;
+    }
+  }
+
+  &__dialog-title {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: 20px;
+    line-height: $line-height-snug;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 4px;
+    }
+  }
+
+  &__dialog-body,
+  &__dialog-binds {
+    margin: 0;
+    color: styles.$color-text-primary;
+    font-size: 15px;
+    line-height: $line-height-body;
+  }
+
+  &__dialog-binds {
+    font-weight: 600;
+  }
+
+  &__dialog-note {
+    margin: 0;
+    color: styles.$color-text-secondary;
+    font-size: 14px;
+    line-height: $line-height-body;
+  }
+
+  &__dialog-actions {
+    display: flex;
+    flex-direction: column;
+    gap: $block-gap;
+
+    @media (min-width: $bp-shell-wide) {
+      flex-direction: row;
+    }
+  }
+
+  // --------------------------------------------------------- revision form
+
+  &__revision-form {
+    display: flex;
+    flex-direction: column;
+    gap: $block-gap;
+  }
+
+  &__revision-label {
+    color: styles.$color-text-primary;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  &__revision-input {
+    width: 100%;
+    padding: styles.spacing(12);
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-input;
+    background: styles.$color-surface-primary;
+    color: styles.$color-text-primary;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: $line-height-body;
+    resize: vertical;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &__revision-counter {
+    margin: 0;
+    color: styles.$color-text-tertiary;
+    font-size: 13px;
+  }
+
+  &__revision-error {
+    margin: 0;
+    color: styles.$color-status-error;
+    font-size: 14px;
+    line-height: $line-height-body;
+  }
+}

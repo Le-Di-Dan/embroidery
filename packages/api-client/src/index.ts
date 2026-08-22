@@ -479,6 +479,65 @@ export type {
   QuotationRejectedResponse,
 } from './generated/embroidery-api.schemas';
 
+// The customer secure design review (`APP6-B10` read, `APP6-B11` decisions),
+// consumed by `APP6-S02` at `/truy-cap/duyet-thiet-ke`.
+//
+// Three operations, released consumer-driven: until S02 there was no approved
+// control behind any of them, and the Admin design-case workbench deliberately
+// left them uncrossed so that a staff screen could never be one careless import
+// away from approving a design on the customer's behalf. That reasoning is
+// unchanged — the block below is reached by the *customer* surface, and the
+// Admin block still exports none of it.
+//
+// The `token` travels in a request **body** in all three, never as a path
+// segment, query parameter or header, so a bearer credential cannot reach an
+// access log. The body types cross so the caller names the wire shape at the
+// transport seam rather than assembling a literal that would compile just as
+// well with the token in the wrong field.
+//
+// ### The bodies are the exactness contract
+//
+// `versionId` on both decisions is a **locator the customer was shown**, not an
+// authority: the server checks it against the grant's own request and design
+// case inside the deciding transaction. `documentHash` and `acceptedAgreements`
+// exist on the approval alone, and `RequestDesignRevisionBody` publishes
+// neither — which is what keeps a revision request from ever carrying consent
+// it did not ask for. Every other identifier (request, design case, customer,
+// grant, challenge) is derived server-side and is absent from these schemas.
+//
+// ### `document` is the concrete `DesignDocument`
+//
+// The review response references the single generated `APP3-P01` component, so
+// the stored document never passes through an index signature on its way to a
+// renderer. `TransportDesignDocument` above remains the name for the wire
+// shape; `@embroidery/design-document` remains the authority on structure and
+// validation, and nothing validates a document against these declarations.
+//
+// The version- and request-status enums cross as **values** so the outcome
+// cards read the states the server publishes rather than a hand-kept list that
+// could drift.
+export {
+  publicDesignReviewCurrent,
+  publicDesignReviewApprove,
+  publicDesignReviewRequestRevision,
+} from './generated/embroidery-api';
+export {
+  DesignApprovedResponseVersionStatus,
+  DesignApprovedResponseRequestStatus,
+  DesignRevisionRequestedResponseVersionStatus,
+  DesignRevisionRequestedResponseRequestStatus,
+} from './generated/embroidery-api.schemas';
+export type {
+  ReadCurrentDesignReviewBody,
+  ApproveDesignVersionBody,
+  ApproveDesignVersionBodyAcceptedAgreementsItem,
+  RequestDesignRevisionBody,
+  CustomerDesignReviewResponse,
+  DesignReviewAgreementResponse,
+  DesignApprovedResponse,
+  DesignRevisionRequestedResponse,
+} from './generated/embroidery-api.schemas';
+
 // Admin Customer support and notification delivery (APP4-B07, APP4-B08),
 // consumed by the Admin customer-access support screen (APP4-A01). Exposed here
 // so that feature never deep-imports the generated tree.
