@@ -179,8 +179,8 @@ table can hold (`APP7-G01` §9).
 |---|---|---|
 | `APP7-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation |
 | `APP7-G01` | `COMPLETE` | Payment authority; `PO-APP7-001` locked; roadmap revised 12 → 15 |
-| `APP7-B01` | `INCOMPLETE` | **Next** — Admin SKU authoring (2 ops). Unblocks the Catalog order-item branch; depends on `G01` |
-| `APP7-W01` | `INCOMPLETE` | `design.approved` order-conversion consumer; repairs the AGG-15 fixture; promotes the code generator; depends on `B01`, `G01` |
+| `APP7-B01` | `COMPLETE` | Admin SKU authoring — 2 ops (`adminSku_create`, `adminSku_update`). A variant can now reach exactly one order-eligible (`is_active`) SKU; the owning `product_variants` row is the concurrency arbiter; no schema or migration change. Report [`reports/APP7-B01-COMPLETION-REPORT.md`](../reports/APP7-B01-COMPLETION-REPORT.md) |
+| `APP7-W01` | `INCOMPLETE` | **Next** — `design.approved` order-conversion consumer; repairs the AGG-15 fixture; promotes the code generator; depends on `B01`, `G01` |
 | `APP7-B02` | `INCOMPLETE` | Admin order read; depends on `W01` |
 | `APP7-B03` | `INCOMPLETE` | Customer deposit read, attempt initiation, QR delivery; depends on `W01` |
 | `APP7-DB01` | `INCOMPLETE` | `payment_transfer_evidence` association migration; depends on `G01` |
