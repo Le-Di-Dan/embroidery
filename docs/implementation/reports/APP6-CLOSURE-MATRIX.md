@@ -55,7 +55,7 @@ not restated here. No checkpoint was added or cancelled after `R00`.
 | 19 | APP6-S01 | storefront | COMPLETE | accepted | `42cbb0d`, `d387639` | `/truy-cap/bao-gia` — a pending flag cannot detect that an async re-read finished; the bootstrap needed a monotonic `resolveCount` — [`APP6-S01-COMPLETION-REPORT.md`](./APP6-S01-COMPLETION-REPORT.md) | 0 | 3 |
 | 20 | APP6-S02 | storefront | COMPLETE | accepted | `7573ccd`, `5cb00ad` | `/truy-cap/duyet-thiet-ke` — consent keyed by the signature of the set it was given for, so there is no reset to delete — [`APP6-S02-COMPLETION-REPORT.md`](./APP6-S02-COMPLETION-REPORT.md) | 0 | 1 |
 | 21 | APP6-E01 (+C1) | cross-layer | **COMPLETE — PASS** | accepted | `33f8747`, `46d3bff`; C1 `fdb0e9a` | 6 serial cases, 54 API acceptance tests, Catalog + COP → `APPROVED`; C1 withdrew the design-case-origin false positive — [`APP6-E01-COMPLETION-REPORT.md`](./APP6-E01-COMPLETION-REPORT.md) §22 | 0 | 0 opened |
-| 22 | APP6-X01 | closure | **COMPLETE** | this document | see §7 | Phase closure — [`APP6-X01-COMPLETION-REPORT.md`](./APP6-X01-COMPLETION-REPORT.md) | 0 | 0 |
+| 22 | APP6-X01 | closure | **COMPLETE** | this document | `ccd946a` (see §7) | Phase closure — [`APP6-X01-COMPLETION-REPORT.md`](./APP6-X01-COMPLETION-REPORT.md) | 0 | 0 |
 
 `G01-C1`, `A01-C1` and `E01-C1` are **corrections to their parent checkpoint**,
 not separate roadmap checkpoints, so the canonical count of 21 counts each
@@ -202,7 +202,7 @@ correction. No Figma redraw is required to close APP6.
 
 ```text
 fdb0e9a  docs(app6): correct the APP6-E01 design-case origin evidence (E01-C1)
-<X01>    docs(app6): close APP6 at X01
+ccd946a  docs(app6): close APP6 at X01
 ```
 
 Local commits only. Nothing pushed.

@@ -507,7 +507,7 @@ of the closure commit.
 
 ```text
 fdb0e9a  docs(app6): correct the APP6-E01 design-case origin evidence (E01-C1)
-<X01>    docs(app6): close APP6 at X01
+ccd946a  docs(app6): close APP6 at X01
 ```
 
 Local commits only. **Nothing pushed.**
