@@ -38,7 +38,7 @@ generated client or Figma artifact was changed.
 
 Only documentation commits exist after `7573ccd` (`5cb00ad` records the S02
 commit hash), so the accepted `APP6-S01` and `APP6-S02` browser evidence remains
-valid and was **not** rerun (§7).
+valid and was **not** rerun (§13).
 
 The counts above were recomputed from the committed artifact at entry and again
 inside `E01-06` as an assertion — the artifact is read, never regenerated.
@@ -64,8 +64,8 @@ claim is about **composition** and no single-slice suite could have made it.
 | `APP6-B09` | Canonical hash, `GRD-004` partial unique index, CC-03 permutations | Send unchanged | `NEW` — one-active-review while a sibling draft exists on the same case |
 | `APP6-B10` | Exact active version, effective agreement set, no storage leak | Read unchanged | `NEW` — the agreement set the approval then binds, end to end |
 | `APP6-B11` | Approval Snapshot, GRD-007/008, idempotency, CC-02/CC-04 | Decisions unchanged | `NEW` — first-decision-wins in **both** directions across a composed run |
-| `APP6-A01` / `APP6-A02` | Admin browser acceptance | UI inputs unchanged (§8) | none |
-| `APP6-S01` / `APP6-S02` | Storefront browser acceptance | UI inputs unchanged (§7) | none |
+| `APP6-A01` / `APP6-A02` | Admin browser acceptance | UI inputs unchanged (§13) | none |
+| `APP6-S01` / `APP6-S02` | Storefront browser acceptance | UI inputs unchanged (§13) | none |
 
 No `B0n`, `A0n` or `S0n` suite was rerun. No accepted checkpoint suite ran
 without changed inputs.
@@ -124,7 +124,7 @@ Only prerequisite state that APP6 consumes and no APP6 operation produces:
 4. a `custom_requests` row at **`UNDER_REVIEW`** with its quantity breakdown, and
    on the COP branch its `customer_owned_products` row (APP5);
 5. the `design_cases` row — **no delivered route creates one**
-   (`FU-APP6-E01-DESIGN-CASE-ORIGIN-01`, §12);
+   (`FU-APP6-E01-DESIGN-CASE-ORIGIN-01`, §17);
 6. the `REQUEST_ACCESS` grant (APP4-B05).
 
 The harness holds no route, repository call or statement that can write a
@@ -638,6 +638,8 @@ rather than a tick:
 
 ```text
 test(app6): deliver APP6-E01 focused cross-layer acceptance
+
+COMMIT = 33f8747
 ```
 
 Local commit only. Nothing pushed.
