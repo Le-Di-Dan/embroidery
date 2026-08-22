@@ -844,6 +844,125 @@ export interface AdminNotificationIntentListResponse {
   intents: AdminNotificationIntentResponse[];
 }
 
+export type AdminOrderDetailResponseStatus =
+  (typeof AdminOrderDetailResponseStatus)[keyof typeof AdminOrderDetailResponseStatus];
+
+export const AdminOrderDetailResponseStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * Which branch of the frozen subject this line is: a catalog SKU, or a product the customer already owned. Never both, and never neither. Derived from the stored ids; no column holds it.
+ */
+export type AdminOrderItemResponseSubjectKind =
+  (typeof AdminOrderItemResponseSubjectKind)[keyof typeof AdminOrderItemResponseSubjectKind];
+
+export const AdminOrderItemResponseSubjectKind = {
+  CATALOG: 'CATALOG',
+  CUSTOMER_OWNED: 'CUSTOMER_OWNED',
+} as const;
+
+export interface AdminOrderItemResponse {
+  /** The exact approval evidence that authorized this line (D7-07). Immutable, unlike the order’s own `currentApprovalSnapshotId`, which is an audited pointer that a post-approval revision may move. */
+  approvalSnapshotId: string;
+  /** The frozen currency of this line. */
+  currencyCode: string;
+  /** The frozen customer-owned product. Present on `CUSTOMER_OWNED` lines only. */
+  customerOwnedProductId?: string;
+  /** The accepted line total, transported exactly as stored. Never recomputed as `unitPriceAmount × quantity`. */
+  lineTotalAmount: string;
+  /** The frozen line position, dense and 1-based. Unique within the order (`uq_order_items__order_position`), and the order lines are always returned in. */
+  position: number;
+  /** The product name as frozen at order creation — never a live `products` row. It keeps saying what the customer approved after Catalog is renamed. */
+  productName: string;
+  /** The frozen quantity of this line. */
+  quantity: number;
+  /** The size label as frozen. Absent whenever the order froze none — the Approval Snapshot has no size column, and a value is never reconstructed from live `product_variants`. */
+  sizeLabel?: string;
+  /** The frozen SKU. Present on `CATALOG` lines only. */
+  skuId?: string;
+  /** Which branch of the frozen subject this line is: a catalog SKU, or a product the customer already owned. Never both, and never neither. Derived from the stored ids; no column holds it. */
+  subjectKind: AdminOrderItemResponseSubjectKind;
+  /** The accepted unit price, transported exactly as stored. Never a current SKU price and never derived from the line total. */
+  unitPriceAmount: string;
+  /** The variant label as frozen from the Approval Snapshot. Absent on customer-owned lines, which have no Catalog variant and are never given a fabricated one. */
+  variantLabel?: string;
+}
+
+export interface AdminOrderDetailResponse {
+  /** The exact accepted quotation version this order froze its commercial basis from (REL-073). Never `quotations.current_version_id`, which is a mutable pointer. */
+  acceptedQuotationVersionId: string;
+  code: string;
+  createdAt: string;
+  currencyCode: string;
+  /** The order’s current approval snapshot (REL-074) — an audited pointer, reported as stored. Each line carries its own immutable `approvalSnapshotId` beside it. */
+  currentApprovalSnapshotId: string;
+  customRequestId: string;
+  customerId: string;
+  /** The frozen lines, in `position` order. */
+  items: AdminOrderItemResponse[];
+  orderId: string;
+  status: AdminOrderDetailResponseStatus;
+  /** The frozen order total, transported exactly as stored. */
+  totalAmount: string;
+  updatedAt: string;
+}
+
+/**
+ * The current LC-14 state, reported as stored.
+ */
+export type AdminOrderQueueItemResponseStatus =
+  (typeof AdminOrderQueueItemResponseStatus)[keyof typeof AdminOrderQueueItemResponseStatus];
+
+export const AdminOrderQueueItemResponseStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminOrderQueueItemResponse {
+  /** The human order code. Display and search only — it never authorizes anything. */
+  code: string;
+  /** When the order was created from the approved design. */
+  createdAt: string;
+  /** The frozen currency of `totalAmount`. */
+  currencyCode: string;
+  /** The custom request this order was created from. One order per request (`uq_orders__request`), so this is also how the Admin screen navigates back. */
+  customRequestId: string;
+  customerId: string;
+  orderId: string;
+  /** The current LC-14 state, reported as stored. */
+  status: AdminOrderQueueItemResponseStatus;
+  /** The order total as frozen at creation, transported exactly as `numeric(14,2)` stores it. Never re-summed from the lines and never re-derived from a current price. */
+  totalAmount: string;
+}
+
+export interface AdminOrderQueueResponse {
+  /** True when a further page exists. */
+  hasNext: boolean;
+  items: AdminOrderQueueItemResponse[];
+  /** Opaque keyset cursor for the next page. Absent on the last page. */
+  nextCursor?: string;
+}
+
 /**
  * @nullable
  */
@@ -4053,6 +4172,47 @@ export type AdminNotificationIntentList200 = ApiSuccessResponse & {
 
 export type AdminNotificationIntentReplay200 = ApiSuccessResponse & {
   data: NotificationReplayResponse;
+};
+
+export type AdminOrderListParams = {
+  /**
+   * Repeatable. Omitted means every state.
+   */
+  status?: AdminOrderListStatusItem[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from a previous page.
+   */
+  cursor?: unknown;
+};
+
+export type AdminOrderListStatusItem =
+  (typeof AdminOrderListStatusItem)[keyof typeof AdminOrderListStatusItem];
+
+export const AdminOrderListStatusItem = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type AdminOrderList200 = ApiSuccessResponse & {
+  data: AdminOrderQueueResponse;
+};
+
+export type AdminOrderDetail200 = ApiSuccessResponse & {
+  data: AdminOrderDetailResponse;
 };
 
 export type AdminProductListParams = {

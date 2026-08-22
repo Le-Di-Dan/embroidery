@@ -39,6 +39,9 @@ import type {
   AdminNotificationIntentList200,
   AdminNotificationIntentListParams,
   AdminNotificationIntentReplay200,
+  AdminOrderDetail200,
+  AdminOrderList200,
+  AdminOrderListParams,
   AdminProductArchive200,
   AdminProductCreate201,
   AdminProductDetail200,
@@ -595,6 +598,34 @@ export const adminNotificationIntentReplay = (
 ) => {
   return apiRequest<AdminNotificationIntentReplay200>(
     { url: `/api/admin/notification-intents/${intentId}/replay`, method: 'POST' },
+    options,
+  );
+};
+
+/**
+ * Keyset-paginated, newest first, with a stable `id` tie-breaker so a page boundary cannot repeat or skip a row while orders are being created. There is no offset paging and no total count. With no `status` filter the page carries every LC-14 state — orders have no canonical triage subset, so none is invented and nothing is silently hidden. Every value is a column of the order itself: the total is the frozen order total, never a sum over the lines or a current catalog price, and no product, variant, SKU or customer profile is read to enrich a row. Payment facts are not here — `APP7-B04` owns Admin payment operations — though an order that has reached `DEPOSIT_PAID` reports that as its own state.
+ * @summary List orders for operational triage
+ */
+export const adminOrderList = (
+  params?: AdminOrderListParams,
+  options?: SecondParameter<typeof apiRequest<AdminOrderList200>>,
+) => {
+  return apiRequest<AdminOrderList200>(
+    { url: `/api/admin/orders`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * The order as it was frozen when the approved design was converted: its code, LC-14 state, request and customer linkage, the exact accepted quotation version and approval snapshot it was built from, the frozen total, and the ordered lines. Each line names exactly one subject — a catalog SKU or a customer-owned product — with the product name, variant and size labels **as stored**, not as Catalog reads today; a renamed product, a retired variant or a repriced SKU changes nothing here. Money is transported, never recomputed: no unit × quantity, no sum over lines, no deposit percentage. It is a read: nothing is written, no status moves and no audit event is appended. No payment attempt, transfer reference, evidence or provider field appears — `APP7-B04` owns those — and no storage key, token or session secret appears anywhere in the response.
+ * @summary Get one order with its frozen lines
+ */
+export const adminOrderDetail = (
+  orderId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminOrderDetail200>>,
+) => {
+  return apiRequest<AdminOrderDetail200>(
+    { url: `/api/admin/orders/${orderId}`, method: 'GET' },
     options,
   );
 };
@@ -1614,6 +1645,8 @@ export type AdminNotificationIntentListResult = NonNullable<
 export type AdminNotificationIntentReplayResult = NonNullable<
   Awaited<ReturnType<typeof adminNotificationIntentReplay>>
 >;
+export type AdminOrderListResult = NonNullable<Awaited<ReturnType<typeof adminOrderList>>>;
+export type AdminOrderDetailResult = NonNullable<Awaited<ReturnType<typeof adminOrderDetail>>>;
 export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
 export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;
 export type AdminProductDetailResult = NonNullable<Awaited<ReturnType<typeof adminProductDetail>>>;

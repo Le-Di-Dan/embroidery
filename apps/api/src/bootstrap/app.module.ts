@@ -19,6 +19,7 @@ import { HealthModule } from '../modules/health/health.module';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
+import { AdminOrderModule } from '../modules/order/admin-order.module';
 import { CustomRequestIntakeModule } from '../modules/order/custom-request-intake.module';
 import { CustomRequestAdminModule } from '../modules/order/custom-request-admin.module';
 import { CustomRequestAssetDeliveryModule } from '../modules/order/custom-request-asset-delivery.module';
@@ -223,6 +224,14 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // and the outbox that the read is defined by not holding.
     // `CONTROLLER_DOMAIN_KEYS` keeps both publishing `publicDesignReview`.
     CustomerDesignDecisionModule,
+    // APP7-B02 — the Admin order queue and detail, on its own `admin/orders`
+    // base path. Disjoint from every module above, so registration order cannot
+    // make one shadow another. Like `CustomRequestAdminModule` it is defined by
+    // what it cannot inject: no `OrderModule`, so `ORDER_REPOSITORY` and the
+    // canonical `OrderChainGuard` `APP7-W01-C1` consolidated are out of reach of
+    // both routes, and no Catalog or Customer port, so a frozen order fact
+    // cannot be reconstructed from live state by accident.
+    AdminOrderModule,
   ],
 })
 export class AppModule {}
