@@ -220,8 +220,12 @@ export async function seedCommissionWorld(
     `);
   }
 
-  // No delivered APP5 or APP6 route creates a design case; it is prerequisite
-  // state here for the reason `APP6-B08`'s own harness records.
+  // The design case is created by the delivered APP5 `request.submit`
+  // (TR-LC11-01 — `SubmitCustomRequestUseCase` calls
+  // `DesignCaseRepository.createForRequest` inside the submission transaction).
+  // E01 starts at the APP6 prerequisite boundary with the request already
+  // `UNDER_REVIEW`, so that prior-phase consequence is seeded here rather than
+  // re-executed.
   const designCaseId = newId();
   await db.execute(sql`
     insert into design_cases (id, custom_request_id) values (${designCaseId}, ${requestId})

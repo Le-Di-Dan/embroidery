@@ -123,8 +123,9 @@ Only prerequisite state that APP6 consumes and no APP6 operation produces:
 3. the Catalog chain and the submitted Design Session that names it (APP2/APP3/APP5);
 4. a `custom_requests` row at **`UNDER_REVIEW`** with its quantity breakdown, and
    on the COP branch its `customer_owned_products` row (APP5);
-5. the `design_cases` row — **no delivered route creates one**
-   (`FU-APP6-E01-DESIGN-CASE-ORIGIN-01`, §17);
+5. the `design_cases` row — created in production by the delivered APP5
+   `request.submit` (TR-LC11-01), which E01 does not re-execute because it starts
+   at the APP6 prerequisite boundary (§22);
 6. the `REQUEST_ACCESS` grant (APP4-B05).
 
 The harness holds no route, repository call or statement that can write a
@@ -530,7 +531,7 @@ schemas**, migrations **36** — both unchanged from entry.
 ```text
 apps/api/jest.app6-e01.config.mjs                                          31
 apps/api/test/acceptance/app6-e01/app6-e01-context.ts                     305
-apps/api/test/acceptance/app6-e01/app6-e01-world.ts                       332
+apps/api/test/acceptance/app6-e01/app6-e01-world.ts                       336
 apps/api/test/acceptance/app6-e01/app6-e01-journey.ts                     237
 apps/api/test/acceptance/app6-e01/e01-01-catalog-happy-path.acceptance.spec.ts   499
 apps/api/test/acceptance/app6-e01/e01-02-cop-happy-path.acceptance.spec.ts       360
@@ -554,24 +555,25 @@ APP6-S01`; `APP6-S02` already chose not to extend it and recorded its outcome in
 the §9 roadmap row instead. `E01` follows that precedent rather than adding a
 block for itself and leaving a hole where S02's would be.
 
+`APP6-E01-C1` later touched two of these files — the report (§4.3, §17, §18 and
+the new §22) and `app6-e01-world.ts`, whose comment above the design-case seed
+was corrected. The comment edit is why `app6-e01-world.ts` reads 336 lines here
+rather than the 332 committed by `33f8747`; no code line changed (§22.6).
+
 ---
 
 ## 17. Follow-ups
 
-**New (nonblocking):**
+**New (nonblocking):** none.
+
+**Opened by E01 and closed by `APP6-E01-C1`:**
 
 ```text
-FU-APP6-E01-DESIGN-CASE-ORIGIN-01
-  Owner: APP6-X01.
-  No delivered APP5 or APP6 operation creates a `design_cases` row. `APP6-B08`
-  authors versions onto a case that must already exist and answers
-  `DESIGN_CASE_UNRESOLVED` when the pointer is absent, so on the current surface
-  a request can reach `DIGITIZING` and then be unable to receive a design
-  version at all. Every APP6 suite — B08, B09, B10, B11 and now E01 — seeds the
-  row directly, which is why the gap has stayed invisible.
-  Not a defect in any delivered slice and not a blocker for E01: nothing in the
-  phase plan assigned case creation to an APP6 checkpoint. X01 should decide
-  whether it belongs to APP6 closure, to APP7, or to a correction of APP5-B01.
+FU-APP6-E01-DESIGN-CASE-ORIGIN-01 = CLOSED_FALSE_POSITIVE
+  Delivered owner: APP5-B01 / TR-LC11-01 `request.submit`.
+  E01 originally concluded that no delivered APP5 or APP6 operation creates a
+  `design_cases` row. That conclusion was wrong; see §22. No runtime work is
+  routed and no APP6-X01 action is required for design-case creation.
 ```
 
 **Carried unchanged:**
@@ -607,7 +609,7 @@ browser step-up limitation or for the absence of full regression.
 |---|---|---|
 | `APP6-S01` | `COMPLETE` | Customer secure quotation |
 | `APP6-S02` | `COMPLETE` | Customer secure design review |
-| `APP6-E01` | `COMPLETE` | Focused cross-layer acceptance **PASS** |
+| `APP6-E01` | `COMPLETE` | Focused cross-layer acceptance **PASS**; `C1` evidence correction incorporated (§22) |
 | `APP6-X01` | `INCOMPLETE` | **Next** — phase closure |
 
 ---
@@ -650,4 +652,122 @@ Local commit only. Nothing pushed.
 
 ```text
 NEXT CHECKPOINT: APP6-X01 — Phase closure
+```
+
+---
+
+## 22. `APP6-E01-C1` — design-case origin evidence correction
+
+```text
+APP6-E01-C1 = COMPLETE
+CORRECTION  = DESIGN_CASE_ORIGIN_EVIDENCE_ALIGNMENT
+```
+
+### 22.1 The original false conclusion
+
+§4.3 and §17 inferred, from the fact that the E01 fixture seeds the
+`design_cases` row, that **no delivered APP5 or APP6 operation creates one** —
+and opened `FU-APP6-E01-DESIGN-CASE-ORIGIN-01` against `APP6-X01` on that basis.
+The inference does not hold: a fixture seeding a row proves only that the
+seeding phase does not produce it inside its own execution window, not that no
+delivered operation produces it at all.
+
+### 22.2 The stronger accepted evidence
+
+Design-case header creation is owned by **APP5**, and was delivered and proved
+there:
+
+| Source | What it establishes |
+| --- | --- |
+| `docs/database/DB3_LIFECYCLE_SPECIFICATIONS.md` (LC-11) | `TR-LC11-01 (submit) → NEW` — "W1 tx (request + design case + grant)", **create case** |
+| `docs/implementation/audits/APP5_PHASE_ENTRY_AUDIT.md` §126, §235, §355 | "Design case header creation — **Yes** … Created by APP5 per TR-LC11-01"; `APP5-B01` scope explicitly includes "create design case" in the W1 transaction |
+| `docs/implementation/audits/APP5_G01_SUBMISSION_MODERATION_AUTHORITY.md` §104, §233 | "Design case header — created (TR-LC11-01)" on **both** the catalog and COP branches, inside the one W1 transaction |
+| `docs/implementation/reports/APP5-B01-COMPLETION-REPORT.md` §5, §7 | submission transaction map row "design case → APP3 `DesignCaseRepository.createForRequest`", with real-PostgreSQL row-count evidence |
+
+`APP5-B01`'s real-PostgreSQL evidence, restated:
+
+```text
+first submission          -> 1 custom_requests, 1 design_cases
+same completed replay     -> byte-identical 201; still 1 design case
+concurrent duplicate CC-18-> custom_requests = 1, design_cases = 1
+```
+
+Targeted source read confirming the delivered creator (no test run):
+
+```text
+apps/api/src/modules/order/application/submit-custom-request.use-case.ts:230
+  await this.designCases.createForRequest(newId() as DesignCaseId, requestId);
+```
+
+Therefore:
+
+```text
+DESIGN_CASE_ORIGIN = APP5-B01 request.submit (TR-LC11-01)
+```
+
+### 22.3 Correct interpretation of the E01 fixture
+
+E01 deliberately begins the APP6 journey at the **APP6 prerequisite boundary** —
+a `custom_requests` row already at `UNDER_REVIEW` — instead of calling APP5
+`request.submit`. That is in scope: APP5 is a prior accepted phase and E01 is a
+phase-scoped acceptance run, not an APP5→APP6 re-execution. Because the
+submission call is outside the E01 execution window, the fixture must seed the
+APP5 consequences APP6 consumes, and the design-case header is one of them.
+E01 seeds it as **prior-phase evidence reuse**, not because production lacks a
+creator.
+
+### 22.4 `APP6-B08` semantics — unchanged
+
+`APP6-B08` remains correct as delivered: it authors versions onto the case
+addressed by `custom_requests.current_design_case_id` and answers
+`DESIGN_CASE_UNRESOLVED` when that accepted prerequisite is absent or corrupt.
+No case-creation behavior is added to APP6, and no new APP6 checkpoint is
+created for it.
+
+### 22.5 Follow-up disposition
+
+```text
+FU-APP6-E01-DESIGN-CASE-ORIGIN-01 = CLOSED_FALSE_POSITIVE
+DELIVERED OWNER                   = APP5-B01 / TR-LC11-01 request.submit
+E01 FIXTURE RATIONALE             = prerequisite-boundary seeding of an
+                                    already-delivered APP5 consequence
+```
+
+`FU-APP6-S02-WATERMARK-DRAWN-VS-DELIVERED-01` and every other carried follow-up
+in §17 are unchanged, still owned by `APP6-X01`.
+
+### 22.6 Files changed by C1
+
+```text
+docs/implementation/reports/APP6-E01-COMPLETION-REPORT.md   §4.3, §17, this §22
+apps/api/test/acceptance/app6-e01/app6-e01-world.ts         comment text only
+```
+
+The harness edit replaces the false comment above the design-case seed with the
+correct APP5 attribution. No statement, fixture value or assertion changed, so
+no behavior changed.
+
+### 22.7 Validation
+
+Evidence/documentation only. No production source, harness behavior, fixture
+semantics, database, OpenAPI, generated client or Figma change was made, so no
+suite was rerun — a passing command is not re-executed on unchanged inputs.
+
+```text
+targeted source read   APP5 authority + evidence + submit-custom-request.use-case.ts
+targeted grep          FU-APP6-E01-DESIGN-CASE-ORIGIN-01 (2 hits, both in this report)
+                       "no delivered ... design case" (1 hit, the harness comment)
+git diff --check       clean
+```
+
+### 22.8 Unchanged verdict
+
+```text
+APP6-E01                          = COMPLETE
+APP6 CROSS-LAYER ACCEPTANCE       = PASS
+BLOCKING DEFECTS                  = 0
+six serial acceptance cases       = not rerun, not reopened
+APP5-B01 suite                    = not rerun
+APP6_WATERMARK_RUNTIME_AUTHORITY  = DELIVERED_APP3_S09
+NEXT CHECKPOINT                   = APP6-X01
 ```
