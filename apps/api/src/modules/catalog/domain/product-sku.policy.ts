@@ -68,42 +68,50 @@ export function isSkuAuthorableProductState(status: string): boolean {
 }
 
 /**
- * The business SKU code — and, deliberately, **no character policy**
- * (`APP7-B01-C1`).
+ * The business SKU code has **no policy constant here, deliberately**
+ * (`APP7-B01-C1`, finalised by `APP7-B01-FD1`).
  *
- * The accepted authority for `skus.code` is exactly this, and nothing more:
+ * The accepted authority for `skus.code` is exactly this, and nothing more —
+ * verified against the physical DDL, `0007_create_catalog_tables.sql:59,66`,
+ * which declares `"code" text NOT NULL` with `uq_skus__code` and no CHECK, and
+ * which no later migration alters:
  *
  * ```text
- * type         text NOT NULL           (COL-TBL014-02, catalog/skus.ts)
- * comparison   bytewise, `C` collation (ADR-DB5-002 R1 Population A, R2)
- * uniqueness   global, uq_skus__code   (CST-012 / IDX-014)
- * alphabet     NONE
- * max length   NONE
- * nonblank     NONE  (no CHECK on this column, or on any `code` column)
- * normalization NONE (ADR-DB5-002 R3 names lowercase email, E.164 phone and
- *                     slugified paths as the normalized columns; a SKU code is
- *                     not among them)
+ * type          text NOT NULL          (COL-TBL014-02, catalog/skus.ts)
+ * comparison    bytewise, `C`          (ADR-DB5-002 R1 Population A, R2)
+ * uniqueness    global, uq_skus__code  (CST-012 / IDX-014)
+ * alphabet      NONE
+ * max length    NONE
+ * nonblank      NONE  (no CHECK on this column, or on any `code` column)
+ * normalization NONE  (ADR-DB5-002 R3 names lowercase email, E.164 phone and
+ *                      slugified paths as the normalized columns; a SKU code
+ *                      is not among them)
  * ```
  *
- * `APP7-B01` shipped `^[A-Za-z0-9][A-Za-z0-9._-]*$` here. No accepted source
- * supports it: `text` restricts no character, and bytewise comparison under `C`
- * is a statement about *equality*, not about which bytes may be stored. A
- * Vietnamese code such as `ÁO-THUN-ĐEN` is a legal identifier that the regex
- * silently refused. It is removed rather than replaced — a second invented
- * alphabet would be the same defect with different characters.
+ * Two rules therefore live nowhere in this module, and their absence is the
+ * point:
+ *
+ * - **No alphabet.** `APP7-B01` shipped `^[A-Za-z0-9][A-Za-z0-9._-]*$`. No
+ *   accepted source supports it: `text` restricts no character, and bytewise
+ *   comparison is a statement about *equality*, not about which bytes may be
+ *   stored. A Vietnamese code such as `ÁO-THUN-ĐEN-M` is a legal identifier the
+ *   regex silently refused. `APP7-B01-C1` removed it rather than replacing it.
+ * - **No length or nonblank bound.** `APP7-B01-C1` kept `min(1)`/`max(64)` and
+ *   argued they were payload limits rather than identifier rules. The Product
+ *   Owner ruled otherwise in `APP7-B01-FD1`: a field-specific rule that rejects
+ *   an otherwise authority-valid database value is a domain/API contract
+ *   constraint whatever the comment calls it, and transport abuse belongs to
+ *   the delivered body-size controls, not to a SKU-shaped number invented here.
+ *   `SKU_CODE_MAX_LENGTH` is deleted rather than lowered or raised.
  *
  * Nothing normalizes the code either: no case folding, no trimming, no Unicode
  * normalization, no character replacement. The stored value is byte-for-byte
  * what the Admin sent, which is what makes `uq_skus__code` genuine business
  * uniqueness rather than an approximation of it.
  *
- * What remains is a **request-payload bound, not an identifier rule**: the
- * column is unbounded `text`, so this caps what one HTTP body may carry, on the
- * same footing as `PRODUCT_NAME_MAX_LENGTH` — which `APP2-B02` labels as
- * "mirroring nothing but sane input". It restricts no character and changes no
- * stored byte.
+ * A business-level SKU-code policy — if the Product Owner ever wants one — needs
+ * explicit authority of its own. `APP7-B01` may not invent it.
  */
-export const SKU_CODE_MAX_LENGTH = 64;
 
 /**
  * The largest SKU price override `numeric(14,2)` can hold under the VND

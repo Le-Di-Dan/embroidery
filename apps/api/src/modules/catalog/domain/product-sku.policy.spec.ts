@@ -102,8 +102,15 @@ describe('SKU code policy (APP7-B01-C1)', () => {
     expect(named).toEqual([]);
   });
 
-  it('keeps a payload bound, which restricts length and not characters', () => {
-    expect(policy.SKU_CODE_MAX_LENGTH).toBe(64);
+  it('publishes no SKU-code bound of any kind (APP7-B01-FD1)', () => {
+    // `APP7-B01-C1` kept `SKU_CODE_MAX_LENGTH = 64` and argued it was a payload
+    // limit. The Product Owner ruled that a field-specific rule rejecting an
+    // authority-valid database value is a contract constraint whatever the
+    // comment calls it, so the constant is deleted rather than re-tuned — and
+    // this asserts no successor appeared under another name.
+    const exported = policy as Record<string, unknown>;
+    expect(exported['SKU_CODE_MAX_LENGTH']).toBeUndefined();
+    expect(Object.keys(exported).filter((name) => /^SKU_CODE/.test(name))).toEqual([]);
   });
 });
 

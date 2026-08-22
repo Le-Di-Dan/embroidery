@@ -15,10 +15,7 @@
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
-import {
-  MAX_SKU_PRICE_OVERRIDE_AMOUNT,
-  SKU_CODE_MAX_LENGTH,
-} from '../../domain/product-sku.policy';
+import { MAX_SKU_PRICE_OVERRIDE_AMOUNT } from '../../domain/product-sku.policy';
 
 /** UUID path parameters — rejected before any repository call or lock. */
 export const createSkuParamsSchema = z
@@ -32,27 +29,34 @@ export const skuIdParamSchema = z.object({ skuId: z.string().uuid() }).strict();
 export class SkuIdParam extends createZodDto(skuIdParamSchema) {}
 
 /**
- * The business SKU code — carrying **no character policy** (`APP7-B01-C1`).
+ * The business SKU code: **the wire type, and nothing else**
+ * (`APP7-B01-FD1`).
  *
- * The column is `text` under the `C` collation: it restricts no character, and
- * ADR-DB5-002 R1/R2 make the code a Population A technical identifier compared
- * *bytewise*, which is a statement about equality, not about which bytes may be
- * stored. `APP7-B01` narrowed that to an ASCII alphabet no accepted source
- * supports, silently refusing legal identifiers such as `ÁO-THUN-ĐEN-M`. The
- * regex is removed and deliberately not replaced.
+ * `skus.code` is `text NOT NULL` with `uq_skus__code` and no CHECK
+ * (`0007_create_catalog_tables.sql:59,66`), filed by ADR-DB5-002 R1 under
+ * Population A and compared *bytewise* under `C` (R2). That is the whole
+ * accepted contract: no alphabet, no length, no nonblank rule, no
+ * normalization. So this schema asserts only that the field is a string, and
+ * every remaining rule about a SKU code lives where authority actually put it —
+ * in the database.
  *
- * Not trimmed, not upper-cased, not normalised in any way: `CST-012` compares
- * the stored bytes, so anything this layer "fixed" would be stored as a
- * different identifier from the one the Admin typed (ADR-DB5-002 R3 assigns
- * normalization to the writing module, and names no rule for a SKU code).
+ * The two things deliberately **not** here, both removed rather than adjusted:
  *
- * The two bounds that remain are payload limits, not identifier rules: the
- * column is unbounded `text`, so `max` caps what one HTTP body may carry, on
- * the footing `APP2-B02` uses for its own free-text bounds. Authority defines
- * no nonblank rule for this column, so `min(1)` is not one either — it only
- * refuses a body that omits the value by sending an empty string.
+ * - `.regex(...)` — `APP7-B01` invented an ASCII alphabet, which silently
+ *   refused legal identifiers such as `ÁO-THUN-ĐEN-M` (`APP7-B01-C1`).
+ * - `.min(1)` / `.max(64)` — `APP7-B01-C1` kept these as "payload bounds".
+ *   `APP7-B01-FD1` ruled that a field-specific rule rejecting an
+ *   authority-valid database value is a contract constraint whatever the
+ *   comment calls it, and that transport abuse is the delivered body-size
+ *   controls' job, not a SKU-shaped number invented here.
+ *
+ * Nothing transforms the value either — no `.trim()`, no case folding, no
+ * Unicode normalization. `CST-012` compares the stored bytes, so anything this
+ * layer "fixed" would be stored as a different identifier from the one the
+ * Admin typed (ADR-DB5-002 R3 assigns normalization to the writing module and
+ * names no rule for a SKU code).
  */
-const skuCodeSchema = z.string().min(1).max(SKU_CODE_MAX_LENGTH);
+const skuCodeSchema = z.string();
 
 /**
  * A VND amount in minor units, as a decimal **string**.

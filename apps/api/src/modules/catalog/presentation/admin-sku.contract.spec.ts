@@ -96,13 +96,17 @@ describe('APP7-B01 Admin SKU contract', () => {
     });
 
     it.each(['CreateSkuBody', 'UpdateSkuBody'])(
-      '%s advertises no SKU-code character policy (APP7-B01-C1)',
+      '%s advertises no SKU-code policy at all (APP7-B01-C1, APP7-B01-FD1)',
       (name) => {
-        // `skus.code` is `text` compared bytewise (ADR-DB5-002 R1/R2) with
-        // global uniqueness (CST-012), and no accepted source restricts a
-        // character. `APP7-B01` published an ASCII `pattern` anyway, which told
-        // every generated client that `ÁO-THUN-ĐEN-M` was invalid. The contract
-        // must not carry that claim, nor a replacement under `format` or an
+        // `skus.code` is `text NOT NULL` with `uq_skus__code` and no CHECK
+        // (`0007_create_catalog_tables.sql:59,66`), compared bytewise under `C`
+        // (ADR-DB5-002 R1/R2). No accepted source restricts a character, a
+        // length or emptiness — so the contract must claim none of them.
+        //
+        // `APP7-B01` published an ASCII `pattern`, telling every generated
+        // client that `ÁO-THUN-ĐEN-M` was invalid; `APP7-B01-C1` removed it but
+        // kept `minLength`/`maxLength`, which made the same kind of claim about
+        // length. Both are gone, and nothing may return under `format` or as an
         // enumeration of legal values.
         const code = (
           OPENAPI.components.schemas[name]?.['properties'] as Record<
@@ -111,15 +115,38 @@ describe('APP7-B01 Admin SKU contract', () => {
           >
         )['code'];
         expect(code).toBeDefined();
-        expect(code?.['pattern']).toBeUndefined();
-        expect(code?.['format']).toBeUndefined();
-        expect(code?.['enum']).toBeUndefined();
-        // The payload bound stays: it restricts length, not characters.
-        expect(code?.['maxLength']).toBe(64);
+        // The wire type, and only the wire type.
+        expect(code?.['type']).toBe('string');
+        for (const claim of ['pattern', 'format', 'enum', 'minLength', 'maxLength']) {
+          expect(code?.[claim]).toBeUndefined();
+        }
       },
     );
 
-    it('gives the generated client an unrestricted code (APP7-B01-C1)', () => {
+    it('gives the generated client an unrestricted code (APP7-B01-C1, APP7-B01-FD1)', () => {
+      const create =
+        /export interface CreateSkuBody \{[\s\S]*?\n\}/.exec(CLIENT_SCHEMAS)?.[0] ?? '';
+      const update =
+        /export interface UpdateSkuBody \{[\s\S]*?\n\}/.exec(CLIENT_SCHEMAS)?.[0] ?? '';
+      expect(create).not.toBe('');
+      expect(update).not.toBe('');
+      for (const block of [create, update]) {
+        // Scoped to `code` alone: `priceOverrideAmount` legitimately keeps
+        // `@pattern ^\d{1,12}$`, which is the VND whole-đồng rule the column's
+        // own CHECK enforces. The generated annotations are how a client-side
+        // validator learns a constraint, so an unauthorized rule surviving on
+        // `code` here is the same defect one layer further out.
+        const lines = block.split('\n');
+        const declaration = lines.findIndex((line) => /^\s*code\??: string;/.test(line));
+        expect(declaration).toBeGreaterThan(-1);
+        const preceding: string[] = [];
+        for (let index = declaration - 1; index > 0; index -= 1) {
+          const line = lines[index] ?? '';
+          if (!/^\s*(\/\*\*|\*|\*\/)/.test(line)) break;
+          preceding.push(line);
+        }
+        expect(preceding.join('\n')).not.toMatch(/@pattern|@minLength|@maxLength|@format/);
+      }
       expect(CLIENT_SCHEMAS).not.toMatch(/\^\[A-Za-z0-9]\[A-Za-z0-9\._-]\*\$/);
     });
 

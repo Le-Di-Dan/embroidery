@@ -1821,10 +1821,6 @@ export interface CreateQuotationDraftBody {
 }
 
 export interface CreateSkuBody {
-  /**
-   * @minLength 1
-   * @maxLength 64
-   */
   code: string;
   isActive: boolean;
   /** @pattern ^\d{1,12}$ */
@@ -3764,10 +3760,6 @@ export interface UpdateProductBody {
 }
 
 export interface UpdateSkuBody {
-  /**
-   * @minLength 1
-   * @maxLength 64
-   */
   code?: string;
   isActive?: boolean;
   /**

@@ -3145,8 +3145,6 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "maxLength": 64,
-            "minLength": 1,
             "type": "string"
           },
           "isActive": {
@@ -7014,8 +7012,6 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "maxLength": 64,
-            "minLength": 1,
             "type": "string"
           },
           "isActive": {
