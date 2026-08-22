@@ -179,7 +179,8 @@ table can hold (`APP7-G01` §9).
 |---|---|---|
 | `APP7-R00` | `COMPLETE` | Phase-entry audit and roadmap reconciliation |
 | `APP7-G01` | `COMPLETE` | Payment authority; `PO-APP7-001` locked; roadmap revised 12 → 15 |
-| `APP7-B01` | `COMPLETE` | Admin SKU authoring — 2 ops (`adminSku_create`, `adminSku_update`). A variant can now reach exactly one order-eligible (`is_active`) SKU; the owning `product_variants` row is the concurrency arbiter; no schema or migration change. Report [`reports/APP7-B01-COMPLETION-REPORT.md`](../reports/APP7-B01-COMPLETION-REPORT.md) |
+| `APP7-B01` | `COMPLETE — CORRECTED (C1)` | Admin SKU authoring — 2 ops (`adminSku_create`, `adminSku_update`). A variant can now reach exactly one order-eligible (`is_active`) SKU; the owning `product_variants` row is the concurrency arbiter; no schema or migration change. Report [`reports/APP7-B01-COMPLETION-REPORT.md`](../reports/APP7-B01-COMPLETION-REPORT.md) |
+| `APP7-B01-C1` | `COMPLETE` | Removed the SKU-code alphabet B01 invented. `skus.code` is `text NOT NULL`, compared bytewise under `C` (ADR-DB5-002 R1/R2) and unique globally (CST-012) — no accepted source restricts a character, so a legal code such as `ÁO-THUN-ĐEN-M` was being refused. Removed, not replaced; no normalization added. OpenAPI delta = 2 deleted `pattern` lines, surface unchanged at 74/81/170. `APP7-B01-C2` = `MUST_NOT_BE_CREATED`. Report [`reports/APP7-B01-C1-CORRECTION-REPORT.md`](../reports/APP7-B01-C1-CORRECTION-REPORT.md) |
 | `APP7-W01` | `INCOMPLETE` | **Next** — `design.approved` order-conversion consumer; repairs the AGG-15 fixture; promotes the code generator; depends on `B01`, `G01` |
 | `APP7-B02` | `INCOMPLETE` | Admin order read; depends on `W01` |
 | `APP7-B03` | `INCOMPLETE` | Customer deposit read, attempt initiation, QR delivery; depends on `W01` |
