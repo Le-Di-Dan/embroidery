@@ -462,7 +462,12 @@ the DB manifest/fingerprint regression (no migration); the Figma registry checke
 `docs/implementation/phases/APP6-DESIGN-REVIEW-AND-QUOTATION.md` row 17 moves
 `INCOMPLETE` → `COMPLETE`, and `APP6-S02` becomes **Next**.
 
-## 20. Closing block
+## 20. Commit
+
+`42cbb0d` — `feat(app6): deliver APP6-S01 Customer secure quotation screen` (local
+only; not pushed).
+
+## 21. Closing block
 
 ```text
 APP6-S01 = COMPLETE
