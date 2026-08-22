@@ -12,42 +12,37 @@
  *
  * The uniqueness arbiter is `uq_quotations__code`, not this function.
  *
- * ### Why this mirrors `request-code.ts` rather than importing it
+ * ### The promotion this file asked for has happened
  *
- * `APP5-G01`'s `generateRequestCode` is the same mechanism with a different
- * prefix, and it lives in the **order** module's domain. Importing it would
- * couple CTX-QUO to CTX-ORD's internals for a string generator, and promoting it
- * to app-shared would rewrite an accepted APP5 file for a reason APP5 did not
- * ask for. Two consumers is not yet the third that justifies a shared home
- * (`CLAUDE.md` §5), so the mechanism is restated at the narrowest scope and the
- * promotion is left to whoever needs the third code.
+ * This module used to restate `request-code.ts` and recorded why: *"Two
+ * consumers is not yet the third that justifies a shared home … the promotion
+ * is left to whoever needed the third code."* `APP7-W01` needs `ORD-`, from the
+ * **worker**, which may not import `apps/api`. The alphabet, the ten-character
+ * body and the rejection sampling now live once in `@embroidery/domain-types`
+ * (`FU-APP6-B01-CODE-GENERATOR-PROMOTION-01`, closed). The prefix, the
+ * published constants and every byte this function can produce are unchanged.
  */
 import { randomBytes } from 'node:crypto';
 
+import {
+  generateHumanCode,
+  HUMAN_CODE_ALPHABET,
+  HUMAN_CODE_BODY_LENGTH,
+  humanCodePattern,
+  type RandomBytesSource as HumanCodeRandomBytesSource,
+} from '@embroidery/domain-types';
+
 /** Unambiguous when spoken and when typed — the `G01-D12` alphabet. */
-export const QUOTATION_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+export const QUOTATION_CODE_ALPHABET = HUMAN_CODE_ALPHABET;
 
 export const QUOTATION_CODE_PREFIX = 'QUO-';
 
-export const QUOTATION_CODE_LENGTH = 10;
+export const QUOTATION_CODE_LENGTH = HUMAN_CODE_BODY_LENGTH;
 
 /** Exactly what {@link generateQuotationCode} produces, and nothing else. */
-export const QUOTATION_CODE_PATTERN = new RegExp(
-  `^${QUOTATION_CODE_PREFIX}[${QUOTATION_CODE_ALPHABET}]{${String(QUOTATION_CODE_LENGTH)}}$`,
-);
+export const QUOTATION_CODE_PATTERN = humanCodePattern(QUOTATION_CODE_PREFIX);
 
-/**
- * The largest byte value that maps onto whole alphabet repetitions.
- *
- * 256 is not a multiple of 30, so a plain `byte % 30` would make the first
- * sixteen symbols measurably more likely. Bytes at or above this ceiling are
- * discarded instead — the standard rejection sampling, stated because a "close
- * enough" modulo is exactly the shortcut that silently costs entropy.
- */
-const REJECTION_CEILING =
-  Math.floor(256 / QUOTATION_CODE_ALPHABET.length) * QUOTATION_CODE_ALPHABET.length;
-
-export type RandomBytesSource = (size: number) => Buffer;
+export type RandomBytesSource = HumanCodeRandomBytesSource;
 
 /**
  * Draws one code. The random source is a parameter so a test can prove the
@@ -55,17 +50,5 @@ export type RandomBytesSource = (size: number) => Buffer;
  * never passes one.
  */
 export function generateQuotationCode(random: RandomBytesSource = randomBytes): string {
-  const characters: string[] = [];
-  while (characters.length < QUOTATION_CODE_LENGTH) {
-    for (const byte of random(QUOTATION_CODE_LENGTH)) {
-      if (byte >= REJECTION_CEILING) {
-        continue;
-      }
-      characters.push(QUOTATION_CODE_ALPHABET[byte % QUOTATION_CODE_ALPHABET.length] as string);
-      if (characters.length === QUOTATION_CODE_LENGTH) {
-        break;
-      }
-    }
-  }
-  return `${QUOTATION_CODE_PREFIX}${characters.join('')}`;
+  return generateHumanCode(QUOTATION_CODE_PREFIX, random);
 }

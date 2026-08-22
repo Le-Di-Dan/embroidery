@@ -11,36 +11,40 @@
  * It is also never accepted from a client — this module is the only producer.
  *
  * The uniqueness arbiter is `uq_custom_requests__code`, not this function. The
- * rejection sampling below only guarantees an unbiased draw; a collision is
- * settled by the database and retried by the caller.
+ * rejection sampling in the shared mechanism only guarantees an unbiased draw;
+ * a collision is settled by the database and retried by the caller.
+ *
+ * ### The mechanism moved; the code did not
+ *
+ * `APP7-W01` supplied the third consumer `quotation-code.ts` was waiting for
+ * (`FU-APP6-B01-CODE-GENERATOR-PROMOTION-01`), and it lives in the **worker**,
+ * which may not import `apps/api`. The alphabet, the ten-character body and the
+ * rejection sampling therefore now live in `@embroidery/domain-types`; the
+ * prefix, the published constants and the exported names below are unchanged,
+ * and so is every byte this function can produce.
  */
 import { randomBytes } from 'node:crypto';
 
+import {
+  generateHumanCode,
+  HUMAN_CODE_ALPHABET,
+  HUMAN_CODE_BODY_LENGTH,
+  humanCodePattern,
+  type RandomBytesSource as HumanCodeRandomBytesSource,
+} from '@embroidery/domain-types';
+
 /** `G01-D12`. Unambiguous when spoken and when typed. */
-export const REQUEST_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+export const REQUEST_CODE_ALPHABET = HUMAN_CODE_ALPHABET;
 
 export const REQUEST_CODE_PREFIX = 'REQ-';
 
 /** `G01-D12`. Ten characters over a 30-symbol alphabet ≈ 49 bits. */
-export const REQUEST_CODE_LENGTH = 10;
+export const REQUEST_CODE_LENGTH = HUMAN_CODE_BODY_LENGTH;
 
 /** Exactly what {@link generateRequestCode} produces, and nothing else. */
-export const REQUEST_CODE_PATTERN = new RegExp(
-  `^${REQUEST_CODE_PREFIX}[${REQUEST_CODE_ALPHABET}]{${String(REQUEST_CODE_LENGTH)}}$`,
-);
+export const REQUEST_CODE_PATTERN = humanCodePattern(REQUEST_CODE_PREFIX);
 
-/**
- * The largest byte value that maps onto whole alphabet repetitions.
- *
- * 256 is not a multiple of 30, so a plain `byte % 30` would make the first
- * sixteen symbols measurably more likely. Bytes at or above this ceiling are
- * discarded instead — the standard rejection sampling, stated here because a
- * "close enough" modulo is exactly the shortcut that silently costs entropy.
- */
-const REJECTION_CEILING =
-  Math.floor(256 / REQUEST_CODE_ALPHABET.length) * REQUEST_CODE_ALPHABET.length;
-
-export type RandomBytesSource = (size: number) => Buffer;
+export type RandomBytesSource = HumanCodeRandomBytesSource;
 
 /**
  * Draws one code.
@@ -49,19 +53,5 @@ export type RandomBytesSource = (size: number) => Buffer;
  * the rejection behaviour deterministically; production never passes one.
  */
 export function generateRequestCode(random: RandomBytesSource = randomBytes): string {
-  const characters: string[] = [];
-  while (characters.length < REQUEST_CODE_LENGTH) {
-    // Over-draw: at a ~6% rejection rate a single-byte-at-a-time loop would
-    // make many more syscalls than one batch per round.
-    for (const byte of random(REQUEST_CODE_LENGTH)) {
-      if (byte >= REJECTION_CEILING) {
-        continue;
-      }
-      characters.push(REQUEST_CODE_ALPHABET[byte % REQUEST_CODE_ALPHABET.length] as string);
-      if (characters.length === REQUEST_CODE_LENGTH) {
-        break;
-      }
-    }
-  }
-  return `${REQUEST_CODE_PREFIX}${characters.join('')}`;
+  return generateHumanCode(REQUEST_CODE_PREFIX, random);
 }

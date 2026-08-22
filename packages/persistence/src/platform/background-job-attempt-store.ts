@@ -34,6 +34,13 @@ export const BACKGROUND_JOB_KINDS = [
   'SESSION_CLEANUP',
   'PAYMENT_RECONCILIATION',
   'RETENTION_SWEEP',
+  // `APP7-W01` — the `design.approved` order conversion. Added on the exact
+  // terms `ASSET_PROCESSING` was chosen over `OUTBOX_DISPATCH` (IMP-D030):
+  // `job_kind` is open text with **no CHECK**, so this list is the G-DB7-51
+  // write-time guard and not a schema constraint — no migration. The work is
+  // creating an order, not dispatching an outbox row, and filing it under the
+  // transport kind would hide it from an operator's dead-letter query.
+  'ORDER_CREATION',
 ] as const;
 
 export type BackgroundJobKind = (typeof BACKGROUND_JOB_KINDS)[number];

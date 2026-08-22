@@ -10,3 +10,11 @@ export type {
   AssetNormalizationAssociationRef,
   AssetNormalizationRequestedPayload,
 } from './events/asset-normalization-requested';
+
+export {
+  generateHumanCode,
+  HUMAN_CODE_ALPHABET,
+  HUMAN_CODE_BODY_LENGTH,
+  humanCodePattern,
+} from './codes/human-code';
+export type { RandomBytesSource } from './codes/human-code';

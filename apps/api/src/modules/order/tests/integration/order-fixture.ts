@@ -124,16 +124,25 @@ export async function seedOrderChain(
     insert into product_variants (id, product_id, color_name, size_label, display_order, is_active)
     values (${variantId}, ${productId}, 'Black', 'M', 1, true)
   `);
+  // `code` on both rows below is stable placement identity, made `NOT NULL` by
+  // migration `0034` (APP3-DB01) long after this DB7-era fixture was written —
+  // which is the whole of `FU-APP6-B03-ORDER-AGGREGATE-SUITE-RED-01`
+  // (`APP7-R00` §4: `STALE_TEST_EXPECTATIONS`, no runtime code involved).
+  // The values satisfy `ck_product_sides__code_format` /
+  // `ck_embroidery_areas__code_format` (`^[a-z0-9][a-z0-9_-]{0,63}$`) and are
+  // deterministic literals rather than derived from an id, because
+  // `uq_product_sides__product_code` and `uq_embroidery_areas__side_code` are
+  // scoped to the parent and each fixture chain seeds its own parent.
   await db.execute(sql`
     insert into product_sides
-      (id, product_id, name, background_asset_id, image_width_px, image_height_px,
+      (id, product_id, code, name, background_asset_id, image_width_px, image_height_px,
        physical_width_mm, physical_height_mm, px_per_mm, display_order)
-    values (${sideId}, ${productId}, 'Front', ${assetId}, 1000, 1200, 400, 480, 2.5, 1)
+    values (${sideId}, ${productId}, 'front', 'Front', ${assetId}, 1000, 1200, 400, 480, 2.5, 1)
   `);
   await db.execute(sql`
     insert into embroidery_areas
-      (id, product_side_id, name, bound_x_px, bound_y_px, bound_width_px, bound_height_px, display_order)
-    values (${areaId}, ${sideId}, 'Chest', 100, 150, 300, 200, 1)
+      (id, product_side_id, code, name, bound_x_px, bound_y_px, bound_width_px, bound_height_px, display_order)
+    values (${areaId}, ${sideId}, 'chest', 'Chest', 100, 150, 300, 200, 1)
   `);
 
   // An order line must name exactly one subject

@@ -5,6 +5,7 @@ import { AssetInspectionModule } from '../jobs/asset-inspection/asset-inspection
 import { IntakeCleanupModule } from '../jobs/app5-intake-cleanup/intake-cleanup.module';
 import { AssetNormalizationModule } from '../jobs/asset-normalization/asset-normalization.module';
 import { NotificationDeliveryModule } from '../jobs/notification-delivery/notification-delivery.module';
+import { OrderConversionModule } from '../jobs/order-conversion/order-conversion.module';
 import { WorkerRuntimeModule } from '../runtime/worker-runtime.module';
 import { WorkerObjectStorageModule } from '../storage/object-storage.module';
 
@@ -41,6 +42,12 @@ import { WorkerObjectStorageModule } from '../storage/object-storage.module';
     // sends, which is the fail-closed state that keeps a secret undelivered
     // rather than dead-lettered.
     NotificationDeliveryModule,
+    // `OrderConversionModule` (APP7-W01) is the fourth outbox capability, and
+    // the consumer `design.approved` has been waiting for since APP6-B11: every
+    // approval so far has left a `PENDING` row nothing claimed. It adds no
+    // queue and no transport — only a handler, and the claim filter grows by
+    // exactly one event type.
+    OrderConversionModule,
     // `IntakeCleanupModule` (APP5-B02) is the first capability here that is
     // **not** an outbox handler: an expired, unbound customer upload produces
     // no event to claim, which is precisely why it needs a sweep. It shares the
