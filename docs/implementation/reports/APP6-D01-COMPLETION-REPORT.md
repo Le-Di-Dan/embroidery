@@ -204,6 +204,17 @@ APP3 node rather than approximated: Inter Medium 13, `Color/Text/Primary` at **1
 node opacity, **18°** rotation, 160 × 130 tiling, always on, no toggle, no export
 control, and no claim that screenshots are prevented.
 
+> **Superseded as implementation authority by `APP6-X01` closure routing.** The
+> rotation and tile figures above are a **historical D01 visual measurement of the
+> Figma reproduction**; runtime implementation authority is the delivered
+> `APP3-S09` treatment, which rotates **−30°** and tiles a **5 × 7 percentage
+> grid** of the overlay box. `APP6-S02` correctly followed `APP3-S09`. The
+> non-geometric properties recorded here — Inter Medium 13, `Color/Text/Primary`
+> at 13 % node opacity, always on, no toggle, no export control, and no claim that
+> screenshots are prevented — are unchanged and remain accurate.
+> `FU-APP6-S02-WATERMARK-DRAWN-VS-DELIVERED-01` = `CLOSED_BY_AUTHORITY_ROUTING`.
+> No runtime change and no Figma mutation was made to record this.
+
 **Nothing new was added to the design system:** 0 component masters, 0 instances, 0 new
 variables, text styles, paint styles or effect styles. Measured identically before and
 after: 3 collections / 52 variables / 11 text styles / 0 effect styles / 0 paint styles.
