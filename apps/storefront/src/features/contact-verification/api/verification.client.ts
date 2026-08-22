@@ -21,19 +21,24 @@ import {
 
 import { getBrowserApiClient } from '../../../config/browser-api-client';
 import { CONTACT_KIND_VALUES, type ContactKind } from '../model/contact-draft';
-import { VERIFICATION_PURPOSE } from '../model/verification-purpose';
+import type { VerificationPurpose } from '../model/verification-purpose';
 
-/** Requests a code for a destination. The contact is sent exactly as typed. */
+/**
+ * Requests a code for a destination. The contact is sent exactly as typed.
+ *
+ * `purpose` is required rather than defaulted here: a default at the transport
+ * seam is the one place a step-up could silently become a submission, and the
+ * server treats the two as different proofs — only a `STEP_UP` challenge
+ * satisfies `APP6-B05`'s GRD-003. The controller fixes it once, from the
+ * surface that mounted the flow.
+ */
 export async function issueVerificationChallenge(
   contactKind: ContactKind,
   contact: string,
+  purpose: VerificationPurpose,
 ): Promise<VerificationChallengeResponse> {
   const body = await publicVerificationIssue(
-    {
-      contact,
-      contactKind: CONTACT_KIND_VALUES[contactKind],
-      purpose: VERIFICATION_PURPOSE,
-    },
+    { contact, contactKind: CONTACT_KIND_VALUES[contactKind], purpose },
     { instance: getBrowserApiClient() },
   );
   return body.data;

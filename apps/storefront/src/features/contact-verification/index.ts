@@ -24,7 +24,12 @@ export { VerificationQueryProvider } from './ui/verification-query-provider';
  * reducer state, never leaves the code-entry input and its ref, and no export
  * here can reach it.
  */
-export { useContactVerification, type ContactVerification } from './hooks/use-contact-verification';
+export {
+  useContactVerification,
+  type ContactVerification,
+  type ContactVerificationOptions,
+} from './hooks/use-contact-verification';
+export { VERIFICATION_PURPOSES, type VerificationPurpose } from './model/verification-purpose';
 export { useNow } from './hooks/use-now';
 export { VERIFICATION_COPY } from './model/verification-copy';
 export { isResendAvailable, verificationUiState } from './model/verification-state';

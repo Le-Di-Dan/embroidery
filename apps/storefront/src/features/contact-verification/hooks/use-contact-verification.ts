@@ -33,6 +33,10 @@ import {
 } from '../api/verification.client';
 import { isPlausibleContact, type ContactKind } from '../model/contact-draft';
 import {
+  DEFAULT_VERIFICATION_PURPOSE,
+  type VerificationPurpose,
+} from '../model/verification-purpose';
+import {
   attemptOutcomeOf,
   deadChallengeOutcome,
   issueOutcomeOf,
@@ -70,7 +74,21 @@ export interface ContactVerification {
   readonly isResending: boolean;
 }
 
-export function useContactVerification(): ContactVerification {
+/**
+ * What the mounting surface fixes about the flow.
+ *
+ * One field, and it is the only thing that differs between `/xac-minh-lien-he`
+ * and the step-up embedded in `/truy-cap/bao-gia`: everything else — the
+ * reducer, the three writes, the ambiguity-resolving read, the code's whole
+ * lifetime — is identical and is not re-implemented anywhere.
+ */
+export interface ContactVerificationOptions {
+  /** Defaults to `SUBMISSION`, which is what `APP4-S01` has always issued. */
+  readonly purpose?: VerificationPurpose;
+}
+
+export function useContactVerification(options?: ContactVerificationOptions): ContactVerification {
+  const purpose = options?.purpose ?? DEFAULT_VERIFICATION_PURPOSE;
   const [state, dispatch] = useReducer(verificationReducer, initialVerificationState);
   const queryClient = useQueryClient();
 
@@ -112,7 +130,7 @@ export function useContactVerification(): ContactVerification {
   );
 
   const issue = useMutation({
-    mutationFn: () => issueVerificationChallenge(state.contactKind, state.contact),
+    mutationFn: () => issueVerificationChallenge(state.contactKind, state.contact, purpose),
     onSuccess: (response) => {
       clearCode();
       dispatch({ type: 'CHALLENGE_OPENED', challenge: toChallenge(response) });

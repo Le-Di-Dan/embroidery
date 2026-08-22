@@ -14,8 +14,10 @@
  * credential on its own terms or move the strip relative to the request.
  */
 export {
+  NO_SECURE_CREDENTIAL,
   useSecureLinkBootstrap,
   type SecureLinkBootstrap,
+  type SecureLinkBootstrapOptions,
 } from './hooks/use-secure-link-bootstrap';
 export { SECURE_LINK_COPY } from './model/secure-link-copy';
 export type { SecureLinkState, SecureLinkStatus } from './model/secure-link-state';

@@ -49,7 +49,13 @@
  * mutation entry as well.
  *
  * It is cleared on success, on a definitive refusal, on a missing-or-malformed
- * fragment, and on unmount. It is deliberately **kept** across a transient
+ * fragment, and on unmount — except that a consumer may ask, through
+ * {@link SecureLinkBootstrapOptions}, to keep it past a *successful* read. Only
+ * `APP6-S01` does: the same grant authorises the customer's later accept or
+ * reject, the fragment is already gone, and persisting it is forbidden, so the
+ * ref is the only place it can live. Every other clearing rule is unchanged for
+ * that consumer, and it clears the credential itself the moment its decision
+ * settles. It is deliberately **kept** across a transient
  * failure, and only that one: a network error carries no verdict about the
  * link, the fragment is gone and cannot be read twice, so destroying it there
  * would convert a flaky connection into a permanently dead link. It stays in
@@ -76,10 +82,76 @@ import {
 
 export interface SecureLinkBootstrap<TPayload> {
   readonly state: SecureLinkState<TPayload>;
-  /** Explicit user action only. There is no automatic retry anywhere (§15). */
+  /**
+   * Runs the resolve call again with the credential already held.
+   *
+   * Explicit user action or an explicit reconciliation only. There is no
+   * automatic retry anywhere (§15), and this fires nothing on its own: it is a
+   * function a caller invokes, guarded by the credential itself so it can never
+   * run with an empty one.
+   */
   readonly retry: () => void;
   readonly retrying: boolean;
+  /**
+   * How many times the resolve call has succeeded on this mount.
+   *
+   * Starts at 0 and increases by one per successful read. A consumer that must
+   * know when a *re-read* has finished — `APP6-S01` compares the version it
+   * gets back against the one the customer chose — needs a signal that is
+   * unambiguous in a single render pass. A pending flag is not: it reads false
+   * both before the request starts and after it ends, and a fast response can
+   * be batched so that `true` is never rendered at all. A counter can only go
+   * up, and it goes up exactly once per completed read.
+   */
+  readonly resolveCount: number;
+  /**
+   * Spends the retained credential on one further call.
+   *
+   * Present only for a consumer that asked to retain it. The secret is handed
+   * to `spend` as an argument and is never returned, stored or logged here; a
+   * consumer that has no credential (never had one, or dropped it) gets
+   * {@link NO_SECURE_CREDENTIAL} rather than a request with an empty token.
+   */
+  readonly runWithSecret: <TResult>(
+    spend: (secret: string) => Promise<TResult>,
+  ) => Promise<TResult>;
+  /** Destroys the credential. Idempotent, and irreversible for this mount. */
+  readonly clearCredential: () => void;
+  /** Whether a credential is still held. Never the credential itself. */
+  readonly hasCredential: () => boolean;
 }
+
+/**
+ * Options for a landing whose credential outlives its first call.
+ *
+ * `APP4-S02` and `APP5-S02` are read-only: the customer arrives, one call is
+ * made, and the credential has no further use the moment it settles. `APP6-S01`
+ * is not — the same grant authorises the customer's later accept or reject, the
+ * fragment is already gone, and nothing may persist it. So the credential must
+ * survive a successful read, in the same ephemeral ref and nowhere else.
+ *
+ * Off by default, deliberately. Retention is the exceptional posture and the
+ * screens that do not need it must not acquire it by inheritance.
+ */
+export interface SecureLinkBootstrapOptions {
+  /**
+   * Keeps the credential in the ref after the resolve call succeeds.
+   *
+   * Every other lifetime rule is unchanged: it still dies on a definitive
+   * refusal, on a missing or malformed fragment and on unmount, and it is still
+   * never written anywhere a snapshot could reach.
+   */
+  readonly retainCredentialAfterSuccess?: boolean;
+}
+
+/**
+ * Raised when a caller tries to spend a credential this mount no longer holds.
+ *
+ * A thrown error rather than a silent no-op: the call sites are decisions the
+ * customer explicitly took, and one that quietly does nothing would leave a
+ * button that appears to work.
+ */
+export const NO_SECURE_CREDENTIAL = 'NO_SECURE_CREDENTIAL';
 
 /**
  * Runs the one authorized call a secure-link landing is allowed to make.
@@ -90,7 +162,9 @@ export interface SecureLinkBootstrap<TPayload> {
  */
 export function useSecureLinkBootstrap<TPayload>(
   resolveWithSecret: (secret: string) => Promise<TPayload>,
+  options?: SecureLinkBootstrapOptions,
 ): SecureLinkBootstrap<TPayload> {
+  const retainAfterSuccess = options?.retainCredentialAfterSuccess === true;
   const [state, dispatch] = useReducer(
     secureLinkReducer as Reducer<SecureLinkState<TPayload>, SecureLinkAction<TPayload>>,
     initialSecureLinkState,
@@ -122,13 +196,21 @@ export function useSecureLinkBootstrap<TPayload>(
    */
   const bootstrappedRef = useRef(false);
 
+  /** Incremented in `onSuccess`, so it is already current when React re-renders. */
+  const resolveCountRef = useRef(0);
+
   const resolve = useMutation({
     // No variables: the credential is read from the ref, so nothing TanStack
     // retains after settlement can contain it.
     mutationFn: () => resolveRef.current(tokenRef.current),
     onSuccess: (payload: TPayload) => {
-      // A verdict exists and it is favourable; the credential has no further use.
-      clearToken();
+      // A verdict exists and it is favourable. For a read-only landing the
+      // credential has no further use and dies here; for a landing that will
+      // spend it again on the customer's own explicit decision it stays in the
+      // same ref it has been in since bootstrap — never in storage, the URL,
+      // history state or the cache.
+      if (!retainAfterSuccess) clearToken();
+      resolveCountRef.current += 1;
       dispatch({ type: 'RESOLVED', payload });
     },
     onError: (error: unknown) => {
@@ -187,5 +269,30 @@ export function useSecureLinkBootstrap<TPayload>(
     resolve.mutate();
   }, [resolve]);
 
-  return { state, retry, retrying: resolve.isPending };
+  /**
+   * The one way a retained credential is reachable, and it never returns it.
+   *
+   * The secret is passed into `spend` and the promise resolves with whatever
+   * that call produced, so the credential's only appearance outside this hook
+   * is as an argument on the stack of the request that needs it.
+   */
+  const runWithSecret = useCallback(
+    <TResult>(spend: (secret: string) => Promise<TResult>): Promise<TResult> => {
+      if (tokenRef.current === '') return Promise.reject(new Error(NO_SECURE_CREDENTIAL));
+      return spend(tokenRef.current);
+    },
+    [],
+  );
+
+  const hasCredential = useCallback(() => tokenRef.current !== '', []);
+
+  return {
+    state,
+    retry,
+    retrying: resolve.isPending,
+    resolveCount: resolveCountRef.current,
+    runWithSecret,
+    clearCredential: clearToken,
+    hasCredential,
+  };
 }

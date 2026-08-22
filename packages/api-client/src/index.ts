@@ -431,6 +431,54 @@ export type {
   SecureLinkResolutionResponse,
 } from './generated/embroidery-api.schemas';
 
+// Public customer quotation read and decisions (APP6-B04, APP6-B05), consumed
+// by the Storefront secure-quotation screen (APP6-S01). Exposed here so that
+// feature never deep-imports the generated tree.
+//
+// All three bodies carry the secure-link token in a request **body**, never a
+// path segment, query parameter or header — the same rule `ResolveSecureLinkBody`
+// states, for the same reason: a bearer credential must not reach an access log.
+// The body types are exported so the caller names the wire shape at the
+// transport seam rather than assembling a literal that would compile just as
+// well with the token in the wrong field.
+//
+// The two decision bodies also carry `versionId`, and that field is the whole
+// exactness contract: the server checks it against the quotation's own current
+// pointer inside the deciding transaction, so a superseded version is refused
+// rather than silently upgraded. It is a **locator the customer was shown**, not
+// an authority — every other identifier (request, quotation, customer, grant,
+// challenge) is derived server-side and is absent from these schemas.
+//
+// The status enums cross as **values** because the screen branches on each and a
+// mistyped string literal is a comparison that is simply never true. The request
+// status on the accepted response crosses for the same reason, and is displayed
+// nowhere: it is the server's own projection, read back so the screen can state
+// that a request moved without the screen ever having asked it to.
+export {
+  publicQuotationCurrent,
+  publicQuotationAccept,
+  publicQuotationReject,
+} from './generated/embroidery-api';
+export {
+  CustomerQuotationResponseStatus,
+  CustomerQuotationResponseQuotationStatus,
+  CustomerQuotationLineItemResponseLineKind,
+  QuotationAcceptedResponseVersionStatus,
+  QuotationAcceptedResponseQuotationStatus,
+  QuotationAcceptedResponseRequestStatus,
+  QuotationRejectedResponseVersionStatus,
+  QuotationRejectedResponseQuotationStatus,
+} from './generated/embroidery-api.schemas';
+export type {
+  ReadCurrentQuotationBody,
+  AcceptQuotationBody,
+  RejectQuotationBody,
+  CustomerQuotationResponse,
+  CustomerQuotationLineItemResponse,
+  QuotationAcceptedResponse,
+  QuotationRejectedResponse,
+} from './generated/embroidery-api.schemas';
+
 // Admin Customer support and notification delivery (APP4-B07, APP4-B08),
 // consumed by the Admin customer-access support screen (APP4-A01). Exposed here
 // so that feature never deep-imports the generated tree.

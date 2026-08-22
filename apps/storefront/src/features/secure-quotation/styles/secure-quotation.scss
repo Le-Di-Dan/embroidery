@@ -1,0 +1,580 @@
+// Secure quotation — feature-scoped styles (APP6-S01).
+//
+// Design source: FIG-APP6-S01-* (file BQwqV8GdfUIELvsQDB1UQE, page APP_06,
+// nodes 700:3 · 701:3 · 701:88 · 701:147 · 702:3 · 702:65 · 702:129 · 703:3 ·
+// 703:36 · 704:3 · 705:3), approved under FIG-APPROVAL-APP6-D01-PO-001.
+//
+// Measured live from the approved frames:
+//   desktop 1440 — card 960 wide, 32 padding, radius 24; table columns
+//                  420 / 70 / 160 / 182 with the last three right-aligned;
+//                  totals block 180 tall, deposit split 80, buttons 49 tall
+//   mobile   390 — card 350 wide inside a 20 gutter, 16 padding; the table
+//                  becomes stacked blocks 76 tall; buttons 52 tall, full width
+//   dialog       — 560 wide, 32 padding, radius 24, over a scrim
+//
+// Colour, type, radius and spacing come from @embroidery/styles. The frames use
+// a few steps the shared scale does not define (6, 14, 18, 20, 49, 52); each is
+// a documented local literal, following the APP4-S02 precedent — inventing
+// scale steps would change a shared foundation to suit one screen.
+//
+// This content mounts *inside* the APP4 `.secure-link-access` section, which is
+// deliberate: APP6-D01 reuses the secure-access frames rather than redrawing
+// them, so the section's centring and vertical rhythm are already established
+// there and are not duplicated here.
+
+@use '@embroidery/styles' as styles;
+
+// Mirrored from secure-link-access.scss, which mirrors storefront-shell.scss.
+// One breakpoint governs the whole landing; a second would let the table's
+// stacked form and the shell's gutter switch at widths nobody tests together.
+$bp-shell-wide: 768px;
+
+// Approved card geometry (700:9 / 704:8).
+$card-max: 960px;
+$card-padding: styles.spacing(32);
+$card-padding-mobile: styles.spacing(16);
+$stack-gap: 20px; // 700:12 → 700:13 → 700:14 rhythm; no step between 16 and 24
+$stack-gap-tight: styles.spacing(12);
+
+// Approved badge geometry (700:10).
+$badge-padding-block: 6px;
+$badge-padding-inline: styles.spacing(16);
+
+// Approved row and block geometry (700:19, 700:39, 700:48).
+$row-padding-block: styles.spacing(12);
+$row-padding-inline: 15px; // 700:20 inset; not a step on the shared scale
+$block-padding: 15px;
+$block-gap: styles.spacing(8);
+
+// Approved control geometry (700:55 desktop, 704:45 mobile). The mobile height
+// is the one that matters: 52 is the approved touch target and must not shrink.
+$button-height: 49px;
+$button-height-mobile: 52px;
+$button-gap: styles.spacing(16);
+
+// Approved dialog geometry (701:63).
+$dialog-max: 560px;
+$dialog-padding: styles.spacing(32);
+$dialog-padding-mobile: 20px;
+$dialog-gap: 18px; // no shared step between 16 and 24
+
+$line-height-snug: 1.35;
+$line-height-body: 1.5;
+
+.secure-quotation {
+  display: flex;
+  flex-direction: column;
+  gap: $stack-gap;
+  width: 100%;
+  max-width: $card-max;
+  padding: $card-padding-mobile;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-lg;
+
+  @media (min-width: $bp-shell-wide) {
+    padding: $card-padding;
+  }
+
+  // 700:10 — the state pill. The label is always printed, so the state is
+  // never carried by colour alone (634:150).
+  &__badge {
+    align-self: flex-start;
+    margin: 0;
+    padding: $badge-padding-block $badge-padding-inline;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: 999px;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-snug;
+    color: styles.$color-text-secondary;
+
+    &--success {
+      border-color: styles.$color-status-success;
+      color: styles.$color-status-success;
+    }
+
+    &--warning {
+      border-color: styles.$color-status-warning;
+      color: styles.$color-status-warning;
+    }
+
+    &--error {
+      border-color: styles.$color-status-error;
+      color: styles.$color-status-error;
+    }
+  }
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+
+    // The heading receives focus when the link settles, so it must show a ring;
+    // a programmatic focus with no visible indicator is a keyboard user losing
+    // their place silently.
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 4px;
+    }
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  // 702:124 / 702:188 — the banner above the figures.
+  &__alert {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px $block-padding;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+
+    &--warning {
+      border-color: styles.$color-status-warning;
+    }
+
+    &--error {
+      border-color: styles.$color-status-error;
+    }
+
+    &--info {
+      border-color: styles.$color-status-info;
+    }
+  }
+
+  &__alert-title {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__alert-body {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  // 700:14 … 700:38 desktop table / 704:13 … 704:28 mobile stack.
+  //
+  // One markup, two presentations. Below the breakpoint every cell becomes its
+  // own row inside a bordered block and prints its column name from
+  // `data-label`, so the figures keep their meaning without a header to read
+  // them against — and without a second component that could show something
+  // different from the table.
+  &__lines {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+
+    thead {
+      display: none;
+    }
+
+    th,
+    td {
+      text-align: left;
+      font-weight: styles.$font-weight-regular;
+    }
+  }
+
+  &__line {
+    display: block;
+    padding: $row-padding-block $row-padding-inline;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-xs;
+
+    & + & {
+      margin-block-start: styles.spacing(8);
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      gap: styles.spacing(16);
+      padding-block-start: 6px;
+      font-size: styles.$font-size-caption;
+      color: styles.$color-text-secondary;
+
+      &::before {
+        content: attr(data-label);
+        color: styles.$color-text-tertiary;
+      }
+    }
+  }
+
+  &__line-description {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__line-text {
+    line-height: $line-height-body;
+  }
+
+  &__line-kind {
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  @media (min-width: $bp-shell-wide) {
+    &__lines {
+      thead {
+        display: table-header-group;
+      }
+
+      thead th {
+        padding: $row-padding-block $row-padding-inline;
+        background: styles.$color-background-secondary;
+        border: 1px solid styles.$color-border-primary;
+        font-size: styles.$font-size-caption;
+        color: styles.$color-text-tertiary;
+      }
+    }
+
+    &__line {
+      display: table-row;
+      padding: 0;
+      border: 0;
+
+      & + & {
+        margin-block-start: 0;
+      }
+
+      th,
+      td {
+        padding: $row-padding-block $row-padding-inline;
+        border-block-end: 1px solid styles.$color-border-primary;
+      }
+
+      td {
+        display: table-cell;
+        padding-block-start: $row-padding-block;
+        font-size: styles.$font-size-body-s;
+        color: styles.$color-text-primary;
+
+        &::before {
+          content: none;
+        }
+      }
+    }
+
+    &__line-kind {
+      // The desktop table has a dedicated content column; the kind rides under
+      // the description rather than claiming a fifth column the frame has not.
+      display: block;
+    }
+
+    &__numeric {
+      text-align: right;
+    }
+  }
+
+  &__empty {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  // 700:39 totals and 700:48 deposit split.
+  &__totals {
+    display: flex;
+    flex-direction: column;
+    gap: $stack-gap-tight;
+  }
+
+  &__totals-list,
+  &__deposit {
+    display: flex;
+    flex-direction: column;
+    gap: $block-gap;
+    margin: 0;
+    padding: $block-padding;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+  }
+
+  &__deposit {
+    background: styles.$color-surface-primary;
+
+    @media (min-width: $bp-shell-wide) {
+      flex-direction: row;
+      gap: styles.spacing(32);
+    }
+  }
+
+  &__totals-row {
+    display: flex;
+    justify-content: space-between;
+    gap: styles.spacing(16);
+
+    dt {
+      font-size: styles.$font-size-caption;
+      color: styles.$color-text-tertiary;
+    }
+
+    dd {
+      margin: 0;
+      font-size: styles.$font-size-body-s;
+      color: styles.$color-text-primary;
+    }
+
+    // 700:46 / 700:47 — the figure the acceptance names, set apart.
+    &--total {
+      padding-block-start: $block-gap;
+      border-block-start: 1px solid styles.$color-border-primary;
+
+      dt {
+        font-size: styles.$font-size-body-s;
+        color: styles.$color-text-primary;
+      }
+
+      dd {
+        font-size: styles.$font-size-body-m;
+        font-weight: styles.$font-weight-semibold;
+      }
+    }
+  }
+
+  &__deposit-part {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    dt {
+      font-size: styles.$font-size-caption;
+      color: styles.$color-text-tertiary;
+    }
+
+    dd {
+      margin: 0;
+      font-size: styles.$font-size-body-m;
+      color: styles.$color-text-primary;
+    }
+  }
+
+  &__deposit-note,
+  &__note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  // 701:206 / 702:62 — the committed decision.
+  &__outcome {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px $block-padding;
+    background: styles.$color-background-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+
+    &--accepted {
+      border-color: styles.$color-status-success;
+    }
+
+    &--rejected {
+      border-color: styles.$color-border-secondary;
+    }
+  }
+
+  &__outcome-title {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+
+    .secure-quotation__outcome--accepted & {
+      color: styles.$color-status-success;
+    }
+  }
+
+  &__outcome-body,
+  &__outcome-note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__outcome-figure {
+    display: flex;
+    justify-content: space-between;
+    gap: styles.spacing(16);
+    margin: 0;
+
+    dt {
+      font-size: styles.$font-size-caption;
+      color: styles.$color-text-tertiary;
+    }
+
+    dd {
+      margin: 0;
+      font-size: styles.$font-size-body-m;
+      font-weight: styles.$font-weight-semibold;
+      color: styles.$color-text-primary;
+    }
+  }
+
+  // 700:55 / 700:57 desktop, 704:45 / 704:47 mobile.
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: $button-gap;
+
+    @media (min-width: $bp-shell-wide) {
+      flex-direction: row;
+    }
+  }
+
+  &__button {
+    min-height: $button-height-mobile;
+    padding-inline: styles.spacing(24);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-sm;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+    cursor: pointer;
+
+    @media (min-width: $bp-shell-wide) {
+      min-height: $button-height;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      background: styles.$color-background-secondary;
+      border-color: styles.$color-border-primary;
+      color: styles.$color-text-tertiary;
+      cursor: default;
+    }
+
+    &--primary {
+      flex: 1 1 auto;
+      background: styles.$color-action-primary;
+      border-color: styles.$color-action-primary;
+      color: styles.$color-surface-primary;
+
+      &:hover:not(:disabled) {
+        background: styles.$color-action-hover;
+        border-color: styles.$color-action-hover;
+      }
+    }
+
+    &--danger {
+      border-color: styles.$color-status-error;
+      color: styles.$color-status-error;
+    }
+  }
+
+  // 701:62 / 701:63 — the modal frame the three overlays share.
+  &__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: styles.spacing(16);
+    overflow-y: auto;
+    background: styles.$color-overlay-scrim;
+  }
+
+  &__dialog {
+    display: flex;
+    flex-direction: column;
+    gap: $dialog-gap;
+    width: 100%;
+    max-width: $dialog-max;
+    padding: $dialog-padding-mobile;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-lg;
+
+    @media (min-width: $bp-shell-wide) {
+      padding: $dialog-padding;
+    }
+  }
+
+  &__dialog-title {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    line-height: $line-height-snug;
+    color: styles.$color-text-primary;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 4px;
+    }
+  }
+
+  &__dialog-body {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    line-height: $line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__dialog-note {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: $line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__dialog-actions {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+
+    @media (min-width: $bp-shell-wide) {
+      flex-direction: row;
+    }
+  }
+
+  // The embedded APP4 verification cards keep their own styling; this only
+  // removes the card chrome they would otherwise draw inside a dialog that is
+  // already a card.
+  &__step-up {
+    .contact-verification__card {
+      padding: 0;
+      background: none;
+      border: 0;
+    }
+  }
+
+  &__visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
