@@ -8,6 +8,7 @@ import { DesignTemplateAssetPublicModule } from '../modules/design/design-templa
 import { DesignTemplatePublicModule } from '../modules/design/design-template-public.module';
 import { CatalogAdminSideBackgroundModule } from '../modules/catalog/catalog-admin-side-background.module';
 import { CatalogPlacementModule } from '../modules/catalog/catalog-placement.module';
+import { CatalogSkuModule } from '../modules/catalog/catalog-sku.module';
 import { CatalogPublicMediaModule } from '../modules/catalog/catalog-public-media.module';
 import { CatalogPublicSideBackgroundModule } from '../modules/catalog/catalog-public-side-background.module';
 import { CatalogPublicModule } from '../modules/catalog/catalog-public.module';
@@ -60,6 +61,12 @@ import { ValidationModule } from '../platform/validation/validation.module';
     CatalogDraftModule,
     CatalogPublicationModule,
     CatalogPlacementModule,
+    // `APP7-B01` — Admin SKU authoring, the inherited APP2 Catalog gap that leaves
+    // the Catalog order-item branch unreachable. Registered beside the other
+    // Admin catalog modules; its two routes differ from every other in segment
+    // count and in the segment after `admin`, so registration order cannot make
+    // one shadow another.
+    CatalogSkuModule,
     // APP3-B02A — Admin Side background delivery, the JIT unblock for APP3-A01's
     // placement preview. Registered beside the placement module it serves and
     // before the public delivery module: the two share the `sides/.../background`

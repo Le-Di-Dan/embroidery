@@ -55,6 +55,8 @@ import type {
   AdminQuotationSendVersion200,
   AdminQuotationVersionDetail200,
   AdminQuotationVersionHistory200,
+  AdminSkuCreate201,
+  AdminSkuUpdate200,
   AppendModerationNoteBody,
   ApproveDesignVersionBody,
   ArchiveDesignTemplateBody,
@@ -66,6 +68,7 @@ import type {
   CreateDesignTemplateBody,
   CreateProductBody,
   CreateQuotationDraftBody,
+  CreateSkuBody,
   HealthStatusResponse,
   IssueVerificationChallengeBody,
   PublicCustomRequestAssetStatus200,
@@ -121,6 +124,7 @@ import type {
   UnpublishDesignTemplateBody,
   UnpublishProductBody,
   UpdateProductBody,
+  UpdateSkuBody,
 } from './embroidery-api.schemas';
 
 import { apiRequest } from '../clients/api-request.mutator';
@@ -790,6 +794,27 @@ export const adminProductUnpublish = (
 };
 
 /**
+ * Creates one sellable SKU definition under the named variant. The product/variant relationship is proved server-side from locked rows, and the write is refused when it would leave the variant with more than one order-eligible (`isActive`) SKU — an order must be able to resolve exactly one SKU without guessing. The currency is server-owned (VND) and stock is not part of this contract: `skus` is the definition side only.
+ * @summary Create a SKU for a product variant
+ */
+export const adminSkuCreate = (
+  productId: unknown,
+  variantId: unknown,
+  createSkuBody: CreateSkuBody,
+  options?: SecondParameter<typeof apiRequest<AdminSkuCreate201>>,
+) => {
+  return apiRequest<AdminSkuCreate201>(
+    {
+      url: `/api/admin/products/${productId}/variants/${variantId}/skus`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createSkuBody,
+    },
+    options,
+  );
+};
+
+/**
  * Creates the quotation for one custom request together with its first `DRAFT` version and the priced lines that explain it. The two commit together: there is no quotation without its first version. A request may hold exactly one quotation — a later price is a new **version** of it, not a second quotation.
  *
  * Only the lines, the shipping fee and an optional adjustment are priced input. The line totals, the subtotal, the total and the deposit/remaining split are all derived: the split comes from published business policy, not from this request, and the amounts are exact decimal throughout — send them as strings.
@@ -907,6 +932,26 @@ export const adminSecureGrantRevoke = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: revokeSecureGrantBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Patches the code, the optional price override and the sellable flag. The owning variant is resolved server-side and cannot be changed — there is no field that moves a SKU to another variant. Activating a SKU is refused when its variant already has an order-eligible one; deactivating is always allowed. Sending `priceOverrideAmount: null` clears the override so the product base price applies again.
+ * @summary Update a SKU
+ */
+export const adminSkuUpdate = (
+  skuId: unknown,
+  updateSkuBody: UpdateSkuBody,
+  options?: SecondParameter<typeof apiRequest<AdminSkuUpdate200>>,
+) => {
+  return apiRequest<AdminSkuUpdate200>(
+    {
+      url: `/api/admin/skus/${skuId}`,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      data: updateSkuBody,
     },
     options,
   );
@@ -1594,6 +1639,7 @@ export type AdminProductSideBackgroundGetResult = NonNullable<
 export type AdminProductUnpublishResult = NonNullable<
   Awaited<ReturnType<typeof adminProductUnpublish>>
 >;
+export type AdminSkuCreateResult = NonNullable<Awaited<ReturnType<typeof adminSkuCreate>>>;
 export type AdminQuotationCreateResult = NonNullable<
   Awaited<ReturnType<typeof adminQuotationCreate>>
 >;
@@ -1612,6 +1658,7 @@ export type AdminQuotationSendVersionResult = NonNullable<
 export type AdminSecureGrantRevokeResult = NonNullable<
   Awaited<ReturnType<typeof adminSecureGrantRevoke>>
 >;
+export type AdminSkuUpdateResult = NonNullable<Awaited<ReturnType<typeof adminSkuUpdate>>>;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
 export type PublicCustomRequestAssetUploadResult = NonNullable<

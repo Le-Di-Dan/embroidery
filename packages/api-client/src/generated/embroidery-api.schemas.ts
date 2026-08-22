@@ -1280,6 +1280,31 @@ export interface AdminQuotationVersionHistoryResponse {
   versions: AdminQuotationVersionResponse[];
 }
 
+export type AdminSkuResponseCurrencyCode =
+  (typeof AdminSkuResponseCurrencyCode)[keyof typeof AdminSkuResponseCurrencyCode];
+
+export const AdminSkuResponseCurrencyCode = {
+  VND: 'VND',
+} as const;
+
+export interface AdminSkuResponse {
+  /** The business SKU code. Globally unique and compared bytewise. */
+  code: string;
+  createdAt: string;
+  currencyCode: AdminSkuResponseCurrencyCode;
+  /** The sellable flag. `true` makes this SKU order-eligible for its variant. */
+  isActive: boolean;
+  /** Whole đồng as a decimal string; never a JSON number. Absent when the product base price applies. */
+  priceOverrideAmount?: string;
+  productId: string;
+  /** The owning variant. Immutable: a SKU is never moved between variants. */
+  productVariantId: string;
+  skuId: string;
+  updatedAt: string;
+  /** How many SKUs of the owning variant are order-eligible after this write. Never more than 1: a variant with an ambiguous set is refused, so an order can resolve one SKU without guessing. */
+  variantOrderEligibleSkuCount: number;
+}
+
 export interface AdminSubmittedDesignSourceResponse {
   /** The canonical, quantized Design Document exactly as persisted. */
   document: DesignDocument;
@@ -1793,6 +1818,18 @@ export interface CreateQuotationDraftBody {
    * @maximum 100000000
    */
   stitchCount?: number;
+}
+
+export interface CreateSkuBody {
+  /**
+   * @minLength 1
+   * @maxLength 64
+   * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]*$
+   */
+  code: string;
+  isActive: boolean;
+  /** @pattern ^\d{1,12}$ */
+  priceOverrideAmount?: string;
 }
 
 export interface CurrentStaffResponse {
@@ -3727,6 +3764,21 @@ export interface UpdateProductBody {
   name?: string;
 }
 
+export interface UpdateSkuBody {
+  /**
+   * @minLength 1
+   * @maxLength 64
+   * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]*$
+   */
+  code?: string;
+  isActive?: boolean;
+  /**
+   * @nullable
+   * @pattern ^\d{1,12}$
+   */
+  priceOverrideAmount?: string | null;
+}
+
 export interface VerificationChallengeResponse {
   /** The open challenge for this destination and purpose. The same value is returned while that challenge stays live. */
   challengeId: string;
@@ -4086,6 +4138,10 @@ export type AdminProductUnpublish200 = ApiSuccessResponse & {
   data: AdminProductPublicationResponse;
 };
 
+export type AdminSkuCreate201 = ApiSuccessResponse & {
+  data: AdminSkuResponse;
+};
+
 export type AdminQuotationCreate201 = ApiSuccessResponse & {
   data: QuotationDraftedResponse;
 };
@@ -4104,6 +4160,10 @@ export type AdminQuotationVersionDetail200 = ApiSuccessResponse & {
 
 export type AdminQuotationSendVersion200 = ApiSuccessResponse & {
   data: AdminQuotationSentResponse;
+};
+
+export type AdminSkuUpdate200 = ApiSuccessResponse & {
+  data: AdminSkuResponse;
 };
 
 export type PublicCustomRequestAssetUploadParams = {
