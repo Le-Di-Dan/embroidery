@@ -603,6 +603,15 @@ changed.
   copies could drift; extracting the Ordering persistence into a shared package is a
   candidate follow-up for whichever checkpoint next needs Order writes from two
   applications. Recorded as **`FU-APP7-W01-ORDER-CHAIN-GUARD-DUPLICATION-01`**.
+
+  > **Superseded by `APP7-W01-C1`.** The paragraph above is left exactly as written, because
+  > it is the record of how the defect was found. Product Owner review ruled that this was
+  > not acceptable debt but the defect itself: an application boundary is a reason to
+  > **share** persistence authority, not to copy it, and "far outside a W01 slice" was the
+  > wrong call. The canonical Order and Payment persistence now lives once in
+  > `@embroidery/persistence` and is consumed by both applications; `WorkerOrderChainGuard`
+  > is deleted. The follow-up is `CLOSED_BY_APP7_W01_C1` and is **not** carried forward. See
+  > [`APP7-W01-C1-CORRECTION-REPORT.md`](./APP7-W01-C1-CORRECTION-REPORT.md) and IMP-D054.
 - **Order-line pricing reads `quotation_line_items`.** `APP7-R00` §10 says "unit_price /
   line_total frozen from the accepted quotation version", and `quotation_versions` stores no
   per-unit column — the only exact copy available is the version's own line items. This is
