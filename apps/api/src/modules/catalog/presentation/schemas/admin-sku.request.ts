@@ -18,7 +18,6 @@ import { createZodDto, registerZodDtos } from '../../../../platform/validation';
 import {
   MAX_SKU_PRICE_OVERRIDE_AMOUNT,
   SKU_CODE_MAX_LENGTH,
-  SKU_CODE_PATTERN,
 } from '../../domain/product-sku.policy';
 
 /** UUID path parameters — rejected before any repository call or lock. */
@@ -33,22 +32,27 @@ export const skuIdParamSchema = z.object({ skuId: z.string().uuid() }).strict();
 export class SkuIdParam extends createZodDto(skuIdParamSchema) {}
 
 /**
- * The business SKU code.
+ * The business SKU code — carrying **no character policy** (`APP7-B01-C1`).
+ *
+ * The column is `text` under the `C` collation: it restricts no character, and
+ * ADR-DB5-002 R1/R2 make the code a Population A technical identifier compared
+ * *bytewise*, which is a statement about equality, not about which bytes may be
+ * stored. `APP7-B01` narrowed that to an ASCII alphabet no accepted source
+ * supports, silently refusing legal identifiers such as `ÁO-THUN-ĐEN-M`. The
+ * regex is removed and deliberately not replaced.
  *
  * Not trimmed, not upper-cased, not normalised in any way: `CST-012` compares
- * the column bytewise, so anything this layer "fixed" would be stored as a
- * different identifier from the one the Admin typed. The pattern only rules out
- * shapes that make a bytewise-exact identifier dangerous — whitespace and
- * invisible characters, which produce two codes a human reads as one.
+ * the stored bytes, so anything this layer "fixed" would be stored as a
+ * different identifier from the one the Admin typed (ADR-DB5-002 R3 assigns
+ * normalization to the writing module, and names no rule for a SKU code).
+ *
+ * The two bounds that remain are payload limits, not identifier rules: the
+ * column is unbounded `text`, so `max` caps what one HTTP body may carry, on
+ * the footing `APP2-B02` uses for its own free-text bounds. Authority defines
+ * no nonblank rule for this column, so `min(1)` is not one either — it only
+ * refuses a body that omits the value by sending an empty string.
  */
-const skuCodeSchema = z
-  .string()
-  .min(1)
-  .max(SKU_CODE_MAX_LENGTH)
-  .regex(
-    SKU_CODE_PATTERN,
-    'A SKU code starts with a letter or digit and may then contain letters, digits, dots, hyphens and underscores.',
-  );
+const skuCodeSchema = z.string().min(1).max(SKU_CODE_MAX_LENGTH);
 
 /**
  * A VND amount in minor units, as a decimal **string**.

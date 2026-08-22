@@ -3147,7 +3147,6 @@
           "code": {
             "maxLength": 64,
             "minLength": 1,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
             "type": "string"
           },
           "isActive": {
@@ -7017,7 +7016,6 @@
           "code": {
             "maxLength": 64,
             "minLength": 1,
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
             "type": "string"
           },
           "isActive": {

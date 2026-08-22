@@ -1824,7 +1824,6 @@ export interface CreateSkuBody {
   /**
    * @minLength 1
    * @maxLength 64
-   * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]*$
    */
   code: string;
   isActive: boolean;
@@ -3768,7 +3767,6 @@ export interface UpdateSkuBody {
   /**
    * @minLength 1
    * @maxLength 64
-   * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]*$
    */
   code?: string;
   isActive?: boolean;

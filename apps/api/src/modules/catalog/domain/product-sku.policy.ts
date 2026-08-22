@@ -68,18 +68,42 @@ export function isSkuAuthorableProductState(status: string): boolean {
 }
 
 /**
- * The business SKU code.
+ * The business SKU code — and, deliberately, **no character policy**
+ * (`APP7-B01-C1`).
  *
- * `CST-012` / `IDX-014` make the code globally unique and **bytewise** exact
- * (`ADR-DB5-002` R2, `DB5_INDEXES_CATALOG_GALLERY_CONTENT.md`), so nothing here
- * normalizes it: no case folding, no trimming into a different value, no
- * alphabet of this checkpoint's invention. The pattern only refuses shapes the
- * exactness rule would otherwise make dangerous — whitespace and invisible
- * characters, which produce two codes a human reads as one — and the stored
- * value is byte-for-byte what the Admin sent.
+ * The accepted authority for `skus.code` is exactly this, and nothing more:
+ *
+ * ```text
+ * type         text NOT NULL           (COL-TBL014-02, catalog/skus.ts)
+ * comparison   bytewise, `C` collation (ADR-DB5-002 R1 Population A, R2)
+ * uniqueness   global, uq_skus__code   (CST-012 / IDX-014)
+ * alphabet     NONE
+ * max length   NONE
+ * nonblank     NONE  (no CHECK on this column, or on any `code` column)
+ * normalization NONE (ADR-DB5-002 R3 names lowercase email, E.164 phone and
+ *                     slugified paths as the normalized columns; a SKU code is
+ *                     not among them)
+ * ```
+ *
+ * `APP7-B01` shipped `^[A-Za-z0-9][A-Za-z0-9._-]*$` here. No accepted source
+ * supports it: `text` restricts no character, and bytewise comparison under `C`
+ * is a statement about *equality*, not about which bytes may be stored. A
+ * Vietnamese code such as `ÁO-THUN-ĐEN` is a legal identifier that the regex
+ * silently refused. It is removed rather than replaced — a second invented
+ * alphabet would be the same defect with different characters.
+ *
+ * Nothing normalizes the code either: no case folding, no trimming, no Unicode
+ * normalization, no character replacement. The stored value is byte-for-byte
+ * what the Admin sent, which is what makes `uq_skus__code` genuine business
+ * uniqueness rather than an approximation of it.
+ *
+ * What remains is a **request-payload bound, not an identifier rule**: the
+ * column is unbounded `text`, so this caps what one HTTP body may carry, on the
+ * same footing as `PRODUCT_NAME_MAX_LENGTH` — which `APP2-B02` labels as
+ * "mirroring nothing but sane input". It restricts no character and changes no
+ * stored byte.
  */
 export const SKU_CODE_MAX_LENGTH = 64;
-export const SKU_CODE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 /**
  * The largest SKU price override `numeric(14,2)` can hold under the VND

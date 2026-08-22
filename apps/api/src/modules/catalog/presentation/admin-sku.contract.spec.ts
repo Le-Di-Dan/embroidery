@@ -95,6 +95,34 @@ describe('APP7-B01 Admin SKU contract', () => {
       expect(schema?.['additionalProperties']).toBe(false);
     });
 
+    it.each(['CreateSkuBody', 'UpdateSkuBody'])(
+      '%s advertises no SKU-code character policy (APP7-B01-C1)',
+      (name) => {
+        // `skus.code` is `text` compared bytewise (ADR-DB5-002 R1/R2) with
+        // global uniqueness (CST-012), and no accepted source restricts a
+        // character. `APP7-B01` published an ASCII `pattern` anyway, which told
+        // every generated client that `ÁO-THUN-ĐEN-M` was invalid. The contract
+        // must not carry that claim, nor a replacement under `format` or an
+        // enumeration of legal values.
+        const code = (
+          OPENAPI.components.schemas[name]?.['properties'] as Record<
+            string,
+            Record<string, unknown>
+          >
+        )['code'];
+        expect(code).toBeDefined();
+        expect(code?.['pattern']).toBeUndefined();
+        expect(code?.['format']).toBeUndefined();
+        expect(code?.['enum']).toBeUndefined();
+        // The payload bound stays: it restricts length, not characters.
+        expect(code?.['maxLength']).toBe(64);
+      },
+    );
+
+    it('gives the generated client an unrestricted code (APP7-B01-C1)', () => {
+      expect(CLIENT_SCHEMAS).not.toMatch(/\^\[A-Za-z0-9]\[A-Za-z0-9\._-]\*\$/);
+    });
+
     it('marks the create body required exactly where the schema does', () => {
       expect(OPENAPI.components.schemas['CreateSkuBody']?.['required']).toEqual([
         'code',

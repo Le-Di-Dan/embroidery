@@ -126,13 +126,11 @@ describe('Admin SKU HTTP flow (integration)', () => {
   describe('the wire contract', () => {
     it('creates a SKU and answers 201 in the standard envelope', async () => {
       const seeded = await seedVariant();
-      const res = await authed
-        .post(skusPath(seeded.productId, seeded.variantId))
-        .send({
-          code: `HTTP-${newId().slice(0, 8)}`,
-          priceOverrideAmount: '260000',
-          isActive: true,
-        });
+      const res = await authed.post(skusPath(seeded.productId, seeded.variantId)).send({
+        code: `HTTP-${newId().slice(0, 8)}`,
+        priceOverrideAmount: '260000',
+        isActive: true,
+      });
 
       expect(res.status).toBe(201);
       const envelope = res.body as Envelope<SkuPayload>;
@@ -170,6 +168,37 @@ describe('Admin SKU HTTP flow (integration)', () => {
         'updatedAt',
         'variantOrderEligibleSkuCount',
       ]);
+    });
+
+    it('accepts a code the B01 alphabet refused, unchanged (APP7-B01-C1)', async () => {
+      // Legal per accepted authority: `skus.code` is `text NOT NULL` compared
+      // bytewise under `C` (ADR-DB5-002 R1/R2), and no source restricts a
+      // character. Over HTTP this is the full path — Zod, the service, the
+      // column and the response projection — so a narrowing anywhere in it
+      // would show up here.
+      const code = `ÁO-THUN-ĐEN-${newId().slice(0, 8)}`;
+      const seeded = await seedVariant();
+      const res = await authed
+        .post(skusPath(seeded.productId, seeded.variantId))
+        .send({ code, isActive: true });
+
+      expect(res.status).toBe(201);
+      expect((res.body as Envelope<SkuPayload>).data.code).toBe(code);
+
+      const [row] = (
+        await ctx.database.client.db.execute<{ code: string }>(
+          sql`select code from skus where id = ${(res.body as Envelope<SkuPayload>).data.skuId}`,
+        )
+      ).rows;
+      expect(row?.code).toBe(code);
+
+      // The exact bytes are still one identity: a second SKU claiming them is
+      // refused by `uq_skus__code`, not by any character rule.
+      const duplicate = await authed
+        .post(skusPath(seeded.productId, seeded.variantId))
+        .send({ code, isActive: false });
+      expect(duplicate.status).toBe(409);
+      expect((duplicate.body as { code: string }).code).toBe('SKU_CODE_CONFLICT');
     });
   });
 

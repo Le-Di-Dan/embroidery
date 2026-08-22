@@ -139,6 +139,46 @@ describe('APP7-B01 SKU refusal rules (integration)', () => {
       );
       expect(upper.code).toBe('TB-CASE');
     });
+
+    it('stores a code the B01 alphabet refused, byte for byte (APP7-B01-C1)', async () => {
+      const seeded = await seed();
+      // Legal per accepted authority — `text NOT NULL` restricts no character
+      // and ADR-DB5-002 R1/R2 make the column a bytewise-compared Population A
+      // identifier — and refused by nothing but the regex `APP7-B01` invented.
+      const code = 'ÁO-THUN-ĐEN-M';
+
+      const created = await as(() =>
+        service().create({
+          productId: seeded.productId,
+          variantId: seeded.variantId,
+          code,
+          isActive: true,
+        }),
+      );
+
+      expect(created.code).toBe(code);
+      // Read back from the column rather than from the return value: the point
+      // is that the bytes on disk are the bytes the Admin sent, with no
+      // trimming, folding or Unicode normalization in between.
+      expect(
+        await countOf(sql`select count(*)::text as count from skus
+                           where id = ${created.skuId} and code = ${code}`),
+      ).toBe(1);
+
+      // And uniqueness still decides identity on those exact bytes.
+      expect(
+        await codeOf(() =>
+          as(() =>
+            service().create({
+              productId: seeded.productId,
+              variantId: seeded.variantId,
+              code,
+              isActive: false,
+            }),
+          ),
+        ),
+      ).toBe('SKU_CODE_CONFLICT');
+    });
   });
 
   describe('the order-eligible invariant', () => {

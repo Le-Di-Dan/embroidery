@@ -7,13 +7,13 @@
  * makes it atomic — and so a future change to that mechanism cannot quietly
  * change the rule.
  */
+import * as policy from './product-sku.policy';
 import {
   evaluateOrderEligibility,
   isSkuAuthorableProductState,
   MAX_ORDER_ELIGIBLE_SKUS_PER_VARIANT,
   MAX_SKU_PRICE_OVERRIDE_AMOUNT,
   SKU_AUTHORABLE_PRODUCT_STATES,
-  SKU_CODE_PATTERN,
   SKU_CURRENCY,
   SKU_ORDER_ELIGIBLE_IS_ACTIVE,
 } from './product-sku.policy';
@@ -76,25 +76,34 @@ describe('SKU-authorable product states', () => {
   });
 });
 
-describe('SKU code shape', () => {
-  it.each(['TB-GAU-NAU-M', 'sku_1', 'A', '0.1-2_3'])('accepts %s', (code) => {
-    expect(SKU_CODE_PATTERN.test(code)).toBe(true);
+describe('SKU code policy (APP7-B01-C1)', () => {
+  it('publishes no character policy at all', () => {
+    // The accepted authority for `skus.code` is `text NOT NULL`, bytewise
+    // comparison under `C` (ADR-DB5-002 R1/R2) and global uniqueness
+    // (CST-012). None of those restricts a character. `APP7-B01` shipped an
+    // ASCII regex anyway; this asserts it is gone and was not replaced by a
+    // second invented alphabet under another name.
+    const exported = policy as Record<string, unknown>;
+    for (const name of Object.keys(exported)) {
+      expect(exported[name]).not.toBeInstanceOf(RegExp);
+    }
+    expect(exported['SKU_CODE_PATTERN']).toBeUndefined();
   });
 
-  it.each([
-    ['an empty code', ''],
-    ['a leading space', ' TB-1'],
-    ['a trailing space', 'TB-1 '],
-    ['an inner space', 'TB 1'],
-    ['a leading separator', '-TB1'],
-    ['a non-breaking space', 'TB 1'],
-    ['a zero-width joiner', 'TB‍1'],
-  ])('refuses %s', (_label, code) => {
-    expect(SKU_CODE_PATTERN.test(code)).toBe(false);
+  it('publishes no normalization helper either', () => {
+    // ADR-DB5-002 R3 assigns normalization to the writing module and names
+    // lowercase email, E.164 phone and slugified paths — not a SKU code. A
+    // trim-or-fold helper here would make the stored bytes differ from what
+    // the Admin typed, and `uq_skus__code` compares stored bytes.
+    const exported = policy as Record<string, unknown>;
+    const named = Object.keys(exported).filter((name) =>
+      /normal|slug|trim|fold|canonical/i.test(name),
+    );
+    expect(named).toEqual([]);
   });
 
-  it('is anchored, so a bad prefix cannot be smuggled in', () => {
-    expect(SKU_CODE_PATTERN.test('bad code\nGOOD-1')).toBe(false);
+  it('keeps a payload bound, which restricts length and not characters', () => {
+    expect(policy.SKU_CODE_MAX_LENGTH).toBe(64);
   });
 });
 

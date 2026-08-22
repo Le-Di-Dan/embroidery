@@ -33,6 +33,54 @@ describe('SKU path parameters', () => {
   });
 });
 
+/**
+ * Codes that accepted authority makes legal and that `APP7-B01`'s invented
+ * ASCII regex refused. Derived from the authority, not chosen first:
+ *
+ * - `skus.code` is `text NOT NULL` (COL-TBL014-02) — `text` restricts no
+ *   character, and no CHECK constrains this column.
+ * - ADR-DB5-002 R1 files it under Population A, compared **bytewise** under the
+ *   `C` collation (R2). That ADR's own decision drivers name `Đ` and `à` as
+ *   characters whose *ordering* is arbitrary under `C` while equality stays
+ *   exact — so a Vietnamese code is precisely the case the collation choice was
+ *   made to handle, not one it excludes.
+ * - ADR-DB5-002 R3 lists the columns stored pre-normalized: lowercase email,
+ *   E.164 phone, slugified paths. A SKU code is not among them, so no
+ *   normalization may narrow it either.
+ *
+ * These are the discriminating values for `APP7-B01-C1`.
+ */
+const AUTHORITY_LEGAL_CODES = [
+  ['Vietnamese with diacritics and Đ', 'ÁO-THUN-ĐEN-M'],
+  ['ASCII punctuation and a space outside the invented set', 'TEE/BLK M#1'],
+] as const;
+
+describe('SKU code carries no character policy (APP7-B01-C1)', () => {
+  it.each(AUTHORITY_LEGAL_CODES)('create accepts %s', (_label, code) => {
+    expect(createSkuBodySchema.parse({ code, isActive: true })).toEqual({ code, isActive: true });
+  });
+
+  it.each(AUTHORITY_LEGAL_CODES)('update accepts %s', (_label, code) => {
+    expect(updateSkuBodySchema.parse({ code })).toEqual({ code });
+  });
+
+  it('returns the code unchanged — no trimming, folding or replacement', () => {
+    // `uq_skus__code` compares the stored bytes, so a value this layer "fixed"
+    // would be a different identifier from the one the Admin typed.
+    const code = '  tee blk  ';
+    expect(createSkuBodySchema.parse({ code, isActive: false }).code).toBe(code);
+  });
+
+  it('still bounds the payload length, which restricts no character', () => {
+    expect(createSkuBodySchema.safeParse({ code: 'Đ'.repeat(64), isActive: true }).success).toBe(
+      true,
+    );
+    expect(createSkuBodySchema.safeParse({ code: 'A'.repeat(65), isActive: true }).success).toBe(
+      false,
+    );
+  });
+});
+
 describe('create SKU body', () => {
   it('accepts a code and an explicit sellable flag', () => {
     expect(createSkuBodySchema.parse({ code: 'TB-GAU-NAU-M', isActive: true })).toEqual({
