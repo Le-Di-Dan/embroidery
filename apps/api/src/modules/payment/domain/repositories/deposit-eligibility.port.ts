@@ -1,21 +1,14 @@
 /**
- * Deposit-satisfaction fact port — **G-DB7-27/GRD-013**.
+ * The deposit-satisfaction fact Inventory gates on — re-exported from its shared
+ * home (`APP7-W01-C1`).
  *
- * An official inventory reservation may only be created once the order's
- * Deposit obligation is SATISFIED. That fact lives entirely in the Payment
- * module's own tables (`orders.current_approval_snapshot_id` is `NOT NULL`,
- * so the approval-exists half of GRD-013 is already guaranteed physically
- * for any order — only the deposit half needs a runtime check).
+ * It moved with the AGG-16 repository it reads through, and nothing about it
+ * changed: Inventory still learns whether an order's DEPOSIT obligation is
+ * satisfied (G-DB7-27) without importing CTX-PAY's repository or touching its
+ * tables (`BACKEND_CONVENTIONS.md` §10).
  *
- * A **port**, deliberately: Inventory needs this one fact and
- * `BACKEND_CONVENTIONS.md` §10 forbids it from calling the payment module's
- * concrete repository or reading its tables. Inventory depends on this
- * interface; Payment provides the implementation.
+ * This file is a re-export and holds no logic; `DEPOSIT_ELIGIBILITY_PORT` is the
+ * same Symbol instance.
  */
-
-export const DEPOSIT_ELIGIBILITY_PORT = Symbol('DEPOSIT_ELIGIBILITY_PORT');
-
-export interface DepositEligibilityPort {
-  /** True only if the order's DEPOSIT obligation exists and is SATISFIED. */
-  isDepositSatisfied(orderId: string): Promise<boolean>;
-}
+export { DEPOSIT_ELIGIBILITY_PORT } from '@embroidery/persistence';
+export type { DepositEligibilityPort } from '@embroidery/persistence';

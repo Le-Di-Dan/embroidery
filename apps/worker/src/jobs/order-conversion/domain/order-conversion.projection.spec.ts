@@ -10,12 +10,11 @@ import { projectOrderItems, type ConversionSubject } from './order-conversion.pr
 import type {
   AcceptedQuotationVersion,
   FrozenApprovalSnapshot,
-} from './repositories/order-conversion.repository';
+} from './repositories/conversion-authority.repository';
 
 const CATALOG_SNAPSHOT: FrozenApprovalSnapshot = {
   id: 'approval-1',
   customRequestId: 'request-1',
-  customerId: 'customer-1',
   productVariantId: 'variant-1',
   customerOwnedProductId: undefined,
   productName: 'Tee frozen at approval',

@@ -2,7 +2,7 @@
   "name": "@embroidery/persistence",
   "version": "0.1.0",
   "private": true,
-  "description": "NestJS persistence runtime and platform-primitive persistence (DB7). Consumers: @embroidery/api, @embroidery/worker.",
+  "description": "NestJS persistence runtime, platform-primitive persistence and the shared AGG-15 Order / AGG-16 Payment persistence two applications write (DB7). Consumers: @embroidery/api, @embroidery/worker.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

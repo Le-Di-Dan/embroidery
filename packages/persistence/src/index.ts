@@ -88,3 +88,58 @@ export type {
   DatabaseHealthStatus,
 } from './health/database-health.service';
 export { DatabaseHealthService } from './health/database-health.service';
+
+// ---------------------------------------------------------------------------
+// Shared aggregate persistence (APP7-W01-C1).
+//
+// AGG-15 Order and AGG-16 Payment are the only aggregates **two applications
+// write**: the API owns the request, quotation and design paths, and the worker
+// converts an approval into an order with both obligations. Everything else in
+// this package is a platform primitive; these two are here because a second
+// implementation of GRD-009 or of the obligation pair would be free to disagree
+// with the first, and no constraint in the schema would catch it (INV-19).
+//
+// Delivered DB7 behaviour is unchanged — the files moved, the semantics did not.
+// ---------------------------------------------------------------------------
+
+export type { CustomRequestId, RequestActor } from './order/ordering-identity';
+export type {
+  AcknowledgeShippingFeeInput,
+  CreateOrderInput,
+  Order,
+  OrderId,
+  OrderItem,
+  OrderRepository,
+  OrderTransition,
+  SaveShippingDetailInput,
+  ShippingDetail,
+  TransitionOrderInput,
+} from './order/order.repository';
+export { ORDER_REPOSITORY } from './order/order.repository';
+export { DISPATCHABLE_FROM, isLegalOrderTransition } from './order/order-transitions';
+export type { OrderChain } from './order/order-chain.guard';
+export { OrderChainGuard } from './order/order-chain.guard';
+export { DrizzleOrderRepository } from './order/drizzle-order.repository';
+export { DrizzleOrderShippingRepository } from './order/drizzle-order-shipping.repository';
+export { OrderPersistenceModule } from './order/order-persistence.module';
+
+export type {
+  AttemptId,
+  CreateObligationInput,
+  ObligationId,
+  OpenAttemptInput,
+  PaymentAttempt,
+  PaymentObligation,
+  PaymentObligationRepository,
+  ProviderEventOutcome,
+  RecordProviderEventInput,
+  Refund,
+  RefundId,
+} from './payment/payment-obligation.repository';
+export { PAYMENT_OBLIGATION_REPOSITORY } from './payment/payment-obligation.repository';
+export type { DepositEligibilityPort } from './payment/deposit-eligibility.port';
+export { DEPOSIT_ELIGIBILITY_PORT } from './payment/deposit-eligibility.port';
+export { PaymentEvidenceRepository } from './payment/payment-evidence.repository';
+export { DrizzlePaymentObligationRepository } from './payment/drizzle-payment-obligation.repository';
+export { DrizzleDepositEligibilityAdapter } from './payment/drizzle-deposit-eligibility.adapter';
+export { PaymentPersistenceModule } from './payment/payment-persistence.module';

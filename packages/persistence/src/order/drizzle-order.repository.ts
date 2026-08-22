@@ -4,14 +4,13 @@
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
 import type { OrderState } from '@embroidery/database';
-import { DatabaseExecutor, DrizzleRepository, OutboxEventStore } from '@embroidery/persistence';
+import { DatabaseExecutor } from '../runtime/database-executor';
+import { DrizzleRepository } from '../repository/drizzle-repository';
+import { OutboxEventStore } from '../platform/outbox-event-store';
 import { asc, eq } from 'drizzle-orm';
 
-import { isLegalOrderTransition } from '../../domain/lifecycle/order-transitions';
-import type {
-  CustomRequestId,
-  RequestActor,
-} from '../../domain/repositories/custom-request.repository';
+import { isLegalOrderTransition } from './order-transitions';
+import type { CustomRequestId, RequestActor } from './ordering-identity';
 import type {
   AcknowledgeShippingFeeInput,
   CreateOrderInput,
@@ -23,7 +22,7 @@ import type {
   SaveShippingDetailInput,
   ShippingDetail,
   TransitionOrderInput,
-} from '../../domain/repositories/order.repository';
+} from './order.repository';
 import { DrizzleOrderShippingRepository } from './drizzle-order-shipping.repository';
 import { OrderChainGuard } from './order-chain.guard';
 import { toItem, toOrder } from './order-row.mapper';

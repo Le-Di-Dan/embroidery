@@ -12,17 +12,18 @@
  */
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
-import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
+import { DatabaseExecutor } from '../runtime/database-executor';
+import { DrizzleRepository } from '../repository/drizzle-repository';
 import { and, eq } from 'drizzle-orm';
 
-import { DISPATCHABLE_FROM } from '../../domain/lifecycle/order-transitions';
+import { DISPATCHABLE_FROM } from './order-transitions';
 import type {
   AcknowledgeShippingFeeInput,
   Order,
   OrderId,
   SaveShippingDetailInput,
   ShippingDetail,
-} from '../../domain/repositories/order.repository';
+} from './order.repository';
 import { toOrder, toShippingDetail } from './order-row.mapper';
 
 const {

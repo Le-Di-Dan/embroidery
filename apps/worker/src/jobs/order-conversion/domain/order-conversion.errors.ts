@@ -37,8 +37,12 @@ export const ORDER_CONVERSION_REFUSALS = [
   'QUOTE_NOT_ACCEPTED',
   /** More than one `ACCEPTED` version resolves for the request: never guess which. */
   'ACCEPTED_QUOTATION_AMBIGUOUS',
-  /** `OrderChainGuard`'s own code: the version was raised for another request. */
-  'QUOTATION_BELONGS_TO_ANOTHER_REQUEST',
+  //
+  // `QUOTATION_BELONGS_TO_ANOTHER_REQUEST` is **not** here, and must not be
+  // added back (`APP7-W01-C1`). It is `OrderChainGuard`'s own code, raised by
+  // the canonical repository inside the creating transaction; a copy in this set
+  // would mean the worker had started deciding the chain again.
+  //
   /** The accepted version priced no line, so no order line can be projected. */
   'ACCEPTED_QUOTATION_NOT_PRICED',
   /** Catalog branch: the frozen variant has **no** ACTIVE SKU (`APP7-W01` §7). */

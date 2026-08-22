@@ -3,10 +3,11 @@
  */
 import { Injectable } from '@nestjs/common';
 import { schema } from '@embroidery/database';
-import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
+import { DatabaseExecutor } from '../runtime/database-executor';
+import { DrizzleRepository } from '../repository/drizzle-repository';
 import { and, eq } from 'drizzle-orm';
 
-import type { DepositEligibilityPort } from '../../domain/repositories/deposit-eligibility.port';
+import type { DepositEligibilityPort } from './deposit-eligibility.port';
 
 const { paymentObligations } = schema;
 

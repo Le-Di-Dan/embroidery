@@ -13,7 +13,19 @@ import type { CustomRequestState } from '@embroidery/database';
 
 import type { ProductVariantId } from '../../../catalog/domain/repositories/placement-hierarchy.port';
 
-export type CustomRequestId = string & { readonly __brand: 'CustomRequestId' };
+/**
+ * `CustomRequestId` and `RequestActor` are declared in `@embroidery/persistence`
+ * (`src/order/ordering-identity.ts`) and re-exported here under their delivered
+ * names (`APP7-W01-C1`).
+ *
+ * They moved for one reason: the shared AGG-15 `OrderRepository` contract names
+ * both, and a type a two-application contract references may not live inside one
+ * of those applications. The request aggregate is still their conceptual owner
+ * and is still written only by the API — nothing else about AGG-13 moved.
+ */
+import type { CustomRequestId, RequestActor } from '@embroidery/persistence';
+
+export type { CustomRequestId, RequestActor };
 
 export interface CustomRequest {
   readonly id: CustomRequestId;
@@ -65,17 +77,6 @@ export interface SubmitRequestInput {
    */
   readonly submittedSessionId?: string | undefined;
 }
-
-/**
- * Who caused a transition, and the evidence for it.
- *
- * The shape mirrors the schema's actor CHECK: exactly one of the three actor
- * references must be present, matching `actorKind`.
- */
-export type RequestActor =
-  | { readonly kind: 'ADMIN'; readonly adminId: string }
-  | { readonly kind: 'CUSTOMER'; readonly customerId: string; readonly grantId: string }
-  | { readonly kind: 'SYSTEM'; readonly systemJobKey: string };
 
 export interface TransitionRequestInput {
   readonly id: CustomRequestId;

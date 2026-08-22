@@ -5,13 +5,8 @@
  */
 import type { OrderState, ShippingDetailState, schema } from '@embroidery/database';
 
-import type { CustomRequestId } from '../../domain/repositories/custom-request.repository';
-import type {
-  Order,
-  OrderId,
-  OrderItem,
-  ShippingDetail,
-} from '../../domain/repositories/order.repository';
+import type { CustomRequestId } from './ordering-identity';
+import type { Order, OrderId, OrderItem, ShippingDetail } from './order.repository';
 
 export type OrderRow = typeof schema.orders.$inferSelect;
 export type ItemRow = typeof schema.orderItems.$inferSelect;

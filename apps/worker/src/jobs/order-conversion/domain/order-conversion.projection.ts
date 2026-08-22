@@ -53,12 +53,16 @@
  * it from touching accepted pricing, and the only way to guarantee that is to
  * have no path to it.
  */
+// The canonical AGG-15 line shape, so what this projects is exactly what
+// `OrderRepository.createFromAcceptedQuotation` freezes — no shadow type in
+// between that could drift from the aggregate's own contract (`APP7-W01-C1`).
+import type { OrderItem } from '@embroidery/persistence';
+
 import { conversionRefusal, type OrderConversionRefusalError } from './order-conversion.errors';
 import type {
   AcceptedQuotationVersion,
-  ConvertedOrderItem,
   FrozenApprovalSnapshot,
-} from './repositories/order-conversion.repository';
+} from './repositories/conversion-authority.repository';
 
 /** The subject the snapshot froze, once its live identity has been resolved. */
 export type ConversionSubject =
@@ -70,7 +74,7 @@ export type ConversionSubject =
     };
 
 export type ProjectionResult =
-  | { readonly ok: true; readonly items: readonly ConvertedOrderItem[] }
+  | { readonly ok: true; readonly items: readonly OrderItem[] }
   | { readonly ok: false; readonly error: OrderConversionRefusalError };
 
 export function projectOrderItems(
@@ -95,7 +99,7 @@ export function projectOrderItems(
   const items = version.lineItems
     .slice()
     .sort((left, right) => left.position - right.position)
-    .map((line, index): ConvertedOrderItem => ({
+    .map((line, index): OrderItem => ({
       // Dense and 1-based, which is what `uq_order_items__order_position`
       // indexes. The accepted version's own order is preserved; its numbering
       // is not copied, because a gap there is a quotation fact and would make
@@ -115,7 +119,7 @@ function displayCopy(
   snapshot: FrozenApprovalSnapshot,
   subject: ConversionSubject,
 ): Pick<
-  ConvertedOrderItem,
+  OrderItem,
   'skuId' | 'customerOwnedProductId' | 'productName' | 'variantLabel' | 'sizeLabel'
 > {
   if (subject.branch === 'CATALOG') {

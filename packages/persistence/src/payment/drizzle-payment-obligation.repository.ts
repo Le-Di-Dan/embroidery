@@ -9,7 +9,8 @@
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
 import type { PaymentAttemptState, PaymentObligationKind } from '@embroidery/database';
-import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
+import { DatabaseExecutor } from '../runtime/database-executor';
+import { DrizzleRepository } from '../repository/drizzle-repository';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 
 import type {
@@ -24,7 +25,7 @@ import type {
   RecordProviderEventInput,
   Refund,
   RefundId,
-} from '../../domain/repositories/payment-obligation.repository';
+} from './payment-obligation.repository';
 import { PaymentEvidenceRepository } from './payment-evidence.repository';
 import { toAttempt, toObligation } from './payment-row.mapper';
 

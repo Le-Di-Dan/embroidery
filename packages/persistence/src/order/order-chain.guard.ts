@@ -12,7 +12,8 @@
  */
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, schema } from '@embroidery/database';
-import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
+import { DatabaseExecutor } from '../runtime/database-executor';
+import { DrizzleRepository } from '../repository/drizzle-repository';
 import { eq } from 'drizzle-orm';
 
 const { quotationVersions, quotations, approvalSnapshots } = schema;

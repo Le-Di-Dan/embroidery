@@ -19,7 +19,7 @@ import type {
   PaymentObligation,
   Refund,
   RefundId,
-} from '../../domain/repositories/payment-obligation.repository';
+} from './payment-obligation.repository';
 
 export type ObligationRow = typeof schema.paymentObligations.$inferSelect;
 export type AttemptRow = typeof schema.paymentAttempts.$inferSelect;
