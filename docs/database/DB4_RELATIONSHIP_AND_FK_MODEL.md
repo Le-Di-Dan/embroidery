@@ -141,6 +141,7 @@
 | REL-106 | assets → contact_verification_challenges (uploaded_via_challenge) | N–0..1 | no | ref | yes | set-null (parent is hard-TTL `temp`) | yes | **APP5-DB01**; challenge-scoped intake provenance for `APP5-G01 D13`. `restrict` would block the challenge TTL sweep; `cascade` would delete an asset row whose binary still exists (INV-10). `intake_expires_at` deliberately survives the clear |
 | REL-107 | design_versions → customer_owned_products (customer_owned_product) | N–0..1 | no | ref | yes | restrict | yes | **APP6-DB01**; the COP branch of CST-129. `restrict` matches every other edge on this table and `order_items`' own COP edge — a formal version is evidence, and evidence never loses its subject |
 | REL-108 | approval_snapshots → customer_owned_products (customer_owned_product) | N–0..1 | no | ref | yes | restrict | yes | **APP6-DB01**; the COP branch of CST-131, and the edge APP7 converts into an `order_items` COP line without inventing Catalog identity |
+| REL-109 | payment_transfer_evidence → payment_attempts / assets | N–1 ×2 | no | comp (attempt-owned) / ref | yes | restrict ×2 | yes | **APP7-DB01**; the CTX-PAY typed asset association PO-APP7-001 requires (ADR-DB4-003 forbids a generic `asset_links` table and no delivered association belongs to Payment). `restrict` on both ends because evidence is retain-class — disposal goes through the G4 tombstone flow, which sees the association |
 
 ## 7. Cross-context reference rules (verification against DB2)
 

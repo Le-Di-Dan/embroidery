@@ -11,12 +11,14 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 // DB6 launch declared 92 rows / 164 edges. Application-era database-change
-// checkpoints have added three REL rows since: REL-106 (APP5-DB01) and
+// checkpoints have added four REL rows since: REL-106 (APP5-DB01) and
 // REL-107/REL-108 (APP6-DB01, the customer-owned-product branch on
-// `design_versions` and `approval_snapshots`). Each expands ×1, so both totals
-// move by the same three.
-const EXPECTED_REL_ROWS = 95;
-const EXPECTED_FK_EDGES = 167;
+// `design_versions` and `approval_snapshots`), each expanding ×1; and REL-109
+// (APP7-DB01, `payment_transfer_evidence` → `payment_attempts` / `assets`),
+// which expands ×2 like every other asset-association row. Rows therefore move
+// by four and edges by five.
+const EXPECTED_REL_ROWS = 96;
+const EXPECTED_FK_EDGES = 169;
 
 /**
  * Mandated edges absent from the REL model entirely, each its own deviation

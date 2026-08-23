@@ -79,9 +79,9 @@ Four relationship metrics, kept separate and never interchanged:
 
 | Metric | Value |
 |---|---|
-| Relationship ID range | REL-001..108 (108 slots — 105 at DB6 launch, +REL-106 APP5-DB01, +REL-107/108 APP6-DB01) |
-| Documented REL rows | **95** (92 at DB6 launch + 3 application-era: REL-106, REL-107, REL-108) |
-| Expanded logical FK/reference edges | **167** = 156 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) + 4 documented additions (DEV-DB6-013: approval_snapshots placement refs, planned owner G13) + 2 documented additions (DEV-DB6-014: shipping_fee_acknowledgements grant/challenge, implemented G15). The three derived additions beyond DB6 launch are the application-era rows: REL-106 (APP5-DB01), REL-107 and REL-108 (APP6-DB01) |
+| Relationship ID range | REL-001..109 (109 slots — 105 at DB6 launch, +REL-106 APP5-DB01, +REL-107/108 APP6-DB01, +REL-109 APP7-DB01) |
+| Documented REL rows | **96** (92 at DB6 launch + 4 application-era: REL-106, REL-107, REL-108, REL-109) |
+| Expanded logical FK/reference edges | **169** = 156 derived (DEV-DB6-009) + 1 documented addition (DEV-DB6-010: custom_request_assets → assets) + 4 documented additions (DEV-DB6-012: design_versions placement refs) + 4 documented additions (DEV-DB6-013: approval_snapshots placement refs, planned owner G13) + 2 documented additions (DEV-DB6-014: shipping_fee_acknowledgements grant/challenge, implemented G15). The four derived additions beyond DB6 launch are the application-era rows: REL-106 (APP5-DB01), REL-107 and REL-108 (APP6-DB01), and REL-109 ×2 (APP7-DB01, the `payment_transfer_evidence` association’s two edges) |
 | Physical FK target | **160** (corrected G19, DEV-DB6-017 — see note below; not 162) |
 | Implemented physical FK constraints | grows per group (parity gate counts these) |
 
@@ -96,7 +96,7 @@ run:
 | Multiplicity source | Rows | Edges |
 |---|---|---|
 | ×1 (single target) | 58 | 58 |
-| ×N marker: ×2 | 20 | 40 |
+| ×N marker: ×2 | 21 | 42 |
 | ×N marker: ×3 | 3 | 9 |
 | ×N marker: ×4 | 1 | 4 |
 | ×N marker: ×5 | 2 | 10 |
@@ -108,7 +108,7 @@ run:
 | DEV-DB6-012 addition: design_versions placement refs — product/variant/side/area (no REL row exists) | — | 4 |
 | DEV-DB6-013 addition: approval_snapshots placement refs — product/variant/side/area (no REL row exists; planned owner G13) | — | 4 |
 | DEV-DB6-014 addition: shipping_fee_acknowledgements → secure_access_grants / contact_verification_challenges (no REL row exists; implemented G15) | — | 2 |
-| **Total** | **95 rows** | **167** |
+| **Total** | **96 rows** | **169** |
 
 The 26 multi-target rows and their expansions:
 
@@ -164,8 +164,8 @@ with **no REL row at all** (ledger actor refs on TBL-019,
 `admin_id`-shaped columns on TBL-046/057/058/062, same class as TBL-041/009)
 carry no FK and are outside both counts. Also updated in §2 header table:
 `REL-001..105 → 92 rows → 164 edges` — the DB6-launch figures. Application-era
-checkpoints have since added three REL rows (REL-106 `APP5-DB01`, REL-107 and
-REL-108 `APP6-DB01`), so the current §2 header table reads
+checkpoints have since added four REL rows (REL-106 `APP5-DB01`, REL-107 and
+REL-108 `APP6-DB01`, REL-109 ×2 `APP7-DB01`), so the current §2 header table reads
 `REL-001..108 → 95 rows → 167 edges`; `tools/db-metric-check.mjs` re-derives
 both from DB4 on every run. The DEV-DB6-017 narrative above is left at its own
 figures deliberately: it records what was reconciled in July 2026, not what the
@@ -778,6 +778,7 @@ evidence.
 | TBL-056 | `payment_provider_events` | `payment/payment-provider-events.ts` | bigint | append | implemented |
 | TBL-057 | `payment_reconciliations` | `payment/payment-reconciliations.ts` | bigint | append | implemented |
 | TBL-058 | `refunds` | `payment/refunds.ts` | uuid7 | state mutable + amounts immutable | implemented |
+| TBL-079 | `payment_transfer_evidence` | `payment/payment-transfer-evidence.ts` | uuid7 | assoc, append | implemented |
 
 **DB6-C4 note:** `payment_reconciliations.admin_id` (COL-TBL057-07) and
 `refunds.approved_by_admin_id`/`executed_by_admin_id` (COL-TBL058-10) — per
@@ -985,12 +986,16 @@ DEC-25). See `DB6_DEVIATION_REGISTER.md` DEV-DB6-016.
 | G13 | 3 | 53 | **implemented** |
 | G14 | 4 | 57 | **implemented** |
 | G15 | 8 | 65 | **implemented** |
-| G16 | 5 | 70 | **implemented** |
-| G17 | 5 | 75 | **implemented** |
-| G18 | 2 | 77 | **implemented** |
-| G19 | 1 | 78 | **implemented** |
+| G16 | 6 | 71 | **implemented** |
+| G17 | 5 | 76 | **implemented** |
+| G18 | 2 | 78 | **implemented** |
+| G19 | 1 | 79 | **implemented** |
 
 **78 of 78 implemented. DB6-G01..G19 physical schema implementation COMPLETE.**
+One application-era table has been added since: **TBL-079**
+`payment_transfer_evidence` (`APP7-DB01`, migration 0037), counted in its
+owning group G16 — so the live baseline is **79** tables while the DB6 launch
+figure stays 78.
 
 `inventory_soft_holds` (TBL-020) and `inventory_reservations` (TBL-021) are
 listed by DB4 under G6 but **created** in G10 and G15 respectively, because
@@ -1056,6 +1061,11 @@ the customer-owned-product design branch ADR-APP6-001 authorises — four
 columns, 845 → **849**. The same migration drops `NOT NULL` from the four
 Catalog placement columns on both tables; that widens nullability without
 changing any count.
+**APP7-DB01** (migration 0037) is the fourth, and the first to add a *table*
+rather than columns: `payment_transfer_evidence` (TBL-079) contributes
+`payment_attempt_id` and `asset_id` as expansions — the table postdates the DB4
+`COL-*` register, so it has no logical COL IDs — plus the two convention columns
+`id` and `created_at`, four columns, 849 → **853**, and 78 → **79** tables.
 
 The seven `×N` COL expansions across G1–G6 (each +N−1 columns):
 
@@ -1093,11 +1103,11 @@ that register on every run.
 | G13 | 3 | 20 | 13 | 33 | 6 | 39 |
 | G14 | 4 | 37 | 10 | 47 | 9 | 56 |
 | G15 | 8 | 71 | 20 | 91 | 20 | 111 |
-| G16 | 5 | 48 | 6 | 54 | 13 | 67 |
+| G16 | 6 | 48 | 8 | 56 | 15 | 71 |
 | G17 | 5 | 25 | 9 | 34 | 12 | 46 |
 | G18 | 2 | 15 | 1 | 16 | 5 | 21 |
 | G19 | 1 | 9 | 4 | 13 | 2 | 15 |
-| **Total** | **78** | **537** | **109** | **646** | **203** | **849** |
+| **Total** | **79** | **537** | **111** | **648** | **205** | **853** |
 
 Live-database anchor (2026-07-18): `pg_attribute` reports **226** physical
 columns across the 23 implemented tables — the formula and the database

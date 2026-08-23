@@ -166,6 +166,17 @@ constraint-created (78 PK + 50 UNIQUE = 128)
 > query, per S26. No `IDX-*` slot is allocated for either — the DB5 register is
 > the launch access-path catalog, and an application-era index selected by an
 > application-era query does not belong in it.
+>
+> `APP7-DB01` (migration 0037) added the first application-era **table**,
+> `payment_transfer_evidence`, and with it two constraint-created indexes: its
+> primary key and `uq_payment_transfer_evidence__attempt_asset`, the CST-043
+> attempt+asset pair. A live database now carries **217** physical indexes; the
+> partial split is unchanged at **48** (13 partial-unique + 35
+> partial-performance). **No explicit index was added**: the UNIQUE leads on
+> `payment_attempt_id`, so one attempt's evidence rows are one contiguous range
+> and both later access paths — APP7-B05's list/count by attempt and APP7-B06's
+> exact-pair resolve — are already served. No `IDX-*` slot is allocated, for the
+> same reason as APP3-DB01's and APP5-DB01's additions.
 
 Four clarifications that the formula depends on:
 

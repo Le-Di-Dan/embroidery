@@ -34,7 +34,12 @@ const SCHEMA_DIR = join(REPO_ROOT, 'packages', 'database', 'src', 'schema');
 const SCHEMA_MANIFEST = join(DOCS, 'DB6_SCHEMA_IMPLEMENTATION_MANIFEST.md');
 const INDEX_MANIFEST = join(DOCS, 'DB6_INDEX_IMPLEMENTATION_MANIFEST.md');
 
-const TOTAL_TABLES = 78;
+// 78 at DB6 launch (TBL-001..078) plus every application-era table an approved
+// database-change checkpoint has added since: TBL-079 `payment_transfer_evidence`
+// (APP7-DB01, migration 0037). The TBL-001..078 coverage sweep below is stated
+// against the launch range; the group roll-up is stated against this total.
+const LAUNCH_TABLES = 78;
+const TOTAL_TABLES = 79;
 const RETIRED_IDX = ['IDX-072', 'IDX-083', 'IDX-089', 'IDX-128'];
 
 const problems = [];
@@ -72,13 +77,16 @@ const indexManifest = stripEmphasis(read(INDEX_MANIFEST));
     const id = row.match(/TBL-\d{3}/)[0];
     counts.set(id, (counts.get(id) ?? 0) + 1);
   }
-  for (let i = 1; i <= TOTAL_TABLES; i += 1) {
+  for (let i = 1; i <= LAUNCH_TABLES; i += 1) {
     const id = `TBL-${String(i).padStart(3, '0')}`;
     const n = counts.get(id) ?? 0;
     if (n === 0) fail(`${id} is not in the schema manifest table register`);
     if (n > 1) fail(`${id} appears ${n} times in the schema manifest (must be exactly one group)`);
   }
   notes.push(`schema manifest: ${rows.length} table rows for ${TOTAL_TABLES} tables`);
+  if (rows.length !== TOTAL_TABLES) {
+    fail(`schema manifest has ${rows.length} TBL rows, expected ${TOTAL_TABLES}`);
+  }
 }
 
 // --- 2/3. IDX status uniqueness and retired-ID reuse -----------------------

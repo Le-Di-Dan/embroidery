@@ -1,13 +1,15 @@
 /**
  * DB6-S26 — live table/column inventory checker.
  * Verifies the live catalog on a disposable database matches the canonical
- * 78-table / 849-column baseline (833 at DB6 launch + 10 from APP3-DB01
- * + 2 from APP5-DB01 + 4 from APP6-DB01). Usage: node db-live-tables-check.mjs <url>
+ * 79-table / 853-column baseline (78 tables and 833 columns at DB6 launch,
+ * + 10 columns from APP3-DB01 + 2 from APP5-DB01 + 4 from APP6-DB01, and
+ * + 1 table / 4 columns from APP7-DB01's `payment_transfer_evidence`).
+ * Usage: node db-live-tables-check.mjs <url>
  */
 import { connect, report } from './live-db.mjs';
 
-const EXPECTED_TABLES = 78;
-const EXPECTED_COLUMNS = 849;
+const EXPECTED_TABLES = 79;
+const EXPECTED_COLUMNS = 853;
 
 const client = await connect(process.argv[2]);
 const { note, fail, finish } = report('tables');

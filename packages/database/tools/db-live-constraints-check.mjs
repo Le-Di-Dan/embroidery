@@ -17,7 +17,11 @@ import { connect, report } from './live-db.mjs';
 // APP6-DB01 adds three CHECKs (CST-129/CST-131 exactly-one placement branch on
 // `design_versions`/`approval_snapshots`, CST-130 the COP placement labels) and
 // two FKs (REL-107/REL-108, both -> `customer_owned_products`).
-const EXPECTED = { p: 78, f: 165, u: 52, c: 204 };
+// APP7-DB01 adds the first application-era *table*, `payment_transfer_evidence`:
+// one PK, one UNIQUE (the CST-043 attempt+asset pair) and two FKs (REL-109 ×2,
+// -> `payment_attempts` and -> `assets`). It adds no CHECK — the five-per-attempt
+// bound is an application guard under the attempt row lock, not a constraint.
+const EXPECTED = { p: 79, f: 167, u: 53, c: 204 };
 const NAMES = { p: 'PK', f: 'FK', u: 'UNIQUE', c: 'CHECK' };
 
 const client = await connect(process.argv[2]);
@@ -74,11 +78,15 @@ const DB6_RELATIONSHIP_CEILING = 160;
 const APP3_DB01_EDGES = 2;
 const APP5_DB01_EDGES = 1;
 const APP6_DB01_EDGES = 2;
-const EXPECTED_FKS = DB6_RELATIONSHIP_CEILING + APP3_DB01_EDGES + APP5_DB01_EDGES + APP6_DB01_EDGES;
+// APP7-DB01's pair is the `payment_transfer_evidence` association's two edges.
+const APP7_DB01_EDGES = 2;
+const EXPECTED_FKS =
+  DB6_RELATIONSHIP_CEILING + APP3_DB01_EDGES + APP5_DB01_EDGES + APP6_DB01_EDGES + APP7_DB01_EDGES;
 note(
   `relationship ceiling: ${relationshipCeiling[0].n} / ${EXPECTED_FKS} ` +
     `(${DB6_RELATIONSHIP_CEILING} DEV-DB6-017 + ${APP3_DB01_EDGES} APP3-DB01` +
-    ` + ${APP5_DB01_EDGES} APP5-DB01 + ${APP6_DB01_EDGES} APP6-DB01)`,
+    ` + ${APP5_DB01_EDGES} APP5-DB01 + ${APP6_DB01_EDGES} APP6-DB01` +
+    ` + ${APP7_DB01_EDGES} APP7-DB01)`,
 );
 if (relationshipCeiling[0].n !== EXPECTED_FKS) {
   fail(

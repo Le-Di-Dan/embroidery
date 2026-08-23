@@ -1,8 +1,11 @@
 /**
  * DB6-S26 — live index inventory checker.
  * Verifies the post-S25 canonical split (DB6_INDEX_IMPLEMENTATION_MANIFEST.md
- * §7, plus APP3-DB01 and APP5-DB01): 215 total / 48 partial (13 partial-unique +
- * 35 partial-performance) / 37 non-partial performance. This is the corrected split, not the stale
+ * §7, plus APP3-DB01, APP5-DB01 and APP7-DB01): 217 total / 48 partial
+ * (13 partial-unique + 35 partial-performance) / 37 non-partial performance.
+ * APP7-DB01 contributes two constraint-created indexes and no explicit one —
+ * `payment_transfer_evidence`'s PK and its attempt+asset UNIQUE, whose
+ * `payment_attempt_id` prefix already serves the evidence-by-attempt path. This is the corrected split, not the stale
  * pre-S25 45/32/38 estimate — do not revert to it.
  * Usage: node db-live-indexes-check.mjs <url>
  */
@@ -16,8 +19,8 @@ const { rows: total } = await client.query(`
   JOIN pg_namespace n ON n.oid = c.relnamespace
   WHERE c.relkind = 'i' AND n.nspname = 'public'
 `);
-note(`total physical indexes: ${total[0].n} / 215`);
-if (total[0].n !== 215) fail(`total physical index count is ${total[0].n}, expected 215`);
+note(`total physical indexes: ${total[0].n} / 217`);
+if (total[0].n !== 217) fail(`total physical index count is ${total[0].n}, expected 217`);
 
 const classify = async (label, expected, where) => {
   const { rows } = await client.query(`
@@ -30,10 +33,10 @@ const classify = async (label, expected, where) => {
   if (rows[0].n !== expected) fail(`${label} count is ${rows[0].n}, expected ${expected}`);
 };
 
-await classify('PK backing', 78, `i.indisprimary`);
+await classify('PK backing', 79, `i.indisprimary`);
 await classify(
   'UNIQUE backing (non-partial)',
-  52,
+  53,
   `i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL`,
 );
 await classify(

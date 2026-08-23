@@ -109,6 +109,8 @@ export * from './payment/payment-attempts';
 export * from './payment/payment-provider-events';
 export * from './payment/payment-reconciliations';
 export * from './payment/refunds';
+// APP7-DB01 (application era) — CTX-PAY transfer-evidence association.
+export * from './payment/payment-transfer-evidence';
 
 // G17 — Production (CTX-PRD)
 export * from './production/production-jobs';

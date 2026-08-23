@@ -144,6 +144,9 @@ const ROWS: readonly MetricRow[] = [
   ['payment_attempts', 'G16', 11, 2, 3, 16],
   ['payment_provider_events', 'G16', 9, 1, 2, 12],
   ['payment_reconciliations', 'G16', 8, 0, 2, 10],
+  // APP7-DB01: no DB4 COL IDs — the table postdates the register, so both
+  // business columns count as expansions (manifest §4.1).
+  ['payment_transfer_evidence', 'G16', 0, 2, 2, 4],
   ['refunds', 'G16', 11, 3, 3, 17],
 
   // G17 — Production

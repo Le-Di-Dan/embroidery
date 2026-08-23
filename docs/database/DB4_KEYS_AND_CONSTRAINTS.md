@@ -75,7 +75,7 @@ operational records, per the PK column in
 | CST-040 | UQ | payment_provider_events | (provider_key, provider_event_ref) — **provider event unique** | **INV-07 / GRD-012** | double-applied callback | **yes** | idempotency claim | **D7-09 / D8-01 (critical)** |
 | CST-041 | UQ | production_jobs | (order_id, approval_snapshot_id) | INV-19 / `production.start` idem | duplicate job per approval | yes | idem | D8-13 |
 | CST-042 | UQ | production_specifications | production_job_id | INV-03 | two specs per job | yes | creation tx | D7-07 |
-| CST-043 | UQ | production_artifacts / design_version_assets / design_session_assets / design_template_assets / gallery_entry_assets / custom_request_assets | owner+asset (+role) per ADR-DB4-003 | INV-25 | duplicate association | yes | — | D7 |
+| CST-043 | UQ | production_artifacts / design_version_assets / design_session_assets / design_template_assets / gallery_entry_assets / custom_request_assets / **payment_transfer_evidence (APP7-DB01)** | owner+asset (+role) per ADR-DB4-003 | INV-25 | duplicate association | yes | — | D7 |
 | CST-044 | UQ | content_pages | (page_type, slug) · redirect_rules.source_path · agreements.agreement_type | REQ-SEO-001/004, GAP-09 | ambiguous route/type | yes | — | D7 |
 | CST-045 | UQ | agreement_versions | (agreement_id, version) | GAP-09 | version reuse | yes | publish tx | D7 |
 | CST-046 | XCL | agreement_versions | at most one **effective** PUBLISHED version per agreement at any instant (effective_from windows must not overlap among non-superseded/withdrawn rows) | GRD-008 | two effective terms versions | dir (exclusion candidate → DB6 raw SQL; primary = publish-tx guard) | publish tx supersedes prior | D7-13/D8 (approve-vs-publish) |

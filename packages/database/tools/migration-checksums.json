@@ -34,5 +34,6 @@
   "0033_provision_catalog_draft_categories.sql": "a53236e91faed984499b58625730db3e27f8023df93d3647de3abbba3f5670f9",
   "0034_add_app3_placement_and_derivative_authority.sql": "ceaed118b5897b4dd2581309a97161d382632d5a91700e95876bebc8e76a16d2",
   "0035_add_app5_intake_provenance.sql": "ce344519f0c2024fe8227009aed430f1cf68e2bb4106c4a731ac0a8475eac136",
-  "0036_add_app6_cop_design_context.sql": "c3d49223d004aab3d90af2ac074810485b8934705eb30ce584d0de437a4aec33"
+  "0036_add_app6_cop_design_context.sql": "c3d49223d004aab3d90af2ac074810485b8934705eb30ce584d0de437a4aec33",
+  "0037_add_app7_transfer_evidence_association.sql": "4bd4fa795eb27022ffaf04c03a291a3752807ff80349afc0b50efd65c1086390"
 }
