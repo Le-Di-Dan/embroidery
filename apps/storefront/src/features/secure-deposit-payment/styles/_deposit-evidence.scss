@@ -1,0 +1,196 @@
+// Secure deposit payment — the optional transfer-evidence panel.
+//
+// `748:3` through `748:144` and `750:376`. The reminder is styled to be
+// unmissable rather than a footnote (§12) while the *không bắt buộc* badge and
+// the two optional notes keep it from reading as a requirement — the design's
+// whole balancing act, and the reason the reminder has a background of its own.
+
+@use '@embroidery/styles' as styles;
+@use './deposit-tokens' as tokens;
+
+.secure-deposit {
+  &__evidence-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(12);
+    align-items: center;
+    width: 100%;
+  }
+
+  &__quota {
+    margin-left: auto;
+    padding: tokens.$pill-padding-block tokens.$pill-padding-inline;
+    background: styles.$color-surface-secondary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: 999px;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-secondary;
+  }
+
+  // Prominent, not buried (745:365 / 750:364).
+  &__reminder {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    width: 100%;
+    padding: tokens.$row-padding-inline;
+    background: styles.$color-surface-secondary;
+    border: 1.5px solid styles.$color-action-primary;
+    border-radius: styles.$radius-sm;
+  }
+
+  &__reminder-headline {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-bold;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__evidence-list {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  // No per-row action of any kind: the set is append-only by contract, and a
+  // disabled bin icon would invite the customer to wonder why.
+  &__evidence-item {
+    display: flex;
+    gap: tokens.$evidence-gap;
+    align-items: flex-start;
+    padding: styles.spacing(12);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-xs;
+  }
+
+  &__evidence-glyph {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: tokens.$evidence-glyph;
+    height: tokens.$evidence-glyph;
+    background: styles.$color-background-secondary;
+    border-radius: styles.$radius-xs;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__evidence-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    min-width: 0;
+    align-items: flex-start;
+  }
+
+  &__evidence-meta {
+    font-size: tokens.$font-size-micro;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__evidence-note {
+    font-size: styles.$font-size-caption;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__uploading {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    align-items: flex-start;
+    width: 100%;
+    padding: styles.spacing(12);
+    background: styles.$color-surface-secondary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-xs;
+  }
+
+  &__uploading-percent {
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__uploading-name {
+    font-size: tokens.$font-size-micro;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__dropzone {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    align-items: flex-start;
+    width: 100%;
+    padding: tokens.$row-padding-inline;
+    border: 1px dashed styles.$color-border-secondary;
+    border-radius: styles.$radius-sm;
+
+    &--closed {
+      border-style: solid;
+      opacity: 0.85;
+    }
+  }
+
+  &__dropzone-title {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  // The constraint line *is* the input's label (753:155): it names the formats,
+  // the size and the count, so a screen reader hears the rules before the
+  // file picker opens rather than after the server refuses.
+  &__field-label {
+    font-size: tokens.$font-size-micro;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  // The input stays in the accessibility tree and keyboard-reachable; it is the
+  // visual chrome that is replaced by the button beside it, never the control.
+  &__file-input {
+    font-family: inherit;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &__evidence-error {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  @media (max-width: tokens.$bp-shell-wide) {
+    &__quota {
+      margin-left: 0;
+    }
+
+    &__evidence-glyph {
+      width: tokens.$evidence-glyph-mobile;
+      height: tokens.$evidence-glyph-mobile;
+    }
+
+    &__dropzone,
+    &__reminder {
+      padding: tokens.$card-padding-mobile;
+    }
+  }
+}

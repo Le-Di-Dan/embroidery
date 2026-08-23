@@ -1,5 +1,16 @@
 /**
- * The idempotency key one customer upload action carries (`APP5-B02` §7).
+ * The idempotency key one customer upload action carries (`APP5-B02` §7,
+ * `APP7-B05` §7).
+ *
+ * ## Why it lives in `shared/utils` and not in a feature
+ *
+ * It was `APP5-S01`'s alone until `APP7-S01` had to send transfer evidence
+ * through the same `Idempotency-Key` contract. Two features in this app now
+ * mint one, and a second copy of the reasoning below would be a second place
+ * for it to drift — so it moved to the narrowest scope that covers both
+ * consumers (`CLAUDE.md` §5, `REPOSITORY_STRUCTURE` §4 `shared/`). Nothing
+ * about the function changed in the move; it carries no business rule and no
+ * user-facing copy, which is exactly what makes `shared/` the right place.
  *
  * ## Why this is not `crypto.randomUUID()`
  *

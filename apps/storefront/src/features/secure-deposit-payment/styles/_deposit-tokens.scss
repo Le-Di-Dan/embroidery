@@ -1,0 +1,86 @@
+// Secure deposit payment — the geometry the approved frames measure to.
+//
+// Design source: FIG-APP7-S01-* (file BQwqV8GdfUIELvsQDB1UQE, page APP_07,
+// nodes 745:3 · 747:3 · 747:41 · 748:3 · 748:29 · 748:57 · 748:86 · 748:115 ·
+// 748:144 · 749:3 · 749:26 · 749:50 · 750:3 · 750:376 · 750:415 · 751:3 ·
+// 753:3 · 753:120 · 753:179), approved under FIG-APPROVAL-APP7-D01-PO-001.
+//
+// Measured live from the approved frames:
+//   desktop 1440 — content 1280 wide inside an 80 gutter, cards 28 padding,
+//                  radius 16; the transfer band is instructions + a 440 QR card
+//   mobile   390 — one column inside a 20 gutter, cards 16 padding, controls
+//                  49 tall and full width (750:22, 750:35, 750:361, 750:370)
+//   QR           — 250 module box in an 18-padded 14-radius frame (745:54)
+//
+// Colour, type, radius and spacing come from @embroidery/styles. The frames use
+// a handful of steps the shared scale does not define (6, 10, 13, 14, 18, 20,
+// 26, 28, 44, 49); each is a documented local literal, following the APP4-S02
+// and APP6-S01 precedent — inventing scale steps would change a shared
+// foundation to suit one screen.
+//
+// This file holds values only. It emits no rules, so every partial may `@use` it
+// without duplicating a single declaration into the bundle.
+
+@use '@embroidery/styles' as styles;
+
+// Mirrored from secure-link-access.scss, which mirrors storefront-shell.scss.
+// One breakpoint governs the whole route; a second would let the transfer band's
+// stacked form and the shell's gutter switch at widths nobody tests together.
+$bp-shell-wide: 768px;
+
+// Approved content geometry (745:8 / 747:8 / 749:55).
+$content-max: 1280px;
+$stack-gap: 20px; // no shared step between 16 and 24
+$stack-gap-tight: styles.spacing(12);
+
+// Approved card geometry (745:20 / 747:16 / 748:6 / 749:6).
+$card-padding: 28px;
+$card-padding-mobile: styles.spacing(16);
+$card-gap: styles.spacing(16);
+
+// Approved row geometry (745:40 / 747:18 / 750:29).
+$row-padding-block: 13px;
+$row-padding-inline: styles.spacing(16);
+$row-label-width: 220px;
+
+// Approved pill geometry (745:12 / 748:9 / 751:16).
+$pill-padding-block: 5px;
+$pill-padding-inline: styles.spacing(12);
+$pill-gap: 6px;
+
+// Approved note geometry (745:359 / 748:26 / 749:17).
+$note-padding-block: styles.spacing(12);
+$note-padding-inline: styles.spacing(16);
+$note-gap: 10px;
+
+// Approved control geometry (747:35 desktop, 750:22 mobile).
+$button-padding-block: 14px;
+$button-padding-inline: 22px;
+$button-height-mobile: 49px;
+
+// Approved QR geometry (745:52 / 745:54 / 745:55 / 750:40).
+$qr-card-width: 440px;
+$qr-frame-padding: 18px;
+$qr-module-box: 250px;
+$qr-module-box-mobile: 228px;
+
+// Approved dialog geometry, reusing the APP6-D01 step-up frame (701:62).
+$dialog-width: 560px;
+
+// Approved evidence geometry (748:70 / 748:158 / 750:389).
+$evidence-glyph: 52px;
+$evidence-glyph-mobile: 44px;
+$evidence-gap: 14px;
+
+// The accessibility specification's minimum touch target (753:178).
+$touch-target-min: 44px;
+
+$line-height-snug: 1.35;
+$line-height-body: 1.5;
+
+// Type steps the frames use that the shared scale does not define.
+$font-size-hero-amount: 34px; // 745:31
+$font-size-hero-amount-mobile: 28px; // 750:21
+$font-size-card-title: 19px; // 745:21
+$font-size-micro: 11px; // 745:37 fine print
+$font-size-title-mobile: 26px; // 750:10

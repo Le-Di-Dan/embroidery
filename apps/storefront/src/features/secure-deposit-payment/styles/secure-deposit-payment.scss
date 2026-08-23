@@ -1,0 +1,15 @@
+// Secure deposit payment — the feature's stylesheet entry (APP7-S01).
+//
+// Composition only. Four partials, split by responsibility rather than by line
+// count: the shared geometry, the page frame, the transfer band and the evidence
+// panel, plus the step-up overlay. `APP7-A01-C1` had to split an oversized Admin
+// stylesheet after the fact; this one is bounded from the start, and §40 makes
+// the 400-line cap apply to SCSS exactly as it does to TypeScript.
+//
+// `_deposit-tokens.scss` emits no rules, so every partial may `@use` it without
+// duplicating a declaration into the bundle.
+
+@use './deposit-layout';
+@use './deposit-transfer';
+@use './deposit-evidence';
+@use './deposit-dialog';

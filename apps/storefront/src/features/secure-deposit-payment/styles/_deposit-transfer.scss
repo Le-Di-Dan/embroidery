@@ -1,0 +1,189 @@
+// Secure deposit payment — the transfer band: amounts, reference, copy, QR.
+//
+// `745:3` puts the instructions and the QR side by side at 1440 and `750:3`
+// stacks them at 390. The band is a two-column grid that collapses at the one
+// shared breakpoint, so the QR card keeps its measured width on desktop and
+// becomes a full-width block on mobile without a second breakpoint to reason
+// about.
+
+@use '@embroidery/styles' as styles;
+@use './deposit-tokens' as tokens;
+
+.secure-deposit {
+  &__transfer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) tokens.$qr-card-width;
+    gap: tokens.$stack-gap;
+    align-items: start;
+    width: 100%;
+  }
+
+  // The amount and the reference are the two values a mistyped character makes
+  // worthless, so both get the hero treatment the frames give them (745:26,
+  // 745:33) rather than sitting in the fact list with the bank name.
+  &__hero {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    align-items: flex-start;
+    width: 100%;
+    padding: tokens.$row-padding-inline;
+    background: styles.$color-surface-secondary;
+    border: 1.5px solid styles.$color-action-primary;
+    border-radius: styles.$radius-sm;
+
+    &--reference {
+      border-color: styles.$color-border-secondary;
+    }
+  }
+
+  &__hero-label {
+    margin: 0;
+    font-size: tokens.$font-size-micro;
+    font-weight: styles.$font-weight-semibold;
+    letter-spacing: 0.04em;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__hero-value {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+    align-items: baseline;
+    margin: 0;
+  }
+
+  &__hero-number {
+    font-size: tokens.$font-size-hero-amount;
+    font-weight: styles.$font-weight-bold;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__hero-currency {
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-secondary;
+  }
+
+  // The reference and the account number are transcribed character by character
+  // into a banking app, so they are set in a monospaced face where a zero and an
+  // O cannot be confused, and are never letter-spaced into ambiguity.
+  &__reference,
+  &__account {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__copy {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &__copy-button {
+    display: inline-flex;
+    gap: styles.spacing(4);
+    align-items: center;
+    justify-content: center;
+    min-height: tokens.$touch-target-min;
+    padding: styles.spacing(8) tokens.$row-padding-inline;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-xs;
+    font-family: inherit;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &__copy-symbol {
+    font-weight: styles.$font-weight-bold;
+  }
+
+  &__qr {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$card-gap;
+    align-items: center;
+    width: 100%;
+    padding: tokens.$card-padding;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-md;
+    text-align: center;
+  }
+
+  &__qr-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: tokens.$qr-module-box;
+    min-height: tokens.$qr-module-box;
+    padding: tokens.$qr-frame-padding;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-sm;
+  }
+
+  &__qr-image {
+    display: block;
+    width: tokens.$qr-module-box;
+    max-width: 100%;
+    height: auto;
+  }
+
+  // A failed or absent QR keeps the frame's footprint so the panel does not jump
+  // when the image arrives, and states the fallback in words rather than leaving
+  // an empty box the customer has to interpret.
+  &__qr-placeholder {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  @media (max-width: tokens.$bp-shell-wide) {
+    &__transfer {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    &__hero-number {
+      font-size: tokens.$font-size-hero-amount-mobile;
+    }
+
+    // Full-width copy controls at the approved mobile height (750:22 / 750:35).
+    &__copy,
+    &__copy-button {
+      width: 100%;
+      min-height: tokens.$button-height-mobile;
+    }
+
+    &__qr {
+      padding: tokens.$card-padding-mobile;
+    }
+
+    &__qr-frame {
+      min-width: tokens.$qr-module-box-mobile;
+      min-height: tokens.$qr-module-box-mobile;
+    }
+
+    &__qr-image {
+      width: tokens.$qr-module-box-mobile;
+    }
+  }
+}

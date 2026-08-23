@@ -30,7 +30,7 @@ import { normalizeApiClientError } from '@embroidery/api-client';
 
 import { readRequestAssetStatus, uploadRequestAsset } from '../api/custom-request.client';
 import { customRequestQueryKeys } from '../model/custom-request-query-keys';
-import { newUploadIdempotencyKey } from '../model/upload-idempotency-key';
+import { newUploadIdempotencyKey } from '../../../shared/utils/upload-idempotency-key';
 import {
   applyStatus,
   challengeCapReached,

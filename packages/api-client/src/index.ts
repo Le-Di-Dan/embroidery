@@ -992,6 +992,78 @@ export type {
   ReviewPaymentAttemptBody,
 } from './generated/embroidery-api.schemas';
 
+// The customer secure deposit surface (`APP7-B03` read, initiation and QR;
+// `APP7-B05` transfer evidence), consumed by `APP7-S01` at
+// `/truy-cap/thanh-toan`. Exposed here so that feature never deep-imports the
+// generated tree.
+//
+// ### All five carry the credential in a request body
+//
+// Every one of them is a `POST`, including the two that return an image or a
+// list and write nothing. `ADR-APP4-001` §11 makes the URL fragment the only
+// browser carrier for a secure token and marks a path or query carrier
+// `FORBIDDEN` with no fallback, so a `GET …/qr?token=…` would put a live
+// credential into the gateway access log, the application log, every proxy
+// between and the `Referer` of any link the page then renders. The body types
+// cross so the caller names the wire shape at the transport seam rather than
+// assembling a literal that would compile just as well with the token in the
+// wrong field.
+//
+// ### `publicOrderDepositCurrent` publishes no attempt state
+//
+// It returns the order code, the order and obligation status, the obligation's
+// own frozen amount and currency, the server-owned bank instructions and the
+// access expiry — and nothing about a payment attempt. Attempt status is
+// reachable only through `publicOrderDepositInitiate`, which is idempotent and
+// answers `replayed: true` with the attempt an identical earlier call opened.
+// That asymmetry is a fact of the contract, not an omission to be repaired on
+// the client, and it is why `DepositAttemptResponse` crosses beside the read.
+//
+// ### The QR is a `Blob`, and the evidence upload is multipart
+//
+// `publicOrderDepositQr` sets `responseType: 'blob'` itself, so no consumer
+// configures transport to get the image. `publicOrderDepositEvidenceUpload`
+// builds its own `FormData` and appends `accessToken`, `attemptId` and then
+// `file` — alphabetical, which is exactly the order `APP7-B05` requires, the
+// credential and the locator both arriving before the first byte of the image.
+// Its `Idempotency-Key` has no generated parameter and travels through the
+// operation's per-call config, as `APP5-B02`'s upload does.
+//
+// The status enums cross as **values** because the screen branches on each and
+// a mistyped string literal is a comparison that is simply never true.
+// `DepositAttemptResponseStatus` publishes the whole LC-16 vocabulary even
+// though B03 only ever creates `PENDING`: a stored attempt may carry another
+// and the screen renders what is stored rather than what it expected.
+export {
+  publicOrderDepositCurrent,
+  publicOrderDepositInitiate,
+  publicOrderDepositQr,
+  publicOrderDepositEvidenceUpload,
+  publicOrderDepositEvidenceStatus,
+} from './generated/embroidery-api';
+export {
+  CustomerDepositResponseDepositStatus,
+  CustomerDepositResponseOrderStatus,
+  DepositAttemptResponseMethod,
+  DepositAttemptResponseStatus,
+  TransferEvidenceItemResponseAssetStatus,
+  TransferEvidenceItemResponseMediaType,
+  TransferEvidenceUploadResponseAssetStatus,
+} from './generated/embroidery-api.schemas';
+export type {
+  ReadDepositBody,
+  InitiateDepositAttemptBody,
+  DepositQrBody,
+  ReadTransferEvidenceBody,
+  PublicOrderDepositEvidenceUploadBody,
+  CustomerDepositResponse,
+  DepositBankInstructionsResponse,
+  DepositAttemptResponse,
+  TransferEvidenceItemResponse,
+  TransferEvidenceListResponse,
+  TransferEvidenceUploadResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

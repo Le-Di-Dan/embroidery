@@ -8,7 +8,7 @@
  * cases below drive the *absence* explicitly rather than trusting the ambient
  * environment to reproduce it.
  */
-import { newUploadIdempotencyKey } from '../../src/features/custom-request/model/upload-idempotency-key';
+import { newUploadIdempotencyKey } from '../../src/shared/utils/upload-idempotency-key';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 /** The server contract: `[A-Za-z0-9._:-]{8,128}` (`parseIdempotencyKey`). */
