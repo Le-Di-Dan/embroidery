@@ -7476,7 +7476,6 @@
             "type": "string"
           },
           "observedTransferReference": {
-            "maxLength": 2000,
             "type": "string"
           },
           "reviewReason": {
@@ -8099,7 +8098,6 @@
             "type": "string"
           },
           "observedTransferReference": {
-            "maxLength": 2000,
             "type": "string"
           }
         },

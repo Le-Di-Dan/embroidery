@@ -198,6 +198,38 @@ describe('APP7-B04 — mismatch, explicit review and terminal-state integrity', 
       await expectDepositUntouched(seeded);
     });
 
+    it('accepts an observed memo longer than any invented bound, untruncated (APP7-B04-FD1)', async () => {
+      const seeded = await seed('longmemo');
+      // Well past the 2000-character ceiling `APP7-B04-C1` had borrowed from the
+      // note field. `payment_reconciliations.bank_reference` is `text` with no
+      // length authority, so nothing in this path may decide such a memo cannot
+      // exist — and nothing may quietly shorten it either.
+      const long = `${seeded.expectedReference}-${'x'.repeat(5_000)}`;
+      expect(long.length).toBeGreaterThan(2_000);
+
+      const response = await authed
+        .post(ADMIN_PAYMENT_ROUTES.verify(seeded.attemptId))
+        .send({
+          observedAmount: SEEDED_DEPOSIT_AMOUNT,
+          observedTransferReference: long,
+          note: 'Nội dung chuyển khoản dài bất thường.',
+        })
+        // Not a 400: the request boundary imposes no length of its own.
+        .expect(200);
+
+      expect((response.body as Envelope<DecisionBody>).data.attemptStatus).toBe('REQUIRES_REVIEW');
+
+      const reconciliations = await readReconciliations(context.ctx.database, seeded.attemptId);
+      expect(reconciliations).toHaveLength(1);
+      // Byte-for-byte, and the length is asserted separately so a silent
+      // truncation to 2000 could not pass by prefix equality.
+      expect(reconciliations[0]?.bank_reference).toBe(long);
+      expect(reconciliations[0]?.bank_reference?.length).toBe(long.length);
+
+      // A long memo is still a mismatch, not a success.
+      await expectDepositUntouched(seeded);
+    });
+
     it('resolves a REQUIRES_REVIEW attempt when the operator then verifies it exactly', async () => {
       const seeded = await seed('resolve');
       await authed

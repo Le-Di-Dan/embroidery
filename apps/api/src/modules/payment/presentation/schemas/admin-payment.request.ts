@@ -1,15 +1,21 @@
 /**
  * Request-side validation for the three Admin payment operations
- * (`APP7-B04` §11, §19, §32; `APP7-B04-C1`).
+ * (`APP7-B04` §11, §19, §32; `APP7-B04-C1`; `APP7-B04-FD1`).
  *
  * ### Expected identifier and observed evidence are different kinds of thing
  *
- * The one rule this file exists to keep straight, and the one `APP7-B04-C1`
- * corrects: a **server-derived** reference is a canonical identifier and carries
- * the `APP7-G01` §4 pattern; an **Admin-observed** bank memo is evidence about
- * the outside world and carries no pattern at all. Constraining the second to
- * the shape of the first — which B04 did — makes the mismatch this checkpoint
- * exists to record unrepresentable.
+ * The one rule this file exists to keep straight: a **server-derived** reference
+ * is a canonical identifier and carries the `APP7-G01` §4 pattern; an
+ * **Admin-observed** bank memo is evidence about the outside world and carries
+ * no constraint at all. Constraining the second by the first — which B04 did —
+ * makes the mismatch this checkpoint exists to record unrepresentable.
+ *
+ * It took two passes to get right, and the second is the more useful lesson.
+ * `APP7-B04-C1` removed the canonical pattern but replaced it with a
+ * 2000-character ceiling borrowed from the note field on this same body;
+ * `APP7-B04-FD1` removed that too. A constraint is authorized by the thing being
+ * constrained, never by a neighbouring field that happens to be nearby — and
+ * "the column has no bound" is a finding to honour, not a gap to fill.
  *
  * Both bodies are `.strict()`, and that is the security property rather than a
  * style choice. Every field `APP7-B04` §11 forbids — `orderId`, `obligationId`,
@@ -62,7 +68,8 @@ const observedAmountSchema = z
   .regex(/^\d{1,12}(?:\.\d{1,2})?$/, 'An amount is up to twelve digits with at most two decimals.');
 
 /**
- * The reference as it appeared on the received transfer (`APP7-B04-C1`).
+ * The reference as it appeared on the received transfer (`APP7-B04-C1`,
+ * `APP7-B04-FD1`).
  *
  * ### It is evidence, not an identifier
  *
@@ -75,7 +82,7 @@ const observedAmountSchema = z
  *
  * `APP7-B04` originally validated this field against that canonical pattern, on
  * the reasoning that a typo should be a `400` the operator can see. That was
- * wrong, and `APP7-B04-C1` corrects it: rejecting a non-canonical memo at the
+ * wrong, and `APP7-B04-C1` corrected it: rejecting a non-canonical memo at the
  * DTO boundary stops the financial evidence layer from ever recording the
  * mismatch, so the one fact a later audit needs — *what the bank transaction
  * actually contained*, as against what the customer was instructed to use —
@@ -89,20 +96,29 @@ const observedAmountSchema = z
  * `payment_reconciliations.bank_reference`. Any transformation here would make
  * an observation agree with an expectation it did not actually match.
  *
- * ### The only rule is a length ceiling, and it is not a new alphabet
+ * ### There is no rule at all, and that is the finding (`APP7-B04-FD1`)
  *
  * `COL-TBL057-08` is nullable `text` with no CHECK, no length and no character
- * set, so there is no pre-B04 bound to preserve. The 2000-character ceiling is
- * the bound this same body already applies to the operator's written reason, and
- * it exists for that rule's reason alone — an authenticated operator should not
- * be able to write an unbounded blob into the money record by accident. It
- * constrains size and nothing else: every printable byte, in any case, in any
- * script, is accepted and reaches the comparison.
+ * set. `APP7-B04-C1` established exactly that — and then applied a
+ * 2000-character ceiling borrowed from the operator's written reason on the same
+ * body. That was the same defect one step smaller: a bound appropriate to an
+ * Admin-authored note is not authority for an observed bank fact, and imposing
+ * it made the application assert something no accepted document says — that a
+ * real memo longer than 2000 characters cannot exist.
+ *
+ * So there is no `max`, no `min`, no pattern, no format and no enum. The field
+ * is a plain string, and the value is compared and persisted exactly as it
+ * arrived. Body-size abuse is the delivered HTTP transport layer's concern, and
+ * a Payment-domain field constraint is not a substitute for it.
  *
  * An empty memo is a real observation — a transfer can arrive carrying none — so
  * it is accepted too and recorded as what it is. It simply will not match.
+ *
+ * The operator's written **reason** keeps its own bound below, and that
+ * asymmetry is the point: a human-authored explanation has an accepted length
+ * policy, an observed financial fact does not.
  */
-const observedReferenceSchema = z.string().max(2_000);
+const observedReferenceSchema = z.string();
 
 /**
  * One written justification.

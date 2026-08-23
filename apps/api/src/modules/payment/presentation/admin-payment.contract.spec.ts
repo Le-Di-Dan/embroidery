@@ -325,20 +325,34 @@ describe('APP7-B04 — the published Admin payment contract', () => {
       }
     });
 
-    it('publishes the observed memo without the canonical reference pattern (APP7-B04-C1)', () => {
+    it('publishes the observed memo with no constraint at all (APP7-B04-C1, FD1)', () => {
       // `^[A-Z0-9]{15}$` describes the reference the **server derives**. An
       // observed bank memo is evidence about the outside world, and constraining
       // it to that shape — which `APP7-B04` did — makes a lowercase or mangled
       // memo a `400` and destroys the contradiction before it can be recorded.
+      //
+      // `maxLength` is asserted absent too. `COL-TBL057-08` is `text` with no
+      // length authority, so a ceiling here — even the 2000 `APP7-B04-C1`
+      // borrowed from the note field beside it — would be the application
+      // asserting that a real memo longer than that cannot exist. Body-size
+      // abuse is the transport layer's concern.
       for (const path of [VERIFY_PATH, REVIEW_PATH]) {
         const observed = bodySchemaOf(path).properties?.['observedTransferReference'];
         expect(observed?.type).toBe('string');
         expect(observed?.pattern).toBeUndefined();
+        expect(observed?.format).toBeUndefined();
         expect(observed?.enum).toBeUndefined();
-        // Size only. No minimum, because an empty memo is a real observation.
-        expect(observed?.maxLength).toBe(2_000);
         expect(observed?.minLength).toBeUndefined();
+        expect(observed?.maxLength).toBeUndefined();
       }
+    });
+
+    it('keeps the operator’s written reason bounded — the asymmetry is the point', () => {
+      // A human-authored explanation has an accepted length policy; an observed
+      // financial fact does not. Removing the observed bound must not remove
+      // this one.
+      expect(bodySchemaOf(VERIFY_PATH).properties?.['note']?.maxLength).toBe(2_000);
+      expect(bodySchemaOf(REVIEW_PATH).properties?.['reviewReason']?.maxLength).toBe(2_000);
     });
 
     it('keeps the canonical pattern on the derived expected reference', () => {
