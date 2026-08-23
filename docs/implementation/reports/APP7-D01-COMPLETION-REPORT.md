@@ -547,3 +547,22 @@ A01_UI_IMPLEMENTATION_GATE = BLOCKED_UNTIL_RELEVANT_D01_ROWS_ARE_PRODUCT_OWNER_A
 ```
 
 `APP7-A01` and `APP7-S01` were **not** started. No UI code exists for this phase.
+
+---
+
+## 19. Commits
+
+```text
+9e30e37  docs(app7): register the APP7-D01 design package (APP7-D01)
+         docs/design/FIGMA_DESIGN_INDEX.md
+         docs/implementation/phases/APP7-DEPOSIT-PAYMENT-AND-ORDER-CREATION.md
+
+5b9c90d  docs(app7): record APP7-D01 and advance the roadmap (APP7-D01)
+         docs/implementation/reports/APP7-D01-COMPLETION-REPORT.md
+         docs/implementation/10-MASTER-APPLICATION-ROADMAP.md
+
+NOT_PUSHED = true
+```
+
+The Figma mutations are already remote — the design file is the live artifact under
+review. Git stays local; nothing was pushed.
