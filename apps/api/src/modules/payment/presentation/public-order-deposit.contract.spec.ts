@@ -31,18 +31,21 @@ const B05_EVIDENCE_PATHS = [
 ];
 
 /**
- * `APP7-B04`'s three Admin operations.
+ * The Admin payment operations `APP7-B04` and `APP7-B06` publish.
  *
  * Listed for the same reason B05's are: the repository-wide "no other payment
  * route exists" bound below matches on the word `payment`, and an Admin
- * verification path is a route that must be *named* to stay excluded rather than
- * loosened past by a prefix filter. All three are behind
- * `AuthenticatedAdminGuard` and none is reachable from this customer surface.
+ * verification or evidence-delivery path is a route that must be *named* to stay
+ * excluded rather than loosened past by a prefix filter. All four are behind
+ * `AuthenticatedAdminGuard` and none is reachable from this customer surface —
+ * `APP7-B06` deliberately publishes **no** customer binary for transfer
+ * evidence, so its addition here does not add one below.
  */
 const B04_ADMIN_PAYMENT_PATHS = [
   '/api/admin/orders/{orderId}/payments',
   '/api/admin/payment-attempts/{attemptId}/verify',
   '/api/admin/payment-attempts/{attemptId}/review',
+  '/api/admin/payment-evidence/{evidenceId}/content',
 ];
 
 interface OperationShape {

@@ -113,6 +113,29 @@ export interface AdminPaymentReadRepository {
   listEvidence(attemptIds: readonly string[]): Promise<AdminTransferEvidenceRow[]>;
 
   /**
+   * One association addressed by its own id, or nothing (`APP7-B06` §4, §5).
+   *
+   * Added by `APP7-B06` rather than by a second repository, because B04 and B06
+   * already share `payment_transfer_evidence` and two API-local statements
+   * against one table is how the two quietly stop meaning the same thing. This
+   * is the narrowest reusable method that answers B06's question, and it stays
+   * on the read seam: there is no write, no lock and no transaction on this
+   * contract, so the delivery module can hold it and still be structurally
+   * incapable of moving a payment.
+   *
+   * It resolves the association **only when it names a live payment attempt**.
+   * The FK makes an orphan unreachable, so the join is not a defence against a
+   * missing row — it is what makes "the association resolves one attempt" a
+   * property of the statement rather than of a caller's restraint, on the
+   * pattern `DrizzleRequestAssetDeliveryRepository` set for its role filter.
+   *
+   * Deliberately absent: any method taking an `assetId`. `APP7-B06` §24 forbids
+   * a generic Admin asset binary, and a lookup that could serve one is not
+   * declared here for a refactor to find.
+   */
+  findEvidenceForDelivery(evidenceId: string): Promise<AdminTransferEvidenceRow | undefined>;
+
+  /**
    * The reconciliation history for one obligation and its attempts, oldest
    * first.
    *

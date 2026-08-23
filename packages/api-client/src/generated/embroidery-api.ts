@@ -699,6 +699,24 @@ export const adminPaymentAttemptVerify = (
 };
 
 /**
+ * Streams the validated image a customer submitted as evidence of their deposit transfer. Private: the Admin session cookie is verified on every request, and the evidence id grants nothing on its own. The address is the payment evidence association — there is no route that serves an asset by its own id, so an id lifted from anywhere else cannot be read here. The association, the payment attempt it names, the upload lane, the inspection verdict and the tombstone are re-checked on every request; only evidence APP7-B04 reports as previewEligible is served. What is served is the inspection-approved source the customer uploaded: APP7 produces no normalized derivative of transfer evidence, and none is generated here. No storage location, provider address, bank configuration or credential of any kind appears in the response, and there is no parameter that could ask for one. Opening evidence changes no payment truth: no attempt or obligation moves, no order transitions, no reconciliation is appended and the Admin session is not rotated — APP7-B04 remains the only verification authority. Responses are never cached: the bytes are immutable but the authorisation around them is not.
+ * @summary Open one transfer screenshot submitted against a deposit
+ */
+export const adminPaymentEvidenceGet = (
+  evidenceId: string,
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/admin/payment-evidence/${evidenceId}/content`,
+      method: 'GET',
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Keyset-paginated, newest first. There is no offset paging and no total count. With no status filter the page carries drafts, published and archived products alike.
  * @summary List Admin products
  */
@@ -1824,6 +1842,9 @@ export type AdminPaymentAttemptReviewResult = NonNullable<
 >;
 export type AdminPaymentAttemptVerifyResult = NonNullable<
   Awaited<ReturnType<typeof adminPaymentAttemptVerify>>
+>;
+export type AdminPaymentEvidenceGetResult = NonNullable<
+  Awaited<ReturnType<typeof adminPaymentEvidenceGet>>
 >;
 export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
 export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;

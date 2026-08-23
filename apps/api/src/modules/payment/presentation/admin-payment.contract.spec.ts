@@ -17,6 +17,15 @@ import { ensureGenerationEnvironment } from '../../../openapi/generation-environ
 const READ_PATH = '/api/admin/orders/{orderId}/payments';
 const VERIFY_PATH = '/api/admin/payment-attempts/{attemptId}/verify';
 const REVIEW_PATH = '/api/admin/payment-attempts/{attemptId}/review';
+/**
+ * `APP7-B06`'s private binary, named here rather than filtered past.
+ *
+ * The two repository-wide bounds below match on the word `payment`, so a new
+ * Admin payment route must be *named* to stay inside them — which is what keeps
+ * "B04 publishes three operations and none of them serves a byte" checkable
+ * after a sibling checkpoint adds a fourth.
+ */
+const B06_EVIDENCE_PATH = '/api/admin/payment-evidence/{evidenceId}/content';
 
 /** `APP7-B03`'s and `APP7-B05`'s customer operations, named so the bounds stay exhaustive. */
 const CUSTOMER_PAYMENT_PATHS = [
@@ -206,25 +215,50 @@ describe('APP7-B04 — the published Admin payment contract', () => {
       );
     });
 
-    it('publishes exactly three operations beneath /api/admin/payment-attempts and admin payments', () => {
+    it('publishes exactly four operations beneath the Admin payment surface', () => {
       const operations = Object.entries(document.paths)
         .filter(([path]) => path.includes('payment') && path.startsWith('/api/admin'))
         .flatMap(([path, item]) =>
           Object.keys(item).map((method) => `${method.toUpperCase()} ${path}`),
         );
+      // B04's three, plus `APP7-B06`'s one private binary — named here rather
+      // than let past by a loosened filter, so a fifth Admin payment route still
+      // fails this assertion.
       expect(operations.sort()).toEqual(
-        [`GET ${READ_PATH}`, `POST ${VERIFY_PATH}`, `POST ${REVIEW_PATH}`].sort(),
+        [
+          `GET ${READ_PATH}`,
+          `POST ${VERIFY_PATH}`,
+          `POST ${REVIEW_PATH}`,
+          `GET ${B06_EVIDENCE_PATH}`,
+        ].sort(),
       );
     });
 
-    it('publishes no Admin binary evidence operation — that is APP7-B06’s', () => {
-      // B04 exposes evidence *metadata* and a `previewEligible` hint. A route
-      // that could serve a byte would be B06 delivered early, without its
-      // association-first, ACCEPTED-only, no-existence-oracle proof.
+    it('serves no byte from any B04 operation — evidence delivery is APP7-B06’s', () => {
+      // B04 exposes evidence *metadata* and a `previewEligible` hint, and that
+      // has not changed: none of its three operations answers with bytes.
+      for (const [path, method] of [
+        [READ_PATH, 'get'],
+        [VERIFY_PATH, 'post'],
+        [REVIEW_PATH, 'post'],
+      ] as const) {
+        expect(Object.keys(operation(path, method).responses?.['200']?.content ?? {})).toEqual([
+          'application/json',
+        ]);
+      }
+
+      // The one Admin payment evidence route is B06's, it is a GET, and it is
+      // addressed by the association id rather than by an asset id — the
+      // property B04 named when it declined to publish `assetId`.
       const evidenceRoutes = Object.keys(document.paths).filter(
-        (path) => path.startsWith('/api/admin') && /evidence|asset|preview|download/i.test(path),
+        (path) =>
+          path.startsWith('/api/admin') && path.includes('payment') && /evidence/i.test(path),
       );
-      expect(evidenceRoutes.filter((path) => path.includes('payment'))).toEqual([]);
+      expect(evidenceRoutes).toEqual([B06_EVIDENCE_PATH]);
+      expect(Object.keys(document.paths[B06_EVIDENCE_PATH] ?? {})).toEqual(['get']);
+      expect(document.paths[B06_EVIDENCE_PATH]?.['get']?.operationId).toBe(
+        'adminPaymentEvidence_get',
+      );
     });
 
     it('publishes no provider, webhook, callback or remaining-payment operation anywhere', () => {

@@ -41,6 +41,7 @@ import { CustomerDepositModule } from '../modules/payment/customer-deposit.modul
 import { CustomerDepositAttemptModule } from '../modules/payment/customer-deposit-attempt.module';
 import { CustomerDepositEvidenceModule } from '../modules/payment/customer-deposit-evidence.module';
 import { AdminOrderPaymentModule } from '../modules/payment/admin-order-payment.module';
+import { AdminPaymentEvidenceModule } from '../modules/payment/admin-payment-evidence.module';
 import { AdminPaymentVerificationModule } from '../modules/payment/admin-payment-verification.module';
 import { ContentModule } from '../modules/content/content.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
@@ -282,6 +283,16 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // in one injector is what makes "only Admin verification can reach
     // DEPOSIT_PAID" a property of the wiring.
     AdminPaymentVerificationModule,
+    // APP7-B06 — the one Admin private transfer-evidence binary, on its own
+    // `admin/payment-evidence` base path, disjoint from both modules above. A
+    // fourth payment module because it is the only Admin payment surface that
+    // needs a configured object store, and putting one in `AdminOrderPaymentModule`
+    // would make `getObjectStream` resolvable from a JSON read that must never
+    // open an object. It holds neither writer, so the preview cannot move an
+    // attempt, an obligation or an order. It publishes its own
+    // `adminPaymentEvidence` domain — a private binary lane is its own domain, on
+    // the precedent `AdminCustomRequestAssetController` already set.
+    AdminPaymentEvidenceModule,
   ],
 })
 export class AppModule {}

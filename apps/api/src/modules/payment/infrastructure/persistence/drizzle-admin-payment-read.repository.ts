@@ -162,6 +162,46 @@ export class DrizzleAdminPaymentReadRepository
     });
   }
 
+  async findEvidenceForDelivery(evidenceId: string): Promise<AdminTransferEvidenceRow | undefined> {
+    return this.run('findEvidenceForDelivery', async () => {
+      // The join is the point. Selecting the association alone would answer
+      // "a row with this id exists"; joining `payment_attempts` answers "a row
+      // with this id names a payment attempt", which is the term `APP7-B06` §2
+      // actually requires. `fk_payment_transfer_evidence__payment_attempt_id`
+      // makes an orphan unreachable, so this costs a PK lookup and buys a
+      // predicate that cannot be dropped by a later edit without failing.
+      //
+      // No asset table appears here, and that is the boundary: AGG-08 owns the
+      // asset row and the storage key, and a statement that produced one from a
+      // CTX-PAY repository would make Payment a second authority on where a
+      // customer's private file lives (`BACKEND_CONVENTIONS.md` §10).
+      const [row] = await this.db
+        .select({
+          id: paymentTransferEvidence.id,
+          paymentAttemptId: paymentTransferEvidence.paymentAttemptId,
+          assetId: paymentTransferEvidence.assetId,
+          createdAt: paymentTransferEvidence.createdAt,
+        })
+        .from(paymentTransferEvidence)
+        .innerJoin(
+          paymentAttempts,
+          eq(paymentAttempts.id, paymentTransferEvidence.paymentAttemptId),
+        )
+        .where(eq(paymentTransferEvidence.id, evidenceId))
+        .limit(1);
+
+      if (row === undefined) {
+        return undefined;
+      }
+      return {
+        id: row.id,
+        paymentAttemptId: row.paymentAttemptId,
+        assetId: row.assetId,
+        createdAt: row.createdAt,
+      };
+    });
+  }
+
   async listReconciliations(
     obligationId: string,
     attemptIds: readonly string[],
