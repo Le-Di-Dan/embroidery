@@ -72,4 +72,7 @@ export const REQUEST_INTAKE_LANE: AssetIntakeLane = Object.freeze({
   // carry a third, variable field would change a code path two shipped lanes
   // already depend on.
   declaresMetadataFields: false,
+  // The challenge is the credential and it travels in the path, so this lane's
+  // body stays one file part and nothing else.
+  credentialFields: [],
 });

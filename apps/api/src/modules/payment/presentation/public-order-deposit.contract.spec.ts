@@ -18,6 +18,18 @@ const DEPOSIT_PATH = '/api/public/orders/deposit';
 const ATTEMPTS_PATH = '/api/public/orders/deposit/attempts';
 const QR_PATH = '/api/public/orders/deposit/qr';
 
+/**
+ * `APP7-B05`'s two operations.
+ *
+ * Restated here so the two "and nothing else" bounds below stay exhaustive
+ * assertions about the whole `public/orders` surface, rather than being loosened
+ * into a prefix filter that would quietly stop noticing a fourth B03 route.
+ */
+const B05_EVIDENCE_PATHS = [
+  '/api/public/orders/deposit/evidence',
+  '/api/public/orders/deposit/evidence/status',
+];
+
 interface OperationShape {
   readonly operationId?: string;
   readonly parameters?: readonly { readonly name: string; readonly in: string }[];
@@ -144,11 +156,13 @@ describe('APP7-B03 — the published customer deposit contract', () => {
   }
 
   describe('the surface is exactly three operations', () => {
-    it('publishes three paths under public/orders and nothing else', () => {
+    it('publishes three paths under public/orders, beside B05’s two and nothing else', () => {
       const paths = Object.keys(document.paths).filter((path) =>
         path.startsWith('/api/public/orders'),
       );
-      expect(paths.sort()).toEqual([DEPOSIT_PATH, ATTEMPTS_PATH, QR_PATH].sort());
+      expect(paths.sort()).toEqual(
+        [DEPOSIT_PATH, ATTEMPTS_PATH, QR_PATH, ...B05_EVIDENCE_PATHS].sort(),
+      );
     });
 
     it('publishes exactly one method on each, all POST', () => {
@@ -163,14 +177,17 @@ describe('APP7-B03 — the published customer deposit contract', () => {
       expect(operation(QR_PATH, 'post').operationId).toBe('publicOrderDeposit_qr');
     });
 
-    it('publishes no fourth deposit or payment operation anywhere', () => {
-      // Attempt list, attempt detail, "mark paid", customer confirmation,
-      // evidence, Admin verification, a provider route and a webhook are each
-      // explicitly out of scope. None of them exists at any path.
+    it('publishes no deposit or payment operation beyond B03’s three and B05’s two', () => {
+      // Attempt list, attempt detail, "mark paid", customer confirmation, Admin
+      // verification, a provider route and a webhook are each explicitly out of
+      // scope. None of them exists at any path. The two evidence routes are
+      // `APP7-B05`'s and are bounded by their own suite.
       const forbidden = Object.keys(document.paths).filter((path) =>
         /deposit|payment|evidence|webhook|refund/i.test(path),
       );
-      expect(forbidden.sort()).toEqual([DEPOSIT_PATH, ATTEMPTS_PATH, QR_PATH].sort());
+      expect(forbidden.sort()).toEqual(
+        [DEPOSIT_PATH, ATTEMPTS_PATH, QR_PATH, ...B05_EVIDENCE_PATHS].sort(),
+      );
     });
 
     it('takes no locator in any path, so no order can be addressed', () => {

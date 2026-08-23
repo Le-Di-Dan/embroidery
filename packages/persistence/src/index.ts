@@ -140,6 +140,14 @@ export { PAYMENT_OBLIGATION_REPOSITORY } from './payment/payment-obligation.repo
 export type { DepositEligibilityPort } from './payment/deposit-eligibility.port';
 export { DEPOSIT_ELIGIBILITY_PORT } from './payment/deposit-eligibility.port';
 export { PaymentEvidenceRepository } from './payment/payment-evidence.repository';
+export { PaymentTransferEvidenceRepository } from './payment/payment-transfer-evidence.repository';
+export type {
+  BindTransferEvidenceInput,
+  BoundTransferEvidence,
+  LockedEvidenceAttempt,
+  TransferEvidenceAssociation,
+  TransferEvidenceId,
+} from './payment/payment-transfer-evidence.repository';
 export { DrizzlePaymentObligationRepository } from './payment/drizzle-payment-obligation.repository';
 export { DrizzleDepositEligibilityAdapter } from './payment/drizzle-deposit-eligibility.adapter';
 export { PaymentPersistenceModule } from './payment/payment-persistence.module';

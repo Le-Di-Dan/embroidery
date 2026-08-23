@@ -31,21 +31,35 @@ import { ADMIN_CATALOG_INTAKE_LANE, type AssetIntakeLane } from '../../domain/in
 /** Bounds on the metadata half of the body, independent of the file limit. */
 const MAX_FIELD_VALUE_BYTES = 128;
 
-/** The contract carries exactly two fields. */
+/** The self-describing Admin contract carries exactly two fields. */
 const EXPECTED_FIELDS = 2;
 
 /**
- * Busboy's own cap, set one above the contract.
+ * Busboy's own cap for one lane, always one above what that lane declares.
  *
- * Set to exactly two, Busboy's `fieldsLimit` would fire before the explicit
- * rules below could ever run — a third field would be reported as "too many
- * fields" instead of the specific violation it is, and the ordering check would
- * become unreachable code. One spare lets the intentional rule decide, while
- * the cap still stops an unbounded field flood.
+ * Set to exactly the declared count, Busboy's `fieldsLimit` would fire before
+ * the explicit rules below could ever run — an extra field would be reported as
+ * "too many fields" instead of the specific violation it is, and the ordering
+ * check would become unreachable code. One spare lets the intentional rule
+ * decide, while the cap still stops an unbounded field flood.
+ *
+ * Floored at {@link EXPECTED_FIELDS}, so the three lanes shipped before
+ * `APP7-B05` keep the exact ceiling they were delivered with.
  */
-const MAX_FIELDS = EXPECTED_FIELDS + 1;
+function fieldCapFor(lane: AssetIntakeLane): number {
+  return Math.max(EXPECTED_FIELDS, lane.credentialFields.length) + 1;
+}
 
 export interface OpenedUpload {
+  /**
+   * The lane's `credentialFields`, as sent — every one present, none repeated,
+   * all read before the file part. Empty for a lane that declares none.
+   *
+   * Uninterpreted: the parser proves the *shape* of the body, and the surface
+   * that declared the field proves the value. Nothing here is logged, and the
+   * caller is expected to treat it as a credential.
+   */
+  readonly fields: Readonly<Record<string, string>>;
   /** The client-declared content type of the file part, not yet allowlisted. */
   readonly declaredMediaType: string;
   /** The raw filename as sent; normalized by the caller, never stored. */
@@ -62,6 +76,7 @@ export interface OpenedUpload {
 interface PendingState {
   assetKind?: string;
   classification?: string;
+  readonly credentials: Map<string, string>;
   fileSeen: boolean;
 }
 
@@ -73,17 +88,33 @@ interface PendingState {
  * one would silently accept a request the client did not mean to send.
  */
 function readField(state: PendingState, lane: AssetIntakeLane, name: string, value: string): void {
-  if (!lane.declaresMetadataFields) {
+  if (!lane.declaresMetadataFields && lane.credentialFields.length === 0) {
     // This lane's body is one file part and nothing else, so any field at all
     // is a shape violation rather than an unrecognised name.
     throw assetIntakeError('ASSET_UPLOAD_METADATA_INVALID');
   }
   if (state.fileSeen) {
     // A field after the file part cannot participate in the fingerprint that
-    // was already computed, so accepting it would make the receipt a lie.
+    // was already computed, so accepting it would make the receipt a lie — and
+    // a credential arriving late could not have authorized the bytes that came
+    // before it.
     throw assetIntakeError('ASSET_UPLOAD_INVALID_MULTIPART');
   }
   if (Buffer.byteLength(value, 'utf8') > MAX_FIELD_VALUE_BYTES) {
+    throw assetIntakeError('ASSET_UPLOAD_METADATA_INVALID');
+  }
+  if (lane.credentialFields.includes(name)) {
+    // A duplicate is a rejection for the same reason a duplicate
+    // `classification` is: two values for one credential has no correct
+    // interpretation, and last-wins would let a trailing field decide who the
+    // caller is. The value is stored, never compared and never logged.
+    if (state.credentials.has(name)) {
+      throw assetIntakeError('ASSET_UPLOAD_METADATA_INVALID');
+    }
+    state.credentials.set(name, value);
+    return;
+  }
+  if (!lane.declaresMetadataFields) {
     throw assetIntakeError('ASSET_UPLOAD_METADATA_INVALID');
   }
   if (name === UPLOAD_FIELD_ASSET_KIND) {
@@ -126,7 +157,7 @@ export function openMultipartUpload(
         // were removed, the parser itself would still refuse a second file.
         limits: {
           files: 1,
-          fields: MAX_FIELDS,
+          fields: fieldCapFor(lane),
           fieldSize: MAX_FIELD_VALUE_BYTES,
           fileSize: lane.maxUploadBytes + 1,
         },
@@ -137,7 +168,7 @@ export function openMultipartUpload(
       return;
     }
 
-    const state: PendingState = { fileSeen: false };
+    const state: PendingState = { credentials: new Map<string, string>(), fileSeen: false };
     let settled = false;
     let finishReject: ((error: Error) => void) | undefined;
     let finishResolve: (() => void) | undefined;
@@ -190,6 +221,15 @@ export function openMultipartUpload(
         fail(assetIntakeError('ASSET_UPLOAD_METADATA_INVALID'));
         return;
       }
+      // Every declared credential, before the first byte. A body that reached
+      // the file part without one could not have been authorized to send it,
+      // and refusing here is what keeps that impossible rather than merely
+      // checked later.
+      if (lane.credentialFields.some((field) => !state.credentials.has(field))) {
+        discard(stream);
+        fail(assetIntakeError('ASSET_UPLOAD_METADATA_INVALID'));
+        return;
+      }
       state.fileSeen = true;
       settled = true;
       // Tearing Busboy down mid-parse makes this stream emit `Unexpected end of
@@ -200,6 +240,7 @@ export function openMultipartUpload(
       // anything: the async iterator still sees and reports it.
       stream.on('error', () => undefined);
       resolve({
+        fields: Object.freeze(Object.fromEntries(state.credentials)),
         declaredMediaType: info.mimeType,
         rawFilename: info.filename,
         stream,

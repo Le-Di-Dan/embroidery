@@ -39,6 +39,7 @@ import { CustomerDesignDecisionModule } from '../modules/design/customer-design-
 import { CustomerDesignReviewModule } from '../modules/design/customer-design-review.module';
 import { CustomerDepositModule } from '../modules/payment/customer-deposit.module';
 import { CustomerDepositAttemptModule } from '../modules/payment/customer-deposit-attempt.module';
+import { CustomerDepositEvidenceModule } from '../modules/payment/customer-deposit-evidence.module';
 import { ContentModule } from '../modules/content/content.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
@@ -253,6 +254,15 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // defined by not holding. `CONTROLLER_DOMAIN_KEYS` keeps both publishing
     // `publicOrderDeposit`.
     CustomerDepositAttemptModule,
+    // APP7-B05 — the customer transfer-evidence lane, on the same `public/orders`
+    // base path with a distinct sub-path (`deposit/evidence`), disjoint from the
+    // three above. A third deposit module because it is the only one that needs a
+    // configured object store and the delivered intake pipeline, and the only one
+    // that writes `payment_transfer_evidence`. It publishes its own
+    // `publicOrderDepositEvidence` domain — an intake lane is its own domain, on
+    // the precedent `CONTROLLER_DOMAIN_KEYS` already records for
+    // `PublicCustomRequestAssetController`.
+    CustomerDepositEvidenceModule,
   ],
 })
 export class AppModule {}

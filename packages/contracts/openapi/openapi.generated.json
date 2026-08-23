@@ -6642,6 +6642,28 @@
         ],
         "type": "object"
       },
+      "ReadTransferEvidenceBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token and one attempt locator to read the transfer images already submitted for that attempt. Reads only; it submits nothing and changes no payment, order or asset state.",
+        "properties": {
+          "accessToken": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          },
+          "attemptId": {
+            "description": "The bank-transfer attempt this image belongs to, as returned when the attempt was opened. A locator and not authorization: the server proves the attempt belongs to the deposit this link opens before accepting anything, and an attempt that is not yours is indistinguishable from one that does not exist.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "attemptId"
+        ],
+        "type": "object"
+      },
       "ReadinessStatusResponse": {
         "properties": {
           "database": {
@@ -7369,6 +7391,115 @@
           "transform",
           "type",
           "visible"
+        ],
+        "type": "object"
+      },
+      "TransferEvidenceItemResponse": {
+        "properties": {
+          "assetStatus": {
+            "description": "How far inspection has got. REJECTED is terminal for the image and means only that the file was refused — it is not a failed payment, and it changes nothing about the transfer or the order.",
+            "enum": [
+              "UPLOADED",
+              "INSPECTING",
+              "ACCEPTED",
+              "REJECTED"
+            ],
+            "example": "ACCEPTED",
+            "type": "string"
+          },
+          "byteSize": {
+            "description": "Server-measured size in bytes. Never the value a client declared.",
+            "example": 51200,
+            "type": "number"
+          },
+          "createdAt": {
+            "description": "When the image was submitted. Nothing ever updates it.",
+            "example": "2026-08-23T09:15:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "evidenceId": {
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07",
+            "format": "uuid",
+            "type": "string"
+          },
+          "mediaType": {
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ],
+            "example": "image/jpeg",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidenceId",
+          "assetStatus",
+          "mediaType",
+          "byteSize",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "TransferEvidenceListResponse": {
+        "properties": {
+          "evidence": {
+            "description": "Every image submitted for this one attempt, oldest first — between zero and 5 of them, so there is no page cursor. An empty list is an ordinary case: transfer evidence is optional and a payment with none is verified in exactly the same way. A retry opens a new attempt, which starts with an empty list of its own.",
+            "items": {
+              "$ref": "#/components/schemas/TransferEvidenceItemResponse"
+            },
+            "maxItems": 5,
+            "type": "array"
+          }
+        },
+        "required": [
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "TransferEvidenceUploadResponse": {
+        "properties": {
+          "assetStatus": {
+            "description": "Inspection has been queued, not completed. The image is recorded as submitted; whether it is usable is answered later by the status operation.",
+            "enum": [
+              "INSPECTING"
+            ],
+            "example": "INSPECTING",
+            "type": "string"
+          },
+          "byteSize": {
+            "description": "Server-measured size in bytes. Never the value a client declared.",
+            "example": 51200,
+            "type": "number"
+          },
+          "evidenceId": {
+            "description": "This submission’s own id. It identifies the image among the ones already submitted for this attempt; there is no operation that takes it back.",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07",
+            "format": "uuid",
+            "type": "string"
+          },
+          "mediaType": {
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ],
+            "example": "image/png",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "True when this response replayed an earlier identical upload. A replay writes no second image, no second submission and no second inspection.",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "evidenceId",
+          "assetStatus",
+          "mediaType",
+          "byteSize",
+          "replayed"
         ],
         "type": "object"
       },
@@ -20939,6 +21070,507 @@
         "summary": "Open one bank-transfer attempt against the deposit a secure link opens",
         "tags": [
           "publicOrderDeposit"
+        ]
+      }
+    },
+    "/api/public/orders/deposit/evidence": {
+      "post": {
+        "description": "Streams a single PNG, JPEG or WebP image of at most 10485760 bytes into private storage, records it against the named bank-transfer attempt and queues inspection. Transfer evidence is **optional** and supporting only: it helps the workshop reconcile the payment faster, and a correct transfer with no image at all is verified in exactly the same way. It changes nothing — no attempt is settled, no deposit is satisfied, no order becomes DEPOSIT_PAID and no verification is recorded. The order, the deposit, the customer and the step-up evidence are all resolved by the server from the secure link; the attempt id names which attempt the image belongs to and is proved against that link before a byte is read. Append-only: at most 5 images per attempt, and none can be deleted or replaced. A retry opens a new attempt with an evidence set of its own. Idempotent: repeating the request with the same Idempotency-Key and the same file returns the original result and writes no second image, submission or inspection.",
+        "operationId": "publicOrderDepositEvidence_upload",
+        "parameters": [
+          {
+            "description": "The caller’s own key for this upload, 8–128 characters from A–Z a–z 0–9 . _ : and -. Never stored in the clear and never echoed back.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "accessToken": {
+                    "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed. Must arrive before the file part.",
+                    "type": "string"
+                  },
+                  "attemptId": {
+                    "description": "The bank-transfer attempt this image belongs to, as returned when the attempt was opened. A locator and not authorization: the server proves the attempt belongs to the deposit this link opens before accepting anything, and an attempt that is not yours is indistinguishable from one that does not exist. Must arrive before the file part.",
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "file": {
+                    "description": "Exactly one image/png, image/jpeg, image/webp image of at most 10485760 bytes. The declared type must match the file signature; SVG, GIF, PDF and every other type is refused. At most 5 images may be submitted for one attempt, and none can be deleted or replaced afterwards.",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "accessToken",
+                  "attemptId",
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TransferEvidenceUploadResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The image is stored, recorded against the attempt and queued for inspection.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed multipart body, or a missing or malformed Idempotency-Key.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "REVERIFICATION_REQUIRED — the step-up this attempt was opened with no longer stands for this customer. Resolved by verifying the contact again and starting a new attempt; it is not a statement about the link.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every attempt this link does not open. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded or for another target, or the attempt does not exist, belongs to another obligation, or belongs to somebody else.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The upload exceeded the hard duration.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "EVIDENCE_QUOTA_REACHED when the attempt already holds 5 images; EVIDENCE_ATTEMPT_CLOSED when the attempt has finished and accepts no more; IDEMPOTENCY_CONFLICT or ASSET_UPLOAD_IN_PROGRESS for a conflicting or duplicate attempt with this key.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The image exceeds the maximum permitted size.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported media type, or the content does not match its declared type.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Image storage is temporarily unavailable.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Submit one transfer image for one bank-transfer attempt",
+        "tags": [
+          "publicOrderDepositEvidence"
+        ]
+      }
+    },
+    "/api/public/orders/deposit/evidence/status": {
+      "post": {
+        "description": "Lists what has been submitted for the named bank-transfer attempt and how far inspection has got with each, so the payment screen can say \"sent\" and then \"received\" truthfully. Answers only for an attempt the presented link opens; anything else is indistinguishable from not existing. Bounded at 5 entries, so there is no pagination, and an empty list is an ordinary case. It reads only: nothing is submitted, no payment, order or asset state changes, and no image content is served — the response carries metadata and status, never bytes, a URL or a storage location.",
+        "operationId": "publicOrderDepositEvidence_status",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadTransferEvidenceBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TransferEvidenceListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Between zero and five submissions, oldest first.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "REVERIFICATION_REQUIRED — the attempt’s step-up no longer stands.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every attempt this link does not open.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read the transfer images already submitted for one attempt",
+        "tags": [
+          "publicOrderDepositEvidence"
         ]
       }
     },

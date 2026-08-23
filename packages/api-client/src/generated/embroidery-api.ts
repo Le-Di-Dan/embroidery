@@ -95,6 +95,9 @@ import type {
   PublicDesignTemplateList200,
   PublicDesignTemplateListParams,
   PublicOrderDepositCurrent200,
+  PublicOrderDepositEvidenceStatus200,
+  PublicOrderDepositEvidenceUpload202,
+  PublicOrderDepositEvidenceUploadBody,
   PublicOrderDepositInitiate201,
   PublicProductDetail200,
   PublicProductList200,
@@ -115,6 +118,7 @@ import type {
   ReadCurrentQuotationBody,
   ReadCustomRequestStatusBody,
   ReadDepositBody,
+  ReadTransferEvidenceBody,
   ReadinessStatusResponse,
   RejectQuotationBody,
   ReplaceProductPlacementBody,
@@ -1341,6 +1345,49 @@ export const publicOrderDepositInitiate = (
 };
 
 /**
+ * Streams a single PNG, JPEG or WebP image of at most 10485760 bytes into private storage, records it against the named bank-transfer attempt and queues inspection. Transfer evidence is **optional** and supporting only: it helps the workshop reconcile the payment faster, and a correct transfer with no image at all is verified in exactly the same way. It changes nothing — no attempt is settled, no deposit is satisfied, no order becomes DEPOSIT_PAID and no verification is recorded. The order, the deposit, the customer and the step-up evidence are all resolved by the server from the secure link; the attempt id names which attempt the image belongs to and is proved against that link before a byte is read. Append-only: at most 5 images per attempt, and none can be deleted or replaced. A retry opens a new attempt with an evidence set of its own. Idempotent: repeating the request with the same Idempotency-Key and the same file returns the original result and writes no second image, submission or inspection.
+ * @summary Submit one transfer image for one bank-transfer attempt
+ */
+export const publicOrderDepositEvidenceUpload = (
+  publicOrderDepositEvidenceUploadBody: PublicOrderDepositEvidenceUploadBody,
+  options?: SecondParameter<typeof apiRequest<PublicOrderDepositEvidenceUpload202>>,
+) => {
+  const formData = new FormData();
+  formData.append(`accessToken`, publicOrderDepositEvidenceUploadBody.accessToken);
+  formData.append(`attemptId`, publicOrderDepositEvidenceUploadBody.attemptId);
+  formData.append(`file`, publicOrderDepositEvidenceUploadBody.file);
+
+  return apiRequest<PublicOrderDepositEvidenceUpload202>(
+    {
+      url: `/api/public/orders/deposit/evidence`,
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      data: formData,
+    },
+    options,
+  );
+};
+
+/**
+ * Lists what has been submitted for the named bank-transfer attempt and how far inspection has got with each, so the payment screen can say "sent" and then "received" truthfully. Answers only for an attempt the presented link opens; anything else is indistinguishable from not existing. Bounded at 5 entries, so there is no pagination, and an empty list is an ordinary case. It reads only: nothing is submitted, no payment, order or asset state changes, and no image content is served — the response carries metadata and status, never bytes, a URL or a storage location.
+ * @summary Read the transfer images already submitted for one attempt
+ */
+export const publicOrderDepositEvidenceStatus = (
+  readTransferEvidenceBody: ReadTransferEvidenceBody,
+  options?: SecondParameter<typeof apiRequest<PublicOrderDepositEvidenceStatus200>>,
+) => {
+  return apiRequest<PublicOrderDepositEvidenceStatus200>(
+    {
+      url: `/api/public/orders/deposit/evidence/status`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: readTransferEvidenceBody,
+    },
+    options,
+  );
+};
+
+/**
  * Streams a PNG QR encoding the bank transfer for this deposit: the merchant’s bank and account, the DEPOSIT obligation’s exact amount and the derived transfer reference. It is an EMVCo/NAPAS account-transfer payload — a banking application reads it and pre-fills the transfer — and it is not a checkout session: it contains no application URL, no secure-link token, no attempt id and no provider reference. The image is generated locally on the server on every request from immutable inputs and is never stored, so no object, asset or storage key exists for it. Requesting it changes no payment state whatsoever. The same 404 as the deposit read answers every unusable token and every order with no deposit.
  * @summary Download the bank-transfer QR for the deposit a secure link opens
  */
@@ -1810,6 +1857,12 @@ export type PublicOrderDepositCurrentResult = NonNullable<
 >;
 export type PublicOrderDepositInitiateResult = NonNullable<
   Awaited<ReturnType<typeof publicOrderDepositInitiate>>
+>;
+export type PublicOrderDepositEvidenceUploadResult = NonNullable<
+  Awaited<ReturnType<typeof publicOrderDepositEvidenceUpload>>
+>;
+export type PublicOrderDepositEvidenceStatusResult = NonNullable<
+  Awaited<ReturnType<typeof publicOrderDepositEvidenceStatus>>
 >;
 export type PublicOrderDepositQrResult = NonNullable<
   Awaited<ReturnType<typeof publicOrderDepositQr>>

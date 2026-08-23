@@ -47,6 +47,25 @@ export interface AssetIntakeLane {
    * possible effect is to be filled in wrong.
    */
   readonly declaresMetadataFields: boolean;
+  /**
+   * Opaque field names this lane requires **before** the file part — all of
+   * them, each at most once (`APP7-B05`).
+   *
+   * The two shipped customer lanes carry their credential outside the body: a
+   * challenge in the path, a session in a header. Their bodies are one file part
+   * and nothing else, so this is empty for them. The Payment evidence lane
+   * cannot follow suit — `ADR-APP4-001` §11 makes the secure-link token a
+   * body-only carrier with no path, query or header fallback — so its credential
+   * arrives as a multipart field, and it has to arrive *before* the file because
+   * it is what authorizes reading a single byte of it.
+   *
+   * The parser only collects these values and enforces their presence,
+   * uniqueness and ordering. It never interprets one: what a field means, and
+   * whether it is well formed, belongs to the surface that declared it. That is
+   * the difference from {@link declaresMetadataFields}, whose two fields exist to
+   * be *refused* unless they restate a constant, not to carry anything.
+   */
+  readonly credentialFields: readonly string[];
 }
 
 /** The lane `APP2-B01` shipped. Unchanged; named so the parser can be shared. */
@@ -56,4 +75,5 @@ export const ADMIN_CATALOG_INTAKE_LANE: AssetIntakeLane = Object.freeze({
   maxUploadBytes: MAX_UPLOAD_BYTES,
   operationNamespace: UPLOAD_OPERATION_NAMESPACE,
   declaresMetadataFields: true,
+  credentialFields: [],
 });

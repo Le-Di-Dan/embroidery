@@ -46,4 +46,7 @@ export const DESIGN_SESSION_INTAKE_LANE: AssetIntakeLane = Object.freeze({
   maxUploadBytes: MAX_SESSION_UPLOAD_BYTES,
   operationNamespace: SESSION_UPLOAD_OPERATION_NAMESPACE,
   declaresMetadataFields: false,
+  // The session cookie is the credential and it never travels in the body, so
+  // this lane's body stays one file part and nothing else.
+  credentialFields: [],
 });

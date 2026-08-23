@@ -30,15 +30,25 @@ import { DEPOSIT_ELIGIBILITY_PORT } from './deposit-eligibility.port';
 import { DrizzleDepositEligibilityAdapter } from './drizzle-deposit-eligibility.adapter';
 import { DrizzlePaymentObligationRepository } from './drizzle-payment-obligation.repository';
 import { PaymentEvidenceRepository } from './payment-evidence.repository';
+import { PaymentTransferEvidenceRepository } from './payment-transfer-evidence.repository';
 import { PAYMENT_OBLIGATION_REPOSITORY } from './payment-obligation.repository';
 
 @Module({
   imports: [DatabaseModule],
   providers: [
     PaymentEvidenceRepository,
+    PaymentTransferEvidenceRepository,
     { provide: PAYMENT_OBLIGATION_REPOSITORY, useClass: DrizzlePaymentObligationRepository },
     { provide: DEPOSIT_ELIGIBILITY_PORT, useClass: DrizzleDepositEligibilityAdapter },
   ],
-  exports: [PAYMENT_OBLIGATION_REPOSITORY, DEPOSIT_ELIGIBILITY_PORT],
+  exports: [
+    PAYMENT_OBLIGATION_REPOSITORY,
+    DEPOSIT_ELIGIBILITY_PORT,
+    // APP7-B05. The one canonical writer of `payment_transfer_evidence`,
+    // exported as the class because it has no port: it is CTX-PAY persistence
+    // consumed by CTX-PAY surfaces, and `APP7-B06` will list through this same
+    // instance rather than growing a second reader.
+    PaymentTransferEvidenceRepository,
+  ],
 })
 export class PaymentPersistenceModule {}

@@ -3584,6 +3584,22 @@ export interface ReadDepositBody {
   token: string;
 }
 
+/**
+ * Presents a secure-link token and one attempt locator to read the transfer images already submitted for that attempt. Reads only; it submits nothing and changes no payment, order or asset state.
+ */
+export interface ReadTransferEvidenceBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  accessToken: string;
+  /**
+   * The bank-transfer attempt this image belongs to, as returned when the attempt was opened. A locator and not authorization: the server proves the attempt belongs to the deposit this link opens before accepting anything, and an attempt that is not yours is indistinguishable from one that does not exist.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  attemptId: string;
+}
+
 export type ReadinessStatusResponseService =
   (typeof ReadinessStatusResponseService)[keyof typeof ReadinessStatusResponseService];
 
@@ -3933,6 +3949,78 @@ export interface SubmitVerificationAttemptBody {
    * @pattern ^[0-9]{6}$
    */
   code: string;
+}
+
+/**
+ * How far inspection has got. REJECTED is terminal for the image and means only that the file was refused — it is not a failed payment, and it changes nothing about the transfer or the order.
+ */
+export type TransferEvidenceItemResponseAssetStatus =
+  (typeof TransferEvidenceItemResponseAssetStatus)[keyof typeof TransferEvidenceItemResponseAssetStatus];
+
+export const TransferEvidenceItemResponseAssetStatus = {
+  UPLOADED: 'UPLOADED',
+  INSPECTING: 'INSPECTING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export type TransferEvidenceItemResponseMediaType =
+  (typeof TransferEvidenceItemResponseMediaType)[keyof typeof TransferEvidenceItemResponseMediaType];
+
+export const TransferEvidenceItemResponseMediaType = {
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface TransferEvidenceItemResponse {
+  /** How far inspection has got. REJECTED is terminal for the image and means only that the file was refused — it is not a failed payment, and it changes nothing about the transfer or the order. */
+  assetStatus: TransferEvidenceItemResponseAssetStatus;
+  /** Server-measured size in bytes. Never the value a client declared. */
+  byteSize: number;
+  /** When the image was submitted. Nothing ever updates it. */
+  createdAt: string;
+  evidenceId: string;
+  mediaType: TransferEvidenceItemResponseMediaType;
+}
+
+export interface TransferEvidenceListResponse {
+  /**
+   * Every image submitted for this one attempt, oldest first — between zero and 5 of them, so there is no page cursor. An empty list is an ordinary case: transfer evidence is optional and a payment with none is verified in exactly the same way. A retry opens a new attempt, which starts with an empty list of its own.
+   * @maxItems 5
+   */
+  evidence: TransferEvidenceItemResponse[];
+}
+
+/**
+ * Inspection has been queued, not completed. The image is recorded as submitted; whether it is usable is answered later by the status operation.
+ */
+export type TransferEvidenceUploadResponseAssetStatus =
+  (typeof TransferEvidenceUploadResponseAssetStatus)[keyof typeof TransferEvidenceUploadResponseAssetStatus];
+
+export const TransferEvidenceUploadResponseAssetStatus = {
+  INSPECTING: 'INSPECTING',
+} as const;
+
+export type TransferEvidenceUploadResponseMediaType =
+  (typeof TransferEvidenceUploadResponseMediaType)[keyof typeof TransferEvidenceUploadResponseMediaType];
+
+export const TransferEvidenceUploadResponseMediaType = {
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface TransferEvidenceUploadResponse {
+  /** Inspection has been queued, not completed. The image is recorded as submitted; whether it is usable is answered later by the status operation. */
+  assetStatus: TransferEvidenceUploadResponseAssetStatus;
+  /** Server-measured size in bytes. Never the value a client declared. */
+  byteSize: number;
+  /** This submission’s own id. It identifies the image among the ones already submitted for this attempt; there is no operation that takes it back. */
+  evidenceId: string;
+  mediaType: TransferEvidenceUploadResponseMediaType;
+  /** True when this response replayed an earlier identical upload. A replay writes no second image, no second submission and no second inspection. */
+  replayed: boolean;
 }
 
 export type TransitionCustomRequestBodyModerationNoteKind =
@@ -4559,6 +4647,23 @@ export type PublicOrderDepositCurrent200 = ApiSuccessResponse & {
 
 export type PublicOrderDepositInitiate201 = ApiSuccessResponse & {
   data: DepositAttemptResponse;
+};
+
+export type PublicOrderDepositEvidenceUploadBody = {
+  /** The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed. Must arrive before the file part. */
+  accessToken: string;
+  /** The bank-transfer attempt this image belongs to, as returned when the attempt was opened. A locator and not authorization: the server proves the attempt belongs to the deposit this link opens before accepting anything, and an attempt that is not yours is indistinguishable from one that does not exist. Must arrive before the file part. */
+  attemptId: string;
+  /** Exactly one image/png, image/jpeg, image/webp image of at most 10485760 bytes. The declared type must match the file signature; SVG, GIF, PDF and every other type is refused. At most 5 images may be submitted for one attempt, and none can be deleted or replaced afterwards. */
+  file: Blob;
+};
+
+export type PublicOrderDepositEvidenceUpload202 = ApiSuccessResponse & {
+  data: TransferEvidenceUploadResponse;
+};
+
+export type PublicOrderDepositEvidenceStatus200 = ApiSuccessResponse & {
+  data: TransferEvidenceListResponse;
 };
 
 export type PublicProductListParams = {

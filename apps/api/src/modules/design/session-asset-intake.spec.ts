@@ -129,6 +129,12 @@ describe('the Session intake lane', () => {
       maxUploadBytes: MAX_UPLOAD_BYTES,
       operationNamespace: 'admin.asset.upload',
       declaresMetadataFields: true,
+      // `APP7-B05` widened the lane contract with `credentialFields`, for the
+      // one surface whose credential has to travel in the multipart body. The
+      // Admin lane declares none, so its behaviour is unchanged — and stating
+      // the empty array keeps this an exhaustive shape assertion, which is what
+      // would catch a credential field appearing on the Admin upload.
+      credentialFields: [],
     });
   });
 
