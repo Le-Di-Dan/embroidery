@@ -1,0 +1,54 @@
+// The shared Admin status pill (`APP7-A01`; `732:3`, `734:3`, `740:3`, `743:35`).
+//
+// Colour is a redundant cue only: the symbol and the label are always rendered,
+// so nothing here may become the sole carrier of a status. The tints are the
+// same `Color/Status/*` tokens the existing Admin badges use — this is one
+// colour system with a shared component, not a second one.
+//
+// `$radius-xl` rather than a literal `999px`: at this badge's height the largest
+// radius token already renders as a full pill, so the approved shape is reached
+// without an off-scale magic value.
+
+@use '@embroidery/styles' as styles;
+
+.admin-status {
+  display: inline-flex;
+  align-items: center;
+  gap: styles.spacing(4);
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xl;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+  // Deliberately not `nowrap`: the longest label ("Chờ thanh toán cuối") is
+  // wider than its narrow-desktop column, and a badge that refuses to wrap
+  // pushes the table past its own box. The status text is the only signal an
+  // operator has, so it wraps rather than being clipped.
+  overflow-wrap: anywhere;
+}
+
+.admin-status__symbol {
+  font-weight: styles.$font-weight-bold;
+}
+
+.admin-status--info {
+  border-color: styles.$color-status-info;
+  color: styles.$color-status-info;
+}
+
+.admin-status--success {
+  border-color: styles.$color-status-success;
+  color: styles.$color-status-success;
+}
+
+.admin-status--warning {
+  border-color: styles.$color-status-warning;
+  color: styles.$color-status-warning;
+}
+
+.admin-status--error {
+  border-color: styles.$color-status-error;
+  color: styles.$color-status-error;
+}

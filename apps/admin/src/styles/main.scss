@@ -8,6 +8,7 @@
 
 // Shared Admin primitives (used by more than one feature).
 @use '../shared/forms/admin-field';
+@use '../shared/status/admin-status';
 
 // Feature styles (each feature owns a leaf stylesheet, composed here).
 @use '../features/staff-auth/styles/staff-login';
@@ -25,6 +26,8 @@
 @use '../features/custom-request-detail/styles/custom-request-detail';
 @use '../features/request-quotation/styles/request-quotation';
 @use '../features/request-design-case/styles/request-design-case';
+@use '../features/order-queue/styles/order-queue';
+@use '../features/order-detail/styles/order-detail';
 
 // Browser normalization: predictable box model.
 *,

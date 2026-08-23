@@ -17,6 +17,7 @@ import { ADMIN_ASSETS_ROUTE } from '../../src/features/assets/model/asset-route'
 import { ADMIN_CUSTOMER_ACCESS_ROUTE } from '../../src/features/customer-access-support/model/customer-access-route';
 import { ADMIN_REQUESTS_ROUTE } from '../../src/features/custom-request-queue/model/custom-request-queue-route';
 import { ADMIN_DESIGN_TEMPLATES_ROUTE } from '../../src/features/design-templates/model/design-template-route';
+import { ADMIN_ORDERS_ROUTE } from '../../src/features/order-queue/model/order-queue-route';
 import { ADMIN_PRODUCTS_ROUTE } from '../../src/features/products/model/product-route';
 import { AUTHENTICATED_HOME_ROUTE } from '../../src/config/routes';
 import { makeApiClientError, makeNetworkError } from '../support/api-error';
@@ -30,6 +31,8 @@ const IMPLEMENTED_ADMIN_ROUTES = [
   ADMIN_DESIGN_TEMPLATES_ROUTE,
   // `APP5-A01` — the custom-request queue, at `(protected)/requests`.
   ADMIN_REQUESTS_ROUTE,
+  // `APP7-A01` — the order queue, at `(protected)/orders`.
+  ADMIN_ORDERS_ROUTE,
   // `APP4-A01` — customer access support, at `(protected)/support/customer-access`.
   // Its nav entry shipped without being listed here, which left this assertion
   // red at `APP5-A01`'s entry HEAD; both destinations are recorded now.

@@ -1,0 +1,869 @@
+// Admin order detail and deposit payment workbench (`APP7-A01`).
+//
+// Reproduces `FIG-APP7-A01-DETAIL-AWAITING-DESKTOP` (`734:3`),
+// `FIG-APP7-A01-DETAIL-EVIDENCE-DESKTOP` (`736:3`), the verification and review
+// dialogs (`737:3`, `737:57`, `737:110`, `740:3`, `740:56`, `740:111`,
+// `741:3`), the evidence preview (`742:3`, `743:3`) and the reconciliation
+// history (`743:35`). Every colour, radius, space and type size is a token: no
+// literal hex and no magic pixel value beyond the layout thresholds named below.
+//
+// Class names are prefixed `order*`, `payment*` and `evidence*`. The Admin
+// stylesheet is global and unscoped, so a generic `.card` or `.dialog` here
+// would collide with another feature's rules in a way jsdom could never catch.
+
+@use '@embroidery/styles' as styles;
+
+// The two-column workbench. Below this the frozen facts and the deposit panel
+// stack, so a long observed reference and the payment cards never have to
+// compete for a half-width column (`753:3` — Admin is desktop-first, and the
+// requirement is that nothing overflows, not that a mobile product exists).
+$order-detail-stack: 1180px;
+
+// The width the frozen column holds while both columns are side by side.
+$order-detail-frozen-column: 660px;
+
+.order-detail {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.order-detail__breadcrumb {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-detail__back {
+  color: styles.$color-text-tertiary;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.order-detail__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(16);
+  align-items: center;
+  margin-top: styles.spacing(4);
+}
+
+.order-detail__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.order-detail__total {
+  margin: 0 0 0 auto;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-detail__columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(24);
+  align-items: flex-start;
+}
+
+.order-detail__frozen {
+  display: flex;
+  flex: 0 1 $order-detail-frozen-column;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  min-width: 0;
+}
+
+.order-detail__payments {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+@media (max-width: $order-detail-stack) {
+  .order-detail__frozen,
+  .order-detail__payments {
+    flex-basis: 100%;
+  }
+}
+
+.order-detail__loading,
+.order-panel__loading {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-detail__failure,
+.order-panel__failure {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  align-items: flex-start;
+  padding: styles.spacing(32);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.order-detail__failure-title,
+.order-panel__failure-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-detail__failure-body,
+.order-panel__failure-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-detail__action,
+.order-panel__action,
+.order-card__action {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+.order-card__action--primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cards
+// ---------------------------------------------------------------------------
+.order-panel {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+.order-card {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.order-card__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+}
+
+.order-card__help {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-card__note {
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-card__definitions {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+}
+
+.order-definition {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  align-items: baseline;
+}
+
+.order-definition__label {
+  flex: 0 0 auto;
+  min-width: 40%;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-definition__value {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  overflow-wrap: anywhere;
+}
+
+.order-card__link {
+  color: styles.$color-status-info;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.order-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.order-card__badge-group {
+  display: inline-flex;
+  gap: styles.spacing(4);
+  align-items: center;
+}
+
+.order-card__badge-prefix {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-card__expected {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.order-card__expected-heading {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+.order-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.order-card__review-state {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.order-card__review-title {
+  margin: 0;
+  color: styles.$color-status-warning;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// ---------------------------------------------------------------------------
+// Frozen order lines
+// ---------------------------------------------------------------------------
+.order-items,
+.order-history,
+.order-comparison__table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+
+  th,
+  td {
+    padding: styles.spacing(8) styles.spacing(12);
+    border-bottom: 1px solid styles.$color-border-primary;
+    text-align: left;
+    vertical-align: top;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-caption;
+    overflow-wrap: anywhere;
+  }
+
+  thead th {
+    background: styles.$color-surface-secondary;
+    color: styles.$color-text-secondary;
+    font-weight: styles.$font-weight-semibold;
+  }
+}
+
+.order-items__caption,
+.order-history__caption,
+.order-comparison__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.order-items__numeric,
+.order-history__numeric {
+  text-align: right;
+}
+
+.order-items__product {
+  display: table-cell;
+  font-weight: styles.$font-weight-regular;
+}
+
+.order-items__product-name {
+  display: block;
+  color: styles.$color-text-primary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-items__product-detail {
+  display: block;
+  margin-top: styles.spacing(4);
+  color: styles.$color-text-tertiary;
+}
+
+.order-items__kind {
+  display: inline-block;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xl;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  white-space: nowrap;
+}
+
+.order-items__absent,
+.order-history__absent {
+  display: block;
+  color: styles.$color-text-tertiary;
+}
+
+.order-items__absent-note {
+  display: block;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// Payment attempts
+// ---------------------------------------------------------------------------
+.order-attempts {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-attempt {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.order-attempt__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: center;
+}
+
+.order-attempt__method {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// ---------------------------------------------------------------------------
+// Evidence
+// ---------------------------------------------------------------------------
+.order-evidence__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: baseline;
+}
+
+.order-evidence__count {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-evidence__readonly,
+.order-evidence__token {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-evidence__list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-evidence__item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: center;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+}
+
+.order-evidence__meta {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+}
+
+.order-evidence__facts {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-evidence__preview {
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+.order-evidence__empty {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  align-items: center;
+  padding: styles.spacing(24);
+  border: 1px dashed styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  text-align: center;
+}
+
+.order-evidence__empty-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-evidence__empty-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// Reconciliation history
+// ---------------------------------------------------------------------------
+.order-history__detail {
+  background: styles.$color-surface-secondary;
+}
+
+.order-history__reason,
+.order-history__reference {
+  display: block;
+  color: styles.$color-text-secondary;
+}
+
+.order-long-text {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(4);
+  align-items: baseline;
+}
+
+.order-long-text__value {
+  overflow-wrap: anywhere;
+}
+
+.order-long-text__toggle {
+  padding: 0;
+  border: none;
+  background: none;
+  color: styles.$color-status-info;
+  font-size: styles.$font-size-caption;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+// ---------------------------------------------------------------------------
+// Payment dialogs
+// ---------------------------------------------------------------------------
+.payment-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: styles.spacing(32);
+  overflow-y: auto;
+  background: styles.$color-overlay-scrim;
+  z-index: 1;
+}
+
+.payment-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  width: 100%;
+  max-width: 640px;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.payment-dialog__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-heading-s;
+}
+
+.payment-dialog__help,
+.payment-dialog__badge-note {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.payment-dialog__expected,
+.payment-dialog__observed {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+}
+
+.payment-dialog__expected {
+  background: styles.$color-surface-secondary;
+}
+
+// The observed block is the one the operator writes into, so it carries the
+// action border — the two blocks must never look interchangeable.
+.payment-dialog__observed {
+  border-color: styles.$color-action-primary;
+}
+
+.payment-dialog__badge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+.payment-dialog__badge-note {
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-regular;
+}
+
+.payment-dialog__validation {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.payment-dialog__warning {
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.payment-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.payment-dialog__submit,
+.payment-dialog__dismiss,
+.evidence-preview__close,
+.evidence-preview__nav,
+.evidence-preview__retry {
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+.payment-dialog__submit {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+  }
+
+  &:disabled {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-surface-secondary;
+  }
+}
+
+.payment-dialog__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Payment fields
+// ---------------------------------------------------------------------------
+.payment-field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.payment-field__label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(4);
+  align-items: baseline;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.payment-field__required {
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+}
+
+.payment-field__optional {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-regular;
+}
+
+.payment-field__control {
+  width: 100%;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-s;
+  // No `text-transform`. The observed reference is submitted exactly as typed
+  // (`737:40`), and a visual uppercase would misrepresent what is being sent.
+}
+
+.payment-field--error .payment-field__control {
+  border-color: styles.$color-status-error;
+}
+
+.payment-field__help {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.payment-field__error {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// Decision outcome
+// ---------------------------------------------------------------------------
+.payment-outcome {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.payment-outcome--verified {
+  border-color: styles.$color-status-success;
+}
+
+.payment-outcome--requiresReview,
+.payment-outcome--stale {
+  border-color: styles.$color-status-warning;
+}
+
+.payment-outcome--checking {
+  border-color: styles.$color-status-info;
+}
+
+.payment-outcome--failed {
+  border-color: styles.$color-status-error;
+}
+
+.payment-outcome__badge {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+.payment-outcome__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-bold;
+}
+
+.payment-outcome__body,
+.payment-outcome__note {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.payment-outcome__heading {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+// ---------------------------------------------------------------------------
+// Expected vs observed
+// ---------------------------------------------------------------------------
+.order-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.order-comparison__heading {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+// ---------------------------------------------------------------------------
+// Evidence preview
+// ---------------------------------------------------------------------------
+.evidence-preview__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.evidence-preview__image {
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+}
+
+.evidence-preview__state {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  text-align: center;
+}
+
+.evidence-preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  align-items: center;
+}
+
+.evidence-preview__position {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.evidence-preview__close {
+  margin-left: auto;
+}

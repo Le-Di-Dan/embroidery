@@ -3,6 +3,7 @@ import { ADMIN_ASSETS_ROUTE, ASSET_COPY } from '../../assets';
 import { ADMIN_CUSTOMER_ACCESS_ROUTE, CUSTOMER_ACCESS_COPY } from '../../customer-access-support';
 import { ADMIN_REQUESTS_ROUTE, CUSTOM_REQUEST_QUEUE_COPY } from '../../custom-request-queue';
 import { ADMIN_DESIGN_TEMPLATES_ROUTE, DESIGN_TEMPLATE_COPY } from '../../design-templates';
+import { ADMIN_ORDERS_ROUTE, ORDER_QUEUE_COPY } from '../../order-queue';
 import { ADMIN_PRODUCTS_ROUTE, PRODUCT_COPY } from '../../products';
 
 /**
@@ -21,9 +22,11 @@ export interface AdminNavItem {
  * The authenticated shell's primary navigation. `APP2-A01` adds the asset
  * library as the first real business destination, `APP2-A02` adds the product
  * list, `APP3-A02` adds the Design Template list, `APP4-A01` adds customer
- * access support and `APP5-A01` adds the custom-request queue; the label and the
- * route both come from the owning capability, so there is one spelling of each.
- * Order follows the approved Admin frames, which put support last.
+ * access support, `APP5-A01` adds the custom-request queue and `APP7-A01` adds
+ * the order queue; the label and the route both come from the owning capability,
+ * so there is one spelling of each. Order follows the approved Admin frames,
+ * which put orders after requests — the sequence an order actually travels — and
+ * support last (`732:9`).
  */
 export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
   { id: 'overview', label: 'Tổng quan', href: AUTHENTICATED_HOME_ROUTE },
@@ -39,6 +42,7 @@ export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
     label: CUSTOM_REQUEST_QUEUE_COPY.page.title,
     href: ADMIN_REQUESTS_ROUTE,
   },
+  { id: 'orders', label: ORDER_QUEUE_COPY.page.title, href: ADMIN_ORDERS_ROUTE },
   {
     id: 'customer-access-support',
     label: CUSTOMER_ACCESS_COPY.page.title,

@@ -909,6 +909,89 @@ export type {
   DesignVersionSentResponse,
 } from './generated/embroidery-api.schemas';
 
+// The Admin order + deposit-payment workspace (`APP7-B02` order reads,
+// `APP7-B04` payment read and the two decisions, `APP7-B06` private evidence
+// delivery), consumed by `APP7-A01`.
+//
+// Six operations, released consumer-driven. `APP7-B06` deliberately left its
+// curated export to this checkpoint rather than publishing a byte-serving
+// operation with no screen behind it, on the delivered `APP5-B06` → `APP5-A02`
+// precedent; `B02` and `B04` cross here for the same reason.
+//
+// ### The two decisions cross for the first time
+//
+// `adminPaymentAttemptVerify` is the only operation in APP7 that can move money
+// state, and `adminPaymentAttemptReview` is the only one that can suspend an
+// attempt for reconciliation. Until A01 there was no approved control behind
+// either. They travel with the reads on purpose: a decision is only legible
+// beside the expected/observed facts it is judged against, and A01 re-reads
+// `adminOrderPaymentRead` after every one of them rather than projecting the
+// receipt into the cache.
+//
+// ### `adminPaymentEvidenceGet` is addressed by `evidenceId`
+//
+// The locator is the `payment_transfer_evidence` association id, never an asset
+// id — there is no route that serves an asset by its own id, and `APP7-B04`
+// publishes no `assetId` for one to be lifted from. The operation returns a
+// `Blob`; the generated function sets `responseType: 'blob'` itself, so no
+// consumer configures transport to get it.
+//
+// ### Every amount crosses as a `string`
+//
+// `expectedAmount`, an attempt's `amount`, a reconciliation's `amount`, the
+// order total and every order-item figure are decimal strings. A VND amount
+// through an IEEE-754 double is precision loss no later formatting can undo, and
+// the verify body's `observedAmount` is a string for the same reason — the
+// server compares it exactly, with no tolerance and no rounding.
+//
+// The status enums cross as **values** so the screen derives its labels and its
+// action matrix from the contract rather than from a hand-kept list that could
+// drift from what the server publishes. `AdminOrderListStatusItem` in
+// particular is what the queue's filter options are built from.
+//
+// `AdminPaymentAttemptResponseStatus` publishes the full LC-16 vocabulary,
+// `PROCESSING`, `REFUNDED` and `PARTIALLY_REFUNDED` included, because a stored
+// attempt may carry one and the panel renders what is stored — APP7 itself
+// produces none of them.
+export {
+  adminOrderList,
+  adminOrderDetail,
+  adminOrderPaymentRead,
+  adminPaymentAttemptVerify,
+  adminPaymentAttemptReview,
+  adminPaymentEvidenceGet,
+} from './generated/embroidery-api';
+export {
+  AdminOrderListStatusItem,
+  AdminOrderQueueItemResponseStatus,
+  AdminOrderDetailResponseStatus,
+  AdminOrderItemResponseSubjectKind,
+  AdminOrderPaymentsResponseOrderStatus,
+  AdminOrderPaymentsResponseDepositStatus,
+  AdminPaymentAttemptResponseStatus,
+  AdminPaymentAttemptResponseMethod,
+  AdminPaymentEvidenceResponseAssetStatus,
+  AdminPaymentReconciliationResponseAction,
+  PaymentDecisionResponseAttemptStatus,
+  PaymentDecisionResponseDepositStatus,
+  PaymentDecisionResponseOrderStatus,
+  PaymentDecisionResponseReconciliationAction,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminOrderListParams,
+  AdminOrderQueueResponse,
+  AdminOrderQueueItemResponse,
+  AdminOrderDetailResponse,
+  AdminOrderItemResponse,
+  AdminOrderPaymentsResponse,
+  AdminPaymentAttemptResponse,
+  AdminPaymentEvidenceResponse,
+  AdminPaymentReconciliationResponse,
+  PaymentDecisionResponse,
+  VerifyPaymentAttemptBody,
+  ReviewPaymentAttemptBody,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

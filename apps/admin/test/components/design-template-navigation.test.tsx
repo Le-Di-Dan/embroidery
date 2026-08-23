@@ -45,6 +45,9 @@ it('does not disturb the existing entries', () => {
     'products',
     'design-templates',
     'custom-requests',
+    // `APP7-A01` appended the order queue after the request queue — the
+    // sequence an order actually travels.
+    'orders',
     'customer-access-support',
   ]);
 });
