@@ -918,6 +918,152 @@ export interface AdminOrderDetailResponse {
   updatedAt: string;
 }
 
+export type AdminOrderPaymentsResponseDepositStatus =
+  (typeof AdminOrderPaymentsResponseDepositStatus)[keyof typeof AdminOrderPaymentsResponseDepositStatus];
+
+export const AdminOrderPaymentsResponseDepositStatus = {
+  PENDING: 'PENDING',
+  SATISFIED: 'SATISFIED',
+  CANCELLED: 'CANCELLED',
+  SUPERSEDED: 'SUPERSEDED',
+} as const;
+
+export type AdminOrderPaymentsResponseOrderStatus =
+  (typeof AdminOrderPaymentsResponseOrderStatus)[keyof typeof AdminOrderPaymentsResponseOrderStatus];
+
+export const AdminOrderPaymentsResponseOrderStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The image’s own inspection state. It is never a payment state: an `ACCEPTED` screenshot does not mean money arrived, and a `REJECTED` one does not mean a payment failed.
+ */
+export type AdminPaymentEvidenceResponseAssetStatus =
+  (typeof AdminPaymentEvidenceResponseAssetStatus)[keyof typeof AdminPaymentEvidenceResponseAssetStatus];
+
+export const AdminPaymentEvidenceResponseAssetStatus = {
+  UPLOADED: 'UPLOADED',
+  INSPECTING: 'INSPECTING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface AdminPaymentEvidenceResponse {
+  /** The image’s own inspection state. It is never a payment state: an `ACCEPTED` screenshot does not mean money arrived, and a `REJECTED` one does not mean a payment failed. */
+  assetStatus: AdminPaymentEvidenceResponseAssetStatus;
+  /** Server-measured at intake, in bytes. */
+  byteSize: number;
+  createdAt: string;
+  /** The `payment_transfer_evidence` association id. `APP7-B06` addresses its private delivery by this value; the underlying asset id is never published. */
+  evidenceId: string;
+  mediaType: string;
+  /** True exactly when `assetStatus` is `ACCEPTED` — a hint for the Admin preview, not a payment fact and not an authorization. `APP7-B06` re-proves the association and the status itself before serving a byte. */
+  previewEligible: boolean;
+}
+
+/**
+ * APP7 opens `BANK_TRANSFER` only; the set is LC-16’s full vocabulary.
+ */
+export type AdminPaymentAttemptResponseMethod =
+  (typeof AdminPaymentAttemptResponseMethod)[keyof typeof AdminPaymentAttemptResponseMethod];
+
+export const AdminPaymentAttemptResponseMethod = {
+  PROVIDER_REDIRECT: 'PROVIDER_REDIRECT',
+  BANK_TRANSFER: 'BANK_TRANSFER',
+  OTHER: 'OTHER',
+} as const;
+
+export type AdminPaymentAttemptResponseStatus =
+  (typeof AdminPaymentAttemptResponseStatus)[keyof typeof AdminPaymentAttemptResponseStatus];
+
+export const AdminPaymentAttemptResponseStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  REQUIRES_REVIEW: 'REQUIRES_REVIEW',
+  REFUNDED: 'REFUNDED',
+  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
+} as const;
+
+export interface AdminPaymentAttemptResponse {
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  amount: string;
+  attemptId: string;
+  createdAt: string;
+  currencyCode: string;
+  /** The customer’s transfer screenshots for this exact attempt, oldest first. An empty array is an ordinary, valid deposit: evidence is optional and never a precondition for verification. */
+  evidence: AdminPaymentEvidenceResponse[];
+  expiresAt?: string;
+  failedAt?: string;
+  /** APP7 opens `BANK_TRANSFER` only; the set is LC-16’s full vocabulary. */
+  method: AdminPaymentAttemptResponseMethod;
+  /** Mandatory while the attempt is `REQUIRES_REVIEW`; absent otherwise. */
+  reviewReason?: string;
+  status: AdminPaymentAttemptResponseStatus;
+  succeededAt?: string;
+  updatedAt: string;
+}
+
+export type AdminPaymentReconciliationResponseAction =
+  (typeof AdminPaymentReconciliationResponseAction)[keyof typeof AdminPaymentReconciliationResponseAction];
+
+export const AdminPaymentReconciliationResponseAction = {
+  MANUAL_MATCH: 'MANUAL_MATCH',
+  RESOLVE_REVIEW: 'RESOLVE_REVIEW',
+  OBLIGATION_RECALC: 'OBLIGATION_RECALC',
+  CARRYOVER_APPLICATION: 'CARRYOVER_APPLICATION',
+} as const;
+
+export interface AdminPaymentReconciliationResponse {
+  action: AdminPaymentReconciliationResponseAction;
+  /** The operator, derived from their session. Never accepted from a request. */
+  adminId: string;
+  /** The amount the operator observed, when they recorded one. Absent means no figure was recorded — not that nothing arrived. */
+  amount?: string;
+  /** The memo observed on the received transfer. Never a merchant account number. */
+  bankReference?: string;
+  createdAt: string;
+  paymentAttemptId?: string;
+  /** The operator’s own account of what they checked. */
+  reason: string;
+  /** The append sequence. Reconciliations are immutable. */
+  reconciliationId: string;
+  /** The status the reconciled attempt landed on. */
+  resolvedStatus?: string;
+}
+
+export interface AdminOrderPaymentsResponse {
+  /** Every attempt on this deposit, oldest first, with a stable `id` tie-breaker. */
+  attempts: AdminPaymentAttemptResponse[];
+  depositObligationId: string;
+  depositStatus: AdminOrderPaymentsResponseDepositStatus;
+  /** The DEPOSIT obligation’s own frozen amount — the figure a received transfer must match exactly. Never a share recomputed from a quotation and never a live catalog price. */
+  expectedAmount: string;
+  expectedCurrencyCode: string;
+  /** The exact memo the customer was told to put on the transfer: `ORD`, the order code body, then `DC`. Derived from the order, never stored and never accepted from a request. */
+  expectedTransferReference: string;
+  orderCode: string;
+  orderId: string;
+  orderStatus: AdminOrderPaymentsResponseOrderStatus;
+  /** Every manual reconciliation recorded against this deposit, oldest first. */
+  reconciliations: AdminPaymentReconciliationResponse[];
+  satisfiedAt?: string;
+  /** The one attempt that satisfied the deposit, once one has. */
+  satisfiedByAttemptId?: string;
+}
+
 /**
  * The current LC-14 state, reported as stored.
  */
@@ -3150,6 +3296,69 @@ export interface NotificationReplayResponse {
   status: NotificationReplayResponseStatus;
 }
 
+export type PaymentDecisionResponseAttemptStatus =
+  (typeof PaymentDecisionResponseAttemptStatus)[keyof typeof PaymentDecisionResponseAttemptStatus];
+
+export const PaymentDecisionResponseAttemptStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  REQUIRES_REVIEW: 'REQUIRES_REVIEW',
+  REFUNDED: 'REFUNDED',
+  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
+} as const;
+
+export type PaymentDecisionResponseDepositStatus =
+  (typeof PaymentDecisionResponseDepositStatus)[keyof typeof PaymentDecisionResponseDepositStatus];
+
+export const PaymentDecisionResponseDepositStatus = {
+  PENDING: 'PENDING',
+  SATISFIED: 'SATISFIED',
+  CANCELLED: 'CANCELLED',
+  SUPERSEDED: 'SUPERSEDED',
+} as const;
+
+export type PaymentDecisionResponseOrderStatus =
+  (typeof PaymentDecisionResponseOrderStatus)[keyof typeof PaymentDecisionResponseOrderStatus];
+
+export const PaymentDecisionResponseOrderStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type PaymentDecisionResponseReconciliationAction =
+  (typeof PaymentDecisionResponseReconciliationAction)[keyof typeof PaymentDecisionResponseReconciliationAction];
+
+export const PaymentDecisionResponseReconciliationAction = {
+  MANUAL_MATCH: 'MANUAL_MATCH',
+  RESOLVE_REVIEW: 'RESOLVE_REVIEW',
+  OBLIGATION_RECALC: 'OBLIGATION_RECALC',
+  CARRYOVER_APPLICATION: 'CARRYOVER_APPLICATION',
+} as const;
+
+export interface PaymentDecisionResponse {
+  attemptId: string;
+  attemptStatus: PaymentDecisionResponseAttemptStatus;
+  depositObligationId: string;
+  depositStatus: PaymentDecisionResponseDepositStatus;
+  orderId: string;
+  orderStatus: PaymentDecisionResponseOrderStatus;
+  reconciliationAction: PaymentDecisionResponseReconciliationAction;
+  /** True when this response reported a verification that had already committed — the retry of a call whose response was lost. Nothing was written a second time. */
+  replayed: boolean;
+}
+
 export type PublicCategoryResponseSlug =
   (typeof PublicCategoryResponseSlug)[keyof typeof PublicCategoryResponseSlug];
 
@@ -3864,6 +4073,18 @@ export interface RestoreDesignTemplateBody {
   reason: string;
 }
 
+export interface ReviewPaymentAttemptBody {
+  /** @pattern ^\d{1,12}(?:\.\d{1,2})?$ */
+  observedAmount?: string;
+  /** @pattern ^ORD[23456789ABCDEFGHJKMNPQRSTVWXYZ]{10}DC$ */
+  observedTransferReference?: string;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  reviewReason: string;
+}
+
 /**
  * Withdraws a live secure grant, with a mandatory reason.
  */
@@ -4149,6 +4370,18 @@ export interface VerificationChallengeStatusResponse {
   expiresAt: string;
   /** The lifecycle state. A challenge whose expiry has passed reads EXPIRED whether or not a sweep has run, so a client is never told to keep waiting on a code that can no longer be answered. */
   state: VerificationChallengeStatusResponseState;
+}
+
+export interface VerifyPaymentAttemptBody {
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  note: string;
+  /** @pattern ^\d{1,12}(?:\.\d{1,2})?$ */
+  observedAmount: string;
+  /** @pattern ^ORD[23456789ABCDEFGHJKMNPQRSTVWXYZ]{10}DC$ */
+  observedTransferReference: string;
 }
 
 export type AdminAssetListParams = {
@@ -4442,6 +4675,18 @@ export type AdminOrderList200 = ApiSuccessResponse & {
 
 export type AdminOrderDetail200 = ApiSuccessResponse & {
   data: AdminOrderDetailResponse;
+};
+
+export type AdminOrderPaymentRead200 = ApiSuccessResponse & {
+  data: AdminOrderPaymentsResponse;
+};
+
+export type AdminPaymentAttemptReview200 = ApiSuccessResponse & {
+  data: PaymentDecisionResponse;
+};
+
+export type AdminPaymentAttemptVerify200 = ApiSuccessResponse & {
+  data: PaymentDecisionResponse;
 };
 
 export type AdminProductListParams = {

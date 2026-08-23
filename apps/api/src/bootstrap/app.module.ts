@@ -40,6 +40,8 @@ import { CustomerDesignReviewModule } from '../modules/design/customer-design-re
 import { CustomerDepositModule } from '../modules/payment/customer-deposit.module';
 import { CustomerDepositAttemptModule } from '../modules/payment/customer-deposit-attempt.module';
 import { CustomerDepositEvidenceModule } from '../modules/payment/customer-deposit-evidence.module';
+import { AdminOrderPaymentModule } from '../modules/payment/admin-order-payment.module';
+import { AdminPaymentVerificationModule } from '../modules/payment/admin-payment-verification.module';
 import { ContentModule } from '../modules/content/content.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
@@ -263,6 +265,23 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // the precedent `CONTROLLER_DOMAIN_KEYS` already records for
     // `PublicCustomRequestAssetController`.
     CustomerDepositEvidenceModule,
+    // APP7-B04 — the Admin deposit-payment read, on the `admin/orders` base path
+    // with a sub-path (`{orderId}/payments`) disjoint from `AdminOrderModule`'s
+    // two routes, so registration order cannot make one shadow another. A
+    // separate module from the mutations below because it is defined by what it
+    // cannot inject: no `PaymentPersistenceModule` and no `OrderPersistenceModule`,
+    // so neither writer is resolvable and the read cannot settle, satisfy or
+    // transition anything. It publishes its own `adminOrderPayment` domain — an
+    // order's payment vertical is its own resource, not a split of B02's detail.
+    AdminOrderPaymentModule,
+    // APP7-B04 — the two Admin payment mutations, on their own
+    // `admin/payment-attempts` base path. The first and only module in the
+    // repository that may move money state: it holds both canonical writers, the
+    // transaction manager, the outbox and the audit writer. That is exactly the
+    // reach every other payment module is defined by not having, and keeping it
+    // in one injector is what makes "only Admin verification can reach
+    // DEPOSIT_PAID" a property of the wiring.
+    AdminPaymentVerificationModule,
   ],
 })
 export class AppModule {}

@@ -29,6 +29,7 @@ import { DatabaseModule } from '../database.module';
 import { DEPOSIT_ELIGIBILITY_PORT } from './deposit-eligibility.port';
 import { DrizzleDepositEligibilityAdapter } from './drizzle-deposit-eligibility.adapter';
 import { DrizzlePaymentObligationRepository } from './drizzle-payment-obligation.repository';
+import { PaymentAttemptRepository } from './payment-attempt.repository';
 import { PaymentEvidenceRepository } from './payment-evidence.repository';
 import { PaymentTransferEvidenceRepository } from './payment-transfer-evidence.repository';
 import { PAYMENT_OBLIGATION_REPOSITORY } from './payment-obligation.repository';
@@ -36,6 +37,7 @@ import { PAYMENT_OBLIGATION_REPOSITORY } from './payment-obligation.repository';
 @Module({
   imports: [DatabaseModule],
   providers: [
+    PaymentAttemptRepository,
     PaymentEvidenceRepository,
     PaymentTransferEvidenceRepository,
     { provide: PAYMENT_OBLIGATION_REPOSITORY, useClass: DrizzlePaymentObligationRepository },

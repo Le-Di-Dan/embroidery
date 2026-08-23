@@ -42,6 +42,9 @@ import type {
   AdminOrderDetail200,
   AdminOrderList200,
   AdminOrderListParams,
+  AdminOrderPaymentRead200,
+  AdminPaymentAttemptReview200,
+  AdminPaymentAttemptVerify200,
   AdminProductArchive200,
   AdminProductCreate201,
   AdminProductDetail200,
@@ -126,6 +129,7 @@ import type {
   ResolveCustomerByContactBody,
   ResolveSecureLinkBody,
   RestoreDesignTemplateBody,
+  ReviewPaymentAttemptBody,
   RevokeSecureGrantBody,
   SaveDesignTemplateDocumentBody,
   StaffLoginRequest,
@@ -137,6 +141,7 @@ import type {
   UnpublishProductBody,
   UpdateProductBody,
   UpdateSkuBody,
+  VerifyPaymentAttemptBody,
 } from './embroidery-api.schemas';
 
 import { apiRequest } from '../clients/api-request.mutator';
@@ -635,6 +640,60 @@ export const adminOrderDetail = (
 ) => {
   return apiRequest<AdminOrderDetail200>(
     { url: `/api/admin/orders/${orderId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Everything an operator needs to verify a deposit: the order’s LC-14 state, the DEPOSIT obligation with the exact amount owed and its currency, the transfer reference the customer was told to use, every attempt against that deposit with its LC-16 state, the metadata of any transfer screenshots the customer submitted, and the manual reconciliation history. The expected amount is the obligation’s own frozen column — no deposit percentage is recomputed and no live quotation or catalog price is read. The reference is derived from the order code and stored nowhere. Evidence is **supporting material**: its status is never a payment status, an empty list is an ordinary valid deposit, and no image bytes are served here — `APP7-B06` owns the private delivery. The remaining payment is not shown and is not collectible in this phase. It is a read: nothing is written, no status moves and no event is appended.
+ * @summary Get one order’s deposit payment facts
+ */
+export const adminOrderPaymentRead = (
+  orderId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminOrderPaymentRead200>>,
+) => {
+  return apiRequest<AdminOrderPaymentRead200>(
+    { url: `/api/admin/orders/${orderId}/payments`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * For the case the operator knows something the comparison cannot see — an unreadable memo, two transfers, a statement that disagrees with the customer. The attempt moves to `REQUIRES_REVIEW` with the mandatory reason, and a reconciliation records it. The deposit is **not** satisfied, the order does **not** move, no `payment.verified` is emitted and no provider event is written — there is no branch in this operation that could settle a payment. An observed amount or reference may be recorded when the operator has one; omitting them records nothing rather than a fabricated zero. A terminal attempt is refused: LC-16 never regresses.
+ * @summary Route one payment attempt to manual review
+ */
+export const adminPaymentAttemptReview = (
+  attemptId: unknown,
+  reviewPaymentAttemptBody: ReviewPaymentAttemptBody,
+  options?: SecondParameter<typeof apiRequest<AdminPaymentAttemptReview200>>,
+) => {
+  return apiRequest<AdminPaymentAttemptReview200>(
+    {
+      url: `/api/admin/payment-attempts/${attemptId}/review`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: reviewPaymentAttemptBody,
+    },
+    options,
+  );
+};
+
+/**
+ * The only operation in this phase that can move money state. The server proves the whole chain inside one transaction — the attempt belongs to this obligation, the obligation is the DEPOSIT one, it belongs to this order, and the attempt is a bank transfer — then compares the operator’s observed amount and reference against the obligation’s own frozen amount and the reference derived from the order code. Exact match only: no tolerance, no rounding and no floating-point comparison. On a match the attempt becomes `SUCCEEDED`, the deposit becomes `SATISFIED` by that exact attempt, the order moves `AWAITING_DEPOSIT` → `DEPOSIT_PAID`, a reconciliation is appended and `payment.verified` is emitted once — all atomically, or none of it. On a mismatch nothing is satisfied, the order does not move, and the attempt is routed to `REQUIRES_REVIEW` with the operator’s reason: the response is still `200`, and `attemptStatus` says which happened. Transfer evidence is never a precondition — a correct payment with no screenshots verifies normally. Retrying a verification whose response was lost returns the committed truth with `replayed: true` and writes nothing a second time. No provider is contacted and no provider event is written.
+ * @summary Verify one bank-transfer deposit attempt against funds received
+ */
+export const adminPaymentAttemptVerify = (
+  attemptId: unknown,
+  verifyPaymentAttemptBody: VerifyPaymentAttemptBody,
+  options?: SecondParameter<typeof apiRequest<AdminPaymentAttemptVerify200>>,
+) => {
+  return apiRequest<AdminPaymentAttemptVerify200>(
+    {
+      url: `/api/admin/payment-attempts/${attemptId}/verify`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: verifyPaymentAttemptBody,
+    },
     options,
   );
 };
@@ -1757,6 +1816,15 @@ export type AdminNotificationIntentReplayResult = NonNullable<
 >;
 export type AdminOrderListResult = NonNullable<Awaited<ReturnType<typeof adminOrderList>>>;
 export type AdminOrderDetailResult = NonNullable<Awaited<ReturnType<typeof adminOrderDetail>>>;
+export type AdminOrderPaymentReadResult = NonNullable<
+  Awaited<ReturnType<typeof adminOrderPaymentRead>>
+>;
+export type AdminPaymentAttemptReviewResult = NonNullable<
+  Awaited<ReturnType<typeof adminPaymentAttemptReview>>
+>;
+export type AdminPaymentAttemptVerifyResult = NonNullable<
+  Awaited<ReturnType<typeof adminPaymentAttemptVerify>>
+>;
 export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
 export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;
 export type AdminProductDetailResult = NonNullable<Awaited<ReturnType<typeof adminProductDetail>>>;

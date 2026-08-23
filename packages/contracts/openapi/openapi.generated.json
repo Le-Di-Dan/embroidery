@@ -1191,6 +1191,99 @@
         ],
         "type": "object"
       },
+      "AdminOrderPaymentsResponse": {
+        "properties": {
+          "attempts": {
+            "description": "Every attempt on this deposit, oldest first, with a stable `id` tie-breaker.",
+            "items": {
+              "$ref": "#/components/schemas/AdminPaymentAttemptResponse"
+            },
+            "type": "array"
+          },
+          "depositObligationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "depositStatus": {
+            "enum": [
+              "PENDING",
+              "SATISFIED",
+              "CANCELLED",
+              "SUPERSEDED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          },
+          "expectedAmount": {
+            "description": "The DEPOSIT obligation’s own frozen amount — the figure a received transfer must match exactly. Never a share recomputed from a quotation and never a live catalog price.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "expectedCurrencyCode": {
+            "example": "VND",
+            "type": "string"
+          },
+          "expectedTransferReference": {
+            "description": "The exact memo the customer was told to put on the transfer: `ORD`, the order code body, then `DC`. Derived from the order, never stored and never accepted from a request.",
+            "example": "ORD7K3MPQ2XVDDC",
+            "type": "string"
+          },
+          "orderCode": {
+            "example": "ORD-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderStatus": {
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "AWAITING_DEPOSIT",
+            "type": "string"
+          },
+          "reconciliations": {
+            "description": "Every manual reconciliation recorded against this deposit, oldest first.",
+            "items": {
+              "$ref": "#/components/schemas/AdminPaymentReconciliationResponse"
+            },
+            "type": "array"
+          },
+          "satisfiedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "satisfiedByAttemptId": {
+            "description": "The one attempt that satisfied the deposit, once one has.",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "orderCode",
+          "orderStatus",
+          "depositObligationId",
+          "depositStatus",
+          "expectedAmount",
+          "expectedCurrencyCode",
+          "expectedTransferReference",
+          "attempts",
+          "reconciliations"
+        ],
+        "type": "object"
+      },
       "AdminOrderQueueItemResponse": {
         "properties": {
           "code": {
@@ -1281,6 +1374,193 @@
         "required": [
           "items",
           "hasNext"
+        ],
+        "type": "object"
+      },
+      "AdminPaymentAttemptResponse": {
+        "properties": {
+          "amount": {
+            "description": "Exact `numeric(14,2)` VND, always a string. Never a JSON number.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "attemptId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currencyCode": {
+            "example": "VND",
+            "type": "string"
+          },
+          "evidence": {
+            "description": "The customer’s transfer screenshots for this exact attempt, oldest first. An empty array is an ordinary, valid deposit: evidence is optional and never a precondition for verification.",
+            "items": {
+              "$ref": "#/components/schemas/AdminPaymentEvidenceResponse"
+            },
+            "type": "array"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "failedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "method": {
+            "description": "APP7 opens `BANK_TRANSFER` only; the set is LC-16’s full vocabulary.",
+            "enum": [
+              "PROVIDER_REDIRECT",
+              "BANK_TRANSFER",
+              "OTHER"
+            ],
+            "example": "BANK_TRANSFER",
+            "type": "string"
+          },
+          "reviewReason": {
+            "description": "Mandatory while the attempt is `REQUIRES_REVIEW`; absent otherwise.",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "SUCCEEDED",
+              "FAILED",
+              "EXPIRED",
+              "REQUIRES_REVIEW",
+              "REFUNDED",
+              "PARTIALLY_REFUNDED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          },
+          "succeededAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attemptId",
+          "method",
+          "status",
+          "amount",
+          "currencyCode",
+          "createdAt",
+          "updatedAt",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "AdminPaymentEvidenceResponse": {
+        "properties": {
+          "assetStatus": {
+            "description": "The image’s own inspection state. It is never a payment state: an `ACCEPTED` screenshot does not mean money arrived, and a `REJECTED` one does not mean a payment failed.",
+            "enum": [
+              "UPLOADED",
+              "INSPECTING",
+              "ACCEPTED",
+              "REJECTED"
+            ],
+            "type": "string"
+          },
+          "byteSize": {
+            "description": "Server-measured at intake, in bytes.",
+            "example": 245760,
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "evidenceId": {
+            "description": "The `payment_transfer_evidence` association id. `APP7-B06` addresses its private delivery by this value; the underlying asset id is never published.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "mediaType": {
+            "example": "image/png",
+            "type": "string"
+          },
+          "previewEligible": {
+            "description": "True exactly when `assetStatus` is `ACCEPTED` — a hint for the Admin preview, not a payment fact and not an authorization. `APP7-B06` re-proves the association and the status itself before serving a byte.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "evidenceId",
+          "assetStatus",
+          "mediaType",
+          "byteSize",
+          "createdAt",
+          "previewEligible"
+        ],
+        "type": "object"
+      },
+      "AdminPaymentReconciliationResponse": {
+        "properties": {
+          "action": {
+            "enum": [
+              "MANUAL_MATCH",
+              "RESOLVE_REVIEW",
+              "OBLIGATION_RECALC",
+              "CARRYOVER_APPLICATION"
+            ],
+            "example": "MANUAL_MATCH",
+            "type": "string"
+          },
+          "adminId": {
+            "description": "The operator, derived from their session. Never accepted from a request.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "amount": {
+            "description": "The amount the operator observed, when they recorded one. Absent means no figure was recorded — not that nothing arrived.",
+            "example": "1500000.00",
+            "type": "string"
+          },
+          "bankReference": {
+            "description": "The memo observed on the received transfer. Never a merchant account number.",
+            "example": "ORD7K3MPQ2XVDDC",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "paymentAttemptId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "description": "The operator’s own account of what they checked.",
+            "type": "string"
+          },
+          "reconciliationId": {
+            "description": "The append sequence. Reconciliations are immutable.",
+            "example": "41",
+            "type": "string"
+          },
+          "resolvedStatus": {
+            "description": "The status the reconciled attempt landed on.",
+            "example": "SUCCEEDED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reconciliationId",
+          "action",
+          "reason",
+          "adminId",
+          "createdAt"
         ],
         "type": "object"
       },
@@ -5675,6 +5955,88 @@
         ],
         "type": "object"
       },
+      "PaymentDecisionResponse": {
+        "properties": {
+          "attemptId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "attemptStatus": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "SUCCEEDED",
+              "FAILED",
+              "EXPIRED",
+              "REQUIRES_REVIEW",
+              "REFUNDED",
+              "PARTIALLY_REFUNDED"
+            ],
+            "example": "SUCCEEDED",
+            "type": "string"
+          },
+          "depositObligationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "depositStatus": {
+            "enum": [
+              "PENDING",
+              "SATISFIED",
+              "CANCELLED",
+              "SUPERSEDED"
+            ],
+            "example": "SATISFIED",
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderStatus": {
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "DEPOSIT_PAID",
+            "type": "string"
+          },
+          "reconciliationAction": {
+            "enum": [
+              "MANUAL_MATCH",
+              "RESOLVE_REVIEW",
+              "OBLIGATION_RECALC",
+              "CARRYOVER_APPLICATION"
+            ],
+            "example": "MANUAL_MATCH",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "True when this response reported a verification that had already committed — the retry of a call whose response was lost. Nothing was written a second time.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "attemptId",
+          "attemptStatus",
+          "depositObligationId",
+          "depositStatus",
+          "orderId",
+          "orderStatus",
+          "reconciliationAction",
+          "replayed"
+        ],
+        "type": "object"
+      },
       "PublicCategoryResponse": {
         "properties": {
           "name": {
@@ -7106,6 +7468,28 @@
         ],
         "type": "object"
       },
+      "ReviewPaymentAttemptBody": {
+        "additionalProperties": false,
+        "properties": {
+          "observedAmount": {
+            "pattern": "^\\d{1,12}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "observedTransferReference": {
+            "pattern": "^ORD[23456789ABCDEFGHJKMNPQRSTVWXYZ]{10}DC$",
+            "type": "string"
+          },
+          "reviewReason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reviewReason"
+        ],
+        "type": "object"
+      },
       "RevokeSecureGrantBody": {
         "additionalProperties": false,
         "description": "Withdraws a live secure grant, with a mandatory reason.",
@@ -7699,6 +8083,30 @@
           "challengeId",
           "state",
           "expiresAt"
+        ],
+        "type": "object"
+      },
+      "VerifyPaymentAttemptBody": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "observedAmount": {
+            "pattern": "^\\d{1,12}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "observedTransferReference": {
+            "pattern": "^ORD[23456789ABCDEFGHJKMNPQRSTVWXYZ]{10}DC$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "observedAmount",
+          "observedTransferReference",
+          "note"
         ],
         "type": "object"
       }
@@ -13398,6 +13806,629 @@
         "summary": "Get one order with its frozen lines",
         "tags": [
           "adminOrder"
+        ]
+      }
+    },
+    "/api/admin/orders/{orderId}/payments": {
+      "get": {
+        "description": "Everything an operator needs to verify a deposit: the order’s LC-14 state, the DEPOSIT obligation with the exact amount owed and its currency, the transfer reference the customer was told to use, every attempt against that deposit with its LC-16 state, the metadata of any transfer screenshots the customer submitted, and the manual reconciliation history. The expected amount is the obligation’s own frozen column — no deposit percentage is recomputed and no live quotation or catalog price is read. The reference is derived from the order code and stored nowhere. Evidence is **supporting material**: its status is never a payment status, an empty list is an ordinary valid deposit, and no image bytes are served here — `APP7-B06` owns the private delivery. The remaining payment is not shown and is not collectible in this phase. It is a read: nothing is written, no status moves and no event is appended.",
+        "operationId": "adminOrderPayment_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminOrderPaymentsResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The order’s deposit payment vertical.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed order id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such order.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Get one order’s deposit payment facts",
+        "tags": [
+          "adminOrderPayment"
+        ]
+      }
+    },
+    "/api/admin/payment-attempts/{attemptId}/review": {
+      "post": {
+        "description": "For the case the operator knows something the comparison cannot see — an unreadable memo, two transfers, a statement that disagrees with the customer. The attempt moves to `REQUIRES_REVIEW` with the mandatory reason, and a reconciliation records it. The deposit is **not** satisfied, the order does **not** move, no `payment.verified` is emitted and no provider event is written — there is no branch in this operation that could settle a payment. An observed amount or reference may be recorded when the operator has one; omitting them records nothing rather than a fabricated zero. A terminal attempt is refused: LC-16 never regresses.",
+        "operationId": "adminPaymentAttempt_review",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attemptId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewPaymentAttemptBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PaymentDecisionResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed review, with the deposit and order reported unchanged.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed attempt id or body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such payment attempt.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The attempt is already settled, or is not a deposit bank transfer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Route one payment attempt to manual review",
+        "tags": [
+          "adminPaymentAttempt"
+        ]
+      }
+    },
+    "/api/admin/payment-attempts/{attemptId}/verify": {
+      "post": {
+        "description": "The only operation in this phase that can move money state. The server proves the whole chain inside one transaction — the attempt belongs to this obligation, the obligation is the DEPOSIT one, it belongs to this order, and the attempt is a bank transfer — then compares the operator’s observed amount and reference against the obligation’s own frozen amount and the reference derived from the order code. Exact match only: no tolerance, no rounding and no floating-point comparison. On a match the attempt becomes `SUCCEEDED`, the deposit becomes `SATISFIED` by that exact attempt, the order moves `AWAITING_DEPOSIT` → `DEPOSIT_PAID`, a reconciliation is appended and `payment.verified` is emitted once — all atomically, or none of it. On a mismatch nothing is satisfied, the order does not move, and the attempt is routed to `REQUIRES_REVIEW` with the operator’s reason: the response is still `200`, and `attemptStatus` says which happened. Transfer evidence is never a precondition — a correct payment with no screenshots verifies normally. Retrying a verification whose response was lost returns the committed truth with `replayed: true` and writes nothing a second time. No provider is contacted and no provider event is written.",
+        "operationId": "adminPaymentAttempt_verify",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attemptId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPaymentAttemptBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PaymentDecisionResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed decision — verified, or routed to review.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed attempt id or body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such payment attempt.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The attempt is already settled, is not a deposit bank transfer, or the deposit was already satisfied by another attempt. Nothing changed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Verify one bank-transfer deposit attempt against funds received",
+        "tags": [
+          "adminPaymentAttempt"
         ]
       }
     },

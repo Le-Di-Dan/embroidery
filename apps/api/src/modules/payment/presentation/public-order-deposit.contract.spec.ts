@@ -30,6 +30,21 @@ const B05_EVIDENCE_PATHS = [
   '/api/public/orders/deposit/evidence/status',
 ];
 
+/**
+ * `APP7-B04`'s three Admin operations.
+ *
+ * Listed for the same reason B05's are: the repository-wide "no other payment
+ * route exists" bound below matches on the word `payment`, and an Admin
+ * verification path is a route that must be *named* to stay excluded rather than
+ * loosened past by a prefix filter. All three are behind
+ * `AuthenticatedAdminGuard` and none is reachable from this customer surface.
+ */
+const B04_ADMIN_PAYMENT_PATHS = [
+  '/api/admin/orders/{orderId}/payments',
+  '/api/admin/payment-attempts/{attemptId}/verify',
+  '/api/admin/payment-attempts/{attemptId}/review',
+];
+
 interface OperationShape {
   readonly operationId?: string;
   readonly parameters?: readonly { readonly name: string; readonly in: string }[];
@@ -177,16 +192,23 @@ describe('APP7-B03 — the published customer deposit contract', () => {
       expect(operation(QR_PATH, 'post').operationId).toBe('publicOrderDeposit_qr');
     });
 
-    it('publishes no deposit or payment operation beyond B03’s three and B05’s two', () => {
-      // Attempt list, attempt detail, "mark paid", customer confirmation, Admin
-      // verification, a provider route and a webhook are each explicitly out of
-      // scope. None of them exists at any path. The two evidence routes are
-      // `APP7-B05`'s and are bounded by their own suite.
+    it('publishes no customer deposit or payment operation beyond B03’s three and B05’s two', () => {
+      // Attempt list, attempt detail, "mark paid", customer confirmation, a
+      // provider route and a webhook are each explicitly out of scope. None of
+      // them exists at any path. The two evidence routes are `APP7-B05`'s and
+      // the three Admin routes are `APP7-B04`'s; both are bounded by their own
+      // suites and are named here so this stays an exhaustive assertion.
       const forbidden = Object.keys(document.paths).filter((path) =>
         /deposit|payment|evidence|webhook|refund/i.test(path),
       );
       expect(forbidden.sort()).toEqual(
-        [DEPOSIT_PATH, ATTEMPTS_PATH, QR_PATH, ...B05_EVIDENCE_PATHS].sort(),
+        [
+          DEPOSIT_PATH,
+          ATTEMPTS_PATH,
+          QR_PATH,
+          ...B05_EVIDENCE_PATHS,
+          ...B04_ADMIN_PAYMENT_PATHS,
+        ].sort(),
       );
     });
 

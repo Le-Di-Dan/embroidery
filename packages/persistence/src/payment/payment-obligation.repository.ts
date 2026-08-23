@@ -47,6 +47,30 @@ export interface PaymentAttempt {
   readonly providerRef: string | undefined;
 }
 
+/**
+ * One attempt and its obligation, read together under the attempt's row lock
+ * (`APP7-B04`).
+ *
+ * The Admin verification transaction must prove a whole chain — the attempt
+ * belongs to *this* obligation, the obligation is the `DEPOSIT` one, and it
+ * belongs to *this* order — before it moves a single row. Reading both halves in
+ * one locked call is what makes the chain the transaction proves the same chain
+ * the writes then act on; two unlocked reads could each be true of a different
+ * instant.
+ *
+ * `FOR UPDATE` is on the **attempt** alone. It is the row every competing
+ * verification of the same attempt contends on, and taking it first fixes the
+ * lock order as `payment_attempts` → `payment_obligations` (`satisfy`) →
+ * `orders` (`transition`). The obligation is deliberately *not* locked here:
+ * `satisfy` locks it and re-reads its state, and taking it early would make two
+ * verifications of two different attempts on one deposit queue on each other
+ * before either had proved anything.
+ */
+export interface VerifiableAttempt {
+  readonly attempt: PaymentAttempt;
+  readonly obligation: PaymentObligation;
+}
+
 export interface Refund {
   readonly id: RefundId;
   readonly paymentAttemptId: AttemptId;
@@ -112,6 +136,18 @@ export interface PaymentObligationRepository {
   ): Promise<PaymentAttempt>;
 
   /**
+   * Locks one attempt and reads it with the obligation it belongs to
+   * (`APP7-B04`).
+   *
+   * `undefined` for an attempt that does not exist, and for one whose obligation
+   * cannot be read — a caller that cannot see the obligation cannot prove the
+   * chain, so it must refuse rather than act on half of it.
+   *
+   * @requiresTransaction
+   */
+  lockAttemptForVerification(id: AttemptId): Promise<VerifiableAttempt | undefined>;
+
+  /**
    * Marks the obligation satisfied by one of **its own** succeeded attempts
    * (G-DB7-06, G-DB7-33).
    *
@@ -144,6 +180,24 @@ export interface PaymentObligationRepository {
     reason: string;
     adminId: string;
     amount?: string | undefined;
+    /**
+     * The status the reconciled attempt or obligation landed on (COL-TBL057-04).
+     *
+     * TBL-057 deliberately leaves this column without a CHECK — it records
+     * LC-16's set or LC-15's, depending on which target was resolved — so the
+     * caller states the status it actually produced rather than a combined enum
+     * inventing one.
+     */
+    resolvedStatus?: string | undefined;
+    /**
+     * The transfer reference the operator observed on the received payment
+     * (COL-TBL057-08).
+     *
+     * The bank memo the money arrived with, not a provider identifier: this flow
+     * has no provider (`APP7-G01` §1). Never a storage key, a secure token or a
+     * merchant account number.
+     */
+    bankReference?: string | undefined;
   }): Promise<void>;
 
   /** @requiresTransaction — amount must not exceed what remains refundable (G-DB7-35). */

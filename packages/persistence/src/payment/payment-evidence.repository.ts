@@ -81,6 +81,8 @@ export class PaymentEvidenceRepository extends DrizzleRepository {
     reason: string;
     adminId: string;
     amount?: string | undefined;
+    resolvedStatus?: string | undefined;
+    bankReference?: string | undefined;
   }): Promise<void> {
     return this.run('appendReconciliation', async () => {
       if (input.reason.trim() === '') {
@@ -99,7 +101,13 @@ export class PaymentEvidenceRepository extends DrizzleRepository {
         action: input.action,
         reason: input.reason,
         adminId: input.adminId,
+        // `null` rather than an omitted key on all three: `amount`,
+        // `resolved_status` and `bank_reference` are nullable evidence columns,
+        // and a reconciliation that records no observed amount must store no
+        // amount rather than a fabricated zero (`APP7-B04` §16).
         amount: input.amount ?? null,
+        resolvedStatus: input.resolvedStatus ?? null,
+        bankReference: input.bankReference ?? null,
       });
     });
   }

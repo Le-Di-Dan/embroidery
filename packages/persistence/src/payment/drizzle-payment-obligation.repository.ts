@@ -3,15 +3,22 @@
  * (TBL-054, TBL-055).
  *
  * Provider events, reconciliations and refunds live in
- * `PaymentEvidenceRepository`, delegated to from here so the aggregate keeps
- * one contract (DB7 §10.1).
+ * `PaymentEvidenceRepository`, and the attempt row's own settlement, locked
+ * verification read and lookups live in `PaymentAttemptRepository`. Both are
+ * delegated to from here so the aggregate keeps one contract (DB7 §10.1) — no
+ * table gains a repository of its own, and no caller has to know which class
+ * holds which method.
+ *
+ * What stays here is what is decided under the **obligation's** row lock:
+ * `createForOrder`, `openAttempt` (an attempt may only open against a `PENDING`
+ * obligation), `satisfy` (G-DB7-06 / G-DB7-33) and `cancel`.
  */
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
 import type { PaymentAttemptState, PaymentObligationKind } from '@embroidery/database';
 import { DatabaseExecutor } from '../runtime/database-executor';
 import { DrizzleRepository } from '../repository/drizzle-repository';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import type {
   AttemptId,
@@ -25,7 +32,9 @@ import type {
   RecordProviderEventInput,
   Refund,
   RefundId,
+  VerifiableAttempt,
 } from './payment-obligation.repository';
+import { PaymentAttemptRepository } from './payment-attempt.repository';
 import { PaymentEvidenceRepository } from './payment-evidence.repository';
 import { toAttempt, toObligation } from './payment-row.mapper';
 
@@ -41,8 +50,35 @@ export class DrizzlePaymentObligationRepository
   constructor(
     executor: DatabaseExecutor,
     private readonly evidence: PaymentEvidenceRepository,
+    private readonly attempts: PaymentAttemptRepository,
   ) {
     super(executor);
+  }
+
+  // The attempt row's own lifecycle — settlement, the locked verification read
+  // and the two lookups — is a separate responsibility, implemented in
+  // `PaymentAttemptRepository` and delegated to here so the aggregate still
+  // presents one `PaymentObligationRepository` contract.
+
+  settleAttempt(
+    id: AttemptId,
+    status: PaymentAttemptState,
+    at: Date,
+    reviewReason?: string,
+  ): Promise<PaymentAttempt> {
+    return this.attempts.settle(id, status, at, reviewReason);
+  }
+
+  lockAttemptForVerification(id: AttemptId): Promise<VerifiableAttempt | undefined> {
+    return this.attempts.lockForVerification(id);
+  }
+
+  loadAttempt(id: AttemptId): Promise<PaymentAttempt | undefined> {
+    return this.attempts.load(id);
+  }
+
+  listAttempts(id: ObligationId): Promise<PaymentAttempt[]> {
+    return this.attempts.listForObligation(id);
   }
 
   async createForOrder(input: CreateObligationInput): Promise<PaymentObligation> {
@@ -119,43 +155,6 @@ export class DrizzlePaymentObligationRepository
           'PaymentObligationRepository.openAttempt',
           'ATTEMPT_NOT_CREATED',
           'Could not open the payment attempt.',
-        );
-      }
-      return toAttempt(row);
-    });
-  }
-
-  async settleAttempt(
-    id: AttemptId,
-    status: PaymentAttemptState,
-    at: Date,
-    reviewReason?: string,
-  ): Promise<PaymentAttempt> {
-    return this.run('settleAttempt', async () => {
-      const [row] = await this.db
-        .update(paymentAttempts)
-        .set({
-          status,
-          succeededAt: status === 'SUCCEEDED' ? at : null,
-          failedAt: status === 'FAILED' || status === 'EXPIRED' ? at : null,
-          reviewReason: reviewReason ?? null,
-          updatedAt: at,
-        })
-        .where(
-          and(
-            eq(paymentAttempts.id, id),
-            // Only an unsettled attempt may settle. Re-settling would let a
-            // late callback overwrite a decision already acted on.
-            inArray(paymentAttempts.status, ['PENDING', 'PROCESSING', 'REQUIRES_REVIEW']),
-          ),
-        )
-        .returning();
-
-      if (row === undefined) {
-        throw guardViolationError(
-          'PaymentObligationRepository.settleAttempt',
-          'ATTEMPT_ALREADY_SETTLED',
-          'That payment attempt has already been settled.',
         );
       }
       return toAttempt(row);
@@ -335,28 +334,6 @@ export class DrizzlePaymentObligationRepository
         )
         .limit(1);
       return row === undefined ? undefined : toObligation(row);
-    });
-  }
-
-  async loadAttempt(id: AttemptId): Promise<PaymentAttempt | undefined> {
-    return this.run('loadAttempt', async () => {
-      const [row] = await this.db
-        .select()
-        .from(paymentAttempts)
-        .where(eq(paymentAttempts.id, id))
-        .limit(1);
-      return row === undefined ? undefined : toAttempt(row);
-    });
-  }
-
-  async listAttempts(id: ObligationId): Promise<PaymentAttempt[]> {
-    return this.run('listAttempts', async () => {
-      const rows = await this.db
-        .select()
-        .from(paymentAttempts)
-        .where(eq(paymentAttempts.paymentObligationId, id))
-        .orderBy(asc(paymentAttempts.createdAt));
-      return rows.map(toAttempt);
     });
   }
 }

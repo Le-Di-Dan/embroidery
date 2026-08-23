@@ -54,4 +54,21 @@ export interface OrderDepositContextPort {
    * same from outside.
    */
   findOrderForRequest(requestId: CustomRequestId): Promise<OrderDepositContext | undefined>;
+
+  /**
+   * The same three fields, addressed by the order's own id (`APP7-B04` §7).
+   *
+   * The Admin payment read is given an `orderId` in its path, so it has no
+   * request to walk from. It gets a second method on **this** port rather than
+   * `ORDER_REPOSITORY` for the reason the port exists at all: a CTX-PAY read
+   * surface must not acquire `transition()` in order to learn an order's code,
+   * and `AdminOrderReadRepository` is Ordering's own queue-and-detail projection
+   * — reusing it would put the frozen line items, the customer id and both
+   * snapshot references into a payment response that has no use for them.
+   *
+   * Never throws for absence, on the same terms as
+   * {@link OrderDepositContextPort.findOrderForRequest}: the caller decides what
+   * an unknown order means on its own surface.
+   */
+  findOrderById(orderId: string): Promise<OrderDepositContext | undefined>;
 }

@@ -135,10 +135,12 @@ export type {
   RecordProviderEventInput,
   Refund,
   RefundId,
+  VerifiableAttempt,
 } from './payment/payment-obligation.repository';
 export { PAYMENT_OBLIGATION_REPOSITORY } from './payment/payment-obligation.repository';
 export type { DepositEligibilityPort } from './payment/deposit-eligibility.port';
 export { DEPOSIT_ELIGIBILITY_PORT } from './payment/deposit-eligibility.port';
+export { PaymentAttemptRepository } from './payment/payment-attempt.repository';
 export { PaymentEvidenceRepository } from './payment/payment-evidence.repository';
 export { PaymentTransferEvidenceRepository } from './payment/payment-transfer-evidence.repository';
 export type {

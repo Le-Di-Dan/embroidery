@@ -30,4 +30,5 @@ export type {
   RecordProviderEventInput,
   Refund,
   RefundId,
+  VerifiableAttempt,
 } from '@embroidery/persistence';

@@ -104,6 +104,16 @@ export {
   PRODUCT_MEDIA_PRIMARY_ROLE,
   PRODUCT_MEDIA_SECONDARY_ROLE,
 } from './schema/catalog/product-media';
+/**
+ * The closed reconciliation-action set (`APP7-B04`), on the same terms.
+ *
+ * `ck_payment_reconciliations__action_allowed` is generated from this tuple, so
+ * an Admin verification that picked its action from a literal in the payment
+ * module would be the second source DB5-A09 forbids — and the drift would only
+ * surface as a sanitised CHECK violation on a money write. It is plain frozen
+ * data: no table object or driver type is reachable through it.
+ */
+export { PAYMENT_RECONCILIATION_ACTIONS } from './schema/payment/payment-reconciliations';
 
 /**
  * Canonical lifecycle-state unions, re-exported as **types only**.
@@ -154,6 +164,7 @@ export type {
   PaymentObligationKind,
   PaymentObligationState,
   PaymentProviderEventOutcome,
+  PaymentReconciliationAction,
   ProductMediaRole,
   ProductionArtifactKind,
   ProductionJobState,

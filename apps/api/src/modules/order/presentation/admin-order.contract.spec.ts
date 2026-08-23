@@ -133,17 +133,28 @@ describe('APP7-B02 — the published Admin order contract', () => {
     expect(document.paths[DETAIL_PATH]?.['get']?.operationId).toBe('adminOrder_detail');
   });
 
-  it('publishes no third operation anywhere beneath /api/admin/orders', () => {
+  it('publishes no write, and no B02 operation, anywhere beneath /api/admin/orders', () => {
     const operations = Object.entries(document.paths)
       .filter(([path]) => path.startsWith('/api/admin/orders'))
       .flatMap(([path, item]) =>
         Object.keys(item).map((method) => `${method.toUpperCase()} ${path}`),
       );
 
-    // Two GETs and nothing else: no POST, PATCH or DELETE that would make B02 a
-    // write surface, and no `/payments`, `/obligations`, `/evidence` or
-    // `/transitions` sub-resource that would pre-empt `APP7-B04`.
-    expect(operations.sort()).toEqual(['GET /api/admin/orders', 'GET /api/admin/orders/{orderId}']);
+    // Three GETs and nothing else: no POST, PATCH or DELETE that would make any
+    // `admin/orders` route a write surface, and no `/obligations`,
+    // `/evidence` or `/transitions` sub-resource.
+    //
+    // `{orderId}/payments` is `APP7-B04`'s Admin deposit read, delivered after
+    // this suite was written and named here rather than filtered past: it is a
+    // different controller in a different module, published as its own
+    // `adminOrderPayment` domain, and B02's two operation ids are untouched.
+    // B04's two **mutations** are not here at all — they address
+    // `admin/payment-attempts`, so no write exists under this prefix.
+    expect(operations.sort()).toEqual([
+      'GET /api/admin/orders',
+      'GET /api/admin/orders/{orderId}',
+      'GET /api/admin/orders/{orderId}/payments',
+    ]);
   });
 
   it('declares the queue filters as query parameters and accepts no body', () => {
