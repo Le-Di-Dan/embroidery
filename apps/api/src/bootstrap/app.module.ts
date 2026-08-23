@@ -37,6 +37,8 @@ import { CustomerQuotationDecisionModule } from '../modules/quotation/customer-q
 import { CustomerQuotationModule } from '../modules/quotation/customer-quotation.module';
 import { CustomerDesignDecisionModule } from '../modules/design/customer-design-decision.module';
 import { CustomerDesignReviewModule } from '../modules/design/customer-design-review.module';
+import { CustomerDepositModule } from '../modules/payment/customer-deposit.module';
+import { CustomerDepositAttemptModule } from '../modules/payment/customer-deposit-attempt.module';
 import { ContentModule } from '../modules/content/content.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
@@ -232,6 +234,25 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // both routes, and no Catalog or Customer port, so a frozen order fact
     // cannot be reconstructed from live state by accident.
     AdminOrderModule,
+    // APP7-B03 — the customer's two zero-write deposit operations, on their own
+    // `public/orders` base path. Disjoint from `admin/orders` above and from
+    // every public module before it, so registration order cannot make one
+    // shadow another. Like `CustomerQuotationModule` it is defined by what it
+    // cannot inject: no `DatabaseModule`, so no transaction manager and no
+    // idempotency store; no `OrderModule`, so no LC-14 transition; no asset or
+    // storage module, so the QR is generated in-process and nothing is stored.
+    // Its merchant bank configuration is read by a factory, so a deployment
+    // missing one of the four values fails at composition rather than at the
+    // first customer request.
+    CustomerDepositModule,
+    // APP7-B03 — the customer's one deposit write, on the same `public/orders`
+    // base path with a distinct sub-path (`deposit/attempts`), disjoint from
+    // `deposit` and `deposit/qr` above. A second deposit module because it is
+    // the mirror image of the first: it holds the transaction manager, the
+    // idempotency store and the canonical AGG-16 repository that the read is
+    // defined by not holding. `CONTROLLER_DOMAIN_KEYS` keeps both publishing
+    // `publicOrderDeposit`.
+    CustomerDepositAttemptModule,
   ],
 })
 export class AppModule {}

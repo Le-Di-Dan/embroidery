@@ -89,6 +89,11 @@ export async function createApiIntegrationContext(
   // than by weakening the production requirement — a fallback would make the
   // one rule that keeps a stolen database useless optional in production too.
   const restoreDesignSessionEnv = applyDesignSessionTestEnv();
+  // `APP7-B03` composes `CustomerDepositModule`, whose config refuses to resolve
+  // without all four merchant bank values (`APP7-G01` §3). Synthetic, and
+  // supplied here rather than by weakening the production requirement — a
+  // fallback would let a deployment ship a deposit surface with no account.
+  const restoreMerchantBankEnv = applyMerchantBankTestEnv();
   // Non-connecting object-storage placeholders unless the caller already set
   // real ones — an upload suite points them at a live disposable MinIO.
   const restoreStorageEnv = applyOfflineObjectStorageEnv();
@@ -119,6 +124,7 @@ export async function createApiIntegrationContext(
   } finally {
     restoreStorageEnv();
     restoreDesignSessionEnv();
+    restoreMerchantBankEnv();
     if (previousUrl === undefined) {
       delete process.env['DATABASE_URL'];
     } else {
@@ -130,6 +136,39 @@ export async function createApiIntegrationContext(
       process.env['NODE_ENV'] = previousNodeEnv;
     }
   }
+}
+
+/**
+ * The synthetic merchant bank account every booted API needs (`APP7-B03`).
+ *
+ * Exported so a deposit suite asserts the response against **these exact
+ * values** rather than against whatever the response happened to contain. A
+ * deliberately obvious non-account: no real bank BIN, no real account number.
+ */
+export const MERCHANT_BANK_TEST_CONFIG = {
+  bankBin: '970418',
+  accountNumber: '31410000123456',
+  accountName: 'CONG TY TNHH THEU TEST',
+  bankDisplayName: 'Ngan Hang Test',
+} as const;
+
+export function applyMerchantBankTestEnv(): () => void {
+  const names = [
+    ['PAYMENT_MERCHANT_BANK_BIN', MERCHANT_BANK_TEST_CONFIG.bankBin],
+    ['PAYMENT_MERCHANT_ACCOUNT_NUMBER', MERCHANT_BANK_TEST_CONFIG.accountNumber],
+    ['PAYMENT_MERCHANT_ACCOUNT_NAME', MERCHANT_BANK_TEST_CONFIG.accountName],
+    ['PAYMENT_MERCHANT_BANK_DISPLAY_NAME', MERCHANT_BANK_TEST_CONFIG.bankDisplayName],
+  ] as const;
+  const previous = names.map(([name]) => [name, process.env[name]] as const);
+  for (const [name, value] of names) {
+    process.env[name] = value;
+  }
+  return () => {
+    for (const [name, value] of previous) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  };
 }
 
 /** The synthetic Design Session environment every booted API needs (APP3-B07). */

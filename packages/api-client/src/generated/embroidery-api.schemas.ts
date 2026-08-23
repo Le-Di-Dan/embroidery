@@ -2215,6 +2215,68 @@ export interface CustomRequestSubmissionResponse {
   status: string;
 }
 
+/**
+ * The DEPOSIT obligation’s own state. `SATISFIED` means an Admin confirmed receipt; opening an attempt, downloading the QR and transferring at the bank all leave it `PENDING`.
+ */
+export type CustomerDepositResponseDepositStatus =
+  (typeof CustomerDepositResponseDepositStatus)[keyof typeof CustomerDepositResponseDepositStatus];
+
+export const CustomerDepositResponseDepositStatus = {
+  PENDING: 'PENDING',
+  SATISFIED: 'SATISFIED',
+  CANCELLED: 'CANCELLED',
+  SUPERSEDED: 'SUPERSEDED',
+} as const;
+
+/**
+ * The order’s own LC-14 state. `DEPOSIT_PAID` appears only after an Admin has verified that the money arrived; nothing a customer does produces it.
+ */
+export type CustomerDepositResponseOrderStatus =
+  (typeof CustomerDepositResponseOrderStatus)[keyof typeof CustomerDepositResponseOrderStatus];
+
+export const CustomerDepositResponseOrderStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface DepositBankInstructionsResponse {
+  /** The account holder, so the customer can check it against their banking app. */
+  accountName: string;
+  /** The receiving account number. Server-owned configuration; never customer input. */
+  accountNumber: string;
+  /** The receiving bank’s NAPAS acquirer id, exactly as the QR encodes it. A public bank identifier, not a credential. */
+  bankBin: string;
+  /** The receiving bank’s name, for the customer to read. */
+  bankDisplayName: string;
+  /** The exact message to put on the bank transfer: `ORD`, the order code body, then `DC` for the deposit. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind and identical on every read and every retry. It carries no name, phone, email, token or attempt id. */
+  transferReference: string;
+}
+
+export interface CustomerDepositResponse {
+  /** When this secure link stops opening the deposit. */
+  accessExpiresAt: string;
+  bankInstructions: DepositBankInstructionsResponse;
+  /** The obligation’s own currency, copied. Always VND, enforced physically. */
+  currencyCode: string;
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  depositAmount: string;
+  /** The DEPOSIT obligation’s own state. `SATISFIED` means an Admin confirmed receipt; opening an attempt, downloading the QR and transferring at the bank all leave it `PENDING`. */
+  depositStatus: CustomerDepositResponseDepositStatus;
+  /** The customer-facing order code. Display and support only — a code is never an authorization input (CST-026, ADR-DB1-007). */
+  orderCode: string;
+  /** The order’s own LC-14 state. `DEPOSIT_PAID` appears only after an Admin has verified that the money arrived; nothing a customer does produces it. */
+  orderStatus: CustomerDepositResponseOrderStatus;
+}
+
 export interface DesignReviewAgreementResponse {
   /** The agreement type. The set and its order come from the published `design_approval.agreements` policy, so this is configuration rather than a fixed enumeration and a client must not hard-code the members. */
   agreementType: string;
@@ -2395,6 +2457,63 @@ export interface DatabaseHealthResponse {
   pool: DatabasePoolResponse;
   reason: DatabaseHealthResponseReason;
   status: DatabaseHealthResponseStatus;
+}
+
+/**
+ * Always BANK_TRANSFER in APP7. There is no payment provider in this flow.
+ */
+export type DepositAttemptResponseMethod =
+  (typeof DepositAttemptResponseMethod)[keyof typeof DepositAttemptResponseMethod];
+
+export const DepositAttemptResponseMethod = {
+  PROVIDER_REDIRECT: 'PROVIDER_REDIRECT',
+  BANK_TRANSFER: 'BANK_TRANSFER',
+  OTHER: 'OTHER',
+} as const;
+
+/**
+ * Always PENDING. Opening an attempt records an intention to transfer, never a payment: only Admin verification can settle it.
+ */
+export type DepositAttemptResponseStatus =
+  (typeof DepositAttemptResponseStatus)[keyof typeof DepositAttemptResponseStatus];
+
+export const DepositAttemptResponseStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  REQUIRES_REVIEW: 'REQUIRES_REVIEW',
+  REFUNDED: 'REFUNDED',
+  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
+} as const;
+
+export interface DepositAttemptResponse {
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  amount: string;
+  /** The attempt this call opened, or the one an identical earlier call opened. Opaque, and not an address: no operation on this surface takes it. */
+  attemptId: string;
+  /** Copied from the obligation. */
+  currencyCode: string;
+  /** Always BANK_TRANSFER in APP7. There is no payment provider in this flow. */
+  method: DepositAttemptResponseMethod;
+  /** True when an earlier call with the same Idempotency-Key already opened this attempt and this response replays it. No second attempt was created. */
+  replayed: boolean;
+  /** Always PENDING. Opening an attempt records an intention to transfer, never a payment: only Admin verification can settle it. */
+  status: DepositAttemptResponseStatus;
+  /** The exact message to put on the bank transfer: `ORD`, the order code body, then `DC` for the deposit. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind and identical on every read and every retry. It carries no name, phone, email, token or attempt id. */
+  transferReference: string;
+}
+
+/**
+ * Presents a secure-link token to download the bank-transfer QR for the deposit that link opens. The account, the amount and the transfer reference are all server-owned; no attempt id and no QR input is accepted.
+ */
+export interface DepositQrBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
 }
 
 /**
@@ -2931,6 +3050,17 @@ export interface HealthStatusResponse {
 }
 
 /**
+ * Presents a secure-link token to open one BANK_TRANSFER payment attempt against the deposit that link opens. The obligation, amount, currency, method and step-up evidence are all resolved by the server; none of them is accepted here. The caller’s attempt key travels in the Idempotency-Key header.
+ */
+export interface InitiateDepositAttemptBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
+/**
  * Which kind of destination `contact` is.
  */
 export type IssueVerificationChallengeBodyContactKind =
@@ -3436,6 +3566,17 @@ export interface ReadCurrentQuotationBody {
  * Presents a secure-link token to read the one request it opens.
  */
 export interface ReadCustomRequestStatusBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
+/**
+ * Presents a secure-link token to read the deposit owed on the order that link already opens. No order, obligation, attempt, amount or customer identifier is accepted.
+ */
+export interface ReadDepositBody {
   /**
    * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
    * @pattern ^[A-Za-z0-9_-]{43}$
@@ -4410,6 +4551,14 @@ export type PublicDesignTemplateList200 = ApiSuccessResponse & {
 
 export type PublicDesignTemplateDetail200 = ApiSuccessResponse & {
   data: PublicDesignTemplateDetailResponse;
+};
+
+export type PublicOrderDepositCurrent200 = ApiSuccessResponse & {
+  data: CustomerDepositResponse;
+};
+
+export type PublicOrderDepositInitiate201 = ApiSuccessResponse & {
+  data: DepositAttemptResponse;
 };
 
 export type PublicProductListParams = {

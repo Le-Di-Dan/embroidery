@@ -123,6 +123,16 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // two public identifiers; with it, `publicDesignReview_current` is untouched
   // and the family reads `_current`, `_approve`, `_requestRevision`.
   PublicDesignReviewDecisionController: 'publicDesignReview',
+  // `APP7-B03`. Reading a deposit, downloading its transfer QR and opening a
+  // bank-transfer attempt are one published `publicOrderDeposit` domain. They
+  // are two classes because the read module is *defined* by holding no
+  // transaction manager and no idempotency store — the boundary that lets its
+  // suite say a deposit read and a QR download cannot open an attempt — while
+  // the initiation needs both. Without this entry the write would mint
+  // `publicOrderDepositAttempt_initiate`, letting a module boundary name a
+  // public identifier; with it the family reads `_current`, `_qr`, `_initiate`.
+  PublicOrderDepositController: 'publicOrderDeposit',
+  PublicOrderDepositAttemptController: 'publicOrderDeposit',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

@@ -69,6 +69,32 @@ export function ensureGenerationEnvironment(env: NodeJS.ProcessEnv = process.env
   }
   applyOfflineObjectStorageEnv(env);
   applyGenerationDesignSessionEnv(env);
+  applyGenerationMerchantBankEnv(env);
+}
+
+/**
+ * Non-secret placeholders for the merchant bank configuration (`APP7-B03`).
+ *
+ * `CustomerDepositModule` refuses to resolve without all four values
+ * (`APP7-G01` §3), and document generation builds the whole application graph —
+ * so without this the artifact simply cannot be produced. These are
+ * generation-time placeholders in the same spirit as the offline storage values
+ * above: they are structurally valid, obviously not a real account, and never a
+ * fallback for a running API, because generation and the offline harnesses are
+ * the only callers. A deployment that omits one still fails at composition.
+ */
+export function applyGenerationMerchantBankEnv(env: NodeJS.ProcessEnv = process.env): void {
+  const placeholders: ReadonlyArray<readonly [string, string]> = [
+    ['PAYMENT_MERCHANT_BANK_BIN', '970000'],
+    ['PAYMENT_MERCHANT_ACCOUNT_NUMBER', '0000000000'],
+    ['PAYMENT_MERCHANT_ACCOUNT_NAME', 'OPENAPI GENERATION PLACEHOLDER'],
+    ['PAYMENT_MERCHANT_BANK_DISPLAY_NAME', 'OpenAPI Generation Placeholder Bank'],
+  ];
+  for (const [name, value] of placeholders) {
+    if (env[name] === undefined || env[name] === '') {
+      env[name] = value;
+    }
+  }
 }
 
 /**
