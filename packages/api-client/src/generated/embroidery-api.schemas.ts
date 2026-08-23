@@ -4076,7 +4076,7 @@ export interface RestoreDesignTemplateBody {
 export interface ReviewPaymentAttemptBody {
   /** @pattern ^\d{1,12}(?:\.\d{1,2})?$ */
   observedAmount?: string;
-  /** @pattern ^ORD[23456789ABCDEFGHJKMNPQRSTVWXYZ]{10}DC$ */
+  /** @maxLength 2000 */
   observedTransferReference?: string;
   /**
    * @minLength 1
@@ -4380,7 +4380,7 @@ export interface VerifyPaymentAttemptBody {
   note: string;
   /** @pattern ^\d{1,12}(?:\.\d{1,2})?$ */
   observedAmount: string;
-  /** @pattern ^ORD[23456789ABCDEFGHJKMNPQRSTVWXYZ]{10}DC$ */
+  /** @maxLength 2000 */
   observedTransferReference: string;
 }
 

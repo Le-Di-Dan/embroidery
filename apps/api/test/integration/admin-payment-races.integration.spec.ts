@@ -13,6 +13,17 @@
  * fault-injection code exists in the runtime: the rollback proof overrides one
  * provider **in the testing module only**, so the failure is injected at a seam
  * Nest already offers rather than by a flag the production build carries.
+ *
+ * ### One execution each, deliberately (`APP7-B04-C1` §11)
+ *
+ * `APP7-B04` shipped these with 5× and 3× repetition loops. That was a
+ * validation-discipline defect and the loops are gone: repeating a race is
+ * running a passing command again on unchanged input, which buys confidence
+ * rather than evidence. Either the arbiter is the obligation row lock — in which
+ * case one execution proves it — or it is timing, in which case eight
+ * executions prove nothing either. The determinism lives in the assertions
+ * (`[200, 409]`, one satisfying attempt, one transition row, one event), not in
+ * the repeat count.
  */
 import { sql } from 'drizzle-orm';
 import type { TestingModuleBuilder } from '@nestjs/testing';
@@ -140,20 +151,6 @@ describe('APP7-B04 — concurrent verification and rollback', () => {
       await expectExactlyOneApplication(seeded, seeded.attemptId);
     });
 
-    it('repeats the same-attempt race five more times, always exactly one application', async () => {
-      for (let index = 0; index < 5; index += 1) {
-        const seeded = await seed(`same-repeat-${String(index)}`);
-        const results = await Promise.all([
-          verify(seeded.attemptId, seeded.expectedReference, 'A'),
-          verify(seeded.attemptId, seeded.expectedReference, 'B'),
-        ]);
-        for (const response of results) {
-          expect(response.status).toBe(200);
-        }
-        await expectExactlyOneApplication(seeded, seeded.attemptId);
-      }
-    });
-
     it('CC-10: two eligible attempts racing yield exactly one satisfying attempt', async () => {
       const seeded = await seed('cc10');
       // A second attempt on the *same* deposit, opened by the canonical writer,
@@ -185,22 +182,6 @@ describe('APP7-B04 — concurrent verification and rollback', () => {
       expect(await countOutbox(context.ctx.database, 'payment.verified', loserId)).toBe(0);
 
       await expectExactlyOneApplication(seeded, winnerId);
-    });
-
-    it('repeats CC-10 three more times, always one winner and one intact loser', async () => {
-      for (let index = 0; index < 3; index += 1) {
-        const seeded = await seed(`cc10-repeat-${String(index)}`);
-        const rival = await openAttempt(context.ctx.app, seeded.depositObligationId);
-        const [a, b] = await Promise.all([
-          verify(seeded.attemptId, seeded.expectedReference, 'A'),
-          verify(rival, seeded.expectedReference, 'B'),
-        ]);
-        expect([a.status, b.status].sort()).toEqual([200, 409]);
-        const winnerId = a.status === 200 ? seeded.attemptId : rival;
-        const loserId = a.status === 200 ? rival : seeded.attemptId;
-        expect((await readAttempt(context.ctx.database, loserId)).status).toBe('PENDING');
-        await expectExactlyOneApplication(seeded, winnerId);
-      }
     });
   });
 

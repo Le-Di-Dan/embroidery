@@ -7476,7 +7476,7 @@
             "type": "string"
           },
           "observedTransferReference": {
-            "pattern": "^ORD[23456789ABCDEFGHJKMNPQRSTVWXYZ]{10}DC$",
+            "maxLength": 2000,
             "type": "string"
           },
           "reviewReason": {
@@ -8099,7 +8099,7 @@
             "type": "string"
           },
           "observedTransferReference": {
-            "pattern": "^ORD[23456789ABCDEFGHJKMNPQRSTVWXYZ]{10}DC$",
+            "maxLength": 2000,
             "type": "string"
           }
         },

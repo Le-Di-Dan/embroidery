@@ -1,6 +1,15 @@
 /**
  * Request-side validation for the three Admin payment operations
- * (`APP7-B04` §11, §19, §32).
+ * (`APP7-B04` §11, §19, §32; `APP7-B04-C1`).
+ *
+ * ### Expected identifier and observed evidence are different kinds of thing
+ *
+ * The one rule this file exists to keep straight, and the one `APP7-B04-C1`
+ * corrects: a **server-derived** reference is a canonical identifier and carries
+ * the `APP7-G01` §4 pattern; an **Admin-observed** bank memo is evidence about
+ * the outside world and carries no pattern at all. Constraining the second to
+ * the shape of the first — which B04 did — makes the mismatch this checkpoint
+ * exists to record unrepresentable.
  *
  * Both bodies are `.strict()`, and that is the security property rather than a
  * style choice. Every field `APP7-B04` §11 forbids — `orderId`, `obligationId`,
@@ -31,7 +40,6 @@
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
-import { DEPOSIT_REFERENCE_PATTERN } from '../../domain/deposit/deposit-reference';
 
 /** UUID path parameters — rejected before any repository call. */
 export const adminOrderPaymentsParamSchema = z.object({ orderId: z.string().uuid() }).strict();
@@ -54,18 +62,47 @@ const observedAmountSchema = z
   .regex(/^\d{1,12}(?:\.\d{1,2})?$/, 'An amount is up to twelve digits with at most two decimals.');
 
 /**
- * The reference as it appeared on the transfer.
+ * The reference as it appeared on the received transfer (`APP7-B04-C1`).
  *
- * Shape-checked against the exact `APP7-G01` §4 pattern the server derives, so a
- * typo is a `400` the operator can see rather than a silent trip into review.
- * Equality against the order's own derived reference is still proved
- * server-side: this only rejects values that could not be **any** order's
- * reference, and it is not, and must not become, the match.
+ * ### It is evidence, not an identifier
+ *
+ * `APP7-G01` §4's `^[A-Z0-9]{15}$` describes the reference **this system
+ * derives** and instructs the customer to use. It does not describe what a bank
+ * memo actually contains. A customer can type it in lowercase, drop a character,
+ * add punctuation, let their banking app truncate it, or write something else
+ * entirely — and every one of those is precisely the contradiction manual
+ * reconciliation exists to record.
+ *
+ * `APP7-B04` originally validated this field against that canonical pattern, on
+ * the reasoning that a typo should be a `400` the operator can see. That was
+ * wrong, and `APP7-B04-C1` corrects it: rejecting a non-canonical memo at the
+ * DTO boundary stops the financial evidence layer from ever recording the
+ * mismatch, so the one fact a later audit needs — *what the bank transaction
+ * actually contained*, as against what the customer was instructed to use —
+ * is destroyed before it reaches a row.
+ *
+ * ### Nothing is done to the value
+ *
+ * No pattern, no `.trim()`, no uppercasing, no punctuation stripping, no
+ * whitespace collapsing, no Unicode normalization, no character replacement. The
+ * string that arrives is the string compared and the string persisted to
+ * `payment_reconciliations.bank_reference`. Any transformation here would make
+ * an observation agree with an expectation it did not actually match.
+ *
+ * ### The only rule is a length ceiling, and it is not a new alphabet
+ *
+ * `COL-TBL057-08` is nullable `text` with no CHECK, no length and no character
+ * set, so there is no pre-B04 bound to preserve. The 2000-character ceiling is
+ * the bound this same body already applies to the operator's written reason, and
+ * it exists for that rule's reason alone — an authenticated operator should not
+ * be able to write an unbounded blob into the money record by accident. It
+ * constrains size and nothing else: every printable byte, in any case, in any
+ * script, is accepted and reaches the comparison.
+ *
+ * An empty memo is a real observation — a transfer can arrive carrying none — so
+ * it is accepted too and recorded as what it is. It simply will not match.
  */
-const observedReferenceSchema = z
-  .string()
-  .trim()
-  .regex(DEPOSIT_REFERENCE_PATTERN, 'A deposit reference is ORD, ten code characters, then DC.');
+const observedReferenceSchema = z.string().max(2_000);
 
 /**
  * One written justification.

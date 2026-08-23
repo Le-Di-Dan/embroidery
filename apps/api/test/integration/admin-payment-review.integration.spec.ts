@@ -157,18 +157,45 @@ describe('APP7-B04 — mismatch, explicit review and terminal-state integrity', 
       await expectDepositUntouched(other);
     });
 
-    it('refuses a reference that could not be any order’s, before any repository call', async () => {
-      const seeded = await seed('refshape');
-      await authed
+    it('records a non-canonical memo as evidence instead of rejecting it (APP7-B04-C1)', async () => {
+      const seeded = await seed('noncanonical');
+      // The exact defect `APP7-B04-C1` corrects. B04 validated the **observed**
+      // memo against the pattern of the **derived** reference, so a customer who
+      // typed the right characters in lowercase produced a `400` and the
+      // contradiction was never recorded anywhere. An observed bank memo is
+      // evidence about the outside world, not an identifier this system issues.
+      const lowercase = seeded.expectedReference.toLowerCase();
+      expect(lowercase).not.toBe(seeded.expectedReference);
+
+      const response = await authed
         .post(ADMIN_PAYMENT_ROUTES.verify(seeded.attemptId))
         .send({
           observedAmount: SEEDED_DEPOSIT_AMOUNT,
-          observedTransferReference: 'ORD-7K3MPQ2XVD',
-          note: 'x',
+          observedTransferReference: lowercase,
+          note: 'Nội dung chuyển khoản viết thường, không khớp mã đã cấp.',
         })
-        .expect(400);
-      expect((await readAttempt(context.ctx.database, seeded.attemptId)).status).toBe('PENDING');
-      expect(await readReconciliations(context.ctx.database, seeded.attemptId)).toHaveLength(0);
+        // Not a 400. It reaches the business logic and commits a durable review.
+        .expect(200);
+
+      const body = (response.body as Envelope<DecisionBody>).data;
+      expect(body.attemptStatus).toBe('REQUIRES_REVIEW');
+      expect(body.depositStatus).toBe('PENDING');
+      expect(body.orderStatus).toBe('AWAITING_DEPOSIT');
+
+      const reconciliations = await readReconciliations(context.ctx.database, seeded.attemptId);
+      expect(reconciliations).toHaveLength(1);
+      // Persisted verbatim. A later audit must be able to tell what the customer
+      // was instructed to use from what the transaction actually contained, so
+      // the stored value is neither uppercased nor normalised toward the
+      // expected one.
+      expect(reconciliations[0]?.bank_reference).toBe(lowercase);
+      expect(reconciliations[0]?.resolved_status).toBe('REQUIRES_REVIEW');
+
+      // And accepting it at the boundary did not make it equivalent.
+      expect((await readAttempt(context.ctx.database, seeded.attemptId)).status).toBe(
+        'REQUIRES_REVIEW',
+      );
+      await expectDepositUntouched(seeded);
     });
 
     it('resolves a REQUIRES_REVIEW attempt when the operator then verifies it exactly', async () => {

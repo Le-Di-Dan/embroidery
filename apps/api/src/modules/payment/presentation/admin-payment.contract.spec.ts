@@ -28,6 +28,10 @@ const CUSTOMER_PAYMENT_PATHS = [
 ];
 
 interface SchemaShape {
+  readonly pattern?: string;
+  readonly maxLength?: number;
+  readonly minLength?: number;
+  readonly example?: string;
   readonly type?: string;
   readonly format?: string;
   readonly required?: readonly string[];
@@ -319,6 +323,32 @@ describe('APP7-B04 — the published Admin payment contract', () => {
       for (const path of [VERIFY_PATH, REVIEW_PATH]) {
         expect(bodySchemaOf(path).properties?.['observedAmount']?.type).toBe('string');
       }
+    });
+
+    it('publishes the observed memo without the canonical reference pattern (APP7-B04-C1)', () => {
+      // `^[A-Z0-9]{15}$` describes the reference the **server derives**. An
+      // observed bank memo is evidence about the outside world, and constraining
+      // it to that shape — which `APP7-B04` did — makes a lowercase or mangled
+      // memo a `400` and destroys the contradiction before it can be recorded.
+      for (const path of [VERIFY_PATH, REVIEW_PATH]) {
+        const observed = bodySchemaOf(path).properties?.['observedTransferReference'];
+        expect(observed?.type).toBe('string');
+        expect(observed?.pattern).toBeUndefined();
+        expect(observed?.enum).toBeUndefined();
+        // Size only. No minimum, because an empty memo is a real observation.
+        expect(observed?.maxLength).toBe(2_000);
+        expect(observed?.minLength).toBeUndefined();
+      }
+    });
+
+    it('keeps the canonical pattern on the derived expected reference', () => {
+      // The other half of the same rule: C1 must not weaken the identifier this
+      // system issues, only stop imposing its shape on what a bank returned.
+      const expected = schemaOf('AdminOrderPaymentsResponse').properties?.[
+        'expectedTransferReference'
+      ];
+      expect(expected?.type).toBe('string');
+      expect(expected?.example).toMatch(/^[A-Z0-9]{15}$/);
     });
   });
 
