@@ -1,0 +1,149 @@
+// Admin order detail — card chrome (`APP7-A01`).
+//
+// The surface every panel on the screen is built from: the card box, its title
+// and help text, the bordered note, the definition list, the badge rows, the
+// read-only expected block and the `REQUIRES_REVIEW` banner (`734:34`,
+// `734:109`, `741:3`).
+//
+// Shared by the frozen column and the deposit workbench alike, which is why it
+// sits between the layout and the panels that use it.
+
+@use '@embroidery/styles' as styles;
+
+// ---------------------------------------------------------------------------
+// Cards
+// ---------------------------------------------------------------------------
+.order-panel {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+.order-card {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.order-card__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+}
+
+.order-card__help {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-card__note {
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-card__definitions {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+}
+
+.order-definition {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  align-items: baseline;
+}
+
+.order-definition__label {
+  flex: 0 0 auto;
+  min-width: 40%;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-definition__value {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  overflow-wrap: anywhere;
+}
+
+.order-card__link {
+  color: styles.$color-status-info;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.order-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.order-card__badge-group {
+  display: inline-flex;
+  gap: styles.spacing(4);
+  align-items: center;
+}
+
+.order-card__badge-prefix {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-card__expected {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.order-card__expected-heading {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+.order-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.order-card__review-state {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.order-card__review-title {
+  margin: 0;
+  color: styles.$color-status-warning;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}

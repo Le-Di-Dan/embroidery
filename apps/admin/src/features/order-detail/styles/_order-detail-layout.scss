@@ -1,0 +1,154 @@
+// Admin order detail — page shell and two-column layout (`APP7-A01`).
+//
+// The outermost frame of `FIG-APP7-A01-DETAIL-AWAITING-DESKTOP` (`734:3`): the
+// header row, the frozen/payment column split, the page-level loading and
+// failure states, and the button treatments those states share with the cards.
+//
+// It owns the feature's only two layout thresholds, and it is loaded **first**
+// so every later partial cascades over it.
+
+@use '@embroidery/styles' as styles;
+
+// The two-column workbench. Below this the frozen facts and the deposit panel
+// stack, so a long observed reference and the payment cards never have to
+// compete for a half-width column (`753:3` — Admin is desktop-first, and the
+// requirement is that nothing overflows, not that a mobile product exists).
+$order-detail-stack: 1180px;
+
+// The width the frozen column holds while both columns are side by side.
+$order-detail-frozen-column: 660px;
+
+.order-detail {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.order-detail__breadcrumb {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-detail__back {
+  color: styles.$color-text-tertiary;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.order-detail__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(16);
+  align-items: center;
+  margin-top: styles.spacing(4);
+}
+
+.order-detail__title {
+  margin: 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.order-detail__total {
+  margin: 0 0 0 auto;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-detail__columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(24);
+  align-items: flex-start;
+}
+
+.order-detail__frozen {
+  display: flex;
+  flex: 0 1 $order-detail-frozen-column;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  min-width: 0;
+}
+
+.order-detail__payments {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+@media (max-width: $order-detail-stack) {
+  .order-detail__frozen,
+  .order-detail__payments {
+    flex-basis: 100%;
+  }
+}
+
+.order-detail__loading,
+.order-panel__loading {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-detail__failure,
+.order-panel__failure {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  align-items: flex-start;
+  padding: styles.spacing(32);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.order-detail__failure-title,
+.order-panel__failure-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-detail__failure-body,
+.order-panel__failure-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-detail__action,
+.order-panel__action,
+.order-card__action {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+.order-card__action--primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+  }
+}

@@ -1,0 +1,176 @@
+// Admin order detail — the deposit workbench panels (`APP7-A01`).
+//
+// The three read surfaces of `adminOrderPayment_read`, in the order they are
+// rendered: the payment attempts (`734:128`), the customer's transfer evidence
+// with its per-state preview affordance (`736:149`, `743:3`), and the
+// reconciliation history rows with the long-value reveal a bank memo needs
+// (`743:35`, `743:83`).
+//
+// Read-only presentation only. Everything that takes a decision is in the
+// dialog partial that follows.
+
+@use '@embroidery/styles' as styles;
+
+// ---------------------------------------------------------------------------
+// Payment attempts
+// ---------------------------------------------------------------------------
+.order-attempts {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-attempt {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.order-attempt__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: center;
+}
+
+.order-attempt__method {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// ---------------------------------------------------------------------------
+// Evidence
+// ---------------------------------------------------------------------------
+.order-evidence__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: baseline;
+}
+
+.order-evidence__count {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-evidence__readonly,
+.order-evidence__token {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-evidence__list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-evidence__item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: center;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+}
+
+.order-evidence__meta {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+}
+
+.order-evidence__facts {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-evidence__preview {
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+.order-evidence__empty {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  align-items: center;
+  padding: styles.spacing(24);
+  border: 1px dashed styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  text-align: center;
+}
+
+.order-evidence__empty-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-evidence__empty-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// Reconciliation history
+// ---------------------------------------------------------------------------
+.order-history__detail {
+  background: styles.$color-surface-secondary;
+}
+
+.order-history__reason,
+.order-history__reference {
+  display: block;
+  color: styles.$color-text-secondary;
+}
+
+.order-long-text {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(4);
+  align-items: baseline;
+}
+
+.order-long-text__value {
+  overflow-wrap: anywhere;
+}
+
+.order-long-text__toggle {
+  padding: 0;
+  border: none;
+  background: none;
+  color: styles.$color-status-info;
+  font-size: styles.$font-size-caption;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -1,0 +1,217 @@
+// Admin order detail — payment decision dialogs and their fields
+// (`APP7-A01`).
+//
+// The modal shell, scrim and action row shared by the verification, the review
+// and the evidence lightbox (`737:3`, `740:111`, `742:3`), plus the field
+// treatment the two decision forms use (`737:27`, `740:119`).
+//
+// The field control deliberately declares no `text-transform`: the observed
+// transfer reference is submitted exactly as typed, and a visual uppercase would
+// misrepresent what is about to be sent.
+
+@use '@embroidery/styles' as styles;
+
+// ---------------------------------------------------------------------------
+// Payment dialogs
+// ---------------------------------------------------------------------------
+.payment-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: styles.spacing(32);
+  overflow-y: auto;
+  background: styles.$color-overlay-scrim;
+  z-index: 1;
+}
+
+.payment-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  width: 100%;
+  max-width: 640px;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.payment-dialog__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-heading-s;
+}
+
+.payment-dialog__help,
+.payment-dialog__badge-note {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.payment-dialog__expected,
+.payment-dialog__observed {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+}
+
+.payment-dialog__expected {
+  background: styles.$color-surface-secondary;
+}
+
+// The observed block is the one the operator writes into, so it carries the
+// action border — the two blocks must never look interchangeable.
+.payment-dialog__observed {
+  border-color: styles.$color-action-primary;
+}
+
+.payment-dialog__badge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+.payment-dialog__badge-note {
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-regular;
+}
+
+.payment-dialog__validation {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.payment-dialog__warning {
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.payment-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.payment-dialog__submit,
+.payment-dialog__dismiss,
+.evidence-preview__close,
+.evidence-preview__nav,
+.evidence-preview__retry {
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+.payment-dialog__submit {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+  }
+
+  &:disabled {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-surface-secondary;
+  }
+}
+
+.payment-dialog__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Payment fields
+// ---------------------------------------------------------------------------
+.payment-field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.payment-field__label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(4);
+  align-items: baseline;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.payment-field__required {
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+}
+
+.payment-field__optional {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-regular;
+}
+
+.payment-field__control {
+  width: 100%;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-s;
+  // No `text-transform`. The observed reference is submitted exactly as typed
+  // (`737:40`), and a visual uppercase would misrepresent what is being sent.
+}
+
+.payment-field--error .payment-field__control {
+  border-color: styles.$color-status-error;
+}
+
+.payment-field__help {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.payment-field__error {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-caption;
+}

@@ -1,0 +1,100 @@
+// Admin order detail — the shared table base, and the frozen order lines
+// (`APP7-A01`).
+//
+// Three tables appear on this screen — the frozen order lines (`734:64`), the
+// reconciliation history (`743:35`) and the expected-vs-observed comparison
+// (`740:33`) — and they share one base rule. That rule lives here and is
+// emitted **before** all three, exactly as the single file emitted it, so the
+// two later partials style their specifics over a base that is already present.
+//
+// Splitting the base apart per table would have meant duplicating a selector
+// list across files, which is the one thing this split must not do.
+
+@use '@embroidery/styles' as styles;
+
+// ---------------------------------------------------------------------------
+// Frozen order lines
+// ---------------------------------------------------------------------------
+.order-items,
+.order-history,
+.order-comparison__table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+
+  th,
+  td {
+    padding: styles.spacing(8) styles.spacing(12);
+    border-bottom: 1px solid styles.$color-border-primary;
+    text-align: left;
+    vertical-align: top;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-caption;
+    overflow-wrap: anywhere;
+  }
+
+  thead th {
+    background: styles.$color-surface-secondary;
+    color: styles.$color-text-secondary;
+    font-weight: styles.$font-weight-semibold;
+  }
+}
+
+.order-items__caption,
+.order-history__caption,
+.order-comparison__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.order-items__numeric,
+.order-history__numeric {
+  text-align: right;
+}
+
+.order-items__product {
+  display: table-cell;
+  font-weight: styles.$font-weight-regular;
+}
+
+.order-items__product-name {
+  display: block;
+  color: styles.$color-text-primary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-items__product-detail {
+  display: block;
+  margin-top: styles.spacing(4);
+  color: styles.$color-text-tertiary;
+}
+
+.order-items__kind {
+  display: inline-block;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xl;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  white-space: nowrap;
+}
+
+.order-items__absent,
+.order-history__absent {
+  display: block;
+  color: styles.$color-text-tertiary;
+}
+
+.order-items__absent-note {
+  display: block;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
