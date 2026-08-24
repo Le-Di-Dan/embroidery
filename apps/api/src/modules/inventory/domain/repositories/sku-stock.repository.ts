@@ -67,6 +67,17 @@ export interface LedgerEntry {
   readonly quantity: number;
   readonly onHandDelta: number;
   readonly reason: string | undefined;
+  /**
+   * When the movement was appended (`APP8-B01`).
+   *
+   * Mapped from `created_at`, a column the table has carried since DB7. It is
+   * published rather than left behind because an operator reading a stock
+   * history needs to know *when* it changed, and the ledger is append-only so
+   * the value never moves. Ordering still comes from the identity sequence,
+   * which is the append order; this is the timestamp of that append, not a
+   * second sort key.
+   */
+  readonly occurredAt: Date;
 }
 
 /** Who caused a stock movement. Ledger entries are evidence, so this is required. */

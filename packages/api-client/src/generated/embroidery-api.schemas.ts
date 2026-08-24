@@ -78,6 +78,19 @@ export interface AddQuotationVersionBody {
   stitchCount?: number;
 }
 
+export interface AdjustSkuStockBody {
+  /**
+   * @minimum -2147483647
+   * @maximum 2147483647
+   */
+  delta: number;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  reason: string;
+}
+
 export type AdminAssetDetailResponseClassification =
   (typeof AdminAssetDetailResponseClassification)[keyof typeof AdminAssetDetailResponseClassification];
 
@@ -1568,6 +1581,64 @@ export interface AdminSkuResponse {
   updatedAt: string;
   /** How many SKUs of the owning variant are order-eligible after this write. Never more than 1: a variant with an ambiguous set is refused, so an order can resolve one SKU without guessing. */
   variantOrderEligibleSkuCount: number;
+}
+
+/**
+ * The movement kind. Direction lives here; `quantity` is the magnitude.
+ */
+export type AdminSkuStockLedgerEntryResponseEntryKind =
+  (typeof AdminSkuStockLedgerEntryResponseEntryKind)[keyof typeof AdminSkuStockLedgerEntryResponseEntryKind];
+
+export const AdminSkuStockLedgerEntryResponseEntryKind = {
+  ADJUSTMENT: 'ADJUSTMENT',
+  HOLD_PLACED: 'HOLD_PLACED',
+  HOLD_RELEASED: 'HOLD_RELEASED',
+  HOLD_EXPIRED: 'HOLD_EXPIRED',
+  HOLD_CONVERTED: 'HOLD_CONVERTED',
+  RESERVED: 'RESERVED',
+  RESERVATION_RELEASED: 'RESERVATION_RELEASED',
+  RESERVATION_EXPIRED: 'RESERVATION_EXPIRED',
+  CONSUMED: 'CONSUMED',
+} as const;
+
+export interface AdminSkuStockLedgerEntryResponse {
+  /** The movement kind. Direction lives here; `quantity` is the magnitude. */
+  entryKind: AdminSkuStockLedgerEntryResponseEntryKind;
+  occurredAt: string;
+  /** The signed effect on `quantityOnHand` — `0` for a pure hold or reservation move, whose goods are still on the shelf. Σ of this column rebuilds the counter. */
+  onHandDelta: number;
+  /** The magnitude, always positive (CST-062). */
+  quantity: number;
+  /** Mandatory on an ADJUSTMENT (GRD-023); absent on movements that carry none. */
+  reason?: string;
+}
+
+export interface AdminSkuStockLedgerResponse {
+  /** Newest first, at most 100. An empty array is an ordinary answer: a SKU that has never been counted has no history. */
+  entries: AdminSkuStockLedgerEntryResponse[];
+  skuId: string;
+  skuStockId: string;
+  /** True when older entries exist beyond this page. */
+  truncated: boolean;
+}
+
+export interface AdminSkuStockResponse {
+  /** `quantityOnHand − heldQuantity − reservedQuantity`, computed under the anchor row lock and never stored. It can be acted on only for as long as that lock was held. */
+  available: number;
+  /** The sum of active soft holds. Holds reduce availability, never on-hand. */
+  heldQuantity: number;
+  /** Q-20’s predicate: a threshold is configured and `quantityOnHand` is at or below it. On-hand, not availability — holds and reservations do not move this flag. Always false when no threshold is configured. */
+  lowStock: boolean;
+  /** The configured low-stock threshold. Absent when none is configured. */
+  lowStockThreshold?: number;
+  /** The authoritative operational counter. Never negative (CST-061). */
+  quantityOnHand: number;
+  /** The sum of active official reservations. */
+  reservedQuantity: number;
+  /** The Catalog SKU this stock record belongs to. */
+  skuId: string;
+  /** The `sku_stocks` row — the inventory lock anchor. Created on first use if this SKU has never been counted. */
+  skuStockId: string;
 }
 
 export interface AdminSubmittedDesignSourceResponse {
@@ -4786,6 +4857,18 @@ export type AdminQuotationSendVersion200 = ApiSuccessResponse & {
 
 export type AdminSkuUpdate200 = ApiSuccessResponse & {
   data: AdminSkuResponse;
+};
+
+export type AdminSkuStockGet200 = ApiSuccessResponse & {
+  data: AdminSkuStockResponse;
+};
+
+export type AdminSkuStockAdjust200 = ApiSuccessResponse & {
+  data: AdminSkuStockResponse;
+};
+
+export type AdminSkuStockLedger200 = ApiSuccessResponse & {
+  data: AdminSkuStockLedgerResponse;
 };
 
 export type PublicCustomRequestAssetUploadParams = {

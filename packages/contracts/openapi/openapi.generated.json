@@ -106,6 +106,26 @@
         ],
         "type": "object"
       },
+      "AdjustSkuStockBody": {
+        "additionalProperties": false,
+        "properties": {
+          "delta": {
+            "maximum": 2147483647,
+            "minimum": -2147483647,
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "delta",
+          "reason"
+        ],
+        "type": "object"
+      },
       "AdminAssetDetailResponse": {
         "properties": {
           "assetId": {
@@ -2843,6 +2863,135 @@
           "variantOrderEligibleSkuCount",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AdminSkuStockLedgerEntryResponse": {
+        "properties": {
+          "entryKind": {
+            "description": "The movement kind. Direction lives here; `quantity` is the magnitude.",
+            "enum": [
+              "ADJUSTMENT",
+              "HOLD_PLACED",
+              "HOLD_RELEASED",
+              "HOLD_EXPIRED",
+              "HOLD_CONVERTED",
+              "RESERVED",
+              "RESERVATION_RELEASED",
+              "RESERVATION_EXPIRED",
+              "CONSUMED"
+            ],
+            "example": "ADJUSTMENT",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "onHandDelta": {
+            "description": "The signed effect on `quantityOnHand` — `0` for a pure hold or reservation move, whose goods are still on the shelf. Σ of this column rebuilds the counter.",
+            "example": 20,
+            "type": "number"
+          },
+          "quantity": {
+            "description": "The magnitude, always positive (CST-062).",
+            "example": 20,
+            "type": "number"
+          },
+          "reason": {
+            "description": "Mandatory on an ADJUSTMENT (GRD-023); absent on movements that carry none.",
+            "example": "Kiểm kho tháng 8",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entryKind",
+          "quantity",
+          "onHandDelta",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "AdminSkuStockLedgerResponse": {
+        "properties": {
+          "entries": {
+            "description": "Newest first, at most 100. An empty array is an ordinary answer: a SKU that has never been counted has no history.",
+            "items": {
+              "$ref": "#/components/schemas/AdminSkuStockLedgerEntryResponse"
+            },
+            "type": "array"
+          },
+          "skuId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "skuStockId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "truncated": {
+            "description": "True when older entries exist beyond this page.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "skuId",
+          "skuStockId",
+          "entries",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "AdminSkuStockResponse": {
+        "properties": {
+          "available": {
+            "description": "`quantityOnHand − heldQuantity − reservedQuantity`, computed under the anchor row lock and never stored. It can be acted on only for as long as that lock was held.",
+            "example": 25,
+            "type": "number"
+          },
+          "heldQuantity": {
+            "description": "The sum of active soft holds. Holds reduce availability, never on-hand.",
+            "example": 5,
+            "type": "number"
+          },
+          "lowStock": {
+            "description": "Q-20’s predicate: a threshold is configured and `quantityOnHand` is at or below it. On-hand, not availability — holds and reservations do not move this flag. Always false when no threshold is configured.",
+            "type": "boolean"
+          },
+          "lowStockThreshold": {
+            "description": "The configured low-stock threshold. Absent when none is configured.",
+            "example": 10,
+            "type": "number"
+          },
+          "quantityOnHand": {
+            "description": "The authoritative operational counter. Never negative (CST-061).",
+            "example": 40,
+            "type": "number"
+          },
+          "reservedQuantity": {
+            "description": "The sum of active official reservations.",
+            "example": 10,
+            "type": "number"
+          },
+          "skuId": {
+            "description": "The Catalog SKU this stock record belongs to.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "skuStockId": {
+            "description": "The `sku_stocks` row — the inventory lock anchor. Created on first use if this SKU has never been counted.",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "skuId",
+          "skuStockId",
+          "quantityOnHand",
+          "heldQuantity",
+          "reservedQuantity",
+          "available",
+          "lowStock"
         ],
         "type": "object"
       },
@@ -18523,6 +18672,556 @@
         "summary": "Update a SKU",
         "tags": [
           "adminSku"
+        ]
+      }
+    },
+    "/api/admin/skus/{skuId}/stock": {
+      "get": {
+        "description": "The operational truth about one SKU: what is on hand, what is held, what is reserved, and what is therefore available. Availability is computed under the `sku_stocks` row lock as `on hand − holds − reservations` and is never stored, so the figure is exactly as current as the transaction that produced it. A SKU that has never been counted gains its zero-quantity stock anchor on this first read and is reported as having nothing available — which is true — rather than being refused. Repeating the read creates no second anchor. A customer-owned product has no SKU and no stock record, and reaches this operation not at all.",
+        "operationId": "adminSkuStock_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skuId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminSkuStockResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The stock state of that SKU.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed SKU id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such SKU.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Read one Catalog SKU stock record and its availability",
+        "tags": [
+          "adminSkuStock"
+        ]
+      }
+    },
+    "/api/admin/skus/{skuId}/stock/adjustments": {
+      "post": {
+        "description": "The only operation that moves `quantityOnHand`, and the only way stock ever enters the system. The delta is signed whole units and a reason is mandatory (GRD-023): stock that changed for no recorded reason cannot be reconciled against the ledger. Under the `sku_stocks` row lock the server applies the delta, appends exactly one `ADJUSTMENT` ledger entry carrying that reason, and records the operator, the correlation id and the quantity before and after as an audit event — all atomically, or none of it. An adjustment that would take stock below zero is refused and writes nothing at all. This is not a set-absolute operation: two operators counting at once must not silently discard each other’s work.",
+        "operationId": "adminSkuStock_adjust",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skuId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustSkuStockBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminSkuStockResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed stock state, recomputed after the adjustment.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed SKU id or body: a zero delta, a fractional delta, or a blank reason.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such SKU.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The adjustment would take stock below zero. Nothing changed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Apply one audited stock adjustment to a Catalog SKU",
+        "tags": [
+          "adminSkuStock"
+        ]
+      }
+    },
+    "/api/admin/skus/{skuId}/stock/ledger": {
+      "get": {
+        "description": "Every movement recorded against this SKU’s stock — adjustments, holds, reservations and consumption — newest first, with the mandatory reason on each adjustment. The ledger is append-only and is the rebuild source of truth: summing `onHandDelta` reproduces `quantityOnHand`. It carries no order, no customer and no reservation holder; who acted on an adjustment is recorded on its audit event, not here. At most 100 entries are returned and `truncated` says when older ones exist.",
+        "operationId": "adminSkuStock_ledger",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skuId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminSkuStockLedgerResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The ledger page of that SKU.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed SKU id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such SKU.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Read the movement history behind one SKU stock record",
+        "tags": [
+          "adminSkuStock"
         ]
       }
     },

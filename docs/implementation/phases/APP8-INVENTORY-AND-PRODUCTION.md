@@ -1,8 +1,9 @@
 # APP8 — Inventory Reservation and Production Operations
 
-> **Status:** `IN PROGRESS` — `APP8-R00` and `APP8-G01` complete (`APP8-G01`
-> corrected by `APP8-G01-C1`); phase audited, planned and its authority locked
-> (§10.5).
+> **Status:** `IN PROGRESS` — `APP8-R00`, `APP8-G01` (corrected by
+> `APP8-G01-C1`) and `APP8-B01` complete; phase audited, planned, its authority
+> locked (§10.5) and `InventoryModule` composed into the running API with the
+> Admin stock surface that closes Gap A (§12).
 > Sections 1–9 below are the **original pre-entry candidate plan**, preserved as
 > planning history. Section 10 onward is the **canonical, repository-grounded
 > plan** produced by `APP8-R00`. Where the two disagree, **section 10 onward
@@ -355,8 +356,8 @@ APP8 checkpoint, and it is the only APP8 status table.
 ```text
 R00   COMPLETE
 G01   COMPLETE          (corrected by APP8-G01-C1 — PO-APP8-005 wording only)
-B01   INCOMPLETE — Next
-B02   INCOMPLETE
+B01   COMPLETE          (3 HTTP operations; InventoryModule composed; Gap A closed)
+B02   INCOMPLETE — Next
 W01   INCOMPLETE
 B03   INCOMPLETE
 B04   INCOMPLETE

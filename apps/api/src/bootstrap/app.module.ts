@@ -43,6 +43,7 @@ import { CustomerDepositEvidenceModule } from '../modules/payment/customer-depos
 import { AdminOrderPaymentModule } from '../modules/payment/admin-order-payment.module';
 import { AdminPaymentEvidenceModule } from '../modules/payment/admin-payment-evidence.module';
 import { AdminPaymentVerificationModule } from '../modules/payment/admin-payment-verification.module';
+import { AdminSkuStockModule } from '../modules/inventory/admin-sku-stock.module';
 import { ContentModule } from '../modules/content/content.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
@@ -293,6 +294,22 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // `adminPaymentEvidence` domain — a private binary lane is its own domain, on
     // the precedent `AdminCustomRequestAssetController` already set.
     AdminPaymentEvidenceModule,
+    // APP8-B01 — the Admin stock surface, and the line that finally composes
+    // CTX-INV into the running API: `InventoryModule` was imported by three
+    // integration specs and two DB9 benchmarks and by nothing here, so the
+    // delivered inventory layer was unreachable at runtime and `ensureStockRow`
+    // had no caller at all (`APP8_PHASE_ENTRY_AUDIT.md` §5.3, Gap A). It shares
+    // the `admin/skus` base path with `CatalogSkuModule`'s APP7-B01 update,
+    // which is safe and deliberate: its three routes each add a `stock`
+    // segment, so Nest matches on segment count and method and no registration
+    // order can make one shadow another. Keeping them two modules is what stops
+    // a stock route from reaching the variant lock and the order-eligibility
+    // rule that SKU authoring owns. Like `AdminOrderPaymentModule` it is
+    // defined by what
+    // it cannot inject: no Catalog module, so a SKU's existence stays the FK's
+    // answer; no order, payment or production module, so a stock route can move
+    // nothing but a quantity.
+    AdminSkuStockModule,
   ],
 })
 export class AppModule {}

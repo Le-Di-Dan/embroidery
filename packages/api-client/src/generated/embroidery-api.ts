@@ -8,6 +8,7 @@
 import type {
   AcceptQuotationBody,
   AddQuotationVersionBody,
+  AdjustSkuStockBody,
   AdminAssetDetail200,
   AdminAssetList200,
   AdminAssetListParams,
@@ -62,6 +63,9 @@ import type {
   AdminQuotationVersionDetail200,
   AdminQuotationVersionHistory200,
   AdminSkuCreate201,
+  AdminSkuStockAdjust200,
+  AdminSkuStockGet200,
+  AdminSkuStockLedger200,
   AdminSkuUpdate200,
   AppendModerationNoteBody,
   ApproveDesignVersionBody,
@@ -1074,6 +1078,54 @@ export const adminSkuUpdate = (
   );
 };
 
+/**
+ * The operational truth about one SKU: what is on hand, what is held, what is reserved, and what is therefore available. Availability is computed under the `sku_stocks` row lock as `on hand − holds − reservations` and is never stored, so the figure is exactly as current as the transaction that produced it. A SKU that has never been counted gains its zero-quantity stock anchor on this first read and is reported as having nothing available — which is true — rather than being refused. Repeating the read creates no second anchor. A customer-owned product has no SKU and no stock record, and reaches this operation not at all.
+ * @summary Read one Catalog SKU stock record and its availability
+ */
+export const adminSkuStockGet = (
+  skuId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminSkuStockGet200>>,
+) => {
+  return apiRequest<AdminSkuStockGet200>(
+    { url: `/api/admin/skus/${skuId}/stock`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * The only operation that moves `quantityOnHand`, and the only way stock ever enters the system. The delta is signed whole units and a reason is mandatory (GRD-023): stock that changed for no recorded reason cannot be reconciled against the ledger. Under the `sku_stocks` row lock the server applies the delta, appends exactly one `ADJUSTMENT` ledger entry carrying that reason, and records the operator, the correlation id and the quantity before and after as an audit event — all atomically, or none of it. An adjustment that would take stock below zero is refused and writes nothing at all. This is not a set-absolute operation: two operators counting at once must not silently discard each other’s work.
+ * @summary Apply one audited stock adjustment to a Catalog SKU
+ */
+export const adminSkuStockAdjust = (
+  skuId: unknown,
+  adjustSkuStockBody: AdjustSkuStockBody,
+  options?: SecondParameter<typeof apiRequest<AdminSkuStockAdjust200>>,
+) => {
+  return apiRequest<AdminSkuStockAdjust200>(
+    {
+      url: `/api/admin/skus/${skuId}/stock/adjustments`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: adjustSkuStockBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Every movement recorded against this SKU’s stock — adjustments, holds, reservations and consumption — newest first, with the mandatory reason on each adjustment. The ledger is append-only and is the rebuild source of truth: summing `onHandDelta` reproduces `quantityOnHand`. It carries no order, no customer and no reservation holder; who acted on an adjustment is recorded on its audit event, not here. At most 100 entries are returned and `truncated` says when older ones exist.
+ * @summary Read the movement history behind one SKU stock record
+ */
+export const adminSkuStockLedger = (
+  skuId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminSkuStockLedger200>>,
+) => {
+  return apiRequest<AdminSkuStockLedger200>(
+    { url: `/api/admin/skus/${skuId}/stock/ledger`, method: 'GET' },
+    options,
+  );
+};
+
 export const healthCheck = (options?: SecondParameter<typeof apiRequest<HealthStatusResponse>>) => {
   return apiRequest<HealthStatusResponse>({ url: `/api/health`, method: 'GET' }, options);
 };
@@ -1891,6 +1943,13 @@ export type AdminSecureGrantRevokeResult = NonNullable<
   Awaited<ReturnType<typeof adminSecureGrantRevoke>>
 >;
 export type AdminSkuUpdateResult = NonNullable<Awaited<ReturnType<typeof adminSkuUpdate>>>;
+export type AdminSkuStockGetResult = NonNullable<Awaited<ReturnType<typeof adminSkuStockGet>>>;
+export type AdminSkuStockAdjustResult = NonNullable<
+  Awaited<ReturnType<typeof adminSkuStockAdjust>>
+>;
+export type AdminSkuStockLedgerResult = NonNullable<
+  Awaited<ReturnType<typeof adminSkuStockLedger>>
+>;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
 export type PublicCustomRequestAssetUploadResult = NonNullable<

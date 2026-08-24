@@ -190,6 +190,7 @@ export class DrizzleSkuStockRepository extends DrizzleRepository implements SkuS
         quantity: row.quantity,
         onHandDelta: row.onHandDelta,
         reason: row.reason ?? undefined,
+        occurredAt: row.createdAt,
       }));
     });
   }
