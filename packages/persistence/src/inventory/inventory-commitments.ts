@@ -15,16 +15,12 @@
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
 import type { InventorySoftHoldState } from '@embroidery/database';
-import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
+import { DrizzleRepository } from '../repository/drizzle-repository';
+import { DatabaseExecutor } from '../runtime/database-executor';
 import { eq } from 'drizzle-orm';
 
-import type { SkuId } from '../../../catalog/domain/repositories/placement-hierarchy.port';
-import type {
-  InventoryActor,
-  SkuStockId,
-  SoftHold,
-  SoftHoldId,
-} from '../../domain/repositories/sku-stock.repository';
+import type { SkuId } from './inventory-identity';
+import type { InventoryActor, SkuStockId, SoftHold, SoftHoldId } from './sku-stock.repository';
 import { StockAnchor } from './stock-anchor';
 
 const { inventoryLedgerEntries, inventorySoftHolds } = schema;

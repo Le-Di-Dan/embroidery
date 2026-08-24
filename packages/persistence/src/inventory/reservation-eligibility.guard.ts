@@ -15,8 +15,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { guardViolationError } from '@embroidery/database';
 
-import { DEPOSIT_ELIGIBILITY_PORT } from '../../../payment/domain/repositories/deposit-eligibility.port';
-import type { DepositEligibilityPort } from '../../../payment/domain/repositories/deposit-eligibility.port';
+import { DEPOSIT_ELIGIBILITY_PORT } from '../payment/deposit-eligibility.port';
+import type { DepositEligibilityPort } from '../payment/deposit-eligibility.port';
 
 @Injectable()
 export class ReservationEligibilityGuard {

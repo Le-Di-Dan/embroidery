@@ -12,18 +12,23 @@
  */
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
-import type { InventoryEntryKind, InventoryReservationState } from '@embroidery/database';
-import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
+import type {
+  InventoryEntryKind,
+  InventoryReservationState,
+  Transaction,
+} from '@embroidery/database';
+import { DrizzleRepository } from '../repository/drizzle-repository';
+import { DatabaseExecutor } from '../runtime/database-executor';
 import { eq } from 'drizzle-orm';
 
-import type { SkuId } from '../../../catalog/domain/repositories/placement-hierarchy.port';
+import type { SkuId } from './inventory-identity';
 import type {
   InventoryActor,
   Reservation,
   ReservationId,
   SkuStockId,
   SoftHoldId,
-} from '../../domain/repositories/sku-stock.repository';
+} from './sku-stock.repository';
 import { actorColumns, InventoryCommitments } from './inventory-commitments';
 import { ReservationEligibilityGuard } from './reservation-eligibility.guard';
 import { StockAnchor } from './stock-anchor';
@@ -182,7 +187,8 @@ export class InventoryReservations extends DrizzleRepository {
   ): Promise<void> {
     return this.run('releaseReservation', async () => {
       const tx = this.requireTransaction('releaseReservation');
-      const reservation = await this.requireReservedReservation(id, 'releaseReservation');
+      // CC-21. The lock, then the decision — in that order, in this transaction.
+      const reservation = await this.lockReservedReservation(tx, id, 'releaseReservation');
 
       await tx
         .update(inventoryReservations)
@@ -209,7 +215,9 @@ export class InventoryReservations extends DrizzleRepository {
   async consumeReservation(id: ReservationId, actor: InventoryActor): Promise<void> {
     return this.run('consumeReservation', async () => {
       const tx = this.requireTransaction('consumeReservation');
-      const reservation = await this.requireReservedReservation(id, 'consumeReservation');
+      // CC-21. Before the anchor: a reservation may only be terminalized once,
+      // and only the holder of its row lock may decide that.
+      const reservation = await this.lockReservedReservation(tx, id, 'consumeReservation');
 
       const [stock] = await tx
         .select()
@@ -263,14 +271,54 @@ export class InventoryReservations extends DrizzleRepository {
     });
   }
 
-  private async requireReservedReservation(
+  /**
+   * **DB3 CC-21** — the release-vs-consume arbiter.
+   *
+   * `DB3_CONCURRENCY_SPECIFICATION.md` CC-21 names the arbiter as *"reservation
+   * row LOCK + idempotent transitions"*, and `DB5_LOCKING_ACCESS_PATHS.md`
+   * repeats it. Until `APP8-B02` neither terminal path took that lock: both read
+   * the status through the unlocked `findReservation`, so a cancellation saga
+   * and a production goods-issue could each observe `RESERVED`, and the
+   * reservation would end up with a `RESERVATION_RELEASED` ledger row **and** a
+   * `CONSUMED` one — plus an on-hand decrement for stock that was also released.
+   * Locking `sku_stocks` inside `consumeReservation` did not save it: that lock
+   * came *after* the status read, and `releaseReservation` never reached the
+   * anchor at all.
+   *
+   * So the row is taken `FOR UPDATE` **before** the status is looked at, and the
+   * status is looked at under that lock, in the same transaction. The second
+   * caller blocks on the lock and, when it is released, reads the winner's
+   * committed terminal status — `RESERVATION_NOT_ACTIVE`, the delivered refusal,
+   * unchanged. One transition, one terminal ledger effect, at most one on-hand
+   * decrement.
+   *
+   * **Lock order.** Reservation row first, `sku_stocks` anchor second. No
+   * delivered path locks the anchor and then an *existing* reservation row —
+   * `createReservation` and `convertHold` lock the anchor and then *insert*, and
+   * a row nobody can name yet cannot be waited on — so this adds no cycle and
+   * leaves the proven `orders` → `sku_stocks` direction
+   * (`DB8_LOCK_ORDER_MATRIX.md`) untouched. Isolation stays `READ COMMITTED`
+   * with explicit locks (DEC-DB7-006); nothing here opts into `SERIALIZABLE`.
+   *
+   * @requiresTransaction
+   */
+  private async lockReservedReservation(
+    tx: Transaction,
     id: ReservationId,
     operation: string,
   ): Promise<Reservation> {
-    const reservation = await this.findReservation(id);
-    if (reservation === undefined) {
+    const [row] = await tx
+      .select()
+      .from(inventoryReservations)
+      .where(eq(inventoryReservations.id, id))
+      .limit(1)
+      .for('update');
+
+    if (row === undefined) {
       throw notFoundError(`SkuStockRepository.${operation}`, 'That reservation does not exist.');
     }
+
+    const reservation = toReservation(row);
     if (reservation.status !== 'RESERVED') {
       throw guardViolationError(
         `SkuStockRepository.${operation}`,

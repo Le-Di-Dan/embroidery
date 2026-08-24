@@ -20,7 +20,15 @@ export type ProductId = string & { readonly __brand: 'ProductId' };
 export type ProductVariantId = string & { readonly __brand: 'ProductVariantId' };
 export type ProductSideId = string & { readonly __brand: 'ProductSideId' };
 export type EmbroideryAreaId = string & { readonly __brand: 'EmbroideryAreaId' };
-export type SkuId = string & { readonly __brand: 'SkuId' };
+/**
+ * Re-exported from its shared home (`APP8-B02`).
+ *
+ * The declaration moved to `@embroidery/persistence` because the shared AGG-07
+ * SKU Stock contract names it, and that contract is now read by two
+ * applications. Catalog remains its conceptual owner and publishes it here
+ * unchanged: this is a re-export of the one declaration, not a second one.
+ */
+export type { SkuId } from '@embroidery/persistence';
 
 /**
  * A placement reference to validate.

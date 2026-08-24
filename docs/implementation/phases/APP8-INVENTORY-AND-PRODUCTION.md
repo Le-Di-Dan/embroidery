@@ -357,8 +357,10 @@ APP8 checkpoint, and it is the only APP8 status table.
 R00   COMPLETE
 G01   COMPLETE          (corrected by APP8-G01-C1 — PO-APP8-005 wording only)
 B01   COMPLETE          (3 HTTP operations; InventoryModule composed; Gap A closed)
-B02   INCOMPLETE — Next
-W01   INCOMPLETE
+B02   COMPLETE          (0 HTTP operations; inventory persistence promoted to
+                       @embroidery/persistence; DB3 CC-21 release-vs-consume row
+                       lock added; Gap B closed)
+W01   INCOMPLETE — Next
 B03   INCOMPLETE
 B04   INCOMPLETE
 D01   INCOMPLETE

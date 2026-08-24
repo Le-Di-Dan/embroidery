@@ -13,16 +13,13 @@
  */
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
-import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import type { DatabaseExecutorHandle } from '@embroidery/persistence';
+import { DrizzleRepository } from '../repository/drizzle-repository';
+import { DatabaseExecutor } from '../runtime/database-executor';
+import type { DatabaseExecutorHandle } from '../runtime/database-executor';
 import { and, eq, sum } from 'drizzle-orm';
 
-import type { SkuId } from '../../../catalog/domain/repositories/placement-hierarchy.port';
-import type {
-  SkuStock,
-  SkuStockId,
-  StockAvailability,
-} from '../../domain/repositories/sku-stock.repository';
+import type { SkuId } from './inventory-identity';
+import type { SkuStock, SkuStockId, StockAvailability } from './sku-stock.repository';
 
 const { skuStocks, inventorySoftHolds, inventoryReservations } = schema;
 

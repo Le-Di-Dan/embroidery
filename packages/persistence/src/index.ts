@@ -153,3 +153,33 @@ export type {
 export { DrizzlePaymentObligationRepository } from './payment/drizzle-payment-obligation.repository';
 export { DrizzleDepositEligibilityAdapter } from './payment/drizzle-deposit-eligibility.adapter';
 export { PaymentPersistenceModule } from './payment/payment-persistence.module';
+
+// ---------------------------------------------------------------------------
+// Shared inventory persistence (APP8-B02).
+//
+// AGG-07 SKU Stock joins AGG-15 and AGG-16 as an aggregate **two applications
+// write**: the Admin stock surface (`APP8-B01`) adjusts it from the API, and
+// `APP8-W01` creates the official reservation from the worker. Narrow, per
+// `PO-APP8-006` — production persistence stays API-local, because nothing
+// outside `apps/api` writes it.
+//
+// Delivered DB7 behaviour is unchanged except for the DB3 CC-21 repair the same
+// checkpoint owns: `releaseReservation` and `consumeReservation` now take the
+// reservation row lock before the terminal-state decision.
+// ---------------------------------------------------------------------------
+
+export type { SkuId } from './inventory/inventory-identity';
+export type {
+  InventoryActor,
+  LedgerEntry,
+  Reservation,
+  ReservationId,
+  SkuStock,
+  SkuStockId,
+  SkuStockRepository,
+  SoftHold,
+  SoftHoldId,
+  StockAvailability,
+} from './inventory/sku-stock.repository';
+export { SKU_STOCK_REPOSITORY } from './inventory/sku-stock.repository';
+export { InventoryPersistenceModule } from './inventory/inventory-persistence.module';
