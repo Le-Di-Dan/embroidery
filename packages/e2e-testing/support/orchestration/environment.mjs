@@ -117,10 +117,31 @@ export async function bootstrapAdmin({ config, databaseUrl, credentials, log, ex
  * login, session and logout journeys run end-to-end through the gateway.
  * @param {{ runId: string, config: object, log: (msg: string) => void, withAdmin?: { email: string, password: string, displayName: string } }} params
  */
-export async function startEnvironment({ runId, config, log, withAdmin, withApp4 }) {
+export async function startEnvironment({
+  runId,
+  config,
+  log,
+  withAdmin,
+  withApp4,
+  withMerchantBank,
+}) {
   const cleanup = new CleanupStack();
   const projectName = `emb-e2e-${runId}`;
   const cEnv = composeEnv(config);
+  /**
+   * Environment every process that composes the API's real `AppModule` needs.
+   *
+   * `APP7-B03` made the merchant bank account a module-scoped fail-fast
+   * provider, so both the API HTTP process **and** the staff-bootstrap CLI —
+   * which builds the same `AppModule` to create the Admin — refuse to start
+   * without all four values. Merged into their environments here rather than at
+   * each call site, so no future mode can forget one of the two.
+   */
+  const appModuleEnv = {
+    ...(withApp4 ?? {}),
+    ...(withMerchantBank ?? {}),
+  };
+  const hasAppModuleEnv = Object.keys(appModuleEnv).length > 0;
   // Browser origins the API must accept for state-changing staff requests
   // (ADR-APP1-001 §6): the gateway hostname on both the host-published and the
   // Compose-internal gateway ports, so login works from either runner.
@@ -182,7 +203,7 @@ export async function startEnvironment({ runId, config, log, withAdmin, withApp4
         databaseUrl: database.url,
         credentials: withAdmin,
         log,
-        ...(withApp4 === undefined ? {} : { extraEnv: withApp4 }),
+        ...(hasAppModuleEnv ? { extraEnv: appModuleEnv } : {}),
       });
     }
 
@@ -199,7 +220,7 @@ export async function startEnvironment({ runId, config, log, withAdmin, withApp4
       config,
       databaseUrl: database.url,
       adminOrigins,
-      ...(withApp4 === undefined ? {} : { extraEnv: withApp4 }),
+      ...(hasAppModuleEnv ? { extraEnv: appModuleEnv } : {}),
     });
     await apiService.start();
     cleanup.push('stop api', () => apiService.stop());

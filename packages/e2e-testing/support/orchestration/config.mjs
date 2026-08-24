@@ -97,6 +97,50 @@ export function app4SecretValues(app4) {
 }
 
 /**
+ * The merchant bank account this run's deposit surface is configured with.
+ *
+ * `APP7-B03`'s `MERCHANT_BANK_CONFIG` is a module-scoped, fail-fast provider
+ * over the four names `APP7-G01` locked, so a graph containing
+ * `CustomerDepositModule` cannot be composed without all four. Every value below
+ * is synthetic and structurally valid — a six-digit NAPAS acquirer id, a digit
+ * account number, an unaccented holder name — because the QR encoder and the
+ * deposit instructions both validate shape before they will produce anything.
+ *
+ * **None of these is a credential**, and `APP7-B03` asserts as much: they are
+ * printed on the customer's own screen and encoded into the QR they scan, and
+ * none of the four names matches `CLAUDE.md` §8a's protected pattern. They are
+ * generated here rather than read from `.env` for the ordinary E2E reason —
+ * this run owns its own universe — and, deliberately, so that no real merchant
+ * account can reach a test artifact.
+ *
+ * The values are **not** valid for the `APP7-E01` §10 bank-application scan.
+ * That gate needs a real merchant account configured by the operator, and a
+ * synthetic BIN would produce a QR that parses and names nothing.
+ */
+export function createMerchantBankConfig() {
+  return {
+    // `970000` is the placeholder `.env.example` publishes: six digits, and
+    // deliberately not any real acquirer's id.
+    bankBin: '970000',
+    // Digits only, 14 of them: `ACCOUNT_NUMBER_PATTERN` accepts 6–19 and
+    // rejects anything else, so the run must not hand it a hex string.
+    accountNumber: `9900${String(randomBytes(5).readUIntBE(0, 5) % 10 ** 10).padStart(10, '0')}`,
+    accountName: 'E2E SYNTHETIC MERCHANT',
+    bankDisplayName: 'Ngan Hang E2E',
+  };
+}
+
+/** The merchant bank account as the environment `APP7-B03` reads it. */
+export function merchantBankEnv(merchant) {
+  return {
+    PAYMENT_MERCHANT_BANK_BIN: merchant.bankBin,
+    PAYMENT_MERCHANT_ACCOUNT_NUMBER: merchant.accountNumber,
+    PAYMENT_MERCHANT_ACCOUNT_NAME: merchant.accountName,
+    PAYMENT_MERCHANT_BANK_DISPLAY_NAME: merchant.bankDisplayName,
+  };
+}
+
+/**
  * This run's object storage, as the environment every storage consumer reads.
  *
  * The API HTTP process is configured with these by `api-service.mjs`. They are

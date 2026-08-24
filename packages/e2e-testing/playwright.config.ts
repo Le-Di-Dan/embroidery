@@ -123,5 +123,21 @@ export default defineConfig({
       testMatch: '**/app5/e01.acceptance.spec.ts',
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
     },
+    // APP7-E01 cross-layer acceptance. One serial project over both spec files,
+    // for the same reason `app4-r01-chromium` is one: the run is a chain whose
+    // committed state one case hands to the next, and Playwright gives no
+    // ordering guarantee across projects. The Admin journeys open their own
+    // context against the Admin origin. Desktop 1440 is the approved reference
+    // viewport (`APP7-D01`), and the mobile-390 state resizes its own context.
+    {
+      name: 'app7-e01-chromium',
+      testMatch: '**/app7/*.acceptance.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...chromiumLaunch,
+        baseURL: STOREFRONT_URL,
+        viewport: { width: 1440, height: 900 },
+      },
+    },
   ],
 });

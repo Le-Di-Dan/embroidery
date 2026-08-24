@@ -15,8 +15,10 @@ import {
   app4SecretEnv,
   createAdminCredentials,
   createApp4SecretConfig,
+  createMerchantBankConfig,
   createRunId,
   loadE2EConfig,
+  merchantBankEnv,
   objectStorageEnv,
 } from '../support/orchestration/config.mjs';
 import { startEnvironment } from '../support/orchestration/environment.mjs';
@@ -46,6 +48,11 @@ const APP4_R01_C1 = ['app4-r01-c1-chromium'];
 // APP5-E01 — the custom-request cross-layer acceptance run. Same topology as the
 // APP4 browser tier, plus this run's object storage for the in-process worker.
 const APP5_E01 = ['app5-e01-chromium'];
+// APP7-E01 — the deposit-payment cross-layer acceptance run. Same topology as
+// the APP5 one (it needs the verification lane, the notification sink and this
+// run's object storage) plus the merchant bank account `APP7-B03` fails fast
+// without.
+const APP7_E01 = ['app7-e01-chromium'];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -115,33 +122,41 @@ function parseArgs(argv) {
   // it needs the real verification and notification lanes — so it rides the same
   // mode with its own project.
   const app5E01 = flags.has('--app5-e01');
+  // APP7-E01: same topology and secret material as the APP5 run, one more
+  // project and the merchant bank configuration.
+  const app7E01 = flags.has('--app7-e01');
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
-  const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01;
+  const app4Browser =
+    flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
-    : app5E01
-      ? 'app5-e01'
-      : app4Browser
-        ? 'app4-browser'
-        : app1
-          ? 'app1'
-          : full
-            ? 'full'
-            : 'smoke';
-  const projects = app5E01
-    ? APP5_E01
-    : app4R01C1
-      ? APP4_R01_C1
-      : app4R01
-        ? APP4_R01
+    : app7E01
+      ? 'app7-e01'
+      : app5E01
+        ? 'app5-e01'
         : app4Browser
-          ? APP4
+          ? 'app4-browser'
           : app1
-            ? APP1
+            ? 'app1'
             : full
-              ? FULL
-              : SMOKE;
+              ? 'full'
+              : 'smoke';
+  const projects = app7E01
+    ? APP7_E01
+    : app5E01
+      ? APP5_E01
+      : app4R01C1
+        ? APP4_R01_C1
+        : app4R01
+          ? APP4_R01
+          : app4Browser
+            ? APP4
+            : app1
+              ? APP1
+              : full
+                ? FULL
+                : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
     app1 || app4Browser
@@ -154,7 +169,7 @@ function parseArgs(argv) {
   const extraArgs = [];
   if (flags.has('--headed')) extraArgs.push('--headed');
   if (flags.has('--debug')) extraArgs.push('--debug');
-  return { mode, projects, runner, extraArgs, app1, app4, app4Browser, app5E01 };
+  return { mode, projects, runner, extraArgs, app1, app4, app4Browser, app5E01, app7E01 };
 }
 
 function log(message) {
@@ -172,7 +187,7 @@ async function verifyClean(config) {
 }
 
 async function main() {
-  const { mode, projects, runner, extraArgs, app1, app4, app4Browser, app5E01 } = parseArgs(
+  const { mode, projects, runner, extraArgs, app1, app4, app4Browser, app5E01, app7E01 } = parseArgs(
     process.argv.slice(2),
   );
   // APP5-E01 runs on `*.localhost` hostnames instead of `*.embroidery.local`.
@@ -186,7 +201,7 @@ async function main() {
   // production origin without terminating TLS in the harness. `localhost` itself
   // is deliberately not used: the orchestrator probes the gateway's own health
   // on `http://localhost:<port>`, which must keep reaching the default server.
-  if (app5E01) {
+  if (app5E01 || app7E01) {
     process.env['STOREFRONT_HOST'] = process.env['STOREFRONT_HOST'] ?? 'embroidery.localhost';
     process.env['ADMIN_HOST'] = process.env['ADMIN_HOST'] ?? 'admin.embroidery.localhost';
   }
@@ -212,6 +227,13 @@ async function main() {
   const app4Secrets = app4Browser
     ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
     : undefined;
+  // `APP7-B03`'s merchant bank configuration is a module-scoped fail-fast
+  // provider, so a graph containing `CustomerDepositModule` cannot be composed
+  // without all four values. Every run that boots the real `AppModule` — the
+  // API HTTP process, and the browser tier's in-process contexts — therefore
+  // needs them, not only the APP7 mode. Synthetic and non-secret; see
+  // `createMerchantBankConfig`.
+  const merchant = createMerchantBankConfig();
   log(`run ${runId} — mode=${mode} runner=${runner} projects=${projects.length}`);
 
   let env;
@@ -249,6 +271,7 @@ async function main() {
       config,
       log,
       withAdmin: adminCredentials,
+      withMerchantBank: merchantBankEnv(merchant),
       ...(app4Secrets === undefined
         ? {}
         : {
@@ -259,7 +282,7 @@ async function main() {
               // API process was never given one — so no run before this one
               // could open a Design Session at all. The value is this run's own
               // gateway origin, the same shape `docker-compose.dev.yml` sets.
-              ...(app5E01
+              ...(app5E01 || app7E01
                 ? {
                     DESIGN_SESSION_ALLOWED_ORIGINS: config.baseUrls.storefront,
                     // The Session cookie is `__Host-` prefixed (IMP-D043 PO-03),
@@ -305,7 +328,13 @@ async function main() {
             // customer upload, so it must read this run's MinIO rather than the
             // runtime's unresolvable offline default. The APP4 runs never fetch
             // an object and are left on that default deliberately.
-            ...(app5E01 ? objectStorageEnv(config.storage) : {}),
+            ...(app5E01 || app7E01 ? objectStorageEnv(config.storage) : {}),
+            // APP7-E01: the in-process `AppModule` context composes the deposit
+            // module, so it needs the same four merchant values the API HTTP
+            // process was started with — and the spec asserts the customer's
+            // screen against them, which is only meaningful if both halves of
+            // the topology were configured identically.
+            ...merchantBankEnv(merchant),
           }
         : {};
     exitCode =
