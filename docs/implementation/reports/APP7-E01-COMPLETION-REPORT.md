@@ -1,0 +1,759 @@
+# APP7-E01 — Completion Report
+
+- Checkpoint: `APP7-E01` — Focused Cross-Layer Acceptance
+- Mode: `FOCUSED CROSS-LAYER ACCEPTANCE`
+- Branch / HEAD at entry: `production` @ `de8607c`
+- Date: 2026-08-24
+
+---
+
+## A. Verdict
+
+```text
+APP7-E01_AUTOMATED        = PASS
+APP7_CROSS_LAYER_ACCEPTANCE = PASS (automated tier)
+
+AUTOMATED_CASES           = 6 / 6 PASS
+BROWSER_ACCEPTANCE        = PASS
+REAL_BANK_APP_SCAN        = PENDING_MANUAL_ENV
+TRANSFER_SUBMITTED        = false
+
+APP7-E01                  = NOT COMPLETE
+APP7-X01                  = NOT READY
+BLOCKING_DEFECTS (APP7 runtime) = 0
+```
+
+`APP7-E01` §10 makes the real bank-application QR scan a **blocking** gate and
+forbids downgrading it. This machine carries **no merchant bank configuration**:
+none of `APP7-G01`'s four locked variable names is present in `.env`, and none is
+named in `.env-ignore` (§L states the check, with no value read or printed). A QR
+generated from the harness's own synthetic account would parse and then name no
+real bank, so producing one and asking the Product Owner to scan it would be the
+simulation §10 forbids. **No human pause was spent** — §21 permits asking only
+after automated PASS, and §10's pause exists only when valid local configuration
+does.
+
+One setup requirement is returned in §L. Nothing else stands between this
+checkpoint and `COMPLETE`.
+
+E01 also surfaced one **defect outside its authority to repair** (§16): the
+development Compose stack cannot start the API, because `APP7-B03`'s fail-fast
+merchant configuration was never wired into it. Evidence and exact case in §Q2.
+It is not an APP7 *runtime* defect — every runtime assertion below passes — but
+it is a real delivery gap and the Product Owner should route it.
+
+---
+
+## B. Entry and baseline
+
+Every APP7 implementation checkpoint was accepted at entry:
+
+```text
+R00 G01 B01 W01 B02 B03 DB01 B05 B04 B06 D01 A01 S01   COMPLETE
+E01                                                     executed here
+X01                                                     NOT STARTED
+```
+
+Production source change expected: `NONE`. Production source change made:
+**`NONE`** — `git status` shows five modified files and two new directories, all
+inside `packages/e2e-testing`, which is a `private` devDependency-only workspace
+(`check:e2e` re-asserts that boundary and passed).
+
+### Runtime topology (§5)
+
+One isolated acceptance topology, everything real, nothing simulated:
+
+| Participant | How it runs |
+|---|---|
+| PostgreSQL | ephemeral container + a **disposable** database per run, dropped on teardown |
+| MinIO | ephemeral container; the evidence lane fetches and stores real objects |
+| API | the built `dist/main.js` as a host process |
+| Nginx gateway | the real e2e template, real hostname routing, the only browser entrypoint |
+| Storefront / Admin | real production builds via `next start` |
+| APP7 order-conversion runtime | the real `WorkerModule`, composed in the test process, startup gate held closed |
+| API graph for the port and the issuer | the real `AppModule`, composed in the same process against the same database |
+| Payment provider | **none exists in the topology**; nothing is stubbed because there is nothing to stub |
+
+The persistent development database is never touched: the run provisions and
+drops its own (`[e2e] cleanup verified: all E2E ports closed, disposable database
+dropped`).
+
+---
+
+## C. Authority reconciliation
+
+`APP7_PHASE_ENTRY_AUDIT.md` §19 predates `APP7-G01` and reads as though a
+verified deposit *creates* the Order. Recorded, and R00 history is **not**
+rewritten:
+
+```text
+R00_E01_ORDER_AFTER_VERIFICATION_WORDING = SUPERSEDED_BY_G01_TR_LC14_01
+```
+
+E01-01 proves the delivered order both ways round in one case: the Order exists
+at `AWAITING_DEPOSIT`, with both obligations, **before any attempt is opened**;
+and the order that later reaches `DEPOSIT_PAID` is asserted to be the **same row
+by id**, not merely an order in the same state.
+
+### R00 target disposition (§8)
+
+| Old R00 target | Disposition |
+|---|---|
+| E01-03 duplicate `design.approved` | live in **E01-05** |
+| E01-04 duplicate deposit verification | live in **E01-05**; CC-10 reused from B04, not rerun |
+| E01-05 unverified / wrong amount | live in **E01-04** |
+| E01-06 foreign snapshot / mismatched design | reused from `APP7-W01` `OrderChainGuard` evidence |
+| E01-07 exact amount / VND | live in **E01-01/02**, plus reused W01/B03 evidence |
+| E01-08 exact accepted version / snapshot / no live Catalog | reused from `APP7-W01` + `APP7-B02` |
+| E01-09 no APP8 work | live in **E01-01/02/06** |
+| E01-10 no secret / provider leak | live in **E01-06** plus the accepted per-checkpoint scans |
+| E01-11 `DepositEligibilityPort` | live in **E01-01/06** |
+
+`APP7-G01` §16's own additions (E01-12…E01-20) are covered by E01-01 (QR
+encoding, QR render changes nothing), E01-03 (evidence changes no payment state,
+duplicate/quota behaviour reused from B05, the three-vocabulary separation) and
+E01-06 (no key/bucket/token on any surface).
+
+---
+
+## D. Reused predecessor evidence (§3)
+
+Reused **without rerun**, because E01 changed none of the production input each
+measured:
+
+| Checkpoint | Reused proof |
+|---|---|
+| `APP7-B01` | Admin SKU authoring and its concurrency |
+| `APP7-W01` | the Order writer, the Catalog/COP chain guards, exact version + snapshot binding, the CC-11 conversion race |
+| `APP7-B02` | the frozen Admin Order read (no live Catalog re-read) |
+| `APP7-B03` | initiation race and idempotency, QR TLV/CRC/decode conformance |
+| `APP7-B05` | media signature and size limits, the quota race, upload replay, `REQUIRES_REVIEW` evidence behaviour |
+| `APP7-B04` | exact-match verification internals, the same-attempt race, CC-10, transaction rollback |
+| `APP7-B06` | association-first private delivery internals |
+| `APP7-A01` / `APP7-S01` | component-level UI, token handling and Blob behaviour |
+
+`BROAD_REGRESSION = NOT_RUN_BY_DESIGN`. No predecessor suite was rerun, for
+confidence or otherwise.
+
+---
+
+## E. E01-01 — Catalog full happy path
+
+One APP6-approved Catalog hand-off, one real `ACTIVE` SKU. Real `design.approved`
+conversion through the production consumer (real outbox row, real claim, real
+lease, real `JobExecutionService`).
+
+**Conversion**
+
+```text
+orders for the request                = 1
+order.status                          = AWAITING_DEPOSIT
+order.accepted_quotation_version_id   = the seeded accepted version
+order.current_approval_snapshot_id    = the seeded snapshot
+order_items                           = 1
+  sku_id                              = the seeded active SKU
+  customer_owned_product_id           = null
+  unit_price_amount                   = 1 111 111.00
+  line_total_amount                   = 3 333 333.00
+obligations                           = [DEPOSIT, REMAINING], both on this order
+  every currency_code                 = VND
+  DEPOSIT.amount                      = 1 166 667.00
+  REMAINING.amount                    = 2 166 666.00
+DepositEligibilityPort(order)         = false
+```
+
+The money is chosen to catch a recomputation: the accepted split is **35 %**, not
+`BR-005`'s 40 %, so a converter that recomputed the business default would land on
+`1 333 333`; 35 % of the total is `1 166 666.55`, so the stored figure is DB4's
+round-half-up result and not a truncation; and `deposit + remaining = total` holds
+by subtraction.
+
+**Customer, through the real Storefront and the real B03**
+
+- the secure link is minted by the production `SecureGrantIssuer` (a real
+  `reissue`, inside a real request context — see §Q3);
+- `/truy-cap/thanh-toan#t=…` opens, the fragment is **stripped from the visible
+  URL before the first request**;
+- the pre-attempt summary shows the order code and `1.166.667 VND`; the code read
+  off the screen resolves to this exact order row;
+- initiating runs the **real GRD-003 step-up over the page**: the delivered APP4
+  contact-verification dialog issues a challenge, the real notification runtime
+  delivers it, and the code is typed into the real form. No guard is bypassed and
+  no step-up row is pre-seeded for this case;
+- the instructions then show, exactly: `1.166.667 VND`, the derived reference
+  `ORD<code-body>DC`, and the three configured bank facts;
+- the QR renders.
+
+**Zero evidence in this case, by design.** Before Admin action: attempt `PENDING`,
+`BANK_TRANSFER`, amount `1 166 667.00`, transfer-evidence rows `0`, order still
+`AWAITING_DEPOSIT`, port still `false`.
+
+**Admin, through the real A01 workspace**
+
+`/orders` → the queue row for this code → `/orders/{orderId}` → the payment
+panel. Before verifying: order badge *Chờ đặt cọc*, deposit badge *Chưa thu*,
+expected amount `1.166.667 VND`, expected reference the derived one, evidence
+empty state visible. Then the delivered verify dialog, with the observed amount
+and reference **typed** (the observed fields open empty by design).
+
+```text
+outcome banner data-outcome          = verified
+attempt.status                        = SUCCEEDED
+DEPOSIT.status                        = SATISFIED
+DEPOSIT.satisfied_by_attempt_id       = that exact attempt
+order (same id).status                = DEPOSIT_PAID
+order_transitions → DEPOSIT_PAID      = 1
+reconciliations on the deposit        = 1
+outbox payment.verified (this attempt)= 1
+payment_provider_events               = 0
+DepositEligibilityPort(order)         = true
+```
+
+**Customer confirmation.** `APP7-S01` deliberately does not poll and no customer
+polling endpoint exists, so the **original secure link is re-opened in a fresh
+browser context** after verification. It renders *Đã xác nhận tiền cọc* with both
+success badges, and the whole page text contains none of `749:90`'s forbidden
+sentences (*đang sản xuất*, *đã giao*, *giữ hàng*, *đã hoàn tất*).
+
+**APP8 boundary.** Every table in `inventory_reservations`,
+`inventory_soft_holds`, `inventory_ledger_entries`, `production_jobs`,
+`production_job_transitions`, `production_specifications`,
+`production_artifacts`: **0 rows**.
+
+---
+
+## F. E01-02 — COP conversion truth
+
+One APP6-approved customer-owned hand-off, real `design.approved` conversion.
+
+```text
+orders for the request        = 1
+order.status                  = AWAITING_DEPOSIT
+order_items                   = 1
+  customer_owned_product_id   = the seeded COP row
+  sku_id                      = null
+  variant_label               = null
+  size_label                  = null
+DEPOSIT.amount / currency     = 1 166 667.00 / VND
+REMAINING.amount / currency   = 2 166 666.00 / VND
+```
+
+No Catalog product, variant, SKU, side or area identity is fabricated for the
+customer-owned line — the two label columns a Catalog line would carry are
+asserted `null` rather than merely unread.
+
+The smallest real payment that proves this same COP order settles: the delivered
+`publicOrderDeposit_initiate` over real HTTP through the real gateway, then the
+delivered Admin verification carrying the real session cookie. The full browser
+journey is **not** repeated (§7).
+
+```text
+attemptStatus  = SUCCEEDED
+depositStatus  = SATISFIED
+orderStatus    = DEPOSIT_PAID   (and orderId is this order)
+DepositEligibilityPort(order) = true
+payment_provider_events = 0
+APP8 writes = 0
+```
+
+---
+
+## G. E01-03 — optional evidence, supporting only, Admin preview
+
+A fresh converted Order; the **customer's own browser** opens the attempt through
+the real B03, then submits one synthetic image through the real B05 multipart
+intake into real MinIO, inspected by the real inspection lane.
+
+**Immediately after the upload**, the screen says the *image* is being checked
+(*Đang kiểm tra ảnh*) and the order badge still reads *Chờ xác nhận tiền cọc*.
+`APP7-B05` answers `INSPECTING`, and this route has no poll that could quietly
+promote it.
+
+Inspection settled inside §12's bound (`timeout ≤ 20 s`, `interval ≥ 250 ms`,
+one bounded helper, test-internal waiting only):
+
+```text
+asset.status = ACCEPTED
+```
+
+**Before any payment verification:**
+
+```text
+attempt.status                     = PENDING
+DEPOSIT.status                     = PENDING
+order.status                       = AWAITING_DEPOSIT
+reconciliations                    = 0
+outbox payment.verified            = 0
+DepositEligibilityPort(order)      = false
+```
+
+**The customer copy stays non-authoritative.** After the customer returns to the
+tab (the only real gesture that refetches on a route with no poll — see §Q4), the
+panel reads *Ảnh đã được tiếp nhận* together with the standing warning *"Đây là
+trạng thái của ẢNH, không phải của thanh toán…"*, the order badge is still *Chờ
+xác nhận tiền cọc*, and the page text does not contain *đã xác nhận tiền cọc*.
+
+**Admin.**
+
+```text
+B04 metadata: evidence[0].evidenceId    = the association id
+              evidence[0].previewEligible = true
+raw asset id appears in the B04 payload = false   (asserted against the actual id)
+B06 GET /api/admin/payment-evidence/{evidenceId}/content
+              status                     = 200
+              bytes                      = byte-identical to what the customer uploaded
+Admin preview dialog renders the image.
+```
+
+**Verification still turns only on amount and reference.** Verifying with the
+exact pair succeeds; the deposit is satisfied by that attempt and the order
+reaches `DEPOSIT_PAID`. Evidence altered no part of the predicate — E01-01
+already proved the zero-evidence path, and no second zero-evidence journey was
+created.
+
+---
+
+## H. E01-04 — mismatch → durable REQUIRES_REVIEW
+
+A fresh converted Order and a `PENDING` `BANK_TRANSFER` attempt. One deliberately
+mismatched observed amount — `1 166 666.00`, **one dong short**, so the case
+proves an exact comparison with no tolerance rather than a coarse mismatch.
+
+```text
+outcome banner data-outcome  = requiresReview
+banner title                 = "Đã chuyển giao dịch sang cần đối chiếu"
+banner body                  = "Máy chủ đã ghi nhận thành công. Đây là một kết quả
+                                nghiệp vụ, KHÔNG phải lỗi hệ thống…"
+generic failure banner       = 0 occurrences
+outcome rows                 = attempt "cần đối chiếu" / deposit "Chưa thu" / order "Chờ đặt cọc"
+
+attempt.status               = REQUIRES_REVIEW
+attempt.review_reason        = present, non-empty
+reconciliations              = 1
+DEPOSIT.status               = PENDING
+order.status                 = AWAITING_DEPOSIT
+order_transitions → DEPOSIT_PAID = 0
+outbox payment.verified      = 0
+payment_provider_events      = 0
+DepositEligibilityPort(order)= false
+```
+
+The review is left **unresolved**: §7 says not to resolve it, and nothing in this
+harness's cleanup needs it resolved.
+
+---
+
+## I. E01-05 — cheap replay / idempotency convergence
+
+Reuses E01-01's committed facts. No race loop, no CC-10 rerun, no initiation race.
+
+**Duplicate `design.approved`, redelivered once.** The effect key is the approval
+snapshot, so two rows naming one approval are two deliveries of one effect.
+
+```text
+orders for the request  = 1        (unchanged)
+order_items             = unchanged
+obligations             = unchanged
+```
+
+**Verification replay, retried once** with the same logical exact values.
+
+```text
+attemptStatus / depositStatus / orderStatus = SUCCEEDED / SATISFIED / DEPOSIT_PAID
+order_transitions → DEPOSIT_PAID            = 1     (still)
+reconciliations                             = 1     (still)
+outbox payment.verified                     = 1     (still)
+total order transitions                     = unchanged
+DEPOSIT.satisfied_by_attempt_id             = the original attempt
+```
+
+Converged to the committed truth; no second satisfaction, no second transition,
+no second reconciliation application, no second event.
+
+---
+
+## J. E01-06 — secrecy and the APP8 hand-off boundary
+
+A fresh order, so the port can be interrogated at each customer step that must
+**not** flip it.
+
+```text
+after conversion                       -> false
+after attempt creation                 -> false
+after QR generation (200, image/png)   -> false
+after Admin verification (SATISFIED)   -> true
+```
+
+E01-03 supplies the fourth of §7's four non-flipping steps: evidence upload and
+evidence `ACCEPTED` both leave the port `false`.
+
+**Browser secrecy sweep** — over `location.href`, the full serialized DOM,
+`localStorage`, `sessionStorage` and `document.cookie`, on **both** the customer
+surface and the operator's own workspace. Reported as names, never values:
+
+```text
+secure-link token on any surface   = absent
+step-up code on any surface        = absent
+Admin password on any surface      = absent
+```
+
+Shape-matched sweep of the customer surface (catches a value this run does not
+even know):
+
+```text
+postgres:// URL   = absent
+s3:// address     = absent
+"Idempotency-Key" = absent
+"bucket"          = absent
+```
+
+```text
+payment_provider_events = 0
+refunds                 = 0
+APP8 writes             = 0
+```
+
+No merchant account number, account holder, token, digest, code, idempotency key,
+storage key, bucket or database credential appears anywhere in this report.
+
+---
+
+## K. Browser acceptance (§9)
+
+One focused APP7 Playwright project, serial, `workers: 1`. **No full Playwright
+sweep** — the project matches only `specs/app7/*.acceptance.spec.ts`.
+
+| Surface | Viewport | Result |
+|---|---|---|
+| Admin | 1440 × 900 | `/orders` → queue row → `/orders/{orderId}` → payment panel → exact verify → `DEPOSIT_PAID` success banner. **PASS** |
+| Admin | 1440 × 900 | the same harness renders `REQUIRES_REVIEW` once (E01-04), reusing the same logged-in context. **PASS** |
+| Storefront | 1440 × 900 | before verification: `/truy-cap/thanh-toan` → exact bank facts → QR → prominent optional-evidence reminder → truthful PENDING copy. **PASS** |
+| Storefront | 1440 × 900 | after verification: the **original** secure link re-opened → *Đã xác nhận tiền cọc*. **PASS** |
+| Storefront | 390 × 844 | QR + instructions state: amount label, reference label, account-number label and QR all visible, evidence reminder visible, and `scrollWidth − clientWidth ≤ 1` so no critical payment fact overflows horizontally. **PASS** |
+
+Not every `APP7-D01` state was browser-tested, by instruction.
+
+---
+
+## L. Real bank-app scan (§10, §11)
+
+Local merchant-bank configuration was inspected **without reading or printing any
+value** — variable *names* only:
+
+```text
+names matching /merchant|bank|payment/ in .env         = 0   (of 39 names present)
+PAYMENT_MERCHANT_BANK_BIN            present in .env   = false
+PAYMENT_MERCHANT_ACCOUNT_NUMBER      present in .env   = false
+PAYMENT_MERCHANT_ACCOUNT_NAME        present in .env   = false
+PAYMENT_MERCHANT_BANK_DISPLAY_NAME   present in .env   = false
+merchant/bank entry in .env-ignore                     = none
+```
+
+Therefore:
+
+```text
+REAL_BANK_APP_SCAN = PENDING_MANUAL_ENV
+QR_PNG_GENERATED   = false
+TRANSFER_SUBMITTED = false
+HUMAN_PAUSES_SPENT = 0   (of MAX_HUMAN_PAUSES = 1)
+```
+
+No PNG was produced and no scan was requested. The harness's own merchant values
+are synthetic and structurally valid (a six-digit placeholder BIN, a generated
+digit account number) — enough for the API to compose and for the QR encoder to
+build a conformant payload, and deliberately **not** enough to name a real bank in
+a banking application. Asking the Product Owner to scan one would be exactly the
+simulation §10 forbids.
+
+### The one exact setup requirement
+
+Set all four `APP7-G01` §3 variables to the **real merchant account** in the root
+`.env`, and make them reachable by the API process:
+
+```text
+PAYMENT_MERCHANT_BANK_BIN            six-digit NAPAS acquirer id of the receiving bank
+PAYMENT_MERCHANT_ACCOUNT_NUMBER      6–19 digits, the receiving account
+PAYMENT_MERCHANT_ACCOUNT_NAME        account holder, ≤ 70 characters
+PAYMENT_MERCHANT_BANK_DISPLAY_NAME   the bank's human name
+```
+
+Claude did not and will not write `.env` (`CLAUDE.md` §8a). Once the operator has
+set them, re-run only the scan step: generate one QR through the real
+`publicOrderDeposit_qr`, open the PNG in a Vietnamese banking application, and
+confirm bank/account, exact amount and exact reference are pre-filled — **without
+pressing Transfer**.
+
+```text
+QR_REFERENCE_PREFILL          = PENDING (blocked on the above)
+BANK_SETTLEMENT_MEMO_ROUNDTRIP = NOT_PROVEN   (a later operational follow-up)
+```
+
+---
+
+## M. APP8 handoff
+
+`DepositEligibilityPort` exists and was **located, not created** — resolved out of
+the API's real graph (`DEPOSIT_ELIGIBILITY_PORT` from `@embroidery/persistence`,
+implemented by `DrizzleDepositEligibilityAdapter`, provided by
+`PaymentPersistenceModule`). The harness fails loudly with
+`APP8_HANDOFF_PORT_MISSING` if the token is absent; it never provides a fallback.
+
+```text
+APP8_HANDOFF_PORT = PRESENT
+before DEPOSIT SATISFIED -> false   (E01-01, E01-02, E01-03, E01-06)
+after  DEPOSIT SATISFIED -> true    (E01-01, E01-02, E01-06)
+never flipped by: QR generation, attempt creation, evidence upload, evidence ACCEPTED
+```
+
+No APP8 code was created. APP8 tables carry 0 rows in every case that checked.
+
+---
+
+## N. Security scan
+
+Boolean and shape facts only; §J carries the results. In addition:
+
+- the secure-link token exists only in this process's memory and in the URL
+  fragment of one navigation, and the delivered bootstrap strips it from the
+  visible URL before the first request (asserted);
+- the step-up code exists only in the in-process recording adapter and in the
+  browser field it is typed into; it is read through a deliberately named
+  accessor and used only in a boolean-shaped comparison;
+- every database evidence read is projected through the accepted `projectSafe`
+  filter, which **removes** any column whose name matches
+  `hash|digest|cipher|iv|auth_tag|token|code|secret|pepper` and reports its
+  presence as a boolean. One narrow exception is documented in the source:
+  `currency_code` is aliased to `currency` so `VND` can be asserted exactly — a
+  value that is neither secret nor a locator. `orders.code` stays withheld; the
+  run learns the order code from the customer's screen and reaches the row again
+  with the code as a bound *parameter*.
+
+---
+
+## O. Follow-up disposition
+
+Carried, not implemented, and none proved blocking by E01:
+
+```text
+FU-APP7-S01-EXACT-MONEY-PROMOTION-01   CARRIED  (nonblocking)
+FU-APP7-S01-SHARED-DIALOG-01           CARRIED  (nonblocking)
+FU-APP7-S01-SCSS-GATE-01               CARRIED  (nonblocking)
+FU-ADMIN-SHARED-DIALOG-01              CARRIED  (nonblocking)
+```
+
+S01's design/backend discrepancies (customer total order amount, customer
+verification timestamp, some confirmation evidence-count contexts) are **not** E01
+blockers and no backend field was added:
+
+```text
+ROUTED_NONBLOCKING_DESIGN_RECONCILIATION
+owner = APP7-X01 / future design-maintenance
+```
+
+No Figma node was read, created or mutated in E01.
+
+New, raised by this checkpoint:
+
+```text
+FU-APP7-E01-DEV-COMPOSE-MERCHANT-01   BLOCKING for the development topology; see §Q2
+FU-APP7-E01-BANK-SCAN-ENV-01          the §L setup requirement
+```
+
+---
+
+## P. Validation and wall-clock ledger
+
+Only the scoped controls this change justifies were run; no repository-wide
+aggregate exists or was invoked.
+
+| Command | Scope | Result |
+|---|---|---|
+| `pnpm --filter @embroidery/e2e-testing e2e:app7:e01` | the canonical E01 aggregate + focused browser acceptance | **PASS — 7/7** |
+| `pnpm --filter @embroidery/e2e-testing typecheck` | E01/test typecheck | PASS |
+| `pnpm --filter @embroidery/e2e-testing lint` | scoped ESLint | PASS (0 problems) |
+| `npx prettier --write "specs/app7/**/*.ts"` | scoped Prettier | applied |
+| `pnpm --filter @embroidery/e2e-testing check:e2e` | E2E boundary + collection | PASS — boundary clean, 65 tests collect |
+| `git diff --check` | whitespace | clean |
+| `node tools/check-report-secrets.mjs` | every report in the repository | **0 findings in this report**; 1 pre-existing finding elsewhere — see below |
+
+The secret checker has no path argument and scans every report at once. It
+reports **nothing** against `APP7-E01-COMPLETION-REPORT.md`. It does report one
+line in `APP6-B04-COMPLETION-REPORT.md` (line 93, a `token` followed by what the
+heuristic reads as a plaintext value). That file is untouched by this checkpoint
+and was last written at `63393e9`, so the finding is **pre-existing**, is not
+E01's to repair (§16), and is raised here rather than silently absorbed:
+
+```text
+FU-APP6-B04-REPORT-SECRET-HEURISTIC-01   pre-existing, nonblocking for APP7
+```
+
+### Wall clock and run count
+
+```text
+canonical aggregate wall clock   = 43.8 s   (Playwright 23.2 s, 7 tests)
+target                            ≤ 35 min   — met with very large margin
+hard stop                            50 min   — not approached
+
+canonical aggregate runs (green)  = 1
+harness-development runs (red)    = 6
+total across all invocations      ≈ 5 min 33 s
+```
+
+**Stated plainly, because §18 asks for it:** the six red runs were all caused by
+`APP7-E01` **test/helper** defects, never by production behaviour, and no
+production source was touched to resolve any of them. §18 asks that only the
+failed case be rerun; this harness's unit of invocation is the one Playwright
+project, so each fix re-executed the whole project rather than the single case.
+That is a deviation from the letter of §18 and is recorded here rather than
+glossed. The six defects were: an evidence reader withholding `currency_code`
+behind the secret filter; `issue()` colliding with the hand-off's own `ACTIVE`
+grant; a missing request context around the grant issuer; the amount hero read
+without whitespace normalisation; `payment.verified` asserted against the
+obligation instead of the attempt; Playwright's Node-side HTTP client unable to
+resolve the run's `*.localhost` gateway hostname; a `visibilitychange` dispatched
+where nothing listens; and a strict-mode text collision on the mobile check.
+
+No confidence rerun, no race loop and no second Playwright run were performed.
+
+---
+
+## Q. Notable findings
+
+### Q1 — the run is one aggregate, deliberately
+
+Both spec files share **one** worker-scoped world (`app7-test.ts`): one
+`AppModule`, one `WorkerModule`, one Admin login, one public origin. Two
+independently built worlds put four Nest graphs, two pools, the API process, both
+Next servers, Nginx, PostgreSQL, MinIO and Chromium on one machine — and the first
+thing to give way was not an assertion but the Storefront answering a navigation,
+which arrived as an nginx `504` and read exactly like a product defect. Sharing
+the world removed it and cut the run from ~85 s to ~23 s.
+
+### Q2 — the development Compose stack cannot start the API (defect, not repaired)
+
+`APP7-B03` made the merchant bank account a **module-scoped fail-fast provider**:
+`CustomerDepositModule` cannot be composed without all four values. It was wired
+into the API's own integration harness — and into nothing else.
+
+Executable evidence:
+
+```text
+$ node -e "loadMerchantBankConfig({})"
+THROWS = PAYMENT_MERCHANT_BANK_BIN is required: the deposit surface has no
+         default merchant account and no fallback.
+
+$ pnpm docker:dev:config | grep -c PAYMENT_MERCHANT
+0
+```
+
+The rendered development Compose defines `STAFF_ALLOWED_ORIGINS` and the APP4
+secret block for the `api` service and **no** `PAYMENT_MERCHANT_*` key, and the
+`staff-bootstrap` CLI composes the same `AppModule`. So `docker:dev:up` cannot
+bring up the API, and the root `.env` cannot help because no compose key
+references those variables.
+
+Per §16 this was **not repaired here**. The exact case is above; the fix is an
+`x-merchant-bank-env` anchor on the `api` and `staff-bootstrap` services plus the
+four values in `.env`, and it belongs to whoever the Product Owner routes it to.
+
+The E2E orchestration was given the four values as **test** configuration, which
+is a harness change inside `packages/e2e-testing` and is why every run above
+could boot at all.
+
+### Q3 — the hand-off already owns an ACTIVE grant, so the link is *reissued*
+
+`approval_snapshots.grant_id` is `NOT NULL` and points at the grant the approval
+was made under, and `CST-008` permits one `ACTIVE` grant per (customer, request).
+`issue()` therefore refuses with `GRANT_ALREADY_ACTIVE` — correctly. The harness
+calls the production `reissue()` instead, which is also what happens in life: the
+approval link is superseded and a new one minted, through the real
+`revokeActive → mint → supersede` path with no fixture touching a row. The call is
+wrapped in a real request context because `SecureGrantAuditRecorder` requires one:
+every grant must be attributable to the request that caused it.
+
+### Q4 — `payment.verified` names the **attempt**, not the obligation
+
+`SE-007` is appended with `aggregateKind: 'PAYMENT_ATTEMPT'` and
+`aggregateId: attemptId`. An assertion keyed on the obligation reads `0` on a
+perfectly correct verification. Recorded because it is the kind of thing a later
+consumer will key on wrongly.
+
+### Q5 — the customer sees `ACCEPTED` only after returning to the tab
+
+`APP7-S01` genuinely does not poll: no interval, no socket, no "check again"
+control anywhere in the feature, and the evidence list refetches exactly once
+after an upload — at which point inspection is still `INSPECTING`. The only
+gesture that reveals a finished inspection is the customer leaving the tab and
+coming back, which is what E01-03 performs. This is delivered behaviour, not a
+defect, and it is worth stating because "the customer never sees `ACCEPTED`" is
+the wrong conclusion to draw from it.
+
+---
+
+## R. Files changed
+
+New, all test-only, all within the 600-line limit:
+
+| File | Lines |
+|---|---|
+| `packages/e2e-testing/support/app7/app7-world.mjs` | 378 |
+| `packages/e2e-testing/support/app7/app7-evidence.mjs` | 220 |
+| `packages/e2e-testing/support/app7/app7-control.mjs` | 108 |
+| `packages/e2e-testing/specs/app7/e01-order-payment.acceptance.spec.ts` | 522 |
+| `packages/e2e-testing/specs/app7/e01-evidence-browser.acceptance.spec.ts` | 345 |
+| `packages/e2e-testing/specs/app7/support/app7-e01-world.ts` | 249 |
+| `packages/e2e-testing/specs/app7/support/deposit-driver.ts` | 211 |
+| `packages/e2e-testing/specs/app7/support/admin-order-driver.ts` | 159 |
+| `packages/e2e-testing/specs/app7/support/app7-test.ts` | 69 |
+
+Modified (harness only):
+
+| File | Change |
+|---|---|
+| `packages/e2e-testing/playwright.config.ts` | the `app7-e01-chromium` project, desktop 1440 |
+| `packages/e2e-testing/scripts/run-e2e.mjs` | the `--app7-e01` mode; merchant bank env for every mode |
+| `packages/e2e-testing/support/orchestration/config.mjs` | `createMerchantBankConfig` / `merchantBankEnv` |
+| `packages/e2e-testing/support/orchestration/environment.mjs` | one `appModuleEnv` merged into the API process **and** the staff-bootstrap CLI |
+| `packages/e2e-testing/package.json` | `e2e:app7:e01` |
+
+Production source, schema, migrations, generated OpenAPI, generated client and
+Figma: **unchanged**.
+
+---
+
+## S. Git evidence
+
+```text
+branch      = production
+HEAD at entry = de8607c
+pushed      = false
+```
+
+Two commits, per §24: the acceptance harness first, then this report and the
+roadmap evidence. No production source in either.
+
+---
+
+## T. Roadmap
+
+```text
+R00  COMPLETE
+G01  COMPLETE
+B01  COMPLETE — CORRECTED — REVIEW_ACCEPTED
+W01  COMPLETE — CORRECTED (C1) — REVIEW_ACCEPTED
+B02  COMPLETE — REVIEW_ACCEPTED
+B03  COMPLETE — REVIEW_ACCEPTED
+DB01 COMPLETE — REVIEW_ACCEPTED
+B05  COMPLETE — REVIEW_ACCEPTED
+B04  COMPLETE — CORRECTED — REVIEW_ACCEPTED
+B06  COMPLETE — REVIEW_ACCEPTED
+D01  COMPLETE — PRODUCT_OWNER_APPROVED
+A01  COMPLETE — CORRECTED (C1) — REVIEW_ACCEPTED
+S01  COMPLETE — REVIEW_ACCEPTED
+E01  AUTOMATED_PASS — NOT COMPLETE (REAL_BANK_APP_SCAN = PENDING_MANUAL_ENV) — Next
+X01  INCOMPLETE — NOT READY
+```
+
+Exactly one Next. `APP7-X01` is not started.
+
+**STOP.** Returned to the Product Owner.
