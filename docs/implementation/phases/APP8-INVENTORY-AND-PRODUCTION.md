@@ -1,7 +1,8 @@
 # APP8 — Inventory Reservation and Production Operations
 
-> **Status:** `IN PROGRESS` — `APP8-R00` and `APP8-G01` complete; phase audited,
-> planned and its authority locked (§10.5).
+> **Status:** `IN PROGRESS` — `APP8-R00` and `APP8-G01` complete (`APP8-G01`
+> corrected by `APP8-G01-C1`); phase audited, planned and its authority locked
+> (§10.5).
 > Sections 1–9 below are the **original pre-entry candidate plan**, preserved as
 > planning history. Section 10 onward is the **canonical, repository-grounded
 > plan** produced by `APP8-R00`. Where the two disagree, **section 10 onward
@@ -192,6 +193,15 @@ delivery (deferred, ruling routed to `G01`); any customer-facing surface;
 remaining payment, shipping, delivery, refund, cancellation execution and final
 settlement (all APP9).
 
+> **`APP8-G01-C1` clarification — read "cancellation execution" above narrowly.**
+> R00's own §12.1 APP8-owned transition table lists production job
+> `PLANNED`/`STARTED` → `CANCELLED` (Admin, reason mandatory) and reservation
+> `RESERVED` → `RELEASED` as **APP8 work**, owned by `APP8-B04`. The out-of-scope
+> phrase therefore means the **full order cancellation/refund saga** — refund
+> calculation and payment, remaining-payment settlement, shipping/delivery
+> reversal, final settlement — not production-job cancellation. R00's sentence is
+> preserved verbatim as written; §10.5 is the binding reading.
+
 ### 10.4 True Product Owner decision — **RESOLVED by `APP8-G01`**
 
 > Preserved as written at R00. The question below was genuinely open at phase
@@ -276,11 +286,24 @@ PO-APP8-004  Production artifact generation and management are DEFERRED /
              production_specifications row plus the exact approved design evidence
              already reachable through the accepted APP6 authority.
 
-PO-APP8-005  APP8 ends at job COMPLETED + order PRODUCTION_COMPLETED (TR-LC14-04).
-             APP8 never executes TR-LC14-05, remaining-payment collection, shipping
-             freeze, dispatch, delivery, cancellation execution, refund or final
-             settlement. APP7's unsatisfied REMAINING obligation is preserved for
-             APP9.
+PO-APP8-005  APP8's SUCCESSFUL PRODUCTION HANDOFF ends at job COMPLETED + order
+             PRODUCTION_COMPLETED (TR-LC14-04). APP8 does not execute TR-LC14-05,
+             remaining-payment collection, shipping, delivery, refund or final
+             settlement. APP7's unsatisfied REMAINING obligation is preserved for APP9.
+
+             This boundary does NOT exclude APP8-owned production-job cancellation.
+             Production job PLANNED/STARTED -> CANCELLED, Admin-initiated with a
+             MANDATORY reason, remains in APP8-B04 — under the existing job row lock
+             and LC-18 legality, appending the accepted production_job_transitions
+             record, and RELEASING any still-active Catalog reservation
+             (RESERVED -> RELEASED, TR-LC17-06) with that mandatory reason. COP-only
+             orders have no reservation to release and none is fabricated; mixed
+             orders release only the applicable Catalog reservation(s); no
+             customer-facing cancellation flow is invented.
+
+             Full ORDER cancellation/refund saga execution — refund calculation and
+             payment, remaining-payment settlement, shipping/delivery reversal, final
+             financial settlement — remains OUTSIDE APP8. IMP-O008 stays outside APP8.
 
 PO-APP8-006  IMP-D054 applies NARROWLY. Inventory persistence is promoted/reused
              through @embroidery/persistence because APP8-W01 (apps/worker) and the
@@ -331,7 +354,7 @@ APP8 checkpoint, and it is the only APP8 status table.
 
 ```text
 R00   COMPLETE
-G01   COMPLETE
+G01   COMPLETE          (corrected by APP8-G01-C1 — PO-APP8-005 wording only)
 B01   INCOMPLETE — Next
 B02   INCOMPLETE
 W01   INCOMPLETE
@@ -444,3 +467,10 @@ whose production job is `COMPLETED`, to `AWAITING_FINAL_PAYMENT` against the
 `REMAINING` obligation APP7 created and left unsatisfied. APP8 collects no
 payment, freezes no shipping, executes no cancellation or refund, and completes
 no fulfillment.
+
+> **`APP8-G01-C1` clarification.** "Executes no cancellation" above means no
+> **order** cancellation/refund saga execution. APP8 **does** own production-job
+> cancellation — `PLANNED`/`STARTED` → `CANCELLED` with a mandatory reason, and
+> the release of any still-active Catalog reservation — in `APP8-B04`, exactly as
+> R00 §12.1 accepted. R00's sentence is preserved verbatim; §10.5 is the binding
+> reading.

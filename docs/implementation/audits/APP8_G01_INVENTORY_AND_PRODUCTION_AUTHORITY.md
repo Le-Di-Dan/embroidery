@@ -5,6 +5,10 @@
 - Branch/HEAD at entry: `production` @ `4ba1c93`
 - Date: 2026-08-24
 - Product Owner rulings: `PO-APP8-001` … `PO-APP8-006` — **LOCKED**
+- Correction applied: `APP8-G01-C1` — §5 (`PO-APP8-005`) rewritten so the
+  terminal boundary no longer reads as excluding **production-job**
+  cancellation, which APP8 owns in `APP8-B04`. Every other ruling is unchanged.
+  See [`APP8-G01-C1-COMPLETION-REPORT.md`](../reports/APP8-G01-C1-COMPLETION-REPORT.md).
 
 This package turns the `APP8-R00` audit and the Product Owner's six rulings into
 values that later APP8 checkpoints may not invent. It changes documentation
@@ -252,6 +256,14 @@ PRODUCTION_ARTIFACT_OWNER = UNASSIGNED — nonblocking deferred capability.
 
 ## 5. `PO-APP8-005` — APP8 terminal boundary
 
+> **Corrected by `APP8-G01-C1`.** The first `APP8-G01` delivery listed
+> *"cancellation execution"* among the things APP8 never performs. That phrasing
+> was materially too broad: it collided with the APP8-owned production-job
+> cancellation path that `APP8_PHASE_ENTRY_AUDIT.md` §12.1 already accepts. The
+> boundary below is a boundary on the **successful production handoff** and on
+> the **commercial** cancellation/refund workflow — never on production-job
+> cancellation.
+
 ```text
 PO-APP8-005 = APP8_ENDS_AT_PRODUCTION_COMPLETED
 
@@ -259,15 +271,62 @@ APP8_TERMINAL_JOB_STATE   = COMPLETED             (LC-18 terminal)
 APP8_TERMINAL_ORDER_STATE = PRODUCTION_COMPLETED  (TR-LC14-04)
 ```
 
-APP8 **must not execute** any of:
+**Canonical wording.** APP8's successful production handoff ends at production
+job `COMPLETED` and order `PRODUCTION_COMPLETED`. APP8 does not execute
+`PRODUCTION_COMPLETED → AWAITING_FINAL_PAYMENT`, remaining-payment collection,
+shipping, delivery, refund, or final settlement. This boundary does **not**
+exclude APP8-owned production-job cancellation: `PLANNED`/`STARTED` →
+`CANCELLED` with mandatory reason remains in `APP8-B04`, including release of any
+still-active Catalog reservation required by the accepted reservation lifecycle.
+Full order cancellation/refund saga execution remains outside APP8.
+
+### 5.1 Outside APP8
 
 | Forbidden in APP8 | Owner |
 |---|---|
 | `PRODUCTION_COMPLETED → AWAITING_FINAL_PAYMENT` (`TR-LC14-05`) | APP9 |
-| remaining-payment collection (`GRD-016`) | APP9 |
+| remaining-payment collection and settlement (`GRD-016`) | APP9 |
 | shipping freeze and dispatch (`GRD-017`, `TR-LC14-07`) | APP9 |
-| delivery and completion (`GRD-018`, `TR-LC14-08`) | APP9 |
-| cancellation execution, refund and final settlement (`GRD-020`, `GRD-021`, `TR-LC20-02`) | APP9 |
+| delivery and order completion (`GRD-018`, `TR-LC14-08`) | APP9 |
+| refund calculation and refund payment (`GRD-021`, `TR-LC20-02`) | APP9 |
+| **full order cancellation/refund saga execution** — the commercial workflow, its stage matrix and its compensations (`GRD-020`, `ADR-DB3-002`) | later authority; `IMP-O008` stays outside APP8 |
+| shipping/delivery reversal, final financial settlement | APP9 |
+
+### 5.2 Inside APP8 — production-job cancellation
+
+```text
+APP8_OWNED_CANCELLATION = production job PLANNED -> CANCELLED
+                          production job STARTED -> CANCELLED
+OWNER                   = APP8-B04
+```
+
+Accepted by `APP8_PHASE_ENTRY_AUDIT.md` §12.1, whose APP8-owned transition table
+lists both the job move (*"`PLANNED`/`STARTED` → `CANCELLED` | Admin, reason
+mandatory | ADMIN | legality + reason | production service | job row lock |
+transition row"*) and the reservation move (*"reservation `RESERVED` →
+`RELEASED` | job cancelled / admin, reason mandatory (TR-LC17-06, GRD-020)"*).
+Rules, unchanged from that accepted table:
+
+- **Admin-initiated.**
+- **Cancellation reason is mandatory** — a cancellation without a recorded reason
+  is not a valid APP8 cancellation.
+- The existing **production-job row lock** and LC-18 transition legality remain
+  authoritative. APP8 adds no new lock anchor and no new legality table.
+- The accepted **`production_job_transitions` audit record** is appended.
+- If the order holds an active Catalog inventory reservation still `RESERVED`, the
+  owning APP8 flow **releases** it (`RESERVED → RELEASED`, `TR-LC17-06`) with the
+  mandatory reason and the accepted ledger append.
+- **COP-only orders have no reservation to release** — consistent with
+  `PO-APP8-001`, nothing is fabricated in order to have something to release, and
+  the absence is not an error.
+- **Mixed orders release only the applicable Catalog reservation(s)**; COP
+  portions are untouched.
+- **No customer-facing cancellation flow is invented here** —
+  `CUSTOMER_UI_DISPOSITION = NO_CUSTOMER_UI_IN_APP8` is unchanged.
+
+This is production-operation cancellation. It does not expand into refund
+calculation, refund payment, remaining-payment settlement, shipping or delivery
+reversal, or the commercial cancellation saga, all of which stay in §5.1.
 
 ```text
 APP9_ENTRY_PRECONDITION = TR-LC14-05 — an Admin moves an order at
@@ -409,7 +468,7 @@ NEXT_CHECKPOINT = APP8-B01
 | `PO-APP8-002` | `APP8-W01` (reservation creation writes `expires_at = NULL`); removes any sweep from the phase |
 | `PO-APP8-003` | `APP8-B03` (Admin creation endpoint); keeps `APP8-W01` single-purpose |
 | `PO-APP8-004` | `APP8-B03` / `APP8-A03` scope; `APP8-D01` draws no artifact management |
-| `PO-APP8-005` | `APP8-B04` terminal transition; `APP8-X01` handoff |
+| `PO-APP8-005` | `APP8-B04` — both the terminal `COMPLETED` transition **and** the APP8-owned `PLANNED`/`STARTED` → `CANCELLED` path with its Catalog-reservation release (§5.2); `APP8-X01` handoff |
 | `PO-APP8-006` | `APP8-B02` promotion scope |
 
 ---

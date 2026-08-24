@@ -6,7 +6,31 @@
 - HEAD at entry: `4ba1c93a29999cae9a14ddfcaaf06ecff5b57ae7` (`4ba1c93`)
 - Working tree at entry: clean
 - Date: 2026-08-24
-- Verdict: **`APP8-G01 = COMPLETE`**
+- Verdict: **`APP8-G01 = COMPLETE_CORRECTED`** (originally delivered as
+  `COMPLETE`; corrected by `APP8-G01-C1`)
+
+> ## Correction notice — `APP8-G01-C1`
+>
+> **This report is preserved as historical evidence and is superseded in exactly
+> one place.** In §3 (`PO-APP8-005`) and §1's summary it listed **"cancellation
+> execution"** among the things APP8 never performs. That phrasing was materially
+> too broad and collided with the APP8-owned production-job cancellation path
+> that `APP8_PHASE_ENTRY_AUDIT.md` §12.1 already accepts.
+>
+> **Corrected reading, binding:** APP8's *successful production handoff* ends at
+> job `COMPLETED` + order `PRODUCTION_COMPLETED`. APP8 does not execute
+> `TR-LC14-05`, remaining-payment collection, shipping, delivery, refund or final
+> settlement. This does **not** exclude APP8-owned production-job cancellation —
+> `PLANNED`/`STARTED` → `CANCELLED` with mandatory reason remains in `APP8-B04`,
+> including release of any still-active Catalog reservation. Full **order**
+> cancellation/refund saga execution remains outside APP8.
+>
+> The original wording below is left unedited so the defect stays checkable. The
+> canonical authority is
+> [`../audits/APP8_G01_INVENTORY_AND_PRODUCTION_AUTHORITY.md`](../audits/APP8_G01_INVENTORY_AND_PRODUCTION_AUTHORITY.md)
+> §5; the correction is recorded in
+> [`APP8-G01-C1-COMPLETION-REPORT.md`](./APP8-G01-C1-COMPLETION-REPORT.md).
+> Every other ruling in this report passed review and is unchanged.
 
 ---
 
