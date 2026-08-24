@@ -284,8 +284,11 @@ historical implementation commits amended = none
 ```
 
 ```text
-docs(app7): close deposit payment and order creation phase (APP7-X01)
+d93d3f7  docs(app7): close deposit payment and order creation phase (APP7-X01)
 ```
+
+The hash is recorded by one follow-up commit — a commit cannot contain its own
+hash. Local commits only; **nothing pushed**.
 
 Contents: the finalized `APP7-E01` report, the `APP7-X01` completion report, this
 matrix, the APP7 phase document and the master roadmap. Documentation only — no

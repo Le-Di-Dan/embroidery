@@ -714,7 +714,15 @@ amended       = none (no historical implementation commit was touched)
 One closure commit:
 
 ```text
-docs(app7): close deposit payment and order creation phase (APP7-X01)
+d93d3f7  docs(app7): close deposit payment and order creation phase (APP7-X01)
+```
+
+Recorded by one follow-up commit, the same way `APP7-D01` and `APP6-X01` recorded
+theirs: a commit cannot contain its own hash.
+
+```text
+final HEAD = the follow-up commit recording the line above
+local commits only — nothing pushed
 ```
 
 ---
