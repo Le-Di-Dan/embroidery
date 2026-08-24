@@ -65,6 +65,39 @@ x-app4-secret-env: &app4-secret-env
   SECURE_LINK_TOKEN_SECRET_PEPPER: ${SECURE_LINK_TOKEN_SECRET_PEPPER:-}
   NOTIFICATION_DELIVERY_ENVELOPE_KEY: ${NOTIFICATION_DELIVERY_ENVELOPE_KEY:-}
 
+# The one merchant bank account deposits are transferred to (APP7-G01 §3,
+# APP7-B03).
+#
+# Required by EVERY consumer of `AppModule`, exactly like the Design Session
+# pepper above and for a stricter reason: `MERCHANT_BANK_CONFIG` is a
+# **module-scoped fail-fast provider**, so `loadMerchantBankConfig` throws while
+# `CustomerDepositModule` is being composed — before any request. Without these
+# four the API container never listens and the `staff-bootstrap` one-shot exits
+# non-zero, which fails `service_completed_successfully` and keeps the whole
+# stack un-ready. `APP7-E01` found exactly that (`FU-APP7-E01-DEV-COMPOSE-MERCHANT-01`).
+#
+# Wired here for `api` and `staff-bootstrap` and nowhere else, because those are
+# the only two development processes that compose `AppModule`: `worker` builds
+# `WorkerModule`, which imports no payment module, and `db-migrate` runs the
+# database CLI.
+#
+# No defaults, deliberately. A development placeholder account would be the
+# "fake default bank" `APP7-G01` forbids: it would let the stack start and then
+# print someone else's account number on a customer's screen and into the QR
+# they scan. `${VAR:-}` supplies an empty string rather than a value, which the
+# loader rejects — so the existing fail-fast behaviour is preserved exactly, and
+# the failure names the variable rather than a Compose interpolation warning.
+#
+# These are NOT credentials (none of the four names matches the CLAUDE.md §8a
+# protected pattern, and `APP7-B03` asserts as much): they are printed on the
+# customer's own deposit screen. They are still operator-owned and belong in
+# `.env`, never in this file.
+x-merchant-bank-env: &merchant-bank-env
+  PAYMENT_MERCHANT_BANK_BIN: ${PAYMENT_MERCHANT_BANK_BIN:-}
+  PAYMENT_MERCHANT_ACCOUNT_NUMBER: ${PAYMENT_MERCHANT_ACCOUNT_NUMBER:-}
+  PAYMENT_MERCHANT_ACCOUNT_NAME: ${PAYMENT_MERCHANT_ACCOUNT_NAME:-}
+  PAYMENT_MERCHANT_BANK_DISPLAY_NAME: ${PAYMENT_MERCHANT_BANK_DISPLAY_NAME:-}
+
 services:
   # Edge gateway — the only public browser entrypoint in normal mode (D-036).
   # Direct application ports are exposed only via docker-compose.debug.yml.
@@ -171,7 +204,7 @@ services:
       dockerfile: infrastructure/docker/api.Dockerfile
       target: dev
     environment:
-      <<: [*object-storage-env, *design-session-env, *app4-secret-env]
+      <<: [*object-storage-env, *design-session-env, *app4-secret-env, *merchant-bank-env]
       NODE_ENV: development
       API_PORT: '4000'
       # Reach the database over the compose network (never the host mapping).
@@ -240,8 +273,10 @@ services:
       # This CLI creates a full Nest application context from AppModule, so it
       # instantiates the asset providers and needs the same storage config — and,
       # since APP3-B07 composed DesignModule into AppModule, the same Design
-      # Session config. Anything added to AppModule lands here too.
-      <<: [*object-storage-env, *design-session-env, *app4-secret-env]
+      # Session config — and, since APP7-B03 composed `CustomerDepositModule`
+      # into it, the merchant bank account, whose provider fails fast at
+      # composition. Anything added to AppModule lands here too.
+      <<: [*object-storage-env, *design-session-env, *app4-secret-env, *merchant-bank-env]
       NODE_ENV: development
       DATABASE_URL: postgres://${POSTGRES_USER:-embroidery}:${POSTGRES_PASSWORD:-embroidery_dev_password}@postgres:5432/${POSTGRES_DB:-embroidery}
       STAFF_BOOTSTRAP_EMAIL: ${STAFF_BOOTSTRAP_EMAIL:-}

@@ -108,12 +108,60 @@ async function runApp4Mode({ config, runId, log }) {
   }
 }
 
+/**
+ * `--app7-qr-scan` (APP7-E01-U01) is not a Playwright mode either.
+ *
+ * It prepares the single artifact the one human gate in `APP7-E01` §10 needs: a
+ * real `publicOrderDeposit_qr` PNG encoding the **operator's real merchant
+ * destination** and a **synthetic** order, deposit and reference. It opens no
+ * browser, asserts no payment outcome and re-executes none of the six E01
+ * cases.
+ *
+ * Nothing it prints is a value: presence and shape are booleans, and the only
+ * string returned is the local, git-ignored file path.
+ */
+async function runApp7QrScanMode({ log }) {
+  const { prepareQrForScan } = await import('../support/app7/app7-qr-scan-prepare.mjs');
+  const result = await prepareQrForScan({ log });
+
+  if (!result.ok && result.stage === 'MERCHANT_ENV') {
+    log('APP7-E01-U01 = WAITING_FOR_OPERATOR_MERCHANT_ENV');
+    log(`merchant env present    = ${String(result.inspection.present)}`);
+    log(`merchant env shape valid = ${String(result.inspection.shapeValid)}`);
+    if (result.inspection.missing.length > 0) {
+      log(`MISSING_VARIABLES = ${result.inspection.missing.join(', ')}`);
+    }
+    if (result.inspection.reason !== undefined) {
+      // The loader's refusal names the variable and never the value.
+      log(`shape refusal = ${result.inspection.reason}`);
+    }
+    return 1;
+  }
+  if (!result.ok) {
+    log(`APP7-E01-U01 = FAILED at ${result.stage}`);
+    log(JSON.stringify({ ...result, ok: undefined }));
+    return 1;
+  }
+
+  log('merchant env present     = true');
+  log('merchant env shape valid = true');
+  log(`QR HTTP                  = ${String(result.status)}`);
+  log(`QR content type          = ${result.contentType}`);
+  log(`QR PNG bytes             = ${String(result.byteLength)}`);
+  log(`order is AWAITING_DEPOSIT = ${String(result.orderIsAwaitingDeposit)}`);
+  log(`deposit is PENDING        = ${String(result.depositIsPending)}`);
+  log(`QR PNG path              = ${result.pngPath}`);
+  return 0;
+}
+
 function parseArgs(argv) {
   const flags = new Set(argv.filter((a) => a.startsWith('--')));
   const runnerArg = argv.find((a) => a.startsWith('--runner='));
   const app1 = flags.has('--app1');
   // APP4-E01-H01: a non-Playwright mode, so it short-circuits before projects.
   const app4 = flags.has('--app4') && !flags.has('--app4-browser');
+  // APP7-E01-U01: a non-Playwright mode; it short-circuits before projects.
+  const app7QrScan = flags.has('--app7-qr-scan');
   // APP4-E01-R01: the canonical acceptance run — the same topology and env as
   // the H02 browser tier, a different project.
   const app4R01C1 = flags.has('--app4-r01-c1');
@@ -126,8 +174,7 @@ function parseArgs(argv) {
   // project and the merchant bank configuration.
   const app7E01 = flags.has('--app7-e01');
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
-  const app4Browser =
-    flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
+  const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
@@ -169,7 +216,18 @@ function parseArgs(argv) {
   const extraArgs = [];
   if (flags.has('--headed')) extraArgs.push('--headed');
   if (flags.has('--debug')) extraArgs.push('--debug');
-  return { mode, projects, runner, extraArgs, app1, app4, app4Browser, app5E01, app7E01 };
+  return {
+    mode,
+    projects,
+    runner,
+    extraArgs,
+    app1,
+    app4,
+    app4Browser,
+    app5E01,
+    app7E01,
+    app7QrScan,
+  };
 }
 
 function log(message) {
@@ -187,9 +245,25 @@ async function verifyClean(config) {
 }
 
 async function main() {
-  const { mode, projects, runner, extraArgs, app1, app4, app4Browser, app5E01, app7E01 } = parseArgs(
-    process.argv.slice(2),
-  );
+  const {
+    mode,
+    projects,
+    runner,
+    extraArgs,
+    app1,
+    app4,
+    app4Browser,
+    app5E01,
+    app7E01,
+    app7QrScan,
+  } = parseArgs(process.argv.slice(2));
+
+  // APP7-E01-U01 owns its own lean topology and teardown and starts no browser
+  // tier, so it returns before any hostname, project or Playwright machinery.
+  if (app7QrScan) {
+    log('mode=app7-qr-scan (APP7-E01-U01 manual-scan preparation)');
+    process.exit(await runApp7QrScanMode({ log }));
+  }
   // APP5-E01 runs on `*.localhost` hostnames instead of `*.embroidery.local`.
   //
   // Not cosmetic: Chrome attaches `Sec-Fetch-*` only to *potentially

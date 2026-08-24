@@ -36,9 +36,15 @@ import { assertPortsFree, waitForPort } from '../orchestration/net.mjs';
  * On any failure it unwinds everything started so far and rethrows, so a failed
  * setup never leaves a container, a process or a database behind.
  *
- * @param {{ runId: string, config: object, app4: object, log: (m: string) => void }} params
+ * `extraEnv`, when given, **replaces** the APP4 secret block this owner would
+ * otherwise build — it is the whole child environment addition, so a caller that
+ * needs more than the peppers (`APP7-E01-U01` needs the merchant bank
+ * destination too) composes the full set itself and cannot end up with half of
+ * one universe and half of another.
+ *
+ * @param {{ runId: string, config: object, app4: object, log: (m: string) => void, extraEnv?: Record<string, string> }} params
  */
-export async function startApp4Environment({ runId, config, app4, log }) {
+export async function startApp4Environment({ runId, config, app4, log, extraEnv }) {
   const cleanup = new CleanupStack();
   const projectName = `emb-e2e-${runId}`;
   const cEnv = composeEnv(config);
@@ -89,7 +95,7 @@ export async function startApp4Environment({ runId, config, app4, log }) {
       config,
       databaseUrl: database.url,
       adminOrigins: `http://${config.hosts.admin}:${config.ports.gateway}`,
-      extraEnv: app4SecretEnv(app4),
+      extraEnv: extraEnv ?? app4SecretEnv(app4),
     });
     await apiService.start();
     cleanup.push('stop api', () => apiService.stop());
