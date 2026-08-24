@@ -891,7 +891,13 @@ NOT_PUSHED = true
 
 ### 33.1 Commit hash
 
-`APP8-R00` commit: **`<recorded below>`**
+```text
+9676890  docs(app8): audit inventory and production phase entry (APP8-R00)
+```
+
+Recorded by one follow-up commit, on the precedent `APP7-X01` and `APP7-D01` both
+set: a commit cannot contain its own hash. Both commits are local; nothing is
+pushed.
 
 ---
 
