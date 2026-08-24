@@ -1,6 +1,7 @@
 # APP8 — Inventory Reservation and Production Operations
 
-> **Status:** `IN PROGRESS` — `APP8-R00` complete, phase audited and planned.
+> **Status:** `IN PROGRESS` — `APP8-R00` and `APP8-G01` complete; phase audited,
+> planned and its authority locked (§10.5).
 > Sections 1–9 below are the **original pre-entry candidate plan**, preserved as
 > planning history. Section 10 onward is the **canonical, repository-grounded
 > plan** produced by `APP8-R00`. Where the two disagree, **section 10 onward
@@ -191,7 +192,12 @@ delivery (deferred, ruling routed to `G01`); any customer-facing surface;
 remaining payment, shipping, delivery, refund, cancellation execution and final
 settlement (all APP9).
 
-### 10.4 True Product Owner decision
+### 10.4 True Product Owner decision — **RESOLVED by `APP8-G01`**
+
+> Preserved as written at R00. The question below was genuinely open at phase
+> entry; `PO-APP8-001` has since been ruled **Option A**. The historical record
+> stays because the discovery is the evidence that the ambiguity was found rather
+> than assumed away. The binding answer is §10.5.
 
 ```text
 PO-APP8-001 — do COP-only orders require an inventory reservation to enter production?
@@ -207,6 +213,94 @@ clause for the COP branch.
 
 Option B makes a delivered first-class branch permanently unusable. Routed to
 `APP8-G01`. Blocks `B04` and `E01` case 7; blocks nothing before that.
+
+### 10.5 `APP8-G01` — the locked authority
+
+Produced by `APP8-G01` at `production` @ `4ba1c93`. Full package:
+[`APP8_G01_INVENTORY_AND_PRODUCTION_AUTHORITY.md`](../audits/APP8_G01_INVENTORY_AND_PRODUCTION_AUTHORITY.md).
+Completion report:
+[`APP8-G01-COMPLETION-REPORT.md`](../reports/APP8-G01-COMPLETION-REPORT.md).
+
+These are **canonical APP8 values**, no longer recommendations. Later checkpoints
+consume them and may not re-decide them.
+
+```text
+CONTRADICTION_WITH_STRONGER_AUTHORITY = NONE FOUND
+NEW_ADR_REQUIRED                      = NO   (every ruling resolves inside an
+                                              already-accepted architecture)
+```
+
+**`PO-APP8-001 = APPROVED_OPTION_A`.** `GRD-015`'s reservation clause binds **per
+reservable order subject**, not per order.
+
+- **Catalog-only** — production starts only on: valid exact approval snapshot;
+  DEPOSIT `SATISFIED` through `DepositEligibilityPort`; order `DEPOSIT_PAID`;
+  order not `ON_HOLD` / `CANCELLING`; every inventory-reservable Catalog quantity
+  covered by an active reservation that is `RESERVED` when the production-start
+  transaction consumes it.
+- **COP-only** — **may enter production with no reservation** once every
+  non-inventory guard above passes. A COP item has `sku_id IS NULL`, so APP8
+  fabricates no SKU, no `sku_stocks` row and no reservation. The absence is
+  expected behaviour, never an error.
+- **Mixed** — Catalog portions require coverage; COP portions require none;
+  start is blocked if any required Catalog reservation is missing or not
+  `RESERVED`; COP items never weaken a Catalog requirement.
+- **Cardinality is the repository's.** `CST-016` allows one active `RESERVED` row
+  per `(order_id, sku_stock_id)`. Where several Catalog items resolve to the same
+  SKU there is still **one** reservation, whose quantity must cover the order's
+  frozen Catalog quantity for that SKU. No per-item rows are invented.
+- One `GRD-015` implementation, one deposit predicate, no COP-specific fake
+  inventory path.
+
+```text
+PO-APP8-002  APP8 official reservations are NO-EXPIRY: expires_at = NULL, no sweep,
+             no TTL value chosen. Soft-hold expiry semantics untouched.
+             DEC-14 stays deferred/nonblocking.
+             (Authorised by ADR-DB1-018 r3 + its Deferred Details, DB4 §37–38,
+              TR-LC17-07 — an explicit lock, not a default.)
+
+PO-APP8-003  Production job creation is ADMIN-INITIATED, synchronous through the
+             Admin API, post-deposit, against the EXACT approval snapshot, one job
+             per (order_id, approval_snapshot_id), with the immutable specification
+             frozen in the same transaction. TR-LC18-01 permits "system/admin";
+             APP8 selects admin. The worker gains no job-creation duty.
+             SYSTEM remains the actor for the payment.verified reservation consumer.
+
+PO-APP8-004  Production artifact generation and management are DEFERRED /
+             NONBLOCKING for APP8: no DST/PES/EXP writer, no machine runner, no new
+             object storage, no customer export, no APP8 HTTP or UI surface for
+             artifacts. attachArtifact stays untouched and unused. TR-LC18-03 has
+             no guard, so nothing is bypassed. Owner is UNASSIGNED — deliberately
+             not routed to APP9 for symmetry.
+             APP8's authoritative production input is the frozen
+             production_specifications row plus the exact approved design evidence
+             already reachable through the accepted APP6 authority.
+
+PO-APP8-005  APP8 ends at job COMPLETED + order PRODUCTION_COMPLETED (TR-LC14-04).
+             APP8 never executes TR-LC14-05, remaining-payment collection, shipping
+             freeze, dispatch, delivery, cancellation execution, refund or final
+             settlement. APP7's unsatisfied REMAINING obligation is preserved for
+             APP9.
+
+PO-APP8-006  IMP-D054 applies NARROWLY. Inventory persistence is promoted/reused
+             through @embroidery/persistence because APP8-W01 (apps/worker) and the
+             Admin API (apps/api) both write it — no duplicate worker inventory DB
+             logic, no worker-only adapter. Production persistence STAYS API-LOCAL;
+             it is not moved for symmetry, and is promoted later only if a concrete
+             accepted cross-runtime consumer is proven. APP8-B02 keeps its position
+             and its CC-21 release-vs-consume repair.
+```
+
+Inherited and restated as canonical: `DepositEligibilityPort` is the **sole**
+deposit authority (no second port, no duplicated SQL);
+`INVENTORY_SCHEMA_DISPOSITION` and `PRODUCTION_SCHEMA_DISPOSITION` are both
+`NO_MIGRATION_REQUIRED` and no `production_job_attempts` table is created; the
+existing PostgreSQL outbox/claim runtime (`IMP-D029`) is reused with no broker,
+queue table, second datastore or alternate idempotency subsystem;
+`CUSTOMER_UI_DISPOSITION = NO_CUSTOMER_UI_IN_APP8`; `APP8-D01` remains the design
+gate immediately before Admin UI. The §11 roadmap is unchanged.
+
+---
 
 ## 11. Canonical checkpoints
 
@@ -237,8 +331,8 @@ APP8 checkpoint, and it is the only APP8 status table.
 
 ```text
 R00   COMPLETE
-G01   INCOMPLETE — Next
-B01   INCOMPLETE
+G01   COMPLETE
+B01   INCOMPLETE — Next
 B02   INCOMPLETE
 W01   INCOMPLETE
 B03   INCOMPLETE
