@@ -16,6 +16,8 @@ production code, not a real race.
 | Stock hold/reserve | `SkuStockRepository.loadForUpdate` → `hold`/`reserve` | `sku_stocks` FOR UPDATE | — | — |
 | Hold → reservation conversion | `SkuStockRepository.convertHold` | `sku_stocks` FOR UPDATE | `inventory_soft_holds` (state check, same tx) | — |
 | Stock adjustment | `SkuStockRepository.adjust` | `sku_stocks` FOR UPDATE | — | — |
+| Reservation release / consume (`APP8-B02`) | `SkuStockRepository.releaseReservation` / `consumeReservation` | `inventory_reservations` FOR UPDATE (CC-21 arbiter) | `sku_stocks` FOR UPDATE (consume only) | — |
+| Order official reservation (`APP8-W01`) | `ReserveOrderInventoryUseCase.reserve` → `SkuStockRepository.createReservation` × N | `payment_obligations` (read, no lock — GRD-013 via `DepositEligibilityPort`) | `sku_stocks` FOR UPDATE, **once per required SKU, in ascending `skus.id`** | — |
 | Payment obligation satisfaction | `PaymentObligationRepository.satisfy` | `payment_obligations` FOR UPDATE | — | — |
 | Design case version pointer | `DesignCaseRepository.setCurrentVersion` | `design_cases` FOR UPDATE | — | — |
 | Quotation acceptance | `QuotationRepository.accept` | `quotations` FOR UPDATE | — | — |
@@ -39,6 +41,23 @@ same tables in a documented order except:
   in-tx) *before* `SkuStockRepository` takes the `sku_stocks` row lock in
   `createReservation`/`convertHold`. This is the one documented
   cross-context order: **obligation read → stock lock**, never the reverse.
+
+- **`sku_stocks` then `sku_stocks`** — `APP8-W01` is the first flow to take
+  **several** anchor locks in one transaction: a multi-SKU order reserves each
+  required SKU inside one transaction, so a second worker reserving an
+  overlapping SKU set for a different order could deadlock if the two chose
+  different directions. It is arbitrated by a **deterministic total order, not a
+  new lock anchor**: `aggregateCatalogRequirements` sorts the requirements by
+  `skus.id` ascending and the use case awaits them sequentially, so the same
+  logical lock set is always acquired in the same order and the cycle is
+  unconstructible. The sort key is the SKU id rather than the `sku_stocks` row
+  id because the anchor id is not knowable until the anchor has been read, and an
+  ordering that cannot be computed before locking begins is not an ordering. No
+  `SERIALIZABLE`, no advisory lock, no distributed lock (`APP8-W01` §8).
+- **`inventory_reservations` then `sku_stocks`** — added by `APP8-B02`'s CC-21
+  repair, in that direction only. No delivered path locks the anchor and then an
+  *existing* reservation row: `createReservation` and `convertHold` lock the
+  anchor and then **insert**, and a row nobody can name yet cannot be waited on.
 
 Because no code path takes the same two locks in opposite orders, DB8-CP6's
 deadlock fixture (§ below) constructs a **synthetic** opposite-order

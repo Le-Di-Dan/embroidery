@@ -57,6 +57,9 @@ describe('APP7-W01 job-kind handoff', () => {
       'PAYMENT_RECONCILIATION',
       'RETENTION_SWEEP',
       'ORDER_CREATION',
+      // `APP8-W01` appended this kind on identical terms; the assertion is that
+      // the delivered values did not move, not that the list stopped growing.
+      'INVENTORY_RESERVATION',
     ]);
   });
 

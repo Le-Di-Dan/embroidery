@@ -41,6 +41,12 @@ export const BACKGROUND_JOB_KINDS = [
   // creating an order, not dispatching an outbox row, and filing it under the
   // transport kind would hide it from an operator's dead-letter query.
   'ORDER_CREATION',
+  // `APP8-W01` — the `payment.verified` official inventory reservation
+  // (`TR-LC17-04`). Added on exactly the terms `ORDER_CREATION` was, and for the
+  // same reason: the work is committing stock against an order, not dispatching
+  // an outbox row, and an operator querying dead-lettered reservations must be
+  // able to name the kind. No CHECK, no migration.
+  'INVENTORY_RESERVATION',
 ] as const;
 
 export type BackgroundJobKind = (typeof BACKGROUND_JOB_KINDS)[number];

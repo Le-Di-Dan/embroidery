@@ -4,6 +4,7 @@ import { DatabaseModule } from '@embroidery/persistence';
 import { AssetInspectionModule } from '../jobs/asset-inspection/asset-inspection.module';
 import { IntakeCleanupModule } from '../jobs/app5-intake-cleanup/intake-cleanup.module';
 import { AssetNormalizationModule } from '../jobs/asset-normalization/asset-normalization.module';
+import { InventoryReservationModule } from '../jobs/inventory-reservation/inventory-reservation.module';
 import { NotificationDeliveryModule } from '../jobs/notification-delivery/notification-delivery.module';
 import { OrderConversionModule } from '../jobs/order-conversion/order-conversion.module';
 import { WorkerRuntimeModule } from '../runtime/worker-runtime.module';
@@ -48,6 +49,12 @@ import { WorkerObjectStorageModule } from '../storage/object-storage.module';
     // queue and no transport — only a handler, and the claim filter grows by
     // exactly one event type.
     OrderConversionModule,
+    // `InventoryReservationModule` (APP8-W01) is the fifth outbox capability,
+    // and the consumer `payment.verified` has been waiting for since APP7-B04:
+    // every verified deposit so far has left a `PENDING` row nothing claimed. It
+    // adds no queue and no transport — only a handler, and the claim filter
+    // grows by exactly one event type.
+    InventoryReservationModule,
     // `IntakeCleanupModule` (APP5-B02) is the first capability here that is
     // **not** an outbox handler: an expired, unbound customer upload produces
     // no event to claim, which is precisely why it needs a sweep. It shares the
