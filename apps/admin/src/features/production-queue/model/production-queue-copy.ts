@@ -4,8 +4,9 @@
  *
  * One catalog, so no component hard-codes copy (CLAUDE.md §5) and the queue's
  * vocabulary can be reviewed as a whole. The **status** labels are not here —
- * they belong to `production-status.ts`, because a job must not be named one
- * thing in the filter and another in its row.
+ * they belong to `src/shared/presentation/production-status.ts`, because a job
+ * must not be named one thing in the filter, another in its row and a third on
+ * the detail screen `APP8-A03` builds from the same four states.
  *
  * The error sentences are chosen by failure *classification* alone. A server
  * `message` is never rendered; the published business code rides inside the

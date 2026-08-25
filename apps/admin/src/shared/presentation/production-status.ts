@@ -15,20 +15,30 @@
  * There is no transition table, no action matrix and no "can this job move to
  * X". Those are server facts that `APP8-B04` decides under a row lock, and a
  * helper answering them would become a second lifecycle authority living in the
- * browser. `APP8-A02` renders no transition control at all.
+ * browser. In particular this module cannot be used to reconstruct GRD-015:
+ * knowing a job is `PLANNED` says which *controls* the approved frames draw, and
+ * says nothing at all about whether the server will accept the move behind one.
  *
- * ## Feature scope, deliberately
+ * ## Admin shared scope, on the checkpoint that gave it a second caller
  *
- * This lives in the production capability rather than in `src/shared`, which is
- * the narrowest valid scope today (CLAUDE.md §5): the queue is its only
- * consumer. `APP8-A03` may promote it when the job detail needs the same
- * words — that is a move with two real callers, not an abstraction created for
- * a hypothetical one.
+ * `APP8-A02` kept this inside the production-queue capability because the queue
+ * was its only consumer — the narrowest valid scope at the time (CLAUDE.md §5) —
+ * and recorded that `APP8-A03` should promote it once the job detail needed the
+ * same words. That is now the case: the queue row, the detail status pill, the
+ * transition-history rows and the dialog prose all name the same four states, so
+ * this moved to Admin shared scope with two real callers rather than being
+ * generalised for a hypothetical one. Nothing else moved with it — the queue's
+ * filters, query keys and cursor logic stay in the queue, because the detail
+ * screen has no list to filter and no cursor to carry.
+ *
+ * It is deliberately *not* pushed into `@embroidery/ui`: nothing on the
+ * storefront renders a production state, and no customer surface exists in APP8
+ * at all.
  */
 import type { AdminProductionJobListStatusItem } from '@embroidery/api-client';
 
-import type { AdminStatusTone } from '../../../shared/status/admin-status-badge';
-import { STATUS_SYMBOLS } from '../../../shared/presentation/order-status';
+import type { AdminStatusTone } from '../status/admin-status-badge';
+import { STATUS_SYMBOLS } from './order-status';
 
 export type ProductionStatusValue =
   (typeof AdminProductionJobListStatusItem)[keyof typeof AdminProductionJobListStatusItem];

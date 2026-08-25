@@ -1,0 +1,257 @@
+// Admin production job detail — the reservation, history and action sections
+// (`784:99`, `784:84`, `784:120`).
+//
+// Split from `_production-job-cards.scss` by responsibility: that partial owns
+// the card frame and the two authority cards (identity, frozen specification,
+// cancellation evidence), and this one owns the three sections built on top of
+// it. The shared `.job-card` frame lives there and is not redefined here.
+
+@use '@embroidery/styles' as styles;
+
+// ---------------------------------------------------------------------------
+// Reservation context
+// ---------------------------------------------------------------------------
+.job-counts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: styles.spacing(16);
+  margin: 0;
+}
+
+.job-counts__label {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-counts__value {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-reservations {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.job-reservation {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  padding: styles.spacing(8) styles.spacing(12);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.job-reservation__ident {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 0;
+  min-width: 0;
+}
+
+.job-reservation__sku {
+  overflow-wrap: anywhere;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-reservation__stock {
+  overflow-wrap: anywhere;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-reservation__quantity {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// The state is a word, always. The tint only reinforces it — an operator who
+// cannot separate the hues still reads "Đang giữ" or "Đã tiêu thụ".
+.job-reservation__status {
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+
+  &--success {
+    color: styles.$color-status-success;
+  }
+
+  &--info {
+    color: styles.$color-status-info;
+  }
+
+  &--warning {
+    color: styles.$color-status-warning;
+  }
+
+  &--error {
+    color: styles.$color-status-error;
+  }
+
+  &--neutral {
+    color: styles.$color-text-tertiary;
+  }
+}
+
+// The COP-only and mixed states: neutral surfaces, never warning or error —
+// the absence of a reservation on a customer-owned order is a valid state.
+.job-cop,
+.job-mixed {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.job-cop__title,
+.job-mixed__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-cop__body,
+.job-mixed__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-not-gate {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: flex-start;
+  margin: 0;
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.job-not-gate__mark {
+  color: styles.$color-status-warning;
+  font-weight: styles.$font-weight-bold;
+}
+
+.job-not-gate__body {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// Transition history
+// ---------------------------------------------------------------------------
+.job-history {
+  width: 100%;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.job-history__caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.job-history th,
+.job-history td {
+  padding: styles.spacing(8) styles.spacing(12);
+  border-bottom: 1px solid styles.$color-border-primary;
+  overflow-wrap: anywhere;
+  text-align: left;
+  vertical-align: top;
+}
+
+.job-history thead th {
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-history__move {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-history__actor,
+.job-history__at,
+.job-history__reason {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-regular;
+}
+
+.job-history-empty {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+}
+
+.job-history-empty__title {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-history-empty__body {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// Action set
+// ---------------------------------------------------------------------------
+.job-actions__button {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+
+  &--primary {
+    border-color: styles.$color-action-primary;
+    background: styles.$color-action-primary;
+    color: styles.$color-background-primary;
+  }
+
+  // Destructive, and named as such: "Huỷ lệnh sản xuất" says which object is
+  // cancelled, so it can never be read as cancelling the customer order.
+  &--destructive {
+    border-color: styles.$color-status-error;
+    color: styles.$color-status-error;
+  }
+}
+
+.job-actions__note {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}

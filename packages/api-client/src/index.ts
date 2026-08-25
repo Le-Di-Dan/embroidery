@@ -1121,6 +1121,39 @@ export type {
   AdminProductionJobQueueItemResponse,
 } from './generated/embroidery-api.schemas';
 
+// The Admin production **job detail** and its guarded transitions (`APP8-B03`
+// read, `APP8-B04` write), consumed by `APP8-A03` at `/san-xuat/{jobId}`.
+//
+// Two operations cross, and only two. `adminProductionJobCreate` stays
+// unexported: creation is nested under a specific order and requires that
+// order's exact approval snapshot and a satisfied deposit, so no screen this
+// boundary serves has anything to submit it with — and publishing it would make
+// "APP8's Admin surfaces do not create production jobs" a convention rather
+// than a fact the module graph enforces.
+//
+// `TransitionProductionJobBodyTo` crosses as a **value** for the reason
+// `AdminProductionJobListStatusItem` does: the moves a caller may request come
+// from the contract rather than from string literals that can drift. It is
+// deliberately three values, not four — `PLANNED` is the state a job is created
+// in and is not a destination any transition may name.
+//
+// The detail response carries the job root, the **frozen** specification copied
+// from the approval at creation, the append-only transition history and a
+// read-only reservation summary. No artifact, storage key, note, customer
+// detail, amount, operator or machine exists on any of these types, so no
+// screen built on them can render one.
+export { adminProductionJobGet, adminProductionJobTransition } from './generated/embroidery-api';
+export { TransitionProductionJobBodyTo } from './generated/embroidery-api.schemas';
+export type {
+  AdminProductionJobDetailResponse,
+  AdminProductionSpecificationResponse,
+  AdminProductionReservationSummaryResponse,
+  AdminProductionReservationResponse,
+  AdminProductionTransitionResponse,
+  AdminProductionTransitionResultResponse,
+  TransitionProductionJobBody,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

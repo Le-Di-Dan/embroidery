@@ -98,22 +98,18 @@ describe('the generated boundary', () => {
 
   it('reaches no production mutation and no second read from this screen', () => {
     const actual = jest.requireActual<Record<string, unknown>>('@embroidery/api-client');
-    // The queue's service seam exposes one function, and the public api-client
-    // boundary does not publish the three mutations to this app at all — so
-    // "the queue cannot start, complete or cancel a job" is a fact of the module
-    // graph rather than a convention.
+    // The queue's service seam exposes one function, so "the queue cannot start,
+    // complete or cancel a job" is a fact of this feature's module graph rather
+    // than a convention. `APP8-A03` published the detail read and the transition
+    // on the shared api-client boundary for `/san-xuat/{jobId}`, which is why
+    // the whole-package check below is scoped to creation: that operation is
+    // nested under an order and reaches no Admin screen at all.
     const queueService = jest.requireActual<Record<string, unknown>>(
       '../../src/features/production-queue/services/production-queue.service',
     );
     expect(Object.keys(queueService)).toEqual(['fetchProductionQueuePage']);
     expect(actual['adminProductionJobList']).toBeDefined();
-    for (const forbidden of [
-      'adminProductionJobCreate',
-      'adminProductionJobGet',
-      'adminProductionJobTransition',
-    ]) {
-      expect(actual[forbidden]).toBeUndefined();
-    }
+    expect(actual['adminProductionJobCreate']).toBeUndefined();
   });
 });
 

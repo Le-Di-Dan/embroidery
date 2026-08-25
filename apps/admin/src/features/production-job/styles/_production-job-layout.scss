@@ -1,0 +1,189 @@
+// Admin production job detail — the page frame and the two-column layout
+// (`784:3`, `789:160`).
+//
+// Every colour, radius, space and type size is a token: no literal hex and no
+// magic pixel value beyond the single layout threshold named below.
+
+@use '@embroidery/styles' as styles;
+
+// The approved narrow reference (`789:160`) is a 1280 viewport, whose Admin
+// content column sits at 1076px once the 204px sidenav is taken. At and below
+// it, `789:200` moves the aside below the main column and lifts the action card
+// above the fold — the aside's contents are re-ordered, never dropped: the
+// status, the action set, the frozen specification and the reservation truth all
+// survive at every width, and nothing is parked behind an overflow menu.
+$job-narrow-desktop: 1320px;
+
+.job-page {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24);
+}
+
+.job-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.job-page__breadcrumb {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-page__back {
+  align-self: flex-start;
+  color: styles.$color-action-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.job-page__title {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-heading-m;
+}
+
+// The transition announcement. It carries text only after a command committed
+// and the authoritative re-read landed, so an empty live region is the resting
+// state rather than a placeholder sentence.
+.job-page__live {
+  margin: 0;
+  color: styles.$color-status-success;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+
+  &:empty {
+    display: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main / aside
+// ---------------------------------------------------------------------------
+.job-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 366px;
+  gap: styles.spacing(16);
+  align-items: start;
+
+  // `789:200`: the aside becomes a full-width band under the header, and the
+  // action card is the first thing in it so the primary command stays reachable
+  // without scrolling past the specification.
+  @media (max-width: $job-narrow-desktop) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.job-columns__main,
+.job-columns__aside {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+}
+
+@media (max-width: $job-narrow-desktop) {
+  .job-columns__aside {
+    order: -1;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Loading and failure frames
+// ---------------------------------------------------------------------------
+.job-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.job-skeleton__status {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.job-skeleton__bars {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.job-skeleton__bar {
+  height: styles.spacing(16);
+  width: 40%;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+
+  &--header {
+    height: styles.spacing(32);
+    width: 60%;
+  }
+
+  &--wide {
+    width: 100%;
+  }
+}
+
+.job-panel {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+
+  &--warning {
+    border-color: styles.$color-status-warning;
+  }
+
+  &--error {
+    border-color: styles.$color-status-error;
+  }
+}
+
+.job-panel__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-panel__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.job-panel__actions {
+  display: flex;
+  gap: styles.spacing(8);
+  flex-wrap: wrap;
+}
+
+.job-panel__action {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: none;
+  cursor: pointer;
+}

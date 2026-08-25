@@ -31,7 +31,10 @@
 import { AdminProductionJobListStatusItem } from '@embroidery/api-client';
 import type { AdminProductionJobListParams } from '@embroidery/api-client';
 
-import { productionStatusLabel, type ProductionStatusValue } from './production-status';
+import {
+  productionStatusLabel,
+  type ProductionStatusValue,
+} from '../../../shared/presentation/production-status';
 
 export interface ProductionQueueFilters {
   /** The selected LC-18 states. Empty means "send no `status`". */

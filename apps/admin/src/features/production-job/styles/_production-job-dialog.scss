@@ -1,0 +1,310 @@
+// Admin production job detail — the transition dialog (`786:3` … `786:202`).
+//
+// Loaded last, so its rules cascade over the card treatments the dialog reuses
+// for its effect rows, standing notes and refusal panel.
+
+@use '@embroidery/styles' as styles;
+
+$job-dialog-width: 700px;
+
+.job-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  padding: styles.spacing(24);
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+  background: styles.$color-overlay-scrim;
+}
+
+.job-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  width: 100%;
+  max-width: $job-dialog-width;
+  margin: auto;
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.job-dialog__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-bold;
+}
+
+.job-dialog__subtitle {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-dialog__footer {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.job-dialog__button {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+
+  &--primary {
+    border-color: styles.$color-action-primary;
+    background: styles.$color-action-primary;
+    color: styles.$color-background-primary;
+  }
+
+  &--destructive {
+    border-color: styles.$color-status-error;
+    background: styles.$color-status-error;
+    color: styles.$color-background-primary;
+  }
+
+  // The pending state `786:201` draws: the confirm control is inert and says
+  // "Đang xử lý…", so a second click cannot become a second command.
+  &:disabled {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-border-secondary;
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+.job-dialog__live {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+
+  &:empty {
+    display: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The single-transaction effect rows
+// ---------------------------------------------------------------------------
+.job-effects {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.job-effects__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-effects__list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.job-effects__row {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  padding: styles.spacing(8) styles.spacing(12);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  flex-wrap: wrap;
+}
+
+.job-effects__subject {
+  flex: 1 0 auto;
+  min-width: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-effects__from,
+.job-effects__arrow {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-effects__to {
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+
+  &--neutral {
+    color: styles.$color-text-tertiary;
+  }
+
+  &--info {
+    color: styles.$color-status-info;
+  }
+
+  &--success {
+    color: styles.$color-status-success;
+  }
+
+  &--warning {
+    color: styles.$color-status-warning;
+  }
+
+  &--error {
+    color: styles.$color-status-error;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Standing notes
+// ---------------------------------------------------------------------------
+.job-notes {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.job-note {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border: 1px solid transparent;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.job-note__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-note__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-note--warning {
+  border-color: styles.$color-status-warning;
+
+  .job-note__title {
+    color: styles.$color-status-warning;
+  }
+}
+
+.job-note--error {
+  border-color: styles.$color-status-error;
+
+  .job-note__title {
+    color: styles.$color-status-error;
+  }
+}
+
+.job-note--info {
+  border-color: styles.$color-status-info;
+
+  .job-note__title {
+    color: styles.$color-status-info;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The cancellation reason field
+// ---------------------------------------------------------------------------
+.job-field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.job-field__label {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-field__required {
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+}
+
+.job-field__input {
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-s;
+  resize: vertical;
+
+  &--invalid {
+    border-color: styles.$color-status-error;
+  }
+}
+
+.job-field__help {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-field__error {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// The refusal panel
+// ---------------------------------------------------------------------------
+.job-refusal {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.job-refusal__title {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-refusal__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-refusal__reload {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}

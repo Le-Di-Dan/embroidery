@@ -4,10 +4,10 @@ import Link from 'next/link';
 
 import { ADMIN_ORDERS_ROUTE } from '../../order-queue';
 import { truncateIdentifier } from '../../../shared/presentation/identifier';
+import { productionStatusLabel } from '../../../shared/presentation/production-status';
 import type { ProductionQueueFilterController } from '../hooks/use-production-queue-filters';
 import { PRODUCTION_QUEUE_COPY } from '../model/production-queue-copy';
 import { isProductionQueueFiltered } from '../model/production-queue-filters';
-import { productionStatusLabel } from '../model/production-status';
 
 interface ProductionQueueEmptyProps {
   readonly controller: ProductionQueueFilterController;

@@ -1,0 +1,284 @@
+// Admin production job detail — the shared card frame and the two authority
+// cards: the job identity header (`784:29`), the frozen specification
+// (`784:47`) and the cancellation evidence (`785:178`).
+//
+// The reservation, history and action sections build on the same `.job-card`
+// frame and live in `_production-job-sections.scss`.
+
+@use '@embroidery/styles' as styles;
+
+// The narrow reflow threshold, shared with the layout partial: at 1280 the
+// specification grid drops from three columns to two (`789:217`). Every field
+// stays on screen; only the track count changes.
+$job-narrow-desktop: 1320px;
+
+.job-card {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+
+  &--warning {
+    border-color: styles.$color-status-warning;
+  }
+
+  &--cancelled {
+    border-color: styles.$color-status-error;
+  }
+}
+
+.job-card__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+
+  &--error {
+    color: styles.$color-status-error;
+  }
+}
+
+.job-card__source,
+.job-card__note {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-card__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Identity header
+// ---------------------------------------------------------------------------
+.job-identity {
+  flex-direction: row;
+  gap: styles.spacing(16);
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.job-identity__ident {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.job-identity__label {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-identity__id {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-bold;
+}
+
+.job-identity__order {
+  margin: 0;
+}
+
+.job-identity__order-link {
+  display: inline-flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.job-identity__order-code {
+  color: styles.$color-action-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-identity__order-open {
+  color: styles.$color-status-info;
+  font-size: styles.$font-size-caption;
+}
+
+.job-identity__approval,
+.job-identity__rework {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-identity__meta {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  align-items: flex-end;
+}
+
+.job-identity__stamp {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+
+  &--muted {
+    color: styles.$color-text-tertiary;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Frozen specification
+// ---------------------------------------------------------------------------
+.job-frozen {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: flex-start;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.job-frozen__mark {
+  font-size: styles.$font-size-body-s;
+}
+
+.job-frozen__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-frozen__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: styles.spacing(12) styles.spacing(16);
+  margin: 0;
+
+  @media (max-width: $job-narrow-desktop) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.job-spec-grid__cell {
+  min-width: 0;
+}
+
+.job-spec-grid__label {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-spec-grid__value {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+
+  // An approved absence, not a stored figure — toned down so it never reads as
+  // a value copied from the approval.
+  &--absent {
+    color: styles.$color-text-tertiary;
+    font-weight: styles.$font-weight-regular;
+  }
+}
+
+.job-spec-hash,
+.job-spec-params {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.job-spec-hash__label {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-spec-hash__value {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-primary;
+  font-family: styles.$font-family-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-spec-params__value {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+
+  &--absent {
+    color: styles.$color-text-tertiary;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cancellation evidence
+// ---------------------------------------------------------------------------
+.job-reason {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.job-reason__label {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.job-reason__value {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-boundary {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.job-boundary__title {
+  margin: 0;
+  color: styles.$color-status-warning;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.job-boundary__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}

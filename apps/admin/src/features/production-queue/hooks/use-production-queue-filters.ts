@@ -27,6 +27,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 
+import type { ProductionStatusValue } from '../../../shared/presentation/production-status';
 import {
   DEFAULT_PRODUCTION_QUEUE_FILTERS,
   PRODUCTION_QUEUE_ORDER_PARAM,
@@ -39,7 +40,6 @@ import {
   withoutStatusFilter,
   type ProductionQueueFilters,
 } from '../model/production-queue-filters';
-import type { ProductionStatusValue } from '../model/production-status';
 
 export interface ProductionQueueFilterController {
   readonly filters: ProductionQueueFilters;

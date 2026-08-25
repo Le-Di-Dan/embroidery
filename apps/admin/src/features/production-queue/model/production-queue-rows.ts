@@ -41,9 +41,12 @@ import type {
 } from '@embroidery/api-client';
 
 import { truncateIdentifier } from '../../../shared/presentation/identifier';
+import {
+  presentProductionStatus,
+  type ProductionStatusPresentation,
+} from '../../../shared/presentation/production-status';
 import { PRODUCTION_QUEUE_COPY } from './production-queue-copy';
 import { adminProductionJobRoute } from './production-queue-route';
-import { presentProductionStatus, type ProductionStatusPresentation } from './production-status';
 
 export interface ProductionMilestone {
   /** The raw ISO instant, for the machine-readable `dateTime` attribute. */
