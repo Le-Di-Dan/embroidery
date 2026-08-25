@@ -45,6 +45,14 @@ export interface OrderItemRow {
   readonly productName: string;
   /** The frozen subject line beneath the name: a SKU + variant, or the COP note. */
   readonly subjectDetail: string;
+  /**
+   * The frozen Catalog SKU, when the line has one. Published so the table can
+   * offer the `APP8-A01` stock workspace for that SKU; it is never shown as a
+   * separate value and never sent anywhere from here. A customer-owned line has
+   * no SKU at all and gets `undefined`, which is why the link cannot appear on
+   * one.
+   */
+  readonly skuId: string | undefined;
   readonly kindLabel: string;
   readonly isCatalog: boolean;
   /** The frozen size label, or `undefined` when the order froze none. */
@@ -74,6 +82,7 @@ export function toOrderItemRow(item: AdminOrderItemResponse): OrderItemRow {
     position: item.position,
     productName: item.productName,
     subjectDetail: isCatalog ? catalogSubjectDetail(item) : COPY.items.customerOwnedNote,
+    skuId: isCatalog ? item.skuId : undefined,
     kindLabel: isCatalog ? COPY.items.catalog : COPY.items.customerOwned,
     isCatalog,
     sizeLabel: item.sizeLabel,

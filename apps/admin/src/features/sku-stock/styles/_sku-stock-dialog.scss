@@ -1,0 +1,97 @@
+// Admin SKU stock — the adjustment dialog (`777:3` … `777:99`).
+//
+// Loaded last, so its rules cascade over the panel treatments the dialog reuses
+// for its consequence, preview, pending, success and refusal notes.
+
+@use '@embroidery/styles' as styles;
+
+$stock-dialog-width: 640px;
+
+.stock-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  padding: styles.spacing(24);
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+  background: styles.$color-overlay-scrim;
+}
+
+.stock-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  width: 100%;
+  max-width: $stock-dialog-width;
+  margin: auto;
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.stock-dialog__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-bold;
+}
+
+.stock-dialog__context {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.stock-dialog__form,
+.stock-dialog__outcome {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.stock-dialog__footer {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.stock-dialog__secondary,
+.stock-dialog__primary {
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-input;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+}
+
+.stock-dialog__secondary {
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+}
+
+.stock-dialog__primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+
+  &:hover {
+    background: styles.$color-action-hover;
+  }
+}
+
+// A disabled control is visibly disabled and not merely inert: while a write is
+// in flight `777:58`/`777:81` grey both the submit and the dismissal, and an
+// operator must be able to see that clicking again will do nothing.
+.stock-dialog__secondary:disabled,
+.stock-dialog__primary:disabled {
+  border-color: styles.$color-border-secondary;
+  background: styles.$color-border-secondary;
+  color: styles.$color-background-primary;
+  cursor: not-allowed;
+}

@@ -77,6 +77,22 @@
   color: styles.$color-text-tertiary;
 }
 
+// The per-line route into the APP8-A01 inventory workspace. It sits under the
+// frozen subject line and adds no column, so the approved table geometry
+// (`734:64`) is unchanged.
+.order-items__stock-link {
+  display: inline-block;
+  margin-top: styles.spacing(4);
+  color: styles.$color-action-primary;
+  font-weight: styles.$font-weight-medium;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
 .order-items__kind {
   display: inline-block;
   padding: styles.spacing(4) styles.spacing(8);

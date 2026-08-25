@@ -1,0 +1,11 @@
+// Admin SKU stock workspace (`APP8-A01`) — the feature's single entry, loaded
+// by `src/styles/main.scss`.
+//
+// The partials are listed in cascade order: the page frame and the metric cards
+// first, then the panel/banner/table/skeleton treatments every state is built
+// from, and last the dialog, which layers over them. Reordering these lines
+// changes the emitted CSS; each selector lives in exactly one partial.
+
+@use 'sku-stock-layout';
+@use 'sku-stock-panels';
+@use 'sku-stock-dialog';

@@ -1,7 +1,8 @@
 # APP8 — Inventory Reservation and Production Operations
 
 > **Status:** `IN PROGRESS` — `APP8-R00`, `APP8-G01` (corrected by
-> `APP8-G01-C1`), `APP8-B01`, `APP8-B02`, `APP8-W01`, `APP8-B03`, `APP8-B04` and `APP8-D01` complete; phase audited,
+> `APP8-G01-C1`), `APP8-B01`, `APP8-B02`, `APP8-W01`, `APP8-B03`, `APP8-B04`,
+> `APP8-D01` and `APP8-A01` complete; phase audited,
 > planned, its authority locked (§10.5), `InventoryModule` composed into the
 > running API with the Admin stock surface that closes Gap A, inventory
 > persistence promoted to `@embroidery/persistence` with the CC-21 repair that
@@ -11,9 +12,12 @@
 > transitions that move the job, the order and the order's inventory
 > reservations in one transaction, and the APP8 Figma design package for the
 > three Admin surfaces delivered on `APP_08` (`766:3`, root section `771:3`,
-> 41 frames / 41 registry rows, all `REVIEW_REQUIRED`) (§12).
-> `APP8-A01` is `NEXT` but **`BLOCKED_PENDING_PO_DESIGN_APPROVAL`**: no APP8
-> frontend checkpoint may start against a `REVIEW_REQUIRED` registry row.
+> 41 frames / 41 registry rows) (§12). The Product Owner reviewed and passed the
+> **complete** `APP8-D01` package; all 41 rows are
+> `APPROVED_FOR_IMPLEMENTATION` under **`FIG-APPROVAL-APP8-D01-PO-001`**,
+> recorded by `APP8-A01`, which lifted `BLOCKED_PENDING_PO_DESIGN_APPROVAL` and
+> then delivered the Admin SKU stock workspace at `/kho/skus/{skuId}` against
+> those approved rows, adding **0** HTTP operations. `APP8-A02` is `NEXT`.
 > Sections 1–9 below are the **original pre-entry candidate plan**, preserved as
 > planning history. Section 10 onward is the **canonical, repository-grounded
 > plan** produced by `APP8-R00`. Where the two disagree, **section 10 onward
@@ -384,13 +388,27 @@ B04   COMPLETE          (1 HTTP operation; POST /admin/production-jobs/{jobId}/t
                        RESERVED and moves no order; one transaction per command;
                        lock order orders -> production_jobs -> inventory_reservations
                        -> sku_stocks; no migration)
-D01   COMPLETE          (0 HTTP operations; APP8 Figma design package on the
+D01   COMPLETE / PO APPROVED
+                      (0 HTTP operations; APP8 Figma design package on the
                        pre-existing empty APP_08 page 766:3; root section 771:3;
-                       9 sub-sections, 41 frames, 41 registry rows, all
-                       REVIEW_REQUIRED; no runtime, schema, OpenAPI, client or
-                       worker change)
-A01   INCOMPLETE — Next (BLOCKED_PENDING_PO_DESIGN_APPROVAL of the APP8-D01 rows)
-A02   INCOMPLETE
+                       9 sub-sections, 41 frames, 41 registry rows; all 41
+                       promoted REVIEW_REQUIRED -> APPROVED_FOR_IMPLEMENTATION
+                       under FIG-APPROVAL-APP8-D01-PO-001 by APP8-A01; no Figma
+                       node, node id, deep link or Last Verified value changed;
+                       no runtime, schema, OpenAPI, client or worker change;
+                       APP8-D01-C1 unused)
+A01   COMPLETE          (0 new HTTP operations; the Admin SKU stock workspace at
+                       /kho/skus/{skuId}, consuming the delivered
+                       adminSkuStock_get / adminSkuStock_adjust /
+                       adminSkuStock_ledger; server-truth metrics including a
+                       valid negative available; read-only low-stock threshold;
+                       truthful never-counted anchor state; audited signed-delta
+                       adjustment with mandatory reason, duplicate-submit guard,
+                       post-write re-read and the INVENTORY_STOCK_WOULD_GO_NEGATIVE
+                       refusal; bounded ledger with the truncation notice and no
+                       pagination affordance; no backend, schema, worker, OpenAPI
+                       or generated-client change)
+A02   INCOMPLETE — Next
 A03   INCOMPLETE
 E01   INCOMPLETE
 X01   INCOMPLETE

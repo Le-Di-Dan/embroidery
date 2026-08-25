@@ -1,0 +1,154 @@
+// Admin SKU stock — page frame, context card, metrics and notes (`APP8-A01`).
+//
+// Reproduces `FIG-APP8-A01-STOCK-DEFAULT-DESKTOP` (`775:3`),
+// `FIG-APP8-A01-STOCK-LOWSTOCK-DESKTOP` (`775:101`),
+// `FIG-APP8-A01-STOCK-NEWANCHOR-DESKTOP` (`776:3`) and the narrow behaviour of
+// `FIG-APP8-A01-STOCK-NARROW` (`789:3`).
+//
+// Every colour, radius, space and type size is a token. Class names are
+// prefixed `stock*`: the Admin stylesheet is global and unscoped, so a generic
+// `.card` or `.metric` here would collide with another feature's rules in a way
+// jsdom could never catch.
+
+@use '@embroidery/styles' as styles;
+
+// The metric card's own basis. Four of them plus three gaps fit the 1440
+// content column; at the approved narrow viewport they no longer do, so they
+// wrap into the 2×2 grid `789:36`/`789:45` draws. Nothing is hidden at 1280 —
+// the wrap is the entire responsive behaviour of this row.
+$stock-metric-basis: 266px;
+
+.stock-page {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24);
+}
+
+.stock-page__breadcrumb {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.stock-page__title {
+  margin: styles.spacing(4) 0 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-heading-m;
+}
+
+.stock-note {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  line-height: 1.5;
+}
+
+// The SKU context card (`775:30`): identity, the low-stock pill and the one
+// action. It wraps rather than overflowing, so a long identifier never pushes
+// the adjust button off the narrow viewport.
+.stock-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(16);
+  align-items: center;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.stock-context__identity {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.stock-context__eyebrow {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+}
+
+.stock-context__sku {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-bold;
+}
+
+.stock-context__identifiers {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.stock-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.stock-metric {
+  display: flex;
+  flex: 1 1 $stock-metric-basis;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: $stock-metric-basis;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.stock-metric__label {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+}
+
+.stock-metric__value {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-bold;
+}
+
+.stock-metric__note {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  line-height: 1.5;
+}
+
+// The border and the figure carry the tone; the label and the note never do.
+// `775:151` renders a negative availability in the error tone because it
+// deserves attention, not because it is invalid.
+.stock-metric--info {
+  border-color: styles.$color-status-info;
+
+  .stock-metric__value {
+    color: styles.$color-status-info;
+  }
+}
+
+.stock-metric--success {
+  border-color: styles.$color-status-success;
+
+  .stock-metric__value {
+    color: styles.$color-status-success;
+  }
+}
+
+.stock-metric--error {
+  border-color: styles.$color-status-error;
+
+  .stock-metric__value {
+    color: styles.$color-status-error;
+  }
+}

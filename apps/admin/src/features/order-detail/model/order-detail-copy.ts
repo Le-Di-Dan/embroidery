@@ -66,6 +66,13 @@ export const ORDER_DETAIL_COPY = {
     absentNote: 'không có',
     customerOwnedNote: 'Sản phẩm của khách · không có SKU',
     skuPrefix: 'SKU',
+    /**
+     * The one way an operator reaches `APP8-A01`'s SKU stock workspace. It is
+     * offered per line rather than from the sidenav because `APP8-B01` exposes
+     * stock **by SKU** and publishes no all-SKU query — there is no
+     * parameterless inventory destination to navigate to.
+     */
+    stockLink: 'Xem tồn kho',
     variantPrefix: 'biến thể',
     sizeNote:
       'Kích cỡ chỉ hiển thị khi đơn hàng đã đông cứng một nhãn kích cỡ. Khi vắng mặt, ô hiển thị “không có” — không dựng nhãn giả từ biến thể hay từ Catalog hiện tại.',

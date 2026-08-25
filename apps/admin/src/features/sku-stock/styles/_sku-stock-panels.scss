@@ -1,0 +1,304 @@
+// Admin SKU stock — banners, panels, skeleton and the ledger table
+// (`775:57`, `775:155`, `775:63`, `776:47`, `776:54`, `776:168`, `777:128`,
+// `777:165`).
+//
+// One panel treatment serves the empty state, every failure state, the
+// consequence and preview notes inside the dialog, and the truncation banner —
+// they are the same object with different tones, and giving each its own
+// treatment is how two "error" surfaces end up looking like different products.
+
+@use '@embroidery/styles' as styles;
+
+.stock-banner {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: flex-start;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-warning;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.stock-banner__mark {
+  color: styles.$color-status-warning;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+.stock-banner__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.stock-banner__title {
+  margin: 0;
+  color: styles.$color-status-warning;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.stock-banner__text {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  line-height: 1.5;
+}
+
+.stock-panel {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(12);
+  border: 1px solid transparent;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.stock-panel__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.stock-panel__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  line-height: 1.5;
+}
+
+.stock-panel--empty {
+  gap: styles.spacing(8);
+  padding: styles.spacing(24);
+  border-color: styles.$color-border-primary;
+  background: styles.$color-surface-primary;
+
+  .stock-panel__title {
+    font-size: styles.$font-size-body-m;
+  }
+}
+
+.stock-panel--info {
+  border-color: styles.$color-status-info;
+
+  .stock-panel__title {
+    color: styles.$color-status-info;
+  }
+}
+
+.stock-panel--success {
+  border-color: styles.$color-status-success;
+
+  .stock-panel__title {
+    color: styles.$color-status-success;
+  }
+}
+
+.stock-panel--warning {
+  border-color: styles.$color-status-warning;
+
+  .stock-panel__title {
+    color: styles.$color-status-warning;
+  }
+}
+
+.stock-panel--error {
+  border-color: styles.$color-status-error;
+
+  .stock-panel__title {
+    color: styles.$color-status-error;
+  }
+}
+
+.stock-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.stock-panel__action,
+.stock-context__action {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-input;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.stock-context__action,
+.stock-panel__action--primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+
+  &:hover {
+    background: styles.$color-action-hover;
+  }
+
+  &:active {
+    background: styles.$color-action-active;
+  }
+}
+
+.stock-ledger {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.stock-ledger__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: baseline;
+}
+
+.stock-ledger__title {
+  flex: 1 1 auto;
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.stock-ledger__bound {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+// The table scrolls inside its own container rather than widening the page.
+// At the approved narrow viewport the columns simply narrow (`789:60`); the
+// scroll is the guard for anything narrower, so the Admin body never scrolls
+// horizontally.
+.stock-table__scroll {
+  overflow-x: auto;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: styles.$font-size-caption;
+
+  th,
+  td {
+    padding: styles.spacing(12);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  thead th {
+    background: styles.$color-surface-secondary;
+    color: styles.$color-text-secondary;
+    font-weight: styles.$font-weight-semibold;
+    white-space: nowrap;
+  }
+
+  tbody td {
+    border-top: 1px solid styles.$color-border-primary;
+    color: styles.$color-text-secondary;
+  }
+}
+
+.stock-table__kind {
+  white-space: nowrap;
+}
+
+.stock-table__col--reason {
+  width: 40%;
+}
+
+.stock-table__reason--absent {
+  color: styles.$color-text-tertiary;
+}
+
+// The sign is in the text, so the tint only reinforces it.
+.stock-table__effect {
+  font-weight: styles.$font-weight-semibold;
+  white-space: nowrap;
+}
+
+.stock-table__effect--positive {
+  color: styles.$color-status-success;
+}
+
+.stock-table__effect--negative {
+  color: styles.$color-status-error;
+}
+
+.stock-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+}
+
+.stock-skeleton__label {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.stock-skeleton__context,
+.stock-skeleton__metric {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.stock-skeleton__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+}
+
+.stock-skeleton__metric {
+  flex: 1 1 266px;
+  min-width: 266px;
+}
+
+.stock-skeleton__table {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.stock-skeleton__bar,
+.stock-skeleton__row {
+  display: block;
+  height: styles.spacing(12);
+  border-radius: styles.$radius-xs;
+  background: styles.$color-border-primary;
+}
+
+.stock-skeleton__bar--sm {
+  width: 30%;
+}
+
+.stock-skeleton__bar--md {
+  width: 60%;
+}
+
+.stock-skeleton__bar--lg {
+  width: 45%;
+  height: styles.spacing(24);
+}

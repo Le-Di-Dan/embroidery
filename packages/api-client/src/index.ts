@@ -1064,6 +1064,34 @@ export type {
   TransferEvidenceUploadResponse,
 } from './generated/embroidery-api.schemas';
 
+// Admin SKU stock operations (APP8-B01). Exposed on the public boundary so the
+// Admin inventory capability never deep-imports the generated tree.
+//
+// All three are keyed on `skuId`, which is the only address the contract
+// accepts: a customer-owned product has no SKU and no stock record, so the
+// COP branch is unrepresentable here rather than merely avoided.
+//
+// `AdjustSkuStockBody` crosses because the adjustment is the one operation that
+// moves `quantityOnHand`, and the caller must build its body from the published
+// type rather than an object literal — `delta` and `reason`, and nothing a
+// server owns. There is deliberately no set-absolute body to export, because
+// the contract publishes none.
+//
+// No enum crosses as a value. The screen renders `entryKind` as the stored
+// token and never branches on it, so importing the vocabulary would create a
+// second place for it to drift from the contract.
+export {
+  adminSkuStockGet,
+  adminSkuStockAdjust,
+  adminSkuStockLedger,
+} from './generated/embroidery-api';
+export type {
+  AdjustSkuStockBody,
+  AdminSkuStockResponse,
+  AdminSkuStockLedgerResponse,
+  AdminSkuStockLedgerEntryResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

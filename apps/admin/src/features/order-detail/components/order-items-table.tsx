@@ -1,5 +1,8 @@
+import Link from 'next/link';
+
 import type { AdminOrderItemResponse } from '@embroidery/api-client';
 
+import { adminSkuStockRoute } from '../../sku-stock';
 import { ORDER_DETAIL_COPY as COPY } from '../model/order-detail-copy';
 import { hasAnySizeLabel, toOrderItemRow } from '../model/order-item-presentation';
 
@@ -34,6 +37,17 @@ interface OrderItemsTableProps {
  * line under the product name is built from the contract's own optional fields —
  * a catalog line missing both simply shows nothing rather than borrowing the
  * customer-owned wording.
+ *
+ * ## The one route into the inventory workspace
+ *
+ * A catalog line carries a frozen `skuId`, and this is the only place in the
+ * Admin app that holds one, so the per-line "Xem tồn kho" link is how an
+ * operator reaches `APP8-A01`. It is not a sidenav entry because `APP8-B01`
+ * publishes stock **by SKU** and no all-SKU query, so there is no parameterless
+ * inventory destination for the shell to point at — and the shell's own rule is
+ * that it never renders an anchor to a route that does not exist. The link adds
+ * no column and no request: it navigates with an identifier the order already
+ * froze, and the stock screen re-checks the Admin session on arrival.
  */
 export function OrderItemsTable({ items }: OrderItemsTableProps) {
   const rows = items.map(toOrderItemRow);
@@ -77,6 +91,15 @@ export function OrderItemsTable({ items }: OrderItemsTableProps) {
                 <span className="order-items__product-name">{row.productName}</span>
                 {row.subjectDetail === '' ? null : (
                   <span className="order-items__product-detail">{row.subjectDetail}</span>
+                )}
+                {row.skuId === undefined ? null : (
+                  <Link
+                    className="order-items__stock-link"
+                    href={adminSkuStockRoute(row.skuId)}
+                    data-testid="order-item-stock-link"
+                  >
+                    {COPY.items.stockLink}
+                  </Link>
                 )}
               </th>
               <td>
