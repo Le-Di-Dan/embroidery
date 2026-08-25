@@ -44,6 +44,7 @@ import { AdminOrderPaymentModule } from '../modules/payment/admin-order-payment.
 import { AdminPaymentEvidenceModule } from '../modules/payment/admin-payment-evidence.module';
 import { AdminPaymentVerificationModule } from '../modules/payment/admin-payment-verification.module';
 import { AdminSkuStockModule } from '../modules/inventory/admin-sku-stock.module';
+import { AdminProductionModule } from '../modules/production/admin-production.module';
 import { ContentModule } from '../modules/content/content.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
@@ -310,6 +311,21 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // answer; no order, payment or production module, so a stock route can move
     // nothing but a quantity.
     AdminSkuStockModule,
+    // APP8-B03 — the Admin production surface, and the line that finally
+    // composes CTX-PRD into the running API: `ProductionModule` was imported by
+    // one integration spec and by nothing here, so the delivered production
+    // layer was unreachable at runtime and `createJob` had no caller outside a
+    // test (`APP8_PHASE_ENTRY_AUDIT.md`). Its creation route shares the
+    // `admin/orders` base path with `AdminOrderModule` and the Admin payment
+    // surface, which is safe and deliberate: the route adds a `production-jobs`
+    // segment, so Nest matches on segment count and method and no registration
+    // order can make one shadow another. Like `AdminSkuStockModule` it is
+    // defined by what it cannot inject: no order or inventory writer, so no
+    // route here can move an order or touch a reservation; no Catalog, Design
+    // or Quotation module, so a frozen specification cannot be reconstructed
+    // from live state; and no transition use case at all, because every LC-18
+    // move belongs to APP8-B04.
+    AdminProductionModule,
   ],
 })
 export class AppModule {}

@@ -1400,6 +1400,179 @@ export interface AdminProductPublicationResponse {
   updatedAt: string;
 }
 
+export type AdminProductionJobCreatedResponseStatus =
+  (typeof AdminProductionJobCreatedResponseStatus)[keyof typeof AdminProductionJobCreatedResponseStatus];
+
+export const AdminProductionJobCreatedResponseStatus = {
+  PLANNED: 'PLANNED',
+  STARTED: 'STARTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminProductionJobCreatedResponse {
+  /** Resolved from the order, never from the request body. */
+  approvalSnapshotId: string;
+  jobId: string;
+  orderId: string;
+  status: AdminProductionJobCreatedResponseStatus;
+}
+
+export type AdminProductionJobDetailResponseStatus =
+  (typeof AdminProductionJobDetailResponseStatus)[keyof typeof AdminProductionJobDetailResponseStatus];
+
+export const AdminProductionJobDetailResponseStatus = {
+  PLANNED: 'PLANNED',
+  STARTED: 'STARTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type AdminProductionReservationResponseStatus =
+  (typeof AdminProductionReservationResponseStatus)[keyof typeof AdminProductionReservationResponseStatus];
+
+export const AdminProductionReservationResponseStatus = {
+  RESERVED: 'RESERVED',
+  CONSUMED: 'CONSUMED',
+  RELEASED: 'RELEASED',
+  EXPIRED: 'EXPIRED',
+} as const;
+
+export interface AdminProductionReservationResponse {
+  quantity: number;
+  reservationId: string;
+  skuId: string;
+  skuStockId: string;
+  status: AdminProductionReservationResponseStatus;
+}
+
+export interface AdminProductionReservationSummaryResponse {
+  /** Order lines naming a Catalog SKU. */
+  catalogItemCount: number;
+  /** Order lines naming a customer-owned product. */
+  customerOwnedItemCount: number;
+  /** True when the order has at least one Catalog line. False means the order is customer-owned only, where the absence of a reservation is expected by design (PO-APP8-001) and never an error. **Display context only** — production start is decided under the stock row lock, not from this read. */
+  required: boolean;
+  /** Every reservation ever placed against the order, terminal ones included, so a released reservation is distinguishable from one that never existed. */
+  reservations: AdminProductionReservationResponse[];
+}
+
+export interface AdminProductionSpecificationResponse {
+  approvalSnapshotId: string;
+  areaName: string;
+  /** The approval hash, copied at creation (D7-07). Provenance of the machine file — never recomputed here. */
+  documentHash: string;
+  physicalHeightMm: string;
+  /** Transported exactly as `numeric` stores it — never rounded or converted. */
+  physicalWidthMm: string;
+  /** Frozen display copy (Class F, INV-12). Never re-read from the live catalog. */
+  productName: string;
+  /** Free-text machine parameters recorded when the job was created. */
+  productionParameters?: string;
+  /** The approved quantity, frozen at creation. */
+  quantityTotal: number;
+  sideName: string;
+  /** Frozen variant label. Always absent for a customer-owned product (INV-13). */
+  variantLabel?: string;
+}
+
+export type AdminProductionTransitionResponseFromStatus =
+  (typeof AdminProductionTransitionResponseFromStatus)[keyof typeof AdminProductionTransitionResponseFromStatus];
+
+export const AdminProductionTransitionResponseFromStatus = {
+  PLANNED: 'PLANNED',
+  STARTED: 'STARTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type AdminProductionTransitionResponseToStatus =
+  (typeof AdminProductionTransitionResponseToStatus)[keyof typeof AdminProductionTransitionResponseToStatus];
+
+export const AdminProductionTransitionResponseToStatus = {
+  PLANNED: 'PLANNED',
+  STARTED: 'STARTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminProductionTransitionResponse {
+  /** Who moved the job. `production_job_transitions.actor_kind` carries no dictionary set and none is invented here; a customer never appears. */
+  actorKind: string;
+  /** Present on an ADMIN transition. */
+  adminId?: string;
+  /** The request correlation this move was recorded under. */
+  correlationId: string;
+  fromStatus: AdminProductionTransitionResponseFromStatus;
+  occurredAt: string;
+  /** Mandatory on a cancellation, absent otherwise. */
+  reason?: string;
+  /** Present on a SYSTEM transition. */
+  systemJobKey?: string;
+  toStatus: AdminProductionTransitionResponseToStatus;
+}
+
+export interface AdminProductionJobDetailResponse {
+  approvalSnapshotId: string;
+  cancelledAt?: string;
+  /** Mandatory evidence on a cancelled job. */
+  cancelledReason?: string;
+  completedAt?: string;
+  createdAt: string;
+  jobId: string;
+  /** The human order code. Display and search only — it never authorizes anything. */
+  orderCode: string;
+  orderId: string;
+  /** Read-only inventory context. Never the basis of a production-start decision. */
+  reservationSummary?: AdminProductionReservationSummaryResponse;
+  /** REL-092 rework lineage. A redo is a new job, never a mutated one. */
+  reworkedFromJobId?: string;
+  /** The immutable specification frozen from the exact approval at creation. */
+  specification?: AdminProductionSpecificationResponse;
+  startedAt?: string;
+  status: AdminProductionJobDetailResponseStatus;
+  /** The append-only LC-18 timeline in insert order. Empty for a PLANNED job. */
+  transitions: AdminProductionTransitionResponse[];
+  updatedAt: string;
+}
+
+/**
+ * The current LC-18 state, reported as stored.
+ */
+export type AdminProductionJobQueueItemResponseStatus =
+  (typeof AdminProductionJobQueueItemResponseStatus)[keyof typeof AdminProductionJobQueueItemResponseStatus];
+
+export const AdminProductionJobQueueItemResponseStatus = {
+  PLANNED: 'PLANNED',
+  STARTED: 'STARTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminProductionJobQueueItemResponse {
+  /** The exact approval snapshot this job was frozen from. One job per (order, approval snapshot) — `uq_production_jobs__order_approval_snapshot`. */
+  approvalSnapshotId: string;
+  /** When the job was cancelled. */
+  cancelledAt?: string;
+  /** When production completed. */
+  completedAt?: string;
+  createdAt: string;
+  jobId: string;
+  orderId: string;
+  /** When production started. Absent while the job is still PLANNED. */
+  startedAt?: string;
+  /** The current LC-18 state, reported as stored. */
+  status: AdminProductionJobQueueItemResponseStatus;
+}
+
+export interface AdminProductionJobQueueResponse {
+  /** True when a further page exists. */
+  hasNext: boolean;
+  items: AdminProductionJobQueueItemResponse[];
+  /** Opaque keyset cursor for the next page. Absent on the last page. */
+  nextCursor?: string;
+}
+
 export interface AdminQuotationHeaderResponse {
   /**
    * The version the customer is currently looking at, or `null` while the quotation has never been sent. Advanced only by the send transaction (`APP6-B03`).
@@ -2095,6 +2268,16 @@ export interface CreateProductBody {
    * @maxLength 200
    */
   name: string;
+}
+
+export interface CreateProductionJobBody {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  approvalSnapshotId?: string;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  productionParameters?: string;
 }
 
 export type CreateQuotationDraftBodyLineItemsItemLineKind =
@@ -4750,12 +4933,48 @@ export type AdminOrderPaymentRead200 = ApiSuccessResponse & {
   data: AdminOrderPaymentsResponse;
 };
 
+export type AdminProductionJobCreate201 = ApiSuccessResponse & {
+  data: AdminProductionJobCreatedResponse;
+};
+
 export type AdminPaymentAttemptReview200 = ApiSuccessResponse & {
   data: PaymentDecisionResponse;
 };
 
 export type AdminPaymentAttemptVerify200 = ApiSuccessResponse & {
   data: PaymentDecisionResponse;
+};
+
+export type AdminProductionJobListParams = {
+  orderId?: string;
+  /**
+   * Repeatable. Absent means every state.
+   */
+  status?: AdminProductionJobListStatusItem[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  cursor?: unknown;
+};
+
+export type AdminProductionJobListStatusItem =
+  (typeof AdminProductionJobListStatusItem)[keyof typeof AdminProductionJobListStatusItem];
+
+export const AdminProductionJobListStatusItem = {
+  PLANNED: 'PLANNED',
+  STARTED: 'STARTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type AdminProductionJobList200 = ApiSuccessResponse & {
+  data: AdminProductionJobQueueResponse;
+};
+
+export type AdminProductionJobGet200 = ApiSuccessResponse & {
+  data: AdminProductionJobDetailResponse;
 };
 
 export type AdminProductListParams = {

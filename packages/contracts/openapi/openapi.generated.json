@@ -2147,6 +2147,413 @@
         ],
         "type": "object"
       },
+      "AdminProductionJobCreatedResponse": {
+        "properties": {
+          "approvalSnapshotId": {
+            "description": "Resolved from the order, never from the request body.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6031",
+            "format": "uuid",
+            "type": "string"
+          },
+          "jobId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6091",
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PLANNED",
+              "STARTED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "PLANNED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId",
+          "orderId",
+          "approvalSnapshotId",
+          "status"
+        ],
+        "type": "object"
+      },
+      "AdminProductionJobDetailResponse": {
+        "properties": {
+          "approvalSnapshotId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6031",
+            "format": "uuid",
+            "type": "string"
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cancelledReason": {
+            "description": "Mandatory evidence on a cancelled job.",
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "jobId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6091",
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderCode": {
+            "description": "The human order code. Display and search only — it never authorizes anything.",
+            "example": "ORD-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "orderId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "format": "uuid",
+            "type": "string"
+          },
+          "reservationSummary": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminProductionReservationSummaryResponse"
+              }
+            ],
+            "description": "Read-only inventory context. Never the basis of a production-start decision."
+          },
+          "reworkedFromJobId": {
+            "description": "REL-092 rework lineage. A redo is a new job, never a mutated one.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "specification": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminProductionSpecificationResponse"
+              }
+            ],
+            "description": "The immutable specification frozen from the exact approval at creation."
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PLANNED",
+              "STARTED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "PLANNED",
+            "type": "string"
+          },
+          "transitions": {
+            "description": "The append-only LC-18 timeline in insert order. Empty for a PLANNED job.",
+            "items": {
+              "$ref": "#/components/schemas/AdminProductionTransitionResponse"
+            },
+            "type": "array"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId",
+          "orderId",
+          "orderCode",
+          "approvalSnapshotId",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "transitions"
+        ],
+        "type": "object"
+      },
+      "AdminProductionJobQueueItemResponse": {
+        "properties": {
+          "approvalSnapshotId": {
+            "description": "The exact approval snapshot this job was frozen from. One job per (order, approval snapshot) — `uq_production_jobs__order_approval_snapshot`.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6031",
+            "format": "uuid",
+            "type": "string"
+          },
+          "cancelledAt": {
+            "description": "When the job was cancelled.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "completedAt": {
+            "description": "When production completed.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "example": "2026-08-25T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "jobId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6091",
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "format": "uuid",
+            "type": "string"
+          },
+          "startedAt": {
+            "description": "When production started. Absent while the job is still PLANNED.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "description": "The current LC-18 state, reported as stored.",
+            "enum": [
+              "PLANNED",
+              "STARTED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "PLANNED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId",
+          "orderId",
+          "approvalSnapshotId",
+          "status",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "AdminProductionJobQueueResponse": {
+        "properties": {
+          "hasNext": {
+            "description": "True when a further page exists.",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminProductionJobQueueItemResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "description": "Opaque keyset cursor for the next page. Absent on the last page.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "hasNext"
+        ],
+        "type": "object"
+      },
+      "AdminProductionReservationResponse": {
+        "properties": {
+          "quantity": {
+            "example": 25,
+            "type": "number"
+          },
+          "reservationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "skuId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6021",
+            "format": "uuid",
+            "type": "string"
+          },
+          "skuStockId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RESERVED",
+              "CONSUMED",
+              "RELEASED",
+              "EXPIRED"
+            ],
+            "example": "RESERVED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reservationId",
+          "skuStockId",
+          "skuId",
+          "quantity",
+          "status"
+        ],
+        "type": "object"
+      },
+      "AdminProductionReservationSummaryResponse": {
+        "properties": {
+          "catalogItemCount": {
+            "description": "Order lines naming a Catalog SKU.",
+            "example": 1,
+            "type": "number"
+          },
+          "customerOwnedItemCount": {
+            "description": "Order lines naming a customer-owned product.",
+            "example": 0,
+            "type": "number"
+          },
+          "required": {
+            "description": "True when the order has at least one Catalog line. False means the order is customer-owned only, where the absence of a reservation is expected by design (PO-APP8-001) and never an error. **Display context only** — production start is decided under the stock row lock, not from this read.",
+            "type": "boolean"
+          },
+          "reservations": {
+            "description": "Every reservation ever placed against the order, terminal ones included, so a released reservation is distinguishable from one that never existed.",
+            "items": {
+              "$ref": "#/components/schemas/AdminProductionReservationResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "required",
+          "catalogItemCount",
+          "customerOwnedItemCount",
+          "reservations"
+        ],
+        "type": "object"
+      },
+      "AdminProductionSpecificationResponse": {
+        "properties": {
+          "approvalSnapshotId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6031",
+            "format": "uuid",
+            "type": "string"
+          },
+          "areaName": {
+            "example": "Chest",
+            "type": "string"
+          },
+          "documentHash": {
+            "description": "The approval hash, copied at creation (D7-07). Provenance of the machine file — never recomputed here.",
+            "example": "sha256:0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            "type": "string"
+          },
+          "physicalHeightMm": {
+            "example": "80.00",
+            "type": "string"
+          },
+          "physicalWidthMm": {
+            "description": "Transported exactly as `numeric` stores it — never rounded or converted.",
+            "example": "120.00",
+            "type": "string"
+          },
+          "productName": {
+            "description": "Frozen display copy (Class F, INV-12). Never re-read from the live catalog.",
+            "example": "Tee",
+            "type": "string"
+          },
+          "productionParameters": {
+            "description": "Free-text machine parameters recorded when the job was created.",
+            "type": "string"
+          },
+          "quantityTotal": {
+            "description": "The approved quantity, frozen at creation.",
+            "example": 25,
+            "type": "number"
+          },
+          "sideName": {
+            "example": "Front",
+            "type": "string"
+          },
+          "variantLabel": {
+            "description": "Frozen variant label. Always absent for a customer-owned product (INV-13).",
+            "example": "Black / M",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approvalSnapshotId",
+          "documentHash",
+          "productName",
+          "sideName",
+          "areaName",
+          "physicalWidthMm",
+          "physicalHeightMm",
+          "quantityTotal"
+        ],
+        "type": "object"
+      },
+      "AdminProductionTransitionResponse": {
+        "properties": {
+          "actorKind": {
+            "description": "Who moved the job. `production_job_transitions.actor_kind` carries no dictionary set and none is invented here; a customer never appears.",
+            "example": "ADMIN",
+            "type": "string"
+          },
+          "adminId": {
+            "description": "Present on an ADMIN transition.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "correlationId": {
+            "description": "The request correlation this move was recorded under.",
+            "type": "string"
+          },
+          "fromStatus": {
+            "enum": [
+              "PLANNED",
+              "STARTED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "PLANNED",
+            "type": "string"
+          },
+          "occurredAt": {
+            "example": "2026-08-25T10:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Mandatory on a cancellation, absent otherwise.",
+            "type": "string"
+          },
+          "systemJobKey": {
+            "description": "Present on a SYSTEM transition.",
+            "type": "string"
+          },
+          "toStatus": {
+            "enum": [
+              "PLANNED",
+              "STARTED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "STARTED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fromStatus",
+          "toStatus",
+          "actorKind",
+          "correlationId",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
       "AdminQuotationHeaderResponse": {
         "properties": {
           "currentVersionId": {
@@ -3747,6 +4154,22 @@
           "categorySlug",
           "name"
         ],
+        "type": "object"
+      },
+      "CreateProductionJobBody": {
+        "additionalProperties": false,
+        "properties": {
+          "approvalSnapshotId": {
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "productionParameters": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "CreateQuotationDraftBody": {
@@ -14115,6 +14538,238 @@
         ]
       }
     },
+    "/api/admin/orders/{orderId}/production-jobs": {
+      "post": {
+        "description": "Creates a PLANNED production job against the exact approval snapshot the order names, freezing its specification from that approval in the same transaction. The approval is read from the order, never chosen by the caller: a snapshot approved for a different order cannot become this order’s production basis, and naming one is refused. Creation requires the order’s deposit obligation to be SATISFIED (GRD-013), checked through the single deposit authority — an unsatisfied deposit creates no job and no specification at all. One job exists per (order, approval snapshot); a repeat request is refused and never produces a second job. An inventory reservation is **not** required to plan the work: a customer-owned-only order has none by design, and whether production may actually start is a later, separate decision. This operation starts no production, moves no order and touches no reservation.",
+        "operationId": "adminProductionJob_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductionJobBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminProductionJobCreatedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The created job, in PLANNED.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed order id or body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such order.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The named approval does not belong to this order, the deposit is not satisfied, or a job already exists for this order and approval. Nothing was created.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Create the production job for one order",
+        "tags": [
+          "adminProductionJob"
+        ]
+      }
+    },
     "/api/admin/payment-attempts/{attemptId}/review": {
       "post": {
         "description": "For the case the operator knows something the comparison cannot see — an unreadable memo, two transfers, a statement that disagrees with the customer. The attempt moves to `REQUIRES_REVIEW` with the mandatory reason, and a reconciliation records it. The deposit is **not** satisfied, the order does **not** move, no `payment.verified` is emitted and no provider event is written — there is no branch in this operation that could settle a payment. An observed amount or reference may be recorded when the operator has one; omitting them records nothing rather than a fabricated zero. A terminal attempt is refused: LC-16 never regresses.",
@@ -14808,6 +15463,338 @@
         "summary": "Open one transfer screenshot submitted against a deposit",
         "tags": [
           "adminPaymentEvidence"
+        ]
+      }
+    },
+    "/api/admin/production-jobs": {
+      "get": {
+        "description": "One keyset page of production jobs, newest first, bounded at 100 rows. With no `status` the page is every LC-18 state: there is no default triage subset, because none is defined by any accepted authority and a silent one would hide the completed and cancelled jobs an operator went looking for. Paging is by opaque cursor on `(createdAt, id)`, so a job created while the operator pages is neither repeated nor skipped. Rows carry the job, the order it belongs to, the exact approval it was frozen from, its state and its lifecycle timestamps — and no priority, SLA, operator, machine or attempt count, because the production model has no such fact.",
+        "operationId": "adminProductionJob_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "orderId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Repeatable. Absent means every state.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "PLANNED",
+                  "STARTED",
+                  "COMPLETED",
+                  "CANCELLED"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminProductionJobQueueResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "One page of the production queue.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed filter, page size, order id, or a cursor this endpoint did not issue.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Read the production work queue",
+        "tags": [
+          "adminProductionJob"
+        ]
+      }
+    },
+    "/api/admin/production-jobs/{jobId}": {
+      "get": {
+        "description": "The job root with its LC-18 evidence, the immutable specification frozen from the exact approval snapshot at creation, the append-only transition history in insert order, and read-only inventory context. The specification is a copy, never a live read: a product renamed in the catalog after the job was created does not change what is produced. The reservation summary is display context only — a customer-owned-only order truthfully reports no reservation requirement, and a Catalog order reports the reservations standing against it. It is taken without the stock row lock and is never the basis of a production-start decision. No artifact, note, customer detail or amount is returned.",
+        "operationId": "adminProductionJob_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminProductionJobDetailResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "That production job.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed job id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such production job.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Read one production job, its frozen specification and its history",
+        "tags": [
+          "adminProductionJob"
         ]
       }
     },

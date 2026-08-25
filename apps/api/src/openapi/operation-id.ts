@@ -133,6 +133,15 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // public identifier; with it the family reads `_current`, `_qr`, `_initiate`.
   PublicOrderDepositController: 'publicOrderDeposit',
   PublicOrderDepositAttemptController: 'publicOrderDeposit',
+  // `APP8-B03`. Creating a production job, reading the queue and reading one job
+  // are one published `adminProductionJob` domain. They are two classes because
+  // a job is created **under the order it is produced for** — the approval is
+  // resolved from `orders.current_approval_snapshot_id`, so the order belongs in
+  // the path — while the queue and the detail address the job by its own id
+  // across every order. Without this entry the creation would mint
+  // `adminOrderProductionJob_create`, letting a routing decision name a public
+  // identifier; with it the family reads `_create`, `_list`, `_get`.
+  AdminOrderProductionJobController: 'adminProductionJob',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

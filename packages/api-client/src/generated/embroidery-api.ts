@@ -57,6 +57,10 @@ import type {
   AdminProductPublish200,
   AdminProductUnpublish200,
   AdminProductUpdate200,
+  AdminProductionJobCreate201,
+  AdminProductionJobGet200,
+  AdminProductionJobList200,
+  AdminProductionJobListParams,
   AdminQuotationAddVersion201,
   AdminQuotationCreate201,
   AdminQuotationSendVersion200,
@@ -77,6 +81,7 @@ import type {
   CreateDesignSessionBody,
   CreateDesignTemplateBody,
   CreateProductBody,
+  CreateProductionJobBody,
   CreateQuotationDraftBody,
   CreateSkuBody,
   DepositQrBody,
@@ -663,6 +668,26 @@ export const adminOrderPaymentRead = (
 };
 
 /**
+ * Creates a PLANNED production job against the exact approval snapshot the order names, freezing its specification from that approval in the same transaction. The approval is read from the order, never chosen by the caller: a snapshot approved for a different order cannot become this order’s production basis, and naming one is refused. Creation requires the order’s deposit obligation to be SATISFIED (GRD-013), checked through the single deposit authority — an unsatisfied deposit creates no job and no specification at all. One job exists per (order, approval snapshot); a repeat request is refused and never produces a second job. An inventory reservation is **not** required to plan the work: a customer-owned-only order has none by design, and whether production may actually start is a later, separate decision. This operation starts no production, moves no order and touches no reservation.
+ * @summary Create the production job for one order
+ */
+export const adminProductionJobCreate = (
+  orderId: unknown,
+  createProductionJobBody: CreateProductionJobBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductionJobCreate201>>,
+) => {
+  return apiRequest<AdminProductionJobCreate201>(
+    {
+      url: `/api/admin/orders/${orderId}/production-jobs`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createProductionJobBody,
+    },
+    options,
+  );
+};
+
+/**
  * For the case the operator knows something the comparison cannot see — an unreadable memo, two transfers, a statement that disagrees with the customer. The attempt moves to `REQUIRES_REVIEW` with the mandatory reason, and a reconciliation records it. The deposit is **not** satisfied, the order does **not** move, no `payment.verified` is emitted and no provider event is written — there is no branch in this operation that could settle a payment. An observed amount or reference may be recorded when the operator has one; omitting them records nothing rather than a fabricated zero. A terminal attempt is refused: LC-16 never regresses.
  * @summary Route one payment attempt to manual review
  */
@@ -716,6 +741,34 @@ export const adminPaymentEvidenceGet = (
       method: 'GET',
       responseType: 'blob',
     },
+    options,
+  );
+};
+
+/**
+ * One keyset page of production jobs, newest first, bounded at 100 rows. With no `status` the page is every LC-18 state: there is no default triage subset, because none is defined by any accepted authority and a silent one would hide the completed and cancelled jobs an operator went looking for. Paging is by opaque cursor on `(createdAt, id)`, so a job created while the operator pages is neither repeated nor skipped. Rows carry the job, the order it belongs to, the exact approval it was frozen from, its state and its lifecycle timestamps — and no priority, SLA, operator, machine or attempt count, because the production model has no such fact.
+ * @summary Read the production work queue
+ */
+export const adminProductionJobList = (
+  params?: AdminProductionJobListParams,
+  options?: SecondParameter<typeof apiRequest<AdminProductionJobList200>>,
+) => {
+  return apiRequest<AdminProductionJobList200>(
+    { url: `/api/admin/production-jobs`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * The job root with its LC-18 evidence, the immutable specification frozen from the exact approval snapshot at creation, the append-only transition history in insert order, and read-only inventory context. The specification is a copy, never a live read: a product renamed in the catalog after the job was created does not change what is produced. The reservation summary is display context only — a customer-owned-only order truthfully reports no reservation requirement, and a Catalog order reports the reservations standing against it. It is taken without the stock row lock and is never the basis of a production-start decision. No artifact, note, customer detail or amount is returned.
+ * @summary Read one production job, its frozen specification and its history
+ */
+export const adminProductionJobGet = (
+  jobId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminProductionJobGet200>>,
+) => {
+  return apiRequest<AdminProductionJobGet200>(
+    { url: `/api/admin/production-jobs/${jobId}`, method: 'GET' },
     options,
   );
 };
@@ -1889,6 +1942,9 @@ export type AdminOrderDetailResult = NonNullable<Awaited<ReturnType<typeof admin
 export type AdminOrderPaymentReadResult = NonNullable<
   Awaited<ReturnType<typeof adminOrderPaymentRead>>
 >;
+export type AdminProductionJobCreateResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductionJobCreate>>
+>;
 export type AdminPaymentAttemptReviewResult = NonNullable<
   Awaited<ReturnType<typeof adminPaymentAttemptReview>>
 >;
@@ -1897,6 +1953,12 @@ export type AdminPaymentAttemptVerifyResult = NonNullable<
 >;
 export type AdminPaymentEvidenceGetResult = NonNullable<
   Awaited<ReturnType<typeof adminPaymentEvidenceGet>>
+>;
+export type AdminProductionJobListResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductionJobList>>
+>;
+export type AdminProductionJobGetResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductionJobGet>>
 >;
 export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
 export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;
