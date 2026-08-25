@@ -29,6 +29,7 @@
 @use '../features/order-queue/styles/order-queue';
 @use '../features/order-detail/styles/order-detail';
 @use '../features/sku-stock/styles/sku-stock';
+@use '../features/production-queue/styles/production-queue';
 
 // Browser normalization: predictable box model.
 *,

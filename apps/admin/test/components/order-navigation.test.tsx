@@ -44,6 +44,9 @@ it('places orders after requests, following the sequence an order travels', () =
     'design-templates',
     'custom-requests',
     'orders',
+    // `APP8-A02` appended the production queue after the order queue; the order
+    // entry keeps its position.
+    'production',
     'customer-access-support',
   ]);
 });

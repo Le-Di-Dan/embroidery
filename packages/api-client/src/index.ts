@@ -1092,6 +1092,35 @@ export type {
   AdminSkuStockLedgerEntryResponse,
 } from './generated/embroidery-api.schemas';
 
+// The Admin production work queue (`APP8-B03`), consumed by `APP8-A02` at
+// `/san-xuat`. Exposed here so the Admin production capability never
+// deep-imports the generated tree.
+//
+// Only the **list** operation crosses. `adminProductionJobCreate`,
+// `adminProductionJobGet` and `adminProductionJobTransition` are deliberately
+// left unexported: A02 is a read-only queue, and a boundary that published the
+// three mutations would make "this screen cannot start, complete or cancel a
+// job" a convention rather than a fact the module graph enforces.
+//
+// `AdminProductionJobListStatusItem` crosses as a **value** for the reason
+// `AdminOrderListStatusItem` does: the filter's four options are derived from
+// the contract rather than from a hand-kept list that could drift. It is the
+// whole LC-18 vocabulary — `PLANNED`, `STARTED`, `COMPLETED`, `CANCELLED` —
+// and there is no fifth value and no `ALL` sentinel to export, because the
+// contract defines neither: an omitted `status` is what "every state" means.
+//
+// The queue item publishes ids, a status and lifecycle timestamps and nothing
+// else — no order code, no frozen specification, no priority, no operator, no
+// machine and no attempt count. Those either live on the detail contract or do
+// not exist at all, so no type here offers a place to put one.
+export { adminProductionJobList } from './generated/embroidery-api';
+export { AdminProductionJobListStatusItem } from './generated/embroidery-api.schemas';
+export type {
+  AdminProductionJobListParams,
+  AdminProductionJobQueueResponse,
+  AdminProductionJobQueueItemResponse,
+} from './generated/embroidery-api.schemas';
+
 // Generated transport types derived from the committed OpenAPI artifact.
 export type {
   ApiErrorResponse,

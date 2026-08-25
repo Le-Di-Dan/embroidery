@@ -2,7 +2,7 @@
 
 > **Status:** `IN PROGRESS` — `APP8-R00`, `APP8-G01` (corrected by
 > `APP8-G01-C1`), `APP8-B01`, `APP8-B02`, `APP8-W01`, `APP8-B03`, `APP8-B04`,
-> `APP8-D01` and `APP8-A01` complete; phase audited,
+> `APP8-D01`, `APP8-A01` and `APP8-A02` complete; phase audited,
 > planned, its authority locked (§10.5), `InventoryModule` composed into the
 > running API with the Admin stock surface that closes Gap A, inventory
 > persistence promoted to `@embroidery/persistence` with the CC-21 repair that
@@ -17,7 +17,9 @@
 > `APPROVED_FOR_IMPLEMENTATION` under **`FIG-APPROVAL-APP8-D01-PO-001`**,
 > recorded by `APP8-A01`, which lifted `BLOCKED_PENDING_PO_DESIGN_APPROVAL` and
 > then delivered the Admin SKU stock workspace at `/kho/skus/{skuId}` against
-> those approved rows, adding **0** HTTP operations. `APP8-A02` is `NEXT`.
+> those approved rows, adding **0** HTTP operations. `APP8-A02` then delivered
+> the Admin production queue at `/san-xuat` against the approved A02 rows,
+> also adding **0** HTTP operations. `APP8-A03` is `NEXT`.
 > Sections 1–9 below are the **original pre-entry candidate plan**, preserved as
 > planning history. Section 10 onward is the **canonical, repository-grounded
 > plan** produced by `APP8-R00`. Where the two disagree, **section 10 onward
@@ -408,8 +410,21 @@ A01   COMPLETE          (0 new HTTP operations; the Admin SKU stock workspace at
                        refusal; bounded ledger with the truncation notice and no
                        pagination affordance; no backend, schema, worker, OpenAPI
                        or generated-client change)
-A02   INCOMPLETE — Next
-A03   INCOMPLETE
+A02   COMPLETE          (0 new HTTP operations; the Admin production queue at
+                       /san-xuat, consuming the delivered adminProductionJob_list;
+                       LC-18 status[] multi-select over exactly PLANNED / STARTED /
+                       COMPLETED / CANCELLED, with an empty selection sending no
+                       filter, and a truthful orderId filter that never resolves
+                       an order code; keyset load-more on hasNext / nextCursor
+                       with no page number and no total; the server's
+                       (createdAt, id) order preserved with no client re-sort;
+                       distinct empty and filtered-empty states; loading
+                       skeleton, retryable read failure, PRODUCTION_CURSOR_INVALID
+                       first-page recovery and 401 sign-in; the approved narrow
+                       reduction hiding only the approvalSnapshotId column; the
+                       "Sản xuất" sidenav entry; no backend, schema, worker,
+                       OpenAPI or generated-client change)
+A03   INCOMPLETE — Next
 E01   INCOMPLETE
 X01   INCOMPLETE
 ```

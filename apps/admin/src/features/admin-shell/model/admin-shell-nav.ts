@@ -4,6 +4,7 @@ import { ADMIN_CUSTOMER_ACCESS_ROUTE, CUSTOMER_ACCESS_COPY } from '../../custome
 import { ADMIN_REQUESTS_ROUTE, CUSTOM_REQUEST_QUEUE_COPY } from '../../custom-request-queue';
 import { ADMIN_DESIGN_TEMPLATES_ROUTE, DESIGN_TEMPLATE_COPY } from '../../design-templates';
 import { ADMIN_ORDERS_ROUTE, ORDER_QUEUE_COPY } from '../../order-queue';
+import { ADMIN_PRODUCTION_ROUTE, PRODUCTION_QUEUE_COPY } from '../../production-queue';
 import { ADMIN_PRODUCTS_ROUTE, PRODUCT_COPY } from '../../products';
 
 /**
@@ -22,11 +23,19 @@ export interface AdminNavItem {
  * The authenticated shell's primary navigation. `APP2-A01` adds the asset
  * library as the first real business destination, `APP2-A02` adds the product
  * list, `APP3-A02` adds the Design Template list, `APP4-A01` adds customer
- * access support, `APP5-A01` adds the custom-request queue and `APP7-A01` adds
- * the order queue; the label and the route both come from the owning capability,
- * so there is one spelling of each. Order follows the approved Admin frames,
- * which put orders after requests — the sequence an order actually travels — and
+ * access support, `APP5-A01` adds the custom-request queue, `APP7-A01` adds the
+ * order queue and `APP8-A02` adds the production queue; the label and the route
+ * both come from the owning capability, so there is one spelling of each. Order
+ * follows the approved Admin frames, which put orders after requests — the
+ * sequence an order actually travels — production after orders (`780:22`), and
  * support last (`732:9`).
+ *
+ * `APP8-D01` also draws a `Kho` entry beside this one (`780:20`). It is
+ * deliberately **not** added: `APP8-B01` publishes stock by SKU only, so a
+ * parameterless `/kho` destination would have to be an all-SKU list no accepted
+ * contract can serve, and this shell's own rule is that every item points at a
+ * route that exists. `/san-xuat` is a real parameterless route, which is why
+ * production may join and inventory may not. `FU-APP8-A01-04` stays open.
  */
 export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
   { id: 'overview', label: 'Tổng quan', href: AUTHENTICATED_HOME_ROUTE },
@@ -43,6 +52,11 @@ export const ADMIN_PRIMARY_NAV: readonly AdminNavItem[] = [
     href: ADMIN_REQUESTS_ROUTE,
   },
   { id: 'orders', label: ORDER_QUEUE_COPY.page.title, href: ADMIN_ORDERS_ROUTE },
+  {
+    id: 'production',
+    label: PRODUCTION_QUEUE_COPY.page.navLabel,
+    href: ADMIN_PRODUCTION_ROUTE,
+  },
   {
     id: 'customer-access-support',
     label: CUSTOMER_ACCESS_COPY.page.title,

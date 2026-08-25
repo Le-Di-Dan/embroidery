@@ -48,6 +48,9 @@ it('does not disturb the existing entries', () => {
     // `APP7-A01` appended the order queue after the request queue — the
     // sequence an order actually travels.
     'orders',
+    // `APP8-A02` appended the production queue after the order queue, which is
+    // where `780:22` draws it.
+    'production',
     'customer-access-support',
   ]);
 });

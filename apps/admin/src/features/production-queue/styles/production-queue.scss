@@ -1,0 +1,458 @@
+// Admin production queue (`APP8-A02`).
+//
+// Reproduces `FIG-APP8-A02-QUEUE-DEFAULT-DESKTOP` (`780:3`),
+// `FIG-APP8-A02-QUEUE-FILTER-DESKTOP` (`780:105`), the two empty states
+// (`782:3`, `782:44`), the loading skeleton (`782:89`), the error states
+// (`782:206`) and the narrow reference (`789:85`). Every colour, radius, space
+// and type size is a token: no literal hex and no magic pixel value beyond the
+// two layout thresholds named below.
+//
+// Class names are prefixed `production*`. The Admin stylesheet is global and
+// unscoped, so a generic `.table` or `.filters` here would collide with another
+// feature's rules in a way jsdom could never catch.
+
+@use '@embroidery/styles' as styles;
+
+// The approved narrow reference (`789:85`) is a 1280 viewport, whose Admin
+// content column sits at 988px once the 204px sidenav and the page padding are
+// taken. This is the width at which `789:157`'s single reduction applies: the
+// `approvalSnapshotId` column is hidden, and nothing else is.
+$production-narrow-desktop: 1320px;
+
+// The status multi-select is a grid of checkboxes; below this the four options
+// stack into a single column rather than squeezing their labels.
+$production-filter-narrow: 900px;
+
+// The order-id filter is bounded so a UUID does not stretch across the whole
+// content column; `780:35` draws the control at 330px.
+$production-order-filter-width: 330px;
+
+.production {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.production__breadcrumb {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.production__title {
+  margin: styles.spacing(4) 0 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+.production__source {
+  margin: styles.spacing(8) 0 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// The two approved filters: native controls, not custom widgets
+// ---------------------------------------------------------------------------
+.production-filters {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.production-filters__group {
+  margin: 0;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.production-filters__legend {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  padding: 0 styles.spacing(4);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.production-filters__summary {
+  color: styles.$color-action-primary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.production-filters__options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: styles.spacing(4) styles.spacing(16);
+  margin: styles.spacing(8) 0 0;
+  padding: 0;
+  list-style: none;
+
+  @media (max-width: $production-filter-narrow) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.production-filters__label {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+  padding: styles.spacing(4);
+  cursor: pointer;
+}
+
+.production-filters__option-label {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+// The stored contract value beside the label. Tertiary and small: it is a
+// reconciliation aid, not the primary reading.
+.production-filters__option-token {
+  margin-left: auto;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.production-filters__vocabulary {
+  margin: styles.spacing(8) 0 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.production-filters__scope {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.production-filters__order {
+  max-width: $production-order-filter-width;
+}
+
+// ---------------------------------------------------------------------------
+// The queue table
+// ---------------------------------------------------------------------------
+.production-collection {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+}
+
+.production-collection__ordering {
+  margin: 0;
+  padding: styles.spacing(12) styles.spacing(16);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.production-table {
+  width: 100%;
+  border-collapse: collapse;
+  // Fixed layout so the colgroup decides the tracks: at the narrow reference the
+  // remaining columns widen rather than the longest status label pushing the
+  // table past the viewport.
+  table-layout: fixed;
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+
+  th,
+  td {
+    padding: styles.spacing(12) styles.spacing(16);
+    border-bottom: 1px solid styles.$color-border-primary;
+    text-align: left;
+    vertical-align: middle;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-body-s;
+    overflow-wrap: anywhere;
+  }
+
+  thead th {
+    background: styles.$color-surface-secondary;
+    color: styles.$color-text-secondary;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.production-table__caption {
+  padding-bottom: styles.spacing(8);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  text-align: left;
+}
+
+// The row identity, emphasised as `780:50` draws it.
+.production-table__job {
+  color: styles.$color-action-primary;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.production-table__order,
+.production-table__milestone {
+  color: styles.$color-text-secondary;
+}
+
+.production-table__approval,
+.production-table__absent {
+  color: styles.$color-text-tertiary;
+}
+
+.production-table__open {
+  color: styles.$color-status-info;
+  font-weight: styles.$font-weight-medium;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.production-table__col--job {
+  width: 17%;
+}
+
+.production-table__col--order {
+  width: 16%;
+}
+
+.production-table__col--approval {
+  width: 18%;
+}
+
+.production-table__col--status {
+  width: 15%;
+}
+
+.production-table__col--created {
+  width: 13%;
+}
+
+.production-table__col--milestone {
+  width: 13%;
+}
+
+.production-table__col--open {
+  width: 8%;
+}
+
+// The action column header is a label for assistive technology only: `780:48`
+// draws it blank, and a visible word there would title a column of controls
+// rather than a column of data.
+.production-table__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// The single approved narrow reduction (`789:157`): the approval column goes,
+// head and body cells together so the table never goes ragged. Nothing else is
+// hidden — the job, the order, the status, both timestamps and the row link
+// stay on screen — and there is no horizontal scroll and no overflow menu
+// holding the dropped column.
+@media (max-width: $production-narrow-desktop) {
+  .production-table__approval,
+  .production-table__col--approval {
+    display: none;
+  }
+
+  .production-table th,
+  .production-table td {
+    padding: styles.spacing(8) styles.spacing(12);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Data-derived states: empty, filtered-empty and the three read failures
+// ---------------------------------------------------------------------------
+.production-panel {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  align-items: flex-start;
+  padding: styles.spacing(32);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.production-panel--warning {
+  border-color: styles.$color-status-warning;
+
+  .production-panel__title {
+    color: styles.$color-status-warning;
+  }
+}
+
+.production-panel--error {
+  border-color: styles.$color-status-error;
+
+  .production-panel__title {
+    color: styles.$color-status-error;
+  }
+}
+
+.production-panel__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.production-panel__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.production-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.production-panel__action,
+.production-pagination__action {
+  display: inline-block;
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+.production-panel__action--primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+}
+
+// A screen-reader-only live region: the append announcement is spoken, not seen.
+.production-collection__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.production-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  align-items: center;
+}
+
+.production-pagination__note {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.production-pagination__error-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// Loading skeleton
+// ---------------------------------------------------------------------------
+.production-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.production-skeleton__status {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.production-skeleton__note {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.production-skeleton__rows {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.production-skeleton__row {
+  display: flex;
+  gap: styles.spacing(16);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.production-skeleton__bar {
+  height: styles.spacing(12);
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+}
+
+.production-skeleton__bar--job {
+  width: 17%;
+}
+
+.production-skeleton__bar--order {
+  width: 16%;
+}
+
+// Dropped at the narrow reference with the column it stands for, so the loading
+// geometry keeps matching the table that replaces it.
+.production-skeleton__bar--approval {
+  width: 18%;
+
+  @media (max-width: $production-narrow-desktop) {
+    display: none;
+  }
+}
+
+.production-skeleton__bar--status {
+  width: 15%;
+}
+
+.production-skeleton__bar--meta {
+  flex: 1;
+}
