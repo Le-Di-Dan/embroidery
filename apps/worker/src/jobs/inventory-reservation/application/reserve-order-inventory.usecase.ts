@@ -65,6 +65,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { newId } from '@embroidery/database';
 import {
+  aggregateCatalogRequirements,
   IdempotencyStore,
   ORDER_REPOSITORY,
   SKU_STOCK_REPOSITORY,
@@ -73,6 +74,7 @@ import {
   type OrderId,
   type OrderRepository,
   type ReservationId,
+  type ReservationRequirement,
   type SkuStockRepository,
 } from '@embroidery/persistence';
 
@@ -85,10 +87,6 @@ import {
   reserveFingerprint,
   reserveScopeKey,
 } from '../domain/order-reserve-idempotency';
-import {
-  aggregateCatalogRequirements,
-  type ReservationRequirement,
-} from '../domain/reservation-requirements';
 
 /**
  * The ledger actor for every row this capability appends.

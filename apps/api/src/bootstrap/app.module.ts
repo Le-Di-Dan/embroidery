@@ -45,6 +45,7 @@ import { AdminPaymentEvidenceModule } from '../modules/payment/admin-payment-evi
 import { AdminPaymentVerificationModule } from '../modules/payment/admin-payment-verification.module';
 import { AdminSkuStockModule } from '../modules/inventory/admin-sku-stock.module';
 import { AdminProductionModule } from '../modules/production/admin-production.module';
+import { AdminProductionTransitionModule } from '../modules/production/admin-production-transition.module';
 import { ContentModule } from '../modules/content/content.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
@@ -326,6 +327,14 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // from live state; and no transition use case at all, because every LC-18
     // move belongs to APP8-B04.
     AdminProductionModule,
+    // APP8-B04 — the guarded LC-18 transitions, in their own module so the
+    // boundary above survives. Start, complete and cancel need the canonical
+    // order writer and the canonical shared inventory writer; putting those into
+    // AdminProductionModule would give a queue projection an order transition
+    // and a stock decrement. Both controllers publish into the one
+    // `adminProductionJob` domain, so this composition decision does not name a
+    // public identifier.
+    AdminProductionTransitionModule,
   ],
 })
 export class AppModule {}

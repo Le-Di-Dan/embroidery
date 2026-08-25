@@ -9,14 +9,16 @@
  * Carries **G-DB7-26** (via `StockAnchor`), **G-DB7-27** (via
  * `ReservationEligibilityGuard`), **G-DB7-28** (hold → reservation
  * conversion) and **G-DB7-29** (every commitment appends its ledger entry).
+ *
+ * The terminal writes themselves — the RESERVED -> RELEASED / CONSUMED row lock,
+ * the on-hand decrement and the ledger append — live in
+ * `reservation-terminalization.ts`, because `APP8-B04` gave each of them a
+ * second entry point keyed by (order, SKU) instead of by reservation id. One
+ * write, two ways to name the row it acts on.
  */
 import { Injectable } from '@nestjs/common';
-import { guardViolationError, notFoundError, schema } from '@embroidery/database';
-import type {
-  InventoryEntryKind,
-  InventoryReservationState,
-  Transaction,
-} from '@embroidery/database';
+import { guardViolationError, schema } from '@embroidery/database';
+import type { InventoryEntryKind } from '@embroidery/database';
 import { DrizzleRepository } from '../repository/drizzle-repository';
 import { DatabaseExecutor } from '../runtime/database-executor';
 import { eq } from 'drizzle-orm';
@@ -26,26 +28,21 @@ import type {
   InventoryActor,
   Reservation,
   ReservationId,
-  SkuStockId,
   SoftHoldId,
 } from './sku-stock.repository';
 import { actorColumns, InventoryCommitments } from './inventory-commitments';
 import { ReservationEligibilityGuard } from './reservation-eligibility.guard';
+import {
+  applyConsume,
+  applyRelease,
+  lockOrderReservation,
+  lockReservedReservationById,
+  reservationNotActive,
+  toReservation,
+} from './reservation-terminalization';
 import { StockAnchor } from './stock-anchor';
 
 const { skuStocks, inventoryLedgerEntries, inventorySoftHolds, inventoryReservations } = schema;
-
-type ReservationRow = typeof inventoryReservations.$inferSelect;
-
-export function toReservation(row: ReservationRow): Reservation {
-  return {
-    id: row.id as ReservationId,
-    skuStockId: row.skuStockId as SkuStockId,
-    orderId: row.orderId,
-    quantity: row.quantity,
-    status: row.status as InventoryReservationState,
-  };
-}
 
 @Injectable()
 export class InventoryReservations extends DrizzleRepository {
@@ -188,27 +185,8 @@ export class InventoryReservations extends DrizzleRepository {
     return this.run('releaseReservation', async () => {
       const tx = this.requireTransaction('releaseReservation');
       // CC-21. The lock, then the decision — in that order, in this transaction.
-      const reservation = await this.lockReservedReservation(tx, id, 'releaseReservation');
-
-      await tx
-        .update(inventoryReservations)
-        .set({
-          status: 'RELEASED',
-          releasedReason: reason,
-          terminalizedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(inventoryReservations.id, id));
-
-      await tx.insert(inventoryLedgerEntries).values({
-        skuStockId: reservation.skuStockId,
-        entryKind: 'RESERVATION_RELEASED',
-        quantity: reservation.quantity,
-        onHandDelta: 0,
-        reservationId: id,
-        reason,
-        ...actorColumns(actor),
-      });
+      const reservation = await lockReservedReservationById(tx, id, 'releaseReservation');
+      await applyRelease(tx, reservation, reason, actor);
     });
   }
 
@@ -217,46 +195,106 @@ export class InventoryReservations extends DrizzleRepository {
       const tx = this.requireTransaction('consumeReservation');
       // CC-21. Before the anchor: a reservation may only be terminalized once,
       // and only the holder of its row lock may decide that.
-      const reservation = await this.lockReservedReservation(tx, id, 'consumeReservation');
+      const reservation = await lockReservedReservationById(tx, id, 'consumeReservation');
+      await applyConsume(tx, reservation, actor, 'consumeReservation');
+    });
+  }
 
-      const [stock] = await tx
-        .select()
-        .from(skuStocks)
-        .where(eq(skuStocks.id, reservation.skuStockId))
-        .limit(1)
-        .for('update');
-
+  /**
+   * Consumes the order's active reservation for one SKU — the goods issue at
+   * production start (`TR-LC17-05`, `APP8-B04` §9, §10).
+   *
+   * The caller knows *"this order needs 25 of that SKU"*, derived from the frozen
+   * order items by `aggregateCatalogRequirements`; it does not know a
+   * reservation id, and must not decide anything from an unlocked read of one. So
+   * the whole decision is made here, under the reservation's row lock: which row
+   * is active, whether its quantity covers the requirement, and the terminal write
+   * itself. An identifier discovered outside the lock could have been released
+   * between that read and this write; a *status* read outside it is the CC-21
+   * defect `APP8-B02` repaired.
+   *
+   * The stock anchor is resolved by SKU **without** a lock, deliberately: that is
+   * identity, not state — `uq_sku_stocks__sku` makes one row per SKU and no path
+   * moves a reservation between anchors — and {@link applyConsume} locks the same
+   * anchor before it touches the balance. Locking it here instead would reverse
+   * the `APP8-B02` order and put a cycle back into the matrix.
+   *
+   * Refuses rather than repairs. A missing, released, expired or already-consumed
+   * reservation is `RESERVATION_NOT_ACTIVE`; one that does not cover the frozen
+   * requirement is `RESERVATION_QUANTITY_INSUFFICIENT`. Neither is patched by
+   * creating a replacement reservation or by restocking, and both roll the
+   * caller's whole transaction back (`APP8-B04` §10).
+   *
+   * @requiresTransaction
+   */
+  async consumeOrderReservation(input: {
+    orderId: string;
+    skuId: SkuId;
+    requiredQuantity: number;
+    actor: InventoryActor;
+  }): Promise<Reservation> {
+    return this.run('consumeOrderReservation', async () => {
+      const tx = this.requireTransaction('consumeOrderReservation');
+      const stock = await this.anchor.load(tx, input.skuId);
       if (stock === undefined) {
-        throw notFoundError(
-          'SkuStockRepository.consumeReservation',
-          'That stock record does not exist.',
+        // No anchor means no reservation for this SKU can ever have existed, so
+        // the Catalog requirement is uncovered — the same refusal, not a 404.
+        throw reservationNotActive('consumeOrderReservation');
+      }
+
+      const reservation = await lockOrderReservation(tx, input.orderId, stock.id);
+      if (reservation === undefined) {
+        throw reservationNotActive('consumeOrderReservation');
+      }
+      if (reservation.quantity < input.requiredQuantity) {
+        throw guardViolationError(
+          'SkuStockRepository.consumeOrderReservation',
+          'RESERVATION_QUANTITY_INSUFFICIENT',
+          'That reservation does not cover the quantity this order requires.',
         );
       }
 
-      await tx
-        .update(inventoryReservations)
-        .set({ status: 'CONSUMED', terminalizedAt: new Date(), updatedAt: new Date() })
-        .where(eq(inventoryReservations.id, id));
+      await applyConsume(tx, reservation, input.actor, 'consumeOrderReservation');
+      return reservation;
+    });
+  }
 
-      // Consumption is the only path that reduces on-hand: the goods have
-      // physically left.
-      await tx
-        .update(skuStocks)
-        .set({
-          quantityOnHand: stock.quantityOnHand - reservation.quantity,
-          updatedAt: new Date(),
-        })
-        .where(eq(skuStocks.id, stock.id));
+  /**
+   * Releases the order's reservation for one SKU **if one is still active**
+   * (`TR-LC17-06`, `APP8-B04` §13.2).
+   *
+   * Returns `undefined` when there is nothing active to release, and that is an
+   * ordinary outcome rather than an error: after a production start the
+   * reservation is `CONSUMED`, and §13.2 forbids "unconsuming" it or fabricating
+   * a release so that the two cancellation paths look alike. A COP portion has no
+   * SKU at all and never reaches this method (`PO-APP8-001`).
+   *
+   * The decision is still taken under the row lock, so a release racing a
+   * concurrent consume cannot leave two terminal ledger effects for one
+   * reservation.
+   *
+   * @requiresTransaction
+   */
+  async releaseOrderReservationIfActive(input: {
+    orderId: string;
+    skuId: SkuId;
+    reason: string;
+    actor: InventoryActor;
+  }): Promise<Reservation | undefined> {
+    return this.run('releaseOrderReservationIfActive', async () => {
+      const tx = this.requireTransaction('releaseOrderReservationIfActive');
+      const stock = await this.anchor.load(tx, input.skuId);
+      if (stock === undefined) {
+        return undefined;
+      }
 
-      await tx.insert(inventoryLedgerEntries).values({
-        skuStockId: stock.id,
-        entryKind: 'CONSUMED',
-        quantity: reservation.quantity,
-        onHandDelta: -reservation.quantity,
-        reservationId: id,
-        orderId: reservation.orderId,
-        ...actorColumns(actor),
-      });
+      const reservation = await lockOrderReservation(tx, input.orderId, stock.id);
+      if (reservation === undefined) {
+        return undefined;
+      }
+
+      await applyRelease(tx, reservation, input.reason, input.actor);
+      return reservation;
     });
   }
 
@@ -269,63 +307,5 @@ export class InventoryReservations extends DrizzleRepository {
         .limit(1);
       return row === undefined ? undefined : toReservation(row);
     });
-  }
-
-  /**
-   * **DB3 CC-21** — the release-vs-consume arbiter.
-   *
-   * `DB3_CONCURRENCY_SPECIFICATION.md` CC-21 names the arbiter as *"reservation
-   * row LOCK + idempotent transitions"*, and `DB5_LOCKING_ACCESS_PATHS.md`
-   * repeats it. Until `APP8-B02` neither terminal path took that lock: both read
-   * the status through the unlocked `findReservation`, so a cancellation saga
-   * and a production goods-issue could each observe `RESERVED`, and the
-   * reservation would end up with a `RESERVATION_RELEASED` ledger row **and** a
-   * `CONSUMED` one — plus an on-hand decrement for stock that was also released.
-   * Locking `sku_stocks` inside `consumeReservation` did not save it: that lock
-   * came *after* the status read, and `releaseReservation` never reached the
-   * anchor at all.
-   *
-   * So the row is taken `FOR UPDATE` **before** the status is looked at, and the
-   * status is looked at under that lock, in the same transaction. The second
-   * caller blocks on the lock and, when it is released, reads the winner's
-   * committed terminal status — `RESERVATION_NOT_ACTIVE`, the delivered refusal,
-   * unchanged. One transition, one terminal ledger effect, at most one on-hand
-   * decrement.
-   *
-   * **Lock order.** Reservation row first, `sku_stocks` anchor second. No
-   * delivered path locks the anchor and then an *existing* reservation row —
-   * `createReservation` and `convertHold` lock the anchor and then *insert*, and
-   * a row nobody can name yet cannot be waited on — so this adds no cycle and
-   * leaves the proven `orders` → `sku_stocks` direction
-   * (`DB8_LOCK_ORDER_MATRIX.md`) untouched. Isolation stays `READ COMMITTED`
-   * with explicit locks (DEC-DB7-006); nothing here opts into `SERIALIZABLE`.
-   *
-   * @requiresTransaction
-   */
-  private async lockReservedReservation(
-    tx: Transaction,
-    id: ReservationId,
-    operation: string,
-  ): Promise<Reservation> {
-    const [row] = await tx
-      .select()
-      .from(inventoryReservations)
-      .where(eq(inventoryReservations.id, id))
-      .limit(1)
-      .for('update');
-
-    if (row === undefined) {
-      throw notFoundError(`SkuStockRepository.${operation}`, 'That reservation does not exist.');
-    }
-
-    const reservation = toReservation(row);
-    if (reservation.status !== 'RESERVED') {
-      throw guardViolationError(
-        `SkuStockRepository.${operation}`,
-        'RESERVATION_NOT_ACTIVE',
-        'That reservation is no longer active.',
-      );
-    }
-    return reservation;
   }
 }

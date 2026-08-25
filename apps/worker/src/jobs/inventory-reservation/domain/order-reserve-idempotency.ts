@@ -46,7 +46,7 @@
  */
 import { createHash } from 'node:crypto';
 
-import type { ReservationRequirement } from './reservation-requirements';
+import type { ReservationRequirement } from '@embroidery/persistence';
 
 /** `DB3_IDEMPOTENCY_SPECIFICATION.md`'s namespace for this operation. */
 export const INVENTORY_RESERVE_NAMESPACE = 'inventory.reserve';

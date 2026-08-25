@@ -142,6 +142,19 @@ export class DrizzleProductionJobRepository
     });
   }
 
+  async loadForUpdate(id: ProductionJobId): Promise<ProductionJob | undefined> {
+    return this.run('loadForUpdate', async () => {
+      const tx = this.requireTransaction('loadForUpdate');
+      const [row] = await tx
+        .select()
+        .from(productionJobs)
+        .where(eq(productionJobs.id, id))
+        .limit(1)
+        .for('update');
+      return row === undefined ? undefined : toJob(row);
+    });
+  }
+
   async transition(input: {
     id: ProductionJobId;
     to: ProductionJobState;

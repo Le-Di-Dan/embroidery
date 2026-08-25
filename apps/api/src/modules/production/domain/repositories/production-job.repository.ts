@@ -58,6 +58,21 @@ export interface ProductionJobRepository {
     productionParameters?: string | undefined;
   }): Promise<ProductionJob>;
 
+  /**
+   * Loads the job under its row lock, before any decision is taken about it
+   * (`APP8-B04` §8).
+   *
+   * The same row lock {@link transition} takes, reachable on its own because a
+   * transition command must **decide** from the job's committed state and not
+   * only move it: `GRD-015` compares the job's `approval_snapshot_id` against the
+   * order's authoritative one, and consumes inventory, before the move happens.
+   * Reading that through {@link findById} and acting on it afterwards would put
+   * the whole start decision outside the lock that arbitrates it.
+   *
+   * @requiresTransaction
+   */
+  loadForUpdate(id: ProductionJobId): Promise<ProductionJob | undefined>;
+
   /** @requiresTransaction — move and evidence together, legality checked. */
   transition(input: {
     id: ProductionJobId;

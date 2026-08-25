@@ -1,13 +1,15 @@
 # APP8 — Inventory Reservation and Production Operations
 
 > **Status:** `IN PROGRESS` — `APP8-R00`, `APP8-G01` (corrected by
-> `APP8-G01-C1`), `APP8-B01`, `APP8-B02`, `APP8-W01` and `APP8-B03` complete; phase audited,
+> `APP8-G01-C1`), `APP8-B01`, `APP8-B02`, `APP8-W01`, `APP8-B03` and `APP8-B04` complete; phase audited,
 > planned, its authority locked (§10.5), `InventoryModule` composed into the
 > running API with the Admin stock surface that closes Gap A, inventory
 > persistence promoted to `@embroidery/persistence` with the CC-21 repair that
 > closes Gap B, the `payment.verified` → official reservation worker
 > consumer delivered, and `ProductionModule` composed into the running API with
-> the Admin production creation, queue and detail surface (§12).
+> the Admin production creation, queue and detail surface, and the guarded LC-18
+> transitions that move the job, the order and the order's inventory
+> reservations in one transaction (§12).
 > Sections 1–9 below are the **original pre-entry candidate plan**, preserved as
 > planning history. Section 10 onward is the **canonical, repository-grounded
 > plan** produced by `APP8-R00`. Where the two disagree, **section 10 onward
@@ -371,8 +373,14 @@ B03   COMPLETE          (3 HTTP operations; ProductionModule composed into the
                        running API; Admin creation gated on DEPOSIT_ELIGIBILITY_PORT
                        against the order-resolved approval; queue and detail reads;
                        no migration)
-B04   INCOMPLETE — Next
-D01   INCOMPLETE
+B04   COMPLETE          (1 HTTP operation; POST /admin/production-jobs/{jobId}/transitions;
+                       start consumes every required Catalog reservation and moves the
+                       order DEPOSIT_PAID -> IN_PRODUCTION, complete moves it to
+                       PRODUCTION_COMPLETED, cancel releases only what is still
+                       RESERVED and moves no order; one transaction per command;
+                       lock order orders -> production_jobs -> inventory_reservations
+                       -> sku_stocks; no migration)
+D01   INCOMPLETE — Next
 A01   INCOMPLETE
 A02   INCOMPLETE
 A03   INCOMPLETE

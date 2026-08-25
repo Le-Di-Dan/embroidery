@@ -83,12 +83,26 @@ describe('canonical inventory persistence has exactly one implementation', () =>
     // legitimately publishes `schema.INVENTORY_ENTRY_KINDS` as an enum. The
     // precise signals are the query layer and the Drizzle table objects, whose
     // camelCase identifiers appear in statements and never in prose.
+    //
+    // A **read** adapter is not an implementation of this aggregate.
+    // `APP8-B03` added `drizzle-order-reservation-summary.adapter.ts`, a
+    // display-only projection behind its own narrow port: it has no insert, no
+    // update, no delete and no `for('update')`, so it cannot create, terminalize
+    // or oversubscribe anything, and it duplicates neither the availability
+    // arithmetic nor the anchor lock — which is what INV-19 is about. What must
+    // stay singular is the **writer**, so that is what is scanned for. The file
+    // is still required to be read-only, and that is asserted below rather than
+    // assumed.
+    const WRITE_SIGNALS =
+      /\.(?:insert|update|delete)\(|\.for\('update'\)|\.for\('share'\)|requireTransaction\(/;
+
     const offenders = PRODUCTION_SOURCES.filter(
       (file) =>
-        /\bfrom\s+'drizzle-orm'/.test(file.text) ||
-        /\b(?:skuStocks|inventorySoftHolds|inventoryReservations|inventoryLedgerEntries)\b/.test(
-          file.text,
-        ),
+        (/\bfrom\s+'drizzle-orm'/.test(file.text) ||
+          /\b(?:skuStocks|inventorySoftHolds|inventoryReservations|inventoryLedgerEntries)\b/.test(
+            file.text,
+          )) &&
+        WRITE_SIGNALS.test(file.text),
     );
 
     expect(offenders.map((file) => file.path)).toEqual([]);

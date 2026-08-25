@@ -1573,6 +1573,65 @@ export interface AdminProductionJobQueueResponse {
   nextCursor?: string;
 }
 
+/**
+ * The LC-18 state the job held when the transaction began.
+ */
+export type AdminProductionTransitionResultResponseFromStatus =
+  (typeof AdminProductionTransitionResultResponseFromStatus)[keyof typeof AdminProductionTransitionResultResponseFromStatus];
+
+export const AdminProductionTransitionResultResponseFromStatus = {
+  PLANNED: 'PLANNED',
+  STARTED: 'STARTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The order state after the same transaction. A start moves it to IN_PRODUCTION and a completion to PRODUCTION_COMPLETED; a production-job cancellation leaves it exactly as it was, because APP8 does not execute the order cancellation workflow.
+ */
+export type AdminProductionTransitionResultResponseOrderStatus =
+  (typeof AdminProductionTransitionResultResponseOrderStatus)[keyof typeof AdminProductionTransitionResultResponseOrderStatus];
+
+export const AdminProductionTransitionResultResponseOrderStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The LC-18 state the job now holds.
+ */
+export type AdminProductionTransitionResultResponseStatus =
+  (typeof AdminProductionTransitionResultResponseStatus)[keyof typeof AdminProductionTransitionResultResponseStatus];
+
+export const AdminProductionTransitionResultResponseStatus = {
+  PLANNED: 'PLANNED',
+  STARTED: 'STARTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminProductionTransitionResultResponse {
+  /** The LC-18 state the job held when the transaction began. */
+  fromStatus: AdminProductionTransitionResultResponseFromStatus;
+  jobId: string;
+  orderId: string;
+  /** The order state after the same transaction. A start moves it to IN_PRODUCTION and a completion to PRODUCTION_COMPLETED; a production-job cancellation leaves it exactly as it was, because APP8 does not execute the order cancellation workflow. */
+  orderStatus: AdminProductionTransitionResultResponseOrderStatus;
+  /** The inventory reservations this transition terminalized — consumed by a start, released by a cancellation. Empty when the order has no Catalog line to reserve for, and empty when a cancellation found nothing still reserved because production had already consumed it. Nothing is fabricated to make the list non-empty. */
+  reservationIds: string[];
+  /** The LC-18 state the job now holds. */
+  status: AdminProductionTransitionResultResponseStatus;
+}
+
 export interface AdminQuotationHeaderResponse {
   /**
    * The version the customer is currently looking at, or `null` while the quotation has never been sent. Advanced only by the send transaction (`APP6-B03`).
@@ -4538,6 +4597,24 @@ export interface TransitionCustomRequestBody {
   toStatus: TransitionCustomRequestBodyToStatus;
 }
 
+export type TransitionProductionJobBodyTo =
+  (typeof TransitionProductionJobBodyTo)[keyof typeof TransitionProductionJobBodyTo];
+
+export const TransitionProductionJobBodyTo = {
+  STARTED: 'STARTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface TransitionProductionJobBody {
+  /**
+   * @minLength 1
+   * @maxLength 1000
+   */
+  reason?: string;
+  to: TransitionProductionJobBodyTo;
+}
+
 export interface UnpublishDesignTemplateBody {
   /**
    * @minimum 0
@@ -4975,6 +5052,10 @@ export type AdminProductionJobList200 = ApiSuccessResponse & {
 
 export type AdminProductionJobGet200 = ApiSuccessResponse & {
   data: AdminProductionJobDetailResponse;
+};
+
+export type AdminProductionJobTransition200 = ApiSuccessResponse & {
+  data: AdminProductionTransitionResultResponse;
 };
 
 export type AdminProductListParams = {

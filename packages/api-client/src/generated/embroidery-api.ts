@@ -61,6 +61,7 @@ import type {
   AdminProductionJobGet200,
   AdminProductionJobList200,
   AdminProductionJobListParams,
+  AdminProductionJobTransition200,
   AdminQuotationAddVersion201,
   AdminQuotationCreate201,
   AdminQuotationSendVersion200,
@@ -146,6 +147,7 @@ import type {
   SubmitCustomRequestBody,
   SubmitVerificationAttemptBody,
   TransitionCustomRequestBody,
+  TransitionProductionJobBody,
   UnpublishDesignTemplateBody,
   UnpublishProductBody,
   UpdateProductBody,
@@ -769,6 +771,32 @@ export const adminProductionJobGet = (
 ) => {
   return apiRequest<AdminProductionJobGet200>(
     { url: `/api/admin/production-jobs/${jobId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Moves the job through LC-18 and, where the lifecycle requires it, the order and the order's inventory reservations — all in one transaction that commits together or not at all.
+ *
+ * **STARTED** requires the job PLANNED, the order DEPOSIT_PAID and not on hold or being cancelled, the order’s DEPOSIT obligation satisfied, and the job frozen from the approval the order is still produced against. It consumes every Catalog reservation the order’s frozen items require — one per SKU, quantity aggregated — decrementing on-hand once each, and moves the order to IN_PRODUCTION. A customer-owned-only order requires no reservation at all and starts with none; a mixed order consumes only its Catalog portions. If any required reservation is missing, already terminal or short, nothing at all is committed — including reservations earlier in the same request.
+ *
+ * **COMPLETED** requires the job STARTED and the order IN_PRODUCTION, and moves the order to PRODUCTION_COMPLETED. It touches no inventory: the goods were issued at start. It does not request the remaining payment, freeze shipping or dispatch.
+ *
+ * **CANCELLED** requires a reason, is legal from PLANNED or STARTED, and releases only reservations that are still reserved. A job cancelled after production started leaves its consumed inventory consumed — stock that has left is not restored by cancelling the paperwork. The order’s own commercial state is deliberately unchanged: cancelling a production job is not the order cancellation and refund workflow.
+ * @summary Start, complete or cancel one production job
+ */
+export const adminProductionJobTransition = (
+  jobId: unknown,
+  transitionProductionJobBody: TransitionProductionJobBody,
+  options?: SecondParameter<typeof apiRequest<AdminProductionJobTransition200>>,
+) => {
+  return apiRequest<AdminProductionJobTransition200>(
+    {
+      url: `/api/admin/production-jobs/${jobId}/transitions`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: transitionProductionJobBody,
+    },
     options,
   );
 };
@@ -1959,6 +1987,9 @@ export type AdminProductionJobListResult = NonNullable<
 >;
 export type AdminProductionJobGetResult = NonNullable<
   Awaited<ReturnType<typeof adminProductionJobGet>>
+>;
+export type AdminProductionJobTransitionResult = NonNullable<
+  Awaited<ReturnType<typeof adminProductionJobTransition>>
 >;
 export type AdminProductListResult = NonNullable<Awaited<ReturnType<typeof adminProductList>>>;
 export type AdminProductCreateResult = NonNullable<Awaited<ReturnType<typeof adminProductCreate>>>;

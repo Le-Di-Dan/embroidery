@@ -184,6 +184,14 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     });
   }
 
+  async loadForUpdate(id: OrderId): Promise<Order | undefined> {
+    return this.run('loadForUpdate', async () => {
+      const tx = this.requireTransaction('loadForUpdate');
+      const [row] = await tx.select().from(orders).where(eq(orders.id, id)).limit(1).for('update');
+      return row === undefined ? undefined : toOrder(row);
+    });
+  }
+
   async transition(input: TransitionOrderInput): Promise<Order> {
     return this.run('transition', async () => {
       const tx = this.requireTransaction('transition');

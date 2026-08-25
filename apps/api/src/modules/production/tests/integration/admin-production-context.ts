@@ -29,6 +29,12 @@
  * keeping `ORDER_REPOSITORY` out of the production routes' injector — and the
  * contract suite asserts the three published operations are the only ones.
  *
+ * `APP8-B04` extends it rather than forking it: the transition module joins the
+ * same application, and inventory is seeded through the canonical shared
+ * `SkuStockRepository` — `ensureStockRow` then `createReservation` — so a start
+ * consumes rows the one AGG-07 writer actually wrote, under the deposit gate it
+ * actually enforces. Raw SQL is used only for reading committed state back.
+ *
  * Test-only.
  */
 import { randomBytes } from 'node:crypto';
@@ -37,9 +43,11 @@ import type { Server } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { newId } from '@embroidery/database';
+import type { OrderState } from '@embroidery/database';
 import { createDisposableDatabase, truncateAllTables } from '@embroidery/database/testing';
 import type { DisposableDatabase } from '@embroidery/database/testing';
-import { TransactionManager } from '@embroidery/persistence';
+import { SKU_STOCK_REPOSITORY, TransactionManager } from '@embroidery/persistence';
+import type { ReservationId, SkuId, SkuStockId, SkuStockRepository } from '@embroidery/persistence';
 import { sql } from 'drizzle-orm';
 
 import { GLOBAL_ROUTE_PREFIX } from '../../../../bootstrap/api-application';
@@ -57,7 +65,9 @@ import type {
 } from '../../../order/domain/repositories/order.repository';
 import { seedOrderChain } from '../../../order/tests/integration/order-fixture';
 import type { OrderFixture } from '../../../order/tests/integration/order-fixture';
+import { InventoryModule } from '../../../inventory/inventory.module';
 import { AdminProductionModule } from '../../admin-production.module';
+import { AdminProductionTransitionModule } from '../../admin-production-transition.module';
 
 /** The development cookie name (`cookieSecure` is false outside production). */
 export const ADMIN_COOKIE_NAME = 'adm_session';
@@ -67,6 +77,25 @@ export const FROZEN_PRODUCT_NAME = 'Tee';
 export const FROZEN_VARIANT_LABEL = 'Black / M';
 
 const COP_DOC_HASH = `sha256:${'3'.repeat(64)}`;
+
+/** The tables the suites count rows in. */
+export type CountableTable =
+  | 'production_jobs'
+  | 'production_specifications'
+  | 'production_job_transitions'
+  | 'order_transitions'
+  | 'inventory_reservations'
+  | 'inventory_ledger_entries'
+  | 'outbox_events'
+  | 'audit_events';
+
+export interface ReservationRow {
+  readonly id: string;
+  readonly skuId: string;
+  readonly quantity: number;
+  readonly status: string;
+  readonly releasedReason: string | null;
+}
 
 export interface SeededOrder {
   readonly orderId: string;
@@ -102,7 +131,27 @@ export interface AdminProductionTestContext {
   /** A COP order line, so the order has no Catalog subject at all. */
   customerOwnedItem(customerOwnedProductId: string): OrderItem;
   renameLiveProduct(fixture: OrderFixture, name: string): Promise<void>;
-  countRows(table: 'production_jobs' | 'production_specifications'): Promise<number>;
+  countRows(table: CountableTable): Promise<number>;
+  /** Runs work inside one real transaction, for canonical-writer seeding. */
+  inTransaction<T>(work: () => Promise<T>): Promise<T>;
+  /** The canonical AGG-15 writer, for seeding an order into a later LC-14 state. */
+  orderWriter(): OrderRepository;
+  /** The canonical shared AGG-07 writer, for seeding stock and reservations. */
+  stockWriter(): SkuStockRepository;
+  /** A second SKU on the fixture's product, so an order can require two. */
+  seedSecondSku(fixture: OrderFixture): Promise<SkuId>;
+  /** An anchor row with on-hand stock, through `ensureStockRow`. */
+  seedStock(skuId: string, quantityOnHand: number): Promise<SkuStockId>;
+  /** One official reservation, through the canonical `createReservation`. */
+  seedReservation(orderId: string, skuId: string, quantity: number): Promise<string>;
+  /** Moves an order through the canonical AGG-15 `transition`. */
+  moveOrder(orderId: string, to: OrderState, reason?: string): Promise<void>;
+  /** `sku_stocks.quantity_on_hand` as stored. */
+  onHand(skuId: string): Promise<number>;
+  /** Every reservation row for one order, oldest first. */
+  reservationsOf(orderId: string): Promise<ReservationRow[]>;
+  /** Ledger entry kinds for one SKU, in append order. */
+  ledgerKindsOf(skuId: string): Promise<string[]>;
   close(): Promise<void>;
 }
 
@@ -117,6 +166,7 @@ export async function createAdminProductionContext(
 
   let app: INestApplication;
   let orders: OrderRepository;
+  let stock: SkuStockRepository;
   let transactions: TransactionManager;
   try {
     const moduleRef = await Test.createTestingModule({
@@ -126,14 +176,21 @@ export async function createAdminProductionContext(
         ValidationModule,
         HttpResponseModule,
         AdminProductionModule,
+        // `APP8-B04`'s one mutation. Registered here rather than in a second
+        // harness so the queue, the detail and the transitions are proved
+        // against the same application — a start must be visible to the read
+        // routes that B03 delivered, not to a copy of them.
+        AdminProductionTransitionModule,
         // Seeding only — see the file header.
         OrderModule,
+        InventoryModule,
       ],
     }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix(GLOBAL_ROUTE_PREFIX);
     await app.init();
     orders = moduleRef.get<OrderRepository>(ORDER_REPOSITORY);
+    stock = moduleRef.get<SkuStockRepository>(SKU_STOCK_REPOSITORY);
     transactions = moduleRef.get(TransactionManager);
   } catch (error: unknown) {
     await disposable.drop();
@@ -322,12 +379,107 @@ export async function createAdminProductionContext(
       await db.execute(sql`update products set name = ${name} where id = ${fixture.productId}`);
     },
     countRows: async (table) => {
-      const statement =
-        table === 'production_jobs'
-          ? sql`select count(*)::text as count from production_jobs`
-          : sql`select count(*)::text as count from production_specifications`;
-      const [row] = (await db.execute<{ count: string }>(statement)).rows;
+      // `sql.raw` on a value from a closed union, never from a test's input:
+      // eight literal table names, each spelled in `CountableTable`.
+      const [row] = (
+        await db.execute<{ count: string }>(
+          sql`select count(*)::text as count from ${sql.raw(table)}`,
+        )
+      ).rows;
       return Number(row?.count ?? '0');
+    },
+    inTransaction: (work) => transactions.runInTransaction(work),
+    orderWriter: () => orders,
+    stockWriter: () => stock,
+    seedSecondSku: async (fixture) => {
+      const variantId = newId();
+      const skuId = newId() as SkuId;
+      await db.execute(sql`
+        insert into product_variants
+          (id, product_id, color_name, size_label, display_order, is_active)
+        values (${variantId}, ${fixture.productId}, 'White', 'L', 2, true)
+      `);
+      await db.execute(sql`
+        insert into skus (id, product_variant_id, code, currency_code, is_active)
+        values (${skuId}, ${variantId}, ${`SKU-${skuId}`}, 'VND', true)
+      `);
+      return skuId;
+    },
+    seedStock: async (skuId, quantityOnHand) => {
+      const stockId = newId() as SkuStockId;
+      const created = await transactions.runInTransaction(() =>
+        stock.ensureStockRow(stockId, skuId as SkuId, quantityOnHand),
+      );
+      return created.id;
+    },
+    seedReservation: async (orderId, skuId, quantity) => {
+      const reservation = await transactions.runInTransaction(() =>
+        stock.createReservation({
+          id: newId() as ReservationId,
+          skuId: skuId as SkuId,
+          orderId,
+          quantity,
+          // The same SYSTEM actor `APP8-W01` writes, so the seeded row is the
+          // one a verified deposit would have produced.
+          actor: { kind: 'SYSTEM', systemJobKey: 'inventory.reserve' },
+        }),
+      );
+      return reservation.id;
+    },
+    moveOrder: async (orderId, to, reason) => {
+      await transactions.runInTransaction(() =>
+        orders.transition({
+          id: orderId as OrderId,
+          to,
+          actor: { kind: 'SYSTEM', systemJobKey: 'test.seed' },
+          ...(reason === undefined ? {} : { reason }),
+          correlationId: newId(),
+        }),
+      );
+    },
+    onHand: async (skuId) => {
+      const [row] = (
+        await db.execute<{ quantity_on_hand: number }>(
+          sql`select quantity_on_hand from sku_stocks where sku_id = ${skuId}`,
+        )
+      ).rows;
+      return Number(row?.quantity_on_hand ?? -1);
+    },
+    reservationsOf: async (orderId) => {
+      const rows = (
+        await db.execute<{
+          id: string;
+          sku_id: string;
+          quantity: number;
+          status: string;
+          released_reason: string | null;
+        }>(sql`
+          select r.id, s.sku_id, r.quantity, r.status, r.released_reason
+            from inventory_reservations r
+            join sku_stocks s on s.id = r.sku_stock_id
+           where r.order_id = ${orderId}
+           order by r.id
+        `)
+      ).rows;
+      return rows.map((row) => ({
+        id: row.id,
+        skuId: row.sku_id,
+        quantity: Number(row.quantity),
+        status: row.status,
+        releasedReason: row.released_reason,
+      }));
+    },
+    ledgerKindsOf: async (skuId) => {
+      const rows = (
+        await db.execute<{ entry_kind: string }>(sql`
+          select l.entry_kind
+            from inventory_ledger_entries l
+            join sku_stocks s on s.id = l.sku_stock_id
+           where s.sku_id = ${skuId}
+           order by l.id
+        `)
+      ).rows;
+      return rows.map((row) => row.entry_kind);
     },
     close: async () => {
       await app.close();
@@ -351,9 +503,11 @@ export function dataOf<T>(response: { readonly body: unknown }): T {
   return (response.body as { readonly data: T }).data;
 }
 
-/** The three canonical routes, under the global API prefix. */
+/** The four canonical routes, under the global API prefix. */
 export const ROUTES = {
   create: (orderId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/orders/${orderId}/production-jobs`,
   queue: () => `/${GLOBAL_ROUTE_PREFIX}/admin/production-jobs`,
   detail: (jobId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/production-jobs/${jobId}`,
+  transition: (jobId: string) =>
+    `/${GLOBAL_ROUTE_PREFIX}/admin/production-jobs/${jobId}/transitions`,
 } as const;

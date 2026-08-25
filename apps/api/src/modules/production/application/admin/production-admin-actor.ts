@@ -47,8 +47,26 @@ export class ProductionAdminActorRequiredError extends Error {
 }
 
 export function assertProductionAdminActor(requestContext: RequestContextService): void {
+  requireProductionAdminId(requestContext);
+}
+
+/**
+ * The same assertion, returning the id — for a path that **stores** it.
+ *
+ * `APP8-B04`'s transitions write `production_job_transitions`, whose
+ * `actor_kind`/`admin_id` columns are LC-18's actor evidence, and the accepted
+ * audit row for *"Production start/complete/cancel"* names an admin actor too.
+ * So here the operator's identity is not merely enforced, it is persisted, and
+ * a function that returns it is honest rather than suggestive.
+ *
+ * It is the same read and the same refusal — `assertProductionAdminActor` is
+ * now this function with the id discarded, so creation and transition cannot
+ * drift apart on what "an Admin production operation" means.
+ */
+export function requireProductionAdminId(requestContext: RequestContextService): string {
   const actor = requestContext.requireAuthenticatedActor();
   if (actor.kind !== 'ADMIN') {
     throw new ProductionAdminActorRequiredError(actor.kind);
   }
+  return actor.adminId;
 }

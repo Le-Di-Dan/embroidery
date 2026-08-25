@@ -2554,6 +2554,80 @@
         ],
         "type": "object"
       },
+      "AdminProductionTransitionResultResponse": {
+        "properties": {
+          "fromStatus": {
+            "description": "The LC-18 state the job held when the transaction began.",
+            "enum": [
+              "PLANNED",
+              "STARTED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "PLANNED",
+            "type": "string"
+          },
+          "jobId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6091",
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderStatus": {
+            "description": "The order state after the same transaction. A start moves it to IN_PRODUCTION and a completion to PRODUCTION_COMPLETED; a production-job cancellation leaves it exactly as it was, because APP8 does not execute the order cancellation workflow.",
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "IN_PRODUCTION",
+            "type": "string"
+          },
+          "reservationIds": {
+            "description": "The inventory reservations this transition terminalized — consumed by a start, released by a cancellation. Empty when the order has no Catalog line to reserve for, and empty when a cancellation found nothing still reserved because production had already consumed it. Nothing is fabricated to make the list non-empty.",
+            "example": [
+              "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071"
+            ],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "description": "The LC-18 state the job now holds.",
+            "enum": [
+              "PLANNED",
+              "STARTED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "example": "STARTED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId",
+          "orderId",
+          "fromStatus",
+          "status",
+          "orderStatus",
+          "reservationIds"
+        ],
+        "type": "object"
+      },
       "AdminQuotationHeaderResponse": {
         "properties": {
           "currentVersionId": {
@@ -8498,6 +8572,28 @@
         },
         "required": [
           "toStatus"
+        ],
+        "type": "object"
+      },
+      "TransitionProductionJobBody": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "to": {
+            "enum": [
+              "STARTED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "to"
         ],
         "type": "object"
       },
@@ -15793,6 +15889,238 @@
           }
         ],
         "summary": "Read one production job, its frozen specification and its history",
+        "tags": [
+          "adminProductionJob"
+        ]
+      }
+    },
+    "/api/admin/production-jobs/{jobId}/transitions": {
+      "post": {
+        "description": "Moves the job through LC-18 and, where the lifecycle requires it, the order and the order's inventory reservations — all in one transaction that commits together or not at all.\n\n**STARTED** requires the job PLANNED, the order DEPOSIT_PAID and not on hold or being cancelled, the order’s DEPOSIT obligation satisfied, and the job frozen from the approval the order is still produced against. It consumes every Catalog reservation the order’s frozen items require — one per SKU, quantity aggregated — decrementing on-hand once each, and moves the order to IN_PRODUCTION. A customer-owned-only order requires no reservation at all and starts with none; a mixed order consumes only its Catalog portions. If any required reservation is missing, already terminal or short, nothing at all is committed — including reservations earlier in the same request.\n\n**COMPLETED** requires the job STARTED and the order IN_PRODUCTION, and moves the order to PRODUCTION_COMPLETED. It touches no inventory: the goods were issued at start. It does not request the remaining payment, freeze shipping or dispatch.\n\n**CANCELLED** requires a reason, is legal from PLANNED or STARTED, and releases only reservations that are still reserved. A job cancelled after production started leaves its consumed inventory consumed — stock that has left is not restored by cancelling the paperwork. The order’s own commercial state is deliberately unchanged: cancelling a production job is not the order cancellation and refund workflow.",
+        "operationId": "adminProductionJob_transition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransitionProductionJobBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminProductionTransitionResultResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed transition.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed job id or body, a cancellation with no reason, or a reason on a transition that records none.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such production job.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "LC-18 does not allow that move; the order is on hold or being cancelled; the order is not in the state the move requires; the deposit is not satisfied; the job’s approval is no longer the order’s; or a required inventory reservation is missing, terminal or short. Nothing was committed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Start, complete or cancel one production job",
         "tags": [
           "adminProductionJob"
         ]

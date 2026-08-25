@@ -142,6 +142,15 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // `adminOrderProductionJob_create`, letting a routing decision name a public
   // identifier; with it the family reads `_create`, `_list`, `_get`.
   AdminOrderProductionJobController: 'adminProductionJob',
+  // `APP8-B04`. The guarded LC-18 transitions join the same published domain.
+  // They are a third class because the write authorities they need — the
+  // canonical order writer and the canonical shared inventory writer — must not
+  // reach the queue projection or the creation path, so they live in their own
+  // module. Without this entry the one mutation would mint
+  // `adminProductionTransition_transition`, letting that composition decision
+  // name a public identifier; with it the family reads `_create`, `_list`,
+  // `_get`, `_transition`.
+  AdminProductionTransitionController: 'adminProductionJob',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

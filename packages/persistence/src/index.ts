@@ -183,3 +183,12 @@ export type {
 } from './inventory/sku-stock.repository';
 export { SKU_STOCK_REPOSITORY } from './inventory/sku-stock.repository';
 export { InventoryPersistenceModule } from './inventory/inventory-persistence.module';
+
+// The canonical Catalog reservation-requirement rule (`APP8-B04` §6).
+//
+// Promoted out of `apps/worker` because both runtimes now derive it from the
+// same frozen order items: `APP8-W01` to create the reservations, `APP8-B04` to
+// decide which ones production start must consume. One aggregation, or the two
+// halves of the same order's inventory could disagree about what it needs.
+export type { ReservationRequirement } from './inventory/reservation-requirements';
+export { aggregateCatalogRequirements } from './inventory/reservation-requirements';

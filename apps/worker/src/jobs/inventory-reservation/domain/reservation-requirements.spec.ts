@@ -6,9 +6,9 @@
  * inferred from a row count in the integration suite, which proves the same
  * outcomes end-to-end but cannot show *why* they hold.
  */
+import { aggregateCatalogRequirements } from '@embroidery/persistence';
 import type { OrderItem, SkuId } from '@embroidery/persistence';
 
-import { aggregateCatalogRequirements } from './reservation-requirements';
 import { canonicalReservePreimage, reserveFingerprint } from './order-reserve-idempotency';
 
 function catalogItem(position: number, skuId: string, quantity: number): OrderItem {

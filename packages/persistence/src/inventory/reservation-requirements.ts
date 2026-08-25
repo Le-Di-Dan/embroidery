@@ -1,5 +1,23 @@
 /**
- * What one order actually requires of inventory (`APP8-W01` §5, §6, §8).
+ * What one order actually requires of inventory (`APP8-W01` §5–§8, `APP8-B04` §5.5, §6).
+ *
+ * ### Why this lives in `@embroidery/persistence` (`APP8-B04` §6)
+ *
+ * It was delivered by `APP8-W01` inside `apps/worker`. `APP8-B04` needs the
+ * identical rule in `apps/api`: production start re-derives the Catalog
+ * requirements from the same frozen items to know which reservations it must
+ * consume, and `PO-APP8-001` §1.5 makes *"one reservation per SKU, quantity
+ * aggregated across every item resolving to it"* one authority rather than a
+ * coincidence between two implementations. An order could only be reserved for
+ * under one aggregation and started under another if there were two copies of
+ * this function, so there is one — moved, not duplicated, and
+ * `ReserveOrderInventoryUseCase` imports it from here.
+ *
+ * That is `IMP-D054` on the terms `PO-APP8-006` already applied to the
+ * reservation writer itself: two runtimes, one aggregate, one implementation.
+ * This is the smallest unit that satisfies it — one pure function and its
+ * result type, beside the reservation identity contract (`CST-016`) the rule
+ * is derived from. No domain service, no new package, no new module.
  *
  * Pure: order items in, a sorted requirement set out. No database, no clock, no
  * identity generation — which is what makes the aggregation rule testable
@@ -39,7 +57,8 @@
  * anchor id is not knowable until the anchor has been read, and an ordering you
  * cannot compute before you start locking is not an ordering.
  */
-import type { OrderItem, SkuId } from '@embroidery/persistence';
+import type { OrderItem } from '../order/order.repository';
+import type { SkuId } from './inventory-identity';
 
 /** One SKU's total frozen Catalog quantity for one order. */
 export interface ReservationRequirement {

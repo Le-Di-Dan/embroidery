@@ -162,6 +162,18 @@ export class DrizzleSkuStockRepository extends DrizzleRepository implements SkuS
     return this.reservations.consumeReservation(id, actor);
   }
 
+  consumeOrderReservation(
+    input: Parameters<InventoryReservations['consumeOrderReservation']>[0],
+  ): Promise<Reservation> {
+    return this.reservations.consumeOrderReservation(input);
+  }
+
+  releaseOrderReservationIfActive(
+    input: Parameters<InventoryReservations['releaseOrderReservationIfActive']>[0],
+  ): Promise<Reservation | undefined> {
+    return this.reservations.releaseOrderReservationIfActive(input);
+  }
+
   findHold(id: SoftHoldId): Promise<SoftHold | undefined> {
     return this.commitments.findHold(id);
   }

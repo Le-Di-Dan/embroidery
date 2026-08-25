@@ -130,6 +130,26 @@ export interface OrderRepository {
    */
   createFromAcceptedQuotation(input: CreateOrderInput): Promise<Order>;
 
+  /**
+   * Loads the order under its row lock, before any decision is made about it.
+   *
+   * The row lock `transition` already takes, made reachable on its own so a
+   * caller that must **decide** from the order's committed state — rather than
+   * only move it — can hold the same lock while it decides. `APP8-B04` is the
+   * first: `GRD-015`/`GRD-022` require `DEPOSIT_PAID` and refuse `ON_HOLD` /
+   * `CANCELLING`, and LC-14 alone cannot express that (`ON_HOLD → IN_PRODUCTION`
+   * is a *legal* move — it is the resume path — so a legality check would let a
+   * held order start production). Reading the status unlocked and transitioning
+   * afterwards would leave exactly the window the order row exists to close.
+   *
+   * It is the **first** lock in that flow's order, which is what keeps the order
+   * row the arbiter between production start and an order hold or cancellation
+   * (`DB8_LOCK_ORDER_MATRIX.md` §1).
+   *
+   * @requiresTransaction
+   */
+  loadForUpdate(id: OrderId): Promise<Order | undefined>;
+
   /** @requiresTransaction — move and evidence together, legality checked. */
   transition(input: TransitionOrderInput): Promise<Order>;
 

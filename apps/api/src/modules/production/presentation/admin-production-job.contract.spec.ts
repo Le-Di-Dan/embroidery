@@ -23,6 +23,8 @@ import { ensureGenerationEnvironment } from '../../../openapi/generation-environ
 const CREATE_PATH = '/api/admin/orders/{orderId}/production-jobs';
 const QUEUE_PATH = '/api/admin/production-jobs';
 const DETAIL_PATH = '/api/admin/production-jobs/{jobId}';
+/** `APP8-B04`'s one addition, asserted here so the bound stays in one place. */
+const TRANSITION_PATH = '/api/admin/production-jobs/{jobId}/transitions';
 
 interface SchemaShape {
   readonly type?: string;
@@ -153,41 +155,53 @@ describe('APP8-B03 — the published Admin production contract', () => {
     return schema as SchemaShape;
   }
 
-  describe('the surface is exactly three operations', () => {
-    it('publishes one mutation and two reads, and nothing else', () => {
+  describe('the surface is exactly four operations', () => {
+    it('publishes two mutations and two reads, and nothing else', () => {
       expect(Object.keys(document.paths[CREATE_PATH] as object)).toEqual(['post']);
       expect(Object.keys(document.paths[QUEUE_PATH] as object)).toEqual(['get']);
       expect(Object.keys(document.paths[DETAIL_PATH] as object)).toEqual(['get']);
+      expect(Object.keys(document.paths[TRANSITION_PATH] as object)).toEqual(['post']);
     });
 
     it('names them in one Admin domain', () => {
       expect(operation(CREATE_PATH, 'post').operationId).toBe('adminProductionJob_create');
       expect(operation(QUEUE_PATH, 'get').operationId).toBe('adminProductionJob_list');
       expect(operation(DETAIL_PATH, 'get').operationId).toBe('adminProductionJob_get');
+      expect(operation(TRANSITION_PATH, 'post').operationId).toBe('adminProductionJob_transition');
     });
 
     /**
-     * The composition proof, and the bound on the checkpoint's size in one
+     * The composition proof, and the bound on the phase's size in one
      * assertion: every production route in the whole document is one of these
-     * three. A start, complete, cancel, artifact or note route — or a customer
-     * one — fails here.
+     * four. `APP8-B04` added exactly one — the transitions collection — and an
+     * artifact, note or customer route still fails here.
      */
-    it('publishes exactly three production operations across the entire document', () => {
+    it('publishes exactly four production operations across the entire document', () => {
       const operations = Object.entries(document.paths)
         .filter(([path]) => /production/i.test(path))
         .flatMap(([path, item]) =>
           Object.keys(item).map((method) => `${method.toUpperCase()} ${path}`),
         );
       expect(operations.sort()).toEqual(
-        [`POST ${CREATE_PATH}`, `GET ${QUEUE_PATH}`, `GET ${DETAIL_PATH}`].sort(),
+        [
+          `POST ${CREATE_PATH}`,
+          `GET ${QUEUE_PATH}`,
+          `GET ${DETAIL_PATH}`,
+          `POST ${TRANSITION_PATH}`,
+        ].sort(),
       );
     });
 
-    it('adds no transition, artifact or note route under the production surface', () => {
+    /**
+     * One transitions collection, not three verbs. `APP8-B04` §3 caps the
+     * mutation surface at two operations for the whole checkpoint; a
+     * `/start`, `/complete` or `/cancel` route would publish three operation
+     * ids for one state machine and is what this assertion forbids. Artifacts
+     * and notes stay outside APP8 entirely (`PO-APP8-004`).
+     */
+    it('adds no per-verb, artifact or note route under the production surface', () => {
       const stray = Object.keys(document.paths).filter((path) =>
-        /production-jobs\/\{jobId\}\/(start|complete|cancel|artifacts|notes|transitions)/i.test(
-          path,
-        ),
+        /production-jobs\/\{jobId\}\/(start|complete|cancel|artifacts|notes)/i.test(path),
       );
       expect(stray).toEqual([]);
     });

@@ -198,10 +198,28 @@ describe('APP8-B01 — the published Admin stock contract', () => {
       expect(Object.keys(document.paths[B01_SKU_UPDATE_PATH] as object)).toEqual(['patch']);
     });
 
-    it('publishes no inventory reservation, hold or production route at all', () => {
-      const stray = Object.keys(document.paths).filter((path) =>
-        /reservation|soft-hold|production/i.test(path),
-      );
+    /**
+     * The bound `APP8-B01` set, narrowed to what it can still truthfully claim.
+     *
+     * As written at B01 this scanned the **whole** document, which was correct
+     * while APP8 had no other surface. `APP8-B03` then published the accepted
+     * Admin production routes and `APP8-B04` the transitions collection, so the
+     * document-wide form now fails on routes two later checkpoints were accepted
+     * on rather than on anything B01 owns.
+     *
+     * What B01 actually asserts is that the *stock* surface publishes no
+     * reservation or soft-hold route and no production route of its own: it
+     * cannot reach `createReservation`, `release`, `consume` or a production
+     * job, and no path under `admin/skus` may suggest otherwise. The exclusion
+     * below is the accepted production surface by its exact prefix, and its own
+     * count is asserted in `admin-production-job.contract.spec.ts` — so a stray
+     * production route is still caught, there rather than here.
+     */
+    it('publishes no inventory reservation or soft-hold route, and no production route of its own', () => {
+      const stray = Object.keys(document.paths)
+        .filter((path) => !path.startsWith('/api/admin/production-jobs'))
+        .filter((path) => !path.startsWith('/api/admin/orders/{orderId}/production-jobs'))
+        .filter((path) => /reservation|soft-hold|production/i.test(path));
       expect(stray).toEqual([]);
     });
 

@@ -1,8 +1,8 @@
 /**
- * The closed refusal vocabulary of the three Admin production operations
- * (`APP8-B03` §11).
+ * The closed refusal vocabulary of the Admin production operations
+ * (`APP8-B03` §11, `APP8-B04` §19).
  *
- * Five entries. Everything else a caller can get wrong is already answered by a
+ * Six entries at `APP8-B03`. Everything else a caller can get wrong is already answered by a
  * delivered mechanism and is deliberately **not** repeated here: a malformed id
  * or an unknown query parameter is the Zod pipe's `400`, no session is
  * `AuthenticatedAdminGuard`'s `401`, a foreign origin is `StaffOriginGuard`'s
@@ -51,6 +51,28 @@ export const PRODUCTION_OPERATION_FAILURES = [
   'PRODUCTION_JOB_ALREADY_EXISTS',
   /** The supplied page cursor is not one this endpoint issued. */
   'PRODUCTION_CURSOR_INVALID',
+
+  // --- `APP8-B04` — the guarded transitions -------------------------------
+  //
+  // Six more, and each answers a *different* operator action. The persistence
+  // layer's own authority-named guard codes — `INVALID_TRANSITION`,
+  // `CANCELLATION_REASON_REQUIRED`, `RESERVATION_NOT_ACTIVE` — are the internal
+  // ones these translate; the published names keep this module's `PRODUCTION_`
+  // prefix, which is how every other module in this repository publishes a
+  // shared guard code (`payment.`, `design_version.`, `quotation.`).
+
+  /** LC-18 does not allow that move from the job's committed state. */
+  'PRODUCTION_INVALID_TRANSITION',
+  /** A production job may not be cancelled without a recorded reason. */
+  'PRODUCTION_CANCELLATION_REASON_REQUIRED',
+  /** GRD-022: the order is ON_HOLD or CANCELLING. Production waits for the hold. */
+  'PRODUCTION_ORDER_ON_HOLD',
+  /** GRD-015: the order is not in the state this production move requires. */
+  'PRODUCTION_BLOCKED',
+  /** A required Catalog reservation is missing or already terminal. */
+  'PRODUCTION_RESERVATION_NOT_ACTIVE',
+  /** The reservation standing for a SKU does not cover the frozen quantity. */
+  'PRODUCTION_RESERVATION_INSUFFICIENT',
 ] as const;
 
 export type ProductionOperationFailure = (typeof PRODUCTION_OPERATION_FAILURES)[number];
@@ -89,6 +111,36 @@ const RESPONSE_OF: Readonly<Record<ProductionOperationFailure, () => HttpExcepti
     new BadRequestException({
       code: 'PRODUCTION_CURSOR_INVALID',
       message: 'That page cursor is not valid.',
+    }),
+  PRODUCTION_INVALID_TRANSITION: () =>
+    new ConflictException({
+      code: 'PRODUCTION_INVALID_TRANSITION',
+      message: 'That status change is not allowed for this production job.',
+    }),
+  PRODUCTION_CANCELLATION_REASON_REQUIRED: () =>
+    new BadRequestException({
+      code: 'PRODUCTION_CANCELLATION_REASON_REQUIRED',
+      message: 'A reason is required to cancel a production job.',
+    }),
+  PRODUCTION_ORDER_ON_HOLD: () =>
+    new ConflictException({
+      code: 'PRODUCTION_ORDER_ON_HOLD',
+      message: 'This order is on hold or being cancelled; production cannot move it.',
+    }),
+  PRODUCTION_BLOCKED: () =>
+    new ConflictException({
+      code: 'PRODUCTION_BLOCKED',
+      message: 'This order is not in a state that allows that production move.',
+    }),
+  PRODUCTION_RESERVATION_NOT_ACTIVE: () =>
+    new ConflictException({
+      code: 'PRODUCTION_RESERVATION_NOT_ACTIVE',
+      message: 'An inventory reservation this order requires is missing or no longer active.',
+    }),
+  PRODUCTION_RESERVATION_INSUFFICIENT: () =>
+    new ConflictException({
+      code: 'PRODUCTION_RESERVATION_INSUFFICIENT',
+      message: 'An inventory reservation this order requires does not cover its quantity.',
     }),
 };
 

@@ -154,6 +154,46 @@ export interface SkuStockRepository {
   /** Consumes a reservation at production, reducing on-hand. @requiresTransaction */
   consumeReservation(id: ReservationId, actor: InventoryActor): Promise<void>;
 
+  /**
+   * Consumes the order's active reservation for one SKU (`APP8-B04` §9, §10).
+   *
+   * The (order, SKU) form of {@link consumeReservation}, for the caller that
+   * derived *"this order requires 25 of that SKU"* from the frozen order items
+   * and holds no reservation id. Everything — which row is active, whether its
+   * quantity covers `requiredQuantity`, and the terminal write — is decided under
+   * the reservation's row lock, so no state is read through an unlocked query
+   * and then acted on (`FU-APP8-B02-02`).
+   *
+   * Refuses with `RESERVATION_NOT_ACTIVE` when nothing active stands for the
+   * pair and `RESERVATION_QUANTITY_INSUFFICIENT` when what stands is short. It
+   * never creates a replacement reservation and never restocks.
+   *
+   * @requiresTransaction
+   */
+  consumeOrderReservation(input: {
+    orderId: string;
+    skuId: SkuId;
+    requiredQuantity: number;
+    actor: InventoryActor;
+  }): Promise<Reservation>;
+
+  /**
+   * Releases the order's reservation for one SKU **if one is still active**
+   * (`APP8-B04` §13.2).
+   *
+   * Returns `undefined` when there is none — the ordinary outcome once
+   * production has started and the reservation is `CONSUMED`. Nothing is
+   * fabricated to give a cancellation something to release.
+   *
+   * @requiresTransaction
+   */
+  releaseOrderReservationIfActive(input: {
+    orderId: string;
+    skuId: SkuId;
+    reason: string;
+    actor: InventoryActor;
+  }): Promise<Reservation | undefined>;
+
   findBySku(skuId: SkuId): Promise<SkuStock | undefined>;
   findHold(id: SoftHoldId): Promise<SoftHold | undefined>;
   findReservation(id: ReservationId): Promise<Reservation | undefined>;
