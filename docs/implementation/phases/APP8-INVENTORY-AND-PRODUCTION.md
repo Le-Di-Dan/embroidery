@@ -1,7 +1,7 @@
 # APP8 — Inventory Reservation and Production Operations
 
 > **Status:** `IN PROGRESS` — `APP8-R00`, `APP8-G01` (corrected by
-> `APP8-G01-C1`), `APP8-B01`, `APP8-B02`, `APP8-W01`, `APP8-B03` and `APP8-B04` complete; phase audited,
+> `APP8-G01-C1`), `APP8-B01`, `APP8-B02`, `APP8-W01`, `APP8-B03`, `APP8-B04` and `APP8-D01` complete; phase audited,
 > planned, its authority locked (§10.5), `InventoryModule` composed into the
 > running API with the Admin stock surface that closes Gap A, inventory
 > persistence promoted to `@embroidery/persistence` with the CC-21 repair that
@@ -9,7 +9,11 @@
 > consumer delivered, and `ProductionModule` composed into the running API with
 > the Admin production creation, queue and detail surface, and the guarded LC-18
 > transitions that move the job, the order and the order's inventory
-> reservations in one transaction (§12).
+> reservations in one transaction, and the APP8 Figma design package for the
+> three Admin surfaces delivered on `APP_08` (`766:3`, root section `771:3`,
+> 41 frames / 41 registry rows, all `REVIEW_REQUIRED`) (§12).
+> `APP8-A01` is `NEXT` but **`BLOCKED_PENDING_PO_DESIGN_APPROVAL`**: no APP8
+> frontend checkpoint may start against a `REVIEW_REQUIRED` registry row.
 > Sections 1–9 below are the **original pre-entry candidate plan**, preserved as
 > planning history. Section 10 onward is the **canonical, repository-grounded
 > plan** produced by `APP8-R00`. Where the two disagree, **section 10 onward
@@ -380,8 +384,12 @@ B04   COMPLETE          (1 HTTP operation; POST /admin/production-jobs/{jobId}/t
                        RESERVED and moves no order; one transaction per command;
                        lock order orders -> production_jobs -> inventory_reservations
                        -> sku_stocks; no migration)
-D01   INCOMPLETE — Next
-A01   INCOMPLETE
+D01   COMPLETE          (0 HTTP operations; APP8 Figma design package on the
+                       pre-existing empty APP_08 page 766:3; root section 771:3;
+                       9 sub-sections, 41 frames, 41 registry rows, all
+                       REVIEW_REQUIRED; no runtime, schema, OpenAPI, client or
+                       worker change)
+A01   INCOMPLETE — Next (BLOCKED_PENDING_PO_DESIGN_APPROVAL of the APP8-D01 rows)
 A02   INCOMPLETE
 A03   INCOMPLETE
 E01   INCOMPLETE

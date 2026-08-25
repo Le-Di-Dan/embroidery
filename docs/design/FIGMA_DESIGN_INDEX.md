@@ -63,6 +63,7 @@ Authority:
 `APP_05` write target: page **`641:3`** in `FIG-FILE-PRODUCT` (APP5 design packages).
 `APP_06` write target: page **`678:3`** in `FIG-FILE-PRODUCT` (APP6 design packages).
 `APP_07` write target: page **`726:3`** in `FIG-FILE-PRODUCT` (APP7 design packages).
+`APP_08` write target: page **`766:3`** in `FIG-FILE-PRODUCT` (APP8 design packages).
 
 ## 4. Screen and state registry
 
@@ -975,6 +976,70 @@ The promotion is a **registry edit only**. No Figma node was opened for mutation
 | FIG-APP7-REUSE-MAP | Shared | APP7 reuse | Reuse Map | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_07 | 753:179 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=753-179) | APP7-D01 | — | FIG-APPROVAL-APP7-D01-PO-001 | 2026-08-23 |
 | FIG-APP7-HANDOFF-DEPENDENCY-MAP | Shared | APP7 handoff | Backend Dependency Map | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_07 | 754:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=754-3) | APP7-D01 | — | FIG-APPROVAL-APP7-D01-PO-001 | 2026-08-23 |
 
+### 4.14 APP8-D01 — Inventory Reservation & Production Operations (NEW, this checkpoint)
+
+Section **`771:3`** — [APP8-D01 · Inventory Reservation & Production Operations](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=771-3), page **APP_08** (`766:3`).
+
+One top-level Figma section holding **9 named sub-sections** (`00 — APP8 Overview / Journey` … `08 — Admin · Narrow 1280`) and **41 frames**, matching the single-section anchor convention of `APP1-D01` … `APP7-D01`.
+
+**Pre-draw audit (mandatory).** Before any Figma write this registry was searched for every APP8-owned term — `APP8`, `APP_08`, `inventory`, `stock`, `reservation`, `production`, `/kho`, `/san-xuat` — and **no row existed**; §4 ended at `4.13 APP7-D01` and §3 listed `APP_01`…`APP_07` write targets only. The live file was then read: the `APP_08` page **already existed** at `766:3` and had **zero children**. Per §2 rule 1 it was **reused, not re-created**, and no duplicate APP8 page or package exists. Outcome: **`NO_EXISTING_APP8_DESIGN`** — nothing was reused, supplemented, repaired or superseded, and no APP1–APP7 or BRD0 node was touched.
+
+Every row below enters as `REVIEW_REQUIRED` with approval evidence `—`. `APP8-D01` does **not** self-approve (§2 rule 4, §9). **No APP8 frontend checkpoint may start against a `REVIEW_REQUIRED` row**; a human reviewer must promote the rows their checkpoint consumes, with an approval-evidence id, following the `APP3-D01`…`APP7-D01` precedent.
+
+**Contract-derived, not brief-derived.** Every frame was drawn against the accepted `APP8-B01`/`APP8-B03`/`APP8-B04` DTOs, not planning prose. Four contract facts changed the design and are recorded on `FIG-APP8-HANDOFF-DEPENDENCY-MAP` (`788:179`): the production **queue publishes no `orderCode` and no specification**, so the work list is keyed on `jobId`/`orderId`/`approvalSnapshotId` and no frame invents a concise frozen-spec column; `lowStockThreshold` is **read-only** — B01 publishes no threshold-authoring operation, so no frame offers one; the stock ledger has **no pagination contract**, so the truncation state carries a bounded-page banner and deliberately no “load more”; and **no retryable-concurrency error code exists** — B04 resolves contention by row lock, so the loser waits and receives an ordinary `409`, which is why `FIG-APP8-STALE-CONFLICT-SPEC` (`787:149`) designs “state changed — reload” and forbids an automatic-retry flow for a code the contract does not have.
+
+**Product truth carried in the design.** `FIG-APP8-MATRIX-RESERVATION-TRUTH` (`788:3`) fixes Catalog / COP / mixed rendering: a COP-only order shows the absence of reservation as an ordinary valid state (neutral surface, no warning colour, no “missing” wording), a mixed order shows only its real Catalog reservations and never a fabricated COP row, and `reservationSummary.required` is labelled display context, never a client-side eligibility gate. Start communicates that reserved Catalog stock is consumed and that the server may refuse; complete stops at `PRODUCTION_COMPLETED` with no remaining-payment, shipping or settlement action anywhere in the package; and job cancellation is separated from order cancellation/refund in copy on every cancel surface — `PLANNED` may release a still-active reservation, `STARTED` explicitly does not restore consumed stock.
+
+**Shells reused, deliberately not duplicated.** The Admin topbar and sidenav remain `APP1-D01` authority (`385:10`); the queue table, cursor pagination control, status pill, confirmation dialog, input/error field and skeleton/empty/error patterns remain `APP7-D01` authority (`732:3`, `732:31`, `737:3`, `737:57`, `740:111`, `741:87`). APP8 adds exactly **two** sidenav entries (`Kho`, `Sản xuất`) and redesigns no part of the shell. The mapping is tabulated on `FIG-APP8-REUSE-MAP` (`788:136`).
+
+**Scope exclusions are recorded, not merely absent.** `FIG-APP8-SCOPE-BOUNDARY` (`788:52`) names fifteen capabilities APP8 deliberately does not carry — remaining payment, shipping, order cancellation/refund, operator and machine assignment, priority/SLA, attempts and claims, artifact management, low-stock-threshold authoring, absolute stock overwrite, manual reservation actions, ledger pagination, an all-SKU stock list, production-note mutation, any customer surface, and rework-job creation — each with the reason the backend does not support it.
+
+**Synthetic data only.** Every SKU code, order code, job id, approval id, hash, quantity, reason and timestamp in this package is synthetic. No production data, customer contact, secure token, admin account, real database id or object-storage URL appears anywhere. The package contains no customer-facing surface and no APP9 surface.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-APP8-OVERVIEW-JOURNEY | Shared | APP8 phase overview | Journey Flow Map | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 772:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=772-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-OVERVIEW-SURFACES | Shared | APP8 surface ownership | Surface & Route Ownership | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 773:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=773-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-STOCK-DEFAULT-DESKTOP | Admin | /kho/skus/{skuId} | SKU Stock | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 775:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=775-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-STOCK-LOWSTOCK-DESKTOP | Admin | /kho/skus/{skuId} | SKU Stock | Low Stock — Negative Available | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 775:101 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=775-101) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-STOCK-NEWANCHOR-DESKTOP | Admin | /kho/skus/{skuId} | SKU Stock | Never Counted — New Anchor | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 776:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=776-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-STOCK-LOADING-DESKTOP | Admin | /kho/skus/{skuId} | SKU Stock | Loading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 776:54 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=776-54) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-STOCK-ERROR-DESKTOP | Admin | /kho/skus/{skuId} | SKU Stock | Error & Refusal | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 776:142 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=776-142) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-ADJUST-DEFAULT | Admin | /kho/skus/{skuId} | Stock Adjustment Dialog | Default | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 777:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=777-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-ADJUST-VALIDATION | Admin | /kho/skus/{skuId} | Stock Adjustment Dialog | Validation Error (400) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 777:33 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=777-33) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-ADJUST-SUBMITTING | Admin | /kho/skus/{skuId} | Stock Adjustment Dialog | Submitting | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 777:60 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=777-60) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-ADJUST-SUCCESS | Admin | /kho/skus/{skuId} | Stock Adjustment Dialog | Success | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 777:83 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=777-83) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-ADJUST-NEGATIVE-REFUSAL | Admin | /kho/skus/{skuId} | Stock Adjustment Dialog | Negative-stock Refusal (409) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 777:99 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=777-99) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-LEDGER-TRUNCATED | Admin | /kho/skus/{skuId} | Stock Ledger | Truncated Page | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 777:125 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=777-125) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A02-QUEUE-DEFAULT-DESKTOP | Admin | /san-xuat | Production Queue | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 780:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=780-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A02-QUEUE-FILTER-DESKTOP | Admin | /san-xuat | Production Queue | Status Filter Open | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 780:105 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=780-105) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A02-QUEUE-EMPTY-DESKTOP | Admin | /san-xuat | Production Queue | Empty | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 782:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=782-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A02-QUEUE-FILTERED-EMPTY-DESKTOP | Admin | /san-xuat | Production Queue | Filtered Empty | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 782:44 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=782-44) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A02-QUEUE-LOADING-DESKTOP | Admin | /san-xuat | Production Queue | Loading | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 782:89 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=782-89) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A02-QUEUE-ERROR-DESKTOP | Admin | /san-xuat | Production Queue | Error | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 782:206 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=782-206) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-DETAIL-PLANNED-CATALOG-DESKTOP | Admin | /san-xuat/{jobId} | Production Job Detail | PLANNED — Catalog | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 784:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=784-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-DETAIL-STARTED-MIXED-DESKTOP | Admin | /san-xuat/{jobId} | Production Job Detail | STARTED — Mixed Order | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 784:129 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=784-129) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-DETAIL-COMPLETED-DESKTOP | Admin | /san-xuat/{jobId} | Production Job Detail | COMPLETED | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 785:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=785-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-DETAIL-CANCELLED-DESKTOP | Admin | /san-xuat/{jobId} | Production Job Detail | CANCELLED | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 785:134 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=785-134) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-DETAIL-COP-DESKTOP | Admin | /san-xuat/{jobId} | Production Job Detail | PLANNED — COP-only, No Reservation Required | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 785:270 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=785-270) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-START-CONFIRM | Admin | /san-xuat/{jobId} | Production Transition Dialog | Start Production — Confirm | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 786:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=786-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-COMPLETE-CONFIRM | Admin | /san-xuat/{jobId} | Production Transition Dialog | Complete Production — Confirm | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 786:39 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=786-39) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-CANCEL-FROM-PLANNED | Admin | /san-xuat/{jobId} | Production Transition Dialog | Cancel Job — from PLANNED | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 786:70 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=786-70) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-CANCEL-FROM-STARTED | Admin | /san-xuat/{jobId} | Production Transition Dialog | Cancel Job — from STARTED | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 786:110 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=786-110) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-CANCEL-REASON-MISSING | Admin | /san-xuat/{jobId} | Production Transition Dialog | Cancel Job — Reason Missing (400) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 786:150 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=786-150) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-TRANSITION-SUBMITTING | Admin | /san-xuat/{jobId} | Production Transition Dialog | Submitting | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 786:177 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=786-177) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-REFUSAL-PRODUCTION | Shared | APP8 production refusals | Production Refusal Catalog | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 787:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=787-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-REFUSAL-INVENTORY | Shared | APP8 inventory refusals | Inventory Refusal Catalog | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 787:94 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=787-94) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-STALE-CONFLICT-SPEC | Shared | APP8 stale and concurrent action | Stale / Conflict Interaction Spec | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 787:149 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=787-149) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-MATRIX-RESERVATION-TRUTH | Shared | APP8 reservation truth | Catalog / COP / Mixed Truth Matrix | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 788:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=788-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-SCOPE-BOUNDARY | Shared | APP8 scope boundary | Scope Boundary Matrix | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 788:52 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=788-52) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-REUSE-MAP | Shared | APP8 reuse | Reuse Map | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 788:136 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=788-136) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-HANDOFF-DEPENDENCY-MAP | Shared | APP8 handoff | Backend Dependency Map | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 788:179 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=788-179) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A01-STOCK-NARROW | Admin | /kho/skus/{skuId} | SKU Stock | Default | Narrow 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 789:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=789-3) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A02-QUEUE-NARROW | Admin | /san-xuat | Production Queue | Default | Narrow 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 789:85 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=789-85) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-A03-DETAIL-NARROW | Admin | /san-xuat/{jobId} | Production Job Detail | PLANNED — Catalog | Narrow 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 789:160 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=789-160) | APP8-D01 | — | — | 2026-08-25 |
+| FIG-APP8-RESPONSIVE-SPEC | Shared | APP8 responsive behaviour | Responsive Coverage & Behaviour | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_08 | 789:267 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=789-267) | APP8-D01 | — | — | 2026-08-25 |
+
 ## 5. IA and user-flow registry
 
 Flow/IA/wireframe nodes are indexed as `REFERENCE_ONLY` — they inform, but do not
@@ -1255,6 +1320,31 @@ canonical entry exists for any APP1-D01 composite key.
   four `APP2-D01` Product Detail rows retired to `REFERENCE_ONLY`. No UI01/UI02/UI04/UI05
   node and no DS source was modified; 0 detached instances, 0 new component masters, 0 new
   tokens or text styles.
+- **`APP8-D01` (2026-08-25):** APP8 design package created on the **pre-existing but
+  empty** `APP_08` canvas (`766:3`) as section `771:3` — 9 sub-sections, **41
+  frames**, **41 new registry rows**, all `REVIEW_REQUIRED` with approval evidence
+  `—`. The canvas was **reused, not created** (§2 rule 1). Pre-draw audit outcome
+  `NO_EXISTING_APP8_DESIGN`: the registry carried no APP8 row and §3 listed no
+  `APP_08` write target. Coverage: `APP8-A01` 5 inventory desktop states + 6
+  adjustment/ledger states, `APP8-A02` 6 production-queue desktop states,
+  `APP8-A03` 5 job-detail desktop states + 6 transition dialogs, 3 narrow-1280
+  Admin frames, and 10 shared specification frames (journey, surface ownership,
+  two refusal catalogs, stale/conflict interaction spec, reservation truth matrix,
+  scope boundary, reuse map, backend dependency map, responsive coverage).
+  The APP1 Admin shell (`385:10`) and the APP7 queue/table/pill/dialog/field
+  patterns (`732:3`, `732:31`, `737:3`, `737:57`, `740:111`, `741:87`) were
+  **referenced, not redrawn**; APP8 adds exactly two sidenav entries. No APP1–APP7
+  or BRD0 node was modified; no DS library file was touched; **0 component masters,
+  0 instances, 0 new variables, text styles, paint styles or effect styles** —
+  every frame composes the existing `Primitive`/`Semantic`/`Foundation` variables.
+  **Layout verified in absolute space.** Learning from the `APP7-D01` reflow defect,
+  sections were packed in section-relative coordinates and then audited with an
+  independent `absoluteBoundingBox` pass: 41 frames, **0** frames escaping their
+  section, **0** section-to-section overlaps, **0** frame-to-frame overlaps, and a
+  rendered root size (`9260 × 11032`) that matches the root box exactly.
+  13 review-useful prototype reactions and 2 flow starting points were added
+  (queue → detail, filter open, the three transition dialogs, submitting →
+  conflict, and the inventory adjustment outcomes).
 - **Consistency gate:** `pnpm check:figma-design-index` — see
   `tools/check-figma-design-index.mjs`. Product Detail route/scope authority is separately
   gated by `pnpm check:storefront-product-detail-authority`.
