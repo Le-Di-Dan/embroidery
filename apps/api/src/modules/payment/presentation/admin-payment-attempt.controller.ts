@@ -98,23 +98,29 @@ export class AdminPaymentAttemptController {
   @HttpCode(HttpStatus.OK)
   @ApiSuccessCode('PAYMENT_ATTEMPT_VERIFIED', 'Payment attempt verification recorded.')
   @ApiOperation({
-    summary: 'Verify one bank-transfer deposit attempt against funds received',
+    summary: 'Verify one bank-transfer payment attempt against funds received',
     description:
-      'The only operation in this phase that can move money state. The server proves the whole ' +
-      'chain inside one transaction — the attempt belongs to this obligation, the obligation is ' +
-      'the DEPOSIT one, it belongs to this order, and the attempt is a bank transfer — then ' +
-      'compares the operator’s observed amount and reference against the obligation’s own ' +
-      'frozen amount and the reference derived from the order code. Exact match only: no ' +
+      'The only operation that can move money state. It settles either of an order’s two ' +
+      'obligations, and which one is **derived** from the attempt, never stated by the caller: ' +
+      'the request carries an attempt id and nothing else identifying a payment. The server ' +
+      'proves the whole chain inside one transaction — the attempt belongs to this obligation, ' +
+      'the obligation is one this operation has authority over, it belongs to this order, the ' +
+      'order is already at the step that obligation is collected at, and the attempt is a bank ' +
+      'transfer — then compares the operator’s observed amount and reference against the ' +
+      'obligation’s own frozen amount and the reference derived from the order code and the ' +
+      'obligation kind (`…DC` for a deposit, `…RM` for the balance). Exact match only: no ' +
       'tolerance, no rounding and no floating-point comparison. On a match the attempt becomes ' +
-      '`SUCCEEDED`, the deposit becomes `SATISFIED` by that exact attempt, the order moves ' +
-      '`AWAITING_DEPOSIT` → `DEPOSIT_PAID`, a reconciliation is appended and `payment.verified` ' +
-      'is emitted once — all atomically, or none of it. On a mismatch nothing is satisfied, the ' +
-      'order does not move, and the attempt is routed to `REQUIRES_REVIEW` with the operator’s ' +
-      'reason: the response is still `200`, and `attemptStatus` says which happened. Transfer ' +
-      'evidence is never a precondition — a correct payment with no screenshots verifies ' +
-      'normally. Retrying a verification whose response was lost returns the committed truth ' +
-      'with `replayed: true` and writes nothing a second time. No provider is contacted and no ' +
-      'provider event is written.',
+      '`SUCCEEDED`, the obligation becomes `SATISFIED` by that exact attempt, the order moves ' +
+      '`AWAITING_DEPOSIT` → `DEPOSIT_PAID` for a deposit or `AWAITING_FINAL_PAYMENT` → ' +
+      '`READY_FOR_DELIVERY` for the balance, a reconciliation is appended and ' +
+      '`payment.verified` is emitted once carrying the real obligation kind — all atomically, ' +
+      'or none of it. No worker performs the lifecycle move and no second event type exists. ' +
+      'On a mismatch nothing is satisfied, the order does not move, and the attempt is routed ' +
+      'to `REQUIRES_REVIEW` with the operator’s reason: the response is still `200`, and ' +
+      '`attemptStatus` says which happened. Transfer evidence is never a precondition — a ' +
+      'correct payment with no screenshots verifies normally. Retrying a verification whose ' +
+      'response was lost returns the committed truth with `replayed: true` and writes nothing ' +
+      'a second time. No provider is contacted and no provider event is written.',
   })
   @ApiParam({ name: 'attemptId', format: 'uuid' })
   @ApiBody({ type: VerifyPaymentAttemptBody })
@@ -134,8 +140,13 @@ export class AdminPaymentAttemptController {
   @ApiResponse({
     status: 409,
     description:
-      'The attempt is already settled, is not a deposit bank transfer, or the deposit was ' +
-      'already satisfied by another attempt. Nothing changed.',
+      'PAYMENT_ATTEMPT_ALREADY_SETTLED — the attempt is terminal; ' +
+      'PAYMENT_ATTEMPT_NOT_VERIFIABLE — it is not a bank transfer, or its obligation is of a ' +
+      'kind this operation cannot settle; PAYMENT_OBLIGATION_NOT_PAYABLE — the obligation was ' +
+      'already satisfied by another attempt, or is cancelled; ' +
+      'PAYMENT_ORDER_NOT_AWAITING_PAYMENT — the order has not reached the step this obligation ' +
+      'is collected at, most often a balance verified before an Admin opened final payment. ' +
+      'Nothing changed in any of the four cases.',
     schema: ERROR_SCHEMA,
   })
   @ApiResponse({
@@ -179,7 +190,7 @@ export class AdminPaymentAttemptController {
   @ApiBody({ type: ReviewPaymentAttemptBody })
   @ApiResponse({
     status: 200,
-    description: 'The committed review, with the deposit and order reported unchanged.',
+    description: 'The committed review, with the obligation and order reported unchanged.',
     schema: envelopeSchemaOf(PaymentDecisionResponse),
   })
   @ApiResponse({ status: 400, description: 'Malformed attempt id or body.', schema: ERROR_SCHEMA })
@@ -192,7 +203,8 @@ export class AdminPaymentAttemptController {
   @ApiResponse({ status: 404, description: 'No such payment attempt.', schema: ERROR_SCHEMA })
   @ApiResponse({
     status: 409,
-    description: 'The attempt is already settled, or is not a deposit bank transfer.',
+    description:
+      'The attempt is already settled, or is not a bank transfer this operation can act on.',
     schema: ERROR_SCHEMA,
   })
   @ApiResponse({

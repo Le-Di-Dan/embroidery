@@ -23,12 +23,7 @@
  * response body. Mapping it to a `409` here would discard the durable review the
  * accepted lifecycle requires and leave the contradiction recorded nowhere.
  */
-import {
-  ConflictException,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 
 export const PAYMENT_VERIFICATION_FAILURES = [
   /** No `payment_attempts` row with that id. */
@@ -37,15 +32,41 @@ export const PAYMENT_VERIFICATION_FAILURES = [
   'PAYMENT_ORDER_NOT_FOUND',
   /**
    * The attempt exists but is outside this operation's authority: it is not a
-   * `BANK_TRANSFER`, or its obligation is not the `DEPOSIT` one. `APP7-B04`
-   * collects both under one code because both mean the same thing to an
-   * operator — this is not an attempt B04 verifies.
+   * `BANK_TRANSFER`, or its obligation is of a kind this surface cannot settle.
+   * Both are collected under one code because both mean the same thing to an
+   * operator — this is not an attempt this operation verifies.
+   *
+   * `APP9-B03` widened the second half from "not the `DEPOSIT` one" to "not one
+   * of the two `CST-039` kinds". The code and its status are unchanged; only the
+   * set it guards grew, and a third kind added later still lands here.
    */
   'PAYMENT_ATTEMPT_NOT_VERIFIABLE',
   /** Terminal already (`SUCCEEDED`, `FAILED`, `EXPIRED`, refunded). LC-16 never regresses. */
   'PAYMENT_ATTEMPT_ALREADY_SETTLED',
-  /** The DEPOSIT is `SATISFIED` or `CANCELLED` — a different attempt won, or it is void. */
-  'DEPOSIT_NOT_PAYABLE',
+  /**
+   * The obligation is `SATISFIED` or `CANCELLED` — a different attempt won, or it
+   * is void.
+   *
+   * Renamed from `DEPOSIT_NOT_PAYABLE` by `APP9-B03`, because the code now
+   * answers for the remaining balance too and telling an operator "this deposit
+   * is no longer awaiting payment" about a settled *balance* is simply wrong. It
+   * is a narrow rename inside this Admin family only: the customer deposit
+   * surface keeps its own `DEPOSIT_NOT_PAYABLE` in `deposit.errors.ts`, which is a
+   * different vocabulary on a different surface, and no frontend matched this
+   * one.
+   */
+  'PAYMENT_OBLIGATION_NOT_PAYABLE',
+  /**
+   * The order is not in the state this obligation kind is verified from
+   * (`APP9-B03` §7).
+   *
+   * `DEPOSIT` verifies from `AWAITING_DEPOSIT`, `REMAINING` from
+   * `AWAITING_FINAL_PAYMENT`. The commonest real cause is an operator verifying
+   * a balance transfer before `TR-LC14-05` has opened collection, with the order
+   * still at `PRODUCTION_COMPLETED`; a held order is the other. It is a refusal
+   * and not a fault: nothing is written, and the operator's own action fixes it.
+   */
+  'PAYMENT_ORDER_NOT_AWAITING_PAYMENT',
 ] as const;
 
 export type PaymentVerificationFailure = (typeof PAYMENT_VERIFICATION_FAILURES)[number];
@@ -72,17 +93,22 @@ const RESPONSE_OF: Readonly<Record<PaymentVerificationFailure, () => HttpExcepti
   PAYMENT_ATTEMPT_NOT_VERIFIABLE: () =>
     new ConflictException({
       code: 'PAYMENT_ATTEMPT_NOT_VERIFIABLE',
-      message: 'That payment attempt is not a deposit bank transfer.',
+      message: 'That payment attempt cannot be verified here.',
     }),
   PAYMENT_ATTEMPT_ALREADY_SETTLED: () =>
     new ConflictException({
       code: 'PAYMENT_ATTEMPT_ALREADY_SETTLED',
       message: 'That payment attempt has already been settled.',
     }),
-  DEPOSIT_NOT_PAYABLE: () =>
+  PAYMENT_OBLIGATION_NOT_PAYABLE: () =>
     new ConflictException({
-      code: 'DEPOSIT_NOT_PAYABLE',
-      message: 'This deposit is no longer awaiting payment.',
+      code: 'PAYMENT_OBLIGATION_NOT_PAYABLE',
+      message: 'That payment is no longer awaiting payment.',
+    }),
+  PAYMENT_ORDER_NOT_AWAITING_PAYMENT: () =>
+    new ConflictException({
+      code: 'PAYMENT_ORDER_NOT_AWAITING_PAYMENT',
+      message: 'This order is not awaiting that payment.',
     }),
 };
 

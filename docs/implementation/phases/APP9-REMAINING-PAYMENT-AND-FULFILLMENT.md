@@ -393,8 +393,37 @@ B02   COMPLETE   (customer REMAINING surface — POST /api/public/orders/final-p
                   208->214 schemas; 3 HTTP operations, 0 migrations, 0 worker
                   changes, 0 Admin verification, 0 TR-LC14-06, 0 notification
                   intents, 0 provider/callback/webhook behaviour)
-B03   NEXT
-W01   INCOMPLETE
+B03   COMPLETE   (Admin REMAINING verification and TR-LC14-06, delivered by
+                  generalising the existing POST
+                  /api/admin/payment-attempts/{attemptId}/verify —
+                  adminPaymentAttempt_verify, 0 new HTTP operations and no
+                  second verification route. The obligation kind is derived
+                  from the locked obligation row, never accepted from the
+                  request, and resolved through a closed two-row table
+                  (DEPOSIT: AWAITING_DEPOSIT -> DEPOSIT_PAID;
+                  REMAINING: AWAITING_FINAL_PAYMENT -> READY_FOR_DELIVERY) so a
+                  third kind is refused rather than inheriting the deposit's
+                  move. A source-state guard runs before any write — LC-14
+                  legality is deliberately not the guard — and is re-proved by
+                  transition()'s own FOR UPDATE, whose INVALID_TRANSITION is
+                  classified rather than leaked. One transaction settles the
+                  attempt SUCCEEDED, satisfies the obligation, appends the
+                  reconciliation, moves the order and appends the outbox row;
+                  GRD-016's causal order is structural because the obligation is
+                  SATISFIED before the transition line runs. payment.verified
+                  now carries the real obligationKind, closing R00's hard-coded
+                  'DEPOSIT'. Replay still returns committed truth with no second
+                  settlement, transition, reconciliation or event. The shared
+                  chain resolver, decision recorder and error vocabulary were
+                  narrowly generalised, so adminPaymentAttempt_review now
+                  reaches a REMAINING attempt while still settling and moving
+                  nothing. OpenAPI unchanged at 96 paths / 103 operations /
+                  214 schemas — descriptions only, no operation, path or schema
+                  added. 0 migrations, 0 worker changes, 0 new event types,
+                  0 provider/callback/webhook, no shipping, dispatch, freeze or
+                  completion. FU-APP8-W01-01 stays open by design: a correct
+                  REMAINING event will now dead-letter until APP9-W01)
+W01   NEXT
 B04   INCOMPLETE
 B05   INCOMPLETE
 D01   INCOMPLETE

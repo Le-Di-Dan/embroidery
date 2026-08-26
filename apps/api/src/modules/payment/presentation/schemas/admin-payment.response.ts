@@ -256,16 +256,37 @@ export class PaymentDecisionResponse {
   @ApiProperty({ enum: schema.PAYMENT_ATTEMPT_STATES, example: 'SUCCEEDED' })
   attemptStatus!: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({
+    format: 'uuid',
+    description:
+      'The obligation this decision acted on — the one the named attempt belongs to, resolved ' +
+      'by the server. Since `APP9-B03` that is the DEPOSIT obligation for a deposit ' +
+      'verification and the REMAINING one for a final-payment verification; the `deposit` ' +
+      'prefix is the original `APP7-B04` field name, kept so no delivered client breaks.',
+  })
   depositObligationId!: string;
 
-  @ApiProperty({ enum: schema.PAYMENT_OBLIGATION_STATES, example: 'SATISFIED' })
+  @ApiProperty({
+    enum: schema.PAYMENT_OBLIGATION_STATES,
+    example: 'SATISFIED',
+    description:
+      'The state of that same obligation after the decision committed. `SATISFIED` on a match, ' +
+      'unchanged on a review. It describes whichever obligation `depositObligationId` names, ' +
+      'not the deposit specifically.',
+  })
   depositStatus!: string;
 
   @ApiProperty({ format: 'uuid' })
   orderId!: string;
 
-  @ApiProperty({ enum: schema.ORDER_STATES, example: 'DEPOSIT_PAID' })
+  @ApiProperty({
+    enum: schema.ORDER_STATES,
+    example: 'DEPOSIT_PAID',
+    description:
+      'The order’s state after the decision committed, read back rather than assumed. A ' +
+      'verified deposit reports `DEPOSIT_PAID` and a verified balance `READY_FOR_DELIVERY`; a ' +
+      'review reports the order unmoved.',
+  })
   orderStatus!: string;
 
   @ApiProperty({ enum: PAYMENT_RECONCILIATION_ACTIONS, example: 'MANUAL_MATCH' })

@@ -3820,6 +3820,9 @@ export const PaymentDecisionResponseAttemptStatus = {
   PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
 } as const;
 
+/**
+ * The state of that same obligation after the decision committed. `SATISFIED` on a match, unchanged on a review. It describes whichever obligation `depositObligationId` names, not the deposit specifically.
+ */
 export type PaymentDecisionResponseDepositStatus =
   (typeof PaymentDecisionResponseDepositStatus)[keyof typeof PaymentDecisionResponseDepositStatus];
 
@@ -3830,6 +3833,9 @@ export const PaymentDecisionResponseDepositStatus = {
   SUPERSEDED: 'SUPERSEDED',
 } as const;
 
+/**
+ * The order’s state after the decision committed, read back rather than assumed. A verified deposit reports `DEPOSIT_PAID` and a verified balance `READY_FOR_DELIVERY`; a review reports the order unmoved.
+ */
 export type PaymentDecisionResponseOrderStatus =
   (typeof PaymentDecisionResponseOrderStatus)[keyof typeof PaymentDecisionResponseOrderStatus];
 
@@ -3860,9 +3866,12 @@ export const PaymentDecisionResponseReconciliationAction = {
 export interface PaymentDecisionResponse {
   attemptId: string;
   attemptStatus: PaymentDecisionResponseAttemptStatus;
+  /** The obligation this decision acted on — the one the named attempt belongs to, resolved by the server. Since `APP9-B03` that is the DEPOSIT obligation for a deposit verification and the REMAINING one for a final-payment verification; the `deposit` prefix is the original `APP7-B04` field name, kept so no delivered client breaks. */
   depositObligationId: string;
+  /** The state of that same obligation after the decision committed. `SATISFIED` on a match, unchanged on a review. It describes whichever obligation `depositObligationId` names, not the deposit specifically. */
   depositStatus: PaymentDecisionResponseDepositStatus;
   orderId: string;
+  /** The order’s state after the decision committed, read back rather than assumed. A verified deposit reports `DEPOSIT_PAID` and a verified balance `READY_FOR_DELIVERY`; a review reports the order unmoved. */
   orderStatus: PaymentDecisionResponseOrderStatus;
   reconciliationAction: PaymentDecisionResponseReconciliationAction;
   /** True when this response reported a verification that had already committed — the retry of a call whose response was lost. Nothing was written a second time. */

@@ -98,7 +98,15 @@ export class ReviewPaymentAttemptUseCase {
 
     try {
       return await this.transactions.runInTransaction(async () => {
-        const { locked, orderId } = await this.chain.resolve(command.attemptId);
+        // `kind` and `orderStatus` come from the shared chain `APP9-B03` made
+        // kind-aware. Review itself gained no new behaviour: it settles the
+        // attempt to `REQUIRES_REVIEW`, appends a reconciliation and moves no
+        // order, which was already true of either obligation. What changed is
+        // that a `REMAINING` attempt now reaches it at all, instead of being
+        // refused as not verifiable — the same shared resolver decides both
+        // operations, and an escalation path that could not reach half the
+        // payments the sibling operation can settle would be the odd rule.
+        const { locked, orderId, orderStatus, kind } = await this.chain.resolve(command.attemptId);
         const { attempt, obligation } = locked;
         const now = this.clock.now();
 
@@ -138,14 +146,16 @@ export class ReviewPaymentAttemptUseCase {
             observedTransferReference: command.observedTransferReference,
             fromStatus: statusBefore,
             toStatus: 'REQUIRES_REVIEW',
+            obligationKind: kind,
           },
           adminId,
           command.reviewReason,
         );
 
         // Read back rather than assumed. The response's whole job is to state
-        // that the deposit and the order did not move, and reporting a remembered
-        // value would be this file asserting that instead of observing it.
+        // that the obligation and the order did not move, and reporting a
+        // remembered value would be this file asserting that instead of
+        // observing it.
         const order = await this.orders.findById(orderId as OrderId);
         return {
           attemptId: attempt.id,
@@ -153,7 +163,9 @@ export class ReviewPaymentAttemptUseCase {
           depositObligationId: obligation.id,
           depositStatus: obligation.status,
           orderId,
-          orderStatus: order?.status ?? 'AWAITING_DEPOSIT',
+          // Falling back to what the chain observed rather than to a deposit
+          // literal: this operation now runs for either kind.
+          orderStatus: order?.status ?? orderStatus,
           reconciliationAction: action,
           replayed: false,
         };

@@ -27,13 +27,29 @@ const REVIEW_PATH = '/api/admin/payment-attempts/{attemptId}/review';
  */
 const B06_EVIDENCE_PATH = '/api/admin/payment-evidence/{evidenceId}/content';
 
-/** `APP7-B03`'s and `APP7-B05`'s customer operations, named so the bounds stay exhaustive. */
+/**
+ * Every customer payment operation, named so the bounds below stay exhaustive.
+ *
+ * `APP7-B03`'s three and `APP7-B05`'s two, plus `APP9-B02`'s three. B02 added
+ * the final-payment trio and updated the two exhaustive bounds inside
+ * `public-order-deposit.contract.spec.ts` but not this third one, which lives in
+ * another file and asserts the same property from the Admin side — so this list
+ * was stale and the suite was red until `APP9-B03` completed the update.
+ *
+ * The assertion these feed is unchanged in meaning: **the Admin payment
+ * checkpoint publishes no customer operation of its own.** Naming the customer
+ * paths is what keeps that an exhaustive claim rather than a prefix filter that
+ * would quietly stop noticing a new one.
+ */
 const CUSTOMER_PAYMENT_PATHS = [
   '/api/public/orders/deposit',
   '/api/public/orders/deposit/attempts',
   '/api/public/orders/deposit/qr',
   '/api/public/orders/deposit/evidence',
   '/api/public/orders/deposit/evidence/status',
+  '/api/public/orders/final-payment',
+  '/api/public/orders/final-payment/attempts',
+  '/api/public/orders/final-payment/qr',
 ];
 
 interface SchemaShape {

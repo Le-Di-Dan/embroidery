@@ -10,12 +10,12 @@ import {
   classifyAttemptForVerification,
   isSameVerificationApplication,
   judgeObservedTransfer,
-  type ExpectedDepositFacts,
+  type ExpectedTransferFacts,
 } from './payment-verification.policy';
 import { observedAmountMatches } from './observed-amount';
 import { reconciliationActionFor } from './reconciliation-evidence';
 
-const EXPECTED: ExpectedDepositFacts = {
+const EXPECTED: ExpectedTransferFacts = {
   amount: '765000.00',
   currencyCode: 'VND',
   transferReference: 'ORD7K3MPQ2XVDDC',
@@ -70,8 +70,9 @@ describe('judgeObservedTransfer — the exact-match predicate', () => {
       'ORD-7K3MPQ2XVD-DC',
       'ORD7K3MPQ2XVDD',
     ]) {
-      expect(judgeObservedTransfer({ amount: '765000', transferReference: reference }, EXPECTED))
-        .toEqual({ matched: false, mismatch: 'REFERENCE_MISMATCH' });
+      expect(
+        judgeObservedTransfer({ amount: '765000', transferReference: reference }, EXPECTED),
+      ).toEqual({ matched: false, mismatch: 'REFERENCE_MISMATCH' });
     }
   });
 
@@ -119,9 +120,9 @@ describe('isSameVerificationApplication — the network-timeout retry', () => {
   });
 
   it('refuses when the deposit was satisfied by a different attempt (CC-10’s loser)', () => {
-    expect(
-      isSameVerificationApplication({ ...committed, satisfiedByAttemptId: 'attempt-2' }),
-    ).toBe(false);
+    expect(isSameVerificationApplication({ ...committed, satisfiedByAttemptId: 'attempt-2' })).toBe(
+      false,
+    );
   });
 
   it('refuses a SUCCEEDED attempt whose obligation is still PENDING', () => {

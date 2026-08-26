@@ -11,6 +11,7 @@ import { IdentityModule } from '../identity/identity.module';
 import { PaymentDecisionChainResolver } from './application/admin/payment-decision-chain.resolver';
 import { PaymentDecisionRecorder } from './application/admin/payment-decision.recorder';
 import { ReviewPaymentAttemptUseCase } from './application/admin/review-payment-attempt.use-case';
+import { RouteAttemptToReview } from './application/admin/route-attempt-to-review.service';
 import { VerifyPaymentAttemptUseCase } from './application/admin/verify-payment-attempt.use-case';
 import { AdminPaymentAttemptController } from './presentation/admin-payment-attempt.controller';
 
@@ -78,6 +79,7 @@ import { AdminPaymentAttemptController } from './presentation/admin-payment-atte
   providers: [
     PaymentDecisionChainResolver,
     PaymentDecisionRecorder,
+    RouteAttemptToReview,
     VerifyPaymentAttemptUseCase,
     ReviewPaymentAttemptUseCase,
   ],

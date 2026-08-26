@@ -53,6 +53,7 @@ import {
   AUDIT_EVENT_REPOSITORY,
   type AuditEventRepository,
 } from '../../../audit/domain/repositories/audit-event.repository';
+import type { VerifiableObligationKind } from '../../domain/verification/verified-payment-transition';
 
 /** `TR-LC16-03`. Lowercase dot-namespaced, as `DB3_AUDIT_SPECIFICATION.md` locks. */
 export const PAYMENT_ATTEMPT_VERIFIED_ACTION = 'payment_attempt.verified';
@@ -69,6 +70,21 @@ export interface PaymentDecisionFacts {
   readonly attemptId: string;
   readonly obligationId: string;
   readonly orderId: string;
+  /**
+   * Which `CST-039` obligation the decision settled.
+   *
+   * Required, not optional, and typed to the closed verifiable set. `APP7-B04`
+   * wrote the literal `'DEPOSIT'` into the event payload because a deposit was
+   * the only thing it could settle; `APP9-B03` made that a lie for half its
+   * callers. A required field is what stops the next caller from omitting it and
+   * silently reintroducing a default.
+   *
+   * Both paths carry it. The event payload needs it because SE-007's consumer
+   * routes on it; the audit summary carries it because an operator reading
+   * `payment_attempt.review_required` on an order with two live obligations
+   * otherwise cannot tell which payment was escalated.
+   */
+  readonly obligationKind: VerifiableObligationKind;
   /** What the operator observed. Recorded, never treated as authority. */
   readonly observedAmount: string | undefined;
   readonly observedTransferReference: string | undefined;
@@ -101,7 +117,11 @@ export class PaymentDecisionRecorder {
       payload: {
         paymentAttemptId: facts.attemptId,
         paymentObligationId: facts.obligationId,
-        obligationKind: 'DEPOSIT',
+        // The real kind, read off the obligation row the verifying transaction
+        // locked. Never a literal: a `REMAINING` settlement announced as
+        // `DEPOSIT` would tell the reservation consumer to reserve stock a
+        // second time for an order already in production.
+        obligationKind: facts.obligationKind,
         orderId: facts.orderId,
       },
       payloadSchemaVersion: PAYMENT_VERIFIED_SCHEMA_VERSION,
@@ -141,6 +161,7 @@ export class PaymentDecisionRecorder {
       reason,
       summary: {
         paymentObligationId: facts.obligationId,
+        obligationKind: facts.obligationKind,
         orderId: facts.orderId,
         fromStatus: facts.fromStatus,
         toStatus: facts.toStatus,

@@ -31,6 +31,7 @@
  * attempt gets an operator that attempt's facts and no reach into anything else.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import type { OrderState } from '@embroidery/database';
 import {
   PAYMENT_OBLIGATION_REPOSITORY,
   type AttemptId,
@@ -44,20 +45,49 @@ import {
   type OrderRepository,
 } from '../../../order/domain/repositories/order.repository';
 import { depositTransferReference } from '../../domain/deposit/deposit-reference';
+import { remainingTransferReference } from '../../domain/final-payment/final-payment-reference';
 import {
   BANK_TRANSFER_METHOD,
-  DEPOSIT_OBLIGATION_KIND,
-  type ExpectedDepositFacts,
+  type ExpectedTransferFacts,
 } from '../../domain/verification/payment-verification.policy';
 import { paymentVerificationError } from '../../domain/verification/payment-verification.errors';
+import {
+  verifiedPaymentTransitionFor,
+  type VerifiableObligationKind,
+  type VerifiedPaymentTransition,
+} from '../../domain/verification/verified-payment-transition';
 
 /** Everything one decision needs, all of it read under the attempt's lock. */
 export interface PaymentDecisionChain {
   readonly locked: VerifiableAttempt;
   readonly orderId: string;
   readonly orderCode: string;
-  readonly expected: ExpectedDepositFacts;
+  /**
+   * The order's state as this transaction found it.
+   *
+   * Read here rather than re-read at the point of use, so the source-state guard
+   * and the response's "nothing moved" claim quote the same observation.
+   */
+  readonly orderStatus: OrderState;
+  /** Derived from the locked obligation row, never accepted from the request. */
+  readonly kind: VerifiableObligationKind;
+  /** The LC-14 pair this kind verifies across (`APP9-B03` §7). */
+  readonly transition: VerifiedPaymentTransition;
+  readonly expected: ExpectedTransferFacts;
 }
+
+/**
+ * The transfer memo each kind's obligation is paid against.
+ *
+ * Two builders rather than one parameterised function: `APP7-G01` §4 forbids a
+ * kind parameter on the reference derivation itself, so the choice is made here,
+ * from the kind the database reported, and each builder stays unable to derive
+ * the other's memo.
+ */
+const REFERENCE_BUILDER: Readonly<Record<VerifiableObligationKind, (code: string) => string>> = {
+  DEPOSIT: depositTransferReference,
+  REMAINING: remainingTransferReference,
+};
 
 @Injectable()
 export class PaymentDecisionChainResolver {
@@ -74,13 +104,21 @@ export class PaymentDecisionChainResolver {
       throw paymentVerificationError('PAYMENT_ATTEMPT_NOT_FOUND');
     }
 
-    // The obligation is read, not trusted: `fk_payment_attempts__payment_obligation_id`
-    // proves the row exists, and only this comparison proves it is a DEPOSIT.
-    // Without it a REMAINING attempt — which APP9 will create — would be
-    // verifiable by an APP7 route that has no authority over it.
-    if (locked.obligation.kind !== DEPOSIT_OBLIGATION_KIND) {
+    // The kind is **derived**, never accepted: it is read off the obligation row
+    // this transaction locked, and the request carries only an attempt id. The
+    // obligation itself is read rather than trusted —
+    // `fk_payment_attempts__payment_obligation_id` proves the row exists, and only
+    // this lookup proves the surface has authority over it.
+    //
+    // `APP9-B03` widened the set from `DEPOSIT` alone to both `CST-039` kinds. It
+    // is a *lookup*, not a widened comparison: a third kind added to the
+    // database later returns `undefined` and is refused here, rather than
+    // silently inheriting the deposit's LC-14 transition.
+    const transition = verifiedPaymentTransitionFor(locked.obligation.kind);
+    if (transition === undefined) {
       throw paymentVerificationError('PAYMENT_ATTEMPT_NOT_VERIFIABLE');
     }
+    const kind = locked.obligation.kind;
     // `APP7-G01` §1: the manual MVP settles bank transfers and nothing else. A
     // `PROVIDER_REDIRECT` attempt is a provider's to confirm, and IMP-O007 is
     // open, so no operator may hand-settle one here.
@@ -100,10 +138,16 @@ export class PaymentDecisionChainResolver {
       locked,
       orderId: order.id,
       orderCode: order.code,
+      orderStatus: order.status,
+      kind,
+      transition,
       expected: {
         amount: locked.obligation.amount,
         currencyCode: locked.obligation.currencyCode,
-        transferReference: depositTransferReference(order.code),
+        // The memo for *this* obligation's kind. A REMAINING transfer carries
+        // the RM reference, so an operator who pasted the deposit's DC memo is
+        // routed to review rather than silently matched.
+        transferReference: REFERENCE_BUILDER[kind](order.code),
       },
     };
   }

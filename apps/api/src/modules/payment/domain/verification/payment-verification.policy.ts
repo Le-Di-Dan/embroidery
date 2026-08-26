@@ -45,7 +45,11 @@ import type { PaymentAttemptState, PaymentObligationState } from '@embroidery/da
 import { observedAmountMatches } from './observed-amount';
 
 /** LC-16 statuses a manual verification may settle **from**. */
-const VERIFIABLE_FROM: readonly PaymentAttemptState[] = ['PENDING', 'PROCESSING', 'REQUIRES_REVIEW'];
+const VERIFIABLE_FROM: readonly PaymentAttemptState[] = [
+  'PENDING',
+  'PROCESSING',
+  'REQUIRES_REVIEW',
+];
 
 /** `APP7-G01` §1 — the only method this flow ever produces or verifies. */
 export const BANK_TRANSFER_METHOD = 'BANK_TRANSFER';
@@ -78,7 +82,7 @@ export function classifyAttemptForVerification(status: PaymentAttemptState): Att
  * `depositTransferReference`. Nothing here can be supplied by the request, which
  * is why the type has no field a caller's body maps onto.
  */
-export interface ExpectedDepositFacts {
+export interface ExpectedTransferFacts {
   readonly amount: string;
   readonly currencyCode: string;
   readonly transferReference: string;
@@ -94,8 +98,7 @@ export interface ObservedTransferFacts {
 export type VerificationMismatch = 'AMOUNT_MISMATCH' | 'REFERENCE_MISMATCH' | 'CURRENCY_MISMATCH';
 
 export type VerificationVerdict =
-  | { readonly matched: true }
-  | { readonly matched: false; readonly mismatch: VerificationMismatch };
+  { readonly matched: true } | { readonly matched: false; readonly mismatch: VerificationMismatch };
 
 /** `ck_payment_obligations__currency_vnd` — the only currency this flow settles. */
 const VND = 'VND';
@@ -118,7 +121,7 @@ const VND = 'VND';
  */
 export function judgeObservedTransfer(
   observed: ObservedTransferFacts,
-  expected: ExpectedDepositFacts,
+  expected: ExpectedTransferFacts,
 ): VerificationVerdict {
   if (expected.currencyCode !== VND) {
     return { matched: false, mismatch: 'CURRENCY_MISMATCH' };
@@ -164,7 +167,7 @@ export function isSameVerificationApplication(input: {
   readonly satisfiedByAttemptId: string | undefined;
   readonly attemptId: string;
   readonly observed: ObservedTransferFacts;
-  readonly expected: ExpectedDepositFacts;
+  readonly expected: ExpectedTransferFacts;
 }): boolean {
   return (
     input.attemptStatus === 'SUCCEEDED' &&

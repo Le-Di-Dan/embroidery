@@ -74,8 +74,6 @@ import { isPersistenceError } from '@embroidery/database';
 import {
   PAYMENT_OBLIGATION_REPOSITORY,
   TransactionManager,
-  type AttemptId,
-  type ObligationId,
   type PaymentObligationRepository,
 } from '@embroidery/persistence';
 
@@ -97,6 +95,7 @@ import { reconciliationActionFor } from '../../domain/verification/reconciliatio
 import type { PaymentDecisionView } from './admin-payment.view';
 import { PaymentDecisionChainResolver } from './payment-decision-chain.resolver';
 import { PaymentDecisionRecorder } from './payment-decision.recorder';
+import { RouteAttemptToReview } from './route-attempt-to-review.service';
 import { requirePaymentAdminActorId } from './payment-admin-actor';
 
 /**
@@ -132,7 +131,7 @@ export interface VerifyPaymentAttemptCommand {
 /** The persistence guard codes this use case translates. */
 const OBLIGATION_NOT_PENDING = 'OBLIGATION_NOT_PENDING';
 const ATTEMPT_ALREADY_SETTLED = 'ATTEMPT_ALREADY_SETTLED';
-
+const INVALID_TRANSITION = 'INVALID_TRANSITION';
 
 @Injectable()
 export class VerifyPaymentAttemptUseCase {
@@ -143,6 +142,7 @@ export class VerifyPaymentAttemptUseCase {
     private readonly obligations: PaymentObligationRepository,
     @Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository,
     private readonly recorder: PaymentDecisionRecorder,
+    private readonly reviewRouter: RouteAttemptToReview,
     private readonly requestContext: RequestContextService,
     private readonly clock: AuditClock,
   ) {}
@@ -157,7 +157,8 @@ export class VerifyPaymentAttemptUseCase {
 
     try {
       return await this.transactions.runInTransaction(async () => {
-        const { locked, orderId, expected } = await this.chain.resolve(command.attemptId);
+        const { locked, orderId, orderStatus, kind, transition, expected } =
+          await this.chain.resolve(command.attemptId);
         const { attempt, obligation } = locked;
         const now = this.clock.now();
 
@@ -174,6 +175,11 @@ export class VerifyPaymentAttemptUseCase {
           // this one writes nothing, appends no second reconciliation, emits no
           // second event, and answers with the committed truth rather than a
           // conflict that would read as "the payment failed".
+          // Checked **before** the source-state guard, and that order matters:
+          // a committed verification has already moved the order off its source
+          // state, so guarding first would answer a lost-response retry with
+          // "this order is not awaiting that payment" — a refusal that reads as
+          // "the payment failed" for a payment that succeeded.
           const order = await this.orders.findById(orderId as OrderId);
           return {
             attemptId: attempt.id,
@@ -181,7 +187,7 @@ export class VerifyPaymentAttemptUseCase {
             depositObligationId: obligation.id,
             depositStatus: obligation.status,
             orderId,
-            orderStatus: order?.status ?? 'DEPOSIT_PAID',
+            orderStatus: order?.status ?? transition.target,
             reconciliationAction: reconciliationActionFor(attempt.status),
             replayed: true,
           };
@@ -200,7 +206,25 @@ export class VerifyPaymentAttemptUseCase {
           // it under the row lock and is the real arbiter; this earlier read
           // exists so the operator reads a stated reason rather than a bare
           // guard code.
-          throw paymentVerificationError('DEPOSIT_NOT_PAYABLE');
+          throw paymentVerificationError('PAYMENT_OBLIGATION_NOT_PAYABLE');
+        }
+        if (orderStatus !== transition.source) {
+          // `APP9-B03` §7. The order has not reached the step this obligation is
+          // collected at — for a balance, the commonest cause is an operator
+          // verifying before `TR-LC14-05` opened collection, leaving the order at
+          // `PRODUCTION_COMPLETED`; a held order is the other.
+          //
+          // Placed **before** the verdict on purpose. A mismatch would otherwise
+          // route to `REQUIRES_REVIEW` and append a reconciliation, which is a
+          // durable write against an order that is not collecting this payment
+          // at all. Refusing here means a wrong-state verification writes
+          // nothing whatever the observed facts were.
+          //
+          // It is also deliberately not `isLegalOrderTransition`: `APP9-B01`
+          // recorded why. `ON_HOLD -> DEPOSIT_PAID` and
+          // `ON_HOLD -> READY_FOR_DELIVERY` are both *legal* moves, so legality
+          // alone would let a verification resume a held order as a side effect.
+          throw paymentVerificationError('PAYMENT_ORDER_NOT_AWAITING_PAYMENT');
         }
 
         const verdict = judgeObservedTransfer(observed, expected);
@@ -208,10 +232,12 @@ export class VerifyPaymentAttemptUseCase {
         const action = reconciliationActionFor(statusBefore);
 
         if (!verdict.matched) {
-          return this.routeToReview({
+          return this.reviewRouter.route({
             attemptId: attempt.id,
             obligationId: obligation.id,
             orderId,
+            orderStatus,
+            kind,
             observed,
             note: command.note,
             action,
@@ -225,6 +251,12 @@ export class VerifyPaymentAttemptUseCase {
         // G-DB7-06 / G-DB7-33 are re-proved inside this call, under the
         // obligation's own row lock. Nothing here writes a satisfaction column.
         const satisfied = await this.obligations.satisfy(obligation.id, attempt.id, now);
+        // TR-LC14-02 for a deposit, TR-LC14-06 for the balance — the pair the
+        // kind table named, in the *same* transaction as the settlement above.
+        // GRD-016's causal order is therefore structural rather than asserted:
+        // the obligation is already `SATISFIED` when this line runs, and no
+        // worker is involved in either move.
+        //
         // No `eventKind`, so the repository writes `STATE_CHANGE`.
         // `ck_order_transitions__event_kind_allowed` closes the column to six
         // values — `STATE_CHANGE`, `DELIVERY_EVENT`, `SAGA_STEP`,
@@ -235,7 +267,7 @@ export class VerifyPaymentAttemptUseCase {
         // reconciliation row and the audit event, which are built for it.
         const order = await this.orders.transition({
           id: orderId as OrderId,
-          to: 'DEPOSIT_PAID',
+          to: transition.target,
           actor: { kind: 'ADMIN', adminId },
           correlationId,
         });
@@ -264,6 +296,10 @@ export class VerifyPaymentAttemptUseCase {
             observedTransferReference: command.observedTransferReference,
             fromStatus: statusBefore,
             toStatus: 'SUCCEEDED',
+            // The kind the locked obligation row reported, carried through to
+            // the event rather than re-derived. SE-007's payload must state
+            // which obligation was settled, and only this transaction knows.
+            obligationKind: kind,
           },
           adminId,
         );
@@ -285,77 +321,6 @@ export class VerifyPaymentAttemptUseCase {
   }
 
   /**
-   * The durable contradiction path (`APP7-B04` §18, LC-16 `TR-LC16-05`).
-   *
-   * An under-payment, an over-payment or a wrong reference must never silently
-   * become `SUCCEEDED`, and must not be downgraded to a bare refusal either: the
-   * accepted lifecycle owns a durable review, so the attempt moves to
-   * `REQUIRES_REVIEW` with its mandatory reason and the reconciliation records
-   * what was observed. The deposit is **not** satisfied, the order does **not**
-   * move, and no `payment.verified` is emitted.
-   *
-   * `review_reason` is the operator's own note verbatim. No sentence is composed
-   * from the mismatch — `APP7-B04` §18 forbids fabricating a review vocabulary,
-   * and the reconciliation row already carries the observed amount, the observed
-   * reference and `resolved_status` as evidence of exactly what contradicted.
-   */
-  private async routeToReview(input: {
-    readonly attemptId: AttemptId;
-    readonly obligationId: ObligationId;
-    readonly orderId: string;
-    readonly observed: ObservedTransferFacts;
-    readonly note: string;
-    readonly action: ReturnType<typeof reconciliationActionFor>;
-    readonly statusBefore: string;
-    readonly adminId: string;
-    readonly now: Date;
-  }): Promise<PaymentDecisionView> {
-    await this.obligations.settleAttempt(
-      input.attemptId,
-      'REQUIRES_REVIEW',
-      input.now,
-      input.note,
-    );
-    await this.obligations.appendReconciliation({
-      paymentAttemptId: input.attemptId,
-      paymentObligationId: input.obligationId,
-      action: input.action,
-      reason: input.note,
-      adminId: input.adminId,
-      amount: input.observed.amount,
-      resolvedStatus: 'REQUIRES_REVIEW',
-      bankReference: input.observed.transferReference,
-    });
-    await this.recorder.recordReviewRequired(
-      {
-        attemptId: input.attemptId,
-        obligationId: input.obligationId,
-        orderId: input.orderId,
-        observedAmount: input.observed.amount,
-        observedTransferReference: input.observed.transferReference,
-        fromStatus: input.statusBefore,
-        toStatus: 'REQUIRES_REVIEW',
-      },
-      input.adminId,
-      input.note,
-    );
-
-    const order = await this.orders.findById(input.orderId as OrderId);
-    return {
-      attemptId: input.attemptId,
-      attemptStatus: 'REQUIRES_REVIEW',
-      depositObligationId: input.obligationId,
-      // Unchanged, and read back rather than assumed: the response must report
-      // the deposit as still awaiting payment, which is the whole point.
-      depositStatus: 'PENDING',
-      orderId: input.orderId,
-      orderStatus: order?.status ?? 'AWAITING_DEPOSIT',
-      reconciliationAction: input.action,
-      replayed: false,
-    };
-  }
-
-  /**
    * Translates the persistence verdicts this use case owns, and only those.
    *
    * Both are reachable through a real race rather than through bad input:
@@ -368,10 +333,17 @@ export class VerifyPaymentAttemptUseCase {
    */
   private classify(error: unknown): unknown {
     if (isPersistenceError(error) && error.code === OBLIGATION_NOT_PENDING) {
-      return paymentVerificationError('DEPOSIT_NOT_PAYABLE');
+      return paymentVerificationError('PAYMENT_OBLIGATION_NOT_PAYABLE');
     }
     if (isPersistenceError(error) && error.code === ATTEMPT_ALREADY_SETTLED) {
       return paymentVerificationError('PAYMENT_ATTEMPT_ALREADY_SETTLED');
+    }
+    if (isPersistenceError(error) && error.code === INVALID_TRANSITION) {
+      // The row-locked half of the source-state guard above: the order moved
+      // between the chain's read and `transition`'s own `FOR UPDATE`. The whole
+      // transaction rolls back, so the settlement, the satisfaction and the
+      // reconciliation go with it — this only decides which refusal is read.
+      return paymentVerificationError('PAYMENT_ORDER_NOT_AWAITING_PAYMENT');
     }
     return error;
   }
