@@ -44,6 +44,7 @@ import type {
   AdminOrderList200,
   AdminOrderListParams,
   AdminOrderPaymentRead200,
+  AdminOrderTransition200,
   AdminPaymentAttemptReview200,
   AdminPaymentAttemptVerify200,
   AdminProductArchive200,
@@ -146,6 +147,7 @@ import type {
   StaffSelfGet200,
   SubmitCustomRequestBody,
   SubmitVerificationAttemptBody,
+  TransitionAdminOrderBody,
   TransitionCustomRequestBody,
   TransitionProductionJobBody,
   UnpublishDesignTemplateBody,
@@ -684,6 +686,32 @@ export const adminProductionJobCreate = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: createProductionJobBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Moves the order from PRODUCTION_COMPLETED to AWAITING_FINAL_PAYMENT (TR-LC14-05), in one transaction that commits together or not at all.
+ *
+ * It requires the order to be exactly PRODUCTION_COMPLETED — an order on hold or still in production is refused — and it requires the order to have a live REMAINING payment obligation. That obligation was created beside the DEPOSIT one when the order was converted from the accepted quotation, and this command **does not create it, change its amount or satisfy it**: the order’s new lifecycle state is what opens the payment window. A DEPOSIT obligation cannot stand in for it, and a missing REMAINING obligation is refused rather than repaired.
+ *
+ * It collects nothing. No payment attempt is opened, no bank-transfer instruction or QR is produced, no evidence is accepted and no customer message is sent — the customer final-payment surface is a separate capability. It does not verify a payment, touch shipping, dispatch or complete the order.
+ *
+ * Replaying the command after it has committed is refused: TR-LC14-05 is legal from one state only, so a retry finds the order already in AWAITING_FINAL_PAYMENT and appends no second transition.
+ * @summary Open final payment on an order whose production is complete
+ */
+export const adminOrderTransition = (
+  orderId: unknown,
+  transitionAdminOrderBody: TransitionAdminOrderBody,
+  options?: SecondParameter<typeof apiRequest<AdminOrderTransition200>>,
+) => {
+  return apiRequest<AdminOrderTransition200>(
+    {
+      url: `/api/admin/orders/${orderId}/transitions`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: transitionAdminOrderBody,
     },
     options,
   );
@@ -1972,6 +2000,9 @@ export type AdminOrderPaymentReadResult = NonNullable<
 >;
 export type AdminProductionJobCreateResult = NonNullable<
   Awaited<ReturnType<typeof adminProductionJobCreate>>
+>;
+export type AdminOrderTransitionResult = NonNullable<
+  Awaited<ReturnType<typeof adminOrderTransition>>
 >;
 export type AdminPaymentAttemptReviewResult = NonNullable<
   Awaited<ReturnType<typeof adminPaymentAttemptReview>>

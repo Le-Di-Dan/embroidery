@@ -1123,6 +1123,71 @@ export interface AdminOrderQueueResponse {
 }
 
 /**
+ * The LC-14 state the order held when the transaction began.
+ */
+export type AdminOrderTransitionResultResponseFromStatus =
+  (typeof AdminOrderTransitionResultResponseFromStatus)[keyof typeof AdminOrderTransitionResultResponseFromStatus];
+
+export const AdminOrderTransitionResultResponseFromStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The obligation’s own LC-15 state, unchanged by this command.
+ */
+export type AdminOrderTransitionResultResponseRemainingObligationStatus =
+  (typeof AdminOrderTransitionResultResponseRemainingObligationStatus)[keyof typeof AdminOrderTransitionResultResponseRemainingObligationStatus];
+
+export const AdminOrderTransitionResultResponseRemainingObligationStatus = {
+  PENDING: 'PENDING',
+  SATISFIED: 'SATISFIED',
+} as const;
+
+/**
+ * The LC-14 state the order now holds.
+ */
+export type AdminOrderTransitionResultResponseStatus =
+  (typeof AdminOrderTransitionResultResponseStatus)[keyof typeof AdminOrderTransitionResultResponseStatus];
+
+export const AdminOrderTransitionResultResponseStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminOrderTransitionResultResponse {
+  /** The order code, as frozen at creation. */
+  code: string;
+  /** The LC-14 state the order held when the transaction began. */
+  fromStatus: AdminOrderTransitionResultResponseFromStatus;
+  orderId: string;
+  /** The live REMAINING obligation this command required. It was created with the order and is neither created, recalculated nor satisfied here — the order’s new state is what makes it payable. */
+  remainingObligationId: string;
+  /** The obligation’s own LC-15 state, unchanged by this command. */
+  remainingObligationStatus: AdminOrderTransitionResultResponseRemainingObligationStatus;
+  /** The LC-14 state the order now holds. */
+  status: AdminOrderTransitionResultResponseStatus;
+}
+
+/**
  * @nullable
  */
 export type AdminPlacementAreaResponseMaxHeightMm = { [key: string]: unknown } | null;
@@ -4556,6 +4621,17 @@ export interface TransferEvidenceUploadResponse {
   replayed: boolean;
 }
 
+export type TransitionAdminOrderBodyTo =
+  (typeof TransitionAdminOrderBodyTo)[keyof typeof TransitionAdminOrderBodyTo];
+
+export const TransitionAdminOrderBodyTo = {
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+} as const;
+
+export interface TransitionAdminOrderBody {
+  to: TransitionAdminOrderBodyTo;
+}
+
 export type TransitionCustomRequestBodyModerationNoteKind =
   (typeof TransitionCustomRequestBodyModerationNoteKind)[keyof typeof TransitionCustomRequestBodyModerationNoteKind];
 
@@ -5012,6 +5088,10 @@ export type AdminOrderPaymentRead200 = ApiSuccessResponse & {
 
 export type AdminProductionJobCreate201 = ApiSuccessResponse & {
   data: AdminProductionJobCreatedResponse;
+};
+
+export type AdminOrderTransition200 = ApiSuccessResponse & {
+  data: AdminOrderTransitionResultResponse;
 };
 
 export type AdminPaymentAttemptReview200 = ApiSuccessResponse & {

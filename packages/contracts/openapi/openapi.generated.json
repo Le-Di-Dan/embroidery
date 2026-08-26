@@ -1397,6 +1397,80 @@
         ],
         "type": "object"
       },
+      "AdminOrderTransitionResultResponse": {
+        "properties": {
+          "code": {
+            "description": "The order code, as frozen at creation.",
+            "example": "ORD-2K4M8P1QZT",
+            "type": "string"
+          },
+          "fromStatus": {
+            "description": "The LC-14 state the order held when the transaction began.",
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "PRODUCTION_COMPLETED",
+            "type": "string"
+          },
+          "orderId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "format": "uuid",
+            "type": "string"
+          },
+          "remainingObligationId": {
+            "description": "The live REMAINING obligation this command required. It was created with the order and is neither created, recalculated nor satisfied here — the order’s new state is what makes it payable.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6082",
+            "format": "uuid",
+            "type": "string"
+          },
+          "remainingObligationStatus": {
+            "description": "The obligation’s own LC-15 state, unchanged by this command.",
+            "enum": [
+              "PENDING",
+              "SATISFIED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          },
+          "status": {
+            "description": "The LC-14 state the order now holds.",
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "AWAITING_FINAL_PAYMENT",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "code",
+          "fromStatus",
+          "status",
+          "remainingObligationId",
+          "remainingObligationStatus"
+        ],
+        "type": "object"
+      },
       "AdminPaymentAttemptResponse": {
         "properties": {
           "amount": {
@@ -8532,6 +8606,21 @@
         ],
         "type": "object"
       },
+      "TransitionAdminOrderBody": {
+        "additionalProperties": false,
+        "properties": {
+          "to": {
+            "enum": [
+              "AWAITING_FINAL_PAYMENT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "to"
+        ],
+        "type": "object"
+      },
       "TransitionCustomRequestBody": {
         "additionalProperties": false,
         "properties": {
@@ -14863,6 +14952,238 @@
         "summary": "Create the production job for one order",
         "tags": [
           "adminProductionJob"
+        ]
+      }
+    },
+    "/api/admin/orders/{orderId}/transitions": {
+      "post": {
+        "description": "Moves the order from PRODUCTION_COMPLETED to AWAITING_FINAL_PAYMENT (TR-LC14-05), in one transaction that commits together or not at all.\n\nIt requires the order to be exactly PRODUCTION_COMPLETED — an order on hold or still in production is refused — and it requires the order to have a live REMAINING payment obligation. That obligation was created beside the DEPOSIT one when the order was converted from the accepted quotation, and this command **does not create it, change its amount or satisfy it**: the order’s new lifecycle state is what opens the payment window. A DEPOSIT obligation cannot stand in for it, and a missing REMAINING obligation is refused rather than repaired.\n\nIt collects nothing. No payment attempt is opened, no bank-transfer instruction or QR is produced, no evidence is accepted and no customer message is sent — the customer final-payment surface is a separate capability. It does not verify a payment, touch shipping, dispatch or complete the order.\n\nReplaying the command after it has committed is refused: TR-LC14-05 is legal from one state only, so a retry finds the order already in AWAITING_FINAL_PAYMENT and appends no second transition.",
+        "operationId": "adminOrder_transition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransitionAdminOrderBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminOrderTransitionResultResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed transition.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed order id or body, or a target this operation does not perform.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such order.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The order is not PRODUCTION_COMPLETED, or it has no live REMAINING payment obligation. Nothing was committed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Open final payment on an order whose production is complete",
+        "tags": [
+          "adminOrder"
         ]
       }
     },

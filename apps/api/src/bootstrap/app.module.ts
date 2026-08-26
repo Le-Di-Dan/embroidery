@@ -20,6 +20,7 @@ import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
 import { AdminOrderModule } from '../modules/order/admin-order.module';
+import { AdminOrderLifecycleModule } from '../modules/order/admin-order-lifecycle.module';
 import { CustomRequestIntakeModule } from '../modules/order/custom-request-intake.module';
 import { CustomRequestAdminModule } from '../modules/order/custom-request-admin.module';
 import { CustomRequestAssetDeliveryModule } from '../modules/order/custom-request-asset-delivery.module';
@@ -335,6 +336,18 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // `adminProductionJob` domain, so this composition decision does not name a
     // public identifier.
     AdminProductionTransitionModule,
+    // APP9-B01 — the one guarded LC-14 command (TR-LC14-05), in its own module
+    // so the APP7-B02 boundary above survives. Opening final payment needs the
+    // canonical order writer and the canonical obligation reader; putting those
+    // into AdminOrderModule would give a queue projection and a detail read an
+    // order transition. It shares the `admin/orders` base path with
+    // AdminOrderModule, the Admin payment read and the production-job creation,
+    // which is safe and deliberate: its route adds a `transitions` segment and
+    // is the only POST at that segment count, so Nest matches on segment count
+    // and method and no registration order can make one shadow another. Both
+    // order controllers publish into the one `adminOrder` domain, so this
+    // composition decision does not name a public identifier.
+    AdminOrderLifecycleModule,
   ],
 })
 export class AppModule {}

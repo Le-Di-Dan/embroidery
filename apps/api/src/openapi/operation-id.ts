@@ -151,6 +151,15 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // name a public identifier; with it the family reads `_create`, `_list`,
   // `_get`, `_transition`.
   AdminProductionTransitionController: 'adminProductionJob',
+  // `APP9-B01`. The one guarded LC-14 command joins `APP7-B02`'s published
+  // `adminOrder` domain. It is a second class because the write authority it
+  // needs — the canonical `ORDER_REPOSITORY` — must not reach B02's queue and
+  // detail, which were accepted on holding no order writer at all, so it lives
+  // in its own module. Without this entry the mutation would mint
+  // `adminOrderLifecycle_transition`, letting that composition decision name a
+  // public identifier; with it the family reads `_list`, `_detail`,
+  // `_transition`, and B02's two accepted ids stay untouched.
+  AdminOrderLifecycleController: 'adminOrder',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

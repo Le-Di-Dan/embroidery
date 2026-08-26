@@ -355,10 +355,19 @@ G01   COMPLETE   (authority lock, documentation only — PO-APP9-001 = OPTION A 
                   cancellation/refund DEFERRED with IMP-O008 and FU-APP8-B04-02
                   routed forward nonblocking; 13 active checkpoints; 0 runtime,
                   schema, OpenAPI, generated-client and Figma changes)
-B01   NEXT       (TR-LC14-05 — Admin moves PRODUCTION_COMPLETED ->
-                  AWAITING_FINAL_PAYMENT and makes REMAINING payable; 1 HTTP
-                  operation, 0 migrations, 0 worker changes)
-B02   INCOMPLETE
+B01   COMPLETE   (TR-LC14-05 — POST /api/admin/orders/{orderId}/transitions,
+                  adminOrder_transition, Admin-only; PRODUCTION_COMPLETED ->
+                  AWAITING_FINAL_PAYMENT under one order row lock, guarded on a
+                  live REMAINING obligation read kind-aware through
+                  findLiveForOrder; the obligation is neither created,
+                  recalculated nor satisfied and no payable flag exists; replay
+                  is a deterministic ORDER_INVALID_TRANSITION with no second
+                  transition row; side effects are the canonical order_transitions
+                  row and nothing else; OpenAPI 92->93 paths, 99->100 operations,
+                  206->208 schemas; 1 HTTP operation, 0 migrations, 0 worker
+                  changes, 0 notification intents, 0 provider/webhook behaviour)
+B02   NEXT       (customer REMAINING surface: read, QR, attempt initiation;
+                  3 HTTP operations)
 B03   INCOMPLETE
 W01   INCOMPLETE
 B04   INCOMPLETE
