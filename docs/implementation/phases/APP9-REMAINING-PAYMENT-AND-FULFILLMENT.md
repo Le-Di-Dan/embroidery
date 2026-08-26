@@ -5,6 +5,13 @@
 > disproved it, the assumption has been removed rather than carried forward.
 > Evidence: [`audits/APP9_PHASE_ENTRY_AUDIT.md`](../audits/APP9_PHASE_ENTRY_AUDIT.md),
 > [`reports/APP9-R00-COMPLETION-REPORT.md`](../reports/APP9-R00-COMPLETION-REPORT.md).
+>
+> **Authority lock.** `APP9-G01` closed `PO-APP9-001` as **OPTION A — DEFER** and
+> froze the implementation authority for every later checkpoint:
+> [`audits/APP9_G01_COMMERCE_COMPLETION_AUTHORITY.md`](../audits/APP9_G01_COMMERCE_COMPLETION_AUTHORITY.md),
+> [`reports/APP9-G01-COMPLETION-REPORT.md`](../reports/APP9-G01-COMPLETION-REPORT.md),
+> register `IMP-D057`. Where this document and the authority package disagree,
+> the authority package governs.
 
 ## 1. Audited outcome
 
@@ -40,9 +47,8 @@ Three provisional assumptions were disproved and are not carried forward:
 ## 2. Dependencies
 
 APP8 closed at `APP8-X01` with the order at `PRODUCTION_COMPLETED` and its
-production job `COMPLETED`. `PO-APP9-001` (§6) must be answered by `APP9-G01`
-before any cancellation or refund checkpoint; it blocks nothing on the
-commerce-completion path.
+production job `COMPLETED`. `PO-APP9-001` (§6) is **closed** by `APP9-G01` as
+**OPTION A — DEFER**; no APP9 checkpoint has an open Product Owner dependency.
 
 ## 3. APP8 handoff (binding, not reopened)
 
@@ -82,6 +88,28 @@ The canonical lifecycle, from `DB3_LIFECYCLE_SPECIFICATIONS.md` LC-14:
 | `TR-LC14-06` | `AWAITING_FINAL_PAYMENT` → `READY_FOR_DELIVERY` | **system** (final payment verified) | remaining `SATISFIED` (**GRD-016**) |
 | `TR-LC14-07` | `READY_FOR_DELIVERY` → `DELIVERED` | **admin** | **GRD-017** shipping frozen at dispatch |
 | `TR-LC14-08` | `DELIVERED` → `COMPLETED` | **admin** | **GRD-018** delivered first |
+
+Locked by `APP9-G01` (§3–§4 of the authority package), binding on every later
+checkpoint:
+
+```text
+TR-LC14-05  actor ADMIN     PRODUCTION_COMPLETED   -> AWAITING_FINAL_PAYMENT
+TR-LC14-06  actor SYSTEM    AWAITING_FINAL_PAYMENT -> READY_FOR_DELIVERY
+            implementation ownership = synchronous, inside the Admin verification transaction
+TR-LC14-07  actor ADMIN     READY_FOR_DELIVERY     -> DELIVERED   (freeze + snapshot, atomic)
+TR-LC14-08  actor ADMIN     DELIVERED              -> COMPLETED
+
+PAYMENT_MVP                       = MANUAL_BANK_TRANSFER   (IMP-D052 / PO-APP7-001)
+DEPOSIT != REMAINING              = permanent               (CST-039)
+LIVE_CARRIER_TRACKING             = OUT_OF_SCOPE
+APP9_NOTIFICATION_INTENTS         = OUT_OF_SCOPE            (APP10 owns communication)
+APP9_MIGRATIONS                   = 0
+```
+
+No provider, callback, webhook or automatic bank reconciliation is introduced,
+and `READY_FOR_DELIVERY -> COMPLETED` is never collapsed into one transition.
+The non-canonical names `ready for handoff`, `fulfilled`,
+`fulfillment-completed` and `shipment-completed` must not return.
 
 `TR-LC14-06` is implemented **synchronously inside the Admin verification
 transaction**, following the delivered `TR-LC14-02` precedent. That is what
@@ -126,44 +154,50 @@ supersedes the remaining obligation (`SUPERSEDED` + a new row), and a fee
 **increase** additionally requires a `shipping_fee_acknowledgements` row
 carrying a grant and a step-up challenge.
 
-## 6. Cancellation / refund disposition
+## 6. Cancellation / refund disposition — DEFERRED
 
 ```text
-CANCELLATION_REFUND = PARTIALLY_GOVERNED_REQUIRES_PO_LOCK
+PO-APP9-001                    = OPTION A — DEFER          (Product Owner, binding)
+COMMERCIAL_CANCELLATION_REFUND = DEFERRED_FROM_APP9
+CON_144_POLICY_VALUES_IN_APP9  = NOT_DEFINED
 ```
 
-`ADR-DB3-002` locks the S1–S9 stage matrix and `DB3_CANCELLATION_COMPENSATION_SPEC.md`
-locks the six-step saga; `order_cancellation_requests`, `refunds`,
-`payment_reconciliations` and their repository methods (including
-`refundableAmount()` for `GRD-021`) all ship. Refunds are **records, not
-provider automation** — no automated provider refund may be invented.
+The Product Owner has ruled. Commercial order cancellation and refund are **not**
+in APP9's active scope, and the question is closed: it is not re-asked inside
+APP9, and options B (partial lock) and C (full saga) are withdrawn from active
+planning. `APP9-B06`, `APP9-B07` and a cancellation/refund Admin checkpoint are
+`NOT_CREATED`. Full authority:
+[`audits/APP9_G01_COMMERCE_COMPLETION_AUTHORITY.md`](../audits/APP9_G01_COMMERCE_COMPLETION_AUTHORITY.md)
+§1, register `IMP-D057`.
 
-The one gap is the per-stage default refund dispositions, deferred by
-`ADR-DB3-002` to policy configuration values (CON-144) with owner "business",
-and carried in the register as:
+Why the deferral is safe: `ADR-DB3-002` locks the S1–S9 stage matrix and
+`DB3_CANCELLATION_COMPENSATION_SPEC.md` locks the six-step saga;
+`order_cancellation_requests`, `refunds`, `payment_reconciliations` and their
+repository methods (including `refundableAmount()` for `GRD-021`) all ship, with
+zero non-test callers. Refunds are **records, not provider automation** — no
+automated provider refund may be invented. The one genuine gap is the per-stage
+default refund dispositions, which `ADR-DB3-002` defers to policy configuration
+values (CON-144) with owner **business** — money policy APP9 is forbidden to
+invent, and on which the commerce-completion exit gate does not depend.
+
+APP9 must not implement: commercial order cancellation endpoints,
+`order_cancellation_requests` application flows, refund approval, refund
+execution, refund Admin UI, refund customer UI, CON-144 configuration values, or
+any refund percentage or monetary default. The existing persistence is left
+untouched — not deleted, not redesigned, not migrated.
+
+Routed forward as **nonblocking**:
 
 ```text
-| IMP-O008 | Cancellation/refund policy parameters | APP9 | Before cancellation/refund checkpoints |
+IMP-O008        DEFERRED / NONBLOCKING   Cancellation/refund policy parameters (CON-144)
+FU-APP8-B04-02  CARRIED_FORWARD / NONBLOCKING
 ```
 
-```text
-PO-APP9-001  Does APP9 execute the commercial cancellation/refund branch, and
-             what are the CON-144 per-stage default refund dispositions?
-  A. DEFER (recommended)  commerce-completion path only; IMP-O008 and
-                          FU-APP8-B04-02 route forward. 13 checkpoints, 8-9 ops.
-  B. PARTIAL LOCK         + APP9-B06 (cancellation review), APP9-B07 (refund
-                          record lifecycle), one further Admin checkpoint.
-                          16 checkpoints, ~14 ops.
-  C. FULL SAGA            rejected — LC-21 spans five bounded contexts and cannot
-                          be sliced within the APP9 checkpoint-size rules.
-```
-
-`FU-APP8-B04-02` (a cancelled job leaving the order mid-lifecycle) resolves as
-follows: the order stays where it is by design; `ON_HOLD` is already legal and
+`FU-APP8-B04-02` (a cancelled job leaving the order mid-lifecycle) needs no new
+APP8 work: the order stays where it is by design; `ON_HOLD` is already legal and
 already delivered; a **replacement production job for the same approval snapshot
 is impossible** because `uq_production_jobs__order_approval_snapshot` is a plain
-unique, so re-planning is the `ADR-DB3-003` approval-revision path, not APP9's;
-and the commercial cancellation branch (stage S6) is APP9's only under option B.
+unique, so re-planning is the `ADR-DB3-003` approval-revision path, not APP9's.
 Nothing is retrofitted into `APP8-B04`.
 
 ## 7. In scope
@@ -181,7 +215,6 @@ Nothing is retrofitted into `APP8-B04`.
 - One complete APP9 Figma design package.
 - The Admin order fulfillment workspace (extending `/orders/{orderId}`) and one
   new Storefront route.
-- Commercial cancellation and refund records **only under `PO-APP9-001` = B**.
 
 ## 8. Out of scope
 
@@ -193,6 +226,9 @@ Nothing is retrofitted into `APP8-B04`.
   `tracking_code` are static Admin-entered fields recorded **internally** (J8).
 - Any customer-facing tracking surface.
 - Combining `DEPOSIT` and `REMAINING` into one obligation.
+- Commercial order cancellation and refund in every form — endpoints,
+  `order_cancellation_requests` flows, refund approval/execution, refund UI,
+  CON-144 configuration values (`PO-APP9-001 = OPTION A — DEFER`, §6).
 - Inventing refund policy values, percentages or automated refund execution.
 - Customer notification intents for `SE-010` / `SE-011` — APP9 emits outbox
   events only, following APP7 and APP8 precedent; APP10 owns communication.
@@ -219,8 +255,11 @@ group with a mandatory reason.
 
 ## 10. Canonical checkpoint roadmap
 
-Under `PO-APP9-001 = A` (recommended). Option B appends `B06`, `B07` and one
-further Admin checkpoint after `B05`, before `D01`.
+**Frozen by `APP9-G01` under `PO-APP9-001 = OPTION A — DEFER`.** Thirteen
+checkpoints, no alternative. `B06`, `B07`, `A02`, `S02`, `C01`, `C02` and `C03`
+are not added, and each row's authority boundary is locked in
+[`APP9_G01_COMMERCE_COMPLETION_AUTHORITY.md`](../audits/APP9_G01_COMMERCE_COMPLETION_AUTHORITY.md)
+§5.
 
 | # | Checkpoint | Purpose | Dependency | Main change area | HTTP ops | Migration? | Worker? | Design/UI? | Focused test scope |
 |--:|---|---|---|---|--:|---|---|---|---|
@@ -286,9 +325,9 @@ PREDICTED_APP9_E01_CASE_BUDGET  = 10-13
 - A verified `REMAINING` obligation no longer dead-letters (`FU-APP8-W01-01`
   closed).
 - No provider, webhook, migration or carrier-tracking scope appears.
-- Cancellation and refund are either fully governed and delivered (option B) or
-  explicitly deferred with `IMP-O008` and `FU-APP8-B04-02` routed forward
-  (option A).
+- Cancellation and refund are explicitly deferred (`PO-APP9-001 = OPTION A`),
+  with `IMP-O008` and `FU-APP8-B04-02` routed forward as nonblocking and no
+  CON-144 value invented.
 - `APP9-E01` passes.
 
 ## 14. Handoff
@@ -303,14 +342,22 @@ Exactly one unfinished row carries **NEXT**. This table is updated after every
 APP9 checkpoint, and it is the only APP9 status table.
 
 ```text
-R00   COMPLETE   (COMPLETE_WITH_PO_DECISIONS_REQUIRED — PO-APP9-001 open;
+R00   COMPLETE   (COMPLETE_WITH_PO_DECISIONS_REQUIRED — PO-APP9-001 raised;
                   entry baseline 92 paths / 99 operations / 206 schemas,
                   37 migrations / 79 tables, 0 APP9 Figma rows;
                   14/14 provisional candidates dispositioned into a 13-checkpoint
                   canonical roadmap; APP9_SCHEMA_DISPOSITION = NO_MIGRATION_REQUIRED)
-G01   NEXT       (authority lock; must record PO-APP9-001 and the TR-LC14-05..08
-                  actor/guard map; no runtime change)
-B01   INCOMPLETE
+G01   COMPLETE   (authority lock, documentation only — PO-APP9-001 = OPTION A —
+                  DEFER recorded as binding (IMP-D057); TR-LC14-05..08 actor/guard
+                  map, manual-bank-transfer, no-carrier-tracking and
+                  no-notification-intent boundaries, freeze/snapshot authority and
+                  the B01/B02/B03/W01/B04/B05/D01/A01/S01/E01/X01 boundaries frozen;
+                  cancellation/refund DEFERRED with IMP-O008 and FU-APP8-B04-02
+                  routed forward nonblocking; 13 active checkpoints; 0 runtime,
+                  schema, OpenAPI, generated-client and Figma changes)
+B01   NEXT       (TR-LC14-05 — Admin moves PRODUCTION_COMPLETED ->
+                  AWAITING_FINAL_PAYMENT and makes REMAINING payable; 1 HTTP
+                  operation, 0 migrations, 0 worker changes)
 B02   INCOMPLETE
 B03   INCOMPLETE
 W01   INCOMPLETE
