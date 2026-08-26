@@ -87,8 +87,10 @@ import type {
   CreateQuotationDraftBody,
   CreateSkuBody,
   DepositQrBody,
+  FinalPaymentQrBody,
   HealthStatusResponse,
   InitiateDepositAttemptBody,
+  InitiateFinalPaymentAttemptBody,
   IssueVerificationChallengeBody,
   PublicCustomRequestAssetStatus200,
   PublicCustomRequestAssetUpload202,
@@ -113,6 +115,8 @@ import type {
   PublicOrderDepositEvidenceUpload202,
   PublicOrderDepositEvidenceUploadBody,
   PublicOrderDepositInitiate201,
+  PublicOrderFinalPaymentCurrent200,
+  PublicOrderFinalPaymentInitiate201,
   PublicProductDetail200,
   PublicProductList200,
   PublicProductListParams,
@@ -132,6 +136,7 @@ import type {
   ReadCurrentQuotationBody,
   ReadCustomRequestStatusBody,
   ReadDepositBody,
+  ReadFinalPaymentBody,
   ReadTransferEvidenceBody,
   ReadinessStatusResponse,
   RejectQuotationBody,
@@ -1646,6 +1651,64 @@ export const publicOrderDepositQr = (
 };
 
 /**
+ * Returns what is owed on the remaining balance of the one order belonging to the custom request the presented secure link grants access to. The request comes from the grant and the order from the request, so there is no order id, obligation id, attempt id, amount or customer identifier in the body. The amount is the REMAINING obligation’s own frozen figure, copied from the accepted quotation at order creation — no total minus deposit is recomputed and no quotation is read — and the currency is the obligation’s own VND. The bank instructions are server-owned configuration, and the transfer reference is derived from the order code with the RM suffix, so it is identical on every read and distinct from the deposit memo. The deposit is neither shown nor payable here. This read stays available after the payment window closes, so a customer whose balance an Admin has verified can see that; `payable` is what distinguishes the two. Reading writes nothing: no attempt is opened, no state moves and the link is not consumed. Every token that does not open a live grant, and every request with no live REMAINING obligation, answer with one identical 404.
+ * @summary Read the final payment a secure link opens
+ */
+export const publicOrderFinalPaymentCurrent = (
+  readFinalPaymentBody: ReadFinalPaymentBody,
+  options?: SecondParameter<typeof apiRequest<PublicOrderFinalPaymentCurrent200>>,
+) => {
+  return apiRequest<PublicOrderFinalPaymentCurrent200>(
+    {
+      url: `/api/public/orders/final-payment`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: readFinalPaymentBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Records that the customer is about to transfer the remaining balance. The order, the REMAINING obligation, the amount, the currency and the step-up evidence are all resolved by the server from the grant — none of them is accepted from the caller, and the DEPOSIT obligation cannot be reached through this route. Inside one transaction the grant is re-checked under its row lock, the order must be AWAITING_FINAL_PAYMENT and the obligation still PENDING, a recent re-verification of the customer’s own contact is required, and one BANK_TRANSFER attempt is created at PENDING for the obligation’s exact amount. This is **not** a payment: no attempt is settled, no obligation is satisfied, no order becomes READY_FOR_DELIVERY and no reconciliation is written — only an Admin verifying that the money arrived can do any of that. Repeating the call with the same Idempotency-Key replays the same attempt and creates no second one; a deliberate retry sends a new key.
+ * @summary Open one bank-transfer attempt against the final payment a secure link opens
+ */
+export const publicOrderFinalPaymentInitiate = (
+  initiateFinalPaymentAttemptBody: InitiateFinalPaymentAttemptBody,
+  options?: SecondParameter<typeof apiRequest<PublicOrderFinalPaymentInitiate201>>,
+) => {
+  return apiRequest<PublicOrderFinalPaymentInitiate201>(
+    {
+      url: `/api/public/orders/final-payment/attempts`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: initiateFinalPaymentAttemptBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Streams a PNG QR encoding the bank transfer for the remaining balance: the merchant’s bank and account, the REMAINING obligation’s exact amount and the derived RM transfer reference. It is an EMVCo/NAPAS account-transfer payload — a banking application reads it and pre-fills the transfer — and it is not a checkout session: it contains no application URL, no secure-link token, no attempt id and no provider reference. The image is generated locally on the server on every request from immutable inputs and is never stored, so no object, asset or storage key exists for it. Requesting it changes no payment state whatsoever. Unlike the read, it is refused unless the balance is currently payable, because a QR is an instruction to send money and one served outside that window would invite a transfer nobody owes. The same 404 as the final-payment read answers every unusable token and every order with no live REMAINING obligation.
+ * @summary Download the bank-transfer QR for the final payment a secure link opens
+ */
+export const publicOrderFinalPaymentQr = (
+  finalPaymentQrBody: FinalPaymentQrBody,
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/public/orders/final-payment/qr`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: finalPaymentQrBody,
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Returns published products in editorial order, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts and archived products are excluded by the query itself. Pagination is keyset: `nextCursor` is opaque, bound to the filter it was issued under, and null on the last page. Responses are never stored. Publication is re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished product visible.
  * @summary List published products
  */
@@ -2138,6 +2201,15 @@ export type PublicOrderDepositEvidenceStatusResult = NonNullable<
 >;
 export type PublicOrderDepositQrResult = NonNullable<
   Awaited<ReturnType<typeof publicOrderDepositQr>>
+>;
+export type PublicOrderFinalPaymentCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof publicOrderFinalPaymentCurrent>>
+>;
+export type PublicOrderFinalPaymentInitiateResult = NonNullable<
+  Awaited<ReturnType<typeof publicOrderFinalPaymentInitiate>>
+>;
+export type PublicOrderFinalPaymentQrResult = NonNullable<
+  Awaited<ReturnType<typeof publicOrderFinalPaymentQr>>
 >;
 export type PublicProductListResult = NonNullable<Awaited<ReturnType<typeof publicProductList>>>;
 export type PublicProductDetailResult = NonNullable<

@@ -366,9 +366,34 @@ B01   COMPLETE   (TR-LC14-05 — POST /api/admin/orders/{orderId}/transitions,
                   row and nothing else; OpenAPI 92->93 paths, 99->100 operations,
                   206->208 schemas; 1 HTTP operation, 0 migrations, 0 worker
                   changes, 0 notification intents, 0 provider/webhook behaviour)
-B02   NEXT       (customer REMAINING surface: read, QR, attempt initiation;
-                  3 HTTP operations)
-B03   INCOMPLETE
+B02   COMPLETE   (customer REMAINING surface — POST /api/public/orders/final-payment,
+                  /final-payment/qr and /final-payment/attempts;
+                  publicOrderFinalPayment_current/_qr/_initiate; a sibling of the
+                  deposit lane, with none of APP7's five customer payment
+                  operations renamed or moved. The existing REQUEST_ACCESS grant
+                  is reused and no grant scope is added; the walk is
+                  grant -> request -> order -> live REMAINING through
+                  findLiveForOrder, so DEPOSIT is never a fallback and a
+                  SUPERSEDED or CANCELLED obligation is invisible. Payability is
+                  derived, never stored: order AWAITING_FINAL_PAYMENT and
+                  obligation PENDING gate the QR and the attempt, while the read
+                  stays available afterwards and publishes `payable: false`. The
+                  amount is the obligation's own frozen figure — no
+                  total-minus-deposit anywhere — and the memo is the RM code
+                  APP7-G01 §4 reserved, derived by a sibling of the DC builder
+                  APP7 forbade a kind parameter on. The APP7 merchant
+                  configuration, QR payload builder, encoder, step-up resolver
+                  and payment.initiate idempotency namespace are reused
+                  unchanged. Two shared helpers were narrowly generalised:
+                  DepositTargetResolver -> PaymentTargetResolver (kind
+                  parameter + order-only hop) and EvidenceAttemptAuthorizer
+                  (attempt-scoped rather than DEPOSIT-scoped), so
+                  EVIDENCE_REUSE = NARROWLY_GENERALISED with 0 new evidence
+                  endpoints. OpenAPI 93->96 paths, 100->103 operations,
+                  208->214 schemas; 3 HTTP operations, 0 migrations, 0 worker
+                  changes, 0 Admin verification, 0 TR-LC14-06, 0 notification
+                  intents, 0 provider/callback/webhook behaviour)
+B03   NEXT
 W01   INCOMPLETE
 B04   INCOMPLETE
 B05   INCOMPLETE

@@ -6,7 +6,7 @@ import { OrderDepositContextModule } from '../order/order-deposit-context.module
 import { MERCHANT_BANK_CONFIG, loadMerchantBankConfig } from './config/merchant-bank.config';
 import type { MerchantBankConfig } from './config/merchant-bank.config';
 import { DeliverDepositQr } from './application/customer/deliver-deposit-qr.query';
-import { DepositTargetResolver } from './application/customer/deposit-target.resolver';
+import { PaymentTargetResolver } from './application/customer/payment-target.resolver';
 import { ReadDeposit } from './application/customer/read-deposit.query';
 import { BankTransferQrEncoder } from './infrastructure/qr/bank-transfer-qr.encoder';
 import { PublicOrderDepositController } from './presentation/public-order-deposit.controller';
@@ -65,7 +65,7 @@ import { PublicOrderDepositController } from './presentation/public-order-deposi
       useFactory: (): MerchantBankConfig => loadMerchantBankConfig(process.env),
     },
     BankTransferQrEncoder,
-    DepositTargetResolver,
+    PaymentTargetResolver,
     ReadDeposit,
     DeliverDepositQr,
   ],

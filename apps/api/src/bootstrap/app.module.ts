@@ -41,6 +41,8 @@ import { CustomerDesignReviewModule } from '../modules/design/customer-design-re
 import { CustomerDepositModule } from '../modules/payment/customer-deposit.module';
 import { CustomerDepositAttemptModule } from '../modules/payment/customer-deposit-attempt.module';
 import { CustomerDepositEvidenceModule } from '../modules/payment/customer-deposit-evidence.module';
+import { CustomerFinalPaymentModule } from '../modules/payment/customer-final-payment.module';
+import { CustomerFinalPaymentAttemptModule } from '../modules/payment/customer-final-payment-attempt.module';
 import { AdminOrderPaymentModule } from '../modules/payment/admin-order-payment.module';
 import { AdminPaymentEvidenceModule } from '../modules/payment/admin-payment-evidence.module';
 import { AdminPaymentVerificationModule } from '../modules/payment/admin-payment-verification.module';
@@ -270,6 +272,29 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // the precedent `CONTROLLER_DOMAIN_KEYS` already records for
     // `PublicCustomRequestAssetController`.
     CustomerDepositEvidenceModule,
+    // APP9-B02 — the customer's two zero-write final-payment operations, on the
+    // same `public/orders` base path with sub-paths (`final-payment`,
+    // `final-payment/qr`) disjoint from the deposit lane's five above, so
+    // registration order cannot make one shadow another. A fourth module on that
+    // base path rather than more controllers on `CustomerDepositModule`, because
+    // each of these modules is the whole security boundary of one obligation
+    // kind and a reviewer must be able to read one without the other. Like the
+    // deposit read it is defined by what it cannot inject: no `DatabaseModule`,
+    // so no transaction manager and no idempotency store; no `OrderModule`, so
+    // no LC-14 transition and no `TR-LC14-06`; no `IdentityModule`, so no Admin
+    // verification; no asset or storage module, so the QR is generated
+    // in-process and nothing is stored. It reuses the same `REQUEST_ACCESS`
+    // grant and the same merchant bank factory — no new grant scope and no
+    // second merchant configuration.
+    CustomerFinalPaymentModule,
+    // APP9-B02 — the customer's one final-payment write, on the same base path
+    // with a distinct sub-path (`final-payment/attempts`). A second
+    // final-payment module for the reason `CustomerDepositAttemptModule` is a
+    // second deposit module: it is the mirror image of the read, holding the
+    // transaction manager, the idempotency store and the canonical AGG-16
+    // repository that the read is defined by not holding.
+    // `CONTROLLER_DOMAIN_KEYS` keeps both publishing `publicOrderFinalPayment`.
+    CustomerFinalPaymentAttemptModule,
     // APP7-B04 — the Admin deposit-payment read, on the `admin/orders` base path
     // with a sub-path (`{orderId}/payments`) disjoint from `AdminOrderModule`'s
     // two routes, so registration order cannot make one shadow another. A

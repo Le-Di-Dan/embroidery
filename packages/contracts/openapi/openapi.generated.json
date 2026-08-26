@@ -4875,6 +4875,78 @@
         ],
         "type": "object"
       },
+      "CustomerFinalPaymentResponse": {
+        "properties": {
+          "accessExpiresAt": {
+            "description": "When this secure link stops opening the final payment.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "bankInstructions": {
+            "$ref": "#/components/schemas/FinalPaymentBankInstructionsResponse"
+          },
+          "currencyCode": {
+            "description": "The obligation’s own currency, copied. Always VND, enforced physically.",
+            "example": "VND",
+            "type": "string"
+          },
+          "finalPaymentAmount": {
+            "description": "Exact `numeric(14,2)` VND, always a string. Never a JSON number.",
+            "example": "1785000.00",
+            "type": "string"
+          },
+          "finalPaymentStatus": {
+            "description": "The final payment obligation’s own state. `SATISFIED` means an Admin confirmed receipt; opening an attempt, downloading the QR and transferring at the bank all leave it `PENDING`. It is a different obligation from the deposit and moves independently of it (CST-039).",
+            "enum": [
+              "PENDING",
+              "SATISFIED",
+              "CANCELLED",
+              "SUPERSEDED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          },
+          "orderCode": {
+            "description": "The customer-facing order code. Display and support only — a code is never an authorization input (CST-026, ADR-DB1-007).",
+            "example": "ORD-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "orderStatus": {
+            "description": "The order’s own LC-14 state. `AWAITING_FINAL_PAYMENT` is the one state in which the balance may be paid, and only an Admin opens it (TR-LC14-05). `READY_FOR_DELIVERY` appears only after an Admin has verified that the money arrived; nothing a customer does produces it.",
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "AWAITING_FINAL_PAYMENT",
+            "type": "string"
+          },
+          "payable": {
+            "description": "Whether the two states above currently permit payment: the order is AWAITING_FINAL_PAYMENT and the obligation is still PENDING. Derived on every read and stored nowhere. It is not a claim that anything has been paid — that is `finalPaymentStatus` — but the single answer to \"may the QR and a new attempt be requested right now\", which the other two operations refuse when it is false.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "orderCode",
+          "orderStatus",
+          "finalPaymentStatus",
+          "finalPaymentAmount",
+          "currencyCode",
+          "payable",
+          "bankInstructions",
+          "accessExpiresAt"
+        ],
+        "type": "object"
+      },
       "CustomerOwnedRequestSubjectResponse": {
         "properties": {
           "description": {
@@ -6342,6 +6414,122 @@
         ],
         "type": "object"
       },
+      "FinalPaymentAttemptResponse": {
+        "properties": {
+          "amount": {
+            "description": "Exact `numeric(14,2)` VND, always a string. Never a JSON number.",
+            "example": "1785000.00",
+            "type": "string"
+          },
+          "attemptId": {
+            "description": "The attempt this call opened, or the one an identical earlier call opened. Opaque, and not an address: no operation on this surface takes it.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "type": "string"
+          },
+          "currencyCode": {
+            "description": "Copied from the obligation.",
+            "example": "VND",
+            "type": "string"
+          },
+          "method": {
+            "description": "Always BANK_TRANSFER. There is no payment provider in this flow.",
+            "enum": [
+              "PROVIDER_REDIRECT",
+              "BANK_TRANSFER",
+              "OTHER"
+            ],
+            "example": "BANK_TRANSFER",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "True when an earlier call with the same Idempotency-Key already opened this attempt and this response replays it. No second attempt was created.",
+            "example": false,
+            "type": "boolean"
+          },
+          "status": {
+            "description": "Always PENDING. Opening an attempt records an intention to transfer, never a payment: only Admin verification can settle it.",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "SUCCEEDED",
+              "FAILED",
+              "EXPIRED",
+              "REQUIRES_REVIEW",
+              "REFUNDED",
+              "PARTIALLY_REFUNDED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          },
+          "transferReference": {
+            "description": "The exact message to put on the bank transfer: `ORD`, the order code body, then `RM` for the final payment. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind and identical on every read and every retry. The `RM` suffix is what distinguishes it from the deposit memo on the same order. It carries no name, phone, email, token or attempt id.",
+            "example": "ORD7K3MPQ2XVDRM",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attemptId",
+          "method",
+          "status",
+          "amount",
+          "currencyCode",
+          "transferReference",
+          "replayed"
+        ],
+        "type": "object"
+      },
+      "FinalPaymentBankInstructionsResponse": {
+        "properties": {
+          "accountName": {
+            "description": "The account holder, so the customer can check it against their banking app.",
+            "example": "CONG TY THEU",
+            "type": "string"
+          },
+          "accountNumber": {
+            "description": "The receiving account number. Server-owned configuration; never customer input.",
+            "example": "00000000000",
+            "type": "string"
+          },
+          "bankBin": {
+            "description": "The receiving bank’s NAPAS acquirer id, exactly as the QR encodes it. A public bank identifier, not a credential.",
+            "example": "970418",
+            "type": "string"
+          },
+          "bankDisplayName": {
+            "description": "The receiving bank’s name, for the customer to read.",
+            "example": "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam",
+            "type": "string"
+          },
+          "transferReference": {
+            "description": "The exact message to put on the bank transfer: `ORD`, the order code body, then `RM` for the final payment. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind and identical on every read and every retry. The `RM` suffix is what distinguishes it from the deposit memo on the same order. It carries no name, phone, email, token or attempt id.",
+            "example": "ORD7K3MPQ2XVDRM",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bankBin",
+          "bankDisplayName",
+          "accountNumber",
+          "accountName",
+          "transferReference"
+        ],
+        "type": "object"
+      },
+      "FinalPaymentQrBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to download the bank-transfer QR for the final payment that link opens. The account, the amount and the transfer reference are all server-owned; no attempt id and no QR input is accepted.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
       "FontStyle": {
         "enum": [
           "normal",
@@ -6545,6 +6733,21 @@
       "InitiateDepositAttemptBody": {
         "additionalProperties": false,
         "description": "Presents a secure-link token to open one BANK_TRANSFER payment attempt against the deposit that link opens. The obligation, amount, currency, method and step-up evidence are all resolved by the server; none of them is accepted here. The caller’s attempt key travels in the Idempotency-Key header.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
+      "InitiateFinalPaymentAttemptBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to open one BANK_TRANSFER payment attempt against the final payment that link opens. The obligation, amount, currency, method and step-up evidence are all resolved by the server; none of them is accepted here. The caller’s attempt key travels in the Idempotency-Key header.",
         "properties": {
           "token": {
             "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
@@ -7712,6 +7915,21 @@
       "ReadDepositBody": {
         "additionalProperties": false,
         "description": "Presents a secure-link token to read the deposit owed on the order that link already opens. No order, obligation, attempt, amount or customer identifier is accepted.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
+      "ReadFinalPaymentBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to read the final payment owed on the order that link already opens. No order, obligation, attempt, amount or customer identifier is accepted.",
         "properties": {
           "token": {
             "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
@@ -25354,6 +25572,631 @@
         "summary": "Download the bank-transfer QR for the deposit a secure link opens",
         "tags": [
           "publicOrderDeposit"
+        ]
+      }
+    },
+    "/api/public/orders/final-payment": {
+      "post": {
+        "description": "Returns what is owed on the remaining balance of the one order belonging to the custom request the presented secure link grants access to. The request comes from the grant and the order from the request, so there is no order id, obligation id, attempt id, amount or customer identifier in the body. The amount is the REMAINING obligation’s own frozen figure, copied from the accepted quotation at order creation — no total minus deposit is recomputed and no quotation is read — and the currency is the obligation’s own VND. The bank instructions are server-owned configuration, and the transfer reference is derived from the order code with the RM suffix, so it is identical on every read and distinct from the deposit memo. The deposit is neither shown nor payable here. This read stays available after the payment window closes, so a customer whose balance an Admin has verified can see that; `payable` is what distinguishes the two. Reading writes nothing: no attempt is opened, no state moves and the link is not consumed. Every token that does not open a live grant, and every request with no live REMAINING obligation, answer with one identical 404.",
+        "operationId": "publicOrderFinalPayment_current",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadFinalPaymentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CustomerFinalPaymentResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The final payment this link opens, projected for its customer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no readable final payment. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for another target, the order has not been created, or the order has no live REMAINING obligation — including one that a shipping-fee change superseded. The deposit is never substituted for it.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FINAL_PAYMENT_INSTRUCTIONS_UNAVAILABLE — secure-link resolution or the merchant bank configuration is not usable. It names no variable and no value.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read the final payment a secure link opens",
+        "tags": [
+          "publicOrderFinalPayment"
+        ]
+      }
+    },
+    "/api/public/orders/final-payment/attempts": {
+      "post": {
+        "description": "Records that the customer is about to transfer the remaining balance. The order, the REMAINING obligation, the amount, the currency and the step-up evidence are all resolved by the server from the grant — none of them is accepted from the caller, and the DEPOSIT obligation cannot be reached through this route. Inside one transaction the grant is re-checked under its row lock, the order must be AWAITING_FINAL_PAYMENT and the obligation still PENDING, a recent re-verification of the customer’s own contact is required, and one BANK_TRANSFER attempt is created at PENDING for the obligation’s exact amount. This is **not** a payment: no attempt is settled, no obligation is satisfied, no order becomes READY_FOR_DELIVERY and no reconciliation is written — only an Admin verifying that the money arrived can do any of that. Repeating the call with the same Idempotency-Key replays the same attempt and creates no second one; a deliberate retry sends a new key.",
+        "operationId": "publicOrderFinalPayment_initiate",
+        "parameters": [
+          {
+            "description": "The caller’s own key for this attempt, 8–128 characters from A–Z a–z 0–9 . _ : and -. The same key replays the attempt it already opened; a new key opens a new attempt. Keys are scoped to the obligation, so one used on the deposit is free here. Never stored in the clear and never echoed back.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitiateFinalPaymentAttemptBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FinalPaymentAttemptResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The attempt this call opened, or a replay of an earlier identical one.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body, or a missing or malformed Idempotency-Key.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "REVERIFICATION_REQUIRED — the link is live, but no recent contact re-verification stands for this customer. Resolved by completing a STEP_UP verification and calling again; it is not a statement about the link.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no live REMAINING obligation. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for another target, the order has not been created, or a shipping-fee change superseded the obligation. The deposit is never substituted for it.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FINAL_PAYMENT_NOT_PAYABLE when the balance is not currently collectable — the order has not reached AWAITING_FINAL_PAYMENT, is on hold, has moved past it, or the obligation is already SATISFIED, so a settled balance cannot be reopened by a new attempt; DUPLICATE_OPERATION when another initiation with this key is still in flight; IDEMPOTENCY_CONFLICT when this key was already spent on a different initiation.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FINAL_PAYMENT_INSTRUCTIONS_UNAVAILABLE — secure-link resolution or the step-up policy is not usable. It discloses no configuration internal.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Open one bank-transfer attempt against the final payment a secure link opens",
+        "tags": [
+          "publicOrderFinalPayment"
+        ]
+      }
+    },
+    "/api/public/orders/final-payment/qr": {
+      "post": {
+        "description": "Streams a PNG QR encoding the bank transfer for the remaining balance: the merchant’s bank and account, the REMAINING obligation’s exact amount and the derived RM transfer reference. It is an EMVCo/NAPAS account-transfer payload — a banking application reads it and pre-fills the transfer — and it is not a checkout session: it contains no application URL, no secure-link token, no attempt id and no provider reference. The image is generated locally on the server on every request from immutable inputs and is never stored, so no object, asset or storage key exists for it. Requesting it changes no payment state whatsoever. Unlike the read, it is refused unless the balance is currently payable, because a QR is an instruction to send money and one served outside that window would invite a transfer nobody owes. The same 404 as the final-payment read answers every unusable token and every order with no live REMAINING obligation.",
+        "operationId": "publicOrderFinalPayment_qr",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalPaymentQrBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The transfer QR, as a downloadable PNG.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Always `no-store`. The bytes are stable but the link authorising them is not.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "description": "Always `attachment` with a fixed filename naming no order fact.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no readable final payment. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for another target, the order has not been created, or the order has no live REMAINING obligation — including one that a shipping-fee change superseded. The deposit is never substituted for it.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FINAL_PAYMENT_NOT_PAYABLE — the order has not reached AWAITING_FINAL_PAYMENT, is on hold, has already moved past it, or the balance is already SATISFIED. One code for both halves, so the response does not disclose the order’s internal state; the read carries both states honestly for a caller entitled to them.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FINAL_PAYMENT_INSTRUCTIONS_UNAVAILABLE — the merchant bank configuration or the QR encoder could not produce a payload. It discloses no configuration internal.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Download the bank-transfer QR for the final payment a secure link opens",
+        "tags": [
+          "publicOrderFinalPayment"
         ]
       }
     },

@@ -40,8 +40,11 @@ import type { NetworkReadableRequest } from '../../../customer/infrastructure/ra
 import type { CustomRequestId } from '../../../order/domain/repositories/custom-request.repository';
 import { MERCHANT_BANK_CONFIG, type MerchantBankConfig } from '../../config/merchant-bank.config';
 import { depositTransferReference } from '../../domain/deposit/deposit-reference';
-import { DepositTargetResolver } from './deposit-target.resolver';
+import { PaymentTargetResolver } from './payment-target.resolver';
 import type { CustomerDepositView } from './customer-deposit.view';
+
+/** The one obligation kind this deposit surface resolves (`CST-039`). */
+const DEPOSIT = 'DEPOSIT' as const;
 
 /** The whole input. One credential, by design — see the header. */
 export interface ReadDepositCommand {
@@ -57,7 +60,7 @@ export type DepositReadOutcome =
 export class ReadDeposit {
   constructor(
     private readonly links: AuthorizeSecureLink,
-    private readonly targets: DepositTargetResolver,
+    private readonly targets: PaymentTargetResolver,
     @Inject(MERCHANT_BANK_CONFIG) private readonly bank: MerchantBankConfig,
   ) {}
 
@@ -70,7 +73,10 @@ export class ReadDeposit {
       return { outcome: 'RATE_LIMITED', retryAfterSeconds: admission.retryAfterSeconds };
     }
 
-    const target = await this.targets.resolve(admission.link.customRequestId as CustomRequestId);
+    const target = await this.targets.resolve(
+      admission.link.customRequestId as CustomRequestId,
+      DEPOSIT,
+    );
 
     return {
       outcome: 'READ',

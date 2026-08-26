@@ -2833,6 +2833,70 @@ export interface CustomerDesignReviewResponse {
   version: number;
 }
 
+/**
+ * The final payment obligation’s own state. `SATISFIED` means an Admin confirmed receipt; opening an attempt, downloading the QR and transferring at the bank all leave it `PENDING`. It is a different obligation from the deposit and moves independently of it (CST-039).
+ */
+export type CustomerFinalPaymentResponseFinalPaymentStatus =
+  (typeof CustomerFinalPaymentResponseFinalPaymentStatus)[keyof typeof CustomerFinalPaymentResponseFinalPaymentStatus];
+
+export const CustomerFinalPaymentResponseFinalPaymentStatus = {
+  PENDING: 'PENDING',
+  SATISFIED: 'SATISFIED',
+  CANCELLED: 'CANCELLED',
+  SUPERSEDED: 'SUPERSEDED',
+} as const;
+
+/**
+ * The order’s own LC-14 state. `AWAITING_FINAL_PAYMENT` is the one state in which the balance may be paid, and only an Admin opens it (TR-LC14-05). `READY_FOR_DELIVERY` appears only after an Admin has verified that the money arrived; nothing a customer does produces it.
+ */
+export type CustomerFinalPaymentResponseOrderStatus =
+  (typeof CustomerFinalPaymentResponseOrderStatus)[keyof typeof CustomerFinalPaymentResponseOrderStatus];
+
+export const CustomerFinalPaymentResponseOrderStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface FinalPaymentBankInstructionsResponse {
+  /** The account holder, so the customer can check it against their banking app. */
+  accountName: string;
+  /** The receiving account number. Server-owned configuration; never customer input. */
+  accountNumber: string;
+  /** The receiving bank’s NAPAS acquirer id, exactly as the QR encodes it. A public bank identifier, not a credential. */
+  bankBin: string;
+  /** The receiving bank’s name, for the customer to read. */
+  bankDisplayName: string;
+  /** The exact message to put on the bank transfer: `ORD`, the order code body, then `RM` for the final payment. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind and identical on every read and every retry. The `RM` suffix is what distinguishes it from the deposit memo on the same order. It carries no name, phone, email, token or attempt id. */
+  transferReference: string;
+}
+
+export interface CustomerFinalPaymentResponse {
+  /** When this secure link stops opening the final payment. */
+  accessExpiresAt: string;
+  bankInstructions: FinalPaymentBankInstructionsResponse;
+  /** The obligation’s own currency, copied. Always VND, enforced physically. */
+  currencyCode: string;
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  finalPaymentAmount: string;
+  /** The final payment obligation’s own state. `SATISFIED` means an Admin confirmed receipt; opening an attempt, downloading the QR and transferring at the bank all leave it `PENDING`. It is a different obligation from the deposit and moves independently of it (CST-039). */
+  finalPaymentStatus: CustomerFinalPaymentResponseFinalPaymentStatus;
+  /** The customer-facing order code. Display and support only — a code is never an authorization input (CST-026, ADR-DB1-007). */
+  orderCode: string;
+  /** The order’s own LC-14 state. `AWAITING_FINAL_PAYMENT` is the one state in which the balance may be paid, and only an Admin opens it (TR-LC14-05). `READY_FOR_DELIVERY` appears only after an Admin has verified that the money arrived; nothing a customer does produces it. */
+  orderStatus: CustomerFinalPaymentResponseOrderStatus;
+  /** Whether the two states above currently permit payment: the order is AWAITING_FINAL_PAYMENT and the obligation is still PENDING. Derived on every read and stored nowhere. It is not a claim that anything has been paid — that is `finalPaymentStatus` — but the single answer to "may the QR and a new attempt be requested right now", which the other two operations refuse when it is false. */
+  payable: boolean;
+}
+
 export type CustomerQuotationLineItemResponseLineKind =
   (typeof CustomerQuotationLineItemResponseLineKind)[keyof typeof CustomerQuotationLineItemResponseLineKind];
 
@@ -3551,6 +3615,63 @@ export interface DesignVersionSentResponse {
   versionStatus: DesignVersionSentResponseVersionStatus;
 }
 
+/**
+ * Always BANK_TRANSFER. There is no payment provider in this flow.
+ */
+export type FinalPaymentAttemptResponseMethod =
+  (typeof FinalPaymentAttemptResponseMethod)[keyof typeof FinalPaymentAttemptResponseMethod];
+
+export const FinalPaymentAttemptResponseMethod = {
+  PROVIDER_REDIRECT: 'PROVIDER_REDIRECT',
+  BANK_TRANSFER: 'BANK_TRANSFER',
+  OTHER: 'OTHER',
+} as const;
+
+/**
+ * Always PENDING. Opening an attempt records an intention to transfer, never a payment: only Admin verification can settle it.
+ */
+export type FinalPaymentAttemptResponseStatus =
+  (typeof FinalPaymentAttemptResponseStatus)[keyof typeof FinalPaymentAttemptResponseStatus];
+
+export const FinalPaymentAttemptResponseStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  REQUIRES_REVIEW: 'REQUIRES_REVIEW',
+  REFUNDED: 'REFUNDED',
+  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
+} as const;
+
+export interface FinalPaymentAttemptResponse {
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  amount: string;
+  /** The attempt this call opened, or the one an identical earlier call opened. Opaque, and not an address: no operation on this surface takes it. */
+  attemptId: string;
+  /** Copied from the obligation. */
+  currencyCode: string;
+  /** Always BANK_TRANSFER. There is no payment provider in this flow. */
+  method: FinalPaymentAttemptResponseMethod;
+  /** True when an earlier call with the same Idempotency-Key already opened this attempt and this response replays it. No second attempt was created. */
+  replayed: boolean;
+  /** Always PENDING. Opening an attempt records an intention to transfer, never a payment: only Admin verification can settle it. */
+  status: FinalPaymentAttemptResponseStatus;
+  /** The exact message to put on the bank transfer: `ORD`, the order code body, then `RM` for the final payment. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind and identical on every read and every retry. The `RM` suffix is what distinguishes it from the deposit memo on the same order. It carries no name, phone, email, token or attempt id. */
+  transferReference: string;
+}
+
+/**
+ * Presents a secure-link token to download the bank-transfer QR for the final payment that link opens. The account, the amount and the transfer reference are all server-owned; no attempt id and no QR input is accepted.
+ */
+export interface FinalPaymentQrBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
 export type HealthStatusResponseService =
   (typeof HealthStatusResponseService)[keyof typeof HealthStatusResponseService];
 
@@ -3577,6 +3698,17 @@ export interface HealthStatusResponse {
  * Presents a secure-link token to open one BANK_TRANSFER payment attempt against the deposit that link opens. The obligation, amount, currency, method and step-up evidence are all resolved by the server; none of them is accepted here. The caller’s attempt key travels in the Idempotency-Key header.
  */
 export interface InitiateDepositAttemptBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
+/**
+ * Presents a secure-link token to open one BANK_TRANSFER payment attempt against the final payment that link opens. The obligation, amount, currency, method and step-up evidence are all resolved by the server; none of them is accepted here. The caller’s attempt key travels in the Idempotency-Key header.
+ */
+export interface InitiateFinalPaymentAttemptBody {
   /**
    * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
    * @pattern ^[A-Za-z0-9_-]{43}$
@@ -4164,6 +4296,17 @@ export interface ReadCustomRequestStatusBody {
  * Presents a secure-link token to read the deposit owed on the order that link already opens. No order, obligation, attempt, amount or customer identifier is accepted.
  */
 export interface ReadDepositBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
+/**
+ * Presents a secure-link token to read the final payment owed on the order that link already opens. No order, obligation, attempt, amount or customer identifier is accepted.
+ */
+export interface ReadFinalPaymentBody {
   /**
    * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
    * @pattern ^[A-Za-z0-9_-]{43}$
@@ -5370,6 +5513,14 @@ export type PublicOrderDepositEvidenceUpload202 = ApiSuccessResponse & {
 
 export type PublicOrderDepositEvidenceStatus200 = ApiSuccessResponse & {
   data: TransferEvidenceListResponse;
+};
+
+export type PublicOrderFinalPaymentCurrent200 = ApiSuccessResponse & {
+  data: CustomerFinalPaymentResponse;
+};
+
+export type PublicOrderFinalPaymentInitiate201 = ApiSuccessResponse & {
+  data: FinalPaymentAttemptResponse;
 };
 
 export type PublicProductListParams = {

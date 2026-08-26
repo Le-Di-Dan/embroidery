@@ -49,7 +49,10 @@ import { buildBankTransferQrPayload } from '../../domain/deposit/bank-transfer-q
 import { depositTransferReference } from '../../domain/deposit/deposit-reference';
 import { depositError } from '../../domain/deposit/deposit.errors';
 import { BankTransferQrEncoder } from '../../infrastructure/qr/bank-transfer-qr.encoder';
-import { DepositTargetResolver } from './deposit-target.resolver';
+import { PaymentTargetResolver } from './payment-target.resolver';
+
+/** The one obligation kind this deposit surface resolves (`CST-039`). */
+const DEPOSIT = 'DEPOSIT' as const;
 
 /** The whole input. One credential — the QR names no attempt and no order. */
 export interface DeliverDepositQrCommand {
@@ -64,7 +67,7 @@ export type DepositQrOutcome =
 export class DeliverDepositQr {
   constructor(
     private readonly links: AuthorizeSecureLink,
-    private readonly targets: DepositTargetResolver,
+    private readonly targets: PaymentTargetResolver,
     private readonly encoder: BankTransferQrEncoder,
     @Inject(MERCHANT_BANK_CONFIG) private readonly bank: MerchantBankConfig,
   ) {}
@@ -78,7 +81,10 @@ export class DeliverDepositQr {
       return { outcome: 'RATE_LIMITED', retryAfterSeconds: admission.retryAfterSeconds };
     }
 
-    const target = await this.targets.resolve(admission.link.customRequestId as CustomRequestId);
+    const target = await this.targets.resolve(
+      admission.link.customRequestId as CustomRequestId,
+      DEPOSIT,
+    );
 
     let png: Buffer;
     try {

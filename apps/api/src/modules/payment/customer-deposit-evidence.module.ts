@@ -7,7 +7,7 @@ import { ObjectStorageModule } from '../asset/infrastructure/storage/object-stor
 import { UploadTimer } from '../asset/application/ports/upload-timer';
 import { CustomerModule } from '../customer/customer.module';
 import { OrderDepositContextModule } from '../order/order-deposit-context.module';
-import { DepositTargetResolver } from './application/customer/deposit-target.resolver';
+import { PaymentTargetResolver } from './application/customer/payment-target.resolver';
 import { AttemptStepUpVerifier } from './application/evidence/attempt-step-up.verifier';
 import { EvidenceAttemptAuthorizer } from './application/evidence/evidence-attempt.authorizer';
 import { ReadTransferEvidence } from './application/evidence/read-transfer-evidence.query';
@@ -72,7 +72,7 @@ import { PublicOrderDepositEvidenceController } from './presentation/public-orde
  * it, and it is a stateless scheduling seam, so a second instance is not a
  * second source of truth.
  *
- * `DepositTargetResolver` is likewise provided rather than exported from the
+ * `PaymentTargetResolver` is likewise provided rather than exported from the
  * read module — it is a stateless walk over two injected ports, and importing
  * `CustomerDepositModule` to reach it would drag the merchant bank configuration
  * and the QR encoder into a surface that uses neither.
@@ -92,7 +92,7 @@ import { PublicOrderDepositEvidenceController } from './presentation/public-orde
   controllers: [PublicOrderDepositEvidenceController],
   providers: [
     UploadTimer,
-    DepositTargetResolver,
+    PaymentTargetResolver,
     AttemptStepUpVerifier,
     EvidenceAttemptAuthorizer,
     TransferEvidenceObjectWriter,

@@ -133,6 +133,17 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // public identifier; with it the family reads `_current`, `_qr`, `_initiate`.
   PublicOrderDepositController: 'publicOrderDeposit',
   PublicOrderDepositAttemptController: 'publicOrderDeposit',
+  // `APP9-B02`. The final-payment surface repeats that split exactly, and for
+  // the same reason: the read module is *defined* by holding no transaction
+  // manager and no idempotency store, so a balance read and a QR download
+  // cannot open an attempt, while the initiation needs both. Only the second
+  // class needs an entry — `PublicOrderFinalPaymentController` already derives
+  // `publicOrderFinalPayment` — and without it the write would mint
+  // `publicOrderFinalPaymentAttempt_initiate`, letting a module boundary name a
+  // public identifier. With it the family reads `_current`, `_qr`, `_initiate`,
+  // a sibling of `publicOrderDeposit`'s three rather than a rename of them:
+  // both domains coexist and neither of APP7's ids moves.
+  PublicOrderFinalPaymentAttemptController: 'publicOrderFinalPayment',
   // `APP8-B03`. Creating a production job, reading the queue and reading one job
   // are one published `adminProductionJob` domain. They are two classes because
   // a job is created **under the order it is produced for** — the approval is

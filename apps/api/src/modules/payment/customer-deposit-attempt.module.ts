@@ -4,7 +4,7 @@ import { DatabaseModule, PaymentPersistenceModule } from '@embroidery/persistenc
 import { AuditContextModule } from '../../platform/audit-context/audit-context.module';
 import { CustomerModule } from '../customer/customer.module';
 import { OrderDepositContextModule } from '../order/order-deposit-context.module';
-import { DepositTargetResolver } from './application/customer/deposit-target.resolver';
+import { PaymentTargetResolver } from './application/customer/payment-target.resolver';
 import { InitiateDepositAttemptUseCase } from './application/customer/initiate-deposit-attempt.use-case';
 import { PublicOrderDepositAttemptController } from './presentation/public-order-deposit-attempt.controller';
 
@@ -65,6 +65,6 @@ import { PublicOrderDepositAttemptController } from './presentation/public-order
     PaymentPersistenceModule,
   ],
   controllers: [PublicOrderDepositAttemptController],
-  providers: [DepositTargetResolver, InitiateDepositAttemptUseCase],
+  providers: [PaymentTargetResolver, InitiateDepositAttemptUseCase],
 })
 export class CustomerDepositAttemptModule {}

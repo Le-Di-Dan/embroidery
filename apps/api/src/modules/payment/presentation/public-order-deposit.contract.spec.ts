@@ -31,6 +31,25 @@ const B05_EVIDENCE_PATHS = [
 ];
 
 /**
+ * `APP9-B02`'s three operations, on the same `public/orders` base path.
+ *
+ * Named here for exactly the reason B05's two are: the two bounds below are
+ * exhaustive assertions about the whole `public/orders` surface, and the
+ * repository-wide bound matches on the word `payment`, so a *sibling* surface is
+ * a route that must be named to stay excluded rather than loosened past by a
+ * prefix filter. Their presence is what B03 must keep being unaffected by: the
+ * two families coexist, none of B03's three paths or operation ids moved, and
+ * every assertion below about what a *deposit* schema may contain still holds
+ * unchanged — including the one that says the word `remaining` appears in none
+ * of them.
+ */
+const B02_FINAL_PAYMENT_PATHS = [
+  '/api/public/orders/final-payment',
+  '/api/public/orders/final-payment/qr',
+  '/api/public/orders/final-payment/attempts',
+];
+
+/**
  * The Admin payment operations `APP7-B04` and `APP7-B06` publish.
  *
  * Listed for the same reason B05's are: the repository-wide "no other payment
@@ -174,12 +193,18 @@ describe('APP7-B03 — the published customer deposit contract', () => {
   }
 
   describe('the surface is exactly three operations', () => {
-    it('publishes three paths under public/orders, beside B05’s two and nothing else', () => {
+    it('publishes three paths under public/orders, beside B05’s two, B02’s three and nothing else', () => {
       const paths = Object.keys(document.paths).filter((path) =>
         path.startsWith('/api/public/orders'),
       );
       expect(paths.sort()).toEqual(
-        [DEPOSIT_PATH, ATTEMPTS_PATH, QR_PATH, ...B05_EVIDENCE_PATHS].sort(),
+        [
+          DEPOSIT_PATH,
+          ATTEMPTS_PATH,
+          QR_PATH,
+          ...B05_EVIDENCE_PATHS,
+          ...B02_FINAL_PAYMENT_PATHS,
+        ].sort(),
       );
     });
 
@@ -198,9 +223,10 @@ describe('APP7-B03 — the published customer deposit contract', () => {
     it('publishes no customer deposit or payment operation beyond B03’s three and B05’s two', () => {
       // Attempt list, attempt detail, "mark paid", customer confirmation, a
       // provider route and a webhook are each explicitly out of scope. None of
-      // them exists at any path. The two evidence routes are `APP7-B05`'s and
-      // the three Admin routes are `APP7-B04`'s; both are bounded by their own
-      // suites and are named here so this stays an exhaustive assertion.
+      // them exists at any path. The two evidence routes are `APP7-B05`'s, the
+      // four Admin routes are `APP7-B04`/`B06`'s and the three final-payment
+      // routes are `APP9-B02`'s; each is bounded by its own suite and is named
+      // here so this stays an exhaustive assertion.
       const forbidden = Object.keys(document.paths).filter((path) =>
         /deposit|payment|evidence|webhook|refund/i.test(path),
       );
@@ -211,6 +237,7 @@ describe('APP7-B03 — the published customer deposit contract', () => {
           QR_PATH,
           ...B05_EVIDENCE_PATHS,
           ...B04_ADMIN_PAYMENT_PATHS,
+          ...B02_FINAL_PAYMENT_PATHS,
         ].sort(),
       );
     });

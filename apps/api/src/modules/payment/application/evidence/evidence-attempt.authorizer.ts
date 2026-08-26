@@ -6,7 +6,7 @@
  * secure token          → the grant row, re-established under its lock
  *   → grant.customRequestId
  *     → orders.custom_request_id            uq_orders__request, exactly one
- *       → payment_obligations(kind = DEPOSIT, live)
+ *       → payment_obligations(order_id), of either kind
  *         → the exact payment_attempts row the caller named
  * ```
  *
@@ -14,20 +14,32 @@
  *
  * `APP7-B03` deliberately defined no current-attempt selector, so evidence has
  * to name the attempt it belongs to. Naming is all the caller does: the attempt
- * is read under its own row lock and then checked to belong to the obligation
- * this grant resolved to, that obligation to be the live `DEPOSIT` one, and that
- * obligation's order to be the order this request produced. Changing the id
- * therefore cannot reach another customer's order — it reaches a row that fails
- * the first comparison.
+ * is read under its own row lock and then checked to belong to an obligation of
+ * the order this request produced, and to have been opened by the one method
+ * this surface has an evidence flow for. Changing the id therefore cannot reach
+ * another customer's order — it reaches a row that fails the order comparison.
+ *
+ * ### Attempt-scoped, not kind-scoped (`APP9-B02`)
+ *
+ * `APP7-B05` additionally required the attempt's obligation to be the live
+ * `DEPOSIT` one, because `DEPOSIT` was the only obligation APP7 made payable.
+ * `payment_transfer_evidence` is attempt-scoped (`IMP-D055`) and `APP9-B02` makes
+ * `REMAINING` payable through a sibling surface, so that clause is now the
+ * obligation-kind assertion below: **either** `CST-039` kind, provided the
+ * obligation belongs to this request's order. Nothing else about the chain
+ * moved. In particular the order comparison — the clause isolation actually
+ * rests on — is unchanged, and is now load-bearing on its own rather than
+ * shadowed by an obligation-identity comparison that could only ever hold for
+ * one kind.
  *
  * No selection rule is invented anywhere: nothing here reads "latest", "newest
  * `PENDING`" or "highest `created_at`".
  *
  * ### One answer for every miss
  *
- * An unknown attempt, another obligation's attempt, another customer's attempt,
- * a `REMAINING` obligation's attempt, an attempt whose method is not
- * `BANK_TRANSFER`, an unknown token, an expired grant, a request with no order —
+ * An unknown attempt, another order's attempt, another customer's attempt, an
+ * attempt whose obligation is of neither `CST-039` kind, an attempt whose method
+ * is not `BANK_TRANSFER`, an unknown token, an expired grant, a request with no order —
  * all leave as the delivered `404 / SECURE_LINK_UNAVAILABLE`, identical in
  * status, code, message and shape. A caller cannot tell a foreign attempt id
  * from a fictional one.
@@ -54,11 +66,17 @@ import {
   acceptsTransferEvidence,
 } from '../../domain/evidence/transfer-evidence.policy';
 import { transferEvidenceError } from '../../domain/evidence/transfer-evidence.errors';
-import { DepositTargetResolver } from '../customer/deposit-target.resolver';
+import { PaymentTargetResolver } from '../customer/payment-target.resolver';
 import { AttemptStepUpVerifier } from './attempt-step-up.verifier';
 
-/** The obligation kind this whole surface is about. There is no parameter. */
-const DEPOSIT = 'DEPOSIT';
+/**
+ * The obligation kinds a customer may attach transfer evidence to.
+ *
+ * Both of the two `CST-039` kinds, and stated as a closed set rather than
+ * omitted: a third kind added later must fail here until someone decides that
+ * this surface should carry its evidence.
+ */
+const EVIDENCE_OBLIGATION_KINDS: readonly string[] = ['DEPOSIT', 'REMAINING'];
 
 /** Everything a proved evidence operation may act on. No token, no digest. */
 export interface AuthorizedEvidenceAttempt {
@@ -73,7 +91,7 @@ export interface AuthorizedEvidenceAttempt {
 export class EvidenceAttemptAuthorizer {
   constructor(
     private readonly grants: ReauthorizeSecureGrant,
-    private readonly targets: DepositTargetResolver,
+    private readonly targets: PaymentTargetResolver,
     private readonly evidence: PaymentTransferEvidenceRepository,
     private readonly stepUp: AttemptStepUpVerifier,
   ) {}
@@ -95,21 +113,20 @@ export class EvidenceAttemptAuthorizer {
     readonly requireOpenAttempt: boolean;
   }): Promise<AuthorizedEvidenceAttempt> {
     const grant = await this.grants.reauthorize(input.token, input.now);
-    const target = await this.targets.resolve(grant.customRequestId as CustomRequestId);
+    const order = await this.targets.resolveOrder(grant.customRequestId as CustomRequestId);
 
     const attempt = await this.evidence.lockAttemptForEvidence(input.attemptId as AttemptId);
     if (attempt === undefined) {
       throw secureLinkUnavailable();
     }
-    // Four comparisons, none of them redundant: the first is the one that stops
-    // a foreign attempt id, and the other three stop a *reachable* row that is
-    // nonetheless the wrong kind of target — a REMAINING obligation's attempt, a
-    // row a later repository lookup could return from another order, or an
-    // attempt opened by a method this surface has no evidence flow for.
+    // Three comparisons, none redundant: the first is what stops a foreign
+    // attempt id — the attempt's own obligation must hang off *this* request's
+    // order — and the third stops a reachable row opened by a method this
+    // surface has no evidence flow for. The kind is asserted against the closed
+    // set above rather than against one literal, so a third kind is refused.
     if (
-      attempt.paymentObligationId !== target.obligation.id ||
-      attempt.obligationKind !== DEPOSIT ||
-      attempt.obligationOrderId !== target.order.id ||
+      attempt.obligationOrderId !== order.id ||
+      !EVIDENCE_OBLIGATION_KINDS.includes(attempt.obligationKind) ||
       attempt.method !== TRANSFER_EVIDENCE_ATTEMPT_METHOD
     ) {
       throw secureLinkUnavailable();
@@ -126,8 +143,11 @@ export class EvidenceAttemptAuthorizer {
     return {
       customerId: grant.customerId,
       customRequestId: grant.customRequestId,
-      orderId: target.order.id,
-      obligationId: target.obligation.id,
+      orderId: order.id,
+      // The attempt's *own* obligation, read off the locked row. Never the one a
+      // kind-scoped lookup returned: those were the same value only while
+      // DEPOSIT was the only payable kind.
+      obligationId: attempt.paymentObligationId,
       attempt,
     };
   }
