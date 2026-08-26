@@ -1,6 +1,21 @@
 # APP8 — Inventory Reservation and Production Operations
 
-> **Status:** `IN PROGRESS` — `APP8-R00`, `APP8-G01` (corrected by
+> **Status:** `CLOSED` — closed at `APP8-X01` on 2026-08-26 with
+> `APP8 = PASS_WITH_FOLLOW_UPS`, **0 blocking follow-ups**. All 13 canonical
+> checkpoints are `COMPLETE`. Final measured baseline: **7 APP8-owned HTTP
+> operations** (B01 = 3, B03 = 3, B04 = 1), OpenAPI **92 paths / 99 operations /
+> 206 schemas**, **0 migrations** (DB unchanged at 37 migrations / 79 tables),
+> **1 worker handler** (`payment.verified` → official inventory reservation),
+> **41 Figma rows all `APPROVED_FOR_IMPLEMENTATION`** under
+> `FIG-APPROVAL-APP8-D01-PO-001`, and `APP8-E01` acceptance **PASS** (4 journeys
+> / 14 cases / 0 runtime changes). Inventory persistence is canonical under
+> `@embroidery/persistence`; **production persistence remains API-local**.
+> Terminal state: production job `COMPLETED` + order `PRODUCTION_COMPLETED`.
+> `NEXT_PHASE = APP9 — Remaining Payment, Fulfillment and Completion`.
+> Closure: [`reports/APP8-X01-COMPLETION-REPORT.md`](../reports/APP8-X01-COMPLETION-REPORT.md),
+> matrix: [`reports/APP8-CLOSURE-MATRIX.md`](../reports/APP8-CLOSURE-MATRIX.md).
+>
+> **Delivery history (as it stood before closure):** `APP8-R00`, `APP8-G01` (corrected by
 > `APP8-G01-C1`), `APP8-B01`, `APP8-B02`, `APP8-W01`, `APP8-B03`, `APP8-B04`,
 > `APP8-D01`, `APP8-A01` and `APP8-A02` complete; phase audited,
 > planned, its authority locked (§10.5), `InventoryModule` composed into the
@@ -19,7 +34,9 @@
 > then delivered the Admin SKU stock workspace at `/kho/skus/{skuId}` against
 > those approved rows, adding **0** HTTP operations. `APP8-A02` then delivered
 > the Admin production queue at `/san-xuat` against the approved A02 rows,
-> also adding **0** HTTP operations. `APP8-A03` is `NEXT`.
+> also adding **0** HTTP operations. `APP8-A03` delivered the Admin production
+> job detail at `/san-xuat/{jobId}`, and `APP8-E01` closed the functional
+> acceptance; `APP8-X01` then closed the phase (§12).
 > Sections 1–9 below are the **original pre-entry candidate plan**, preserved as
 > planning history. Section 10 onward is the **canonical, repository-grounded
 > plan** produced by `APP8-R00`. Where the two disagree, **section 10 onward
@@ -364,6 +381,20 @@ Predicted totals: **8 new HTTP operations**, **0 migrations**, **1 worker
 handler**, **1 design package**, **3 Admin screens**. Backend checkpoints stay in
 the normal 1–3 operation band; none approaches the hard maximum of 5.
 
+> **Measured at closure (`APP8-X01`), superseding the prediction above:**
+> **7** new HTTP operations, not 8 — `APP8-B04` delivered **1**
+> (`POST /api/admin/production-jobs/{jobId}/transitions`), not 2: start,
+> complete and cancel are one command endpoint, not two verbs on two paths.
+> Every other predicted total held exactly — 0 migrations, 1 worker handler,
+> 1 design package (41 frames), 3 Admin screens.
+>
+> **Row 4 correction.** This table's `APP8-B02` row reads "promote inventory +
+> production persistence". `APP8-B02` promoted **inventory only**; production
+> persistence remains API-local at
+> `apps/api/src/modules/production/infrastructure/persistence/`, and
+> `packages/persistence/src/` has no `production/`. The delivered narrowing
+> governs.
+
 ## 12. Roadmap status
 
 Exactly one unfinished row carries **Next**. This table is updated after every
@@ -440,8 +471,26 @@ E01   COMPLETE          (focused cross-boundary acceptance: 4 journeys / 14 case
                        acceptance commands — CMD-TEST-APP8-E01-API,
                        CMD-TEST-APP8-E01-WORKER, CMD-TEST-APP8-E01-ADMIN;
                        every accepted lower-checkpoint proof reused, none rerun)
-X01   INCOMPLETE — Next
+X01   COMPLETE          (phase closure, baseline reconciliation and the APP9
+                       handoff; documentation only — 0 source, test, schema,
+                       generated-artifact, Figma and tooling changes; measured
+                       baseline 92/99/206 OpenAPI, 7 APP8-owned operations,
+                       37 migrations / 79 tables with 0 APP8 migrations,
+                       1 worker handler, 41/41 approved Figma rows;
+                       APP8 = PASS_WITH_FOLLOW_UPS, 0 blocking;
+                       APP8-X01-C1 unused)
 ```
+
+```text
+PHASE      = CLOSED
+APP8       = PASS_WITH_FOLLOW_UPS
+BLOCKING   = 0
+NEXT_PHASE = APP9 — Remaining Payment, Fulfillment and Completion
+NOT_PUSHED = true
+```
+
+No unfinished row remains, so no row carries **Next**. The closure matrix is
+[`reports/APP8-CLOSURE-MATRIX.md`](../reports/APP8-CLOSURE-MATRIX.md).
 
 ## 13. Phase governance
 
