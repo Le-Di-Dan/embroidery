@@ -452,4 +452,90 @@ describe('APP8-W01 payment.verified inventory reservation (integration)', () => 
       expect(await reservedLedgerCount(order)).toBe(0);
     });
   });
+  describe('case 10 — a verified REMAINING payment is consumed, and reserves nothing', () => {
+    let order: SeededOrder;
+    let outcomes: readonly string[];
+    let eventIds: readonly bigint[];
+
+    beforeAll(async () => {
+      // `FU-APP8-W01-01`: before `APP9-W01` this exact row was refused by the
+      // payload parser as `JOB_PAYLOAD_INVALID` and dead-lettered terminally.
+      order = await seedDepositPaidOrder(context.disposable, {
+        suffix: 'c10',
+        items: [{ sku: 'a', quantity: 3 }],
+        stock: { a: 10 },
+      });
+      // Two rows, so redelivery is proven inside this case rather than by a
+      // second seeded order: at-least-once permits the duplicate, and a no-op
+      // that were secretly stateful would diverge on the second delivery.
+      eventIds = [
+        await appendPaymentVerifiedEvent(context.disposable, order, {
+          obligationKind: 'REMAINING',
+        }),
+        await appendPaymentVerifiedEvent(context.disposable, order, {
+          obligationKind: 'REMAINING',
+        }),
+      ];
+      const first = await context.runOnce();
+      const second = await context.runOnce();
+      outcomes = [first?.outcome ?? 'NOT_CLAIMED', second?.outcome ?? 'NOT_CLAIMED'];
+    }, 300_000);
+
+    it('succeeds on both deliveries, with no retry and no dead-letter', () => {
+      expect(outcomes).toEqual(['SUCCEEDED', 'SUCCEEDED']);
+    });
+
+    it('completes both outbox rows through the delivered success path', async () => {
+      const events = await context.rows<{ status: string }>(
+        sql`SELECT status FROM outbox_events
+            WHERE aggregate_id = ${order.paymentAttemptId}`,
+      );
+
+      // The same terminal state a reservation reaches. No DEAD_LETTER, no row
+      // left PENDING for an operator to chase, and no "consumed remaining
+      // payments" table invented to record that the handler was here.
+      expect(events).toHaveLength(2);
+      expect(events.map((event) => event.status)).toEqual(['DISPATCHED', 'DISPATCHED']);
+    });
+
+    it('files one SUCCEEDED attempt per delivery in the ordinary ledger', async () => {
+      // `job_key` is the outbox event id — the same linkage every other handler's
+      // attempts are filed under. No reservation-specific evidence table.
+      const attemptRows = await context.rows<{ outcome: string; error_class: string | null }>(
+        sql`SELECT outcome, error_class FROM background_job_attempts
+            WHERE job_kind = 'INVENTORY_RESERVATION'
+              AND job_key IN (${eventIds[0]?.toString()}, ${eventIds[1]?.toString()})
+            ORDER BY id`,
+      );
+
+      expect(attemptRows).toHaveLength(2);
+      expect(attemptRows.every((row) => row.outcome === 'SUCCEEDED')).toBe(true);
+      expect(attemptRows.every((row) => row.error_class === null)).toBe(true);
+    });
+
+    it('creates no reservation, no ledger effect and no idempotency record', async () => {
+      expect(await reservations(order)).toHaveLength(0);
+      expect(await reservedLedgerCount(order)).toBe(0);
+      expect(
+        await countRows(
+          context,
+          sql`SELECT count(*) AS count FROM idempotency_records
+              WHERE operation_namespace = 'inventory.reserve' AND scope_key = ${order.orderId}`,
+        ),
+      ).toBe(0);
+    });
+
+    it('leaves the SKU anchor untouched', async () => {
+      // `sku_stocks` carries no reserved column: committed stock *is* the
+      // `inventory_reservations` rows, which the assertion above counts at zero.
+      // What remains to prove is that on-hand was not moved either.
+      const stock = await context.rows<{ quantity_on_hand: number }>(
+        sql`SELECT quantity_on_hand FROM sku_stocks
+            WHERE sku_id = ${order.skuIds['a'] as string}`,
+      );
+
+      expect(stock).toHaveLength(1);
+      expect(stock[0]?.quantity_on_hand).toBe(10);
+    });
+  });
 });

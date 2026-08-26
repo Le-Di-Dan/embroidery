@@ -8,6 +8,7 @@
 import {
   deriveReservationEffectKey,
   parsePaymentVerifiedPayload,
+  VERIFIED_OBLIGATION_KINDS,
   PAYMENT_ATTEMPT_AGGREGATE_KIND,
   PAYMENT_VERIFIED_EVENT_TYPE,
   PAYMENT_VERIFIED_PAYLOAD_VERSION,
@@ -28,7 +29,7 @@ describe('the accepted SE-007 contract', () => {
     expect(PAYMENT_ATTEMPT_AGGREGATE_KIND).toBe('PAYMENT_ATTEMPT');
   });
 
-  it('accepts the producer payload and keeps only the lookup keys', () => {
+  it('accepts a DEPOSIT payload and keeps the lookup keys and the kind', () => {
     const result = parsePaymentVerifiedPayload(PRODUCER_PAYLOAD);
 
     expect(result).toEqual({
@@ -37,8 +38,32 @@ describe('the accepted SE-007 contract', () => {
         orderId: 'order-1',
         paymentAttemptId: 'attempt-1',
         paymentObligationId: 'obligation-1',
+        obligationKind: 'DEPOSIT',
       },
     });
+  });
+
+  it('accepts the same shape carrying REMAINING (APP9-B03, FU-APP8-W01-01)', () => {
+    // The event that used to dead-letter. Same four keys, same version, same
+    // aggregate linkage — only the kind differs, and it is now a variable.
+    const result = parsePaymentVerifiedPayload({
+      ...PRODUCER_PAYLOAD,
+      obligationKind: 'REMAINING',
+    });
+
+    expect(result).toEqual({
+      valid: true,
+      payload: {
+        orderId: 'order-1',
+        paymentAttemptId: 'attempt-1',
+        paymentObligationId: 'obligation-1',
+        obligationKind: 'REMAINING',
+      },
+    });
+  });
+
+  it('accepts exactly two kinds and no others', () => {
+    expect(VERIFIED_OBLIGATION_KINDS).toEqual(['DEPOSIT', 'REMAINING']);
   });
 
   it.each([
@@ -55,47 +80,42 @@ describe('the accepted SE-007 contract', () => {
     });
   });
 
-  it('refuses an obligation kind other than DEPOSIT', () => {
-    // `TR-LC17-04` is gated on the deposit verified event, and the producer
-    // writes `DEPOSIT` as a literal. A remaining-payment verification must reach
-    // an operator rather than reserve stock a second time — extending this
-    // consumer is APP9's deliberate work, not this handler's guess.
+  it.each([
+    ['an unknown future kind', 'FINAL_SETTLEMENT'],
+    ['a lowercased known kind', 'remaining'],
+    ['a kind that merely starts with a known one', 'DEPOSIT_TOPUP'],
+    ['a missing kind', undefined],
+    ['a non-string kind', 1],
+  ])('refuses %s — no coercion onto either branch', (_label, obligationKind) => {
+    // The set is closed. A producer ahead of this build must reach an operator
+    // as a terminal malformed payload, never be guessed onto DEPOSIT (a second
+    // reservation) or onto REMAINING (a silent no-op).
+    expect(parsePaymentVerifiedPayload({ ...PRODUCER_PAYLOAD, obligationKind })).toEqual({
+      valid: false,
+      errorClass: 'JOB_PAYLOAD_INVALID',
+    });
+  });
+
+  it.each(VERIFIED_OBLIGATION_KINDS)('still validates the ids for a %s payload', (kind) => {
+    // The kind widening must not weaken anything else the parser refuses.
     expect(
-      parsePaymentVerifiedPayload({ ...PRODUCER_PAYLOAD, obligationKind: 'REMAINING' }),
+      parsePaymentVerifiedPayload({ ...PRODUCER_PAYLOAD, obligationKind: kind, orderId: '' }),
     ).toEqual({ valid: false, errorClass: 'JOB_PAYLOAD_INVALID' });
   });
 });
 
 describe('the effect key', () => {
   it('is the order, so two deliveries of one verification are one effect', () => {
-    const first = deriveReservationEffectKey({
-      orderId: 'order-1',
-      paymentAttemptId: 'attempt-1',
-      paymentObligationId: 'obligation-1',
-    });
-    const second = deriveReservationEffectKey({
-      orderId: 'order-1',
-      paymentAttemptId: 'attempt-1',
-      paymentObligationId: 'obligation-1',
-    });
+    const first = deriveReservationEffectKey({ orderId: 'order-1' });
+    const second = deriveReservationEffectKey({ orderId: 'order-1' });
 
     expect(first).toBe(second);
     expect(first).toContain('order-1');
   });
 
   it('separates two orders', () => {
-    expect(
-      deriveReservationEffectKey({
-        orderId: 'order-1',
-        paymentAttemptId: 'a',
-        paymentObligationId: 'o',
-      }),
-    ).not.toBe(
-      deriveReservationEffectKey({
-        orderId: 'order-2',
-        paymentAttemptId: 'a',
-        paymentObligationId: 'o',
-      }),
+    expect(deriveReservationEffectKey({ orderId: 'order-1' })).not.toBe(
+      deriveReservationEffectKey({ orderId: 'order-2' }),
     );
   });
 });

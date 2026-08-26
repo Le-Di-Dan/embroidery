@@ -19,6 +19,13 @@
  * Nothing in `APP8-G01` names a schedule for inventory reservation, and
  * inventing one would be a policy this checkpoint does not own.
  *
+ * `APP9-W01` extended it, and extended nothing else: `payment.verified` still
+ * has exactly one owner in the registry. The event now carries the obligation's
+ * real kind, so this handler branches on it — a DEPOSIT reserves exactly as it
+ * always did, a REMAINING is consumed successfully and reserves nothing
+ * (`FU-APP8-W01-01`). No second handler, no second event type, no second
+ * idempotency namespace and no table for "remaining payments we have seen".
+ *
  * The job kind is `INVENTORY_RESERVATION`, not the transport kind
  * `OUTBOX_DISPATCH` — the precedent is `ORDER_CREATION` and, before it,
  * `ASSET_PROCESSING` (IMP-D030): filing domain work under the transport kind
@@ -46,6 +53,7 @@ import {
   PAYMENT_VERIFIED_PAYLOAD_VERSION,
   type PaymentVerifiedLookup,
 } from './domain/payment-verified.payload';
+import { requiresInventoryReservation } from './domain/reservation-trigger.policy';
 
 /** The DB7 job kind this capability files its attempt evidence under. */
 const INVENTORY_RESERVATION: BackgroundJobKind = 'INVENTORY_RESERVATION';
@@ -80,6 +88,23 @@ export class InventoryReservationHandler implements JobHandler<PaymentVerifiedLo
         'EVENT_LINKAGE_MISMATCH',
         'The event linkage and payload name different payment attempts.',
       );
+    }
+
+    if (!requiresInventoryReservation(payload.obligationKind)) {
+      // A verified REMAINING payment (`APP9-B03`) is a legitimate delivery of
+      // this event that inventory owes nothing for: the order's stock was
+      // committed when its deposit was verified, and `TR-LC17-04` gates the
+      // official reservation on that deposit alone. Returning here is the
+      // handler's success — the runtime records `SUCCEEDED` and completes the
+      // outbox row through the same path a reservation takes. Nothing is
+      // written: no reservation, no ledger entry, no stock effect and no
+      // stand-in "consumed" row invented to make the attempt look busy.
+      //
+      // Placed *after* the linkage check on purpose. The whole canonical event
+      // is validated first — shape by the parser, linkage above — and only then
+      // does the kind decide the action, so a REMAINING row with a producer
+      // defect is still refused rather than waved through by its kind.
+      return;
     }
 
     try {

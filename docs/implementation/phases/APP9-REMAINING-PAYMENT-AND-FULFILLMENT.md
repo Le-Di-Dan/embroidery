@@ -122,8 +122,15 @@ payload parser rejects any `obligationKind` other than the literal `'DEPOSIT'`
 with the terminal `JOB_PAYLOAD_INVALID`, and the worker registry throws at
 startup if a second handler claims the same event type. A verified `REMAINING`
 obligation would therefore **dead-letter** — never reserve stock a second time,
-but never dispatch either. `APP9-W01` extends that one consumer to accept both
+but never dispatch either. `APP9-W01` extended that one consumer to accept both
 kinds and no-op for `REMAINING`.
+
+**`FU-APP8-W01-01` = CLOSED** (`APP9-W01`). The parser now accepts the closed set
+`{DEPOSIT, REMAINING}`; `reservation-trigger.policy.ts` decides that only
+`DEPOSIT` reserves; and the live-runtime integration suite proves a REMAINING
+event reaching `SUCCEEDED` with a `DISPATCHED` outbox row and zero inventory
+writes, on the first delivery and on a redelivery. Still exactly one registered
+handler for `payment.verified`, and no new event type.
 
 ## 5. Fulfillment authority summary
 
@@ -423,8 +430,18 @@ B03   COMPLETE   (Admin REMAINING verification and TR-LC14-06, delivered by
                   0 provider/callback/webhook, no shipping, dispatch, freeze or
                   completion. FU-APP8-W01-01 stays open by design: a correct
                   REMAINING event will now dead-letter until APP9-W01)
-W01   NEXT
-B04   INCOMPLETE
+W01   COMPLETE   (the sole payment.verified consumer now accepts the closed kind
+                  set {DEPOSIT, REMAINING}. DEPOSIT reserves exactly as APP8-W01
+                  delivered — cases 1-9 of the live-runtime suite unchanged and
+                  green. REMAINING is a successful no-op: SUCCEEDED attempt,
+                  DISPATCHED outbox row, 0 reservations, 0 RESERVED ledger
+                  entries, 0 inventory.reserve idempotency records, on-hand
+                  untouched, and harmless on redelivery. Unknown kinds stay
+                  terminal JOB_PAYLOAD_INVALID — no coercion onto either branch.
+                  1 handler owns payment.verified, 0 handlers added, 0 HTTP
+                  operations, 0 OpenAPI/client change, 0 migrations, 0 schema
+                  change. FU-APP8-W01-01 = CLOSED)
+B04   NEXT
 B05   INCOMPLETE
 D01   INCOMPLETE
 A01   INCOMPLETE

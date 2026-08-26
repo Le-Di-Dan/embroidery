@@ -13,7 +13,7 @@
  * ```text
  * paymentAttemptId      the attempt the operator verified — also aggregate_id
  * paymentObligationId   the obligation that moved to SATISFIED
- * obligationKind        the literal 'DEPOSIT'
+ * obligationKind        'DEPOSIT' | 'REMAINING' — the real kind, since APP9-B03
  * orderId               the order the obligation belongs to
  * ```
  *
@@ -23,19 +23,24 @@
  * reserve is read from here: the reservable subjects and their quantities come
  * from the frozen `order_items` rows, and whether the order may reserve at all
  * comes from `DepositEligibilityPort` through the canonical repository. This
- * payload answers one question — **which order** — and the deposit facts it
- * carries are used only to prove the row is the event this handler consumes.
+ * payload answers two questions — **which order**, and **whether inventory owes
+ * this event anything at all** — and the payment facts it carries are used only
+ * to prove the row is the event this handler consumes.
  *
- * ### Why `obligationKind` is validated as a literal
+ * ### Why `obligationKind` is a closed set, not a free string
  *
- * The producer does not compute it; it writes `'DEPOSIT'` as a constant, because
- * `verify-payment-attempt.use-case.ts` refuses any non-deposit obligation
- * (`DEPOSIT_NOT_PAYABLE`). `TR-LC17-04` is likewise gated on *the deposit
- * verified event*. So `DEPOSIT` is part of the contract's shape rather than one
- * of its variables, and reading it as such is what makes a future
- * remaining-payment verification visible to an operator instead of silently
- * reserving stock a second time. Extending this consumer is APP9's to do
- * deliberately, not this handler's to guess at.
+ * Until `APP9-B03` the producer wrote `'DEPOSIT'` as a constant, so this parser
+ * read it as a literal and every other value was a malformed payload.
+ * `APP9-B03` generalised the one verification command and now emits the
+ * obligation's real kind, which made a verified remaining payment arrive here as
+ * `JOB_PAYLOAD_INVALID` and dead-letter (`FU-APP8-W01-01`).
+ *
+ * So the kind is a variable now — but a **closed** one. Exactly `DEPOSIT` and
+ * `REMAINING` are accepted, because those are the two kinds the verification
+ * command can satisfy. Anything else stays a terminal malformed payload: a
+ * producer ahead of this build must reach an operator, never be coerced onto
+ * whichever branch happens to look safer. *Which* of the two triggers a
+ * reservation is not decided here — see `reservation-trigger.policy.ts`.
  *
  * The version is checked by the runtime before this file is reached
  * (`payloadSchemaVersion`), so a producer ahead of this build is
@@ -52,17 +57,29 @@ export const PAYMENT_VERIFIED_PAYLOAD_VERSION = 1;
 /** The aggregate the producer links the row to: the verified attempt. */
 export const PAYMENT_ATTEMPT_AGGREGATE_KIND = 'PAYMENT_ATTEMPT';
 
-/** The one obligation kind that triggers an official reservation (`TR-LC17-04`). */
+/** The obligation kind that triggers an official reservation (`TR-LC17-04`). */
 export const DEPOSIT_OBLIGATION_KIND = 'DEPOSIT';
+
+/** The obligation kind `APP9-B03` added to this event, which reserves nothing. */
+export const REMAINING_OBLIGATION_KIND = 'REMAINING';
+
+/** The closed set this consumer accepts. Not a prefix and not a pattern. */
+export const VERIFIED_OBLIGATION_KINDS = [
+  DEPOSIT_OBLIGATION_KIND,
+  REMAINING_OBLIGATION_KIND,
+] as const;
+
+export type VerifiedObligationKind = (typeof VERIFIED_OBLIGATION_KINDS)[number];
 
 /** The effect-key namespace. Versioned so a v2 effect cannot collide with v1. */
 const EFFECT_KEY_PREFIX = 'inventory-reservation:v1:';
 
-/** The lookup key, and nothing else. */
+/** The lookup key, plus the one field that decides whether there is work. */
 export interface PaymentVerifiedLookup {
   readonly orderId: string;
   readonly paymentAttemptId: string;
   readonly paymentObligationId: string;
+  readonly obligationKind: VerifiedObligationKind;
 }
 
 export function parsePaymentVerifiedPayload(
@@ -75,8 +92,9 @@ export function parsePaymentVerifiedPayload(
   const orderId = record['orderId'];
   const paymentAttemptId = record['paymentAttemptId'];
   const paymentObligationId = record['paymentObligationId'];
+  const obligationKind = record['obligationKind'];
 
-  if (record['obligationKind'] !== DEPOSIT_OBLIGATION_KIND) {
+  if (!isVerifiedObligationKind(obligationKind)) {
     return { valid: false, errorClass: 'JOB_PAYLOAD_INVALID' };
   }
   if (
@@ -86,7 +104,14 @@ export function parsePaymentVerifiedPayload(
   ) {
     return { valid: false, errorClass: 'JOB_PAYLOAD_INVALID' };
   }
-  return { valid: true, payload: { orderId, paymentAttemptId, paymentObligationId } };
+  return {
+    valid: true,
+    payload: { orderId, paymentAttemptId, paymentObligationId, obligationKind },
+  };
+}
+
+function isVerifiedObligationKind(value: unknown): value is VerifiedObligationKind {
+  return VERIFIED_OBLIGATION_KINDS.some((kind) => kind === value);
 }
 
 /**
@@ -100,7 +125,9 @@ export function parsePaymentVerifiedPayload(
  * the order only for as long as one order can have exactly one verified deposit
  * attempt — true today, and not a property this file should depend on.
  */
-export function deriveReservationEffectKey(payload: PaymentVerifiedLookup): string {
+export function deriveReservationEffectKey(
+  payload: Pick<PaymentVerifiedLookup, 'orderId'>,
+): string {
   return `${EFFECT_KEY_PREFIX}${payload.orderId}`;
 }
 
