@@ -424,9 +424,23 @@ A02   COMPLETE          (0 new HTTP operations; the Admin production queue at
                        reduction hiding only the approvalSnapshotId column; the
                        "Sản xuất" sidenav entry; no backend, schema, worker,
                        OpenAPI or generated-client change)
-A03   INCOMPLETE — Next
-E01   INCOMPLETE
-X01   INCOMPLETE
+A03   COMPLETE          (0 new HTTP operations; the Admin production job detail at
+                       /san-xuat/{jobId}, consuming the delivered
+                       adminProductionJob_get and adminProductionJob_transition;
+                       the frozen specification, the reservation summary and the
+                       transition history rendered from published fields only;
+                       action visibility derived from job.status; the three
+                       guarded transitions with a mandatory cancellation reason
+                       and cancellation copy that names the production job and
+                       denies any order cancellation or refund; no backend,
+                       schema, worker, OpenAPI or generated-client change)
+E01   COMPLETE          (focused cross-boundary acceptance: 4 journeys / 14 cases,
+                       0 runtime feature changes, 0 HTTP operations, 0 migrations,
+                       0 Figma rows, OpenAPI unchanged at 92/99/206; three scoped
+                       acceptance commands — CMD-TEST-APP8-E01-API,
+                       CMD-TEST-APP8-E01-WORKER, CMD-TEST-APP8-E01-ADMIN;
+                       every accepted lower-checkpoint proof reused, none rerun)
+X01   INCOMPLETE — Next
 ```
 
 ## 13. Phase governance
