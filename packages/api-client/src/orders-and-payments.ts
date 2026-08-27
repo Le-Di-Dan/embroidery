@@ -241,3 +241,57 @@ export type {
   AdminOrderDispatchResponse,
   AdminOrderCompletionResponse,
 } from './generated/embroidery-api.schemas';
+
+// The customer secure final-payment surface (`APP9-B02`), consumed by
+// `APP9-S01` on one Storefront route.
+//
+// Three operations, released consumer-driven: until S01 there was no approved
+// customer screen behind any of them. They are the **sibling** of the deposit
+// lane above, not a replacement for it — same base path, same locator-free
+// `POST` shape, same secure-link body carrier, same idempotency namespace — and
+// the two lanes move independently because `REMAINING` and `DEPOSIT` are
+// different obligations (`CST-039`).
+//
+// ### No evidence operation is added here
+//
+// `APP9-B02` generalised `EvidenceAttemptAuthorizer` to
+// `['DEPOSIT', 'REMAINING']` rather than publishing a second evidence route, so
+// a `REMAINING` attempt resolves through `publicOrderDepositEvidenceUpload` and
+// `publicOrderDepositEvidenceStatus` already exported above. Those two names are
+// deposit-flavoured **transport** names for a route APP9 may not rename
+// (`FU-APP9-B02-01`); no screen built on this barrel may let that wording reach
+// a customer.
+//
+// ### `payable` is the gate, and it is the server's
+//
+// `CustomerFinalPaymentResponse.payable` is derived on every read from the
+// order's state and the obligation's, and the QR and the attempt both answer
+// `409 FINAL_PAYMENT_NOT_PAYABLE` when it is false. It is not a claim that
+// anything was paid — that is `finalPaymentStatus` — and nothing downstream may
+// substitute the order status for it.
+//
+// ### The amount is the obligation's own frozen figure
+//
+// `finalPaymentAmount` is exact `numeric(14,2)` VND as a decimal **string**,
+// copied from the accepted quotation at order creation. It is never recomputed
+// as a total minus a deposit, and this barrel publishes neither an order total
+// nor a deposit amount through which a consumer could try.
+export {
+  publicOrderFinalPaymentCurrent,
+  publicOrderFinalPaymentInitiate,
+  publicOrderFinalPaymentQr,
+} from './generated/embroidery-api';
+export {
+  CustomerFinalPaymentResponseFinalPaymentStatus,
+  CustomerFinalPaymentResponseOrderStatus,
+  FinalPaymentAttemptResponseMethod,
+  FinalPaymentAttemptResponseStatus,
+} from './generated/embroidery-api.schemas';
+export type {
+  ReadFinalPaymentBody,
+  InitiateFinalPaymentAttemptBody,
+  FinalPaymentQrBody,
+  CustomerFinalPaymentResponse,
+  FinalPaymentBankInstructionsResponse,
+  FinalPaymentAttemptResponse,
+} from './generated/embroidery-api.schemas';

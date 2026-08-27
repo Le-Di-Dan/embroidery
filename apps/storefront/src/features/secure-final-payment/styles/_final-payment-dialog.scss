@@ -1,0 +1,90 @@
+// Secure final payment — the step-up overlay.
+//
+// `APP9-B02` requires a recent re-verification before it will open an attempt,
+// so the APP4 verification machine runs **over** this route rather than as a
+// navigation — leaving the page would unmount the only copy of the credential.
+// The geometry matches `APP6-D01`'s step-up frame (`701:3`, `701:62`), which the
+// deposit lane already composes: a 560-wide dialog on a scrim, 32 padding,
+// radius 24.
+
+@use '@embroidery/styles' as styles;
+@use './final-payment-tokens' as tokens;
+
+.secure-final-payment {
+  &__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: styles.spacing(24);
+    background: styles.$color-overlay-scrim;
+
+    // The scrim is not a dismiss target: this dialog stands between the customer
+    // and a credential, and a stray backdrop click is the least deliberate
+    // gesture there is. Escape and the cancel control are the two ways out.
+    overflow-y: auto;
+  }
+
+  &__dialog {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(16);
+    width: 100%;
+    max-width: tokens.$dialog-width;
+    padding: styles.spacing(32);
+    background: styles.$color-surface-primary;
+    border-radius: styles.$radius-lg;
+  }
+
+  &__dialog-title {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-bold;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 4px;
+    }
+  }
+
+  &__dialog-body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+  }
+
+  &__dialog-note {
+    margin: 0;
+    font-size: tokens.$font-size-micro;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__step-up {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  &__dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  @media (max-width: tokens.$bp-shell-wide) {
+    &__scrim {
+      padding: styles.spacing(16);
+      align-items: flex-start;
+    }
+
+    &__dialog {
+      padding: tokens.$card-padding-mobile;
+    }
+  }
+}

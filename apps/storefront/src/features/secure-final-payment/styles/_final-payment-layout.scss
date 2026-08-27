@@ -1,0 +1,310 @@
+// Secure final payment — page frame, cards, facts, notes, pills, controls.
+//
+// The structural half of the route: everything that is true of the page in every
+// one of its five states. The transfer band, the evidence section and the dialog
+// each own their own partial, so a change to the QR card cannot move the page's
+// vertical rhythm and none of the four files approaches the 400-line cap.
+//
+// This content mounts *inside* the APP4 `.secure-link-access` section, which is
+// deliberate: `APP9-D01` reuses the secure-access frames rather than redrawing
+// them (`819:221` is APP4's own unavailable card), so the section's centring and
+// outer padding are already established there and are not duplicated here.
+
+@use '@embroidery/styles' as styles;
+@use './final-payment-tokens' as tokens;
+
+.secure-final-payment {
+  display: flex;
+  flex-direction: column;
+  gap: tokens.$stack-gap;
+  width: 100%;
+  max-width: tokens.$content-max;
+
+  // Every fact on this screen is a value the customer must be able to read in
+  // full — an account number, a fifteen-character reference, a bank name. Long
+  // values wrap rather than widening the page, so no critical payment fact ever
+  // requires a horizontal scroll (§23).
+  overflow-wrap: anywhere;
+
+  &__visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  &__heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: styles.spacing(12);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-heading-m;
+    font-weight: styles.$font-weight-bold;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+
+    // The heading receives focus when the link settles, so it must show a ring;
+    // a programmatic focus with no visible indicator is a keyboard user losing
+    // their place silently.
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 4px;
+    }
+  }
+
+  &__order-line {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+  }
+
+  &__fine-print {
+    margin: 0;
+    font-size: tokens.$font-size-micro;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$card-gap;
+    align-items: flex-start;
+    width: 100%;
+    padding: tokens.$card-padding;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-md;
+
+    &--accent {
+      background: styles.$color-surface-secondary;
+      border: 1.5px solid styles.$color-action-primary;
+    }
+  }
+
+  &__card-title {
+    display: flex;
+    gap: styles.spacing(8);
+    align-items: baseline;
+    margin: 0;
+    font-size: tokens.$font-size-card-title;
+    font-weight: styles.$font-weight-bold;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__card-symbol {
+    flex: none;
+    font-weight: styles.$font-weight-bold;
+  }
+
+  // Facts are a description list: the label really is a term and the value
+  // really is its description, so assistive technology reads them as pairs
+  // rather than as a run of unrelated sentences.
+  &__facts {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$stack-gap-tight;
+    width: 100%;
+    margin: 0;
+  }
+
+  &__fact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(12);
+    align-items: center;
+    padding: tokens.$row-padding-block tokens.$row-padding-inline;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-xs;
+
+    &--accent {
+      background: styles.$color-surface-secondary;
+      border: 1.5px solid styles.$color-action-primary;
+    }
+  }
+
+  &__fact-label {
+    flex: 0 0 tokens.$row-label-width;
+    max-width: 100%;
+    font-size: styles.$font-size-caption;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__fact-value {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(12);
+    align-items: center;
+    flex: 1 1 12ch;
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+  }
+
+  &__note {
+    display: flex;
+    gap: tokens.$note-gap;
+    align-items: flex-start;
+    width: 100%;
+    margin: 0;
+    padding: tokens.$note-padding-block tokens.$note-padding-inline;
+    background: styles.$color-surface-secondary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-xs;
+    font-size: tokens.$font-size-micro;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+
+    &--info {
+      border-color: styles.$color-status-info;
+    }
+
+    &--warning {
+      border-color: styles.$color-status-warning;
+    }
+
+    &--danger {
+      border-color: styles.$color-status-error;
+    }
+  }
+
+  &__note-symbol {
+    flex: none;
+    font-weight: styles.$font-weight-bold;
+  }
+
+  &__note-text {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  // Status is never colour alone: the symbol and the label carry it, and the
+  // border only reinforces what both already say.
+  &__pill {
+    display: inline-flex;
+    gap: tokens.$pill-gap;
+    align-items: center;
+    padding: tokens.$pill-padding-block tokens.$pill-padding-inline;
+    background: styles.$color-surface-secondary;
+    border: 1px solid styles.$color-text-tertiary;
+    border-radius: 999px;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-tertiary;
+
+    &--neutral {
+      border-color: styles.$color-text-secondary;
+      color: styles.$color-text-secondary;
+    }
+
+    &--waiting,
+    &--progress {
+      border-color: styles.$color-status-warning;
+      color: styles.$color-status-warning;
+    }
+
+    &--success {
+      border-color: styles.$color-status-success;
+      color: styles.$color-status-success;
+    }
+
+    &--danger {
+      border-color: styles.$color-status-error;
+      color: styles.$color-status-error;
+    }
+  }
+
+  &__pill-symbol {
+    font-weight: styles.$font-weight-bold;
+  }
+
+  &__button {
+    display: inline-flex;
+    gap: styles.spacing(8);
+    align-items: center;
+    justify-content: center;
+    min-height: tokens.$touch-target-min;
+    padding: tokens.$button-padding-block tokens.$button-padding-inline;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-xs;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+    cursor: pointer;
+
+    &--primary {
+      background: styles.$color-action-primary;
+      border-color: styles.$color-action-primary;
+      color: styles.$color-surface-primary;
+
+      &:hover:not(:disabled) {
+        background: styles.$color-action-hover;
+        border-color: styles.$color-action-hover;
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  @media (max-width: tokens.$bp-shell-wide) {
+    &__title {
+      font-size: tokens.$font-size-title-mobile;
+    }
+
+    &__card {
+      padding: tokens.$card-padding-mobile;
+    }
+
+    // Mobile stacks the label above its value: 350px of usable width cannot hold
+    // a 240px label beside a fifteen-character reference without one of them
+    // truncating, and neither may truncate (§23).
+    &__fact {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: styles.spacing(4);
+    }
+
+    &__fact-label {
+      flex: none;
+    }
+
+    // Full-width controls at the approved mobile height (819:4).
+    &__button {
+      width: 100%;
+      min-height: tokens.$button-height-mobile;
+    }
+  }
+}

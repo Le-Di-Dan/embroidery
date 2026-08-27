@@ -561,7 +561,18 @@ A01   COMPLETE (Admin commerce-completion workspace. All 36 APP9 design-index
                   before and after with none added or lost. Structural only:
                   0 Admin application source changed, 0 generated file, 0
                   OpenAPI change, 0 Figma change)
-S01   NEXT
-E01   INCOMPLETE
+S01   COMPLETE (2026-08-27 — one Storefront route,
+                  /truy-cap/thanh-toan-con-lai, carrying the whole customer
+                  balance-and-completion surface: not-yet-payable, payable,
+                  instructions + dynamic QR, optional transfer evidence, and
+                  READY_FOR_DELIVERY / DELIVERED / COMPLETED progress.
+                  NEW_STOREFRONT_ROUTES = 1, APP9-S02 does not exist.
+                  publicOrderFinalPayment_current / _qr / _initiate only; the
+                  APP7 evidence route reused with neutral copy and no new
+                  endpoint. CUSTOMER_TRACKING_UI = NOT_IMPLEMENTED,
+                  CUSTOMER_FEE_ACK_UI = BACKEND_READY / UI_DEFERRED.
+                  10 focused frontend cases, 0 migrations, 0 OpenAPI change,
+                  0 generated-file edit, 0 backend change)
+E01   NEXT
 X01   INCOMPLETE
 ```

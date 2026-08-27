@@ -1,0 +1,15 @@
+// Secure final payment — the feature's stylesheet entry (APP9-S01).
+//
+// Composition only. Four partials, split by responsibility rather than by line
+// count: the page frame, the money band and completion stepper, the evidence
+// section, and the step-up overlay. The 400-line cap applies to SCSS exactly as
+// it does to TypeScript, and this feature is bounded from the start rather than
+// split after the fact.
+//
+// `_final-payment-tokens.scss` emits no rules, so every partial may `@use` it
+// without duplicating a declaration into the bundle.
+
+@use './final-payment-layout';
+@use './final-payment-transfer';
+@use './final-payment-evidence';
+@use './final-payment-dialog';

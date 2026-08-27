@@ -1,0 +1,175 @@
+// Secure final payment — the optional transfer-evidence section.
+//
+// `817:16` (not sent) and `817:31` (sent). One section in two states: the
+// dropzone, the submitted list, the upload progress and the refusal note.
+
+@use '@embroidery/styles' as styles;
+@use './final-payment-tokens' as tokens;
+
+.secure-final-payment {
+  &__evidence-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(12);
+    align-items: center;
+    width: 100%;
+  }
+
+  &__quota {
+    margin-left: auto;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-secondary;
+  }
+
+  // The intake (817:22). Centred, because the approved frame centres it and
+  // because the control it contains is the only thing in it.
+  &__dropzone {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    align-items: center;
+    width: 100%;
+    padding: tokens.$dropzone-padding styles.spacing(16);
+    background: styles.$color-surface-secondary;
+    border: 1px dashed styles.$color-border-secondary;
+    border-radius: styles.$radius-xs;
+    text-align: center;
+
+    &--closed {
+      border-style: solid;
+    }
+  }
+
+  &__dropzone-title {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+  }
+
+  // The constraint line is the input's own label, so it is bound to the control
+  // rather than floating above it as decoration.
+  &__field-label {
+    font-size: tokens.$font-size-micro;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  // The native input is visually replaced by the styled button beside it, but it
+  // stays in the accessibility tree and in the tab order: clipping it rather
+  // than hiding it is what keeps a keyboard user able to reach the file picker.
+  &__file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  &__uploading {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(12);
+    align-items: center;
+    width: 100%;
+  }
+
+  &__uploading-percent {
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__uploading-name {
+    flex: 1 1 12ch;
+    min-width: 0;
+    font-size: tokens.$font-size-micro;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__evidence-list {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$stack-gap-tight;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__evidence-item {
+    display: flex;
+    gap: tokens.$evidence-gap;
+    align-items: flex-start;
+    padding: styles.spacing(12) styles.spacing(16);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-xs;
+  }
+
+  // A decorative placeholder, never a thumbnail: no customer operation serves
+  // evidence bytes, so there is nothing to render here and a frame that looked
+  // like an image would promise one.
+  &__evidence-glyph {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: tokens.$evidence-glyph;
+    height: tokens.$evidence-glyph;
+    background: styles.$color-surface-secondary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-xs;
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__evidence-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  &__evidence-meta {
+    font-size: tokens.$font-size-micro;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__evidence-note {
+    font-size: styles.$font-size-caption;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__evidence-error {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  @media (max-width: tokens.$bp-shell-wide) {
+    &__dropzone {
+      padding: styles.spacing(20) styles.spacing(12);
+    }
+
+    &__evidence-glyph {
+      width: tokens.$evidence-glyph-mobile;
+      height: tokens.$evidence-glyph-mobile;
+    }
+
+    &__quota {
+      margin-left: 0;
+    }
+  }
+}

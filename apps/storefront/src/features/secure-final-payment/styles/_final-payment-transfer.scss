@@ -1,0 +1,271 @@
+// Secure final payment — the transfer band, the amount hero, the QR card, the
+// copy controls and the completion stepper.
+//
+// The money half of the route. Everything here is either a figure the customer
+// must read exactly or a control that copies one, plus the four-step progress
+// the settled lane draws.
+
+@use '@embroidery/styles' as styles;
+@use './final-payment-tokens' as tokens;
+
+.secure-final-payment {
+  // The approved two-column band (816:19): instructions on the left, the QR card
+  // on the right. Grid rather than flex because the QR column has a fixed
+  // approved width and the instructions column takes what is left, which is one
+  // declaration in grid and three in flex.
+  &__transfer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) tokens.$qr-card-width;
+    gap: tokens.$transfer-gap;
+    align-items: start;
+    width: 100%;
+  }
+
+  &__transfer-main,
+  &__transfer-aside {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$stack-gap;
+    min-width: 0;
+  }
+
+  // The exact balance, at the size the frame makes it (816:25). It is the visual
+  // anchor of the page and the one figure the customer must transfer.
+  &__hero {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    align-items: flex-start;
+    width: 100%;
+    padding: styles.spacing(16);
+    background: styles.$color-surface-secondary;
+    border: 1.5px solid styles.$color-action-primary;
+    border-radius: styles.$radius-xs;
+  }
+
+  &__hero-value {
+    margin: 0;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__hero-number {
+    font-size: tokens.$font-size-hero-amount;
+    font-weight: styles.$font-weight-bold;
+  }
+
+  &__hero-currency {
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-secondary;
+  }
+
+  // The same figure on the pre-attempt card (816:257), one step smaller because
+  // no instructions surround it yet.
+  &__highlight {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    align-items: flex-start;
+    width: 100%;
+    padding: styles.spacing(16);
+    background: styles.$color-surface-secondary;
+    border: 1.5px solid styles.$color-action-primary;
+    border-radius: styles.$radius-xs;
+  }
+
+  &__highlight-label {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+    letter-spacing: 0.04em;
+    color: styles.$color-text-secondary;
+  }
+
+  &__highlight-value {
+    margin: 0;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__highlight-number {
+    font-size: tokens.$font-size-highlight-amount;
+    font-weight: styles.$font-weight-bold;
+  }
+
+  &__highlight-currency {
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-secondary;
+  }
+
+  // The account number and the transfer reference are read character by
+  // character against a banking app, so both are set in the monospace face and
+  // neither is ever letter-spaced, folded or re-grouped.
+  &__account,
+  &__reference {
+    font-family: styles.$font-family-mono;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__copy {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &__copy-button {
+    display: inline-flex;
+    gap: styles.spacing(4);
+    align-items: center;
+    justify-content: center;
+    min-height: tokens.$touch-target-min;
+    padding: styles.spacing(8) styles.spacing(12);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-xs;
+    font-family: inherit;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-primary;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &__copy-symbol {
+    font-weight: styles.$font-weight-bold;
+  }
+
+  // The QR card (816:63). A shortcut, never the channel — every value it encodes
+  // is printed as readable text in the column beside it, so this panel may fail
+  // entirely without costing the customer the ability to pay.
+  &__qr {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$card-gap;
+    align-items: flex-start;
+    width: 100%;
+    padding: tokens.$card-padding;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-md;
+  }
+
+  &__qr-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: tokens.$qr-module-box;
+    padding: tokens.$qr-frame-padding;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-xs;
+  }
+
+  &__qr-image {
+    width: tokens.$qr-module-box;
+    max-width: 100%;
+    height: auto;
+  }
+
+  &__qr-placeholder {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    align-items: center;
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+    text-align: center;
+  }
+
+  // The four-step completion progress (818:54). A stepper, not a timeline: no
+  // timestamp, no carrier, no estimate and nothing that ticks.
+  &__stepper {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: tokens.$step-gap;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__step {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    align-items: center;
+    padding: styles.spacing(12) styles.spacing(4);
+    border-top: 2px solid styles.$color-border-primary;
+    text-align: center;
+
+    &--done {
+      border-top-color: styles.$color-status-success;
+    }
+  }
+
+  &__step-symbol {
+    font-size: styles.$font-size-body-m;
+    line-height: 1;
+    color: styles.$color-text-tertiary;
+
+    .secure-final-payment__step--done & {
+      color: styles.$color-status-success;
+    }
+  }
+
+  &__step-label {
+    font-size: styles.$font-size-caption;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+
+    .secure-final-payment__step--done & {
+      font-weight: styles.$font-weight-semibold;
+      color: styles.$color-text-primary;
+    }
+  }
+
+  @media (max-width: tokens.$bp-shell-wide) {
+    // One column below the shell breakpoint (819:4). The QR follows the
+    // instructions rather than sitting beside them, and never shrinks below a
+    // scannable size.
+    &__transfer {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    &__qr {
+      padding: tokens.$card-padding-mobile;
+    }
+
+    &__qr-frame {
+      min-height: tokens.$qr-module-box-mobile;
+    }
+
+    &__qr-image {
+      width: tokens.$qr-module-box-mobile;
+    }
+
+    &__hero-number {
+      font-size: tokens.$font-size-hero-amount-mobile;
+    }
+
+    // Four steps cannot hold a legible label each at 390px, so they become two
+    // rows of two rather than four columns of truncated text.
+    &__stepper {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    &__copy-button {
+      width: 100%;
+    }
+  }
+}
