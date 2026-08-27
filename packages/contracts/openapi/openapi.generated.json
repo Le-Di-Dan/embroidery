@@ -1057,6 +1057,63 @@
         ],
         "type": "object"
       },
+      "AdminOrderCompletionResponse": {
+        "properties": {
+          "code": {
+            "description": "The order code, as frozen at creation.",
+            "example": "ORD-2K4M8P1QZT",
+            "type": "string"
+          },
+          "fromStatus": {
+            "description": "The LC-14 state the order held when the transaction began.",
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "DELIVERED",
+            "type": "string"
+          },
+          "orderId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "description": "The LC-14 state the order now holds — terminal.",
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "COMPLETED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "code",
+          "fromStatus",
+          "status"
+        ],
+        "type": "object"
+      },
       "AdminOrderDetailResponse": {
         "properties": {
           "acceptedQuotationVersionId": {
@@ -1147,6 +1204,86 @@
           "createdAt",
           "updatedAt",
           "items"
+        ],
+        "type": "object"
+      },
+      "AdminOrderDispatchResponse": {
+        "properties": {
+          "code": {
+            "description": "The order code, as frozen at creation.",
+            "example": "ORD-2K4M8P1QZT",
+            "type": "string"
+          },
+          "dispatchedAt": {
+            "description": "The canonical dispatch instant. The same value stamps the shipping snapshot and the order’s delivered timestamp, so the three cannot disagree.",
+            "example": "2026-03-04T09:15:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "fromStatus": {
+            "description": "The LC-14 state the order held when the transaction began.",
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "READY_FOR_DELIVERY",
+            "type": "string"
+          },
+          "frozenAt": {
+            "description": "When the shipping detail became immutable (GRD-017).",
+            "example": "2026-03-04T09:15:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "orderId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "format": "uuid",
+            "type": "string"
+          },
+          "shippingStatus": {
+            "description": "The shipping detail’s LC-19 state, read back from the committed row rather than assumed.",
+            "enum": [
+              "FROZEN"
+            ],
+            "example": "FROZEN",
+            "type": "string"
+          },
+          "status": {
+            "description": "The LC-14 state the order now holds.",
+            "enum": [
+              "AWAITING_DEPOSIT",
+              "DEPOSIT_PAID",
+              "IN_PRODUCTION",
+              "PRODUCTION_COMPLETED",
+              "AWAITING_FINAL_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "DELIVERED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "code",
+          "fromStatus",
+          "status",
+          "dispatchedAt",
+          "shippingStatus",
+          "frozenAt"
         ],
         "type": "object"
       },
@@ -15044,6 +15181,408 @@
           }
         ],
         "summary": "Get one order with its frozen lines",
+        "tags": [
+          "adminOrder"
+        ]
+      }
+    },
+    "/api/admin/orders/{orderId}/completion": {
+      "post": {
+        "description": "Moves the order from DELIVERED to COMPLETED (TR-LC14-08), the terminal state of the order lifecycle. GRD-018 is the whole guard: the order must already be DELIVERED, so an order still awaiting dispatch is refused.\n\nIt records the move and nothing else. It does not freeze shipping again or create a second snapshot — the freeze happened at dispatch and there is exactly one snapshot per order. It changes no payment obligation, no shipping detail and no inventory, contacts no carrier and sends no customer message.\n\nIt is deliberately separate from dispatch: an order sits in DELIVERED for as long as delivery takes, and COMPLETED has no successor to walk back from.\n\nReplaying it after it has committed is refused, and appends no second transition.",
+        "operationId": "adminOrder_complete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminOrderCompletionResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed completion.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed order id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such order.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "ORDER_INVALID_TRANSITION — the order is not DELIVERED, which includes an order already completed. Nothing was committed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Complete an order that has been delivered",
+        "tags": [
+          "adminOrder"
+        ]
+      }
+    },
+    "/api/admin/orders/{orderId}/dispatch": {
+      "post": {
+        "description": "Moves the order from READY_FOR_DELIVERY to DELIVERED (TR-LC14-07) and, in the **same** transaction, freezes its shipping details and copies them into the order’s one shipping snapshot. All of it commits together or none of it does: there is no committed state in which the order is dispatched and its address is still editable, and none in which a snapshot exists with no transition explaining it.\n\nTwo canonical guards are evaluated inside that transaction before anything is written. GRD-017 requires a shipping detail that is complete enough to freeze — it must exist, still be editable, and carry a shipping fee, because the snapshot records an amount and a freeze with no fee would record one nobody agreed to. **A carrier name and a tracking code are not required**: they are static internal notes, copied into the snapshot when present. GRD-016 requires the order’s live REMAINING obligation to be SATISFIED — the lifecycle state is not taken as proof of it, because a shipping-fee recalculation can replace a satisfied balance with a new pending one without moving the order.\n\nAfter it commits, the shipping details are immutable: the Admin shipping write refuses them and a database trigger rejects any mutation. Corrections after this point are recorded as compensating events, never as edits.\n\nIt contacts no carrier, polls no courier, opens no tracking lifecycle and sends no customer message. It changes no payment obligation, attempt or reconciliation — the balance is read, not touched — and it does not complete the order, which is a separate command.\n\nReplaying it after it has committed is refused: TR-LC14-07 is legal from one state only, so a retry finds the order already DELIVERED and creates no second snapshot and no second transition.",
+        "operationId": "adminOrder_dispatch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminOrderDispatchResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The committed dispatch, with the freeze it produced.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed order id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such order.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "ORDER_INVALID_TRANSITION — the order is not READY_FOR_DELIVERY, which includes an order already dispatched; ORDER_SHIPPING_NOT_READY — GRD-017, the shipping details are missing or incomplete; ORDER_REMAINING_PAYMENT_UNSATISFIED — GRD-016, the balance is not settled; ORDER_REMAINING_PAYMENT_MISSING — the order has no live remaining obligation at all. Nothing was committed in any of the four cases.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Dispatch an order that is ready for delivery, freezing its shipping details",
         "tags": [
           "adminOrder"
         ]

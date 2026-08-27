@@ -41,7 +41,9 @@ import type {
   AdminNotificationIntentList200,
   AdminNotificationIntentListParams,
   AdminNotificationIntentReplay200,
+  AdminOrderComplete200,
   AdminOrderDetail200,
+  AdminOrderDispatch200,
   AdminOrderList200,
   AdminOrderListParams,
   AdminOrderPaymentRead200,
@@ -663,6 +665,48 @@ export const adminOrderDetail = (
 ) => {
   return apiRequest<AdminOrderDetail200>(
     { url: `/api/admin/orders/${orderId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Moves the order from DELIVERED to COMPLETED (TR-LC14-08), the terminal state of the order lifecycle. GRD-018 is the whole guard: the order must already be DELIVERED, so an order still awaiting dispatch is refused.
+ *
+ * It records the move and nothing else. It does not freeze shipping again or create a second snapshot — the freeze happened at dispatch and there is exactly one snapshot per order. It changes no payment obligation, no shipping detail and no inventory, contacts no carrier and sends no customer message.
+ *
+ * It is deliberately separate from dispatch: an order sits in DELIVERED for as long as delivery takes, and COMPLETED has no successor to walk back from.
+ *
+ * Replaying it after it has committed is refused, and appends no second transition.
+ * @summary Complete an order that has been delivered
+ */
+export const adminOrderComplete = (
+  orderId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminOrderComplete200>>,
+) => {
+  return apiRequest<AdminOrderComplete200>(
+    { url: `/api/admin/orders/${orderId}/completion`, method: 'POST' },
+    options,
+  );
+};
+
+/**
+ * Moves the order from READY_FOR_DELIVERY to DELIVERED (TR-LC14-07) and, in the **same** transaction, freezes its shipping details and copies them into the order’s one shipping snapshot. All of it commits together or none of it does: there is no committed state in which the order is dispatched and its address is still editable, and none in which a snapshot exists with no transition explaining it.
+ *
+ * Two canonical guards are evaluated inside that transaction before anything is written. GRD-017 requires a shipping detail that is complete enough to freeze — it must exist, still be editable, and carry a shipping fee, because the snapshot records an amount and a freeze with no fee would record one nobody agreed to. **A carrier name and a tracking code are not required**: they are static internal notes, copied into the snapshot when present. GRD-016 requires the order’s live REMAINING obligation to be SATISFIED — the lifecycle state is not taken as proof of it, because a shipping-fee recalculation can replace a satisfied balance with a new pending one without moving the order.
+ *
+ * After it commits, the shipping details are immutable: the Admin shipping write refuses them and a database trigger rejects any mutation. Corrections after this point are recorded as compensating events, never as edits.
+ *
+ * It contacts no carrier, polls no courier, opens no tracking lifecycle and sends no customer message. It changes no payment obligation, attempt or reconciliation — the balance is read, not touched — and it does not complete the order, which is a separate command.
+ *
+ * Replaying it after it has committed is refused: TR-LC14-07 is legal from one state only, so a retry finds the order already DELIVERED and creates no second snapshot and no second transition.
+ * @summary Dispatch an order that is ready for delivery, freezing its shipping details
+ */
+export const adminOrderDispatch = (
+  orderId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminOrderDispatch200>>,
+) => {
+  return apiRequest<AdminOrderDispatch200>(
+    { url: `/api/admin/orders/${orderId}/dispatch`, method: 'POST' },
     options,
   );
 };
@@ -2130,6 +2174,8 @@ export type AdminNotificationIntentReplayResult = NonNullable<
 >;
 export type AdminOrderListResult = NonNullable<Awaited<ReturnType<typeof adminOrderList>>>;
 export type AdminOrderDetailResult = NonNullable<Awaited<ReturnType<typeof adminOrderDetail>>>;
+export type AdminOrderCompleteResult = NonNullable<Awaited<ReturnType<typeof adminOrderComplete>>>;
+export type AdminOrderDispatchResult = NonNullable<Awaited<ReturnType<typeof adminOrderDispatch>>>;
 export type AdminOrderPaymentReadResult = NonNullable<
   Awaited<ReturnType<typeof adminOrderPaymentRead>>
 >;

@@ -221,14 +221,36 @@ export interface OrderRepository {
   saveShippingDetails(input: SaveShippingDetailInput): Promise<ShippingDetail>;
 
   /**
-   * Freezes shipping and snapshots it, in the dispatch transaction.
+   * Freezes shipping, snapshots it and moves the order to DELIVERED, in one
+   * transaction — LC-14 `TR-LC14-07`.
    *
    * Requires the order to be READY_FOR_DELIVERY (which GRD-016 gates on the
-   * remaining payment) and the shipping detail to be complete (GRD-017).
+   * remaining payment) and the shipping detail to be complete (GRD-017). The
+   * freeze, the snapshot and the lifecycle move commit together or not at all,
+   * so no committed state exists in which an order is dispatched and its
+   * address is still editable, or in which a snapshot has no transition
+   * explaining it.
+   *
+   * `actor` is the operator the `order_transitions` row is attributed to.
+   * `TR-LC14-07` is an **admin** move, so the Admin command passes its bound
+   * operator; it is optional only because fixtures and benchmarks that predate
+   * `APP9-B05` call this writer to *manufacture* a FROZEN detail rather than to
+   * perform a dispatch, and the `order.dispatch` system job key they fall back
+   * to is an honest description of what they are.
+   *
+   * Replay is a deterministic refusal, not a second receipt: the source-state
+   * assertion is against the locked `orders` row, so a retry after commit finds
+   * DELIVERED and writes nothing. `uq_shipping_snapshots__order` is the
+   * physical backstop behind that — one dispatch freeze per order, always.
    *
    * @requiresTransaction
    */
-  dispatch(orderId: OrderId, dispatchedAt: Date, correlationId: string): Promise<Order>;
+  dispatch(
+    orderId: OrderId,
+    dispatchedAt: Date,
+    correlationId: string,
+    actor?: RequestActor,
+  ): Promise<Order>;
 
   /**
    * The fee baseline for one order, taken under the shipping detail's own

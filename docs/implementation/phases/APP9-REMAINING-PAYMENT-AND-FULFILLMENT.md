@@ -483,8 +483,41 @@ B04   COMPLETE   (Admin editable shipping detail — GET/PUT
                   holds no ORDER_REPOSITORY and carries no shipping field.
                   3 HTTP operations, +3 OpenAPI operations against the phase
                   entry baseline, 0 migrations, 0 schema change)
-B05   NEXT
-D01   INCOMPLETE
+B05   COMPLETE   (dispatch freeze, delivery and order completion — POST
+                  /api/admin/orders/{orderId}/dispatch and POST
+                  /api/admin/orders/{orderId}/completion, adminOrder_dispatch /
+                  adminOrder_complete, Admin-only behind the APP1 guards. Two
+                  operations because they are two decisions: TR-LC14-07 records
+                  that the parcel left, TR-LC14-08 that the order is closed, and
+                  the order sits in DELIVERED between them. Neither takes a
+                  request body — the operator, the dispatch instant and every
+                  shipping fact are server-side, so none can be supplied.
+                  Dispatch composes the delivered OrderRepository.dispatch: in
+                  ONE transaction the shipping detail goes EDITABLE -> FROZEN
+                  with frozen_at set, exactly one shipping_snapshots row is
+                  written field-for-field from the authoritative pre-freeze
+                  detail, and the order moves READY_FOR_DELIVERY -> DELIVERED
+                  with one SHIPPING_FREEZE order_transitions row now carrying
+                  actor_kind ADMIN and admin_id. Lock order orders FOR UPDATE ->
+                  shipping_details FOR UPDATE -> payment_obligations, extending
+                  APP9-B04's accepted order rather than inverting it. GRD-017 is
+                  enforced as the schema's own answer — the detail must exist, be
+                  EDITABLE and carry a fee, because shipping_snapshots.fee_amount
+                  is NOT NULL; carrier_name and tracking_code are copied when
+                  present and are NEVER required. GRD-016 is checked explicitly
+                  in the dispatch transaction, as DB3_SHIPPING_FEE_AND_FREEZE_SPEC
+                  §2, the guard catalog and CC-14 all require: the live REMAINING
+                  obligation must be SATISFIED, because an APP9-B04 fee increase
+                  can leave an order READY_FOR_DELIVERY owing money. Completion
+                  is separate and writes to orders and order_transitions alone —
+                  no second freeze, no second snapshot, no payment, shipping,
+                  inventory, carrier or notification effect. Both replays are
+                  deterministic refusals under the order-row lock, backed by
+                  uq_shipping_snapshots__order. No carrier API, webhook, poll,
+                  tracking lifecycle or customer tracking route. No cancellation
+                  or refund change. 2 HTTP operations, +2 OpenAPI operations,
+                  0 migrations, 0 schema change, 0 worker change)
+D01   NEXT
 A01   INCOMPLETE
 S01   INCOMPLETE
 E01   INCOMPLETE

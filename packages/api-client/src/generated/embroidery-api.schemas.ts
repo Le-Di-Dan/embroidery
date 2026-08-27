@@ -873,6 +873,56 @@ export interface AdminNotificationIntentListResponse {
   intents: AdminNotificationIntentResponse[];
 }
 
+/**
+ * The LC-14 state the order held when the transaction began.
+ */
+export type AdminOrderCompletionResponseFromStatus =
+  (typeof AdminOrderCompletionResponseFromStatus)[keyof typeof AdminOrderCompletionResponseFromStatus];
+
+export const AdminOrderCompletionResponseFromStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The LC-14 state the order now holds — terminal.
+ */
+export type AdminOrderCompletionResponseStatus =
+  (typeof AdminOrderCompletionResponseStatus)[keyof typeof AdminOrderCompletionResponseStatus];
+
+export const AdminOrderCompletionResponseStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminOrderCompletionResponse {
+  /** The order code, as frozen at creation. */
+  code: string;
+  /** The LC-14 state the order held when the transaction began. */
+  fromStatus: AdminOrderCompletionResponseFromStatus;
+  orderId: string;
+  /** The LC-14 state the order now holds — terminal. */
+  status: AdminOrderCompletionResponseStatus;
+}
+
 export type AdminOrderDetailResponseStatus =
   (typeof AdminOrderDetailResponseStatus)[keyof typeof AdminOrderDetailResponseStatus];
 
@@ -945,6 +995,72 @@ export interface AdminOrderDetailResponse {
   /** The frozen order total, transported exactly as stored. */
   totalAmount: string;
   updatedAt: string;
+}
+
+/**
+ * The LC-14 state the order held when the transaction began.
+ */
+export type AdminOrderDispatchResponseFromStatus =
+  (typeof AdminOrderDispatchResponseFromStatus)[keyof typeof AdminOrderDispatchResponseFromStatus];
+
+export const AdminOrderDispatchResponseFromStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * The shipping detail’s LC-19 state, read back from the committed row rather than assumed.
+ */
+export type AdminOrderDispatchResponseShippingStatus =
+  (typeof AdminOrderDispatchResponseShippingStatus)[keyof typeof AdminOrderDispatchResponseShippingStatus];
+
+export const AdminOrderDispatchResponseShippingStatus = {
+  FROZEN: 'FROZEN',
+} as const;
+
+/**
+ * The LC-14 state the order now holds.
+ */
+export type AdminOrderDispatchResponseStatus =
+  (typeof AdminOrderDispatchResponseStatus)[keyof typeof AdminOrderDispatchResponseStatus];
+
+export const AdminOrderDispatchResponseStatus = {
+  AWAITING_DEPOSIT: 'AWAITING_DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT_PAID',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  PRODUCTION_COMPLETED: 'PRODUCTION_COMPLETED',
+  AWAITING_FINAL_PAYMENT: 'AWAITING_FINAL_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface AdminOrderDispatchResponse {
+  /** The order code, as frozen at creation. */
+  code: string;
+  /** The canonical dispatch instant. The same value stamps the shipping snapshot and the order’s delivered timestamp, so the three cannot disagree. */
+  dispatchedAt: string;
+  /** The LC-14 state the order held when the transaction began. */
+  fromStatus: AdminOrderDispatchResponseFromStatus;
+  /** When the shipping detail became immutable (GRD-017). */
+  frozenAt: string;
+  orderId: string;
+  /** The shipping detail’s LC-19 state, read back from the committed row rather than assumed. */
+  shippingStatus: AdminOrderDispatchResponseShippingStatus;
+  /** The LC-14 state the order now holds. */
+  status: AdminOrderDispatchResponseStatus;
 }
 
 export type AdminOrderPaymentsResponseDepositStatus =
@@ -5439,6 +5555,14 @@ export type AdminOrderList200 = ApiSuccessResponse & {
 
 export type AdminOrderDetail200 = ApiSuccessResponse & {
   data: AdminOrderDetailResponse;
+};
+
+export type AdminOrderComplete200 = ApiSuccessResponse & {
+  data: AdminOrderCompletionResponse;
+};
+
+export type AdminOrderDispatch200 = ApiSuccessResponse & {
+  data: AdminOrderDispatchResponse;
 };
 
 export type AdminOrderPaymentRead200 = ApiSuccessResponse & {

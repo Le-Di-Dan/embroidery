@@ -9,6 +9,7 @@ import { DrizzleRepository } from '../repository/drizzle-repository';
 import { OutboxEventStore } from '../platform/outbox-event-store';
 import { asc, eq } from 'drizzle-orm';
 
+import { actorColumns } from './order-transition-actor';
 import { isLegalOrderTransition } from './order-transitions';
 import type { CustomRequestId, RequestActor } from './ordering-identity';
 import type {
@@ -34,17 +35,6 @@ const { orders, orderItems, orderTransitions } = schema;
 
 const CURRENCY = 'VND';
 
-function actorColumns(actor: RequestActor) {
-  switch (actor.kind) {
-    case 'ADMIN':
-      return { actorKind: 'ADMIN', adminId: actor.adminId };
-    case 'CUSTOMER':
-      return { actorKind: 'CUSTOMER', customerId: actor.customerId, grantId: actor.grantId };
-    case 'SYSTEM':
-      return { actorKind: 'SYSTEM', systemJobKey: actor.systemJobKey };
-  }
-}
-
 @Injectable()
 export class DrizzleOrderRepository extends DrizzleRepository implements OrderRepository {
   constructor(
@@ -65,8 +55,13 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     return this.shipping.saveShippingDetails(input);
   }
 
-  dispatch(orderId: OrderId, dispatchedAt: Date, correlationId: string): Promise<Order> {
-    return this.shipping.dispatch(orderId, dispatchedAt, correlationId);
+  dispatch(
+    orderId: OrderId,
+    dispatchedAt: Date,
+    correlationId: string,
+    actor?: RequestActor,
+  ): Promise<Order> {
+    return this.shipping.dispatch(orderId, dispatchedAt, correlationId, actor);
   }
 
   lockShippingFeeBaseline(orderId: OrderId): Promise<ShippingFeeBaseline | undefined> {

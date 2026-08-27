@@ -16,7 +16,9 @@ import { DatabaseExecutor } from '../runtime/database-executor';
 import { DrizzleRepository } from '../repository/drizzle-repository';
 import { and, eq } from 'drizzle-orm';
 
+import { actorColumns } from './order-transition-actor';
 import { DISPATCHABLE_FROM } from './order-transitions';
+import type { RequestActor } from './ordering-identity';
 import type {
   AcknowledgeShippingFeeInput,
   FindShippingFeeAcknowledgementInput,
@@ -40,6 +42,18 @@ const {
 } = schema;
 
 const CURRENCY = 'VND';
+
+/**
+ * The actor a dispatch is attributed to when the caller names none.
+ *
+ * LC-14 `TR-LC14-07` is an **admin** move, so the Admin command supplies its
+ * own bound operator and this default is never what a real dispatch records.
+ * It exists for the callers that predate `APP9-B05` — fixtures and benchmarks
+ * that reach for the one delivered freeze writer to *manufacture* a FROZEN
+ * detail rather than to perform an operator's dispatch — and it keeps recording
+ * what those callers actually are: a job, not a person.
+ */
+const DISPATCH_SEED_ACTOR: RequestActor = { kind: 'SYSTEM', systemJobKey: 'order.dispatch' };
 
 @Injectable()
 export class DrizzleOrderShippingRepository extends DrizzleRepository {
@@ -139,7 +153,12 @@ export class DrizzleOrderShippingRepository extends DrizzleRepository {
     });
   }
 
-  async dispatch(orderId: OrderId, dispatchedAt: Date, correlationId: string): Promise<Order> {
+  async dispatch(
+    orderId: OrderId,
+    dispatchedAt: Date,
+    correlationId: string,
+    actor: RequestActor = DISPATCH_SEED_ACTOR,
+  ): Promise<Order> {
     return this.run('dispatch', async () => {
       const tx = this.requireTransaction('dispatch');
 
@@ -224,8 +243,7 @@ export class DrizzleOrderShippingRepository extends DrizzleRepository {
         fromStatus: DISPATCHABLE_FROM,
         toStatus: 'DELIVERED',
         eventKind: 'SHIPPING_FREEZE',
-        actorKind: 'SYSTEM',
-        systemJobKey: 'order.dispatch',
+        ...actorColumns(actor),
         correlationId,
       });
 

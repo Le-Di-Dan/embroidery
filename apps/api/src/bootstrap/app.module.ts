@@ -20,6 +20,7 @@ import { IdentityModule } from '../modules/identity/identity.module';
 import { NotificationModule } from '../modules/notification/notification.module';
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
 import { AdminOrderModule } from '../modules/order/admin-order.module';
+import { AdminOrderDeliveryModule } from '../modules/order/admin-order-delivery.module';
 import { AdminOrderLifecycleModule } from '../modules/order/admin-order-lifecycle.module';
 import { AdminOrderShippingModule } from '../modules/order/admin-order-shipping.module';
 import { CustomerShippingFeeModule } from '../modules/order/customer-shipping-fee.module';
@@ -393,6 +394,16 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // the collection segment `shipping-fee-acknowledgements` is unique across
     // every module mounted there, so no registration order can shadow a route.
     CustomerShippingFeeModule,
+    // `APP9-B05` — the two guarded Admin delivery commands (`TR-LC14-07`,
+    // `TR-LC14-08`), in a fourth Admin order module because the dispatch needs
+    // the freeze writer that neither `AdminOrderModule` (no order writer at
+    // all) nor `AdminOrderLifecycleModule` (no shipping authority) may hold.
+    // Its routes add a `dispatch` and a `completion` segment under the same
+    // `admin/orders` base path; both are POSTs at the same segment count as
+    // `transitions` but under distinct names, so Nest matches on the literal
+    // segment and no registration order can make one shadow another. It joins
+    // the one `adminOrder` domain through `CONTROLLER_DOMAIN_KEYS`.
+    AdminOrderDeliveryModule,
   ],
 })
 export class AppModule {}

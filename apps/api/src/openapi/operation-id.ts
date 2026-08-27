@@ -171,6 +171,15 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // public identifier; with it the family reads `_list`, `_detail`,
   // `_transition`, and B02's two accepted ids stay untouched.
   AdminOrderLifecycleController: 'adminOrder',
+  // `APP9-B05`. The two guarded LC-14 delivery commands join the same published
+  // `adminOrder` domain. They are a third class because the dispatch needs the
+  // freeze writer, which `APP7-B02`'s read module holds none of and `APP9-B01`'s
+  // lifecycle module was accepted on not holding either. Without this entry they
+  // would mint `adminOrderDelivery_dispatch` and `adminOrderDelivery_complete`,
+  // letting that composition decision name two public identifiers; with it the
+  // family reads `_list`, `_detail`, `_transition`, `_dispatch`, `_complete`,
+  // and the three accepted ids stay untouched.
+  AdminOrderDeliveryController: 'adminOrder',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */
