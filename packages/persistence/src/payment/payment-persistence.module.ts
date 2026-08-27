@@ -31,6 +31,7 @@ import { DrizzleDepositEligibilityAdapter } from './drizzle-deposit-eligibility.
 import { DrizzlePaymentObligationRepository } from './drizzle-payment-obligation.repository';
 import { PaymentAttemptRepository } from './payment-attempt.repository';
 import { PaymentEvidenceRepository } from './payment-evidence.repository';
+import { PaymentRecalculationRepository } from './payment-recalculation.repository';
 import { PaymentTransferEvidenceRepository } from './payment-transfer-evidence.repository';
 import { PAYMENT_OBLIGATION_REPOSITORY } from './payment-obligation.repository';
 
@@ -39,6 +40,7 @@ import { PAYMENT_OBLIGATION_REPOSITORY } from './payment-obligation.repository';
   providers: [
     PaymentAttemptRepository,
     PaymentEvidenceRepository,
+    PaymentRecalculationRepository,
     PaymentTransferEvidenceRepository,
     { provide: PAYMENT_OBLIGATION_REPOSITORY, useClass: DrizzlePaymentObligationRepository },
     { provide: DEPOSIT_ELIGIBILITY_PORT, useClass: DrizzleDepositEligibilityAdapter },

@@ -100,6 +100,24 @@ export interface OpenAttemptInput {
   readonly expiresAt?: Date | undefined;
 }
 
+/**
+ * One recorded recalculation of a live obligation (`TR-LC15-04`, ADR-DB3-003 r7).
+ *
+ * The successor's amount is stated by the caller and never derived here: what a
+ * shipping-fee change does to a remaining balance is business authority
+ * (`DB3_SHIPPING_FEE_AND_FREEZE_SPEC.md` §1.2), not persistence. This contract's
+ * job is that the two rows move together and that the chain says which replaced
+ * which.
+ */
+export interface RecalculateObligationInput {
+  /** The live obligation being replaced. Must still be `PENDING`. */
+  readonly id: ObligationId;
+  /** The successor's id, minted by the caller so it can be reported back. */
+  readonly successorId: ObligationId;
+  /** The successor's amount, already computed under the caller's own rule. */
+  readonly amount: string;
+}
+
 export interface RecordProviderEventInput {
   readonly providerKey: string;
   /** The provider's own event id — the idempotency arbiter (INV-07). */
@@ -157,6 +175,31 @@ export interface PaymentObligationRepository {
    * @requiresTransaction
    */
   satisfy(id: ObligationId, attemptId: AttemptId, at: Date): Promise<PaymentObligation>;
+
+  /**
+   * Replaces one live obligation with a successor carrying a new amount
+   * (`TR-LC15-04`, `APP9-B04`).
+   *
+   * The **only** writer that produces `SUPERSEDED`, and the only one that sets
+   * `superseded_by_obligation_id`. Both rows move in one statement pair inside
+   * the caller's transaction: the predecessor becomes `SUPERSEDED` pointing at
+   * the successor, and the successor is created `PENDING` carrying forward the
+   * predecessor's `source_quotation_version_id` — the amount's provenance does
+   * not change because the shipping fee did, and re-deriving it from a live
+   * quotation would make a mutable row the origin of a frozen one.
+   *
+   * The predecessor is locked and re-read `PENDING` inside this call, exactly as
+   * {@link satisfy} does. `SATISFIED` is terminal in LC-15 and `TR-LC15-04` is
+   * `PENDING -> SUPERSEDED` alone, so an obligation the customer has already
+   * paid is refused rather than reopened — there is no canonical path that turns
+   * settled money back into a balance.
+   *
+   * The amount is **never mutated in place**: the predecessor's row keeps the
+   * figure it was payable at, which is what makes the chain auditable.
+   *
+   * @requiresTransaction
+   */
+  recalculate(input: RecalculateObligationInput): Promise<PaymentObligation>;
 
   /** @requiresTransaction */
   cancel(id: ObligationId): Promise<void>;

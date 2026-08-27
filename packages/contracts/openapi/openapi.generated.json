@@ -23,6 +23,27 @@
         ],
         "type": "object"
       },
+      "AcknowledgeShippingFeeBody": {
+        "additionalProperties": false,
+        "description": "Records the customer’s acceptance of one exact shipping-fee increase on the order their secure link opens. The order, customer, current fee, currency, grant and step-up evidence are all resolved by the server; none of them is accepted here.",
+        "properties": {
+          "newFeeAmount": {
+            "description": "The exact new shipping fee the customer is accepting, in VND as a decimal string (whole đồng). It must be higher than the fee the order currently carries — this command records acceptance of an increase and nothing else. The fee being moved from is the server’s, never the caller’s.",
+            "pattern": "^\\d{1,12}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "newFeeAmount"
+        ],
+        "type": "object"
+      },
       "AddQuotationVersionBody": {
         "additionalProperties": false,
         "properties": {
@@ -3351,6 +3372,150 @@
           "scopeKind",
           "status",
           "expiresAt"
+        ],
+        "type": "object"
+      },
+      "AdminShippingDetailResponse": {
+        "properties": {
+          "addressLine": {
+            "example": "12 Nguyễn Huệ",
+            "type": "string"
+          },
+          "carrierName": {
+            "description": "An internal note of who is carrying the parcel. Not a carrier integration: nothing is called, polled or subscribed to, and no delivery state is derived from it.",
+            "example": "Giao Hàng Nhanh",
+            "nullable": true,
+            "type": "object"
+          },
+          "countryCode": {
+            "description": "Defaulted on the row; there is no cross-border fulfillment in the MVP.",
+            "example": "VN",
+            "type": "string"
+          },
+          "district": {
+            "example": "Quận 1",
+            "nullable": true,
+            "type": "object"
+          },
+          "feeAmount": {
+            "description": "The effective shipping fee, exactly as `numeric(14,2)` stores it. A string, never a JSON number. Absent only on a detail saved before a fee was set.",
+            "example": "50000.00",
+            "nullable": true,
+            "type": "object"
+          },
+          "frozenAt": {
+            "description": "When dispatch froze the detail. Absent while it is still editable.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "province": {
+            "example": "TP. Hồ Chí Minh",
+            "type": "string"
+          },
+          "recipientName": {
+            "example": "Nguyễn Thị Mai",
+            "type": "string"
+          },
+          "recipientPhone": {
+            "description": "The delivery contact for this order, as stored. Not the customer profile.",
+            "example": "0901234567",
+            "type": "string"
+          },
+          "status": {
+            "description": "LC-19. `FROZEN` means dispatch has already snapshotted this detail (GRD-017) and no further edit is accepted.",
+            "enum": [
+              "EDITABLE",
+              "FROZEN"
+            ],
+            "example": "EDITABLE",
+            "type": "string"
+          },
+          "trackingCode": {
+            "description": "An internal reference an operator typed. There is no live tracking lookup.",
+            "example": "GHN123456789",
+            "nullable": true,
+            "type": "object"
+          },
+          "ward": {
+            "example": "Phường Bến Nghé",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "recipientName",
+          "recipientPhone",
+          "addressLine",
+          "province",
+          "countryCode",
+          "status"
+        ],
+        "type": "object"
+      },
+      "AdminShippingDetailSavedResponse": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/AdminShippingDetailResponse"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/AdminShippingFeeOutcomeResponse"
+          },
+          "orderId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "detail",
+          "fee"
+        ],
+        "type": "object"
+      },
+      "AdminShippingFeeOutcomeResponse": {
+        "properties": {
+          "acknowledged": {
+            "description": "Whether this change required and recorded the customer’s acknowledgement. True only for an increase; a decrease needs none (DB3 §1.2).",
+            "example": false,
+            "type": "boolean"
+          },
+          "changed": {
+            "description": "Whether the effective fee moved. When false, no payment record was touched.",
+            "example": false,
+            "type": "boolean"
+          },
+          "previousFeeAmount": {
+            "description": "The fee this write was measured against: the stored one, or — before any fee had been stored — the accepted quotation version’s frozen shipping fee.",
+            "example": "50000.00",
+            "type": "string"
+          },
+          "remainingAmount": {
+            "description": "The successor’s amount: the previous live amount moved by the fee difference.",
+            "example": "1815000.00",
+            "nullable": true,
+            "type": "object"
+          },
+          "remainingObligationId": {
+            "description": "The successor REMAINING obligation, now the one live payable authority.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6082",
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "supersededObligationId": {
+            "description": "The REMAINING obligation this change marked SUPERSEDED. Its amount was **not** edited; it keeps the figure it was payable at.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6082",
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "changed",
+          "previousFeeAmount",
+          "acknowledged"
         ],
         "type": "object"
       },
@@ -8469,6 +8634,63 @@
         ],
         "type": "object"
       },
+      "SaveShippingDetailBody": {
+        "additionalProperties": false,
+        "properties": {
+          "addressLine": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "carrierName": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "district": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "feeAmount": {
+            "pattern": "^\\d{1,12}(?:\\.\\d{1,2})?$",
+            "type": "string"
+          },
+          "province": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "recipientName": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "recipientPhone": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string"
+          },
+          "trackingCode": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "ward": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipientName",
+          "recipientPhone",
+          "addressLine",
+          "province",
+          "feeAmount"
+        ],
+        "type": "object"
+      },
       "SecureLinkResolutionResponse": {
         "properties": {
           "customRequestId": {
@@ -8556,6 +8778,48 @@
           "line"
         ],
         "type": "string"
+      },
+      "ShippingFeeAcknowledgedResponse": {
+        "properties": {
+          "acknowledgedAt": {
+            "example": "2026-08-27T09:15:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "currencyCode": {
+            "example": "VND",
+            "type": "string"
+          },
+          "newFeeAmount": {
+            "description": "The fee the customer accepted.",
+            "example": "80000.00",
+            "type": "string"
+          },
+          "orderCode": {
+            "description": "The order this acknowledgement was recorded against.",
+            "example": "DH-2026-000128",
+            "type": "string"
+          },
+          "previousFeeAmount": {
+            "description": "The fee the order carried when the decision was made, derived by the server. An acknowledgement only authorises a change from this exact figure.",
+            "example": "50000.00",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "True when this exact decision had already been recorded and the call wrote nothing. Repeating the confirmation never creates a second piece of evidence.",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "orderCode",
+          "previousFeeAmount",
+          "newFeeAmount",
+          "currencyCode",
+          "acknowledgedAt",
+          "replayed"
+        ],
+        "type": "object"
       },
       "StaffLoginRequest": {
         "properties": {
@@ -15173,6 +15437,395 @@
         "summary": "Create the production job for one order",
         "tags": [
           "adminProductionJob"
+        ]
+      }
+    },
+    "/api/admin/orders/{orderId}/shipping-detail": {
+      "get": {
+        "description": "Returns the order’s own shipping record (`shipping_details`), which is the authoritative delivery destination for this order. It is never derived from the customer profile, a contact point or an address book: the recipient may legitimately differ from the customer, and a later profile edit must not rewrite where an order was sent.\n\nThe read stays available **after** dispatch has frozen the detail, and reports that through `status` and `frozenAt`. Only the write is restricted to an editable detail.\n\n`carrierName` and `trackingCode` are internal strings an operator recorded. There is no carrier integration behind them — nothing is called, polled or subscribed to, and no delivery state is derived from them.",
+        "operationId": "adminOrderShipping_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminShippingDetailResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The stored shipping detail.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed order id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such order, or the order has no shipping detail yet.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Read the shipping detail of one order",
+        "tags": [
+          "adminOrderShipping"
+        ]
+      },
+      "put": {
+        "description": "Saves the order’s shipping record while it is still `EDITABLE`, creating it if the order has none yet. One transaction commits everything below together or nothing at all.\n\nA detail that is already `FROZEN` is refused: dispatch has snapshotted it, and the address an order was shipped to is evidence rather than a field. This operation never dispatches, freezes, thaws, creates a shipping snapshot, moves the order or completes it — the detail is still `EDITABLE` when the call returns.\n\n**The shipping fee is money.** If the effective fee is unchanged, the shipping record changes and nothing in the payment record is touched: no obligation is superseded, no acknowledgement is recorded and no payment attempt is affected. If the fee changes, the live REMAINING obligation is **recalculated** the canonical way — it is marked SUPERSEDED, exactly one successor is created carrying the previous live amount moved by the fee difference, and the two are linked. The old obligation’s amount is never edited in place, and the deposit is never touched or recomputed.\n\nA fee **increase** additionally requires the customer’s acknowledgement, and the evidence is resolved from the order’s own chain — an active in-scope secure grant on this order’s request, plus a fresh verified step-up by that customer. It cannot be asserted in the body. Without it the whole call is refused and nothing is written. A decrease is in the customer’s favour and needs none.\n\nA fee change is refused outright once the remaining payment has been settled: there is no path that turns paid money back into a payable balance. Non-fee edits on such an order still succeed.\n\nReplaying the same request is safe. The second call measures the fee against what the first one stored, finds no change, and records no second acknowledgement and no second successor obligation.",
+        "operationId": "adminOrderShipping_save",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveShippingDetailBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminShippingDetailSavedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The saved detail, and what the fee change did.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed order id or body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such order.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The detail is frozen; or a fee change was asked for and the order has no live remaining obligation, that obligation is already settled, the customer’s acknowledgement is missing, or the resulting balance would not be a valid amount. Nothing was committed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Only application/json is accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Create or update the shipping detail of one order, before dispatch",
+        "tags": [
+          "adminOrderShipping"
         ]
       }
     },
@@ -26200,6 +26853,231 @@
         "summary": "Download the bank-transfer QR for the final payment a secure link opens",
         "tags": [
           "publicOrderFinalPayment"
+        ]
+      }
+    },
+    "/api/public/orders/shipping-fee-acknowledgements": {
+      "post": {
+        "description": "Records the customer’s decision to accept a specific higher shipping fee. The order, the customer, the fee currently in force, the currency, the grant and the step-up evidence are all resolved by the server from the secure link — only the new fee being accepted is taken from the caller. Inside one transaction the grant is re-checked under its row lock, the shipping detail is locked and must still be editable, the fee must be a genuine increase over the one the order carries, and a recent re-verification of the customer’s own contact is required. Exactly one immutable acknowledgement is appended. This changes nothing else: the shipping fee is not updated, the remaining balance is not recalculated, no payment is created and the order does not move — the operator applies the fee afterwards, and can only apply the exact increase acknowledged here. Repeating the same confirmation replays it and writes no second record.",
+        "operationId": "publicOrderShippingFee_acknowledge",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcknowledgeShippingFeeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ShippingFeeAcknowledgedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The decision this call recorded, or a replay of an identical earlier one.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body, unknown field, or a fee that is not a valid VND amount.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "REVERIFICATION_REQUIRED — the link is live, but no recent contact re-verification stands for this customer. Resolved by completing a STEP_UP verification and calling again; it is not a statement about the link.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no reachable order. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for another target, or the order has not been created yet.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SHIPPING_FEE_NOT_INCREASED when the submitted fee is not higher than the fee the order currently carries — including the case where that fee has moved since the screen was rendered, because the baseline is always the server’s; SHIPPING_FEE_NOT_ADJUSTABLE when the shipping detail is already frozen at dispatch and no fee change can be applied to this order at all.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "ACKNOWLEDGEMENT_POLICY_UNAVAILABLE — secure-link resolution or the step-up policy is not usable. It discloses no configuration internal.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Accept one exact shipping-fee increase on the order a secure link opens",
+        "tags": [
+          "publicOrderShippingFee"
         ]
       }
     },

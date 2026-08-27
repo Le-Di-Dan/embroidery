@@ -19,16 +19,20 @@ import { and, eq } from 'drizzle-orm';
 import { DISPATCHABLE_FROM } from './order-transitions';
 import type {
   AcknowledgeShippingFeeInput,
+  FindShippingFeeAcknowledgementInput,
   Order,
   OrderId,
   SaveShippingDetailInput,
   ShippingDetail,
+  ShippingFeeAcknowledgement,
+  ShippingFeeBaseline,
 } from './order.repository';
-import { toOrder, toShippingDetail } from './order-row.mapper';
+import { toOrder, toShippingDetail, toShippingFeeAcknowledgement } from './order-row.mapper';
 
 const {
   orders,
   orderTransitions,
+  quotationVersions,
   shippingDetails,
   shippingSnapshots,
   shippingFeeAcknowledgements,
@@ -94,6 +98,44 @@ export class DrizzleOrderShippingRepository extends DrizzleRepository {
         );
       }
       return toShippingDetail(row);
+    });
+  }
+
+  async lockShippingFeeBaseline(orderId: OrderId): Promise<ShippingFeeBaseline | undefined> {
+    return this.run('lockShippingFeeBaseline', async () => {
+      const tx = this.requireTransaction('lockShippingFeeBaseline');
+
+      // The detail first, and locked: it is the row every competing pre-freeze
+      // write contends on, so taking it here fixes the lock order as
+      // `shipping_details` -> `payment_obligations` for the whole recalculation.
+      // An order with no detail yet locks nothing — there is no row to lock —
+      // and the live-obligation arbiter
+      // (`uq_payment_obligations__order_kind__live`) is what serialises two
+      // concurrent *first* writes that both change the fee.
+      const [detail] = await tx
+        .select()
+        .from(shippingDetails)
+        .where(eq(shippingDetails.orderId, orderId))
+        .limit(1)
+        .for('update');
+
+      // The quoted fee comes from the order's own accepted-version pointer, not
+      // from a caller-supplied id: `orders.accepted_quotation_version_id` is
+      // frozen at creation and the join is what makes the baseline this order's.
+      const [quoted] = await tx
+        .select({ shippingFeeAmount: quotationVersions.shippingFeeAmount })
+        .from(orders)
+        .innerJoin(quotationVersions, eq(orders.acceptedQuotationVersionId, quotationVersions.id))
+        .where(eq(orders.id, orderId))
+        .limit(1);
+
+      if (quoted === undefined) {
+        return undefined;
+      }
+      return {
+        detail: detail === undefined ? undefined : toShippingDetail(detail),
+        quotedFeeAmount: quoted.shippingFeeAmount,
+      };
     });
   }
 
@@ -194,17 +236,57 @@ export class DrizzleOrderShippingRepository extends DrizzleRepository {
     });
   }
 
-  async acknowledgeShippingFee(input: AcknowledgeShippingFeeInput): Promise<void> {
+  async acknowledgeShippingFee(
+    input: AcknowledgeShippingFeeInput,
+  ): Promise<ShippingFeeAcknowledgement> {
     return this.run('acknowledgeShippingFee', async () => {
-      await this.db.insert(shippingFeeAcknowledgements).values({
-        orderId: input.orderId,
-        previousFeeAmount: input.previousFeeAmount,
-        newFeeAmount: input.newFeeAmount,
-        currencyCode: CURRENCY,
-        grantId: input.grantId,
-        stepUpChallengeId: input.stepUpChallengeId,
-        acknowledgedAt: input.acknowledgedAt,
-      });
+      const [row] = await this.db
+        .insert(shippingFeeAcknowledgements)
+        .values({
+          orderId: input.orderId,
+          previousFeeAmount: input.previousFeeAmount,
+          newFeeAmount: input.newFeeAmount,
+          currencyCode: CURRENCY,
+          grantId: input.grantId,
+          stepUpChallengeId: input.stepUpChallengeId,
+          acknowledgedAt: input.acknowledgedAt,
+        })
+        .returning();
+
+      if (row === undefined) {
+        throw guardViolationError(
+          'OrderRepository.acknowledgeShippingFee',
+          'ACKNOWLEDGEMENT_NOT_CREATED',
+          'Could not record the shipping-fee acknowledgement.',
+        );
+      }
+      return toShippingFeeAcknowledgement(row);
+    });
+  }
+
+  async findShippingFeeAcknowledgement(
+    input: FindShippingFeeAcknowledgementInput,
+  ): Promise<ShippingFeeAcknowledgement | undefined> {
+    return this.run('findShippingFeeAcknowledgement', async () => {
+      // All three predicates, always. The fee columns are `numeric(14,2)`, so
+      // the comparison happens in Postgres at the column's own scale — a stored
+      // `50000.00` and a supplied `50000.00` are one value, and no JS number
+      // is involved on either side.
+      const [row] = await this.db
+        .select()
+        .from(shippingFeeAcknowledgements)
+        .where(
+          and(
+            eq(shippingFeeAcknowledgements.orderId, input.orderId),
+            eq(shippingFeeAcknowledgements.previousFeeAmount, input.previousFeeAmount),
+            eq(shippingFeeAcknowledgements.newFeeAmount, input.newFeeAmount),
+            eq(shippingFeeAcknowledgements.currencyCode, CURRENCY),
+          ),
+        )
+        .orderBy(shippingFeeAcknowledgements.id)
+        .limit(1);
+
+      return row === undefined ? undefined : toShippingFeeAcknowledgement(row);
     });
   }
 

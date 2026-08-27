@@ -111,8 +111,11 @@ export type {
   OrderItem,
   OrderRepository,
   OrderTransition,
+  FindShippingFeeAcknowledgementInput,
   SaveShippingDetailInput,
   ShippingDetail,
+  ShippingFeeAcknowledgement,
+  ShippingFeeBaseline,
   TransitionOrderInput,
 } from './order/order.repository';
 export { ORDER_REPOSITORY } from './order/order.repository';
@@ -132,6 +135,7 @@ export type {
   PaymentObligation,
   PaymentObligationRepository,
   ProviderEventOutcome,
+  RecalculateObligationInput,
   RecordProviderEventInput,
   Refund,
   RefundId,

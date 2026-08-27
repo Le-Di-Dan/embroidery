@@ -276,7 +276,7 @@ are not added, and each row's authority boundary is locked in
 | 4 | `APP9-B02` | Customer remaining-payment surface: read, QR, attempt initiation | B01 | `payment` module (customer) | 3 | no | no | no | grant→request→order→`REMAINING` walk, exact amount, reference derivation |
 | 5 | `APP9-B03` | Admin remaining verification and `TR-LC14-06` in one transaction; emit the true `obligationKind` | B02 | `payment` module (admin) | 0–1 | no | no | no | the `GRD-016` chain under the order lock; DEPOSIT behaviour unchanged |
 | 6 | `APP9-W01` | Extend the `payment.verified` consumer so `REMAINING` is consumed and no-ops (`FU-APP8-W01-01`) | B03 | `apps/worker` inventory-reservation | 0 | no | **yes** (1 extended, 0 added) | no | payload parser both kinds; no second reservation; effect key unchanged |
-| 7 | `APP9-B04` | Shipping detail write and read while `EDITABLE`, including the fee-change acknowledgement path | B01 | `order` module | 2 | no | no | no | `SHIPPING_FROZEN` refusal; obligation recalculation on a fee change |
+| 7 | `APP9-B04` | Shipping detail write and read while `EDITABLE`, plus the customer-owned fee-increase acknowledgement it requires | B01 | `order` module | 3 | no | no | no | `SHIPPING_FROZEN` refusal; obligation recalculation on a fee change; an increase blocked without a matching customer acknowledgement |
 | 8 | `APP9-B05` | `TR-LC14-07` dispatch (freeze + snapshot + `DELIVERED`) and `TR-LC14-08` completion | B03, B04 | `order` module | 2 | no | no | no | `GRD-016`/`017`/`018`; post-freeze mutation rejected by the trigger |
 | 9 | `APP9-D01` | One complete APP9 Figma design package on a new `APP_09` page | B05 | `docs/design` + Figma | 0 | no | no | **yes** | `node tools/check-figma-design-index.mjs` |
 | 10 | `APP9-A01` | Admin order fulfillment workspace — extend `/orders/{orderId}`, plus the fulfillment status filter on `/orders` | D01 approved | `apps/admin` | 0 | no | no | **yes** | action visibility per `order.status`; each refusal |
@@ -441,8 +441,49 @@ W01   COMPLETE   (the sole payment.verified consumer now accepts the closed kind
                   1 handler owns payment.verified, 0 handlers added, 0 HTTP
                   operations, 0 OpenAPI/client change, 0 migrations, 0 schema
                   change. FU-APP8-W01-01 = CLOSED)
-B04   NEXT
-B05   INCOMPLETE
+B04   COMPLETE   (Admin editable shipping detail — GET/PUT
+                  /api/admin/orders/{orderId}/shipping-detail,
+                  adminOrderShipping_read / _save, Admin-only behind the APP1
+                  guards. shipping_details is the single source of truth; no
+                  customer profile, contact point or address book is read. The
+                  read serves a FROZEN detail too and reports frozenAt; the
+                  write is EDITABLE-only and refuses SHIPPING_FROZEN. The fee
+                  baseline is the stored fee, or — before one is stored — the
+                  ACCEPTED quotation version's frozen shipping_fee_amount, so a
+                  first write cannot move money silently. Unchanged fee touches
+                  no payment row at all. A change recalculates canonically:
+                  successor = live REMAINING + (new fee - old fee), exact bigint
+                  hundredths, never total - deposit. The predecessor is marked
+                  SUPERSEDED with its amount untouched and
+                  superseded_by_obligation_id set, exactly one successor becomes
+                  live, and an OBLIGATION_RECALC reconciliation records it.
+                  DEPOSIT is never touched. An increase requires a
+                  shipping_fee_acknowledgements row whose grant and step-up
+                  challenge are resolved server-side from the order's own chain
+                  and validated live (scope, ACTIVE, unexpired, customer and
+                  request match, fresh VERIFIED STEP_UP); no raw token, OTP,
+                  hash or pepper is stored or published. A fee change against a
+                  SATISFIED REMAINING is refused with zero writes — TR-LC15-04 is
+                  PENDING -> SUPERSEDED alone and no backward LC-14 move is
+                  invented; non-fee edits still succeed. No dispatch, freeze,
+                  snapshot, completion, tracking, notification, provider, refund
+                  or worker change. 0 migrations, 0 schema change.
+
+                  APP9-B04-C1 = PASS. The fee-increase acknowledgement authority
+                  was corrected: the Admin PUT no longer creates customer
+                  evidence. A third operation was added — POST
+                  /api/public/orders/shipping-fee-acknowledgements,
+                  publicOrderShippingFee_acknowledge — and the customer records
+                  their own decision through it, behind the existing
+                  REQUEST_ACCESS grant with no new scope. The Admin increase now
+                  requires a matching pre-existing acknowledgement (same order,
+                  same previous fee as the locked baseline, same new fee, VND);
+                  a mismatched, stale or foreign one cannot authorize. Admin
+                  remains the sole shipping-detail editor: the customer command
+                  holds no ORDER_REPOSITORY and carries no shipping field.
+                  3 HTTP operations, +3 OpenAPI operations against the phase
+                  entry baseline, 0 migrations, 0 schema change)
+B05   NEXT
 D01   INCOMPLETE
 A01   INCOMPLETE
 S01   INCOMPLETE

@@ -21,6 +21,8 @@ import { NotificationModule } from '../modules/notification/notification.module'
 import { NotificationAdminModule } from '../modules/notification/notification-admin.module';
 import { AdminOrderModule } from '../modules/order/admin-order.module';
 import { AdminOrderLifecycleModule } from '../modules/order/admin-order-lifecycle.module';
+import { AdminOrderShippingModule } from '../modules/order/admin-order-shipping.module';
+import { CustomerShippingFeeModule } from '../modules/order/customer-shipping-fee.module';
 import { CustomRequestIntakeModule } from '../modules/order/custom-request-intake.module';
 import { CustomRequestAdminModule } from '../modules/order/custom-request-admin.module';
 import { CustomRequestAssetDeliveryModule } from '../modules/order/custom-request-asset-delivery.module';
@@ -373,6 +375,24 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // order controllers publish into the one `adminOrder` domain, so this
     // composition decision does not name a public identifier.
     AdminOrderLifecycleModule,
+    // APP9-B04 - the two guarded Admin shipping-detail operations, in a third
+    // Admin order module because they need what neither delivered one holds:
+    // the shipping writer and the obligation recalculation together. It adds a
+    // `shipping-detail` segment under the same `admin/orders` base path, and
+    // is the only GET and the only PUT at that segment and name, so no
+    // registration order can make one route shadow another. It publishes its
+    // own `adminOrderShipping` domain rather than joining `adminOrder`: a
+    // distinct sub-resource with its own read/write pair, exactly as
+    // `/orders/{orderId}/payments` publishes `adminOrderPayment`.
+    AdminOrderShippingModule,
+    // `APP9-B04-C1` — the customer half of the same fee change, and a separate
+    // module because it is a separate security boundary: it holds no
+    // `ORDER_REPOSITORY` and no payment contract, so the one thing it can do is
+    // append the customer's own decision. It publishes
+    // `publicOrderShippingFee` under the existing `public/orders` base path;
+    // the collection segment `shipping-fee-acknowledgements` is unique across
+    // every module mounted there, so no registration order can shadow a route.
+    CustomerShippingFeeModule,
   ],
 })
 export class AppModule {}

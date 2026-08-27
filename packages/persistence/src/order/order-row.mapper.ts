@@ -6,11 +6,18 @@
 import type { OrderState, ShippingDetailState, schema } from '@embroidery/database';
 
 import type { CustomRequestId } from './ordering-identity';
-import type { Order, OrderId, OrderItem, ShippingDetail } from './order.repository';
+import type {
+  Order,
+  OrderId,
+  OrderItem,
+  ShippingDetail,
+  ShippingFeeAcknowledgement,
+} from './order.repository';
 
 export type OrderRow = typeof schema.orders.$inferSelect;
 export type ItemRow = typeof schema.orderItems.$inferSelect;
 export type ShippingRow = typeof schema.shippingDetails.$inferSelect;
+export type ShippingFeeAcknowledgementRow = typeof schema.shippingFeeAcknowledgements.$inferSelect;
 
 export function toOrder(row: OrderRow): Order {
   return {
@@ -46,10 +53,30 @@ export function toShippingDetail(row: ShippingRow): ShippingDetail {
     recipientName: row.recipientName,
     recipientPhone: row.recipientPhone,
     addressLine: row.addressLine,
+    ward: row.ward ?? undefined,
+    district: row.district ?? undefined,
     province: row.province,
+    countryCode: row.countryCode,
     feeAmount: row.feeAmount ?? undefined,
     carrierName: row.carrierName ?? undefined,
     trackingCode: row.trackingCode ?? undefined,
     status: row.status as ShippingDetailState,
+    frozenAt: row.frozenAt ?? undefined,
+  };
+}
+
+/** The identity column is `bigint`; it leaves as text so no caller can round it. */
+export function toShippingFeeAcknowledgement(
+  row: ShippingFeeAcknowledgementRow,
+): ShippingFeeAcknowledgement {
+  return {
+    id: String(row.id),
+    orderId: row.orderId,
+    previousFeeAmount: row.previousFeeAmount,
+    newFeeAmount: row.newFeeAmount,
+    currencyCode: row.currencyCode,
+    grantId: row.grantId,
+    stepUpChallengeId: row.stepUpChallengeId,
+    acknowledgedAt: row.acknowledgedAt,
   };
 }

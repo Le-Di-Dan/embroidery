@@ -49,11 +49,43 @@ export interface ShippingDetail {
   readonly recipientName: string;
   readonly recipientPhone: string;
   readonly addressLine: string;
+  readonly ward: string | undefined;
+  readonly district: string | undefined;
   readonly province: string;
+  readonly countryCode: string;
   readonly feeAmount: string | undefined;
   readonly carrierName: string | undefined;
   readonly trackingCode: string | undefined;
   readonly status: ShippingDetailState;
+  readonly frozenAt: Date | undefined;
+}
+
+/**
+ * The fee facts a pre-freeze shipping write must decide against, read together
+ * under the shipping detail's own row lock (`APP9-B04`).
+ *
+ * A fee change is only meaningful against the fee it replaces, and `DB3`
+ * §1.2 names two different baselines depending on whether one has been set:
+ * the stored `shipping_details.fee_amount` once the Admin has set one, and the
+ * **accepted quotation version's** frozen `shipping_fee_amount` before that —
+ * the figure the live `REMAINING` obligation was priced from. Reading them in
+ * one locked call is what makes the baseline the transaction decides on the same
+ * baseline it then writes against; two unlocked reads could each be true of a
+ * different instant.
+ *
+ * `FOR UPDATE` is on the **shipping detail** alone, fixing the lock order as
+ * `shipping_details` → `payment_obligations`. The quotation version is read
+ * without a lock deliberately: an `ACCEPTED` version is frozen by INV-02, so
+ * there is no writer to contend with, and locking a row nothing updates would
+ * only widen the window this transaction holds.
+ *
+ * `detail` is `undefined` for an order that has never had one saved — the
+ * ordinary case for the first Admin write, not an error.
+ */
+export interface ShippingFeeBaseline {
+  readonly detail: ShippingDetail | undefined;
+  /** The accepted quotation version's frozen shipping fee. */
+  readonly quotedFeeAmount: string;
 }
 
 export interface OrderTransition {
@@ -108,6 +140,38 @@ export interface AcknowledgeShippingFeeInput {
   readonly grantId: string;
   readonly stepUpChallengeId: string;
   readonly acknowledgedAt: Date;
+}
+
+/**
+ * One committed customer acknowledgement of one exact fee movement (TBL-049).
+ *
+ * Append-only evidence: there is no update and no delete on this table, and the
+ * row carries references only — no raw secure-link token, no OTP, no code hash
+ * and no pepper (DEV-DB6-014).
+ */
+export interface ShippingFeeAcknowledgement {
+  /** The identity column, rendered as text; `bigint` never leaves as a number. */
+  readonly id: string;
+  readonly orderId: string;
+  readonly previousFeeAmount: string;
+  readonly newFeeAmount: string;
+  readonly currencyCode: string;
+  readonly grantId: string;
+  readonly stepUpChallengeId: string;
+  readonly acknowledgedAt: Date;
+}
+
+/**
+ * The exact tuple an acknowledgement must bind to be usable (`APP9-B04-C1` §9).
+ *
+ * All three fields together, never a "latest acknowledgement for this order":
+ * a decision the customer made about one fee movement must not authorize a
+ * different one.
+ */
+export interface FindShippingFeeAcknowledgementInput {
+  readonly orderId: OrderId;
+  readonly previousFeeAmount: string;
+  readonly newFeeAmount: string;
 }
 
 export const ORDER_REPOSITORY = Symbol('ORDER_REPOSITORY');
@@ -166,8 +230,45 @@ export interface OrderRepository {
    */
   dispatch(orderId: OrderId, dispatchedAt: Date, correlationId: string): Promise<Order>;
 
-  /** @requiresTransaction */
-  acknowledgeShippingFee(input: AcknowledgeShippingFeeInput): Promise<void>;
+  /**
+   * The fee baseline for one order, taken under the shipping detail's own
+   * `FOR UPDATE` lock (`APP9-B04`).
+   *
+   * Returns nothing when the order itself does not exist. A missing shipping
+   * detail is **not** absence: the baseline still resolves, carrying the
+   * quoted fee and no detail.
+   *
+   * @requiresTransaction — a lock taken outside one is released immediately and
+   * proves nothing.
+   */
+  lockShippingFeeBaseline(orderId: OrderId): Promise<ShippingFeeBaseline | undefined>;
+
+  /**
+   * Appends one customer acknowledgement of a shipping-fee increase.
+   *
+   * Written by the **customer's** own command (`APP9-B04-C1`), never by the
+   * Admin shipping write: the row is the customer's decision, and a decision
+   * nobody made is not evidence. Returns the committed row so the caller can
+   * report exactly what was recorded rather than what it believes it sent.
+   *
+   * @requiresTransaction
+   */
+  acknowledgeShippingFee(input: AcknowledgeShippingFeeInput): Promise<ShippingFeeAcknowledgement>;
+
+  /**
+   * The standing acknowledgement for one exact fee movement, if the customer
+   * has made that decision.
+   *
+   * Read by the Admin write before it applies an increase, and by the customer
+   * command as its replay lookup. Matching is on the whole tuple — order,
+   * previous fee, new fee — so an acknowledgement whose `previous_fee_amount`
+   * no longer equals the current baseline simply does not match, which is what
+   * makes stale evidence unusable without a mutable "consumed" flag the schema
+   * does not have.
+   */
+  findShippingFeeAcknowledgement(
+    input: FindShippingFeeAcknowledgementInput,
+  ): Promise<ShippingFeeAcknowledgement | undefined>;
 
   /** @requiresTransaction — one pending request per order is arbitrated physically. */
   openCancellationRequest(input: {

@@ -21,6 +21,22 @@ export interface AcceptQuotationBody {
   versionId: string;
 }
 
+/**
+ * Records the customer’s acceptance of one exact shipping-fee increase on the order their secure link opens. The order, customer, current fee, currency, grant and step-up evidence are all resolved by the server; none of them is accepted here.
+ */
+export interface AcknowledgeShippingFeeBody {
+  /**
+   * The exact new shipping fee the customer is accepting, in VND as a decimal string (whole đồng). It must be higher than the fee the order currently carries — this command records acceptance of an increase and nothing else. The fee being moved from is the server’s, never the caller’s.
+   * @pattern ^\d{1,12}(?:\.\d{1,2})?$
+   */
+  newFeeAmount: string;
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
 export type AddQuotationVersionBodyLineItemsItemLineKind =
   (typeof AddQuotationVersionBodyLineItemsItemLineKind)[keyof typeof AddQuotationVersionBodyLineItemsItemLineKind];
 
@@ -1853,6 +1869,139 @@ export interface AdminQuotationVersionHistoryResponse {
   quotation: AdminQuotationHeaderResponse;
   /** Every version of this quotation, oldest first by version number. Not paginated, and never filtered: a superseded or expired version stays in the history exactly as it was. */
   versions: AdminQuotationVersionResponse[];
+}
+
+/**
+ * An internal note of who is carrying the parcel. Not a carrier integration: nothing is called, polled or subscribed to, and no delivery state is derived from it.
+ * @nullable
+ */
+export type AdminShippingDetailResponseCarrierName = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type AdminShippingDetailResponseDistrict = { [key: string]: unknown } | null;
+
+/**
+ * The effective shipping fee, exactly as `numeric(14,2)` stores it. A string, never a JSON number. Absent only on a detail saved before a fee was set.
+ * @nullable
+ */
+export type AdminShippingDetailResponseFeeAmount = { [key: string]: unknown } | null;
+
+/**
+ * When dispatch froze the detail. Absent while it is still editable.
+ * @nullable
+ */
+export type AdminShippingDetailResponseFrozenAt = { [key: string]: unknown } | null;
+
+/**
+ * LC-19. `FROZEN` means dispatch has already snapshotted this detail (GRD-017) and no further edit is accepted.
+ */
+export type AdminShippingDetailResponseStatus =
+  (typeof AdminShippingDetailResponseStatus)[keyof typeof AdminShippingDetailResponseStatus];
+
+export const AdminShippingDetailResponseStatus = {
+  EDITABLE: 'EDITABLE',
+  FROZEN: 'FROZEN',
+} as const;
+
+/**
+ * An internal reference an operator typed. There is no live tracking lookup.
+ * @nullable
+ */
+export type AdminShippingDetailResponseTrackingCode = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type AdminShippingDetailResponseWard = { [key: string]: unknown } | null;
+
+export interface AdminShippingDetailResponse {
+  addressLine: string;
+  /**
+   * An internal note of who is carrying the parcel. Not a carrier integration: nothing is called, polled or subscribed to, and no delivery state is derived from it.
+   * @nullable
+   */
+  carrierName?: AdminShippingDetailResponseCarrierName;
+  /** Defaulted on the row; there is no cross-border fulfillment in the MVP. */
+  countryCode: string;
+  /** @nullable */
+  district?: AdminShippingDetailResponseDistrict;
+  /**
+   * The effective shipping fee, exactly as `numeric(14,2)` stores it. A string, never a JSON number. Absent only on a detail saved before a fee was set.
+   * @nullable
+   */
+  feeAmount?: AdminShippingDetailResponseFeeAmount;
+  /**
+   * When dispatch froze the detail. Absent while it is still editable.
+   * @nullable
+   */
+  frozenAt?: AdminShippingDetailResponseFrozenAt;
+  province: string;
+  recipientName: string;
+  /** The delivery contact for this order, as stored. Not the customer profile. */
+  recipientPhone: string;
+  /** LC-19. `FROZEN` means dispatch has already snapshotted this detail (GRD-017) and no further edit is accepted. */
+  status: AdminShippingDetailResponseStatus;
+  /**
+   * An internal reference an operator typed. There is no live tracking lookup.
+   * @nullable
+   */
+  trackingCode?: AdminShippingDetailResponseTrackingCode;
+  /** @nullable */
+  ward?: AdminShippingDetailResponseWard;
+}
+
+/**
+ * The successor’s amount: the previous live amount moved by the fee difference.
+ * @nullable
+ */
+export type AdminShippingFeeOutcomeResponseRemainingAmount = { [key: string]: unknown } | null;
+
+/**
+ * The successor REMAINING obligation, now the one live payable authority.
+ * @nullable
+ */
+export type AdminShippingFeeOutcomeResponseRemainingObligationId = {
+  [key: string]: unknown;
+} | null;
+
+/**
+ * The REMAINING obligation this change marked SUPERSEDED. Its amount was **not** edited; it keeps the figure it was payable at.
+ * @nullable
+ */
+export type AdminShippingFeeOutcomeResponseSupersededObligationId = {
+  [key: string]: unknown;
+} | null;
+
+export interface AdminShippingFeeOutcomeResponse {
+  /** Whether this change required and recorded the customer’s acknowledgement. True only for an increase; a decrease needs none (DB3 §1.2). */
+  acknowledged: boolean;
+  /** Whether the effective fee moved. When false, no payment record was touched. */
+  changed: boolean;
+  /** The fee this write was measured against: the stored one, or — before any fee had been stored — the accepted quotation version’s frozen shipping fee. */
+  previousFeeAmount: string;
+  /**
+   * The successor’s amount: the previous live amount moved by the fee difference.
+   * @nullable
+   */
+  remainingAmount?: AdminShippingFeeOutcomeResponseRemainingAmount;
+  /**
+   * The successor REMAINING obligation, now the one live payable authority.
+   * @nullable
+   */
+  remainingObligationId?: AdminShippingFeeOutcomeResponseRemainingObligationId;
+  /**
+   * The REMAINING obligation this change marked SUPERSEDED. Its amount was **not** edited; it keeps the figure it was payable at.
+   * @nullable
+   */
+  supersededObligationId?: AdminShippingFeeOutcomeResponseSupersededObligationId;
+}
+
+export interface AdminShippingDetailSavedResponse {
+  detail: AdminShippingDetailResponse;
+  fee: AdminShippingFeeOutcomeResponse;
+  orderId: string;
 }
 
 export type AdminSkuResponseCurrencyCode =
@@ -4636,6 +4785,51 @@ export interface SaveDesignTemplateDocumentBody {
   expectedCurrentVersion: number;
 }
 
+export interface SaveShippingDetailBody {
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  addressLine: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  carrierName?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  district?: string;
+  /** @pattern ^\d{1,12}(?:\.\d{1,2})?$ */
+  feeAmount: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  province: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  recipientName: string;
+  /**
+   * @minLength 1
+   * @maxLength 32
+   */
+  recipientPhone: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  trackingCode?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  ward?: string;
+}
+
 /**
  * What the grant covers. One value today; a link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead.
  */
@@ -4653,6 +4847,19 @@ export interface SecureLinkResolutionResponse {
   expiresAt: string;
   /** What the grant covers. One value today; a link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead. */
   scopeKind: SecureLinkResolutionResponseScopeKind;
+}
+
+export interface ShippingFeeAcknowledgedResponse {
+  acknowledgedAt: string;
+  currencyCode: string;
+  /** The fee the customer accepted. */
+  newFeeAmount: string;
+  /** The order this acknowledgement was recorded against. */
+  orderCode: string;
+  /** The fee the order carried when the decision was made, derived by the server. An acknowledgement only authorises a change from this exact figure. */
+  previousFeeAmount: string;
+  /** True when this exact decision had already been recorded and the call wrote nothing. Repeating the confirmation never creates a second piece of evidence. */
+  replayed: boolean;
 }
 
 export interface StaffLoginRequest {
@@ -5242,6 +5449,14 @@ export type AdminProductionJobCreate201 = ApiSuccessResponse & {
   data: AdminProductionJobCreatedResponse;
 };
 
+export type AdminOrderShippingRead200 = ApiSuccessResponse & {
+  data: AdminShippingDetailResponse;
+};
+
+export type AdminOrderShippingSave200 = ApiSuccessResponse & {
+  data: AdminShippingDetailSavedResponse;
+};
+
 export type AdminOrderTransition200 = ApiSuccessResponse & {
   data: AdminOrderTransitionResultResponse;
 };
@@ -5530,6 +5745,10 @@ export type PublicOrderFinalPaymentCurrent200 = ApiSuccessResponse & {
 
 export type PublicOrderFinalPaymentInitiate201 = ApiSuccessResponse & {
   data: FinalPaymentAttemptResponse;
+};
+
+export type PublicOrderShippingFeeAcknowledge201 = ApiSuccessResponse & {
+  data: ShippingFeeAcknowledgedResponse;
 };
 
 export type PublicProductListParams = {

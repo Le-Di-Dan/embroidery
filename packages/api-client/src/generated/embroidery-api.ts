@@ -7,6 +7,7 @@
  */
 import type {
   AcceptQuotationBody,
+  AcknowledgeShippingFeeBody,
   AddQuotationVersionBody,
   AdjustSkuStockBody,
   AdminAssetDetail200,
@@ -44,6 +45,8 @@ import type {
   AdminOrderList200,
   AdminOrderListParams,
   AdminOrderPaymentRead200,
+  AdminOrderShippingRead200,
+  AdminOrderShippingSave200,
   AdminOrderTransition200,
   AdminPaymentAttemptReview200,
   AdminPaymentAttemptVerify200,
@@ -117,6 +120,7 @@ import type {
   PublicOrderDepositInitiate201,
   PublicOrderFinalPaymentCurrent200,
   PublicOrderFinalPaymentInitiate201,
+  PublicOrderShippingFeeAcknowledge201,
   PublicProductDetail200,
   PublicProductList200,
   PublicProductListParams,
@@ -148,6 +152,7 @@ import type {
   ReviewPaymentAttemptBody,
   RevokeSecureGrantBody,
   SaveDesignTemplateDocumentBody,
+  SaveShippingDetailBody,
   StaffLoginRequest,
   StaffSelfGet200,
   SubmitCustomRequestBody,
@@ -691,6 +696,54 @@ export const adminProductionJobCreate = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: createProductionJobBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Returns the order’s own shipping record (`shipping_details`), which is the authoritative delivery destination for this order. It is never derived from the customer profile, a contact point or an address book: the recipient may legitimately differ from the customer, and a later profile edit must not rewrite where an order was sent.
+ *
+ * The read stays available **after** dispatch has frozen the detail, and reports that through `status` and `frozenAt`. Only the write is restricted to an editable detail.
+ *
+ * `carrierName` and `trackingCode` are internal strings an operator recorded. There is no carrier integration behind them — nothing is called, polled or subscribed to, and no delivery state is derived from them.
+ * @summary Read the shipping detail of one order
+ */
+export const adminOrderShippingRead = (
+  orderId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminOrderShippingRead200>>,
+) => {
+  return apiRequest<AdminOrderShippingRead200>(
+    { url: `/api/admin/orders/${orderId}/shipping-detail`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Saves the order’s shipping record while it is still `EDITABLE`, creating it if the order has none yet. One transaction commits everything below together or nothing at all.
+ *
+ * A detail that is already `FROZEN` is refused: dispatch has snapshotted it, and the address an order was shipped to is evidence rather than a field. This operation never dispatches, freezes, thaws, creates a shipping snapshot, moves the order or completes it — the detail is still `EDITABLE` when the call returns.
+ *
+ * **The shipping fee is money.** If the effective fee is unchanged, the shipping record changes and nothing in the payment record is touched: no obligation is superseded, no acknowledgement is recorded and no payment attempt is affected. If the fee changes, the live REMAINING obligation is **recalculated** the canonical way — it is marked SUPERSEDED, exactly one successor is created carrying the previous live amount moved by the fee difference, and the two are linked. The old obligation’s amount is never edited in place, and the deposit is never touched or recomputed.
+ *
+ * A fee **increase** additionally requires the customer’s acknowledgement, and the evidence is resolved from the order’s own chain — an active in-scope secure grant on this order’s request, plus a fresh verified step-up by that customer. It cannot be asserted in the body. Without it the whole call is refused and nothing is written. A decrease is in the customer’s favour and needs none.
+ *
+ * A fee change is refused outright once the remaining payment has been settled: there is no path that turns paid money back into a payable balance. Non-fee edits on such an order still succeed.
+ *
+ * Replaying the same request is safe. The second call measures the fee against what the first one stored, finds no change, and records no second acknowledgement and no second successor obligation.
+ * @summary Create or update the shipping detail of one order, before dispatch
+ */
+export const adminOrderShippingSave = (
+  orderId: unknown,
+  saveShippingDetailBody: SaveShippingDetailBody,
+  options?: SecondParameter<typeof apiRequest<AdminOrderShippingSave200>>,
+) => {
+  return apiRequest<AdminOrderShippingSave200>(
+    {
+      url: `/api/admin/orders/${orderId}/shipping-detail`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data: saveShippingDetailBody,
     },
     options,
   );
@@ -1709,6 +1762,25 @@ export const publicOrderFinalPaymentQr = (
 };
 
 /**
+ * Records the customer’s decision to accept a specific higher shipping fee. The order, the customer, the fee currently in force, the currency, the grant and the step-up evidence are all resolved by the server from the secure link — only the new fee being accepted is taken from the caller. Inside one transaction the grant is re-checked under its row lock, the shipping detail is locked and must still be editable, the fee must be a genuine increase over the one the order carries, and a recent re-verification of the customer’s own contact is required. Exactly one immutable acknowledgement is appended. This changes nothing else: the shipping fee is not updated, the remaining balance is not recalculated, no payment is created and the order does not move — the operator applies the fee afterwards, and can only apply the exact increase acknowledged here. Repeating the same confirmation replays it and writes no second record.
+ * @summary Accept one exact shipping-fee increase on the order a secure link opens
+ */
+export const publicOrderShippingFeeAcknowledge = (
+  acknowledgeShippingFeeBody: AcknowledgeShippingFeeBody,
+  options?: SecondParameter<typeof apiRequest<PublicOrderShippingFeeAcknowledge201>>,
+) => {
+  return apiRequest<PublicOrderShippingFeeAcknowledge201>(
+    {
+      url: `/api/public/orders/shipping-fee-acknowledgements`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: acknowledgeShippingFeeBody,
+    },
+    options,
+  );
+};
+
+/**
  * Returns published products in editorial order, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts and archived products are excluded by the query itself. Pagination is keyset: `nextCursor` is opaque, bound to the filter it was issued under, and null on the last page. Responses are never stored. Publication is re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished product visible.
  * @summary List published products
  */
@@ -2064,6 +2136,12 @@ export type AdminOrderPaymentReadResult = NonNullable<
 export type AdminProductionJobCreateResult = NonNullable<
   Awaited<ReturnType<typeof adminProductionJobCreate>>
 >;
+export type AdminOrderShippingReadResult = NonNullable<
+  Awaited<ReturnType<typeof adminOrderShippingRead>>
+>;
+export type AdminOrderShippingSaveResult = NonNullable<
+  Awaited<ReturnType<typeof adminOrderShippingSave>>
+>;
 export type AdminOrderTransitionResult = NonNullable<
   Awaited<ReturnType<typeof adminOrderTransition>>
 >;
@@ -2210,6 +2288,9 @@ export type PublicOrderFinalPaymentInitiateResult = NonNullable<
 >;
 export type PublicOrderFinalPaymentQrResult = NonNullable<
   Awaited<ReturnType<typeof publicOrderFinalPaymentQr>>
+>;
+export type PublicOrderShippingFeeAcknowledgeResult = NonNullable<
+  Awaited<ReturnType<typeof publicOrderShippingFeeAcknowledge>>
 >;
 export type PublicProductListResult = NonNullable<Awaited<ReturnType<typeof publicProductList>>>;
 export type PublicProductDetailResult = NonNullable<

@@ -13,6 +13,7 @@ import { isLegalOrderTransition } from './order-transitions';
 import type { CustomRequestId, RequestActor } from './ordering-identity';
 import type {
   AcknowledgeShippingFeeInput,
+  FindShippingFeeAcknowledgementInput,
   CreateOrderInput,
   Order,
   OrderId,
@@ -21,6 +22,8 @@ import type {
   OrderTransition,
   SaveShippingDetailInput,
   ShippingDetail,
+  ShippingFeeAcknowledgement,
+  ShippingFeeBaseline,
   TransitionOrderInput,
 } from './order.repository';
 import { DrizzleOrderShippingRepository } from './drizzle-order-shipping.repository';
@@ -66,8 +69,18 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     return this.shipping.dispatch(orderId, dispatchedAt, correlationId);
   }
 
-  acknowledgeShippingFee(input: AcknowledgeShippingFeeInput): Promise<void> {
+  lockShippingFeeBaseline(orderId: OrderId): Promise<ShippingFeeBaseline | undefined> {
+    return this.shipping.lockShippingFeeBaseline(orderId);
+  }
+
+  acknowledgeShippingFee(input: AcknowledgeShippingFeeInput): Promise<ShippingFeeAcknowledgement> {
     return this.shipping.acknowledgeShippingFee(input);
+  }
+
+  findShippingFeeAcknowledgement(
+    input: FindShippingFeeAcknowledgementInput,
+  ): Promise<ShippingFeeAcknowledgement | undefined> {
+    return this.shipping.findShippingFeeAcknowledgement(input);
   }
 
   openCancellationRequest(input: {

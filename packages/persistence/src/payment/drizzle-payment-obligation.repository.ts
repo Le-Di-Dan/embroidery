@@ -11,7 +11,8 @@
  *
  * What stays here is what is decided under the **obligation's** row lock:
  * `createForOrder`, `openAttempt` (an attempt may only open against a `PENDING`
- * obligation), `satisfy` (G-DB7-06 / G-DB7-33) and `cancel`.
+ * obligation), `satisfy` (G-DB7-06 / G-DB7-33) and `cancel`. The recalculation
+ * chain (`TR-LC15-04`) is `PaymentRecalculationRepository`, delegated to below.
  */
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, notFoundError, schema } from '@embroidery/database';
@@ -29,12 +30,14 @@ import type {
   PaymentObligation,
   PaymentObligationRepository,
   ProviderEventOutcome,
+  RecalculateObligationInput,
   RecordProviderEventInput,
   Refund,
   RefundId,
   VerifiableAttempt,
 } from './payment-obligation.repository';
 import { PaymentAttemptRepository } from './payment-attempt.repository';
+import { PaymentRecalculationRepository } from './payment-recalculation.repository';
 import { PaymentEvidenceRepository } from './payment-evidence.repository';
 import { toAttempt, toObligation } from './payment-row.mapper';
 
@@ -51,6 +54,7 @@ export class DrizzlePaymentObligationRepository
     executor: DatabaseExecutor,
     private readonly evidence: PaymentEvidenceRepository,
     private readonly attempts: PaymentAttemptRepository,
+    private readonly recalculations: PaymentRecalculationRepository,
   ) {
     super(executor);
   }
@@ -245,6 +249,10 @@ export class DrizzlePaymentObligationRepository
       }
       return toObligation(row);
     });
+  }
+
+  recalculate(input: RecalculateObligationInput): Promise<PaymentObligation> {
+    return this.recalculations.recalculate(input);
   }
 
   async cancel(id: ObligationId): Promise<void> {
