@@ -536,8 +536,32 @@ D01   COMPLETE (one APP9 design package on the pre-existing, empty APP_09
                   provider UI anywhere. 0 component masters, 0 instances, 0 new
                   variables or styles. Design/documentation only — 0 code, 0
                   migrations, 0 OpenAPI change)
-A01   NEXT
-S01   INCOMPLETE
+A01   COMPLETE (Admin commerce-completion workspace. All 36 APP9 design-index
+                  rows promoted REVIEW_REQUIRED -> APPROVED_FOR_IMPLEMENTATION
+                  under FIG-APPROVAL-APP9-D01-PO-001. NEW_ADMIN_ROUTES=0 —
+                  /orders gains the five fulfillment badge tones only, and
+                  /orders/{orderId} gains a state-driven fulfillment rail beside
+                  the existing APP7 deposit workbench. Five accepted operations
+                  consumed and no backend added: adminOrder_transition,
+                  adminOrderShipping_read/_save, adminOrder_dispatch,
+                  adminOrder_complete. Three approved-but-unbacked figures were
+                  deliberately NOT rendered — the PRODUCTION_COMPLETED and
+                  open-dialog "total - deposit" balance, the acknowledged-fee
+                  amount and the queue's deposit/remaining columns — because no
+                  delivered read publishes them; the approved API-gap treatment
+                  stands in their place. FU-APP9-B03-01 UI side closed (no
+                  deposit-flavoured transport name reaches the screen);
+                  FU-APP9-B03-02 kept as ACCEPTED_UI_DEGRADATION /
+                  BACKEND_FOLLOWUP_REMAINS. 11 focused frontend cases, 0
+                  migrations, 0 OpenAPI change, 0 generated-file edit.
+                  APP9-A01-C1 = PASS: the curated api-client export surface,
+                  which A01 had grown to 1231 lines, was split by domain into
+                  eight barrels behind an unchanged root boundary — root
+                  index.ts 46 lines, largest barrel 250, 414 exported names
+                  before and after with none added or lost. Structural only:
+                  0 Admin application source changed, 0 generated file, 0
+                  OpenAPI change, 0 Figma change)
+S01   NEXT
 E01   INCOMPLETE
 X01   INCOMPLETE
 ```

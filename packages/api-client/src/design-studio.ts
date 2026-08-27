@@ -1,0 +1,250 @@
+/**
+ * The 2D Design Studio (`APP3`): Admin placement authoring and template
+ * management, the private background and template assets they render, the
+ * generated Design Document transport types, and the anonymous Studio bootstrap,
+ * session and autosave surface.
+ *
+ * Admin authoring and the anonymous Studio are one domain rather than two: a
+ * placement authored on the Admin side is the exact manifest the Studio
+ * bootstraps against, and the Design Document types below are the single
+ * projection both sides share.
+ *
+ * Two of these resolve to a `Blob` rather than JSON. The caller turns that into
+ * a browser object URL and owns revoking it; nothing here caches bytes.
+ */
+
+// Admin Product placement authoring (APP3-B01), exposed for the Admin
+// placement screen (`APP3-A01`). The read and the replace cross together: the
+// read is the only source of the `updatedAt` the replace must echo back, so an
+// operation boundary that offered one without the other would publish a write
+// nobody could safely perform.
+//
+// `publicProductPlacementGet` was withheld here through `APP3-A01`. It answers a
+// deliberately narrower model — no `backgroundAssetId`, no retired rows and no
+// concurrency token — and putting it on this boundary beside the Admin pair
+// would have invited an authoring screen to bind to it and silently lose the
+// history the operator is meant to see. It crosses with `APP3-S01`, its first
+// real consumer, in the Studio block below; the rule it protected is unchanged,
+// and A01's own gate still asserts the authoring screen calls the Admin pair.
+export { adminProductPlacementGet, adminProductPlacementReplace } from './generated/embroidery-api';
+export type {
+  AdminProductPlacementResponse,
+  AdminPlacementSideResponse,
+  AdminPlacementAreaResponse,
+  ReplaceProductPlacementBody,
+  ReplacePlacementSideBody,
+  ReplacePlacementAreaBody,
+} from './generated/embroidery-api.schemas';
+
+// Admin Side background delivery (APP3-B02A), exposed for the placement preview
+// (`APP3-A01-C1`).
+//
+// `APP3-B02A` deliberately withheld this from the boundary because no consumer
+// existed — an operation here is an invitation to call it, which is the same
+// reasoning that keeps `publicProductMediaGet` off it. `APP3-A01-C1` is that
+// consumer: it renders the Side's real background so Embroidery Areas are
+// authored on the actual image rather than on an empty frame.
+//
+// It resolves to a `Blob`. The caller turns that into a browser object URL as a
+// purely local rendering handle — never persisted, never sent back, and not a
+// storage address. No bucket, key or provider URL crosses this boundary in
+// either direction.
+//
+// `publicProductSideBackgroundGet` stays withheld for the reason it always was:
+// it requires the Product to be PUBLISHED, and placement is authored while the
+// Product is still a draft.
+export { adminProductSideBackgroundGet } from './generated/embroidery-api';
+
+// Admin Design Template management (APP3-B03), exposed for the Template list
+// screen (`APP3-A02`).
+//
+// The list and the create cross together because the list screen owns the
+// create entry point: a list you cannot add to is a dead end, and the create
+// response is what the list is reconciled from.
+//
+// `adminDesignTemplate_detail` and `adminDesignTemplate_saveDocument` crossed
+// with the Template editor (`APP3-A03`), which is the consumer this boundary was
+// waiting for. They cross **together**: the detail read is the only source of
+// the `expectedCurrentVersion` the save must echo back, so offering one without
+// the other would publish a write nobody could safely perform.
+//
+// The detail read staying off the boundary until now was not caution about the
+// operation — it was about *who* could reach it. A list screen that can resolve
+// a row by fetching it is the N+1 a keyset list exists to avoid, and that rule
+// is unchanged: `APP3-A02`'s own gate still asserts the list never performs a
+// detail read, and now asserts it against a boundary where the operation exists.
+//
+// `adminDesignTemplate_assignScope` crosses with `APP3-A03-C1`, its first and
+// only consumer. `APP3-B03B` published it and deliberately kept it off this
+// boundary, because a backend checkpoint exposing an operation no screen calls
+// is an invitation with nobody to accept it.
+//
+// It is a **one-time initial** assignment, not a scope editor: the server admits
+// it only for an unscoped, versionless `DRAFT`, and there is no rescope or
+// clear-scope operation to pair it with. Nothing here should ever grow one.
+//
+// The four LC-24 lifecycle operations cross with `APP3-A04`, the lifecycle
+// screen, and they cross **together**. They are one state machine: a surface
+// that could publish but not unpublish, or archive but not restore, would strand
+// an operator in a state with no way back — and `restore` in particular is the
+// only exit from `ARCHIVED`, so withholding it would make archive behave like
+// the delete it is explicitly not. `APP3-B04A` delivered it for exactly this.
+//
+// They stayed withheld through `APP3-A02` and `APP3-A03` because an operation on
+// this boundary is an invitation to add a button for it, and neither of those
+// screens is lifecycle mutation. That rule has not been relaxed — it has been
+// *satisfied*: the consumer now exists, and A02's and A03's own gates still
+// assert that neither of them calls one.
+//
+// The status enum is re-exported as a value so the filter options are derived
+// from the contract rather than a hand-kept list that could drift out of step
+// with the three lifecycle states the server actually accepts.
+export {
+  adminDesignTemplateCreate,
+  adminDesignTemplateList,
+  adminDesignTemplateDetail,
+  adminDesignTemplateSaveDocument,
+  adminDesignTemplateAssignScope,
+  adminDesignTemplatePublish,
+  adminDesignTemplateUnpublish,
+  adminDesignTemplateArchive,
+  adminDesignTemplateRestore,
+} from './generated/embroidery-api';
+export { AdminDesignTemplateListStatus } from './generated/embroidery-api.schemas';
+export type {
+  AdminDesignTemplateListParams,
+  AdminDesignTemplateListResponse,
+  AdminDesignTemplateSummaryResponse,
+  AdminDesignTemplateDetailResponse,
+  AdminDesignTemplateScopeResponse,
+  AdminDesignTemplateVersionResponse,
+  CreateDesignTemplateBody,
+  SaveDesignTemplateDocumentBody,
+  AssignDesignTemplateScopeBody,
+  PublishDesignTemplateBody,
+  UnpublishDesignTemplateBody,
+  ArchiveDesignTemplateBody,
+  RestoreDesignTemplateBody,
+} from './generated/embroidery-api.schemas';
+
+// The generated Design Document transport types (`APP3-A03`).
+//
+// These are Orval's projection of the *same* `APP3-P01` types the
+// `@embroidery/design-document` package owns — the OpenAPI schema is generated
+// from them. They are exposed only so a caller can name the wire shape at the
+// transport seam; `@embroidery/design-document` remains the single authority on
+// document structure, schema version, quantization and validation, and nothing
+// may validate a document against these declarations instead.
+export type {
+  DesignDocument as TransportDesignDocument,
+  DesignPlacementSnapshot as TransportDesignPlacementSnapshot,
+} from './generated/embroidery-api.schemas';
+
+// Anonymous Studio bootstrap (APP3-S01): the public placement manifest, the two
+// published-Template reads, the Template asset delivery and the two Session
+// operations the Studio route actually calls.
+//
+// They cross together because they are one journey and each is meaningless
+// without the next: the manifest is the only Side/Area authority, the list is
+// compatible with exactly one `product → side → area` triple the manifest
+// produced, the detail resolves the chosen Template's published document, the
+// asset route is the only address that serves a byte referenced by that
+// document, and the create/resume pair is what turns a choice into a session.
+//
+// `publicDesignTemplateAssetGet` (`APP3-B05A`) resolves to a `Blob`. The caller
+// turns it into a browser object URL as a purely local rendering handle — never
+// persisted, never sent back, never a storage address. Publication, the current
+// published version, document membership, the durable association, placement
+// eligibility and the derivative are all re-proved by the server on every
+// request, so the address grants nothing on its own.
+//
+// The two `mode` enums are re-exported as **values** because the create body is
+// a discriminated union: `BLANK` and `CLONE_TEMPLATE` must come from the
+// contract, not from a literal a screen could mistype into a request the server
+// would refuse for a reason nobody could see in the diff.
+//
+// `APP3-S06` releases the three Session-asset operations, because the screen
+// that owns them now exists. They are released **together** and only together:
+// an upload that could not be polled would leave the Studio guessing, and a
+// preview without a status would have to poll the binary route as a state
+// machine — which is exactly the misuse `publicDesignSessionAssetStatus` exists
+// to prevent, since the binary route answers one indistinguishable 404 for
+// eleven different private misses.
+//
+// `publicDesignSessionAssetGet` resolves to a `Blob`, like the Template asset
+// and Side background above and for the same reason: the caller turns it into a
+// browser object URL as a purely local rendering handle — never persisted into
+// the design document, never sent back, never a storage address.
+//
+// `APP3-S10` releases `publicDesignSessionAutosave`, on exactly the terms the
+// withholding stated: persistence was withheld until the screen that owns saving
+// existed, and it now does. The condition is satisfied rather than relaxed —
+// every predecessor's gate still asserts that *its* screens call nothing here,
+// and S10's own gate asserts that the only caller is its autosave service.
+//
+// It is the one **write** in this allowlist. `APP3-B08` guards it with
+// compare-and-set on a revision the client may only ever have *read*: a
+// mismatch is refused `409` with zero write, so the operation cannot be misused
+// into a silent overwrite even by a caller that wanted to.
+//
+// Deliberately still withheld:
+//
+// - `publicProductMediaGet`, unchanged: product images are fetched by the
+//   browser from the relative `media[].url` the catalog responses return.
+//
+// `publicProductSideBackgroundGet` crossed with `APP3-S02`, the stage that
+// finally renders one. S01 withheld it for the reason stated at the time — it
+// rendered no stage, so it needed no background bytes — and that rule is
+// satisfied rather than relaxed: S01's own gate still asserts the bootstrap
+// screen never calls it.
+//
+// It resolves to a `Blob`, like the Template asset above and for the same
+// reason. The caller turns it into a browser object URL as a purely local
+// rendering handle — never persisted, never sent back, never a storage address.
+// The address is contextual: a public Product slug and a Side's stable public
+// code, neither of which is an asset id, a derivative id or a storage key, and
+// the server re-proves publication, side activity and the derivative on every
+// request.
+export {
+  publicProductPlacementGet,
+  publicProductSideBackgroundGet,
+  publicDesignTemplateList,
+  publicDesignTemplateDetail,
+  publicDesignTemplateAssetGet,
+  publicDesignSessionCreate,
+  publicDesignSessionResume,
+  publicDesignSessionAutosave,
+  publicDesignSessionAssetCreate,
+  publicDesignSessionAssetGet,
+  publicDesignSessionAssetStatus,
+} from './generated/embroidery-api';
+export {
+  CreateBlankDesignSessionBodyMode,
+  CloneDesignSessionBodyMode,
+  // Re-exported as **values** so the Studio branches on contract states rather
+  // than on string literals a screen could mistype into a comparison that is
+  // simply never true.
+  DesignSessionAssetStatusResponseState,
+  DesignSessionAssetStatusResponseMediaType,
+} from './generated/embroidery-api.schemas';
+export type {
+  PublicProductPlacementResponse,
+  PublicPlacementSideResponse,
+  PublicPlacementAreaResponse,
+  PublicDesignTemplateListParams,
+  PublicDesignTemplateListResponse,
+  PublicDesignTemplateSummaryResponse,
+  PublicDesignTemplateDetailResponse,
+  PublicDesignTemplateVersionResponse,
+  PublicDesignTemplateScopeResponse,
+  CreateDesignSessionBody,
+  CreateBlankDesignSessionBody,
+  CloneDesignSessionBody,
+  AutosaveDesignSessionBody,
+  DesignSessionSnapshotResponse,
+  DesignSessionScopeResponse,
+  DesignSessionLineageResponse,
+  PublicDesignSessionAssetCreateBody,
+  DesignSessionAssetIntakeResponse,
+  DesignSessionAssetStatusResponse,
+} from './generated/embroidery-api.schemas';

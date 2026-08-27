@@ -1,7 +1,7 @@
 /**
  * The query-key factory for the Admin order + deposit workspace.
  *
- * Three entries, and they are deliberately different kinds of thing:
+ * Four entries, and they are deliberately different kinds of thing:
  *
  * - **the order** is the frozen `APP7-B02` read. It never changes as a result of
  *   anything on this screen except the order's own status, so it is keyed by
@@ -27,6 +27,18 @@ export const orderDetailKeys = {
   all: ROOT,
   detail: (orderId: string) => [...ROOT, 'detail', orderId] as const,
   payments: (orderId: string) => [...ROOT, 'detail', orderId, 'payments'] as const,
+  /**
+   * The order's own shipping detail (`APP9-B04`), under the order it belongs
+   * to.
+   *
+   * A separate entry from the order rather than a member of it, because the
+   * two change for different reasons: a shipping save moves the detail and
+   * leaves the order's status exactly where it was, while a dispatch moves
+   * both. Nesting it under `detail` is what lets a dispatch invalidate the
+   * order and the detail as one subtree, without reaching the payments beside
+   * them.
+   */
+  shipping: (orderId: string) => [...ROOT, 'detail', orderId, 'shipping'] as const,
   /** One private image, addressed exactly as `APP7-B06` addresses it. */
   evidence: (orderId: string, evidenceId: string) =>
     [...ROOT, 'detail', orderId, 'evidence', evidenceId] as const,

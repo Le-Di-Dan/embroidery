@@ -24,6 +24,11 @@
 //
 // Reordering these lines changes the emitted CSS. Adding a selector to two
 // partials would too — each rule lives in exactly one of them.
+//
+// `order-fulfillment` is last for that reason: the APP9 rail (`APP9-A01`) is
+// composed **on top of** the APP7 card chrome above it, reusing `.order-card`
+// and its title, help, note and definition rules rather than redefining any of
+// them, and adding only what APP9 draws and APP7 never did.
 
 @use 'order-detail-layout';
 @use 'order-detail-cards';
@@ -31,3 +36,4 @@
 @use 'order-payment-workbench';
 @use 'order-payment-dialogs';
 @use 'order-payment-outcome';
+@use 'order-fulfillment';

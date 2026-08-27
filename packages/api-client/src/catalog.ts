@@ -1,0 +1,122 @@
+/**
+ * Assets, products and their publication (`APP2`) — the Admin authoring side and
+ * the anonymous public reads that serve the Storefront from the same catalog.
+ *
+ * The Admin intake, draft authoring and publication operations sit beside the
+ * public listing and detail resolver on purpose: they are two views of one
+ * catalog, and an operator publishing a product needs to see exactly which read
+ * a customer will then get.
+ *
+ * `adminProductArchive` is still deliberately withheld — the block below says
+ * why, where it would otherwise sit.
+ */
+
+// Admin asset intake operations (APP2-B01). Exposed on the public boundary so
+// the Admin Assets capability never deep-imports the generated tree. The
+// generated `assetKind`/`classification` enums are re-exported as values so a
+// caller supplies the fixed multipart metadata from the contract instead of
+// hard-coding a literal.
+export { adminAssetUpload, adminAssetDetail, adminAssetList } from './generated/embroidery-api';
+export {
+  AdminAssetUploadBodyAssetKind,
+  AdminAssetUploadBodyClassification,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminAssetDetailResponse,
+  AdminAssetListResponse,
+  AdminAssetListParams,
+  AdminAssetUploadBody,
+  AdminAssetUploadReceiptResponse,
+} from './generated/embroidery-api.schemas';
+
+// Admin product read + draft-authoring operations (APP2-B02). `adminProductList`
+// serves the read-only list (`APP2-A02`); create, detail and update serve the
+// product form/detail capability (`APP2-A03`).
+//
+// Still deliberately withheld: `adminProductArchive`, which has no approved
+// surface (`FU-APP2-PRODUCT-ARCHIVE-UI-01`). Archive is not unpublish — it is a
+// separate lifecycle transition with its own reason requirement — so keeping it
+// off this boundary is what stops a publication screen from reaching it by
+// mistake while `FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` is still open.
+//
+// The query enums are re-exported as values so filter and category options are
+// derived from the contract rather than hard-coded.
+export {
+  adminProductList,
+  adminProductCreate,
+  adminProductDetail,
+  adminProductUpdate,
+} from './generated/embroidery-api';
+export {
+  AdminProductListStatus,
+  AdminProductListCategorySlug,
+  AdminProductDetailResponseStatus,
+  AdminProductMediaResponseRole,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminProductListParams,
+  AdminProductListResponse,
+  AdminProductSummaryResponse,
+  AdminProductCategoryResponse,
+  AdminProductDetailResponse,
+  AdminProductMediaResponse,
+  CreateProductBody,
+  UpdateProductBody,
+} from './generated/embroidery-api.schemas';
+
+// Admin product publication operations (APP2-B03), exposed for the Admin
+// publication interaction (`APP2-A04`). All three cross the boundary together:
+// the readiness report is only meaningful next to the command it describes, and
+// publish and unpublish are the two directions of one transition.
+//
+// `AdminProductRequirementResponseCode` is re-exported as a value on purpose.
+// The screen renders the complete requirement set in the server's order, so the
+// codes have to come from the contract — deriving them from a hand-kept list
+// would let the two drift, and the drift would show up as a silently missing
+// requirement row rather than as a build failure.
+export {
+  adminProductPublicationReadiness,
+  adminProductPublish,
+  adminProductUnpublish,
+} from './generated/embroidery-api';
+export {
+  AdminProductRequirementResponseCode,
+  AdminProductPublicationReadinessResponseStatus,
+  AdminProductPublicationResponseStatus,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminProductPublicationReadinessResponse,
+  AdminProductPublicationResponse,
+  AdminProductRequirementResponse,
+  PublishProductBody,
+  UnpublishProductBody,
+} from './generated/embroidery-api.schemas';
+
+// Anonymous public catalog reads (APP2-B04): the listing for the Storefront
+// Discover feed (`APP2-S01`) and the detail resolver for Product Detail
+// (`APP2-S02`).
+//
+// `publicProductDetail` crossed this boundary in `APP2-S02`, once IMP-D039
+// locked `/san-pham/[slug]`. It was withheld until then precisely because a
+// route did not exist, and the two facts belong together: an operation on the
+// public boundary is an invitation to render a page for it.
+//
+// `publicProductMediaGet` stays withheld, for a different reason that has not
+// changed: it serves image bytes, which the browser fetches by rendering the
+// relative `media[].url` the list and detail responses already return —
+// application code must never stream those bytes itself.
+//
+// The category enum is re-exported as a value so the Storefront's category chips
+// are derived from the contract rather than a hand-kept list that could drift
+// out of step with the four categories the database actually provisions.
+export { publicProductList, publicProductDetail } from './generated/embroidery-api';
+export { PublicProductListCategorySlug } from './generated/embroidery-api.schemas';
+export type {
+  PublicProductListParams,
+  PublicProductListResponse,
+  PublicProductSummaryResponse,
+  PublicProductDetailResponse,
+  PublicProductSeoResponse,
+  PublicCategoryResponse,
+  PublicMediaReferenceResponse,
+} from './generated/embroidery-api.schemas';

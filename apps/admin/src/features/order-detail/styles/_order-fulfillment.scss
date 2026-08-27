@@ -1,0 +1,284 @@
+// Admin order fulfillment rail — the APP9 commerce-completion workspace
+// (`APP9-A01`).
+//
+// Reproduces the right column of `809:4` (`FIG-APP9-A01-DETAIL-PRODCOMPLETED-DESKTOP`),
+// `811:4` (`…-AWAITINGFINAL-…`), `812:4` (`…-SHIPPING-EDITABLE-…`), `812:109`
+// (`…-SHIPPING-FEEREFUSAL-…`), `815:4` (`…-DETAIL-DELIVERED-…`) and `815:124`
+// (`…-DETAIL-COMPLETED-…`), plus the three confirmation dialogs' effect blocks
+// (`809:95`, `814:4`, `815:89`).
+//
+// Every colour, radius, space and type size is a token. The rail is composed
+// **on top of** `_order-detail-cards.scss`: the card box, its title, help text,
+// note and definition list are the APP7 chrome reused as-is, and nothing here
+// redefines one of them. What this partial adds is only what APP9 draws and APP7
+// never did — the named API-gap block, the field grid, the refusal treatments
+// and the fulfillment button pair.
+//
+// Class names are prefixed `order-fulfillment*`. The Admin stylesheet is global
+// and unscoped, so a generic `.field` or `.gap` here would collide with another
+// feature's rules in a way jsdom could never catch.
+
+@use '@embroidery/styles' as styles;
+
+.order-fulfillment {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+// The card title and its LC-19 badge share a baseline (`812:39`, `815:159`).
+.order-card__heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  align-items: center;
+}
+
+// ---------------------------------------------------------------------------
+// Named limits and rules
+// ---------------------------------------------------------------------------
+//
+// One block, two tints. The error tint is the API gap (`811:74`) and the
+// no-override note (`812:211`); the warning tint is the dispatch freeze
+// (`814:10`). Both are read-only prose about a constraint, so they share a shape
+// and differ only in how loudly they are drawn.
+.order-fulfillment__gap {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.order-fulfillment__gap--warning {
+  border-color: styles.$color-status-warning;
+}
+
+.order-fulfillment__gap-title {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+.order-fulfillment__gap-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-fulfillment__no-actions {
+  margin: 0;
+  padding-inline-start: styles.spacing(16);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// Locked capabilities (`809:84`)
+// ---------------------------------------------------------------------------
+//
+// Inert rows, never disabled controls: there is no button inside one, so nothing
+// is reachable by keyboard and nothing could be re-enabled by an inspector.
+.order-fulfillment__locked {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+}
+
+.order-fulfillment__locked-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+}
+
+.order-fulfillment__locked-label {
+  min-width: 160px;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-fulfillment__locked-reason {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+// ---------------------------------------------------------------------------
+// The shipping editor (`812:46`…`812:84`)
+// ---------------------------------------------------------------------------
+//
+// A responsive grid rather than the design's fixed two- and three-column rows.
+// `812:4` is drawn at Desktop 1440 only, and `auto-fit` reproduces its row
+// grouping at that width while collapsing to one column in the Admin shell's
+// narrow breakpoint — which is the existing Admin responsive strategy, not a
+// separate mobile product.
+.order-fulfillment__fields {
+  display: grid;
+  gap: styles.spacing(12);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.order-fulfillment__field {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+}
+
+.order-fulfillment__label {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+}
+
+.order-fulfillment__input {
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+
+  &:disabled {
+    background: styles.$color-surface-secondary;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+// The invalid tint sits on the label and the border together (`812:179`), so an
+// operator who cannot distinguish the tints still finds the field by its text.
+.order-fulfillment__field--invalid {
+  .order-fulfillment__label {
+    color: styles.$color-status-error;
+  }
+
+  .order-fulfillment__input {
+    border-color: styles.$color-status-error;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Refusals and receipts
+// ---------------------------------------------------------------------------
+.order-fulfillment__refusal {
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+.order-fulfillment__refusal-lead {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.order-fulfillment__saved {
+  margin: 0;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-status-success;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-secondary;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+}
+
+// The fee-increase refusal is the one card drawn with its own border, because
+// it is the one refusal an operator cannot resolve alone (`812:197`).
+.order-card--refusal {
+  border-width: 2px;
+  border-color: styles.$color-status-error;
+}
+
+.order-fulfillment__compare {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-status-error;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+// ---------------------------------------------------------------------------
+// Dialog effect blocks
+// ---------------------------------------------------------------------------
+.payment-dialog__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.order-fulfillment__effect {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-secondary;
+}
+
+.order-fulfillment__snapshot-title {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-bold;
+}
+
+// ---------------------------------------------------------------------------
+// Actions
+// ---------------------------------------------------------------------------
+.order-fulfillment__actions,
+.order-fulfillment__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  align-items: center;
+}
+
+.order-fulfillment__button {
+  padding: styles.spacing(12) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  cursor: pointer;
+
+  &:disabled {
+    border-color: styles.$color-border-secondary;
+    background: styles.$color-surface-secondary;
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+.order-fulfillment__button--primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+  }
+}

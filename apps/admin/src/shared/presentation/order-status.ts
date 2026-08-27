@@ -2,7 +2,8 @@
  * How an order's LC-14 state is named to an operator, for the whole Admin app.
  *
  * Two APP7 screens read it — the order queue (`732:3`, `732:110`) and the order
- * detail (`734:3`, `736:3`) — so it sits in Admin shared scope for the reason
+ * detail (`734:3`, `736:3`) — and `APP9-A01` extends both rather than adding a
+ * screen, so it sits in Admin shared scope for the reason
  * `request-status.ts` does: an order must not change its name as the operator
  * moves between the list and the order it opened.
  *
@@ -13,16 +14,20 @@
  * are server facts, and a helper that answered them would become a second
  * lifecycle authority living in the browser.
  *
- * ## Only three states are drawn, and the rest say so honestly
+ * ## A state is tinted only once a phase has drawn it
  *
- * `APP7-D01` draws pills for exactly `AWAITING_DEPOSIT`, `DEPOSIT_PAID` and
- * `IN_PRODUCTION` (`732:3`), and the state matrix (`751:3`) is explicit that
- * APP7 neither produces nor designs screens for the nine states from
- * `IN_PRODUCTION` onward — "hiển thị đúng mã đó một cách trung tính thay vì
- * đoán nghĩa". The eight undrawn states therefore carry the approved Vietnamese
- * label from the queue's own filter list (`732:110`, which enumerates all
- * eleven) but a **neutral** tone: naming them is what the filter requires,
- * tinting them would be APP7 inventing a semantic for a state APP8/APP9 own.
+ * `APP7-D01` drew pills for `AWAITING_DEPOSIT`, `DEPOSIT_PAID` and
+ * `IN_PRODUCTION` (`732:3`); `APP9-D01` drew the five fulfillment states on
+ * the same table (`FIG-APP9-A01-ORDERS-FULFILLMENT-DESKTOP`, `808:4`) and on
+ * the detail header of each workspace it owns. Those eight carry their drawn
+ * tone.
+ *
+ * The remaining three — `ON_HOLD`, `CANCELLING`, `CANCELLED` — stay
+ * **neutral**. They carry the approved Vietnamese label from the queue's own
+ * filter list (`732:110`, which enumerates all eleven) because naming them is
+ * what the filter requires, but tinting them would be inventing a semantic for
+ * a state no delivered phase owns: commercial cancellation is deferred
+ * (`PO-APP9-001 = OPTION A — DEFER`).
  *
  * ## Total by construction
  *
@@ -82,21 +87,21 @@ const ORDER_STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
   IN_PRODUCTION: { label: 'Đang sản xuất', tone: 'info', symbol: STATUS_SYMBOLS.running },
   PRODUCTION_COMPLETED: {
     label: 'Sản xuất xong',
-    tone: 'neutral',
-    symbol: STATUS_SYMBOLS.idle,
+    tone: 'info',
+    symbol: STATUS_SYMBOLS.working,
   },
   AWAITING_FINAL_PAYMENT: {
     label: 'Chờ thanh toán cuối',
-    tone: 'neutral',
-    symbol: STATUS_SYMBOLS.idle,
+    tone: 'warning',
+    symbol: STATUS_SYMBOLS.waiting,
   },
   READY_FOR_DELIVERY: {
     label: 'Sẵn sàng giao',
-    tone: 'neutral',
-    symbol: STATUS_SYMBOLS.idle,
+    tone: 'info',
+    symbol: STATUS_SYMBOLS.running,
   },
-  DELIVERED: { label: 'Đã giao', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
-  COMPLETED: { label: 'Hoàn tất', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
+  DELIVERED: { label: 'Đã giao', tone: 'success', symbol: STATUS_SYMBOLS.succeeded },
+  COMPLETED: { label: 'Hoàn tất', tone: 'success', symbol: STATUS_SYMBOLS.succeeded },
   ON_HOLD: { label: 'Tạm giữ', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
   CANCELLING: { label: 'Đang huỷ', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },
   CANCELLED: { label: 'Đã huỷ', tone: 'neutral', symbol: STATUS_SYMBOLS.idle },

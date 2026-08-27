@@ -10,6 +10,7 @@ import { useOrderDetailQuery } from '../hooks/use-order-detail-queries';
 import { ORDER_DETAIL_COPY as COPY } from '../model/order-detail-copy';
 import { classifyOrderReadFailure } from '../model/order-detail-failure';
 import { DepositPaymentPanel } from './deposit-payment-panel';
+import { FulfillmentPanel } from './fulfillment-panel';
 import { OrderFrozenFactsCard } from './order-frozen-facts-card';
 import { OrderItemsTable } from './order-items-table';
 
@@ -29,6 +30,21 @@ interface OrderDetailScreenProps {
  * for different reasons — the frozen facts move only when the order's own status
  * does — and separate columns because an operator reconciling money needs the
  * agreed figures beside the observed ones.
+ *
+ * ## `APP9-A01` extends this screen rather than adding one
+ *
+ * The fulfillment rail sits at the top of the same right column, above the
+ * deposit workbench, and renders whichever APP9 section the order's state calls
+ * for — opening the balance, the balance itself, shipping, dispatch, completion
+ * or nothing at all. `NEW_ADMIN_ROUTES = 0`: there is no `/fulfillment`, no
+ * `/shipping`, no `/final-payments` and no second order queue, because a
+ * decision that freezes an address or closes an order belongs beside the order
+ * it acts on, not on a page that would have to re-state which order it meant.
+ *
+ * The rail is passed the order it was given rather than re-reading it. One
+ * `adminOrder_detail` per screen, and the status the header renders is the same
+ * status the rail routes on — two reads could disagree, and then the header and
+ * the actions beneath it would be describing different orders.
  *
  * The payment surface lives here rather than at `/payments` or
  * `/orders/{id}/payment` for the same reason: a decision that can settle a
@@ -123,6 +139,7 @@ export function OrderDetailScreen({ orderId }: OrderDetailScreenProps) {
           <OrderItemsTable items={order.items} />
         </div>
         <div className="order-detail__payments">
+          <FulfillmentPanel order={order} />
           <DepositPaymentPanel orderId={orderId} />
         </div>
       </div>
