@@ -517,8 +517,26 @@ B05   COMPLETE   (dispatch freeze, delivery and order completion — POST
                   tracking lifecycle or customer tracking route. No cancellation
                   or refund change. 2 HTTP operations, +2 OpenAPI operations,
                   0 migrations, 0 schema change, 0 worker change)
-D01   NEXT
-A01   INCOMPLETE
+D01   COMPLETE (one APP9 design package on the pre-existing, empty APP_09
+                  page 766:2 — reused, not re-created. Root section 807:3,
+                  14 sub-sections, 36 frames, 36 design-index rows all entered
+                  REVIEW_REQUIRED with no approval evidence: 18 Admin, 12
+                  Storefront, 6 shared specification frames. NEW_ADMIN_ROUTES=0
+                  — only /orders and /orders/{orderId} extended, 0 sidenav
+                  entries added; NEW_STOREFRONT_ROUTES=1 — one secure
+                  final-payment/completion surface, APP9_S02 does not exist.
+                  Ten delivered operation ids annotated and no others. Three
+                  API limits drawn rather than hidden: no Admin read projects
+                  the REMAINING obligation (FU-APP9-B03-02), the decision
+                  response carries the balance under deposit-flavoured transport
+                  names (FU-APP9-B03-01), and no customer projection returns a
+                  server-authoritative proposed shipping fee — so
+                  CUSTOMER_FEE_ACK_UI = BACKEND_READY / UI_DEFERRED, owner APP10.
+                  No carrier, tracking, cancellation, refund, notification or
+                  provider UI anywhere. 0 component masters, 0 instances, 0 new
+                  variables or styles. Design/documentation only — 0 code, 0
+                  migrations, 0 OpenAPI change)
+A01   NEXT
 S01   INCOMPLETE
 E01   INCOMPLETE
 X01   INCOMPLETE
