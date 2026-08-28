@@ -597,5 +597,22 @@ E01   COMPLETE (2026-08-28 — cross-boundary acceptance only, 0 runtime or
                   0 migrations. CUSTOMER_FEE_ACK_UI stays
                   BACKEND_READY / UI_DEFERRED; the optional S01 static boundary
                   guard was NOT delivered, so FU-APP9-S01-04 stays open)
-X01   NEXT
+X01   COMPLETE (2026-08-28 — phase closure, documentation only. 0 runtime,
+                  test, schema, migration, OpenAPI, generated-client and Figma
+                  changes. Baselines verified read-only against the committed
+                  repository and all matched: 100 paths / 108 operations /
+                  222 schemas, 9 APP9-owned HTTP operations (99 -> 108),
+                  37 migrations with 0 owned by APP9, 36 APP9 Figma rows all
+                  APPROVED_FOR_IMPLEMENTATION under
+                  FIG-APPROVAL-APP9-D01-PO-001, 0 new Admin routes and 1 new
+                  Storefront route. E01 evidence reused, not re-executed.
+                  31 follow-ups classified: 4 CLOSED, 18 NONBLOCKING_OPEN,
+                  4 ACCEPTED_LIMITATION, 5 DEFERRED_TO_LATER_PHASE, 0 blocking.
+                  APP9 = PASS_WITH_FOLLOW_UPS, PHASE = CLOSED.
+                  Evidence: reports/APP9-X01-COMPLETION-REPORT.md,
+                  reports/APP9-CLOSURE-MATRIX.md)
 ```
+
+No row carries `NEXT`: every APP9 checkpoint is `COMPLETE` and the phase is
+closed. `NEXT_PHASE = APP10 — Customer Operations and Communication`, which was
+**not** begun.
