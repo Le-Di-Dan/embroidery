@@ -144,6 +144,7 @@ export type {
   ContactKind,
   ContentPageState,
   ContentPageType,
+  CustomerMergeCaseState,
   CustomRequestState,
   DesignReviewOutcome,
   DesignSessionState,

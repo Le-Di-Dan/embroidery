@@ -597,6 +597,11 @@
       },
       "AdminCustomerContactResponse": {
         "properties": {
+          "contactId": {
+            "description": "The opaque identifier of this contact, and the only way to address it. Required by the APP10-B01 promote and deactivate operations. A server-generated id, not derived from the contact value, and scoped in use: an operation quoting it against another Customer is answered exactly as one quoting an id that names nothing.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081",
+            "type": "string"
+          },
           "kind": {
             "description": "Whether this contact is an email address or a phone number.",
             "enum": [
@@ -623,6 +628,7 @@
           }
         },
         "required": [
+          "contactId",
           "kind",
           "maskedValue",
           "verified",
@@ -647,6 +653,11 @@
           "displayName": {
             "description": "What this Customer calls themselves, from the Customer record alone. Absent when they never supplied one — a Customer exists from a verified contact, and a name is not part of that. It is not a Business Profile company name, not derived from a contact, and never a substitute for the identifier: two Customers may share a name.",
             "example": "Nguyễn Minh An",
+            "type": "string"
+          },
+          "notes": {
+            "description": "The operator’s internal note on this Customer, added by APP10-B01 so the field that checkpoint makes writable can also be read back. Staff-facing only: it is never shown to the Customer, never notified, and never part of a public or secure-link response. Absent when no operator has written one.",
+            "example": "Prefers to be contacted in the afternoon.",
             "type": "string"
           },
           "verifiedAt": {
@@ -675,6 +686,102 @@
         },
         "required": [
           "grants"
+        ],
+        "type": "object"
+      },
+      "AdminCustomerMergeCaseResponse": {
+        "properties": {
+          "consequencePreview": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergeConsequencePreviewResponse"
+              }
+            ],
+            "description": "What executing this merge would attempt to move or revoke, counted from current rows on every read and stored nowhere. Advisory: rows arrive and leave between opening a case and executing it, and execution re-evaluates actual state inside its own transaction. Frozen commercial evidence — approval snapshots, quotation acceptances, design reviews, audit events and every append-only transition history — is deliberately excluded, because a merge never rewrites it."
+          },
+          "decidedAt": {
+            "description": "When the case left REQUESTED. Absent while it is still open. The operator’s reason for declining is not published here: the case carries one reason column and it holds why the case was raised, so the declining reason is recorded in the audit trail instead.",
+            "example": "2026-08-28T10:15:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "loser": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergeParticipantResponse"
+              }
+            ],
+            "description": "The Customer that would be merged away, with masked contacts."
+          },
+          "mergeCaseId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6090",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why the operator opened this case. Their own words, stored once.",
+            "example": "Same person: the phone number was re-registered under a new email after a typo.",
+            "type": "string"
+          },
+          "requestedAt": {
+            "example": "2026-08-28T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "requestedByAdminId": {
+            "description": "The Admin who opened the case, taken from their session, never from a body.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6001",
+            "type": "string"
+          },
+          "status": {
+            "description": "REQUESTED until it is decided. REJECTED means an operator declined it and nothing was transferred. EXECUTED means the merge was performed.",
+            "enum": [
+              "REQUESTED",
+              "EXECUTED",
+              "REJECTED"
+            ],
+            "example": "REQUESTED",
+            "type": "string"
+          },
+          "survivor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergeParticipantResponse"
+              }
+            ],
+            "description": "The Customer that survives, with masked contacts."
+          }
+        },
+        "required": [
+          "mergeCaseId",
+          "status",
+          "reason",
+          "requestedByAdminId",
+          "requestedAt",
+          "consequencePreview"
+        ],
+        "type": "object"
+      },
+      "AdminCustomerMergeOpenedResponse": {
+        "properties": {
+          "mergeCaseId": {
+            "description": "The merge case that was opened.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6090",
+            "type": "string"
+          },
+          "status": {
+            "description": "Always REQUESTED. A case is born open and nothing has been transferred.",
+            "enum": [
+              "REQUESTED",
+              "EXECUTED",
+              "REJECTED"
+            ],
+            "example": "REQUESTED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mergeCaseId",
+          "status"
         ],
         "type": "object"
       },
@@ -7099,6 +7206,115 @@
         ],
         "type": "object"
       },
+      "MergeConsequencePreviewResponse": {
+        "properties": {
+          "activeSecureAccessGrants": {
+            "description": "The merged-away Customer’s ACTIVE secure access grants — the live links execution would revoke. Already expired or revoked grants open nothing and are not counted.",
+            "example": 1,
+            "type": "number"
+          },
+          "businessProfile": {
+            "description": "Whether the merged-away Customer has a business profile that would move. A boolean rather than a count: at most one profile exists per Customer.",
+            "example": false,
+            "type": "boolean"
+          },
+          "contactPoints": {
+            "description": "Every contact point belonging to the merged-away Customer, deactivated ones included: each carries the Customer reference and each has to move.",
+            "example": 2,
+            "type": "number"
+          },
+          "customRequests": {
+            "description": "Custom requests that would be repointed to the surviving Customer.",
+            "example": 3,
+            "type": "number"
+          },
+          "orders": {
+            "description": "Orders that would be repointed to the surviving Customer.",
+            "example": 2,
+            "type": "number"
+          },
+          "uploadedAssets": {
+            "description": "Assets uploaded by the merged-away Customer that would be repointed.",
+            "example": 5,
+            "type": "number"
+          }
+        },
+        "required": [
+          "contactPoints",
+          "activeSecureAccessGrants",
+          "customRequests",
+          "orders",
+          "uploadedAssets",
+          "businessProfile"
+        ],
+        "type": "object"
+      },
+      "MergeParticipantContactResponse": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "EMAIL",
+              "PHONE"
+            ],
+            "example": "EMAIL",
+            "type": "string"
+          },
+          "maskedValue": {
+            "description": "The masked contact, and the only form of it this API publishes. Deterministic and one-way, so an operator can recognise the same contact across two Customer cards without either address being disclosed.",
+            "example": "a***@vidu.com",
+            "type": "string"
+          },
+          "primary": {
+            "description": "Whether this is the Customer’s primary contact.",
+            "example": true,
+            "type": "boolean"
+          },
+          "verified": {
+            "description": "Whether this contact completed a challenge.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "maskedValue",
+          "verified",
+          "primary"
+        ],
+        "type": "object"
+      },
+      "MergeParticipantResponse": {
+        "properties": {
+          "contacts": {
+            "description": "The Customer’s current contacts, primary first. Deactivated historical contacts are not listed here — they are counted in the consequence preview, which is where the number of rows a merge moves belongs.",
+            "items": {
+              "$ref": "#/components/schemas/MergeParticipantContactResponse"
+            },
+            "type": "array"
+          },
+          "customerId": {
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "type": "string"
+          },
+          "displayName": {
+            "description": "What this Customer calls themselves. Absent when they never supplied one, and never a substitute for the identifier — two Customers sharing a name is exactly the situation that produces a merge case.",
+            "example": "Nguyễn Minh An",
+            "type": "string"
+          },
+          "verifiedAt": {
+            "description": "When this identity was established. A Customer exists only verified.",
+            "example": "2026-08-14T09:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customerId",
+          "verifiedAt",
+          "contacts"
+        ],
+        "type": "object"
+      },
       "ModerationNoteAppendedResponse": {
         "properties": {
           "adminId": {
@@ -7177,6 +7393,39 @@
           "replayIntentId",
           "status",
           "outcome"
+        ],
+        "type": "object"
+      },
+      "OpenCustomerMergeBody": {
+        "additionalProperties": false,
+        "description": "Opens a REQUESTED merge case for one explicitly chosen pair. Nothing is transferred, revoked or tombstoned — that is the merge execution operation.",
+        "properties": {
+          "loserCustomerId": {
+            "description": "The Customer that would be merged away. Must not already be merged into another: merge chains are never followed or flattened.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why the operator believes these two records are the same person. Required: a merge is an exceptional, admin-only decision and the case is the evidence for it. Stored on the merge case and never copied into the audit trail, logged, or notified.",
+            "example": "Same person: the phone number was re-registered under a new email after a typo.",
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "survivorCustomerId": {
+            "description": "The Customer that survives the merge. Stated by the operator and never chosen, defaulted or swapped by the server. Obtained from the exact-contact resolver.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "survivorCustomerId",
+          "loserCustomerId",
+          "reason"
         ],
         "type": "object"
       },
@@ -8300,6 +8549,23 @@
         ],
         "type": "object"
       },
+      "RejectCustomerMergeBody": {
+        "additionalProperties": false,
+        "description": "Declines a REQUESTED merge case. A lifecycle decision only: no contact, grant, request, order or asset is touched, and neither Customer changes.",
+        "properties": {
+          "reason": {
+            "description": "Why the operator is declining this merge. Required, and recorded in the audit trail against the merge case.",
+            "example": "Different people: the shared phone number belongs to a shop, not to one customer.",
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
       "RejectQuotationBody": {
         "additionalProperties": false,
         "description": "Declines the exact quotation version the customer was shown. Takes the same two fields as acceptance and no reason text, because the schema keeps no rejection reason. Declining a price does not reject the custom request.",
@@ -9334,6 +9600,27 @@
         "required": [
           "expectedUpdatedAt"
         ],
+        "type": "object"
+      },
+      "UpdateCustomerProfileBody": {
+        "additionalProperties": false,
+        "description": "Bounded maintenance of a Customer’s profile metadata. Two fields, and neither verification evidence, merge state nor any contact is reachable through it.",
+        "properties": {
+          "displayName": {
+            "description": "What this Customer calls themselves, on the Customer record alone. Never a Business Profile company name and never derived from a contact. Send `null` or a blank string to clear it; omit the field to leave it unchanged.",
+            "example": "Nguyễn Minh An",
+            "maxLength": 200,
+            "nullable": true,
+            "type": "string"
+          },
+          "notes": {
+            "description": "The operator’s internal note on this Customer. Staff-facing only: it is never shown to the Customer, never notified and never part of a public or secure-link response. Send `null` or a blank string to clear it; omit the field to leave it unchanged.",
+            "example": "Prefers to be contacted in the afternoon.",
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "UpdateProductBody": {
@@ -12056,6 +12343,620 @@
         ]
       }
     },
+    "/api/admin/customer-merges": {
+      "post": {
+        "description": "Records that an operator proposes merging one Customer into another, with a mandatory reason. **Nothing is merged.** No contact is moved, no access grant revoked, no request, order or asset repointed and no Customer tombstoned — the case is a decision waiting to be made. The surviving and merged-away Customers are exactly the two stated in the body and are never swapped, defaulted or inferred; a Customer already merged into another is refused as either participant, and merge chains are never followed. Both ids come from the exact-contact resolver: this operation accepts no email and no phone number. One open case may exist per ordered pair, arbitrated by a unique index, so two simultaneous requests for the same pair cannot both succeed.",
+        "operationId": "adminCustomerMerge_open",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenCustomerMergeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminCustomerMergeOpenedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The merge case was opened, in REQUESTED.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body, an unknown field, an over-long or blank reason, or the same Customer named as both survivor and loser.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such surviving Customer, or no such merged-away Customer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Either Customer has already been merged into another, or a merge case is already open for this pair.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The body is not application/json.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Open a Customer merge case",
+        "tags": [
+          "adminCustomerMerge"
+        ]
+      }
+    },
+    "/api/admin/customer-merges/{caseId}": {
+      "get": {
+        "description": "The case, both Customers as masked identity cards, and a read-only preview of what executing this merge would move or revoke. Contacts are returned masked and only masked — the raw, normalized and display values are never published, on either side. The preview counts only **live** identity references: contact points, active secure access grants, custom requests, orders, uploaded assets and the business profile. Frozen commercial evidence is excluded by design — approval snapshots, quotation acceptances, design reviews, audit events and every append-only transition history keep their original Customer, because a merge records a decision and never rewrites what a customer already agreed to. The counts are computed from current rows on every read, stored nowhere and advisory: execution re-evaluates state inside its own transaction. This is a read — it writes no row, changes no state and appends no merge event.",
+        "operationId": "adminCustomerMerge_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminCustomerMergeCaseResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The merge case, both masked Customers, and the consequence preview.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed case id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such merge case.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Get one merge case and its consequence preview",
+        "tags": [
+          "adminCustomerMerge"
+        ]
+      }
+    },
+    "/api/admin/customer-merges/{caseId}/reject": {
+      "post": {
+        "description": "Declines a REQUESTED case with a mandatory reason. A lifecycle decision and nothing else: neither Customer changes, no merge pointer is written, no contact is moved, no access grant revoked, and no request, order or asset repointed. Only a REQUESTED case may be rejected — a case that is already rejected or executed is a conflict, not a quiet success, because the reason a second caller supplied would otherwise be silently discarded. The reason is recorded in the audit trail against the case.",
+        "operationId": "adminCustomerMerge_reject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectCustomerMergeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The merge case is rejected. No content.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed case id or body, an unknown field, or a blank or over-long reason.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such merge case.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The case has already been decided and can no longer be rejected.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The body is not application/json.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Reject a Customer merge case",
+        "tags": [
+          "adminCustomerMerge"
+        ]
+      }
+    },
     "/api/admin/customers/resolve": {
       "post": {
         "description": "Turns one exact contact an operator already holds — from a ticket, a request or a conversation — into the Customer id the support reads are addressed by. The contact is normalized by the canonical rules and matched **whole** against verified, current contacts: this is an equality lookup, not a search. There is no partial, prefix or fuzzy match, no result list and no paging, because a verified contact belongs to exactly one Customer. Unknown, unverified, deactivated and malformed inputs all answer 404 alike — the operation tells you which Customer owns a contact you already know, and never whether a contact exists. The submitted value is never echoed, logged or stored.",
@@ -12394,6 +13295,588 @@
         "summary": "Get one Customer for support",
         "tags": [
           "adminCustomerSupport"
+        ]
+      },
+      "patch": {
+        "description": "Patches the two profile fields an operator maintains — `displayName` and `notes` — and nothing else. Verification evidence, merge state, anonymization and every contact are unreachable from this operation: it cannot create a contact, change a contact value, or write or clear a verification instant. An omitted field is left unchanged; `null` or a blank string clears it. A patch whose values already match writes nothing and appends no audit event. A Customer already merged into another can no longer be maintained.",
+        "operationId": "adminCustomer_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerProfileBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The profile is up to date. No content.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed customer id, an unknown field, an over-long value, or an empty patch.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such Customer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The Customer has been merged into another and can no longer be maintained.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The body is not application/json.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Update a Customer’s profile metadata",
+        "tags": [
+          "adminCustomer"
+        ]
+      }
+    },
+    "/api/admin/customers/{customerId}/contacts/{contactId}/deactivate": {
+      "post": {
+        "description": "Retires a contact of this Customer. Soft and never destructive: the row stays, its value and its verification instant are left exactly as they are, and only the deactivation instant is written — which is what releases it from the verified-contact uniqueness rule. The primary contact cannot be deactivated, and neither can the Customer’s last verified one; promote a replacement first, explicitly. Nothing is promoted as a side effect. Deactivating a contact that is already deactivated succeeds and changes nothing — no write, no audit event.",
+        "operationId": "adminCustomerContact_deactivate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contactId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "That contact is deactivated. No content.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "A malformed id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such Customer, or this Customer has no such contact. A contact id belonging to another Customer is answered exactly the same way as one that names nothing.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The Customer has been merged into another, or the contact is the primary one or the last verified one.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Deactivate a contact",
+        "tags": [
+          "adminCustomerContact"
+        ]
+      }
+    },
+    "/api/admin/customers/{customerId}/contacts/{contactId}/primary": {
+      "post": {
+        "description": "Moves the primary designation to a contact that already belongs to this Customer, is active and is **already verified**. The rotation is atomic: the previous primary is cleared and this one set inside one transaction, arbitrated by the one-primary-per-Customer unique index. The contact value is never rewritten, no verification instant is written or cleared, and no contact is created. Promoting the contact that is already primary succeeds and changes nothing — no write, no audit event.",
+        "operationId": "adminCustomerContact_promote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contactId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "That contact is the primary one. No content.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "A malformed id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such Customer, or this Customer has no such contact. A contact id belonging to another Customer is answered exactly the same way as one that names nothing.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The Customer has been merged into another, or the contact is deactivated or not verified. An unverified contact becomes promotable through the verification flow, never through this operation.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Make a contact the primary one",
+        "tags": [
+          "adminCustomerContact"
         ]
       }
     },

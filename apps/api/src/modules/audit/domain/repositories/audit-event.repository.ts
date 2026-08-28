@@ -58,6 +58,16 @@ export const AUDIT_TARGET_KINDS = [
   // polymorphic target to have no foreign key precisely so an audit row can
   // outlive the transient row it describes.
   'CONTACT_VERIFICATION_CHALLENGE',
+  // `APP10-B02` — the target of `customer.merge_case_opened` /
+  // `customer.merge_case_rejected` (TBL-009). Same footing as `PRODUCT`,
+  // `DESIGN_TEMPLATE` and `CONTACT_VERIFICATION_CHALLENGE` above: `target_kind`
+  // is open text with no CHECK by DB4 design, so this list is the application's
+  // own G-DB7-46 guard and adding a kind needs no migration. The target is the
+  // **case**, not either customer: a merge case is about two identities and
+  // neither is more its subject than the other, so filing the row under one
+  // would hide the decision from the other's timeline. Both ids travel in the
+  // summary.
+  'CUSTOMER_MERGE_CASE',
 ] as const;
 
 export type AuditTargetKind = (typeof AUDIT_TARGET_KINDS)[number];

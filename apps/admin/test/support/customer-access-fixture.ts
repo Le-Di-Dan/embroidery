@@ -49,8 +49,24 @@ export function makeCustomer(
     displayName: 'Nguyễn Minh An',
     verifiedAt: '2026-08-12T09:00:00.000Z',
     contacts: [
-      { kind: 'EMAIL', maskedValue: EMAIL_MASK, verified: true, primary: true },
-      { kind: 'PHONE', maskedValue: PHONE_MASK, verified: false, primary: false },
+      // `contactId` became part of the published contact projection in
+      // `APP10-B01`, which addresses its two contact operations by it. Synthetic
+      // ids, obviously so: the A01 screen does not render them today, and the
+      // fixture exists to satisfy the contract, not to assert on them.
+      {
+        contactId: '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081',
+        kind: 'EMAIL',
+        maskedValue: EMAIL_MASK,
+        verified: true,
+        primary: true,
+      },
+      {
+        contactId: '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6082',
+        kind: 'PHONE',
+        maskedValue: PHONE_MASK,
+        verified: false,
+        primary: false,
+      },
     ],
     ...overrides,
   };

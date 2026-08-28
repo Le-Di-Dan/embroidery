@@ -88,6 +88,89 @@ operations / 84 schemas"). Those sentences are accurate as a record of what the
 gate asserts, and are left as written; this subsection is what says the assertion
 is historical.
 
+### 1.2 `CMD-CHECK-APP4-B07-CONTRACT` is superseded in part by `APP10-B01`
+
+Recorded by `APP10-B01` (2026-08-28). **No gate logic was changed**, and none
+should be: the file is `APP4-B07`'s acceptance evidence, and editing it to make
+a later world green is what would destroy the record it exists to carry.
+
+The gate was **already red at HEAD**, on a pristine tree, for two frozen-artifact
+reasons of exactly the kind §1.1 describes:
+
+```text
+✗ the document publishes 111 operations; expected 53   (was 108 before B01)
+✗ the repository has 37 migrations; APP4-B07 adds none (B01 adds none either)
+```
+
+`APP10-B01` then supersedes **four** of its substantive rules, each under a
+locked Product-Owner decision recorded in the B01 prompt and `APP10-G01` §E.1:
+
+| Gate rule, as written for B07 | Superseded by | Why |
+|---|---|---|
+| `/api/admin/customers/{customerId}` owns exactly one `get` | B01 §3 | the bounded `PATCH` (`adminCustomer_update`) |
+| the Admin support surface declares four paths | B01 §3 | the two contact routes (`adminCustomerContact_promote`/`_deactivate`) |
+| `AdminCustomerContactResponse` publishes exactly `[kind, maskedValue, primary, verified]` | B01 §7 | the opaque `contactId`, without which the two contact operations address nothing |
+| `AdminCustomerDetailResponse` publishes exactly `[contacts, customerId, displayName, verifiedAt]` | B01 §7 | `notes`, the second field B01 makes writable — a field an operator may write but never read back is not maintainable |
+
+Everything else the gate asserts is **unchanged and still authoritative**, and
+B01 was built to keep it so: no customer list, search or contact-lookup
+parameter; no raw, normalized, display or source contact value in the published
+contract; the `contactPointId` name still absent; no second guard, no role
+vocabulary, no session parsing in a controller; no Business Profile; no schema
+or migration. The three B01 operations live in **new** classes
+(`AdminCustomerController`, `AdminCustomerContactController`) and new
+application files precisely so the ten source files the gate reads keep passing
+its source rules — `AdminCustomerSupportController` still declares no
+`@Patch`/`@Put`/`@Delete` and exactly one `@Post('resolve')`, and no B07 source
+file calls a customer write.
+
+Consequences, binding on any later checkpoint:
+
+- The row is reclassified `ACTIVE_SCOPED` → `HISTORICAL_SCOPED`. It is **not**
+  current acceptance evidence for APP10 or any later phase.
+- Its six current failures are **not** evidence of a defect in a change under
+  review, and must never be reported as one.
+- Its APP4-B07 rules that B01 did not supersede remain authoritative. Run it
+  when a change touches the B07 surface, and read past the six.
+- Repairing it — teaching it the APP10 world — is APP4 / tooling maintenance,
+  and would also require updating `CMD-TEST-APP4-B07-CONTRACT`'s 47 mutation
+  cases. Recorded as `FU-APP10-B01-01`.
+
+
+### 1.3 `CMD-CHECK-APP4-B07-CONTRACT` — one further rule superseded by `APP10-B02`
+
+Recorded by `APP10-B02` (2026-08-28). **No gate logic was changed**, for the
+reason §1.2 gives: the file is `APP4-B07`'s acceptance evidence, and editing it
+to make a later world green destroys the record it exists to carry.
+
+The gate now reports **seven** failures rather than six. Six are exactly the ones
+§1.2 lists — two frozen-artifact counts (the operation total, now `114`, and the
+37 migrations) and B01's four superseded projection/route rules. The seventh is
+new, and `APP10-B02` supersedes it:
+
+| Gate rule, as written for B07 | Superseded by | Why |
+|---|---|---|
+| the whole published contract names no `businessProfile` | B02 §8.1, §14 | `MergeConsequencePreviewResponse.businessProfile` — a **boolean** saying whether the merged-away Customer has a profile that a merge would move |
+
+The rule is implemented as a document-wide forbidden-substring scan (gate rules
+12/15/27), so it fires on any operation anywhere in the contract, not only on
+B07's four. Its intent — *no Business Profile **data** is published* — is
+untouched and is still verifiable: `companyName`, `taxCode` and `billingContact`
+remain forbidden and remain **absent** from the whole document, as do
+`normalizedValue`, `normalized_value`, `displayValue`, `display_value`,
+`rawValue`, `e164`, `verifiedSource`, `contactPointId`, `passwordHash` and
+`sessionToken`. The B02 field is one boolean on a different surface
+(`adminCustomerMerge_detail`), carrying no column of `business_profiles`, and it
+exists because the merge consequence preview would otherwise tell an operator
+that nothing moves when a profile does.
+
+`AdminCustomerDetailResponse` — the projection the rule was written to protect —
+still publishes no business profile of any kind.
+
+Consequences are those §1.2 already records: the row stays
+`HISTORICAL_SCOPED`, its **seven** current failures are not evidence of a defect
+in a change under review, and repairing the gate remains `FU-APP10-B01-01`.
+
 ## 2. Root `package.json` — what stays
 
 Exactly 30 scripts, in three groups. A `sonar` script may be added only when
@@ -413,9 +496,14 @@ leaving the hole open.
 | `CMD-TEST-APP4-B03-VERIFICATION` | `@embroidery/api` | verification issue/resend suite | `pnpm --filter @embroidery/api exec jest --runInBand --testPathPatterns="verification-challenge\|verification-unconfigured" --testPathIgnorePatterns=/node_modules/` | apps/api/src/modules/customer/tests/integration/verification-challenge-*.integration.spec.ts, apps/api/src/modules/customer/tests/integration/verification-unconfigured.integration.spec.ts | Any change to challenge issuance, business resend, the issuance rate window or the atomic delivery hand-off. Starts a **disposable** PostgreSQL with every migration and needs a Docker daemon; publishes the policy through its canonical versioned path and overrides only the verification clock and the code minter. Proves hash-only storage, policy-derived expiry and resend timing, one secret-free intent and one `PENDING` delivery event per issuance, the sealed envelope carrying exactly the issued code, an already-open challenge returned rather than rotated, stale expiry before insert, CST-007 under concurrency, rollback leaving no partial rows, `ISSUED → CANCELLED` on resend with a new code/intent/event/envelope, cooldown and rate refusals that write nothing, purpose isolation, fail-closed policy, and that no synthetic code reaches any persisted column. | `ACTIVE_SCOPED` |
 | `CMD-CHECK-APP4-W01` | repository tool | checkpoint gate (APP4-W01) | `node tools/check-app4-w01.mjs` | tools/check-app4-w01.mjs · tools/check-app4-w01-boundaries.mjs | Any change to the notification delivery worker: its registration, the aggregate-linkage lookup, the envelope opening, the channel port or recording adapter, the delivery persistence, or the `notification.delivery` policy read. Asserts the **negations** — one registration, no second queue or poll loop, no `claimBatch` caller, no AES-GCM outside the shared package, no `originNotificationIntentId` read, no `DEAD_LETTER` reset, no `FAILED → PENDING` intent transition, no fallback retry constant, no policy publication, no Admin identity, no provider SDK, no app-to-app import, no plaintext column or log line, no migration, no HTTP surface, no UI. Reads code with comments stripped, never prose. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP4-W01` | repository tool | checkpoint gate tests | `node --test tools/check-app4-w01.test.mjs` | tools/check-app4-w01.test.mjs | Any edit to the W01 checker or the sources it parses. 35 mutation cases: each breaks exactly one ruling in a throwaway copy and proves the gate refuses it, plus three that keep the gate honest — that it reads code rather than its own doc comments, that it passes against a faithful copy at another path, and that a properly *declared* new failure class is allowed. | `ACTIVE_SCOPED` |
-| `CMD-CHECK-APP4-B07-CONTRACT` | repository tool | checkpoint gate (APP4-B07) | `node tools/check-app4-b07-contract.mjs` | tools/check-app4-b07-contract.mjs | Any change to the Admin Customer or secure-grant support surface, its guards, its projections, the customer-scoped grant read or the generated contract. Reads the generated OpenAPI document, the generated client **and** source. Asserts the **negations** — no fourth route, no customer list, search or contact-lookup parameter, no customer mutation, no merge or anonymization read; no raw, normalized, display or source contact value and no Business Profile in the published contract; no token, hash, digest or ciphertext in any B07 file, schema or generated symbol, and none selected by the repository read; no second guard, no role or permission vocabulary and no session parsing in a controller; no direct repository `revoke`, no `supersede`, no Admin issue or reissue; no notification import, table or module; and no schema, migration or APP5–APP7 business content. Reads code with comments stripped, never prose. | `ACTIVE_SCOPED` |
+| `CMD-CHECK-APP4-B07-CONTRACT` | repository tool | checkpoint gate (APP4-B07) | `node tools/check-app4-b07-contract.mjs` | tools/check-app4-b07-contract.mjs | Any change to the Admin Customer or secure-grant support surface, its guards, its projections, the customer-scoped grant read or the generated contract. Reads the generated OpenAPI document, the generated client **and** source. Asserts the **negations** — no fourth route, no customer list, search or contact-lookup parameter, no customer mutation, no merge or anonymization read; no raw, normalized, display or source contact value and no Business Profile in the published contract; no token, hash, digest or ciphertext in any B07 file, schema or generated symbol, and none selected by the repository read; no second guard, no role or permission vocabulary and no session parsing in a controller; no direct repository `revoke`, no `supersede`, no Admin issue or reissue; no notification import, table or module; and no schema, migration or APP5–APP7 business content. Reads code with comments stripped, never prose. **Partly superseded by `APP10-B01` — see §1.2.** | `HISTORICAL_SCOPED` |
 | `CMD-TEST-APP4-B07-CONTRACT` | repository tool | checkpoint gate tests | `node --test tools/check-app4-b07-contract.test.mjs` | tools/check-app4-b07-contract.test.mjs | Any edit to the B07 gate or the sources and contract it parses. 47 mutation cases: each breaks exactly one ruling in a throwaway copy and proves the gate refuses it, plus four that keep the gate honest — that it reads code rather than its own doc comments, that it passes against a faithful copy at another path, that a missing owned file fails, and that the real repository passes unchanged. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP4-B07-SUPPORT` | `@embroidery/api` | Admin support live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runTestsByPath src/modules/customer/tests/integration/admin-customer-support.integration.spec.ts src/modules/customer/tests/integration/admin-customer-grants.integration.spec.ts src/modules/customer/tests/integration/admin-secure-grant-revoke.integration.spec.ts` | apps/api/src/modules/customer/tests/integration/admin-*.ts | Any change to the three Admin support routes, the query, the revocation use case, the guards they reuse or the grant repository read. Boots the real HTTP application with the **real** `AuthenticatedAdminGuard` against a disposable PostgreSQL database and a real `admin_sessions` row. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP10-B01-PROFILE` | `@embroidery/api` | Admin profile maintenance live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runInBand --runTestsByPath src/modules/customer/tests/integration/admin-customer-profile.integration.spec.ts` | apps/api/src/modules/customer/tests/integration/admin-customer-profile.integration.spec.ts · customer-maintenance-queries.ts | Any change to `adminCustomer_update`, the profile use case, the bounded repository write, or the customer-detail projection. Boots the real HTTP application with the **real** `AuthenticatedAdminGuard` against a disposable PostgreSQL. Proves the two writable fields and only those, the absent/null/blank contract, that a value-identical patch moves no row and appends no audit event, the merged-customer refusal, that a body naming `verifiedAt`/`mergedIntoCustomerId`/`anonymizedAt`/a contact is rejected rather than ignored, and that the projection publishes `contactId` and `notes` while still carrying no raw, normalized or display contact value. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP10-B01-CONTACT` | `@embroidery/api` | Admin contact maintenance live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runInBand --runTestsByPath src/modules/customer/tests/integration/admin-customer-contact-maintenance.integration.spec.ts` | apps/api/src/modules/customer/tests/integration/admin-customer-contact-maintenance.integration.spec.ts · customer-maintenance-queries.ts | Any change to `adminCustomerContact_promote`/`_deactivate`, the contact use case, the maintenance policy, or `setPrimaryContact`/`deactivateContactPoint`. Same real-guard, disposable-database harness. Proves the atomic rotation leaves exactly one primary, that no contact value, `verified_at` or `verified_source` is ever rewritten, the unverified/deactivated/merged refusals, that deactivation is soft and refuses the primary and the last verified contact and promotes nothing as a side effect, that both replays are audit-silent no-ops, and that a foreign `contactId` is answered identically to a missing one with no cross-customer value in the body. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP10-B01-ADMIN-FIXTURE` | `@embroidery/admin` | delivered customer-access component suites | `pnpm --filter @embroidery/admin exec jest --runTestsByPath test/components/customer-access-grant.test.tsx test/components/customer-access-lookup.test.tsx test/components/customer-access-notification.test.tsx test/components/customer-access-security.test.tsx` | apps/admin/test/support/customer-access-fixture.ts and its four consumers | Any change to the published `AdminCustomerDetailResponse`/`AdminCustomerContactResponse` shape, which the A01 fixture must satisfy. Run by `APP10-B01` because `contactId` became required on the contact projection. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP10-B02-LIFECYCLE` | `@embroidery/api` | merge case lifecycle live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runInBand --runTestsByPath src/modules/customer/tests/integration/admin-customer-merge-lifecycle.integration.spec.ts` | apps/api/src/modules/customer/tests/integration/admin-customer-merge-lifecycle.integration.spec.ts · customer-merge-queries.ts | Any change to `adminCustomerMerge_open`/`_reject`, the merge policy, the merge case repository or its audit recorder. Boots the real HTTP application with the **real** `AuthenticatedAdminGuard` against a disposable PostgreSQL. Proves the case is created `REQUESTED` with survivor and loser exactly as stated and attributed to the session Admin; the mandatory-reason, self-merge, unknown-participant, already-merged and duplicate-pair refusals; that two **concurrent** opens of one pair produce 201 + 409 and exactly one row, arbitrated by the CST-010 partial unique rather than the pre-check; that a strict body naming a contact, a status, an admin id or a decision instant is a 400; that `REQUESTED → REJECTED` stamps `decided_at`, leaves the open reason intact and records the declining reason in `audit_events.reason`; that a rejected or executed case refuses a second rejection; that no ownership snapshot moves and `customer_merge_events` stays empty on every path; and that all three routes are refused without a session, from a foreign origin, and — for the two body-bearing mutations — without `application/json`. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP10-B02-PREVIEW` | `@embroidery/api` | merge consequence preview live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runInBand --runTestsByPath src/modules/customer/tests/integration/admin-customer-merge-preview.integration.spec.ts` | apps/api/src/modules/customer/tests/integration/admin-customer-merge-preview.integration.spec.ts · customer-merge-queries.ts | Any change to `adminCustomerMerge_detail`, the preview reader, the customer-owned count adapter or either cross-module count port. Same real-guard, disposable-database harness, seeding a full order chain so the merged-away customer genuinely owns requests, an order, an ACTIVE grant, uploads and a business profile **and** carries an `approval_snapshots` and a `quotation_acceptances` row with the same `customer_id`. Proves the six live counts against the seeded rows; that the preview is the loser's and not the survivor's; that a deactivated contact counts and an EXPIRED or REVOKED grant does not; that the two frozen categories exist and appear in no count and no category name; that both Customer cards are masked with no raw, normalized or display value, no `notes`, no `contactId` and no merge pointer; that the counts are recomputed and never stored; and that two reads write no row, no audit event and no merge event. | `ACTIVE_SCOPED` |
 | `CMD-CHECK-APP4-B08-CONTRACT` | repository tool | checkpoint gate (APP4-B08) | `node tools/check-app4-b08-contract.mjs` | tools/check-app4-b08-contract.mjs · tools/check-app4-b08-replay.mjs | Any change to the Admin notification list, the manual transport replay, the replay key or reference contract, the notification intent read model or the outbox terminal-source lookup. Reads the generated OpenAPI document, the generated client **and** source. Asserts the **negations** — no `/retry` route anywhere, no third Admin notification route, no customer-facing notification surface, no recipient/customer/template search; no raw recipient, `params`, provider body, exception or scheduler internal in the published contract; no settle, dead-letter, re-claim, attempt-counter or row update in any B08 file; no payload or ciphertext query for source discovery and no field read out of the envelope; no `openDeliveryEnvelope`, `sealDeliveryEnvelope`, cipher or secret issuer, and no `@embroidery/notification-delivery` import at all; a deterministic SHA-256 replay key over the locked pair with no clock, actor, request or random component and no second idempotency framework; expiry enforced on **both** referenced aggregates; an Admin-only audit actor with no secret in the summary; and no provider SDK, schema, migration or APP5–APP7 content. Reads code with comments stripped, never prose. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP4-B08-CONTRACT` | repository tool | checkpoint gate tests | `node --test tools/check-app4-b08-contract.test.mjs` | tools/check-app4-b08-contract.test.mjs | Any edit to the B08 gate or the sources and contract it parses. 58 mutation cases: each breaks exactly one ruling in a throwaway copy and proves the gate refuses it, plus four that keep the gate honest — it passes against the real repository and against a faithful copy at another path, it fails when an owned file is deleted, and it **reads code rather than prose**. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP4-B08-ADMIN` | `@embroidery/api` | Admin notification live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runTestsByPath src/modules/notification/tests/integration/admin-notification-list.integration.spec.ts src/modules/notification/tests/integration/admin-notification-replay.integration.spec.ts src/modules/notification/tests/integration/admin-notification-replay-refusal.integration.spec.ts` | apps/api/src/modules/notification/tests/integration/admin-notification-*.ts | Any change to the two Admin notification routes, the replay transaction, the eligibility resolver or the repositories they read. Boots the real HTTP application with the **real** `AuthenticatedAdminGuard` against a disposable PostgreSQL database, and drives the terminal-delivery fixture through the production intake, attempt-recording and settle path rather than writing a status column. | `ACTIVE_SCOPED` |

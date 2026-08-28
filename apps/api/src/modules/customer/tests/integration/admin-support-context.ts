@@ -305,10 +305,23 @@ export function dataOf<T>(response: { readonly body: unknown }): T {
   return (response.body as { readonly data: T }).data;
 }
 
-/** The four canonical routes, under the global API prefix. */
+/**
+ * The four `APP4-B07` routes, `APP10-B01`'s three and `APP10-B02`'s three, under
+ * the global prefix.
+ */
 export const ROUTES = {
   resolve: () => `/${GLOBAL_ROUTE_PREFIX}/admin/customers/resolve`,
   detail: (customerId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/customers/${customerId}`,
   grants: (customerId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/customers/${customerId}/grants`,
   revoke: (grantId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/secure-grants/${grantId}/revoke`,
+  updateProfile: (customerId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/customers/${customerId}`,
+  promoteContact: (customerId: string, contactId: string) =>
+    `/${GLOBAL_ROUTE_PREFIX}/admin/customers/${customerId}/contacts/${contactId}/primary`,
+  deactivateContact: (customerId: string, contactId: string) =>
+    `/${GLOBAL_ROUTE_PREFIX}/admin/customers/${customerId}/contacts/${contactId}/deactivate`,
+  // `APP10-B02`. Their own root: a merge case belongs to two customers, so it is
+  // not nested under either.
+  openMerge: () => `/${GLOBAL_ROUTE_PREFIX}/admin/customer-merges`,
+  mergeCase: (caseId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/customer-merges/${caseId}`,
+  rejectMerge: (caseId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/customer-merges/${caseId}/reject`,
 } as const;

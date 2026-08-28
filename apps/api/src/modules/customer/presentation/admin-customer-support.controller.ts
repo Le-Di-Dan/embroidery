@@ -239,8 +239,12 @@ export class AdminCustomerSupportController {
  * The detail projection.
  *
  * A function whose return type has nowhere to put a normalized value, a display
- * value, a contact-point id or a merge pointer, so no later edit to the view can
- * leak one without also changing this function.
+ * value or a merge pointer, so no later edit to the view can leak one without
+ * also changing this function.
+ *
+ * `APP10-B01` added two members, and only two: the opaque `contactId` its two
+ * contact operations are addressed by, and `notes`, the profile field it makes
+ * writable. Neither is a contact value, and neither weakens the rule above.
  */
 function toDetailPayload(view: AdminCustomerDetailView): AdminCustomerDetailPayload {
   return {
@@ -248,8 +252,10 @@ function toDetailPayload(view: AdminCustomerDetailView): AdminCustomerDetailPayl
     // Omitted rather than null when the Customer never supplied one, matching
     // how every other optional field in this API is serialized.
     ...(view.displayName === undefined ? {} : { displayName: view.displayName }),
+    ...(view.notes === undefined ? {} : { notes: view.notes }),
     verifiedAt: view.verifiedAt.toISOString(),
     contacts: view.contacts.map((contact) => ({
+      contactId: contact.contactPointId,
       kind: contact.kind,
       maskedValue: contact.maskedValue,
       verified: contact.verified,

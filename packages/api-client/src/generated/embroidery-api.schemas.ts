@@ -482,6 +482,8 @@ export const AdminCustomerContactResponseKind = {
 } as const;
 
 export interface AdminCustomerContactResponse {
+  /** The opaque identifier of this contact, and the only way to address it. Required by the APP10-B01 promote and deactivate operations. A server-generated id, not derived from the contact value, and scoped in use: an operation quoting it against another Customer is answered exactly as one quoting an id that names nothing. */
+  contactId: string;
   /** Whether this contact is an email address or a phone number. */
   kind: AdminCustomerContactResponseKind;
   /** The masked contact, and the only form of it this API publishes. Deterministic and one-way: the same contact always masks the same way, so an operator can recognise it across screens, and it can never be turned back into an address or a number. */
@@ -499,6 +501,8 @@ export interface AdminCustomerDetailResponse {
   customerId: string;
   /** What this Customer calls themselves, from the Customer record alone. Absent when they never supplied one — a Customer exists from a verified contact, and a name is not part of that. It is not a Business Profile company name, not derived from a contact, and never a substitute for the identifier: two Customers may share a name. */
   displayName?: string;
+  /** The operator’s internal note on this Customer, added by APP10-B01 so the field that checkpoint makes writable can also be read back. Staff-facing only: it is never shown to the Customer, never notified, and never part of a public or secure-link response. Absent when no operator has written one. */
+  notes?: string;
   /** When this Customer identity was established. A Customer exists only as the result of a successful verification, so the presence of this instant *is* the verification fact — there is no unverified Customer for it to be absent on. */
   verifiedAt: string;
 }
@@ -541,6 +545,99 @@ export interface AdminSecureGrantResponse {
 export interface AdminCustomerGrantsResponse {
   /** Every grant belonging to this Customer, newest first, whatever its state — a revoked or expired grant is exactly what explains a link that stopped working. Scoped to the Customer in the path; there is no cross-Customer or global grant listing. */
   grants: AdminSecureGrantResponse[];
+}
+
+/**
+ * REQUESTED until it is decided. REJECTED means an operator declined it and nothing was transferred. EXECUTED means the merge was performed.
+ */
+export type AdminCustomerMergeCaseResponseStatus =
+  (typeof AdminCustomerMergeCaseResponseStatus)[keyof typeof AdminCustomerMergeCaseResponseStatus];
+
+export const AdminCustomerMergeCaseResponseStatus = {
+  REQUESTED: 'REQUESTED',
+  EXECUTED: 'EXECUTED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface MergeConsequencePreviewResponse {
+  /** The merged-away Customer’s ACTIVE secure access grants — the live links execution would revoke. Already expired or revoked grants open nothing and are not counted. */
+  activeSecureAccessGrants: number;
+  /** Whether the merged-away Customer has a business profile that would move. A boolean rather than a count: at most one profile exists per Customer. */
+  businessProfile: boolean;
+  /** Every contact point belonging to the merged-away Customer, deactivated ones included: each carries the Customer reference and each has to move. */
+  contactPoints: number;
+  /** Custom requests that would be repointed to the surviving Customer. */
+  customRequests: number;
+  /** Orders that would be repointed to the surviving Customer. */
+  orders: number;
+  /** Assets uploaded by the merged-away Customer that would be repointed. */
+  uploadedAssets: number;
+}
+
+export type MergeParticipantContactResponseKind =
+  (typeof MergeParticipantContactResponseKind)[keyof typeof MergeParticipantContactResponseKind];
+
+export const MergeParticipantContactResponseKind = {
+  EMAIL: 'EMAIL',
+  PHONE: 'PHONE',
+} as const;
+
+export interface MergeParticipantContactResponse {
+  kind: MergeParticipantContactResponseKind;
+  /** The masked contact, and the only form of it this API publishes. Deterministic and one-way, so an operator can recognise the same contact across two Customer cards without either address being disclosed. */
+  maskedValue: string;
+  /** Whether this is the Customer’s primary contact. */
+  primary: boolean;
+  /** Whether this contact completed a challenge. */
+  verified: boolean;
+}
+
+export interface MergeParticipantResponse {
+  /** The Customer’s current contacts, primary first. Deactivated historical contacts are not listed here — they are counted in the consequence preview, which is where the number of rows a merge moves belongs. */
+  contacts: MergeParticipantContactResponse[];
+  customerId: string;
+  /** What this Customer calls themselves. Absent when they never supplied one, and never a substitute for the identifier — two Customers sharing a name is exactly the situation that produces a merge case. */
+  displayName?: string;
+  /** When this identity was established. A Customer exists only verified. */
+  verifiedAt: string;
+}
+
+export interface AdminCustomerMergeCaseResponse {
+  /** What executing this merge would attempt to move or revoke, counted from current rows on every read and stored nowhere. Advisory: rows arrive and leave between opening a case and executing it, and execution re-evaluates actual state inside its own transaction. Frozen commercial evidence — approval snapshots, quotation acceptances, design reviews, audit events and every append-only transition history — is deliberately excluded, because a merge never rewrites it. */
+  consequencePreview: MergeConsequencePreviewResponse;
+  /** When the case left REQUESTED. Absent while it is still open. The operator’s reason for declining is not published here: the case carries one reason column and it holds why the case was raised, so the declining reason is recorded in the audit trail instead. */
+  decidedAt?: string;
+  /** The Customer that would be merged away, with masked contacts. */
+  loser?: MergeParticipantResponse;
+  mergeCaseId: string;
+  /** Why the operator opened this case. Their own words, stored once. */
+  reason: string;
+  requestedAt: string;
+  /** The Admin who opened the case, taken from their session, never from a body. */
+  requestedByAdminId: string;
+  /** REQUESTED until it is decided. REJECTED means an operator declined it and nothing was transferred. EXECUTED means the merge was performed. */
+  status: AdminCustomerMergeCaseResponseStatus;
+  /** The Customer that survives, with masked contacts. */
+  survivor?: MergeParticipantResponse;
+}
+
+/**
+ * Always REQUESTED. A case is born open and nothing has been transferred.
+ */
+export type AdminCustomerMergeOpenedResponseStatus =
+  (typeof AdminCustomerMergeOpenedResponseStatus)[keyof typeof AdminCustomerMergeOpenedResponseStatus];
+
+export const AdminCustomerMergeOpenedResponseStatus = {
+  REQUESTED: 'REQUESTED',
+  EXECUTED: 'EXECUTED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface AdminCustomerMergeOpenedResponse {
+  /** The merge case that was opened. */
+  mergeCaseId: string;
+  /** Always REQUESTED. A case is born open and nothing has been transferred. */
+  status: AdminCustomerMergeOpenedResponseStatus;
 }
 
 export interface AdminCustomerResolutionResponse {
@@ -4071,6 +4168,28 @@ export interface NotificationReplayResponse {
   status: NotificationReplayResponseStatus;
 }
 
+/**
+ * Opens a REQUESTED merge case for one explicitly chosen pair. Nothing is transferred, revoked or tombstoned — that is the merge execution operation.
+ */
+export interface OpenCustomerMergeBody {
+  /**
+   * The Customer that would be merged away. Must not already be merged into another: merge chains are never followed or flattened.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  loserCustomerId: string;
+  /**
+   * Why the operator believes these two records are the same person. Required: a merge is an exceptional, admin-only decision and the case is the evidence for it. Stored on the merge case and never copied into the audit trail, logged, or notified.
+   * @minLength 1
+   * @maxLength 1000
+   */
+  reason: string;
+  /**
+   * The Customer that survives the merge. Stated by the operator and never chosen, defaulted or swapped by the server. Obtained from the exact-contact resolver.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  survivorCustomerId: string;
+}
+
 export type PaymentDecisionResponseAttemptStatus =
   (typeof PaymentDecisionResponseAttemptStatus)[keyof typeof PaymentDecisionResponseAttemptStatus];
 
@@ -4627,6 +4746,18 @@ export interface ReadinessStatusResponse {
 }
 
 /**
+ * Declines a REQUESTED merge case. A lifecycle decision only: no contact, grant, request, order or asset is touched, and neither Customer changes.
+ */
+export interface RejectCustomerMergeBody {
+  /**
+   * Why the operator is declining this merge. Required, and recorded in the audit trail against the merge case.
+   * @minLength 1
+   * @maxLength 1000
+   */
+  reason: string;
+}
+
+/**
  * Declines the exact quotation version the customer was shown. Takes the same two fields as acceptance and no reason text, because the schema keeps no rejection reason. Declining a price does not reject the custom request.
  */
 export interface RejectQuotationBody {
@@ -5179,6 +5310,24 @@ export interface UnpublishProductBody {
   expectedUpdatedAt: string;
 }
 
+/**
+ * Bounded maintenance of a Customer’s profile metadata. Two fields, and neither verification evidence, merge state nor any contact is reachable through it.
+ */
+export interface UpdateCustomerProfileBody {
+  /**
+   * What this Customer calls themselves, on the Customer record alone. Never a Business Profile company name and never derived from a contact. Send `null` or a blank string to clear it; omit the field to leave it unchanged.
+   * @maxLength 200
+   * @nullable
+   */
+  displayName?: string | null;
+  /**
+   * The operator’s internal note on this Customer. Staff-facing only: it is never shown to the Customer, never notified and never part of a public or secure-link response. Send `null` or a blank string to clear it; omit the field to leave it unchanged.
+   * @maxLength 2000
+   * @nullable
+   */
+  notes?: string | null;
+}
+
 export type UpdateProductBodyCategorySlug =
   (typeof UpdateProductBodyCategorySlug)[keyof typeof UpdateProductBodyCategorySlug];
 
@@ -5416,6 +5565,14 @@ export type AdminCustomRequestSubmittedDesignGet200 = ApiSuccessResponse & {
 
 export type AdminCustomRequestTransition200 = ApiSuccessResponse & {
   data: RequestTransitionedResponse;
+};
+
+export type AdminCustomerMergeOpen201 = ApiSuccessResponse & {
+  data: AdminCustomerMergeOpenedResponse;
+};
+
+export type AdminCustomerMergeDetail200 = ApiSuccessResponse & {
+  data: AdminCustomerMergeCaseResponse;
 };
 
 export type AdminCustomerSupportResolve200 = ApiSuccessResponse & {

@@ -167,13 +167,24 @@ describe('APP4-B07 Admin customer support (integration)', () => {
       // `displayName` joined this list under the Product Owner's A01 ruling; the
       // exhaustive comparison is what keeps a *second* identity field from
       // arriving unnoticed beside it.
+      //
+      // `notes` is authorized by `APP10-B01` §7 and is absent here only because
+      // this fixture customer has none — the field is omitted rather than
+      // published null. Its presence is asserted by the B01 profile suite; what
+      // this list still guarantees is that nothing *else* arrived.
       expect(Object.keys(data).sort()).toEqual([
         'contacts',
         'customerId',
         'displayName',
         'verifiedAt',
       ]);
+      // `contactId` joined the contact projection under `APP10-B01` §7: that
+      // checkpoint delivers two per-contact operations, so an opaque id now
+      // addresses something real. It is not derived from the contact value, and
+      // the exhaustive comparison is unchanged in purpose — a raw, normalized or
+      // display value arriving beside it still fails here.
       expect(Object.keys(data.contacts[0] ?? {}).sort()).toEqual([
+        'contactId',
         'kind',
         'maskedValue',
         'primary',

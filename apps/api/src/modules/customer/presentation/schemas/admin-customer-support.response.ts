@@ -12,10 +12,14 @@
  * either would turn a support screen into a contact database — the exact outcome
  * `ADR-APP4-001` §2.3 introduced masking to prevent.
  *
- * **No `contactPointId`.** B07 has no per-contact operation — no edit, no
- * verify, no unverify, no primary rotation — so an id here would address nothing
- * that exists, and would be the natural thing for a later client to put in a
- * URL.
+ * **An opaque `contactId`, added by `APP10-B01`.** B07 published none, and gave
+ * the reason: it had no per-contact operation, so an id would have addressed
+ * nothing. B01 delivers two — promote and deactivate — and both are addressed
+ * by contact, so the id now names something real and is the minimum change that
+ * makes them reachable. It is the server-generated
+ * `customer_contact_points.id` and nothing else: opaque, not derived from the
+ * contact value, and useless for finding a contact that was not already
+ * published in this response. It reveals nothing a raw value would.
  *
  * **No `verifiedSource`.** It names the mechanism that verified a contact, and
  * no locked support authority asks for it.
@@ -64,6 +68,16 @@ export type PublishedContactKindsAreComplete =
 
 export class AdminCustomerContactResponse {
   @ApiProperty({
+    example: '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081',
+    description:
+      'The opaque identifier of this contact, and the only way to address it. Required by the ' +
+      'APP10-B01 promote and deactivate operations. A server-generated id, not derived from the ' +
+      'contact value, and scoped in use: an operation quoting it against another Customer is ' +
+      'answered exactly as one quoting an id that names nothing.',
+  })
+  contactId!: string;
+
+  @ApiProperty({
     enum: PUBLISHED_CONTACT_KINDS,
     example: 'EMAIL',
     description: 'Whether this contact is an email address or a phone number.',
@@ -110,6 +124,17 @@ export class AdminCustomerDetailResponse {
       'never a substitute for the identifier: two Customers may share a name.',
   })
   displayName?: string;
+
+  @ApiProperty({
+    required: false,
+    example: 'Prefers to be contacted in the afternoon.',
+    description:
+      'The operator’s internal note on this Customer, added by APP10-B01 so the field that ' +
+      'checkpoint makes writable can also be read back. Staff-facing only: it is never shown ' +
+      'to the Customer, never notified, and never part of a public or secure-link response. ' +
+      'Absent when no operator has written one.',
+  })
+  notes?: string;
 
   @ApiProperty({
     format: 'date-time',

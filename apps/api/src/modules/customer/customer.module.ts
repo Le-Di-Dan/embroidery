@@ -3,9 +3,19 @@ import { DatabaseModule } from '@embroidery/persistence';
 
 import { SlidingWindowRateLimiter } from '../../platform/rate-limit/sliding-window-rate-limiter';
 
+import { AssetMergeConsequenceModule } from '../asset/customer-merge-consequence.module';
 import { AuditModule } from '../audit/audit.module';
+import { CustomerMergeConsequenceModule } from '../order/customer-merge-consequence.module';
 import { NotificationModule } from '../notification/notification.module';
 import { CustomerIdentityAuditRecorder } from './application/customer-identity-audit.recorder';
+import { CustomerMaintenanceAuditRecorder } from './application/customer-maintenance-audit.recorder';
+import { CustomerMergeAuditRecorder } from './application/customer-merge-audit.recorder';
+import { CustomerMergeCaseQuery } from './application/customer-merge-case.query';
+import { MergeConsequencePreviewReader } from './application/customer-merge-consequence.preview';
+import { OpenCustomerMergeCase } from './application/open-customer-merge-case.use-case';
+import { RejectCustomerMergeCase } from './application/reject-customer-merge-case.use-case';
+import { MaintainCustomerContact } from './application/maintain-customer-contact.use-case';
+import { MaintainCustomerProfile } from './application/maintain-customer-profile.use-case';
 import { IssueVerificationChallengeUseCase } from './application/issue-verification-challenge.use-case';
 import { ReadVerificationChallengeStatus } from './application/read-verification-challenge-status.query';
 import { ResendVerificationChallengeUseCase } from './application/resend-verification-challenge.use-case';
@@ -24,12 +34,16 @@ import { VerificationChallengeIssuer } from './application/verification-challeng
 import { VerificationOutcomeAuditRecorder } from './application/verification-outcome-audit.recorder';
 import { App4SecretPepperProvider } from './config/app4-secret-pepper.provider';
 import { ADMIN_CUSTOMER_SUMMARY_PORT } from './domain/repositories/admin-customer-summary.port';
+import { CUSTOMER_MERGE_CASE_REPOSITORY } from './domain/repositories/customer-merge-case.repository';
+import { CUSTOMER_MERGE_PREVIEW_PORT } from './domain/repositories/customer-merge-preview.port';
 import { CUSTOMER_REPOSITORY } from './domain/repositories/customer.repository';
 import { SECURE_ACCESS_GRANT_REPOSITORY } from './domain/repositories/secure-access-grant.repository';
 import { VERIFICATION_CHALLENGE_REPOSITORY } from './domain/repositories/verification-challenge.repository';
 import { VerificationClock } from './infrastructure/clock/verification-clock';
 import { VerificationCodeMinter } from './infrastructure/crypto/verification-code.minter';
 import { DrizzleAdminCustomerSummaryAdapter } from './infrastructure/persistence/drizzle-admin-customer-summary.adapter';
+import { DrizzleCustomerMergeCaseRepository } from './infrastructure/persistence/drizzle-customer-merge-case.repository';
+import { DrizzleCustomerMergePreviewAdapter } from './infrastructure/persistence/drizzle-customer-merge-preview.adapter';
 import { DrizzleCustomerRepository } from './infrastructure/persistence/drizzle-customer.repository';
 import { DrizzleSecureAccessGrantRepository } from './infrastructure/persistence/drizzle-secure-access-grant.repository';
 import { DrizzleVerificationChallengeRepository } from './infrastructure/persistence/drizzle-verification-challenge.repository';
@@ -92,7 +106,18 @@ import { PublicVerificationController } from './presentation/public-verification
  * narrow read-only addition, and shares nothing else with it.
  */
 @Module({
-  imports: [DatabaseModule, AuditModule, NotificationModule],
+  imports: [
+    DatabaseModule,
+    AuditModule,
+    NotificationModule,
+    // `APP10-B02`. Two count-only read ports, each implemented by the context
+    // that owns the table, so the merge consequence preview never reads another
+    // module's tables (`CLAUDE.md` §5). Neither module exports a repository, a
+    // transaction manager or a write of any kind — importing them confers two
+    // counting methods and nothing else.
+    CustomerMergeConsequenceModule,
+    AssetMergeConsequenceModule,
+  ],
   controllers: [PublicVerificationController, PublicSecureLinkController],
   providers: [
     { provide: CUSTOMER_REPOSITORY, useClass: DrizzleCustomerRepository },
@@ -102,6 +127,27 @@ import { PublicVerificationController } from './presentation/public-verification
     { provide: ADMIN_CUSTOMER_SUMMARY_PORT, useClass: DrizzleAdminCustomerSummaryAdapter },
     CustomerIdentityAuditRecorder,
     ResolveOrCreateVerifiedCustomer,
+    // `APP10-B01`. The maintenance capabilities live here, beside the repository
+    // and the audit seam they need, and are exported for the Admin surface to
+    // call. The recorder stays unexported, on this module's standing rule: a
+    // consuming context receives the capability, never the machinery.
+    CustomerMaintenanceAuditRecorder,
+    MaintainCustomerProfile,
+    MaintainCustomerContact,
+    // `APP10-B02`. The merge case lifecycle and its consequence preview, bound
+    // here beside the customer repository and the audit seam they need. The two
+    // ports are separate from `CUSTOMER_REPOSITORY` on the rule
+    // `admin-customer-summary.port.ts` records: a merge case is a workflow row
+    // about two customers, and the preview holds counts rather than the contact
+    // rows a wide contract would have returned. Nothing bound here can execute a
+    // merge — that transaction is `APP10-B03`'s.
+    { provide: CUSTOMER_MERGE_CASE_REPOSITORY, useClass: DrizzleCustomerMergeCaseRepository },
+    { provide: CUSTOMER_MERGE_PREVIEW_PORT, useClass: DrizzleCustomerMergePreviewAdapter },
+    CustomerMergeAuditRecorder,
+    MergeConsequencePreviewReader,
+    OpenCustomerMergeCase,
+    CustomerMergeCaseQuery,
+    RejectCustomerMergeCase,
     {
       provide: VERIFICATION_CHALLENGE_REPOSITORY,
       useClass: DrizzleVerificationChallengeRepository,
@@ -175,6 +221,20 @@ import { PublicVerificationController } from './presentation/public-verification
     // fail-closed policy read and the abuse budget.
     AuthorizeSecureLink,
     ReauthorizeSecureGrant,
+    // `APP10-B01`'s two Admin maintenance capabilities. Exported rather than
+    // re-provided beside the controllers, so there is one instance of each and
+    // the audit recorder they write through cannot be duplicated by a second
+    // module composing its own.
+    MaintainCustomerProfile,
+    MaintainCustomerContact,
+    // `APP10-B02`'s three merge lifecycle capabilities, on the same rule: the
+    // Admin surface receives the capability, never the machinery. The two merge
+    // ports, the recorder and the preview reader stay unexported — a caller
+    // holding the case repository could write a `REJECTED` row with no audit
+    // event beside it.
+    OpenCustomerMergeCase,
+    CustomerMergeCaseQuery,
+    RejectCustomerMergeCase,
   ],
 })
 export class CustomerModule {}

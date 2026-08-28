@@ -30,6 +30,7 @@ export function toCustomer(row: CustomerRow): Customer {
   return {
     id: row.id as CustomerId,
     displayName: row.displayName ?? undefined,
+    notes: row.notes ?? undefined,
     verifiedAt: row.verifiedAt,
     mergedIntoCustomerId: (row.mergedIntoCustomerId ?? undefined) as CustomerId | undefined,
     anonymizedAt: row.anonymizedAt ?? undefined,

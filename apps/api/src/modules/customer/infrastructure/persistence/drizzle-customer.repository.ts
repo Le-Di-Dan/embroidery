@@ -21,6 +21,7 @@ import type {
   Customer,
   CustomerId,
   CustomerRepository,
+  UpdateCustomerProfileInput,
   UpsertBusinessProfileInput,
 } from '../../domain/repositories/customer.repository';
 import { ANONYMIZED_MARKER, toContact, toCustomer } from './customer-row.mapper';
@@ -168,6 +169,77 @@ export class DrizzleCustomerRepository extends DrizzleRepository implements Cust
         .update(customerContactPoints)
         .set({ isPrimary: true, updatedAt: new Date() })
         .where(eq(customerContactPoints.id, contactPointId));
+    });
+  }
+
+  /**
+   * The bounded profile write (`APP10-B01`).
+   *
+   * One statement against one table, and the `set` object is built from the
+   * two members {@link UpdateCustomerProfileInput} declares — there is no
+   * spread of a caller-supplied object anywhere on this path, so no column
+   * outside those two can be reached even by a caller that invented a key.
+   *
+   * Not `requireTransaction`: a single-row, single-table update has nothing to
+   * be atomic *with* here. The use case still runs it inside one, because its
+   * audit row must commit with it.
+   */
+  async updateProfile(id: CustomerId, input: UpdateCustomerProfileInput): Promise<Customer> {
+    return this.run('updateProfile', async () => {
+      const [row] = await this.db
+        .update(customers)
+        .set({
+          ...(input.displayName === undefined ? {} : { displayName: input.displayName }),
+          ...(input.notes === undefined ? {} : { notes: input.notes }),
+          updatedAt: new Date(),
+        })
+        .where(eq(customers.id, id))
+        .returning();
+
+      if (row === undefined) {
+        throw notFoundError('CustomerRepository.updateProfile', 'That customer does not exist.');
+      }
+      return toCustomer(row);
+    });
+  }
+
+  /**
+   * The soft retirement (`APP10-B01`).
+   *
+   * `deactivated_at` only. `verified_at`, `verified_source`,
+   * `normalized_value` and `display_value` are left exactly as they are: a
+   * retired contact keeps its evidence, and the CST-005 partial unique stops
+   * applying to it because that predicate reads `deactivated_at`, not the
+   * value.
+   *
+   * The guarded predicate is also the physical half of two rules the use case
+   * states first: a second call matches nothing rather than moving an instant
+   * already recorded, and a primary contact is never retired — CST-006 is
+   * partial on `is_primary` alone, so a deactivated primary would still hold
+   * the one primary slot while being unreachable.
+   */
+  async deactivateContactPoint(id: ContactPointId): Promise<ContactPoint> {
+    return this.run('deactivateContactPoint', async () => {
+      const at = new Date();
+      const [row] = await this.db
+        .update(customerContactPoints)
+        .set({ deactivatedAt: at, updatedAt: at })
+        .where(
+          and(
+            eq(customerContactPoints.id, id),
+            isNull(customerContactPoints.deactivatedAt),
+            eq(customerContactPoints.isPrimary, false),
+          ),
+        )
+        .returning();
+
+      if (row === undefined) {
+        throw notFoundError(
+          'CustomerRepository.deactivateContactPoint',
+          'That contact point does not exist, is already deactivated, or is the primary contact.',
+        );
+      }
+      return toContact(row);
     });
   }
 

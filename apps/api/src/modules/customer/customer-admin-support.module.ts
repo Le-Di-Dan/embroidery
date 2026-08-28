@@ -4,6 +4,9 @@ import { IdentityModule } from '../identity/identity.module';
 import { CustomerModule } from './customer.module';
 import { AdminCustomerSupportQuery } from './application/admin-customer-support.query';
 import { RevokeSecureGrantUseCase } from './application/revoke-secure-grant.use-case';
+import { AdminCustomerController } from './presentation/admin-customer.controller';
+import { AdminCustomerContactController } from './presentation/admin-customer-contact.controller';
+import { AdminCustomerMergeController } from './presentation/admin-customer-merge.controller';
 import { AdminCustomerSupportController } from './presentation/admin-customer-support.controller';
 import { AdminSecureGrantController } from './presentation/admin-secure-grant.controller';
 
@@ -45,7 +48,24 @@ import { AdminSecureGrantController } from './presentation/admin-secure-grant.co
  */
 @Module({
   imports: [IdentityModule, CustomerModule],
-  controllers: [AdminCustomerSupportController, AdminSecureGrantController],
+  controllers: [
+    AdminCustomerSupportController,
+    AdminSecureGrantController,
+    // `APP10-B01`. Two more classes rather than more methods on the support
+    // controller: that one is a read surface and stays one, and the published
+    // operation ids `adminCustomer_update`, `adminCustomerContact_promote` and
+    // `adminCustomerContact_deactivate` are derived from these class names —
+    // reaching them from the support class would have needed a
+    // `CONTROLLER_DOMAIN_KEYS` entry inventing a domain the layout lacks.
+    AdminCustomerController,
+    AdminCustomerContactController,
+    // `APP10-B02`. A fourth class, and its own path root: a merge case belongs to
+    // *two* customers, so nesting it under one would have made the choice of
+    // parent arbitrary. `createOperationId` derives `adminCustomerMerge_open`,
+    // `_detail` and `_reject` from this class name — the published identities
+    // `APP10-G01` §E.2 fixed. There is deliberately no execute route on it.
+    AdminCustomerMergeController,
+  ],
   providers: [AdminCustomerSupportQuery, RevokeSecureGrantUseCase],
 })
 export class CustomerAdminSupportModule {}

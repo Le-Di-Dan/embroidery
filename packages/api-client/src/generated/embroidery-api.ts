@@ -25,6 +25,8 @@ import type {
   AdminCustomRequestListParams,
   AdminCustomRequestSubmittedDesignGet200,
   AdminCustomRequestTransition200,
+  AdminCustomerMergeDetail200,
+  AdminCustomerMergeOpen201,
   AdminCustomerSupportDetail200,
   AdminCustomerSupportGrants200,
   AdminCustomerSupportResolve200,
@@ -97,6 +99,7 @@ import type {
   InitiateDepositAttemptBody,
   InitiateFinalPaymentAttemptBody,
   IssueVerificationChallengeBody,
+  OpenCustomerMergeBody,
   PublicCustomRequestAssetStatus200,
   PublicCustomRequestAssetUpload202,
   PublicCustomRequestAssetUploadBody,
@@ -145,6 +148,7 @@ import type {
   ReadFinalPaymentBody,
   ReadTransferEvidenceBody,
   ReadinessStatusResponse,
+  RejectCustomerMergeBody,
   RejectQuotationBody,
   ReplaceProductPlacementBody,
   RequestDesignRevisionBody,
@@ -164,6 +168,7 @@ import type {
   TransitionProductionJobBody,
   UnpublishDesignTemplateBody,
   UnpublishProductBody,
+  UpdateCustomerProfileBody,
   UpdateProductBody,
   UpdateSkuBody,
   VerifyPaymentAttemptBody,
@@ -400,6 +405,59 @@ export const adminCustomRequestTransition = (
 };
 
 /**
+ * Records that an operator proposes merging one Customer into another, with a mandatory reason. **Nothing is merged.** No contact is moved, no access grant revoked, no request, order or asset repointed and no Customer tombstoned — the case is a decision waiting to be made. The surviving and merged-away Customers are exactly the two stated in the body and are never swapped, defaulted or inferred; a Customer already merged into another is refused as either participant, and merge chains are never followed. Both ids come from the exact-contact resolver: this operation accepts no email and no phone number. One open case may exist per ordered pair, arbitrated by a unique index, so two simultaneous requests for the same pair cannot both succeed.
+ * @summary Open a Customer merge case
+ */
+export const adminCustomerMergeOpen = (
+  openCustomerMergeBody: OpenCustomerMergeBody,
+  options?: SecondParameter<typeof apiRequest<AdminCustomerMergeOpen201>>,
+) => {
+  return apiRequest<AdminCustomerMergeOpen201>(
+    {
+      url: `/api/admin/customer-merges`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: openCustomerMergeBody,
+    },
+    options,
+  );
+};
+
+/**
+ * The case, both Customers as masked identity cards, and a read-only preview of what executing this merge would move or revoke. Contacts are returned masked and only masked — the raw, normalized and display values are never published, on either side. The preview counts only **live** identity references: contact points, active secure access grants, custom requests, orders, uploaded assets and the business profile. Frozen commercial evidence is excluded by design — approval snapshots, quotation acceptances, design reviews, audit events and every append-only transition history keep their original Customer, because a merge records a decision and never rewrites what a customer already agreed to. The counts are computed from current rows on every read, stored nowhere and advisory: execution re-evaluates state inside its own transaction. This is a read — it writes no row, changes no state and appends no merge event.
+ * @summary Get one merge case and its consequence preview
+ */
+export const adminCustomerMergeDetail = (
+  caseId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminCustomerMergeDetail200>>,
+) => {
+  return apiRequest<AdminCustomerMergeDetail200>(
+    { url: `/api/admin/customer-merges/${caseId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Declines a REQUESTED case with a mandatory reason. A lifecycle decision and nothing else: neither Customer changes, no merge pointer is written, no contact is moved, no access grant revoked, and no request, order or asset repointed. Only a REQUESTED case may be rejected — a case that is already rejected or executed is a conflict, not a quiet success, because the reason a second caller supplied would otherwise be silently discarded. The reason is recorded in the audit trail against the case.
+ * @summary Reject a Customer merge case
+ */
+export const adminCustomerMergeReject = (
+  caseId: unknown,
+  rejectCustomerMergeBody: RejectCustomerMergeBody,
+  options?: SecondParameter<typeof apiRequest<void>>,
+) => {
+  return apiRequest<void>(
+    {
+      url: `/api/admin/customer-merges/${caseId}/reject`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: rejectCustomerMergeBody,
+    },
+    options,
+  );
+};
+
+/**
  * Turns one exact contact an operator already holds — from a ticket, a request or a conversation — into the Customer id the support reads are addressed by. The contact is normalized by the canonical rules and matched **whole** against verified, current contacts: this is an equality lookup, not a search. There is no partial, prefix or fuzzy match, no result list and no paging, because a verified contact belongs to exactly one Customer. Unknown, unverified, deactivated and malformed inputs all answer 404 alike — the operation tells you which Customer owns a contact you already know, and never whether a contact exists. The submitted value is never echoed, logged or stored.
  * @summary Resolve a Customer by exact contact
  */
@@ -428,6 +486,56 @@ export const adminCustomerSupportDetail = (
 ) => {
   return apiRequest<AdminCustomerSupportDetail200>(
     { url: `/api/admin/customers/${customerId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Patches the two profile fields an operator maintains — `displayName` and `notes` — and nothing else. Verification evidence, merge state, anonymization and every contact are unreachable from this operation: it cannot create a contact, change a contact value, or write or clear a verification instant. An omitted field is left unchanged; `null` or a blank string clears it. A patch whose values already match writes nothing and appends no audit event. A Customer already merged into another can no longer be maintained.
+ * @summary Update a Customer’s profile metadata
+ */
+export const adminCustomerUpdate = (
+  customerId: unknown,
+  updateCustomerProfileBody: UpdateCustomerProfileBody,
+  options?: SecondParameter<typeof apiRequest<void>>,
+) => {
+  return apiRequest<void>(
+    {
+      url: `/api/admin/customers/${customerId}`,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      data: updateCustomerProfileBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Retires a contact of this Customer. Soft and never destructive: the row stays, its value and its verification instant are left exactly as they are, and only the deactivation instant is written — which is what releases it from the verified-contact uniqueness rule. The primary contact cannot be deactivated, and neither can the Customer’s last verified one; promote a replacement first, explicitly. Nothing is promoted as a side effect. Deactivating a contact that is already deactivated succeeds and changes nothing — no write, no audit event.
+ * @summary Deactivate a contact
+ */
+export const adminCustomerContactDeactivate = (
+  customerId: unknown,
+  contactId: unknown,
+  options?: SecondParameter<typeof apiRequest<void>>,
+) => {
+  return apiRequest<void>(
+    { url: `/api/admin/customers/${customerId}/contacts/${contactId}/deactivate`, method: 'POST' },
+    options,
+  );
+};
+
+/**
+ * Moves the primary designation to a contact that already belongs to this Customer, is active and is **already verified**. The rotation is atomic: the previous primary is cleared and this one set inside one transaction, arbitrated by the one-primary-per-Customer unique index. The contact value is never rewritten, no verification instant is written or cleared, and no contact is created. Promoting the contact that is already primary succeeds and changes nothing — no write, no audit event.
+ * @summary Make a contact the primary one
+ */
+export const adminCustomerContactPromote = (
+  customerId: unknown,
+  contactId: unknown,
+  options?: SecondParameter<typeof apiRequest<void>>,
+) => {
+  return apiRequest<void>(
+    { url: `/api/admin/customers/${customerId}/contacts/${contactId}/primary`, method: 'POST' },
     options,
   );
 };
@@ -2130,11 +2238,29 @@ export type AdminCustomRequestSubmittedDesignGetResult = NonNullable<
 export type AdminCustomRequestTransitionResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestTransition>>
 >;
+export type AdminCustomerMergeOpenResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerMergeOpen>>
+>;
+export type AdminCustomerMergeDetailResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerMergeDetail>>
+>;
+export type AdminCustomerMergeRejectResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerMergeReject>>
+>;
 export type AdminCustomerSupportResolveResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomerSupportResolve>>
 >;
 export type AdminCustomerSupportDetailResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomerSupportDetail>>
+>;
+export type AdminCustomerUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerUpdate>>
+>;
+export type AdminCustomerContactDeactivateResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerContactDeactivate>>
+>;
+export type AdminCustomerContactPromoteResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerContactPromote>>
 >;
 export type AdminCustomerSupportGrantsResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomerSupportGrants>>

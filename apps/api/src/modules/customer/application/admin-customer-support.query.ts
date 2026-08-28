@@ -51,6 +51,14 @@ import { AdminSupportError } from '../domain/support/admin-support.errors';
 
 /** One current contact, as an operator may see it. */
 export interface AdminContactView {
+  /**
+   * The opaque `customer_contact_points.id` (`APP10-B01`).
+   *
+   * B07 deliberately published none, because it had no per-contact operation
+   * for one to address. B01 delivers two, so the id now names something real.
+   * It is not derived from the contact value and cannot be turned into one.
+   */
+  readonly contactPointId: string;
   readonly kind: ContactKind;
   /** `APP4-P01`'s deterministic mask. Never the normalized or display value. */
   readonly maskedValue: string;
@@ -62,6 +70,8 @@ export interface AdminCustomerDetailView {
   readonly customerId: string;
   /** The Customer's own name, when they supplied one. Never a Business Profile. */
   readonly displayName: string | undefined;
+  /** The operator's internal note (`APP10-B01`). Staff-facing, never notified. */
+  readonly notes: string | undefined;
   /** When this identity came into existence. A Customer exists only verified. */
   readonly verifiedAt: Date;
   readonly contacts: readonly AdminContactView[];
@@ -108,6 +118,7 @@ export class AdminCustomerSupportQuery {
     return {
       customerId: customer.id,
       displayName: customer.displayName,
+      notes: customer.notes,
       verifiedAt: customer.verifiedAt,
       contacts: contacts.filter(isCurrent).sort(byPrimaryThenKind).map(toContactView),
     };
@@ -231,6 +242,7 @@ function byPrimaryThenKind(left: ContactPoint, right: ContactPoint): number {
  */
 function toContactView(contact: ContactPoint): AdminContactView {
   return {
+    contactPointId: contact.id,
     kind: contact.contactKind,
     maskedValue: maskContact(contact.contactKind, contact.normalizedValue),
     verified: contact.verifiedAt !== undefined,
