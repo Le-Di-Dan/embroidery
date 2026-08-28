@@ -573,6 +573,29 @@ S01   COMPLETE (2026-08-27 — one Storefront route,
                   CUSTOMER_FEE_ACK_UI = BACKEND_READY / UI_DEFERRED.
                   10 focused frontend cases, 0 migrations, 0 OpenAPI change,
                   0 generated-file edit, 0 backend change)
-E01   NEXT
-X01   INCOMPLETE
+E01   COMPLETE (2026-08-28 — cross-boundary acceptance only, 0 runtime or
+                  business files changed. Two scoped serial commands, because
+                  apps/api may not import apps/worker:
+                  CMD-TEST-APP9-E01-API (4 journeys, 10 cases) and
+                  CMD-TEST-APP9-E01-WORKER (journey 2B, 2 cases) — 12 cases,
+                  all passed. Journeys 1-4 run on ONE order carried from
+                  PRODUCTION_COMPLETED to COMPLETED: TR-LC14-05 opens final
+                  payment without touching the live REMAINING row; the secure
+                  link publishes that exact frozen amount and no other order's;
+                  the QR decodes to it; the customer's attempt belongs to it;
+                  Admin verification reaches SATISFIED + READY_FOR_DELIVERY and
+                  emits exactly one payment.verified carrying
+                  obligationKind = REMAINING; an unchanged-fee shipping save
+                  recalculates nothing and mints no acknowledgement; dispatch
+                  freezes, snapshots and reaches DELIVERED atomically;
+                  completion reaches COMPLETED. Both replays are deterministic
+                  409 ORDER_INVALID_TRANSITION with no duplicate row. The
+                  worker half consumes the REMAINING event on an order that is
+                  ALREADY reserved and leaves the reservation set, the ledger
+                  and the shelf untouched. No real bank transfer, no Docker
+                  browser stack, no OpenAPI or generated-file change,
+                  0 migrations. CUSTOMER_FEE_ACK_UI stays
+                  BACKEND_READY / UI_DEFERRED; the optional S01 static boundary
+                  guard was NOT delivered, so FU-APP9-S01-04 stays open)
+X01   NEXT
 ```
