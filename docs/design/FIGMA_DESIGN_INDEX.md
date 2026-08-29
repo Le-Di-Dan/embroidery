@@ -65,6 +65,7 @@ Authority:
 `APP_07` write target: page **`726:3`** in `FIG-FILE-PRODUCT` (APP7 design packages).
 `APP_08` write target: page **`766:3`** in `FIG-FILE-PRODUCT` (APP8 design packages).
 `APP_09` write target: page **`766:2`** in `FIG-FILE-PRODUCT` (APP9 design packages).
+`APP_10` write target: page **`825:3`** in `FIG-FILE-PRODUCT` (APP10 design packages).
 
 ## 4. Screen and state registry
 
@@ -1110,6 +1111,110 @@ The whole package was promoted rather than only the eighteen Admin rows `APP9-A0
 | FIG-APP9-BACKEND-OPERATION-MAP | Shared | APP9 handoff | Backend Operation & Handoff Map | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_09 | 821:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=821-3) | APP9-D01 | — | FIG-APPROVAL-APP9-D01-PO-001 | 2026-08-27 |
 | FIG-APP9-SCOPE-BOUNDARY | Shared | APP9 scope boundary | Scope Boundary | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_09 | 821:87 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=821-87) | APP9-D01 | — | FIG-APPROVAL-APP9-D01-PO-001 | 2026-08-27 |
 | FIG-APP9-REUSE-MAP | Shared | APP9 reuse | Design Reuse Map | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_09 | 821:130 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=821-130) | APP9-D01 | — | FIG-APPROVAL-APP9-D01-PO-001 | 2026-08-27 |
+
+### 4.16 APP10-D01 — Customer Operations & Communication (NEW, this checkpoint)
+
+Section **`828:3`** — [APP10-D01 · Customer Operations & Communication](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=828-3), page **APP_10** (`825:3`).
+
+**Pre-draw audit (mandatory).** Before any Figma write this registry was searched
+for every APP10-owned term — `APP10`, `APP_10`, `merge`, `gộp`, `zalo`,
+`messenger`, `customer-merges`, `profile maintenance` — and **no registry row
+existed**; §4 ended at `4.15 APP9-D01` and §3 listed `APP_01`…`APP_09` write
+targets only. The live file was then read: the `APP_10` page **already existed**
+at `825:3` and had **zero children**. Per §2 rule 1 it was **reused, not
+re-created**, and no duplicate APP10 page or package exists. Outcome:
+**`NO_EXISTING_APP10_DESIGN`** — nothing was reused, supplemented, repaired or
+superseded, and **no APP1–APP9 or BRD0 node was created, modified, moved,
+renamed, restyled or deleted**.
+
+**`/support/customer-access` is extended, not replaced.** The 18 approved
+`APP4-D01` frames (lookup, loading, load error, not found, customer & contact
+overview, the secure-grant set and the whole notification-delivery/replay set)
+remain the authority for everything they already cover, and APP10 keeps them
+unchanged. `APP10-A01` adds only the maintenance affordances the `APP10-B01`
+contract actually publishes — display name, internal notes, promote-primary and
+deactivate-contact — inside the existing left-hand customer card. `APP10-A02`
+lives at `/support/customer-access/merge` and `…/merge/{caseId}`, i.e. as
+sub-routes of the existing `Hỗ trợ truy cập khách hàng` nav entry, so **APP10
+adds 0 sidenav entries** and the approved Admin shell (`APP1-D01` `385:10`) is
+used as-is. `APP10-I01` extends the `Kết nối` column of the approved Storefront
+footer (`APP1-D02` `405:2253` / mobile `409:2359`).
+
+**Design-system cost: zero.** 0 component masters, 0 instances, 0 new variables,
+text styles, paint styles or effect styles. Every frame composes the existing
+`Primitive` / `Semantic` / `Foundation` collections and the Inter family
+(Regular / Medium / Semi Bold / Bold), reusing the APP4 screen chrome
+(1440 × 900, 240 sidebar, 64 topbar, spec strip) and the APP9-D01 dialog
+grammar (context strip, white dialog, bordered effect/error/why blocks, spacer
+action row). The DS library file was **not** touched. No Zalo or Messenger brand
+asset was added: the design system carries no licensed provider artwork, so the
+CTAs are type plus an `↗` external-link glyph and an explicit
+"Mở ứng dụng bên ngoài" caption.
+
+**Contract fidelity.** Every frame is implementable against the seven delivered
+HTTP operations (`APP10-B01` ×3, `APP10-B02` ×3, `APP10-B03` ×1) plus the
+already-approved `APP4-B07` exact-contact resolver. The package deliberately
+draws **no** customer list or search, **no** contact creation, **no** verification
+mutation, **no** unmerge, **no** merge-event timeline, and **no** historical
+rejection-reason display — the last two are recorded in
+`FIG-APP10-CONTRACT-FIDELITY` (`845:3`) as known contract limits rather than
+designed away. Post-execution consequence counts are explicitly **not** presented
+as "what was moved": `FIG-APP10-A02-PREVIEW-SEMANTICS` (`841:84`) fixes that rule
+and `FIG-APP10-A02-CASE-EXECUTED-DESKTOP` (`837:3`) states in-place why the
+completed screen shows no figures.
+
+Every row below enters as `REVIEW_REQUIRED` with approval evidence `—`.
+`APP10-D01` does **not** self-approve (§2 rule 4). **No APP10 frontend checkpoint
+may start against a `REVIEW_REQUIRED` row**; a human reviewer must promote the
+rows their checkpoint consumes, with an approval-evidence id, following the
+`APP3-D01`…`APP9-D01` precedent.
+
+41 rows: **36 Admin · 4 Storefront · 2 Shared** (the Admin count includes the two
+Admin-scoped specification frames).
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-APP10-OVERVIEW-JOURNEY | Shared | APP10 phase overview | Package & Journey Map | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 828:4 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=828-4) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-MAINT-DESKTOP-DEFAULT | Admin | /support/customer-access | Customer Profile Maintenance | Loaded | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 829:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=829-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-MAINT-NARROW-1280 | Admin | /support/customer-access | Customer Profile Maintenance | Loaded | Admin Narrow 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 834:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=834-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-PROFILE-EDITING | Admin | /support/customer-access | Profile Edit Panel | Editing | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 831:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=831-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-PROFILE-SAVED | Admin | /support/customer-access | Profile Edit Panel | Saved | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 831:28 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=831-28) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-PROFILE-VALIDATION | Admin | /support/customer-access | Profile Edit Panel | Validation Error (400) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 831:42 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=831-42) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-PROFILE-MERGED-REFUSED | Admin | /support/customer-access | Profile Edit Panel | Refused — Customer Merged (409) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 831:62 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=831-62) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-PENDING-STATES | Admin | /support/customer-access | Maintenance Pending States | Submitting | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 831:80 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=831-80) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-PROMOTE-CONFIRM | Admin | /support/customer-access | Promote Primary Contact Dialog | Confirm | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 832:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=832-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-PROMOTE-SUCCESS | Admin | /support/customer-access | Promote Primary Contact Dialog | Success | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 832:26 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=832-26) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-PROMOTE-REFUSED | Admin | /support/customer-access | Promote Primary Contact Dialog | Refused (404 / 409) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 832:46 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=832-46) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-DEACTIVATE-CONFIRM | Admin | /support/customer-access | Deactivate Contact Dialog | Confirm | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 832:67 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=832-67) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-DEACTIVATE-SUCCESS | Admin | /support/customer-access | Deactivate Contact Dialog | Success | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 832:90 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=832-90) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-DEACTIVATE-PRIMARY-REFUSED | Admin | /support/customer-access | Deactivate Contact Dialog | Refused — Primary Contact (409) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 833:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=833-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-DEACTIVATE-LASTVERIFIED-REFUSED | Admin | /support/customer-access | Deactivate Contact Dialog | Refused — Last Verified Contact (409) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 833:21 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=833-21) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-STALE-AND-FAILURE | Admin | /support/customer-access | Maintenance Failure States | Stale / Generic Failure | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 833:39 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=833-39) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A01-CONTACT-ELIGIBILITY | Admin | /support/customer-access | Contact Action Eligibility Matrix | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 833:60 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=833-60) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-SELECT-EMPTY-DESKTOP | Admin | /support/customer-access/merge | Merge Participant Selection | Both Slots Empty | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 835:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=835-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-SELECT-FILLED-DESKTOP | Admin | /support/customer-access/merge | Merge Participant Selection | Both Resolved — Ready to Open | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 835:82 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=835-82) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-SELECT-SAMECUSTOMER | Admin | /support/customer-access/merge | Merge Participant Selection | Refused — Same Customer (400) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 840:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=840-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-OPEN-CONFLICTS | Admin | /support/customer-access/merge | Open Merge Case | Refused (404 / 409) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 840:19 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=840-19) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-CASE-REQUESTED-DESKTOP | Admin | /support/customer-access/merge/{caseId} | Merge Case Workspace | REQUESTED — Comparison & Consequence Preview | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 836:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=836-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-CASE-NARROW-1280 | Admin | /support/customer-access/merge/{caseId} | Merge Case Workspace | REQUESTED — Comparison & Consequence Preview | Admin Narrow 1280 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 838:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=838-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-CASE-PROFILECONFLICT-DESKTOP | Admin | /support/customer-access/merge/{caseId} | Merge Case Workspace | Blocked — Business Profile Conflict | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 836:123 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=836-123) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-CASE-EXECUTED-DESKTOP | Admin | /support/customer-access/merge/{caseId} | Merge Case Workspace | EXECUTED | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 837:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=837-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-CASE-REJECTED-DESKTOP | Admin | /support/customer-access/merge/{caseId} | Merge Case Workspace | REJECTED | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 837:95 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=837-95) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-EXECUTE-CONFIRM | Admin | /support/customer-access/merge/{caseId} | Execute Merge Dialog | Confirm | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 840:40 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=840-40) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-EXECUTE-PENDING | Admin | /support/customer-access/merge/{caseId} | Execute Merge Dialog | Executing | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 840:74 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=840-74) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-EXECUTE-ALREADYEXECUTED | Admin | /support/customer-access/merge/{caseId} | Execute Merge Dialog | Already Executed — Safe Completion | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 840:93 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=840-93) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-EXECUTE-PROFILECONFLICT | Admin | /support/customer-access/merge/{caseId} | Execute Merge Dialog | Refused — Business Profile Conflict (409) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 840:110 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=840-110) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-EXECUTE-PARTICIPANT-REFUSED | Admin | /support/customer-access/merge/{caseId} | Execute Merge Dialog | Refused — Participant Invalid (409) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 841:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=841-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-EXECUTE-FAILURE | Admin | /support/customer-access/merge/{caseId} | Execute Merge Dialog | Sanitized Generic Failure | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 841:24 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=841-24) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-REJECT-CONFIRM | Admin | /support/customer-access/merge/{caseId} | Reject Merge Case Dialog | Confirm — Reason Required | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 841:45 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=841-45) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-REJECT-CONFLICT | Admin | /support/customer-access/merge/{caseId} | Reject Merge Case Dialog | Refused — Invalid Transition (409) | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 841:66 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=841-66) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-A02-PREVIEW-SEMANTICS | Admin | APP10 merge consequence preview | Consequence Preview Semantics | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 841:84 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=841-84) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-I01-FOOTER-DESKTOP | Storefront | shared storefront shell | Contact Handoff Footer | Zalo & Messenger CTAs | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 842:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=842-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-I01-FOOTER-MOBILE | Storefront | shared storefront shell | Contact Handoff Footer | Zalo & Messenger CTAs | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 842:48 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=842-48) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-I01-CTA-STATES | Storefront | shared storefront shell | Contact Handoff CTA | Interaction & Missing Configuration | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 843:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=843-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-I01-HANDOFF-SPEC | Storefront | APP10 external handoff | External Handoff Specification | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 843:44 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=843-44) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-ADMIN-REFUSAL-CATALOG | Admin | APP10 admin refusals | Admin Refusal Catalog | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 844:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=844-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-CONTRACT-FIDELITY | Shared | APP10 contract fidelity | Backend Contract & Design Boundary Map | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 845:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=845-3) | APP10-D01 | — | — | 2026-08-29 |
 
 ## 5. IA and user-flow registry
 

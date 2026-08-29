@@ -160,8 +160,8 @@ APP10 checkpoint, and it is the only APP10 status table.
 | `APP10-B01` | Customer profile & contact maintenance | `COMPLETE` |
 | `APP10-B02` | Merge case lifecycle & consequence preview | `COMPLETE` |
 | `APP10-B03` | Merge execution & immutable event history | `COMPLETE` |
-| `APP10-D01` | APP10 design package | `NEXT` |
-| `APP10-A01` | Admin customer profile maintenance UI | `INCOMPLETE` |
+| `APP10-D01` | APP10 design package | `COMPLETE` |
+| `APP10-A01` | Admin customer profile maintenance UI | `NEXT` |
 | `APP10-A02` | Admin customer merge workflow | `INCOMPLETE` |
 | `APP10-I01` | Zalo/Messenger simple handoff | `INCOMPLETE` |
 | `APP10-E01` | Customer operations cross-boundary acceptance | `INCOMPLETE` |
@@ -292,4 +292,31 @@ B03   COMPLETE (2026-08-29 — the destructive half of merge, and exactly one ne
                 for the refined preview contract); FULL_MONOREPO_TEST =
                 NOT_RUN, FULL_E2E = NOT_RUN. PO_DECISION_REQUIRED = NONE.
                 Evidence: reports/APP10-B03-COMPLETION-REPORT.md)
+
+D01   COMPLETE (2026-08-29 — one design package, one APP_10 page, zero runtime
+                change. The pre-existing empty APP_10 page (825:3) was REUSED,
+                not re-created; section 828:3 holds 41 frames (36 Admin,
+                4 Storefront, 2 Shared) registered as FIGMA_DESIGN_INDEX.md
+                §4.16, all REVIEW_REQUIRED with approval evidence "—" — D01
+                does not self-approve. Registry 450 -> 491 rows, 21 -> 22
+                tables, plus the APP_10 write-target line in §3. The 18
+                approved APP4-D01 /support/customer-access frames are reused
+                unchanged and extended, never replaced; A02 lives at
+                /support/customer-access/merge and .../merge/{caseId} as
+                sub-routes of the existing nav entry, so APP10 adds 0 sidenav
+                entries; I01 extends the "Kết nối" column of the approved
+                APP1-D02 footer. Design-system cost: 0 component masters,
+                0 instances, 0 new variables/styles; the DS library file was
+                not touched and no APP1-APP9 or BRD0 node was modified. Every
+                frame is implementable against the 7 delivered APP10
+                operations plus the APP4-B07 resolver: no customer list or
+                search, no contact creation, no verification mutation, no
+                unmerge, no merge-event timeline and no historical
+                rejection-reason display are designed. Post-execution preview
+                counts are explicitly not presented as "what was moved".
+                Validation: node tools/check-figma-design-index.mjs — PASS
+                (491 registry IDs, 491 node rows, 22 tables). RUNTIME_TESTS =
+                NOT_RUN, FULL_MONOREPO_TEST = NOT_RUN, FULL_E2E = NOT_RUN.
+                PO_DECISION_REQUIRED = NONE.
+                Evidence: reports/APP10-D01-COMPLETION-REPORT.md)
 ```
