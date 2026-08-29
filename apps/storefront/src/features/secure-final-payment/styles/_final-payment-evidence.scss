@@ -160,7 +160,7 @@
 
   @media (max-width: tokens.$bp-shell-wide) {
     &__dropzone {
-      padding: styles.spacing(20) styles.spacing(12);
+      padding: tokens.$stack-gap styles.spacing(12);
     }
 
     &__evidence-glyph {

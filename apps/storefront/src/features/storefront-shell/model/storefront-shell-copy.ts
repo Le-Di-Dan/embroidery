@@ -33,26 +33,43 @@ export const STOREFRONT_SHELL_COPY = {
     unavailable: 'Tìm kiếm sẽ sớm ra mắt.',
   },
   /**
-   * APP10-I01 external contact handoff (`FIG-APP10-I01-FOOTER-DESKTOP` 842:3,
-   * `FIG-APP10-I01-CTA-STATES` 843:3). `Kết nối` is the approved footer column
-   * this group extends (`APP1-D02` 405:2253). No company contact block, address
-   * or phone number is invented here — I01 adds two configured external links
-   * and nothing else.
+   * APP10-I01 external contact handoff, relocated from the footer to a floating
+   * bottom-right dock by PO direction at `APP10-E01`. The four I01 frames
+   * (`FIG-APP10-I01-FOOTER-DESKTOP` 842:3, `-FOOTER-MOBILE` 842:48,
+   * `-CTA-STATES` 843:3, `-HANDOFF-SPEC` 843:44) still draw the footer
+   * rectangles and are stale against it — redraw tracked as `FU-APP10-E01-01`.
+   * No company contact block, address or phone number is invented here: the
+   * handoff is two configured external links and nothing else.
    */
   contactHandoff: {
-    /** Column heading for the handoff group. */
+    /**
+     * Names the dock landmark. Visually hidden: a floating pair of circles has
+     * no room for a heading, and a landmark still needs a name to be findable.
+     */
     title: 'Kết nối',
     /**
-     * Visible on every CTA, inside the link, so the accessible name reads
-     * "Zalo Mở ứng dụng bên ngoài" without an `aria-label` overriding the
-     * visible text. The approved frames caption every CTA this way rather than
-     * relying on the `↗` glyph alone.
+     * Carried inside every CTA, so the accessible name reads
+     * "Zalo — Mở ứng dụng bên ngoài". On the circular dock it lives in the
+     * visually-hidden name span rather than as on-screen caption text: the link
+     * still states both the channel and the handoff, and no `aria-label`
+     * overrides visible text, because a circle has none to override.
      */
     externalCaption: 'Mở ứng dụng bên ngoài',
     /** Provider names as plain type: the design system holds no licensed provider artwork. */
     channels: {
       zalo: 'Zalo',
       messenger: 'Messenger',
+    },
+    /**
+     * The visible mark inside each circle, and the reason it is a letter rather
+     * than a logo: the design system holds no licensed provider artwork, and an
+     * invented approximation of a trademark is worse than an initial. Each is
+     * `aria-hidden` — the adjacent name span carries the meaning — so no CTA is
+     * ever announced as a single character.
+     */
+    marks: {
+      zalo: 'Z',
+      messenger: 'M',
     },
   },
   footer: {

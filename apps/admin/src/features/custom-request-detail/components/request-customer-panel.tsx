@@ -51,10 +51,16 @@ export function RequestCustomerPanel({ customer }: RequestCustomerPanelProps) {
             <p className="request-detail__hint">{COPY.customer.noContacts}</p>
           ) : (
             <ul className="request-detail__contacts" data-testid="request-customer-contacts">
-              {customer.contacts.map((contact) => {
+              {/*
+                Keyed by position, for the reason `merge-participant-card`
+                records: the mask is lossy and a merged customer can own two
+                contacts that mask identically, and this projection publishes no
+                contact id. Read-only and never reordered in the browser.
+              */}
+              {customer.contacts.map((contact, index) => {
                 const presented = presentContact(contact);
                 return (
-                  <li className="request-detail__contact" key={presented.maskedValue}>
+                  <li className="request-detail__contact" key={index}>
                     <span className="request-detail__contact-kind">{presented.kindLabel}</span>
                     <span className="request-detail__contact-value">{presented.maskedValue}</span>
                     {/* Text, never a colour or an icon alone: an operator who

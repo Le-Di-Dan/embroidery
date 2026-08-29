@@ -80,11 +80,20 @@ export function MergeParticipantCard({ role, participant, testId }: MergePartici
 
       <h4 className="customer-merge-participant__contacts-heading">{COPY.contactsHeading}</h4>
       <ul className="customer-merge-participant__contacts" data-testid={`${testId}-contacts`}>
-        {participant.contacts.map((contact) => (
-          <li
-            className="customer-merge-participant__contact"
-            key={`${contact.kind}-${contact.maskedValue}`}
-          >
+        {/*
+          Keyed by position. `maskContact` is deterministic and lossy, so two
+          addresses at one domain sharing a first character produce the *same*
+          mask — and a merge survivor holds precisely that pair, which made
+          `kind-maskedValue` a duplicate key that React warns may duplicate or
+          omit a row. `APP10-B02` publishes no `contactId` on a merge
+          participant (an id is published when an operation is addressed by it,
+          and none here is), so no server identity exists to use instead. The
+          index is the right key for this list and only this kind of list: it is
+          a read-only, server-ordered projection that is never reordered,
+          filtered, inserted into or edited in the browser.
+        */}
+        {participant.contacts.map((contact, index) => (
+          <li className="customer-merge-participant__contact" key={index}>
             <span className="customer-merge-participant__kind">
               {contact.kind === 'EMAIL' ? COPY.kindEmail : COPY.kindPhone}
             </span>

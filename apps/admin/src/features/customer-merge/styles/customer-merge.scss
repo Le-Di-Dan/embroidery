@@ -70,7 +70,7 @@ $customer-merge-slot-min: 420px;
   &__back {
     align-self: flex-start;
     font-size: styles.$font-size-body-s;
-    color: styles.$color-text-link;
+    color: styles.$color-action-primary;
   }
 
   // The two participant columns. `auto-fit` with a named floor rather than a
@@ -177,7 +177,7 @@ $customer-merge-slot-min: 420px;
   &__primary {
     border: 1px solid styles.$color-action-primary;
     background: styles.$color-action-primary;
-    color: styles.$color-text-inverse;
+    color: styles.$color-surface-primary;
   }
 
   // Execute and reject are visually distinct: the irreversible one carries the
@@ -186,7 +186,7 @@ $customer-merge-slot-min: 420px;
   &__danger {
     border: 1px solid styles.$color-status-error;
     background: styles.$color-status-error;
-    color: styles.$color-text-inverse;
+    color: styles.$color-surface-primary;
   }
 
   &__secondary {
@@ -469,7 +469,7 @@ $customer-merge-slot-min: 420px;
 
   &__effects {
     margin: 0;
-    padding-left: styles.spacing(20);
+    padding-left: styles.spacing(24);
     font-size: styles.$font-size-body-s;
     color: styles.$color-text-secondary;
   }

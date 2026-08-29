@@ -51,9 +51,16 @@ $pill-padding-inline: styles.spacing(12);
 $pill-gap: 6px;
 
 // Approved note geometry (816:221 / 817:29 / 818:21).
-$note-padding-block: styles.spacing(14);
+$note-padding-block: 14px; // no shared step between 12 and 16
 $note-padding-inline: styles.spacing(16);
 $note-gap: 10px;
+
+// The banking face. Neither the account number nor the transfer reference may be
+// read with an ambiguous 0/O or 1/l, so both are set in the platform's own
+// monospace stack — a documented local literal for the same reason the off-scale
+// steps are: `@embroidery/styles` locks two brand families, and adding a third to
+// the shared foundation is a design-system decision, not one screen's.
+$mono-family: ui-monospace, 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
 
 // Approved control geometry (816:264 desktop, 819:4 mobile).
 $button-padding-block: 12px;

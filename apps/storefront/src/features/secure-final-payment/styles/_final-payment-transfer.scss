@@ -104,7 +104,7 @@
   // neither is ever letter-spaced, folded or re-grouped.
   &__account,
   &__reference {
-    font-family: styles.$font-family-mono;
+    font-family: tokens.$mono-family;
     font-size: styles.$font-size-body-m;
     font-weight: styles.$font-weight-semibold;
     color: styles.$color-text-primary;

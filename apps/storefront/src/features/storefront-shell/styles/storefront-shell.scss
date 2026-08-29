@@ -7,7 +7,8 @@
 
 @use '@embroidery/styles' as styles;
 
-// The APP10-I01 `Kết nối` footer handoff — its own partial, not more rules here.
+// The APP10-I01 `Kết nối` floating contact dock — its own partial, not more
+// rules here. Fixed-position chrome the shell renders beside `<main>`.
 @use './contact-handoff';
 
 // Local layout breakpoints — the design system defers a shared breakpoint scale

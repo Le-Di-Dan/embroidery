@@ -1,106 +1,168 @@
-// APP10-I01 — `Kết nối` external contact handoff, inside the shell footer.
+// APP10-I01 — `Kết nối` external contact handoff, as a floating bottom-right dock.
 //
-// Design source: FIG-APP10-I01-FOOTER-DESKTOP (842:3), -FOOTER-MOBILE (842:48)
-// and -CTA-STATES (843:3), approved under FIG-APPROVAL-APP10-D01-PO-001.
+// Design status: the four approved I01 frames — FIG-APP10-I01-FOOTER-DESKTOP
+// (842:3), -FOOTER-MOBILE (842:48), -CTA-STATES (843:3) and -HANDOFF-SPEC
+// (843:44), approved under FIG-APPROVAL-APP10-D01-PO-001 — draw these CTAs as
+// flat rectangles at the end of the footer. PO review at APP10-E01 rejected that
+// placement live and directed a floating circular dock instead, so the frames are
+// STALE against this file and are re-registered for redraw (FU-APP10-E01-01).
+// Everything below is the directed composition, not a reading of those frames.
 //
 // A partial rather than more rules in `storefront-shell.scss`: that stylesheet
-// already stands at the 400-line cap (§40), and the handoff is a distinct
-// responsibility — an external-navigation group — not more shell chrome. It is
-// composed from `storefront-shell.scss` so the shell keeps a single leaf entry
+// already stands at the 400-line cap (§40), and the dock is a distinct
+// responsibility — persistent external-navigation chrome — not shell layout. It
+// is composed from `storefront-shell.scss` so the shell keeps a single leaf entry
 // in `main.scss`.
 //
-// The group reflows *inside* the footer at every width. There is no fixed or
-// absolute positioning anywhere below on purpose: a floating corner affordance
-// is what reads as a chatbot launcher, and 842:3 records that it must not.
+// The dock floats, and that is the one thing 843:44 constrains: a floating corner
+// affordance must not become a chatbot launcher. It does not. There is no
+// open/close state, no panel, no badge, no unread count and no script — the dock
+// is two anchors that leave the site, and its position is the only thing this
+// change moved.
 
 @use '@embroidery/styles' as styles;
 
 // Mirrored from `storefront-shell.scss` — the design system defers a shared
-// breakpoint scale (FU-A16), and a partial cannot `@use` the shell entry
-// without emitting its rules a second time.
-$bp-footer: 768px;
+// breakpoint scale (FU-A16), and a partial cannot `@use` the shell entry without
+// emitting its rules a second time.
+$bp-dock: 768px;
 
-.storefront-shell__footer-handoff {
-  display: flex;
-  flex-direction: column;
-  gap: styles.spacing(8);
+// Below the drawer ($z-drawer: 100) and its scrim on purpose: an open mobile
+// drawer must cover the dock, never the other way round. Above ordinary page
+// content, which sets no z-index of its own in the shell.
+$z-dock: 90;
+
+// Approved touch geometry, widened from the 44px minimum: a persistent corner
+// affordance is aimed at with a thumb while scrolling, and 56 is the smallest
+// circle that stays comfortable at that. Larger than $size-touch-target-min by
+// design, never smaller.
+$dock-size: 56px;
+
+// Clear of the viewport edge by one shared step at each side, and of the mobile
+// browser chrome by the safe-area inset where the platform reports one.
+$dock-inset: styles.spacing(16);
+
+// Local elevation — @embroidery/styles defines no shadow scale (GAP-D02, the same
+// gap `$scrim-drawer` records). Derived from the approved ink text token at low
+// alpha rather than an arbitrary grey, so the dock reads as lifted off the page
+// without introducing an unapproved colour.
+$dock-shadow: 0 4px 16px rgba(styles.$color-text-primary, 0.18);
+$dock-shadow-hover: 0 6px 20px rgba(styles.$color-text-primary, 0.26);
+
+.storefront-shell__handoff-dock {
+  position: fixed;
+  right: $dock-inset;
+  bottom: $dock-inset;
+  z-index: $z-dock;
+  // Respects the iOS/Android home indicator without a media query.
+  padding-right: env(safe-area-inset-right, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+
+  @media (min-width: $bp-dock) {
+    right: styles.spacing(24);
+    bottom: styles.spacing(24);
+  }
 }
 
-.storefront-shell__footer-handoff-title {
-  margin: 0;
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-s;
-  font-weight: styles.$font-weight-semibold;
-  line-height: 1.5;
-  color: styles.$color-text-primary;
+// The landmark's name. A pair of circles has no room for a heading, and a
+// landmark with no accessible name is not findable, so the heading is real text
+// positioned out of view rather than an `aria-label` on the section.
+.storefront-shell__handoff-dock-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
-.storefront-shell__footer-handoff-list {
+// Stacked, bottom-anchored: `column-reverse` puts the first configured channel
+// (Zalo, the approved order) nearest the thumb, so adding or removing the second
+// channel never moves the first.
+.storefront-shell__handoff-dock-list {
   display: flex;
-  flex-direction: column;
-  gap: styles.spacing(8);
+  flex-direction: column-reverse;
+  gap: styles.spacing(12);
   margin: 0;
   padding: 0;
   list-style: none;
-
-  // Desktop/tablet: the two CTAs sit side by side in the footer row.
-  @media (min-width: $bp-footer) {
-    flex-direction: row;
-    gap: styles.spacing(16);
-  }
 }
 
-.storefront-shell__footer-handoff-cta {
-  display: inline-flex;
-  flex-direction: column;
-  gap: styles.spacing(4);
+// Filled with the brand action token, not the surface token the footer
+// rectangles used. A rectangle sitting in the footer's own flow is read because
+// it is where the eye already is; a circle floating over a near-white page is
+// read only if it contrasts with it, and `$color-surface-primary` on
+// `$color-background-primary` does not. The fill is the same treatment every
+// other primary action in the Storefront carries, so the dock announces itself
+// as an action without inventing a provider's brand colour — which the design
+// system deliberately does not hold a licence for.
+.storefront-shell__handoff-dock-cta {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  min-height: styles.$size-touch-target-min;
-  padding: styles.spacing(8) styles.spacing(12);
-  color: styles.$color-text-primary;
+  width: $dock-size;
+  height: $dock-size;
+  color: styles.$color-surface-primary;
   text-decoration: none;
-  border: 1px solid styles.$color-border-primary;
-  border-radius: styles.$radius-md;
-  background: styles.$color-surface-primary;
-  transition: border-color styles.$motion-duration-fast styles.$motion-easing-standard;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: styles.$color-action-primary;
+  box-shadow: $dock-shadow;
+  transition:
+    background-color styles.$motion-duration-fast styles.$motion-easing-standard,
+    box-shadow styles.$motion-duration-fast styles.$motion-easing-standard,
+    transform styles.$motion-duration-fast styles.$motion-easing-standard;
 
   &:hover {
-    border-color: styles.$color-border-secondary;
+    background: styles.$color-action-hover;
+    box-shadow: $dock-shadow-hover;
   }
 
   &:active {
-    border-color: styles.$color-action-active;
+    background: styles.$color-action-active;
   }
 
-  // Keyboard focus must stay visible: this is the only affordance in the footer
-  // that leaves the site, so it is the one a keyboard user most needs to see.
+  // Keyboard focus must stay visible: these are the only affordances that leave
+  // the site, and they sit over page content rather than in the document flow.
+  // Offset by 2 against the ink token, because the ring can no longer be the
+  // action colour the button is now filled with.
   &:focus-visible {
-    outline: 2px solid styles.$color-action-primary;
+    outline: 2px solid styles.$color-text-primary;
     outline-offset: 2px;
   }
+
+  // The lift is the only motion, and it is opt-in: a persistent floating control
+  // that animates for a customer who asked for less of it would be the worst
+  // place in the shell to ignore the preference.
+  @include styles.motion-safe {
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
 }
 
-.storefront-shell__footer-handoff-channel {
-  display: inline-flex;
-  align-items: baseline;
-  gap: styles.spacing(4);
+// The channel initial. Decorative by itself — the name span beside it carries the
+// meaning — so it is `aria-hidden` in the markup and never a CTA's only signal.
+.storefront-shell__handoff-dock-mark {
   font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-body-s;
-  font-weight: styles.$font-weight-medium;
-  line-height: 1.4;
-}
-
-// Decorative: the caption below carries the meaning, so this glyph is hidden
-// from assistive technology and never becomes the CTA's only signal.
-.storefront-shell__footer-handoff-glyph {
-  font-size: styles.$font-size-body-s;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
   line-height: 1;
-  color: styles.$color-text-secondary;
 }
 
-.storefront-shell__footer-handoff-caption {
-  font-family: styles.$font-family-primary;
-  font-size: styles.$font-size-caption;
-  line-height: 1.4;
-  color: styles.$color-text-secondary;
+// The accessible name: "Zalo — Mở ứng dụng bên ngoài", inside the link, out of
+// view. Not an `aria-label`, so it is real text a translation tool can reach.
+.storefront-shell__handoff-dock-name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

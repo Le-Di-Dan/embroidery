@@ -97,10 +97,12 @@ export function CustomerContactPanel({
           <h3 className="customer-access-card__subheading">{COPY.contactsHeading}</h3>
           <ul className="customer-access-contacts" data-testid="customer-contacts">
             {customer.contacts.map((contact) => (
-              <li
-                className="customer-access-contacts__item"
-                key={`${contact.kind}-${contact.maskedValue}`}
-              >
+              // Keyed on the server's own contact id, not on the mask.
+              // `maskContact` is deterministic and lossy, so two addresses at one
+              // domain sharing a first character mask identically — which is
+              // exactly what a merged customer holds. `APP10-B01` publishes
+              // `contactId` here because it addresses two operations by it.
+              <li className="customer-access-contacts__item" key={contact.contactId}>
                 <span className="customer-access-contacts__kind">
                   {contact.kind === 'EMAIL' ? COPY.kindEmail : COPY.kindPhone}
                 </span>

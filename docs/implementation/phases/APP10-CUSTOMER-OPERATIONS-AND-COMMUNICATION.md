@@ -98,7 +98,7 @@ APP4.
 | 6 | `APP10-A01` | Admin customer profile maintenance UI — extends `/support/customer-access` | D01 approved | `apps/admin` | 0 | no | no | **yes** | changed maintenance-panel components only |
 | 7 | `APP10-A02` | Admin customer merge workflow — comparison, consequences, confirmation, forbidden/conflict, audit states | D01 approved, B03 | `apps/admin` | 0 | no | no | **yes** | merge workflow components/queries/router |
 | 8 | `APP10-I01` | Zalo/Messenger simple handoff — configured links, request code in opening text | D01 approved | `apps/storefront` | 0 | no | no | **yes** | footer/CTA component test incl. the updated absence assertion; no provider SDK imported |
-| 9 | `APP10-E01` | Customer operations cross-boundary acceptance | A01, A02, I01 | scoped api / admin commands | 0 | no | no | no | 3 journeys, 8–12 cases |
+| 9 | `APP10-E01` | Customer operations cross-boundary acceptance | A01, A02, I01 | scoped api / admin / storefront commands | 0 planned, **6 delivered** | no | no | no | 4 journeys, 11 cases; live Playwright verification found six blocking SCSS defects and one duplicate-key defect — see `APP10-E01-COMPLETION-REPORT.md` §O |
 | 10 | `APP10-X01` | Phase closure, measured baselines, follow-up classification | E01 | docs | 0 | no | no | no | static evidence only |
 
 Every backend slice carries one primary authority and 1–3 operations; none
@@ -164,8 +164,8 @@ APP10 checkpoint, and it is the only APP10 status table.
 | `APP10-A01` | Admin customer profile maintenance UI | `COMPLETE` |
 | `APP10-A02` | Admin customer merge workflow | `COMPLETE` |
 | `APP10-I01` | Zalo/Messenger simple handoff | `COMPLETE` |
-| `APP10-E01` | Customer operations cross-boundary acceptance | `NEXT` |
-| `APP10-X01` | Phase closure | `INCOMPLETE` |
+| `APP10-E01` | Customer operations cross-boundary acceptance | `COMPLETE` |
+| `APP10-X01` | Phase closure | `NEXT` |
 
 ```text
 G01   COMPLETE (2026-08-28 — audit and documentation only. 0 runtime, test,

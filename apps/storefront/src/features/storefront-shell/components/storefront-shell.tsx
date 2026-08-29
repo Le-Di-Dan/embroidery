@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { STOREFRONT_SHELL_COPY } from '../model/storefront-shell-copy';
+import { StorefrontContactHandoff } from './storefront-contact-handoff';
 import { StorefrontFooter } from './storefront-footer';
 import { StorefrontHeader } from './storefront-header';
 
@@ -17,6 +18,12 @@ export const STOREFRONT_MAIN_ID = 'main-content';
  * The shell deliberately creates **no** page `<h1>`: each page owns its own
  * heading and business content, which render once into `{children}`. Content width
  * and padding follow the approved shell notes (FIG-STOREFRONT-SHELL-NOTES).
+ *
+ * `StorefrontContactHandoff` is the APP10-I01 external contact dock. It is a
+ * sibling of `<main>` and the footer rather than a child of either, because it
+ * floats over the page at every scroll position and belongs to no one section;
+ * it renders nothing at all when neither channel is configured, which is why the
+ * shell can hold it unconditionally.
  */
 export function StorefrontShell({ children }: { children: ReactNode }) {
   return (
@@ -29,6 +36,7 @@ export function StorefrontShell({ children }: { children: ReactNode }) {
         <div className="storefront-shell__main-inner">{children}</div>
       </main>
       <StorefrontFooter />
+      <StorefrontContactHandoff />
     </div>
   );
 }

@@ -1211,12 +1211,31 @@ Admin-scoped specification frames).
 | FIG-APP10-A02-REJECT-CONFIRM | Admin | /support/customer-access/merge/{caseId} | Reject Merge Case Dialog | Confirm — Reason Required | Desktop | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 841:45 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=841-45) | APP10-D01 | — | FIG-APPROVAL-APP10-D01-PO-001 | 2026-08-29 |
 | FIG-APP10-A02-REJECT-CONFLICT | Admin | /support/customer-access/merge/{caseId} | Reject Merge Case Dialog | Refused — Invalid Transition (409) | Desktop | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 841:66 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=841-66) | APP10-D01 | — | FIG-APPROVAL-APP10-D01-PO-001 | 2026-08-29 |
 | FIG-APP10-A02-PREVIEW-SEMANTICS | Admin | APP10 merge consequence preview | Consequence Preview Semantics | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 841:84 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=841-84) | APP10-D01 | — | FIG-APPROVAL-APP10-D01-PO-001 | 2026-08-29 |
-| FIG-APP10-I01-FOOTER-DESKTOP | Storefront | shared storefront shell | Contact Handoff Footer | Zalo & Messenger CTAs | Desktop 1440 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 842:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=842-3) | APP10-D01 | — | FIG-APPROVAL-APP10-D01-PO-001 | 2026-08-29 |
-| FIG-APP10-I01-FOOTER-MOBILE | Storefront | shared storefront shell | Contact Handoff Footer | Zalo & Messenger CTAs | Mobile 390 | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 842:48 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=842-48) | APP10-D01 | — | FIG-APPROVAL-APP10-D01-PO-001 | 2026-08-29 |
-| FIG-APP10-I01-CTA-STATES | Storefront | shared storefront shell | Contact Handoff CTA | Interaction & Missing Configuration | Desktop | high-fidelity | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 843:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=843-3) | APP10-D01 | — | FIG-APPROVAL-APP10-D01-PO-001 | 2026-08-29 |
-| FIG-APP10-I01-HANDOFF-SPEC | Storefront | APP10 external handoff | External Handoff Specification | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 843:44 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=843-44) | APP10-D01 | — | FIG-APPROVAL-APP10-D01-PO-001 | 2026-08-29 |
+| FIG-APP10-I01-FOOTER-DESKTOP | Storefront | shared storefront shell | Contact Handoff Footer | Zalo & Messenger CTAs | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 842:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=842-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-I01-FOOTER-MOBILE | Storefront | shared storefront shell | Contact Handoff Footer | Zalo & Messenger CTAs | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 842:48 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=842-48) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-I01-CTA-STATES | Storefront | shared storefront shell | Contact Handoff CTA | Interaction & Missing Configuration | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 843:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=843-3) | APP10-D01 | — | — | 2026-08-29 |
+| FIG-APP10-I01-HANDOFF-SPEC | Storefront | APP10 external handoff | External Handoff Specification | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 843:44 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=843-44) | APP10-D01 | — | — | 2026-08-29 |
 | FIG-APP10-ADMIN-REFUSAL-CATALOG | Admin | APP10 admin refusals | Admin Refusal Catalog | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 844:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=844-3) | APP10-D01 | — | FIG-APPROVAL-APP10-D01-PO-001 | 2026-08-29 |
 | FIG-APP10-CONTRACT-FIDELITY | Shared | APP10 contract fidelity | Backend Contract & Design Boundary Map | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_10 | 845:3 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=845-3) | APP10-D01 | — | FIG-APPROVAL-APP10-D01-PO-001 | 2026-08-29 |
+
+> **`APP10-E01` — the four `FIG-APP10-I01-*` rows are demoted to `REVIEW_REQUIRED`.**
+> All four draw the Zalo/Messenger CTAs as flat rectangles inside the Storefront
+> footer, and `APP10-I01` built exactly that. PO review of the running Storefront
+> at `APP10-E01` rejected the placement — a customer had to scroll the whole page
+> before the contact affordance existed — and directed a floating circular dock
+> fixed at the bottom-right, with the footer returned to its pre-I01 composition.
+> The delivered code is now the dock, so these frames no longer describe what
+> ships and may not authorize any further work: the rows keep their nodes and
+> links as the historical record, lose their approval evidence, and are blocked
+> for implementation until redrawn and re-approved (`FU-APP10-E01-01`). The
+> redraw could not happen in this checkpoint because the `figma-desktop` MCP
+> server was unreachable (`ConnectionRefused`) for its whole duration.
+>
+> Nothing else in §4.16 is affected: the handoff *contract* the frames specify —
+> configured absolute URLs used verbatim, external navigation only, no provider
+> SDK, malformed or missing configuration omitting the channel — is unchanged and
+> is what `843:44` records. Only the placement moved.
+
 
 ## 5. IA and user-flow registry
 
