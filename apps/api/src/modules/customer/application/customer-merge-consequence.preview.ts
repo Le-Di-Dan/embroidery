@@ -17,7 +17,7 @@
  * |---|---|---|---|
  * | `contactPoints` | `customer_contact_points` | CTX-CUS | `CustomerMergePreviewPort` |
  * | `activeSecureAccessGrants` | `secure_access_grants` (ACTIVE) | CTX-CUS | same |
- * | `businessProfile` | `business_profiles` | CTX-CUS | same |
+ * | `businessProfile` | `business_profiles` | CTX-CUS | same, **both sides** |
  * | `customRequests` | `custom_requests` | CTX-ORD | `OrderingMergeConsequencePort` |
  * | `orders` | `orders` | CTX-ORD | same |
  * | `uploadedAssets` | `assets.uploaded_by_customer_id` | CTX-AST | `AssetMergeConsequencePort` |
@@ -41,6 +41,19 @@
  *
  * Having a `customer_id` is therefore not the test. Being *repointable* is.
  *
+ * ### The business profile is the one category read for *both* customers
+ *
+ * APP10-B03 §10 makes a double-owned business profile a fail-closed blocker:
+ * CST-051 caps the table at one row per customer, so a loser profile cannot be
+ * repointed onto a survivor that already has one, and no resolution available to
+ * code — overwrite, delete, field-by-field merge — is anything but data loss the
+ * operator never chose. The preview therefore publishes three facts rather than
+ * one boolean, so APP10-A02 can warn *before* confirmation instead of letting an
+ * operator meet a refusal at the end of a workflow.
+ *
+ * It is the only category asked about the survivor. The others describe rows that
+ * are moving, and the survivor’s are staying where they are.
+ *
  * ### The counts are advisory, and are not stored
  *
  * They are computed from current rows on every read and persisted nowhere.
@@ -59,6 +72,10 @@ import {
   ORDERING_MERGE_CONSEQUENCE_PORT,
   type OrderingMergeConsequencePort,
 } from '../../order/domain/repositories/customer-merge-consequence.port';
+import {
+  businessProfileReadiness,
+  type BusinessProfileReadiness,
+} from '../domain/merge/customer-merge-execution.policy';
 import {
   CUSTOMER_MERGE_PREVIEW_PORT,
   type CustomerMergePreviewPort,
@@ -79,7 +96,15 @@ export interface MergeConsequencePreview {
   readonly customRequests: number;
   readonly orders: number;
   readonly uploadedAssets: number;
-  readonly businessProfile: boolean;
+  /**
+   * Business-profile readiness for **both** participants, not a count.
+   *
+   * Evolved from the APP10-B02 boolean rather than joined by a second field: two
+   * members answering overlapping questions about one table is how a client comes
+   * to read the wrong one. The conflict member is derived, never supplied, so it
+   * cannot disagree with the two facts beside it.
+   */
+  readonly businessProfile: BusinessProfileReadiness;
 }
 
 @Injectable()
@@ -94,17 +119,22 @@ export class MergeConsequencePreviewReader {
   ) {}
 
   /**
-   * The preview for one merge case, computed for the **loser**.
+   * The preview for one merge case.
    *
-   * The loser is the side that moves: execution carries its live references to
-   * the survivor and revokes its active grants. Counting the survivor's rows
-   * would describe what already belongs where it is going to stay.
+   * Every count is the **loser’s**: it is the side that moves, and counting the
+   * survivor’s rows would describe what already belongs where it is going to
+   * stay. The one exception is business-profile readiness, which is a fact about
+   * the pair — see the file header.
    */
-  async forLoser(loserCustomerId: CustomerId): Promise<MergeConsequencePreview> {
-    const [owned, ordering, uploadedAssets] = await Promise.all([
+  async forCase(
+    survivorCustomerId: CustomerId,
+    loserCustomerId: CustomerId,
+  ): Promise<MergeConsequencePreview> {
+    const [owned, ordering, uploadedAssets, survivorHasProfile] = await Promise.all([
       this.customerOwned.countOwnedReferences(loserCustomerId),
       this.ordering.countLiveCustomerReferences(loserCustomerId),
       this.assets.countUploadsByCustomer(loserCustomerId),
+      this.customerOwned.hasBusinessProfile(survivorCustomerId),
     ]);
 
     return {
@@ -113,7 +143,7 @@ export class MergeConsequencePreviewReader {
       customRequests: ordering.customRequests,
       orders: ordering.orders,
       uploadedAssets,
-      businessProfile: owned.businessProfile,
+      businessProfile: businessProfileReadiness(owned.businessProfile, survivorHasProfile),
     };
   }
 }

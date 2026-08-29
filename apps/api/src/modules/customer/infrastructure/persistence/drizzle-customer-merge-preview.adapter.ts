@@ -70,4 +70,22 @@ export class DrizzleCustomerMergePreviewAdapter
       };
     });
   }
+
+  /**
+   * One presence test, for the survivor side of the collision check.
+   *
+   * `customer_id` is the only column selected — `company_name`, `tax_code` and
+   * `billing_contact` are PII, and a readiness flag needs none of them.
+   */
+  async hasBusinessProfile(customerId: string): Promise<boolean> {
+    return this.run('hasBusinessProfile', async () => {
+      const [row] = await this.db
+        .select({ customerId: businessProfiles.customerId })
+        .from(businessProfiles)
+        .where(eq(businessProfiles.customerId, customerId))
+        .limit(1);
+
+      return row !== undefined;
+    });
+  }
 }

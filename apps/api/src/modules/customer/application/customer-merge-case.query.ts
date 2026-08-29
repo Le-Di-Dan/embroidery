@@ -92,7 +92,7 @@ export class CustomerMergeCaseQuery {
       // Computed on every read, from current rows, and stored nowhere. Even for
       // a `REJECTED` or `EXECUTED` case: a stale number wearing the authority of
       // a record is worse than a current one that says nothing moved.
-      this.preview.forLoser(mergeCase.loserCustomerId),
+      this.preview.forCase(mergeCase.survivorCustomerId, mergeCase.loserCustomerId),
     ]);
 
     return {

@@ -761,6 +761,40 @@
         ],
         "type": "object"
       },
+      "AdminCustomerMergeExecutedResponse": {
+        "properties": {
+          "mergeCaseId": {
+            "description": "The merge case that was executed.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6090",
+            "type": "string"
+          },
+          "outcome": {
+            "description": "EXECUTED when this request performed the merge. ALREADY_EXECUTED when the case had already been executed and this request changed nothing: no ownership moved a second time, no access grant was revoked again, no Customer was tombstoned again, and neither a merge event nor an audit row was appended.",
+            "enum": [
+              "EXECUTED",
+              "ALREADY_EXECUTED"
+            ],
+            "example": "EXECUTED",
+            "type": "string"
+          },
+          "status": {
+            "description": "Always EXECUTED — either this request performed the merge, or an earlier one had already performed it.",
+            "enum": [
+              "REQUESTED",
+              "EXECUTED",
+              "REJECTED"
+            ],
+            "example": "EXECUTED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mergeCaseId",
+          "status",
+          "outcome"
+        ],
+        "type": "object"
+      },
       "AdminCustomerMergeOpenedResponse": {
         "properties": {
           "mergeCaseId": {
@@ -7206,6 +7240,31 @@
         ],
         "type": "object"
       },
+      "MergeBusinessProfileReadinessResponse": {
+        "properties": {
+          "conflict": {
+            "description": "True when both Customers have a business profile. Executing the merge is refused while this holds — before anything is moved, revoked or tombstoned — because only a person can decide which profile is right.",
+            "example": false,
+            "type": "boolean"
+          },
+          "loserHasProfile": {
+            "description": "Whether the merged-away Customer has a business profile that would move to the surviving Customer.",
+            "example": true,
+            "type": "boolean"
+          },
+          "survivorHasProfile": {
+            "description": "Whether the surviving Customer already has one. At most one business profile may exist per Customer.",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "loserHasProfile",
+          "survivorHasProfile",
+          "conflict"
+        ],
+        "type": "object"
+      },
       "MergeConsequencePreviewResponse": {
         "properties": {
           "activeSecureAccessGrants": {
@@ -7214,9 +7273,12 @@
             "type": "number"
           },
           "businessProfile": {
-            "description": "Whether the merged-away Customer has a business profile that would move. A boolean rather than a count: at most one profile exists per Customer.",
-            "example": false,
-            "type": "boolean"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergeBusinessProfileReadinessResponse"
+              }
+            ],
+            "description": "Whether a business profile would move, and whether it can. Both Customers are described: at most one profile may exist per Customer, so a merge whose two sides both have one is refused before anything is moved."
           },
           "contactPoints": {
             "description": "Every contact point belonging to the merged-away Customer, deactivated ones included: each carries the Customer reference and each has to move.",
@@ -12742,6 +12804,207 @@
           }
         ],
         "summary": "Get one merge case and its consequence preview",
+        "tags": [
+          "adminCustomerMerge"
+        ]
+      }
+    },
+    "/api/admin/customer-merges/{caseId}/execute": {
+      "post": {
+        "description": "Performs the merge a REQUESTED case describes, as one transaction: the merged-away Customer’s contact points move to the surviving Customer, its ACTIVE secure access grants are revoked, its custom requests, orders, uploaded assets and business profile are repointed, and it is finally tombstoned to point at the survivor. Either all of it commits or none of it does. Survivor and loser come from the case — this operation takes no body and cannot be told to merge a different pair, to swap them or to skip a step. Frozen commercial evidence is never rewritten: approval snapshots, quotation acceptances, design reviews, audit events and every append-only transition history keep the Customer they were taken against. Both Customer rows are locked in a fixed order, so two merges naming the same pair serialize instead of deadlocking, and the case row is locked first, so two simultaneous executions of one case cannot both perform it. Executing a case that was already executed is a success that changes nothing. The merge is refused, before anything is moved, when either Customer has already been merged away or when both Customers have a business profile — at most one may exist per Customer, and only a person can decide which to keep.",
+        "operationId": "adminCustomerMerge_execute",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminCustomerMergeExecutedResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The merge is executed, or had already been executed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed case id.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No such merge case.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The case was declined and can no longer be executed, either Customer has already been merged into another, both Customers have a business profile, or a contact could not be moved without discarding identity evidence. Nothing was merged.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Execute a Customer merge case",
         "tags": [
           "adminCustomerMerge"
         ]

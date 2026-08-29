@@ -144,13 +144,13 @@ reason §1.2 gives: the file is `APP4-B07`'s acceptance evidence, and editing it
 to make a later world green destroys the record it exists to carry.
 
 The gate now reports **seven** failures rather than six. Six are exactly the ones
-§1.2 lists — two frozen-artifact counts (the operation total, now `114`, and the
-37 migrations) and B01's four superseded projection/route rules. The seventh is
-new, and `APP10-B02` supersedes it:
+§1.2 lists — two frozen-artifact counts (the operation total, now `115` after
+`APP10-B03`, and the 37 migrations) and B01's four superseded projection/route
+rules. The seventh is new, and `APP10-B02` supersedes it:
 
 | Gate rule, as written for B07 | Superseded by | Why |
 |---|---|---|
-| the whole published contract names no `businessProfile` | B02 §8.1, §14 | `MergeConsequencePreviewResponse.businessProfile` — a **boolean** saying whether the merged-away Customer has a profile that a merge would move |
+| the whole published contract names no `businessProfile` | B02 §8.1, §14; refined by B03 §10.2 | `MergeConsequencePreviewResponse.businessProfile` — three booleans (`loserHasProfile`, `survivorHasProfile`, `conflict`) saying whether a profile would move and whether the merge can proceed at all |
 
 The rule is implemented as a document-wide forbidden-substring scan (gate rules
 12/15/27), so it fires on any operation anywhere in the contract, not only on
@@ -164,12 +164,51 @@ remain forbidden and remain **absent** from the whole document, as do
 exists because the merge consequence preview would otherwise tell an operator
 that nothing moves when a profile does.
 
+`APP10-B03` refined the field from a boolean to three booleans and added **no**
+new failure: the scan is on the field name, which is unchanged, and the three
+members carry no column of `business_profiles` either. No new supersession is
+recorded, because no further gate rule became false.
+
 `AdminCustomerDetailResponse` — the projection the rule was written to protect —
 still publishes no business profile of any kind.
 
 Consequences are those §1.2 already records: the row stays
 `HISTORICAL_SCOPED`, its **seven** current failures are not evidence of a defect
 in a change under review, and repairing the gate remains `FU-APP10-B01-01`.
+
+### 1.4 `CMD-CHECK-APP4-B02` — four scope-boundary rules superseded by `APP10-B03`
+
+Recorded by `APP10-B03` (2026-08-29). **No gate logic was changed**, on the
+standing rule §1.2 gives: the file is `APP4-B02`'s acceptance evidence, and
+editing it to make a later world green destroys the record it exists to carry.
+
+Measured on a stashed, pristine tree: the gate reports **70** failures at the
+`APP10-B02` HEAD and **74** after `APP10-B03`. The 70 are inherited and were
+already red — every APP4/APP5/APP6/APP7/APP9/APP10 route, DTO and Swagger
+decorator the Customer module has legitimately gained since B02, the two frozen
+artifact counts, and the merge-case files `APP10-B02` added. The four new ones
+are all instances of the same two scope-boundary rules, and `APP10-B03`
+supersedes them:
+
+| Gate rule, as written for B02 | New failing file | Superseded by | Why |
+|---|---|---|---|
+| no source touches customer merge cases | `application/customer-merge-transfer.service.ts` | B03 §7 | the transfer service is keyed by the merge case it is executing |
+| no source touches customer merge cases | `application/execute-customer-merge.use-case.ts` | B03 §7, §17 | the use case locks the case and transitions it to `EXECUTED` |
+| no source authors a business profile | `application/customer-merge-transfer.service.ts` | B03 §10, §13 | it *repoints* `business_profiles.customer_id`; it authors no profile, and writes none of `company_name`, `tax_code` or `billing_contact` |
+| the repository gained a merge write | `infrastructure/persistence/drizzle-customer-merge-execution.adapter.ts` | B03 §15 | writing `merged_into_customer_id` is the tombstone, and B03 is the checkpoint that owns it |
+
+All four rules were written to state that `APP4-B02` — the customer identity
+checkpoint — must not perform a merge, and they remain true of the code they
+were written about: `drizzle-customer.repository.ts` still contains no
+`merged_into_customer_id` write, and `UpdateCustomerProfileInput` still has no
+member for one. The tombstone write lives in a **separate port and adapter**,
+reachable only from the merge transaction, which is the boundary the rule was
+protecting rather than the file path it happened to name.
+
+Consequences are those §1.2 already records: the row stays `ACTIVE_SCOPED` for
+the identity rules it still governs, its inherited failures are not evidence of
+a defect in a change under review, and repairing the gate for the post-APP4
+world is follow-up `FU-APP10-B03-01`.
 
 ## 2. Root `package.json` — what stays
 
@@ -504,6 +543,8 @@ leaving the hole open.
 | `CMD-TEST-APP10-B01-ADMIN-FIXTURE` | `@embroidery/admin` | delivered customer-access component suites | `pnpm --filter @embroidery/admin exec jest --runTestsByPath test/components/customer-access-grant.test.tsx test/components/customer-access-lookup.test.tsx test/components/customer-access-notification.test.tsx test/components/customer-access-security.test.tsx` | apps/admin/test/support/customer-access-fixture.ts and its four consumers | Any change to the published `AdminCustomerDetailResponse`/`AdminCustomerContactResponse` shape, which the A01 fixture must satisfy. Run by `APP10-B01` because `contactId` became required on the contact projection. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP10-B02-LIFECYCLE` | `@embroidery/api` | merge case lifecycle live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runInBand --runTestsByPath src/modules/customer/tests/integration/admin-customer-merge-lifecycle.integration.spec.ts` | apps/api/src/modules/customer/tests/integration/admin-customer-merge-lifecycle.integration.spec.ts · customer-merge-queries.ts | Any change to `adminCustomerMerge_open`/`_reject`, the merge policy, the merge case repository or its audit recorder. Boots the real HTTP application with the **real** `AuthenticatedAdminGuard` against a disposable PostgreSQL. Proves the case is created `REQUESTED` with survivor and loser exactly as stated and attributed to the session Admin; the mandatory-reason, self-merge, unknown-participant, already-merged and duplicate-pair refusals; that two **concurrent** opens of one pair produce 201 + 409 and exactly one row, arbitrated by the CST-010 partial unique rather than the pre-check; that a strict body naming a contact, a status, an admin id or a decision instant is a 400; that `REQUESTED → REJECTED` stamps `decided_at`, leaves the open reason intact and records the declining reason in `audit_events.reason`; that a rejected or executed case refuses a second rejection; that no ownership snapshot moves and `customer_merge_events` stays empty on every path; and that all three routes are refused without a session, from a foreign origin, and — for the two body-bearing mutations — without `application/json`. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP10-B02-PREVIEW` | `@embroidery/api` | merge consequence preview live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runInBand --runTestsByPath src/modules/customer/tests/integration/admin-customer-merge-preview.integration.spec.ts` | apps/api/src/modules/customer/tests/integration/admin-customer-merge-preview.integration.spec.ts · customer-merge-queries.ts | Any change to `adminCustomerMerge_detail`, the preview reader, the customer-owned count adapter or either cross-module count port. Same real-guard, disposable-database harness, seeding a full order chain so the merged-away customer genuinely owns requests, an order, an ACTIVE grant, uploads and a business profile **and** carries an `approval_snapshots` and a `quotation_acceptances` row with the same `customer_id`. Proves the six live counts against the seeded rows; that the preview is the loser's and not the survivor's; that a deactivated contact counts and an EXPIRED or REVOKED grant does not; that the two frozen categories exist and appear in no count and no category name; that both Customer cards are masked with no raw, normalized or display value, no `notes`, no `contactId` and no merge pointer; that the counts are recomputed and never stored; and that two reads write no row, no audit event and no merge event. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP10-B03-EXECUTION` | `@embroidery/api` | merge execution live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runInBand --runTestsByPath src/modules/customer/tests/integration/admin-customer-merge-execution.integration.spec.ts` | apps/api/src/modules/customer/tests/integration/admin-customer-merge-execution.integration.spec.ts · customer-merge-execution-queries.ts · customer-merge-queries.ts | Any change to `adminCustomerMerge_execute`, the execution use case, the transfer service, the customer-owned execution adapter, the merge-event repository, either cross-module ownership-transfer port, or the grant revocation path. Same real-guard, disposable-database harness, seeding the full order chain plus frozen evidence and actor history on both Ordering transition tables. Proves that every live category moves and the loser is tombstoned; that each moved contact keeps its value, verification instant and source; that the survivor finishes with exactly one primary and the loser’s demoted contact keeps its evidence; that every ACTIVE loser grant becomes `REVOKED` with reason `merge` while EXPIRED/REVOKED rows and their earlier reasons are untouched and no grant is repointed; that approval snapshots, quotation acceptances and both transition histories still name the merged-away Customer while `orders.customer_id` has moved; that the seven-step `customer_merge_events` sequence carries the transaction’s own counts rather than the preview’s, names the loser as subject and the survivor as target, and contains no contact value, name or operator reason; that exactly one `customer.merge_case_executed` audit row is filed against the case and none against either Customer; and that the route is refused with no session and from a foreign origin. | `ACTIVE_SCOPED` |
+| `CMD-TEST-APP10-B03-EXECUTION-GUARDS` | `@embroidery/api` | merge execution refusal, replay, race and rollback suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runInBand --runTestsByPath src/modules/customer/tests/integration/admin-customer-merge-execution-guards.integration.spec.ts` | apps/api/src/modules/customer/tests/integration/admin-customer-merge-execution-guards.integration.spec.ts · customer-merge-execution-queries.ts | Any change to the merge execution policy, the case lock/transition predicates, the business-profile collision rule, the primary-contact demotion plan, or the transaction boundary. Proves that a double-owned business profile is published as `conflict` by the detail preview **and** refused before any destructive write; that a loser-only profile moves; that the duplicate contact forms CST-005 permits (unverified, and verified-but-deactivated) move intact and are neither revived nor promoted; that a survivor with no primary receives the loser’s; the unknown-case 404, malformed-id 400, `REJECTED` 409 and both post-preview tombstoned-participant 409s; that a replay of an executed case is a 200 `ALREADY_EXECUTED` adding no row to `customer_merge_events` or `audit_events`; that two **concurrent** executes both succeed with exactly one `EXECUTED` outcome, one seven-row step sequence and one audit row; and that a failure injected after the transfers rolls back contacts, grants, ownership and the tombstone, leaves the case `REQUESTED`, and that the retry then succeeds. | `ACTIVE_SCOPED` |
 | `CMD-CHECK-APP4-B08-CONTRACT` | repository tool | checkpoint gate (APP4-B08) | `node tools/check-app4-b08-contract.mjs` | tools/check-app4-b08-contract.mjs · tools/check-app4-b08-replay.mjs | Any change to the Admin notification list, the manual transport replay, the replay key or reference contract, the notification intent read model or the outbox terminal-source lookup. Reads the generated OpenAPI document, the generated client **and** source. Asserts the **negations** — no `/retry` route anywhere, no third Admin notification route, no customer-facing notification surface, no recipient/customer/template search; no raw recipient, `params`, provider body, exception or scheduler internal in the published contract; no settle, dead-letter, re-claim, attempt-counter or row update in any B08 file; no payload or ciphertext query for source discovery and no field read out of the envelope; no `openDeliveryEnvelope`, `sealDeliveryEnvelope`, cipher or secret issuer, and no `@embroidery/notification-delivery` import at all; a deterministic SHA-256 replay key over the locked pair with no clock, actor, request or random component and no second idempotency framework; expiry enforced on **both** referenced aggregates; an Admin-only audit actor with no secret in the summary; and no provider SDK, schema, migration or APP5–APP7 content. Reads code with comments stripped, never prose. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP4-B08-CONTRACT` | repository tool | checkpoint gate tests | `node --test tools/check-app4-b08-contract.test.mjs` | tools/check-app4-b08-contract.test.mjs | Any edit to the B08 gate or the sources and contract it parses. 58 mutation cases: each breaks exactly one ruling in a throwaway copy and proves the gate refuses it, plus four that keep the gate honest — it passes against the real repository and against a faithful copy at another path, it fails when an owned file is deleted, and it **reads code rather than prose**. | `ACTIVE_SCOPED` |
 | `CMD-TEST-APP4-B08-ADMIN` | `@embroidery/api` | Admin notification live-database suite | `pnpm --filter @embroidery/api exec jest --config jest.config.mjs --runTestsByPath src/modules/notification/tests/integration/admin-notification-list.integration.spec.ts src/modules/notification/tests/integration/admin-notification-replay.integration.spec.ts src/modules/notification/tests/integration/admin-notification-replay-refusal.integration.spec.ts` | apps/api/src/modules/notification/tests/integration/admin-notification-*.ts | Any change to the two Admin notification routes, the replay transaction, the eligibility resolver or the repositories they read. Boots the real HTTP application with the **real** `AuthenticatedAdminGuard` against a disposable PostgreSQL database, and drives the terminal-delivery fixture through the production intake, attempt-recording and settle path rather than writing a status column. | `ACTIVE_SCOPED` |

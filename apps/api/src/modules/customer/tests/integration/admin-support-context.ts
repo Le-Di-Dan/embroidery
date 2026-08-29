@@ -306,8 +306,8 @@ export function dataOf<T>(response: { readonly body: unknown }): T {
 }
 
 /**
- * The four `APP4-B07` routes, `APP10-B01`'s three and `APP10-B02`'s three, under
- * the global prefix.
+ * The four `APP4-B07` routes, `APP10-B01`'s three, `APP10-B02`'s three and
+ * `APP10-B03`'s one, under the global prefix.
  */
 export const ROUTES = {
   resolve: () => `/${GLOBAL_ROUTE_PREFIX}/admin/customers/resolve`,
@@ -324,4 +324,7 @@ export const ROUTES = {
   openMerge: () => `/${GLOBAL_ROUTE_PREFIX}/admin/customer-merges`,
   mergeCase: (caseId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/customer-merges/${caseId}`,
   rejectMerge: (caseId: string) => `/${GLOBAL_ROUTE_PREFIX}/admin/customer-merges/${caseId}/reject`,
+  // `APP10-B03`. Bodyless: the case is the authority for survivor and loser.
+  executeMerge: (caseId: string) =>
+    `/${GLOBAL_ROUTE_PREFIX}/admin/customer-merges/${caseId}/execute`,
 } as const;

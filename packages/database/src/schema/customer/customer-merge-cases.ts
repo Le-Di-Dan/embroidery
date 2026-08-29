@@ -25,11 +25,28 @@
  * `request_moderation_notes.admin_id` (G9) — a documented gap, not an
  * invented FK.
  *
- * Executing a merge does **not** rewrite history: Orders, Quotations,
- * Payments, Notifications, Audit and design snapshots keep their original
- * `customer_id` — this table records the merge decision and its evidence;
- * `customers.merged_into_customer_id` (G3) is the operational pointer new
- * activity resolves through.
+ * Executing a merge moves **live identity references** and rewrites **no
+ * history** (corrected in APP10-B03; the earlier note here conflated the two).
+ * The distinction is per column, not per table:
+ *
+ * - *live ownership row* → **repointed** to the survivor:
+ *   `orders.customer_id`, `custom_requests.customer_id`,
+ *   `customer_contact_points.customer_id`, `business_profiles.customer_id`,
+ *   `assets.uploaded_by_customer_id` (DB4 §7, DB3 §4 step 2; IDX-118
+ *   `ix_orders__customer` is provisioned for exactly this sweep, "CC-27
+ *   merge");
+ * - *frozen evidence and append-only history* → **never rewritten**:
+ *   `order_transitions` and `custom_request_transitions` (who acted, at a
+ *   moment that has passed), `approval_snapshots`, `quotation_acceptances`,
+ *   `design_reviews` and `audit_events`. These keep their original
+ *   `customer_id` and their frozen contact copies.
+ *
+ * So an *order* changes owner while that same order’s *transition history*
+ * does not: the row records a decision the merged-away identity took, and
+ * rewriting it would rewrite evidence rather than move ownership. This table
+ * records the merge decision, `customer_merge_events` records each executed
+ * step, and `customers.merged_into_customer_id` (G3) is the tombstone pointer
+ * new activity resolves forward through.
  */
 import { sql } from 'drizzle-orm';
 import { check, foreignKey, pgTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/pg-core';

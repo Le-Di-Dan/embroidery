@@ -1,11 +1,15 @@
 /**
  * TBL-009 `customer_merge_cases` persistence contract (`APP10-B02`).
  *
- * The **lifecycle half** of merge, and only that half. There is no `execute`,
- * no method that touches `customers.merged_into_customer_id`, no method that
- * appends a `customer_merge_events` row, and no method that takes the two
- * customer rows under a lock. All four belong to `APP10-B03`, the checkpoint
- * that owns the single transaction which performs a merge (`APP10-G01` §E.2).
+ * The **case lifecycle**, and only that. This contract opens a case, reads one,
+ * and moves it out of `REQUESTED`; it never touches
+ * `customers.merged_into_customer_id`, never moves a contact, a grant, a
+ * request, an order or an asset, and never appends a `customer_merge_events`
+ * row. `APP10-B03` owns the transaction that performs a merge, through ports of
+ * its own (`customer-merge-execution.port.ts`,
+ * `customer-merge-event.repository.ts`); what it adds *here* is the two methods
+ * a case transition needs and nothing else — {@link CustomerMergeCaseRepository.lockById}
+ * and {@link CustomerMergeCaseRepository.execute}.
  *
  * A separate contract from {@link CustomerRepository} rather than four more
  * methods on it, on the rule `admin-customer-summary.port.ts` records: a merge
@@ -15,10 +19,11 @@
  *
  * ### `REQUESTED` and `REJECTED`, and no third state here
  *
- * `CUSTOMER_MERGE_CASE_STATES` is the canonical vocabulary and B02 does not
- * widen it. `EXECUTED` is reachable only from B03, so nothing in this contract
- * writes it — but {@link CustomerMergeCase.status} publishes it, because a case
- * B03 executed must still be readable and must still refuse a rejection.
+ * `CUSTOMER_MERGE_CASE_STATES` is the canonical vocabulary and neither B02 nor
+ * B03 widens it. Both terminal transitions are guarded in their own statement's
+ * predicate rather than by a read the caller made first, so a case decided
+ * between a read and a write matches nothing and is refused instead of
+ * overwritten.
  *
  * There is deliberately no "previewed", "approved" or "confirmed" state: a
  * consequence preview is derived from current rows every time it is asked for
@@ -80,6 +85,28 @@ export interface CustomerMergeCaseRepository {
   findById(id: CustomerMergeCaseId): Promise<CustomerMergeCase | undefined>;
 
   /**
+   * The same read, taken under the case row's `FOR UPDATE` lock
+   * (`APP10-B03` §8).
+   *
+   * The serialization point of merge execution. Two execute requests for one
+   * case both reach this statement; the second blocks until the first commits
+   * and then reads `EXECUTED`, which is an idempotent success that performs no
+   * work — so the destructive half runs once even though two callers asked for
+   * it. A plain re-read would let both see `REQUESTED` and race into the same
+   * transfers, with only the guarded UPDATE below to arbitrate, after the
+   * ownership had already moved twice.
+   *
+   * It is also the *first* lock the execution transaction takes, before either
+   * customer row. Two executes of the same case therefore queue on the case
+   * rather than on a customer, and two executes of different cases sharing a
+   * customer are serialized by the ordered customer locks (CC-27) instead.
+   *
+   * @requiresTransaction — a lock taken outside one is released immediately and
+   * proves nothing.
+   */
+  lockById(id: CustomerMergeCaseId): Promise<CustomerMergeCase | undefined>;
+
+  /**
    * The open case for one **ordered** pair, if there is one.
    *
    * Ordered, because survivor and loser are not interchangeable: CST-010 is on
@@ -106,4 +133,23 @@ export interface CustomerMergeCaseRepository {
    * @requiresTransaction — the audit row must commit with the transition.
    */
   reject(id: CustomerMergeCaseId, decidedAt: Date): Promise<CustomerMergeCase | undefined>;
+
+  /**
+   * Moves one `REQUESTED` case to `EXECUTED`, stamping `decided_at`
+   * (`APP10-B03` §17).
+   *
+   * The same guarded shape {@link reject} uses, and for the same reason:
+   * `status = 'REQUESTED'` is in the statement, so a case rejected or executed
+   * in between matches nothing and this returns `undefined`. It is the last
+   * write of the merge transaction — the case becomes `EXECUTED` only in the
+   * transaction that actually performed the merge, so a rollback leaves it
+   * `REQUESTED` and the operator may retry.
+   *
+   * The open `reason` is never touched: it records why the case was raised, and
+   * executing it does not change that.
+   *
+   * @requiresTransaction — the transition, the transfers, the merge events and
+   * the audit row commit together or not at all.
+   */
+  execute(id: CustomerMergeCaseId, decidedAt: Date): Promise<CustomerMergeCase | undefined>;
 }

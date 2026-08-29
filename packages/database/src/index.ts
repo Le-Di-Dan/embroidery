@@ -157,6 +157,7 @@ export type {
   InventorySoftHoldState,
   GalleryEntryState,
   JobAttemptOutcome,
+  MergeEventStepKind,
   OutboxEventState,
   NotificationDeliveryOutcome,
   NotificationIntentState,

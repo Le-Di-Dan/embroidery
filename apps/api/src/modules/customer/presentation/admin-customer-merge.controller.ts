@@ -5,18 +5,25 @@
  * POST /api/admin/customer-merges                  — adminCustomerMerge_open
  * GET  /api/admin/customer-merges/{caseId}         — adminCustomerMerge_detail
  * POST /api/admin/customer-merges/{caseId}/reject  — adminCustomerMerge_reject
+ * POST /api/admin/customer-merges/{caseId}/execute — adminCustomerMerge_execute (APP10-B03)
  * ```
  *
- * Three, and no fourth. There is deliberately **no execute route here**: merge
- * execution is one transaction with ordered locks over two customer rows
- * (CC-27), it moves ownership across three contexts and it appends the
- * append-only `customer_merge_events` history — `APP10-B03` owns it, and this
- * controller holds no collaborator that could reach any of that. There is also
- * no approve, no cancel, no reopen, no bulk merge, no customer list and no
- * duplicate-candidate search: both participants are found with the delivered
- * exact-contact resolver, which is the one lookup this system has.
+ * Four, and no fifth. There is no approve, no cancel, no reopen, no undo, no bulk
+ * merge, no customer list and no duplicate-candidate search: both participants
+ * are found with the delivered exact-contact resolver, which is the one lookup
+ * this system has.
  *
- * ### A separate class, and the operation ids follow from it
+ * ### The execute route is bodyless, and that is the security property
+ *
+ * `POST {caseId}/execute` takes **no body**. Survivor and loser come from the
+ * case an operator already opened and reviewed; a body could only repeat them,
+ * and a repeated id is an id a caller could change. Nothing here lets a request
+ * choose which identity survives, override an eligibility rule, skip a step or
+ * pass an execution option, so the only thing an execute request decides is
+ * *which case* to execute. `StaffJsonBodyGuard` is therefore absent from it:
+ * there is no JSON to type-check, and adding a body so the guard would have
+ * something to check would be inventing an attack surface to protect it.
+ * * ### A separate class, and the operation ids follow from it
  *
  * `createOperationId` derives `adminCustomerMerge_open` from
  * `AdminCustomerMergeController#open`, which is the published identity
@@ -74,11 +81,8 @@ import {
 import { AuthenticatedAdminGuard } from '../../identity/presentation/guards/authenticated-admin.guard';
 import { StaffJsonBodyGuard } from '../../identity/presentation/guards/staff-json-body.guard';
 import { StaffOriginGuard } from '../../identity/presentation/guards/staff-origin.guard';
-import {
-  CustomerMergeCaseQuery,
-  type CustomerMergeCaseView,
-  type MergeParticipantView,
-} from '../application/customer-merge-case.query';
+import { CustomerMergeCaseQuery } from '../application/customer-merge-case.query';
+import { ExecuteCustomerMerge } from '../application/execute-customer-merge.use-case';
 import { OpenCustomerMergeCase } from '../application/open-customer-merge-case.use-case';
 import { RejectCustomerMergeCase } from '../application/reject-customer-merge-case.use-case';
 import { guardedCustomerMerge } from '../domain/merge/customer-merge.errors';
@@ -90,15 +94,18 @@ import {
   OpenCustomerMergeBody,
   RejectCustomerMergeBody,
 } from './schemas/admin-customer-merge.request';
+import { toCasePayload } from './schemas/admin-customer-merge.projection';
 import {
   AdminCustomerMergeCaseResponse,
+  AdminCustomerMergeExecutedResponse,
   AdminCustomerMergeOpenedResponse,
+  MergeBusinessProfileReadinessResponse,
   MergeConsequencePreviewResponse,
   MergeParticipantContactResponse,
   MergeParticipantResponse,
   type AdminCustomerMergeCasePayload,
+  type AdminCustomerMergeExecutedPayload,
   type AdminCustomerMergeOpenedPayload,
-  type MergeParticipantPayload,
 } from './schemas/admin-customer-merge.response';
 
 const ERROR_SCHEMA = { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.error}` };
@@ -116,15 +123,18 @@ const NO_SESSION = 'No live Admin session.';
 @ApiExtraModels(
   MergeParticipantContactResponse,
   MergeParticipantResponse,
+  MergeBusinessProfileReadinessResponse,
   MergeConsequencePreviewResponse,
   AdminCustomerMergeCaseResponse,
   AdminCustomerMergeOpenedResponse,
+  AdminCustomerMergeExecutedResponse,
 )
 export class AdminCustomerMergeController {
   constructor(
     private readonly opener: OpenCustomerMergeCase,
     private readonly cases: CustomerMergeCaseQuery,
     private readonly rejector: RejectCustomerMergeCase,
+    private readonly executor: ExecuteCustomerMerge,
   ) {}
 
   /**
@@ -290,42 +300,56 @@ export class AdminCustomerMergeController {
       }),
     );
   }
-}
 
-/**
- * The case projection.
- *
- * A function whose return type has nowhere to put a normalized value, a display
- * value, a merge pointer or a note, so no later edit to the view can leak one
- * without also changing this function.
- */
-function toCasePayload(view: CustomerMergeCaseView): AdminCustomerMergeCasePayload {
-  return {
-    mergeCaseId: view.mergeCaseId,
-    status: view.status,
-    reason: view.reason,
-    requestedByAdminId: view.requestedByAdminId,
-    requestedAt: view.requestedAt.toISOString(),
-    // Omitted rather than null while the case is open, matching how every other
-    // optional field in this API is serialized.
-    ...(view.decidedAt === undefined ? {} : { decidedAt: view.decidedAt.toISOString() }),
-    ...(view.survivor === undefined ? {} : { survivor: toParticipant(view.survivor) }),
-    ...(view.loser === undefined ? {} : { loser: toParticipant(view.loser) }),
-    consequencePreview: { ...view.consequencePreview },
-  };
-}
-
-/** The participant projection. The masked value is the only contact form here. */
-function toParticipant(participant: MergeParticipantView): MergeParticipantPayload {
-  return {
-    customerId: participant.customerId,
-    ...(participant.displayName === undefined ? {} : { displayName: participant.displayName }),
-    verifiedAt: participant.verifiedAt.toISOString(),
-    contacts: participant.contacts.map((contact) => ({
-      kind: contact.kind,
-      maskedValue: contact.maskedValue,
-      verified: contact.verified,
-      primary: contact.primary,
-    })),
-  };
+  /**
+   * 200, and it publishes the case, its state and which of the two outcomes
+   * this request produced.
+   *
+   * Not 204, unlike reject: a replay of an executed case is a **success that
+   * changed nothing**, and a client shown an empty body could not tell it apart
+   * from the request that performed the merge. Not 201 either — nothing was
+   * created; a decision was carried out.
+   *
+   * The body carries no counts. What moved is recorded in the append-only merge
+   * event history, which is evidence about data rather than a report to the
+   * caller, and republishing it here would create a second figure to keep in
+   * step with it.
+   */
+  @Post(':caseId/execute')
+  @HttpCode(HttpStatus.OK)
+  @Header('Cache-Control', ADMIN_SUPPORT_CACHE_CONTROL)
+  @ApiSuccessCode('ADMIN_CUSTOMER_MERGE_EXECUTED', 'Merge executed.')
+  @ApiOperation({
+    summary: 'Execute a Customer merge case',
+    description:
+      'Performs the merge a REQUESTED case describes, as one transaction: the merged-away Customer’s contact points move to the surviving Customer, its ACTIVE secure access grants are revoked, its custom requests, orders, uploaded assets and business profile are repointed, and it is finally tombstoned to point at the survivor. Either all of it commits or none of it does. Survivor and loser come from the case — this operation takes no body and cannot be told to merge a different pair, to swap them or to skip a step. Frozen commercial evidence is never rewritten: approval snapshots, quotation acceptances, design reviews, audit events and every append-only transition history keep the Customer they were taken against. Both Customer rows are locked in a fixed order, so two merges naming the same pair serialize instead of deadlocking, and the case row is locked first, so two simultaneous executions of one case cannot both perform it. Executing a case that was already executed is a success that changes nothing. The merge is refused, before anything is moved, when either Customer has already been merged away or when both Customers have a business profile — at most one may exist per Customer, and only a person can decide which to keep.',
+  })
+  @ApiParam({ name: 'caseId', format: 'uuid' })
+  @ApiResponse({
+    status: 200,
+    description: 'The merge is executed, or had already been executed.',
+    schema: envelopeSchemaOf(AdminCustomerMergeExecutedResponse),
+  })
+  @ApiResponse({ status: 400, description: 'Malformed case id.', schema: ERROR_SCHEMA })
+  @ApiResponse({ status: 401, description: NO_SESSION, schema: ERROR_SCHEMA })
+  @ApiResponse({ status: 403, description: ORIGIN_REFUSAL, schema: ERROR_SCHEMA })
+  @ApiResponse({ status: 404, description: 'No such merge case.', schema: ERROR_SCHEMA })
+  @ApiResponse({
+    status: 409,
+    description:
+      'The case was declined and can no longer be executed, either Customer has already been merged into another, both Customers have a business profile, or a contact could not be moved without discarding identity evidence. Nothing was merged.',
+    schema: ERROR_SCHEMA,
+  })
+  async execute(
+    @Param() params: AdminCustomerMergeCaseParams,
+  ): Promise<AdminCustomerMergeExecutedPayload> {
+    return guardedCustomerMerge(async () => {
+      const result = await this.executor.execute(params.caseId as CustomerMergeCaseId);
+      return {
+        mergeCaseId: result.mergeCase.id,
+        status: result.mergeCase.status,
+        outcome: result.disposition === 'ALREADY_EXECUTED' ? 'ALREADY_EXECUTED' : 'EXECUTED',
+      };
+    });
+  }
 }

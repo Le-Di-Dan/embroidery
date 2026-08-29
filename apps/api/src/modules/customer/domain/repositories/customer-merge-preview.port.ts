@@ -47,4 +47,24 @@ export interface CustomerOwnedReferenceCounts {
 
 export interface CustomerMergePreviewPort {
   countOwnedReferences(customerId: string): Promise<CustomerOwnedReferenceCounts>;
+
+  /**
+   * Whether one customer holds a business profile (`APP10-B03` §10.2).
+   *
+   * Added because the preview must now answer a question about the **survivor**,
+   * not only the loser: CST-051 allows one profile per customer, so a merge
+   * whose two sides both have one cannot be executed at all, and an operator
+   * has to see that before confirming rather than as a refusal afterwards.
+   *
+   * One presence test rather than a second {@link countOwnedReferences} call:
+   * the survivor's contact and grant counts describe rows that are staying
+   * exactly where they are, and counting them would put numbers on the screen
+   * that no merge would move.
+   *
+   * Read-only, like everything else on this port. The transfer and its
+   * fail-closed check belong to `customer-merge-execution.port.ts`, which reads
+   * the same fact again under `FOR UPDATE` inside the merge transaction — this
+   * one is advisory, and is recomputed on every read.
+   */
+  hasBusinessProfile(customerId: string): Promise<boolean>;
 }

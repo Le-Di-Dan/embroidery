@@ -559,11 +559,20 @@ export const AdminCustomerMergeCaseResponseStatus = {
   REJECTED: 'REJECTED',
 } as const;
 
+export interface MergeBusinessProfileReadinessResponse {
+  /** True when both Customers have a business profile. Executing the merge is refused while this holds — before anything is moved, revoked or tombstoned — because only a person can decide which profile is right. */
+  conflict: boolean;
+  /** Whether the merged-away Customer has a business profile that would move to the surviving Customer. */
+  loserHasProfile: boolean;
+  /** Whether the surviving Customer already has one. At most one business profile may exist per Customer. */
+  survivorHasProfile: boolean;
+}
+
 export interface MergeConsequencePreviewResponse {
   /** The merged-away Customer’s ACTIVE secure access grants — the live links execution would revoke. Already expired or revoked grants open nothing and are not counted. */
   activeSecureAccessGrants: number;
-  /** Whether the merged-away Customer has a business profile that would move. A boolean rather than a count: at most one profile exists per Customer. */
-  businessProfile: boolean;
+  /** Whether a business profile would move, and whether it can. Both Customers are described: at most one profile may exist per Customer, so a merge whose two sides both have one is refused before anything is moved. */
+  businessProfile: MergeBusinessProfileReadinessResponse;
   /** Every contact point belonging to the merged-away Customer, deactivated ones included: each carries the Customer reference and each has to move. */
   contactPoints: number;
   /** Custom requests that would be repointed to the surviving Customer. */
@@ -619,6 +628,38 @@ export interface AdminCustomerMergeCaseResponse {
   status: AdminCustomerMergeCaseResponseStatus;
   /** The Customer that survives, with masked contacts. */
   survivor?: MergeParticipantResponse;
+}
+
+/**
+ * EXECUTED when this request performed the merge. ALREADY_EXECUTED when the case had already been executed and this request changed nothing: no ownership moved a second time, no access grant was revoked again, no Customer was tombstoned again, and neither a merge event nor an audit row was appended.
+ */
+export type AdminCustomerMergeExecutedResponseOutcome =
+  (typeof AdminCustomerMergeExecutedResponseOutcome)[keyof typeof AdminCustomerMergeExecutedResponseOutcome];
+
+export const AdminCustomerMergeExecutedResponseOutcome = {
+  EXECUTED: 'EXECUTED',
+  ALREADY_EXECUTED: 'ALREADY_EXECUTED',
+} as const;
+
+/**
+ * Always EXECUTED — either this request performed the merge, or an earlier one had already performed it.
+ */
+export type AdminCustomerMergeExecutedResponseStatus =
+  (typeof AdminCustomerMergeExecutedResponseStatus)[keyof typeof AdminCustomerMergeExecutedResponseStatus];
+
+export const AdminCustomerMergeExecutedResponseStatus = {
+  REQUESTED: 'REQUESTED',
+  EXECUTED: 'EXECUTED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface AdminCustomerMergeExecutedResponse {
+  /** The merge case that was executed. */
+  mergeCaseId: string;
+  /** EXECUTED when this request performed the merge. ALREADY_EXECUTED when the case had already been executed and this request changed nothing: no ownership moved a second time, no access grant was revoked again, no Customer was tombstoned again, and neither a merge event nor an audit row was appended. */
+  outcome: AdminCustomerMergeExecutedResponseOutcome;
+  /** Always EXECUTED — either this request performed the merge, or an earlier one had already performed it. */
+  status: AdminCustomerMergeExecutedResponseStatus;
 }
 
 /**
@@ -5573,6 +5614,10 @@ export type AdminCustomerMergeOpen201 = ApiSuccessResponse & {
 
 export type AdminCustomerMergeDetail200 = ApiSuccessResponse & {
   data: AdminCustomerMergeCaseResponse;
+};
+
+export type AdminCustomerMergeExecute200 = ApiSuccessResponse & {
+  data: AdminCustomerMergeExecutedResponse;
 };
 
 export type AdminCustomerSupportResolve200 = ApiSuccessResponse & {

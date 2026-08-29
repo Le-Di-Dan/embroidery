@@ -1,10 +1,22 @@
 /**
  * The durable evidence a merge lifecycle decision leaves (`APP10-B02` §11).
  *
- * Two rows, one per actual state change: a case was opened, or a case was
- * rejected. Nothing else here writes — a detail read, a consequence preview and
- * a refused request all append nothing, because none of them changed anything
- * and `audit_events` outlives its subject by design (G-DB7-46).
+ * Three rows, one per actual state change: a case was opened, rejected, or
+ * executed. Nothing else here writes — a detail read, a consequence preview, a
+ * refused request and an **idempotent replay of an executed case** all append
+ * nothing, because none of them changed anything and `audit_events` outlives its
+ * subject by design (G-DB7-46).
+ *
+ * ### The execute row is ordinary audit, *beside* the merge events
+ *
+ * `APP10-B03` appends a `customer_merge_events` sequence describing what the
+ * merge moved, and one row here describing that an operator performed it. They
+ * answer different questions and neither replaces the other: the step history is
+ * evidence about *data*, keyed to the case and reconcilable category by
+ * category, while the audit row is the attributable record that a named Admin
+ * took an exceptional action at a moment. The audit summary carries no count —
+ * the counts belong to the step rows, and duplicating them would create a second
+ * figure to keep in step.
  *
  * ### Not `customer_merge_events`, and that is the point
  *
@@ -83,6 +95,12 @@ const MERGE_CASE_KIND = 'CUSTOMER_MERGE_CASE' as const;
  */
 export const CUSTOMER_MERGE_CASE_OPENED_ACTION = 'customer.merge_case_opened';
 export const CUSTOMER_MERGE_CASE_REJECTED_ACTION = 'customer.merge_case_rejected';
+/**
+ * `APP10-B03`. Distinct from the two above, and it has to be: an operator
+ * reading the trail must be able to tell a merge being *proposed* from a merge
+ * being *performed*, and only the third one moved anything.
+ */
+export const CUSTOMER_MERGE_CASE_EXECUTED_ACTION = 'customer.merge_case_executed';
 
 export interface RecordMergeCaseInput {
   readonly mergeCaseId: CustomerMergeCaseId;
@@ -116,6 +134,21 @@ export class CustomerMergeAuditRecorder {
       'REJECTED',
       input.rejectionReason,
     );
+  }
+
+  /**
+   * The execute action (`APP10-B03` §18).
+   *
+   * Appended once, inside the merge transaction, and only on the path that
+   * actually merged: a replay of an already-executed case returns before
+   * reaching here, so a retried request adds no second row. It carries no
+   * reason — the case's own reason is why the merge was proposed and is stored
+   * on the case row, and execution adds no new operator words to record.
+   *
+   * @requiresTransaction — the record of the merge commits with the merge.
+   */
+  async recordExecuted(input: RecordMergeCaseInput): Promise<void> {
+    await this.append(CUSTOMER_MERGE_CASE_EXECUTED_ACTION, input, 'EXECUTED', undefined);
   }
 
   private async append(

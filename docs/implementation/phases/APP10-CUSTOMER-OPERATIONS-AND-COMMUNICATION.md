@@ -159,8 +159,8 @@ APP10 checkpoint, and it is the only APP10 status table.
 | `APP10-G01` | Phase-entry baseline & canonical roadmap audit | `COMPLETE` |
 | `APP10-B01` | Customer profile & contact maintenance | `COMPLETE` |
 | `APP10-B02` | Merge case lifecycle & consequence preview | `COMPLETE` |
-| `APP10-B03` | Merge execution & immutable event history | `NEXT` |
-| `APP10-D01` | APP10 design package | `INCOMPLETE` |
+| `APP10-B03` | Merge execution & immutable event history | `COMPLETE` |
+| `APP10-D01` | APP10 design package | `NEXT` |
 | `APP10-A01` | Admin customer profile maintenance UI | `INCOMPLETE` |
 | `APP10-A02` | Admin customer merge workflow | `INCOMPLETE` |
 | `APP10-I01` | Zalo/Messenger simple handoff | `INCOMPLETE` |
@@ -255,4 +255,41 @@ B02   COMPLETE (2026-08-28 — the non-destructive half of merge, exactly as
                 changed; FULL_MONOREPO_TEST = NOT_RUN, FULL_E2E = NOT_RUN.
                 PO_DECISION_REQUIRED = NONE.
                 Evidence: reports/APP10-B02-COMPLETION-REPORT.md)
+
+B03   COMPLETE (2026-08-29 — the destructive half of merge, and exactly one new
+                operation: POST /api/admin/customer-merges/{caseId}/execute
+                (adminCustomerMerge_execute), bodyless, so survivor and loser
+                come from the case and no caller can change them. One
+                transaction, in a fixed order: lock the case FOR UPDATE,
+                classify it, lock both customer rows in primary-key order
+                (CC-27 / D8-18), revalidate both participants, refuse a
+                double-owned business profile before any destructive write,
+                then move contacts, revoke ACTIVE grants with reason merge,
+                repoint custom requests, orders, uploaded assets and the
+                business profile, tombstone the loser last, append the
+                seven-step customer_merge_events sequence, transition the case
+                to EXECUTED and file one Admin audit row. Live ownership moves;
+                frozen evidence never does — approval_snapshots,
+                quotation_acceptances, design_reviews, audit_events and both
+                *_transitions histories still name the merged-away Customer,
+                proven row by row. Contacts keep their value, verification
+                instant and source; only is_primary is ever adjusted, and only
+                on the loser side, with the survivor’s existing primary taking
+                precedence. Grants are revoked, never repointed. Replay of an
+                EXECUTED case is a 200 ALREADY_EXECUTED that writes nothing;
+                two concurrent executes yield one EXECUTED, one seven-row
+                sequence and one audit row; a failure injected after the
+                transfers rolls back every category and leaves the case
+                REQUESTED for a retry. The B02 preview gained business-profile
+                readiness (loserHasProfile / survivorHasProfile / conflict) so
+                A02 can warn before confirmation — a contract refinement, no
+                new endpoint and no migration. The stale customer_merge_cases
+                schema comment was corrected narrowly (FU-APP10-G01-01):
+                orders.customer_id is live and repointed, order_transitions and
+                the frozen evidence are not. 0 migrations. OpenAPI 105->106
+                paths, 114->115 operations, 230->232 schemas. 52 focused tests
+                pass (26 new B03 integration, 26 B02 lifecycle/preview re-run
+                for the refined preview contract); FULL_MONOREPO_TEST =
+                NOT_RUN, FULL_E2E = NOT_RUN. PO_DECISION_REQUIRED = NONE.
+                Evidence: reports/APP10-B03-COMPLETION-REPORT.md)
 ```

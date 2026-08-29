@@ -3,15 +3,19 @@ import { DatabaseModule } from '@embroidery/persistence';
 
 import { SlidingWindowRateLimiter } from '../../platform/rate-limit/sliding-window-rate-limiter';
 
+import { AssetCustomerOwnershipTransferModule } from '../asset/customer-ownership-transfer.module';
 import { AssetMergeConsequenceModule } from '../asset/customer-merge-consequence.module';
 import { AuditModule } from '../audit/audit.module';
 import { CustomerMergeConsequenceModule } from '../order/customer-merge-consequence.module';
+import { CustomerOwnershipTransferModule } from '../order/customer-ownership-transfer.module';
 import { NotificationModule } from '../notification/notification.module';
 import { CustomerIdentityAuditRecorder } from './application/customer-identity-audit.recorder';
 import { CustomerMaintenanceAuditRecorder } from './application/customer-maintenance-audit.recorder';
 import { CustomerMergeAuditRecorder } from './application/customer-merge-audit.recorder';
 import { CustomerMergeCaseQuery } from './application/customer-merge-case.query';
 import { MergeConsequencePreviewReader } from './application/customer-merge-consequence.preview';
+import { CustomerMergeTransfer } from './application/customer-merge-transfer.service';
+import { ExecuteCustomerMerge } from './application/execute-customer-merge.use-case';
 import { OpenCustomerMergeCase } from './application/open-customer-merge-case.use-case';
 import { RejectCustomerMergeCase } from './application/reject-customer-merge-case.use-case';
 import { MaintainCustomerContact } from './application/maintain-customer-contact.use-case';
@@ -35,6 +39,8 @@ import { VerificationOutcomeAuditRecorder } from './application/verification-out
 import { App4SecretPepperProvider } from './config/app4-secret-pepper.provider';
 import { ADMIN_CUSTOMER_SUMMARY_PORT } from './domain/repositories/admin-customer-summary.port';
 import { CUSTOMER_MERGE_CASE_REPOSITORY } from './domain/repositories/customer-merge-case.repository';
+import { CUSTOMER_MERGE_EVENT_REPOSITORY } from './domain/repositories/customer-merge-event.repository';
+import { CUSTOMER_MERGE_EXECUTION_PORT } from './domain/repositories/customer-merge-execution.port';
 import { CUSTOMER_MERGE_PREVIEW_PORT } from './domain/repositories/customer-merge-preview.port';
 import { CUSTOMER_REPOSITORY } from './domain/repositories/customer.repository';
 import { SECURE_ACCESS_GRANT_REPOSITORY } from './domain/repositories/secure-access-grant.repository';
@@ -43,6 +49,8 @@ import { VerificationClock } from './infrastructure/clock/verification-clock';
 import { VerificationCodeMinter } from './infrastructure/crypto/verification-code.minter';
 import { DrizzleAdminCustomerSummaryAdapter } from './infrastructure/persistence/drizzle-admin-customer-summary.adapter';
 import { DrizzleCustomerMergeCaseRepository } from './infrastructure/persistence/drizzle-customer-merge-case.repository';
+import { DrizzleCustomerMergeEventRepository } from './infrastructure/persistence/drizzle-customer-merge-event.repository';
+import { DrizzleCustomerMergeExecutionAdapter } from './infrastructure/persistence/drizzle-customer-merge-execution.adapter';
 import { DrizzleCustomerMergePreviewAdapter } from './infrastructure/persistence/drizzle-customer-merge-preview.adapter';
 import { DrizzleCustomerRepository } from './infrastructure/persistence/drizzle-customer.repository';
 import { DrizzleSecureAccessGrantRepository } from './infrastructure/persistence/drizzle-secure-access-grant.repository';
@@ -117,6 +125,14 @@ import { PublicVerificationController } from './presentation/public-verification
     // counting methods and nothing else.
     CustomerMergeConsequenceModule,
     AssetMergeConsequenceModule,
+    // `APP10-B03`. The two write seams, deliberately separate modules from the
+    // count-only ones above: a merge repoints rows Ordering and Asset own, and
+    // Customer must not reach their tables (`CLAUDE.md` §5). Each exports one
+    // port with one method, each implementation joins **this** transaction
+    // through the ambient handle, and neither confers a repository, a lifecycle
+    // write or a transaction manager.
+    CustomerOwnershipTransferModule,
+    AssetCustomerOwnershipTransferModule,
   ],
   controllers: [PublicVerificationController, PublicSecureLinkController],
   providers: [
@@ -148,6 +164,17 @@ import { PublicVerificationController } from './presentation/public-verification
     OpenCustomerMergeCase,
     CustomerMergeCaseQuery,
     RejectCustomerMergeCase,
+    // `APP10-B03`. The execution half: two more ports and the one transaction
+    // that performs a merge. They are bound here rather than in the Admin
+    // support module for the reason the lifecycle half is — one instance of
+    // each adapter, beside the customer repository, the grant repository and the
+    // audit seam the merge writes through. The event repository can only
+    // append; the execution port is the only thing in this module that can
+    // write `merged_into_customer_id`.
+    { provide: CUSTOMER_MERGE_EXECUTION_PORT, useClass: DrizzleCustomerMergeExecutionAdapter },
+    { provide: CUSTOMER_MERGE_EVENT_REPOSITORY, useClass: DrizzleCustomerMergeEventRepository },
+    CustomerMergeTransfer,
+    ExecuteCustomerMerge,
     {
       provide: VERIFICATION_CHALLENGE_REPOSITORY,
       useClass: DrizzleVerificationChallengeRepository,
@@ -235,6 +262,12 @@ import { PublicVerificationController } from './presentation/public-verification
     OpenCustomerMergeCase,
     CustomerMergeCaseQuery,
     RejectCustomerMergeCase,
+    // `APP10-B03`, on the same rule. The transfer service, the execution port
+    // and the event repository stay unexported: a caller holding any of the
+    // three could move a customer’s orders, revoke their links or append merge
+    // history without the case transition and the audit row that make it a
+    // merge rather than a data edit.
+    ExecuteCustomerMerge,
   ],
 })
 export class CustomerModule {}

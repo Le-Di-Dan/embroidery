@@ -65,7 +65,11 @@ interface CasePayload {
     readonly customRequests: number;
     readonly orders: number;
     readonly uploadedAssets: number;
-    readonly businessProfile: boolean;
+    readonly businessProfile: {
+      readonly loserHasProfile: boolean;
+      readonly survivorHasProfile: boolean;
+      readonly conflict: boolean;
+    };
   };
 }
 
@@ -186,7 +190,7 @@ describe('APP10-B02 · merge case detail and consequence preview', () => {
         customRequests: 2,
         orders: 1,
         uploadedAssets: 2,
-        businessProfile: true,
+        businessProfile: { loserHasProfile: true, survivorHasProfile: false, conflict: false },
       });
 
       // Independently true of the rows themselves, so the preview is being
@@ -207,7 +211,14 @@ describe('APP10-B02 · merge case detail and consequence preview', () => {
       expect(payload.consequencePreview.orders).toBe(0);
       expect(payload.consequencePreview.customRequests).toBe(0);
       expect(payload.consequencePreview.uploadedAssets).toBe(0);
-      expect(payload.consequencePreview.businessProfile).toBe(false);
+      // `APP10-B03` §10.2: the survivor’s profile is reported, because a merge
+      // onto a survivor that already has one is refused — but nothing of the
+      // survivor’s *moves*, so every count stays 0 and there is no conflict.
+      expect(payload.consequencePreview.businessProfile).toEqual({
+        loserHasProfile: false,
+        survivorHasProfile: true,
+        conflict: false,
+      });
     });
 
     it('counts a deactivated contact and skips a non-ACTIVE grant', async () => {

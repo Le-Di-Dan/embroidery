@@ -120,6 +120,60 @@ export class MergeParticipantResponse {
   contacts!: MergeParticipantContactResponse[];
 }
 
+/**
+ * The published execution outcomes (APP10-B03 §19).
+ *
+ * Two values, on the precedent `adminNotificationIntent_replay` set with
+ * CREATED / EXISTING: a replay of a merge that already happened is a success, and
+ * the client is told which of the two it got, so an operator is never shown a
+ * confirmation for work this request did not do.
+ */
+const PUBLISHED_MERGE_OUTCOMES = ['EXECUTED', 'ALREADY_EXECUTED'] as const;
+
+export type AdminCustomerMergeOutcome = (typeof PUBLISHED_MERGE_OUTCOMES)[number];
+
+/**
+ * Business-profile readiness — the one preview member that describes **both**
+ * Customers (`APP10-B03` §10.2).
+ *
+ * A bounded object rather than the `APP10-B02` boolean it replaces. At most one
+ * profile may exist per Customer, so a merge whose two sides both have one cannot
+ * be executed at all, and an operator has to see that before confirming rather
+ * than as a refusal at the end of the workflow. The field is evolved rather than
+ * joined by a second one beside it: two members answering overlapping questions
+ * about one table is how a client comes to read the wrong one.
+ *
+ * Three flags and nothing else. No company name, no tax code, no billing contact:
+ * all three are PII, none is needed to say that a conflict exists, and the query
+ * behind this schema never selects them.
+ */
+export class MergeBusinessProfileReadinessResponse {
+  @ApiProperty({
+    example: true,
+    description:
+      'Whether the merged-away Customer has a business profile that would move to the ' +
+      'surviving Customer.',
+  })
+  loserHasProfile!: boolean;
+
+  @ApiProperty({
+    example: false,
+    description:
+      'Whether the surviving Customer already has one. At most one business profile may ' +
+      'exist per Customer.',
+  })
+  survivorHasProfile!: boolean;
+
+  @ApiProperty({
+    example: false,
+    description:
+      'True when both Customers have a business profile. Executing the merge is refused ' +
+      'while this holds — before anything is moved, revoked or tombstoned — because only a ' +
+      'person can decide which profile is right.',
+  })
+  conflict!: boolean;
+}
+
 export class MergeConsequencePreviewResponse {
   @ApiProperty({
     example: 2,
@@ -156,12 +210,13 @@ export class MergeConsequencePreviewResponse {
   uploadedAssets!: number;
 
   @ApiProperty({
-    example: false,
+    type: MergeBusinessProfileReadinessResponse,
     description:
-      'Whether the merged-away Customer has a business profile that would move. A boolean ' +
-      'rather than a count: at most one profile exists per Customer.',
+      'Whether a business profile would move, and whether it can. Both Customers are ' +
+      'described: at most one profile may exist per Customer, so a merge whose two sides ' +
+      'both have one is refused before anything is moved.',
   })
-  businessProfile!: boolean;
+  businessProfile!: MergeBusinessProfileReadinessResponse;
 }
 
 export class AdminCustomerMergeCaseResponse {
@@ -230,6 +285,41 @@ export class AdminCustomerMergeCaseResponse {
   consequencePreview!: MergeConsequencePreviewResponse;
 }
 
+/**
+ * What the execute operation publishes (`APP10-B03` §4).
+ *
+ * Three fields, and the absences are the contract: no count of what moved, no
+ * list of the rows it touched, no Customer card and no contact of any kind. The
+ * per-category counts are `customer_merge_events` — append-only evidence read
+ * from the merge history, not from the response to the request that wrote it —
+ * and the two Customers are read back through the detail operation, which a
+ * client re-reads anyway to see the state it now has.
+ */
+export class AdminCustomerMergeExecutedResponse {
+  @ApiProperty({ example: CASE_ID_EXAMPLE, description: 'The merge case that was executed.' })
+  mergeCaseId!: string;
+
+  @ApiProperty({
+    enum: PUBLISHED_MERGE_STATES,
+    example: 'EXECUTED',
+    description:
+      'Always EXECUTED — either this request performed the merge, or an earlier one had ' +
+      'already performed it.',
+  })
+  status!: CustomerMergeCaseState;
+
+  @ApiProperty({
+    enum: PUBLISHED_MERGE_OUTCOMES,
+    example: 'EXECUTED',
+    description:
+      'EXECUTED when this request performed the merge. ALREADY_EXECUTED when the case had ' +
+      'already been executed and this request changed nothing: no ownership moved a second ' +
+      'time, no access grant was revoked again, no Customer was tombstoned again, and ' +
+      'neither a merge event nor an audit row was appended.',
+  })
+  outcome!: AdminCustomerMergeOutcome;
+}
+
 export class AdminCustomerMergeOpenedResponse {
   @ApiProperty({ example: CASE_ID_EXAMPLE, description: 'The merge case that was opened.' })
   mergeCaseId!: string;
@@ -270,11 +360,21 @@ export interface AdminCustomerMergeCasePayload {
     readonly customRequests: number;
     readonly orders: number;
     readonly uploadedAssets: number;
-    readonly businessProfile: boolean;
+    readonly businessProfile: {
+      readonly loserHasProfile: boolean;
+      readonly survivorHasProfile: boolean;
+      readonly conflict: boolean;
+    };
   };
 }
 
 export interface AdminCustomerMergeOpenedPayload {
   readonly mergeCaseId: string;
   readonly status: CustomerMergeCaseState;
+}
+
+export interface AdminCustomerMergeExecutedPayload {
+  readonly mergeCaseId: string;
+  readonly status: CustomerMergeCaseState;
+  readonly outcome: AdminCustomerMergeOutcome;
 }

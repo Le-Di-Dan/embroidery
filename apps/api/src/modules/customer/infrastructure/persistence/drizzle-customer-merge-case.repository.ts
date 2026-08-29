@@ -1,10 +1,12 @@
 /**
  * Drizzle implementation of the TBL-009 merge-case lifecycle (`APP10-B02`).
  *
- * Three statements: one INSERT, two guarded reads and one guarded UPDATE. There
- * is no statement here that touches `customers`, `customer_contact_points`,
- * `secure_access_grants` or `customer_merge_events` — the destructive half of
- * merge is `APP10-B03`'s, and this class has nothing it could reach it with.
+ * One INSERT, three reads — one of them locking — and two guarded UPDATEs. There
+ * is still no statement here that touches `customers`,
+ * `customer_contact_points`, `secure_access_grants`, `business_profiles`,
+ * `custom_requests`, `orders`, `assets` or `customer_merge_events`: the case
+ * table is all this class can reach, and the merge itself is performed by
+ * `APP10-B03`'s own ports.
  */
 import { Injectable } from '@nestjs/common';
 import { schema } from '@embroidery/database';
@@ -22,9 +24,10 @@ import { toMergeCase } from './customer-merge-case-row.mapper';
 
 const { customerMergeCases } = schema;
 
-/** The state a case is born in, and the only one a rejection may leave. */
+/** The state a case is born in, and the only one either decision may leave. */
 const REQUESTED = 'REQUESTED';
 const REJECTED = 'REJECTED';
+const EXECUTED = 'EXECUTED';
 
 @Injectable()
 export class DrizzleCustomerMergeCaseRepository
@@ -76,6 +79,27 @@ export class DrizzleCustomerMergeCaseRepository
     });
   }
 
+  /**
+   * The case row under `FOR UPDATE` (`APP10-B03` §8).
+   *
+   * `.for('update')` rather than a plain read: this is the row two concurrent
+   * executes contend on, and the lock is what makes the second one wait for the
+   * first to commit instead of racing it into the same transfers.
+   */
+  async lockById(id: CustomerMergeCaseId): Promise<CustomerMergeCase | undefined> {
+    return this.run('lockById', async () => {
+      const tx = this.requireTransaction('lockById');
+      const [row] = await tx
+        .select()
+        .from(customerMergeCases)
+        .where(eq(customerMergeCases.id, id))
+        .limit(1)
+        .for('update');
+
+      return row === undefined ? undefined : toMergeCase(row);
+    });
+  }
+
   async findOpenForPair(
     survivorCustomerId: CustomerId,
     loserCustomerId: CustomerId,
@@ -114,6 +138,27 @@ export class DrizzleCustomerMergeCaseRepository
             eq(customerMergeCases.status, REQUESTED),
           ),
         )
+        .returning();
+
+      return row === undefined ? undefined : toMergeCase(row);
+    });
+  }
+
+  /**
+   * The execution transition (`APP10-B03` §17).
+   *
+   * Identical in shape to {@link reject} and deliberately so: the same
+   * `status = 'REQUESTED'` predicate in the statement, the same `undefined` for
+   * a case decided in between. `reason` is absent from the `set` object, so the
+   * open reason cannot be overwritten by an execution.
+   */
+  async execute(id: CustomerMergeCaseId, decidedAt: Date): Promise<CustomerMergeCase | undefined> {
+    return this.run('execute', async () => {
+      const tx = this.requireTransaction('execute');
+      const [row] = await tx
+        .update(customerMergeCases)
+        .set({ status: EXECUTED, decidedAt, updatedAt: new Date() })
+        .where(and(eq(customerMergeCases.id, id), eq(customerMergeCases.status, REQUESTED)))
         .returning();
 
       return row === undefined ? undefined : toMergeCase(row);

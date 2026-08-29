@@ -74,6 +74,44 @@ export const CUSTOMER_MERGE_FAILURES = [
    * already made.
    */
   'MERGE_CASE_NOT_REQUESTED',
+  /**
+   * The case can no longer be executed (`APP10-B03`).
+   *
+   * Distinct from `MERGE_CASE_NOT_REQUESTED` because execution asks a
+   * different question. A `REJECTED` case reaches this refusal — an operator
+   * decided against the merge, and executing it anyway would perform a merge
+   * nobody approved. An **`EXECUTED`** case does *not*: replaying a merge that
+   * already happened is an idempotent success, not a conflict, because the world
+   * it asks for is exactly the world that exists and the request carries no
+   * operator payload a second call could silently discard.
+   */
+  'MERGE_CASE_NOT_EXECUTABLE',
+  /**
+   * Both customers hold a business profile (`APP10-B03` §10).
+   *
+   * `uq_business_profiles__customer` (CST-051) caps the table at one row per
+   * customer, so a loser profile cannot be repointed onto a survivor that
+   * already has one. Every resolution available to code destroys something:
+   * overwriting the survivor's profile discards data the operator never saw,
+   * deleting the loser's discards a record the case does not mention, and
+   * merging the fields column by column invents a profile neither customer
+   * supplied. Execution therefore refuses **before any destructive write**, and
+   * a human decides which profile is right.
+   */
+  'MERGE_BUSINESS_PROFILE_CONFLICT',
+  /**
+   * Moving a loser contact would violate a contact uniqueness arbiter
+   * (`APP10-B03` §11.3).
+   *
+   * The reachable collision is CST-006 — one primary per customer — and
+   * execution resolves it deterministically by demoting the loser's primary
+   * before the move, so this refusal is the backstop for the *unreachable* one.
+   * CST-005 makes an active verified `(kind, value)` unique across **all**
+   * customers, so two live customers structurally cannot hold the same
+   * authoritative contact. Fail closed: identity evidence is never deleted or
+   * rewritten to make a transfer fit.
+   */
+  'MERGE_CONTACT_COLLISION',
 ] as const;
 
 export type CustomerMergeFailure = (typeof CUSTOMER_MERGE_FAILURES)[number];
@@ -135,6 +173,29 @@ const RESPONSE_OF: Readonly<Record<CustomerMergeFailure, () => HttpException>> =
   MERGE_CASE_NOT_REQUESTED: () =>
     new HttpException(
       { message: 'That merge case has already been decided and can no longer be rejected.' },
+      HttpStatus.CONFLICT,
+    ),
+  MERGE_CASE_NOT_EXECUTABLE: () =>
+    new HttpException(
+      { message: 'That merge case was declined and can no longer be executed.' },
+      HttpStatus.CONFLICT,
+    ),
+  MERGE_BUSINESS_PROFILE_CONFLICT: () =>
+    new HttpException(
+      {
+        message:
+          'Both Customers have a business profile, and only one of them can be kept. Resolve ' +
+          'the business profile first, then execute the merge. Nothing was merged.',
+      },
+      HttpStatus.CONFLICT,
+    ),
+  MERGE_CONTACT_COLLISION: () =>
+    new HttpException(
+      {
+        message:
+          'A contact of the merged-away Customer cannot be moved without discarding identity ' +
+          'evidence. Nothing was merged.',
+      },
       HttpStatus.CONFLICT,
     ),
 };

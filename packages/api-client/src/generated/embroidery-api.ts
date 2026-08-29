@@ -26,6 +26,7 @@ import type {
   AdminCustomRequestSubmittedDesignGet200,
   AdminCustomRequestTransition200,
   AdminCustomerMergeDetail200,
+  AdminCustomerMergeExecute200,
   AdminCustomerMergeOpen201,
   AdminCustomerSupportDetail200,
   AdminCustomerSupportGrants200,
@@ -433,6 +434,20 @@ export const adminCustomerMergeDetail = (
 ) => {
   return apiRequest<AdminCustomerMergeDetail200>(
     { url: `/api/admin/customer-merges/${caseId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Performs the merge a REQUESTED case describes, as one transaction: the merged-away Customer’s contact points move to the surviving Customer, its ACTIVE secure access grants are revoked, its custom requests, orders, uploaded assets and business profile are repointed, and it is finally tombstoned to point at the survivor. Either all of it commits or none of it does. Survivor and loser come from the case — this operation takes no body and cannot be told to merge a different pair, to swap them or to skip a step. Frozen commercial evidence is never rewritten: approval snapshots, quotation acceptances, design reviews, audit events and every append-only transition history keep the Customer they were taken against. Both Customer rows are locked in a fixed order, so two merges naming the same pair serialize instead of deadlocking, and the case row is locked first, so two simultaneous executions of one case cannot both perform it. Executing a case that was already executed is a success that changes nothing. The merge is refused, before anything is moved, when either Customer has already been merged away or when both Customers have a business profile — at most one may exist per Customer, and only a person can decide which to keep.
+ * @summary Execute a Customer merge case
+ */
+export const adminCustomerMergeExecute = (
+  caseId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminCustomerMergeExecute200>>,
+) => {
+  return apiRequest<AdminCustomerMergeExecute200>(
+    { url: `/api/admin/customer-merges/${caseId}/execute`, method: 'POST' },
     options,
   );
 };
@@ -2243,6 +2258,9 @@ export type AdminCustomerMergeOpenResult = NonNullable<
 >;
 export type AdminCustomerMergeDetailResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomerMergeDetail>>
+>;
+export type AdminCustomerMergeExecuteResult = NonNullable<
+  Awaited<ReturnType<typeof adminCustomerMergeExecute>>
 >;
 export type AdminCustomerMergeRejectResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomerMergeReject>>
