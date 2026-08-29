@@ -165,7 +165,7 @@ APP10 checkpoint, and it is the only APP10 status table.
 | `APP10-A02` | Admin customer merge workflow | `COMPLETE` |
 | `APP10-I01` | Zalo/Messenger simple handoff | `COMPLETE` |
 | `APP10-E01` | Customer operations cross-boundary acceptance | `COMPLETE` |
-| `APP10-X01` | Phase closure | `NEXT` |
+| `APP10-X01` | Phase closure and final authority lock | `COMPLETE` |
 
 ```text
 G01   COMPLETE (2026-08-28 — audit and documentation only. 0 runtime, test,
@@ -433,4 +433,65 @@ I01   COMPLETE (2026-08-29 — Storefront Zalo/Messenger simple external handoff
                 DESIGN_APPROVAL = FIG-APPROVAL-APP10-D01-PO-001.
                 PO_DECISION_REQUIRED = NONE.
                 Evidence: reports/APP10-I01-COMPLETION-REPORT.md)
+
+E01   COMPLETE / PO PASS (2026-08-29 — customer operations cross-boundary
+                acceptance. 4 journeys, 11 cases, 11 PASS, 0 FAIL, 0 blocking
+                findings. Three scoped commands indexed in
+                SCOPED_COMMAND_INDEX.md: CMD-TEST-APP10-E01-API (J1/J2/J3 plus
+                the J4-C1 denial, disposable PostgreSQL, every guard real),
+                CMD-TEST-APP10-E01-ADMIN (E01-02) and
+                CMD-TEST-APP10-E01-STOREFRONT (E01-10/E01-11). 0 endpoints,
+                0 migrations, 0 routes, 0 OpenAPI and 0 generated-client changes.
+                PRODUCT_RUNTIME_DELTA = 6 files against a planned 0, all of it
+                ACCEPTED_PO_DIRECTED_REMEDIATION. Live Playwright verification
+                against the running Docker/Nginx stack was directed by the
+                Product Owner and found both applications returning HTTP 500 on
+                every route at HEAD on six fatal SCSS defects — three this
+                phase's own APP10-A02 regression, three inherited from APP9-S01,
+                all repaired against existing repository precedent with no design
+                change, closing FU-APP10-I01-01. Executing a merge live raised a
+                duplicate React key, because maskContact is deterministic and
+                lossy and a survivor is exactly the record that holds two
+                identically masked addresses, so three lists were rekeyed. And
+                the operator directed the Zalo/Messenger handoff out of the
+                footer into a floating bottom-right dock; every I01 boundary is
+                unchanged and still asserted, only the placement moved. The four
+                FIG-APP10-I01-* frames draw the superseded footer and are demoted
+                to REVIEW_REQUIRED with approval evidence cleared; no approval
+                was invented (FU-APP10-E01-01). Neither defect class was
+                discoverable by any suite: next/jest mocks SCSS and no SCSS
+                compile gate exists (FU-APP10-E01-02).
+                FULL_MONOREPO_TEST = NOT_RUN, FULL_E2E = NOT_RUN.
+                PO_DECISION_REQUIRED = NONE.
+                Evidence: reports/APP10-E01-COMPLETION-REPORT.md)
+
+X01   COMPLETE (2026-08-29 — phase closure and final authority lock.
+                Documentation only: 0 runtime, application, persistence, worker,
+                frontend, schema, migration, OpenAPI, generated-client, test and
+                Figma changes; the accepted E01 remediation is retained, not
+                reverted. All 10 canonical checkpoints COMPLETE, 0 corrections
+                used, 0 blocking follow-ups; 34 follow-ups classified — 4 CLOSED,
+                30 NONBLOCKING. Baselines measured at closure rather than reused
+                from G01: 106 paths / 115 operations / 232 schemas (APP9 closure
+                100 / 108 / 222), 7 APP10-owned HTTP operations, 37 migrations
+                unchanged, 23 Admin (+2) and 12 Storefront (+0) routes, 491 Figma
+                registry ids (+41, of which 37 APPROVED_FOR_IMPLEMENTATION and 4
+                intentionally REVIEW_REQUIRED), 0 dependency and 0 worker delta.
+                Final I01 runtime authority is
+                PO-DIRECTIVE-APP10-E01-I01-FLOATING-HANDOFF-001 — a floating
+                action dock, not the footer. Validation: check-figma-design-index
+                PASS (491 ids, 491 node rows, 22 tables), check-report-secrets
+                (pre-existing findings only, unchanged), prettier on the two
+                closure documents; E01 and every implementation suite
+                deliberately NOT rerun. FULL_MONOREPO_TEST = NOT_RUN,
+                FULL_E2E = NOT_RUN. PO_DECISION_REQUIRED = NONE.
+                Evidence: reports/APP10-X01-COMPLETION-REPORT.md,
+                reports/APP10-CLOSURE-MATRIX.md)
+```
+
+```text
+APP10               = PASS_WITH_FOLLOW_UPS
+BLOCKING_FOLLOW_UPS = 0
+PHASE               = CLOSED
+NEXT_PHASE          = APP11 — Gallery, Content, SEO and Store Presentation
 ```
