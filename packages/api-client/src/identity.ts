@@ -167,3 +167,50 @@ export {
   adminCustomerContactDeactivate,
 } from './generated/embroidery-api';
 export type { UpdateCustomerProfileBody } from './generated/embroidery-api.schemas';
+
+// Admin Customer merge lifecycle and execution (APP10-B02, APP10-B03),
+// consumed by the Admin guarded merge workflow (APP10-A02).
+//
+// Four operations, and again the shape of the set is the boundary. There is no
+// merge **list**, no duplicate-candidate search and no unmerge, because none
+// exists to export: a case is addressed by the id its own creation returned, and
+// `customer_merge_events` is written by B03 but published by no HTTP operation
+// at all. Both participants are chosen by the operator through the exact-contact
+// resolver above; neither this barrel nor the API offers any other way to name a
+// Customer.
+//
+// `adminCustomerMerge_execute` takes **no body** on purpose: survivor and loser
+// come from the case, so no caller can tell it to merge a different pair, swap
+// them, or skip a step. `OpenCustomerMergeBody` and `RejectCustomerMergeBody`
+// cross as types so the two reasons — why the case was raised, and why it was
+// declined — are named at the transport seam; they are different fields on
+// different operations and the case row keeps only the first.
+//
+// Two enums cross as **values** because the screen branches on each and a
+// mistyped literal is a comparison that is never true:
+// `AdminCustomerMergeCaseResponseStatus` (REQUESTED / EXECUTED / REJECTED — the
+// authoritative case state, never derived from a local mutation) and
+// `AdminCustomerMergeExecutedResponseOutcome`, whose ALREADY_EXECUTED exists
+// precisely so a client never has to infer a replay from timing.
+export {
+  adminCustomerMergeOpen,
+  adminCustomerMergeDetail,
+  adminCustomerMergeExecute,
+  adminCustomerMergeReject,
+} from './generated/embroidery-api';
+export {
+  AdminCustomerMergeCaseResponseStatus,
+  AdminCustomerMergeExecutedResponseOutcome,
+  MergeParticipantContactResponseKind,
+} from './generated/embroidery-api.schemas';
+export type {
+  OpenCustomerMergeBody,
+  RejectCustomerMergeBody,
+  AdminCustomerMergeOpenedResponse,
+  AdminCustomerMergeExecutedResponse,
+  AdminCustomerMergeCaseResponse,
+  MergeParticipantResponse,
+  MergeParticipantContactResponse,
+  MergeConsequencePreviewResponse,
+  MergeBusinessProfileReadinessResponse,
+} from './generated/embroidery-api.schemas';

@@ -162,8 +162,8 @@ APP10 checkpoint, and it is the only APP10 status table.
 | `APP10-B03` | Merge execution & immutable event history | `COMPLETE` |
 | `APP10-D01` | APP10 design package | `COMPLETE` / `PO APPROVED` |
 | `APP10-A01` | Admin customer profile maintenance UI | `COMPLETE` |
-| `APP10-A02` | Admin customer merge workflow | `NEXT` |
-| `APP10-I01` | Zalo/Messenger simple handoff | `INCOMPLETE` |
+| `APP10-A02` | Admin customer merge workflow | `COMPLETE` |
+| `APP10-I01` | Zalo/Messenger simple handoff | `NEXT` |
 | `APP10-E01` | Customer operations cross-boundary acceptance | `INCOMPLETE` |
 | `APP10-X01` | Phase closure | `INCOMPLETE` |
 
@@ -357,4 +357,44 @@ A01   COMPLETE (2026-08-29 — Admin customer profile & contact maintenance UI.
                 DESIGN_APPROVAL = FIG-APPROVAL-APP10-D01-PO-001.
                 PO_DECISION_REQUIRED = NONE.
                 Evidence: reports/APP10-A01-COMPLETION-REPORT.md)
+
+A02   COMPLETE (2026-08-29 — Admin guarded customer merge workflow. Two new
+                routes, /support/customer-access/merge and .../merge/{caseId},
+                both sub-routes of the existing customer-access support entry:
+                resolveNavItemState already answers 'section' for them, so
+                APP10 adds 0 sidenav entries and the shell is unchanged.
+                Consumes 6 delivered operations (APP4-B07 resolve + detail,
+                APP10-B02 open/detail/reject, APP10-B03 execute) through the
+                generated client. 0 backend, OpenAPI, migration, worker,
+                generated-client and Figma-node changes; the four merge
+                operations and their schemas re-exported from the api-client
+                identity barrel, and the exact-contact resolution seam published
+                from the customer-access-support barrel so merge reuses it
+                rather than re-implementing it. No customer list, directory,
+                search, merge queue or duplicate browser; no unmerge, no
+                merge-event timeline, no historical rejection-reason display.
+                Survivor and loser are named roles with definition lines, are
+                replaceable until the case exists and are a property of the case
+                afterwards. The business-profile conflict shows the blocker and
+                disables execute visibly, offering no overwrite, field merge,
+                delete-one or continue-anyway. Execute takes the case id and no
+                body; EXECUTED and ALREADY_EXECUTED are both safe completions.
+                Both decisions re-read the authoritative case, and — because
+                B02/B03 publish no business code on their 409s — the execute
+                refusals are classified against that fresh read, with the
+                participant-invalidated and contact-collision causes kept as the
+                one bounded state the approved frame 841:3 draws for both.
+                The preview is a REQUESTED-only surface, so post-decision counts
+                are never relabelled as what moved.
+                Validation: jest test/components/customer-merge — 4 suites,
+                46 tests PASS; jest test/components/customer-access — 6 suites,
+                78 tests PASS (barrel regression); admin typecheck PASS;
+                api-client typecheck PASS; admin lint 1 pre-existing error at
+                HEAD (request-quotation-bootstrap.test.tsx, unrelated);
+                prettier written; check-styles and check-file-size unchanged
+                from HEAD (25 and 80 pre-existing violations, 0 in APP10-A02
+                files). FULL_MONOREPO_TEST = NOT_RUN, FULL_E2E = NOT_RUN.
+                DESIGN_APPROVAL = FIG-APPROVAL-APP10-D01-PO-001.
+                PO_DECISION_REQUIRED = NONE.
+                Evidence: reports/APP10-A02-COMPLETION-REPORT.md)
 ```

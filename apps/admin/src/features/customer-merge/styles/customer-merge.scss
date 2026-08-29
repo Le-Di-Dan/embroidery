@@ -1,0 +1,501 @@
+// Admin guarded customer merge (`APP10-A02`).
+//
+// Reproduces the approved A02 frames in section `828:3`: the two-slot selection
+// screen (`835:3`, `835:82`), the case workspace (`836:3`, its 1280 reference
+// `838:3`, the business-profile blocker `836:123`, the executed `837:3` and
+// rejected `837:95` states) and the two confirmations (`840:40`, `841:45`).
+//
+// Every colour, radius and space is a token — no literal hex, no rgba, and the
+// dialog scrim is the canonical `$color-overlay-scrim`. The status pill and the
+// text field are the shared Admin primitives (`admin-status`, `admin-field`),
+// not a second copy: this screen introduces no new component master, exactly as
+// the D01 package promised.
+//
+// Class names are prefixed `customer-merge*`. The Admin stylesheet is global and
+// unscoped, so a generic `.slot`, `.tile` or `.blocker` here would collide with
+// another feature's rules in a way jsdom could never catch — the defect
+// `APP2-A03` recorded.
+//
+// **1440 and 1280 only.** Both approved viewports are desktop and Admin is a
+// desktop surface. The two-column grids collapse below their floor so the screen
+// stays usable if a window is dragged narrower, but no mobile Admin layout is
+// invented here.
+
+@use '@embroidery/styles' as styles;
+
+// The slot floor from the approved frames: two 560px participant columns at
+// 1440, which at 1280 minus the 240 sidebar and the page padding no longer fit
+// side by side and stack instead.
+$customer-merge-slot-min: 420px;
+
+.customer-merge {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24);
+  // `min-width: 0` rather than `overflow-x`, which computes to `auto` and would
+  // clip the y-axis too.
+  min-width: 0;
+  max-width: 100%;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__section-title {
+    margin: 0;
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__subtitle,
+  &__note,
+  &__hint,
+  &__loading {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__back {
+    align-self: flex-start;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-link;
+  }
+
+  // The two participant columns. `auto-fit` with a named floor rather than a
+  // media query: the same rule collapses the pair at 1280 and inside any
+  // narrower container, so there is one breakpoint and it is the content's.
+  &__slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax($customer-merge-slot-min, 1fr));
+    gap: styles.spacing(16);
+    align-items: start;
+  }
+
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    margin: 0;
+    padding: styles.spacing(16);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-card;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+    font-size: styles.$font-size-body-s;
+
+    > dt {
+      flex: 0 0 200px;
+      color: styles.$color-text-secondary;
+    }
+
+    > dd {
+      margin: 0;
+      color: styles.$color-text-primary;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  &__open,
+  &__outcome,
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    padding: styles.spacing(16);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-card;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+  }
+
+  &__reason {
+    width: 100%;
+    padding: styles.spacing(8);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+    background: styles.$color-surface-primary;
+    resize: vertical;
+
+    &:disabled {
+      background: styles.$color-background-secondary;
+      color: styles.$color-text-secondary;
+    }
+  }
+
+  &__error {
+    margin: 0;
+    padding: styles.spacing(12);
+    border: 1px solid styles.$color-status-error;
+    border-radius: styles.$radius-sm;
+    background: styles.$color-background-secondary;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+  }
+
+  &__primary,
+  &__danger,
+  &__secondary {
+    align-self: flex-start;
+    padding: styles.spacing(8) styles.spacing(16);
+    border-radius: styles.$radius-sm;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  &__primary {
+    border: 1px solid styles.$color-action-primary;
+    background: styles.$color-action-primary;
+    color: styles.$color-text-inverse;
+  }
+
+  // Execute and reject are visually distinct: the irreversible one carries the
+  // error tint, the reversible-by-reopening one is secondary. Neither relies on
+  // colour alone — both carry their own verb.
+  &__danger {
+    border: 1px solid styles.$color-status-error;
+    background: styles.$color-status-error;
+    color: styles.$color-text-inverse;
+  }
+
+  &__secondary {
+    border: 1px solid styles.$color-border-primary;
+    background: styles.$color-surface-primary;
+    color: styles.$color-text-primary;
+  }
+}
+
+.customer-merge-slot {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  min-width: 0;
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__meaning,
+  &__empty,
+  &__loading {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+  }
+}
+
+.customer-merge-participant {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+
+  &__name {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  &__verified {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+  }
+
+  &__contacts-heading {
+    margin: styles.spacing(4) 0 0;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-secondary;
+  }
+
+  &__contacts {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__contact {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: styles.spacing(8);
+    min-width: 0;
+    font-size: styles.$font-size-body-s;
+  }
+
+  &__kind {
+    flex: 0 0 88px;
+    color: styles.$color-text-secondary;
+  }
+
+  &__value {
+    color: styles.$color-text-primary;
+    font-weight: styles.$font-weight-medium;
+    overflow-wrap: anywhere;
+  }
+}
+
+.customer-merge-preview {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  background: styles.$color-surface-primary;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+
+  &__subheading {
+    margin: styles.spacing(4) 0 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  // Tiles wrap rather than shrink: at 1280 a row of five would compress the
+  // labels past legibility, and a count without its label is worse than a
+  // second row.
+  &__tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__tile {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    flex: 1 1 200px;
+    min-width: 0;
+    padding: styles.spacing(12);
+    border: 1px solid styles.$color-border-secondary;
+    border-radius: styles.$radius-sm;
+    background: styles.$color-background-secondary;
+  }
+
+  &__label {
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+  }
+
+  &__value {
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__note {
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-secondary;
+  }
+
+  &__readiness {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    margin: 0;
+  }
+
+  &__readiness-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+    font-size: styles.$font-size-body-s;
+
+    > dt {
+      flex: 0 0 320px;
+      color: styles.$color-text-secondary;
+    }
+
+    > dd {
+      margin: 0;
+      color: styles.$color-text-primary;
+      font-weight: styles.$font-weight-medium;
+    }
+  }
+}
+
+// The hard blocker. High visibility because it is the one state on this screen
+// that removes a capability, and the operator has to understand why rather than
+// wonder whether the button failed to render.
+.customer-merge-blocker {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(16);
+  border: 2px solid styles.$color-status-error;
+  border-radius: styles.$radius-card;
+  background: styles.$color-background-secondary;
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+  }
+}
+
+.customer-merge-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  width: min(560px, calc(100vw - #{styles.spacing(32)}));
+  max-height: calc(100vh - #{styles.spacing(48)});
+  overflow-y: auto;
+  padding: styles.spacing(24);
+  background: styles.$color-surface-primary;
+  border-radius: styles.$radius-card;
+
+  &__backdrop {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: styles.spacing(16);
+    background: styles.$color-overlay-scrim;
+    z-index: 40;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__body,
+  &__lead {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__lead {
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  // The pair restated inside the confirmation: which identity survives is the
+  // one fact an operator must not misread, so it is a labelled list rather than
+  // a sentence they have to parse.
+  &__pair {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    margin: 0;
+    padding: styles.spacing(12);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+    background: styles.$color-background-secondary;
+  }
+
+  &__pair-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+    font-size: styles.$font-size-body-s;
+
+    > dt {
+      flex: 0 0 140px;
+      color: styles.$color-text-secondary;
+    }
+
+    > dd {
+      margin: 0;
+      color: styles.$color-text-primary;
+      font-weight: styles.$font-weight-medium;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  &__effects {
+    margin: 0;
+    padding-left: styles.spacing(20);
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__warning {
+    margin: 0;
+    padding: styles.spacing(8) styles.spacing(12);
+    border: 1px solid styles.$color-status-warning;
+    border-radius: styles.$radius-sm;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+  }
+
+  &__error {
+    margin: 0;
+    padding: styles.spacing(8) styles.spacing(12);
+    border: 1px solid styles.$color-status-error;
+    border-radius: styles.$radius-sm;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-primary;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+    margin-top: styles.spacing(4);
+  }
+}
