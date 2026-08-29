@@ -148,6 +148,11 @@ services:
       NEXT_PUBLIC_API_BASE_PATH: ${NEXT_PUBLIC_API_BASE_PATH:-/api}
       # Server Components call the internal service URL (never in the client bundle).
       INTERNAL_API_BASE_URL: http://api:4000/api
+      # Public external contact channels for the footer handoff (APP10-I01).
+      # Optional and independent: an unset or invalid value omits that CTA, and
+      # with neither set the whole `Kết nối` group is absent. Never a credential.
+      NEXT_PUBLIC_ZALO_CONTACT_URL: ${NEXT_PUBLIC_ZALO_CONTACT_URL:-}
+      NEXT_PUBLIC_MESSENGER_CONTACT_URL: ${NEXT_PUBLIC_MESSENGER_CONTACT_URL:-}
       # Bind-mounted sources need polling for reliable change detection on Windows/macOS hosts.
       WATCHPACK_POLLING: 'true'
     volumes:

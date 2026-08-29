@@ -23,6 +23,14 @@ describe('StorefrontShell — footer', () => {
   });
 
   it('invents no contact, social, or policy data', () => {
+    // APP10-I01 supersedes this assertion's original "no contact channel ever"
+    // reading (FIG-APPROVAL-APP10-D01-PO-001): the footer may now carry the two
+    // Zalo/Messenger CTAs an operator CONFIGURES. What it still may not do is
+    // invent a value, so the rule is narrowed rather than dropped — with no
+    // channel configured, nothing appears. The configured cases are proved in
+    // `storefront-contact-handoff.test.tsx`.
+    delete process.env.NEXT_PUBLIC_ZALO_CONTACT_URL;
+    delete process.env.NEXT_PUBLIC_MESSENGER_CONTACT_URL;
     renderShell();
     const footer = screen.getByRole('contentinfo');
     // No fabricated contact channels or social/policy links.
@@ -32,7 +40,7 @@ describe('StorefrontShell — footer', () => {
       expect(href.startsWith('tel:')).toBe(false);
       expect(/facebook|instagram|tiktok|zalo|twitter|youtube/i.test(href)).toBe(false);
     }
-    // The only footer link is the brand → home.
+    // Unconfigured, the only footer link is still the brand → home.
     expect(within(footer).getAllByRole('link')).toHaveLength(1);
   });
 

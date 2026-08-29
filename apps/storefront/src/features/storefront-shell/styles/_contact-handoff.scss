@@ -1,0 +1,106 @@
+// APP10-I01 — `Kết nối` external contact handoff, inside the shell footer.
+//
+// Design source: FIG-APP10-I01-FOOTER-DESKTOP (842:3), -FOOTER-MOBILE (842:48)
+// and -CTA-STATES (843:3), approved under FIG-APPROVAL-APP10-D01-PO-001.
+//
+// A partial rather than more rules in `storefront-shell.scss`: that stylesheet
+// already stands at the 400-line cap (§40), and the handoff is a distinct
+// responsibility — an external-navigation group — not more shell chrome. It is
+// composed from `storefront-shell.scss` so the shell keeps a single leaf entry
+// in `main.scss`.
+//
+// The group reflows *inside* the footer at every width. There is no fixed or
+// absolute positioning anywhere below on purpose: a floating corner affordance
+// is what reads as a chatbot launcher, and 842:3 records that it must not.
+
+@use '@embroidery/styles' as styles;
+
+// Mirrored from `storefront-shell.scss` — the design system defers a shared
+// breakpoint scale (FU-A16), and a partial cannot `@use` the shell entry
+// without emitting its rules a second time.
+$bp-footer: 768px;
+
+.storefront-shell__footer-handoff {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.storefront-shell__footer-handoff-title {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: 1.5;
+  color: styles.$color-text-primary;
+}
+
+.storefront-shell__footer-handoff-list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  // Desktop/tablet: the two CTAs sit side by side in the footer row.
+  @media (min-width: $bp-footer) {
+    flex-direction: row;
+    gap: styles.spacing(16);
+  }
+}
+
+.storefront-shell__footer-handoff-cta {
+  display: inline-flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(8) styles.spacing(12);
+  color: styles.$color-text-primary;
+  text-decoration: none;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+  transition: border-color styles.$motion-duration-fast styles.$motion-easing-standard;
+
+  &:hover {
+    border-color: styles.$color-border-secondary;
+  }
+
+  &:active {
+    border-color: styles.$color-action-active;
+  }
+
+  // Keyboard focus must stay visible: this is the only affordance in the footer
+  // that leaves the site, so it is the one a keyboard user most needs to see.
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.storefront-shell__footer-handoff-channel {
+  display: inline-flex;
+  align-items: baseline;
+  gap: styles.spacing(4);
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  line-height: 1.4;
+}
+
+// Decorative: the caption below carries the meaning, so this glyph is hidden
+// from assistive technology and never becomes the CTA's only signal.
+.storefront-shell__footer-handoff-glyph {
+  font-size: styles.$font-size-body-s;
+  line-height: 1;
+  color: styles.$color-text-secondary;
+}
+
+.storefront-shell__footer-handoff-caption {
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-caption;
+  line-height: 1.4;
+  color: styles.$color-text-secondary;
+}

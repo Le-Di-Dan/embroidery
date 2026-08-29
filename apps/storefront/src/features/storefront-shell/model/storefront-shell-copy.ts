@@ -32,6 +32,29 @@ export const STOREFRONT_SHELL_COPY = {
     /** Announced state: the affordance is presentational, not functional yet. */
     unavailable: 'Tìm kiếm sẽ sớm ra mắt.',
   },
+  /**
+   * APP10-I01 external contact handoff (`FIG-APP10-I01-FOOTER-DESKTOP` 842:3,
+   * `FIG-APP10-I01-CTA-STATES` 843:3). `Kết nối` is the approved footer column
+   * this group extends (`APP1-D02` 405:2253). No company contact block, address
+   * or phone number is invented here — I01 adds two configured external links
+   * and nothing else.
+   */
+  contactHandoff: {
+    /** Column heading for the handoff group. */
+    title: 'Kết nối',
+    /**
+     * Visible on every CTA, inside the link, so the accessible name reads
+     * "Zalo Mở ứng dụng bên ngoài" without an `aria-label` overriding the
+     * visible text. The approved frames caption every CTA this way rather than
+     * relying on the `↗` glyph alone.
+     */
+    externalCaption: 'Mở ứng dụng bên ngoài',
+    /** Provider names as plain type: the design system holds no licensed provider artwork. */
+    channels: {
+      zalo: 'Zalo',
+      messenger: 'Messenger',
+    },
+  },
   footer: {
     tagline: 'Studio thêu thủ công theo yêu cầu.',
     /** Rights line without a hard-coded year (no stale/invented business value). */

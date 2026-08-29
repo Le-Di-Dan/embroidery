@@ -7,6 +7,9 @@
 
 @use '@embroidery/styles' as styles;
 
+// The APP10-I01 `Kết nối` footer handoff — its own partial, not more rules here.
+@use './contact-handoff';
+
 // Local layout breakpoints — the design system defers a shared breakpoint scale
 // (FU-A16), so these are shell-local decisions, not tokens. `$bp-nav` is the
 // Full↔Compact header threshold: the Full inline header applies above 1024px

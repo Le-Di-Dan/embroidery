@@ -163,8 +163,8 @@ APP10 checkpoint, and it is the only APP10 status table.
 | `APP10-D01` | APP10 design package | `COMPLETE` / `PO APPROVED` |
 | `APP10-A01` | Admin customer profile maintenance UI | `COMPLETE` |
 | `APP10-A02` | Admin customer merge workflow | `COMPLETE` |
-| `APP10-I01` | Zalo/Messenger simple handoff | `NEXT` |
-| `APP10-E01` | Customer operations cross-boundary acceptance | `INCOMPLETE` |
+| `APP10-I01` | Zalo/Messenger simple handoff | `COMPLETE` |
+| `APP10-E01` | Customer operations cross-boundary acceptance | `NEXT` |
 | `APP10-X01` | Phase closure | `INCOMPLETE` |
 
 ```text
@@ -397,4 +397,40 @@ A02   COMPLETE (2026-08-29 — Admin guarded customer merge workflow. Two new
                 DESIGN_APPROVAL = FIG-APPROVAL-APP10-D01-PO-001.
                 PO_DECISION_REQUIRED = NONE.
                 Evidence: reports/APP10-A02-COMPLETION-REPORT.md)
+
+I01   COMPLETE (2026-08-29 — Storefront Zalo/Messenger simple external handoff.
+                One new `Kết nối` group inside the existing shell footer, built
+                from two public configuration values, NEXT_PUBLIC_ZALO_CONTACT_URL
+                and NEXT_PUBLIC_MESSENGER_CONTACT_URL. 0 Storefront routes,
+                0 backend operations, 0 migrations, 0 worker, OpenAPI and
+                generated-client changes, 0 new dependencies, 0 Figma nodes.
+                No chatbot, embedded chat, provider SDK, webhook, inbox, backend
+                adapter or floating launcher: the whole capability is two
+                anchors with target=_blank and rel="noopener noreferrer".
+                Each value must be an absolute http(s) URL with no credentials;
+                an absent, blank or malformed value omits that one CTA, and with
+                neither usable the group is not rendered at all and the footer
+                is its pre-I01 composition. No configuration error is ever shown
+                to a customer, and no `#`, `javascript:` or empty href is
+                emitted. No context is appended to either URL: the shell footer
+                renders on every route with no request or order in hand, so
+                843:44's permitted public reference is unavailable at that
+                boundary and plain configured links are used deliberately rather
+                than new plumbing. The APP1-S01A "no social/contact links"
+                assertion was narrowed — not deleted — to "invents no contact
+                data", proved with both values unset.
+                Validation: storefront jest storefront-contact-handoff (21 tests),
+                storefront-shell-footer, -render, -drawer and the shell boundary
+                suite — 5 suites, 43 tests PASS; storefront typecheck PASS;
+                storefront eslint over the touched scope 0 findings; prettier
+                written; sass compile of storefront-shell.scss PASS (11 handoff
+                rules emitted); check-styles and check-file-size unchanged from
+                HEAD (25 and 80 pre-existing violations, 0 in APP10-I01 files);
+                check-figma-design-index PASS. Inherited, not repaired: the
+                Storefront main.scss bundle fails to compile at HEAD on
+                `spacing(14)` in secure-final-payment (APP9-S01, b561a96).
+                FULL_MONOREPO_TEST = NOT_RUN, FULL_E2E = NOT_RUN.
+                DESIGN_APPROVAL = FIG-APPROVAL-APP10-D01-PO-001.
+                PO_DECISION_REQUIRED = NONE.
+                Evidence: reports/APP10-I01-COMPLETION-REPORT.md)
 ```
