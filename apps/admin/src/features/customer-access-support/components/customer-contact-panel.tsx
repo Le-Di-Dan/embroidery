@@ -1,18 +1,29 @@
 'use client';
 
-import type { AdminCustomerDetailResponse } from '@embroidery/api-client';
+import type {
+  AdminCustomerContactResponse,
+  AdminCustomerDetailResponse,
+} from '@embroidery/api-client';
 
 import { CUSTOMER_ACCESS_COPY } from '../model/customer-access-copy';
+import { CUSTOMER_MAINTENANCE_COPY } from '../model/customer-maintenance-copy';
+import { canDeactivate, canPromote } from '../model/contact-eligibility';
+import type { ContactAction } from '../model/customer-maintenance-failure';
+import type { ProfileMaintenanceState } from '../hooks/use-profile-maintenance';
+import { CustomerProfileForm } from './customer-profile-form';
 
 interface CustomerContactPanelProps {
   readonly customer: AdminCustomerDetailResponse | undefined;
   readonly loading: boolean;
+  readonly profile: ProfileMaintenanceState;
+  readonly onContactAction: (action: ContactAction, contact: AdminCustomerContactResponse) => void;
 }
 
 const COPY = CUSTOMER_ACCESS_COPY.customer;
+const MAINTENANCE = CUSTOMER_MAINTENANCE_COPY.contacts;
 
 /**
- * The Customer identity and their current contacts.
+ * The Customer identity, their maintainable profile, and their current contacts.
  *
  * ### `maskedValue` is rendered exactly as it arrives
  *
@@ -25,7 +36,10 @@ const COPY = CUSTOMER_ACCESS_COPY.customer;
  *
  * The raw, normalized and display forms are not merely unrendered — the response
  * type has no field to put them in, because `APP4-B07`'s projection dropped them
- * before serialisation.
+ * before serialisation. `APP10-B01` added exactly one field to that projection,
+ * `contactId`, and it is used to **address** the two transitions below and is
+ * never rendered: it is an opaque server-generated identifier, not a description
+ * of anything a person would recognise.
  *
  * ### Status is never colour alone
  *
@@ -33,14 +47,24 @@ const COPY = CUSTOMER_ACCESS_COPY.customer;
  * text carries the meaning, and an operator who cannot distinguish the two
  * greens reads the same fact as everyone else.
  *
- * ### There are no controls here
+ * ### The controls here are exactly the ones the contract publishes
  *
- * No edit, no merge, no verify or unverify, no primary rotation, no anonymize.
- * B07 publishes no operation for any of them, so a control would be a button
- * with nothing behind it — and this screen is support visibility, not customer
- * management.
+ * Promote-primary and deactivate, and nothing else. Still no contact creation,
+ * no contact-value edit, no verify or unverify, no merge and no anonymize —
+ * `APP10-B01` publishes no operation for any of them, and a Customer identity is
+ * possession of a verified channel, so a staff control that minted or rewrote
+ * that evidence would replace a proof with a session.
+ *
+ * Deactivated contacts are simply absent: the detail read lists current contacts
+ * only and `AdminCustomerContactResponse` carries no active flag, so there is no
+ * inactive badge to draw and no contact history to open.
  */
-export function CustomerContactPanel({ customer, loading }: CustomerContactPanelProps) {
+export function CustomerContactPanel({
+  customer,
+  loading,
+  profile,
+  onContactAction,
+}: CustomerContactPanelProps) {
   return (
     <section className="customer-access-card" aria-labelledby="customer-panel-heading">
       <h2 className="customer-access-card__heading" id="customer-panel-heading">
@@ -59,16 +83,6 @@ export function CustomerContactPanel({ customer, loading }: CustomerContactPanel
               <dd data-testid="customer-id">{customer.customerId}</dd>
             </div>
             <div className="customer-access-card__row">
-              <dt>{COPY.displayName}</dt>
-              {/*
-                Absent is a real answer, not an empty cell: a Customer exists from
-                a verified contact alone and may never have supplied a name.
-              */}
-              <dd data-testid="customer-display-name">
-                {customer.displayName ?? COPY.displayNameEmpty}
-              </dd>
-            </div>
-            <div className="customer-access-card__row">
               <dt>{COPY.verifiedAt}</dt>
               <dd>
                 <time dateTime={customer.verifiedAt}>
@@ -77,6 +91,8 @@ export function CustomerContactPanel({ customer, loading }: CustomerContactPanel
               </dd>
             </div>
           </dl>
+
+          <CustomerProfileForm customer={customer} profile={profile} />
 
           <h3 className="customer-access-card__subheading">{COPY.contactsHeading}</h3>
           <ul className="customer-access-contacts" data-testid="customer-contacts">
@@ -106,10 +122,39 @@ export function CustomerContactPanel({ customer, loading }: CustomerContactPanel
                     {COPY.primary}
                   </span>
                 ) : null}
+
+                <span className="customer-access-contacts__actions">
+                  {canPromote(contact) ? (
+                    <button
+                      type="button"
+                      className="customer-access-contacts__action"
+                      data-testid="contact-promote"
+                      onClick={() => {
+                        onContactAction('promote', contact);
+                      }}
+                    >
+                      {MAINTENANCE.promote}
+                    </button>
+                  ) : null}
+                  {canDeactivate(contact) ? (
+                    <button
+                      type="button"
+                      className="customer-access-contacts__action"
+                      data-testid="contact-deactivate"
+                      onClick={() => {
+                        onContactAction('deactivate', contact);
+                      }}
+                    >
+                      {MAINTENANCE.deactivate}
+                    </button>
+                  ) : null}
+                </span>
               </li>
             ))}
           </ul>
 
+          <p className="customer-access-card__note">{MAINTENANCE.eligibilityNote}</p>
+          <p className="customer-access-card__note">{MAINTENANCE.deactivatedNote}</p>
           <p className="customer-access-card__note">{COPY.maskNote}</p>
         </>
       )}

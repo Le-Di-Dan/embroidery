@@ -234,7 +234,23 @@ describe('the Customer and contact region', () => {
     });
   });
 
-  it('offers no customer edit, merge or verification control', async () => {
+  /**
+   * Narrowed by `APP10-A01`, not weakened.
+   *
+   * When this suite was written the screen was read-only, so "no edit control"
+   * was the whole rule. `APP10-B01` then published a bounded profile patch and
+   * the two contact transitions, and `APP10-A01` — implementing the
+   * `APP10-D01` frames approved as `FIG-APPROVAL-APP10-D01-PO-001` — surfaces
+   * exactly those three. The edit affordance is now correct, so asserting its
+   * absence would assert against the approved design.
+   *
+   * What is still forbidden is everything APP10 did **not** open: merge, which
+   * is `APP10-A02`'s route and not this screen's; delete, because deactivation
+   * is a retirement and no destructive operation exists; and any verification
+   * control, because a Customer identity is possession of a verified channel and
+   * no Admin operation mints or clears that evidence.
+   */
+  it('offers no merge, delete or verification control', async () => {
     resolvesToCustomer();
     const user = createUser();
     render();
@@ -244,7 +260,7 @@ describe('the Customer and contact region', () => {
       expect(screen.getByTestId('customer-id')).toBeInTheDocument();
     });
 
-    for (const forbidden of [/sửa/i, /gộp/i, /xoá/i, /xác minh lại/i, /huỷ xác minh/i]) {
+    for (const forbidden of [/gộp/i, /xoá/i, /xác minh lại/i, /huỷ xác minh/i]) {
       expect(screen.queryByRole('button', { name: forbidden })).not.toBeInTheDocument();
     }
   });

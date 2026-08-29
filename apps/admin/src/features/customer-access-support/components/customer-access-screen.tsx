@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import type {
+  AdminCustomerContactResponse,
   AdminNotificationIntentResponse,
   AdminSecureGrantResponse,
 } from '@embroidery/api-client';
@@ -9,8 +10,12 @@ import type {
 import { CUSTOMER_ACCESS_COPY } from '../model/customer-access-copy';
 import { useCustomerLookup } from '../hooks/use-customer-lookup';
 import { useCustomerSupportQueries } from '../hooks/use-customer-support-queries';
+import { useContactMaintenance } from '../hooks/use-contact-maintenance';
 import { useGrantRevocation } from '../hooks/use-grant-revocation';
 import { useNotificationReplay } from '../hooks/use-notification-replay';
+import { useProfileMaintenance } from '../hooks/use-profile-maintenance';
+import type { ContactAction } from '../model/customer-maintenance-failure';
+import { ContactActionDialog } from './contact-action-dialog';
 import { CustomerContactPanel } from './customer-contact-panel';
 import { CustomerLookupPanel } from './customer-lookup-panel';
 import { NotificationPanel } from './notification-panel';
@@ -41,10 +46,34 @@ import { SecureGrantPanel } from './secure-grant-panel';
  * Revoke and replay both settle in place: the dialog closes, a banner reports
  * what the server said, and the affected query refetches. There is no navigation
  * and no reload, which is what `APP4-A01`'s acceptance asks for.
+ *
+ * ### `APP10-A01` extends this screen; it does not replace it
+ *
+ * The lookup, the grant card and the notification card are `APP4-A01`'s and are
+ * untouched. What APP10 adds sits inside the existing left-hand customer card:
+ * the two profile fields `APP10-B01` makes writable, and the promote-primary and
+ * deactivate transitions on the contacts already listed there. There is still no
+ * customer list, directory or search — discovery remains exact-contact
+ * resolution — and no merge affordance, which is `APP10-A02`'s route.
+ *
+ * All three maintenance mutations answer 204 and republish nothing, so each one
+ * ends in a re-read of the authoritative customer. Nothing the operator typed or
+ * clicked is written into the cache as if the server had confirmed it.
  */
 export function CustomerAccessScreen() {
   const [revoking, setRevoking] = useState<AdminSecureGrantResponse | null>(null);
   const [replaying, setReplaying] = useState<AdminNotificationIntentResponse | null>(null);
+  /**
+   * The open contact confirmation: which transition, and which contact.
+   *
+   * The *contact* is held, not just its id, because the dialog names it by its
+   * mask — and the mask is a fact the operator already has on screen, unlike the
+   * id, which addresses the request and is never rendered.
+   */
+  const [contactAction, setContactAction] = useState<{
+    readonly action: ContactAction;
+    readonly contact: AdminCustomerContactResponse;
+  } | null>(null);
 
   const lookup = useCustomerLookup();
   const customerId = lookup.customerId;
@@ -57,8 +86,29 @@ export function CustomerAccessScreen() {
     setReplaying(null);
   }, []);
 
+  const closeContactAction = useCallback(() => {
+    setContactAction(null);
+  }, []);
+
   const revocation = useGrantRevocation(customerId, closeRevoke);
   const replay = useNotificationReplay(customerId, closeReplay);
+  const profile = useProfileMaintenance(customerId, data.refetchCustomer);
+  const contacts = useContactMaintenance(customerId, data.refetchCustomer);
+
+  const startContactAction = useCallback(
+    (action: ContactAction, contact: AdminCustomerContactResponse) => {
+      // The previous outcome is cleared as the dialog opens, so a success banner
+      // from the last transition cannot be read as this one's answer.
+      contacts.reset();
+      setContactAction({ action, contact });
+    },
+    [contacts],
+  );
+
+  const dismissContactAction = useCallback(() => {
+    contacts.reset();
+    closeContactAction();
+  }, [closeContactAction, contacts]);
 
   /**
    * One instant for the whole render.
@@ -76,9 +126,12 @@ export function CustomerAccessScreen() {
       // revoke confirmation to another person's record.
       revocation.reset();
       replay.reset();
+      profile.reset();
+      contacts.reset();
+      setContactAction(null);
       lookup.submit(kind, contact);
     },
-    [lookup, replay, revocation],
+    [contacts, lookup, profile, replay, revocation],
   );
 
   const showNotFound = lookup.failure === 'not-found';
@@ -156,7 +209,12 @@ export function CustomerAccessScreen() {
       ) : showLoadError ? null : (
         <div className="customer-access__columns">
           <div className="customer-access__left">
-            <CustomerContactPanel customer={data.customer} loading={data.loading} />
+            <CustomerContactPanel
+              customer={data.customer}
+              loading={data.loading}
+              profile={profile}
+              onContactAction={startContactAction}
+            />
           </div>
           <div className="customer-access__right">
             <SecureGrantPanel
@@ -185,6 +243,20 @@ export function CustomerAccessScreen() {
             revocation.run(revoking.grantId, reason);
           }}
           onCancel={closeRevoke}
+        />
+      )}
+
+      {contactAction === null ? null : (
+        <ContactActionDialog
+          action={contactAction.action}
+          contact={contactAction.contact}
+          busy={contacts.running}
+          succeeded={contacts.succeeded}
+          failure={contacts.failure}
+          onConfirm={() => {
+            contacts.run(contactAction.action, contactAction.contact.contactId);
+          }}
+          onClose={dismissContactAction}
         />
       )}
 

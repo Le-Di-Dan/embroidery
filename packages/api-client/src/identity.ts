@@ -140,3 +140,30 @@ export type {
   AdminNotificationAttemptResponse,
   NotificationReplayResponse,
 } from './generated/embroidery-api.schemas';
+
+// Admin Customer profile and contact maintenance (APP10-B01), consumed by the
+// Admin customer-access support screen (APP10-A01).
+//
+// Three operations, and the shape of the set is again the boundary. There is no
+// customer create, no customer list and no contact **create** here, and there
+// must not be: a Customer identity is possession of a verified channel, so a
+// staff endpoint that minted or rewrote a contact value or a verification
+// instant would replace a proof with a session. What is exported is exactly the
+// three writes that need no new evidence — patch the two profile fields an
+// operator maintains, move the primary designation between contacts that are
+// already verified, and retire one.
+//
+// All three answer `204` and republish nothing, which is deliberate and is why
+// the caller re-reads `adminCustomerSupportDetail` afterwards instead of
+// predicting the new state from what it just sent.
+//
+// `UpdateCustomerProfileBody` crosses as a type so the caller names the wire
+// shape at the transport seam. Its two fields are tri-state — omitted leaves a
+// value unchanged, `null` clears it — and assembling that literal blind is how
+// a "clear the note" would arrive as "leave the note alone".
+export {
+  adminCustomerUpdate,
+  adminCustomerContactPromote,
+  adminCustomerContactDeactivate,
+} from './generated/embroidery-api';
+export type { UpdateCustomerProfileBody } from './generated/embroidery-api.schemas';

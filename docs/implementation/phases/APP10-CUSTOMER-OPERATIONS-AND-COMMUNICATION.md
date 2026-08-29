@@ -160,9 +160,9 @@ APP10 checkpoint, and it is the only APP10 status table.
 | `APP10-B01` | Customer profile & contact maintenance | `COMPLETE` |
 | `APP10-B02` | Merge case lifecycle & consequence preview | `COMPLETE` |
 | `APP10-B03` | Merge execution & immutable event history | `COMPLETE` |
-| `APP10-D01` | APP10 design package | `COMPLETE` |
-| `APP10-A01` | Admin customer profile maintenance UI | `NEXT` |
-| `APP10-A02` | Admin customer merge workflow | `INCOMPLETE` |
+| `APP10-D01` | APP10 design package | `COMPLETE` / `PO APPROVED` |
+| `APP10-A01` | Admin customer profile maintenance UI | `COMPLETE` |
+| `APP10-A02` | Admin customer merge workflow | `NEXT` |
 | `APP10-I01` | Zalo/Messenger simple handoff | `INCOMPLETE` |
 | `APP10-E01` | Customer operations cross-boundary acceptance | `INCOMPLETE` |
 | `APP10-X01` | Phase closure | `INCOMPLETE` |
@@ -319,4 +319,42 @@ D01   COMPLETE (2026-08-29 — one design package, one APP_10 page, zero runtime
                 NOT_RUN, FULL_MONOREPO_TEST = NOT_RUN, FULL_E2E = NOT_RUN.
                 PO_DECISION_REQUIRED = NONE.
                 Evidence: reports/APP10-D01-COMPLETION-REPORT.md)
+
+D01   PO APPROVED (2026-08-29 — Product Owner PASS, CORRECTION_REQUIRED = NO.
+                All 41 APP10-D01 registry rows promoted REVIEW_REQUIRED ->
+                APPROVED_FOR_IMPLEMENTATION with approval evidence
+                FIG-APPROVAL-APP10-D01-PO-001. Registry status only: 0 Figma
+                nodes created, modified, moved, renamed or deleted, and no
+                APP1-APP9 or BRD0 row touched. Recorded by APP10-A01.)
+
+A01   COMPLETE (2026-08-29 — Admin customer profile & contact maintenance UI.
+                /support/customer-access extended, never replaced: the APP4-A01
+                lookup, secure-grant and notification panels are unchanged and
+                proven so by their own 50 passing tests. Added inside the
+                existing customer card: the APP10-B01 profile patch
+                (displayName + notes only) and the promote-primary /
+                deactivate-contact transitions on the contacts already listed.
+                Consumes 5 delivered operations (APP4-B07 resolve + detail,
+                APP10-B01 PATCH + primary + deactivate) through the generated
+                client. 0 backend, OpenAPI, migration, worker, generated-client
+                and Figma-node changes; 3 APP10-B01 operations re-exported from
+                the api-client identity barrel. No customer list, directory or
+                search; no contact creation, verification mutation, delete,
+                undo or reactivate; contactId addresses requests and is never
+                rendered. All three mutations answer 204, so every settled
+                mutation re-reads the authoritative customer — and, because
+                APP10-B01 publishes no business code on its 409s, the
+                primary-contact and last-verified refusals are told apart from
+                that fresh read rather than guessed from a stale snapshot.
+                Validation: jest test/components/customer-access — 6 suites,
+                78 tests PASS (28 new); admin typecheck PASS; admin lint 1
+                pre-existing error at HEAD (request-quotation-bootstrap.test.tsx,
+                unrelated); prettier written; node
+                tools/check-figma-design-index.mjs PASS (491/491/22);
+                check-styles and check-file-size unchanged from HEAD (25 and 80
+                pre-existing violations, 0 in APP10-A01 files).
+                FULL_MONOREPO_TEST = NOT_RUN, FULL_E2E = NOT_RUN.
+                DESIGN_APPROVAL = FIG-APPROVAL-APP10-D01-PO-001.
+                PO_DECISION_REQUIRED = NONE.
+                Evidence: reports/APP10-A01-COMPLETION-REPORT.md)
 ```

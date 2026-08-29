@@ -340,6 +340,54 @@ $customer-access-right-min: 520px;
     font-weight: styles.$font-weight-medium;
     overflow-wrap: anywhere;
   }
+
+  // The two APP10-B01 transitions, pushed to the end of the row so the contact
+  // and its status read first and the actions never displace them. `margin-left:
+  // auto` rather than a fixed column: a row that wraps at 1280 puts them on the
+  // next line intact instead of squeezing the mask.
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+    margin-left: auto;
+  }
+
+  &__action {
+    padding: styles.spacing(4) styles.spacing(8);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-xs;
+    background: styles.$color-surface-primary;
+    font-family: inherit;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: styles.$color-background-secondary;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      color: styles.$color-text-secondary;
+    }
+  }
+}
+
+// The profile block inside the customer card: the two fields APP10-B01 makes
+// writable, read or edited in place. It is a region of the existing card rather
+// than a card of its own, which is what the approved frames show — the operator
+// never leaves the customer they resolved.
+.customer-access-profile {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+  }
 }
 
 // Status is never colour alone: every badge carries its own word, and the colour
@@ -513,6 +561,21 @@ $customer-access-right-min: 520px;
     margin: 0;
     font-size: styles.$font-size-body-s;
     color: styles.$color-text-secondary;
+  }
+
+  // The context strip: which contact this confirmation is about, named by the
+  // server's mask. The APP9-D01 dialog grammar the approved APP10 frames reuse.
+  &__context {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: styles.spacing(8);
+    margin: 0;
+    padding: styles.spacing(8) styles.spacing(12);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-sm;
+    background: styles.$color-background-secondary;
+    font-size: styles.$font-size-body-s;
   }
 
   &__label {

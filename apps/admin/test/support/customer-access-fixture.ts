@@ -23,6 +23,17 @@ export const GRANT_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081';
 export const INTENT_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6090';
 export const REPLAY_INTENT_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6091';
 
+/**
+ * The contact ids `APP10-B01` addresses its two transitions by.
+ *
+ * Exported because the `APP10-A01` suites assert on what is **sent** with them —
+ * and, just as importantly, that neither ever reaches the DOM. A contact id is an
+ * opaque server-generated identifier; the screen uses it in a URL and never as
+ * copy.
+ */
+export const EMAIL_CONTACT_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f60a1';
+export const PHONE_CONTACT_ID = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f60a2';
+
 /** The masked forms the API publishes. */
 export const EMAIL_MASK = 'b***@vidu.test';
 export const PHONE_MASK = '+84 ***** 4821';
@@ -51,17 +62,16 @@ export function makeCustomer(
     contacts: [
       // `contactId` became part of the published contact projection in
       // `APP10-B01`, which addresses its two contact operations by it. Synthetic
-      // ids, obviously so: the A01 screen does not render them today, and the
-      // fixture exists to satisfy the contract, not to assert on them.
+      // ids, obviously so: `APP10-A01` sends them and renders neither.
       {
-        contactId: '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6081',
+        contactId: EMAIL_CONTACT_ID,
         kind: 'EMAIL',
         maskedValue: EMAIL_MASK,
         verified: true,
         primary: true,
       },
       {
-        contactId: '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6082',
+        contactId: PHONE_CONTACT_ID,
         kind: 'PHONE',
         maskedValue: PHONE_MASK,
         verified: false,

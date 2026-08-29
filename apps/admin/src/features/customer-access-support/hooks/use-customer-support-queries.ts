@@ -43,6 +43,19 @@ export interface CustomerSupportData {
   /** True when any of the three reads failed. The screen shows one load error. */
   readonly failed: boolean;
   readonly refetch: () => void;
+  /**
+   * Re-reads the Customer alone and resolves with what the server now says.
+   *
+   * The maintenance mutations answer 204 and republish nothing, so this is how
+   * the screen learns the new state — and, after a refusal, how it learns which
+   * refusal it was: `APP10-B01` publishes no business code on its 409s, so the
+   * reason is read off the authoritative record rather than guessed from the
+   * snapshot the operator clicked on.
+   *
+   * Resolves `undefined` when the re-read itself failed, which is a Customer
+   * that no longer answers rather than one whose state merely moved.
+   */
+  readonly refetchCustomer: () => Promise<AdminCustomerDetailResponse | undefined>;
 }
 
 export function useCustomerSupportQueries(customerId: string | null): CustomerSupportData {
@@ -73,6 +86,10 @@ export function useCustomerSupportQueries(customerId: string | null): CustomerSu
     notifications: notifications.data,
     loading: enabled && (customer.isPending || grants.isPending || notifications.isPending),
     failed: customer.isError || grants.isError || notifications.isError,
+    refetchCustomer: async () => {
+      const result = await customer.refetch();
+      return result.isError ? undefined : result.data;
+    },
     refetch: () => {
       void customer.refetch();
       void grants.refetch();
