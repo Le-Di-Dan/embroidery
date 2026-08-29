@@ -20,8 +20,8 @@ phase.
 |---|---|---|
 | `APP11-G01` | Phase-entry baseline, design authority & canonical roadmap audit | **COMPLETE** |
 | `APP11-G01-C1` | Live Figma authority reconciliation & route lock | **COMPLETE** |
-| `APP11-D01` | Phase design package (one bounded supplement) | **NEXT** |
-| `APP11-B01` | Admin gallery entry authoring | NOT STARTED |
+| `APP11-D01` | Design authority registration, reconciliation & supplement package | **COMPLETE** |
+| `APP11-B01` | Admin gallery entry authoring | **NEXT** |
 | `APP11-B02` | Admin gallery media + publication | NOT STARTED |
 | `APP11-B03` | Public gallery reads + media delivery | NOT STARTED |
 | `APP11-B04` | Public SEO inventory (sitemap) | NOT STARTED |
@@ -120,6 +120,12 @@ delivered whole and is never split across coding checkpoints.
 
 - ~~`OPS-APP11-001`~~ Figma MCP access — **RESOLVED**, `FIGMA_LIVE_ACCESS = PASS`.
 - ~~`PO-APP11-001`~~ route paths — **RESOLVED**, locked in §4.1 below.
+
+**Delivered at `APP11-D01`** (`../reports/APP11-D01-COMPLETION-REPORT.md`): page
+`APP_11` (`853:2`), 8 sections, 33 new frames, plus 5 pre-existing UI05 feed nodes
+registered in place — **38 new registry rows, all `REVIEW_REQUIRED`** (registry
+491 → 529). The gallery feed was **not** redrawn. Implementation checkpoints read
+their authority from `FIGMA_DESIGN_INDEX.md` §4.17.
 
 ## 4. In scope
 
