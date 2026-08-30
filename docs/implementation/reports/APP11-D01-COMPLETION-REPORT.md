@@ -8,6 +8,30 @@
 
 ---
 
+> **CORRECTED BY `APP11-D01-C1` (2026-08-30)** —
+> `../reports/APP11-D01-C1-COMPLETION-REPORT.md`.
+> The Product Owner accepted this package apart from **two defects**, both now
+> fixed. Read this report together with the correction; where they differ, the
+> correction wins.
+>
+> 1. **Alt-text ownership was wrong.** This report and eleven Figma text nodes
+>    — including `875:1006` ("Alt text is owned per gallery asset") and the three
+>    Gallery-Detail media captions ("alt riêng cho mỗi ảnh") — implied a stored,
+>    operator-configured per-asset alt field. **No such column, API property or
+>    Admin control exists**, and APP11 adds no migration. The authority is now
+>    `ALT_TEXT_MODEL = DERIVED_NOT_PERSISTED`: accessible image text is derived
+>    at render time from the gallery entry title plus the image position.
+> 2. **The footer supplement was Desktop-only.** `872:1029` alone could not tell
+>    `APP11-S05` how the store block recomposes. Tablet 1024 (`888:1006`),
+>    Mobile 390 (`888:1058`) and a responsive-authority annotation
+>    (`889:1030`) now exist. Registry **529 → 532**.
+>
+> Everything else below stands unchanged: the gallery feed is still registered
+> and not redrawn, and the Homepage, gallery detail, content-page template,
+> Admin list/editor, dock placement, routes and schema disposition are untouched.
+
+---
+
 ## A. Verdict
 
 ```text

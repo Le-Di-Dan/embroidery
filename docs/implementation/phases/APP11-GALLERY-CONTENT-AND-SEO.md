@@ -21,6 +21,7 @@ phase.
 | `APP11-G01` | Phase-entry baseline, design authority & canonical roadmap audit | **COMPLETE** |
 | `APP11-G01-C1` | Live Figma authority reconciliation & route lock | **COMPLETE** |
 | `APP11-D01` | Design authority registration, reconciliation & supplement package | **COMPLETE** |
+| `APP11-D01-C1` | Design authority consistency & responsive footer correction | **COMPLETE** |
 | `APP11-B01` | Admin gallery entry authoring | **NEXT** |
 | `APP11-B02` | Admin gallery media + publication | NOT STARTED |
 | `APP11-B03` | Public gallery reads + media delivery | NOT STARTED |
@@ -126,6 +127,32 @@ delivered whole and is never split across coding checkpoints.
 registered in place — **38 new registry rows, all `REVIEW_REQUIRED`** (registry
 491 → 529). The gallery feed was **not** redrawn. Implementation checkpoints read
 their authority from `FIGMA_DESIGN_INDEX.md` §4.17.
+
+**Corrected at `APP11-D01-C1`** (`../reports/APP11-D01-C1-COMPLETION-REPORT.md`)
+on two Product Owner review defects, with the accepted package otherwise
+untouched:
+
+1. **Alt-text authority.** `ALT_TEXT_MODEL = DERIVED_NOT_PERSISTED`. Eleven
+   Figma text nodes — including `875:1006`, which claimed "Alt text is owned per
+   gallery asset" — now state that **no per-image alt column, API property or
+   Admin editor exists in APP11** and that accessible image text is derived at
+   render time from the gallery entry title plus the image position. No
+   migration, no API field and no Admin control were added, so
+   `APP11_SCHEMA_DISPOSITION = NO_MIGRATION_REQUIRED` is unchanged. This closes
+   the `docs/07-ADMIN-OPERATIONS` §4 "Configure alt text" divergence **for APP11
+   implementation only** — the product documentation stays for the Product Owner
+   to reconcile separately.
+2. **Responsive footer supplement.** The APP11-owned store-presentation footer
+   block now carries explicit authority at all three widths — Desktop `872:1029`
+   (unchanged), **Tablet 1024 `888:1006`** (2×2 column grid) and **Mobile 390
+   `888:1058`** (single stack, with 100px reserved below the last footer row so
+   the floating dock can never cover it) — plus a responsive-authority annotation
+   `889:1030` fixing stacking, ordering, link grouping, wrapping and the
+   relationships to the DS footer and the dock. `FIG-DS-FOOTER` and the DS file
+   were not touched, and the dock remains a separate floating bottom-right layer.
+
+Registry 529 → **532 rows**, the three new rows `REVIEW_REQUIRED`. Store contact
+values remain placeholders for the Product Owner to supply before `APP11-S05`.
 
 ## 4. In scope
 

@@ -1291,9 +1291,12 @@ dock frames plus `FIG-APP11-CONTACT-DOCK-MISSING-CONFIG` supersede those frames
 **for placement only**; the handoff contract they specify is unchanged. The
 runtime remains a floating bottom-right dock and was not reverted to the footer.
 
-38 rows: **17 Storefront gallery/home · 7 content pages · 9 Admin · 3 footer &
-dock · 2 phase specifications**, of which **5 register pre-existing UI05 nodes**
-and 33 point at frames created on `APP_11`.
+41 rows: **17 Storefront gallery/home · 7 content pages · 9 Admin · 5 footer &
+dock · 3 phase specifications**, of which **5 register pre-existing UI05 nodes**
+and 36 point at frames created on `APP_11`. The last three rows were added by
+`APP11-D01-C1` — the Tablet/Mobile footer store-presentation supplements and
+their responsive authority annotation. They are `REVIEW_REQUIRED` like the rest;
+`APP11-D01-C1` does not self-approve and no approval token is assumed.
 
 | Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -1329,6 +1332,9 @@ and 33 point at frames created on `APP_11`.
 | FIG-APP11-ADMIN-GALLERY-EDITOR-PUB-UNPUBLISH | Admin | /gallery/[entryId] | Gallery Editor Publication Panel | Confirm Unpublish | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 870:1274 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=870-1274) | APP11-D01 | — | — | 2026-08-29 |
 | FIG-APP11-ADMIN-GALLERY-EDITOR-MOBILE | Admin | /gallery/[entryId] | Gallery Editor | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 870:1368 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=870-1368) | APP11-D01 | — | — | 2026-08-29 |
 | FIG-APP11-FOOTER-STORE-SUPPLEMENT | Storefront | shell footer | Footer Store Presentation Supplement | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 872:1029 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=872-1029) | APP11-D01 | — | — | 2026-08-29 |
+| FIG-APP11-FOOTER-STORE-SUPPLEMENT-TABLET | Storefront | shell footer | Footer Store Presentation Supplement | Default | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 888:1006 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=888-1006) | APP11-D01-C1 | — | — | 2026-08-30 |
+| FIG-APP11-FOOTER-STORE-SUPPLEMENT-MOBILE | Storefront | shell footer | Footer Store Presentation Supplement | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 888:1058 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=888-1058) | APP11-D01-C1 | — | — | 2026-08-30 |
+| FIG-APP11-FOOTER-SUPPLEMENT-RESPONSIVE-AUTHORITY | Shared | shell footer | Footer Supplement Responsive Authority | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 889:1030 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=889-1030) | APP11-D01-C1 | — | — | 2026-08-30 |
 | FIG-APP11-CONTACT-DOCK-DESKTOP | Storefront | shell, all pages | Floating Contact Dock | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 872:1079 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=872-1079) | APP11-D01 | — | — | 2026-08-29 |
 | FIG-APP11-CONTACT-DOCK-MOBILE | Storefront | shell, all pages | Floating Contact Dock | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 872:1089 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=872-1089) | APP11-D01 | — | — | 2026-08-29 |
 | FIG-APP11-CONTACT-DOCK-MISSING-CONFIG | Storefront | shell, all pages | Floating Contact Dock | Missing configuration | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 873:1018 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=873-1018) | APP11-D01 | — | — | 2026-08-29 |
