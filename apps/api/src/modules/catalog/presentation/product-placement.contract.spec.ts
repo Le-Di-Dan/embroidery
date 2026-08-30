@@ -291,8 +291,20 @@ describe('the concurrency token is an explicit HTTP contract', () => {
   it('never appears in the public manifest', () => {
     const publicSchemas = Object.entries(schemas).filter(([name]) => name.startsWith('Public'));
     const serialized = JSON.stringify(Object.fromEntries(publicSchemas));
+    // The token itself: no public surface accepts one, anywhere, ever.
     expect(serialized).not.toContain('expectedUpdatedAt');
-    expect(serialized).not.toContain('updatedAt');
+
+    // Nor does a public schema publish the column a token is read from — with
+    // one exception since `APP11-B04`: `PublicSitemapEntryResponse.updatedAt`
+    // is the sitemap `<lastmod>` of an already-public entity, on a read-only
+    // operation that accepts no body. It is a freshness fact for crawlers, not
+    // a concurrency token: nothing can be written back with it, and no public
+    // write exists to write it to. Naming the exception keeps the claim exact
+    // rather than deleting it.
+    const carriers = publicSchemas
+      .filter(([, schema]) => JSON.stringify(schema).includes('"updatedAt"'))
+      .map(([name]) => name);
+    expect(carriers).toEqual(['PublicSitemapEntryResponse']);
   });
 
   it('is typed by the generated client, in and out', () => {

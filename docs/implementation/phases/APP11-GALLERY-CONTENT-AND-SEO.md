@@ -28,8 +28,8 @@ phase.
 | `APP11-B03` | Public gallery reads + media delivery | **COMPLETE** |
 | `APP11-B03-C1` | Composition compliance & media-intake roadmap reconciliation | **COMPLETE** |
 | `APP11-B03A` | Admin gallery media intake & public derivative preparation | **COMPLETE** |
-| `APP11-B04` | Public SEO inventory (sitemap) | **NEXT** |
-| `APP11-A01` | Admin gallery list | NOT STARTED |
+| `APP11-B04` | Public SEO inventory (sitemap) | **COMPLETE** |
+| `APP11-A01` | Admin gallery list | **NEXT** |
 | `APP11-A02` | Admin gallery editor + publication | NOT STARTED |
 | `APP11-S01` | Homepage / store introduction (+ SCSS compile gate) | NOT STARTED |
 | `APP11-S02` | Public gallery feed | NOT STARTED |
@@ -115,6 +115,18 @@ Migration `0018_create_content_gallery_agreement_tables.sql` created
 listing) and `IDX-067` (DB5's "Q-06 sitemap scan") already built. The API
 `GalleryModule` and `ContentModule` compose their repositories today. APP11 adds
 the missing read models, HTTP operations and UI — **it creates no table**.
+
+`APP11-B04` corrected one detail of that sentence. `IDX-067` is
+`ix_content_pages__published_indexable`, on **`content_pages`** — so it covers
+the content-page half of DB5's Q-06, which this phase does not build. The
+sitemap scan B04 actually delivered is served by two other indexes, both
+pre-existing and both verified against the live schema: `IDX-065`
+(`ix_products__category_display_id__published`, whose schema comment already
+names Q-06) for the Product half, and `IDX-066`
+(`ix_gallery_entries__display_id__published`) for the Gallery half, with the
+"has a deliverable image" term resolved as an indexed semi-join through
+`uq_gallery_entry_assets__entry_asset`, `pk_assets` and
+`uq_asset_derivatives__asset_kind__not_failed`. No index was added.
 
 ### 3.2 Design policy
 
@@ -262,6 +274,20 @@ dependency ordering are in the G01 report §N.
 | `APP11-B03` | Public gallery feed, entry by slug, public derivative delivery | +3 | 0 |
 | `APP11-B03A` | Admin gallery media intake & public derivative preparation (§7.1) | +2 | 0 |
 | `APP11-B04` | Public indexable-URL inventory for the sitemap | +1 | 0 |
+
+**Backend HTTP budget, reconciled at `APP11-B04`.** The `APP11-G01` forecast was
+`+11` (115 → 126). `APP11-B03A` closed a real phase blocker and cost `+2` that
+the forecast did not anticipate, so the delivered total is:
+
+```text
+ORIGINAL_FORECAST                              = +11
+APP11_B03A_DISCOVERED_DELTA                    = +2
+APP11_ACTUAL_BACKEND_HTTP_DELTA_AFTER_B04      = +13
+APP11_FINAL_BACKEND_OPERATION_COUNT_AFTER_B04  = 128
+```
+
+The obsolete `+11` is not preserved: the estimate was wrong about what the phase
+needed, and the phase was right to build it.
 
 ### 7.1 `APP11-B03A` — Admin Gallery Media Intake & Public Derivative Preparation
 

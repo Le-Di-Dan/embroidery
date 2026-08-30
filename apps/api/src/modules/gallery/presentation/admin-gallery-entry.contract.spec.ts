@@ -117,12 +117,14 @@ describe('APP11-B01 Admin gallery entry contract', () => {
       expect(adminGalleryPaths.sort()).toEqual(
         [COLLECTION, ITEM, `${ITEM}/assets`, `${ITEM}/publication`].sort(),
       );
-      // `APP11-B03` delivered the public gallery surface, so this assertion is
-      // now about the Admin scope only. The sitemap and the content-page
-      // surface are still unbuilt and are named so the day one appears early
+      // `APP11-B03` delivered the public gallery surface and `APP11-B04` the
+      // one public sitemap operation, so this assertion is now about the Admin
+      // scope only: neither of those is an Admin gallery route, and the
+      // content-page surface is still unbuilt — named so the day one appears
       // this fails by name rather than by count.
-      for (const forbidden of ['/api/public/sitemap-entries', '/api/admin/content-pages']) {
-        expect(OPENAPI.paths[forbidden]).toBeUndefined();
+      expect(OPENAPI.paths['/api/admin/content-pages']).toBeUndefined();
+      for (const path of adminGalleryPaths) {
+        expect(path).not.toMatch(/sitemap|content-pages?/i);
       }
     });
 

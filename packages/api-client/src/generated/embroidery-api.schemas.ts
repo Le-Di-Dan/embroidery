@@ -4786,6 +4786,31 @@ export interface PublicProductVariantListResponse {
   variants: PublicProductVariantResponse[];
 }
 
+/**
+ * Which dynamic entity family the slug belongs to. Closed to these two values: the consumer maps a kind to its own browser route, and a third kind is a contract change.
+ */
+export type PublicSitemapEntryResponseKind =
+  (typeof PublicSitemapEntryResponseKind)[keyof typeof PublicSitemapEntryResponseKind];
+
+export const PublicSitemapEntryResponseKind = {
+  PRODUCT: 'PRODUCT',
+  GALLERY: 'GALLERY',
+} as const;
+
+export interface PublicSitemapEntryResponse {
+  /** Which dynamic entity family the slug belongs to. Closed to these two values: the consumer maps a kind to its own browser route, and a third kind is a contract change. */
+  kind: PublicSitemapEntryResponseKind;
+  /** The immutable server-owned address segment. Not a path and not a URL — the Storefront owns the route shape and composes the browser URL itself. */
+  slug: string;
+  /** The entity's own last-modified instant, for `<lastmod>`. Never the request time and never derived from stored objects, so an unchanged page reports an unchanged stamp. */
+  updatedAt: string;
+}
+
+export interface PublicSitemapListResponse {
+  /** The complete current inventory, ordered by kind then slug. Never partial: an inventory too large for one response fails the request rather than truncating. */
+  items: PublicSitemapEntryResponse[];
+}
+
 export interface PublishDesignTemplateBody {
   /**
    * @minimum 0
@@ -6533,6 +6558,10 @@ export type PublicQuotationReject200 = ApiSuccessResponse & {
 
 export type PublicSecureLinkResolve200 = ApiSuccessResponse & {
   data: SecureLinkResolutionResponse;
+};
+
+export type PublicSitemapEntryList200 = ApiSuccessResponse & {
+  data: PublicSitemapListResponse;
 };
 
 export type PublicVerificationIssue202 = ApiSuccessResponse & {

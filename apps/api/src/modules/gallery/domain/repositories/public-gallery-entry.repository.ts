@@ -70,6 +70,19 @@ export interface PublicGalleryEntryDetail {
   readonly assets: readonly PublicGalleryEntryAssetRow[];
 }
 
+/**
+ * One indexable public Gallery entry, as the SEO inventory needs it
+ * (`APP11-B04`).
+ *
+ * Two fields and no more: an address and a freshness stamp. No title, no
+ * description, no cover, no count — a sitemap consumer needs none of them, and
+ * a wider shape here would put editorial text on a wire that must stay minimal.
+ */
+export interface PublicIndexableGalleryEntryRow {
+  readonly slug: string;
+  readonly updatedAt: Date;
+}
+
 export interface PublicGalleryEntryListQuery {
   readonly limit: number;
   readonly after: { readonly displayOrder: number; readonly id: string } | undefined;
@@ -93,6 +106,29 @@ export interface PublicGalleryEntryRepository {
    * statements that would then disagree about what "absent" means.
    */
   findPublishedBySlug(slug: string): Promise<PublicGalleryEntryDetail | undefined>;
+
+  /**
+   * Every published, indexable entry whose **detail** page would currently
+   * render, in `slug` order (`APP11-B04`).
+   *
+   * Three terms, and the third is the reason this method exists on *this* port
+   * rather than in an SEO module: `status = 'PUBLISHED'` and "has at least one
+   * currently deliverable detail image" are exactly what decides whether
+   * `GET /api/public/gallery-entries/{slug}` answers 200 or 404, taken from the
+   * one eligibility definition both already use. A sitemap that advertised a
+   * slug the detail refuses would be a broken index entry the API could have
+   * prevented. `is_indexable` is the third, and is the only term the browsing
+   * reads deliberately never apply.
+   *
+   * Keyed on the detail rendition, not the feed's: the sitemap advertises
+   * detail pages, so it must agree with the read that serves them — an entry
+   * whose thumbnail is gone but whose detail still renders belongs in the
+   * index, and it is the detail's 404 that has to be aligned with.
+   *
+   * `limit` is a safety bound the caller sets one above its own cap, so an
+   * inventory too large to honour is detectable rather than silently truncated.
+   */
+  listIndexable(limit: number): Promise<readonly PublicIndexableGalleryEntryRow[]>;
 }
 
 export const PUBLIC_GALLERY_ENTRY_REPOSITORY = Symbol('PUBLIC_GALLERY_ENTRY_REPOSITORY');

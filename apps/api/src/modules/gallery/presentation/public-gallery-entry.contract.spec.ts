@@ -157,9 +157,22 @@ describe('APP11-B03 public gallery contract', () => {
   });
 
   describe('out of scope', () => {
-    it('publishes no sitemap, robots, content-page or redirect operation', () => {
+    it('publishes no robots, content-page or redirect operation', () => {
       for (const path of Object.keys(OPENAPI.paths)) {
-        expect(path).not.toMatch(/sitemap|robots\.txt|content-pages?|redirects?/i);
+        expect(path).not.toMatch(/robots\.txt|content-pages?|redirects?/i);
+      }
+    });
+
+    it('adds no sitemap operation of its own', () => {
+      // `APP11-B04` delivered the one sitemap operation, so the artifact-wide
+      // "no sitemap path exists" assertion this checkpoint made is no longer
+      // the right question. What B03 still owns is that *its* three routes are
+      // the whole gallery surface: none of them is a sitemap, and the one that
+      // does exist lives outside `gallery-entries` and is B04's to assert.
+      const sitemapPaths = Object.keys(OPENAPI.paths).filter((path) => /sitemap/i.test(path));
+      expect(sitemapPaths).toEqual(['/api/public/sitemap-entries']);
+      for (const path of sitemapPaths) {
+        expect(path).not.toContain('gallery-entries');
       }
     });
 
@@ -203,12 +216,20 @@ describe('APP11-B03 public gallery contract', () => {
     });
 
     it('never makes indexability a visibility predicate', () => {
-      // A structural claim, not a prose one: the SQL builder that decides who
-      // is visible must not compare `isIndexable`. The column is selected and
-      // projected; it is never a WHERE term.
+      // A structural claim, not a prose one: the two SQL builders that decide
+      // who is *visible* must not compare `isIndexable`. The column is selected
+      // and projected there; it is never a WHERE term.
+      //
+      // Scoped to those two methods since `APP11-B04`, which added
+      // `listIndexable` to the same adapter. That read is the SEO inventory and
+      // indexability is exactly its point — so the claim this checkpoint owns
+      // is that the *browsing* reads still do not filter on it, not that the
+      // file never mentions the column in a predicate.
       const sql = withoutComments(ENTRY_REPOSITORY_SOURCE);
-      expect(sql).toContain('isIndexable: galleryEntries.isIndexable');
-      expect(sql).not.toMatch(/eq\(\s*galleryEntries\.isIndexable/);
+      const browsingReads = sql.slice(0, sql.indexOf('async listIndexable'));
+      expect(browsingReads).toContain('isIndexable: galleryEntries.isIndexable');
+      expect(browsingReads).not.toMatch(/eq\(\s*galleryEntries\.isIndexable/);
+      expect(sql).toContain('async listIndexable');
     });
 
     it('binds the feed to the canonical publication predicate and ordering', () => {

@@ -75,6 +75,19 @@ export interface PublicLinkedProductRow {
   readonly thumbnailProductMediaId: string | undefined;
 }
 
+/**
+ * One indexable public Product, as the SEO inventory needs it (`APP11-B04`).
+ *
+ * Two fields and no more: an address and a freshness stamp. Deliberately *not*
+ * {@link PublicProductListRow} — a sitemap has no use for a price, a category,
+ * a stock flag or a thumbnail, and a shape that carried them would invite them
+ * onto a wire that must stay minimal.
+ */
+export interface PublicIndexableProductRow {
+  readonly slug: string;
+  readonly updatedAt: Date;
+}
+
 export interface PublicProductListQuery {
   readonly limit: number;
   readonly categorySlug: string | undefined;
@@ -102,6 +115,22 @@ export interface PublicProductRepository {
    * question through the publication predicate instead of a label lookup.
    */
   findPublishedSummaryById(productId: string): Promise<PublicLinkedProductRow | undefined>;
+
+  /**
+   * Every Product an anonymous caller may see **and** that is marked indexable,
+   * in `slug` order (`APP11-B04`).
+   *
+   * The same three visibility terms the other reads apply — published, public
+   * category, category not archived — plus `is_indexable`, which the browsing
+   * reads deliberately never filter on. Public visibility and sitemap
+   * visibility are different questions: a `noindex` Product stays reachable at
+   * its own URL and simply never appears here.
+   *
+   * `limit` is a safety bound the caller sets one above its own cap, so an
+   * inventory larger than the contract can honour is detectable rather than
+   * silently truncated. There is no cursor: this is an inventory, not a feed.
+   */
+  listIndexable(limit: number): Promise<readonly PublicIndexableProductRow[]>;
 }
 
 export const PUBLIC_PRODUCT_REPOSITORY = Symbol('PublicProductRepository');

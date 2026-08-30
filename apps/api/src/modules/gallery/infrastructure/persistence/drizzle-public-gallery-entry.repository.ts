@@ -44,6 +44,7 @@ import type {
   PublicGalleryEntryListQuery,
   PublicGalleryEntryListRow,
   PublicGalleryEntryRepository,
+  PublicIndexableGalleryEntryRow,
 } from '../../domain/repositories/public-gallery-entry.repository';
 import {
   GALLERY_ASSET_ID_SELECTION,
@@ -152,6 +153,30 @@ export class DrizzlePublicGalleryEntryRepository
     };
   }
 
+  async listIndexable(limit: number): Promise<readonly PublicIndexableGalleryEntryRow[]> {
+    return (
+      this.db
+        .select({ slug: galleryEntries.slug, updatedAt: galleryEntries.updatedAt })
+        .from(galleryEntries)
+        .where(
+          and(
+            eq(galleryEntries.status, PUBLIC_GALLERY_ENTRY_VISIBLE_STATE),
+            // The only place in this repository where indexability narrows a
+            // result set: everywhere else a `noindex` entry is an ordinary
+            // published entry.
+            eq(galleryEntries.isIndexable, true),
+            // The detail route's own renderability test, correlated per entry, so
+            // the sitemap cannot advertise a slug that would 404.
+            sql`exists (select 1 ${this.detailSource()})`,
+          ),
+        )
+        // `slug` alone is total: `uq_gallery_entries__slug` makes it unique, so
+        // no tie-breaker is owed and the inventory is stable between calls.
+        .orderBy(asc(galleryEntries.slug))
+        .limit(limit)
+    );
+  }
+
   /**
    * The entry's images in stored gallery order, restricted to those whose
    * detail rendition would really stream. An association the curator kept but
@@ -188,5 +213,16 @@ export class DrizzlePublicGalleryEntryRepository
    */
   private coverSource() {
     return deliverableAssetSource(galleryEntries.id, LIST_DERIVATIVE_KIND);
+  }
+
+  /**
+   * The same correlated source keyed on the **detail** rendition.
+   *
+   * What the sitemap's renderability term asks, and exactly what
+   * `deliverableAssets` filters the detail's images on — so "this entry is in
+   * the index" and "this entry answers 200" are one predicate, not two.
+   */
+  private detailSource() {
+    return deliverableAssetSource(galleryEntries.id, DETAIL_DERIVATIVE_KIND);
   }
 }

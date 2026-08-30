@@ -126,10 +126,19 @@ describe('APP11-B03A Admin gallery asset contract', () => {
       expect(CLIENT_SOURCE).toContain('adminGalleryAssetPreview');
     });
 
-    it('adds no public gallery-asset address and no B04 sitemap operation', () => {
+    it('adds no public gallery-asset address, and mints no sitemap operation itself', () => {
       expect(Object.keys(OPENAPI.paths)).not.toContain('/api/public/gallery-assets');
-      expect(operationIds().some((id) => id.toLowerCase().includes('sitemap'))).toBe(false);
       expect(operationIds().some((id) => id.startsWith('publicAsset'))).toBe(false);
+      // `APP11-B04` delivered the one sitemap operation afterwards, so the
+      // claim B03A owns is that the sitemap family is not *its* — the id
+      // belongs to the SEO surface and none of this checkpoint's own three
+      // ids resemble it.
+      expect(operationIds().filter((id) => id.toLowerCase().includes('sitemap'))).toEqual([
+        'publicSitemapEntry_list',
+      ]);
+      expect(
+        operationIds().filter((id) => id.startsWith('adminGalleryAsset') && /sitemap/i.test(id)),
+      ).toEqual([]);
     });
   });
 

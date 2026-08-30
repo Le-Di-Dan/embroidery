@@ -37,5 +37,13 @@ import { PublicGalleryEntryController } from './presentation/public-gallery-entr
     { provide: PUBLIC_GALLERY_ENTRY_REPOSITORY, useClass: DrizzlePublicGalleryEntryRepository },
     PublicGalleryEntryQuery,
   ],
+  // `APP11-B04`. Exported so the SEO inventory can ask *this* module whether a
+  // gallery detail would currently render, rather than re-deriving publication
+  // and media eligibility over the tables it must not read
+  // (`BACKEND_CONVENTIONS.md` §10). Only the read port leaves: the query and
+  // the controller stay private to this graph, and the port itself takes no
+  // lock and offers no write, so exporting it grants no capability an anonymous
+  // read does not already have.
+  exports: [PUBLIC_GALLERY_ENTRY_REPOSITORY],
 })
 export class GalleryPublicModule {}

@@ -34,6 +34,7 @@ import { schema } from '@embroidery/database';
 import { and, asc, eq, gt, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
 import type {
+  PublicIndexableProductRow,
   PublicLinkedProductRow,
   PublicProductDetail,
   PublicProductDetailMediaRow,
@@ -196,6 +197,29 @@ export class DrizzlePublicProductRepository
       return undefined;
     }
     return { ...row, thumbnailProductMediaId: row.thumbnailProductMediaId ?? undefined };
+  }
+
+  /**
+   * The three visibility terms of the reads above, from the same constants —
+   * a laxer rule would advertise addresses the detail route refuses — plus the
+   * only indexability filter in this repository (`APP11-B04`). `uq_products__slug`
+   * (IDX-011) makes `slug` a total order, so no tie-breaker is owed.
+   */
+  async listIndexable(limit: number): Promise<readonly PublicIndexableProductRow[]> {
+    return this.db
+      .select({ slug: products.slug, updatedAt: products.updatedAt })
+      .from(products)
+      .innerJoin(categories, eq(categories.id, products.categoryId))
+      .where(
+        and(
+          eq(products.status, PUBLIC_PRODUCT_VISIBLE_STATE),
+          eq(categories.status, APP2_CATEGORY_STATUS),
+          isNull(categories.archivedAt),
+          eq(products.isIndexable, true),
+        ),
+      )
+      .orderBy(asc(products.slug))
+      .limit(limit);
   }
 
   /**

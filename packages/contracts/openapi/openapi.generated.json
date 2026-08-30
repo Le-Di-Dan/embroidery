@@ -8792,6 +8792,51 @@
         ],
         "type": "object"
       },
+      "PublicSitemapEntryResponse": {
+        "properties": {
+          "kind": {
+            "description": "Which dynamic entity family the slug belongs to. Closed to these two values: the consumer maps a kind to its own browser route, and a third kind is a contract change.",
+            "enum": [
+              "PRODUCT",
+              "GALLERY"
+            ],
+            "example": "PRODUCT",
+            "type": "string"
+          },
+          "slug": {
+            "description": "The immutable server-owned address segment. Not a path and not a URL — the Storefront owns the route shape and composes the browser URL itself.",
+            "example": "khan-theu-hoa-sen",
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "The entity's own last-modified instant, for `<lastmod>`. Never the request time and never derived from stored objects, so an unchanged page reports an unchanged stamp.",
+            "example": "2026-08-30T09:15:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "slug",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "PublicSitemapListResponse": {
+        "properties": {
+          "items": {
+            "description": "The complete current inventory, ordered by kind then slug. Never partial: an inventory too large for one response fails the request rather than truncating.",
+            "items": {
+              "$ref": "#/components/schemas/PublicSitemapEntryResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "PublishDesignTemplateBody": {
         "additionalProperties": false,
         "properties": {
@@ -33995,6 +34040,110 @@
         "summary": "Resolve a secure-link token",
         "tags": [
           "publicSecureLink"
+        ]
+      }
+    },
+    "/api/public/sitemap-entries": {
+      "get": {
+        "description": "Returns every dynamic entity a search engine may index right now, as `{ kind, slug, updatedAt }`. Anonymous: no session or cookie is involved. A Product appears only when it is publicly visible under the catalog publication authority **and** marked indexable; a gallery entry only when it is published, marked indexable, and its detail page would currently render — so no advertised slug resolves to a 404. Indexability is not visibility: a `noindex` entity stays publicly readable at its own address and is simply absent here. Absence is the only signal — the response never reveals that a hidden, draft or `noindex` entity exists. Path-agnostic on purpose: no absolute URL, no canonical URL and no browser route is emitted, because the Storefront owns route shapes and composes them itself. Static pages and policy pages are Storefront route authority and are not listed. The inventory is complete and unpaged — there is no cursor, limit or filter, and an inventory too large for one response fails rather than truncating, because a crawler cannot tell a partial sitemap from a complete one. Ordered by kind then slug, deterministically; the order carries no SEO weight. Responses are never stored: publication and indexability are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep advertising a withdrawn URL.",
+        "operationId": "publicSitemapEntry_list",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicSitemapListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The complete indexable URL inventory.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The inventory exceeds what one response may carry; nothing partial is sent.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List the indexable dynamic URL inventory",
+        "tags": [
+          "publicSitemapEntry"
         ]
       }
     },

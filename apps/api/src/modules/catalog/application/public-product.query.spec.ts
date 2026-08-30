@@ -63,6 +63,16 @@ class FakeRepository implements PublicProductRepository {
   findPublishedSummaryById(): Promise<undefined> {
     return Promise.resolve(undefined);
   }
+
+  /**
+   * `APP11-B04` added this to the port for the SEO inventory.
+   * `PublicProductQuery` does not call it either — the browsing reads never
+   * filter on indexability — so the fake answers with an empty inventory, which
+   * would fail loudly if a browsing query ever started using it.
+   */
+  listIndexable(): Promise<readonly []> {
+    return Promise.resolve([]);
+  }
 }
 
 describe('PublicProductQuery', () => {

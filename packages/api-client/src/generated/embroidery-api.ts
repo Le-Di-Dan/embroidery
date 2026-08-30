@@ -151,6 +151,7 @@ import type {
   PublicQuotationCurrent200,
   PublicQuotationReject200,
   PublicSecureLinkResolve200,
+  PublicSitemapEntryList200,
   PublicVerificationIssue202,
   PublicVerificationReadStatus200,
   PublicVerificationResend202,
@@ -2352,6 +2353,19 @@ export const publicSecureLinkResolve = (
 };
 
 /**
+ * Returns every dynamic entity a search engine may index right now, as `{ kind, slug, updatedAt }`. Anonymous: no session or cookie is involved. A Product appears only when it is publicly visible under the catalog publication authority **and** marked indexable; a gallery entry only when it is published, marked indexable, and its detail page would currently render — so no advertised slug resolves to a 404. Indexability is not visibility: a `noindex` entity stays publicly readable at its own address and is simply absent here. Absence is the only signal — the response never reveals that a hidden, draft or `noindex` entity exists. Path-agnostic on purpose: no absolute URL, no canonical URL and no browser route is emitted, because the Storefront owns route shapes and composes them itself. Static pages and policy pages are Storefront route authority and are not listed. The inventory is complete and unpaged — there is no cursor, limit or filter, and an inventory too large for one response fails rather than truncating, because a crawler cannot tell a partial sitemap from a complete one. Ordered by kind then slug, deterministically; the order carries no SEO weight. Responses are never stored: publication and indexability are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep advertising a withdrawn URL.
+ * @summary List the indexable dynamic URL inventory
+ */
+export const publicSitemapEntryList = (
+  options?: SecondParameter<typeof apiRequest<PublicSitemapEntryList200>>,
+) => {
+  return apiRequest<PublicSitemapEntryList200>(
+    { url: `/api/public/sitemap-entries`, method: 'GET' },
+    options,
+  );
+};
+
+/**
  * Opens a one-time code challenge for a destination and purpose, and hands the code to asynchronous delivery. While a challenge is still live the same one is returned unchanged — use the resend operation to replace it. The response never contains the code, and is identical whether or not the destination already belongs to a customer.
  * @summary Request a verification code for a contact
  */
@@ -2778,6 +2792,9 @@ export type PublicQuotationRejectResult = NonNullable<
 >;
 export type PublicSecureLinkResolveResult = NonNullable<
   Awaited<ReturnType<typeof publicSecureLinkResolve>>
+>;
+export type PublicSitemapEntryListResult = NonNullable<
+  Awaited<ReturnType<typeof publicSitemapEntryList>>
 >;
 export type PublicVerificationIssueResult = NonNullable<
   Awaited<ReturnType<typeof publicVerificationIssue>>

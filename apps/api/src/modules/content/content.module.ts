@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
 import { PublishApp6AgreementsUseCase } from './application/publish-app6-agreements.use-case';
+import { ContentPublicSeoModule } from './content-public-seo.module';
 import { AGREEMENT_REPOSITORY } from './domain/repositories/agreement.repository';
 import {
   CONTENT_PAGE_REPOSITORY,
@@ -23,6 +24,15 @@ import {
  * Exports `AGREEMENT_REPOSITORY` so Design can resolve the effective agreement
  * set when building an approval snapshot (GRD-008).
  *
+ * `APP11-B04` composed `ContentPublicSeoModule` beneath it — CTX-CNT's first
+ * HTTP surface. This module stays persistence-focused and declares no
+ * controller of its own; the member is registered here rather than in the
+ * application root because "the SEO context publishes an indexable-URL
+ * inventory" is a fact about this context, and because the member holds none of
+ * the three ports above. Importing `ContentModule` for a repository does not
+ * make that controller or its providers resolvable — a Nest import is not
+ * transitive — so nothing an existing consumer sees changes.
+ *
  * `APP6-B10` added `PublishApp6AgreementsUseCase` here rather than to
  * `PolicyModule`: agreement content is the AGG-21 aggregate Content owns, while
  * that module publishes `policy_configurations` and nothing else. No controller
@@ -30,7 +40,7 @@ import {
  * is no agreement-publish HTTP operation anywhere in the API.
  */
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, ContentPublicSeoModule],
   providers: [
     { provide: AGREEMENT_REPOSITORY, useClass: DrizzleAgreementRepository },
     { provide: CONTENT_PAGE_REPOSITORY, useClass: DrizzleContentPageRepository },

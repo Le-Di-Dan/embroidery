@@ -110,17 +110,19 @@ describe('APP11-B02 Admin gallery media & publication contract', () => {
     });
 
     it('publishes no fifth Admin gallery, sitemap or content-page route', () => {
-      // `APP11-B03` delivered the three public gallery routes, so this
-      // assertion is now about the Admin scope only — B02's own boundary, which
-      // is that media selection and publication added no fifth Admin path. The
-      // sitemap and content-page surfaces are still unbuilt.
-      for (const forbidden of ['/api/public/sitemap-entries', '/api/admin/content-pages']) {
-        expect(OPENAPI.paths[forbidden]).toBeUndefined();
+      // `APP11-B03` delivered the three public gallery routes and `APP11-B04`
+      // the one public sitemap operation, so this assertion is now about the
+      // Admin scope only — B02's own boundary, which is that media selection
+      // and publication added no fifth Admin path. The content-page surface is
+      // still unbuilt.
+      expect(OPENAPI.paths['/api/admin/content-pages']).toBeUndefined();
+      const adminGalleryPaths = Object.keys(OPENAPI.paths).filter((path) =>
+        path.startsWith('/api/admin/gallery-entries'),
+      );
+      expect(adminGalleryPaths).toHaveLength(4);
+      for (const path of adminGalleryPaths) {
+        expect(path).not.toMatch(/sitemap|content-pages?/i);
       }
-      expect(
-        Object.keys(OPENAPI.paths).filter((path) => path.startsWith('/api/admin/gallery-entries'))
-          .length,
-      ).toBe(4);
     });
 
     it('exposes no per-image alt text anywhere in the Gallery DTO family', () => {
