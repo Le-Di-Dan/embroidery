@@ -84,6 +84,9 @@ export class RecordingObjectStorage implements ObjectStoragePort {
     return Promise.resolve();
   }
 
+  copyObject(): never {
+    throw new Error('APP5-B02 intake never copies an object.');
+  }
   getObjectStream(): never {
     throw new Error('APP5-B02 intake never reads an object back.');
   }

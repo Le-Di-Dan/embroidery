@@ -9,7 +9,15 @@
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { ACCEPTED_MEDIA_TYPES } from '../../domain/asset-intake.policy';
+import {
+  GALLERY_ASSET_CLASSIFICATION,
+  GALLERY_ASSET_KIND,
+} from '../../domain/admin-asset-scope.policy';
+import {
+  ACCEPTED_MEDIA_TYPES,
+  INTAKE_ASSET_KIND,
+  INTAKE_CLASSIFICATION,
+} from '../../domain/asset-intake.policy';
 
 const ASSET_ID_EXAMPLE = '019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07';
 const CHECKSUM_EXAMPLE = `sha256:${'0'.repeat(64)}`;
@@ -18,10 +26,20 @@ export class AdminAssetUploadReceiptResponse {
   @ApiProperty({ format: 'uuid', example: ASSET_ID_EXAMPLE })
   assetId!: string;
 
-  @ApiProperty({ enum: ['CATALOG_MEDIA'], example: 'CATALOG_MEDIA' })
+  /**
+   * Both lanes are documented because the two reads are scoped
+   * (`APP11-B03A` §10.1): an upload is always `CATALOG_MEDIA`, but a
+   * `scope=GALLERY` read returns the prepared showcase lane. Narrowing the enum
+   * to the upload's own value would make the generated client's type a lie
+   * about a response it can legitimately receive.
+   */
+  @ApiProperty({ enum: [INTAKE_ASSET_KIND, GALLERY_ASSET_KIND], example: INTAKE_ASSET_KIND })
   kind!: string;
 
-  @ApiProperty({ enum: ['PRODUCTION_SENSITIVE'], example: 'PRODUCTION_SENSITIVE' })
+  @ApiProperty({
+    enum: [INTAKE_CLASSIFICATION, GALLERY_ASSET_CLASSIFICATION],
+    example: INTAKE_CLASSIFICATION,
+  })
   classification!: string;
 
   @ApiProperty({

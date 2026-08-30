@@ -1,10 +1,17 @@
 /**
- * The two Admin read operations (`APP2-B01` §19).
+ * The two Admin read operations (`APP2-B01` §19, scoped by `APP11-B03A` §10).
  *
- * Both are scoped to `CATALOG_MEDIA` + `PRODUCTION_SENSITIVE` in the query
- * itself rather than filtered after loading. A post-filter would still have
- * fetched a customer's private asset into the process, and a paging bug would
- * then leak it; scoping in SQL means the row is never selected at all.
+ * Both are confined to one `(kind, classification)` lane in the query itself
+ * rather than filtered after loading. A post-filter would still have fetched a
+ * customer's private asset into the process, and a paging bug would then leak
+ * it; scoping in SQL means the row is never selected at all.
+ *
+ * Which lane is now the caller's explicit choice, from the closed
+ * `ADMIN_ASSET_SCOPES` vocabulary — and omitting it still means `CATALOG`, so
+ * every consumer delivered before `APP11-B03A` sees exactly the list it always
+ * saw. The lanes are never unioned: one scope resolves to one pair, so a
+ * gallery-scoped read cannot return production media and a catalog-scoped read
+ * cannot return a public showcase image.
  *
  * A scoped miss is reported as `ASSET_NOT_FOUND`, exactly like a non-existent
  * id — otherwise the endpoint would confirm the existence of assets the caller
@@ -15,7 +22,7 @@ import { buildPage, decodeCursor, InvalidCursorError, resolveLimit } from '@embr
 import type { AssetState } from '@embroidery/database';
 
 import { assetIntakeError } from '../domain/asset-intake.errors';
-import { INTAKE_ASSET_KIND, INTAKE_CLASSIFICATION } from '../domain/asset-intake.policy';
+import { resolveAdminAssetLane, type AdminAssetScope } from '../domain/admin-asset-scope.policy';
 import {
   ASSET_REPOSITORY,
   type Asset,
@@ -24,21 +31,24 @@ import {
 } from '../domain/repositories/asset.repository';
 import { toDetailView, type AssetDetailView, type AssetListView } from './asset-projection';
 
-const SCOPE = { kind: INTAKE_ASSET_KIND, classification: INTAKE_CLASSIFICATION } as const;
-
 export interface ListAssetsInput {
   readonly cursor?: string | undefined;
   readonly limit?: number | undefined;
   readonly status?: AssetState | undefined;
   readonly mediaType?: string | undefined;
+  /** Absent means `CATALOG`, the lane this operation has always served. */
+  readonly scope?: AdminAssetScope | undefined;
 }
 
 @Injectable()
 export class AssetCatalogQuery {
   constructor(@Inject(ASSET_REPOSITORY) private readonly repository: AssetRepository) {}
 
-  async detail(assetId: string): Promise<AssetDetailView> {
-    const asset = await this.repository.findScoped(assetId as AssetId, SCOPE);
+  async detail(assetId: string, scope?: AdminAssetScope): Promise<AssetDetailView> {
+    const asset = await this.repository.findScoped(
+      assetId as AssetId,
+      resolveAdminAssetLane(scope),
+    );
     if (asset === undefined) {
       throw assetIntakeError('ASSET_NOT_FOUND');
     }
@@ -51,7 +61,7 @@ export class AssetCatalogQuery {
 
     const rows = await this.repository.listScoped({
       filter: {
-        ...SCOPE,
+        ...resolveAdminAssetLane(input.scope),
         status: input.status,
         mimeType: input.mediaType,
       },

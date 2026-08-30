@@ -112,6 +112,7 @@ export type AdminAssetDetailResponseClassification =
 
 export const AdminAssetDetailResponseClassification = {
   PRODUCTION_SENSITIVE: 'PRODUCTION_SENSITIVE',
+  PUBLIC: 'PUBLIC',
 } as const;
 
 export type AdminAssetDetailResponseKind =
@@ -119,6 +120,7 @@ export type AdminAssetDetailResponseKind =
 
 export const AdminAssetDetailResponseKind = {
   CATALOG_MEDIA: 'CATALOG_MEDIA',
+  GALLERY_MEDIA: 'GALLERY_MEDIA',
 } as const;
 
 export type AdminAssetDetailResponseMediaType =
@@ -158,6 +160,7 @@ export type AdminAssetUploadReceiptResponseClassification =
 
 export const AdminAssetUploadReceiptResponseClassification = {
   PRODUCTION_SENSITIVE: 'PRODUCTION_SENSITIVE',
+  PUBLIC: 'PUBLIC',
 } as const;
 
 export type AdminAssetUploadReceiptResponseKind =
@@ -165,6 +168,7 @@ export type AdminAssetUploadReceiptResponseKind =
 
 export const AdminAssetUploadReceiptResponseKind = {
   CATALOG_MEDIA: 'CATALOG_MEDIA',
+  GALLERY_MEDIA: 'GALLERY_MEDIA',
 } as const;
 
 export type AdminAssetUploadReceiptResponseMediaType =
@@ -948,6 +952,64 @@ export interface AdminDesignTemplateListResponse {
   items: AdminDesignTemplateSummaryResponse[];
   /** Opaque keyset cursor for the next page. Absent on the last page. */
   nextCursor?: string;
+}
+
+export type AdminGalleryAssetRenditionResponseRendition =
+  (typeof AdminGalleryAssetRenditionResponseRendition)[keyof typeof AdminGalleryAssetRenditionResponseRendition];
+
+export const AdminGalleryAssetRenditionResponseRendition = {
+  thumbnail: 'thumbnail',
+  'catalog-preview': 'catalog-preview',
+} as const;
+
+export interface AdminGalleryAssetRenditionResponse {
+  rendition: AdminGalleryAssetRenditionResponseRendition;
+  /** Relative Admin path streaming this rendition. Not a storage address and not public: it resolves only behind a live Admin session. */
+  url: string;
+}
+
+export type AdminGalleryAssetResponseClassification =
+  (typeof AdminGalleryAssetResponseClassification)[keyof typeof AdminGalleryAssetResponseClassification];
+
+export const AdminGalleryAssetResponseClassification = {
+  PUBLIC: 'PUBLIC',
+} as const;
+
+export type AdminGalleryAssetResponseKind =
+  (typeof AdminGalleryAssetResponseKind)[keyof typeof AdminGalleryAssetResponseKind];
+
+export const AdminGalleryAssetResponseKind = {
+  GALLERY_MEDIA: 'GALLERY_MEDIA',
+} as const;
+
+/**
+ * Terminal on return: the copy is recorded as already inspected.
+ */
+export type AdminGalleryAssetResponseStatus =
+  (typeof AdminGalleryAssetResponseStatus)[keyof typeof AdminGalleryAssetResponseStatus];
+
+export const AdminGalleryAssetResponseStatus = {
+  ACCEPTED: 'ACCEPTED',
+} as const;
+
+export interface AdminGalleryAssetResponse {
+  /** The prepared asset. Always a new id, never the source asset. */
+  assetId: string;
+  /** Size of the original in bytes. */
+  byteSize: number;
+  /** The source's server-computed SHA-256, true of the byte-identical copy. */
+  checksum: string;
+  classification: AdminGalleryAssetResponseClassification;
+  createdAt: string;
+  kind: AdminGalleryAssetResponseKind;
+  /** The uploaded original's media type, carried from the source. */
+  mediaType: string;
+  /** Every rendition ready to preview now and to serve publicly once attached. */
+  renditions: AdminGalleryAssetRenditionResponse[];
+  /** Terminal on return: the copy is recorded as already inspected. */
+  status: AdminGalleryAssetResponseStatus;
+  /** The prepared asset's own concurrency token, not the source's. */
+  updatedAt: string;
 }
 
 export interface AdminGalleryEntryAssetResponse {
@@ -4419,6 +4481,13 @@ export interface PaymentDecisionResponse {
   replayed: boolean;
 }
 
+export interface PrepareGalleryAssetBody {
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
+  expectedSourceUpdatedAt: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  sourceAssetId: string;
+}
+
 export type PublicCategoryResponseSlug =
   (typeof PublicCategoryResponseSlug)[keyof typeof PublicCategoryResponseSlug];
 
@@ -5697,10 +5766,21 @@ export type AdminAssetListParams = {
    */
   limit?: number;
   /**
+   * Which asset lane to read. `CATALOG` (the default) is product media — `CATALOG_MEDIA` / `PRODUCTION_SENSITIVE`. `GALLERY` is the public showcase lane prepared by `adminGalleryAsset_create` — `GALLERY_MEDIA` / `PUBLIC`. A read returns one lane only.
+   */
+  scope?: AdminAssetListScope;
+  /**
    * Opaque cursor from a previous page.
    */
   cursor?: unknown;
 };
+
+export type AdminAssetListScope = (typeof AdminAssetListScope)[keyof typeof AdminAssetListScope];
+
+export const AdminAssetListScope = {
+  CATALOG: 'CATALOG',
+  GALLERY: 'GALLERY',
+} as const;
 
 export type AdminAssetList200 = ApiSuccessResponse & {
   data: AdminAssetListResponse;
@@ -5738,6 +5818,21 @@ export type AdminAssetUploadBody = {
 export type AdminAssetUpload202 = ApiSuccessResponse & {
   data: AdminAssetUploadReceiptResponse;
 };
+
+export type AdminAssetDetailParams = {
+  /**
+   * Which asset lane to read. `CATALOG` (the default) is product media — `CATALOG_MEDIA` / `PRODUCTION_SENSITIVE`. `GALLERY` is the public showcase lane prepared by `adminGalleryAsset_create` — `GALLERY_MEDIA` / `PUBLIC`. A read returns one lane only.
+   */
+  scope?: AdminAssetDetailScope;
+};
+
+export type AdminAssetDetailScope =
+  (typeof AdminAssetDetailScope)[keyof typeof AdminAssetDetailScope];
+
+export const AdminAssetDetailScope = {
+  CATALOG: 'CATALOG',
+  GALLERY: 'GALLERY',
+} as const;
 
 export type AdminAssetDetail200 = ApiSuccessResponse & {
   data: AdminAssetDetailResponse;
@@ -5926,6 +6021,10 @@ export type AdminDesignTemplateAssignScope200 = ApiSuccessResponse & {
 
 export type AdminDesignTemplateUnpublish200 = ApiSuccessResponse & {
   data: AdminDesignTemplateDetailResponse;
+};
+
+export type AdminGalleryAssetCreate201 = ApiSuccessResponse & {
+  data: AdminGalleryAssetResponse;
 };
 
 export type AdminGalleryEntryListParams = {

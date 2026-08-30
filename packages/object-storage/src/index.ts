@@ -70,6 +70,7 @@ export type { ObjectStorageErrorCode } from './object-storage.errors';
 
 export { OBJECT_STORAGE_BUCKETS } from './object-storage.types';
 export type {
+  CopyObjectInput,
   ListObjectsInput,
   ListedObject,
   MultipartUploadOptions,

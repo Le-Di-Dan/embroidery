@@ -10,12 +10,23 @@ import type { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
+import { ADMIN_ASSET_SCOPES } from '../../domain/admin-asset-scope.policy';
 import {
   ACCEPTED_MEDIA_TYPES,
   INTAKE_ASSET_KIND,
   INTAKE_CLASSIFICATION,
   MAX_UPLOAD_BYTES,
 } from '../../domain/asset-intake.policy';
+
+/**
+ * The lane selector, optional on both reads.
+ *
+ * Optional is the contract, not laziness: an absent value means `CATALOG`, so
+ * every client written before `APP11-B03A` keeps the behaviour it was built
+ * against. An unknown word is a 400 rather than a silent fallback — falling
+ * back would answer a question the caller did not ask, out of the wrong lane.
+ */
+const assetScopeSchema = z.enum(ADMIN_ASSET_SCOPES).optional();
 
 /**
  * The lifecycle values the list filter accepts.
@@ -47,6 +58,11 @@ export const assetIdParamSchema = z
 
 export class AssetIdParam extends createZodDto(assetIdParamSchema) {}
 
+/** The detail read's only query string: which lane to look in. */
+export const assetScopeQuerySchema = z.object({ scope: assetScopeSchema }).strict();
+
+export class AssetScopeQuery extends createZodDto(assetScopeQuerySchema) {}
+
 /**
  * The list query.
  *
@@ -60,12 +76,13 @@ export const listAssetsQuerySchema = z
     limit: z.coerce.number().int().min(1).max(100).optional(),
     status: z.enum(ASSET_STATUS_FILTERS).optional(),
     mediaType: z.enum(ACCEPTED_MEDIA_TYPES).optional(),
+    scope: assetScopeSchema,
   })
   .strict();
 
 export class ListAssetsQuery extends createZodDto(listAssetsQuerySchema) {}
 
-registerZodDtos(AssetIdParam, ListAssetsQuery);
+registerZodDtos(AssetIdParam, AssetScopeQuery, ListAssetsQuery);
 
 /**
  * Documentation-only description of the multipart body.

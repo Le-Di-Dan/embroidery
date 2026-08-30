@@ -73,6 +73,33 @@ export interface ObjectReference {
   readonly key: string;
 }
 
+/**
+ * A server-side object copy (`APP11-B03A`).
+ *
+ * The bytes never enter this process: no stream is opened here, so a copy costs
+ * no heap, no egress through the API and no time proportional to the object
+ * beyond the provider's own. That is why the operation exists as its own method
+ * rather than as a `getObjectStream` piped into a `putObjectStream` — the
+ * read-then-write form would hold a whole image in memory per concurrent
+ * request, and would hand the destination a body this process had the
+ * opportunity to alter.
+ *
+ * `contentType` is stated rather than inherited: the destination is a new
+ * object with its own declared type, and a caller that knows what it is
+ * preparing must not depend on the source object's stored header being right.
+ * `metadata`, when given, **replaces** the source's provider metadata rather
+ * than merging with it — a copy into a different classification lane must not
+ * silently carry the source lane's metadata across.
+ */
+export interface CopyObjectInput {
+  readonly source: ObjectReference;
+  readonly destination: ObjectReference;
+  readonly contentType: string;
+  /** Bounded, non-secret provider metadata. Never PII (ADR §4.4). */
+  readonly metadata?: Readonly<Record<string, string>>;
+  readonly signal?: AbortSignal;
+}
+
 export interface ListObjectsInput {
   readonly bucket: ObjectStorageBucket;
   /** A validated APP2-owned prefix. There is no unrestricted list-all call. */

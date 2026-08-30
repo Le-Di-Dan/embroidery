@@ -2,7 +2,9 @@
  * The object-storage contract consumed by `apps/api` and `apps/worker`
  * (ADR-APP2-001 §4.10).
  *
- * Exactly six operations. The surface is closed on purpose:
+ * Exactly seven operations — six from `APP2-I01`, plus the server-side copy
+ * `APP11-B03A` needed to derive a public showcase asset from an already
+ * inspected private one. The surface is closed on purpose:
  *
  * - there is **no** presign operation — APP2 has no browser-credential or
  *   stable-public-URL flow (ADR §4.7/§4.8), so exposing one would create a
@@ -14,6 +16,7 @@
  * SDK exception, and this package never logs.
  */
 import type {
+  CopyObjectInput,
   ListObjectsInput,
   ListedObject,
   ObjectMetadata,
@@ -33,6 +36,20 @@ export interface ObjectStoragePort {
 
   /** Opens a read stream. The caller owns consuming or destroying the body. */
   getObjectStream(reference: ObjectReference, signal?: AbortSignal): Promise<ObjectStreamResult>;
+
+  /**
+   * Copies one object to another key, provider-side (`APP11-B03A`).
+   *
+   * Not a convenience over get-then-put: the bytes never enter this process, so
+   * the destination is byte-identical by construction and the operation costs
+   * no heap. A missing source is `OBJECT_NOT_FOUND`, so a caller cannot use a
+   * successful copy to conclude anything it did not already know.
+   *
+   * The destination is overwritten if it exists, exactly as `putObjectStream`
+   * would — the caller owns key uniqueness, and every key this repository mints
+   * is derived from a freshly allocated UUIDv7.
+   */
+  copyObject(input: CopyObjectInput): Promise<StoredObjectResult>;
 
   /** Metadata without the body. Throws `OBJECT_NOT_FOUND` when absent. */
   headObject(reference: ObjectReference, signal?: AbortSignal): Promise<ObjectMetadata>;

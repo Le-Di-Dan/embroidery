@@ -146,6 +146,10 @@ export class ReadingObjectStorage implements ObjectStoragePort {
     });
   }
 
+  copyObject(): never {
+    throw new Error('APP5-B06 never copies an object.');
+  }
+
   putObjectStream(): never {
     throw new Error('APP5-B06 never writes an object.');
   }

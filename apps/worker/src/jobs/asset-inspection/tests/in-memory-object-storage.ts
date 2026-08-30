@@ -1,7 +1,7 @@
 /**
  * An in-memory `ObjectStoragePort` for the Docker-free unit suites.
  *
- * Implements the real six-method contract rather than a partial mock, so a
+ * Implements the real seven-method contract rather than a partial mock, so a
  * suite cannot pass because it happened not to call the method that would have
  * failed. Failures are injected per operation, which is how the deterministic
  * versus retryable split gets exercised without an actual outage.
@@ -11,6 +11,7 @@
 import { Readable } from 'node:stream';
 import { ObjectStorageError, type ObjectStorageErrorCode } from '@embroidery/object-storage';
 import type {
+  CopyObjectInput,
   ListObjectsInput,
   ListedObject,
   ObjectMetadata,
@@ -22,7 +23,7 @@ import type {
   StoredObjectResult,
 } from '@embroidery/object-storage';
 
-type Operation = 'get' | 'put' | 'head' | 'delete' | 'list';
+type Operation = 'get' | 'put' | 'copy' | 'head' | 'delete' | 'list';
 
 interface StoredObject {
   readonly body: Buffer;
@@ -91,6 +92,19 @@ export class InMemoryObjectStorage implements ObjectStoragePort {
         resolve({ bucket: input.bucket, key: input.key });
       });
     });
+  }
+
+  copyObject(input: CopyObjectInput): Promise<StoredObjectResult> {
+    this.guard('copy', input.destination.key);
+    const stored = this.require(input.source);
+    // The destination carries its own declared type, matching the adapter's
+    // `MetadataDirective: 'REPLACE'` — a fake that inherited the source's would
+    // hide exactly the mistake that directive exists to prevent.
+    this.objects.set(InMemoryObjectStorage.keyOf(input.destination.bucket, input.destination.key), {
+      body: stored.body,
+      contentType: input.contentType,
+    });
+    return Promise.resolve({ bucket: input.destination.bucket, key: input.destination.key });
   }
 
   getObjectStream(reference: ObjectReference): Promise<ObjectStreamResult> {

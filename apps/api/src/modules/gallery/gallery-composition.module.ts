@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { GalleryAdminMediaModule } from './gallery-admin-media.module';
 import { GalleryAdminModule } from './gallery-admin.module';
 import { GalleryPublicMediaModule } from './gallery-public-media.module';
 import { GalleryPublicModule } from './gallery-public.module';
@@ -7,8 +8,8 @@ import { GalleryPublicModule } from './gallery-public.module';
 /**
  * The CTX-GAL HTTP surface, composed in one place (`APP11-B03-C1`).
  *
- * Three modules, every one of them under `modules/gallery`, and the reason
- * there are three rather than one is written against each below: each is the
+ * Four modules, every one of them under `modules/gallery`, and the reason
+ * there are four rather than one is written against each below: each is the
  * whole security boundary of one Gallery lane, and a reviewer must be able to
  * read one without the other. That argument is about *these* modules, so it
  * belongs beside them — not in the application root, where `APP11-B03` had
@@ -45,6 +46,13 @@ import { GalleryPublicModule } from './gallery-public.module';
     // by no other module, so registration order cannot make one route shadow
     // another.
     GalleryAdminModule,
+    // `APP11-B03A` — the two Admin gallery-media operations, on their own
+    // `admin/gallery-assets` base path, claimed by no other module. A fourth
+    // member because it is the only Gallery surface holding the Asset write
+    // port and a configured object store, and `GalleryAdminModule` above was
+    // accepted on holding neither. It composes no AGG-18 port at all, so
+    // preparing an image cannot attach it or publish anything.
+    GalleryAdminMediaModule,
     // `APP11-B03` — the two anonymous JSON reads, on their own
     // `public/gallery-entries` base path. Defined by what it cannot inject: no
     // object-storage module, so no read can open a private object; no Admin

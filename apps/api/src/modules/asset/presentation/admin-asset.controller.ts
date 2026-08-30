@@ -10,6 +10,12 @@
  * canonical exception. Every rule about multipart shape, idempotency, storage
  * and lifecycle lives behind the service boundary.
  *
+ * `APP11-B03A` gave the two reads an explicit `scope`. It is optional and
+ * defaults to `CATALOG`, so the operations keep their delivered behaviour for
+ * every client that never names one; `GALLERY` reads the public showcase lane
+ * that checkpoint prepares. The upload is untouched and still cannot express a
+ * lane at all — INV-09 keeps `PUBLIC` unreachable from intake.
+ *
  * The upload handler takes the raw request rather than a `@Body()`: binding a
  * body would make Nest buffer 25 MiB in memory before the handler ever ran,
  * which is precisely what the streaming design exists to avoid. For the same
@@ -61,8 +67,10 @@ import {
   AdminAssetListResponse,
   AdminAssetUploadReceiptResponse,
 } from './schemas/admin-asset.response';
+import { ADMIN_ASSET_SCOPES } from '../domain/admin-asset-scope.policy';
 import {
   AssetIdParam,
+  AssetScopeQuery,
   ListAssetsQuery,
   uploadMultipartSchema,
 } from './schemas/admin-asset.request';
@@ -78,6 +86,14 @@ function envelopeOf(model: Parameters<typeof getSchemaPath>[0]) {
 }
 
 const ERROR_SCHEMA = { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.error}` };
+
+/** One description for both reads, so the two cannot drift apart. */
+const SCOPE_DOCUMENTATION = {
+  description:
+    'Which asset lane to read. `CATALOG` (the default) is product media — `CATALOG_MEDIA` / ' +
+    '`PRODUCTION_SENSITIVE`. `GALLERY` is the public showcase lane prepared by ' +
+    '`adminGalleryAsset_create` — `GALLERY_MEDIA` / `PUBLIC`. A read returns one lane only.',
+} as const;
 
 @ApiTags('adminAsset')
 @ApiCookieAuth('adminSession')
@@ -161,30 +177,41 @@ export class AdminAssetController {
   @Get(':assetId')
   @ApiSuccessCode('ASSET_DETAIL_READ', 'Asset retrieved.')
   @ApiOperation({
-    summary: 'Get one product-image asset',
+    summary: 'Get one asset in a named lane',
     description:
-      'Returns the safe intake view. Assets outside product media are reported as not found.',
+      'Returns the safe intake view. The asset must belong to the requested `scope`; anything ' +
+      'outside it — another lane, or nothing at all — is reported identically as not found, so ' +
+      'the endpoint cannot be used to discover that an asset exists. `scope` defaults to ' +
+      '`CATALOG`, which is the product-media lane this operation has always served.',
   })
   @ApiParam({ name: 'assetId', format: 'uuid' })
+  @ApiQuery({ name: 'scope', required: false, enum: ADMIN_ASSET_SCOPES, ...SCOPE_DOCUMENTATION })
   @ApiExtraModels(AdminAssetDetailResponse)
   @ApiResponse({
     status: 200,
     description: 'The asset.',
     schema: envelopeOf(AdminAssetDetailResponse),
   })
-  @ApiResponse({ status: 404, description: 'No such product-image asset.', schema: ERROR_SCHEMA })
-  async detail(@Param() params: AssetIdParam): Promise<AssetDetailView> {
-    return this.guarded(() => this.catalog.detail(params.assetId));
+  @ApiResponse({ status: 400, description: 'Unknown scope.', schema: ERROR_SCHEMA })
+  @ApiResponse({ status: 404, description: 'No such asset in that lane.', schema: ERROR_SCHEMA })
+  async detail(
+    @Param() params: AssetIdParam,
+    @Query() query: AssetScopeQuery,
+  ): Promise<AssetDetailView> {
+    return this.guarded(() => this.catalog.detail(params.assetId, query.scope));
   }
 
   @Get()
   @ApiSuccessCode('ASSET_LIST_READ', 'Assets retrieved.')
   @ApiOperation({
-    summary: 'List product-image assets',
+    summary: 'List assets in one lane',
     description:
-      'Keyset-paginated, newest first. Scoped to product media; there is no offset paging.',
+      'Keyset-paginated, newest first; there is no offset paging. Confined to the single lane ' +
+      '`scope` names — the two lanes are never unioned — and `scope` defaults to `CATALOG`, so ' +
+      'an unchanged client keeps seeing exactly the product-media list it always saw.',
   })
   @ApiQuery({ name: 'cursor', required: false, description: 'Opaque cursor from a previous page.' })
+  @ApiQuery({ name: 'scope', required: false, enum: ADMIN_ASSET_SCOPES, ...SCOPE_DOCUMENTATION })
   @ApiQuery({
     name: 'limit',
     required: false,

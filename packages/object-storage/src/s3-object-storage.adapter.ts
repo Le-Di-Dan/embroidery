@@ -10,6 +10,7 @@
  * line written here would sit outside the API's redaction pipeline (IMP-D022).
  */
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -27,6 +28,7 @@ import type { ObjectStorageConfig } from './object-storage.config';
 import { classifyProviderError, toObjectStorageError } from './object-storage.errors';
 import type { ObjectStoragePort } from './object-storage.port';
 import type {
+  CopyObjectInput,
   ListObjectsInput,
   ListedObject,
   ObjectMetadata,
@@ -130,6 +132,43 @@ export function createS3ObjectStorage(
       throw toObjectStorageError(`put object "${key}"`, error);
     } finally {
       input.signal?.removeEventListener('abort', onAbort);
+    }
+  }
+
+  async function copyObject(input: CopyObjectInput): Promise<StoredObjectResult> {
+    const sourceKey = assertValidObjectKey(input.source.key);
+    const destinationKey = assertValidObjectKey(input.destination.key);
+    const metadata = assertBoundedMetadata(input.metadata);
+
+    try {
+      const response = await client.send(
+        new CopyObjectCommand({
+          Bucket: bucketNameOf(input.destination.bucket),
+          Key: destinationKey,
+          // `encodeURI`, not `encodeURIComponent`: the source is a
+          // `bucket/key` path and the separators must survive. Every key
+          // reaching here has already passed `assertValidObjectKey`, so the
+          // only characters this can encode are ones the builders never emit —
+          // it is defence in depth, not the primary guard.
+          CopySource: encodeURI(`${bucketNameOf(input.source.bucket)}/${sourceKey}`),
+          ContentType: input.contentType,
+          // `REPLACE` is what makes `ContentType` and `Metadata` above take
+          // effect at all; the provider default (`COPY`) would silently carry
+          // the source object's headers and metadata onto the destination.
+          MetadataDirective: 'REPLACE',
+          ...(metadata === undefined ? {} : { Metadata: metadata }),
+        }),
+        requestOptions(input.signal),
+      );
+      return {
+        bucket: input.destination.bucket,
+        key: destinationKey,
+        ...(typeof response.CopyObjectResult?.ETag === 'string'
+          ? { providerEntityTag: response.CopyObjectResult.ETag }
+          : {}),
+      };
+    } catch (error: unknown) {
+      throw toObjectStorageError(`copy object "${sourceKey}" to "${destinationKey}"`, error);
     }
   }
 
@@ -249,6 +288,7 @@ export function createS3ObjectStorage(
 
   return {
     putObjectStream,
+    copyObject,
     getObjectStream,
     headObject,
     deleteObject,

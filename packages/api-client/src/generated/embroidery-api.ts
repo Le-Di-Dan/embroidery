@@ -11,6 +11,7 @@ import type {
   AddQuotationVersionBody,
   AdjustSkuStockBody,
   AdminAssetDetail200,
+  AdminAssetDetailParams,
   AdminAssetList200,
   AdminAssetListParams,
   AdminAssetUpload202,
@@ -41,6 +42,7 @@ import type {
   AdminDesignTemplateRestore200,
   AdminDesignTemplateSaveDocument200,
   AdminDesignTemplateUnpublish200,
+  AdminGalleryAssetCreate201,
   AdminGalleryEntryCreate201,
   AdminGalleryEntryDetail200,
   AdminGalleryEntryList200,
@@ -110,6 +112,7 @@ import type {
   InitiateFinalPaymentAttemptBody,
   IssueVerificationChallengeBody,
   OpenCustomerMergeBody,
+  PrepareGalleryAssetBody,
   PublicCustomRequestAssetStatus200,
   PublicCustomRequestAssetUpload202,
   PublicCustomRequestAssetUploadBody,
@@ -196,8 +199,8 @@ import { apiRequest } from '../clients/api-request.mutator';
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * Keyset-paginated, newest first. Scoped to product media; there is no offset paging.
- * @summary List product-image assets
+ * Keyset-paginated, newest first; there is no offset paging. Confined to the single lane `scope` names — the two lanes are never unioned — and `scope` defaults to `CATALOG`, so an unchanged client keeps seeing exactly the product-media list it always saw.
+ * @summary List assets in one lane
  */
 export const adminAssetList = (
   params?: AdminAssetListParams,
@@ -234,15 +237,16 @@ export const adminAssetUpload = (
 };
 
 /**
- * Returns the safe intake view. Assets outside product media are reported as not found.
- * @summary Get one product-image asset
+ * Returns the safe intake view. The asset must belong to the requested `scope`; anything outside it — another lane, or nothing at all — is reported identically as not found, so the endpoint cannot be used to discover that an asset exists. `scope` defaults to `CATALOG`, which is the product-media lane this operation has always served.
+ * @summary Get one asset in a named lane
  */
 export const adminAssetDetail = (
   assetId: unknown,
+  params?: AdminAssetDetailParams,
   options?: SecondParameter<typeof apiRequest<AdminAssetDetail200>>,
 ) => {
   return apiRequest<AdminAssetDetail200>(
-    { url: `/api/admin/assets/${assetId}`, method: 'GET' },
+    { url: `/api/admin/assets/${assetId}`, method: 'GET', params },
     options,
   );
 };
@@ -747,6 +751,44 @@ export const adminDesignTemplateUnpublish = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: unpublishDesignTemplateBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Creates a **new** public gallery asset by copying an accepted product image and its two display renditions to their own object keys. The source is never modified: it keeps its id, its `CATALOG_MEDIA` kind, its `PRODUCTION_SENSITIVE` classification, its `ACCEPTED` status and every product association, so a product already published from it keeps delivering. The response carries a different id, and both of its renditions are ready before this call returns — so the asset can be attached with `adminGalleryEntry_replaceAssets` and served publicly immediately. The lane, the state, the storage keys and the renditions are all policy-owned and cannot be requested. Requires `expectedSourceUpdatedAt`, the `updatedAt` token last read for the source; a stale value is rejected and nothing is created. Repeating the call prepares a second, independent asset — there is no promotion idempotency.
+ * @summary Prepare a gallery image from an accepted product image
+ */
+export const adminGalleryAssetCreate = (
+  prepareGalleryAssetBody: PrepareGalleryAssetBody,
+  options?: SecondParameter<typeof apiRequest<AdminGalleryAssetCreate201>>,
+) => {
+  return apiRequest<AdminGalleryAssetCreate201>(
+    {
+      url: `/api/admin/gallery-assets`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: prepareGalleryAssetBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Streams the requested rendition of a public gallery asset to an authenticated operator, so an image can be reviewed before — and after — it is attached to an entry. The asset lane is re-checked on every request: only `GALLERY_MEDIA` / `PUBLIC` assets resolve, and exactly the two renditions the public gallery route serves. No storage key, bucket or signed URL is ever exposed, and responses are never cached.
+ * @summary Preview one rendition of a gallery image
+ */
+export const adminGalleryAssetPreview = (
+  assetId: unknown,
+  rendition: 'thumbnail' | 'catalog-preview',
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/admin/gallery-assets/${assetId}/${rendition}`,
+      method: 'GET',
+      responseType: 'blob',
     },
     options,
   );
@@ -2500,6 +2542,12 @@ export type AdminDesignTemplateAssignScopeResult = NonNullable<
 >;
 export type AdminDesignTemplateUnpublishResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplateUnpublish>>
+>;
+export type AdminGalleryAssetCreateResult = NonNullable<
+  Awaited<ReturnType<typeof adminGalleryAssetCreate>>
+>;
+export type AdminGalleryAssetPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof adminGalleryAssetPreview>>
 >;
 export type AdminGalleryEntryListResult = NonNullable<
   Awaited<ReturnType<typeof adminGalleryEntryList>>

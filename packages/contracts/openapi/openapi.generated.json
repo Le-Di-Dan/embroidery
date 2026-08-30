@@ -166,7 +166,8 @@
           },
           "classification": {
             "enum": [
-              "PRODUCTION_SENSITIVE"
+              "PRODUCTION_SENSITIVE",
+              "PUBLIC"
             ],
             "example": "PRODUCTION_SENSITIVE",
             "type": "string"
@@ -177,7 +178,8 @@
           },
           "kind": {
             "enum": [
-              "CATALOG_MEDIA"
+              "CATALOG_MEDIA",
+              "GALLERY_MEDIA"
             ],
             "example": "CATALOG_MEDIA",
             "type": "string"
@@ -256,14 +258,16 @@
           },
           "classification": {
             "enum": [
-              "PRODUCTION_SENSITIVE"
+              "PRODUCTION_SENSITIVE",
+              "PUBLIC"
             ],
             "example": "PRODUCTION_SENSITIVE",
             "type": "string"
           },
           "kind": {
             "enum": [
-              "CATALOG_MEDIA"
+              "CATALOG_MEDIA",
+              "GALLERY_MEDIA"
             ],
             "example": "CATALOG_MEDIA",
             "type": "string"
@@ -1079,6 +1083,104 @@
           "version",
           "documentSchemaVersion",
           "createdAt"
+        ],
+        "type": "object"
+      },
+      "AdminGalleryAssetRenditionResponse": {
+        "properties": {
+          "rendition": {
+            "enum": [
+              "thumbnail",
+              "catalog-preview"
+            ],
+            "example": "thumbnail",
+            "type": "string"
+          },
+          "url": {
+            "description": "Relative Admin path streaming this rendition. Not a storage address and not public: it resolves only behind a live Admin session.",
+            "example": "/api/admin/gallery-assets/019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07/thumbnail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rendition",
+          "url"
+        ],
+        "type": "object"
+      },
+      "AdminGalleryAssetResponse": {
+        "properties": {
+          "assetId": {
+            "description": "The prepared asset. Always a new id, never the source asset.",
+            "example": "019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07",
+            "format": "uuid",
+            "type": "string"
+          },
+          "byteSize": {
+            "description": "Size of the original in bytes.",
+            "example": 51200,
+            "type": "number"
+          },
+          "checksum": {
+            "description": "The source's server-computed SHA-256, true of the byte-identical copy.",
+            "example": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+            "type": "string"
+          },
+          "classification": {
+            "enum": [
+              "PUBLIC"
+            ],
+            "example": "PUBLIC",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "GALLERY_MEDIA"
+            ],
+            "example": "GALLERY_MEDIA",
+            "type": "string"
+          },
+          "mediaType": {
+            "description": "The uploaded original's media type, carried from the source.",
+            "example": "image/png",
+            "type": "string"
+          },
+          "renditions": {
+            "description": "Every rendition ready to preview now and to serve publicly once attached.",
+            "items": {
+              "$ref": "#/components/schemas/AdminGalleryAssetRenditionResponse"
+            },
+            "type": "array"
+          },
+          "status": {
+            "description": "Terminal on return: the copy is recorded as already inspected.",
+            "enum": [
+              "ACCEPTED"
+            ],
+            "example": "ACCEPTED",
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "The prepared asset's own concurrency token, not the source's.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId",
+          "kind",
+          "classification",
+          "status",
+          "mediaType",
+          "byteSize",
+          "checksum",
+          "renditions",
+          "createdAt",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -7834,6 +7936,26 @@
         ],
         "type": "object"
       },
+      "PrepareGalleryAssetBody": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedSourceUpdatedAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "sourceAssetId": {
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourceAssetId",
+          "expectedSourceUpdatedAt"
+        ],
+        "type": "object"
+      },
       "PublicCategoryResponse": {
         "properties": {
           "name": {
@@ -10417,7 +10539,7 @@
   "paths": {
     "/api/admin/assets": {
       "get": {
-        "description": "Keyset-paginated, newest first. Scoped to product media; there is no offset paging.",
+        "description": "Keyset-paginated, newest first; there is no offset paging. Confined to the single lane `scope` names — the two lanes are never unioned — and `scope` defaults to `CATALOG`, so an unchanged client keeps seeing exactly the product-media list it always saw.",
         "operationId": "adminAsset_list",
         "parameters": [
           {
@@ -10441,6 +10563,19 @@
               "maximum": 100,
               "minimum": 1,
               "type": "integer"
+            }
+          },
+          {
+            "description": "Which asset lane to read. `CATALOG` (the default) is product media — `CATALOG_MEDIA` / `PRODUCTION_SENSITIVE`. `GALLERY` is the public showcase lane prepared by `adminGalleryAsset_create` — `GALLERY_MEDIA` / `PUBLIC`. A read returns one lane only.",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "enum": [
+                "CATALOG",
+                "GALLERY"
+              ],
+              "type": "string"
             }
           },
           {
@@ -10548,7 +10683,7 @@
             "adminSession": []
           }
         ],
-        "summary": "List product-image assets",
+        "summary": "List assets in one lane",
         "tags": [
           "adminAsset"
         ]
@@ -10815,9 +10950,22 @@
     },
     "/api/admin/assets/{assetId}": {
       "get": {
-        "description": "Returns the safe intake view. Assets outside product media are reported as not found.",
+        "description": "Returns the safe intake view. The asset must belong to the requested `scope`; anything outside it — another lane, or nothing at all — is reported identically as not found, so the endpoint cannot be used to discover that an asset exists. `scope` defaults to `CATALOG`, which is the product-media lane this operation has always served.",
         "operationId": "adminAsset_detail",
         "parameters": [
+          {
+            "description": "Which asset lane to read. `CATALOG` (the default) is product media — `CATALOG_MEDIA` / `PRODUCTION_SENSITIVE`. `GALLERY` is the public showcase lane prepared by `adminGalleryAsset_create` — `GALLERY_MEDIA` / `PUBLIC`. A read returns one lane only.",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "enum": [
+                "CATALOG",
+                "GALLERY"
+              ],
+              "type": "string"
+            }
+          },
           {
             "in": "path",
             "name": "assetId",
@@ -10876,6 +11024,27 @@
               }
             }
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown scope.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
           "404": {
             "content": {
               "application/json": {
@@ -10884,7 +11053,7 @@
                 }
               }
             },
-            "description": "No such product-image asset.",
+            "description": "No such asset in that lane.",
             "headers": {
               "X-Request-ID": {
                 "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
@@ -10924,7 +11093,7 @@
             "adminSession": []
           }
         ],
-        "summary": "Get one product-image asset",
+        "summary": "Get one asset in a named lane",
         "tags": [
           "adminAsset"
         ]
@@ -16805,6 +16974,442 @@
         "summary": "Unpublish a design template",
         "tags": [
           "adminDesignTemplate"
+        ]
+      }
+    },
+    "/api/admin/gallery-assets": {
+      "post": {
+        "description": "Creates a **new** public gallery asset by copying an accepted product image and its two display renditions to their own object keys. The source is never modified: it keeps its id, its `CATALOG_MEDIA` kind, its `PRODUCTION_SENSITIVE` classification, its `ACCEPTED` status and every product association, so a product already published from it keeps delivering. The response carries a different id, and both of its renditions are ready before this call returns — so the asset can be attached with `adminGalleryEntry_replaceAssets` and served publicly immediately. The lane, the state, the storage keys and the renditions are all policy-owned and cannot be requested. Requires `expectedSourceUpdatedAt`, the `updatedAt` token last read for the source; a stale value is rejected and nothing is created. Repeating the call prepares a second, independent asset — there is no promotion idempotency.",
+        "operationId": "adminGalleryAsset_create",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareGalleryAssetBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminGalleryAssetResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The prepared gallery asset.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The request states an origin outside the Admin allowlist.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The source cannot be prepared. Returned identically for an unknown asset, an asset outside product media — a customer upload or an already-public image — one that is not accepted, one that is rejected, deletion-pending or tombstoned, and one whose display renditions are not ready.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The source changed since it was read; nothing was created.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The body is not application/json.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Image storage is temporarily unavailable; nothing was created.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Prepare a gallery image from an accepted product image",
+        "tags": [
+          "adminGalleryAsset"
+        ]
+      }
+    },
+    "/api/admin/gallery-assets/{assetId}/{rendition}": {
+      "get": {
+        "description": "Streams the requested rendition of a public gallery asset to an authenticated operator, so an image can be reviewed before — and after — it is attached to an entry. The asset lane is re-checked on every request: only `GALLERY_MEDIA` / `PUBLIC` assets resolve, and exactly the two renditions the public gallery route serves. No storage key, bucket or signed URL is ever exposed, and responses are never cached.",
+        "operationId": "adminGalleryAsset_preview",
+        "parameters": [
+          {
+            "description": "`thumbnail` for pickers and cards, `catalog-preview` for the larger image.",
+            "in": "path",
+            "name": "rendition",
+            "required": true,
+            "schema": {
+              "enum": [
+                "thumbnail",
+                "catalog-preview"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The image bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Always `no-store`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed id or rendition.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No live Admin session.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No gallery image is available at this address. Returned identically for an unknown asset, an asset outside the gallery lane, a tombstoned one, and one whose rendition is not ready.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Image storage is temporarily unavailable.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSession": []
+          }
+        ],
+        "summary": "Preview one rendition of a gallery image",
+        "tags": [
+          "adminGalleryAsset"
         ]
       }
     },

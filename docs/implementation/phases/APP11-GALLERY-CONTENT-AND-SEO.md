@@ -27,8 +27,8 @@ phase.
 | `APP11-B02` | Admin gallery media + publication | **COMPLETE** |
 | `APP11-B03` | Public gallery reads + media delivery | **COMPLETE** |
 | `APP11-B03-C1` | Composition compliance & media-intake roadmap reconciliation | **COMPLETE** |
-| `APP11-B03A` | Admin gallery media intake & public derivative preparation | **NEXT** |
-| `APP11-B04` | Public SEO inventory (sitemap) | NOT STARTED |
+| `APP11-B03A` | Admin gallery media intake & public derivative preparation | **COMPLETE** |
+| `APP11-B04` | Public SEO inventory (sitemap) | **NEXT** |
 | `APP11-A01` | Admin gallery list | NOT STARTED |
 | `APP11-A02` | Admin gallery editor + publication | NOT STARTED |
 | `APP11-S01` | Homepage / store introduction (+ SCSS compile gate) | NOT STARTED |
@@ -83,8 +83,9 @@ EXPECTED_APP11_ROUTE_DELTA     = Storefront 12 → 18 pages (+2 route files)
 gallery is built on:
 
 ```text
-FU-APP11-B03-01 = BLOCKING_PHASE_GAP
+FU-APP11-B03-01 = CLOSED by APP11-B03A
 ROUTED_TO       = APP11-B03A
+CLOSED_BY       = POST /api/admin/gallery-assets (adminGalleryAsset_create)
 ```
 
 `APP11-B02` may attach only a `PUBLIC`, non-tombstoned asset and
@@ -97,6 +98,14 @@ writes `assets.classification` after insert, and the Admin asset reads are
 hard-scoped to that same pair, so a `PUBLIC` asset would also be invisible to
 the operator. The original `+11` estimate did not account for this; correctness
 takes precedence over the estimate.
+
+`APP11-B03A` closed the gap without touching either half of that rule. Intake
+still cannot express `PUBLIC`, and no code updates an existing asset's
+classification: the preparation operation **copies** an already-`ACCEPTED`
+catalog asset into a new `GALLERY_MEDIA` / `PUBLIC` row with its own object keys,
+which is precisely the "publication flow" INV-09 names. Operator visibility was
+closed by giving the two existing Admin reads an optional `scope`, defaulting to
+the catalog lane they always served. See §7.1.
 
 ### 3.1 The persistence already exists
 
@@ -251,7 +260,7 @@ dependency ordering are in the G01 report §N.
 | `APP11-B01` | Admin gallery entry authoring — list, create, detail, update | +4 | 0 |
 | `APP11-B02` | Admin gallery media selection + publish/unpublish | +3 | 0 |
 | `APP11-B03` | Public gallery feed, entry by slug, public derivative delivery | +3 | 0 |
-| `APP11-B03A` | Admin gallery media intake & public derivative preparation (§7.1) | TBD | 0 |
+| `APP11-B03A` | Admin gallery media intake & public derivative preparation (§7.1) | +2 | 0 |
 | `APP11-B04` | Public indexable-URL inventory for the sitemap | +1 | 0 |
 
 ### 7.1 `APP11-B03A` — Admin Gallery Media Intake & Public Derivative Preparation
@@ -287,7 +296,18 @@ whatever minimum read change lets an operator see the result. Options A, B and D
 were considered and are weaker: A and B would have to weaken or fork the INV-09
 intake rule, and D found no other producer.
 
-**Open questions `APP11-B03A` must settle before writing code:**
+**Delivered.** `APP11-B03A` is `COMPLETE`; `FU-APP11-B03-01` is `CLOSED`. The
+four open questions below were answered as follows, and the answers are now the
+record rather than the plan:
+
+| # | Question | Answer as delivered |
+|---|---|---|
+| 1 | In-place mutation vs. derived asset | **Derived, always.** `POST /api/admin/gallery-assets` copies the source's original and both display derivatives to keys namespaced by a new UUIDv7 and writes a new asset row. No statement in the feature updates, locks-for-update or tombstones the source, so a published Product keeps delivering from it — proved end to end against the public product-media route. |
+| 2 | `kind` disposition | **`GALLERY_MEDIA` / `PUBLIC`.** Representable with no migration: `ASSET_KINDS` already carries `GALLERY_MEDIA` and no CHECK constrains the `(kind, classification)` pair. The worker owning no `GALLERY_MEDIA` lane is exactly why the copy is created `ACCEPTED` inside the write transaction, with an `asset_inspections` row justifying it — a byte-identical copy of an already-inspected object needs no second inspection, and waiting for one that will never run would leave `APP11-B02` free to attach an image `APP11-B03` cannot serve. |
+| 3 | Admin visibility | **The existing scoped reads gained a lane.** `adminAsset_list` and `adminAsset_detail` take an optional `scope` of `CATALOG` \| `GALLERY`; omitting it still means `CATALOG`, so every delivered consumer is unchanged. Only the binary preview needed a new operation, because no Admin asset-delivery route existed to extend. |
+| 4 | Lifecycle and cleanup | **Detach and unpublish touch no asset.** A prepared asset survives both, stays selectable and previewable, and is unreachable from the public surface until a `PUBLISHED` entry shows it. No un-promotion and no deletion operation was added — see `FU-APP11-B03A-01`. |
+
+**Open questions `APP11-B03A` had to settle before writing code:**
 
 1. **In-place mutation vs. derived asset.** The Product media route requires
    `classification = PRODUCTION_SENSITIVE` (`PRODUCT_MEDIA_ASSET_CLASSIFICATION`),
@@ -310,10 +330,11 @@ asset model cannot represent the workflow; `CUSTOMER_PRIVATE` originals stay
 unexposed; the `PRODUCTION_SENSITIVE` lane is not weakened; no per-image alt
 persistence; no generic CMS; `APP11-B02` and `APP11-B03` behaviour is frozen.
 
-**HTTP delta:** `TBD_BY_APP11_B03A_PREFLIGHT`. It is demonstrably **not 0** —
-no classification writer exists and the intake DTO cannot express `PUBLIC` —
-but whether it is one operation or two depends on question 3, which B03A
-measures rather than this correction guessing.
+**HTTP delta: `+2`**, measured rather than guessed — `adminGalleryAsset_create`
+and `adminGalleryAsset_preview`. Question 3 resolved to "extend the existing
+reads", so selection and listing cost no operation at all; the preview cost one
+because the repository had no authenticated Admin asset-binary route to extend.
+OpenAPI moves `113 / 125 / 247` → `115 / 127 / 250`.
 | `APP11-A01` | Admin gallery list + nav entry | 0 | +1 Admin |
 | `APP11-A02` | Admin gallery editor + publication panel | 0 | +1 Admin |
 | `APP11-S01` | Homepage / store introduction, plus the SCSS compile gate | 0 | 0 |
@@ -344,9 +365,9 @@ The 27 measurable exit criteria are in the G01 report §O. Summarised:
 - Private assets can never be attached to, or served through, the gallery.
 - Every indexable page carries an absolute canonical, Open Graph and correct
   structured data; every private route stays `noindex` and out of the sitemap.
-- Migration count still 37; OpenAPI delta `+11` plus whatever `APP11-B03A`
-  measures for media intake (§3.2) — the original estimate is superseded, not
-  hidden.
+- Migration count still 37; OpenAPI delta `+11` plus the `+2` `APP11-B03A`
+  measured for media intake (§3.2, §7.1) — the original estimate is superseded,
+  not hidden.
 - The Figma index gate passes and its row count matches the closure report.
 - The scoped SCSS compile gate passes for both applications.
 
