@@ -66,3 +66,68 @@ export const GALLERY_ENTRY_SEO_DESCRIPTION_MAX_LENGTH = 320;
  */
 export const GALLERY_ENTRY_DISPLAY_ORDER_MIN = 0;
 export const GALLERY_ENTRY_DISPLAY_ORDER_MAX = 2_147_483_647;
+
+// --- `APP11-B02` media selection and publication ----------------------------
+
+/**
+ * The one state a gallery entry may be published **from**, and the one it lands
+ * in (LC-04 `DRAFT → PUBLISHED`).
+ *
+ * Declared as sets rather than single literals so the guarded UPDATE can carry
+ * "allowed source states" in the statement itself, which is what makes the
+ * pre-flight check and the write test the same thing.
+ */
+export const GALLERY_ENTRY_PUBLISHED_STATE = 'PUBLISHED' satisfies GalleryEntryState;
+
+export const GALLERY_ENTRY_PUBLISHABLE_STATES = [
+  GALLERY_ENTRY_DRAFT_STATE,
+] as const satisfies readonly GalleryEntryState[];
+
+export const GALLERY_ENTRY_UNPUBLISHABLE_STATES = [
+  GALLERY_ENTRY_PUBLISHED_STATE,
+] as const satisfies readonly GalleryEntryState[];
+
+/**
+ * `ARCHIVED` is reachable from neither B02 command.
+ *
+ * Unpublish is **not** archive: it returns a published entry to `DRAFT` and
+ * leaves `archived_at` alone. Archival has no operation in this phase, so an
+ * archived entry cannot be published either — it is absent from the publishable
+ * set above rather than special-cased below.
+ */
+export const GALLERY_ENTRY_ARCHIVED_STATE = 'ARCHIVED' satisfies GalleryEntryState;
+
+/**
+ * The gallery public-media boundary (INV-21/22, REQ-GAL-001).
+ *
+ * Exactly the predicate the delivered AGG-18 `attachAsset` already enforces —
+ * classification `PUBLIC`, and the asset not tombstoned. Restated here as
+ * named constants so the batch replacement in `APP11-B02` and the single-row
+ * attach cannot drift into two different answers to "may this image appear on a
+ * public page".
+ *
+ * `CUSTOMER_PRIVATE` and `PRODUCTION_SENSITIVE` are therefore both refused, and
+ * so is an id that names no asset at all — reported identically, so the endpoint
+ * cannot be used to confirm that a customer's private artwork exists.
+ */
+export const GALLERY_ENTRY_ASSET_CLASSIFICATION = 'PUBLIC' as const;
+export const GALLERY_ENTRY_ASSET_DELETED_STATE = 'DELETED' as const;
+
+/**
+ * The four facts an entry must carry before it may be published.
+ *
+ * A closed set, in a stable order, published as the `errors[].code` list on a
+ * refusal so an operator is told which one is missing rather than that
+ * "something" is. Deliberately **not** here: a linked product, SEO text, a
+ * category, a style, a need, per-image alt text, and `isIndexable` — a
+ * `noindex` entry is a perfectly publishable entry.
+ */
+export const GALLERY_ENTRY_PUBLICATION_REQUIREMENTS = [
+  'GALLERY_ENTRY_TITLE_REQUIRED',
+  'GALLERY_ENTRY_SLUG_REQUIRED',
+  'GALLERY_ENTRY_DESCRIPTION_REQUIRED',
+  'GALLERY_ENTRY_ELIGIBLE_ASSET_REQUIRED',
+] as const;
+
+export type GalleryEntryPublicationRequirement =
+  (typeof GALLERY_ENTRY_PUBLICATION_REQUIREMENTS)[number];

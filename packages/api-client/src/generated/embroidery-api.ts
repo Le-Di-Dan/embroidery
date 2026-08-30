@@ -45,6 +45,9 @@ import type {
   AdminGalleryEntryDetail200,
   AdminGalleryEntryList200,
   AdminGalleryEntryListParams,
+  AdminGalleryEntryPublish200,
+  AdminGalleryEntryReplaceAssets200,
+  AdminGalleryEntryUnpublish200,
   AdminGalleryEntryUpdate200,
   AdminNotificationIntentList200,
   AdminNotificationIntentListParams,
@@ -147,6 +150,7 @@ import type {
   PublicVerificationResend202,
   PublicVerificationSubmitAttempt200,
   PublishDesignTemplateBody,
+  PublishGalleryEntryBody,
   PublishProductBody,
   ReadCurrentDesignReviewBody,
   ReadCurrentQuotationBody,
@@ -157,6 +161,7 @@ import type {
   ReadinessStatusResponse,
   RejectCustomerMergeBody,
   RejectQuotationBody,
+  ReplaceGalleryEntryAssetsBody,
   ReplaceProductPlacementBody,
   RequestDesignRevisionBody,
   ResolveCustomerByContactBody,
@@ -174,6 +179,7 @@ import type {
   TransitionCustomRequestBody,
   TransitionProductionJobBody,
   UnpublishDesignTemplateBody,
+  UnpublishGalleryEntryBody,
   UnpublishProductBody,
   UpdateCustomerProfileBody,
   UpdateGalleryEntryBody,
@@ -805,6 +811,66 @@ export const adminGalleryEntryUpdate = (
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       data: updateGalleryEntryBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Stores the complete intended selection. This is replacement, not append: any image absent from `assetIds` is detached, and the array order becomes the display order with position 0 as the cover. An empty array clears the selection, which is a valid authoring state — publication then refuses until at least one eligible image is attached. Every id must be a public gallery image; a private, production or unknown asset is refused identically, and a refusal changes nothing. Detaching an image never deletes the asset or its derivatives. Requires `expectedUpdatedAt`, the `updatedAt` token last read for this entry. A stale value is rejected as `GALLERY_ENTRY_VERSION_CONFLICT` rather than overwriting a concurrent change, and a successful write advances the token.
+ * @summary Replace the ordered gallery images
+ */
+export const adminGalleryEntryReplaceAssets = (
+  galleryEntryId: unknown,
+  replaceGalleryEntryAssetsBody: ReplaceGalleryEntryAssetsBody,
+  options?: SecondParameter<typeof apiRequest<AdminGalleryEntryReplaceAssets200>>,
+) => {
+  return apiRequest<AdminGalleryEntryReplaceAssets200>(
+    {
+      url: `/api/admin/gallery-entries/${galleryEntryId}/assets`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data: replaceGalleryEntryAssetsBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Moves a PUBLISHED entry back to DRAFT, removing public visibility by lifecycle state alone. This deletes nothing and archives nothing: the title, slug, description, linked product, both SEO fields and the whole ordered image selection all remain, `archivedAt` is never written, and the entry becomes an editable draft again. Requires `expectedUpdatedAt`, the `updatedAt` token last read for this entry. A stale value is rejected as `GALLERY_ENTRY_VERSION_CONFLICT` rather than overwriting a concurrent change, and a successful write advances the token.
+ * @summary Unpublish a gallery entry
+ */
+export const adminGalleryEntryUnpublish = (
+  galleryEntryId: unknown,
+  unpublishGalleryEntryBody: UnpublishGalleryEntryBody,
+  options?: SecondParameter<typeof apiRequest<AdminGalleryEntryUnpublish200>>,
+) => {
+  return apiRequest<AdminGalleryEntryUnpublish200>(
+    {
+      url: `/api/admin/gallery-entries/${galleryEntryId}/publication`,
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      data: unpublishGalleryEntryBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Moves a DRAFT to PUBLISHED. Readiness is recomputed inside the transaction from persisted state — a non-empty title, a slug, a non-empty description and at least one attached image that is still eligible for public delivery — so a readiness answer the client is holding is never trusted. A linked product, SEO text and `isIndexable` are deliberately not required: a `noindex` entry is publishable. An ARCHIVED entry cannot be published here. Requires `expectedUpdatedAt`, the `updatedAt` token last read for this entry. A stale value is rejected as `GALLERY_ENTRY_VERSION_CONFLICT` rather than overwriting a concurrent change, and a successful write advances the token.
+ * @summary Publish a gallery entry
+ */
+export const adminGalleryEntryPublish = (
+  galleryEntryId: unknown,
+  publishGalleryEntryBody: PublishGalleryEntryBody,
+  options?: SecondParameter<typeof apiRequest<AdminGalleryEntryPublish200>>,
+) => {
+  return apiRequest<AdminGalleryEntryPublish200>(
+    {
+      url: `/api/admin/gallery-entries/${galleryEntryId}/publication`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: publishGalleryEntryBody,
     },
     options,
   );
@@ -2395,6 +2461,15 @@ export type AdminGalleryEntryDetailResult = NonNullable<
 >;
 export type AdminGalleryEntryUpdateResult = NonNullable<
   Awaited<ReturnType<typeof adminGalleryEntryUpdate>>
+>;
+export type AdminGalleryEntryReplaceAssetsResult = NonNullable<
+  Awaited<ReturnType<typeof adminGalleryEntryReplaceAssets>>
+>;
+export type AdminGalleryEntryUnpublishResult = NonNullable<
+  Awaited<ReturnType<typeof adminGalleryEntryUnpublish>>
+>;
+export type AdminGalleryEntryPublishResult = NonNullable<
+  Awaited<ReturnType<typeof adminGalleryEntryPublish>>
 >;
 export type AdminNotificationIntentListResult = NonNullable<
   Awaited<ReturnType<typeof adminNotificationIntentList>>

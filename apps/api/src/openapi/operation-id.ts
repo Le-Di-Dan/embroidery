@@ -180,6 +180,16 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // family reads `_list`, `_detail`, `_transition`, `_dispatch`, `_complete`,
   // and the three accepted ids stay untouched.
   AdminOrderDeliveryController: 'adminOrder',
+  // `APP11-B02`. Replacing a gallery entry's ordered images and moving it in
+  // and out of publication join `APP11-B01`'s published `adminGalleryEntry`
+  // domain. They are a second class because the authoring controller already
+  // stands at 263 of the CLAUDE.md §6 limit and media plus lifecycle is a
+  // distinct responsibility from field editing. Without this entry the three
+  // would mint `adminGalleryEntryLifecycle_replaceAssets` and its siblings,
+  // letting a file-size decision name three public identifiers; with it the
+  // family reads `_list`, `_create`, `_detail`, `_update`, `_replaceAssets`,
+  // `_publish`, `_unpublish`, and B01's four accepted ids stay untouched.
+  AdminGalleryEntryLifecycleController: 'adminGalleryEntry',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

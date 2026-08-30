@@ -4,9 +4,11 @@ import { DatabaseModule } from '@embroidery/persistence';
 import { CatalogModule } from '../catalog/catalog.module';
 import { IdentityModule } from '../identity/identity.module';
 import { GalleryModule } from './gallery.module';
+import { AdminGalleryEntryLifecycleService } from './application/admin-gallery-entry-lifecycle.service';
 import { AdminGalleryEntryQuery } from './application/admin-gallery-entry.query';
 import { AdminGalleryEntryService } from './application/admin-gallery-entry.service';
 import { LinkedProductResolver } from './application/linked-product.resolver';
+import { AdminGalleryEntryLifecycleController } from './presentation/admin-gallery-entry-lifecycle.controller';
 import { AdminGalleryEntryController } from './presentation/admin-gallery-entry.controller';
 
 /**
@@ -24,13 +26,20 @@ import { AdminGalleryEntryController } from './presentation/admin-gallery-entry.
  * real product. Gallery therefore never reads a catalog table and never calls
  * our own HTTP API to answer the question (`BACKEND_CONVENTIONS.md` §10).
  *
- * What this module deliberately does not compose: no Asset port, no outbox, no
- * object storage and no worker. B01 associates no media, publishes nothing and
- * announces nothing, so it holds none of the collaborators that would let it.
+ * What this module deliberately does not compose: no Asset write port, no
+ * outbox, no object storage and no worker. `APP11-B02` associates media and
+ * transitions the lifecycle, and it does both through the Gallery aggregate's
+ * own guarded-write port — so no public gallery URL can be minted here, no
+ * derivative regenerated, no stored object touched and no event announced.
  */
 @Module({
   imports: [DatabaseModule, GalleryModule, CatalogModule, IdentityModule],
-  controllers: [AdminGalleryEntryController],
-  providers: [LinkedProductResolver, AdminGalleryEntryService, AdminGalleryEntryQuery],
+  controllers: [AdminGalleryEntryController, AdminGalleryEntryLifecycleController],
+  providers: [
+    LinkedProductResolver,
+    AdminGalleryEntryService,
+    AdminGalleryEntryQuery,
+    AdminGalleryEntryLifecycleService,
+  ],
 })
 export class GalleryAdminModule {}

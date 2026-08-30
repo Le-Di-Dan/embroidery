@@ -24,8 +24,8 @@ phase.
 | `APP11-D01-C1` | Design authority consistency & responsive footer correction | **COMPLETE** |
 | `APP11-B01` | Admin gallery entry authoring | **COMPLETE** |
 | `APP11-B01-C1` | File-size compliance & evidence reconciliation | **COMPLETE** |
-| `APP11-B02` | Admin gallery media + publication | **NEXT** |
-| `APP11-B03` | Public gallery reads + media delivery | NOT STARTED |
+| `APP11-B02` | Admin gallery media + publication | **COMPLETE** |
+| `APP11-B03` | Public gallery reads + media delivery | **NEXT** |
 | `APP11-B04` | Public SEO inventory (sitemap) | NOT STARTED |
 | `APP11-A01` | Admin gallery list | NOT STARTED |
 | `APP11-A02` | Admin gallery editor + publication | NOT STARTED |

@@ -6,7 +6,7 @@ import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
 import type { GalleryEntryState } from '@embroidery/database';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
-import { and, asc, eq, gt, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, or } from 'drizzle-orm';
 
 import type {
   AdminGalleryEntry,
@@ -19,6 +19,7 @@ import type {
   GalleryEntryRepository,
   UpdateGalleryEntryInput,
 } from '../../domain/repositories/gallery-entry.repository';
+import { nextUpdatedAt } from './gallery-entry-concurrency-token';
 import { toAdminEntry, toEntry } from './gallery-entry-row.mapper';
 
 const { galleryEntries, galleryEntryAssets, assets } = schema;
@@ -217,9 +218,10 @@ export class DrizzleGalleryEntryRepository
    */
   async updateAuthoring(input: UpdateGalleryEntryInput): Promise<AdminGalleryEntry | undefined> {
     return this.run('updateAuthoring', async () => {
-      const patch: Record<string, unknown> = {
-        updatedAt: sql`date_trunc('milliseconds', clock_timestamp())`,
-      };
+      // The shared, strictly-monotonic token mechanism: two writes landing in
+      // the same millisecond must not publish the same token, or a stale value
+      // would still match. `APP11-B02`'s guarded writes compare this column.
+      const patch: Record<string, unknown> = { updatedAt: nextUpdatedAt() };
       const { fields } = input;
       if (fields.title !== undefined) patch['title'] = fields.title;
       if (fields.description !== undefined) patch['description'] = fields.description;

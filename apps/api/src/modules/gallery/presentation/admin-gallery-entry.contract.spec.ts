@@ -78,7 +78,7 @@ const VALID_CREATE = {
 
 describe('APP11-B01 Admin gallery entry contract', () => {
   describe('published surface', () => {
-    it('publishes exactly the four Admin operations, with the canonical ids', () => {
+    it('publishes its four Admin operations, with the canonical ids', () => {
       expect(OPENAPI.paths[COLLECTION]?.['get']?.operationId).toBe('adminGalleryEntry_list');
       expect(OPENAPI.paths[COLLECTION]?.['post']?.operationId).toBe('adminGalleryEntry_create');
       expect(OPENAPI.paths[ITEM]?.['get']?.operationId).toBe('adminGalleryEntry_detail');
@@ -89,25 +89,35 @@ describe('APP11-B01 Admin gallery entry contract', () => {
         .map((operation) => operation.operationId ?? '')
         .filter((id) => id.startsWith('adminGalleryEntry') || /gallery/i.test(id));
 
+      // The whole published Gallery family. `APP11-B02` added three ids to it
+      // through `CONTROLLER_DOMAIN_KEYS`, which is exactly why the assertion is
+      // an equality: a fifth *authoring* route, or an id minted from a
+      // controller split, still fails here by name.
       expect(galleryOperations.sort()).toEqual([
         'adminGalleryEntry_create',
         'adminGalleryEntry_detail',
         'adminGalleryEntry_list',
+        'adminGalleryEntry_publish',
+        'adminGalleryEntry_replaceAssets',
+        'adminGalleryEntry_unpublish',
         'adminGalleryEntry_update',
       ]);
     });
 
-    it('publishes no public gallery, publication or asset-mutation route', () => {
+    it('publishes no public gallery or content-page route', () => {
       const galleryPaths = Object.keys(OPENAPI.paths).filter((path) => /gallery/i.test(path));
 
-      expect(galleryPaths.sort()).toEqual([COLLECTION, ITEM]);
-      // The three `APP11-B02` routes and the three `APP11-B03` routes, named so
-      // the day one appears early this fails by name rather than by count.
+      // Four Path Item Objects: B01's collection and item, and B02's two
+      // sub-resources. No fifth.
+      expect(galleryPaths.sort()).toEqual(
+        [COLLECTION, ITEM, `${ITEM}/assets`, `${ITEM}/publication`].sort(),
+      );
+      // The three `APP11-B03` routes, named so the day one appears early this
+      // fails by name rather than by count.
       for (const forbidden of [
-        `${ITEM}/assets`,
-        `${ITEM}/publication`,
         '/api/public/gallery-entries',
         '/api/public/gallery-entries/{slug}',
+        '/api/public/sitemap-entries',
       ]) {
         expect(OPENAPI.paths[forbidden]).toBeUndefined();
       }
@@ -137,7 +147,7 @@ describe('APP11-B01 Admin gallery entry contract', () => {
       }
     });
 
-    it('never reaches the lifecycle or association writers from B01', () => {
+    it('never reaches the lifecycle or association writers from the B01 files', () => {
       // `changeStatus` and `attachAsset` exist on the AGG-18 repository and are
       // `APP11-B02`'s. Named structurally: a call added later would otherwise
       // only show up as a behaviour nobody wrote a test for. Comments are
