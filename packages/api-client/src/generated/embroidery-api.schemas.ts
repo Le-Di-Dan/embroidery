@@ -4480,6 +4480,76 @@ export interface PublicDesignTemplateListResponse {
   nextCursor?: string;
 }
 
+export interface PublicGalleryAssetResponse {
+  /** Opaque identity of the image. It is not a storage reference and grants no access on its own — it resolves only inside this published entry. */
+  assetId: string;
+  /** Zero-based position in the curated order; 0 is the cover. Positions are consecutive over the images actually returned, so a withdrawn image leaves no gap. */
+  position: number;
+  /** Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication and asset eligibility on every request. */
+  url: string;
+}
+
+export interface PublicGalleryLinkedProductResponse {
+  name: string;
+  slug: string;
+  /** Canonical public catalog thumbnail path; absent when there is none. */
+  thumbnailUrl?: string;
+}
+
+export interface PublicGalleryEntrySeoResponse {
+  description?: string;
+  /** Whether the entry may be indexed. */
+  isIndexable: boolean;
+  title?: string;
+}
+
+export interface PublicGalleryEntryDetailResponse {
+  /** Currently deliverable images in the curated order. An image whose bytes are no longer servable is omitted rather than advertised with an address that would 404; the operator selection itself is never edited by a read. */
+  assets: PublicGalleryAssetResponse[];
+  description: string;
+  displayOrder: number;
+  galleryEntryId: string;
+  /**
+   * The linked product, **only** when it is itself publicly visible under the catalog publication authority. Null when there is no link and null when the linked product is draft, archived or otherwise non-public — the two cases are indistinguishable, and neither hides the gallery entry.
+   * @nullable
+   */
+  linkedProduct: PublicGalleryLinkedProductResponse | null;
+  /** Only SEO facts that physically exist on the entry. No canonical browser URL and no robots directive: the document head is a Storefront concern. */
+  seo: PublicGalleryEntrySeoResponse;
+  slug: string;
+  title: string;
+}
+
+export interface PublicGalleryEntrySummaryResponse {
+  /** How many of the images are currently deliverable, not how many are stored. */
+  assetCount: number;
+  /** The leading image — the first currently deliverable association in the stored gallery order. Always present: an entry with no deliverable image is omitted from the feed rather than shown as a broken card. */
+  coverAssetId: string;
+  /** Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication and asset eligibility on every request. */
+  coverUrl: string;
+  description: string;
+  /** Editorial position; the feed is ordered by it. */
+  displayOrder: number;
+  /** Opaque public identity of the entry. */
+  galleryEntryId: string;
+  /** Whether the entry may be indexed by search engines. It is **not** a visibility flag: a `false` entry is still listed, still readable and still media-deliverable. */
+  isIndexable: boolean;
+  /** Immutable server-owned address. */
+  slug: string;
+  title: string;
+}
+
+export interface PublicGalleryEntryListResponse {
+  /** True when another page follows. */
+  hasNext: boolean;
+  items: PublicGalleryEntrySummaryResponse[];
+  /**
+   * Opaque forward cursor, or null on the last page.
+   * @nullable
+   */
+  nextCursor: string | null;
+}
+
 export type PublicMediaReferenceResponseRole =
   (typeof PublicMediaReferenceResponseRole)[keyof typeof PublicMediaReferenceResponseRole];
 
@@ -6252,6 +6322,26 @@ export type PublicDesignTemplateList200 = ApiSuccessResponse & {
 
 export type PublicDesignTemplateDetail200 = ApiSuccessResponse & {
   data: PublicDesignTemplateDetailResponse;
+};
+
+export type PublicGalleryEntryListParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from a prior page.
+   */
+  cursor?: unknown;
+};
+
+export type PublicGalleryEntryList200 = ApiSuccessResponse & {
+  data: PublicGalleryEntryListResponse;
+};
+
+export type PublicGalleryEntryDetail200 = ApiSuccessResponse & {
+  data: PublicGalleryEntryDetailResponse;
 };
 
 export type PublicOrderDepositCurrent200 = ApiSuccessResponse & {

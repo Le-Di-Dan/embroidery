@@ -58,6 +58,23 @@ export interface PublicProductDetail {
   readonly media: readonly PublicProductDetailMediaRow[];
 }
 
+/**
+ * The narrow public summary of a product another surface links to (`APP11-B03`
+ * §8).
+ *
+ * Deliberately smaller than {@link PublicProductListRow}: a linking surface
+ * needs an address, a name and a picture, not a price, a category or a stock
+ * flag. It is served from this port rather than from a second query in the
+ * linking module so that "is this product public" has exactly one answer in the
+ * process — the one this repository already applies to its own two reads.
+ */
+export interface PublicLinkedProductRow {
+  readonly slug: string;
+  readonly name: string;
+  /** The deliverable `THUMBNAIL` association, or `undefined` when there is none. */
+  readonly thumbnailProductMediaId: string | undefined;
+}
+
 export interface PublicProductListQuery {
   readonly limit: number;
   readonly categorySlug: string | undefined;
@@ -73,6 +90,18 @@ export interface PublicProductRepository {
 
   /** Resolves one published product and its deliverable media by exact slug. */
   findPublishedBySlug(slug: string): Promise<PublicProductDetail | undefined>;
+
+  /**
+   * Resolves the public summary of one product **by id**, or nothing when that
+   * product is not publicly visible.
+   *
+   * By id rather than by slug because a linking row stores the id (REL-096),
+   * and `undefined` covers every reason indistinguishably — unknown, draft,
+   * archived, or in a withdrawn category. A caller therefore cannot learn that
+   * an unpublished product exists, which is the whole point of routing the
+   * question through the publication predicate instead of a label lookup.
+   */
+  findPublishedSummaryById(productId: string): Promise<PublicLinkedProductRow | undefined>;
 }
 
 export const PUBLIC_PRODUCT_REPOSITORY = Symbol('PublicProductRepository');

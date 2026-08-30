@@ -53,6 +53,16 @@ class FakeRepository implements PublicProductRepository {
     this.slugCalls.push(slug);
     return Promise.resolve(this.detail);
   }
+
+  /**
+   * `APP11-B03` added this to the port for the Gallery linked-product
+   * projection. `PublicProductQuery` does not call it — no assertion here
+   * depends on it — so the fake answers "not publicly visible", which is the
+   * safe default and would fail loudly if a query ever started using it.
+   */
+  findPublishedSummaryById(): Promise<undefined> {
+    return Promise.resolve(undefined);
+  }
 }
 
 describe('PublicProductQuery', () => {

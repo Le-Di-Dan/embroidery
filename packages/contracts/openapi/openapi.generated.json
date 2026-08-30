@@ -7998,6 +7998,220 @@
         ],
         "type": "object"
       },
+      "PublicGalleryAssetResponse": {
+        "properties": {
+          "assetId": {
+            "description": "Opaque identity of the image. It is not a storage reference and grants no access on its own — it resolves only inside this published entry.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "position": {
+            "description": "Zero-based position in the curated order; 0 is the cover. Positions are consecutive over the images actually returned, so a withdrawn image leaves no gap.",
+            "example": 0,
+            "type": "number"
+          },
+          "url": {
+            "description": "Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication and asset eligibility on every request.",
+            "example": "/api/public/gallery-entries/bo-suu-tap-hoa-sen/assets/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/catalog-preview",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId",
+          "position",
+          "url"
+        ],
+        "type": "object"
+      },
+      "PublicGalleryEntryDetailResponse": {
+        "properties": {
+          "assets": {
+            "description": "Currently deliverable images in the curated order. An image whose bytes are no longer servable is omitted rather than advertised with an address that would 404; the operator selection itself is never edited by a read.",
+            "items": {
+              "$ref": "#/components/schemas/PublicGalleryAssetResponse"
+            },
+            "type": "array"
+          },
+          "description": {
+            "example": "Thêu tay trên vải lanh, giới hạn 12 mẫu.",
+            "type": "string"
+          },
+          "displayOrder": {
+            "example": 100,
+            "type": "number"
+          },
+          "galleryEntryId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "linkedProduct": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicGalleryLinkedProductResponse"
+              }
+            ],
+            "description": "The linked product, **only** when it is itself publicly visible under the catalog publication authority. Null when there is no link and null when the linked product is draft, archived or otherwise non-public — the two cases are indistinguishable, and neither hides the gallery entry.",
+            "nullable": true,
+            "type": "object"
+          },
+          "seo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicGalleryEntrySeoResponse"
+              }
+            ],
+            "description": "Only SEO facts that physically exist on the entry. No canonical browser URL and no robots directive: the document head is a Storefront concern."
+          },
+          "slug": {
+            "example": "bo-suu-tap-hoa-sen",
+            "type": "string"
+          },
+          "title": {
+            "example": "Bộ sưu tập hoa sen",
+            "type": "string"
+          }
+        },
+        "required": [
+          "galleryEntryId",
+          "slug",
+          "title",
+          "description",
+          "displayOrder",
+          "assets",
+          "seo",
+          "linkedProduct"
+        ],
+        "type": "object"
+      },
+      "PublicGalleryEntryListResponse": {
+        "properties": {
+          "hasNext": {
+            "description": "True when another page follows.",
+            "example": false,
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicGalleryEntrySummaryResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "description": "Opaque forward cursor, or null on the last page.",
+            "example": null,
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "hasNext",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "PublicGalleryEntrySeoResponse": {
+        "properties": {
+          "description": {
+            "example": "Mười hai mẫu thêu tay lấy cảm hứng từ hoa sen.",
+            "type": "string"
+          },
+          "isIndexable": {
+            "description": "Whether the entry may be indexed.",
+            "example": true,
+            "type": "boolean"
+          },
+          "title": {
+            "example": "Bộ sưu tập hoa sen thêu tay",
+            "type": "string"
+          }
+        },
+        "required": [
+          "isIndexable"
+        ],
+        "type": "object"
+      },
+      "PublicGalleryEntrySummaryResponse": {
+        "properties": {
+          "assetCount": {
+            "description": "How many of the images are currently deliverable, not how many are stored.",
+            "example": 4,
+            "type": "number"
+          },
+          "coverAssetId": {
+            "description": "The leading image — the first currently deliverable association in the stored gallery order. Always present: an entry with no deliverable image is omitted from the feed rather than shown as a broken card.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "coverUrl": {
+            "description": "Relative application path served by the publication-gated delivery route. Never a storage or CDN address, never signed, and it expires with nothing — the route re-checks publication and asset eligibility on every request.",
+            "example": "/api/public/gallery-entries/bo-suu-tap-hoa-sen/assets/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/thumbnail",
+            "type": "string"
+          },
+          "description": {
+            "example": "Thêu tay trên vải lanh, giới hạn 12 mẫu.",
+            "type": "string"
+          },
+          "displayOrder": {
+            "description": "Editorial position; the feed is ordered by it.",
+            "example": 100,
+            "type": "number"
+          },
+          "galleryEntryId": {
+            "description": "Opaque public identity of the entry.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "isIndexable": {
+            "description": "Whether the entry may be indexed by search engines. It is **not** a visibility flag: a `false` entry is still listed, still readable and still media-deliverable.",
+            "example": true,
+            "type": "boolean"
+          },
+          "slug": {
+            "description": "Immutable server-owned address.",
+            "example": "bo-suu-tap-hoa-sen",
+            "type": "string"
+          },
+          "title": {
+            "example": "Bộ sưu tập hoa sen",
+            "type": "string"
+          }
+        },
+        "required": [
+          "galleryEntryId",
+          "slug",
+          "title",
+          "description",
+          "displayOrder",
+          "isIndexable",
+          "coverAssetId",
+          "coverUrl",
+          "assetCount"
+        ],
+        "type": "object"
+      },
+      "PublicGalleryLinkedProductResponse": {
+        "properties": {
+          "name": {
+            "example": "Khăn thêu hoa sen",
+            "type": "string"
+          },
+          "slug": {
+            "example": "khan-theu-hoa-sen",
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "description": "Canonical public catalog thumbnail path; absent when there is none.",
+            "example": "/api/public/products/khan-theu-hoa-sen/media/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/thumbnail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name"
+        ],
+        "type": "object"
+      },
       "PublicMediaReferenceResponse": {
         "properties": {
           "role": {
@@ -29159,6 +29373,432 @@
         "summary": "Get one asset placed by the current published version of a design template",
         "tags": [
           "publicDesignTemplateAsset"
+        ]
+      }
+    },
+    "/api/public/gallery-entries": {
+      "get": {
+        "description": "Returns published gallery entries in curated order, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts and archived entries are excluded by the query itself. A `noindex` entry is still listed: indexability is an SEO directive, not a visibility flag. An entry whose images are all currently undeliverable is omitted, because an image-led card without an image is not a valid projection. Pagination is keyset: `nextCursor` is opaque and null on the last page. Responses are never stored. Publication and image eligibility are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished entry or a withdrawn image visible.",
+        "operationId": "publicGalleryEntry_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a prior page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicGalleryEntryListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "A page of published gallery entries.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unknown query parameter, an out-of-range page size, or a malformed cursor.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List published gallery entries",
+        "tags": [
+          "publicGalleryEntry"
+        ]
+      }
+    },
+    "/api/public/gallery-entries/{slug}": {
+      "get": {
+        "description": "Resolves a published gallery entry by its immutable server-owned slug. An unknown slug, a draft, an archived entry and an entry with no currently deliverable image all return the same 404: a public caller must not be able to tell unreleased work from work that never existed. A `noindex` published entry resolves normally. The linked product appears only when it is itself publicly visible, and a non-public one never hides the gallery entry. Responses are never stored. Publication and image eligibility are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished entry or a withdrawn image visible.",
+        "operationId": "publicGalleryEntry_detail",
+        "parameters": [
+          {
+            "description": "The immutable server-owned gallery slug.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicGalleryEntryDetailResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The published gallery entry.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The slug is not well formed.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No published gallery entry is available at that address.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get one published gallery entry by slug",
+        "tags": [
+          "publicGalleryEntry"
+        ]
+      }
+    },
+    "/api/public/gallery-entries/{slug}/assets/{assetId}/{rendition}": {
+      "get": {
+        "description": "Streams the requested rendition of one image attached to a PUBLISHED gallery entry. Anonymous: no session, cookie or storage credential is involved. Publication, the association and the asset lane are all re-checked on every request, so unpublishing an entry or withdrawing an image stops delivery immediately even for a caller that already knows the address. Responses are never cached.",
+        "operationId": "publicGalleryEntry_asset",
+        "parameters": [
+          {
+            "description": "`thumbnail` for feed cards, `catalog-preview` for the detail gallery.",
+            "in": "path",
+            "name": "rendition",
+            "required": true,
+            "schema": {
+              "enum": [
+                "thumbnail",
+                "catalog-preview"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque identity of the image associated with this entry. It is not a storage reference and grants no access on its own.",
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "description": "The server-owned gallery slug.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {}
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The image bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Always `no-store`, so a cache cannot outlive an unpublish.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed slug, asset id or rendition.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "No image is publicly available at this address. Returned identically for an unknown entry, a draft or archived entry, an unknown asset, an asset associated with a different entry, a private or production-sensitive asset, a rejected, deletion-pending or tombstoned asset, and an image whose rendition is not ready.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Image storage is temporarily unavailable.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get one published gallery image",
+        "tags": [
+          "publicGalleryEntry"
         ]
       }
     },

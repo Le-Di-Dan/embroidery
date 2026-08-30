@@ -87,12 +87,15 @@ describe('APP11-B01 Admin gallery entry contract', () => {
       const galleryOperations = Object.values(OPENAPI.paths)
         .flatMap((item) => Object.values(item))
         .map((operation) => operation.operationId ?? '')
-        .filter((id) => id.startsWith('adminGalleryEntry') || /gallery/i.test(id));
+        .filter((id) => id.startsWith('adminGalleryEntry'));
 
-      // The whole published Gallery family. `APP11-B02` added three ids to it
-      // through `CONTROLLER_DOMAIN_KEYS`, which is exactly why the assertion is
-      // an equality: a fifth *authoring* route, or an id minted from a
-      // controller split, still fails here by name.
+      // The whole published **Admin** Gallery family. `APP11-B02` added three
+      // ids to it through `CONTROLLER_DOMAIN_KEYS`, which is exactly why the
+      // assertion is an equality: a fifth authoring route, or an id minted from
+      // a controller split, still fails here by name. `APP11-B03`'s three
+      // `publicGalleryEntry_*` ids are a different family and are pinned by
+      // their own contract suite; the filter names the prefix rather than
+      // matching "gallery" anywhere, so the two cannot be confused.
       expect(galleryOperations.sort()).toEqual([
         'adminGalleryEntry_create',
         'adminGalleryEntry_detail',
@@ -104,24 +107,23 @@ describe('APP11-B01 Admin gallery entry contract', () => {
       ]);
     });
 
-    it('publishes no public gallery or content-page route', () => {
-      const galleryPaths = Object.keys(OPENAPI.paths).filter((path) => /gallery/i.test(path));
+    it('publishes no fifth Admin gallery, sitemap or content-page route', () => {
+      const adminGalleryPaths = Object.keys(OPENAPI.paths).filter((path) =>
+        path.startsWith('/api/admin/gallery-entries'),
+      );
 
       // Four Path Item Objects: B01's collection and item, and B02's two
       // sub-resources. No fifth.
-      expect(galleryPaths.sort()).toEqual(
+      expect(adminGalleryPaths.sort()).toEqual(
         [COLLECTION, ITEM, `${ITEM}/assets`, `${ITEM}/publication`].sort(),
       );
-      // The three `APP11-B03` routes, named so the day one appears early this
-      // fails by name rather than by count.
-      for (const forbidden of [
-        '/api/public/gallery-entries',
-        '/api/public/gallery-entries/{slug}',
-        '/api/public/sitemap-entries',
-      ]) {
+      // `APP11-B03` delivered the public gallery surface, so this assertion is
+      // now about the Admin scope only. The sitemap and the content-page
+      // surface are still unbuilt and are named so the day one appears early
+      // this fails by name rather than by count.
+      for (const forbidden of ['/api/public/sitemap-entries', '/api/admin/content-pages']) {
         expect(OPENAPI.paths[forbidden]).toBeUndefined();
       }
-      expect(Object.keys(OPENAPI.paths)).not.toContain('/api/admin/content-pages');
     });
 
     it('regenerates the client through the canonical tooling', () => {

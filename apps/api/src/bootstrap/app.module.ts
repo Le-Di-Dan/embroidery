@@ -46,7 +46,7 @@ import { AdminSkuStockModule } from '../modules/inventory/admin-sku-stock.module
 import { AdminProductionModule } from '../modules/production/admin-production.module';
 import { AdminProductionTransitionModule } from '../modules/production/admin-production-transition.module';
 import { ContentModule } from '../modules/content/content.module';
-import { GalleryAdminModule } from '../modules/gallery/gallery-admin.module';
+import { GalleryCompositionModule } from '../modules/gallery/gallery-composition.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -327,13 +327,13 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // segment and no registration order can make one shadow another. It joins
     // the one `adminOrder` domain through `CONTROLLER_DOMAIN_KEYS`.
     AdminOrderDeliveryModule,
-    // `APP11-B01` — the four Admin gallery authoring operations, and the first
-    // route CTX-GAL has ever published: `GalleryModule` has held the AGG-18
-    // persistence since DB7-CP3 with no controller above it. Registered last
-    // because it reads Catalog and Identity and nothing reads it. Its
-    // `admin/gallery-entries` base path is claimed by no other module, so
-    // registration order cannot make one route shadow another.
-    GalleryAdminModule,
+    // `APP11-B01`…`APP11-B03` — the whole CTX-GAL HTTP surface: the Admin
+    // authoring lane and the two anonymous public lanes. Registered last
+    // because it reads Catalog and Identity and nothing reads it. Its two base
+    // paths are claimed by no other module, so registration order cannot make
+    // one route shadow another. Why the surface is three modules rather than
+    // one is argued beside them, in `gallery-composition.module.ts`.
+    GalleryCompositionModule,
   ],
 })
 export class AppModule {}

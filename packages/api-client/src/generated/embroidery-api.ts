@@ -128,6 +128,9 @@ import type {
   PublicDesignTemplateDetail200,
   PublicDesignTemplateList200,
   PublicDesignTemplateListParams,
+  PublicGalleryEntryDetail200,
+  PublicGalleryEntryList200,
+  PublicGalleryEntryListParams,
   PublicOrderDepositCurrent200,
   PublicOrderDepositEvidenceStatus200,
   PublicOrderDepositEvidenceUpload202,
@@ -1910,6 +1913,54 @@ export const publicDesignTemplateAssetGet = (
 };
 
 /**
+ * Returns published gallery entries in curated order, page by page. Anonymous: no session or cookie is involved, and the caller cannot select lifecycle visibility — there is no parameter for it, and drafts and archived entries are excluded by the query itself. A `noindex` entry is still listed: indexability is an SEO directive, not a visibility flag. An entry whose images are all currently undeliverable is omitted, because an image-led card without an image is not a valid projection. Pagination is keyset: `nextCursor` is opaque and null on the last page. Responses are never stored. Publication and image eligibility are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished entry or a withdrawn image visible.
+ * @summary List published gallery entries
+ */
+export const publicGalleryEntryList = (
+  params?: PublicGalleryEntryListParams,
+  options?: SecondParameter<typeof apiRequest<PublicGalleryEntryList200>>,
+) => {
+  return apiRequest<PublicGalleryEntryList200>(
+    { url: `/api/public/gallery-entries`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Resolves a published gallery entry by its immutable server-owned slug. An unknown slug, a draft, an archived entry and an entry with no currently deliverable image all return the same 404: a public caller must not be able to tell unreleased work from work that never existed. A `noindex` published entry resolves normally. The linked product appears only when it is itself publicly visible, and a non-public one never hides the gallery entry. Responses are never stored. Publication and image eligibility are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep an unpublished entry or a withdrawn image visible.
+ * @summary Get one published gallery entry by slug
+ */
+export const publicGalleryEntryDetail = (
+  slug: unknown,
+  options?: SecondParameter<typeof apiRequest<PublicGalleryEntryDetail200>>,
+) => {
+  return apiRequest<PublicGalleryEntryDetail200>(
+    { url: `/api/public/gallery-entries/${slug}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Streams the requested rendition of one image attached to a PUBLISHED gallery entry. Anonymous: no session, cookie or storage credential is involved. Publication, the association and the asset lane are all re-checked on every request, so unpublishing an entry or withdrawing an image stops delivery immediately even for a caller that already knows the address. Responses are never cached.
+ * @summary Get one published gallery image
+ */
+export const publicGalleryEntryAsset = (
+  slug: unknown,
+  assetId: unknown,
+  rendition: 'thumbnail' | 'catalog-preview',
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/public/gallery-entries/${slug}/assets/${assetId}/${rendition}`,
+      method: 'GET',
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Returns what is owed on the deposit of the one order belonging to the custom request the presented secure link grants access to. The request comes from the grant and the order from the request, so there is no order id, obligation id, attempt id, amount or customer identifier in the body. The amount is the DEPOSIT obligation’s own frozen figure — no share of a total is recomputed and no quotation is read — and the currency is the obligation’s own VND. The bank instructions are server-owned configuration, and the transfer reference is derived from the order code, so it is identical on every read. The remaining payment is neither shown nor payable here. Reading writes nothing: no attempt is opened, no state moves and the link is not consumed. Every token that does not open a live grant, and every request with no deposit to read, answer with one identical 404.
  * @summary Read the deposit a secure link opens
  */
@@ -2615,6 +2666,15 @@ export type PublicDesignTemplateDetailResult = NonNullable<
 >;
 export type PublicDesignTemplateAssetGetResult = NonNullable<
   Awaited<ReturnType<typeof publicDesignTemplateAssetGet>>
+>;
+export type PublicGalleryEntryListResult = NonNullable<
+  Awaited<ReturnType<typeof publicGalleryEntryList>>
+>;
+export type PublicGalleryEntryDetailResult = NonNullable<
+  Awaited<ReturnType<typeof publicGalleryEntryDetail>>
+>;
+export type PublicGalleryEntryAssetResult = NonNullable<
+  Awaited<ReturnType<typeof publicGalleryEntryAsset>>
 >;
 export type PublicOrderDepositCurrentResult = NonNullable<
   Awaited<ReturnType<typeof publicOrderDepositCurrent>>

@@ -190,6 +190,15 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // family reads `_list`, `_create`, `_detail`, `_update`, `_replaceAssets`,
   // `_publish`, `_unpublish`, and B01's four accepted ids stay untouched.
   AdminGalleryEntryLifecycleController: 'adminGalleryEntry',
+  // `APP11-B03`. Streaming one gallery image joins the same published
+  // `publicGalleryEntry` domain as the feed and the detail. It is a second
+  // class because the JSON reads are *defined* by holding no object-storage
+  // port — the boundary that lets their suite say a metadata read cannot open a
+  // private object — while the binary route needs one. Without this entry it
+  // would mint `publicGalleryEntryAsset_asset`, letting that composition
+  // decision name a public identifier; with it the family reads `_list`,
+  // `_detail`, `_asset`.
+  PublicGalleryEntryAssetController: 'publicGalleryEntry',
 };
 
 /** HTTP method keys a Path Item Object may carry; other keys are not operations. */

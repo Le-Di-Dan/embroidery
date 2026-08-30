@@ -34,6 +34,7 @@ import { schema } from '@embroidery/database';
 import { and, asc, eq, gt, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
 import type {
+  PublicLinkedProductRow,
   PublicProductDetail,
   PublicProductDetailMediaRow,
   PublicProductListQuery,
@@ -164,6 +165,37 @@ export class DrizzlePublicProductRepository
       },
       media,
     };
+  }
+
+  async findPublishedSummaryById(productId: string): Promise<PublicLinkedProductRow | undefined> {
+    const [row] = await this.db
+      .select({
+        slug: products.slug,
+        name: products.name,
+        thumbnailProductMediaId: this.deliverableMediaId(
+          DERIVATIVE_KIND_BY_RENDITION[PUBLIC_LIST_RENDITION],
+          PUBLIC_LIST_MEDIA_ROLE,
+        ),
+      })
+      .from(products)
+      .innerJoin(categories, eq(categories.id, products.categoryId))
+      .where(
+        and(
+          eq(products.id, productId),
+          // The same three terms the other two reads apply, from the same
+          // constants. A linking surface must not become a second, laxer
+          // definition of what "publicly visible" means.
+          eq(products.status, PUBLIC_PRODUCT_VISIBLE_STATE),
+          eq(categories.status, APP2_CATEGORY_STATUS),
+          isNull(categories.archivedAt),
+        ),
+      )
+      .limit(1);
+
+    if (row === undefined) {
+      return undefined;
+    }
+    return { ...row, thumbnailProductMediaId: row.thumbnailProductMediaId ?? undefined };
   }
 
   /**

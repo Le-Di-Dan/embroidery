@@ -45,5 +45,11 @@ import { PublicProductVariantController } from './presentation/public-product-va
     PublicProductQuery,
     PublicProductVariantQuery,
   ],
+  // `APP11-B03`. Exported so the public Gallery detail can ask *this* module
+  // whether a linked Product may be shown, rather than re-deriving publication
+  // visibility over the catalog tables it must not read
+  // (`BACKEND_CONVENTIONS.md` §10). Only the read port leaves: the queries and
+  // the controllers stay private to this graph.
+  exports: [PUBLIC_PRODUCT_REPOSITORY],
 })
 export class CatalogPublicModule {}
