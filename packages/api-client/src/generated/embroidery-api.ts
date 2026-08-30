@@ -41,6 +41,11 @@ import type {
   AdminDesignTemplateRestore200,
   AdminDesignTemplateSaveDocument200,
   AdminDesignTemplateUnpublish200,
+  AdminGalleryEntryCreate201,
+  AdminGalleryEntryDetail200,
+  AdminGalleryEntryList200,
+  AdminGalleryEntryListParams,
+  AdminGalleryEntryUpdate200,
   AdminNotificationIntentList200,
   AdminNotificationIntentListParams,
   AdminNotificationIntentReplay200,
@@ -90,6 +95,7 @@ import type {
   AutosaveDesignSessionBody,
   CreateDesignSessionBody,
   CreateDesignTemplateBody,
+  CreateGalleryEntryBody,
   CreateProductBody,
   CreateProductionJobBody,
   CreateQuotationDraftBody,
@@ -170,6 +176,7 @@ import type {
   UnpublishDesignTemplateBody,
   UnpublishProductBody,
   UpdateCustomerProfileBody,
+  UpdateGalleryEntryBody,
   UpdateProductBody,
   UpdateSkuBody,
   VerifyPaymentAttemptBody,
@@ -731,6 +738,73 @@ export const adminDesignTemplateUnpublish = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: unpublishDesignTemplateBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Keyset-paginated in curated order (`display_order` ascending, ties broken by id). There is no offset paging and no total count. With no status filter the page carries drafts, published and archived entries alike. Each row carries the cover image id and the image count; neither is a media address.
+ * @summary List Admin gallery entries
+ */
+export const adminGalleryEntryList = (
+  params?: AdminGalleryEntryListParams,
+  options?: SecondParameter<typeof apiRequest<AdminGalleryEntryList200>>,
+) => {
+  return apiRequest<AdminGalleryEntryList200>(
+    { url: `/api/admin/gallery-entries`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * Creates a DRAFT. The status is not accepted and cannot be chosen. The slug is supplied once here, must match the canonical public slug grammar, and is immutable afterwards. A linked product is validated when present. The entry has no images until APP11-B02 associates them.
+ * @summary Create a gallery entry
+ */
+export const adminGalleryEntryCreate = (
+  createGalleryEntryBody: CreateGalleryEntryBody,
+  options?: SecondParameter<typeof apiRequest<AdminGalleryEntryCreate201>>,
+) => {
+  return apiRequest<AdminGalleryEntryCreate201>(
+    {
+      url: `/api/admin/gallery-entries`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createGalleryEntryBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Returns the authoring fields and the ordered asset associations. No storage key, no media URL and no per-image alt text — alt text is derived at render time and has no column (APP11-D01-C1).
+ * @summary Get one Admin gallery entry
+ */
+export const adminGalleryEntryDetail = (
+  galleryEntryId: unknown,
+  options?: SecondParameter<typeof apiRequest<AdminGalleryEntryDetail200>>,
+) => {
+  return apiRequest<AdminGalleryEntryDetail200>(
+    { url: `/api/admin/gallery-entries/${galleryEntryId}`, method: 'GET' },
+    options,
+  );
+};
+
+/**
+ * Patches the editable authoring fields. `slug`, `status`, `archivedAt` and any asset field are not part of this body and are rejected: renaming, publishing, archiving and changing media are not reachable from here. Omitted fields keep their stored value; sending `linkedProductId`, `seoTitle` or `seoDescription` as null clears it.
+ * @summary Update a gallery entry
+ */
+export const adminGalleryEntryUpdate = (
+  galleryEntryId: unknown,
+  updateGalleryEntryBody: UpdateGalleryEntryBody,
+  options?: SecondParameter<typeof apiRequest<AdminGalleryEntryUpdate200>>,
+) => {
+  return apiRequest<AdminGalleryEntryUpdate200>(
+    {
+      url: `/api/admin/gallery-entries/${galleryEntryId}`,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      data: updateGalleryEntryBody,
     },
     options,
   );
@@ -2309,6 +2383,18 @@ export type AdminDesignTemplateAssignScopeResult = NonNullable<
 >;
 export type AdminDesignTemplateUnpublishResult = NonNullable<
   Awaited<ReturnType<typeof adminDesignTemplateUnpublish>>
+>;
+export type AdminGalleryEntryListResult = NonNullable<
+  Awaited<ReturnType<typeof adminGalleryEntryList>>
+>;
+export type AdminGalleryEntryCreateResult = NonNullable<
+  Awaited<ReturnType<typeof adminGalleryEntryCreate>>
+>;
+export type AdminGalleryEntryDetailResult = NonNullable<
+  Awaited<ReturnType<typeof adminGalleryEntryDetail>>
+>;
+export type AdminGalleryEntryUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof adminGalleryEntryUpdate>>
 >;
 export type AdminNotificationIntentListResult = NonNullable<
   Awaited<ReturnType<typeof adminNotificationIntentList>>

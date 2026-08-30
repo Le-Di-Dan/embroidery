@@ -950,6 +950,94 @@ export interface AdminDesignTemplateListResponse {
   nextCursor?: string;
 }
 
+export interface AdminGalleryEntryAssetResponse {
+  assetId: string;
+  /** The stored association position. Ordering is ascending, ties broken by id. */
+  position: number;
+}
+
+/**
+ * Lifecycle state. Always DRAFT on creation; APP11-B02 owns every transition.
+ */
+export type AdminGalleryEntryDetailResponseStatus =
+  (typeof AdminGalleryEntryDetailResponseStatus)[keyof typeof AdminGalleryEntryDetailResponseStatus];
+
+export const AdminGalleryEntryDetailResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export interface AdminGalleryEntryDetailResponse {
+  /** Lifecycle evidence; set only for an archived entry. Never a filter. */
+  archivedAt?: string;
+  /** How many images the entry has. */
+  assetCount: number;
+  /** Ordered associations. Read-only here — APP11-B02 owns every media change. */
+  assets: AdminGalleryEntryAssetResponse[];
+  /** The first associated image, when one exists. Identity only — there is no URL here. */
+  coverAssetId?: string;
+  createdAt: string;
+  /** Always present; the column is NOT NULL. */
+  description: string;
+  /** Curated position in the gallery. */
+  displayOrder: number;
+  galleryEntryId: string;
+  /** Whether the published entry may be indexed. */
+  isIndexable: boolean;
+  /** Optional product this entry links to. Absent when nothing is linked. */
+  linkedProductId?: string;
+  /** On PATCH, null clears it. */
+  seoDescription?: string;
+  /** On PATCH, null clears it. */
+  seoTitle?: string;
+  /** The public address. Chosen once on create and immutable afterwards. */
+  slug: string;
+  /** Lifecycle state. Always DRAFT on creation; APP11-B02 owns every transition. */
+  status: AdminGalleryEntryDetailResponseStatus;
+  title: string;
+  updatedAt: string;
+}
+
+/**
+ * Lifecycle state. Always DRAFT on creation; APP11-B02 owns every transition.
+ */
+export type AdminGalleryEntrySummaryResponseStatus =
+  (typeof AdminGalleryEntrySummaryResponseStatus)[keyof typeof AdminGalleryEntrySummaryResponseStatus];
+
+export const AdminGalleryEntrySummaryResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export interface AdminGalleryEntrySummaryResponse {
+  /** How many images the entry has. */
+  assetCount: number;
+  /** The first associated image, when one exists. Identity only — there is no URL here. */
+  coverAssetId?: string;
+  /** Curated position in the gallery. */
+  displayOrder: number;
+  galleryEntryId: string;
+  /** Whether the published entry may be indexed. */
+  isIndexable: boolean;
+  /** Optional product this entry links to. Absent when nothing is linked. */
+  linkedProductId?: string;
+  /** The public address. Chosen once on create and immutable afterwards. */
+  slug: string;
+  /** Lifecycle state. Always DRAFT on creation; APP11-B02 owns every transition. */
+  status: AdminGalleryEntrySummaryResponseStatus;
+  title: string;
+}
+
+export interface AdminGalleryEntryListResponse {
+  /** True when a further page exists. */
+  hasNext: boolean;
+  items: AdminGalleryEntrySummaryResponse[];
+  /** Opaque keyset cursor for the next page. Absent on the last page. */
+  nextCursor?: string;
+}
+
 /**
  * What happened. `FAILED_RETRYABLE` was followed by an automatic retry; `FAILED_TERMINAL` was not, and is what leaves the notification in FAILED.
  */
@@ -2774,6 +2862,34 @@ export interface CreateDesignTemplateBody {
   productId?: string;
   /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
   productSideId?: string;
+}
+
+export interface CreateGalleryEntryBody {
+  /** @maxLength 4000 */
+  description: string;
+  /**
+   * @minimum 0
+   * @maximum 2147483647
+   */
+  displayOrder: number;
+  isIndexable: boolean;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  linkedProductId?: string;
+  /** @maxLength 320 */
+  seoDescription?: string;
+  /** @maxLength 200 */
+  seoTitle?: string;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  slug: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
 }
 
 export type CreateProductBodyCategorySlug =
@@ -5369,6 +5485,37 @@ export interface UpdateCustomerProfileBody {
   notes?: string | null;
 }
 
+export interface UpdateGalleryEntryBody {
+  /** @maxLength 4000 */
+  description?: string;
+  /**
+   * @minimum 0
+   * @maximum 2147483647
+   */
+  displayOrder?: number;
+  isIndexable?: boolean;
+  /**
+   * @nullable
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  linkedProductId?: string | null;
+  /**
+   * @maxLength 320
+   * @nullable
+   */
+  seoDescription?: string | null;
+  /**
+   * @maxLength 200
+   * @nullable
+   */
+  seoTitle?: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title?: string;
+}
+
 export type UpdateProductBodyCategorySlug =
   (typeof UpdateProductBodyCategorySlug)[keyof typeof UpdateProductBodyCategorySlug];
 
@@ -5692,6 +5839,44 @@ export type AdminDesignTemplateAssignScope200 = ApiSuccessResponse & {
 
 export type AdminDesignTemplateUnpublish200 = ApiSuccessResponse & {
   data: AdminDesignTemplateDetailResponse;
+};
+
+export type AdminGalleryEntryListParams = {
+  status?: AdminGalleryEntryListStatus;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from a previous page.
+   */
+  cursor?: unknown;
+};
+
+export type AdminGalleryEntryListStatus =
+  (typeof AdminGalleryEntryListStatus)[keyof typeof AdminGalleryEntryListStatus];
+
+export const AdminGalleryEntryListStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export type AdminGalleryEntryList200 = ApiSuccessResponse & {
+  data: AdminGalleryEntryListResponse;
+};
+
+export type AdminGalleryEntryCreate201 = ApiSuccessResponse & {
+  data: AdminGalleryEntryDetailResponse;
+};
+
+export type AdminGalleryEntryDetail200 = ApiSuccessResponse & {
+  data: AdminGalleryEntryDetailResponse;
+};
+
+export type AdminGalleryEntryUpdate200 = ApiSuccessResponse & {
+  data: AdminGalleryEntryDetailResponse;
 };
 
 export type AdminNotificationIntentListParams = {

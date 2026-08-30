@@ -41,18 +41,12 @@ import { CustomerQuotationDecisionModule } from '../modules/quotation/customer-q
 import { CustomerQuotationModule } from '../modules/quotation/customer-quotation.module';
 import { CustomerDesignDecisionModule } from '../modules/design/customer-design-decision.module';
 import { CustomerDesignReviewModule } from '../modules/design/customer-design-review.module';
-import { CustomerDepositModule } from '../modules/payment/customer-deposit.module';
-import { CustomerDepositAttemptModule } from '../modules/payment/customer-deposit-attempt.module';
-import { CustomerDepositEvidenceModule } from '../modules/payment/customer-deposit-evidence.module';
-import { CustomerFinalPaymentModule } from '../modules/payment/customer-final-payment.module';
-import { CustomerFinalPaymentAttemptModule } from '../modules/payment/customer-final-payment-attempt.module';
-import { AdminOrderPaymentModule } from '../modules/payment/admin-order-payment.module';
-import { AdminPaymentEvidenceModule } from '../modules/payment/admin-payment-evidence.module';
-import { AdminPaymentVerificationModule } from '../modules/payment/admin-payment-verification.module';
+import { PaymentCompositionModule } from '../modules/payment/payment-composition.module';
 import { AdminSkuStockModule } from '../modules/inventory/admin-sku-stock.module';
 import { AdminProductionModule } from '../modules/production/admin-production.module';
 import { AdminProductionTransitionModule } from '../modules/production/admin-production-transition.module';
 import { ContentModule } from '../modules/content/content.module';
+import { GalleryAdminModule } from '../modules/gallery/gallery-admin.module';
 import { AuditContextModule } from '../platform/audit-context/audit-context.module';
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
@@ -247,84 +241,13 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // both routes, and no Catalog or Customer port, so a frozen order fact
     // cannot be reconstructed from live state by accident.
     AdminOrderModule,
-    // APP7-B03 — the customer's two zero-write deposit operations, on their own
-    // `public/orders` base path. Disjoint from `admin/orders` above and from
-    // every public module before it, so registration order cannot make one
-    // shadow another. Like `CustomerQuotationModule` it is defined by what it
-    // cannot inject: no `DatabaseModule`, so no transaction manager and no
-    // idempotency store; no `OrderModule`, so no LC-14 transition; no asset or
-    // storage module, so the QR is generated in-process and nothing is stored.
-    // Its merchant bank configuration is read by a factory, so a deployment
-    // missing one of the four values fails at composition rather than at the
-    // first customer request.
-    CustomerDepositModule,
-    // APP7-B03 — the customer's one deposit write, on the same `public/orders`
-    // base path with a distinct sub-path (`deposit/attempts`), disjoint from
-    // `deposit` and `deposit/qr` above. A second deposit module because it is
-    // the mirror image of the first: it holds the transaction manager, the
-    // idempotency store and the canonical AGG-16 repository that the read is
-    // defined by not holding. `CONTROLLER_DOMAIN_KEYS` keeps both publishing
-    // `publicOrderDeposit`.
-    CustomerDepositAttemptModule,
-    // APP7-B05 — the customer transfer-evidence lane, on the same `public/orders`
-    // base path with a distinct sub-path (`deposit/evidence`), disjoint from the
-    // three above. A third deposit module because it is the only one that needs a
-    // configured object store and the delivered intake pipeline, and the only one
-    // that writes `payment_transfer_evidence`. It publishes its own
-    // `publicOrderDepositEvidence` domain — an intake lane is its own domain, on
-    // the precedent `CONTROLLER_DOMAIN_KEYS` already records for
-    // `PublicCustomRequestAssetController`.
-    CustomerDepositEvidenceModule,
-    // APP9-B02 — the customer's two zero-write final-payment operations, on the
-    // same `public/orders` base path with sub-paths (`final-payment`,
-    // `final-payment/qr`) disjoint from the deposit lane's five above, so
-    // registration order cannot make one shadow another. A fourth module on that
-    // base path rather than more controllers on `CustomerDepositModule`, because
-    // each of these modules is the whole security boundary of one obligation
-    // kind and a reviewer must be able to read one without the other. Like the
-    // deposit read it is defined by what it cannot inject: no `DatabaseModule`,
-    // so no transaction manager and no idempotency store; no `OrderModule`, so
-    // no LC-14 transition and no `TR-LC14-06`; no `IdentityModule`, so no Admin
-    // verification; no asset or storage module, so the QR is generated
-    // in-process and nothing is stored. It reuses the same `REQUEST_ACCESS`
-    // grant and the same merchant bank factory — no new grant scope and no
-    // second merchant configuration.
-    CustomerFinalPaymentModule,
-    // APP9-B02 — the customer's one final-payment write, on the same base path
-    // with a distinct sub-path (`final-payment/attempts`). A second
-    // final-payment module for the reason `CustomerDepositAttemptModule` is a
-    // second deposit module: it is the mirror image of the read, holding the
-    // transaction manager, the idempotency store and the canonical AGG-16
-    // repository that the read is defined by not holding.
-    // `CONTROLLER_DOMAIN_KEYS` keeps both publishing `publicOrderFinalPayment`.
-    CustomerFinalPaymentAttemptModule,
-    // APP7-B04 — the Admin deposit-payment read, on the `admin/orders` base path
-    // with a sub-path (`{orderId}/payments`) disjoint from `AdminOrderModule`'s
-    // two routes, so registration order cannot make one shadow another. A
-    // separate module from the mutations below because it is defined by what it
-    // cannot inject: no `PaymentPersistenceModule` and no `OrderPersistenceModule`,
-    // so neither writer is resolvable and the read cannot settle, satisfy or
-    // transition anything. It publishes its own `adminOrderPayment` domain — an
-    // order's payment vertical is its own resource, not a split of B02's detail.
-    AdminOrderPaymentModule,
-    // APP7-B04 — the two Admin payment mutations, on their own
-    // `admin/payment-attempts` base path. The first and only module in the
-    // repository that may move money state: it holds both canonical writers, the
-    // transaction manager, the outbox and the audit writer. That is exactly the
-    // reach every other payment module is defined by not having, and keeping it
-    // in one injector is what makes "only Admin verification can reach
-    // DEPOSIT_PAID" a property of the wiring.
-    AdminPaymentVerificationModule,
-    // APP7-B06 — the one Admin private transfer-evidence binary, on its own
-    // `admin/payment-evidence` base path, disjoint from both modules above. A
-    // fourth payment module because it is the only Admin payment surface that
-    // needs a configured object store, and putting one in `AdminOrderPaymentModule`
-    // would make `getObjectStream` resolvable from a JSON read that must never
-    // open an object. It holds neither writer, so the preview cannot move an
-    // attempt, an obligation or an order. It publishes its own
-    // `adminPaymentEvidence` domain — a private binary lane is its own domain, on
-    // the precedent `AdminCustomRequestAssetController` already set.
-    AdminPaymentEvidenceModule,
+    // `APP7-B03`..`APP9-B02` — the whole CTX-PAY HTTP surface: the five
+    // customer deposit/final-payment lanes and the three Admin payment
+    // surfaces. Composed in `PaymentCompositionModule` beside the modules it
+    // names, at exactly the position the eight entries occupied, so the route
+    // surface and the registration order are unchanged. Each member keeps its
+    // own injector; the wrapper declares no controller, provider or export.
+    PaymentCompositionModule,
     // APP8-B01 — the Admin stock surface, and the line that finally composes
     // CTX-INV into the running API: `InventoryModule` was imported by three
     // integration specs and two DB9 benchmarks and by nothing here, so the
@@ -404,6 +327,13 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // segment and no registration order can make one shadow another. It joins
     // the one `adminOrder` domain through `CONTROLLER_DOMAIN_KEYS`.
     AdminOrderDeliveryModule,
+    // `APP11-B01` — the four Admin gallery authoring operations, and the first
+    // route CTX-GAL has ever published: `GalleryModule` has held the AGG-18
+    // persistence since DB7-CP3 with no controller above it. Registered last
+    // because it reads Catalog and Identity and nothing reads it. Its
+    // `admin/gallery-entries` base path is claimed by no other module, so
+    // registration order cannot make one route shadow another.
+    GalleryAdminModule,
   ],
 })
 export class AppModule {}
