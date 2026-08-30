@@ -42,7 +42,7 @@ import {
 import { publicSitemapInventoryTooLarge } from '../domain/public-sitemap.errors';
 import {
   PUBLIC_SITEMAP_GALLERY_KIND,
-  PUBLIC_SITEMAP_MAX_ENTRIES_PER_KIND,
+  PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES,
   PUBLIC_SITEMAP_PRODUCT_KIND,
 } from '../domain/public-sitemap.policy';
 import {
@@ -51,8 +51,15 @@ import {
   type PublicSitemapView,
 } from './public-sitemap.projection';
 
-/** One over the cap, so an oversized inventory is detected rather than cut. */
-const FETCH_LIMIT = PUBLIC_SITEMAP_MAX_ENTRIES_PER_KIND + 1;
+/**
+ * One over the *combined* cap, per source.
+ *
+ * Deliberately not `cap / 2`: either kind alone may legitimately fill the whole
+ * inventory, so neither source may be bounded below the total. Asking each for
+ * `cap + 1` keeps both reads bounded while leaving the only cap that matters —
+ * the sum — to be decided after both have answered.
+ */
+const FETCH_LIMIT_PER_SOURCE = PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES + 1;
 
 @Injectable()
 export class PublicSitemapQuery {
@@ -64,14 +71,13 @@ export class PublicSitemapQuery {
 
   async list(): Promise<PublicSitemapView> {
     const [products, gallery] = await Promise.all([
-      this.products.listIndexable(FETCH_LIMIT),
-      this.gallery.listIndexable(FETCH_LIMIT),
+      this.products.listIndexable(FETCH_LIMIT_PER_SOURCE),
+      this.gallery.listIndexable(FETCH_LIMIT_PER_SOURCE),
     ]);
 
-    // Checked before anything is projected: a response is either the whole
-    // inventory or no response at all.
-    this.assertWithinCap(products.length);
-    this.assertWithinCap(gallery.length);
+    // One cap over the sum, checked before anything is projected: a response
+    // is either the whole inventory or no response at all.
+    this.assertWithinCap(products.length + gallery.length);
 
     // `kind` then `slug`, and the concatenation *is* the kind ordering — each
     // repository already returned its own half sorted by slug against a unique
@@ -85,12 +91,17 @@ export class PublicSitemapQuery {
   }
 
   /**
-   * The over-fetched row means the true inventory exceeds the cap. Failing is
-   * deliberate: a crawler reads a truncated sitemap as a complete one and
-   * treats the missing URLs as delisted, so a partial index is worse than none.
+   * The cap is on what one sitemap file may carry, so it is asserted once over
+   * the combined total — never twice over two independent halves, which would
+   * have passed 30 000 + 30 000 while the emitted file held 60 000 URLs.
+   *
+   * Failing is deliberate: a crawler reads a truncated sitemap as a complete
+   * one and treats the missing URLs as delisted, so a partial index is worse
+   * than none — and dropping whichever kind happens to be second would be that
+   * same partial index with a tie-break attached.
    */
-  private assertWithinCap(rowCount: number): void {
-    if (rowCount > PUBLIC_SITEMAP_MAX_ENTRIES_PER_KIND) {
+  private assertWithinCap(totalRowCount: number): void {
+    if (totalRowCount > PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES) {
       throw publicSitemapInventoryTooLarge();
     }
   }

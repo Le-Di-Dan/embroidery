@@ -26,7 +26,7 @@ import { join } from 'node:path';
 import {
   PUBLIC_SITEMAP_CACHE_CONTROL,
   PUBLIC_SITEMAP_ENTRY_KINDS,
-  PUBLIC_SITEMAP_MAX_ENTRIES_PER_KIND,
+  PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES,
 } from '../domain/public-sitemap.policy';
 import { PUBLIC_SITEMAP_ERROR_CODES } from '../domain/public-sitemap.errors';
 
@@ -249,11 +249,28 @@ describe('APP11-B04 public sitemap inventory contract', () => {
 
     it('never truncates: the fetch bound is one above the cap and overflow throws', () => {
       const code = withoutComments(QUERY_SOURCE);
-      expect(code).toContain('PUBLIC_SITEMAP_MAX_ENTRIES_PER_KIND + 1');
+      expect(code).toContain('PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES + 1');
       expect(code).toContain('publicSitemapInventoryTooLarge()');
       expect(code).not.toContain('.slice(');
-      expect(PUBLIC_SITEMAP_MAX_ENTRIES_PER_KIND).toBe(50_000);
+      expect(PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES).toBe(50_000);
       expect(PUBLIC_SITEMAP_ERROR_CODES).toEqual(['PUBLIC_SITEMAP_INVENTORY_TOO_LARGE']);
+    });
+
+    it('caps the combined inventory once, never each kind independently', () => {
+      const code = withoutComments(QUERY_SOURCE);
+      const policy = withoutComments(
+        readFileSync(join(__dirname, '..', 'domain', 'public-sitemap.policy.ts'), 'utf8'),
+      );
+      // The defect this replaced: two independent checks, either of which 30 000
+      // rows passes, over a file the protocol caps at 50 000 URLs in total.
+      expect(code).toContain('products.length + gallery.length');
+      // One call site and one definition: the second, independent check is gone.
+      expect(code.split('assertWithinCap')).toHaveLength(3);
+      // The per-kind authority is gone from the feature entirely, not merely
+      // unused — a surviving alias is a second cap waiting to be read again.
+      for (const source of [code, policy]) {
+        expect(source).not.toContain('PER_KIND');
+      }
     });
 
     it('is anonymous, unstored and read-only', () => {

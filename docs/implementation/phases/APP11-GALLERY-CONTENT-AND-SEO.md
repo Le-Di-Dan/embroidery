@@ -29,6 +29,7 @@ phase.
 | `APP11-B03-C1` | Composition compliance & media-intake roadmap reconciliation | **COMPLETE** |
 | `APP11-B03A` | Admin gallery media intake & public derivative preparation | **COMPLETE** |
 | `APP11-B04` | Public SEO inventory (sitemap) | **COMPLETE** |
+| `APP11-B04-C1` | Global sitemap capacity invariant correction | **COMPLETE** |
 | `APP11-A01` | Admin gallery list | **NEXT** |
 | `APP11-A02` | Admin gallery editor + publication | NOT STARTED |
 | `APP11-S01` | Homepage / store introduction (+ SCSS compile gate) | NOT STARTED |

@@ -62,23 +62,29 @@ export const PUBLIC_SITEMAP_GALLERY_KIND: PublicSitemapEntryKind = 'GALLERY';
 export const PUBLIC_SITEMAP_ORDER = ['kind', 'slug'] as const;
 
 /**
- * The hard safety cap on one inventory response.
+ * The hard safety cap on one inventory response — **combined across kinds**.
  *
- * 50 000 is the sitemap protocol's own per-file URL limit, so a response that
- * exceeded it could not be served as a single valid sitemap anyway — which is
- * why the number is that one rather than an invented round figure. The
- * repository is asked for `cap + 1` rows; a full extra row means the true
- * inventory is larger than the contract can honour, and the operation **fails**
- * instead of returning a partial index. Silent truncation is the one outcome
- * this endpoint must never produce: a search engine cannot tell a truncated
- * sitemap from a complete one, and would read the missing URLs as delisted.
+ * 50 000 is the sitemap protocol's own per-*file* URL limit, and this operation
+ * answers with exactly one file's worth of URLs. The bound is therefore on the
+ * total the response carries, never on either kind separately: a per-kind cap
+ * would have admitted 30 000 Products plus 30 000 gallery entries — 60 000 URLs
+ * in one sitemap, with neither kind tripping its own guard and the protocol
+ * limit breached by a response every individual check called safe.
+ *
+ * Each source is asked for `cap + 1` rows and the two lengths are summed before
+ * anything is projected; a sum above the cap means the true inventory is larger
+ * than the contract can honour, and the operation **fails**. Silent truncation
+ * is the one outcome this endpoint must never produce, and preferring one kind
+ * over the other is the same failure wearing a policy: a search engine cannot
+ * tell a truncated sitemap from a complete one, and would read the missing URLs
+ * as delisted.
  *
  * The store is one physical shop with a bounded catalogue, so this is a
  * tripwire for an unforeseen future, not a working page size. Reaching it is
  * the signal that a paged sitemap-index protocol has become necessary — a
  * contract change, and therefore a checkpoint.
  */
-export const PUBLIC_SITEMAP_MAX_ENTRIES_PER_KIND = 50_000;
+export const PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES = 50_000;
 
 /**
  * `no-store`, exactly as the public Catalog and Gallery reads use.

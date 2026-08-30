@@ -212,12 +212,20 @@ There is no canonical repository-wide cap for a full inventory read —
 feeds and would have been the wrong tool, since clamping is exactly the silent
 truncation this operation must never do. So B04 declares its own explicit cap:
 
+> **Superseded by `APP11-B04-C1`.** The cap below was declared and checked
+> *per kind*, which admitted 30 000 Products plus 30 000 gallery entries — 60 000
+> URLs in one sitemap file — with neither kind tripping its own guard. The
+> authority is now one combined bound, `PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES`, and
+> the numbers below read against that single total. See
+> `APP11-B04-C1-COMPLETION-REPORT.md`.
+
 ```text
-PUBLIC_SITEMAP_MAX_ENTRIES_PER_KIND = 50_000   // the sitemap protocol's own per-file URL limit
-FETCH_LIMIT                         = cap + 1
+PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES = 50_000   // the sitemap protocol's own per-file URL limit
+FETCH_LIMIT_PER_SOURCE           = cap + 1
 ```
 
-Each repository is asked for `cap + 1`. A full extra row means the true inventory
+Each repository is asked for `cap + 1` and the two row counts are **summed**
+before the check. A sum above the cap means the true inventory
 exceeds what one response may carry, and the query **throws**
 `PUBLIC_SITEMAP_INVENTORY_TOO_LARGE` → HTTP 503 before anything is projected. No
 `.slice(...)` exists anywhere in the feature, asserted structurally. Reaching the
@@ -477,9 +485,10 @@ FU-APP11-B04-02
   OWNER a dedicated governance checkpoint.
 
 FU-APP11-B04-03
-  WHAT  `PUBLIC_SITEMAP_MAX_ENTRIES_PER_KIND` is a tripwire, not a working page size.
-        If the catalogue ever approaches 50 000 indexable entities per kind, a
-        sitemap-index protocol (multiple sitemap files) becomes necessary.
+  WHAT  `PUBLIC_SITEMAP_MAX_TOTAL_ENTRIES` (per `APP11-B04-C1`) is a tripwire, not a
+        working page size. If the catalogue ever approaches 50 000 indexable
+        entities in total across both kinds, a sitemap-index protocol (multiple
+        sitemap files) becomes necessary.
   WHY   That is a contract change, not a tuning change.
   OWNER a future SEO checkpoint, if the store ever grows into it.
 
