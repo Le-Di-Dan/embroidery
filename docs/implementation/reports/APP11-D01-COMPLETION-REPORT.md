@@ -309,6 +309,44 @@ text styles, `FIG-FILE-DS` untouched. All type uses `Typography/*`; all colour u
 
 ---
 
+## L.0 Layout correction (post-review, same checkpoint)
+
+The first pass placed every frame with **absolute canvas coordinates**. For a
+child of a `SECTION`, Figma treats `node.x` / `node.y` as **relative to the
+section**, so each frame was displaced by its own section's origin
+(`absX = section.x + child.x`). Content Page frames landed at `x ≈ 26 080`, on top
+of the Admin sections; the earlier bounds check missed it because it compared a
+section-relative child `.x` against an absolute section `.x` and the two errors
+cancelled.
+
+Corrected by re-laying out every section with **relative** coordinates on an
+explicit row grid (margin 80, gutters 120 × 200, title band 240), refitting each
+section to its content, then spacing the eight sections along the page with a
+400px gutter. Re-verified with `absoluteBoundingBox`:
+
+```text
+sections = 8 · frames = 33
+section-to-section overlaps      = 0
+frames outside their own section = 0
+sibling frame overlaps           = 0
+cross-section frame overlaps     = 0
+```
+
+Two copy defects that only became visible in the captures were also fixed:
+
+- the side navigation showed **`Bộ sưu tập` twice** in four editor frames — the
+  bulk copy pass had renamed the plain `Sản phẩm` nav item; restored;
+- the publication readiness list carried a fifth, product-specific row
+  (`… ảnh "Sẵn sàng" làm ảnh đại diện`) that duplicated the asset rule; it is now
+  the slug rule, so Ready and Blocked both show exactly the four documented
+  criteria. The mobile list's `Tải thêm sản phẩm` became `Tải thêm mục`.
+
+**No node was created or deleted by this correction** — only positions, section
+sizes and four strings changed, so all 38 registry rows still point at the same
+node IDs and the gate is unaffected.
+
+---
+
 ## L. Validation
 
 ```text
@@ -328,19 +366,24 @@ TESTS_RUN
     → PASS (529 registry IDs, 529 node rows, 23 tables)
   npx prettier --check  (the three changed markdown files)
     → PASS
-  Live Figma visual inspection — rendered and reviewed:
-    329:2 and 334:6 (UI05 source, at G01-C1)
-    860:442  gallery entry detail desktop
-    863:677  content page template desktop
-    864:1253 content page template mobile  (no horizontal overflow)
-    866:905  admin gallery list desktop
-    868:909  admin gallery editor desktop
-  Live structural verification — read back from the file:
+  Live Figma visual inspection — every section captured and reviewed after the
+  layout correction (§L.0), plus the whole page:
+    853:2    whole APP_11 page      — 8 blocks, clear gutters, no overlap
+    857:3    authority map          857:4  homepage reconciliation
+    857:5    gallery detail         857:6  content page template
+    857:7    admin gallery list     857:8  admin gallery editor
+    857:9    footer & floating dock 857:10 responsive/a11y/SEO notes
+  Frame-level captures re-reviewed after the copy fixes:
+    870:1104 publication ready · 870:1187 publication blocked
+    867:946  admin gallery list mobile
+    864:1253 content page template mobile (no horizontal overflow)
+  Live structural verification — read back with absoluteBoundingBox:
     APP_11 holds exactly 8 sections / 33 frames; no stray top-level node
-    every section resized to fit its children; no section overlaps another
+    0 section overlaps · 0 frames outside their section · 0 sibling overlaps
+    0 cross-section frame overlaps
     no gallery-feed frame exists on APP_11
     "Section / Member Works" absent from all 3 APP11 detail frames
-    "Journal" absent from all 3 APP11 homepage frames
+    no Journal section in any APP11 homepage frame
     every admin row/table column sums to the 1036px content width
   git status / git diff — only the three permitted files changed
 ```
