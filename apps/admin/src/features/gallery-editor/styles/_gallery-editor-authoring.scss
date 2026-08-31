@@ -1,0 +1,105 @@
+// Admin gallery editor — authoring form and linked product (`APP11-A02`).
+//
+// The editable half of `FIG-APP11-ADMIN-GALLERY-EDITOR-DESKTOP` (`868:909`):
+// the form header and its save action, the SEO group, the textarea, read-only
+// and checkbox field treatments, and the linked-product value with the picker
+// list that sets it.
+
+@use '@embroidery/styles' as styles;
+
+.gallery-authoring__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(16);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.gallery-authoring__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.gallery-authoring__seo {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  margin: 0;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  min-width: 0;
+}
+
+.gallery-editor__textarea {
+  min-height: styles.spacing(96);
+  font-family: inherit;
+  resize: vertical;
+}
+
+.gallery-editor__readonly {
+  background: styles.$color-background-secondary;
+  color: styles.$color-text-secondary;
+}
+
+.gallery-editor__checkbox-field {
+  gap: styles.spacing(4);
+}
+
+.gallery-editor__checkbox-row {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: center;
+}
+
+.gallery-editor__checkbox {
+  width: styles.spacing(16);
+  height: styles.spacing(16);
+  flex: 0 0 auto;
+}
+
+// Linked product — the current value, its actions, and the picker list.
+.gallery-linked-product {
+  padding: styles.spacing(16);
+  gap: styles.spacing(8);
+}
+
+.gallery-linked-product__value {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  overflow-wrap: anywhere;
+}
+
+.gallery-linked-product__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.gallery-product-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gallery-product-picker__option {
+  display: flex;
+  gap: styles.spacing(16);
+  align-items: center;
+  justify-content: space-between;
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+}
+
+.gallery-product-picker__name {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

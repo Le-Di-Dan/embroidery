@@ -16,18 +16,22 @@
  * shared `AdminStatusBadge` renders and what accessibility requires of this
  * screen.
  *
- * ## Feature scope, on purpose
+ * ## Admin shared scope, on the checkpoint that earned it
  *
- * This stays inside the gallery-list capability because the list is its only
- * caller (CLAUDE.md §5). `APP11-A02`'s editor names the same three states, and
- * the `production-status` precedent is the one to follow when it lands: promote
- * to `src/shared/presentation` on the checkpoint that gives it a second real
- * caller, not before.
+ * `APP11-A01` kept this inside the gallery-list capability, because the list
+ * was its only caller (CLAUDE.md §5), and recorded that the `production-status`
+ * precedent was the one to follow once a second real caller landed.
+ * `APP11-A02` is that checkpoint: the editor's publication panel names the same
+ * three states and must name them identically — an entry called `Bản nháp` in
+ * the list and something else in the editor is the same record described two
+ * ways. So it moves here, and no further: this is Admin-wide, not a workspace
+ * package, because the storefront never sees a gallery entry's lifecycle state
+ * at all. This closes `FU-APP11-A01-06`.
  */
 import type { AdminGalleryEntryListStatus } from '@embroidery/api-client';
 
-import type { AdminStatusTone } from '../../../shared/status/admin-status-badge';
-import { STATUS_SYMBOLS } from '../../../shared/presentation/order-status';
+import type { AdminStatusTone } from '../status/admin-status-badge';
+import { STATUS_SYMBOLS } from './order-status';
 
 export type GalleryStatusValue =
   (typeof AdminGalleryEntryListStatus)[keyof typeof AdminGalleryEntryListStatus];

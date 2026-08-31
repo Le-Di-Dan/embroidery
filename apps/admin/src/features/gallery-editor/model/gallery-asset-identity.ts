@@ -1,0 +1,66 @@
+/**
+ * How one image is named to an operator when its bytes are not what identifies
+ * it.
+ *
+ * `APP2-B01` stores no original filename, and neither does `APP11-B03A`'s copy,
+ * so there is none to show and none is invented. What the contract does publish
+ * is a media type, a byte size and a creation instant — which is enough to tell
+ * two tiles apart in a picker and to caption a row.
+ *
+ * The asset's UUID is never rendered as a label. It is a render key and a
+ * request parameter, and putting it on screen would be an internal identifier
+ * presented as if it meant something to the person reading it.
+ */
+const MEDIA_TYPE_LABELS: Readonly<Record<string, string>> = {
+  'image/png': 'Ảnh PNG',
+  'image/jpeg': 'Ảnh JPEG',
+  'image/webp': 'Ảnh WebP',
+};
+
+/** The neutral label for a media type this build has no name for. */
+export const UNKNOWN_MEDIA_TYPE_LABEL = 'Ảnh';
+
+export function resolveAssetTitle(mediaType: string): string {
+  return MEDIA_TYPE_LABELS[mediaType] ?? UNKNOWN_MEDIA_TYPE_LABEL;
+}
+
+const BYTES_PER_KILOBYTE = 1024;
+
+/**
+ * A rounded size in the largest unit that keeps the number legible. Not a
+ * precise figure — the operator is distinguishing tiles, not auditing storage.
+ */
+export function formatAssetSize(byteSize: number): string {
+  if (!Number.isFinite(byteSize) || byteSize < 0) {
+    return '';
+  }
+  const kilobytes = byteSize / BYTES_PER_KILOBYTE;
+  if (kilobytes < BYTES_PER_KILOBYTE) {
+    return `${String(Math.max(1, Math.round(kilobytes)))} KB`;
+  }
+  return `${(kilobytes / BYTES_PER_KILOBYTE).toFixed(1)} MB`;
+}
+
+/**
+ * A calendar date in the operator's locale-independent, unambiguous form.
+ *
+ * Formatted from the parts rather than through `toLocaleDateString`, whose
+ * output depends on the runtime's locale data and would differ between a
+ * server render, a browser and a test.
+ */
+export function formatAssetDate(createdAt: string): string {
+  const parsed = new Date(createdAt);
+  if (Number.isNaN(parsed.getTime())) {
+    return '';
+  }
+  const day = String(parsed.getDate()).padStart(2, '0');
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  return `${day}/${month}/${String(parsed.getFullYear())}`;
+}
+
+/** `{size} · {date}`, collapsing gracefully when either part is unavailable. */
+export function buildAssetMetaLine(byteSize: number, createdAt: string): string {
+  return [formatAssetSize(byteSize), formatAssetDate(createdAt)]
+    .filter((part) => part !== '')
+    .join(' · ');
+}

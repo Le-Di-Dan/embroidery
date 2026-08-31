@@ -17,6 +17,7 @@ import { ADMIN_ASSETS_ROUTE } from '../../src/features/assets/model/asset-route'
 import { ADMIN_CUSTOMER_ACCESS_ROUTE } from '../../src/features/customer-access-support/model/customer-access-route';
 import { ADMIN_REQUESTS_ROUTE } from '../../src/features/custom-request-queue/model/custom-request-queue-route';
 import { ADMIN_DESIGN_TEMPLATES_ROUTE } from '../../src/features/design-templates/model/design-template-route';
+import { ADMIN_GALLERY_ROUTE } from '../../src/features/gallery-list/model/gallery-list-route';
 import { ADMIN_ORDERS_ROUTE } from '../../src/features/order-queue/model/order-queue-route';
 import { ADMIN_PRODUCTION_ROUTE } from '../../src/features/production-queue/model/production-queue-route';
 import { ADMIN_PRODUCTS_ROUTE } from '../../src/features/products/model/product-route';
@@ -28,6 +29,10 @@ const IMPLEMENTED_ADMIN_ROUTES = [
   AUTHENTICATED_HOME_ROUTE,
   ADMIN_ASSETS_ROUTE,
   ADMIN_PRODUCTS_ROUTE,
+  // `APP11-A01` — the gallery list, at `(protected)/gallery`. Its nav entry
+  // shipped without being listed here, which left this assertion red at
+  // `APP11-A02`’s entry HEAD; the destination is recorded now.
+  ADMIN_GALLERY_ROUTE,
   // `APP3-A02` — the Design Template list, at `(protected)/design-templates`.
   ADMIN_DESIGN_TEMPLATES_ROUTE,
   // `APP5-A01` — the custom-request queue, at `(protected)/requests`.

@@ -24,7 +24,10 @@ import { AdminGalleryEntryListStatus } from '@embroidery/api-client';
 import type { AdminGalleryEntryListParams } from '@embroidery/api-client';
 
 import { GALLERY_LIST_COPY } from './gallery-list-copy';
-import { galleryStatusLabel, type GalleryStatusValue } from './gallery-status';
+import {
+  galleryStatusLabel,
+  type GalleryStatusValue,
+} from '../../../shared/presentation/gallery-status';
 
 /** The presentation value meaning "send no `status`". */
 export const ALL_STATUS_FILTER_VALUE = 'all';

@@ -43,6 +43,8 @@ it('does not disturb the existing entries', () => {
     'overview',
     'assets',
     'products',
+    // `APP11-A01` appended the gallery beside the catalog surfaces.
+    'gallery',
     'design-templates',
     'custom-requests',
     // `APP7-A01` appended the order queue after the request queue — the

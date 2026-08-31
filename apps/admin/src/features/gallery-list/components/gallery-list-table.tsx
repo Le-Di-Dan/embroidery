@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { AdminStatusBadge } from '../../../shared/status/admin-status-badge';
 import { GALLERY_LIST_COPY } from '../model/gallery-list-copy';
 import type { GalleryListRow } from '../model/gallery-list-rows';
@@ -24,13 +26,19 @@ interface GalleryListTableProps {
  * as `APP11-D01` drew them after removing the category column that
  * `gallery_entries` has no field for.
  *
- * ### Nothing here is interactive
+ * ### One real link per row, and it is the title
  *
- * `APP11-A01` ships a read-only list: `/gallery/{entryId}` does not exist yet,
- * so a row link would answer a click with a 404. There is no anchor, no
- * clickable `<div>`, no row `onClick` and no keyboard target — a row is data,
- * and keyboard navigation therefore lands on nothing that is not there.
- * `APP11-A02` restores the row navigation the approved frame draws.
+ * `APP11-A01` staged this: `/gallery/{entryId}` did not exist, so a row link
+ * would have answered a click with a 404. `APP11-A02` builds the editor, and
+ * the approved navigation is restored here.
+ *
+ * The destination is carried by an `<a>` around the title — not by a row
+ * `onClick`, not by a clickable `<div>`, and not by a `tabIndex` on the `<tr>`.
+ * A real anchor is focusable, announced as a link, opens in a new tab on
+ * middle-click and shows its target in the status bar; a div that listens for
+ * clicks does none of that. The rest of the row stays plain data, so the cells
+ * beside it are readable without a keyboard operator having to tab through four
+ * copies of the same destination.
  *
  * ### Server order, preserved
  *
@@ -65,7 +73,14 @@ export function GalleryListTable({ rows }: GalleryListTableProps) {
                 <GalleryCover assetId={row.coverAssetId} alt={row.coverAlt} />
               </span>
               <span className="gallery-table__entry-text">
-                <span className="gallery-table__title">{row.title}</span>
+                <Link
+                  className="gallery-table__title"
+                  href={row.href}
+                  aria-label={GALLERY_LIST_COPY.entry.openLabel(row.title)}
+                  data-testid="gallery-list-row-link"
+                >
+                  {row.title}
+                </Link>
                 <span className="gallery-table__slug">
                   {`${GALLERY_LIST_COPY.entry.slugPrefix}${row.slug}`}
                 </span>

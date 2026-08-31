@@ -1,0 +1,115 @@
+// Admin gallery editor — page frame, two-column workspace and panel chrome
+// (`APP11-A02`).
+//
+// The outermost frame of `FIG-APP11-ADMIN-GALLERY-EDITOR-DESKTOP` (`868:909`)
+// and `-MOBILE` (`870:1368`): the header row, the authoring column and the
+// publication rail beside it, and the panel every section of the editor is
+// drawn on.
+//
+// It owns the feature's only two layout measures, and it is loaded **first** so
+// every later partial cascades over it.
+
+@use '@embroidery/styles' as styles;
+
+// The shell breakpoint the Admin screens already switch at (`products.scss`,
+// `gallery-list.scss`). The editor is a single stacked column below it and a
+// two-column workspace from it upward.
+$gallery-editor-breakpoint: 1024px;
+
+// The publication rail's fixed measure on desktop. Bounded so the authoring
+// column keeps a readable width rather than stretching to whatever is left.
+$gallery-editor-rail-width: 320px;
+
+.gallery-editor {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+.gallery-editor__header {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  align-items: flex-start;
+}
+
+.gallery-editor__breadcrumb {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.gallery-editor__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-heading-m;
+  // A long entry title wraps rather than widening the page: this is the usual
+  // cause of horizontal overflow at 390.
+  overflow-wrap: anywhere;
+}
+
+.gallery-editor__back {
+  color: styles.$color-action-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-editor__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+.gallery-editor__column {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  min-width: 0;
+  flex: 1;
+}
+
+.gallery-editor__rail {
+  min-width: 0;
+}
+
+// From the shell breakpoint upward the publication panel sits beside the
+// authoring column, which is the desktop frame. Below it everything stacks in
+// source order, so nothing is hidden and nothing scrolls sideways.
+@media (min-width: $gallery-editor-breakpoint) {
+  .gallery-editor__body {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .gallery-editor__rail {
+    flex: 0 0 $gallery-editor-rail-width;
+    position: sticky;
+    // Clears the shell's own header so the panel does not slide under it.
+    top: styles.spacing(24);
+  }
+}
+
+// The panel every editor section is drawn on.
+.gallery-editor__panel {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  min-width: 0;
+}
+
+.gallery-editor__panel-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-editor__panel-help {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}

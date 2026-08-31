@@ -1,0 +1,136 @@
+// Admin gallery editor — asset and source picker grids (`APP11-A02`).
+//
+// The grid of choosable images inside the wide dialog (`870:926`): the option
+// card, its image band and caption, the empty state and the cursor-based
+// continuation. Loaded last, because the cards are composed on top of the
+// dialog shell and the image tile above.
+
+@use '@embroidery/styles' as styles;
+
+// The picker card's image band and the grid's minimum column.
+//
+// The column is wide enough for a caption to sit on one or two lines rather
+// than four; the image spans the whole of it, because choosing between images
+// is the entire task of both pickers.
+$gallery-picker-thumb-size: 132px;
+$gallery-picker-min-column: 208px;
+
+.gallery-picker__help,
+.gallery-picker__status,
+.gallery-picker__count {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-picker__grid {
+  display: grid;
+  // Auto-fills to the available width, so the same grid is one column at 390
+  // and several on desktop with no breakpoint of its own.
+  grid-template-columns: repeat(auto-fill, minmax($gallery-picker-min-column, 1fr));
+  gap: styles.spacing(16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gallery-picker__option {
+  min-width: 0;
+}
+
+// The option is a **vertical** card: image on top at the card's full width,
+// then its caption underneath.
+//
+// The earlier horizontal arrangement put the image and the text side by side
+// inside a grid column barely wider than the image, which left the caption a
+// sliver to wrap into and broke every label across four lines. Stacking gives
+// the caption the whole card width, which is the only measure that scales with
+// the column.
+.gallery-picker__label {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(8);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  cursor: pointer;
+  min-width: 0;
+  height: 100%;
+
+  .gallery-asset-thumb {
+    width: 100%;
+    // Fixed height, so a row of cards keeps one baseline whatever the source
+    // images' proportions are and nothing reflows when the bytes land.
+    height: $gallery-picker-thumb-size;
+  }
+}
+
+// The control sits with the caption rather than above the image: it is the
+// thing the operator clicks, and it belongs beside the name it selects.
+.gallery-picker__checkbox {
+  width: styles.spacing(16);
+  height: styles.spacing(16);
+  flex: 0 0 auto;
+}
+
+.gallery-picker__info {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  min-width: 0;
+}
+
+.gallery-picker__text {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.gallery-picker__title {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  overflow-wrap: anywhere;
+}
+
+.gallery-picker__meta {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  overflow-wrap: anywhere;
+}
+
+.gallery-picker__empty {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+}
+
+.gallery-picker__empty-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-picker__empty-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-picker__continuation {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  align-items: flex-start;
+}
+
+.gallery-picker__continuation-error {
+  margin: 0;
+  color: styles.$color-status-error;
+  font-size: styles.$font-size-body-s;
+}

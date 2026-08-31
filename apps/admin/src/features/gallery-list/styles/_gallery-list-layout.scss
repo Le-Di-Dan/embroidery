@@ -1,0 +1,121 @@
+// Admin gallery list — page frame, filter and presentation switch
+// (`APP11-A01`, header action `APP11-A02`).
+//
+// The outermost frame of `FIG-APP11-ADMIN-GALLERY-LIST-DESKTOP` (`866:905`):
+// the heading-plus-action header, the one approved status filter, and the
+// breakpoint that decides which of the two presentations is in the document.
+//
+// It owns the feature's layout threshold and the filter measure, and it is
+// loaded **first** so every later partial cascades over it.
+
+@use '@embroidery/styles' as styles;
+
+// The shell breakpoint the Admin lists already switch at (`products.scss`).
+// The mobile card list presents below it and the desktop table from it upward;
+// exactly one is ever in the accessibility tree, so nothing is announced twice.
+$gallery-breakpoint: 1024px;
+
+// The status select is bounded so the longest option does not stretch across
+// the whole content column.
+$gallery-filter-width: 280px;
+
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding: styles.spacing(24);
+}
+
+// The header is heading-plus-action from APP11-A02 onward. It wraps rather
+// than shrinking the action, so at 390 the button sits under the title at full
+// width instead of being squeezed below the minimum touch target.
+.gallery__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(16);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.gallery__heading {
+  min-width: 0;
+}
+
+.gallery__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.gallery__breadcrumb {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.gallery__title {
+  margin: styles.spacing(4) 0 0;
+  font-size: styles.$font-size-heading-m;
+  color: styles.$color-text-primary;
+}
+
+// ---------------------------------------------------------------------------
+// The one approved filter: a native labelled select, not a custom widget
+// ---------------------------------------------------------------------------
+.gallery-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(16);
+  align-items: flex-end;
+}
+
+.gallery-filter {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.gallery-filter__label {
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-filter__control {
+  width: 100%;
+  max-width: $gallery-filter-width;
+  padding: styles.spacing(8) styles.spacing(12);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+}
+
+// ---------------------------------------------------------------------------
+// The collection, and the one presentation that applies at a given width
+// ---------------------------------------------------------------------------
+.gallery-collection {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+}
+
+// Below the breakpoint the table is gone entirely and the cards present the
+// same four facts; above it the reverse. `display: none` and not a visual
+// hiding trick, so the hidden presentation is out of the accessibility tree.
+.gallery-collection__desktop {
+  display: none;
+
+  @media (min-width: $gallery-breakpoint) {
+    display: block;
+  }
+}
+
+.gallery-collection__mobile {
+  display: block;
+
+  @media (min-width: $gallery-breakpoint) {
+    display: none;
+  }
+}

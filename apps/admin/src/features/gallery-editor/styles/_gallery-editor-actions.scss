@@ -1,0 +1,72 @@
+// Admin gallery editor — button treatments (`APP11-A02`).
+//
+// One base rule shared by every editor, dialog and media-row button, then the
+// primary variant and the inline action. Loaded before the sections so each of
+// them inherits the chrome rather than redefining it.
+
+@use '@embroidery/styles' as styles;
+
+.gallery-editor__primary,
+.gallery-editor__secondary,
+.gallery-editor__inline-action,
+.gallery__primary-action,
+.gallery-dialog__primary,
+.gallery-dialog__secondary,
+.gallery-media-row__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // Every control clears the minimum touch target, which is what makes the
+  // ordering buttons usable at 390 without a pointer.
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    border-color: styles.$color-border-primary;
+    cursor: default;
+  }
+}
+
+.gallery-editor__primary,
+.gallery__primary-action,
+.gallery-dialog__primary {
+  border-color: styles.$color-action-primary;
+  background: styles.$color-action-primary;
+  color: styles.$color-background-primary;
+
+  &:hover:not(:disabled) {
+    background: styles.$color-action-hover;
+    border-color: styles.$color-action-hover;
+  }
+
+  &:active:not(:disabled) {
+    background: styles.$color-action-active;
+    border-color: styles.$color-action-active;
+  }
+
+  &:disabled {
+    background: styles.$color-background-secondary;
+    border-color: styles.$color-border-primary;
+    color: styles.$color-text-tertiary;
+  }
+}
+
+.gallery-editor__inline-action {
+  align-self: flex-start;
+  min-height: auto;
+  padding: styles.spacing(4) 0;
+  border: 0;
+  background: none;
+  color: styles.$color-action-primary;
+  text-decoration: underline;
+}

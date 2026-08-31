@@ -1,0 +1,81 @@
+// Admin gallery editor — failures, notices, validation and status
+// (`APP11-A02`).
+//
+// The feedback surfaces every section of the editor shares: the refusal and
+// notice blocks, the blocked-publication validation summary, the confirmation
+// body, the inline status line and the screen-reader live region that speaks
+// reorder and removal announcements.
+
+@use '@embroidery/styles' as styles;
+
+.gallery-editor__failure,
+.gallery-editor__notice,
+.gallery-editor__validation {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  align-items: flex-start;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-secondary;
+}
+
+.gallery-editor__failure,
+.gallery-editor__validation {
+  border-color: styles.$color-status-error;
+}
+
+.gallery-editor__notice {
+  border-color: styles.$color-status-warning;
+}
+
+.gallery-editor__failure-title,
+.gallery-editor__notice-title,
+.gallery-editor__validation-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-editor__failure-body,
+.gallery-editor__notice-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-editor__validation-list {
+  margin: 0;
+  padding-left: styles.spacing(16);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-editor__confirmation {
+  margin: 0;
+  color: styles.$color-status-success;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-editor__status {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// A screen-reader-only live region: reorder and removal announcements are
+// spoken, not seen. Clipped rather than `display: none`, which would remove it
+// from the accessibility tree and silence it.
+.gallery-editor__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

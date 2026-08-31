@@ -1,0 +1,67 @@
+// Admin gallery editor — publication rail (`APP11-A02`).
+//
+// `FIG-APP11-ADMIN-GALLERY-EDITOR-PUB-READY` (`870:1104`), `-PUB-BLOCKED`
+// (`870:1187`) and `-PUB-UNPUBLISH` (`870:1274`): the status summary, the
+// readiness requirement list and the publish/unpublish actions.
+
+@use '@embroidery/styles' as styles;
+
+.gallery-publication__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gallery-publication__summary-title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-publication__summary-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-publication__requirements {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// The requirement's state is carried by its mark and by the row's own text, not
+// by colour alone: `[data-met]` only changes the tint of a distinction the
+// symbol already makes.
+.gallery-publication__requirement {
+  display: flex;
+  gap: styles.spacing(8);
+  align-items: baseline;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+
+  &[data-met='true'] {
+    color: styles.$color-text-primary;
+  }
+}
+
+.gallery-publication__requirement--flagged {
+  color: styles.$color-status-error;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-publication__requirement-mark {
+  flex: 0 0 auto;
+}
+
+.gallery-publication__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}

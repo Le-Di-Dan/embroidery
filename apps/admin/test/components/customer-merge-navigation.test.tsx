@@ -27,6 +27,8 @@ it('adds no navigation entry for the merge workflow', () => {
     'overview',
     'assets',
     'products',
+    // `APP11-A01` appended the gallery beside the catalog surfaces.
+    'gallery',
     'design-templates',
     'custom-requests',
     'orders',

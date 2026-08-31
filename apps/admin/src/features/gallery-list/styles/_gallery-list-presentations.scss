@@ -1,0 +1,240 @@
+// Admin gallery list — desktop table, shared cover tile and mobile cards
+// (`APP11-A01`, row links `APP11-A02`).
+//
+// The two presentations of the same four facts: the table of
+// `FIG-APP11-ADMIN-GALLERY-LIST-DESKTOP` (`866:905`) and the card list of
+// `-MOBILE` (`867:946`), with the cover tile between them because both draw
+// it. Exactly one presentation is in the accessibility tree at a given width;
+// the switch itself belongs to the layout partial above.
+
+@use '@embroidery/styles' as styles;
+
+// The cover tile. Square, fixed in both axes so a row never reflows when the
+// bytes land and never grows to whatever the thumbnail rendition happens to be.
+$gallery-cover-size: 56px;
+$gallery-cover-size-mobile: 72px;
+
+.gallery-table {
+  width: 100%;
+  border-collapse: collapse;
+  // Fixed layout so the colgroup decides the tracks: a long title wraps inside
+  // its own cell rather than pushing the status column past the viewport.
+  table-layout: fixed;
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+
+  th,
+  td {
+    padding: styles.spacing(12) styles.spacing(16);
+    border-bottom: 1px solid styles.$color-border-primary;
+    text-align: left;
+    vertical-align: middle;
+    color: styles.$color-text-primary;
+    font-size: styles.$font-size-body-s;
+    overflow-wrap: anywhere;
+  }
+
+  thead th {
+    background: styles.$color-surface-secondary;
+    color: styles.$color-text-secondary;
+    font-size: styles.$font-size-caption;
+    font-weight: styles.$font-weight-semibold;
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.gallery-table__caption {
+  padding-bottom: styles.spacing(8);
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-caption;
+  text-align: left;
+}
+
+// The row identity: cover, title, slug and image count in one cell, as the
+// approved `Mục` column draws them.
+.gallery-table__entry {
+  display: flex;
+  gap: styles.spacing(12);
+  align-items: center;
+  font-weight: styles.$font-weight-regular;
+}
+
+.gallery-table__entry-media {
+  flex: 0 0 auto;
+}
+
+.gallery-table__entry-text {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+// The rows one interactive element. Underlined on hover and focus rather than
+// permanently, so a table of twenty rows is not a wall of rules — but it keeps
+// the browser's own focus ring, which is what a keyboard operator navigates by.
+.gallery-table__title {
+  color: styles.$color-text-primary;
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.gallery-table__slug,
+.gallery-table__assets {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.gallery-table__order {
+  color: styles.$color-text-secondary;
+  font-variant-numeric: tabular-nums;
+}
+
+.gallery-table__product {
+  color: styles.$color-text-secondary;
+}
+
+.gallery-table__col--entry {
+  width: 48%;
+}
+
+.gallery-table__col--order {
+  width: 12%;
+}
+
+.gallery-table__col--product {
+  width: 20%;
+}
+
+.gallery-table__col--status {
+  width: 20%;
+}
+
+// The cover tile, shared by both presentations.
+.gallery-cover {
+  display: flex;
+  width: $gallery-cover-size;
+  height: $gallery-cover-size;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  object-fit: cover;
+  overflow: hidden;
+}
+
+.gallery-cover--placeholder {
+  color: styles.$color-text-tertiary;
+}
+
+.gallery-cover__glyph {
+  font-size: styles.$font-size-body-m;
+}
+
+// Mobile card list (`867:946`).
+.gallery-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gallery-card {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.gallery-card__top {
+  display: flex;
+  gap: styles.spacing(12);
+  align-items: center;
+
+  .gallery-cover {
+    width: $gallery-cover-size-mobile;
+    height: $gallery-cover-size-mobile;
+  }
+}
+
+.gallery-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  // Without this a long title makes the flex item refuse to shrink, which is
+  // the usual cause of horizontal overflow at 390.
+  min-width: 0;
+}
+
+.gallery-card__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  overflow-wrap: anywhere;
+}
+
+// The card's link is the title alone, not the card. It still clears the minimum
+// touch target vertically, which is what makes it tappable at 390 without
+// swallowing every touch that lands anywhere on the card.
+.gallery-card__link {
+  display: inline-block;
+  min-height: styles.$size-touch-target-min;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.gallery-card__slug,
+.gallery-card__assets {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  overflow-wrap: anywhere;
+}
+
+// The two secondary facts as a description list: the label is not decoration,
+// it is what tells the reader which number is the display order.
+.gallery-card__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: styles.spacing(4) styles.spacing(12);
+  margin: 0;
+
+  dt {
+    color: styles.$color-text-tertiary;
+    font-size: styles.$font-size-caption;
+  }
+
+  dd {
+    margin: 0;
+    color: styles.$color-text-secondary;
+    font-size: styles.$font-size-body-s;
+    overflow-wrap: anywhere;
+  }
+}
+
+.gallery-card__status {
+  display: flex;
+}

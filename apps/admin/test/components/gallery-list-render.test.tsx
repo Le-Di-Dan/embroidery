@@ -96,16 +96,22 @@ describe('the generated boundary', () => {
     ]);
     expect(actual['adminGalleryEntryList']).toBeDefined();
     expect(actual['adminGalleryAssetPreview']).toBeDefined();
-    // The six A02 operations are not on the curated boundary at all.
-    for (const withheld of [
-      'adminGalleryEntryCreate',
-      'adminGalleryEntryDetail',
-      'adminGalleryEntryUpdate',
-      'adminGalleryEntryReplaceAssets',
-      'adminGalleryEntryPublish',
-      'adminGalleryEntryUnpublish',
+    // The editor's operations now exist on the curated boundary — APP11-A02
+    // consumes them — so the guarantee moves from "the package does not export
+    // them" to "this feature does not import them". That is the guarantee that
+    // was ever really about the list, and the boundary suite asserts it against
+    // the feature's own source.
+    //
+    // What stays absolute is the storefront's view of the same rows: an Admin
+    // screen reading it would be a second, unauthenticated source of truth, and
+    // no checkpoint makes that acceptable.
+    for (const neverExported of [
+      'publicGalleryEntryList',
+      'publicGalleryEntryDetail',
+      'publicGalleryEntryMediaGet',
+      'publicSitemapEntryList',
     ]) {
-      expect(actual[withheld]).toBeUndefined();
+      expect(actual[neverExported]).toBeUndefined();
     }
   });
 });

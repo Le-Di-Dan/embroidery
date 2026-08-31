@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { useGalleryListQuery } from '../hooks/use-gallery-list-query';
 import type { GalleryListFilterController } from '../hooks/use-gallery-list-filters';
@@ -16,6 +16,12 @@ import { GalleryListTable } from './gallery-list-table';
 
 interface GalleryListCollectionProps {
   readonly controller: GalleryListFilterController;
+  /**
+   * The create action, forwarded to the unfiltered empty state where `867:907`
+   * draws it. Nothing else in this component uses it — it is passed through
+   * rather than imported, so the list feature keeps no dependency on the editor.
+   */
+  readonly createAction?: ReactNode;
 }
 
 /**
@@ -36,7 +42,7 @@ interface GalleryListCollectionProps {
  * re-sorted here. The table and the card list receive the same rows; the
  * stylesheet presents exactly one of them at any width.
  */
-export function GalleryListCollection({ controller }: GalleryListCollectionProps) {
+export function GalleryListCollection({ controller, createAction }: GalleryListCollectionProps) {
   const { filters } = controller;
   const query = useGalleryListQuery(filters);
 
@@ -72,7 +78,7 @@ export function GalleryListCollection({ controller }: GalleryListCollectionProps
   }
 
   if (rows.length === 0) {
-    return <GalleryListEmpty controller={controller} />;
+    return <GalleryListEmpty controller={controller} createAction={createAction} />;
   }
 
   return (

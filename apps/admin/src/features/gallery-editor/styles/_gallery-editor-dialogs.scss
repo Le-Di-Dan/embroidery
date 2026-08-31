@@ -1,0 +1,83 @@
+// Admin gallery editor — dialog shell (`APP11-A02`).
+//
+// The backdrop, the panel in its two measures, and the title/body/footer bands
+// every gallery dialog is built from: the create bootstrap, the two pickers,
+// the product picker and the publish/unpublish/discard confirmations.
+
+@use '@embroidery/styles' as styles;
+
+// The two dialog measures. Compact for a confirmation, wide for a picker grid.
+$gallery-dialog-width: 480px;
+$gallery-dialog-wide-width: 800px;
+
+.gallery-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(16);
+  background: styles.$color-overlay-scrim;
+}
+
+.gallery-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  width: 100%;
+  max-width: $gallery-dialog-width;
+  // Never taller than the viewport: a dialog whose footer is below the fold has
+  // no reachable confirm button, which at 390 is the whole dialog.
+  max-height: 100%;
+  overflow-y: auto;
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.gallery-dialog--wide {
+  max-width: $gallery-dialog-wide-width;
+}
+
+.gallery-dialog__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+}
+
+.gallery-dialog__body-text {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(16);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gallery-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  margin-left: auto;
+}
+
+.gallery-editor__form {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  min-width: 0;
+}

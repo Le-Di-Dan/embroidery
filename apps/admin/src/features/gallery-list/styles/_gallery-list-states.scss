@@ -1,0 +1,175 @@
+// Admin gallery list — data-derived states, pagination and loading skeleton
+// (`APP11-A01`).
+//
+// Everything the list shows instead of, or alongside, rows:
+// `FIG-APP11-ADMIN-GALLERY-LIST-EMPTY` (`867:907`), the filtered-empty and
+// read-failure panels, the shared panel/pagination/reset button treatment, the
+// append live region, the cursor pagination note, and the skeleton whose
+// geometry matches the real row.
+
+@use '@embroidery/styles' as styles;
+
+// Matches the cover tile the presentations draw, so the loading geometry
+// keeps the row height the real list will have.
+$gallery-cover-size: 56px;
+
+.gallery-panel {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  align-items: flex-start;
+  padding: styles.spacing(32);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+}
+
+.gallery-panel--warning {
+  border-color: styles.$color-status-warning;
+
+  .gallery-panel__title {
+    color: styles.$color-status-warning;
+  }
+}
+
+.gallery-panel--error {
+  border-color: styles.$color-status-error;
+
+  .gallery-panel__title {
+    color: styles.$color-status-error;
+  }
+}
+
+.gallery-panel__title {
+  margin: 0;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-panel__body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.gallery-panel__action,
+.gallery-pagination__action,
+.gallery-filters__reset {
+  display: inline-block;
+  padding: styles.spacing(8) styles.spacing(16);
+  border: 1px solid styles.$color-border-secondary;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-surface-primary;
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:disabled {
+    color: styles.$color-text-tertiary;
+    cursor: default;
+  }
+}
+
+// A screen-reader-only live region: the append announcement is spoken, not seen.
+.gallery-collection__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.gallery-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  align-items: center;
+}
+
+.gallery-pagination__note {
+  margin: 0;
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+}
+
+.gallery-pagination__error-body {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+// Loading skeleton.
+.gallery-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+.gallery-skeleton__status {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-skeleton__rows {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gallery-skeleton__row {
+  display: flex;
+  gap: styles.spacing(16);
+  align-items: center;
+  padding: styles.spacing(16);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-surface-primary;
+}
+
+.gallery-skeleton__bar {
+  height: styles.spacing(12);
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+}
+
+// Matches the cover tile rather than a bar, so the loading geometry keeps the
+// row height the real list will have.
+.gallery-skeleton__bar--cover {
+  width: $gallery-cover-size;
+  height: $gallery-cover-size;
+  flex: 0 0 auto;
+  border-radius: styles.$radius-sm;
+}
+
+.gallery-skeleton__bar--entry {
+  flex: 1;
+}
+
+.gallery-skeleton__bar--order {
+  width: 8%;
+}
+
+.gallery-skeleton__bar--product {
+  width: 16%;
+}
+
+.gallery-skeleton__bar--status {
+  width: 16%;
+}

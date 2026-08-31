@@ -1,0 +1,137 @@
+// Admin gallery editor — media section, ordered rows and image tiles
+// (`APP11-A02`).
+//
+// `FIG-APP11-ADMIN-GALLERY-EDITOR-MEDIA-SELECT` (`870:926`): the section
+// header and its actions, the ordered list, the row with its position, cover
+// marker and move/remove controls, the dirty-state footer, and the fixed-size
+// image tile the rows and the gallery picker both draw.
+
+@use '@embroidery/styles' as styles;
+
+// The media row's image. Square and fixed in both axes so a row never reflows
+// when the bytes land and never grows to whatever the rendition happens to be.
+$gallery-thumb-size: 72px;
+
+.gallery-media__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(16);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.gallery-media__header-actions,
+.gallery-media__footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.gallery-media__help,
+.gallery-media__empty {
+  margin: 0;
+  color: styles.$color-text-secondary;
+  font-size: styles.$font-size-body-s;
+}
+
+.gallery-media__list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gallery-media__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gallery-media__dirty {
+  margin: 0;
+  color: styles.$color-status-warning;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-media-row {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-md;
+  background: styles.$color-surface-primary;
+}
+
+.gallery-media-row__top {
+  display: flex;
+  gap: styles.spacing(16);
+  align-items: center;
+  min-width: 0;
+}
+
+.gallery-media-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  min-width: 0;
+}
+
+.gallery-media-row__position {
+  color: styles.$color-text-primary;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-semibold;
+}
+
+// The cover marker carries a word, not only a tint, so the first position is
+// readable without distinguishing colours.
+.gallery-media-row__cover {
+  align-self: flex-start;
+  padding: styles.spacing(4) styles.spacing(8);
+  border: 1px solid styles.$color-status-success;
+  border-radius: styles.$radius-xs;
+  color: styles.$color-status-success;
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-semibold;
+}
+
+.gallery-media-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+}
+
+.gallery-media-row__action {
+  padding: styles.spacing(4) styles.spacing(12);
+  font-size: styles.$font-size-caption;
+}
+
+// Image tiles — fixed in both axes so a row never reflows when the bytes land.
+.gallery-asset-thumb {
+  width: $gallery-thumb-size;
+  height: $gallery-thumb-size;
+  flex: 0 0 auto;
+  border-radius: styles.$radius-sm;
+  border: 1px solid styles.$color-border-primary;
+  background: styles.$color-background-secondary;
+  object-fit: cover;
+}
+
+.gallery-asset-thumb--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(4);
+  text-align: center;
+}
+
+.gallery-asset-thumb__note {
+  color: styles.$color-text-tertiary;
+  font-size: styles.$font-size-caption;
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,38 @@
+// Admin gallery editor (`APP11-A02`).
+//
+// Reproduces `FIG-APP11-ADMIN-GALLERY-EDITOR-DESKTOP` (`868:909`),
+// `-MEDIA-SELECT` (`870:926`), `-PUB-READY` (`870:1104`), `-PUB-BLOCKED`
+// (`870:1187`), `-PUB-UNPUBLISH` (`870:1274`) and `-MOBILE` (`870:1368`).
+// Every colour, radius, space and type size is a token: no literal hex and no
+// literal colour function, and no magic pixel value beyond the layout threshold
+// and the tile and dialog measures, each declared by the one partial that
+// uses it.
+//
+// Class names are prefixed `gallery-editor*`, `gallery-media*`,
+// `gallery-publication*`, `gallery-picker*`, `gallery-dialog*`,
+// `gallery-asset-thumb*` and `gallery-linked-product*`. The Admin stylesheet is
+// global and unscoped, so a generic `.panel`, `.dialog` or `.row` here would
+// collide with another feature's rules in a way jsdom could never catch.
+//
+// ## This file is a composition, and the order is load-bearing
+//
+// The feature keeps **one** entry that `src/styles/main.scss` loads, so the
+// Admin styling architecture gains no new global import. The partials below
+// are listed in the exact order their rules were written in the single file
+// this replaces, because that order *is* the cascade: the page frame and
+// panel first, then the button and feedback chrome every section reuses,
+// then the three sections in the order the screen reads them, then the dialog
+// shell, and last the picker grids composed on top of it.
+//
+// Reordering these lines changes the emitted CSS. Each selector lives in
+// exactly one partial, and each layout measure is declared by the partial
+// that is the only one to use it.
+
+@use 'gallery-editor-layout';
+@use 'gallery-editor-actions';
+@use 'gallery-editor-feedback';
+@use 'gallery-editor-authoring';
+@use 'gallery-editor-media';
+@use 'gallery-editor-publication';
+@use 'gallery-editor-dialogs';
+@use 'gallery-editor-pickers';

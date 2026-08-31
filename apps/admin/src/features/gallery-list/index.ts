@@ -2,7 +2,7 @@
 // the Admin shell navigation import from here only; components, hooks, services
 // and model stay encapsulated.
 export { GalleryListScreen } from './components/gallery-list-screen';
-export { ADMIN_GALLERY_ROUTE } from './model/gallery-list-route';
+export { ADMIN_GALLERY_ROUTE, adminGalleryEntryRoute } from './model/gallery-list-route';
 export { GALLERY_LIST_COPY } from './model/gallery-list-copy';
 /**
  * The list cache identity, published for the capability that will invalidate

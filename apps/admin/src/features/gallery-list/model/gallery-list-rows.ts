@@ -23,9 +23,16 @@
  * ### `display_order` is read, not edited
  *
  * The value is rendered as the number it is. There is no edit control, no drag
- * handle, no sort menu and no bulk reorder on this screen: `APP11-A02`'s editor
- * already owns the `display_order` field, which is where `FU-APP11-B01-03` is
- * routed.
+ * handle, no sort menu and no bulk reorder on this screen: the editor owns the
+ * `display_order` field, which is where `FU-APP11-B01-03` is routed, and
+ * changing it here would mean reordering rows underneath the very cursor that
+ * pages them.
+ *
+ * ### The row's destination
+ *
+ * `href` is the editor address for this entry, built from the id. It is the one
+ * place the row's UUID is used, and it is used as an address rather than
+ * rendered as text.
  *
  * ### Page accumulation
  *
@@ -41,11 +48,17 @@ import type {
 } from '@embroidery/api-client';
 
 import { GALLERY_LIST_COPY } from './gallery-list-copy';
-import { presentGalleryStatus, type GalleryStatusPresentation } from './gallery-status';
+import { adminGalleryEntryRoute } from './gallery-list-route';
+import {
+  presentGalleryStatus,
+  type GalleryStatusPresentation,
+} from '../../../shared/presentation/gallery-status';
 
 export interface GalleryListRow {
   /** Stable render identity. Not rendered as text. */
   readonly key: string;
+  /** The editor address for this entry. Never displayed, only linked. */
+  readonly href: string;
   readonly title: string;
   /** The public address, rendered with a leading slash. Never a full URL. */
   readonly slug: string;
@@ -70,6 +83,7 @@ export interface GalleryListRow {
 export function toGalleryListRow(item: AdminGalleryEntrySummaryResponse): GalleryListRow {
   return {
     key: item.galleryEntryId,
+    href: adminGalleryEntryRoute(item.galleryEntryId),
     title: item.title,
     slug: item.slug,
     status: presentGalleryStatus(item.status),

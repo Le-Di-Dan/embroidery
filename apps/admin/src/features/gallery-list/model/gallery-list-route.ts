@@ -5,12 +5,23 @@
  * gallery list (`866:905`), and the canonical spelling for this phase: there is
  * no `/admin/gallery` alias, no `/collections` and no `/library`.
  *
- * The **editor** address is deliberately absent. `APP11-A02` owns
- * `/gallery/{entryId}` and creates the segment behind it; A01 neither builds
- * that route nor addresses it, because a row link to a segment that does not
- * exist is a control that answers a click with a 404. That is the one place
- * this checkpoint departs from the approved end-state frames, and it is staged
- * rather than rejected — `STAGED_ACTION_OWNERSHIP` in the completion report
- * records it, and A02 restores both the create action and the row navigation.
+ * `/gallery/{entryId}` is the editor (`868:909`), delivered by `APP11-A02`.
+ * `APP11-A01` deliberately addressed nothing here while the segment did not
+ * exist; now that it does, the list's rows and cards link to it and the create
+ * bootstrap navigates to it with the id the server returned.
+ *
+ * The segment is the entry's **UUID**, never its slug. The slug is the public
+ * address a customer visits; addressing the Admin editor by it would make an
+ * operator's URL depend on a value the entry is free to have been created with
+ * and would collide with the storefront's own vocabulary. Publication is a
+ * panel *inside* this route, not a route of its own — and there is deliberately
+ * no `/gallery/new`: creation is a bootstrap interaction on the list, because
+ * the server owns the id the editor is addressed by and there is nothing to
+ * edit until it has issued one.
  */
 export const ADMIN_GALLERY_ROUTE = '/gallery';
+
+/** The editor address for one entry. Encoded, because it is interpolated. */
+export function adminGalleryEntryRoute(entryId: string): string {
+  return `${ADMIN_GALLERY_ROUTE}/${encodeURIComponent(entryId)}`;
+}

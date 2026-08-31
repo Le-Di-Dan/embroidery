@@ -1,22 +1,28 @@
 /**
- * `APP11-A01` source boundaries, and the A01/A02 ownership line.
+ * The Admin gallery **list** feature's source boundaries, and the line between
+ * it and the editor.
  *
  * What a rendered test cannot prove: that the screen reaches the API only
- * through the two generated operations this checkpoint owns, that no mutation
- * hook exists anywhere in the feature, that no second read is opened to enrich
- * a row, and that no control addresses the editor route `APP11-A02` has not
- * built yet.
+ * through the two generated operations this feature owns, that no mutation hook
+ * exists anywhere in it, that no second read is opened to enrich a row, and that
+ * the editor address is built in exactly one place rather than spelled out at
+ * every call site.
  *
- * ### Scoped so A02 does not have to weaken it
+ * ### Scoped so A02 extended it rather than deleting it
  *
- * The route assertions are deliberately about **A01's own feature and segment**,
- * not about the repository forever. `APP11-A02` will legitimately create
- * `/gallery/[entryId]` and will legitimately import the six withheld
- * operations; a permanent repository-wide absence assertion would have to be
- * deleted on the very next checkpoint, which makes it a speed bump rather than
- * a guard. What stays true after A02 is the shape asserted here: the
- * *gallery-list* feature owns a read-only list, and the editor lives somewhere
- * else.
+ * `APP11-A01` wrote these assertions about **its own feature and segment**
+ * rather than about the repository forever, precisely so that the checkpoint
+ * that built the editor would not have to delete them. `APP11-A02` has now
+ * built `/gallery/[entryId]` and consumes the seven operations A01 withheld, so
+ * four assertions moved: the segment now has one child, the list's rows link to
+ * it, the curated boundary publishes the editor's operations, and the create
+ * action is rendered.
+ *
+ * Everything else is unchanged, and what remains asserted is the shape that was
+ * ever really the point: **this feature** owns a read-only list. It opens no
+ * mutation, builds no form or dialog, resolves no second read per row, and
+ * reaches no storefront operation — the editor lives somewhere else and this
+ * feature does not import it.
  *
  * The responsive assertions are made against the stylesheet rather than through
  * a browser, which is the smallest method that can settle them in Jest: jsdom
@@ -31,14 +37,21 @@ import * as apiClient from '@embroidery/api-client';
 const APP_DIR = join(__dirname, '..', '..', 'src', 'app', '(protected)');
 const FEATURE_DIR = join(__dirname, '..', '..', 'src', 'features', 'gallery-list');
 
-/** The six operations `APP11-A02` owns and A01 must not reach. */
-const A02_OPERATIONS = [
+/**
+ * The seven operations the **editor** owns, which this feature must not reach.
+ *
+ * They are on the curated boundary from `APP11-A02` onward, so the guarantee is
+ * no longer "the package does not export them" — it is "this feature does not
+ * name them", which is what the assertions below check against the source.
+ */
+const EDITOR_OPERATIONS = [
   'adminGalleryEntryCreate',
   'adminGalleryEntryDetail',
   'adminGalleryEntryUpdate',
   'adminGalleryEntryReplaceAssets',
   'adminGalleryEntryPublish',
   'adminGalleryEntryUnpublish',
+  'adminGalleryAssetCreate',
 ] as const;
 
 function collectFiles(dir: string, pattern: RegExp): string[] {
@@ -76,13 +89,22 @@ describe('the route A01 owns', () => {
     expect(existsSync(join(APP_DIR, 'library'))).toBe(false);
   });
 
-  it('creates no editor or create segment beneath it', () => {
-    // `APP11-A02` builds these. A01 shipping either one would be a screen with
-    // no content, or a form with no operation behind it.
+  it('has exactly one child segment, and it is the editor', () => {
+    // The editor is the only address beneath the list. There is deliberately no
+    // `/gallery/new`: the server owns the id the editor is addressed by, so
+    // creation is a bootstrap interaction on the list rather than a route with
+    // nothing to edit yet. Publication and media are panels *inside* the editor
+    // — three addresses for one screen whose parts share one concurrency token
+    // would be three ways to hold a stale one.
     const segments = readdirSync(join(APP_DIR, 'gallery'), { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name);
-    expect(segments).toEqual([]);
+    expect(segments).toEqual(['[entryId]']);
+    expect(existsSync(join(APP_DIR, 'gallery', '[entryId]', 'page.tsx'))).toBe(true);
+    expect(existsSync(join(APP_DIR, 'gallery', 'new'))).toBe(false);
+    expect(existsSync(join(APP_DIR, 'gallery', '[entryId]', 'edit'))).toBe(false);
+    expect(existsSync(join(APP_DIR, 'gallery', '[entryId]', 'media'))).toBe(false);
+    expect(existsSync(join(APP_DIR, 'gallery', '[entryId]', 'publication'))).toBe(false);
   });
 
   it('keeps the route file thin — it composes and nothing else', () => {
@@ -101,15 +123,14 @@ describe('the generated client boundary', () => {
     expect(code.some((source) => source.text.includes('adminGalleryAssetPreview'))).toBe(true);
   });
 
-  it('withholds every A02 operation from the curated boundary', () => {
-    // The module graph, not a convention: A01 could not call these even if a
-    // component tried, because they are not exported to this app at all.
+  it('publishes the editor operations to the app, but not to this feature', () => {
+    // `APP11-A02` consumes all seven, so they cross the curated boundary. The
+    // guarantee this suite makes is the narrower, truer one asserted below:
+    // none of them is named anywhere in the *gallery-list* source.
     const surface = apiClient as Record<string, unknown>;
-    for (const operation of A02_OPERATIONS) {
-      expect(surface[operation]).toBeUndefined();
+    for (const operation of EDITOR_OPERATIONS) {
+      expect(typeof surface[operation]).toBe('function');
     }
-    // `APP11-B03A`'s asset creation has no Admin surface yet either.
-    expect(surface['adminGalleryAssetCreate']).toBeUndefined();
   });
 
   it('reaches the API through no other transport', () => {
@@ -149,10 +170,10 @@ describe('the generated client boundary', () => {
   });
 });
 
-describe('no A02 capability starts here', () => {
-  it('names no A02 operation anywhere in the feature', () => {
+describe('no editor capability lives in the list feature', () => {
+  it('names no editor operation anywhere in the feature', () => {
     for (const source of code) {
-      for (const operation of A02_OPERATIONS) {
+      for (const operation of EDITOR_OPERATIONS) {
         expect(source.text).not.toContain(operation);
       }
     }
@@ -166,42 +187,56 @@ describe('no A02 capability starts here', () => {
   });
 
   it('builds no create form, modal or dialog', () => {
+    // The create action is the editor's; this feature renders it as an opaque
+    // node it never constructs, so the dialog, its validation and its mutation
+    // all stay outside this source tree.
     for (const source of code) {
       expect(source.text).not.toMatch(/<form\b/);
       expect(source.text).not.toMatch(/<dialog\b|role="dialog"/);
       expect(source.text).not.toMatch(/createPortal/);
     }
-    // No component file is a form or a dialog either.
     const names = code.map((source) => source.path.split('/').pop() ?? '');
     expect(names.filter((name) => /form|dialog|modal|create|editor/.test(name))).toEqual([]);
   });
 
-  it('ships no navigation to a route that does not exist', () => {
+  it('imports nothing from the editor feature', () => {
+    // The dependency points one way. The editor knows this feature's route
+    // helper and cache root; a barrel import back the other way would close
+    // that into a cycle between two feature barrels.
     for (const source of code) {
-      // Nothing addresses the editor: no template literal, no concatenation, no
-      // route helper. `ADMIN_GALLERY_ROUTE` is the list itself and is used by
-      // the shell navigation.
-      expect(source.text).not.toMatch(/\/gallery\/\$\{/);
-      expect(source.text).not.toMatch(/['"`]\/gallery\/[^'"`]/);
-      expect(source.text).not.toMatch(/entryId/);
+      expect(source.text).not.toContain('gallery-editor');
     }
-    // The only `next/link` in the feature is the sign-in recovery, which points
-    // at a route that has existed since APP1.
-    const links = code.filter((source) => source.text.includes("from 'next/link'"));
-    expect(links.map((source) => source.path.split('/').pop())).toEqual([
-      'gallery-list-failure-state.tsx',
-    ]);
   });
 
-  it('makes no row interactive', () => {
+  it('builds the editor address in exactly one place', () => {
+    // One route module owns both gallery addresses, so a row, a card and the
+    // create action's redirect cannot drift into three spellings of one URL.
+    const routeModule = code.find((source) => source.path.endsWith('gallery-list-route.ts'));
+    expect(routeModule?.text).toContain('adminGalleryEntryRoute');
+
+    const builders = code.filter(
+      (source) =>
+        !source.path.endsWith('gallery-list-route.ts') &&
+        /\/gallery\/\$\{|['"`]\/gallery\/[^'"`]/.test(source.text),
+    );
+    expect(builders).toEqual([]);
+  });
+
+  it('navigates by a real link and never by a clickable div', () => {
     const rowSources = code.filter((source) =>
       /gallery-list-table\.tsx|gallery-card-list\.tsx/.test(source.path),
     );
     expect(rowSources).toHaveLength(2);
     for (const source of rowSources) {
-      // No anchor, no button, no clickable div, no keyboard target: a row is
-      // data until A02 gives it a destination.
-      expect(source.text).not.toMatch(/onClick|onKeyDown|tabIndex|<Link|<button|<a\b/);
+      // The destination is carried by `next/link`, which is focusable,
+      // announced as a link and openable in a new tab. A row `onClick`, a
+      // `tabIndex` on a `<tr>` or a keyboard handler standing in for an anchor
+      // would be none of those things.
+      expect(source.text).toContain('<Link');
+      expect(source.text).toContain('href={row.href}');
+      expect(source.text).not.toMatch(/onClick|onKeyDown|tabIndex/);
+      // And the whole row is not the target: exactly one link per row.
+      expect(source.text.match(/<Link/g)).toHaveLength(1);
     }
   });
 });

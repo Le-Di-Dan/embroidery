@@ -4,7 +4,7 @@
  *
  * One catalog, so no component hard-codes copy (CLAUDE.md §5) and the screen's
  * vocabulary can be reviewed as a whole. The **status** labels are not here —
- * they belong to `gallery-status.ts`, because an entry must not be named one
+ * they belong to the shared `gallery-status.ts`, because an entry must not be named one
  * thing in the filter, another in its row and a third in the editor
  * `APP11-A02` builds from the same three states.
  *
@@ -39,6 +39,15 @@ export const GALLERY_LIST_COPY = {
   entry: {
     /** Prefixes the slug in the row so it reads as an address, not a title. */
     slugPrefix: '/',
+    /**
+     * The accessible name of a row link.
+     *
+     * The visible link text is the entry's title, which is the right label in
+     * context. Out of context — in a screen reader's list of links — a bare
+     * title does not say what following it does, so the name states the action
+     * and the subject together.
+     */
+    openLabel: (title: string) => `Mở mục “${title}”`,
     assetCount: (count: number) => `${String(count)} ảnh`,
   },
   linkedProduct: {
@@ -75,11 +84,10 @@ export const GALLERY_LIST_COPY = {
     appended: 'Đã tải thêm mục bộ sưu tập.',
     emptyTitle: 'Chưa có mục bộ sưu tập',
     /**
-     * Says where entries come from without promising a control this screen
-     * does not have: `APP11-A02` owns creation, so an invitation to create one
-     * here would point at a screen that does not exist yet.
+     * The create action now exists beside this text, so the body invites the
+     * operator to use it rather than explaining an absence.
      */
-    emptyBody: 'Các mục sẽ xuất hiện tại đây sau khi được tạo.',
+    emptyBody: 'Tạo mục đầu tiên để bắt đầu bộ sưu tập.',
     filteredEmptyTitle: 'Không có mục phù hợp với trạng thái đã chọn',
     filteredEmptyActive: (label: string) => `Đang lọc: ${label}.`,
     filteredEmptyBody: 'Bỏ bộ lọc để xem toàn bộ mục.',

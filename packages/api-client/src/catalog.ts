@@ -21,8 +21,29 @@ export {
   AdminAssetUploadBodyAssetKind,
   AdminAssetUploadBodyClassification,
 } from './generated/embroidery-api.schemas';
+// The lane selector `APP11-B03A` added to both scoped reads. Exported as a
+// **value**, and by `APP11-A02`, because the gallery editor opens two pickers
+// against one operation — the prepared `GALLERY` images it may attach, and the
+// `CATALOG` sources it may prepare from — and each must name its lane
+// explicitly. Omitting the parameter still means `CATALOG`, which is why the
+// default is never relied on: a picker that quietly showed production-sensitive
+// product media where public gallery media was meant would look, on screen,
+// exactly like one that worked.
+// The response enums cross beside them, also as values. The upload enums that
+// already crossed are single-member by design — intake can only ever mint
+// `CATALOG_MEDIA` / `PRODUCTION_SENSITIVE` — so they cannot name the
+// `GALLERY_MEDIA` / `PUBLIC` lane a read can now return. A consumer deciding
+// which lane an asset is in must compare against the vocabulary the *read*
+// publishes, not against a hard-coded literal that no gate would catch drifting.
+export {
+  AdminAssetListScope,
+  AdminAssetDetailScope,
+  AdminAssetDetailResponseKind,
+  AdminAssetDetailResponseClassification,
+} from './generated/embroidery-api.schemas';
 export type {
   AdminAssetDetailResponse,
+  AdminAssetDetailParams,
   AdminAssetListResponse,
   AdminAssetListParams,
   AdminAssetUploadBody,
