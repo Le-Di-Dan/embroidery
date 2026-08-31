@@ -12,9 +12,22 @@ truth and replaced. Do not re-derive scope from the superseded candidate list.
 
 ## 0. Roadmap status
 
-Exactly one checkpoint is `NEXT`. **Every APP11 checkpoint must update this table
-in the same checkpoint that completes it.** This rule is binding for the whole
-phase.
+```text
+APP11-X01           = COMPLETE
+APP11               = PASS_WITH_FOLLOW_UPS
+BLOCKING_FOLLOW_UPS = 0
+PHASE               = CLOSED
+NEXT_PHASE          = APP12 — Hardening, UAT and Production Readiness
+```
+
+**The phase is closed.** Every checkpoint below is `COMPLETE` and there is no
+`NEXT` inside APP11. Closure evidence:
+[`../reports/APP11-X01-COMPLETION-REPORT.md`](../reports/APP11-X01-COMPLETION-REPORT.md)
+and [`../reports/APP11-CLOSURE-MATRIX.md`](../reports/APP11-CLOSURE-MATRIX.md).
+
+While the phase was open, exactly one checkpoint was `NEXT`, and every APP11
+checkpoint updated this table in the same checkpoint that completed it. That rule
+was binding for the whole phase and is now discharged.
 
 | Checkpoint | Capability | Status |
 |---|---|---|
@@ -41,7 +54,13 @@ phase.
 | `APP11-S04-C1` | Product breadcrumb canonical-category correction | **COMPLETE** |
 | `APP11-S05` | Static content pages + footer store presentation | **COMPLETE** |
 | `APP11-E01` | Cross-boundary acceptance | **COMPLETE** |
-| `APP11-X01` | Phase closure (R5 Operational Beta → APP12) | **NEXT** |
+| `APP11-X01` | Phase closure & final authority lock (R5 Operational Beta → APP12) | **COMPLETE** |
+
+Final measured baseline at closure: OpenAPI `116 / 128 / 252` (APP11 delta
+`+10 / +13 / +20`), 37 migrations (delta 0), Admin 25 page routes, Storefront 18
+page routes plus `/robots.txt` and `/sitemap.xml` as framework metadata routes,
+Figma registry 532 rows under `FIG-APPROVAL-APP11-D01-PO-001`. `APP11-E01` =
+PO PASS, 4 journeys / 11 cases / 11 pass / 0 fail.
 
 ---
 
@@ -428,7 +447,21 @@ Binding for every APP11 checkpoint.
 
 ## 11. Handoff
 
+```text
+NEXT_PHASE = APP12 — Hardening, UAT and Production Readiness
+```
+
 APP12 receives a feature-complete candidate for security, resilience,
 performance, observability, UAT and go-live readiness — plus the items APP11
 deliberately routed forward: `FU-APP10-G01-02`, `FU-APP10-G01-03`,
 `FU-APP10-I01-02`, and the redirect runtime (`FU-APP11-G01-02`).
+
+`APP11-X01` reconciled the complete follow-up inventory: **36 open, 0 blocking**
+(30 APP11-owned, 6 inherited), and 15 closed inside the phase. Every open item
+has a concrete owner. The grouped handoff package — production readiness,
+hardening, UAT/design tooling, governance and Product Owner classes — is in
+[`../reports/APP11-CLOSURE-MATRIX.md`](../reports/APP11-CLOSURE-MATRIX.md) §13.
+
+Those items are **APP12 preflight inputs, not APP12 checkpoints**. APP12 audits
+and dispositions each against its own canonical scope; APP11 pre-decides none of
+them, and APP11 opened no APP12 checkpoint.
