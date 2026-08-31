@@ -49,7 +49,11 @@ export async function fetchAssetDetail(
   signal?: AbortSignal,
 ): Promise<AdminAssetDetailResponse> {
   try {
-    const body = await adminAssetDetail(assetId, {
+    // `APP11-B03A` gave this operation an optional `scope` query parameter, so
+    // the request options moved into the third position. The parameter is
+    // omitted deliberately: its default is `CATALOG`, which is the product-media
+    // lane this screen reads, and the Gallery lane belongs to `APP11`.
+    const body = await adminAssetDetail(assetId, undefined, {
       instance: getBrowserApiClient(),
       ...(signal === undefined ? {} : { config: { signal } }),
     });

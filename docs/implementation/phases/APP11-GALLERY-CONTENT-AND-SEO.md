@@ -30,8 +30,8 @@ phase.
 | `APP11-B03A` | Admin gallery media intake & public derivative preparation | **COMPLETE** |
 | `APP11-B04` | Public SEO inventory (sitemap) | **COMPLETE** |
 | `APP11-B04-C1` | Global sitemap capacity invariant correction | **COMPLETE** |
-| `APP11-A01` | Admin gallery list | **NEXT** |
-| `APP11-A02` | Admin gallery editor + publication | NOT STARTED |
+| `APP11-A01` | Admin gallery list | **COMPLETE** |
+| `APP11-A02` | Admin gallery editor + publication | **NEXT** |
 | `APP11-S01` | Homepage / store introduction (+ SCSS compile gate) | NOT STARTED |
 | `APP11-S02` | Public gallery feed | NOT STARTED |
 | `APP11-S03` | Gallery entry detail | NOT STARTED |
