@@ -26,9 +26,10 @@ import type {
  *   is cover + title + description; a "12 ảnh" line would be a fact about the
  *   detail page, which is `APP11-S03`'s.
  *
- * `slug` is kept because it is the entry's immutable server-owned identity and
- * is what dedupe and the React key are built on. It is **not** rendered and, in
- * S02, not linked: `/bo-suu-tap/[slug]` does not exist yet.
+ * `slug` is kept because it is the entry's immutable server-owned identity: it
+ * is what dedupe and the React key are built on, and — since `APP11-S03` built
+ * `/bo-suu-tap/[slug]` — what the card's one detail action addresses. It is
+ * still never rendered as text.
  */
 export interface GalleryFeedCard {
   /** Immutable server-owned identity; the React key and the dedupe key. */

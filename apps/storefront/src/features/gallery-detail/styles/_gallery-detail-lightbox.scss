@@ -1,0 +1,119 @@
+// Gallery Entry Detail — the accessible lightbox (`APP11-S03`).
+//
+// Design source: FIG-APP11-GALLERY-DETAIL-LIGHTBOX-DESKTOP `862:626` and
+// -MOBILE `862:641`, which `APP11-D01` cloned from the approved Product Detail
+// lightbox `533:3` / `533:26` — so the geometry below is deliberately the same
+// and the two dialogs feel identical.
+//
+// Split from the media partial rather than appended to it: both stayed inside
+// the 400-line hard limit together, but the combined file crossed the 300-line
+// review threshold CLAUDE.md §6 sets, and "the page's media block" and "the
+// modal that opens over it" are two responsibilities rather than one long file.
+
+@use '@embroidery/styles' as styles;
+@use 'gallery-detail-tokens' as tokens;
+
+// --- Lightbox ---------------------------------------------------------------
+
+.gallery-detail__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: tokens.$scrim-layer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: styles.spacing(24);
+  background: tokens.$scrim-color;
+}
+
+.gallery-detail__dialog {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  align-items: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.gallery-detail__dialog-header {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+}
+
+.gallery-detail__dialog-title {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  color: tokens.$scrim-foreground;
+}
+
+.gallery-detail__dialog-control {
+  // The locked minimum in both axes: these are the controls a visitor uses
+  // one-handed on a 390px screen.
+  min-height: styles.$size-touch-target-min;
+  min-width: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(16);
+  border: 0;
+  border-radius: styles.$radius-button;
+  background: tokens.$scrim-control-surface;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-s;
+  color: tokens.$scrim-foreground;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid tokens.$scrim-foreground;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.gallery-detail__dialog-stage-row {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+  max-width: 100%;
+}
+
+.gallery-detail__dialog-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.gallery-detail__dialog-image {
+  display: block;
+  max-width: 100%;
+  max-height: tokens.$stage-max-height;
+  height: auto;
+  object-fit: contain;
+}
+
+.gallery-detail__dialog-position {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: tokens.$scrim-foreground-muted;
+}
+
+// Narrow viewports stack the previous/next controls under the image rather than
+// pinching the stage between them on a 390px screen.
+@media (max-width: #{tokens.$bp-desktop - 1px}) {
+  .gallery-detail__dialog-stage-row {
+    flex-direction: column;
+  }
+}
+
+// --- Reduced motion ---------------------------------------------------------
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-detail *,
+  .gallery-detail__scrim * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

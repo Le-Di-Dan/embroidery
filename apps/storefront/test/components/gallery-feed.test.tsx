@@ -20,6 +20,9 @@ import { GalleryFeedScreen } from '../../src/features/gallery-feed/components/ga
 import { GALLERY_COPY } from '../../src/features/gallery-feed/model/gallery-copy';
 import { galleryEnvelope, makeGalleryEntry, makeGalleryPage } from '../support/gallery-fixture';
 
+/** The shape every activated card action must have: feed route + one slug. */
+const GALLERY_DETAIL_HREF = new RegExp('^/bo-suu-tap/[a-z0-9-]+$');
+
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   publicGalleryEntryList: jest.fn(),
@@ -323,20 +326,37 @@ describe('gallery feed — continuation', () => {
   });
 });
 
-describe('gallery feed — detail navigation staged for APP11-S03', () => {
-  it('renders no anchor and no fake control on a card', async () => {
+describe('gallery feed — detail navigation activated by APP11-S03', () => {
+  /**
+   * This block asserted the opposite until `APP11-S03`: while
+   * `/bo-suu-tap/[slug]` did not exist, a card carried no anchor and nothing
+   * pretending to be one. The route landed together with the affordance — the
+   * whole point of staging it — so the assertion inverts rather than being
+   * deleted, and what it guards is unchanged: the card must offer one real
+   * link and nothing that merely looks like one.
+   *
+   * The card's own semantics, order and content are covered by
+   * `gallery-card-link.test.tsx`; this proves the activation survives the whole
+   * feed's data path rather than a hand-built card list.
+   */
+  it('gives each card one real anchor to its entry, and no fake control', async () => {
     listMock.mockResolvedValue(galleryEnvelope(makeGalleryPage(PAGE_ONE)));
     const { container } = renderFeed();
 
     await waitFor(() => expect(feedTitles()).toHaveLength(3));
     const feed = screen.getByRole('list', { name: GALLERY_COPY.feedLabel });
-    // `/bo-suu-tap/[slug]` does not exist: no link, and nothing pretending to be
-    // one either — no clickable div, no tabindex, no role="link".
-    expect(within(feed).queryAllByRole('link')).toHaveLength(0);
+
+    const links = within(feed).queryAllByRole('link');
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link.tagName).toBe('A');
+      expect(link.getAttribute('href')).toMatch(GALLERY_DETAIL_HREF);
+    }
+    // Still nothing pretending to be a control: no clickable div, no manual
+    // tabindex, no role="link".
     expect(feed.querySelectorAll('[tabindex]')).toHaveLength(0);
     expect(feed.querySelectorAll('[role="link"]')).toHaveLength(0);
-    for (const anchor of container.querySelectorAll('a')) {
-      expect(anchor.getAttribute('href')).not.toMatch(/^\/bo-suu-tap\//);
-    }
+    // And no second, nested address for the same entry.
+    expect(container.querySelectorAll('a[href^="/bo-suu-tap/"]')).toHaveLength(3);
   });
 });

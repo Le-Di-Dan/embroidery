@@ -1,16 +1,23 @@
 /**
  * @jest-environment node
  *
- * Static boundary checks on the gallery feed's production source (`APP11-S02`).
+ * Static boundary checks on the gallery feed's production source (`APP11-S02`,
+ * with the two S03 handoffs taken).
  *
- * These guard the rules a rendering test cannot reach: which route exists, which
- * API operations the feature may touch, that no alias was created, and that the
- * detail navigation `APP11-S03` owns has not been started early.
+ * These guard the rules a rendering test cannot reach: which routes exist,
+ * which API operations the **feed** may touch, and that no alias was created.
+ *
+ * Two assertions here were written to invert when `APP11-S03` landed, and have:
+ * the route set gained `/bo-suu-tap/[slug]`, and the segment that had to be
+ * absent must now be present. Everything the feed itself must not do is
+ * unchanged and still asserted — most importantly that the feed consumes the
+ * *list* operation and not the detail resolver, which belongs to a different
+ * feature.
  *
  * Every route assertion is **enumerated**, never a blanket "nothing else may
- * exist". `APP11-S03` adds `/bo-suu-tap/[slug]` to `ROUTES_AT_S02` and deletes
- * its own line from `ROUTES_OWNED_BY_LATER_CHECKPOINTS`; nothing here has to be
- * torn out to let APP11 finish.
+ * exist". `APP11-S04` and `APP11-S05` add their own lines and delete their own
+ * entries from `ROUTES_OWNED_BY_LATER_CHECKPOINTS`; nothing here has to be torn
+ * out to let APP11 finish.
  */
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -57,10 +64,19 @@ function routeSegments(): string[] {
     .sort();
 }
 
-/** The Storefront's route set as `APP11-S02` leaves it: 12 -> 13. */
-const ROUTES_AT_S02 = [
+/**
+ * The Storefront's route set at the time of reading.
+ *
+ * `APP11-S02` left it at 13 and this list said so. `APP11-S03` added
+ * `/bo-suu-tap/[slug]` — the line this file's own header anticipated — so the
+ * list gains one entry rather than being loosened into a "contains" check. The
+ * count stays exact: what these assertions are for is noticing a route nobody
+ * meant to add.
+ */
+const ROUTES_AT_S03 = [
   '/',
   '/bo-suu-tap',
+  '/bo-suu-tap/[slug]',
   '/kham-pha',
   '/san-pham/[slug]',
   '/san-pham/[slug]/thiet-ke',
@@ -93,16 +109,24 @@ const galleryCode = codeOnly(
 );
 
 describe('gallery feed route boundary', () => {
-  it('adds exactly one route, and the Storefront now serves thirteen', () => {
+  it('serves the feed route, and the Storefront serves fourteen in total', () => {
     expect(existsSync(ROUTE_FILE)).toBe(true);
-    expect(routeSegments()).toEqual(ROUTES_AT_S02);
-    expect(routeSegments()).toHaveLength(13);
+    expect(routeSegments()).toEqual(ROUTES_AT_S03);
+    expect(routeSegments()).toHaveLength(14);
   });
 
-  it('does not create the entry detail route — APP11-S03 owns it', () => {
-    // The card is deliberately non-interactive until this segment exists; the
-    // two land together, so neither a dead link nor an orphan route can ship.
-    expect(existsSync(join(APP_DIR, 'bo-suu-tap', '[slug]'))).toBe(false);
+  it('has the entry detail route APP11-S03 owns, beneath the feed', () => {
+    // This asserted the *absence* of the segment until `APP11-S03`: the card was
+    // deliberately non-interactive while no detail route existed, and the two
+    // had to land together so that neither a dead link nor an orphan route
+    // could ship. They did, so the assertion inverts. What it still guards is
+    // the shape: the entry sits directly beneath the feed, with no level
+    // between them.
+    expect(existsSync(join(APP_DIR, 'bo-suu-tap', '[slug]', 'page.tsx'))).toBe(true);
+    expect(routeSegments().filter((segment) => segment.startsWith('/bo-suu-tap'))).toEqual([
+      '/bo-suu-tap',
+      '/bo-suu-tap/[slug]',
+    ]);
   });
 
   it.each(REJECTED_GALLERY_ALIASES)('creates no /%s alias or redirect', (alias) => {
@@ -140,9 +164,12 @@ describe('gallery feed data-source boundary', () => {
     expect(galleryCode).toContain('publicGalleryEntryList');
   });
 
-  it('consumes no operation a later checkpoint owns', () => {
-    // Detail is APP11-S03's, the sitemap family is APP11-S04's, and no Admin
-    // gallery operation belongs anywhere near an anonymous public surface.
+  it('consumes only the list — never the detail resolver or a later operation', () => {
+    // `publicGalleryEntryDetail` now exists on the curated boundary, and this
+    // is still correct: it belongs to the `gallery-detail` feature, and a feed
+    // that also read one entry would be a second, unowned source of truth for
+    // the same rows. The sitemap family is APP11-S04's, and no Admin gallery
+    // operation belongs anywhere near an anonymous public surface.
     expect(galleryCode).not.toContain('publicGalleryEntryDetail');
     expect(galleryCode).not.toMatch(/publicSitemapEntry|adminGallery|adminAsset/);
   });

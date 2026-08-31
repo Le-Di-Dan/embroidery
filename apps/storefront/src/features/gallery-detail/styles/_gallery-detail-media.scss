@@ -1,0 +1,211 @@
+// Gallery Entry Detail — the ordered media block, the thumbnail strip and the
+// optional related-product card (`APP11-S03`). The lightbox that opens over
+// this block lives in `_gallery-detail-lightbox.scss`.
+//
+// Design source: the media and Related Product sections of
+// FIG-APP11-GALLERY-DETAIL-DESKTOP `860:442` / -TABLET `861:4321` / -MOBILE
+// `861:4487`, whose media composition `APP11-D01` reused from the approved
+// Product Detail stage and strip.
+
+@use '@embroidery/styles' as styles;
+@use 'gallery-detail-tokens' as tokens;
+
+// --- Media block ------------------------------------------------------------
+
+.gallery-detail__media {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  align-items: center;
+}
+
+.gallery-detail__stage-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 4px;
+  }
+}
+
+.gallery-detail__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: tokens.$stage-min-height;
+  padding: styles.spacing(16);
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.gallery-detail__stage-image {
+  display: block;
+  max-width: 100%;
+  // Natural ratio, never a fixed crop. `APP11-B03` publishes no image
+  // dimensions, so any `aspect-ratio` here would be fabricated — and would crop
+  // work the approved authority requires to be shown whole (contain).
+  height: auto;
+  max-height: tokens.$stage-max-height;
+  object-fit: contain;
+}
+
+.gallery-detail__stage-message {
+  margin: 0;
+  max-width: tokens.$narrative-measure-max;
+  text-align: center;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+.gallery-detail__zoom-hint {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+// --- Thumbnails -------------------------------------------------------------
+
+.gallery-detail__thumbnails {
+  display: flex;
+  gap: styles.spacing(12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  // Narrow viewports scroll the strip horizontally rather than wrapping it or
+  // letting it widen the page. The overflow lives here, so the document never
+  // gains a horizontal scrollbar however many images an entry has.
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.gallery-detail__thumbnail-item {
+  flex: 0 0 auto;
+}
+
+.gallery-detail__thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  width: tokens.$thumbnail-size;
+  height: tokens.$thumbnail-size;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+
+  // Selection is a border plus `aria-current`, never colour alone.
+  &[aria-current='true'] {
+    border-color: styles.$color-text-primary;
+  }
+}
+
+.gallery-detail__thumbnail-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  // The strip shows the same detail-rendition address as the stage — the
+  // contract publishes no thumbnail rendition to ask for — so the box is sized
+  // here and the image is cropped to fill it. Cropping is correct for a
+  // navigation control and wrong for the stage, which is why only this rule
+  // uses `cover`.
+  object-fit: cover;
+}
+
+.gallery-detail__thumbnail-fallback {
+  padding: styles.spacing(4);
+  font-size: styles.$font-size-body-s;
+  text-align: center;
+  color: styles.$color-text-secondary;
+}
+
+// --- Related product --------------------------------------------------------
+
+.gallery-detail__related {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(12);
+}
+
+.gallery-detail__related-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.gallery-detail__related-card {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(16);
+  min-height: styles.$size-touch-target-min;
+  padding: styles.spacing(12);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-sm;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    border-color: styles.$color-text-primary;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.gallery-detail__related-media {
+  display: block;
+  overflow: hidden;
+  flex: 0 0 auto;
+  width: tokens.$related-thumbnail-size;
+  height: tokens.$related-thumbnail-size;
+  border-radius: styles.$radius-xs;
+  background: styles.$color-background-secondary;
+}
+
+.gallery-detail__related-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-detail__related-text {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.gallery-detail__related-name {
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+// The "Xem tác phẩm" line is a label inside the one link, not a second control:
+// a nested button or anchor would give the same destination two doors and cost
+// an extra Tab stop.
+.gallery-detail__related-action {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

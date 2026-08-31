@@ -1,0 +1,19 @@
+// Gallery Entry Detail — feature stylesheet entry (`APP11-S03`).
+//
+// Design source: FIG-APP11-GALLERY-DETAIL-DESKTOP `860:442`, -TABLET
+// `861:4321`, -MOBILE `861:4487`, -LIGHTBOX-DESKTOP `862:626`,
+// -LIGHTBOX-MOBILE `862:641` and the -PROVENANCE specification `862:656`, all
+// APPROVED_FOR_IMPLEMENTATION under FIG-APPROVAL-APP11-D01-PO-001 (file
+// BQwqV8GdfUIELvsQDB1UQE, page User Interface).
+//
+// Header, footer, mobile navigation and the floating contact dock are the
+// shared shell's (APP1-D02) and are not restyled here.
+//
+// Split into semantic partials from the start rather than as a later rescue:
+// each stays well inside the 400-line source limit, which CLAUDE.md §6 applies
+// to stylesheets as much as to TypeScript and which
+// `tools/check-scss-file-size.mjs` enforces on the paths a change owns.
+@use 'gallery-detail-layout';
+@use 'gallery-detail-closing';
+@use 'gallery-detail-media';
+@use 'gallery-detail-lightbox';

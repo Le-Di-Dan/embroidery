@@ -48,8 +48,8 @@ export const dynamic = 'force-dynamic';
  * outage surfaces as the approved "Không thể tải bộ sưu tập" state rather than
  * as a rendered error page.
  *
- * There is no `/bo-suu-tap/[slug]` beneath this segment. `APP11-S03` adds it and
- * activates card navigation in the same change.
+ * `/bo-suu-tap/[slug]` sits beneath this segment as of `APP11-S03`, which added
+ * the route and activated the card's detail action in one change.
  */
 export default async function GalleryFeedPage() {
   const queryClient = new QueryClient();

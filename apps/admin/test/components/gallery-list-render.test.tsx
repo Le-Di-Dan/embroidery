@@ -112,11 +112,18 @@ describe('the generated boundary', () => {
     // `test/boundary/gallery-list-source.test.ts` ("names no public gallery or
     // sitemap operation").
     //
+    // `publicGalleryEntryDetail` has since joined the boundary: `APP11-S03`
+    // delivered /bo-suu-tap/[slug], so the storefront read it performs is a
+    // consumed operation like the list. It moves to the same guarantee the list
+    // has — asserted against this feature's own source in
+    // `test/boundary/gallery-list-source.test.ts`, which forbids any
+    // `publicGallery*` name here — rather than against the package both apps
+    // import.
+    //
     // What remains absent from the package is asserted here, because for these
-    // the absence is not a scheduling accident: the detail resolver has no
-    // delivered route, and no gallery media-byte operation is exported at all.
+    // the absence is not a scheduling accident: no gallery media-byte operation
+    // is exported at all, and the sitemap family has no delivered surface.
     for (const neverExported of [
-      'publicGalleryEntryDetail',
       'publicGalleryEntryAsset',
       'publicGalleryEntryMediaGet',
       'publicSitemapEntryList',

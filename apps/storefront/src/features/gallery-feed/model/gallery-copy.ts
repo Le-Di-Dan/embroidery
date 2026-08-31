@@ -42,6 +42,13 @@ export const GALLERY_COPY = {
      * retry that would hammer a route already answering 404.
      */
     imageUnavailable: 'Chưa hiển thị được ảnh của mục này.',
+    /**
+     * The one detail action per card, activated by `APP11-S03` when
+     * `/bo-suu-tap/[slug]` landed. Visible text only: on its own it repeats
+     * across every card, so `galleryDetailActionLabel` supplies the accessible
+     * name that names the entry.
+     */
+    detailAction: 'Xem chi tiết',
   },
 } as const;
 
@@ -60,4 +67,17 @@ export const GALLERY_COPY = {
  */
 export function galleryCoverAlt(entryTitle: string): string {
   return entryTitle;
+}
+
+/**
+ * The accessible name of a card's detail action.
+ *
+ * "Xem chi tiết" is the right thing to read on screen and the wrong thing to
+ * hear in a list of links, where twelve identical names answer nothing. The
+ * entry title is the only fact that distinguishes them and the card already
+ * renders it, so the name is derived rather than authored — there is no
+ * per-entry link-label field for an operator to fill in, and none is wanted.
+ */
+export function galleryDetailActionLabel(entryTitle: string): string {
+  return `Xem chi tiết mục ${entryTitle}`;
 }

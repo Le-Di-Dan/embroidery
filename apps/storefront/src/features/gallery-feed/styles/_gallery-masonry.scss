@@ -43,10 +43,10 @@
   display: flex;
   flex-direction: column;
   gap: styles.spacing(12);
-  // No hover, no pointer, no focus ring: the card is deliberately
-  // non-interactive until `APP11-S03` builds `/bo-suu-tap/[slug]`, and it must
-  // not suggest otherwise. UI05's hover and pressed treatments arrive with the
-  // route they lead to.
+  // The tile itself is still not a control. UI05 draws a text link into the
+  // entry's page rather than a clickable card, so the affordance lives on
+  // `.gallery-feed__card-action` below and the tile keeps no hover, no pointer
+  // and no focus ring of its own.
 }
 
 .gallery-feed__card-media {
@@ -92,6 +92,38 @@
   font-size: styles.$font-size-body-s;
   line-height: tokens.$line-height-relaxed;
   color: styles.$color-text-secondary;
+}
+
+// The one detail action per card (`APP11-S03`), carrying UI05's hover and
+// pressed treatments from `353:2`. A text link, not a tile-sized hit area:
+// the approved card draws it that way, and it keeps one Tab stop per entry
+// with nothing interactive nested inside it.
+.gallery-feed__card-action {
+  // Inline-flex with the locked minimum height, so the target is a real 44px
+  // even though the text is one short line.
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: styles.$size-touch-target-min;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-primary;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: styles.$color-action-primary;
+  }
+
+  &:active {
+    color: styles.$color-action-active;
+  }
+
+  // Focus is never removed, only replaced with a visible ring of our own.
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
 }
 
 // --- Loading skeleton -------------------------------------------------------

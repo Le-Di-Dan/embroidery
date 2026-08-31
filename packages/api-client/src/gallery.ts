@@ -97,9 +97,10 @@ export type {
  * it is asserted per application, in each app's own boundary suite, rather than
  * by keeping the operation out of a package both apps import.
  *
- * Only the list crosses. `publicGalleryEntryDetail` stays withheld because
- * `/bo-suu-tap/[slug]` does not exist yet — `APP11-S03` owns that route, and an
- * operation on this boundary is an invitation to render a page for it. The
+ * The list crossed with `APP11-S02`. `publicGalleryEntryDetail` crosses now,
+ * with `APP11-S03`: the route it resolves — `/bo-suu-tap/[slug]` — exists as of
+ * this checkpoint, so the operation is no longer "an invitation to render a
+ * page for it" but the single read that page performs. The
  * `publicSitemapEntry_*` family stays withheld for `APP11-S04`.
  *
  * `publicGalleryEntryAsset` also stays withheld, for the reason
@@ -108,6 +109,9 @@ export type {
  * `coverUrl` the list response already returns — the API composes that path
  * itself, from the same rendition constant the route serves — so the feed
  * consumes the delivery route without any application code streaming its bytes.
+ * The detail response is built the same way: every `assets[].url` is already
+ * that route at its detail rendition, so `APP11-S03` renders addresses rather
+ * than restreaming bytes, and it composes none of them locally.
  * An `<img src>` cannot be a `Blob`, so exporting the operation would publish a
  * function no correct consumer could call.
  *
@@ -116,9 +120,13 @@ export type {
  * entry, and `coverUrl` is a relative application path the publication-gated
  * route re-checks on every request.
  */
-export { publicGalleryEntryList } from './generated/embroidery-api';
+export { publicGalleryEntryList, publicGalleryEntryDetail } from './generated/embroidery-api';
 export type {
   PublicGalleryEntryListParams,
   PublicGalleryEntryListResponse,
   PublicGalleryEntrySummaryResponse,
+  PublicGalleryEntryDetailResponse,
+  PublicGalleryAssetResponse,
+  PublicGalleryEntrySeoResponse,
+  PublicGalleryLinkedProductResponse,
 } from './generated/embroidery-api.schemas';

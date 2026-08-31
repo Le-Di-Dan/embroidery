@@ -1,0 +1,63 @@
+// Gallery Entry Detail — local layout constants (`APP11-S03`).
+//
+// Split into its own partial so every other detail partial reads the same
+// numbers by name and none of them re-declares a magic value. Colour, type,
+// spacing, radius and control size all come from `@embroidery/styles`; only the
+// values the design foundation deliberately does not lock live here.
+
+// Responsive tiers. The design system defers a shared breakpoint scale (FU-A16),
+// so these are feature-local — and they are the SAME thresholds the gallery
+// feed, the Homepage, `product-discovery` and `product-detail` already use. The
+// approved tablet frame IS 1024 (`861:4321`), so 1024 stays the tablet tier and
+// 1025+ is the desktop tier (`860:442`). Keeping them identical is what stops
+// two adjacent public surfaces reflowing at different widths.
+$bp-desktop: 1025px;
+
+// The shell widens its own content gutter at this width (`storefront-shell.scss`
+// `$bp-footer`). Mirrored rather than imported because it is another feature's
+// internal constant; the boundary suite asserts the two cannot drift apart.
+$bp-shell-wide: 768px;
+
+// The approved mobile content band (`861:4487`): a 24px gutter at 390, matching
+// what `APP2-S02-G01-C1` locked for Product Detail. The shell's own mobile
+// gutter is 16, so the page insets itself by the missing 8 rather than moving
+// every other route to satisfy one screen's authority.
+$mobile-gutter-inset: 8px;
+
+// The approved readable measure — the same ~75-character column
+// `APP2-S02-G01-C1` locked for the story on Product Detail. Deliberately NOT
+// `styles.$layout-reading-max`, which is 720px: the foundation's general
+// reading width and this page's approved narrative measure are different
+// numbers, and silently using the token would widen the column past the
+// approved value.
+$narrative-measure-max: 640px;
+
+// Line heights. The foundation locks the type scale but not these (see the
+// styles package README, Deferred), so they are named here once.
+$line-height-tight: 1.15;
+$line-height-snug: 1.35;
+$line-height-relaxed: 1.6;
+
+// Local composition constants with no shared token.
+$stage-min-height: 320px;
+// The stage and lightbox image ceiling: tall artwork must not push the page
+// title off screen before the visitor has read it.
+$stage-max-height: 70vh;
+$thumbnail-size: 64px;
+$related-thumbnail-size: 96px;
+
+// The lightbox scrim and its on-scrim control surface. GAP-D02: the design
+// system defines no scrim token, so these mirror the values the approved
+// lightbox frames (`862:626` / `862:641`, cloned from `533:3` / `533:26`)
+// themselves use rather than inventing a new palette entry.
+$scrim-color: rgba(20, 18, 18, 0.92);
+$scrim-control-surface: rgba(255, 255, 255, 0.14);
+$scrim-foreground: #ffffff;
+$scrim-foreground-muted: rgba(255, 255, 255, 0.8);
+
+// The lightbox must cover the shell's floating contact dock ($z-dock: 90) —
+// a modal a dock punches through is not modal. 100 is the Product Detail
+// lightbox's own layer and the shell drawer's, so the three dialogs sit on one
+// plane rather than quietly out-stacking each other; the skip link stays above
+// all of them at 300, which is correct.
+$scrim-layer: 100;

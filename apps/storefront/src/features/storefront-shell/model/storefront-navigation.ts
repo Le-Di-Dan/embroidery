@@ -106,6 +106,29 @@ export const STOREFRONT_CUSTOM_REQUEST_ROUTE = '/yeu-cau/moi';
 export const STOREFRONT_GALLERY_ROUTE = '/bo-suu-tap';
 
 /**
+ * The one place a gallery entry URL is built (`APP11-S03`).
+ *
+ * The feed card's detail action and the entry page's own canonical both go
+ * through this, so the address a card promises and the address the page claims
+ * for itself cannot drift apart — the same reason
+ * `buildStorefrontProductDetailPath` exists.
+ *
+ * The entry sits directly beneath the feed because the gallery model is flat.
+ * There is no parent collection to name, so `/bo-suu-tap/[collection]/[work]`,
+ * `/works/[slug]` and `/tac-pham/[slug]` are all rejected, and no redirect is
+ * approved.
+ *
+ * The slug is server-owned and derived against the same charset
+ * `isPublicGalleryEntrySlug` gates, so `encodeURIComponent` can never alter a
+ * legitimate one. It is a second barrier rather than the only one: a caller
+ * that skipped the syntax gate must still not be able to write a raw `?`, `#`
+ * or `/` into the path.
+ */
+export function buildStorefrontGalleryDetailPath(slug: string): string {
+  return `${STOREFRONT_GALLERY_ROUTE}/${encodeURIComponent(slug)}`;
+}
+
+/**
  * Whether `pathname` is inside the area a routed navigation item names.
  *
  * The header used to compare the pathname to the route with `===`, which is

@@ -22,6 +22,10 @@ export {
   // the feed's own route segment must all name one path, and `APP11-S03`
   // extends this family rather than introducing a second literal.
   STOREFRONT_GALLERY_ROUTE,
+  // The one gallery-entry URL builder (`APP11-S03`). On the shell surface with
+  // the constant it extends, so the feed card action and the entry page's own
+  // canonical read one function instead of two path literals.
+  buildStorefrontGalleryDetailPath,
   // The section matcher behind the header's active state. Exported so a feature
   // that needs to reason about "am I inside this area" reuses the one rule the
   // header uses, instead of re-deriving prefix matching.

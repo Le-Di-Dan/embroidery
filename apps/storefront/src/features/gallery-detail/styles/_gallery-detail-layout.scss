@@ -1,0 +1,181 @@
+// Gallery Entry Detail — page frame, breadcrumb, hero and narrative
+// (`APP11-S03`). The closing sections live in `_gallery-detail-closing.scss`.
+//
+// Design source: FIG-APP11-GALLERY-DETAIL-DESKTOP `860:442`, -TABLET
+// `861:4321`, -MOBILE `861:4487`, approved under
+// FIG-APPROVAL-APP11-D01-PO-001.
+//
+// Header, footer, mobile navigation and the floating contact dock are the
+// shared shell's (APP1-D02) and are not restyled here.
+
+@use '@embroidery/styles' as styles;
+@use 'gallery-detail-tokens' as tokens;
+
+.gallery-detail {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(32);
+  padding-block: styles.spacing(24);
+}
+
+// Feature-local mobile content band.
+//
+// The approved mobile frame places detail content in a 342px band at a 24px
+// gutter; the APP1 shell's own mobile gutter is 16px. Widening the shell would
+// move the Homepage, the feed and every other route to satisfy one screen's
+// authority, so this page insets *itself* by the missing 8px — the narrowest
+// mechanism that produces the measured gutter, and exactly what Product Detail
+// does for the same reason.
+//
+// Scoped below the shell's own threshold, so the tablet and desktop bands stay
+// exactly as the shell defines them. The lightbox is unaffected: its scrim is
+// `position: fixed` and belongs to the viewport, not to this band.
+@media (max-width: #{tokens.$bp-shell-wide - 1px}) {
+  .gallery-detail {
+    padding-inline: tokens.$mobile-gutter-inset;
+  }
+
+  // The thumbnail strip's scroll viewport is the content band itself. Without
+  // this the strip hugs its thumbnails, so a two-image entry sits at one width
+  // and a nine-image entry decides its own left edge.
+  .gallery-detail__thumbnails {
+    width: 100%;
+  }
+}
+
+// --- Breadcrumb -------------------------------------------------------------
+
+.gallery-detail__breadcrumb {
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-secondary;
+}
+
+.gallery-detail__crumbs {
+  display: none;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gallery-detail__crumb {
+  display: flex;
+  align-items: center;
+  gap: styles.spacing(8);
+
+  // The separator is decorative, so it is drawn rather than written: a literal
+  // "/" in the DOM would be announced between the crumbs.
+  & + &::before {
+    content: '';
+    width: 1px;
+    height: 12px;
+    background: styles.$color-border-primary;
+  }
+
+  a {
+    // Real navigation, so it carries the locked touch target rather than being
+    // inline text you have to aim at.
+    display: inline-flex;
+    align-items: center;
+    min-height: styles.$size-touch-target-min;
+    color: styles.$color-text-secondary;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      text-decoration: underline;
+    }
+  }
+
+  &[aria-current='page'] {
+    color: styles.$color-text-primary;
+  }
+}
+
+.gallery-detail__back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  color: styles.$color-text-secondary;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+// Desktop and tablet show the two-level trail; mobile shows the single back
+// link. `display: none` removes the other from the accessibility tree too, so
+// assistive technology hears exactly one route back rather than two.
+//
+// The swap happens at the shell's own wide threshold (768), **not** at the
+// desktop tier. Product Detail swaps at 1025 because its trail is three levels
+// deep — Khám phá / category / product — which genuinely does not fit a tablet
+// column. This trail is two levels and flat by construction
+// (`NESTED_COLLECTION_WORK_MODEL = false`), and 1024 is an approved viewport in
+// its own right (`861:4321`): collapsing a short trail at exactly the width the
+// design draws it would hide navigation that fits with room to spare. Measured
+// at 1024: the full trail occupies well under half the 961px content band.
+@media (min-width: tokens.$bp-shell-wide) {
+  .gallery-detail__crumbs {
+    display: flex;
+  }
+
+  .gallery-detail__back-link {
+    display: none;
+  }
+}
+
+// --- Hero -------------------------------------------------------------------
+
+.gallery-detail__hero {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+// The page's single <h1>. It steps down a size on the narrow tier so the mobile
+// composition is a genuine recomposition rather than a shrunken desktop, which
+// is the same rule the feed's own title follows.
+.gallery-detail__title {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-m;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-tight;
+  color: styles.$color-text-primary;
+
+  @media (min-width: tokens.$bp-desktop) {
+    font-size: styles.$font-size-heading-l;
+  }
+}
+
+// --- Narrative --------------------------------------------------------------
+
+.gallery-detail__narrative {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.gallery-detail__narrative-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.gallery-detail__narrative-body {
+  margin: 0;
+  // The approved readable measure. Mobile needs no cap because the content band
+  // is already narrower than 640; the column stays on the page gutter rather
+  // than being centred as a marketing card, and the text wraps naturally with
+  // no clamp, no fixed height and no "read more".
+  max-width: tokens.$narrative-measure-max;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-primary;
+}

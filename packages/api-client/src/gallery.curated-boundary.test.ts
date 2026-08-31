@@ -11,10 +11,11 @@
  *  - the Admin app can reach exactly the gallery operations a delivered screen
  *    consumes, and each is a real callable function rather than a type-only
  *    re-export that would fail at runtime;
- *  - the Storefront can reach exactly the public gallery read its delivered
- *    feed consumes (`APP11-S02`), and nothing beyond it — the detail resolver
- *    and the sitemap family stay off the boundary until S03 and S04 build the
- *    surfaces that would justify them;
+ *  - the Storefront can reach exactly the public gallery reads its delivered
+ *    surfaces consume — the feed's list (`APP11-S02`) and the entry page's
+ *    detail resolver (`APP11-S03`) — and nothing beyond them: the sitemap
+ *    family stays off the boundary until S04 builds the surface that would
+ *    justify it;
  *  - no gallery **media-byte** operation crosses, public or Admin-anonymous:
  *    image bytes reach a page through a server-composed relative path, never
  *    through application code streaming a `Blob`;
@@ -87,22 +88,22 @@ describe('the Admin gallery surface', () => {
 });
 
 describe('the public gallery surface', () => {
-  it('publishes the one read a delivered Storefront screen consumes', () => {
-    // `APP11-S02` is that screen: the gallery feed at /bo-suu-tap. Consumer-driven
-    // release means the list crosses with the feed, not when B03 delivered it.
+  it('publishes the reads the delivered Storefront screens consume', () => {
+    // Consumer-driven release: the list crossed with `APP11-S02` (the feed at
+    // /bo-suu-tap) and the detail resolver crosses with `APP11-S03` (the entry
+    // page at /bo-suu-tap/[slug]) — not when `APP11-B03` delivered either.
     expect(typeof surface['publicGalleryEntryList']).toBe('function');
+    expect(typeof surface['publicGalleryEntryDetail']).toBe('function');
   });
 });
 
 describe('what the boundary never publishes', () => {
   it('withholds every public gallery operation no delivered surface consumes', () => {
-    // Each for its own reason, and neither is merely "not yet scheduled":
-    //   detail — /bo-suu-tap/[slug] does not exist; APP11-S03 owns it, and an
-    //            operation here is an invitation to render a page for it;
-    //   asset  — it streams bytes as a Blob. The browser reaches that route by
-    //            rendering the relative coverUrl the list already returns, so an
-    //            exported function would be one no correct consumer could call.
-    expect(surface['publicGalleryEntryDetail']).toBeUndefined();
+    // `publicGalleryEntryAsset` streams bytes as a Blob. The browser reaches
+    // that route by rendering the relative `coverUrl`/`assets[].url` the list
+    // and detail responses already return, so an exported function would be one
+    // no correct consumer could call — an `<img src>` cannot be a Blob. This is
+    // not a scheduling rule and `APP11-S03` does not relax it.
     expect(surface['publicGalleryEntryAsset']).toBeUndefined();
   });
 

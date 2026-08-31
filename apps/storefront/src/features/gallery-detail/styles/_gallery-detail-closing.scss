@@ -1,0 +1,140 @@
+// Gallery Entry Detail — the two closing sections and the route-local loading
+// and failure surfaces (`APP11-S03`).
+//
+// Design source: the Continue Discovering and Soft Commission CTA sections of
+// FIG-APP11-GALLERY-DETAIL-DESKTOP `860:442` / -TABLET `861:4321` / -MOBILE
+// `861:4487` — both retained from UI05 and re-pointed at this phase's routes.
+//
+// Split from the layout partial to stay inside the 300-line review threshold
+// CLAUDE.md §6 sets: "what the page is" and "how the page ends" are two
+// responsibilities, and the hard 400-line limit is a ceiling rather than a
+// target.
+
+@use '@embroidery/styles' as styles;
+@use 'gallery-detail-tokens' as tokens;
+// --- Continue discovering ---------------------------------------------------
+
+.gallery-detail__continue {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(12);
+}
+
+.gallery-detail__continue-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.gallery-detail__continue-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+  text-decoration: none;
+
+  &:hover {
+    border-color: styles.$color-text-primary;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+// --- Soft commission CTA ----------------------------------------------------
+
+.gallery-detail__commission {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(12);
+  padding: styles.spacing(24);
+  border-radius: styles.$radius-md;
+  background: styles.$color-background-secondary;
+}
+
+.gallery-detail__commission-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.gallery-detail__commission-body {
+  margin: 0;
+  max-width: tokens.$narrative-measure-max;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+.gallery-detail__commission-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(24);
+  border-radius: styles.$radius-button;
+  background: styles.$color-action-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-surface-primary;
+  text-decoration: none;
+
+  &:hover {
+    background: styles.$color-action-hover;
+  }
+
+  &:active {
+    background: styles.$color-action-active;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-text-primary;
+    outline-offset: 2px;
+  }
+}
+
+// --- Loading and error ------------------------------------------------------
+
+.gallery-detail__error-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.gallery-detail__error-body {
+  margin: 0;
+  max-width: tokens.$narrative-measure-max;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+.gallery-detail__error-retry {
+  align-self: flex-start;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-button;
+  background: styles.$color-background-primary;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  color: styles.$color-text-primary;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}

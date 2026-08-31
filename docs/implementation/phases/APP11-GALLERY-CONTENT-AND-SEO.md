@@ -35,8 +35,9 @@ phase.
 | `APP11-A02-C1` | SCSS source-size compliance | **COMPLETE** |
 | `APP11-S01` | Homepage / store introduction (+ SCSS compile gate) | **COMPLETE** |
 | `APP11-S02` | Public gallery feed | **COMPLETE** |
-| `APP11-S03` | Gallery entry detail | **NEXT** |
-| `APP11-S04` | SEO infrastructure | NOT STARTED |
+| `APP11-S03` | Gallery entry detail | **COMPLETE** |
+| `APP11-S03-C1` | Mandatory live gallery detail acceptance closure | **COMPLETE** |
+| `APP11-S04` | SEO infrastructure | **NEXT** |
 | `APP11-S05` | Static content pages + footer store presentation | NOT STARTED |
 | `APP11-E01` | Cross-boundary acceptance | NOT STARTED |
 | `APP11-X01` | Phase closure (R5 Operational Beta → APP12) | NOT STARTED |
