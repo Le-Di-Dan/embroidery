@@ -31,6 +31,45 @@ export function makePublicDetail(
 }
 
 /**
+ * A Product whose category slug is **outside the published contract**, as the
+ * running API demonstrably returns (`APP11-S04-C1`).
+ *
+ * `PublicCategoryResponse.slug` is declared in the committed OpenAPI artifact as
+ * a closed enum — `thu-bong`, `khan`, `quan-ao`, `khac` — so the generated type
+ * says this response cannot exist. It does: `categories.slug` is an
+ * unconstrained `text` column, the dev database holds a fifth row `ao-thun`, and
+ * `GET /api/public/products/ao-thun-cotton` returns
+ * `"category": { "slug": "ao-thun", "name": "Áo thun" }`.
+ *
+ * The single cast lives here rather than at each call site, because the
+ * divergence is one fact about the system and deserves one place that says so.
+ * It is not a convenience: the whole point of the Product Detail breadcrumb rule
+ * is that a *runtime* value can fall outside the Discover filter set, and a test
+ * that could only express in-contract values could never reach the branch that
+ * matters. The divergence itself is a backend/persistence concern this
+ * checkpoint may not touch (`FU-APP11-S04-C1-02`).
+ */
+export function makePublicDetailWithUncontractedCategory(
+  overrides: Partial<PublicProductDetailResponse> = {},
+): PublicProductDetailResponse {
+  return {
+    ...makePublicDetail({
+      slug: 'ao-thun-cotton',
+      name: 'Áo thun cotton',
+      media: [],
+      ...overrides,
+    }),
+    // The one deliberate departure from the generated type in this file. It
+    // needs the two-step conversion precisely because the compiler is right
+    // that the two types do not overlap — which is the fact being modelled.
+    category: {
+      slug: 'ao-thun',
+      name: 'Áo thun',
+    } as unknown as PublicProductDetailResponse['category'],
+  };
+}
+
+/**
  * A Product with no description. The key is **omitted** rather than set to
  * `undefined`, which is what the API does and what the repository's
  * `exactOptionalPropertyTypes` setting requires.

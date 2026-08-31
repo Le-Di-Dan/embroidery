@@ -37,8 +37,9 @@ phase.
 | `APP11-S02` | Public gallery feed | **COMPLETE** |
 | `APP11-S03` | Gallery entry detail | **COMPLETE** |
 | `APP11-S03-C1` | Mandatory live gallery detail acceptance closure | **COMPLETE** |
-| `APP11-S04` | SEO infrastructure | **NEXT** |
-| `APP11-S05` | Static content pages + footer store presentation | NOT STARTED |
+| `APP11-S04` | SEO infrastructure | **COMPLETE** |
+| `APP11-S04-C1` | Product breadcrumb canonical-category correction | **COMPLETE** |
+| `APP11-S05` | Static content pages + footer store presentation | **NEXT** |
 | `APP11-E01` | Cross-boundary acceptance | NOT STARTED |
 | `APP11-X01` | Phase closure (R5 Operational Beta → APP12) | NOT STARTED |
 
@@ -369,7 +370,7 @@ OpenAPI moves `113 / 125 / 247` → `115 / 127 / 250`.
 | `APP11-S01` | Homepage / store introduction, plus the SCSS compile gate | 0 | 0 |
 | `APP11-S02` | Public gallery feed `/bo-suu-tap` on the **UI05 Collections Index** authority (`329:2`/`339:2`/`343:2`) — UI02 masonry language at UI05's 3/2/1 density | 0 | +1 Storefront |
 | `APP11-S03` | Gallery entry detail `/bo-suu-tap/[slug]` — UI05 Collection Detail + the approved Product Detail lightbox | 0 | +1 Storefront |
-| `APP11-S04` | SEO infrastructure | 0 | +2 route files |
+| `APP11-S04` | SEO infrastructure — `STOREFRONT_PUBLIC_ORIGIN` promoted into the Storefront server runtime (IMP-D050, no second variable), `metadataBase`, `robots.ts`, `sitemap.ts`, public-only canonical/Open Graph and `BreadcrumbList` | 0 | +2 **metadata** route files; page routes stay 14 |
 | `APP11-S05` | Static content pages + footer store presentation | 0 | +4 Storefront |
 | `APP11-E01` | Cross-boundary acceptance — 4 journeys / 11 cases | 0 | 0 |
 | `APP11-X01` | Phase closure | 0 | 0 |

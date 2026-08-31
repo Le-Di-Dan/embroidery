@@ -45,3 +45,4 @@ export * from './quotation-and-design-review';
 export * from './orders-and-payments';
 export * from './inventory-and-production';
 export * from './gallery';
+export * from './seo';

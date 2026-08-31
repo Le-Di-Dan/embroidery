@@ -240,22 +240,31 @@ describe('the SEO boundary APP11-S04 owns', () => {
     expect(detailCode).not.toMatch(/localhost|embroidery\.local|\.vercel\.|\.com['"`]/);
   });
 
-  it('declares no metadataBase, Open Graph block or structured data', () => {
-    expect(detailCode).not.toMatch(/metadataBase|openGraph|twitter:|application\/ld\+json/i);
+  it('declares no metadataBase of its own and generates no OG image route', () => {
+    // `metadataBase` is root-layout infrastructure, declared once. Open Graph
+    // now exists here, but composed by the shared public-only helper rather
+    // than assembled locally — and there is still no `opengraph-image` route,
+    // which would generate a picture rather than reference a published one.
+    expect(detailCode).not.toMatch(/metadataBase|twitter:/i);
+    expect(detailCode).toContain('publicPageMetadata');
     expect(existsSync(join(ROUTE_DIR, 'opengraph-image.ts'))).toBe(false);
     expect(existsSync(join(ROUTE_DIR, 'opengraph-image.tsx'))).toBe(false);
   });
 
-  it('starts no site-wide SEO infrastructure', () => {
-    expect(existsSync(join(APP_DIR, 'sitemap.ts'))).toBe(false);
-    expect(existsSync(join(APP_DIR, 'robots.ts'))).toBe(false);
+  it('consumes the site-wide SEO infrastructure APP11-S04 delivered', () => {
+    // These two files are the checkpoint. The assertion is inverted rather
+    // than deleted so the boundary keeps naming what owns them.
+    expect(existsSync(join(APP_DIR, 'sitemap.ts'))).toBe(true);
+    expect(existsSync(join(APP_DIR, 'robots.ts'))).toBe(true);
   });
 
-  it('emits a relative canonical and a robots directive from contract facts', () => {
+  it('emits its canonical through the one route builder, from contract facts', () => {
+    // The path still comes from the single builder — `APP11-S04` changed only
+    // what it resolves against — and the robots directive is still the
+    // operator's own `isIndexable`, applied after the public block so the
+    // block can never overwrite it.
     const route = codeOnly(readFileSync(ROUTE_FILE, 'utf8'));
-    expect(route).toContain(
-      'alternates: { canonical: buildStorefrontGalleryDetailPath(entry.slug)',
-    );
+    expect(route).toContain('path: buildStorefrontGalleryDetailPath(entry.slug)');
     expect(route).toContain('robots: { index: entry.seo.isIndexable, follow: true }');
   });
 

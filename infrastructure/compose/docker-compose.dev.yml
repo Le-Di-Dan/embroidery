@@ -142,12 +142,27 @@ services:
       context: ../..
       dockerfile: infrastructure/docker/storefront.Dockerfile
       target: dev
+      args:
+        # Only the `build` target reads this; `dev` runs `next dev` and never
+        # prerenders. Declared here so a production image built from this file
+        # receives the same origin the container runs with, rather than baking
+        # a different one (APP11-S04).
+        STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-}
     environment:
       NODE_ENV: development
       # Browser calls the same-origin gateway path; never a direct host:port.
       NEXT_PUBLIC_API_BASE_PATH: ${NEXT_PUBLIC_API_BASE_PATH:-/api}
       # Server Components call the internal service URL (never in the client bundle).
       INTERNAL_API_BASE_URL: http://api:4000/api
+      # The absolute customer-facing browser origin (IMP-D050 / APP4-B05), read
+      # server-side by the technical SEO surface (APP11-S04): metadataBase,
+      # canonical URLs, robots.txt and sitemap.xml. The SAME variable the worker
+      # reads for secure links, deliberately — both processes must mean one
+      # address by it, and a second value is how a canonical tag and a secure
+      # link start naming different hosts. No default: an unset value fails the
+      # SEO consumer closed rather than publishing a guessed origin, and it never
+      # carries NEXT_PUBLIC_ because no client code needs it.
+      STOREFRONT_PUBLIC_ORIGIN: ${STOREFRONT_PUBLIC_ORIGIN:-}
       # Public external contact channels for the footer handoff (APP10-I01).
       # Optional and independent: an unset or invalid value omits that CTA, and
       # with neither set the whole `Kết nối` group is absent. Never a credential.

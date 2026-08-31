@@ -59,11 +59,18 @@ describe('the Studio route', () => {
     }
   });
 
-  it('builds the path from the shell route authority', () => {
+  it('writes no route literal and, since APP11-S04, no URL at all', () => {
+    // The route used to compose its own path for a self-canonical.
+    // `APP11-S04` removed that canonical: a private working surface must not
+    // ask to be indexed at its own address, and with `metadataBase` now set it
+    // would have resolved to a real absolute URL for a per-Product design tool.
+    // With no URL to build, the builder import went with it — so the rule this
+    // replaces ("use the shell builder") has nothing left to apply to, while
+    // the rule underneath it still does: the segment literal is written once,
+    // in the shell navigation model, and never here.
     const route = nth(routeFiles, 0).text;
-    expect(route).toContain('buildStorefrontStudioPath');
-    // The literal segment is written once, in the shell navigation model.
     expect(codeOnly(route)).not.toContain("'thiet-ke'");
+    expect(codeOnly(route)).not.toMatch(/alternates|canonical|openGraph/i);
   });
 
   it('keeps the route file thin and server-rendered', () => {

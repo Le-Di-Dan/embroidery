@@ -54,6 +54,10 @@ const detailMock = publicProductDetail as jest.MockedFunction<typeof publicProdu
 beforeEach(() => {
   detailMock.mockReset();
   process.env.INTERNAL_API_BASE_URL = 'http://api:4000/api';
+  // `APP11-S04` gave the Storefront a `metadataBase` and absolute canonicals,
+  // both composed from the one public-origin authority. It has no fallback by
+  // design, so a test that generates metadata has to configure it.
+  process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://shop.example.test';
 });
 
 /** Metadata and the page for one slug, as Next invokes them per request. */

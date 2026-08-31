@@ -1,9 +1,17 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import { buildStorefrontGalleryDetailPath } from '../../../features/storefront-shell';
-import { GalleryDetailScreen, toGalleryDetailView } from '../../../features/gallery-detail';
+import {
+  buildStorefrontGalleryDetailPath,
+  STOREFRONT_GALLERY_ROUTE,
+} from '../../../features/storefront-shell';
+import {
+  GalleryDetailScreen,
+  toGalleryDetailView,
+  GALLERY_DETAIL_COPY,
+} from '../../../features/gallery-detail';
 import { loadGalleryDetail } from '../../../features/gallery-detail/services/gallery-detail.server';
+import { BreadcrumbJsonLd, publicPageMetadata } from '../../../features/storefront-seo';
 
 /**
  * `force-dynamic` renders this segment per request and forbids a build-time or
@@ -33,19 +41,22 @@ interface GalleryDetailPageProps {
  * directive, never body copy. A `noindex` entry stays fully readable — the API
  * resolves it normally, and indexability is not visibility.
  *
- * The canonical is the route helper's **relative** path, exactly as
- * `/san-pham/[slug]` emits one. The Storefront declares no `metadataBase`, and
- * fabricating a host to satisfy a canonical tag is how a staging hostname ends
- * up in production markup. `APP11-S04` owns the public origin, `metadataBase`,
- * `robots.ts`, `sitemap.ts`, global Open Graph defaults and BreadcrumbList
- * JSON-LD; none of them is started here.
+ * The canonical still comes from the one route helper, exactly as
+ * `/san-pham/[slug]` emits one, and `APP11-S04` changed only what it resolves
+ * against: the Storefront now declares a `metadataBase` built from the
+ * configured public origin, so the same path this route always emitted is
+ * published as an absolute URL. The route model is untouched.
  *
- * There is deliberately **no Open Graph block**. An OG image must be an
- * absolute URL, and Next resolves a relative one against `metadataBase` —
- * which this app does not set, so the framework would fall back to a guessed
- * `localhost` origin. Emitting a representative image therefore cannot be done
- * without inventing the public origin S04 owns, so OG handling is deferred
- * whole rather than half-emitted.
+ * The Open Graph block `APP11-S03` deferred is delivered here
+ * (`FU-APP11-S03-04`). S03's reason was exact — an OG image must be absolute,
+ * and without a `metadataBase` the framework would have guessed `localhost` —
+ * and it no longer holds. The image is the entry's **first already-public asset
+ * path**, which is the cover: `assets[0]` is position 0 in the curated order and
+ * is the same publication-gated delivery route the page renders. Nothing is
+ * queried for it and no storage URL is composed. An entry the API returned with
+ * no deliverable image cannot reach this page at all — that is one of the safe
+ * 404 causes — so the absent-image branch is a contract guarantee rather than a
+ * case seen in practice.
  */
 export async function generateMetadata({ params }: GalleryDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -71,10 +82,19 @@ export async function generateMetadata({ params }: GalleryDetailPageProps): Prom
   const { entry } = result;
   const description = entry.seo.description ?? entry.description;
 
+  const image = entry.assets[0]?.url;
+
   return {
-    title: entry.seo.title ?? entry.title,
-    ...(description === '' ? {} : { description }),
-    alternates: { canonical: buildStorefrontGalleryDetailPath(entry.slug) },
+    ...publicPageMetadata({
+      path: buildStorefrontGalleryDetailPath(entry.slug),
+      title: entry.seo.title ?? entry.title,
+      ...(description === '' ? {} : { description }),
+      ...(image === undefined ? {} : { imagePath: image }),
+    }),
+    // The operator's per-entry indexing decision, applied after the public block
+    // so it can never be overwritten by it. A `noindex` entry stays fully
+    // readable and keeps its self-canonical; `APP11-B04` simply leaves it out of
+    // the sitemap. Indexability is not visibility.
     robots: { index: entry.seo.isIndexable, follow: true },
   };
 }
@@ -107,5 +127,30 @@ export default async function GalleryDetailPage({ params }: GalleryDetailPagePro
     throw new Error('The gallery entry detail request failed.');
   }
 
-  return <GalleryDetailScreen entry={toGalleryDetailView(result.entry)} />;
+  const entry = toGalleryDetailView(result.entry);
+
+  return (
+    <>
+      {/*
+       * The visible breadcrumb, restated as `BreadcrumbList` structured data.
+       *
+       * Two levels, because that is what the page draws and what the data model
+       * has: `NESTED_COLLECTION_WORK_MODEL = false`, so there is no parent
+       * collection between the feed and this entry and a third crumb would have
+       * to name a grouping that does not exist. The label and the href are the
+       * same copy constant and the same shell route the rendered `<nav>` uses.
+       *
+       * The entry itself carries a name and no URL — it is the page the visitor
+       * is already on. No `galleryEntryId`, no `assetId`, no `isIndexable`:
+       * the builder takes names and paths and has no field for them.
+       */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: GALLERY_DETAIL_COPY.gallery, path: STOREFRONT_GALLERY_ROUTE },
+          { name: entry.title },
+        ]}
+      />
+      <GalleryDetailScreen entry={entry} />
+    </>
+  );
 }

@@ -12,20 +12,58 @@ import {
   nextCursorOf,
   resolveDiscoverSelection,
   selectionSlug,
+  buildDiscoverHref,
   type DiscoverSearchParams,
 } from '../../features/product-discovery';
 import { fetchFirstDiscoverPageOnServer } from '../../features/product-discovery/services/discover-catalog.server';
+import { publicPageMetadata } from '../../features/storefront-seo';
+
+interface DiscoverPageProps {
+  readonly searchParams: Promise<DiscoverSearchParams>;
+}
 
 /**
- * Static, source-grounded metadata. No canonical URL and no structured product
- * data: the Product Detail route is unresolved (IMP-D038), and a canonical or
- * an item URL invented here would quietly lock a path the Product Owner has not
- * approved.
+ * Discover metadata, including the self-canonical this route lacked
+ * (`FU-APP11-G01-05`).
+ *
+ * The comment that used to stand here justified the missing canonical with "the
+ * Product Detail route is unresolved (IMP-D038)". That reason expired when
+ * IMP-D039 locked `/san-pham/[slug]`, and it was never the real obstacle
+ * anyway: what a canonical needs is an origin, which `APP11-S04` now supplies.
+ *
+ * ## The category state is part of the canonical
+ *
+ * `?category=` is not decoration on one page — it is the canonical address of a
+ * filtered feed (IMP-D038, `APP2-S01-G01`; there is no `/danh-muc/[slug]`). So
+ * each of the four category states self-canonicalises to its own URL, and the
+ * unfiltered feed canonicalises to `/kham-pha` with no query at all. Collapsing
+ * the filtered states onto the bare path would tell a crawler that four
+ * distinct, linked, browsable feeds are one page; adding a query to the
+ * unfiltered one would invent an address nothing links to.
+ *
+ * Only the category parameter survives. The URL is rebuilt from the resolved
+ * selection through `buildDiscoverHref` rather than echoed back, so a tracking
+ * or pagination parameter someone appends cannot enter the canonical.
+ *
+ * An unknown or repeated value never reaches here: it takes the existing
+ * not-found boundary in the page component below, which is where a malformed
+ * category has always been answered.
+ *
+ * Layout, query behaviour and the feed itself are untouched.
  */
-export const metadata: Metadata = {
-  title: `${DISCOVER_COPY.heading} — Xưởng Thêu`,
-  description: DISCOVER_COPY.intro,
-};
+export async function generateMetadata({ searchParams }: DiscoverPageProps): Promise<Metadata> {
+  const selection = resolveDiscoverSelection(await searchParams);
+
+  return publicPageMetadata({
+    // An invalid selection renders the not-found surface, which carries its own
+    // head; canonicalising it to the unfiltered feed here would be the closest
+    // thing to a redirect this checkpoint is allowed to emit, and it would
+    // reward a mistyped link with a real URL.
+    path: buildDiscoverHref(selectionSlug(selection)),
+    title: `${DISCOVER_COPY.heading} — Xưởng Thêu`,
+    description: DISCOVER_COPY.intro,
+  });
+}
 
 /**
  * `force-dynamic` renders this segment per request and forbids a build-time or
@@ -35,10 +73,6 @@ export const metadata: Metadata = {
  * keep showing a product the operator has unpublished.
  */
 export const dynamic = 'force-dynamic';
-
-interface DiscoverPageProps {
-  readonly searchParams: Promise<DiscoverSearchParams>;
-}
 
 /**
  * `/kham-pha` — the anonymous Discover feed (IMP-D038).

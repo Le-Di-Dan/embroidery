@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import HomePage, { dynamic, metadata } from '../../src/app/page';
+import HomePage, { dynamic, generateMetadata } from '../../src/app/page';
 import { HOMEPAGE_COPY } from '../../src/features/homepage';
 
 /**
@@ -29,9 +29,25 @@ describe('storefront home page segment', () => {
   });
 
   it('carries Homepage-specific metadata and no CP0 copy', () => {
+    // `APP11-S04` turned the static object into `generateMetadata`, because the
+    // public origin is read at request time rather than at module load.
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    const metadata = generateMetadata();
+
     expect(metadata.title).toContain(HOMEPAGE_COPY.hero.heading);
     expect(metadata.description).toBe(HOMEPAGE_COPY.hero.lead);
     expect(JSON.stringify(metadata)).not.toMatch(/Embroidery Commerce Storefront|checkpoint/i);
+  });
+
+  it('self-canonicalises and publishes public Open Graph (APP11-S04)', () => {
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    const metadata = generateMetadata();
+
+    expect(metadata.alternates?.canonical).toBe('https://example.test/');
+    expect(metadata.openGraph?.url).toBe('https://example.test/');
+    // No social image: the store has no canonical one, and promoting a featured
+    // Product's photo here would silently become that policy.
+    expect(metadata.openGraph).not.toHaveProperty('images');
   });
 
   it('is rendered per request, so an unpublished product cannot survive in a cache', () => {

@@ -39,6 +39,10 @@ const detailMock = publicGalleryEntryDetail as jest.MockedFunction<typeof public
 beforeEach(() => {
   detailMock.mockReset();
   process.env.INTERNAL_API_BASE_URL = 'http://api:4000/api';
+  // `APP11-S04` gave the Storefront a `metadataBase` and absolute canonicals,
+  // both composed from the one public-origin authority. It has no fallback by
+  // design, so a test that generates metadata has to configure it.
+  process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://shop.example.test';
 });
 
 function params(slug: string) {
@@ -228,27 +232,29 @@ describe('per-entry metadata', () => {
     expect(meta.description).toBe('Mô tả SEO.');
   });
 
-  it('emits a relative canonical from the one route builder', async () => {
+  it('emits the canonical from the one route builder, on the configured origin', async () => {
+    // This used to require a *relative* canonical and no absolute origin
+    // anywhere, because `APP11-S04` had not yet supplied one. It has, so the
+    // requirement inverts: the same builder's path, resolved against the one
+    // configured origin rather than a guessed host.
     detailMock.mockResolvedValue(galleryDetailEnvelope(makeGalleryDetail()));
 
     const meta = await generateMetadata(params(GALLERY_DETAIL_SLUG));
 
-    expect(meta.alternates?.canonical).toBe(`/bo-suu-tap/${GALLERY_DETAIL_SLUG}`);
-    // No absolute origin is invented anywhere: `metadataBase` and the public
-    // origin are `APP11-S04`'s, and a guessed host is how a staging name ends
-    // up in production markup.
-    expect(JSON.stringify(meta)).not.toMatch(/https?:\/\//);
+    expect(meta.alternates?.canonical).toBe(
+      `https://shop.example.test/bo-suu-tap/${GALLERY_DETAIL_SLUG}`,
+    );
   });
 
-  it('emits no Open Graph block', async () => {
+  it('emits the Open Graph block it deferred to APP11-S04', async () => {
+    // S03's reason for emitting none was exact — an OG image must be absolute,
+    // and without a `metadataBase` Next would have guessed an origin. S04
+    // supplied the origin, so the block lands here (`FU-APP11-S03-04`).
     detailMock.mockResolvedValue(galleryDetailEnvelope(makeGalleryDetail()));
 
     const meta = await generateMetadata(params(GALLERY_DETAIL_SLUG));
 
-    // An OG image must be absolute, and Next resolves a relative one against a
-    // `metadataBase` this app does not set — falling back to a guessed origin.
-    // OG is therefore deferred whole to S04 rather than half-emitted.
-    expect(meta.openGraph).toBeUndefined();
+    expect(meta.openGraph?.url).toBe(`https://shop.example.test/bo-suu-tap/${GALLERY_DETAIL_SLUG}`);
   });
 
   it('marks an indexable entry index,follow', async () => {

@@ -14,8 +14,8 @@
  *  - the Storefront can reach exactly the public gallery reads its delivered
  *    surfaces consume — the feed's list (`APP11-S02`) and the entry page's
  *    detail resolver (`APP11-S03`) — and nothing beyond them: the sitemap
- *    family stays off the boundary until S04 builds the surface that would
- *    justify it;
+ *    family is technical SEO spanning two domains, so `APP11-S04` released it
+ *    on its own `./seo` barrel and it must not appear on this one;
  *  - no gallery **media-byte** operation crosses, public or Admin-anonymous:
  *    image bytes reach a page through a server-composed relative path, never
  *    through application code streaming a `Blob`;
@@ -24,6 +24,7 @@
  *  - the lane selector crosses as a **value**, so a picker names its scope from
  *    the contract rather than from a literal that could drift.
  */
+import * as galleryBarrel from './gallery';
 import * as index from './index';
 
 const surface = index as unknown as Record<string, unknown>;
@@ -107,11 +108,17 @@ describe('what the boundary never publishes', () => {
     expect(surface['publicGalleryEntryAsset']).toBeUndefined();
   });
 
-  it('withholds every sitemap operation', () => {
-    // APP11-S04 owns the technical SEO surface; nothing delivered reads it.
-    for (const name of Object.keys(surface)) {
+  it('keeps the sitemap family off the gallery barrel', () => {
+    // The operation is released — `APP11-S04` consumes it — but from `./seo`,
+    // because it answers one question spanning Catalog and Gallery and belongs
+    // to neither. So what this asserts is where it lives, not whether it
+    // exists: the package root re-exports both barrels, and only the module
+    // namespace of this one can tell them apart.
+    for (const name of Object.keys(galleryBarrel)) {
       expect(name).not.toMatch(/^publicSitemap/);
     }
+    // And it really is on the package boundary, from the barrel that owns it.
+    expect(typeof surface['publicSitemapEntryList']).toBe('function');
   });
 
   it('publishes no gallery lifecycle transition the API does not have', () => {

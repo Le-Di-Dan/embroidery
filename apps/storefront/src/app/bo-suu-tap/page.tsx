@@ -10,19 +10,33 @@ import {
   nextGalleryCursorOf,
 } from '../../features/gallery-feed';
 import { fetchFirstGalleryPageOnServer } from '../../features/gallery-feed/services/gallery-feed.server';
+import { STOREFRONT_GALLERY_ROUTE } from '../../features/storefront-shell';
+import { publicPageMetadata } from '../../features/storefront-seo';
 
 /**
- * Static, source-grounded metadata — title and description only.
+ * Gallery feed metadata: the title and description it always had, plus the
+ * self-canonical and public Open Graph block `APP11-S04` supplies now that an
+ * absolute origin exists.
  *
- * No `metadataBase`, canonical, robots directive, Open Graph block or
- * structured data: `APP11-S03` owns per-entry SEO and `APP11-S04` owns the
- * technical SEO infrastructure. A canonical invented here would lock an absolute
- * origin neither checkpoint has settled.
+ * The feed takes no filter and keeps no cursor in the URL, so it has exactly one
+ * address and the canonical is simply the shell's gallery route.
+ *
+ * No `og:image`, and specifically not the first entry's cover: the leading card
+ * changes whenever an operator reorders the feed, so a social preview built from
+ * it would silently re-present the gallery as whatever was published most
+ * recently. There is no canonical representative image for the collection as a
+ * whole, and inventing one is not this checkpoint's decision to make.
+ *
+ * No `BreadcrumbList`: this page draws no visible trail, and structured data
+ * describes what the page shows.
  */
-export const metadata: Metadata = {
-  title: `${GALLERY_COPY.heading} — Xưởng Thêu`,
-  description: GALLERY_COPY.intro,
-};
+export function generateMetadata(): Metadata {
+  return publicPageMetadata({
+    path: STOREFRONT_GALLERY_ROUTE,
+    title: `${GALLERY_COPY.heading} — Xưởng Thêu`,
+    description: GALLERY_COPY.intro,
+  });
+}
 
 /**
  * `force-dynamic` renders this segment per request and forbids a build-time or

@@ -238,12 +238,20 @@ describe('gallery feed content boundary', () => {
     }
   });
 
-  it('starts no APP11-S03 or APP11-S04 SEO infrastructure', () => {
+  it('takes its APP11-S04 SEO from the public helper and invents none', () => {
+    // The rule this replaces was "S03 and S04 have not started". Both have:
+    // the metadata routes exist and the feed requests its canonical and Open
+    // Graph through the one public-only builder. What still holds is that the
+    // feed composes no origin, no URL and no structured data itself — and, in
+    // particular, promotes no entry's cover to og:image, because the leading
+    // card changes whenever an operator reorders the feed.
+    expect(existsSync(join(APP_DIR, 'sitemap.ts'))).toBe(true);
+    expect(existsSync(join(APP_DIR, 'robots.ts'))).toBe(true);
+    expect(galleryCode).toContain('publicPageMetadata');
     expect(galleryCode).not.toMatch(
-      /metadataBase|openGraph|alternates|canonical|robots|application\/ld\+json/i,
+      new RegExp('metadataBase|https?://|application/ld[+]json', 'i'),
     );
-    expect(existsSync(join(APP_DIR, 'sitemap.ts'))).toBe(false);
-    expect(existsSync(join(APP_DIR, 'robots.ts'))).toBe(false);
+    expect(galleryCode).not.toMatch(/imagePath|og:image/i);
   });
 
   it('keeps the route segment thin — composition lives in the feature', () => {

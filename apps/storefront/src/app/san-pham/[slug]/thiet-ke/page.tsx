@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 
 import { StudioBootstrapIsland, STUDIO_COPY } from '../../../../features/design-studio';
 import { loadProductDetail } from '../../../../features/product-detail/services/product-detail.server';
-import { buildStorefrontStudioPath } from '../../../../features/storefront-shell';
 
 /**
  * `force-dynamic`, for the same reason the Product Detail segment above it uses
@@ -26,10 +25,17 @@ export async function generateMetadata({ params }: StudioPageProps): Promise<Met
 
   return {
     title: `${STUDIO_COPY.heading} — ${result.product.name}`,
-    alternates: { canonical: buildStorefrontStudioPath(result.product.slug) },
     // The Studio is a working surface, not a landing page. Indexing it would put
     // a per-Product design tool into search results in place of the Product.
-    robots: { index: false, follow: true },
+    //
+    // `APP11-S04` corrected two things here (`FU-APP11-G01-07`). `follow` is now
+    // `false`, matching every other private route in this app — a page a crawler
+    // is told not to index is not a page whose outbound links it should be
+    // mining. And the self-canonical is gone: this is a private surface, and a
+    // canonical tag is a request to index *this* address, which is the opposite
+    // of what the directive beside it says. The route, its Product resolution
+    // and its not-found behaviour are untouched.
+    robots: { index: false, follow: false },
   };
 }
 

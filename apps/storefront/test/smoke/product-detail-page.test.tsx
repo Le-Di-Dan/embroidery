@@ -38,6 +38,10 @@ const detailMock = publicProductDetail as jest.MockedFunction<typeof publicProdu
 beforeEach(() => {
   detailMock.mockReset();
   process.env.INTERNAL_API_BASE_URL = 'http://api:4000/api';
+  // `APP11-S04` gave the Storefront a `metadataBase` and absolute canonicals,
+  // both composed from the one public-origin authority. It has no fallback by
+  // design, so a test that generates metadata has to configure it.
+  process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://shop.example.test';
 });
 
 function params(slug: string) {
@@ -234,16 +238,17 @@ describe('metadata', () => {
     expect(meta.robots).toEqual({ index: false, follow: true });
   });
 
-  it('emits the relative canonical from the route helper and fabricates no host', async () => {
+  it('emits the canonical from the route helper, on the configured origin', async () => {
+    // This used to require a *relative* canonical and no host at all, because
+    // no public origin existed. `APP11-S04` supplied one, so the requirement
+    // inverts: still the one route helper's path, now on the one configured
+    // origin — never a fabricated or guessed host, which is what the original
+    // assertion was actually protecting.
     detailMock.mockResolvedValue(publicDetailEnvelope(makePublicDetail()));
 
     const meta = await generateMetadata(params('gau-bong-theu-tay'));
 
-    const canonical = meta.alternates?.canonical;
-    expect(canonical).toBe('/san-pham/gau-bong-theu-tay');
-    // A plain relative string, not a URL object built around a fabricated host.
-    expect(typeof canonical).toBe('string');
-    expect(canonical as string).not.toMatch(/^https?:/);
+    expect(meta.alternates?.canonical).toBe('https://shop.example.test/san-pham/gau-bong-theu-tay');
   });
 
   it('describes nothing for a Product the visitor may not see', async () => {
@@ -263,13 +268,18 @@ describe('metadata', () => {
     expect(meta).toEqual({});
   });
 
-  it('invents no structured data, price schema or social image', async () => {
+  it('invents no price schema and no Product structured data', async () => {
+    // `APP11-S04` added a public Open Graph block, so its absence is no longer
+    // the property under test. What still holds — and is what this assertion was
+    // for — is that no commerce fact and no `Product` schema is invented at
+    // render time. The only structured data the page emits is the
+    // `BreadcrumbList` for its visible trail, and that lives in the body.
     detailMock.mockResolvedValue(publicDetailEnvelope(makePublicDetail()));
 
     const meta = await generateMetadata(params('gau-bong-theu-tay'));
 
-    expect(meta.openGraph).toBeUndefined();
     expect(JSON.stringify(meta)).not.toContain('schema.org');
     expect(JSON.stringify(meta)).not.toContain('450000');
+    expect(JSON.stringify(meta)).not.toMatch(/availability|priceCurrency|"Product"/);
   });
 });

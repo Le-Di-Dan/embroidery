@@ -1,0 +1,93 @@
+import type { Metadata } from 'next';
+
+import { toAbsolutePublicUrl } from '../../../config/public-origin';
+
+/**
+ * The one builder for a **public** page's canonical URL and Open Graph block
+ * (`APP11-S04`).
+ *
+ * ## Why this is a helper and not a root-layout default
+ *
+ * `APP11-G01` warned that adding global SEO infrastructure is exactly how a
+ * secure route quietly acquires a public identity. Next's metadata merges
+ * *field by field* down the segment tree: an `openGraph` object declared in the
+ * root layout is inherited by every route that does not replace it, and
+ * `/truy-cap/thanh-toan` would then publish an `og:url` for a page nobody may
+ * link to. A route that forgets to opt out of an inherited default looks
+ * identical, in source, to one that never needed to.
+ *
+ * So the composition is inverted. The root layout carries only `metadataBase` —
+ * URL-resolution infrastructure, which resolves relative values and emits no tag
+ * of its own — and every public Open Graph payload is *requested* by the page
+ * that wants one, through this function. A private route inherits nothing
+ * because there is nothing to inherit, which is a structural guarantee rather
+ * than a convention someone has to remember while adding a route.
+ *
+ * ## What it emits, and what it will not invent
+ *
+ * `type`, `url`, `title`, `description`, `locale`, and images only when the
+ * caller has a genuinely public image path from its own contract.
+ *
+ * There is no `siteName`. The wordmark divergence between `Xưởng Thêu` (the
+ * page titles) and `Nét Thêu` (the secure-route titles) is an open Product Owner
+ * copy question, and `og:site_name` is precisely the field that would settle it
+ * by accident, in published markup, without anybody deciding. Omitting it is not
+ * an oversight; it is the checkpoint declining to make someone else's decision.
+ *
+ * There is no `twitter` block, no `article:*` metadata, no author and no
+ * published date: none of those facts exists in any contract this app reads.
+ */
+
+/** `vi`, matching `<html lang="vi">`. Open Graph wants the underscored form. */
+export const PUBLIC_OG_LOCALE = 'vi_VN';
+
+/** Every public surface here is a page rather than an article or a product. */
+const PUBLIC_OG_TYPE = 'website';
+
+export interface PublicPageMetadataInput {
+  /** Root-relative canonical path from a route builder — never a literal. */
+  readonly path: string;
+  readonly title: string;
+  /** Omitted from both the description tag and `og:description` when absent. */
+  readonly description?: string;
+  /**
+   * A root-relative, already-public media path the caller's own contract
+   * returned (`APP2-T01` / `APP11-B03` delivery routes). Absent is a valid and
+   * common answer: no canonical social image exists for the feeds or the
+   * Homepage, and picking a representative Product photo here would silently
+   * become the store's social-image policy.
+   */
+  readonly imagePath?: string;
+}
+
+/**
+ * Canonical + Open Graph for one public page.
+ *
+ * The canonical is emitted **absolute** rather than relative. `metadataBase`
+ * would resolve a relative one identically, but a `sitemap.xml` entry, an
+ * `og:url` and a `<link rel="canonical">` for the same page are then built by
+ * one function from one origin, so they cannot disagree about the store's
+ * address. It also fails loudly when the origin is unconfigured, at the page
+ * that would otherwise have published a guessed host.
+ */
+export function publicPageMetadata(input: PublicPageMetadataInput): Metadata {
+  const url = toAbsolutePublicUrl(input.path);
+  const description = input.description?.trim();
+  const hasDescription = description !== undefined && description !== '';
+
+  return {
+    title: input.title,
+    ...(hasDescription ? { description } : {}),
+    alternates: { canonical: url },
+    openGraph: {
+      type: PUBLIC_OG_TYPE,
+      url,
+      title: input.title,
+      ...(hasDescription ? { description } : {}),
+      locale: PUBLIC_OG_LOCALE,
+      ...(input.imagePath === undefined
+        ? {}
+        : { images: [{ url: toAbsolutePublicUrl(input.imagePath) }] }),
+    },
+  };
+}

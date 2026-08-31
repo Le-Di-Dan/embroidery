@@ -60,6 +60,23 @@ ENV NODE_ENV=production
 # to `dist`, so they are compiled before `next build` runs. Omitting it here
 # would leave the production image unbuildable while dev worked.
 RUN pnpm --filter "@embroidery/storefront^..." build
+# The public browser origin (IMP-D050 / APP4-B05), needed at BUILD time as well
+# as at run time since APP11-S04: the root layout resolves `metadataBase` from it,
+# and `next build` prerenders the statically generated segments — so the export
+# step reads it exactly as a request would.
+#
+# Declared with NO default, deliberately. A placeholder here would be the
+# fallback the SEO authority forbids, silently baking one host into an image run
+# against another; without one the image build fails closed with the same message
+# a misconfigured request produces. Supply it explicitly:
+#
+#   docker build --build-arg STOREFRONT_PUBLIC_ORIGIN=https://... -f ... .
+#
+# It is public configuration — it appears in every canonical tag the store serves
+# — so passing it as a build argument leaks nothing. Never do this with a secret:
+# build arguments are recorded in the image history.
+ARG STOREFRONT_PUBLIC_ORIGIN
+ENV STOREFRONT_PUBLIC_ORIGIN=${STOREFRONT_PUBLIC_ORIGIN}
 RUN pnpm --filter @embroidery/storefront build
 
 # ---------------------------------------------------------------------------

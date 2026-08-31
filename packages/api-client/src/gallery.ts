@@ -30,8 +30,8 @@
  *
  * ## What is still held back
  *
- * The **public** gallery reads and the sitemap operations are not here, and not
- * merely because no consumer has landed: this barrel serves the Admin app, and
+ * The **public** gallery reads were not here either, and not merely because no
+ * consumer had landed: this barrel serves the Admin app, and
  * a storefront read reached from an Admin screen would be a second,
  * unauthenticated view of the same rows. There is no archive or restore
  * operation to withhold — `APP11-B02` publishes none, so the editor has none to
@@ -100,8 +100,12 @@ export type {
  * The list crossed with `APP11-S02`. `publicGalleryEntryDetail` crosses now,
  * with `APP11-S03`: the route it resolves — `/bo-suu-tap/[slug]` — exists as of
  * this checkpoint, so the operation is no longer "an invitation to render a
- * page for it" but the single read that page performs. The
- * `publicSitemapEntry_*` family stays withheld for `APP11-S04`.
+ * page for it" but the single read that page performs.
+ *
+ * `APP11-S04` released the `publicSitemapEntry_*` family, on its own `./seo`
+ * barrel rather than here: it answers one question spanning Catalog *and*
+ * Gallery, so filing a cross-domain operation under either domain would make it
+ * the property of whichever barrel happened to notice it first.
  *
  * `publicGalleryEntryAsset` also stays withheld, for the reason
  * `publicProductMediaGet` does rather than a scheduling one: it streams image

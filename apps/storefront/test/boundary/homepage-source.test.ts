@@ -59,6 +59,9 @@ const ROUTES_AT_S01 = [
   // Added by `APP11-S02`, which also activated the Collections action below.
   // The route and its link landed together, exactly as S01 staged them.
   '/bo-suu-tap',
+  // Added by `APP11-S03`, which did not extend this list — so this check had
+  // been failing since that checkpoint. `APP11-S04` brings it current.
+  '/bo-suu-tap/[slug]',
   '/kham-pha',
   '/san-pham/[slug]',
   '/san-pham/[slug]/thiet-ke',
@@ -144,12 +147,21 @@ describe('Homepage content boundary', () => {
     expect(homepageCode).not.toMatch(/journal|blog/i);
   });
 
-  it('starts no APP11-S04 SEO infrastructure', () => {
+  it('takes its SEO infrastructure from the APP11-S04 helper, inventing none', () => {
+    // The rule this replaces was "S04 has not started". It has: the metadata
+    // routes exist, and the Homepage requests its canonical and Open Graph
+    // through the one public-only builder. What still holds — and is the part
+    // worth guarding — is that the page composes no URL, no origin and no
+    // structured data of its own.
+    expect(existsSync(join(APP_DIR, 'sitemap.ts'))).toBe(true);
+    expect(existsSync(join(APP_DIR, 'robots.ts'))).toBe(true);
+    expect(homepageCode).toContain('publicPageMetadata');
     expect(homepageCode).not.toMatch(
-      /metadataBase|openGraph|robots|JSON-?LD|application\/ld\+json/i,
+      new RegExp('metadataBase|https?://|application/ld[+]json', 'i'),
     );
-    expect(existsSync(join(APP_DIR, 'sitemap.ts'))).toBe(false);
-    expect(existsSync(join(APP_DIR, 'robots.ts'))).toBe(false);
+    // No social image: the store has no canonical one, and a featured Product's
+    // photo promoted here would silently become that policy.
+    expect(homepageCode).not.toMatch(/imagePath|og:image/i);
   });
 
   it('keeps the route segment thin — composition lives in the feature', () => {

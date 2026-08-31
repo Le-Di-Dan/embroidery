@@ -12,7 +12,7 @@
 import { publicProductList } from '@embroidery/api-client';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import DiscoverPage, { metadata } from '../../src/app/kham-pha/page';
+import DiscoverPage, { generateMetadata } from '../../src/app/kham-pha/page';
 import { makePublicPage, makePublicProduct, publicEnvelope } from '../support/discover-fixture';
 
 jest.mock('@embroidery/api-client', () => ({
@@ -121,9 +121,29 @@ describe('/kham-pha server rendering', () => {
     expect(dynamic).toBe('force-dynamic');
   });
 
-  it('publishes source-grounded metadata with no invented canonical URL', () => {
+  it('publishes source-grounded metadata and an absolute self-canonical', async () => {
+    // This assertion used to require the *absence* of a canonical, on the stale
+    // reason that the Product Detail route was unresolved (`FU-APP11-G01-05`).
+    // IMP-D039 locked that route and `APP11-S04` supplied the origin, so the
+    // rule inverts: the canonical must exist, and must be absolute.
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    const metadata = await generateMetadata({ searchParams: Promise.resolve({}) });
+
     expect(metadata.title).toContain('Khám phá');
-    expect(metadata).not.toHaveProperty('alternates');
+    expect(metadata.alternates?.canonical).toBe('https://example.test/kham-pha');
+    // The unfiltered feed's canonical carries no category query, and the page
+    // still invents no Product URL.
+    expect(JSON.stringify(metadata)).not.toContain('category=');
     expect(JSON.stringify(metadata)).not.toContain('/san-pham');
+  });
+
+  it('self-canonicalises each category state to its own URL (APP11-S04)', async () => {
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    const metadata = await generateMetadata({
+      searchParams: Promise.resolve({ category: 'khan' }),
+    });
+
+    expect(metadata.alternates?.canonical).toBe('https://example.test/kham-pha?category=khan');
+    expect(metadata.openGraph?.url).toBe('https://example.test/kham-pha?category=khan');
   });
 });
