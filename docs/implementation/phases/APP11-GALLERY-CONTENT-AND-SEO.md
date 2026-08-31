@@ -33,8 +33,8 @@ phase.
 | `APP11-A01` | Admin gallery list | **COMPLETE** |
 | `APP11-A02` | Admin gallery editor + publication | **COMPLETE** |
 | `APP11-A02-C1` | SCSS source-size compliance | **COMPLETE** |
-| `APP11-S01` | Homepage / store introduction (+ SCSS compile gate) | **NEXT** |
-| `APP11-S02` | Public gallery feed | NOT STARTED |
+| `APP11-S01` | Homepage / store introduction (+ SCSS compile gate) | **COMPLETE** |
+| `APP11-S02` | Public gallery feed | **NEXT** |
 | `APP11-S03` | Gallery entry detail | NOT STARTED |
 | `APP11-S04` | SEO infrastructure | NOT STARTED |
 | `APP11-S05` | Static content pages + footer store presentation | NOT STARTED |

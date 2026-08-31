@@ -12,4 +12,9 @@ export {
   STOREFRONT_STUDIO_ROUTE_SEGMENT,
   buildStorefrontProductDetailPath,
   buildStorefrontStudioPath,
+  // The canonical custom-request entry point (`APP5-S01`). On the shell
+  // surface because the Homepage commission call to action targets the same
+  // route the header IA item does; two literals for one path is how a second
+  // intake flow starts by accident.
+  STOREFRONT_CUSTOM_REQUEST_ROUTE,
 } from './model/storefront-navigation';

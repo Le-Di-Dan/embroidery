@@ -17,6 +17,13 @@ export {
 export { DISCOVER_COPY } from './model/discover-copy';
 export { discoverQueryKeys } from './model/discover-query-keys';
 export { nextCursorOf } from './model/discover-feed';
+// The public-product card projection. Exposed for the Homepage's Featured
+// Works and Discover preview (`APP11-S01`), so the Storefront keeps exactly one
+// boundary at which `price` and `isDisplayOutOfStock` are dropped from a public
+// product summary — a second projection would be a second place for a commerce
+// field to leak into an image-led surface.
+export { toDiscoverCard } from './model/discover-feed';
+export type { DiscoverCard } from './model/discover-feed';
 export { resolveDiscoverSelection, selectionSlug } from './model/discover-selection';
 export type { DiscoverSelection, DiscoverSearchParams } from './model/discover-selection';
 export type { DiscoverCategorySlug } from './model/discover-categories';

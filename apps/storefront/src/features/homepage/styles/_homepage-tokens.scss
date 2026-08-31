@@ -1,0 +1,34 @@
+// Homepage — local layout constants (`APP11-S01`).
+//
+// Split into its own partial so every other Homepage partial reads the same
+// numbers by name and none of them re-declares a magic value. Colour, type,
+// spacing, radius and control size all come from `@embroidery/styles`; only the
+// values the design foundation deliberately does not lock live here.
+
+// Responsive tiers. The design system defers a shared breakpoint scale (FU-A16),
+// so these are feature-local and aligned with the approved Homepage frames and
+// with `product-discovery`'s existing thresholds: the tablet frame IS 1024, so
+// 1024 stays the tablet tier and 1025+ is the desktop tier. No frame exists
+// between 390 and 1024, so the small→medium switch at 640 is a local decision
+// rather than a measured value — the same one `product-discovery` already made,
+// kept identical so two adjacent surfaces cannot reflow at different widths.
+$bp-medium: 640px;
+$bp-large: 1025px;
+
+// Column counts for the two work grids, following the approved density:
+// Featured Works is the editorial lead-in (1 → 3), the Discover preview is the
+// masonry taste of the feed (2 → 3).
+$featured-columns-wide: 3;
+$preview-columns-medium: 3;
+$preview-columns-small: 2;
+
+// Line heights. The foundation locks the type scale but not these (see the
+// styles package README, Deferred), so they are named here once.
+$line-height-tight: 1.15;
+$line-height-snug: 1.35;
+$line-height-relaxed: 1.6;
+
+// Local composition constants with no shared token. The work-media aspect ratio
+// is written inline as a CSS value in the one rule that needs it: `4 / 5` is
+// division in Sass, and a variable here would either be wrong or need quoting.
+$skeleton-tint: rgba(23, 23, 23, 0.06); // ink/900 at 6%, never a literal grey

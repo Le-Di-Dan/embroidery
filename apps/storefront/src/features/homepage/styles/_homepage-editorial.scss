@@ -1,0 +1,103 @@
+// Homepage — Studio Story and the Commission CTA (sections 5 and 6).
+@use '@embroidery/styles' as styles;
+@use 'homepage-tokens' as tokens;
+
+// --- Studio Story -----------------------------------------------------------
+
+// Prose at a reading measure on the secondary canvas: the surface change is what
+// separates the story from the grids above it, so the section reads as a pause
+// rather than as another row of cards.
+.homepage-story {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding: styles.spacing(32) styles.spacing(24);
+  border-radius: styles.$radius-card;
+  background: styles.$color-background-secondary;
+
+  @media (min-width: tokens.$bp-medium) {
+    padding: styles.spacing(64);
+  }
+}
+
+.homepage-story__body {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  max-width: styles.$layout-reading-max;
+
+  p {
+    margin: 0;
+    font-size: styles.$font-size-body-l;
+    line-height: tokens.$line-height-relaxed;
+    color: styles.$color-text-primary;
+  }
+}
+
+// --- Commission CTA ---------------------------------------------------------
+
+.homepage-commission {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+.homepage-commission__lead {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-l;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+// An ordered list, because the steps are ordered: the sequence is the
+// reassurance (approve first, pay after), and a set of unordered panels would
+// lose exactly the part that does the work.
+.homepage-commission__steps {
+  display: grid;
+  gap: styles.spacing(16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: homepage-step;
+
+  @media (min-width: tokens.$bp-medium) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: styles.spacing(24);
+  }
+}
+
+.homepage-commission__step {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  padding: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: styles.$radius-card;
+  background: styles.$color-surface-primary;
+  counter-increment: homepage-step;
+}
+
+// The step number is generated content and decorative: the list is already
+// ordered in the DOM, so the digit repeats what assistive technology is told
+// anyway. `aria-hidden` cannot be set on a pseudo-element, but a CSS-generated
+// digit is not part of the accessible name of the heading it precedes.
+.homepage-commission__step-title {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+
+  &::before {
+    content: counter(homepage-step) '. ';
+    color: styles.$color-action-primary;
+  }
+}
+
+.homepage-commission__step-body {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}

@@ -1,0 +1,16 @@
+// Homepage — feature stylesheet entry (`APP11-S01`).
+//
+// Design source: FIG-APP11-HOME-DESKTOP `857:11`, -TABLET `857:318`,
+// -MOBILE `857:506`, all APPROVED_FOR_IMPLEMENTATION under
+// FIG-APPROVAL-APP11-D01-PO-001 (file BQwqV8GdfUIELvsQDB1UQE, page APP_11).
+// Header, footer, mobile navigation and the floating contact dock are the
+// shared shell's (APP1-D02) and are not restyled here.
+//
+// Split into semantic partials from the start rather than as a later rescue:
+// each stays well inside the 400-line source limit, which CLAUDE.md §6 applies
+// to stylesheets as much as to TypeScript, and which
+// `tools/check-scss-file-size.mjs` now enforces on the paths a change owns.
+@use 'homepage-layout';
+@use 'homepage-hero';
+@use 'homepage-works';
+@use 'homepage-editorial';

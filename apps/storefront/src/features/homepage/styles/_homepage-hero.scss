@@ -1,0 +1,57 @@
+// Homepage — Hero (section 1).
+@use '@embroidery/styles' as styles;
+@use 'homepage-tokens' as tokens;
+
+// Brief and typographic, per DESIGN_VISION §8: the hero introduces, the works
+// are the page. No carousel, no promotional banner, and no background image
+// carrying text — the heading and lead are DOM text at every width.
+.homepage-hero {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  padding-block: styles.spacing(32) 0;
+
+  @media (min-width: tokens.$bp-medium) {
+    gap: styles.spacing(24);
+    padding-block: styles.spacing(64) 0;
+  }
+}
+
+// The page's single <h1>. It scales across the three approved tiers rather than
+// shrinking one desktop size down: 390 gets heading-l, 1024 display-m, 1440
+// display-l, which is what keeps the mobile composition a composition.
+.homepage-hero__heading {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-l;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-tight;
+  color: styles.$color-text-primary;
+
+  @media (min-width: tokens.$bp-medium) {
+    font-size: styles.$font-size-display-m;
+  }
+
+  @media (min-width: tokens.$bp-large) {
+    font-size: styles.$font-size-display-l;
+  }
+}
+
+.homepage-hero__lead {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-l;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+// Wraps rather than scrolls: two full-width actions stacked at 390 keep both
+// above the fold and both at the full touch target, where a side-by-side pair
+// would squeeze each below it.
+.homepage-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(12);
+  padding-block-start: styles.spacing(8);
+}

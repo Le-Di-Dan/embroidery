@@ -1,0 +1,134 @@
+// Homepage — page rhythm, section headings and the shared action styles.
+@use '@embroidery/styles' as styles;
+@use 'homepage-tokens' as tokens;
+
+// The vertical rhythm of the whole page. The approved frames set a generous
+// section gap; `spacing(48)` on small screens and `spacing(96)` from the medium
+// tier are the foundation's own steps (DESIGN_SYSTEM_FOUNDATION §6 names
+// `spacing(96)` as the section gap), so the page never invents an off-scale gap.
+.homepage {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(48);
+
+  @media (min-width: tokens.$bp-medium) {
+    gap: styles.spacing(96);
+  }
+}
+
+.homepage-section {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+.homepage-section__head {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+// Every section heading is an <h2> and they all look alike on purpose: the six
+// sections are peers in the approved composition, and a section that shouted
+// louder than its neighbours would imply a hierarchy the design does not have.
+.homepage-section__heading {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-m;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-tight;
+  color: styles.$color-text-primary;
+
+  @media (min-width: tokens.$bp-large) {
+    font-size: styles.$font-size-heading-l;
+  }
+}
+
+.homepage-section__intro {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+// Collections carries editorial framing rather than a card grid, so its lead
+// paragraph is allowed the fuller measure the approved section gives it.
+.homepage-section__intro--wide {
+  font-size: styles.$font-size-body-l;
+  color: styles.$color-text-primary;
+}
+
+// The one line a section shows instead of works when the catalog is empty or
+// unreachable. Deliberately quiet: it is a statement of fact, not an alert, and
+// it never carries a status code, an API message or a request id.
+.homepage-section__notice {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+// --- Actions ----------------------------------------------------------------
+//
+// Three weights of the same link. All three are real anchors — never a clickable
+// div — and all three meet the foundation's minimum touch target, which is what
+// keeps the mobile composition usable rather than merely smaller.
+
+.homepage-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(24);
+  border-radius: styles.$radius-button;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  line-height: tokens.$line-height-snug;
+  text-decoration: none;
+
+  // Focus is never removed, only replaced with a visible ring of our own. The
+  // offset keeps it legible against both the page canvas and the filled button.
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.homepage-action--primary {
+  background: styles.$color-action-primary;
+  color: styles.$color-surface-primary;
+
+  &:hover {
+    background: styles.$color-action-hover;
+  }
+
+  &:active {
+    background: styles.$color-action-active;
+  }
+}
+
+.homepage-action--quiet {
+  border: 1px solid styles.$color-border-secondary;
+  background: transparent;
+  color: styles.$color-text-primary;
+
+  &:hover {
+    border-color: styles.$color-text-primary;
+  }
+}
+
+// The continuation link under a work grid. Underlined rather than colour-coded:
+// colour alone may not carry the meaning that this is a link.
+.homepage-action--link {
+  padding-inline: 0;
+  color: styles.$color-text-primary;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+
+  &:hover {
+    color: styles.$color-action-primary;
+  }
+}
