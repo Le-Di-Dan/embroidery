@@ -86,7 +86,28 @@ describe('StorefrontShell — navigation & search boundaries', () => {
       expect(href).not.toBe('#');
       expect(href).not.toBe('');
       // `#main-content` is the skip link's in-page target, not a route.
-      expect(['/', '/kham-pha', '/bo-suu-tap', '/yeu-cau/moi', '#main-content']).toContain(href);
+      //
+      // The set grew at `APP11-S05`: the shell now composes the footer
+      // store-presentation block above the DS footer, and its four columns link
+      // the three singular content routes and the four policies. The primary
+      // navigation above is unchanged — S05 activated no header item, because no
+      // existing IA label means Service and `Studio` may not be repurposed to
+      // `/cua-hang`. What this assertion still guards is the property it always
+      // did: every anchor the shell renders resolves to a delivered route.
+      expect([
+        '/',
+        '/kham-pha',
+        '/bo-suu-tap',
+        '/yeu-cau/moi',
+        '/dich-vu',
+        '/cau-hoi-thuong-gap',
+        '/cua-hang',
+        '/chinh-sach/giao-hang',
+        '/chinh-sach/thanh-toan',
+        '/chinh-sach/doi-tra',
+        '/chinh-sach/bao-mat',
+        '#main-content',
+      ]).toContain(href);
     }
   });
 

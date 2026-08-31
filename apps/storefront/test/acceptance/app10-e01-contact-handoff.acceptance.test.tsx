@@ -32,14 +32,28 @@ const MESSENGER_URL = 'https://m.me/xuong.theu.e01';
 const GROUP_NAME = 'Kết nối';
 
 /**
- * The App Router page count at `APP10-I01`, before and after the handoff.
+ * The App Router page count, asserted so that a contact handoff cannot quietly
+ * become a route.
  *
- * Twelve: `/`, `/kham-pha`, `/san-pham/[slug]`, `/san-pham/[slug]/thiet-ke`,
+ * It was 12 at `APP10-I01` and the constant said so. It then went stale: APP11
+ * added `/bo-suu-tap` (S02), `/bo-suu-tap/[slug]` (S03) and the four content
+ * routes (S05) without this file being updated, so the assertion had been
+ * failing at 14 before S05 touched anything — a pre-existing defect this
+ * checkpoint found rather than caused, recorded in the S05 report §R.
+ *
+ * Eighteen: `/`, `/kham-pha`, `/bo-suu-tap`, `/bo-suu-tap/[slug]`,
+ * `/san-pham/[slug]`, `/san-pham/[slug]/thiet-ke`, `/dich-vu`,
+ * `/cau-hoi-thuong-gap`, `/cua-hang`, `/chinh-sach/[slug]`,
  * `/xac-minh-lien-he`, `/yeu-cau/moi`, `/yeu-cau/da-gui`, `/truy-cap`,
  * `/truy-cap/bao-gia`, `/truy-cap/duyet-thiet-ke`, `/truy-cap/thanh-toan` and
- * `/truy-cap/thanh-toan-con-lai`. The handoff added none of them and adds none.
+ * `/truy-cap/thanh-toan-con-lai`.
+ *
+ * What the assertion is for is unchanged and still holds: the handoff added
+ * none of these and adds none. Every one of the six new routes belongs to a
+ * checkpoint that declared it, and `robots.ts`/`sitemap.ts` are metadata routes
+ * that are deliberately not counted as pages.
  */
-const STOREFRONT_ROUTE_COUNT = 12;
+const STOREFRONT_ROUTE_COUNT = 18;
 
 function setConfig(zalo: string | undefined, messenger: string | undefined) {
   if (zalo === undefined) {
@@ -175,7 +189,9 @@ describe('APP10-E01 · E01-11 · missing or malformed configuration is safe', ()
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
     const footer = screen.getByRole('contentinfo');
-    expect(within(footer).getByText('© Xưởng Thêu · Studio thêu theo yêu cầu.')).toBeInTheDocument();
+    expect(
+      within(footer).getByText('© Xưởng Thêu · Studio thêu theo yêu cầu.'),
+    ).toBeInTheDocument();
     for (const anchor of container.querySelectorAll('a')) {
       const href = anchor.getAttribute('href') ?? '';
       expect(href).not.toBe('');

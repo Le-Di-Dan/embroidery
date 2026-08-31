@@ -73,10 +73,14 @@ function routeSegments(): string[] {
  * count stays exact: what these assertions are for is noticing a route nobody
  * meant to add.
  */
-const ROUTES_AT_S03 = [
+const ROUTES_AT_S05 = [
   '/',
   '/bo-suu-tap',
   '/bo-suu-tap/[slug]',
+  '/cau-hoi-thuong-gap',
+  '/chinh-sach/[slug]',
+  '/cua-hang',
+  '/dich-vu',
   '/kham-pha',
   '/san-pham/[slug]',
   '/san-pham/[slug]/thiet-ke',
@@ -90,13 +94,24 @@ const ROUTES_AT_S03 = [
   '/yeu-cau/moi',
 ].sort();
 
-/** Routes drawn by the approved APP11 design but owned by a later checkpoint. */
-const ROUTES_OWNED_BY_LATER_CHECKPOINTS = [
+/**
+ * The four routes `APP11-S05` delivered.
+ *
+ * This list held the *absence* of each one until S05, for the reason the header
+ * states: the approved design draws them, but a route may not exist before the
+ * checkpoint that owns its content. S05 built them, so the assertion inverts —
+ * and what it now guards is stricter than what it replaced. Each singular route
+ * is a page; `/chinh-sach` is deliberately **not**, because the policy family
+ * is one dynamic route and a parent index would be a page with nothing on it.
+ */
+const ROUTES_DELIVERED_BY_S05 = [
   ['dich-vu', 'APP11-S05 — Service page'],
   ['cau-hoi-thuong-gap', 'APP11-S05 — FAQ page'],
   ['cua-hang', 'APP11-S05 — Local/store page'],
-  ['chinh-sach', 'APP11-S05 — Policy family'],
 ] as const;
+
+/** Rejected aliases for the S05 areas. No alias and no redirect is approved. */
+const REJECTED_S05_ALIASES = ['faq', 'lien-he', 'store', 'policy'] as const;
 
 /** Rejected spellings of this area. No alias and no redirect is approved. */
 const REJECTED_GALLERY_ALIASES = ['thu-vien', 'gallery', 'collections'] as const;
@@ -109,10 +124,10 @@ const galleryCode = codeOnly(
 );
 
 describe('gallery feed route boundary', () => {
-  it('serves the feed route, and the Storefront serves fourteen in total', () => {
+  it('serves the feed route, and the Storefront serves eighteen in total', () => {
     expect(existsSync(ROUTE_FILE)).toBe(true);
-    expect(routeSegments()).toEqual(ROUTES_AT_S03);
-    expect(routeSegments()).toHaveLength(14);
+    expect(routeSegments()).toEqual(ROUTES_AT_S05);
+    expect(routeSegments()).toHaveLength(18);
   });
 
   it('has the entry detail route APP11-S03 owns, beneath the feed', () => {
@@ -137,8 +152,19 @@ describe('gallery feed route boundary', () => {
     expect(galleryCode).not.toMatch(new RegExp(`['"\`]/${alias}(?![-\\w])`));
   });
 
-  it.each(ROUTES_OWNED_BY_LATER_CHECKPOINTS)('does not create /%s (%s)', (segment) => {
-    expect(existsSync(join(APP_DIR, segment))).toBe(false);
+  it.each(ROUTES_DELIVERED_BY_S05)('serves /%s (%s)', (segment) => {
+    expect(existsSync(join(APP_DIR, segment, 'page.tsx'))).toBe(true);
+  });
+
+  it('serves the policy family as one dynamic route, with no parent index page', () => {
+    expect(existsSync(join(APP_DIR, 'chinh-sach', '[slug]', 'page.tsx'))).toBe(true);
+    // A `/chinh-sach` page would be a list of four links the footer already
+    // carries, and it is not in the sitemap, so it must not exist.
+    expect(existsSync(join(APP_DIR, 'chinh-sach', 'page.tsx'))).toBe(false);
+  });
+
+  it.each(REJECTED_S05_ALIASES)('creates no /%s alias or redirect', (alias) => {
+    expect(existsSync(join(APP_DIR, alias))).toBe(false);
   });
 
   it('writes the gallery path in exactly one production module', () => {

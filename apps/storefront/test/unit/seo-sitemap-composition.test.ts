@@ -48,9 +48,12 @@ function inventoryOf(count: number): PublicSitemapEntryResponse[] {
 }
 
 describe('the static half', () => {
-  it('advertises the routes that exist at S04 exit, each exactly once', () => {
+  it('advertises the routes that exist at S05 exit, each exactly once', () => {
     const composed = urls([]);
 
+    // Seven at S04 exit, fourteen at S05: the three singular content routes and
+    // the four concrete policies. The list is the seam working as designed —
+    // `PUBLIC_STATIC_ROUTES` grew, `sitemap.ts` was not touched.
     expect(composed).toEqual([
       `${ORIGIN}/`,
       `${ORIGIN}/kham-pha`,
@@ -59,6 +62,13 @@ describe('the static half', () => {
       `${ORIGIN}/kham-pha?category=quan-ao`,
       `${ORIGIN}/kham-pha?category=khac`,
       `${ORIGIN}/bo-suu-tap`,
+      `${ORIGIN}/dich-vu`,
+      `${ORIGIN}/cau-hoi-thuong-gap`,
+      `${ORIGIN}/cua-hang`,
+      `${ORIGIN}/chinh-sach/giao-hang`,
+      `${ORIGIN}/chinh-sach/thanh-toan`,
+      `${ORIGIN}/chinh-sach/doi-tra`,
+      `${ORIGIN}/chinh-sach/bao-mat`,
     ]);
     expect(new Set(composed).size).toBe(composed.length);
   });
@@ -77,11 +87,15 @@ describe('the static half', () => {
     }
   });
 
-  it('advertises no APP11-S05 route before S05 builds it', () => {
-    const composed = urls([]).join('\n');
-    for (const s05 of ['/dich-vu', '/cau-hoi-thuong-gap', '/cua-hang', '/chinh-sach']) {
-      expect(composed).not.toContain(s05);
-    }
+  it('advertises the four concrete policies, and never the family placeholder', () => {
+    const composed = urls([]);
+    const policies = composed.filter((url) => url.includes('/chinh-sach'));
+
+    expect(policies).toHaveLength(4);
+    // A literal /chinh-sach/[slug] is a URL that 404s for every crawler that
+    // fetches it, and /chinh-sach has no page at all. Neither is advertised.
+    expect(composed).not.toContain(ORIGIN + String.raw`/chinh-sach/[slug]`);
+    expect(composed).not.toContain(ORIGIN + '/chinh-sach');
   });
 
   it('advertises no private, Studio or Admin surface', () => {

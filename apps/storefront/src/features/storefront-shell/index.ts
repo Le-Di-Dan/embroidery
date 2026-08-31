@@ -26,6 +26,15 @@ export {
   // the constant it extends, so the feed card action and the entry page's own
   // canonical read one function instead of two path literals.
   buildStorefrontGalleryDetailPath,
+  // The four `APP11-S05` static content routes. On the shell surface with every
+  // other Storefront path, so the footer store-presentation links, each content
+  // page's own canonical and the S04 static sitemap inventory are composed from
+  // one source and cannot disagree about an address.
+  STOREFRONT_SERVICE_ROUTE,
+  STOREFRONT_FAQ_ROUTE,
+  STOREFRONT_STORE_ROUTE,
+  STOREFRONT_POLICY_ROUTE_BASE,
+  buildStorefrontPolicyPath,
   // The section matcher behind the header's active state. Exported so a feature
   // that needs to reason about "am I inside this area" reuses the one rule the
   // header uses, instead of re-deriving prefix matching.

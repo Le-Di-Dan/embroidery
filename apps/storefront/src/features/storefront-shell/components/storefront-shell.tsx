@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { STOREFRONT_SHELL_COPY } from '../model/storefront-shell-copy';
+import { StorePresentationBlock } from '../../store-presentation';
 import { StorefrontContactHandoff } from './storefront-contact-handoff';
 import { StorefrontFooter } from './storefront-footer';
 import { StorefrontHeader } from './storefront-header';
@@ -24,6 +25,13 @@ export const STOREFRONT_MAIN_ID = 'main-content';
  * floats over the page at every scroll position and belongs to no one section;
  * it renders nothing at all when neither channel is configured, which is why the
  * shell can hold it unconditionally.
+ *
+ * `StorePresentationBlock` (`APP11-S05`) is composed directly above the footer,
+ * which is where the approved responsive authority `889:1030` puts it at all
+ * three widths. It supplements the DS Footer rather than replacing it: the
+ * footer keeps its own composition, and the supplement is a named `<section>`
+ * rather than a second `<footer>`, so the document still has exactly one
+ * `contentinfo` landmark.
  */
 export function StorefrontShell({ children }: { children: ReactNode }) {
   return (
@@ -35,6 +43,7 @@ export function StorefrontShell({ children }: { children: ReactNode }) {
       <main id={STOREFRONT_MAIN_ID} className="storefront-shell__main">
         <div className="storefront-shell__main-inner">{children}</div>
       </main>
+      <StorePresentationBlock />
       <StorefrontFooter />
       <StorefrontContactHandoff />
     </div>

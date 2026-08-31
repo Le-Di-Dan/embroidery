@@ -1,0 +1,55 @@
+// Static content pages — local layout constants (`APP11-S05`).
+//
+// Split into its own partial for the reason the gallery feed's is: every other
+// content partial reads the same numbers by name, and none of them re-declares
+// a magic value. Colour, type, spacing and radius all come from
+// `@embroidery/styles`; only what the design foundation deliberately does not
+// lock lives here.
+
+@use '@embroidery/styles' as styles;
+
+// Responsive tiers. The design system defers a shared breakpoint scale (FU-A16),
+// so these are feature-local — and they are the SAME two thresholds the
+// Homepage, `product-discovery` and the gallery feed already use. The approved
+// tablet frame IS 1024, so 1024 stays tablet and 1025+ is desktop. Three
+// adjacent public surfaces reflowing at three different widths is what keeping
+// them identical prevents.
+$bp-medium: 640px;
+$bp-large: 1025px;
+
+// Long-form reading measure, straight from the audited template frames:
+// Desktop `863:677` = 736, Tablet `864:1085` = 640, Mobile `864:1253` = 342.
+// This is the cap that keeps a policy readable at 1440 — the widest of the
+// three is still far below the 1200px shell content width.
+$reading-mobile: 342px;
+$reading-tablet: 640px;
+$reading-desktop: 736px;
+
+// Line heights. The foundation locks the type scale but not these (styles
+// package README, Deferred), so they are named once here.
+$line-height-tight: 1.15;
+$line-height-snug: 1.35;
+// Deliberately generous: these pages are read in paragraphs, not scanned.
+$line-height-relaxed: 1.7;
+
+// Hairline between FAQ rows and between store-fact rows. Derived from the
+// approved border token, never a literal grey.
+$rule-color: styles.$color-border-primary;
+
+// Values the shared spacing scale does not carry. The scale is a closed set
+// (4, 8, 12, 16, 24, 32, 48, 64, 96, 128) and the compile gate rejects anything
+// else, which is correct — an off-scale step must be a named decision with a
+// reason, not an inline number.
+
+// The FAQ trigger's minimum height. Deliberately above the 44px touch minimum:
+// this is the only tap target on a content page, and a mis-tap collapses the
+// answer someone was reading.
+$faq-trigger-min-height: 56px;
+
+// The minimum touch target for a `tel:`/`mailto:` value on mobile (44 is the
+// documented floor, and these rows are read on a phone by definition).
+$fact-link-min-height: 44px;
+
+// Vertical padding that lifts a link row to the target height without changing
+// the type rhythm around it.
+$fact-link-padding-y: 10px;

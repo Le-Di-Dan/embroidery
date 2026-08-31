@@ -8,7 +8,7 @@
  * gone from the shipped segment rather than merely hidden.
  *
  * Every route assertion below is **enumerated**, never a blanket "nothing else
- * may exist". A later canonical checkpoint adds its route to `ROUTES_AT_S01` and
+ * may exist". A later canonical checkpoint adds its route to `ROUTES_AT_S05` and
  * deletes its own line from `ROUTES_OWNED_BY_LATER_CHECKPOINTS`; nothing here has
  * to be torn out to let APP11 finish.
  */
@@ -54,7 +54,7 @@ function routeSegments(): string[] {
  * `APP11-S02` added `/bo-suu-tap`. A checkpoint that legitimately adds a route
  * adds it here in the same change that builds it.
  */
-const ROUTES_AT_S01 = [
+const ROUTES_AT_S05 = [
   '/',
   // Added by `APP11-S02`, which also activated the Collections action below.
   // The route and its link landed together, exactly as S01 staged them.
@@ -62,6 +62,10 @@ const ROUTES_AT_S01 = [
   // Added by `APP11-S03`, which did not extend this list — so this check had
   // been failing since that checkpoint. `APP11-S04` brings it current.
   '/bo-suu-tap/[slug]',
+  '/cau-hoi-thuong-gap',
+  '/chinh-sach/[slug]',
+  '/cua-hang',
+  '/dich-vu',
   '/kham-pha',
   '/san-pham/[slug]',
   '/san-pham/[slug]/thiet-ke',
@@ -75,12 +79,20 @@ const ROUTES_AT_S01 = [
   '/yeu-cau/moi',
 ].sort();
 
-/** Routes drawn by the approved APP11 design but owned by a later checkpoint. */
-const ROUTES_OWNED_BY_LATER_CHECKPOINTS = [
+/**
+ * The four routes `APP11-S05` delivered.
+ *
+ * This list held the *absence* of each one until S05, for the reason the header
+ * states: the approved design draws them, but a route may not exist before the
+ * checkpoint that owns its content. S05 built them, so the assertion inverts —
+ * and what it now guards is stricter than what it replaced. Each singular route
+ * is a page; `/chinh-sach` is deliberately **not**, because the policy family
+ * is one dynamic route and a parent index would be a page with nothing on it.
+ */
+const ROUTES_DELIVERED_BY_S05 = [
   ['dich-vu', 'APP11-S05 — Service page'],
   ['cau-hoi-thuong-gap', 'APP11-S05 — FAQ page'],
   ['cua-hang', 'APP11-S05 — Local/store page'],
-  ['chinh-sach', 'APP11-S05 — Policy family'],
 ] as const;
 
 const featureSources = collect(FEATURE_DIR, /\.(ts|tsx)$/).map((path) => ({
@@ -95,14 +107,14 @@ const homepageCode = codeOnly(
 describe('Homepage route boundary', () => {
   it('keeps `/` as the Homepage and adds no alias for it', () => {
     expect(existsSync(ROUTE_FILE)).toBe(true);
-    expect(routeSegments()).toEqual(ROUTES_AT_S01);
+    expect(routeSegments()).toEqual(ROUTES_AT_S05);
   });
 
-  it.each(ROUTES_OWNED_BY_LATER_CHECKPOINTS)('does not create /%s (%s)', (segment) => {
-    expect(existsSync(join(APP_DIR, segment))).toBe(false);
-  });
-
-  it.each(ROUTES_OWNED_BY_LATER_CHECKPOINTS)('never links to /%s (%s)', (segment) => {
+  it.each(ROUTES_DELIVERED_BY_S05)('does not link to /%s from the Homepage (%s)', (segment) => {
+    // S05 built these routes, but the Homepage composition APP11-S01 delivered
+    // staged no Service affordance and S05 invented none: `APP11-S05` §18 says
+    // to activate only an affordance already present in approved authority.
+    // The footer store-presentation block is the discovery path.
     expect(homepageCode).not.toContain(`/${segment}`);
   });
 

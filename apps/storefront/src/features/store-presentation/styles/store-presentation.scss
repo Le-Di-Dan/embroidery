@@ -1,0 +1,188 @@
+// Footer store-presentation supplement (`APP11-S05`, closing `FU-APP10-D01-05`).
+//
+// Design source: FIG-APP11-FOOTER-STORE-SUPPLEMENT `872:1029` (Desktop 1440),
+// -TABLET `888:1006` (1024), -MOBILE `888:1058` (390) and
+// FIG-APP11-FOOTER-SUPPLEMENT-RESPONSIVE-AUTHORITY `889:1030` — all
+// APPROVED_FOR_IMPLEMENTATION under FIG-APPROVAL-APP11-D01-PO-001.
+//
+// This file styles the APP11 block only. The approved DS `Footer` below it
+// (`APP1-D02` `405:2253` / `405:3761`, mobile `409:2359`) keeps its own
+// composition in `storefront-shell.scss`, which this checkpoint does not touch.
+
+@use '@embroidery/styles' as styles;
+
+// Feature-local tiers — the same two thresholds every other public Storefront
+// surface uses, so the footer never reflows at a width the page above it does
+// not. The approved tablet frame IS 1024, so 1024 is tablet and 1025+ desktop.
+$bp-medium: 640px;
+$bp-large: 1025px;
+
+// Measured side padding: 80 desktop / 48 tablet / 24 mobile (`889:1030` §D.1,
+// the documented Storefront gutters).
+$pad-mobile: 24px;
+$pad-tablet: 48px;
+$pad-desktop: 80px;
+
+// The mobile dock reserve. `888:1058` ends with 100px of clear space below the
+// last footer row, matching the floating dock's documented mobile inset, so the
+// dock can never cover a footer link. Desktop and tablet need none: the dock's
+// own inset already clears the block.
+$dock-reserve-mobile: 100px;
+
+// Values the shared spacing scale does not carry. It is a closed set
+// (4, 8, 12, 16, 24, 32, 48, 64, 96, 128) and the compile gate rejects anything
+// else, so each measured footer value below is a named decision with a reason.
+
+// Block vertical padding: 40 mobile, 56 from tablet up (`889:1030` §D.1).
+$block-pad-y-mobile: 40px;
+$block-pad-y-wide: 56px;
+
+// The mobile single-stack gap, measured on `888:1058`.
+$stack-gap-mobile: 28px;
+
+// Touch geometry for a footer link and a `tel:`/`mailto:` value: 44 is the
+// documented minimum, and the padding lifts a small-type row to it without
+// spacing the desktop column out.
+$link-min-height: 44px;
+$link-padding-y: 10px;
+
+.store-presentation {
+  padding: $block-pad-y-mobile $pad-mobile;
+  background: styles.$color-background-secondary;
+  border-top: 1px solid styles.$color-border-primary;
+
+  @media (min-width: $bp-medium) {
+    padding: $block-pad-y-wide $pad-tablet;
+  }
+
+  @media (min-width: $bp-large) {
+    padding: $block-pad-y-wide $pad-desktop;
+  }
+}
+
+// Single stack -> 2 x 2 -> 4-in-a-row. Grid track count alone: no CSS `order`
+// anywhere, so DOM order is visual order at every width and a keyboard user
+// tabs the columns in the sequence they read (`889:1030` §D.1).
+//
+// Gaps are the measured values: mobile 28, tablet 32 row / 48 column, desktop
+// 64. `minmax(0, 1fr)` rather than `1fr` so a long unbroken policy label cannot
+// push a track wider than its share and start a horizontal scroll.
+.store-presentation__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $stack-gap-mobile;
+  max-width: styles.$layout-content-max;
+  margin: 0 auto;
+  // The dock reserve lives on the last row of the stack rather than on the
+  // section, so it disappears with the same media query that ends the stack.
+  padding-bottom: $dock-reserve-mobile;
+
+  @media (min-width: $bp-medium) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: styles.spacing(32);
+    column-gap: styles.spacing(48);
+    padding-bottom: 0;
+  }
+
+  @media (min-width: $bp-large) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: styles.spacing(64);
+  }
+}
+
+.store-presentation__column {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  min-width: 0;
+}
+
+.store-presentation__heading {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-semibold;
+  color: styles.$color-text-primary;
+}
+
+.store-presentation__text {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.6;
+  color: styles.$color-text-secondary;
+}
+
+// --- Store facts (rendered only when canonical) ------------------------------
+
+.store-presentation__facts {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+}
+
+.store-presentation__fact-label {
+  font-size: styles.$font-size-caption;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-tertiary;
+}
+
+// Address and opening hours wrap to as many lines as they need and are never
+// truncated or ellipsised (`889:1030` §D.1).
+.store-presentation__fact-value {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.6;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+// A phone number and an e-mail wrap as whole strings, never mid-token, and stay
+// a >=44px target on mobile.
+.store-presentation__fact-link {
+  display: inline-block;
+  min-height: $link-min-height;
+  padding: $link-padding-y 0;
+  color: styles.$color-text-primary;
+  overflow-wrap: normal;
+  word-break: keep-all;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+// --- Link columns -----------------------------------------------------------
+
+.store-presentation__list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// `min-height` plus vertical padding gives every footer link a >=44px target on
+// mobile without spacing the desktop column out — the rows are already 44 tall
+// there, they simply do not need to be.
+.store-presentation__link {
+  display: inline-block;
+  align-self: flex-start;
+  min-height: $link-min-height;
+  padding: $link-padding-y 0;
+  font-size: styles.$font-size-body-s;
+  line-height: 1.6;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+
+  &:hover {
+    color: styles.$color-action-hover;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}

@@ -1,0 +1,176 @@
+// Static content pages — FAQ disclosure, store information and related links
+// (`APP11-S05`).
+//
+// Design source: the FAQ instance `864:779`, the Local instance `864:881` and
+// the shared template's internal-links block `863:677`.
+
+@use '@embroidery/styles' as styles;
+@use 'content-page-tokens' as tokens;
+
+// --- FAQ disclosure ---------------------------------------------------------
+
+.content-page__faq-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid tokens.$rule-color;
+}
+
+.content-page__faq-item {
+  border-bottom: 1px solid tokens.$rule-color;
+}
+
+// The <summary> trigger. `list-style: none` (plus the WebKit pseudo-element)
+// removes the platform marker so the custom one below can be positioned; the
+// element keeps its native button role, expanded state and Enter/Space
+// behaviour, which is the entire reason this is a <details> and not a widget.
+.content-page__faq-question {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: styles.spacing(16);
+  // Generously above the 44px minimum: this is the page's only tap target, and
+  // a mis-tap collapses the answer someone was reading.
+  min-height: tokens.$faq-trigger-min-height;
+  padding: styles.spacing(16) 0;
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  // Never removed, only replaced: keyboard users reach these before anything
+  // else on the page.
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.content-page__faq-question-text {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-medium;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+// The custom disclosure marker, drawn from the border token as a chevron. It is
+// decorative — the open/closed meaning is carried by the element's own state,
+// which the browser exposes — so it never becomes the only signal.
+.content-page__faq-question::after {
+  flex: none;
+  align-self: center;
+  width: styles.spacing(8);
+  height: styles.spacing(8);
+  content: '';
+  border-right: 2px solid styles.$color-text-secondary;
+  border-bottom: 2px solid styles.$color-text-secondary;
+  transform: rotate(45deg);
+
+  @include styles.motion-safe {
+    transition: transform styles.$motion-duration-fast styles.$motion-easing-standard;
+  }
+}
+
+// Rotation only — the answer itself appears instantly, so the content is
+// readable the moment it is revealed with no height animation to sit through.
+.content-page__faq-item[open] > .content-page__faq-question::after {
+  transform: rotate(-135deg);
+}
+
+.content-page__faq-answer {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  padding-bottom: styles.spacing(24);
+}
+
+// --- Store information ------------------------------------------------------
+
+.content-page__store-facts {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  margin: 0;
+}
+
+.content-page__store-fact {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.content-page__store-fact-label {
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-text-secondary;
+}
+
+// Wraps freely and is never truncated: half an address is worse than a wrapped
+// one, and `overflow-wrap` keeps a long unbroken value inside the column
+// instead of pushing the page sideways.
+.content-page__store-fact-value {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-primary;
+  overflow-wrap: anywhere;
+}
+
+// A phone number and an e-mail address wrap as whole strings rather than
+// mid-token, so a customer never reads half a number across two lines.
+.content-page__store-fact-link {
+  display: inline-block;
+  min-height: tokens.$fact-link-min-height;
+  padding: styles.spacing(8) 0;
+  color: styles.$color-text-primary;
+  overflow-wrap: normal;
+  word-break: keep-all;
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+// --- Related internal links -------------------------------------------------
+
+.content-page__link-list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.content-page__link-item {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.content-page__link {
+  align-self: flex-start;
+  font-size: styles.$font-size-body-m;
+  font-weight: styles.$font-weight-medium;
+  color: styles.$color-action-primary;
+
+  &:hover {
+    color: styles.$color-action-hover;
+  }
+
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+.content-page__link-hint {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-secondary;
+}

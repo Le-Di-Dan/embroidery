@@ -1,0 +1,135 @@
+// Static content pages — page frame, hero and long-form body (`APP11-S05`).
+//
+// Design source: the shared template `863:677` (Desktop 1440, reading width 736,
+// side padding 80), `864:1085` (Tablet 1024, 640 / 48) and `864:1253`
+// (Mobile 390, 342 / 24), all APPROVED_FOR_IMPLEMENTATION under
+// FIG-APPROVAL-APP11-D01-PO-001.
+
+@use '@embroidery/styles' as styles;
+@use 'content-page-tokens' as tokens;
+
+// The page column. `max-width` rather than a fixed width, so the measure caps
+// the line length without ever exceeding a narrow viewport — this is the single
+// rule that keeps a policy readable at 1440 and unclipped at 390.
+//
+// The shell already supplies the outer gutters, so the template adds none of
+// its own: two nested paddings is how the mobile measure ends up narrower than
+// the approved 342.
+.content-page {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(32);
+  max-width: tokens.$reading-mobile;
+
+  @media (min-width: tokens.$bp-medium) {
+    max-width: tokens.$reading-tablet;
+    gap: styles.spacing(48);
+  }
+
+  @media (min-width: tokens.$bp-large) {
+    max-width: tokens.$reading-desktop;
+  }
+}
+
+// --- Hero -------------------------------------------------------------------
+
+.content-page__hero {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+// The non-linked hierarchy label above the eyebrow. Only the policy pages carry
+// one; it is plain text because `/chinh-sach` has no page to link to.
+.content-page__trail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: styles.spacing(8);
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  color: styles.$color-text-tertiary;
+}
+
+.content-page__trail-current {
+  color: styles.$color-text-secondary;
+}
+
+.content-page__eyebrow {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: styles.$color-text-secondary;
+}
+
+// The page's single <h1>. It steps down on the narrow tier so the mobile
+// composition is a genuine recomposition rather than a shrunken desktop — the
+// same treatment the gallery feed's title uses.
+.content-page__title {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-m;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-tight;
+  color: styles.$color-text-primary;
+
+  @media (min-width: tokens.$bp-large) {
+    font-size: styles.$font-size-heading-l;
+  }
+}
+
+.content-page__lead {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-secondary;
+}
+
+// --- Body blocks ------------------------------------------------------------
+
+.content-page__sections {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(32);
+
+  @media (min-width: tokens.$bp-medium) {
+    gap: styles.spacing(48);
+  }
+}
+
+.content-page__block {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+}
+
+.content-page__block-heading {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.content-page__paragraph {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-primary;
+}
+
+.content-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+  margin: 0;
+  padding-left: styles.spacing(24);
+}
+
+.content-page__list-item {
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-primary;
+}

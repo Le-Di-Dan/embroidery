@@ -185,3 +185,69 @@ export const STOREFRONT_PRIMARY_NAV: readonly StorefrontNavItem[] = [
   { id: 'commission', label: 'Đặt thêu', route: STOREFRONT_CUSTOM_REQUEST_ROUTE },
   { id: 'journal', label: 'Nhật ký', route: null },
 ];
+
+/**
+ * The three singular public content routes and the policy family
+ * (`APP11-G01-C1` route lock; built by `APP11-S05`).
+ *
+ * They live here for the reason every other Storefront path does: routes are
+ * shell IA, and a path that exists as a literal in two files is a path that can
+ * drift. The footer store-presentation block, the content pages' own canonicals
+ * and the S04 static sitemap inventory all read these four names, so the URL a
+ * footer link promises, the URL a page claims for itself and the URL the sitemap
+ * advertises are composed from one source.
+ *
+ * Each is deliberately singular. There is one physical store (`docs/02` lists
+ * multi-branch as out of scope) and one Service page, so `/cua-hang/[slug]` and
+ * `/dich-vu/[slug]` describe a product that does not exist. `/faq`, `/lien-he`,
+ * `/store` and `/policy` are rejected aliases; no redirect is approved.
+ */
+export const STOREFRONT_SERVICE_ROUTE = '/dich-vu';
+
+/** The FAQ page. `/faq` is a rejected alias. */
+export const STOREFRONT_FAQ_ROUTE = '/cau-hoi-thuong-gap';
+
+/** The single local/store page. `/store` and `/lien-he` are rejected aliases. */
+export const STOREFRONT_STORE_ROUTE = '/cua-hang';
+
+/**
+ * The policy family's parent segment.
+ *
+ * `/chinh-sach` is a **framework parent directory only** — it has no `page.tsx`
+ * and is never advertised, linked or put in the sitemap. Policies legitimately
+ * have several subjects, so the family is the one dynamic route in S05; the
+ * parent index would be a page with nothing on it but a list of four links the
+ * footer already carries.
+ */
+export const STOREFRONT_POLICY_ROUTE_BASE = '/chinh-sach';
+
+/**
+ * The one place a policy URL is built.
+ *
+ * The footer column, each policy page's own canonical and the sitemap's four
+ * concrete policy URLs all go through this, so they cannot disagree. The slug
+ * comes from the closed four-value policy set rather than from user input —
+ * `encodeURIComponent` is a second barrier, not the only one, exactly as on the
+ * Product and gallery builders above.
+ */
+export function buildStorefrontPolicyPath(slug: string): string {
+  return `${STOREFRONT_POLICY_ROUTE_BASE}/${encodeURIComponent(slug)}`;
+}
+
+/*
+ * ## Why sibling features import this module by path, not through the barrel
+ *
+ * `APP11-S05` composes `StorePresentationBlock` inside `StorefrontShell`, and
+ * that block reads the canonical policy set and the store-fact boundary from
+ * `content-pages` — which in turn needs the route constants above. Importing
+ * them through `../../storefront-shell` would load the barrel, which loads the
+ * shell component, which loads the footer block, which loads `content-pages`
+ * again: a genuine module cycle that fails at load with
+ * `Cannot access '_storefrontnavigation' before initialization`.
+ *
+ * This file is a leaf — it imports nothing — so the four S05 content models, the
+ * footer block's copy model and the S04 static-route inventory import it
+ * directly and the cycle cannot form. The barrel stays the entry point for
+ * everything else, including every component; this is the narrow, documented
+ * exception rather than a general licence to reach past it.
+ */

@@ -1,0 +1,19 @@
+// Static content pages — feature stylesheet entry (`APP11-S05`).
+//
+// Design source: FIG-APP11-CONTENT-TEMPLATE-DESKTOP `863:677`, -TABLET
+// `864:1085`, -MOBILE `864:1253`, with the four approved instances
+// FIG-APP11-CONTENT-SERVICE-DESKTOP `864:677`, -FAQ-DESKTOP `864:779`,
+// -LOCAL-DESKTOP `864:881` and -POLICY-DESKTOP `864:983` — all
+// APPROVED_FOR_IMPLEMENTATION under FIG-APPROVAL-APP11-D01-PO-001 (file
+// BQwqV8GdfUIELvsQDB1UQE, section `857:6`).
+//
+// One stylesheet for all four pages, because there is one template. Header,
+// footer, mobile navigation and the floating contact dock belong to the shared
+// shell (APP1-D02) and the store-presentation block owns its own file; none of
+// them is restyled here.
+//
+// Split into semantic partials from the start rather than as a later rescue —
+// CLAUDE.md §6 applies its 400-line limit to stylesheets, and
+// `tools/check-scss-file-size.mjs` enforces it on the paths a change owns.
+@use 'content-page-layout';
+@use 'content-page-blocks';

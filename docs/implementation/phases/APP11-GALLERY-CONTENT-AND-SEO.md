@@ -39,8 +39,8 @@ phase.
 | `APP11-S03-C1` | Mandatory live gallery detail acceptance closure | **COMPLETE** |
 | `APP11-S04` | SEO infrastructure | **COMPLETE** |
 | `APP11-S04-C1` | Product breadcrumb canonical-category correction | **COMPLETE** |
-| `APP11-S05` | Static content pages + footer store presentation | **NEXT** |
-| `APP11-E01` | Cross-boundary acceptance | NOT STARTED |
+| `APP11-S05` | Static content pages + footer store presentation | **COMPLETE** |
+| `APP11-E01` | Cross-boundary acceptance | **NEXT** |
 | `APP11-X01` | Phase closure (R5 Operational Beta → APP12) | NOT STARTED |
 
 ---
