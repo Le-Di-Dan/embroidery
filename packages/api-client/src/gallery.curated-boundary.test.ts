@@ -1,17 +1,23 @@
 /**
- * What the gallery barrel does and does not publish (`APP11-A01`, `APP11-A02`).
+ * What the gallery barrel does and does not publish (`APP11-A01`, `APP11-A02`,
+ * `APP11-S02`).
  *
  * The boundary is consumer-driven: an operation crosses on the checkpoint that
- * consumes it. `APP11-A01` brought the list and the preview; `APP11-A02` brings
- * the editor's seven. That is a rule about *when*, not about *whether*, so what
- * this suite guards is the part that is not a schedule:
+ * consumes it. `APP11-A01` brought the Admin list and the preview; `APP11-A02`
+ * brought the editor's seven; `APP11-S02` brings the public list the Storefront
+ * feed reads. That is a rule about *when*, not about *whether*, so what this
+ * suite guards is the part that is not a schedule:
  *
  *  - the Admin app can reach exactly the gallery operations a delivered screen
  *    consumes, and each is a real callable function rather than a type-only
  *    re-export that would fail at runtime;
- *  - the **public** gallery and sitemap operations never cross into this
- *    boundary at all — an Admin screen reading the storefront's view of the
- *    same rows would be a second, unauthenticated source of truth;
+ *  - the Storefront can reach exactly the public gallery read its delivered
+ *    feed consumes (`APP11-S02`), and nothing beyond it — the detail resolver
+ *    and the sitemap family stay off the boundary until S03 and S04 build the
+ *    surfaces that would justify them;
+ *  - no gallery **media-byte** operation crosses, public or Admin-anonymous:
+ *    image bytes reach a page through a server-composed relative path, never
+ *    through application code streaming a `Blob`;
  *  - nothing this checkpoint added is a lifecycle transition the API does not
  *    publish, so the UI cannot offer an archive, a restore or a deletion;
  *  - the lane selector crosses as a **value**, so a picker names its scope from
@@ -80,12 +86,29 @@ describe('the Admin gallery surface', () => {
   });
 });
 
+describe('the public gallery surface', () => {
+  it('publishes the one read a delivered Storefront screen consumes', () => {
+    // `APP11-S02` is that screen: the gallery feed at /bo-suu-tap. Consumer-driven
+    // release means the list crosses with the feed, not when B03 delivered it.
+    expect(typeof surface['publicGalleryEntryList']).toBe('function');
+  });
+});
+
 describe('what the boundary never publishes', () => {
-  it('withholds every public gallery and sitemap operation', () => {
-    // Not a scheduling decision. This barrel serves the Admin app, and no
-    // checkpoint makes a second, unauthenticated view of the same rows correct.
+  it('withholds every public gallery operation no delivered surface consumes', () => {
+    // Each for its own reason, and neither is merely "not yet scheduled":
+    //   detail — /bo-suu-tap/[slug] does not exist; APP11-S03 owns it, and an
+    //            operation here is an invitation to render a page for it;
+    //   asset  — it streams bytes as a Blob. The browser reaches that route by
+    //            rendering the relative coverUrl the list already returns, so an
+    //            exported function would be one no correct consumer could call.
+    expect(surface['publicGalleryEntryDetail']).toBeUndefined();
+    expect(surface['publicGalleryEntryAsset']).toBeUndefined();
+  });
+
+  it('withholds every sitemap operation', () => {
+    // APP11-S04 owns the technical SEO surface; nothing delivered reads it.
     for (const name of Object.keys(surface)) {
-      expect(name).not.toMatch(/^publicGallery/);
       expect(name).not.toMatch(/^publicSitemap/);
     }
   });

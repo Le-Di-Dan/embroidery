@@ -21,7 +21,7 @@ const ROUTE_FILE = join(APP_DIR, 'page.tsx');
 
 /**
  * Comments explain why a rule exists and therefore quote the very things these
- * checks forbid ("no `/bo-suu-tap` until S02"). Matching against them would make
+ * checks forbid ("no `/dich-vu` until S05"). Matching against them would make
  * every well-documented file fail its own rule, so the checks run on code only.
  */
 function codeOnly(text: string): string {
@@ -50,12 +50,15 @@ function routeSegments(): string[] {
 }
 
 /**
- * The Storefront's route set as `APP11-S01` found it and leaves it: route delta
- * zero. A checkpoint that legitimately adds a route adds it here in the same
- * change that builds it.
+ * The Storefront's route set. `APP11-S01` left it at twelve (route delta zero);
+ * `APP11-S02` added `/bo-suu-tap`. A checkpoint that legitimately adds a route
+ * adds it here in the same change that builds it.
  */
 const ROUTES_AT_S01 = [
   '/',
+  // Added by `APP11-S02`, which also activated the Collections action below.
+  // The route and its link landed together, exactly as S01 staged them.
+  '/bo-suu-tap',
   '/kham-pha',
   '/san-pham/[slug]',
   '/san-pham/[slug]/thiet-ke',
@@ -71,7 +74,6 @@ const ROUTES_AT_S01 = [
 
 /** Routes drawn by the approved APP11 design but owned by a later checkpoint. */
 const ROUTES_OWNED_BY_LATER_CHECKPOINTS = [
-  ['bo-suu-tap', 'APP11-S02 — public gallery feed'],
   ['dich-vu', 'APP11-S05 — Service page'],
   ['cau-hoi-thuong-gap', 'APP11-S05 — FAQ page'],
   ['cua-hang', 'APP11-S05 — Local/store page'],

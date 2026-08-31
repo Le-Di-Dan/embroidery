@@ -17,4 +17,13 @@ export {
   // route the header IA item does; two literals for one path is how a second
   // intake flow starts by accident.
   STOREFRONT_CUSTOM_REQUEST_ROUTE,
+  // The canonical public gallery route (`APP11-S02`). On the shell surface for
+  // the same reason: the header IA item, the Homepage Collections action and
+  // the feed's own route segment must all name one path, and `APP11-S03`
+  // extends this family rather than introducing a second literal.
+  STOREFRONT_GALLERY_ROUTE,
+  // The section matcher behind the header's active state. Exported so a feature
+  // that needs to reason about "am I inside this area" reuses the one rule the
+  // header uses, instead of re-deriving prefix matching.
+  isStorefrontNavRouteActive,
 } from './model/storefront-navigation';

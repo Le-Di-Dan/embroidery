@@ -102,12 +102,22 @@ describe('the generated boundary', () => {
     // was ever really about the list, and the boundary suite asserts it against
     // the feature's own source.
     //
-    // What stays absolute is the storefront's view of the same rows: an Admin
-    // screen reading it would be a second, unauthenticated source of truth, and
-    // no checkpoint makes that acceptable.
+    // The same move now applies to the storefront's own read. `APP11-S02` put
+    // `publicGalleryEntryList` on the boundary for the public gallery feed, so
+    // the package can no longer be the thing that keeps it away from an Admin
+    // screen — one package root serves both applications. What stays absolute is
+    // the rule itself: an Admin screen reading the storefront's unauthenticated
+    // view of the same rows would be a second source of truth. That is asserted
+    // where it is actually true, against this feature's own source, in
+    // `test/boundary/gallery-list-source.test.ts` ("names no public gallery or
+    // sitemap operation").
+    //
+    // What remains absent from the package is asserted here, because for these
+    // the absence is not a scheduling accident: the detail resolver has no
+    // delivered route, and no gallery media-byte operation is exported at all.
     for (const neverExported of [
-      'publicGalleryEntryList',
       'publicGalleryEntryDetail',
+      'publicGalleryEntryAsset',
       'publicGalleryEntryMediaGet',
       'publicSitemapEntryList',
     ]) {

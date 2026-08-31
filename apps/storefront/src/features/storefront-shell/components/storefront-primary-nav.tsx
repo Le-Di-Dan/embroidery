@@ -14,8 +14,9 @@ interface StorefrontPrimaryNavProps {
  * text with an explicit "unavailable" affordance (`aria-disabled`, a visible
  * tag, and a screen-reader suffix) — never a link to an unbuilt route and never
  * a dead anchor (APP1-S01A §9). `APP2-S01` routed `discover` to `/kham-pha`
- * (IMP-D038) and `APP5-S01` routed `commission` to `/yeu-cau/moi`; Collections,
- * Studio and Journal stay unrouted until the phases that own them ship. The two variants carry distinct accessible
+ * (IMP-D038), `APP5-S01` routed `commission` to `/yeu-cau/moi` and `APP11-S02`
+ * routed `collections` to `/bo-suu-tap`; Studio and Journal stay unrouted until
+ * the phases that own them ship. The two variants carry distinct accessible
  * names so the header nav and the drawer nav do not collide for assistive tech.
  */
 export function StorefrontPrimaryNav({ variant }: StorefrontPrimaryNavProps) {

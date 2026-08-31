@@ -61,17 +61,22 @@ describe('StorefrontShell — navigation & search boundaries', () => {
     const { container } = renderShell();
     const nav = screen.getByRole('navigation', { name: 'Điều hướng chính' });
 
-    // Two built areas: Discover (APP2-S01, IMP-D038) and the custom request
-    // (APP5-S01). Each is a real link on its canonical route, and nothing else is.
+    // Three built areas: Discover (APP2-S01, IMP-D038), Collections
+    // (APP11-S02) and the custom request (APP5-S01). Each is a real link on its
+    // canonical route, in IA order, and nothing else is.
     const links = within(nav).queryAllByRole('link');
-    expect(links).toHaveLength(2);
+    expect(links).toHaveLength(3);
     expect(links[0]).toHaveAccessibleName('Khám phá');
     expect(links[0]).toHaveAttribute('href', '/kham-pha');
-    expect(links[1]).toHaveAccessibleName('Đặt thêu');
-    expect(links[1]).toHaveAttribute('href', '/yeu-cau/moi');
+    expect(links[1]).toHaveAccessibleName('Bộ sưu tập');
+    expect(links[1]).toHaveAttribute('href', '/bo-suu-tap');
+    expect(links[2]).toHaveAccessibleName('Đặt thêu');
+    expect(links[2]).toHaveAttribute('href', '/yeu-cau/moi');
 
     // Every other IA label is still flagged unavailable to assistive tech.
-    for (const label of ['Bộ sưu tập', 'Studio', 'Nhật ký']) {
+    // Studio has no landing page (APP3 built one per Product) and the approved
+    // APP11 Homepage deleted Journal outright, so neither gains an href.
+    for (const label of ['Studio', 'Nhật ký']) {
       expect(within(nav).getByText(label).closest('[aria-disabled="true"]')).not.toBeNull();
     }
 
@@ -81,7 +86,7 @@ describe('StorefrontShell — navigation & search boundaries', () => {
       expect(href).not.toBe('#');
       expect(href).not.toBe('');
       // `#main-content` is the skip link's in-page target, not a route.
-      expect(['/', '/kham-pha', '/yeu-cau/moi', '#main-content']).toContain(href);
+      expect(['/', '/kham-pha', '/bo-suu-tap', '/yeu-cau/moi', '#main-content']).toContain(href);
     }
   });
 

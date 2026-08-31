@@ -87,6 +87,50 @@ export function buildStorefrontStudioPath(slug: string): string {
  */
 export const STOREFRONT_CUSTOM_REQUEST_ROUTE = '/yeu-cau/moi';
 
+/**
+ * The canonical public gallery route (`APP11-D01`, `APP11-G01-C1`; built by
+ * `APP11-S02`).
+ *
+ * The path is design and Product Owner authority: the approved UI05 Collections
+ * Index already carries `Bộ sưu tập` as its H1 and as the active header item,
+ * and the registry rows for the feed record `/bo-suu-tap` as the route. UI05's
+ * own provisional `/collections` strings are superseded, and `/thu-vien` and
+ * `/gallery` are rejected — no alias and no redirect is approved, so this is
+ * the single place the path is written. The Homepage Collections section, the
+ * header IA item and the feed's own route segment all read it from here.
+ *
+ * `APP11-S03` extends this family with `/bo-suu-tap/[slug]`; it does not
+ * replace the constant, which is why the active-state matcher below is written
+ * in terms of a section rather than an exact path.
+ */
+export const STOREFRONT_GALLERY_ROUTE = '/bo-suu-tap';
+
+/**
+ * Whether `pathname` is inside the area a routed navigation item names.
+ *
+ * The header used to compare the pathname to the route with `===`, which is
+ * correct for every area that is exactly one page and wrong for the first one
+ * that is not. `APP11-S03` adds `/bo-suu-tap/[slug]`, and a visitor reading one
+ * gallery entry is still inside Bộ sưu tập; an exact match would silently
+ * un-mark the section the moment that route lands.
+ *
+ * A descendant matches only on a full segment boundary, so `/bo-suu-tap-cu`
+ * would not mark `/bo-suu-tap` active. The home route is exact-only for the
+ * obvious reason: every path descends from `/`.
+ *
+ * `pathname` is nullable because `usePathname` genuinely resolves to `null`
+ * outside an App Router context — which is exactly what a rendered component
+ * test sees. The previous `===` comparison tolerated that by accident; a prefix
+ * check would have thrown, so the null is handled rather than assumed away.
+ * No pathname means no current area, which is `false` for every item.
+ */
+export function isStorefrontNavRouteActive(pathname: string | null, route: string): boolean {
+  if (pathname === null) return false;
+  if (pathname === route) return true;
+  if (route === STOREFRONT_HOME_ROUTE) return false;
+  return pathname.startsWith(`${route}/`);
+}
+
 /** A primary-navigation entry. `route` stays `null` until the area ships. */
 export interface StorefrontNavItem {
   readonly id: string;
@@ -96,10 +140,16 @@ export interface StorefrontNavItem {
 }
 
 /**
- * The approved-header primary navigation (canonical IA labels). Two areas are
- * routed: `discover` (`APP2-S01`) and `commission` (`APP5-S01`). The other three
- * are not built, so their items stay presentation only. Do not add an `href`
- * here for a route that does not yet exist.
+ * The approved-header primary navigation (canonical IA labels). Three areas are
+ * routed: `discover` (`APP2-S01`), `commission` (`APP5-S01`) and `collections`
+ * (`APP11-S02`). The other two are not built, so their items stay presentation
+ * only. Do not add an `href` here for a route that does not yet exist.
+ *
+ * `collections` was `route: null` from `APP1-S01A` until the gallery feed
+ * existed; this is the "phase that owns the area" the model above describes,
+ * and the item becomes a real link in the same change that creates the route.
+ * `journal` stays unrouted permanently as far as APP11 is concerned — the
+ * approved Homepage deleted the Journal section outright.
  *
  * `studio` stays `route: null` after `APP3-S01`, and that is the correct
  * outcome rather than an oversight. S01 built a Studio *per Product*; there is
@@ -107,7 +157,7 @@ export interface StorefrontNavItem {
  */
 export const STOREFRONT_PRIMARY_NAV: readonly StorefrontNavItem[] = [
   { id: 'discover', label: 'Khám phá', route: STOREFRONT_DISCOVER_ROUTE },
-  { id: 'collections', label: 'Bộ sưu tập', route: null },
+  { id: 'collections', label: 'Bộ sưu tập', route: STOREFRONT_GALLERY_ROUTE },
   { id: 'studio', label: 'Studio', route: null },
   { id: 'commission', label: 'Đặt thêu', route: STOREFRONT_CUSTOM_REQUEST_ROUTE },
   { id: 'journal', label: 'Nhật ký', route: null },

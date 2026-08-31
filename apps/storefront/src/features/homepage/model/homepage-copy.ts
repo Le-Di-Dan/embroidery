@@ -12,9 +12,10 @@
  *    stated with its precondition (approval first) so it cannot read as a
  *    pay-up-front demand, which BR-005 explicitly forbids.
  * 2. **No promise of a route that does not exist.** The Collections section
- *    carries editorial framing only. `/bo-suu-tap` is `APP11-S02`'s to build;
- *    until it does, a "view collections" call to action here would be a dead
- *    anchor, so there is no such string to accidentally render.
+ *    carried editorial framing only while `/bo-suu-tap` was unbuilt, so that a
+ *    "view collections" call to action could not become a dead anchor.
+ *    `APP11-S02` built the route, and `collections.action` was added in that
+ *    same change — the rule is unchanged, its precondition is simply now met.
  *
  * Editorial direction is `docs/design/DESIGN_VISION.md` §8–§10 (the Homepage is
  * a gallery, the hero introduces briefly, the works arrive within seconds) and
@@ -53,6 +54,12 @@ export const HOMEPAGE_COPY = {
     heading: 'Bộ sưu tập',
     intro:
       'Các tác phẩm được nhóm theo chủ đề và kỹ thuật, để bạn thấy được chiều sâu và phạm vi của xưởng.',
+    /**
+     * The continuation into the gallery feed (`APP11-S02`). It names the
+     * destination rather than the mechanism — no "xem thêm", no count, and
+     * nothing about a checkpoint.
+     */
+    action: 'Xem bộ sưu tập',
   },
 
   /** Section 5 — Studio Story. */

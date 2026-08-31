@@ -1,0 +1,138 @@
+// Gallery feed — page frame, editorial head, states and continuation
+// (`APP11-S02`). Design source: UI05 Collections Index `329:2` / `339:2` /
+// `343:2` and the states board `357:3`.
+
+@use '@embroidery/styles' as styles;
+@use 'gallery-tokens' as tokens;
+
+.gallery-feed {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+}
+
+// --- Editorial head ---------------------------------------------------------
+
+.gallery-feed__intro {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(8);
+}
+
+// The page's single <h1>. It steps down a size on the narrow tier so the mobile
+// composition is a genuine recomposition rather than a shrunken desktop.
+.gallery-feed__title {
+  margin: 0;
+  font-family: styles.$font-family-primary;
+  font-size: styles.$font-size-heading-m;
+  font-weight: styles.$font-weight-semibold;
+  line-height: tokens.$line-height-tight;
+  color: styles.$color-text-primary;
+
+  @media (min-width: tokens.$bp-large) {
+    font-size: styles.$font-size-heading-l;
+  }
+}
+
+.gallery-feed__intro-text {
+  margin: 0;
+  max-width: styles.$layout-reading-max;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+// --- Notices (empty, initial error) -----------------------------------------
+
+.gallery-feed__notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: styles.spacing(12);
+  padding-block: styles.spacing(32);
+  color: styles.$color-text-secondary;
+}
+
+.gallery-feed__notice-heading {
+  margin: 0;
+  font-size: styles.$font-size-heading-s;
+  font-weight: styles.$font-weight-medium;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.gallery-feed__notice-body {
+  margin: 0;
+  font-size: styles.$font-size-body-m;
+  line-height: tokens.$line-height-relaxed;
+}
+
+// --- Action -----------------------------------------------------------------
+//
+// One control shape for every button this feature has: load more, retry
+// continuation and retry initial. All three are real <button>s — never a
+// clickable div — and all three meet the foundation's minimum touch target.
+
+.gallery-feed__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: styles.$size-touch-target-min;
+  padding-inline: styles.spacing(24);
+  border: 1px solid styles.$color-border-primary;
+  border-radius: tokens.$action-radius;
+  background: styles.$color-background-primary;
+  color: styles.$color-text-primary;
+  font-family: inherit;
+  font-size: styles.$font-size-body-s;
+  font-weight: styles.$font-weight-medium;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    border-color: styles.$color-text-primary;
+  }
+
+  // Focus is never removed, only replaced with a visible ring of our own.
+  &:focus-visible {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+}
+
+// --- Continuation -----------------------------------------------------------
+//
+// Sits below the accumulated cards and never replaces them: a failure here is
+// an addendum to a feed the visitor is already reading, not a state that takes
+// the page over.
+
+.gallery-feed__continuation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: styles.spacing(12);
+  padding-block: styles.spacing(24);
+  text-align: center;
+}
+
+.gallery-feed__continuation-status,
+.gallery-feed__continuation-message {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-secondary;
+}
+
+// The live region is always in the DOM so a screen reader has something to
+// observe; when it is empty it must not push the control down, which is what an
+// empty <p> with a line-height would otherwise do.
+.gallery-feed__continuation-status:empty {
+  display: none;
+}
+
+.gallery-feed__continuation-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: styles.spacing(8);
+}

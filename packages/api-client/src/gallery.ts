@@ -83,3 +83,42 @@ export type {
   UnpublishGalleryEntryBody,
   PrepareGalleryAssetBody,
 } from './generated/embroidery-api.schemas';
+
+/**
+ * The **public** gallery read (`APP11-B03`), crossing for `APP11-S02` — the
+ * Storefront gallery feed at `/bo-suu-tap`.
+ *
+ * The block above says the public reads are held back because "this barrel
+ * serves the Admin app". That was true while every gallery consumer was an
+ * Admin screen; it is not a property of the barrel, which is one package root
+ * serving both applications — `publicProductList` has sat on it since
+ * `APP2-S01`. What the rule actually forbids is an **Admin screen** reading the
+ * storefront's unauthenticated view of the same rows, and that stays forbidden:
+ * it is asserted per application, in each app's own boundary suite, rather than
+ * by keeping the operation out of a package both apps import.
+ *
+ * Only the list crosses. `publicGalleryEntryDetail` stays withheld because
+ * `/bo-suu-tap/[slug]` does not exist yet — `APP11-S03` owns that route, and an
+ * operation on this boundary is an invitation to render a page for it. The
+ * `publicSitemapEntry_*` family stays withheld for `APP11-S04`.
+ *
+ * `publicGalleryEntryAsset` also stays withheld, for the reason
+ * `publicProductMediaGet` does rather than a scheduling one: it streams image
+ * bytes as a `Blob`. The browser reaches that route by rendering the relative
+ * `coverUrl` the list response already returns — the API composes that path
+ * itself, from the same rendition constant the route serves — so the feed
+ * consumes the delivery route without any application code streaming its bytes.
+ * An `<img src>` cannot be a `Blob`, so exporting the operation would publish a
+ * function no correct consumer could call.
+ *
+ * Nothing here carries a bucket, an object key, a signature or an expiry:
+ * `coverAssetId` is an opaque identity that resolves only inside its published
+ * entry, and `coverUrl` is a relative application path the publication-gated
+ * route re-checks on every request.
+ */
+export { publicGalleryEntryList } from './generated/embroidery-api';
+export type {
+  PublicGalleryEntryListParams,
+  PublicGalleryEntryListResponse,
+  PublicGalleryEntrySummaryResponse,
+} from './generated/embroidery-api.schemas';

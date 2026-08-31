@@ -146,15 +146,33 @@ describe('Homepage — work sections', () => {
   });
 });
 
-describe('Homepage — Collections staging', () => {
-  it('renders heading and editorial framing with no navigation at all', () => {
+describe('Homepage — Collections', () => {
+  it('continues into the gallery feed through exactly one anchor', () => {
+    // `APP11-S01` shipped this section without an action because `/bo-suu-tap`
+    // did not exist. `APP11-S02` built the route, so the staged action is now a
+    // real link — one, to the feed itself.
     const { container } = renderWithProviders(<HomepageCollections />);
 
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
       HOMEPAGE_COPY.collections.heading,
     );
-    expect(within(container).queryAllByRole('link')).toHaveLength(0);
-    expect(container.innerHTML).not.toContain('bo-suu-tap');
+    const links = within(container).queryAllByRole('link');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName(HOMEPAGE_COPY.collections.action);
+    expect(links[0]).toHaveAttribute('href', '/bo-suu-tap');
+  });
+
+  it('links to the feed and never to one entry', () => {
+    // `/bo-suu-tap/[slug]` is `APP11-S03`'s route and does not exist; a link to
+    // it here would be a 404 on the Storefront's most-visited page.
+    const { container } = renderWithProviders(<HomepageCollections />);
+
+    for (const anchor of container.querySelectorAll('a')) {
+      expect(anchor.getAttribute('href')).toBe('/bo-suu-tap');
+    }
+    // Still no cards, no gallery read and no schedule commentary.
+    expect(container.querySelectorAll('img')).toHaveLength(0);
+    expect(container.textContent).not.toMatch(/sắp ra mắt|đang xây dựng|S0\d/i);
   });
 });
 

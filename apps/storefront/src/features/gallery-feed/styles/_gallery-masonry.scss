@@ -1,0 +1,139 @@
+// Gallery feed — the UI05 masonry, its cards and the loading skeleton
+// (`APP11-S02`). Design source: UI05 Collections Index `329:2` / `339:2` /
+// `343:2`, interaction states `353:2`, loading board `357:3`.
+
+@use '@embroidery/styles' as styles;
+@use 'gallery-tokens' as tokens;
+
+.gallery-feed__masonry {
+  // CSS multi-column, not a JavaScript column split: the DOM keeps ONE list in
+  // server order and the browser distributes it visually, so source order stays
+  // linear for assistive technology while the layout reads as masonry. No
+  // height-balancing and no `order` — both would make the reading order a
+  // function of measured pixels rather than of the curator's display_order.
+  columns: tokens.$columns-mobile;
+  column-gap: tokens.$gap-mobile;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: tokens.$bp-medium) {
+    columns: tokens.$columns-tablet;
+    column-gap: tokens.$gap-wide;
+  }
+
+  @media (min-width: tokens.$bp-large) {
+    columns: tokens.$columns-desktop;
+  }
+}
+
+.gallery-feed__masonry-item {
+  // A card must never be split across a column boundary.
+  break-inside: avoid;
+  margin-bottom: tokens.$gap-mobile;
+
+  @media (min-width: tokens.$bp-medium) {
+    margin-bottom: tokens.$gap-wide;
+  }
+}
+
+// --- Card -------------------------------------------------------------------
+
+.gallery-feed__card {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+  // No hover, no pointer, no focus ring: the card is deliberately
+  // non-interactive until `APP11-S03` builds `/bo-suu-tap/[slug]`, and it must
+  // not suggest otherwise. UI05's hover and pressed treatments arrive with the
+  // route they lead to.
+}
+
+.gallery-feed__card-media {
+  overflow: hidden;
+  border-radius: styles.$radius-sm;
+  background: styles.$color-background-secondary;
+}
+
+.gallery-feed__card-image {
+  display: block;
+  width: 100%;
+  // Natural ratio. `APP11-B03` publishes no derivative dimensions, so a fixed
+  // aspect-ratio here would mean inventing one and cropping every cover into an
+  // equal box — precisely the uniform ecommerce grid UI05 forbids. This is what
+  // makes the masonry's card heights genuinely variable.
+  height: auto;
+}
+
+.gallery-feed__card-placeholder {
+  // The honest stand-in for a cover whose bytes stopped resolving mid-session.
+  // This 4:5 ratio belongs to the placeholder itself, not to any artwork, so it
+  // asserts nothing about the entry.
+  aspect-ratio: 4 / 5;
+  background: styles.$color-background-secondary;
+}
+
+.gallery-feed__card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(4);
+}
+
+.gallery-feed__card-title {
+  margin: 0;
+  font-size: styles.$font-size-body-l;
+  font-weight: styles.$font-weight-medium;
+  line-height: tokens.$line-height-snug;
+  color: styles.$color-text-primary;
+}
+
+.gallery-feed__card-description {
+  margin: 0;
+  font-size: styles.$font-size-body-s;
+  line-height: tokens.$line-height-relaxed;
+  color: styles.$color-text-secondary;
+}
+
+// --- Loading skeleton -------------------------------------------------------
+//
+// Reuses the masonry above so the placeholder occupies the shape the cards will
+// occupy. Three media heights, because a column of identical blocks would
+// promise a uniform grid the feed does not deliver.
+
+.gallery-feed__loading {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(16);
+}
+
+.gallery-feed__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(12);
+}
+
+.gallery-feed__skeleton-media {
+  height: tokens.$skeleton-media-medium;
+  border-radius: styles.$radius-sm;
+  background: tokens.$skeleton-tint;
+}
+
+.gallery-feed__skeleton--0 .gallery-feed__skeleton-media {
+  height: tokens.$skeleton-media-tall;
+}
+
+.gallery-feed__skeleton--2 .gallery-feed__skeleton-media {
+  height: tokens.$skeleton-media-short;
+}
+
+.gallery-feed__skeleton-line {
+  height: styles.spacing(12);
+  width: 70%;
+  border-radius: styles.$radius-sm;
+  background: tokens.$skeleton-tint;
+}
+
+.gallery-feed__skeleton-line--title {
+  height: styles.spacing(16);
+  width: 45%;
+}

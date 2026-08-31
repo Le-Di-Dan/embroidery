@@ -46,10 +46,12 @@ describe('StorefrontShell — mobile navigation drawer', () => {
     const brand = within(dialog).getByRole('link', { name: 'Xưởng Thêu — về trang chủ' });
     const close = within(dialog).getByRole('button', { name: 'Đóng menu điều hướng' });
 
-    // The drawer's third and fourth focusables are the two built primary-nav
-    // areas: Discover (APP2-S01) and the custom request (APP5-S01). The unrouted
-    // items stay non-focusable, so the request link is the last stop in the trap.
+    // The drawer's third, fourth and fifth focusables are the three built
+    // primary-nav areas, in IA order: Discover (APP2-S01), Collections
+    // (APP11-S02) and the custom request (APP5-S01). The unrouted items stay
+    // non-focusable, so the request link is the last stop in the trap.
     const discover = within(dialog).getByRole('link', { name: 'Khám phá' });
+    const collections = within(dialog).getByRole('link', { name: 'Bộ sưu tập' });
     const request = within(dialog).getByRole('link', { name: 'Đặt thêu' });
 
     expect(brand).toHaveFocus();
@@ -57,6 +59,8 @@ describe('StorefrontShell — mobile navigation drawer', () => {
     expect(close).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(discover).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(collections).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(request).toHaveFocus();
     await user.keyboard('{Tab}');

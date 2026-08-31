@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { isStorefrontNavRouteActive } from '../model/storefront-navigation';
+
 /**
  * A primary-navigation item whose route exists.
  *
@@ -13,11 +15,14 @@ import { usePathname } from 'next/navigation';
  *
  * Active state is matched on the pathname alone, so `/kham-pha?category=khan`
  * still marks Discover as current: a category is a filter within the area, not
- * a different area.
+ * a different area. It is matched on the **area** rather than the exact path,
+ * so a descendant route marks its section current too — `APP11-S03` adds
+ * `/bo-suu-tap/[slug]`, and a visitor reading one gallery entry has not left
+ * Bộ sưu tập. See `isStorefrontNavRouteActive` for the segment-boundary rule.
  */
 export function StorefrontNavLink({ route, label }: { route: string; label: string }) {
   const pathname = usePathname();
-  const isActive = pathname === route;
+  const isActive = isStorefrontNavRouteActive(pathname, route);
 
   return (
     <Link

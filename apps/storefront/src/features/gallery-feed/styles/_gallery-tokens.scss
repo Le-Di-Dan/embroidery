@@ -1,0 +1,45 @@
+// Gallery feed — local layout constants (`APP11-S02`).
+//
+// Split into its own partial so every other gallery partial reads the same
+// numbers by name and none of them re-declares a magic value. Colour, type,
+// spacing, radius and control size all come from `@embroidery/styles`; only the
+// values the design foundation deliberately does not lock live here.
+
+// Responsive tiers. The design system defers a shared breakpoint scale (FU-A16),
+// so these are feature-local. They are the SAME two thresholds the Homepage and
+// `product-discovery` already use — the approved tablet frame IS 1024, so 1024
+// stays the tablet tier and 1025+ is the desktop tier. Keeping them identical is
+// what stops three adjacent public surfaces reflowing at different widths.
+$bp-medium: 640px;
+$bp-large: 1025px;
+
+// Column counts, straight from the audited UI05 Collections Index frames:
+// desktop 1440 = 3 columns @ ~410px, tablet 1024 = 2 @ ~452px, mobile 390 = 1
+// @ ~342px. Deliberately NOT UI02's 5/3/2 @ 237px: a gallery card carries a
+// title and a paragraph of editorial copy, which needs the wider measure. The
+// masonry architecture is shared with UI02; the density is not.
+$columns-mobile: 1;
+$columns-tablet: 2;
+$columns-desktop: 3;
+
+// Measured gaps: 16 on mobile, 24 from tablet up — the same rhythm the Discover
+// masonry uses, because both are the same masonry primitive.
+$gap-mobile: 16px;
+$gap-wide: 24px;
+
+// Line heights. The foundation locks the type scale but not these (see the
+// styles package README, Deferred), so they are named here once.
+$line-height-tight: 1.15;
+$line-height-snug: 1.35;
+$line-height-relaxed: 1.6;
+
+// Local composition constants with no shared token.
+$action-radius: 999px; // pill; the foundation defines no pill radius
+$skeleton-tint: rgba(23, 23, 23, 0.06); // ink/900 at 6%, never a literal grey
+
+// Skeleton tile heights. Three different values on purpose: a column of
+// identical blocks would promise a uniform grid and then deliver a
+// variable-height masonry.
+$skeleton-media-short: 220px;
+$skeleton-media-medium: 300px;
+$skeleton-media-tall: 380px;

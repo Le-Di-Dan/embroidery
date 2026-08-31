@@ -1,0 +1,18 @@
+// Public gallery feed — feature stylesheet entry (`APP11-S02`).
+//
+// Design source: FIG-APP11-GALLERY-FEED-DESKTOP `329:2`, -TABLET `339:2`,
+// -MOBILE `343:2`, -INTERACTION-STATES `353:2` and
+// -LOADING-EMPTY-ERROR `357:3`, all APPROVED_FOR_IMPLEMENTATION under
+// FIG-APPROVAL-APP11-D01-PO-001 (file BQwqV8GdfUIELvsQDB1UQE, page
+// User Interface). The rows point at UI05's original nodes: the feed was
+// registered in place, never redrawn (`GALLERY_FEED_REDRAWN = false`).
+//
+// Header, footer, mobile navigation and the floating contact dock are the
+// shared shell's (APP1-D02) and are not restyled here.
+//
+// Split into semantic partials from the start rather than as a later rescue:
+// each stays well inside the 400-line source limit, which CLAUDE.md §6 applies
+// to stylesheets as much as to TypeScript and which
+// `tools/check-scss-file-size.mjs` enforces on the paths a change owns.
+@use 'gallery-layout';
+@use 'gallery-masonry';
