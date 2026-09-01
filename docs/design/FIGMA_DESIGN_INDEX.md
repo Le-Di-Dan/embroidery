@@ -73,6 +73,7 @@ Authority:
 `APP_09` write target: page **`766:2`** in `FIG-FILE-PRODUCT` (APP9 design packages).
 `APP_10` write target: page **`825:3`** in `FIG-FILE-PRODUCT` (APP10 design packages).
 `APP_11` write target: page **`853:2`** in `FIG-FILE-PRODUCT` (APP11 design packages).
+`APP_12` write target: page **`896:3`** in `FIG-FILE-PRODUCT` (APP12 design packages).
 
 ## 4. Screen and state registry
 
@@ -1355,6 +1356,58 @@ checkpoints from `APP11-B01` onward read their authority here.
 | FIG-APP11-FOOTER-HANDOFF-RECONCILIATION | Shared | footer & contact handoff | Footer & Floating Handoff Reconciliation Record | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 873:1006 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=873-1006) | APP11-D01 | — | FIG-APPROVAL-APP11-D01-PO-001 | 2026-08-29 |
 | FIG-APP11-AUTHORITY-MAP | Shared | APP11 phase authority | Authority Map & Handoff | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 874:1006 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=874-1006) | APP11-D01 | — | FIG-APPROVAL-APP11-D01-PO-001 | 2026-08-29 |
 | FIG-APP11-RESPONSIVE-A11Y-SEO-NOTES | Shared | APP11 handoff | Responsive, States, Accessibility & SEO Notes | Specification | Desktop | annotation | APPROVED_FOR_IMPLEMENTATION | BQwqV8GdfUIELvsQDB1UQE | APP_11 | 875:1006 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=875-1006) | APP11-D01 | — | FIG-APPROVAL-APP11-D01-PO-001 | 2026-08-29 |
+
+### 4.18 APP12-D01 — Ready-Made Commerce (NEW, this checkpoint)
+
+Section root **`901:3`** — page **APP_12** (`896:3`), created empty by the operator
+and **reused, not re-created** (§2 rule 1). Thirteen sub-sections hold the package:
+`901:4` Overview · `902:3` Product Detail purchase · `906:139` Purchase unavailable
+states · `907:141` Checkout · `909:255` Checkout states · `910:257` Order Access ·
+`911:304` Order Access state variants · `912:336` Admin queue · `913:336` Admin order
+detail · `914:360` Admin workbench panels · `915:341` Admin categories · `916:342`
+Category form states · `917:347` Shared matrices.
+
+**Pre-draw audit (mandatory).** This registry was searched for every APP12-owned
+term — `APP12`, `APP_12`, `ready-made`, `mua-hang`, `don-hang`, `category`,
+`checkout`, `shipping fee` — and **no registry row existed**; §4 ended at
+`4.17 APP11-D01`. The live file was then read: `APP_12` (`896:3`) existed and was
+**empty**, and the delivered Product Detail authority `529:2225` was opened and its
+composition measured before a single new frame was drawn.
+
+**Foundation preservation.** Every frame reuses the published DS components by
+instance — **57 instances**: Button ×33 plus Header ×3 and Footer ×3 on the 1440
+frames (with NavLink and SearchBar nested inside Header). The ten 1024/390 frames
+use reuse-annotated shell bands instead, because the DS Header/Footer components
+are fixed at 1440 — the `APP9` `816:4` convention. Colour is bound to the `Semantic` variable
+collection and type to the existing `Typography/*` styles; **0 tokens were added and
+0 modified**. The four recorded Figma↔source divergences are drawn in `917:348` and
+repeated in the completion report §E — none was silently resolved.
+
+All rows enter `REVIEW_REQUIRED`. `APP12-D01` does **not** self-approve.
+
+| Registry ID | App/Library | Route/Capability | Screen/Asset | State | Viewport | Class | Status | File Key | Page | Node | Direct URL | Owning Phase | Supersedes/By | Approval Evidence | Last Verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FIG-APP12-D01-OVERVIEW | Shared | APP12 phase authority | Ready-Made Overview, Journey & Reuse Rule | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 901:5 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=901-5) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S01-PURCHASE-DESKTOP | Storefront | /san-pham/[slug] | Product Detail + Ready-Made Purchase Panel | In stock | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 902:4 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=902-4) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S01-PURCHASE-TABLET | Storefront | /san-pham/[slug] | Product Detail + Ready-Made Purchase Panel | In stock | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 905:67 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=905-67) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S01-PURCHASE-MOBILE | Storefront | /san-pham/[slug] | Product Detail + Ready-Made Purchase Panel | In stock | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 905:187 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=905-187) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S01-PURCHASE-OUT-OF-STOCK | Storefront | /san-pham/[slug] | Ready-Made Purchase Panel | No purchasable SKU | All | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 906:140 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=906-140) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S01-PURCHASE-SELECTION-INCOMPLETE | Storefront | /san-pham/[slug] | Ready-Made Purchase Panel | Selection incomplete | All | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 906:186 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=906-186) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S02-CHECKOUT-DESKTOP | Storefront | /mua-hang/[slug] | Ready-Made Checkout | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 907:142 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=907-142) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S02-CHECKOUT-TABLET | Storefront | /mua-hang/[slug] | Ready-Made Checkout | Default | Tablet 1024 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 907:252 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=907-252) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S02-CHECKOUT-MOBILE | Storefront | /mua-hang/[slug] | Ready-Made Checkout | Default | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 907:5738 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=907-5738) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S02-CHECKOUT-VALIDATION | Storefront | /mua-hang/[slug] | Ready-Made Checkout | Field validation | All | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 909:256 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=909-256) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S02-CHECKOUT-SUBMIT-PENDING | Storefront | /mua-hang/[slug] | Ready-Made Checkout | Submit pending | All | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 909:266 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=909-266) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S02-CHECKOUT-REFUSAL | Storefront | /mua-hang/[slug] | Ready-Made Checkout | Creation refused | All | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 909:274 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=909-274) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S03-ORDER-ACCESS-DESKTOP | Storefront | /truy-cap/don-hang | Secure Order Surface | AWAITING_PAYMENT | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 910:258 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=910-258) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S03-ORDER-ACCESS-MOBILE | Storefront | /truy-cap/don-hang | Secure Order Surface | AWAITING_PAYMENT | Mobile 390 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 911:366 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=911-366) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-S03-ORDER-ACCESS-STATES | Storefront | /truy-cap/don-hang | Secure Order Surface State Variants | Eight lifecycle states | All | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 911:305 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=911-305) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-A03-ORDER-QUEUE-DESKTOP | Admin | /orders | Order Queue + Origin Filter | READY_MADE filter | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 912:337 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=912-337) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-A03-ORDER-DETAIL-DESKTOP | Admin | /orders/{orderId} | Order Detail, Ready-Made branch | AWAITING_SHIPPING_FEE | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 913:337 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=913-337) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-A03-WORKBENCH-PANELS | Admin | /orders/{orderId} | FULL payment, fulfilment & fee-refusal panels | State variants | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 914:361 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=914-361) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-A04-CATEGORY-LIST-DESKTOP | Admin | /categories | Category List | Default | Desktop 1440 | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 915:342 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=915-342) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-A04-CATEGORY-FORM-STATES | Admin | /categories | Category Form | Create / slug locked / archive refused | Desktop | high-fidelity | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 916:343 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=916-343) | APP12-D01 | — | — | 2026-09-01 |
+| FIG-APP12-D01-REUSE-MATRIX | Shared | APP12 handoff | Foundation Reuse Matrix, Design-to-Source Mapping & Copy Density | Specification | Desktop | annotation | REVIEW_REQUIRED | BQwqV8GdfUIELvsQDB1UQE | APP_12 | 917:348 | [open](https://www.figma.com/design/BQwqV8GdfUIELvsQDB1UQE/embroidery?node-id=917-348) | APP12-D01 | — | — | 2026-09-01 |
 
 ## 5. IA and user-flow registry
 
