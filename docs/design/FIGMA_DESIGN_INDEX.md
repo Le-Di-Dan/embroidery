@@ -2,7 +2,13 @@
 
 **Status:** Canonical Figma registry — authoritative
 **Owner:** Design governance (created at `APP1-D01`, 2026-07-25)
-**Consistency gate:** `pnpm check:figma-design-index` (static, in `pnpm quality`)
+**Consistency gate:** `node tools/check-figma-design-index.mjs` — static, scoped,
+run on any design or frontend UI checkpoint and on any edit to this registry.
+Indexed as `CMD-CHECK-FIGMA-DESIGN-INDEX` in
+[`../implementation/SCOPED_COMMAND_INDEX.md`](../implementation/SCOPED_COMMAND_INDEX.md).
+The former `pnpm check:figma-design-index` alias and the `pnpm quality`
+aggregate that contained it were both removed by `GOV-Q01-C1`; neither may be
+re-added (`../implementation/VALIDATION_GOVERNANCE.md` §1.1).
 
 ---
 

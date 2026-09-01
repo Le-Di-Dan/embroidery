@@ -147,6 +147,86 @@ aggregate.
 
 ---
 
+## 3A. APP12 scoped validation authority (`APP12-G01`)
+
+Locked by `APP12-G01` (2026-09-01). It refines §3 for APP12; it does not
+replace it, and it introduces no aggregate.
+
+### 3A.1 Change type → validation
+
+Read the row for **each** category a change touches, and run the union. A
+category the change does not touch contributes nothing.
+
+| Change type | Required | Conditional | Forbidden |
+|---|---|---|---|
+| Docs / Markdown only | `git diff --check`; Prettier on touched docs; link/anchor consistency for edited docs | Phase-status consistency when a status table moved | Any test suite, any build |
+| Repository tool / checker | That tool's own `node --test` file; `CMD-CHECK-FILE-SIZE-SCOPED` on touched files | Prettier; ESLint **only where a config covers the path** — the repository root has none, so `tools/**` is Prettier-covered but not ESLint-covered | Repository-wide file-size sweep; any app suite |
+| Backend TS (one module) | Jest for that module and its direct seams; `CMD-CHECK-FILE-SIZE-SCOPED`; ESLint + `tsc --noEmit` for `@embroidery/api` | Integration suite when a repository/adapter changed | Full API suite; worker suite |
+| OpenAPI operation | The above plus `CMD-OPENAPI-GENERATE` + `CMD-OPENAPI-CHECK` | — | Hand-editing the artifact |
+| Generated client | `CMD-API-CLIENT-GENERATE` + `CMD-API-CLIENT-CHECK` | — | Hand-editing `src/generated` |
+| DB migration | `CMD-DB-MANIFEST-CHECK`; migration + affected repository/integration tests | Disposable-PostgreSQL integration suites | Any non-forward-only change |
+| Storefront / Admin TS·TSX | Component tests for the touched capability; `CMD-CHECK-FILE-SIZE-SCOPED`; ESLint + typecheck for that app | Build only when a build-time seam changed | The other app's suite |
+| Storefront / Admin SCSS | **`CMD-CHECK-APP-SCSS-*` for that app — a real Sass compile**; `CMD-CHECK-FILE-SIZE-SCOPED` (or `CMD-CHECK-SCSS-FILE-SIZE`) | Both apps when `packages/styles` changed | Relying on Jest — `next/jest` mocks SCSS and sees no Sass error |
+| Worker | Jest for the touched job and its domain | Integration when a repository changed | API/Storefront/Admin suites |
+| Playwright / live UI | The named spec or project only | Full matrix only for a release gate | Full matrix as checkpoint evidence |
+| Infrastructure / gateway | The relevant gateway/compose/smoke test | Docker only when an image or compose file changed | Image rebuild as routine evidence |
+| Performance | The named benchmark only | — | As checkpoint pass/fail without an approved budget |
+| UAT | Scripted journeys, recorded as observations | — | Substituting UAT for automated evidence |
+
+### 3A.2 File-size governance — the active APP12 rule
+
+The limits are unchanged and are not relaxed:
+
+```text
+runtime/application source  HARD 400   REVIEW 300
+tests                       HARD 600   REVIEW 500
+```
+
+**SCSS is runtime source** for this purpose (CLAUDE.md §6), and `tools/**`
+keeps the bounded soft caps of §5.1 — the tool reports 400/600 for a tooling
+file; §5.1 governs the response.
+
+The active rule:
+
+```text
+ANY NEW OR MODIFIED APP12-IMPACTED SOURCE FILE
+must satisfy the hard limit before checkpoint PASS.
+```
+
+- An **existing over-limit file touched** by an APP12 checkpoint must be split
+  or refactored by that checkpoint before PASS, unless the Product Owner grants
+  an explicit exception, recorded in the completion report.
+- **Untouched historical violations do not block** an unrelated APP12
+  checkpoint. They are tracked debt, not compliance.
+- They are **not** declared compliant. At `APP12-G01` the repository-wide sweep
+  reports **80 hard-limit violations and 214 review warnings**, 77 of the
+  violations in `tools/` scripts. That number is a measurement, not a target,
+  and no checkpoint is asked to fix files it did not touch.
+
+The gate is `CMD-CHECK-FILE-SIZE-SCOPED`
+(`node tools/check-file-size.mjs --paths <path>...`), which covers `.scss`
+alongside TS/JS so one command serves a mixed change. The repository-wide sweep
+is **not** a checkpoint gate and cannot pass.
+
+### 3A.3 Release-gate test classification
+
+A test's class decides *when* it runs, not how good it is.
+
+| Class | Meaning | Runs when |
+|---|---|---|
+| `CHECKPOINT_CHANGE_IMPACT` | The default. Evidence for the change that touches its inputs. | Its inputs change |
+| `WAVE1_RELEASE_GATE` | Must pass for `APP12-R01`. | `E01`, then `R01` |
+| `WAVE2_RELEASE_GATE` | Must pass for `APP12-R02`. | `W04`, then `R02` |
+| `HISTORICAL_EVIDENCE_ONLY` | Owned by a delivered checkpoint; authoritative over its own inputs. | Only when those inputs change |
+| `STALE` / `SUPERSEDED` | Asserts a world accepted authority has replaced. | Never, until reconciled or retired |
+
+`APP12-E01` and `APP12-W04` are the **bounded cross-boundary regression
+authorities**; `R01` and `R02` consume accepted checkpoint evidence rather
+than re-running history. **No full-repository "all tests" run is a release
+gate** unless a release plan explicitly authorizes one under §7.
+
+---
+
 ## 4. Previously closed checkpoints
 
 A closed checkpoint is **not** re-run merely because a later checkpoint exists.

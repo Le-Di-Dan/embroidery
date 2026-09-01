@@ -622,4 +622,6 @@ compose từ primitive, ghi gap vào registry — không tự bịa token từ w
 ## Audit cadence
 
 Registry được kiểm lại ở mỗi phase pre-implementation audit và mỗi design
-checkpoint; cổng tĩnh `pnpm check:figma-design-index` chạy trong `pnpm quality`.
+checkpoint; cổng tĩnh chạy trực tiếp bằng `node tools/check-figma-design-index.mjs`
+(`CMD-CHECK-FIGMA-DESIGN-INDEX`). Alias `pnpm check:figma-design-index` và
+aggregate `pnpm quality` đều đã bị `GOV-Q01-C1` xoá và không được thêm lại.

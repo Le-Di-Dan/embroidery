@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-G01
+NEXT                   = APP12-G02
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
 LOCKED_AT              = APP12-P01 entry, 2026-09-01, Product Owner authority
 ```
@@ -126,6 +126,26 @@ NEW_PO_DECISION_REQUIRED    = NONE
 PO_INPUT_REQUIRED_BEFORE_R01 = canonical store address, opening hours, phone, e-mail
 ```
 
+### 0.5a Release-wave authority (`APP12-G01`)
+
+Wave ownership and release exposure are locked by
+[`../APP12-RELEASE-WAVE-AUTHORITY.md`](../APP12-RELEASE-WAVE-AUTHORITY.md):
+the Storefront route matrix, the 128-operation API ownership inventory
+(31 of 43 public operations `DENY` in Wave 1), the fail-closed release-exposure
+policy, the staff/Admin posture, the `RELEASE_ISOLATION != SEO_ISOLATION`
+distinction, and the exact block/allow input `APP12-G02` implements. A
+checkpoint that adds a customer-facing surface adds a row there; it does not
+invent a local rule.
+
+```text
+G01 = docs / tooling / test-governance only
+      no runtime, no release gate, no UAT data, no Docker rebuild
+```
+
+APP12 scoped validation authority — the change-type validation table, the active
+file-size rule and the release-gate test classification — is
+[`../VALIDATION_GOVERNANCE.md`](../VALIDATION_GOVERNANCE.md) §3A.
+
 ### 0.6 Locked structure (C1, accepted 2026-09-01)
 
 ```text
@@ -188,8 +208,8 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | # | ID | Name | Status |
 |---|---|---|---|
 | 1 | `APP12-P01` | Ready-Made and dynamic-category product/documentation authority | `COMPLETE` |
-| 2 | `APP12-G01` | Wave scope, release-exposure policy and governance reconciliation | **`NEXT`** |
-| 3 | `APP12-G02` | Wave-2 release isolation gate | `NOT_STARTED` |
+| 2 | `APP12-G01` | Wave scope, release-exposure policy and governance reconciliation | `COMPLETE` |
+| 3 | `APP12-G02` | Wave-2 release isolation gate | **`NEXT`** |
 | 4 | `APP12-D01` | Ready-Made commerce design package | `NOT_STARTED` |
 | 5 | `APP12-DB01` | Order origin, Ready-Made lifecycle, FULL obligation, ORDER_ACCESS, reservation expiry | `NOT_STARTED` |
 | 6 | `APP12-C01` | Dynamic public category contract and inventory read | `NOT_STARTED` |

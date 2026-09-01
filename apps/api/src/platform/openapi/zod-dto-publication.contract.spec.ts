@@ -27,6 +27,9 @@ const CLIENT_SCHEMAS = readFileSync(
 );
 
 interface OpenApiSchema {
+  oneOf?: OpenApiSchema[];
+  anyOf?: OpenApiSchema[];
+  allOf?: OpenApiSchema[];
   nullable?: boolean;
   format?: string;
   pattern?: string;
@@ -111,6 +114,21 @@ function resolve(schema: OpenApiSchema | undefined): OpenApiSchema | undefined {
   return OPENAPI.components.schemas[schema.$ref.replace('#/components/schemas/', '')];
 }
 
+/**
+ * The property sets a schema publishes: its own, or one per `oneOf`/`anyOf`
+ * branch, or the merged `allOf` parts. `APP3-B06B` published the first union
+ * body (`CreateDesignSessionBody`), which carries its fields on the branches
+ * rather than on the wrapper — so a sweep that reads only `properties` sees an
+ * empty object and calls a correctly published body a defect.
+ */
+function publishedPropertySets(schema: OpenApiSchema | undefined): OpenApiSchema[] {
+  const branches = schema?.oneOf ?? schema?.anyOf ?? schema?.allOf;
+  if (branches === undefined) {
+    return [schema ?? {}];
+  }
+  return branches.flatMap((branch) => publishedPropertySets(resolve(branch)));
+}
+
 /** Every JSON request body in the document, resolved, with its operation id. */
 function jsonRequestBodies(): { operationId: string; schema: OpenApiSchema }[] {
   const bodies: { operationId: string; schema: OpenApiSchema }[] = [];
@@ -172,16 +190,22 @@ describe('no request body publishes an empty schema', () => {
   it.each(bodies.map((body) => [body.operationId, body.schema] as const))(
     '%s publishes its fields',
     (_operationId, schema) => {
-      expect(Object.keys(schema.properties ?? {}).length).toBeGreaterThan(0);
+      // A union body satisfies this when every branch publishes fields — an
+      // empty branch is still the defect this sweep exists to catch.
+      for (const published of publishedPropertySets(schema)) {
+        expect(Object.keys(published.properties ?? {}).length).toBeGreaterThan(0);
+      }
     },
   );
 
   it('publishes every nested component a body reaches', () => {
     for (const { schema } of bodies) {
-      for (const property of Object.values(schema.properties ?? {})) {
-        const nested = resolve(property.items ?? property);
-        if (nested?.type === 'object') {
-          expect(Object.keys(nested.properties ?? {}).length).toBeGreaterThan(0);
+      for (const published of publishedPropertySets(schema)) {
+        for (const property of Object.values(published.properties ?? {})) {
+          const nested = resolve(property.items ?? property);
+          if (nested?.type === 'object') {
+            expect(Object.keys(nested.properties ?? {}).length).toBeGreaterThan(0);
+          }
         }
       }
     }
@@ -384,13 +408,31 @@ describe('the generated client exposes the same fields', () => {
 });
 
 describe('nothing else about the published surface moved', () => {
-  it('keeps 19 paths and 23 operations', () => {
-    const paths = Object.keys(OPENAPI.paths);
-    expect(paths).toHaveLength(19);
-    const operations = paths.flatMap((path) =>
-      Object.keys(OPENAPI.paths[path] ?? {}).filter((method) => HTTP_METHODS.includes(method)),
+  it('publishes one uniquely and canonically identified operation per method', () => {
+    // This asserted "19 paths and 23 operations" from APP3-P03 until APP12-G01.
+    // That number was never the invariant — it is the count of endpoints
+    // shipped so far, so every later checkpoint had to either break this test
+    // or edit a number, and neither proves anything about publication. What
+    // the surrounding `describe` is actually guarding is that the publication
+    // mechanism emits a *coherent* document, and that survives growth.
+    const operations = Object.entries(OPENAPI.paths).flatMap(([path, item]) =>
+      Object.entries(item)
+        .filter(([method]) => HTTP_METHODS.includes(method))
+        .map(([method, operation]) => ({ path, method, operation })),
     );
-    expect(operations).toHaveLength(23);
+
+    expect(operations.length).toBeGreaterThanOrEqual(Object.keys(OPENAPI.paths).length);
+
+    // Every operation is identified. An unidentified one publishes no client
+    // method at all, which is the failure this file exists to prevent.
+    expect(operations.filter(({ operation }) => operation.operationId === undefined)).toEqual([]);
+
+    // Ids are unique. A duplicate silently overwrites a generated client method.
+    const ids = operations.map(({ operation }) => operation.operationId ?? '');
+    expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
+
+    // And each one keeps the locked `<domain>_<method>` form (APP0-B05).
+    expect(ids.filter((id) => !/^[a-z][A-Za-z0-9]*_[a-z][A-Za-z0-9]*$/.test(id))).toEqual([]);
   });
 
   it('adds no request body to the APP3-B02 binary delivery route', () => {

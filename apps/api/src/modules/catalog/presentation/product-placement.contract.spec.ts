@@ -101,15 +101,33 @@ describe('the three placement operations', () => {
     expect(placementOperations()).toHaveLength(3);
   });
 
-  it('creates no individual side, area, media, Template or Session operation', () => {
+  it('creates no individual side or area placement operation', () => {
     const paths = Object.keys(document.paths);
-    // `APP3-B02` owns exactly one of these shapes — the Side-background
-    // delivery route — and nothing else in the family exists.
-    const b02 = '/api/public/products/{slug}/sides/{sideCode}/background';
-    for (const forbidden of ['/sides/', '/areas/', '/templates', '/sessions', '/background']) {
-      expect(paths.filter((path) => path.includes(forbidden) && path !== b02)).toEqual([]);
+    // The invariant is about *placement*: it is one whole-document resource per
+    // audience, so a Side or an Area is never separately addressable for
+    // authoring. Any path bearing one of those segments must therefore be a
+    // background *delivery* route owned by a named checkpoint, and there are
+    // exactly two of them.
+    //
+    // This was written at APP3-B01 as "no /sides/ path but the one APP3-B02
+    // owns", which was true then. `APP3-B02A` later added the Admin
+    // counterpart — with its own contract gate in
+    // `catalog/admin-side-background.spec.ts` — so the emptiness sweep became
+    // stale against accepted authority. The allowlist below is anchored to that
+    // authority rather than to whatever the tree happens to contain: a new
+    // `/sides/` or `/areas/` path still fails here until it is named.
+    const backgroundDelivery = [
+      '/api/admin/products/{productId}/sides/{sideId}/background', // APP3-B02A
+      '/api/public/products/{slug}/sides/{sideCode}/background', // APP3-B02
+    ];
+    for (const segment of ['/sides/', '/areas/', '/background']) {
+      expect(
+        paths.filter((path) => path.includes(segment) && !backgroundDelivery.includes(path)).sort(),
+      ).toEqual([]);
     }
-    expect(paths.filter((path) => path === b02)).toEqual([b02]);
+    expect(paths.filter((path) => backgroundDelivery.includes(path)).sort()).toEqual(
+      [...backgroundDelivery].sort(),
+    );
   });
 });
 
