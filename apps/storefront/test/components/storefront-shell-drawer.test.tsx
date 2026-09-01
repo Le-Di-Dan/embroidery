@@ -38,35 +38,53 @@ describe('StorefrontShell — mobile navigation drawer', () => {
     expect(document.body.style.overflow).toBe('hidden');
   });
 
-  it('traps focus, cycling on Tab and Shift+Tab', async () => {
-    const user = createUser();
-    renderShell();
-    await user.click(trigger());
-    const dialog = screen.getByRole('dialog', { name: 'Điều hướng' });
-    const brand = within(dialog).getByRole('link', { name: 'Xưởng Thêu — về trang chủ' });
-    const close = within(dialog).getByRole('button', { name: 'Đóng menu điều hướng' });
+  /**
+   * The trap's property is that focus visits every focusable in the drawer in
+   * DOM order and wraps at both ends — not that there are exactly five of them.
+   * `APP12-G02` §9 makes the number release-dependent: while Wave 2 is withheld
+   * the custom-request item renders through the existing non-interactive branch
+   * and is therefore not focusable, and releasing Wave 2 restores it. Running
+   * the same walk in both states proves the trap holds either way, which is
+   * strictly more than the fixed five-stop version proved.
+   */
+  it.each([
+    ['withheld', 'false', ['Khám phá', 'Bộ sưu tập']],
+    ['released', 'true', ['Khám phá', 'Bộ sưu tập', 'Đặt thêu']],
+  ])('traps focus, cycling on Tab and Shift+Tab (Wave 2 %s)', async (_state, flag, areas) => {
+    const key = 'CUSTOM_EMBROIDERY_RELEASE_ENABLED';
+    const previous = process.env[key];
+    process.env[key] = flag;
+    try {
+      const user = createUser();
+      renderShell();
+      await user.click(trigger());
+      const dialog = screen.getByRole('dialog', { name: 'Điều hướng' });
+      const brand = within(dialog).getByRole('link', { name: 'Xưởng Thêu — về trang chủ' });
+      const close = within(dialog).getByRole('button', { name: 'Đóng menu điều hướng' });
 
-    // The drawer's third, fourth and fifth focusables are the three built
-    // primary-nav areas, in IA order: Discover (APP2-S01), Collections
-    // (APP11-S02) and the custom request (APP5-S01). The unrouted items stay
-    // non-focusable, so the request link is the last stop in the trap.
-    const discover = within(dialog).getByRole('link', { name: 'Khám phá' });
-    const collections = within(dialog).getByRole('link', { name: 'Bộ sưu tập' });
-    const request = within(dialog).getByRole('link', { name: 'Đặt thêu' });
+      // The routed primary-nav areas, in IA order. Unrouted items stay
+      // non-focusable, so the last routed area is the last stop in the trap.
+      const stops = areas.map((name) => within(dialog).getByRole('link', { name }));
+      const last = stops[stops.length - 1] as HTMLElement;
 
-    expect(brand).toHaveFocus();
-    await user.keyboard('{Tab}');
-    expect(close).toHaveFocus();
-    await user.keyboard('{Tab}');
-    expect(discover).toHaveFocus();
-    await user.keyboard('{Tab}');
-    expect(collections).toHaveFocus();
-    await user.keyboard('{Tab}');
-    expect(request).toHaveFocus();
-    await user.keyboard('{Tab}');
-    expect(brand).toHaveFocus(); // wraps forward
-    await user.keyboard('{Shift>}{Tab}{/Shift}');
-    expect(request).toHaveFocus(); // wraps backward
+      expect(brand).toHaveFocus();
+      await user.keyboard('{Tab}');
+      expect(close).toHaveFocus();
+      for (const stop of stops) {
+        await user.keyboard('{Tab}');
+        expect(stop).toHaveFocus();
+      }
+      await user.keyboard('{Tab}');
+      expect(brand).toHaveFocus(); // wraps forward
+      await user.keyboard('{Shift>}{Tab}{/Shift}');
+      expect(last).toHaveFocus(); // wraps backward
+    } finally {
+      if (previous === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous;
+      }
+    }
   });
 
   it('closes on the explicit close button and restores focus to the trigger', async () => {

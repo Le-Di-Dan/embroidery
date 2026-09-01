@@ -168,6 +168,14 @@ services:
       # with neither set the whole `Kết nối` group is absent. Never a credential.
       NEXT_PUBLIC_ZALO_CONTACT_URL: ${NEXT_PUBLIC_ZALO_CONTACT_URL:-}
       NEXT_PUBLIC_MESSENGER_CONTACT_URL: ${NEXT_PUBLIC_MESSENGER_CONTACT_URL:-}
+      # The one Wave-2 release-control variable (APP12-G02). The SAME name the
+      # API reads, deliberately: the route gate here and the operation gate there
+      # are two enforcement points of one release decision, and a second variable
+      # is how a blocked route ends up in front of a live API. Non-secret and
+      # server-side — no NEXT_PUBLIC_ twin exists, because a gate the browser can
+      # read is a gate the browser can be told to ignore. Unset means withheld,
+      # which is the canonical default and the production-default state.
+      CUSTOM_EMBROIDERY_RELEASE_ENABLED: ${CUSTOM_EMBROIDERY_RELEASE_ENABLED:-}
       # Bind-mounted sources need polling for reliable change detection on Windows/macOS hosts.
       WATCHPACK_POLLING: 'true'
     volumes:
@@ -235,6 +243,11 @@ services:
       # Dev over plain HTTP: the session cookie cannot be Secure, so use the
       # unprefixed cookie name (the __Host- prefix requires Secure).
       STAFF_SESSION_COOKIE_SECURE: ${STAFF_SESSION_COOKIE_SECURE:-false}
+      # The one Wave-2 release-control variable (APP12-G02) — the SAME name and
+      # the SAME semantics the Storefront reads. Wave-2 route isolation and
+      # Wave-2 operation isolation are one decision enforced twice, so they read
+      # one name. Non-secret, server-side, unset means withheld.
+      CUSTOM_EMBROIDERY_RELEASE_ENABLED: ${CUSTOM_EMBROIDERY_RELEASE_ENABLED:-}
       CHOKIDAR_USEPOLLING: 'true'
       TSC_WATCHFILE: DynamicPriorityPolling
     depends_on:

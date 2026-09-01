@@ -51,6 +51,7 @@ import { AuditContextModule } from '../platform/audit-context/audit-context.modu
 import { HttpResponseModule } from '../platform/http-response/http-response.module';
 import { LoggingModule } from '../platform/logging/logging.module';
 import { PolicyModule } from '../platform/policy/policy.module';
+import { ReleaseGateModule } from '../platform/release-gate/release-gate.module';
 import { RequestContextModule } from '../platform/request-context/request-context.module';
 import { ValidationModule } from '../platform/validation/validation.module';
 
@@ -61,6 +62,13 @@ import { ValidationModule } from '../platform/validation/validation.module';
     AuditContextModule,
     HttpResponseModule,
     ValidationModule,
+    // APP12-G02 — the Wave-2 release gate. Registered among the platform
+    // modules and before every feature module: its `APP_GUARD` is global
+    // wherever it is provided, and Nest runs global guards ahead of the
+    // controller- and route-scoped ones, so a withheld operation is refused
+    // before any delivered authorization guard is consulted. It needs
+    // `StructuredLogger`, which `LoggingModule` above exports globally.
+    ReleaseGateModule,
     // APP4-B01-C1 — publishes the APP4-G01 policy dataset. Composed so the
     // `staff-bootstrap` CLI, which boots this module, can reach it with the
     // Admin id it just resolved. Publishes nothing on its own at startup.

@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-G02
+NEXT                   = APP12-D01
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
 LOCKED_AT              = APP12-P01 entry, 2026-09-01, Product Owner authority
 ```
@@ -209,8 +209,8 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 |---|---|---|---|
 | 1 | `APP12-P01` | Ready-Made and dynamic-category product/documentation authority | `COMPLETE` |
 | 2 | `APP12-G01` | Wave scope, release-exposure policy and governance reconciliation | `COMPLETE` |
-| 3 | `APP12-G02` | Wave-2 release isolation gate | **`NEXT`** |
-| 4 | `APP12-D01` | Ready-Made commerce design package | `NOT_STARTED` |
+| 3 | `APP12-G02` | Wave-2 release isolation gate | `COMPLETE` |
+| 4 | `APP12-D01` | Ready-Made commerce design package | **`NEXT`** |
 | 5 | `APP12-DB01` | Order origin, Ready-Made lifecycle, FULL obligation, ORDER_ACCESS, reservation expiry | `NOT_STARTED` |
 | 6 | `APP12-C01` | Dynamic public category contract and inventory read | `NOT_STARTED` |
 | 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | `NOT_STARTED` |

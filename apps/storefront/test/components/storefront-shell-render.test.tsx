@@ -57,26 +57,50 @@ describe('StorefrontShell — navigation & search boundaries', () => {
     }
   });
 
+  /**
+   * The other half of the `APP12-G02` §9 suppression: releasing Wave 2 restores
+   * the delivered `APP5-S01` link exactly as it was. Asserted so the suppression
+   * cannot quietly become a permanent deletion of a navigation item.
+   */
+  it('restores the custom-request nav link once Wave 2 is released', () => {
+    const key = 'CUSTOM_EMBROIDERY_RELEASE_ENABLED';
+    const previous = process.env[key];
+    process.env[key] = 'true';
+    try {
+      renderShell();
+      const nav = screen.getByRole('navigation', { name: 'Điều hướng chính' });
+      const request = within(nav).getByRole('link', { name: 'Đặt thêu' });
+      expect(request).toHaveAttribute('href', '/yeu-cau/moi');
+      expect(within(nav).queryAllByRole('link')).toHaveLength(3);
+    } finally {
+      if (previous === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous;
+      }
+    }
+  });
+
   it('links only the areas that are built and leaves the rest non-interactive', () => {
     const { container } = renderShell();
     const nav = screen.getByRole('navigation', { name: 'Điều hướng chính' });
 
-    // Three built areas: Discover (APP2-S01, IMP-D038), Collections
-    // (APP11-S02) and the custom request (APP5-S01). Each is a real link on its
-    // canonical route, in IA order, and nothing else is.
+    // Two Wave-1 areas are real links on their canonical routes, in IA order:
+    // Discover (APP2-S01, IMP-D038) and Collections (APP11-S02).
     const links = within(nav).queryAllByRole('link');
-    expect(links).toHaveLength(3);
+    expect(links).toHaveLength(2);
     expect(links[0]).toHaveAccessibleName('Khám phá');
     expect(links[0]).toHaveAttribute('href', '/kham-pha');
     expect(links[1]).toHaveAccessibleName('Bộ sưu tập');
     expect(links[1]).toHaveAttribute('href', '/bo-suu-tap');
-    expect(links[2]).toHaveAccessibleName('Đặt thêu');
-    expect(links[2]).toHaveAttribute('href', '/yeu-cau/moi');
 
-    // Every other IA label is still flagged unavailable to assistive tech.
-    // Studio has no landing page (APP3 built one per Product) and the approved
-    // APP11 Homepage deleted Journal outright, so neither gains an href.
-    for (const label of ['Studio', 'Nhật ký']) {
+    // Every other IA label is flagged unavailable to assistive tech. Studio has
+    // no landing page (APP3 built one per Product) and the approved APP11
+    // Homepage deleted Journal outright, so neither gains an href. `Đặt thêu`
+    // joins them **only while Wave 2 is withheld** (APP12-G02 §9): its route is
+    // built and the server now refuses it, so offering the link would advertise
+    // a deliberate 404. The release-aware half of that is asserted below.
+    for (const label of ['Studio', 'Nhật ký', 'Đặt thêu']) {
       expect(within(nav).getByText(label).closest('[aria-disabled="true"]')).not.toBeNull();
     }
 
