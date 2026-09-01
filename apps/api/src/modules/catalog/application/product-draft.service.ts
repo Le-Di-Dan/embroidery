@@ -79,7 +79,7 @@ export class ProductDraftService {
    */
   async create(command: CreateProductDraftCommand): Promise<ProductDetailView> {
     return this.transactions.runInTransaction(async () => {
-      const category = await this.categories.requireBySlug(command.categorySlug);
+      const category = await this.categories.requireActiveBySlug(command.categorySlug);
       const id = newId() as ProductDraftId;
       const slug = await this.reserveSlug(command.name, id);
 
@@ -109,7 +109,7 @@ export class ProductDraftService {
           : { basePriceAmount: command.basePriceAmount }),
         ...(command.categorySlug === undefined
           ? {}
-          : { categoryId: (await this.categories.requireBySlug(command.categorySlug)).id }),
+          : { categoryId: (await this.categories.requireActiveBySlug(command.categorySlug)).id }),
       };
 
       // Media is validated before the guarded write so an invalid Asset costs

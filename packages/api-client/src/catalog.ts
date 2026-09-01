@@ -152,11 +152,55 @@ export type {
 // data, so a consumer asks for it at runtime; there is nothing here to
 // re-export as a value, because there is no longer a compile-time taxonomy.
 //
-// Read-only and read-only forever on this boundary as far as this checkpoint is
-// concerned: category creation, editing, publication and archival are
-// `APP12-C02`'s Admin operations and do not exist yet.
+// Read-only, and read-only permanently: category creation, editing,
+// publication and archival are Admin operations, exported separately below
+// (`APP12-C02`). No public route mutates a category, and the API graph that
+// serves this read wires no write repository at all.
 export { publicCategoryList } from './generated/embroidery-api';
 export type {
   PublicCategoryListResponse,
   PublicCategoryInventoryItemResponse,
+} from './generated/embroidery-api.schemas';
+
+// The Admin category management operations (`APP12-C02`).
+//
+// The taxonomy became operator-managed data here: create a draft, edit it,
+// publish it, archive it — no source edit, no migration, no deployment. The
+// four operations cross this boundary together because they are one workflow,
+// and `APP12-A01`'s category screen consumes all four.
+//
+// `adminCategoryList` is the canonical **Admin** category inventory. It is not a
+// duplicate of `publicCategoryList`: that one answers "which categories may a
+// customer browse" and returns only published rows, while this one carries
+// drafts and archived rows, the stable Admin key every mutation is addressed
+// by, the concurrency token, and each category's published-product count. The
+// Admin Product form and filter still read the public list (`APP12-C01-C1`);
+// `APP12-A01` moves them onto this one, which is the point at which a draft or
+// an archived category first has anywhere to appear.
+//
+// Two enums cross as **values**, and both are rules rather than category values
+// (`IMP-D062`): the lifecycle vocabulary a screen renders status chips from, and
+// the transition vocabulary its publish/archive controls send. There is still no
+// compiled taxonomy anywhere on this boundary — which categories exist is
+// answered only by a response.
+//
+// There is deliberately no delete: `ARCHIVED` is the terminal state of the
+// APP12 surface, and no operation to remove a category exists to export.
+export {
+  adminCategoryList,
+  adminCategoryCreate,
+  adminCategoryUpdate,
+  adminCategoryTransition,
+} from './generated/embroidery-api';
+export {
+  AdminCategoryResponseStatus,
+  TransitionCategoryBodyAction,
+} from './generated/embroidery-api.schemas';
+export type {
+  AdminCategoryResponse,
+  AdminCategoryListResponse,
+  AdminCategoryListItemResponse,
+  CreateCategoryBody,
+  UpdateCategoryBody,
+  TransitionCategoryBody,
 } from './generated/embroidery-api.schemas';

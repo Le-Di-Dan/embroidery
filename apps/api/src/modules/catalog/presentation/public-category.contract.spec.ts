@@ -5,8 +5,9 @@
  *
  * 1. **The published delta is exactly one anonymous public GET**, on one new
  *    Path Item Object, carrying the canonical `publicCategory_list` id, and
- *    reaching the generated client — with the artifact at 129 operations and 44
- *    public ones.
+ *    reaching the generated client — with the artifact at 133 operations
+ *    (129 at C01, plus `APP12-C02`'s four Admin category writes) and 44 public
+ *    ones.
  * 2. **The four-value category enum is gone from every affected seam.** The
  *    embedded Product category, both Product list filters and both Admin write
  *    bodies publish a pattern-validated string, and no schema in the artifact
@@ -15,7 +16,7 @@
  *    id, no description, no SEO text, no status, no timestamps, no URL.
  * 4. **The operation is path-agnostic and unparameterised.** No browser route,
  *    no origin, no absolute address, and no query parameter of any kind.
- * 5. **Nothing outside C01's scope appeared.** No category write operation, no
+ * 5. **Nothing outside C01's scope appeared.** No *public* category write, no
  *    Ready-Made order contract, no authentication decorator on the controller,
  *    and no category write repository in the module that serves the read.
  * 6. **The release gate classifies the new read.** `publicCategory_list` is
@@ -113,19 +114,27 @@ describe('the published category inventory operation', () => {
     expect(categoryOperations.map(({ operation }) => operation.operationId)).toEqual([
       'publicCategory_list',
     ]);
-    // `APP12-C02` owns category mutation. Nothing anywhere may create, update,
-    // publish or archive a category yet — Admin included.
-    const categoryWrites = allOperations().filter(
-      ({ method, operation }) =>
-        method !== 'get' && /[Cc]ategory/.test(operation.operationId ?? ''),
+    // `APP12-C02` delivered category mutation, and it is **Admin-only**. The
+    // assertion narrows from "nothing writes a category" to "nothing public
+    // does": the public boundary must stay a read forever, while the four
+    // `adminCategory_*` operations are the operator surface that made the
+    // taxonomy data. A public category write appearing here is still a failure.
+    const publicCategoryWrites = allOperations().filter(
+      ({ method, path, operation }) =>
+        method !== 'get' &&
+        path.startsWith('/api/public') &&
+        /[Cc]ategory/.test(operation.operationId ?? ''),
     );
-    expect(categoryWrites).toEqual([]);
+    expect(publicCategoryWrites).toEqual([]);
   });
 
-  it('leaves the artifact at 129 operations, 44 of them public', () => {
+  it('leaves the artifact at 133 operations, 44 of them public', () => {
     const operations = allOperations();
 
-    expect(operations).toHaveLength(129);
+    // 129 at `APP12-C01`, plus the four Admin category operations `APP12-C02`
+    // added. The public count is deliberately unchanged: C02 published no
+    // public operation at all.
+    expect(operations).toHaveLength(133);
     expect(
       operations.filter(({ operation }) => operation.operationId?.startsWith('public')),
     ).toHaveLength(44);

@@ -514,15 +514,26 @@ describe('Admin product HTTP flow (integration)', () => {
   });
 
   describe('boundary', () => {
-    it('exposes no unsanctioned product or category route', async () => {
-      // `/api/public/products` was in this list until `APP2-B04` delivered it.
-      // It is deliberately no longer here: the assertion that mattered was
-      // "the Admin surface invents no public route", not "no public route may
-      // ever exist". These two remain unrouted.
-      for (const path of ['/api/products', '/api/admin/categories']) {
-        const res = await ctx.http.get(path);
-        expect({ path, status: res.status }).toEqual({ path, status: 404 });
-      }
+    it('exposes no unsanctioned product route', async () => {
+      // `/api/public/products` was in this list until `APP2-B04` delivered it,
+      // and `/api/admin/categories` until `APP12-C02` did. Neither removal
+      // weakens the assertion that mattered — "the Admin *product* surface
+      // invents no route of its own" — which is why this one remains unrouted.
+      const res = await ctx.http.get('/api/products');
+      expect(res.status).toBe(404);
+    });
+
+    /**
+     * `APP12-C02`'s category surface exists, and is authenticated.
+     *
+     * Asserted from *this* suite because it is the one that used to prove the
+     * route did not exist at all: a delivered route that answered anonymously
+     * would be the far worse version of the same defect. 401, never 200 and
+     * never 404.
+     */
+    it('answers the Admin category route with 401 rather than 404 or 200', async () => {
+      const res = await ctx.http.get('/api/admin/categories');
+      expect(res.status).toBe(401);
     });
 
     it('serves the sanctioned public catalog anonymously, with no Admin session', async () => {

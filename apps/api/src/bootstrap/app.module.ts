@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AssetIntakeModule } from '../modules/asset/asset-intake.module';
+import { CatalogAdminCategoryModule } from '../modules/catalog/catalog-admin-category.module';
 import { CatalogDraftModule } from '../modules/catalog/catalog-draft.module';
 import { DesignModule } from '../modules/design/design.module';
 import { DesignTemplateAdminModule } from '../modules/design/design-template-admin.module';
@@ -77,6 +78,7 @@ import { ValidationModule } from '../platform/validation/validation.module';
     IdentityModule,
     AssetIntakeModule,
     CatalogDraftModule,
+    CatalogAdminCategoryModule,
     CatalogPublicationModule,
     CatalogPlacementModule,
     // `APP7-B01` — Admin SKU authoring, the inherited APP2 Catalog gap that leaves

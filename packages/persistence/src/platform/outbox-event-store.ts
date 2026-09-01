@@ -59,6 +59,12 @@ export const OUTBOX_AGGREGATE_KINDS = [
   // intent while this linkage names the new replay intent — they diverge on
   // purpose, and only this one is the execution identity.
   'NOTIFICATION_INTENT',
+  // `APP12-C02` — the aggregate of `category.published` / `category.archived`,
+  // the LC-04 delist/relist events for the taxonomy. Added on the same terms as
+  // `PRODUCT` above: a write-time guard over polymorphic text, **no CHECK and no
+  // migration**. Only the two transitions that change public visibility reach
+  // the outbox; a draft that never was public announces nothing.
+  'CATEGORY',
 ] as const;
 
 export type OutboxAggregateKind = (typeof OUTBOX_AGGREGATE_KINDS)[number];

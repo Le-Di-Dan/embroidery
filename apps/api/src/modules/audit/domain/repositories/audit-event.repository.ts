@@ -68,6 +68,13 @@ export const AUDIT_TARGET_KINDS = [
   // would hide the decision from the other's timeline. Both ids travel in the
   // summary.
   'CUSTOMER_MERGE_CASE',
+  // `APP12-C02` — the target of `category.created` / `category.updated` /
+  // `category.published` / `category.archived`. Same footing as `PRODUCT` above:
+  // `target_kind` is open text with no CHECK by DB4 design, so this list is the
+  // application's own G-DB7-46 guard and adding a kind needs no migration. The
+  // taxonomy became operator-managed *data* at `APP12-C02`, so changing it is a
+  // business action with an actor rather than a deployment with a changelog.
+  'CATEGORY',
 ] as const;
 
 export type AuditTargetKind = (typeof AUDIT_TARGET_KINDS)[number];

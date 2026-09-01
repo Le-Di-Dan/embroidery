@@ -78,6 +78,22 @@ export class DrizzleCategoryRepository extends DrizzleRepository implements Cate
     });
   }
 
+  async lockBySlug(slug: string): Promise<Category | undefined> {
+    return this.run('lockBySlug', async () => {
+      const tx = this.requireTransaction('lockBySlug');
+      const [row] = await tx
+        .select()
+        .from(categories)
+        .where(eq(categories.slug, slug))
+        .limit(1)
+        // Share mode: this transaction only needs the row to survive unchanged
+        // until commit. It blocks the exclusive lock the archive transition
+        // takes, and nothing else.
+        .for('share');
+      return row === undefined ? undefined : toCategory(row);
+    });
+  }
+
   async findById(id: CategoryId): Promise<Category | undefined> {
     return this.run('findById', async () => {
       const [row] = await this.db.select().from(categories).where(eq(categories.id, id)).limit(1);

@@ -106,6 +106,22 @@ metadata the Ready-Made catalogue needs, and it names no custom capability. The
 `DENY` set is **unchanged at 31**; the `ALLOW` set becomes **13**. No other
 classification in this section moved.
 
+**Amended by `APP12-C02`.** That checkpoint published **four** new operations —
+`adminCategory_list`, `adminCategory_create`, `adminCategory_update` and
+`adminCategory_transition` — taking the artifact to **120 paths, 133
+operations**: **84** `admin*`, 44 `public*`, 3 `staff*`, 2 `health*`. All four
+are Admin-authenticated, so **this section’s public matrix does not move at
+all**: `public*` stays 44, `DENY` stays **31** and `ALLOW` stays **13**.
+
+They are recorded here rather than left out because the inventory’s value is
+that it is complete: an operation missing from it is an operation nobody
+classified. Admin operations are outside the Wave-2 public gate by construction
+— the gate withholds *customer-reachable* custom capability, and an operator
+managing the store’s own taxonomy is neither customer-reachable nor
+wave-specific. `WAVE2_WITHHELD_PUBLIC_OPERATIONS` and
+`WAVE1_RELEASED_PUBLIC_OPERATIONS` therefore contain no `admin*` id, which the
+C02 contract suite asserts directly.
+
 | Family | Ops | Class | Wave-1 public exposure |
 |---|---|---|---|
 | `publicProduct_*`, `publicProductMedia_*`, `publicProductVariant_*` | 4 | `WAVE1_PUBLIC_READ` | `ALLOW` |

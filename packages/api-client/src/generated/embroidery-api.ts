@@ -16,6 +16,10 @@ import type {
   AdminAssetListParams,
   AdminAssetUpload202,
   AdminAssetUploadBody,
+  AdminCategoryCreate201,
+  AdminCategoryList200,
+  AdminCategoryTransition200,
+  AdminCategoryUpdate200,
   AdminCustomRequestAppendNote201,
   AdminCustomRequestDesignVersionCreate201,
   AdminCustomRequestDesignVersionDetail200,
@@ -98,6 +102,7 @@ import type {
   AssignDesignTemplateScopeBody,
   AuthorDesignVersionBody,
   AutosaveDesignSessionBody,
+  CreateCategoryBody,
   CreateDesignSessionBody,
   CreateDesignTemplateBody,
   CreateGalleryEntryBody,
@@ -184,11 +189,13 @@ import type {
   SubmitCustomRequestBody,
   SubmitVerificationAttemptBody,
   TransitionAdminOrderBody,
+  TransitionCategoryBody,
   TransitionCustomRequestBody,
   TransitionProductionJobBody,
   UnpublishDesignTemplateBody,
   UnpublishGalleryEntryBody,
   UnpublishProductBody,
+  UpdateCategoryBody,
   UpdateCustomerProfileBody,
   UpdateGalleryEntryBody,
   UpdateProductBody,
@@ -249,6 +256,83 @@ export const adminAssetDetail = (
 ) => {
   return apiRequest<AdminAssetDetail200>(
     { url: `/api/admin/assets/${assetId}`, method: 'GET', params },
+    options,
+  );
+};
+
+/**
+ * The canonical Admin category inventory: draft, published and archived alike, ordered by `displayOrder` then `slug`. Unpaged and unfiltered — a taxonomy is navigation, not a feed, and a screen that wants a subset filters on the `status` each item carries. Each item reports `publishedProductCount`, counted from the products themselves, so an operator can see before attempting it whether an archive will be refused. This is the Admin authority for which categories exist; `publicCategory_list` answers the different question of which ones a customer may browse.
+ * @summary List every category, in every state
+ */
+export const adminCategoryList = (
+  options?: SecondParameter<typeof apiRequest<AdminCategoryList200>>,
+) => {
+  return apiRequest<AdminCategoryList200>({ url: `/api/admin/categories`, method: 'GET' }, options);
+};
+
+/**
+ * Creates a category in `DRAFT`. The client never chooses the initial state and there is no create-and-publish shortcut: publication is a separate guarded decision, because it is the moment a public URL comes into existence. The slug must be a valid slug and globally unique across every lifecycle state — an archived category still owns its address. Nothing is inferred: the slug is not derived from the name, no product is seeded, and no other category is renumbered.
+ * @summary Create a draft category
+ */
+export const adminCategoryCreate = (
+  createCategoryBody: CreateCategoryBody,
+  options?: SecondParameter<typeof apiRequest<AdminCategoryCreate201>>,
+) => {
+  return apiRequest<AdminCategoryCreate201>(
+    {
+      url: `/api/admin/categories`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createCategoryBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Changes `name`, `isIndexable`, `displayOrder` and — while the category is still DRAFT — `slug`. Every one of them is data: a rename or a re-order is visible on the next public read, with no deployment.
+ *
+ * `slug` is refused as `CATEGORY_SLUG_IMMUTABLE` once the category is PUBLISHED or ARCHIVED. A published slug is a public URL key the storefront filters on and the sitemap advertises, and this contract delivers no redirect and no alias — so renaming a live address would silently break every link to it. Renaming the `name` is always allowed and never touches the slug.
+ *
+ * An ARCHIVED category is read-only. This operation never changes `status` or `archivedAt`: lifecycle moves only through the transitions collection. Requires `expectedUpdatedAt`, the `updatedAt` token last read for this category. A stale value is refused as `CATEGORY_VERSION_CONFLICT` rather than overwriting a concurrent change, and a successful write advances the token.
+ * @summary Edit a category
+ */
+export const adminCategoryUpdate = (
+  categoryId: unknown,
+  updateCategoryBody: UpdateCategoryBody,
+  options?: SecondParameter<typeof apiRequest<AdminCategoryUpdate200>>,
+) => {
+  return apiRequest<AdminCategoryUpdate200>(
+    {
+      url: `/api/admin/categories/${categoryId}`,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      data: updateCategoryBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Moves the category through its one-way lifecycle: `PUBLISH` takes a DRAFT to PUBLISHED, `ARCHIVE` takes a PUBLISHED to ARCHIVED. Any other move — re-drafting a published category, relisting or archiving a draft — is refused as `CATEGORY_INVALID_TRANSITION`.
+ *
+ * **PUBLISH** makes the category visible through `publicCategory_list`, assignable to a product, and eligible for the sitemap when `isIndexable` is true — on the next read, with no deployment. It seeds no product and never changes `isIndexable`.
+ *
+ * **ARCHIVE** is refused while one or more PUBLISHED products still sit in the category (`CATEGORY_ARCHIVE_BLOCKED_BY_PUBLISHED_PRODUCTS`): reassign or unpublish them first. Nothing is auto-reassigned, auto-unpublished or moved to a fallback category — there is no fallback category. The dependency is re-counted inside the transaction against a locked row, so a product being published concurrently under the same category either blocks the archive or is itself refused; the committed state is never an archived category with a published product in it. On success `archivedAt` is stamped and the category leaves every public read. It is not a delete: the row, its products and their history all survive. Requires `expectedUpdatedAt`, the `updatedAt` token last read for this category. A stale value is refused as `CATEGORY_VERSION_CONFLICT` rather than overwriting a concurrent change, and a successful write advances the token.
+ * @summary Publish or archive one category
+ */
+export const adminCategoryTransition = (
+  categoryId: unknown,
+  transitionCategoryBody: TransitionCategoryBody,
+  options?: SecondParameter<typeof apiRequest<AdminCategoryTransition200>>,
+) => {
+  return apiRequest<AdminCategoryTransition200>(
+    {
+      url: `/api/admin/categories/${categoryId}/transitions`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: transitionCategoryBody,
+    },
     options,
   );
 };
@@ -2484,6 +2568,16 @@ export const staffSessionCreate = (
 export type AdminAssetListResult = NonNullable<Awaited<ReturnType<typeof adminAssetList>>>;
 export type AdminAssetUploadResult = NonNullable<Awaited<ReturnType<typeof adminAssetUpload>>>;
 export type AdminAssetDetailResult = NonNullable<Awaited<ReturnType<typeof adminAssetDetail>>>;
+export type AdminCategoryListResult = NonNullable<Awaited<ReturnType<typeof adminCategoryList>>>;
+export type AdminCategoryCreateResult = NonNullable<
+  Awaited<ReturnType<typeof adminCategoryCreate>>
+>;
+export type AdminCategoryUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof adminCategoryUpdate>>
+>;
+export type AdminCategoryTransitionResult = NonNullable<
+  Awaited<ReturnType<typeof adminCategoryTransition>>
+>;
 export type AdminCustomRequestListResult = NonNullable<
   Awaited<ReturnType<typeof adminCustomRequestList>>
 >;

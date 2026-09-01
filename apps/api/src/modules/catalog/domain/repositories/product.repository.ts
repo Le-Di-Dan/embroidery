@@ -147,6 +147,22 @@ export interface CategoryRepository {
   /** @requiresTransaction */
   changeStatus(id: CategoryId, status: ProductState): Promise<Category>;
   findBySlug(slug: string): Promise<Category | undefined>;
+  /**
+   * The same lookup, with the row locked `FOR SHARE` for the rest of the
+   * transaction (`APP12-C02`).
+   *
+   * Share mode, because a Product write only needs the category to *stay as it
+   * is* until commit — an exclusive lock would serialise every draft creation in
+   * a category against every other. What it does exclude is the one writer that
+   * takes the row `FOR UPDATE`: `AdminCategoryRepository.lockById`, behind the
+   * archive transition. That is what makes "a Product was filed under a category
+   * that was being archived" impossible rather than merely unlikely, and it is
+   * the same seam `DrizzleProductPublicationRepository.lockSnapshot` already
+   * uses on the publish path.
+   *
+   * @requiresTransaction
+   */
+  lockBySlug(slug: string): Promise<Category | undefined>;
   findById(id: CategoryId): Promise<Category | undefined>;
 }
 

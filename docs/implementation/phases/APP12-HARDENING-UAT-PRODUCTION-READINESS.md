@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-C02
+NEXT                   = APP12-C03
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -217,9 +217,9 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 5 | `APP12-DB01` | Order origin, Ready-Made lifecycle, FULL obligation, ORDER_ACCESS, reservation expiry | `COMPLETE` |
 | 6 | `APP12-C01` | Dynamic public category contract and inventory read | `COMPLETE_AFTER_C1` |
 | 6·C1 | `APP12-C01-C1` | Database category source-of-truth correction | `COMPLETE` |
-| 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | **`NEXT`** |
+| 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | `COMPLETE` |
 | 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | `NOT_STARTED` |
-| 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | `NOT_STARTED` |
+| 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | **`NEXT`** |
 | 10 | `APP12-G03` | Representative UAT dataset | `NOT_STARTED` |
 | 11 | `APP12-B01` | Public purchasable SKU projection | `NOT_STARTED` |
 | 12 | `APP12-B02` | Ready-Made order creation and reservation | `NOT_STARTED` |

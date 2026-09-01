@@ -213,6 +213,81 @@ export interface AdminCatalogSubjectResponse {
   variantSizeLabel?: string;
 }
 
+/**
+ * The lifecycle state. A category is publicly browsable in PUBLISHED and in no other state. This is a closed rule vocabulary, not a taxonomy.
+ */
+export type AdminCategoryListItemResponseStatus =
+  (typeof AdminCategoryListItemResponseStatus)[keyof typeof AdminCategoryListItemResponseStatus];
+
+export const AdminCategoryListItemResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export interface AdminCategoryListItemResponse {
+  /** When the category was archived. Absent unless the category is ARCHIVED. */
+  archivedAt?: string;
+  /** The operator's editorial position, and the primary sort key of both this list and the public inventory. Sparse: moving one category renumbers no other. */
+  displayOrder: number;
+  /** The stable Admin key, and the path parameter of every category mutation. Never published on a public contract: an anonymous caller addresses a category by `slug`. */
+  id: string;
+  /** Whether this category may be indexed by a search engine. Independent of publication: a PUBLISHED category with `false` is fully browsable and simply never advertised in a sitemap. */
+  isIndexable: boolean;
+  /** Canonical Vietnamese label. */
+  name: string;
+  /** How many PUBLISHED products currently sit in this category. Counted from the products themselves on every read — there is no counter column — so it is always current as of this response. It is a display aid: archiving re-counts the dependency inside its own transaction and may still refuse, whatever number this response carried. */
+  publishedProductCount: number;
+  /**
+   * The public key. Editable only while the category is DRAFT — publication freezes the address, because this contract delivers no redirect and no alias.
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  slug: string;
+  /** The lifecycle state. A category is publicly browsable in PUBLISHED and in no other state. This is a closed rule vocabulary, not a taxonomy. */
+  status: AdminCategoryListItemResponseStatus;
+  /** The concurrency token. Echo it as `expectedUpdatedAt` on the next update or transition; a stale value is refused as `CATEGORY_VERSION_CONFLICT` rather than overwriting a concurrent change. */
+  updatedAt: string;
+}
+
+export interface AdminCategoryListResponse {
+  /** The complete taxonomy in every state, ordered by `displayOrder` then `slug`. Unpaged and unfiltered: a taxonomy too large for one response fails the request rather than truncating, and a screen that wants a subset filters on `status` itself. */
+  items: AdminCategoryListItemResponse[];
+}
+
+/**
+ * The lifecycle state. A category is publicly browsable in PUBLISHED and in no other state. This is a closed rule vocabulary, not a taxonomy.
+ */
+export type AdminCategoryResponseStatus =
+  (typeof AdminCategoryResponseStatus)[keyof typeof AdminCategoryResponseStatus];
+
+export const AdminCategoryResponseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export interface AdminCategoryResponse {
+  /** When the category was archived. Absent unless the category is ARCHIVED. */
+  archivedAt?: string;
+  /** The operator's editorial position, and the primary sort key of both this list and the public inventory. Sparse: moving one category renumbers no other. */
+  displayOrder: number;
+  /** The stable Admin key, and the path parameter of every category mutation. Never published on a public contract: an anonymous caller addresses a category by `slug`. */
+  id: string;
+  /** Whether this category may be indexed by a search engine. Independent of publication: a PUBLISHED category with `false` is fully browsable and simply never advertised in a sitemap. */
+  isIndexable: boolean;
+  /** Canonical Vietnamese label. */
+  name: string;
+  /**
+   * The public key. Editable only while the category is DRAFT — publication freezes the address, because this contract delivers no redirect and no alias.
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  slug: string;
+  /** The lifecycle state. A category is publicly browsable in PUBLISHED and in no other state. This is a closed rule vocabulary, not a taxonomy. */
+  status: AdminCategoryResponseStatus;
+  /** The concurrency token. Echo it as `expectedUpdatedAt` on the next update or transition; a stale value is refused as `CATEGORY_VERSION_CONFLICT` rather than overwriting a concurrent change. */
+  updatedAt: string;
+}
+
 export type AdminCustomRequestDetailResponseStatus =
   (typeof AdminCustomRequestDetailResponseStatus)[keyof typeof AdminCustomRequestDetailResponseStatus];
 
@@ -2899,6 +2974,26 @@ export interface CreateBlankDesignSessionBody {
   sideCode: string;
 }
 
+export interface CreateCategoryBody {
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  displayOrder: number;
+  isIndexable: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  slug: string;
+}
+
 /**
  * Opens one anonymous Design Session on an exact public placement, either empty or cloned from a published Template.
  */
@@ -5573,6 +5668,20 @@ export interface TransitionAdminOrderBody {
   to: TransitionAdminOrderBodyTo;
 }
 
+export type TransitionCategoryBodyAction =
+  (typeof TransitionCategoryBodyAction)[keyof typeof TransitionCategoryBodyAction];
+
+export const TransitionCategoryBodyAction = {
+  PUBLISH: 'PUBLISH',
+  ARCHIVE: 'ARCHIVE',
+} as const;
+
+export interface TransitionCategoryBody {
+  action: TransitionCategoryBodyAction;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
+  expectedUpdatedAt: string;
+}
+
 export type TransitionCustomRequestBodyModerationNoteKind =
   (typeof TransitionCustomRequestBodyModerationNoteKind)[keyof typeof TransitionCustomRequestBodyModerationNoteKind];
 
@@ -5648,6 +5757,28 @@ export interface UnpublishGalleryEntryBody {
 export interface UnpublishProductBody {
   /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
   expectedUpdatedAt: string;
+}
+
+export interface UpdateCategoryBody {
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  displayOrder?: number;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$ */
+  expectedUpdatedAt: string;
+  isIndexable?: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name?: string;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  slug?: string;
 }
 
 /**
@@ -5858,6 +5989,22 @@ export const AdminAssetDetailScope = {
 
 export type AdminAssetDetail200 = ApiSuccessResponse & {
   data: AdminAssetDetailResponse;
+};
+
+export type AdminCategoryList200 = ApiSuccessResponse & {
+  data: AdminCategoryListResponse;
+};
+
+export type AdminCategoryCreate201 = ApiSuccessResponse & {
+  data: AdminCategoryResponse;
+};
+
+export type AdminCategoryUpdate200 = ApiSuccessResponse & {
+  data: AdminCategoryResponse;
+};
+
+export type AdminCategoryTransition200 = ApiSuccessResponse & {
+  data: AdminCategoryResponse;
 };
 
 export type AdminCustomRequestListParams = {

@@ -67,7 +67,7 @@ export class ProductDraftQuery {
     const categoryId =
       input.categorySlug === undefined
         ? undefined
-        : (await this.categories.requireBySlug(input.categorySlug)).id;
+        : (await this.categories.requireAnyBySlug(input.categorySlug)).id;
 
     const rows = await this.products.list({
       filter: { status: input.status, categoryId },
