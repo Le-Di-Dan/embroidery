@@ -109,3 +109,68 @@
 4. New quotation or schedule adjustment may be required.
 5. Customer must approve again.
 6. Existing deposit handling follows business policy configured for the case.
+
+---
+
+Journeys J11–J14 are added by `APP12-P01` for Wave 1 Ready-Made direct commerce
+and the dynamic category model (`D-043`, `D-044`). J1–J10 above describe custom
+embroidery and are unchanged.
+
+## Journey J11 — Ready-Made purchase (happy path)
+
+1. Admin publishes a Product with a Variant, a SKU, a resolved price and stock.
+2. Customer discovers the Product through Discover or search.
+3. Customer opens Product Detail and sees the live purchase state.
+4. Customer chooses a SKU and a quantity.
+5. Customer opens single-product direct checkout at `/mua-hang/[slug]`.
+6. Customer verifies contact identity (shared APP4 primitive; no account).
+7. Customer supplies the delivery details the order-scoped shipping model needs.
+8. Customer sees the merchandise subtotal, shipping fee pending confirmation and
+   no final payable total yet, then confirms.
+9. System creates the order at `AWAITING_SHIPPING_FEE` and reserves stock.
+10. Admin reviews the delivery facts and sets the exact shipping fee.
+11. System freezes the totals, creates the `FULL` obligation and moves the order
+    to `AWAITING_PAYMENT`.
+12. Customer sees the exact payable total and the dynamic QR on the secure order
+    surface, and pays by bank transfer.
+13. Customer may submit transfer evidence where supported.
+14. Admin verifies the `FULL` payment; the order moves to `READY_FOR_DELIVERY`.
+15. Admin dispatches; the order becomes `DELIVERED`.
+16. Admin completes the order.
+17. Customer observes every state above through `ORDER_ACCESS` at
+    `/truy-cap/don-hang`.
+
+## Journey J12 — Ready-Made abandonment and expiry
+
+1. Customer completes checkout and the order is created.
+2. System reserves stock with a 24-hour expiry.
+3. Either the shipping fee is not confirmed within 24 hours of order creation,
+   or the fee is confirmed but payment is not completed within 24 hours of that
+   confirmation.
+4. The reservation expires and stock returns to availability.
+5. The order becomes `CANCELLED` with an expiry reason and any live `FULL`
+   obligation is cancelled.
+6. Payment becomes impossible; later `FULL` verification is refused.
+7. `ORDER_ACCESS` shows the terminal expired/cancelled state truthfully.
+
+## Journey J13 — Dynamic category publication
+
+1. Admin creates a category as `DRAFT` with a name and an ASCII slug.
+2. Admin may still correct the slug while the category is pre-publication.
+3. Admin publishes the category; from this point the slug is immutable.
+4. Admin assigns the category to a Product and publishes the Product.
+5. The category appears in Discover dynamically, sourced from the runtime
+   category inventory rather than a compiled-in list.
+6. The Product breadcrumb links to it and the continuation call to action points
+   at `/kham-pha?category=<slug>`.
+7. The sitemap includes the category URL only when the category is indexable.
+
+## Journey J14 — Category archive refusal
+
+1. Admin attempts to archive a category.
+2. The category still has `PUBLISHED` dependent Products.
+3. The system refuses the archive.
+4. Admin reassigns those Products to another category or unpublishes them.
+5. Admin retries the archive and it succeeds.
+6. The archived category disappears from Discover, canonical states and the
+   sitemap.

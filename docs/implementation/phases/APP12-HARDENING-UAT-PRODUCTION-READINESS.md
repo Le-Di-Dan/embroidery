@@ -3,13 +3,22 @@
 ## 0. Roadmap status
 
 ```text
-ROADMAP_STATUS         = PROPOSED_FOR_PO_LOCK
-ROADMAP_LOCK           = PENDING_PO_REVIEW
-IMPLEMENTATION_STARTED = false
+ROADMAP_STATUS         = LOCKED
+ROADMAP_LOCK           = LOCKED
+IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-PROPOSED_NEXT          = APP12-P01
+NEXT                   = APP12-G01
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
+LOCKED_AT              = APP12-P01 entry, 2026-09-01, Product Owner authority
 ```
+
+The 38 checkpoints of the accepted C1 roadmap are **immutable**. After this
+lock no APP12 checkpoint ID may be invented, and the 38 may not be reordered,
+merged, split or renamed without explicit Product Owner re-planning authority.
+Work discovered later is handled only by (1) a correction of the current
+checkpoint or (2) a later checkpoint already present in the locked roadmap.
+Correction policy is unchanged: **maximum one correction per checkpoint, no
+`C2`**.
 
 ### 0.0 Category taxonomy — dynamic (Product Owner, C1)
 
@@ -26,9 +35,24 @@ format-validated (`^[a-z0-9-]+$`), and remains **immutable once published**.
 
 This supersedes the taxonomy clauses of `IMP-D032` ("closed, provisioned root
 set"; "no category HTTP operation is added") and `IMP-D038` ("exactly
-`thu-bong`, `khan`, `quan-ao`, `khac`"), recorded by `APP12-P01`. Their other
-clauses — slug immutability, `categorySlug` on the wire, the physical UUID never
-exposed, `/kham-pha`, the `?category=` key — are retained.
+`thu-bong`, `khan`, `quan-ao`, `khac`"), recorded by `APP12-P01` as `IMP-D059`
+and `D-044`. Their other clauses — slug immutability, `categorySlug` on the
+wire, the physical UUID never exposed, `/kham-pha`, the `?category=` key — are
+retained.
+
+**Operator management is mandatory (Product Owner, 2026-09-01).**
+
+```text
+APP12-C02 = MANDATORY
+APP12-A01 = MANDATORY
+```
+
+`CATEGORY_MODEL = DYNAMIC` means an operator can grow the production taxonomy
+without editing source, editing a migration, mutating the database directly or
+deploying the application. A dynamic contract backed only by
+migration-provisioned rows does not satisfy that requirement, so the C1 §E
+scope option to defer `C02`/`A01` is **withdrawn**; no later checkpoint may drop
+either. This is minimum flat taxonomy management, not a taxonomy platform.
 
 ### 0.1 Release strategy — Product Owner authority (2026-09-01)
 
@@ -85,7 +109,7 @@ released, the order is cancelled and later payment verification is refused.
 ### 0.5 Roadmap authority
 
 - [`APP12-PRE-IMPLEMENTATION-AUDIT-C1-COMPLETION-REPORT.md`](../reports/APP12-PRE-IMPLEMENTATION-AUDIT-C1-COMPLETION-REPORT.md)
-  — **current** proposed roadmap (§Q, 38 checkpoints), dynamic category
+  — the **accepted and now locked** roadmap (§Q, 38 checkpoints), dynamic category
   architecture (§C–§E), shipping-fee authority (§F), corrected lifecycle (§G),
   reservation expiry (§H), route model (§I), checkpoint splits (§J–§O),
   follow-up ownership (§P).
@@ -102,7 +126,7 @@ NEW_PO_DECISION_REQUIRED    = NONE
 PO_INPUT_REQUIRED_BEFORE_R01 = canonical store address, opening hours, phone, e-mail
 ```
 
-### 0.6 Proposed structure (C1)
+### 0.6 Locked structure (C1, accepted 2026-09-01)
 
 ```text
 Wave 0   P01 · G01 · G02 · G03 · D01 · DB01
@@ -124,9 +148,94 @@ readiness · `Cxx` contract/category authority · `DBxx` database change control
 runtime visual/content UAT · `Uxx` business UAT · `Exx` cross-boundary
 regression · `Rxx` release gate · `Xxx` closure.
 
-**No APP12 checkpoint is executable until the Product Owner accepts this
-roadmap.** `PROPOSED_NEXT` is not `NEXT`. Actual production deployment remains a
-separately authorized operational action after either release gate.
+### 0.7 Ready-Made commerce authority (`APP12-P01`)
+
+Product and domain authority for Ready-Made direct commerce and the dynamic
+category model is locked by `APP12-P01` in the canonical product documents —
+`docs/01-PRODUCT-REQUIREMENTS.md` §14, `docs/03-USER-JOURNEYS.md` J11–J14,
+`docs/04-BUSINESS-RULES.md` `BR-021`..`BR-038`,
+`docs/06-ORDER-AND-DESIGN-LIFECYCLE.md` §12, `docs/07-ADMIN-OPERATIONS.md` §13,
+`docs/12-DECISION-LOG.md` `D-043`/`D-044` and the implementation register
+`IMP-D058`/`IMP-D059`. Summary of the locked values every later checkpoint
+inherits and may not re-decide:
+
+```text
+BUYABLE_SUBJECT   = SKU              (Product → Product Variant → SKU)
+UNIT_PRICE        = COALESCE(skus.price_override_amount,
+                              products.base_price_amount)   currency VND
+CHECKOUT_MODEL    = SINGLE_PRODUCT_DIRECT_CHECKOUT   (no cart, no account)
+ROUTES            = /san-pham/[slug] · /mua-hang/[slug] · /truy-cap/don-hang
+IDENTITY          = APP4 contact verification reused as a shared primitive
+SHIPPING_FEE      = MANUAL_ADMIN_SHIPPING_FEE_BEFORE_PAYMENT
+PAYMENT_KIND      = FULL             (one obligation, manual transfer + QR)
+PRODUCTION        = SKIPPED          (no production job for READY_MADE)
+ORDER_ORIGIN      = CUSTOM | READY_MADE   (exactly one branch)
+SECURE_SURFACE    = ORDER_ACCESS     (order-scoped secure-access authority)
+RESERVATION       = created at durable order creation
+                    READY_MADE_INITIAL_RESERVATION_WINDOW = 24 hours
+                    READY_MADE_PAYMENT_RESERVATION_WINDOW = 24 hours
+                    CUSTOM reservations stay no-expiry (PO-APP8-002)
+```
+
+`APP12-P01` is documentation authority only: it changed no runtime source, no
+migration, no OpenAPI, no generated client, no Figma, no category data.
+
+### 0.8 Canonical checkpoint status
+
+Exactly one checkpoint may be `NEXT`. Statuses come from
+[`../11-TRACEABILITY-AND-STATUS-MATRIX.md`](../11-TRACEABILITY-AND-STATUS-MATRIX.md) §3.
+
+| # | ID | Name | Status |
+|---|---|---|---|
+| 1 | `APP12-P01` | Ready-Made and dynamic-category product/documentation authority | `COMPLETE` |
+| 2 | `APP12-G01` | Wave scope, release-exposure policy and governance reconciliation | **`NEXT`** |
+| 3 | `APP12-G02` | Wave-2 release isolation gate | `NOT_STARTED` |
+| 4 | `APP12-D01` | Ready-Made commerce design package | `NOT_STARTED` |
+| 5 | `APP12-DB01` | Order origin, Ready-Made lifecycle, FULL obligation, ORDER_ACCESS, reservation expiry | `NOT_STARTED` |
+| 6 | `APP12-C01` | Dynamic public category contract and inventory read | `NOT_STARTED` |
+| 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | `NOT_STARTED` |
+| 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | `NOT_STARTED` |
+| 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | `NOT_STARTED` |
+| 10 | `APP12-G03` | Representative UAT dataset | `NOT_STARTED` |
+| 11 | `APP12-B01` | Public purchasable SKU projection | `NOT_STARTED` |
+| 12 | `APP12-B02` | Ready-Made order creation and reservation | `NOT_STARTED` |
+| 13 | `APP12-B03` | Admin shipping fee, total freeze, FULL obligation lifecycle | `NOT_STARTED` |
+| 14 | `APP12-B04` | ORDER_ACCESS read and FULL payment composition | `NOT_STARTED` |
+| 15 | `APP12-B05` | Admin FULL verification and origin-aware fulfilment | `NOT_STARTED` |
+| 16 | `APP12-S01` | Product Detail purchase state | `NOT_STARTED` |
+| 17 | `APP12-S02` | Ready-Made checkout `/mua-hang/[slug]` | `NOT_STARTED` |
+| 18 | `APP12-S03` | Secure order surface `/truy-cap/don-hang` | `NOT_STARTED` |
+| 19 | `APP12-A02` | Admin Ready-Made order branch UI | `NOT_STARTED` |
+| 20 | `APP12-H01` | Authorization and security audit (Wave 1) | `NOT_STARTED` |
+| 21 | `APP12-H02` | Production deployment and configuration readiness | `NOT_STARTED` |
+| 22 | `APP12-H03` | Observability and alerting (build) | `NOT_STARTED` |
+| 23 | `APP12-H04` | Resilience and failure rehearsal (Wave 1) | `NOT_STARTED` |
+| 24 | `APP12-H05` | Performance and CWV measurement (Wave 1) | `NOT_STARTED` |
+| 25 | `APP12-H06` | SEO and public readiness (Wave 1) | `NOT_STARTED` |
+| 26 | `APP12-H07` | Operational runbooks (Wave 1) | `NOT_STARTED` |
+| 27 | `APP12-H08` | Accessibility and compatibility (Wave 1) | `NOT_STARTED` |
+| 28 | `APP12-V01` | Runtime Visual & Content UAT — audit | `NOT_STARTED` |
+| 29 | `APP12-V02` | Runtime Visual & Content corrections and live re-verification | `NOT_STARTED` |
+| 30 | `APP12-U01` | Wave 1 Ready-Made business UAT | `NOT_STARTED` |
+| 31 | `APP12-E01` | Wave 1 commerce regression, positive and negative | `NOT_STARTED` |
+| 32 | `APP12-R01` | **WAVE 1 RELEASE GATE** — Ready-Made GO / NO-GO | `NOT_STARTED` |
+| 33 | `APP12-W01` | Custom lifecycle UAT excluding Editor deep interaction | `NOT_STARTED` |
+| 34 | `APP12-W02` | Editor functional deep UAT | `NOT_STARTED` |
+| 35 | `APP12-W03` | Editor runtime visual / UI-UX / accessibility / mobile / resilience | `NOT_STARTED` |
+| 36 | `APP12-W04` | Full Custom Embroidery cross-boundary regression | `NOT_STARTED` |
+| 37 | `APP12-R02` | **WAVE 2 RELEASE GATE** — Custom Embroidery GO / NO-GO | `NOT_STARTED` |
+| 38 | `APP12-X01` | Final APP12 closure | `NOT_STARTED` |
+
+Deliverable detail, dependencies and per-checkpoint API/migration/route deltas
+remain in the C1 report §Q; this table is the status record only.
+
+```text
+WAVE_1_GO = NOT_DECLARED
+WAVE_2_GO = NOT_DECLARED
+```
+
+Actual production deployment remains a separately authorized operational action
+after either release gate.
 
 Sections 1–9 below remain the locked phase authority, amended only by §0.2 and
 §0.3; §6 stays as the pre-audit candidate record.

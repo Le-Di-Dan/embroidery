@@ -49,6 +49,34 @@ Admin can:
 - Manage display order.
 - Manage SEO metadata.
 
+### 3.1. Category management
+
+Added by `APP12-P01` (`D-044`, `IMP-D059`). Managing the production taxonomy is
+a mandatory operator capability: an operator must be able to grow it without
+editing source, editing a migration, mutating the database directly or deploying
+the application.
+
+Admin can:
+
+- List categories with their lifecycle state.
+- Create a category as `DRAFT` with a name and an ASCII slug (`^[a-z0-9-]+$`).
+- Update draft and public-safe fields, including the name at any time and the
+  slug only while the category is still pre-publication.
+- Publish a category (`DRAFT → PUBLISHED`), after which the slug is immutable.
+- Archive a category (`PUBLISHED → ARCHIVED`).
+
+Deliberately out of scope: hard delete, nesting, merge, bulk taxonomy
+operations, category-specific media and any generic taxonomy platform.
+
+Refusals the operator must be able to understand:
+
+- Archiving a category that still has `PUBLISHED` dependent Products is
+  refused; the operator reassigns or unpublishes those Products first.
+- Changing the slug of a published category is refused.
+
+Exact HTTP operation allocation is owned by the APP12 category backend and
+Admin UI checkpoints, not by this document.
+
 ## 4. Gallery operations
 
 Admin can:
@@ -118,6 +146,11 @@ Admin can:
 - Record refund metadata.
 - View raw provider reference safely.
 
+For `READY_MADE` orders the payment panel is a single `FULL` obligation: Admin
+views the current obligation and its exact total, reviews optional transfer
+evidence, and verifies the payment, which moves the order to
+`READY_FOR_DELIVERY`. Deposit and remaining-payment controls are not shown.
+
 ## 9. Production operations
 
 Admin can:
@@ -151,6 +184,11 @@ Admin can:
 - Mark delivered.
 - No external tracking API is required.
 
+For `READY_MADE` orders the shipping fee is entered **before** the customer can
+pay. Setting it freezes the totals and creates the `FULL` obligation; correcting
+it while that obligation is `PENDING` supersedes it and creates a successor;
+after the obligation is `SATISFIED` an ordinary fee edit is refused.
+
 ## 12. Auditability
 
 Sensitive actions must be logged:
@@ -166,3 +204,25 @@ Sensitive actions must be logged:
 - Cancellation.
 - Refund.
 - Security configuration changes.
+
+## 13. Ready-Made order operations
+
+Added by `APP12-P01` (`D-043`, `IMP-D058`). Ready-Made orders live in the
+**existing** Admin Order application. No second order application is created.
+
+Admin can:
+
+- Identify the order origin (`READY_MADE` or `CUSTOM`) in the order list and on
+  the order detail, and filter by it.
+- Review the customer and delivery facts of a Ready-Made order.
+- Set and correct the shipping fee before payment (§11).
+- Review the `FULL` payment and its evidence, and verify it (§8).
+- Dispatch and complete the order through the existing fulfilment authority.
+- Cancel or refund through the existing cancellation and refund authority where
+  it applies.
+
+A Ready-Made order detail must not render custom-only panels: quotation, design
+version, approval snapshot, production job or the remaining-payment workflow.
+
+Conceptual capability names only — exact HTTP operations are allocated by the
+APP12 backend and Admin UI checkpoints.

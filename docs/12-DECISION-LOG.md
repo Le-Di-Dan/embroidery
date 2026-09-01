@@ -364,6 +364,109 @@ extension-dependent exclusion constraint and Vietnamese search escalation
 **Status:** Locked (access-path and index architecture); physical
 implementation at DB6.
 
+## D-043 — Ready-Made direct commerce as the Wave-1 business branch
+
+**Decision:** `APP12-P01` locks Ready-Made / base-product direct commerce as the
+Wave-1 release branch, closing an already-present Charter-level gap: Charter §3
+states *"Cửa hàng vừa bán sản phẩm nền vừa nhận thêu trên sản phẩm do khách cung
+cấp"*, so the intent to sell base products was always approved, but the direct
+commerce requirements and lifecycle were under-specified and no direct-sale
+runtime existed before APP12. This is not a new business pivot. Locked values:
+**(1) Waves —** `WAVE 1 = READY_MADE / BASE_PRODUCT DIRECT COMMERCE`,
+`WAVE 2 = ALL CUSTOM EMBROIDERY` (customer-owned-product embroidery, catalog
+personalisation, Design Studio/Editor, custom request intake, manual quotation,
+design review and approval, deposit and remaining payment, custom production and
+fulfilment). Ready-Made must never depend on a custom request, quotation, design
+version, approval snapshot, the Editor or a production job; shared
+infrastructure is reused only where its semantics stay generic and truthful.
+**(2) Buyable subject —** `BUYABLE_SUBJECT = SKU` over the existing
+`Product → Product Variant → SKU` hierarchy: one SKU × quantity, no second
+sellable product model, no cart, no bundle. **(3) Price —** server-authoritative
+`COALESCE(skus.price_override_amount, products.base_price_amount)` in `VND`, with
+`merchandise_subtotal = unit_price × quantity`; the client is never authoritative
+for price, subtotal, shipping fee or payable total; order lines freeze product
+name, variant label, size label, SKU identity, unit price, quantity, line total
+and currency at creation. **(4) Sellability —** a public Product is not a
+currently buyable SKU; stock truth is `sku_stocks` minus active reservations and
+never `products.is_display_out_of_stock`, which stays presentation authority
+only. **(5) Checkout —** `CHECKOUT_MODEL = SINGLE_PRODUCT_DIRECT_CHECKOUT` at the
+new route `/mua-hang/[slug]`, with `/san-pham/[slug]` gaining the purchase state
+and `/truy-cap/don-hang` as the single secure order/payment/status surface; no
+cart route, no customer account, no generic checkout shell, no separate
+confirmation route. **(6) Identity —** APP4 contact verification is reused as a
+shared primitive; a Ready-Made order can never be created for an unverified
+identity, and the customer is never routed through `/yeu-cau/moi`. **(7) Shipping
+fee —** `MANUAL_ADMIN_SHIPPING_FEE_BEFORE_PAYMENT`; checkout never displays a
+fabricated shipping-inclusive total; no carrier integration and no delivery-time
+guarantee. **(8) Payment —** `READY_MADE_PAYMENT_KIND = FULL`: one obligation,
+one exact total, manual bank transfer with dynamic QR, optional transfer
+evidence, Admin verification; never `DEPOSIT`/`REMAINING`/40-60; a fee change
+while `FULL` is `PENDING` supersedes the obligation and creates a successor;
+after `SATISFIED` an ordinary fee edit is refused. **(9) Lifecycle —**
+`AWAITING_SHIPPING_FEE → AWAITING_PAYMENT → READY_FOR_DELIVERY → DELIVERED →
+COMPLETED` plus `ON_HOLD`/`CANCELLING`/`CANCELLED`; no `PAID` order state and no
+production job. **(10) Order origin —** exactly one of `CUSTOM` or `READY_MADE`,
+with no placeholder custom records and no weakening of custom invariants.
+**(11) Reservation —** created at durable order creation only, with
+`READY_MADE_INITIAL_RESERVATION_WINDOW = 24 hours` and
+`READY_MADE_PAYMENT_RESERVATION_WINDOW = 24 hours`; on expiry the reservation is
+released, the order is cancelled with an expiry reason, any live `FULL`
+obligation is cancelled and later verification is refused. **(12) `ORDER_ACCESS`
+—** an order-scoped secure-access authority exposing only customer-safe facts,
+with no account, no raw internal ids and no cross-order access. **(13) Admin —**
+the existing Order application gains origin visibility and the Ready-Made
+controls; custom-only panels are not rendered; no second Admin order
+application. Product authority is `01-PRODUCT-REQUIREMENTS.md` §14,
+`03-USER-JOURNEYS.md` J11–J12, `04-BUSINESS-RULES.md` `BR-021`..`BR-032` and
+`BR-038`, `06-ORDER-AND-DESIGN-LIFECYCLE.md` §12, `07-ADMIN-OPERATIONS.md` §8,
+§11 and §13.
+**Relationships:** implementation counterpart `IMP-D058`; scopes `PO-APP8-002`
+to custom reservations without rewriting it; supersedes no earlier decision.
+**Status:** Locked (product authority). Runtime, persistence, contract and
+design ownership belongs to later APP12 checkpoints.
+
+## D-044 — Dynamic product category model
+
+**Decision:** `APP12-P01` locks `CATEGORY_MODEL = DYNAMIC`. The APP2 set
+`thu-bong`, `khan`, `quan-ao`, `khac` is recorded as the **initial / alpha
+taxonomy**, not a permanent ceiling, and `ao-thun` is a valid category that is
+not remapped to satisfy the old enum. Locked values: **(1) Operator management
+is mandatory** — an operator must be able to grow the production taxonomy
+without editing source, editing a migration, mutating the database directly or
+deploying; a dynamic contract backed only by migration-provisioned rows does not
+satisfy the requirement, so Admin category authority and its UI are mandatory
+scope. **(2) Minimum lifecycle** — `DRAFT → PUBLISHED → ARCHIVED` with list,
+create, update, publish and archive; no hard delete, no nesting, no merge, no
+bulk taxonomy operation, no category media, no generic taxonomy platform; the
+model stays flat. **(3) Slug** — `CATEGORY_SLUG_RULE = ^[a-z0-9-]+$`, stable,
+unique, ASCII and URL-safe; editable while pre-publication; **immutable after
+first publication**, with the name free to change independently; category
+re-slug, redirect and canonical lifecycle are out of scope. **(4) Archive
+guard** — archiving a category that still has `PUBLISHED` dependent Products is
+refused, keeping public Product truth deterministic. **(5) Public inventory** —
+runtime authority, not a compiled-in list; published categories may filter
+Discover, and only published **and** indexable categories additionally enter
+sitemap and canonical/indexing authority; `DRAFT` and `ARCHIVED` are never
+public; labels come from the persisted category name and are never hard-coded in
+the production Storefront or Admin option model. **(6) Consumption** — the
+inventory drives Discover filtering and navigation, the Product breadcrumb
+category link, the continuation call to action `/kham-pha?category=<slug>`, the
+category canonical state and dynamic sitemap category URLs, with the documented
+fallback to `Khám phá → <product>` and `/kham-pha` when the category is missing
+or non-public; the sitemap stops hard-coding four slugs and the existing 50,000
+total-URL guard is unchanged. Product authority is `04-BUSINESS-RULES.md`
+`BR-033`..`BR-037`, `03-USER-JOURNEYS.md` J13–J14 and `07-ADMIN-OPERATIONS.md`
+§3.1.
+**Relationships:** implementation counterpart `IMP-D059`. **Supersedes in part**
+the taxonomy clauses of `IMP-D032` (closed provisioned root set; "no category
+HTTP operation is added"; taxonomy as a closed OpenAPI enum) and `IMP-D038`
+(category state over exactly four slugs). Retained from both: flat model,
+`categorySlug` on the wire, the physical category UUID never exposed publicly,
+safe invalid-category behaviour, `/kham-pha`, the `?category=` query key and
+published slug stability. Historical APP2 records are not rewritten.
+**Status:** Locked (product authority). Contract, Admin and Storefront delivery
+belong to later APP12 checkpoints.
+
 # Open Decisions
 
 The following are intentionally unresolved:
