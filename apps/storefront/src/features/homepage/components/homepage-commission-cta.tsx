@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { isCustomerRouteWithheld } from '../../release-isolation';
 import { HOMEPAGE_COPY } from '../model/homepage-copy';
 import { HOMEPAGE_COMMISSION_ROUTE } from '../model/homepage-routes';
 
@@ -16,8 +17,32 @@ import { HOMEPAGE_COMMISSION_ROUTE } from '../model/homepage-routes';
  *
  * The button is a real `<a>` to the **existing** `/yeu-cau/moi` flow (`APP5-S01`)
  * via the shell's constant. No `/cart`, no `/checkout`, no second intake form.
+ *
+ * ## The whole section stands down while Wave 2 is withheld (`APP12-G02-C1`)
+ *
+ * This section is the ask. Its heading names it, its three steps exist to make
+ * the ask safe to accept, and its button is the only thing it asks the visitor
+ * to do — so when `/yeu-cau/moi` is a deliberate `404`, dropping the anchor and
+ * keeping the rest would leave a section that explains how to commission an
+ * embroidery and then offers no way to. That is not the smaller change; it is
+ * the same dead end with the exit removed. The section is therefore omitted
+ * whole, which is `APP12-G02-C1` §7's `A` — *omit the action* — applied at the
+ * boundary the action actually has.
+ *
+ * Nothing is invented in its place. There is no `Sắp ra mắt`, no banner and no
+ * substitute card: `APP12-RELEASE-WAVE-AUTHORITY.md` §7 forbids designing a
+ * disabled state for a capability that is not released, and a Homepage that
+ * announces the roadmap publishes it. From outside, Wave 2 is simply not there.
+ *
+ * Not a redesign, and not a deletion: the copy, the steps and the href are
+ * unchanged in source, the remaining five sections keep their locked order, and
+ * releasing the capability restores this section exactly as delivered.
  */
 export function HomepageCommissionCta() {
+  if (isCustomerRouteWithheld(HOMEPAGE_COMMISSION_ROUTE)) {
+    return null;
+  }
+
   return (
     <section className="homepage-commission" aria-labelledby="homepage-commission-heading">
       <h2 className="homepage-section__heading" id="homepage-commission-heading">

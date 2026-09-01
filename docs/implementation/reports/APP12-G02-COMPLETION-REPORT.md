@@ -7,11 +7,54 @@ Branch: `feat/app11-s04-seo-infrastructure`
 
 ---
 
+## A0. Correction notice — superseded in two places (`APP12-G02-C1`, 2026-09-01)
+
+Product Owner review returned `CORRECTION_REQUIRED` on this checkpoint. The core
+implementation below was accepted in full and is unchanged; two statements in it
+are superseded by [`APP12-G02-C1-COMPLETION-REPORT.md`](./APP12-G02-C1-COMPLETION-REPORT.md).
+The evidence below is left exactly as recorded.
+
+```text
+APP12-G02       = COMPLETE_AFTER_C1
+CORRECTION_USED = 1 / 1   (no C2)
+```
+
+**1 — The surface count in §N and §R was wrong, in both directions.** The prose
+said "seven further surfaces" and the list beneath it named eight. A mechanical
+inventory of the rendered Storefront found neither figure, and found a site
+neither number included — the Homepage **hero**'s second commission action,
+beside the commission *section* this report did name. The measured figures are:
+
+```text
+SOURCE_OCCURRENCES  = 9    Wave-1 source sites emitting an active Wave-2 CTA
+RUNTIME_SURFACES    = 11   released route patterns that rendered one
+ACTIVE_LINKS_BEFORE = 22   rendered anchors, over 14 crawled URLs
+```
+
+The three are different numbers for a reason: the footer store-presentation block
+is **one** source site that renders on **every** route, and the Homepage is one
+route carrying three separate links. Conflating a component count with a page
+count is what produced the miscount here.
+
+**2 — The reason for deferring them did not hold.** §N judged that suppressing
+those surfaces would require new copy and layout that §27 freezes. It did not.
+Every one was corrected by omitting the offer, with zero copy changes, zero SCSS
+lines, no new component and no disabled-state design; `WAVE2_ACTIVE_LINKS_ON_WAVE1_PAGES = 0`
+is now verified in Chromium against the gateway. `FU-APP12-G02-01` is therefore
+**`CLOSED_BY_APP12_G02_C1`**, not routed to `APP12-S01`.
+
+Unaffected by the correction and still current: the release variable and its
+five-case table, `proxy.ts` and the 7-route matrix, the API guard and its 31/12
+operation authority, the `publicSecureLink_resolve` whole-operation denial, the
+staff/Admin and worker audits, and every baseline freeze figure.
+
+---
+
 ## A. Verdict
 
 ```text
-APP12-G02 = COMPLETE
-CORRECTION_USED = 0 / 1
+APP12-G02 = COMPLETE          (superseded: COMPLETE_AFTER_C1 — see §A0)
+CORRECTION_USED = 0 / 1       (superseded: 1 / 1 — see §A0)
 NEXT_CHECKPOINT = APP12-D01
 ```
 
@@ -529,7 +572,11 @@ screen-reader suffix). No copy, no SCSS, no new state, no redesign, and the link
 is restored verbatim when the flag is `true`. Verified live: 2 links + 3
 unavailable items withheld, 3 links released.
 
-**Not done, and reported rather than silently expanded.** `/yeu-cau/moi` is also
+**Not done, and reported rather than silently expanded.**
+**Superseded by `APP12-G02-C1` — see §A0.** The count below is wrong (nine, not
+seven, including the Homepage *hero* this paragraph omits) and the stated reason
+for deferring did not hold: all nine were corrected by omitting the offer, with
+no new copy, no new affordance and no SCSS change. `/yeu-cau/moi` is also
 advertised from seven further surfaces: the Homepage commission section, the
 gallery-entry commission block, the footer store-presentation block, the Service,
 FAQ and Local pages, and the payment and shipping policy pages. None has a
@@ -639,7 +686,7 @@ artifact-comparison spec confirms.
 
 | ID | Finding | Owner | Blocking |
 |---|---|---|---|
-| `FU-APP12-G02-01` | Seven further customer surfaces still advertise `/yeu-cau/moi` while the server withholds it (Homepage commission, gallery-entry commission, footer store-presentation, Service, FAQ, Local, payment policy, shipping policy). Each needs an unavailable-state affordance that does not exist yet. | `APP12-S01` | no |
+| `FU-APP12-G02-01` | ~~Seven~~ **nine** further customer surfaces still advertise `/yeu-cau/moi` while the server withholds it (Homepage **hero**, Homepage commission, gallery-entry commission, footer store-presentation, Service, FAQ, Local, payment policy, shipping policy). ~~Each needs an unavailable-state affordance that does not exist yet.~~ **No such affordance was needed — see §A0.** | ~~`APP12-S01`~~ **`CLOSED_BY_APP12_G02_C1`** | no |
 
 **Carried forward, owners not taken**
 

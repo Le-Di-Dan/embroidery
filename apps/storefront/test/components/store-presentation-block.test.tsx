@@ -13,6 +13,7 @@
 import { renderWithProviders, screen, within } from '@embroidery/frontend-testing';
 
 import { StorePresentationBlock } from '../../src/features/store-presentation';
+import { withCustomEmbroideryRelease } from '../support/release-flag';
 
 describe('composition', () => {
   it('is a named region, not a second footer landmark', () => {
@@ -110,13 +111,30 @@ describe('store facts degrade truthfully', () => {
     expect(text).not.toMatch(/[\w.-]+@[\w.-]+\.\w{2,}/);
   });
 
-  it('still routes the visitor somewhere real', () => {
-    renderWithProviders(<StorePresentationBlock />);
+  /**
+   * `Ghé xưởng` is Wave-1 and unconditional. The contact column's request action
+   * is Wave-2, so `APP12-G02-C1` makes it follow the release: the block renders
+   * on every page, which made it the widest-reaching offer of a route the server
+   * refuses. Both states are asserted, and the reversibility of the second is
+   * what keeps the suppression from becoming a deletion.
+   */
+  it('still routes the visitor somewhere real, in both release states', () => {
+    withCustomEmbroideryRelease(false, () => {
+      renderWithProviders(<StorePresentationBlock />);
+      expect(screen.getByRole('link', { name: 'Ghé xưởng' })).toHaveAttribute('href', '/cua-hang');
+      expect(screen.queryByRole('link', { name: 'Gửi yêu cầu thêu' })).toBeNull();
+    });
 
-    expect(screen.getByRole('link', { name: 'Ghé xưởng' })).toHaveAttribute('href', '/cua-hang');
-    expect(screen.getByRole('link', { name: 'Gửi yêu cầu thêu' })).toHaveAttribute(
-      'href',
-      '/yeu-cau/moi',
-    );
+    withCustomEmbroideryRelease(true, () => {
+      renderWithProviders(<StorePresentationBlock />);
+      expect(screen.getAllByRole('link', { name: 'Ghé xưởng' })[0]).toHaveAttribute(
+        'href',
+        '/cua-hang',
+      );
+      expect(screen.getByRole('link', { name: 'Gửi yêu cầu thêu' })).toHaveAttribute(
+        'href',
+        '/yeu-cau/moi',
+      );
+    });
   });
 });

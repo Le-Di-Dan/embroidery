@@ -12,6 +12,7 @@ import {
   type HomepageWorks,
 } from '../../src/features/homepage/model/homepage-works';
 import { makePublicPage, makePublicProduct } from '../support/discover-fixture';
+import { withCustomEmbroideryRelease } from '../support/release-flag';
 
 /**
  * The Homepage / store introduction (`APP11-S01`).
@@ -44,17 +45,27 @@ jest.mock('../../src/features/homepage/components/homepage-works-lane', () => ({
 }));
 
 describe('Homepage — approved composition', () => {
+  /**
+   * The locked six-section order is the **released** Homepage, so the release is
+   * turned on for this assertion. `APP12-G02-C1` withholds the Commission CTA
+   * section while Wave 2 is unreleased — the section is the ask end to end, and
+   * `/yeu-cau/moi` is a deliberate `404` then — and the withheld composition is
+   * asserted by `wave2-cta-suppression.test.tsx`. What is pinned here is that
+   * releasing the capability restores the approved order exactly.
+   */
   it('renders exactly the six approved sections, in the locked order', () => {
-    renderWithProviders(<HomepageScreen />);
+    withCustomEmbroideryRelease(true, () => {
+      renderWithProviders(<HomepageScreen />);
 
-    const headings = screen.getAllByRole('heading', { level: 2 }).map((node) => node.textContent);
-    expect(headings).toEqual([
-      HOMEPAGE_COPY.featured.heading,
-      HOMEPAGE_COPY.discover.heading,
-      HOMEPAGE_COPY.collections.heading,
-      HOMEPAGE_COPY.story.heading,
-      HOMEPAGE_COPY.commission.heading,
-    ]);
+      const headings = screen.getAllByRole('heading', { level: 2 }).map((node) => node.textContent);
+      expect(headings).toEqual([
+        HOMEPAGE_COPY.featured.heading,
+        HOMEPAGE_COPY.discover.heading,
+        HOMEPAGE_COPY.collections.heading,
+        HOMEPAGE_COPY.story.heading,
+        HOMEPAGE_COPY.commission.heading,
+      ]);
+    });
   });
 
   it('has exactly one H1, and it is the Hero store introduction', () => {
@@ -80,16 +91,31 @@ describe('Homepage — approved composition', () => {
 
 describe('Homepage — Hero', () => {
   it('offers the low-commitment move alongside the commission ask', () => {
-    renderWithProviders(<HomepageHero />);
+    // Released: the co-presence rule `USER_FLOW_ARCHITECTURE` §6.3 states is
+    // about the ask, so it can only be asserted where the ask exists.
+    withCustomEmbroideryRelease(true, () => {
+      renderWithProviders(<HomepageHero />);
 
-    expect(screen.getByRole('link', { name: HOMEPAGE_COPY.hero.exploreAction })).toHaveAttribute(
-      'href',
-      '/kham-pha',
-    );
-    expect(screen.getByRole('link', { name: HOMEPAGE_COPY.hero.commissionAction })).toHaveAttribute(
-      'href',
-      '/yeu-cau/moi',
-    );
+      expect(screen.getByRole('link', { name: HOMEPAGE_COPY.hero.exploreAction })).toHaveAttribute(
+        'href',
+        '/kham-pha',
+      );
+      expect(
+        screen.getByRole('link', { name: HOMEPAGE_COPY.hero.commissionAction }),
+      ).toHaveAttribute('href', '/yeu-cau/moi');
+    });
+  });
+
+  it('keeps the explore move when the commission ask is withheld', () => {
+    withCustomEmbroideryRelease(false, () => {
+      renderWithProviders(<HomepageHero />);
+
+      expect(screen.getByRole('link', { name: HOMEPAGE_COPY.hero.exploreAction })).toHaveAttribute(
+        'href',
+        '/kham-pha',
+      );
+      expect(screen.getAllByRole('link')).toHaveLength(1);
+    });
   });
 });
 
@@ -194,20 +220,24 @@ describe('Homepage — Studio Story and Commission CTA', () => {
   });
 
   it('reaches the existing request flow and states approval before payment', () => {
-    renderWithProviders(<HomepageCommissionCta />);
+    withCustomEmbroideryRelease(true, () => {
+      renderWithProviders(<HomepageCommissionCta />);
 
-    expect(screen.getByRole('link', { name: HOMEPAGE_COPY.commission.action })).toHaveAttribute(
-      'href',
-      '/yeu-cau/moi',
-    );
-    expect(
-      screen.getByRole('list', { name: HOMEPAGE_COPY.commission.stepsLabel }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/duyệt thiết kế, đơn hàng được đặt cọc 40%/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: HOMEPAGE_COPY.commission.action })).toHaveAttribute(
+        'href',
+        '/yeu-cau/moi',
+      );
+      expect(
+        screen.getByRole('list', { name: HOMEPAGE_COPY.commission.stepsLabel }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/duyệt thiết kế, đơn hàng được đặt cọc 40%/i)).toBeInTheDocument();
+    });
   });
 
   it('invents no cart or checkout entry point', () => {
-    const { container } = renderWithProviders(<HomepageCommissionCta />);
-    expect(container.innerHTML).not.toMatch(/\/(cart|checkout|gio-hang)\b/);
+    withCustomEmbroideryRelease(true, () => {
+      const { container } = renderWithProviders(<HomepageCommissionCta />);
+      expect(container.innerHTML).not.toMatch(/\/(cart|checkout|gio-hang)\b/);
+    });
   });
 });

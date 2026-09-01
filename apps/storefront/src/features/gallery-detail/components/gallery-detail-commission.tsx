@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { isCustomerRouteWithheld } from '../../release-isolation';
 import { STOREFRONT_CUSTOM_REQUEST_ROUTE } from '../../storefront-shell';
 import { GALLERY_DETAIL_COPY } from '../model/gallery-detail-copy';
 
@@ -14,8 +15,26 @@ import { GALLERY_DETAIL_COPY } from '../model/gallery-detail-copy';
  * Deliberately soft. No price, no quote figure, no turnaround promise and no
  * "starting from" — nothing on this page knows any of that, and the request
  * flow itself is where the conversation actually begins.
+ *
+ * ## Withheld with the capability (`APP12-G02-C1`)
+ *
+ * The block renders nothing while Wave 2 is withheld. Like the Homepage CTA it
+ * is an ask end to end — its heading asks the question and its body sentence
+ * (`Gửi yêu cầu để xưởng cùng bạn phác thảo ý tưởng`) is an instruction to use
+ * the very route `src/proxy.ts` is answering with a `404` — so there is no part
+ * of it that survives losing the anchor. Removing the anchor alone would leave
+ * an invitation with nothing to accept.
+ *
+ * The entry above it is unaffected: the media, the narrative, the breadcrumb,
+ * the related Product and `Continue Discovering` are all Wave-1 and all stay,
+ * so the page still ends on a way onward. No replacement copy is introduced,
+ * and releasing the capability restores this block as delivered.
  */
 export function GalleryDetailCommission() {
+  if (isCustomerRouteWithheld(STOREFRONT_CUSTOM_REQUEST_ROUTE)) {
+    return null;
+  }
+
   return (
     <section
       className="gallery-detail__commission"

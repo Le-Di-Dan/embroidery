@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { resolveStoreFacts } from '../../content-pages';
+import { isCustomerRouteWithheld } from '../../release-isolation';
 import {
   STORE_PRESENTATION_COPY,
   STORE_PRESENTATION_POLICY_LINKS,
@@ -38,10 +39,28 @@ import { StorePresentationColumn } from './store-presentation-column';
  * not published twice on every page). The contact column names them in prose and
  * links to neither, so there is nothing to fall out of sync with the dock and
  * nothing to render when the dock is unconfigured.
+ *
+ * ## The contact column's request action follows the release (`APP12-G02-C1`)
+ *
+ * This block is composed by the shell, so it renders on **every** released
+ * page — which made its `Gửi yêu cầu thêu` link the single widest-reaching
+ * advertisement of `/yeu-cau/moi`, an address `src/proxy.ts` answers with a
+ * `404` while Wave 2 is withheld. The link is therefore omitted then.
+ *
+ * The column's prose stays exactly as written. Unlike the Homepage and gallery
+ * CTAs, this column is not an ask: it is the contact column, its sentence also
+ * names the dock channels, and those channels are Wave-1 and still there — so
+ * removing the one anchor leaves a column that still tells the visitor how to
+ * reach the workshop. Rewriting the sentence would be the copy change §18
+ * permits only when structurally unavoidable, and it is not.
+ *
+ * The other three columns are untouched: `Ghé xưởng`, the three service routes
+ * and the four policies are all Wave-1 and all released.
  */
 export function StorePresentationBlock() {
   const facts = resolveStoreFacts();
   const { identity, contact, service, policies, regionLabel } = STORE_PRESENTATION_COPY;
+  const contactActionWithheld = isCustomerRouteWithheld(contact.actionHref);
 
   return (
     <section className="store-presentation" aria-label={regionLabel}>
@@ -77,9 +96,11 @@ export function StorePresentationBlock() {
         {/* 2 — Contact. Prose plus the request route; the dock keeps the externals. */}
         <StorePresentationColumn heading={contact.heading}>
           <p className="store-presentation__text">{contact.fallback}</p>
-          <Link className="store-presentation__link" href={contact.actionHref}>
-            {contact.action}
-          </Link>
+          {contactActionWithheld ? null : (
+            <Link className="store-presentation__link" href={contact.actionHref}>
+              {contact.action}
+            </Link>
+          )}
         </StorePresentationColumn>
 
         {/* 3 — Service & support. Three delivered public routes. */}
