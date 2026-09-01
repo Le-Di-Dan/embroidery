@@ -3,7 +3,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo, useRef } from 'react';
 
-import type { DiscoverCategorySlug } from '../model/discover-categories';
 import { flattenDiscoverPages, nextCursorOf, type DiscoverCard } from '../model/discover-feed';
 import { discoverQueryKeys } from '../model/discover-query-keys';
 import { fetchDiscoverPage } from '../services/discover-catalog.client';
@@ -43,7 +42,7 @@ export interface DiscoverFeed {
  * `nextCursorOf`, so the feed cannot request past the last page or loop on a
  * page that claims a successor it did not supply.
  */
-export function useDiscoverFeed(categorySlug: DiscoverCategorySlug | undefined): DiscoverFeed {
+export function useDiscoverFeed(categorySlug: string | undefined): DiscoverFeed {
   const query = useInfiniteQuery({
     queryKey: discoverQueryKeys.list(categorySlug),
     queryFn: ({ pageParam }) => fetchDiscoverPage(categorySlug, pageParam),

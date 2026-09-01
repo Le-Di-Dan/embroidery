@@ -60,8 +60,13 @@ export type {
 // off this boundary is what stops a publication screen from reaching it by
 // mistake while `FU-APP2-PRODUCT-ARCHIVE-LIFECYCLE-01` is still open.
 //
-// The query enums are re-exported as values so filter and category options are
-// derived from the contract rather than hard-coded.
+// The status and media-role enums are re-exported as values so filter options and
+// role rendering are derived from the contract rather than hard-coded.
+//
+// `AdminProductListCategorySlug` is deliberately **gone** as of `APP12-C01`: the
+// category taxonomy is dynamic, so the contract no longer publishes a closed
+// category enum for this boundary to carry. `APP12-A01` gives the Admin its
+// category options from the runtime category surface instead.
 export {
   adminProductList,
   adminProductCreate,
@@ -70,7 +75,6 @@ export {
 } from './generated/embroidery-api';
 export {
   AdminProductListStatus,
-  AdminProductListCategorySlug,
   AdminProductDetailResponseStatus,
   AdminProductMediaResponseRole,
 } from './generated/embroidery-api.schemas';
@@ -127,11 +131,10 @@ export type {
 // relative `media[].url` the list and detail responses already return —
 // application code must never stream those bytes itself.
 //
-// The category enum is re-exported as a value so the Storefront's category chips
-// are derived from the contract rather than a hand-kept list that could drift
-// out of step with the four categories the database actually provisions.
+// `PublicProductListCategorySlug` is deliberately **gone** as of `APP12-C01`: the
+// taxonomy is dynamic, the filter parameter is now a pattern-validated string,
+// and a consumer that needs the current set reads `publicCategoryList` below.
 export { publicProductList, publicProductDetail } from './generated/embroidery-api';
-export { PublicProductListCategorySlug } from './generated/embroidery-api.schemas';
 export type {
   PublicProductListParams,
   PublicProductListResponse,
@@ -140,4 +143,20 @@ export type {
   PublicProductSeoResponse,
   PublicCategoryResponse,
   PublicMediaReferenceResponse,
+} from './generated/embroidery-api.schemas';
+
+// The dynamic public category inventory (`APP12-C01`).
+//
+// This is the operation that replaces the closed four-value category enum the
+// two product boundaries above used to carry. The set of categories is operator
+// data, so a consumer asks for it at runtime; there is nothing here to
+// re-export as a value, because there is no longer a compile-time taxonomy.
+//
+// Read-only and read-only forever on this boundary as far as this checkpoint is
+// concerned: category creation, editing, publication and archival are
+// `APP12-C02`'s Admin operations and do not exist yet.
+export { publicCategoryList } from './generated/embroidery-api';
+export type {
+  PublicCategoryListResponse,
+  PublicCategoryInventoryItemResponse,
 } from './generated/embroidery-api.schemas';

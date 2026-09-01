@@ -9,9 +9,11 @@
  * parameter*, so an unfiltered request never sends `status=all` and the default
  * page truthfully contains drafts, published and archived products alike.
  */
-import { AdminProductListCategorySlug, AdminProductListStatus } from '@embroidery/api-client';
+import { AdminProductListStatus } from '@embroidery/api-client';
 import type { AdminProductListParams } from '@embroidery/api-client';
 
+import { CATEGORY_SLUG_PATTERN } from './category-slug-shape';
+import type { ProductCategory } from '../services/category-inventory.service';
 import { PRODUCT_COPY } from './product-copy';
 
 /** The presentation value meaning "no parameter". */
@@ -20,9 +22,15 @@ export const ALL_FILTER_VALUE = 'all';
 export type ProductStatusFilter =
   typeof ALL_FILTER_VALUE | (typeof AdminProductListStatus)[keyof typeof AdminProductListStatus];
 
-export type ProductCategoryFilter =
-  | typeof ALL_FILTER_VALUE
-  | (typeof AdminProductListCategorySlug)[keyof typeof AdminProductListCategorySlug];
+/**
+ * The category filter value: `all`, or any category slug (`APP12-C01-C1`).
+ *
+ * A `string` rather than a union, because the set of categories is data. The
+ * options the operator can *choose* come from the inventory; a value arriving
+ * from the URL is validated by shape, so a hand-edited address cannot put a
+ * malformed value into a request.
+ */
+export type ProductCategoryFilter = string;
 
 export interface ProductFilters {
   readonly status: ProductStatusFilter;
@@ -50,14 +58,26 @@ export const PRODUCT_STATUS_FILTER_OPTIONS: readonly ProductFilterOption<Product
   { value: AdminProductListStatus.ARCHIVED, label: PRODUCT_COPY.status.archived },
 ];
 
-export const PRODUCT_CATEGORY_FILTER_OPTIONS: readonly ProductFilterOption<ProductCategoryFilter>[] =
-  [
+/**
+ * The category filter options: "all" first, then one per category the database
+ * currently publishes (`APP12-C01-C1`).
+ *
+ * A function of the inventory rather than a constant, because a constant is
+ * exactly what this correction removed. The order is the API's; the labels are
+ * the rows' own names.
+ *
+ * While the inventory is loading or unavailable the caller passes `[]`, which
+ * yields the "all" option alone — a truthful control that filters nothing rather
+ * than a remembered list of categories that may no longer exist.
+ */
+export function toProductCategoryFilterOptions(
+  categories: readonly ProductCategory[],
+): readonly ProductFilterOption<ProductCategoryFilter>[] {
+  return [
     { value: ALL_FILTER_VALUE, label: PRODUCT_COPY.filters.categoryAll },
-    { value: AdminProductListCategorySlug['thu-bong'], label: PRODUCT_COPY.category.thuBong },
-    { value: AdminProductListCategorySlug.khan, label: PRODUCT_COPY.category.khan },
-    { value: AdminProductListCategorySlug['quan-ao'], label: PRODUCT_COPY.category.quanAo },
-    { value: AdminProductListCategorySlug.khac, label: PRODUCT_COPY.category.khac },
+    ...categories.map((category) => ({ value: category.slug, label: category.name })),
   ];
+}
 
 function normalizeOption<TValue extends string>(
   raw: unknown,
@@ -86,8 +106,26 @@ export function normalizeProductFilters(raw: {
 }): ProductFilters {
   return {
     status: normalizeOption(firstValue(raw.status), PRODUCT_STATUS_FILTER_OPTIONS),
-    category: normalizeOption(firstValue(raw.category), PRODUCT_CATEGORY_FILTER_OPTIONS),
+    category: normalizeCategory(firstValue(raw.category)),
   };
+}
+
+/**
+ * Normalizes the category from the URL by **shape**, not by membership.
+ *
+ * Membership cannot be checked here: this function is synchronous and runs
+ * before the inventory has loaded, and guessing "unknown, so show everything"
+ * against a taxonomy the app has not read would drop a perfectly valid filter on
+ * every page load. A well-formed slug is therefore kept and sent; the API
+ * answers an unknown one with an empty page, which is its own safe policy, and
+ * the empty state explains it.
+ *
+ * A malformed value still normalizes to "all" and is never echoed into a
+ * request or into the DOM.
+ */
+function normalizeCategory(raw: unknown): ProductCategoryFilter {
+  if (typeof raw !== 'string' || raw === ALL_FILTER_VALUE) return ALL_FILTER_VALUE;
+  return CATEGORY_SLUG_PATTERN.test(raw) ? raw : ALL_FILTER_VALUE;
 }
 
 /**

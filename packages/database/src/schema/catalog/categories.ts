@@ -24,52 +24,24 @@ export const CATEGORY_STATES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const;
 export type CategoryState = (typeof CATEGORY_STATES)[number];
 
 /**
- * The fixed APP2 category taxonomy (IMP-D032, provisioned by migration 0033).
+ * ## Where the category values live — and where they do not
  *
- * `products.category_id` is NOT NULL with no default, and APP2 ships no
- * category management API, so these four rows are reference data rather than
- * operator-created content. The slug — not the physical UUID — is the stable
- * public key: it is what `APP2-B02` accepts on the wire and what the generated
- * client exposes as a closed enum, so no Admin surface ever has to learn a
- * category id to file a draft.
+ * They live in **rows**. `APP12-C01-C1` locks
+ * `CATEGORY_VALUE_SOURCE_OF_TRUTH = DATABASE`: this module owns the table, the
+ * columns, the constraints and the lifecycle vocabulary, and it owns **no
+ * category slug, name or ordering**.
  *
- * This is the single source for the set. The migration, the OpenAPI enum, the
- * repository lookup and the Admin labels all derive from it; a second copy is
- * how a taxonomy silently forks.
+ * It used to. `APP2_CATEGORY_TAXONOMY` and `APP2_CATEGORY_SLUGS` were exported
+ * from here and became the OpenAPI enum, the generated client's union, the Admin
+ * option list and the Discover chips — a second taxonomy compiled into the
+ * application, which had already diverged from the first (the database held
+ * `ao-thun`; the type said it could not exist). Both symbols are now test-only
+ * historical fixture data in `__historical__/app2-category-fixture.ts`, read
+ * only by the suites that assert what migration `0033` did.
  *
- * The table models categories **flat** (no parent column), so every entry is a
- * root category by construction — rootness needs no stored value.
+ * Adding a category is therefore a data change: an operator inserts a row and
+ * publishes it. No source edit, no contract edit, no build, no deployment.
  */
-export interface App2CategoryDefinition {
-  /** Deterministic id, fixed in migration 0033 and identical on every machine. */
-  readonly id: string;
-  /** Stable APP2 reference key; immutable, and the value used on the wire. */
-  readonly slug: string;
-  /** Canonical Vietnamese display label. */
-  readonly name: string;
-  readonly displayOrder: number;
-}
-
-export const APP2_CATEGORY_TAXONOMY: readonly App2CategoryDefinition[] = [
-  {
-    id: '019a0000-0000-7000-8000-000000000001',
-    slug: 'thu-bong',
-    name: 'Thú bông',
-    displayOrder: 10,
-  },
-  { id: '019a0000-0000-7000-8000-000000000002', slug: 'khan', name: 'Khăn', displayOrder: 20 },
-  {
-    id: '019a0000-0000-7000-8000-000000000003',
-    slug: 'quan-ao',
-    name: 'Quần áo',
-    displayOrder: 30,
-  },
-  { id: '019a0000-0000-7000-8000-000000000004', slug: 'khac', name: 'Khác', displayOrder: 90 },
-] as const;
-
-/** The closed slug set, in canonical display order — the OpenAPI enum source. */
-export const APP2_CATEGORY_SLUGS = ['thu-bong', 'khan', 'quan-ao', 'khac'] as const;
-export type App2CategorySlug = (typeof APP2_CATEGORY_SLUGS)[number];
 
 /**
  * The status the provisioned taxonomy carries. The lifecycle has no `ACTIVE`

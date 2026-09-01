@@ -23,10 +23,23 @@ describe('create product body', () => {
     expect(parsed).toEqual({ categorySlug: 'thu-bong', name: 'Gấu nâu' });
   });
 
-  it('rejects a category outside the closed APP2 taxonomy', () => {
-    expect(createProductBodySchema.safeParse({ categorySlug: 'do-choi', name: 'X' }).success).toBe(
-      false,
-    );
+  it('accepts any well-formed category slug and rejects malformed ones', () => {
+    // `APP12-C01`: the taxonomy is dynamic, so this boundary checks a shape.
+    // Whether `do-choi` names a category that exists and is active is
+    // `CategoryResolver`'s question, answered against rows and still reported
+    // as `PRODUCT_CATEGORY_INVALID` — Admin semantics are unchanged.
+    for (const categorySlug of ['thu-bong', 'ao-thun', 'do-choi']) {
+      expect({
+        categorySlug,
+        ok: createProductBodySchema.safeParse({ categorySlug, name: 'X' }).success,
+      }).toEqual({ categorySlug, ok: true });
+    }
+    for (const categorySlug of ['DO-CHOI', 'đồ-chơi', 'do_choi', 'do choi', '', '-do']) {
+      expect({
+        categorySlug,
+        ok: createProductBodySchema.safeParse({ categorySlug, name: 'X' }).success,
+      }).toEqual({ categorySlug, ok: false });
+    }
   });
 
   it('rejects every server-owned field', () => {
@@ -152,9 +165,14 @@ describe('list products query', () => {
     }
   });
 
-  it('accepts only a locked category slug and rejects an unknown filter', () => {
+  it('accepts any well-formed category slug and rejects an unknown filter', () => {
+    // `APP12-C01` widened the category filter from a four-value enum to the
+    // dynamic slug shape. The `.strict()` guarantee is untouched: a parameter
+    // this screen does not own is still a 400.
     expect(listProductsQuerySchema.safeParse({ categorySlug: 'quan-ao' }).success).toBe(true);
-    expect(listProductsQuerySchema.safeParse({ categorySlug: 'nonsense' }).success).toBe(false);
+    expect(listProductsQuerySchema.safeParse({ categorySlug: 'ao-thun' }).success).toBe(true);
+    expect(listProductsQuerySchema.safeParse({ categorySlug: 'nonsense' }).success).toBe(true);
+    expect(listProductsQuerySchema.safeParse({ categorySlug: 'NONSENSE' }).success).toBe(false);
     expect(listProductsQuerySchema.safeParse({ offset: 20 }).success).toBe(false);
     expect(listProductsQuerySchema.safeParse({ search: 'gấu' }).success).toBe(false);
   });

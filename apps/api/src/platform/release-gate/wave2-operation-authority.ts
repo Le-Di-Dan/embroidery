@@ -1,10 +1,11 @@
 /**
- * The Wave-2 public operation matrix (`APP12-G02`).
+ * The Wave-2 public operation matrix (`APP12-G02`, extended by `APP12-C01`).
  *
  * This file is the **runtime transcription** of
  * `docs/implementation/APP12-RELEASE-WAVE-AUTHORITY.md` §3 and §7. The authority
- * document classified all **43** public OpenAPI operations mechanically: **31**
- * `DENY` in Wave 1 and **12** `ALLOW`. Both sets are written out here in full
+ * document classified all public OpenAPI operations mechanically: **31** `DENY`
+ * in Wave 1 and — since `APP12-C01` added the public category inventory — **13**
+ * `ALLOW`, over **44** public operations. Both sets are written out here in full
  * rather than derived from a prefix, because a prefix rule is exactly how
  * `publicProductPlacement_get` (custom) and `publicProduct_detail` (Wave-1
  * catalog) end up on the same side of a gate.
@@ -23,7 +24,7 @@
  * accidentally withhold something released", which is the more expensive
  * mistake: denying `publicVerification_*` denies Ready-Made checkout and
  * therefore denies Wave 1 (§3.1). Listing both sets lets one test assert that
- * the union is exactly the 43 public operations the contract publishes, so an
+ * the union is exactly the 44 public operations the contract publishes, so an
  * operation added by a later checkpoint cannot slip through unclassified.
  */
 
@@ -94,7 +95,7 @@ export const WAVE2_WITHHELD_PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The 12 released public operations.
+ * The 13 released public operations.
  *
  * Present so a false denial is a test failure rather than a support ticket. Two
  * of these groups are the ones §4 rule 4 warns about — "deny the capability, not
@@ -114,6 +115,14 @@ export const WAVE1_RELEASED_PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
   'publicProduct_detail',
   'publicProductMedia_get',
   'publicProductVariant_list',
+
+  // The dynamic category inventory (`APP12-C01`). A Wave-1 public read by the
+  // same argument as the catalog list it filters: it publishes published,
+  // non-archived category names and slugs, which is browsing metadata for
+  // Ready-Made discovery, and it names no custom capability — no placement, no
+  // template, no session, no design. Withholding it would leave Wave 1 unable
+  // to render its own category navigation.
+  'publicCategory_list',
 
   // Public gallery reads.
   'publicGalleryEntry_list',

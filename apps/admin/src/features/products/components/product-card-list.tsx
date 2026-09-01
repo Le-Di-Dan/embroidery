@@ -3,7 +3,6 @@ import Link from 'next/link';
 import type { AdminProductSummaryResponse } from '@embroidery/api-client';
 
 import { PRODUCT_COPY } from '../model/product-copy';
-import { parseProductCategory, productCategoryLabel } from '../model/product-category';
 import { adminProductDetailRoute } from '../model/product-route';
 import { ProductMediaPlaceholder } from './product-media-placeholder';
 import { ProductStatusBadge } from './product-status-badge';
@@ -30,9 +29,7 @@ export function ProductCardList({ items }: ProductCardListProps) {
             <ProductMediaPlaceholder />
             <div className="product-card__info">
               <p className="product-card__name">{product.name}</p>
-              <p className="product-card__category">
-                {productCategoryLabel(parseProductCategory(product.category.slug))}
-              </p>
+              <p className="product-card__category">{product.category.name}</p>
             </div>
           </div>
           <div className="product-card__bottom">

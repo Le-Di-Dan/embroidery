@@ -59,13 +59,16 @@ export function makePublicDetailWithUncontractedCategory(
       media: [],
       ...overrides,
     }),
-    // The one deliberate departure from the generated type in this file. It
-    // needs the two-step conversion precisely because the compiler is right
-    // that the two types do not overlap — which is the fact being modelled.
-    category: {
-      slug: 'ao-thun',
-      name: 'Áo thun',
-    } as unknown as PublicProductDetailResponse['category'],
+    // This used to need a two-step `as unknown as` conversion, because the
+    // generated `category.slug` was a closed four-value enum and `ao-thun`
+    // could not be assigned to it — a fixture fighting a type that contradicted
+    // the running database. `APP12-C01` made the slug a string and the cast
+    // became dead code; its absence is the clearest evidence the ceiling is
+    // gone.
+    //
+    // Overridable, so a caller can also exercise a *malformed* slug — the one
+    // case the breadcrumb still refuses to turn into a URL.
+    category: overrides.category ?? { slug: 'ao-thun', name: 'Áo thun' },
   };
 }
 

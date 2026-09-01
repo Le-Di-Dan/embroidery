@@ -27,7 +27,8 @@ import { loadDatabaseConfig } from '../config/database-config';
 import { runMigrations } from '../migrations/run-migrations';
 import { newId } from '../primitives/identifiers';
 import { disposableDatabaseName, migrationsFolder, resolveDatabaseUrl } from '../testing/index';
-import { APP2_CATEGORY_STATUS, APP2_CATEGORY_TAXONOMY } from './catalog/categories';
+import { APP2_CATEGORY_STATUS } from './catalog/categories';
+import { APP2_HISTORICAL_CATEGORIES } from './catalog/__historical__/app2-category-fixture';
 
 const NEW_MIGRATION_TAG = '0033_provision_catalog_draft_categories';
 
@@ -59,7 +60,7 @@ interface CategoryRow {
 }
 
 /** The canonical row this suite pre-seeds in the "already present" case. */
-const PRESEEDED = APP2_CATEGORY_TAXONOMY[1] as (typeof APP2_CATEGORY_TAXONOMY)[number];
+const PRESEEDED = APP2_HISTORICAL_CATEGORIES[1] as (typeof APP2_HISTORICAL_CATEGORIES)[number];
 
 describe('catalog draft categories upgrade path (integration)', () => {
   let baseUrl: string;
@@ -173,9 +174,9 @@ describe('catalog draft categories upgrade path (integration)', () => {
 
       const categories = await readCategories(client);
       expect(categories.map((row) => [row.slug, row.name, row.display_order])).toEqual(
-        APP2_CATEGORY_TAXONOMY.map((c) => [c.slug, c.name, c.displayOrder]),
+        APP2_HISTORICAL_CATEGORIES.map((c) => [c.slug, c.name, c.displayOrder]),
       );
-      expect(categories.map((row) => row.id)).toEqual(APP2_CATEGORY_TAXONOMY.map((c) => c.id));
+      expect(categories.map((row) => row.id)).toEqual(APP2_HISTORICAL_CATEGORIES.map((c) => c.id));
     } finally {
       await client.close();
     }
@@ -195,7 +196,7 @@ describe('catalog draft categories upgrade path (integration)', () => {
       await runMigrations(configFor(url), migrationsFolder());
 
       const after = await readCategories(client);
-      expect(after).toHaveLength(APP2_CATEGORY_TAXONOMY.length);
+      expect(after).toHaveLength(APP2_HISTORICAL_CATEGORIES.length);
       expect(after.filter((row) => row.slug === PRESEEDED.slug)).toHaveLength(1);
       // Byte-identical: the migration accepted it rather than rewriting it.
       expect(after.find((row) => row.slug === PRESEEDED.slug)).toEqual(before[0]);

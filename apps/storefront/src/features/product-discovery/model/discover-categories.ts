@@ -1,52 +1,80 @@
-import { PublicProductListCategorySlug } from '@embroidery/api-client';
+/**
+ * The Discover category navigation model (IMP-D038, made database-backed by
+ * `APP12-C01-C1`).
+ *
+ * ## Where the categories come from
+ *
+ * From `GET /api/public/categories`, on every request. Not from a constant in
+ * this file, and not from a generated contract enum — both of those were a
+ * second, compiled-in taxonomy, and the running database had already outgrown
+ * them: it held `ao-thun` while the Storefront's list said four categories
+ * existed. A chip row assembled from source code cannot show a category the
+ * operator added after the build, and that is precisely the failure
+ * `CATEGORY_VALUE_SOURCE_OF_TRUTH = DATABASE` removes.
+ *
+ * So this module holds **no slug, no label and no ordering**. It holds the
+ * shape of a chip and the rules for turning an inventory into chips — which is
+ * what source code is for.
+ *
+ * ## What is still source-defined, and why that is not a category
+ *
+ * `Tất cả` is. It is a UI state meaning *no `category` query parameter at all*,
+ * not a row anyone could publish, archive or rename. Putting an `all` row in the
+ * database to satisfy symmetry would invent a category the store does not sell
+ * from, and would give the unfiltered feed a second address.
+ */
+import type { PublicCategoryInventoryItemResponse } from '@embroidery/api-client';
+
+import { DISCOVER_COPY } from './discover-copy';
 
 /**
- * The Discover category guidance (IMP-D038).
+ * One publicly browsable category, exactly as the API published it.
  *
- * The slugs come from the generated contract enum, never from a hand-kept list:
- * the API accepts exactly four categories and the database provisions exactly
- * those four, so deriving them here means a contract change shows up as a build
- * failure rather than as a chip that silently 404s. The Vietnamese labels are
- * the canonical category names.
- *
- * This is category guidance, not a filter system. UI02's draft frames sketch
- * style/theme/collection controls; `APP2-B04` supports none of them, so they are
- * omitted rather than faked.
+ * Aliased rather than redefined: a local interface would be a second place to
+ * decide what a category carries, and would drift from the contract the moment
+ * one of them changed.
  */
+export type DiscoverCategory = PublicCategoryInventoryItemResponse;
 
-/** A selectable category, or "all" when `slug` is absent. */
-export interface DiscoverCategory {
+/** A selectable chip: either the "all" UI state or one database category. */
+export interface DiscoverChip {
   /** Stable id for React keys and test selection. */
   readonly id: string;
   /** Absent for "all", which omits the query entirely. */
-  readonly slug?: DiscoverCategorySlug;
+  readonly slug?: string;
   readonly label: string;
 }
 
-export type DiscoverCategorySlug =
-  (typeof PublicProductListCategorySlug)[keyof typeof PublicProductListCategorySlug];
+/** The id of the non-category "all" chip. Not a slug, and never sent. */
+export const DISCOVER_ALL_CHIP_ID = 'all';
 
-const CATEGORY_LABELS: Record<DiscoverCategorySlug, string> = {
-  'thu-bong': 'Thú bông',
-  khan: 'Khăn',
-  'quan-ao': 'Quần áo',
-  khac: 'Khác',
-};
+/**
+ * Builds the chip row: `Tất cả` first, then the inventory in the order the API
+ * returned it.
+ *
+ * The order is **not** re-sorted here. The API orders by `display_order` then
+ * `slug`, which is the operator's editorial authority; sorting again in the
+ * client would be a second ordering authority, and the one that would silently
+ * win. Labels are `category.name` — the operator's own text, rendered as data.
+ */
+export function toDiscoverChips(categories: readonly DiscoverCategory[]): readonly DiscoverChip[] {
+  return [
+    { id: DISCOVER_ALL_CHIP_ID, label: DISCOVER_COPY.categoryAllLabel },
+    ...categories.map((category) => ({
+      id: category.slug,
+      slug: category.slug,
+      label: category.name,
+    })),
+  ];
+}
 
-/** The four contract slugs, in contract order. */
-export const DISCOVER_CATEGORY_SLUGS: readonly DiscoverCategorySlug[] = Object.values(
-  PublicProductListCategorySlug,
-);
-
-/** "Tất cả" first, then the four categories in contract order. */
-export const DISCOVER_CATEGORIES: readonly DiscoverCategory[] = [
-  { id: 'all', label: 'Tất cả' },
-  ...DISCOVER_CATEGORY_SLUGS.map((slug) => ({ id: slug, slug, label: CATEGORY_LABELS[slug] })),
-];
-
-/** Narrows an arbitrary URL value to a contract slug, or `undefined`. */
-export function toDiscoverCategorySlug(value: unknown): DiscoverCategorySlug | undefined {
-  return typeof value === 'string' && (DISCOVER_CATEGORY_SLUGS as readonly string[]).includes(value)
-    ? (value as DiscoverCategorySlug)
-    : undefined;
+/**
+ * Whether `slug` names a category currently in the public inventory.
+ *
+ * Membership is answered against the fetched rows, never against a compiled
+ * list. A category published a minute ago is a valid selection; one archived a
+ * minute ago is not — with no deployment either way.
+ */
+export function isKnownCategory(categories: readonly DiscoverCategory[], slug: string): boolean {
+  return categories.some((category) => category.slug === slug);
 }

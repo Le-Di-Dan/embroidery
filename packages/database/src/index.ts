@@ -75,26 +75,26 @@ export {
 export * as schema from './schema/index';
 
 /**
- * Canonical catalog **reference data and locked draft defaults** (IMP-D032),
+ * Canonical catalog **locked draft defaults and lifecycle values** (IMP-D032),
  * re-exported as values.
  *
- * These are the narrow exception to the types-only rule below, and deliberately
- * so. `APP2-B02-G01` provisioned the four categories in migration `0033` from
- * exactly this list, and `APP2-B02` must resolve a `categorySlug`, label it and
- * document it as a closed OpenAPI enum from the same list. Re-declaring the
- * taxonomy in the backend module would create the second source IMP-D032 warns
- * about — a fork between what the database holds and what the API accepts.
+ * These are the narrow exception to the types-only rule below. They are plain
+ * frozen data: no table object, ORM value or driver type is reachable through
+ * them, so a domain module may import them without pulling the schema namespace
+ * in (`BACKEND_CONVENTIONS.md` §3).
  *
- * They are plain frozen data: no table object, ORM value or driver type is
- * reachable through them, so a domain module may import them without pulling
- * the schema namespace in (`BACKEND_CONVENTIONS.md` §3).
+ * `APP2_CATEGORY_STATUS` is the one category constant that remains, and it is a
+ * **status**, not a category: the lifecycle has no `ACTIVE` literal, so
+ * "publicly visible" maps onto `PUBLISHED`. Status vocabulary is code; category
+ * values are data.
+ *
+ * `APP2_CATEGORY_SLUGS` and `APP2_CATEGORY_TAXONOMY` deliberately no longer
+ * cross this boundary (`APP12-C01-C1`, `IMP-D062`). They were the second,
+ * compiled-in category authority; the `categories` table is the only one now,
+ * and the historical values survive as test-only fixture data in
+ * `schema/catalog/__historical__/app2-category-fixture.ts`.
  */
-export {
-  APP2_CATEGORY_SLUGS,
-  APP2_CATEGORY_STATUS,
-  APP2_CATEGORY_TAXONOMY,
-} from './schema/catalog/categories';
-export type { App2CategoryDefinition, App2CategorySlug } from './schema/catalog/categories';
+export { APP2_CATEGORY_STATUS } from './schema/catalog/categories';
 export {
   PRODUCT_DRAFT_BASE_PRICE_AMOUNT,
   PRODUCT_DRAFT_DISPLAY_ORDER,

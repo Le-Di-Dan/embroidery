@@ -1,4 +1,9 @@
-import { publicSitemapEntryList, type PublicSitemapEntryResponse } from '@embroidery/api-client';
+import {
+  publicCategoryList,
+  publicSitemapEntryList,
+  type PublicCategoryInventoryItemResponse,
+  type PublicSitemapEntryResponse,
+} from '@embroidery/api-client';
 
 import { getServerApiClient } from '../../../config/server-api-client';
 
@@ -26,5 +31,27 @@ import { getServerApiClient } from '../../../config/server-api-client';
  */
 export async function fetchPublicSitemapInventory(): Promise<PublicSitemapEntryResponse[]> {
   const body = await publicSitemapEntryList({ instance: getServerApiClient() });
+  return body.data.items;
+}
+
+/**
+ * The public category inventory, read for the sitemap's category URLs
+ * (`APP12-C01-C1`).
+ *
+ * Deliberately **not** the Discover feature's own reader, which returns
+ * `undefined` on failure so a page can still render its feed. Here the failure
+ * policy is the one above: a sitemap that silently dropped every category URL
+ * would tell a crawler those feeds have been delisted, which is the same defect
+ * as an empty `<urlset>` in a smaller disguise. So the error propagates, the
+ * metadata route fails, and no file is served.
+ *
+ * The indexability filter is applied by the composer, not here: this function's
+ * job is to read, and the SEO rule belongs beside the URL composition it
+ * governs.
+ */
+export async function fetchPublicCategoryInventory(): Promise<
+  PublicCategoryInventoryItemResponse[]
+> {
+  const body = await publicCategoryList({ instance: getServerApiClient() });
   return body.data.items;
 }

@@ -11,7 +11,7 @@
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
-import { APP2_CATEGORY_SLUGS } from '../../domain/product-draft.policy';
+import { CATEGORY_SLUG_MAX_LENGTH, CATEGORY_SLUG_PATTERN } from '../../domain/category-slug';
 
 /**
  * The server-owned slug vocabulary: lowercase alphanumeric groups joined by
@@ -28,10 +28,19 @@ export const publicProductListQuerySchema = z
   .object({
     cursor: z.string().min(1).max(MAX_CURSOR_LENGTH).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
-    // The public taxonomy is fixed (IMP-D032), so the filter is an enum rather
-    // than free text: an unknown value is rejected at the boundary instead of
-    // reaching the database as a predicate that can only ever match nothing.
-    categorySlug: z.enum(APP2_CATEGORY_SLUGS).optional(),
+    // The public taxonomy is **dynamic** (`APP12-C01`), so the filter validates
+    // a shape rather than a membership: the set of categories is operator data
+    // and a contract enum could only ever be a stale copy of it. A malformed
+    // value is still rejected here and never reaches a WHERE clause; a
+    // syntactically valid slug that names no public category resolves to an
+    // empty page, which is the safe answer — never an unfiltered list, and never
+    // an oracle telling an anonymous caller which categories exist in draft.
+    categorySlug: z
+      .string()
+      .min(1)
+      .max(CATEGORY_SLUG_MAX_LENGTH)
+      .regex(CATEGORY_SLUG_PATTERN)
+      .optional(),
   })
   .strict();
 

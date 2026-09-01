@@ -187,7 +187,18 @@ describe('public catalog API', () => {
     for (const item of body.data.items) {
       expect(item.category.slug).toBe('khan');
     }
-    expect((await ctx.http.get(`${LIST_PATH}?categorySlug=khong-ton-tai`)).status).toBe(400);
+    // `APP12-C01` widened this filter from a closed enum to the dynamic slug
+    // shape, so a well-formed slug naming no public category is no longer a
+    // 400 — it is a filtered, empty page. Refusing it would need a compiled
+    // taxonomy, and would tell an anonymous caller which categories the store
+    // holds in draft. What must never happen is the whole catalogue coming
+    // back, which is asserted here rather than assumed.
+    const unknown = await ctx.http.get(`${LIST_PATH}?categorySlug=khong-ton-tai`);
+    expect(unknown.status).toBe(200);
+    expect((unknown.body as Envelope<ListPayload>).data.items).toEqual([]);
+
+    // A malformed slug is still refused at the boundary, before any query.
+    expect((await ctx.http.get(`${LIST_PATH}?categorySlug=KHONG-TON-TAI`)).status).toBe(400);
   });
 
   it('exposes no internal identifier or storage detail on the wire', async () => {

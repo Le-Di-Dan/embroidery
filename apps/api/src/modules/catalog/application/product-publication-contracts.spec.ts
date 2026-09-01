@@ -40,6 +40,7 @@ function productAt(overrides: Partial<ProductDraft> = {}): ProductDraft {
     id: PRODUCT_ID as ProductDraftId,
     categoryId: 'a5b1d2c3-0000-4000-8000-000000000001',
     categorySlug: 'thu-bong',
+    categoryName: 'Thú bông',
     name: 'Gấu bông thỏ trắng',
     slug: 'gau-bong-tho-trang',
     description: 'Gấu bông thêu tay.',

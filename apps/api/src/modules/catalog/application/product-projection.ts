@@ -8,7 +8,6 @@
  * derivative or inspection evidence, no audit actor, no `is_indexable` or SEO
  * column (those belong to publication, `APP2-B03`/`B04`).
  */
-import { categoryNameOf } from '../domain/product-draft.policy';
 import type {
   ProductDraft,
   ProductDraftMedia,
@@ -77,10 +76,15 @@ export function toWholeDong(amount: string): string {
   return match?.[1] ?? amount;
 }
 
-function toCategoryView(slug: string): CategoryView {
-  // The label comes from the locked taxonomy rather than the joined row: the
-  // row's name is operator-visible content, the taxonomy is the contract.
-  return { slug, name: categoryNameOf(slug) ?? slug };
+function toCategoryView(draft: ProductDraft): CategoryView {
+  // Both fields come from the joined `categories` row. The label used to come
+  // from a compiled taxonomy instead, on the reasoning that "the row's name is
+  // operator-visible content, the taxonomy is the contract" — which inverted
+  // the actual authority: a product filed under a category the build did not
+  // know rendered as its raw slug. `APP12-C01-C1` made the row the authority
+  // for both, so a category the operator adds or renames is named correctly
+  // with no deployment.
+  return { slug: draft.categorySlug, name: draft.categoryName };
 }
 
 export function toMediaView(media: ProductDraftMedia): ProductMediaView {
@@ -107,7 +111,7 @@ export function toSummaryView(
     name: product.name,
     slug: product.slug,
     status: product.status,
-    category: toCategoryView(product.categorySlug),
+    category: toCategoryView(product),
     basePriceAmount: toWholeDong(product.basePriceAmount),
     currencyCode: product.currencyCode,
     createdAt: product.createdAt.toISOString(),

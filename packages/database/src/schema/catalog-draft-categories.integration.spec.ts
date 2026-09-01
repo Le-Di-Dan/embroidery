@@ -7,7 +7,8 @@
  */
 import { sql } from 'drizzle-orm';
 
-import { APP2_CATEGORY_STATUS, APP2_CATEGORY_TAXONOMY } from './catalog/categories';
+import { APP2_CATEGORY_STATUS } from './catalog/categories';
+import { APP2_HISTORICAL_CATEGORIES } from './catalog/__historical__/app2-category-fixture';
 import { createDisposableDatabase, verifySchemaBaseline } from '../testing/index';
 import type { DisposableDatabase } from '../testing/index';
 
@@ -50,13 +51,13 @@ describe('catalog draft categories on a fresh database (integration)', () => {
 
   it('provisions exactly the four canonical categories and no fifth row', async () => {
     const rows = await categories();
-    expect(rows).toHaveLength(APP2_CATEGORY_TAXONOMY.length);
-    expect(rows.map((row) => row.slug)).toEqual(APP2_CATEGORY_TAXONOMY.map((c) => c.slug));
+    expect(rows).toHaveLength(APP2_HISTORICAL_CATEGORIES.length);
+    expect(rows.map((row) => row.slug)).toEqual(APP2_HISTORICAL_CATEGORIES.map((c) => c.slug));
   });
 
   it('stores the exact locked id, name, order, status and indexability', async () => {
     const rows = await categories();
-    for (const [index, expected] of APP2_CATEGORY_TAXONOMY.entries()) {
+    for (const [index, expected] of APP2_HISTORICAL_CATEGORIES.entries()) {
       const row = rows[index] as CategoryRow;
       expect(row.id).toBe(expected.id);
       expect(row.name).toBe(expected.name);
@@ -82,7 +83,7 @@ describe('catalog draft categories on a fresh database (integration)', () => {
     const before = await categories();
     // The migrator will not replay 0033, so the DO block is exercised directly
     // — the same statements, against a database that already holds the rows.
-    const migration = APP2_CATEGORY_TAXONOMY.map(
+    const migration = APP2_HISTORICAL_CATEGORIES.map(
       (c) => sql`
         insert into categories (id, name, slug, display_order, status, is_indexable)
         select ${c.id}::uuid, ${c.name}, ${c.slug}, ${c.displayOrder}, ${APP2_CATEGORY_STATUS}, true

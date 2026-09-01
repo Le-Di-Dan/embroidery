@@ -7,7 +7,11 @@
  * Storefront's page-route count — but they publish the two files a crawler reads
  * first, so what they emit is asserted at the route, not only at the model.
  */
-import { publicSitemapEntryList, PublicSitemapEntryResponseKind } from '@embroidery/api-client';
+import {
+  publicCategoryList,
+  publicSitemapEntryList,
+  PublicSitemapEntryResponseKind,
+} from '@embroidery/api-client';
 
 import robots from '../../src/app/robots';
 import sitemap from '../../src/app/sitemap';
@@ -16,17 +20,35 @@ import { SitemapCapacityExceededError } from '../../src/features/storefront-seo'
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   publicSitemapEntryList: jest.fn(),
+  publicCategoryList: jest.fn(),
 }));
 
 const inventoryMock = publicSitemapEntryList as jest.MockedFunction<typeof publicSitemapEntryList>;
+// The category URLs are database rows now (`APP12-C01-C1`), so the sitemap
+// reads a second inventory. `tui-vai` is published but non-indexable: it must
+// reach Discover and must never reach this file.
+const categoryMock = publicCategoryList as jest.MockedFunction<typeof publicCategoryList>;
+
+const CATEGORIES = [
+  { slug: 'mu-luoi-trai', name: 'Mũ lưỡi trai', isIndexable: true, displayOrder: 7 },
+  { slug: 'tui-vai', name: 'Túi vải', isIndexable: false, displayOrder: 8 },
+];
 
 const ORIGIN = 'https://shop.example.test';
 
 beforeEach(() => {
   inventoryMock.mockReset();
+  categoryMock.mockReset();
+  categoryMock.mockResolvedValue(categoryInventory(CATEGORIES));
   process.env.STOREFRONT_PUBLIC_ORIGIN = ORIGIN;
   process.env.INTERNAL_API_BASE_URL = 'http://api:4000/api';
 });
+
+function categoryInventory(items: readonly (typeof CATEGORIES)[number][]) {
+  return { data: { items: [...items] } } as unknown as Awaited<
+    ReturnType<typeof publicCategoryList>
+  >;
+}
 
 function inventory(items: { kind: 'PRODUCT' | 'GALLERY'; slug: string }[]) {
   return {
@@ -89,7 +111,7 @@ describe('/robots.txt', () => {
 });
 
 describe('/sitemap.xml', () => {
-  it('composes the static routes and the B04 inventory into absolute URLs', async () => {
+  it('composes fixed routes, category rows and the B04 inventory into absolute URLs', async () => {
     inventoryMock.mockResolvedValue(
       inventory([
         { kind: PublicSitemapEntryResponseKind.PRODUCT, slug: 'con-tho' },
@@ -103,21 +125,39 @@ describe('/sitemap.xml', () => {
       expect.arrayContaining([
         `${ORIGIN}/`,
         `${ORIGIN}/kham-pha`,
+        // From the inventory, not from a compiled list.
+        `${ORIGIN}/kham-pha?category=mu-luoi-trai`,
         `${ORIGIN}/bo-suu-tap`,
         `${ORIGIN}/san-pham/con-tho`,
         `${ORIGIN}/bo-suu-tap/mua-he`,
       ]),
     );
+    // The published non-indexable category is browsable but never advertised,
+    // and no historical slug survives as a compiled entry.
+    expect(urls.join('\n')).not.toContain('tui-vai');
+    for (const historical of ['thu-bong', 'quan-ao', 'category=khan', 'category=khac']) {
+      expect(urls.join('\n')).not.toContain(historical);
+    }
     expect(inventoryMock).toHaveBeenCalledTimes(1);
   });
 
-  it('discovers indexability from B04 alone — it fetches no Product or Gallery detail', async () => {
+  it('discovers indexability from the two inventories alone — it fetches no detail', async () => {
     inventoryMock.mockResolvedValue(inventory([]));
     await sitemap();
 
-    // One call, to the inventory. Crawling the public feeds to decide inclusion
-    // would fork the indexability authority across two features.
+    // One entity read and one category read, and nothing else. Crawling the
+    // public feeds to decide inclusion would fork the indexability authority.
     expect(inventoryMock).toHaveBeenCalledTimes(1);
+    expect(categoryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates a category-inventory failure rather than dropping every category URL', async () => {
+    // Same reasoning as the entity inventory below: silently omitting every
+    // category URL would tell a crawler those feeds have been delisted.
+    inventoryMock.mockResolvedValue(inventory([]));
+    categoryMock.mockRejectedValue(new Error('categories unavailable'));
+
+    await expect(sitemap()).rejects.toThrow('categories unavailable');
   });
 
   it('propagates an inventory failure instead of serving a static-only sitemap', async () => {

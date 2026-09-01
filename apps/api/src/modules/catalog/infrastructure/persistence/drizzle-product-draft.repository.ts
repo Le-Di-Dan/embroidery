@@ -50,12 +50,21 @@ export class DrizzleProductDraftRepository
     super(executor);
   }
 
-  /** Product columns plus the category slug, which the Admin surface addresses by. */
+  /**
+   * Product columns plus the category slug the Admin surface addresses by and
+   * the category name it displays.
+   *
+   * The name comes from the joined row because the `categories` table is the
+   * only category authority (`APP12-C01-C1`). The join already existed for the
+   * slug, so reading the name beside it costs nothing and removes the compiled
+   * label map that could not name a category added after the build.
+   */
   private selection() {
     return {
       id: products.id,
       categoryId: products.categoryId,
       categorySlug: categories.slug,
+      categoryName: categories.name,
       name: products.name,
       slug: products.slug,
       description: products.description,

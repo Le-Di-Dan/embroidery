@@ -50,14 +50,10 @@ export const PRODUCT_COPY = {
     unknown: 'Chưa xác định',
   },
 
-  /** The fixed IMP-D032 taxonomy (`498:272` — Bộ lọc danh mục). */
-  category: {
-    thuBong: 'Thú bông',
-    khan: 'Khăn',
-    quanAo: 'Quần áo',
-    khac: 'Khác',
-    unknown: 'Chưa xác định',
-  },
+  // No category label catalog. A category's name is **data** — it comes from the
+  // `categories` row on every product and inventory response — so a copy entry
+  // here would be a second, compiled taxonomy and would render a real category
+  // the build had not heard of as "Chưa xác định" (`APP12-C01-C1`).
 
   media: {
     /**

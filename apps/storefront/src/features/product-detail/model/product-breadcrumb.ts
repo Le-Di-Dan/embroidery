@@ -1,8 +1,9 @@
-import { buildDiscoverHref, DISCOVER_ROUTE, toDiscoverCategorySlug } from '../../product-discovery';
+import { buildDiscoverHref, DISCOVER_ROUTE, isCategorySlugShape } from '../../product-discovery';
 import { PRODUCT_DETAIL_COPY } from './product-detail-copy';
 
 /**
- * The one resolved Product Detail breadcrumb trail (`APP11-S04-C1`).
+ * The one resolved Product Detail breadcrumb trail (`APP11-S04-C1`, corrected by
+ * `APP12-C01-C1`).
  *
  * ## Why this model exists
  *
@@ -13,49 +14,39 @@ import { PRODUCT_DETAIL_COPY } from './product-detail-copy';
  * `<nav>` and the JSON-LD are two consumers of this function, and a category
  * decision taken here cannot be taken differently over there.
  *
- * ## The defect it corrects
+ * ## The defect it originally corrected, and the one that replaced it
  *
- * A Product carries a Catalog category (`category.slug`), and Discover filters
- * on a closed set of four slugs. On paper those are the *same* set: the
- * committed OpenAPI artifact declares `PublicCategoryResponse.slug` as the enum
- * `thu-bong | khan | quan-ao | khac`, exactly matching
- * `PublicProductListCategorySlug`, and the generated types say a Product outside
- * it cannot exist.
+ * `APP11-S04` linked `/kham-pha?category=<slug>` unconditionally, trusting a
+ * contract that declared `PublicCategoryResponse.slug` a closed four-value enum.
+ * The running database disagreed — it held a fifth category, `ao-thun`, and the
+ * public read served it — so the page rendered, and advertised in structured
+ * data, a URL Discover answered with its not-found boundary.
  *
- * The running system disagrees. `categories.slug` is an unconstrained `text`
- * column with only a uniqueness index, the database holds a fifth category
- * `ao-thun`, and `GET /api/public/products/ao-thun-cotton` returns it. So
- * `APP11-S04` — which trusted the declared type and linked
- * `/kham-pha?category=<slug>` unconditionally — both rendered and *advertised in
- * structured data* a URL Discover answers with its not-found boundary. A
- * structured-data trail whose intermediate item is not a navigable page is worse
- * than no trail: it tells a crawler the store's own navigation is broken.
+ * `S04-C1` fixed that by checking the slug against the four Discover filters and
+ * dropping the crumb when it did not match. That was right for its moment and
+ * wrong as an end state: it made a **compiled list** the arbiter of which real
+ * categories deserve a breadcrumb, so a category the operator publishes today
+ * still loses its crumb until someone edits source. The store's own data was
+ * being second-guessed by a constant.
  *
- * That divergence between the published contract and the persisted data is a
- * backend concern, recorded as `FU-APP11-S04-C1-02` and deliberately not fixed
- * here. This module's job is narrower and holds either way: a URL this page
- * publishes must resolve, and that is checked rather than assumed. Validating at
- * the boundary is correct even when the type says validation is unnecessary —
- * here it is demonstrably not.
- *
- * ## The rule
+ * ## The rule now
  *
  * ```text
- * category slug is one of the four Discover filters  ->  Khám phá / category / Product
- * anything else                                      ->  Khám phá / Product
+ * category.slug is a well-formed slug  ->  Khám phá / category.name / Product
+ * anything else                        ->  Khám phá / Product
  * ```
  *
- * The non-canonical case drops the crumb rather than repairing it. There is
- * **no mapping** from `ao-thun` to `quan-ao` or to anything else: no repository
- * authority defines one, and inventing a coarse taxonomy here would be this
- * module deciding what the catalogue means. Two levels is the honest trail —
- * `Khám phá` really is where this Product was reached from, and it really does
- * resolve.
+ * There is no membership test, because there is nothing legitimate to test
+ * against: the category on a public Product response came from the `categories`
+ * row the API joined, which is the same table Discover lists from. A Product is
+ * only publicly visible when its category is published and not archived — the
+ * public read enforces that in SQL — so a category that reaches this function
+ * is, by construction, one `/kham-pha?category=` will render.
  *
- * The membership test is `toDiscoverCategorySlug`, the same narrowing the
- * `/kham-pha` route uses to decide whether a `?category=` value is real. One
- * predicate means a crumb can only ever be built for a state the route will
- * actually render, and a contract change moves both at once.
+ * What remains is a **syntax** guard, and it is not ceremony: the slug is
+ * interpolated into a URL this page publishes to crawlers, and a malformed value
+ * must not become an advertised address. That is a rule this app owns. Which
+ * categories exist is not.
  *
  * ## What is not decided here
  *
@@ -85,20 +76,23 @@ export interface ProductBreadcrumbSubject {
  * already on, which is why the visible crumb is text rather than a link and why
  * the JSON-LD item has no `item` URL.
  *
- * Every emitted category href goes through `buildDiscoverHref`, so the crumb,
- * the Discover chips and the sitemap's four category URLs are all composed by
- * one builder and cannot disagree about how a category is addressed.
+ * The category crumb's label is `category.name` — the operator's own text, from
+ * the row — so renaming a category renames the crumb with no deployment. Every
+ * emitted href goes through `buildDiscoverHref`, so the crumb, the Discover
+ * chips and the sitemap's category URLs are composed by one builder and cannot
+ * disagree about how a category is addressed.
  */
 export function resolveProductBreadcrumb(
   product: ProductBreadcrumbSubject,
 ): readonly ProductBreadcrumbItem[] {
-  const canonicalSlug = toDiscoverCategorySlug(product.categorySlug);
+  const hasLinkableCategory =
+    isCategorySlugShape(product.categorySlug) && product.categoryName !== '';
 
   return [
     { name: PRODUCT_DETAIL_COPY.discover, path: DISCOVER_ROUTE },
-    ...(canonicalSlug === undefined
-      ? []
-      : [{ name: product.categoryName, path: buildDiscoverHref(canonicalSlug) }]),
+    ...(hasLinkableCategory
+      ? [{ name: product.categoryName, path: buildDiscoverHref(product.categorySlug) }]
+      : []),
     { name: product.name },
   ];
 }

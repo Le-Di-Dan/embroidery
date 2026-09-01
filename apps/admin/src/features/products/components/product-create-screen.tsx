@@ -17,6 +17,7 @@ import { ADMIN_PRODUCTS_ROUTE, adminProductDetailRoute } from '../model/product-
 import { useProductCreateMutation } from '../hooks/use-product-mutations';
 import { useUnsavedChanges } from '../hooks/use-unsaved-changes';
 import { ProductUnsavedDialog } from './product-confirm-dialogs';
+import { useCategoryInventoryQuery } from '../hooks/use-category-inventory-query';
 import { ProductFormFields } from './product-form-fields';
 import { ProductValidationSummary } from './product-validation-summary';
 
@@ -37,6 +38,10 @@ export function ProductCreateScreen() {
   const [values, setValues] = useState<ProductFormValues>(EMPTY_CREATE_VALUES);
   const [submitted, setSubmitted] = useState(false);
   const mutation = useProductCreateMutation();
+  // The category options are the categories the database currently publishes
+  // (`APP12-C01-C1`). Empty while the read is in flight, or if it fails: the
+  // select then offers its placeholder alone rather than a remembered list.
+  const categories = useCategoryInventoryQuery();
 
   const dirty = isCreateFormDirty(values) && !mutation.isSuccess;
   const guard = useUnsavedChanges(dirty);
@@ -104,6 +109,7 @@ export function ProductCreateScreen() {
             errors={submitted ? errors : {}}
             disabled={submitting}
             showPrice={false}
+            categories={categories.data ?? []}
             onChange={(patch) => setValues((current) => ({ ...current, ...patch }))}
           />
         </div>

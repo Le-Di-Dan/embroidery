@@ -9,7 +9,7 @@
  * only fills in after hydration is invisible to a crawler and slow for the
  * visitor, and `APP2` requires the Storefront to be SSR/SEO-valid.
  */
-import { publicProductList } from '@embroidery/api-client';
+import { publicCategoryList, publicProductList } from '@embroidery/api-client';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import DiscoverPage, { generateMetadata } from '../../src/app/kham-pha/page';
@@ -18,6 +18,7 @@ import { makePublicPage, makePublicProduct, publicEnvelope } from '../support/di
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   publicProductList: jest.fn(),
+  publicCategoryList: jest.fn(),
 }));
 
 const notFoundError = new Error('NEXT_NOT_FOUND');
@@ -28,6 +29,30 @@ jest.mock('next/navigation', () => ({
 }));
 
 const listMock = publicProductList as jest.MockedFunction<typeof publicProductList>;
+const categoryMock = publicCategoryList as jest.MockedFunction<typeof publicCategoryList>;
+
+/**
+ * The category inventory this page now renders its chips from
+ * (`APP12-C01-C1`).
+ *
+ * Arbitrary fixture values, deliberately not the four migration `0033` seeded:
+ * the page must render whatever the database publishes, and a test asserting
+ * the historical four would make this file a second taxonomy.
+ */
+const CATEGORIES = [
+  { slug: 'mu-luoi-trai', name: 'Mũ lưỡi trai', isIndexable: true, displayOrder: 7 },
+  { slug: 'tui-vai', name: 'Túi vải', isIndexable: false, displayOrder: 8 },
+];
+
+function categoryEnvelope(items: readonly (typeof CATEGORIES)[number][]) {
+  return {
+    success: true as const,
+    code: 'PUBLIC_CATEGORY_LIST_READ',
+    message: '',
+    data: { items: [...items] },
+    meta: { requestId: 'test', timestamp: '2026-09-01T00:00:00.000Z' },
+  } as unknown as Awaited<ReturnType<typeof publicCategoryList>>;
+}
 
 const PRODUCTS = [
   makePublicProduct({ slug: 'a', name: 'Thỏ trắng của Mai' }),
@@ -40,6 +65,8 @@ const PRODUCTS = [
 
 beforeEach(() => {
   listMock.mockReset();
+  categoryMock.mockReset();
+  categoryMock.mockResolvedValue(categoryEnvelope(CATEGORIES));
   process.env.INTERNAL_API_BASE_URL = 'http://api:4000/api';
 });
 
@@ -65,30 +92,100 @@ describe('/kham-pha server rendering', () => {
     expect(markup).not.toContain('<footer');
   });
 
-  it('issues exactly one API request for the initial render', async () => {
+  it('issues exactly one product request and one category request per render', async () => {
     listMock.mockResolvedValue(publicEnvelope(makePublicPage(PRODUCTS)));
 
     await renderPage();
 
     expect(listMock).toHaveBeenCalledTimes(1);
     expect(listMock).toHaveBeenCalledWith({ limit: 20 }, expect.anything());
+    expect(categoryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the chips from the database inventory, labelled by row name', async () => {
+    listMock.mockResolvedValue(publicEnvelope(makePublicPage(PRODUCTS)));
+
+    const markup = await renderPage();
+
+    expect(markup).toContain('Mũ lưỡi trai');
+    expect(markup).toContain('/kham-pha?category=mu-luoi-trai');
+    // A non-indexable category is still browsable.
+    expect(markup).toContain('/kham-pha?category=tui-vai');
   });
 
   it('asks the API for the category in the URL and marks that chip current', async () => {
     listMock.mockResolvedValue(publicEnvelope(makePublicPage(PRODUCTS)));
 
-    const markup = await renderPage({ category: 'khan' });
+    const markup = await renderPage({ category: 'mu-luoi-trai' });
 
-    expect(listMock).toHaveBeenCalledWith({ limit: 20, categorySlug: 'khan' }, expect.anything());
+    expect(listMock).toHaveBeenCalledWith(
+      { limit: 20, categorySlug: 'mu-luoi-trai' },
+      expect.anything(),
+    );
     expect(markup).toContain('aria-current="page"');
-    expect(markup).toContain('/kham-pha?category=khan');
+    expect(markup).toContain('/kham-pha?category=mu-luoi-trai');
   });
 
-  it('takes the not-found boundary for an unknown category instead of showing everything', async () => {
+  it('renders a category the build never knew, with no source change', async () => {
+    // The dynamic property in one assertion: a row added to the inventory
+    // becomes a chip and a valid selection, from data alone.
+    listMock.mockResolvedValue(publicEnvelope(makePublicPage(PRODUCTS)));
+    categoryMock.mockResolvedValue(
+      categoryEnvelope([
+        ...CATEGORIES,
+        {
+          slug: 'danh-muc-moi',
+          name: 'Danh mục hoàn toàn mới',
+          isIndexable: true,
+          displayOrder: 9,
+        },
+      ]),
+    );
+
+    const markup = await renderPage({ category: 'danh-muc-moi' });
+
+    expect(markup).toContain('Danh mục hoàn toàn mới');
+    expect(listMock).toHaveBeenCalledWith(
+      { limit: 20, categorySlug: 'danh-muc-moi' },
+      expect.anything(),
+    );
+  });
+
+  it('takes the not-found boundary for a category the inventory does not contain', async () => {
     listMock.mockResolvedValue(publicEnvelope(makePublicPage(PRODUCTS)));
 
     await expect(renderPage({ category: 'khong-ton-tai' })).rejects.toThrow('NEXT_NOT_FOUND');
     expect(listMock).not.toHaveBeenCalled();
+  });
+
+  it('degrades the chip row, and never substitutes a taxonomy, when the inventory fails', async () => {
+    listMock.mockResolvedValue(publicEnvelope(makePublicPage(PRODUCTS)));
+    categoryMock.mockRejectedValue(new Error('connect ECONNREFUSED 10.0.0.4:4000'));
+
+    const markup = await renderPage();
+
+    expect(markup).toContain('Chưa thể tải danh mục.');
+    // The feed still renders, and no remembered category list appears.
+    expect(markup).toContain('Thỏ trắng của Mai');
+    for (const historical of ['thu-bong', 'quan-ao', 'category=khan', 'category=khac']) {
+      expect(markup).not.toContain(historical);
+    }
+    expect(markup).not.toContain('ECONNREFUSED');
+  });
+
+  it('still renders a well-formed category when the inventory is unavailable', async () => {
+    // Unknown is not empty: 404ing a valid category because the inventory read
+    // blipped would be worse than rendering it.
+    listMock.mockResolvedValue(publicEnvelope(makePublicPage(PRODUCTS)));
+    categoryMock.mockRejectedValue(new Error('boom'));
+
+    const markup = await renderPage({ category: 'mu-luoi-trai' });
+
+    expect(markup).toContain('Thỏ trắng của Mai');
+    expect(listMock).toHaveBeenCalledWith(
+      { limit: 20, categorySlug: 'mu-luoi-trai' },
+      expect.anything(),
+    );
   });
 
   it('absorbs a failed prefetch instead of rendering an error page', async () => {
@@ -140,10 +237,27 @@ describe('/kham-pha server rendering', () => {
   it('self-canonicalises each category state to its own URL (APP11-S04)', async () => {
     process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
     const metadata = await generateMetadata({
-      searchParams: Promise.resolve({ category: 'khan' }),
+      searchParams: Promise.resolve({ category: 'mu-luoi-trai' }),
     });
 
-    expect(metadata.alternates?.canonical).toBe('https://example.test/kham-pha?category=khan');
-    expect(metadata.openGraph?.url).toBe('https://example.test/kham-pha?category=khan');
+    expect(metadata.alternates?.canonical).toBe(
+      'https://example.test/kham-pha?category=mu-luoi-trai',
+    );
+    expect(metadata.openGraph?.url).toBe('https://example.test/kham-pha?category=mu-luoi-trai');
+  });
+
+  it('canonicalises a category the build never knew, from the inventory alone', async () => {
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    categoryMock.mockResolvedValue(
+      categoryEnvelope([
+        { slug: 'ao-khoac', name: 'Áo khoác', isIndexable: true, displayOrder: 4 },
+      ]),
+    );
+
+    const metadata = await generateMetadata({
+      searchParams: Promise.resolve({ category: 'ao-khoac' }),
+    });
+
+    expect(metadata.alternates?.canonical).toBe('https://example.test/kham-pha?category=ao-khoac');
   });
 });

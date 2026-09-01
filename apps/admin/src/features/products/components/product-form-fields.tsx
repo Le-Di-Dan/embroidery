@@ -2,10 +2,10 @@
 
 import { useId } from 'react';
 
-import { PRODUCT_CATEGORY_OPTIONS } from '../model/product-category-options';
+import { toProductCategoryOptions } from '../model/product-category-options';
 import { PRODUCT_FORM_COPY } from '../model/product-form-copy';
 import type { ProductFormValues, ProductValidationErrors } from '../model/product-form-values';
-import type { ProductCategorySlug } from '../model/product-category-options';
+import type { ProductCategory } from '../services/category-inventory.service';
 
 interface ProductFormFieldsProps {
   readonly values: ProductFormValues;
@@ -13,6 +13,15 @@ interface ProductFormFieldsProps {
   readonly disabled: boolean;
   /** Create mode renders three fields; price belongs to edit mode only. */
   readonly showPrice: boolean;
+  /**
+   * The category inventory, from `GET /api/public/categories` (`APP12-C01-C1`).
+   *
+   * Passed in rather than fetched here: this component renders and owns no data.
+   * An empty array — inventory still loading, or unreadable — renders the
+   * placeholder alone, which is a truthful "no category can be chosen right now"
+   * rather than a remembered list of four.
+   */
+  readonly categories: readonly ProductCategory[];
   readonly onChange: (patch: Partial<ProductFormValues>) => void;
 }
 
@@ -35,6 +44,7 @@ export function ProductFormFields({
   errors,
   disabled,
   showPrice,
+  categories,
   onChange,
 }: ProductFormFieldsProps) {
   const nameId = useId();
@@ -100,12 +110,10 @@ export function ProductFormFields({
             value={values.categorySlug}
             aria-describedby={`${categoryId}-help`}
             aria-invalid={errors.categorySlug !== undefined}
-            onChange={(event) =>
-              onChange({ categorySlug: event.target.value as ProductCategorySlug | '' })
-            }
+            onChange={(event) => onChange({ categorySlug: event.target.value })}
           >
             <option value="">{PRODUCT_FORM_COPY.fields.categoryPlaceholder}</option>
-            {PRODUCT_CATEGORY_OPTIONS.map((option) => (
+            {toProductCategoryOptions(categories).map((option) => (
               <option key={option.slug} value={option.slug}>
                 {option.label}
               </option>

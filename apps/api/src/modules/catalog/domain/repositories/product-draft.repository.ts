@@ -20,6 +20,15 @@ export interface ProductDraft {
   readonly id: ProductDraftId;
   readonly categoryId: string;
   readonly categorySlug: string;
+  /**
+   * The category's own `name`, read from the joined row (`APP12-C01-C1`).
+   *
+   * Carried rather than looked up: the Admin projection used to derive a label
+   * from a compiled taxonomy, which meant a category the operator adds rendered
+   * as its raw slug. The row already had the name — the join was there — so
+   * this is one more selected column, not one more query.
+   */
+  readonly categoryName: string;
   readonly name: string;
   /** Server-owned and immutable in APP2-B02. */
   readonly slug: string;

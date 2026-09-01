@@ -113,6 +113,7 @@ import type {
   IssueVerificationChallengeBody,
   OpenCustomerMergeBody,
   PrepareGalleryAssetBody,
+  PublicCategoryList200,
   PublicCustomRequestAssetStatus200,
   PublicCustomRequestAssetUpload202,
   PublicCustomRequestAssetUploadBody,
@@ -1660,6 +1661,19 @@ export const healthReadiness = (
 };
 
 /**
+ * Returns every category an anonymous caller may browse by, as `{ slug, name, isIndexable, displayOrder }`. Anonymous: no session or cookie is involved. The taxonomy is **dynamic** — it is operator data, not a fixed contract enum — so a consumer reads it here instead of compiling a category list in. A category appears when it is published and not archived. Draft and archived categories are absent, and absence is the only signal: the response never reveals that an unpublished category exists. Indexability is not visibility: a category marked `isIndexable: false` is listed and fully browsable, and must simply not be advertised in a sitemap or an indexable breadcrumb. The flag is carried so that decision needs no second read. Path-agnostic on purpose: no absolute URL and no browser route is emitted, because the Storefront owns route shapes and composes them itself. The inventory is complete and unpaged — there is no cursor, limit or filter, and a taxonomy too large for one response fails rather than truncating. Ordered by `displayOrder` then `slug`, deterministically. Responses are never stored: publication and archival are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep offering a withdrawn category.
+ * @summary List the publicly browsable categories
+ */
+export const publicCategoryList = (
+  options?: SecondParameter<typeof apiRequest<PublicCategoryList200>>,
+) => {
+  return apiRequest<PublicCategoryList200>(
+    { url: `/api/public/categories`, method: 'GET' },
+    options,
+  );
+};
+
+/**
  * Streams a single PNG, JPEG or WebP image of at most 10485760 bytes into private storage and queues inspection. Authorized by a verified, unexpired SUBMISSION challenge that has not yet produced a request. The image is never public and is not attached to anything until the request is submitted. Idempotent: repeating the request with the same Idempotency-Key and the same file returns the original result and writes no second object or asset.
  * @summary Upload one image as custom-request evidence
  */
@@ -2681,6 +2695,7 @@ export type AdminSkuStockLedgerResult = NonNullable<
 >;
 export type HealthCheckResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>;
 export type HealthReadinessResult = NonNullable<Awaited<ReturnType<typeof healthReadiness>>>;
+export type PublicCategoryListResult = NonNullable<Awaited<ReturnType<typeof publicCategoryList>>>;
 export type PublicCustomRequestAssetUploadResult = NonNullable<
   Awaited<ReturnType<typeof publicCustomRequestAssetUpload>>
 >;

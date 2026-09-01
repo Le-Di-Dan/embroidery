@@ -43,13 +43,34 @@ export const CANONICAL_FILES = Object.freeze({
   designIndex: 'docs/design/FIGMA_DESIGN_INDEX.md',
 });
 
-/** The ruling this gate enforces (IMP-D038). */
+/**
+ * The ruling this gate enforces (IMP-D038).
+ *
+ * ## No category values live here — `APP12-C01-C1`
+ *
+ * This object used to carry `categorySlugs: ['thu-bong', 'khan', 'quan-ao',
+ * 'khac']`, and the gate failed unless the decision register named all four.
+ * A governance tool that holds the category list is still a **second category
+ * authority**: it would have to be edited every time an operator published a
+ * category, which is exactly the coupling `CATEGORY_VALUE_SOURCE_OF_TRUTH =
+ * DATABASE` removes — and until it was, it would fail the build for a data
+ * change.
+ *
+ * What survives is structural and genuinely fixed by ruling: the Discover route,
+ * the Homepage route, the `?category=` query key, and the shape a category slug
+ * may take. Which slugs exist is not this file's business, and no assertion here
+ * may name one again.
+ */
 export const EXPECTED = Object.freeze({
   decisionId: 'IMP-D038',
   discoverRoute: '/kham-pha',
   homeRoute: '/',
   categoryQueryKey: 'category',
-  categorySlugs: ['thu-bong', 'khan', 'quan-ao', 'khac'],
+  /**
+   * The slug **shape** the contract publishes — a rule, not a taxonomy.
+   * Mirrors `CATEGORY_SLUG_PATTERN` in the API's catalog domain.
+   */
+  categorySlugPattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$',
   cardInteraction: 'NON_INTERACTIVE',
   /** Resolved by IMP-D039; `check-storefront-product-detail-authority.mjs` owns its detail. */
   detailRoute: '/san-pham/[slug]',
@@ -190,7 +211,7 @@ function checkFacts(facts, fail) {
     ['APP2-S01 discover route', EXPECTED.discoverRoute],
     ['Homepage route', EXPECTED.homeRoute],
     ['Category query key', EXPECTED.categoryQueryKey],
-    ['Category slugs', EXPECTED.categorySlugs.join(', ')],
+    ['Category value source of truth', 'DATABASE'],
     ['S01 product card interaction', EXPECTED.cardInteraction],
     ['Product detail browser route', EXPECTED.detailRoute],
     ['APP2-S02 status', EXPECTED.s02Status],
@@ -210,7 +231,13 @@ function checkDecisionRow(row, fail) {
     fail(`${CANONICAL_FILES.register}: no single \`${EXPECTED.decisionId}\` row`);
     return;
   }
-  if (!row.trimEnd().endsWith('| LOCKED |')) {
+  // `LOCKED`, optionally followed by the register's supersession annotation —
+  // the form `IMP-D032` and `IMP-D038` both carry since `APP12-P01` recorded
+  // that their category-value clauses were superseded. The exact-match check
+  // that stood here failed on the annotation alone, which made a correctly
+  // recorded supersession look like an unlocked decision (`APP12-C01-C1`).
+  // What must never pass is a status that is not locked at all.
+  if (!/|s*LOCKED[^|]*|s*$/.test(row.trimEnd())) {
     fail(`${EXPECTED.decisionId} is not LOCKED`);
   }
   if (!row.includes(EXPECTED.discoverRoute)) {
@@ -219,9 +246,11 @@ function checkDecisionRow(row, fail) {
   if (!row.includes(`?${EXPECTED.categoryQueryKey}=`)) {
     fail(`${EXPECTED.decisionId} does not state the \`?${EXPECTED.categoryQueryKey}=\` state`);
   }
-  for (const slug of EXPECTED.categorySlugs) {
-    if (!row.includes(slug)) fail(`${EXPECTED.decisionId} omits the fixed category \`${slug}\``);
-  }
+  // Deliberately **no** assertion that the row names any particular category.
+  // IMP-D038 is a dated ruling and its historical sentence about four categories
+  // is history, not a live contract; `IMP-D059`/`IMP-D062` superseded the
+  // taxonomy clause. Requiring the four here would make this gate the thing that
+  // has to change when an operator publishes a category.
   if (!/non-interactive/i.test(row)) {
     fail(`${EXPECTED.decisionId} does not authorize non-interactive S01 product cards`);
   }

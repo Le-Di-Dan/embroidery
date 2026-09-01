@@ -1,7 +1,6 @@
 import { publicProductList, type PublicProductListResponse } from '@embroidery/api-client';
 
 import { getBrowserApiClient } from '../../../config/browser-api-client';
-import type { DiscoverCategorySlug } from '../model/discover-categories';
 import { DISCOVER_PAGE_SIZE } from '../model/discover-query-keys';
 
 /**
@@ -13,7 +12,7 @@ import { DISCOVER_PAGE_SIZE } from '../model/discover-query-keys';
  * different filter (IMP-D037).
  */
 export async function fetchDiscoverPage(
-  categorySlug: DiscoverCategorySlug | undefined,
+  categorySlug: string | undefined,
   cursor: string | undefined,
 ): Promise<PublicProductListResponse> {
   const body = await publicProductList(

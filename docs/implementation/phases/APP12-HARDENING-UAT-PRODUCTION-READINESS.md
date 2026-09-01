@@ -7,9 +7,10 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-C01
+NEXT                   = APP12-C02
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
+                         APP12-C01-C1 (2026-09-01, 1/1 — no C2)
 LOCKED_AT              = APP12-P01 entry, 2026-09-01, Product Owner authority
 ```
 
@@ -214,8 +215,9 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 3·C1 | `APP12-G02-C1` | Wave-2 customer CTA suppression | `COMPLETE` |
 | 4 | `APP12-D01` | Ready-Made commerce design package | `COMPLETE` |
 | 5 | `APP12-DB01` | Order origin, Ready-Made lifecycle, FULL obligation, ORDER_ACCESS, reservation expiry | `COMPLETE` |
-| 6 | `APP12-C01` | Dynamic public category contract and inventory read | **`NEXT`** |
-| 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | `NOT_STARTED` |
+| 6 | `APP12-C01` | Dynamic public category contract and inventory read | `COMPLETE_AFTER_C1` |
+| 6·C1 | `APP12-C01-C1` | Database category source-of-truth correction | `COMPLETE` |
+| 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | **`NEXT`** |
 | 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | `NOT_STARTED` |
 | 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | `NOT_STARTED` |
 | 10 | `APP12-G03` | Representative UAT dataset | `NOT_STARTED` |

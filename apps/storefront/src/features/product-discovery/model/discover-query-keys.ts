@@ -1,5 +1,3 @@
-import type { DiscoverCategorySlug } from './discover-categories';
-
 /**
  * TanStack Query keys and the page size for the Discover feed.
  *
@@ -20,6 +18,6 @@ export const DISCOVER_PAGE_SIZE = 20;
 
 export const discoverQueryKeys = {
   all: ['public-products'] as const,
-  list: (categorySlug: DiscoverCategorySlug | undefined) =>
+  list: (categorySlug: string | undefined) =>
     [...discoverQueryKeys.all, 'list', categorySlug ?? 'all'] as const,
 } as const;

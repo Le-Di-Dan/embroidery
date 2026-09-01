@@ -26,19 +26,17 @@ export { toDiscoverCard } from './model/discover-feed';
 export type { DiscoverCard } from './model/discover-feed';
 export { resolveDiscoverSelection, selectionSlug } from './model/discover-selection';
 export type { DiscoverSelection, DiscoverSearchParams } from './model/discover-selection';
-export type { DiscoverCategorySlug } from './model/discover-categories';
-// The four contract slugs as a **value**, for `APP11-S04`: the sitemap must
-// advertise every canonical category state, and deriving them from the contract
-// enum — the same source the chips use — means a contract change is a build
-// failure rather than a sitemap entry that silently 404s.
-export { DISCOVER_CATEGORY_SLUGS } from './model/discover-categories';
-// The canonical membership test, for `APP11-S04-C1`. A Product carries a
-// Catalog category slug, and nothing constrains that to be one of the four
-// Discover filters — so Product Detail must be able to ask, with the same
-// narrowing `/kham-pha` applies to a `?category=` value, whether a slug names
-// a state this route will actually render. One predicate means a breadcrumb
-// can never link to a filter the feed answers with its not-found boundary.
-export { toDiscoverCategorySlug } from './model/discover-categories';
+// The category chip model (`APP12-C01-C1`). A `DiscoverCategory` is a row from
+// `GET /api/public/categories`, never a compiled value — the type is the
+// contract's own item type, aliased. No slug list crosses this boundary any
+// more, because there is no longer one to export: `DISCOVER_CATEGORY_SLUGS` and
+// `toDiscoverCategorySlug` were a second taxonomy and are gone.
+export type { DiscoverCategory, DiscoverChip } from './model/discover-categories';
+export { toDiscoverChips, isKnownCategory } from './model/discover-categories';
+// Slug **shape**, which is a rule this app owns, unlike the slug **values**,
+// which it does not. Product Detail uses it to reject a malformed category on a
+// Product response before building an href from it.
+export { isCategorySlugShape, CATEGORY_SLUG_PATTERN } from './model/category-slug-shape';
 
 // `services/discover-catalog.server` is deliberately NOT re-exported here. It
 // reaches for `INTERNAL_API_BASE_URL`, which is server-only; routing it through

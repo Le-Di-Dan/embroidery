@@ -1,8 +1,4 @@
-import {
-  buildDiscoverHref,
-  DISCOVER_CATEGORY_SLUGS,
-  DISCOVER_ROUTE,
-} from '../../product-discovery';
+import { DISCOVER_ROUTE } from '../../product-discovery';
 import { STOREFRONT_POLICY_PAGES } from '../../content-pages/model/policies/policy-resolver';
 import {
   STOREFRONT_FAQ_ROUTE,
@@ -51,13 +47,20 @@ import {
  * reason: no canonical SEO authority in this repository sets either, and a
  * number invented here would quietly become that authority.
  *
- * ## The category URLs are query state, not routes
+ * ## The category URLs are **not** here
  *
  * `/kham-pha?category=<slug>` is the canonical address of a filtered Discover
- * feed (IMP-D038, `APP2-S01-G01`) — there is no `/danh-muc/[slug]`. The four
- * slugs come from the contract enum through `DISCOVER_CATEGORY_SLUGS`, never a
- * hand-kept list, so a contract change is a build failure rather than a sitemap
- * advertising a category that 404s.
+ * feed (IMP-D038, `APP2-S01-G01`) — there is no `/danh-muc/[slug]` — so a
+ * category state is a real, indexable URL and belongs in the sitemap. It does
+ * **not** belong in this array, because the set of categories is not fixed:
+ * it is rows in `categories`, read at request time
+ * (`APP12-C01-C1`). This module is for routes that exist because a `page.tsx`
+ * exists; a category URL exists because an operator published a row.
+ *
+ * The four category URLs that used to sit here were compiled from a contract
+ * enum, so a category published after the build never reached a crawler and one
+ * archived after the build kept being advertised. `sitemap-composition.ts` now
+ * takes the live indexable inventory as its own argument.
  */
 
 /** One fixed public URL path, root-relative. */
@@ -69,12 +72,22 @@ export interface PublicStaticRoute {
 }
 
 /**
- * The inventory, in route authority order: home, Discover, its four canonical
- * category states, the gallery feed, then the `APP11-S05` content pages —
- * Service, FAQ, Local, and the four policies in canonical policy order. The
- * order is the sitemap's own static ordering (see `sitemap-composition.ts`), so
- * it is a decision recorded here rather than an accident of how the array was
- * appended to.
+ * The id of the Discover route, named so the composer can place the
+ * database-derived category URLs immediately after it without depending on this
+ * array's positions (`APP12-C01-C1`).
+ */
+export const DISCOVER_ROUTE_ID = 'discover';
+
+/**
+ * The inventory, in route authority order: home, Discover, the gallery feed,
+ * then the `APP11-S05` content pages — Service, FAQ, Local, and the four
+ * policies in canonical policy order. The order is the sitemap's own static
+ * ordering (see `sitemap-composition.ts`), so it is a decision recorded here
+ * rather than an accident of how the array was appended to.
+ *
+ * The database-derived category URLs are inserted **after** `discover` by the
+ * composer, which is where the three sources — fixed routes, category rows,
+ * dynamic entities — are ordered against each other.
  *
  * The S05 entries carry no `lastModified` either, for the reason above: static
  * copy has no authoring timestamp, and the build time would be a freshness claim
@@ -82,11 +95,7 @@ export interface PublicStaticRoute {
  */
 export const PUBLIC_STATIC_ROUTES: readonly PublicStaticRoute[] = [
   { id: 'home', path: STOREFRONT_HOME_ROUTE },
-  { id: 'discover', path: DISCOVER_ROUTE },
-  ...DISCOVER_CATEGORY_SLUGS.map((slug) => ({
-    id: `discover-category-${slug}`,
-    path: buildDiscoverHref(slug),
-  })),
+  { id: DISCOVER_ROUTE_ID, path: DISCOVER_ROUTE },
   { id: 'gallery', path: STOREFRONT_GALLERY_ROUTE },
   { id: 'service', path: STOREFRONT_SERVICE_ROUTE },
   { id: 'faq', path: STOREFRONT_FAQ_ROUTE },

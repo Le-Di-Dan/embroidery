@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import { PRODUCT_COPY } from '../model/product-copy';
 import { ADMIN_PRODUCT_NEW_ROUTE } from '../model/product-route';
+import { useCategoryInventoryQuery } from '../hooks/use-category-inventory-query';
 import { useProductFilters } from '../hooks/use-product-filters';
 import { ProductCollection } from './product-collection';
 import { ProductFilterBar } from './product-filter-bar';
@@ -24,6 +25,10 @@ import { ProductFilterBar } from './product-filter-bar';
  */
 export function ProductListScreen() {
   const { filters, setStatus, setCategory } = useProductFilters();
+  // The filter chips are the categories the database currently publishes
+  // (`APP12-C01-C1`). While the read is in flight — or if it fails — the bar
+  // offers "all" alone rather than a remembered list.
+  const categories = useCategoryInventoryQuery();
 
   return (
     <section className="products">
@@ -51,6 +56,7 @@ export function ProductListScreen() {
         filters={filters}
         onStatusChange={setStatus}
         onCategoryChange={setCategory}
+        categories={categories.data ?? []}
       />
       <ProductCollection filters={filters} />
     </section>

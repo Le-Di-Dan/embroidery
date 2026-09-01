@@ -16,15 +16,23 @@
  */
 import type { AdminProductDetailResponse } from '@embroidery/api-client';
 
-import { PRODUCT_CATEGORY_SLUGS, type ProductCategorySlug } from './product-category-options';
+import { isCategorySlugShape } from './category-slug-shape';
 import { hasSelectionChanged, selectionFromDetailMedia } from './product-media-selection';
 import { inputToPriceAmount, priceAmountToInput } from './product-price';
 
 /** What the inputs hold. Every field is the raw string/selection the UI edits. */
 export interface ProductFormValues {
   readonly name: string;
-  /** Empty string means "not chosen yet" — only ever seen in create mode. */
-  readonly categorySlug: ProductCategorySlug | '';
+  /**
+   * The chosen category slug, or the empty string for "not chosen yet".
+   *
+   * A `string`, because the set of categories is data (`APP12-C01-C1`). The
+   * `<select>` can only offer what the inventory returned, so a value here is a
+   * category the server will accept — and if the inventory later drops one, the
+   * server refuses it as `PRODUCT_CATEGORY_INVALID` rather than this app
+   * pretending to know better.
+   */
+  readonly categorySlug: string;
   readonly description: string;
   /** Raw price input; empty means the unset sentinel. */
   readonly price: string;
@@ -33,7 +41,7 @@ export interface ProductFormValues {
 
 /** The exact `adminProduct_create` body: three fields, nothing else. */
 export interface ProductCreateRequestBody {
-  readonly categorySlug: ProductCategorySlug;
+  readonly categorySlug: string;
   readonly name: string;
   readonly description?: string;
 }
@@ -44,7 +52,7 @@ export interface ProductUpdateRequestBody {
   readonly name?: string;
   readonly description?: string | null;
   readonly basePriceAmount?: string;
-  readonly categorySlug?: ProductCategorySlug;
+  readonly categorySlug?: string;
   readonly mediaAssetIds?: readonly string[];
 }
 
@@ -56,20 +64,20 @@ export const EMPTY_CREATE_VALUES: ProductFormValues = {
   mediaAssetIds: [],
 };
 
-function isKnownCategory(slug: unknown): slug is ProductCategorySlug {
-  return typeof slug === 'string' && (PRODUCT_CATEGORY_SLUGS as readonly string[]).includes(slug);
-}
-
 /**
- * Seeds the form from the authoritative record. An unrecognised category slug
- * becomes "not chosen" rather than being echoed back: this build cannot
- * meaningfully edit a category it does not know, and silently returning the
- * unknown value on save would persist it.
+ * Seeds the form from the authoritative record.
+ *
+ * The product's own category is kept, whatever it is. It used to be checked
+ * against a four-value list and blanked when it did not match — so opening a
+ * real product filed under a real category silently cleared its category field,
+ * and saving would have moved it. The slug is only rejected when it could not be
+ * a slug at all, which is a data defect rather than a category this build has
+ * not heard of (`APP12-C01-C1`).
  */
 export function formValuesFromDetail(product: AdminProductDetailResponse): ProductFormValues {
   return {
     name: product.name,
-    categorySlug: isKnownCategory(product.category.slug) ? product.category.slug : '',
+    categorySlug: isCategorySlugShape(product.category.slug) ? product.category.slug : '',
     description: product.description ?? '',
     price: priceAmountToInput(product.basePriceAmount),
     mediaAssetIds: selectionFromDetailMedia(product.media),
@@ -144,7 +152,7 @@ export function buildUpdateBody(
     name?: string;
     description?: string | null;
     basePriceAmount?: string;
-    categorySlug?: ProductCategorySlug;
+    categorySlug?: string;
     mediaAssetIds?: readonly string[];
   } = { expectedUpdatedAt };
   let changed = false;

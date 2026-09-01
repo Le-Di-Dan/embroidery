@@ -12,22 +12,30 @@ import {
   createUser,
   waitFor,
 } from '@embroidery/frontend-testing';
-import { adminProductCreate, adminProductUpdate } from '@embroidery/api-client';
+import { adminProductCreate, adminProductUpdate, publicCategoryList } from '@embroidery/api-client';
 
 import { ProductCreateScreen } from '../../src/features/products/components/product-create-screen';
 import { PRODUCT_FORM_COPY } from '../../src/features/products/model/product-form-copy';
 import { makeApiClientError } from '../support/api-error';
-import { makeProductDetail, productDetailEnvelope } from '../support/product-fixture';
+import {
+  categoryEnvelope,
+  CATEGORY_FIXTURES,
+  makeProductDetail,
+  productDetailEnvelope,
+} from '../support/product-fixture';
 
 jest.mock('next/navigation', () => mockCreateNavigationMock('/products/new').module);
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   adminProductCreate: jest.fn(),
   adminProductUpdate: jest.fn(),
+  publicCategoryList: jest.fn(),
 }));
 
 const createMock = adminProductCreate as jest.MockedFunction<typeof adminProductCreate>;
 const updateMock = adminProductUpdate as jest.MockedFunction<typeof adminProductUpdate>;
+// The form's category options are the database inventory (`APP12-C01-C1`).
+const categoryMock = publicCategoryList as jest.MockedFunction<typeof publicCategoryList>;
 
 // `jest.mock` is hoisted above every const, so the mock router is read back from
 // the mocked module at test time rather than captured in a binding the factory
@@ -42,15 +50,27 @@ let user: ReturnType<typeof createUser>;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  categoryMock.mockResolvedValue(categoryEnvelope());
   user = createUser();
 });
 
 async function fillValidDraft() {
+  // The options arrive from `publicCategoryList`; selecting before they render
+  // would fail for a reason that has nothing to do with what is being tested.
+  await waitFor(() => {
+    expect(
+      screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel).querySelectorAll('option')
+        .length,
+    ).toBeGreaterThan(1);
+  });
   await user.type(
     screen.getByLabelText(PRODUCT_FORM_COPY.fields.nameLabel),
     'Khăn tay thêu sen đỏ',
   );
-  await user.selectOptions(screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel), 'khan');
+  await user.selectOptions(
+    screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel),
+    'mu-luoi-trai',
+  );
 }
 
 describe('create mode fields', () => {
@@ -86,12 +106,58 @@ describe('create mode fields', () => {
     }
   });
 
-  it('offers exactly one category option per contract slug', () => {
+  it('offers one option per category the database publishes, labelled by row name', async () => {
     renderWithProviders(<ProductCreateScreen />);
     const select = screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel);
 
-    const values = [...select.querySelectorAll('option')].map((option) => option.value);
-    expect(values).toEqual(['', 'thu-bong', 'khan', 'quan-ao', 'khac']);
+    await waitFor(() => {
+      expect([...select.querySelectorAll('option')].map((option) => option.value)).toEqual([
+        '',
+        'mu-luoi-trai',
+        'tui-vai',
+      ]);
+    });
+    expect([...select.querySelectorAll('option')].map((option) => option.textContent)).toEqual([
+      PRODUCT_FORM_COPY.fields.categoryPlaceholder,
+      'Mũ lưỡi trai',
+      'Túi vải',
+    ]);
+  });
+
+  it('offers a category the build never knew, with no source change', async () => {
+    categoryMock.mockResolvedValue(
+      categoryEnvelope([
+        ...CATEGORY_FIXTURES,
+        {
+          slug: 'danh-muc-moi',
+          name: 'Danh mục hoàn toàn mới',
+          isIndexable: true,
+          displayOrder: 9,
+        },
+      ]),
+    );
+    renderWithProviders(<ProductCreateScreen />);
+    const select = screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel);
+
+    await waitFor(() => {
+      expect([...select.querySelectorAll('option')].map((option) => option.value)).toContain(
+        'danh-muc-moi',
+      );
+    });
+    expect(select.textContent).toContain('Danh mục hoàn toàn mới');
+  });
+
+  it('offers the placeholder alone, never a remembered list, when the read fails', async () => {
+    categoryMock.mockRejectedValue(new Error('boom'));
+    renderWithProviders(<ProductCreateScreen />);
+    const select = screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel);
+
+    await waitFor(() => {
+      expect([...select.querySelectorAll('option')]).toHaveLength(1);
+    });
+    for (const historical of ['Thú bông', 'Khăn', 'Quần áo', 'Khác']) {
+      expect(select.textContent).not.toContain(historical);
+    }
   });
 
   it('never renders a category UUID', () => {
@@ -104,7 +170,18 @@ describe('create mode fields', () => {
 describe('create validation', () => {
   it('does not call the API when the name is empty', async () => {
     renderWithProviders(<ProductCreateScreen />);
-    await user.selectOptions(screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel), 'khan');
+    // The options arrive asynchronously now, so selecting one has to wait for
+    // them — otherwise this test fails on the select rather than on validation.
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel).querySelectorAll('option')
+          .length,
+      ).toBeGreaterThan(1);
+    });
+    await user.selectOptions(
+      screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel),
+      'mu-luoi-trai',
+    );
     await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.create.submit }));
 
     expect(createMock).not.toHaveBeenCalled();
@@ -149,7 +226,7 @@ describe('create request', () => {
     const [body] = createMock.mock.calls[0] as unknown as [Record<string, unknown>];
     expect(Object.keys(body).sort()).toEqual(['categorySlug', 'description', 'name']);
     expect(body).toMatchObject({
-      categorySlug: 'khan',
+      categorySlug: 'mu-luoi-trai',
       name: 'Khăn tay thêu sen đỏ',
       description: 'Mô tả ngắn',
     });
@@ -191,7 +268,10 @@ describe('create request', () => {
     createMock.mockResolvedValue(productDetailEnvelope(makeProductDetail()));
     renderWithProviders(<ProductCreateScreen />);
     await user.type(screen.getByLabelText(PRODUCT_FORM_COPY.fields.nameLabel), '  Khăn  ');
-    await user.selectOptions(screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel), 'khan');
+    await user.selectOptions(
+      screen.getByLabelText(PRODUCT_FORM_COPY.fields.categoryLabel),
+      'mu-luoi-trai',
+    );
     await user.click(screen.getByRole('button', { name: PRODUCT_FORM_COPY.create.submit }));
 
     await waitFor(() => expect(createMock).toHaveBeenCalled());

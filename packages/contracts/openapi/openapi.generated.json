@@ -2441,13 +2441,9 @@
             "type": "string"
           },
           "slug": {
-            "enum": [
-              "thu-bong",
-              "khan",
-              "quan-ao",
-              "khac"
-            ],
+            "description": "The dynamic category slug this product is filed under.",
             "example": "thu-bong",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
             "type": "string"
           }
         },
@@ -5083,12 +5079,9 @@
         "additionalProperties": false,
         "properties": {
           "categorySlug": {
-            "enum": [
-              "thu-bong",
-              "khan",
-              "quan-ao",
-              "khac"
-            ],
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
             "type": "string"
           },
           "description": {
@@ -7956,6 +7949,53 @@
         ],
         "type": "object"
       },
+      "PublicCategoryInventoryItemResponse": {
+        "properties": {
+          "displayOrder": {
+            "description": "The operator's editorial position. The primary sort key of this response, published so a consumer that re-groups or merges the list can preserve the intended order instead of inventing one.",
+            "example": 10,
+            "type": "number"
+          },
+          "isIndexable": {
+            "description": "Whether this category may be indexed by a search engine. Not a visibility flag: a `false` category is listed here and remains fully browsable — it must simply not be advertised in a sitemap or an indexable breadcrumb.",
+            "example": true,
+            "type": "boolean"
+          },
+          "name": {
+            "description": "Canonical Vietnamese label.",
+            "example": "Áo thun",
+            "type": "string"
+          },
+          "slug": {
+            "description": "The stable public key, and the value the Product category filter accepts. Dynamic: the set of categories is operator data, not a closed contract enum, so a consumer must read this inventory rather than compile a taxonomy in.",
+            "example": "ao-thun",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "isIndexable",
+          "displayOrder"
+        ],
+        "type": "object"
+      },
+      "PublicCategoryListResponse": {
+        "properties": {
+          "items": {
+            "description": "Every publicly browsable category, ordered by `displayOrder` then `slug`. Complete and unpaged: there is no cursor, and a taxonomy too large for one response fails the request rather than truncating.",
+            "items": {
+              "$ref": "#/components/schemas/PublicCategoryInventoryItemResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "PublicCategoryResponse": {
         "properties": {
           "name": {
@@ -7964,13 +8004,9 @@
             "type": "string"
           },
           "slug": {
-            "enum": [
-              "thu-bong",
-              "khan",
-              "quan-ao",
-              "khac"
-            ],
+            "description": "The category this product is filed under. Dynamic: read `publicCategory_list` for the current set rather than compiling a taxonomy in.",
             "example": "khan",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
             "type": "string"
           }
         },
@@ -10422,12 +10458,9 @@
             "type": "string"
           },
           "categorySlug": {
-            "enum": [
-              "thu-bong",
-              "khan",
-              "quan-ao",
-              "khac"
-            ],
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
             "type": "string"
           },
           "description": {
@@ -22227,16 +22260,12 @@
         "operationId": "adminProduct_list",
         "parameters": [
           {
+            "description": "Filter by category slug. Dynamic (`APP12-C01`) — a well-formed slug naming no category returns an empty page rather than an unfiltered one.",
             "in": "query",
             "name": "categorySlug",
             "required": false,
             "schema": {
-              "enum": [
-                "thu-bong",
-                "khan",
-                "quan-ao",
-                "khac"
-              ],
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
               "type": "string"
             }
           },
@@ -26785,6 +26814,110 @@
         },
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/public/categories": {
+      "get": {
+        "description": "Returns every category an anonymous caller may browse by, as `{ slug, name, isIndexable, displayOrder }`. Anonymous: no session or cookie is involved. The taxonomy is **dynamic** — it is operator data, not a fixed contract enum — so a consumer reads it here instead of compiling a category list in. A category appears when it is published and not archived. Draft and archived categories are absent, and absence is the only signal: the response never reveals that an unpublished category exists. Indexability is not visibility: a category marked `isIndexable: false` is listed and fully browsable, and must simply not be advertised in a sitemap or an indexable breadcrumb. The flag is carried so that decision needs no second read. Path-agnostic on purpose: no absolute URL and no browser route is emitted, because the Storefront owns route shapes and composes them itself. The inventory is complete and unpaged — there is no cursor, limit or filter, and a taxonomy too large for one response fails rather than truncating. Ordered by `displayOrder` then `slug`, deterministically. Responses are never stored: publication and archival are re-read on every request, and there is no cache-invalidation consumer in this system, so a stored copy could keep offering a withdrawn category.",
+        "operationId": "publicCategory_list",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PublicCategoryListResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The complete publicly browsable taxonomy.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "The taxonomy exceeds what one response may carry; nothing partial is sent.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List the publicly browsable categories",
+        "tags": [
+          "publicCategory"
         ]
       }
     },
@@ -32413,16 +32546,12 @@
         "operationId": "publicProduct_list",
         "parameters": [
           {
+            "description": "Filter by category slug. Dynamic (`APP12-C01`) — the set comes from `publicCategory_list`, not from this contract. A well-formed slug naming no public category returns an empty page rather than an unfiltered one.",
             "in": "query",
             "name": "categorySlug",
             "required": false,
             "schema": {
-              "enum": [
-                "thu-bong",
-                "khan",
-                "quan-ao",
-                "khac"
-              ],
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
               "type": "string"
             }
           },

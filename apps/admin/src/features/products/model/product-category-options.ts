@@ -1,38 +1,50 @@
 /**
- * The editable category options.
+ * Category options for the Admin product form (`APP12-C01-C1`).
  *
- * The taxonomy is closed and fixed (IMP-D032) and there is no category
- * endpoint, so the options are derived from the generated contract enum rather
- * than typed out. Adding a category to the contract therefore surfaces here as
- * a build error instead of a silently missing option.
+ * ## No taxonomy lives here
  *
- * The physical category UUID is not in the contract and is never rendered,
- * submitted or logged — the slug is the only category identity the client
- * handles.
+ * This module used to hold a four-value slug list and, next to it,
+ * `product-category.ts` held a slug-to-label map. Both were a second category
+ * authority compiled into the Admin bundle: a category the operator added was
+ * absent from the select, and a product already filed under one rendered as
+ * `Không xác định` in the list. The store's own data was being second-guessed by
+ * a constant.
+ *
+ * The options are now the rows `GET /api/public/categories` returns — the same
+ * set `CategoryResolver` will accept on save, so the form cannot offer a choice
+ * the write path refuses. The label is `category.name`, the operator's own text.
+ *
+ * What remains here is the shape of an option and the rule that the API's order
+ * is the order — which is what source code is for.
  */
-import { AdminProductListCategorySlug } from '@embroidery/api-client';
-
-import { productCategoryLabel, parseProductCategory } from './product-category';
-
-export type ProductCategorySlug =
-  (typeof AdminProductListCategorySlug)[keyof typeof AdminProductListCategorySlug];
-
-/** The four contract slugs, in the approved presentation order. */
-export const PRODUCT_CATEGORY_SLUGS: readonly ProductCategorySlug[] = [
-  AdminProductListCategorySlug['thu-bong'],
-  AdminProductListCategorySlug.khan,
-  AdminProductListCategorySlug['quan-ao'],
-  AdminProductListCategorySlug.khac,
-];
+import type { ProductCategory } from '../services/category-inventory.service';
 
 export interface ProductCategoryOption {
-  readonly slug: ProductCategorySlug;
+  readonly slug: string;
   readonly label: string;
 }
 
-/** Reuses the list's label mapping so both screens spell a category once. */
-export const PRODUCT_CATEGORY_OPTIONS: readonly ProductCategoryOption[] =
-  PRODUCT_CATEGORY_SLUGS.map((slug) => ({
-    slug,
-    label: productCategoryLabel(parseProductCategory(slug)),
-  }));
+/**
+ * One option per category, in the server's `display_order` ordering.
+ *
+ * Not re-sorted: the ordering is the operator's editorial authority and the API
+ * already applied it. Sorting again here would be a second authority, and the
+ * one that would silently win.
+ */
+export function toProductCategoryOptions(
+  categories: readonly ProductCategory[],
+): readonly ProductCategoryOption[] {
+  return categories.map((category) => ({ slug: category.slug, label: category.name }));
+}
+
+/**
+ * Whether `slug` names a category currently on offer.
+ *
+ * Answered against the fetched rows, never against a compiled list. Used to
+ * decide whether an existing product's category can be pre-selected in the form:
+ * a slug the inventory no longer contains cannot be represented by a `<select>`
+ * option, so the field opens unset rather than silently showing the wrong one.
+ */
+export function isOfferedCategory(categories: readonly ProductCategory[], slug: string): boolean {
+  return categories.some((category) => category.slug === slug);
+}

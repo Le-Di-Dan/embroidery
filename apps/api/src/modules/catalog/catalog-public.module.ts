@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
+import { PUBLIC_CATEGORY_REPOSITORY } from './domain/repositories/public-category.repository';
 import { PUBLIC_PRODUCT_REPOSITORY } from './domain/repositories/public-product.repository';
 import { PUBLIC_PRODUCT_VARIANT_REPOSITORY } from './domain/repositories/public-product-variant.repository';
+import { DrizzlePublicCategoryRepository } from './infrastructure/persistence/drizzle-public-category.repository';
 import { DrizzlePublicProductRepository } from './infrastructure/persistence/drizzle-public-product.repository';
 import { DrizzlePublicProductVariantRepository } from './infrastructure/persistence/drizzle-public-product-variant.repository';
+import { PublicCategoryQuery } from './application/public-category.query';
 import { PublicProductQuery } from './application/public-product.query';
 import { PublicProductVariantQuery } from './application/public-product-variant.query';
+import { PublicCategoryController } from './presentation/public-category.controller';
 import { PublicProductController } from './presentation/public-product.controller';
 import { PublicProductVariantController } from './presentation/public-product-variant.controller';
 
@@ -32,18 +36,29 @@ import { PublicProductVariantController } from './presentation/public-product-va
  * being consumed by APP5: Ordering must not own a query over `product_variants`
  * (`BACKEND_CONVENTIONS.md` §10), and the module that already owns the public
  * visibility predicate is the one place it cannot drift from.
+ *
+ * `APP12-C01`'s category inventory joins on the same terms, and adds one of its
+ * own: the taxonomy it lists is the taxonomy the Product category filter here
+ * resolves against. Two modules would be two places where "which categories are
+ * public" is decided, and the day one changed the Storefront would offer a
+ * filter chip the other read answers with nothing. Its **write** side stays
+ * deliberately elsewhere — `CATEGORY_REPOSITORY`, which creates rows and
+ * changes status, belongs to `CatalogModule` and is not wired here, so no route
+ * in this graph can mutate a category.
  */
 @Module({
   imports: [DatabaseModule],
-  controllers: [PublicProductController, PublicProductVariantController],
+  controllers: [PublicProductController, PublicProductVariantController, PublicCategoryController],
   providers: [
     { provide: PUBLIC_PRODUCT_REPOSITORY, useClass: DrizzlePublicProductRepository },
     {
       provide: PUBLIC_PRODUCT_VARIANT_REPOSITORY,
       useClass: DrizzlePublicProductVariantRepository,
     },
+    { provide: PUBLIC_CATEGORY_REPOSITORY, useClass: DrizzlePublicCategoryRepository },
     PublicProductQuery,
     PublicProductVariantQuery,
+    PublicCategoryQuery,
   ],
   // `APP11-B03`. Exported so the public Gallery detail can ask *this* module
   // whether a linked Product may be shown, rather than re-deriving publication

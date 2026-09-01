@@ -92,11 +92,25 @@ describe('public catalog controller contract', () => {
     expect(publicProductListQuerySchema.safeParse({ limit: 1.5 }).success).toBe(false);
   });
 
-  it('accepts only the fixed public category taxonomy', () => {
-    expect(publicProductListQuerySchema.safeParse({ categorySlug: 'khan' }).success).toBe(true);
-    expect(publicProductListQuerySchema.safeParse({ categorySlug: 'khong-ton-tai' }).success).toBe(
-      false,
-    );
+  it('accepts any well-formed category slug, and rejects malformed ones', () => {
+    // `APP12-C01`: the taxonomy is dynamic, so the boundary validates a shape.
+    // A slug naming no public category is *not* a 400 any more — it is a
+    // filtered, empty page, proved over HTTP in the integration suite. Refusing
+    // it here would need a closed contract enum, which is the ceiling C01
+    // removed, and would also make the endpoint an oracle for which categories
+    // the store has drafted.
+    for (const categorySlug of ['khan', 'ao-thun', 'khong-ton-tai', 'danh-muc-2026']) {
+      expect({
+        categorySlug,
+        ok: publicProductListQuerySchema.safeParse({ categorySlug }).success,
+      }).toEqual({ categorySlug, ok: true });
+    }
+    for (const categorySlug of ['AO-THUN', 'áo-thun', 'ao_thun', 'ao thun', '-ao', 'ao--thun']) {
+      expect({
+        categorySlug,
+        ok: publicProductListQuerySchema.safeParse({ categorySlug }).success,
+      }).toEqual({ categorySlug, ok: false });
+    }
   });
 
   it('validates the slug shape strictly', () => {

@@ -45,7 +45,7 @@ import { ProductDraftQuery } from '../application/product-draft.query';
 import { ProductDraftService } from '../application/product-draft.service';
 import type { ProductDetailView, ProductListView } from '../application/product-projection';
 import { isProductDraftError, toHttpException } from '../domain/product-draft.errors';
-import { APP2_CATEGORY_SLUGS } from '../domain/product-draft.policy';
+import { CATEGORY_SLUG_PATTERN } from '../domain/category-slug';
 import {
   AdminProductDetailResponse,
   AdminProductListResponse,
@@ -95,7 +95,14 @@ export class AdminProductController {
     schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
   })
   @ApiQuery({ name: 'status', required: false, enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'] })
-  @ApiQuery({ name: 'categorySlug', required: false, enum: APP2_CATEGORY_SLUGS })
+  @ApiQuery({
+    name: 'categorySlug',
+    required: false,
+    schema: { type: 'string', pattern: CATEGORY_SLUG_PATTERN.source },
+    description:
+      'Filter by category slug. Dynamic (`APP12-C01`) — a well-formed slug naming no ' +
+      'category returns an empty page rather than an unfiltered one.',
+  })
   @ApiExtraModels(AdminProductListResponse)
   @ApiResponse({
     status: 200,

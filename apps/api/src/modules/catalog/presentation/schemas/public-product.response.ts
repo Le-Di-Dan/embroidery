@@ -16,15 +16,32 @@
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { APP2_CATEGORY_SLUGS } from '../../domain/product-draft.policy';
+import { CATEGORY_SLUG_PATTERN } from '../../domain/category-slug';
 import { PRODUCT_CURRENCY } from '../../domain/product-draft.policy';
 
 const SLUG_EXAMPLE = 'khan-theu-hoa-sen';
 const MEDIA_PATH_EXAMPLE =
   '/api/public/products/khan-theu-hoa-sen/media/019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071/thumbnail';
 
+/**
+ * The category **embedded in a Product payload** — a name and a slug, which is
+ * all a product card needs.
+ *
+ * `slug` stopped being a four-value enum at `APP12-C01`: the taxonomy is
+ * dynamic, so the contract publishes the slug's shape and a consumer that needs
+ * the current set reads `publicCategory_list`. The shape is otherwise
+ * unchanged, and this schema deliberately does **not** carry `isIndexable` or
+ * `displayOrder` — those belong to the inventory item, not to every product
+ * summary and detail in the catalogue.
+ */
 export class PublicCategoryResponse {
-  @ApiProperty({ enum: APP2_CATEGORY_SLUGS, example: 'khan' })
+  @ApiProperty({
+    pattern: CATEGORY_SLUG_PATTERN.source,
+    description:
+      'The category this product is filed under. Dynamic: read `publicCategory_list` for ' +
+      'the current set rather than compiling a taxonomy in.',
+    example: 'khan',
+  })
   slug!: string;
 
   @ApiProperty({ description: 'Canonical Vietnamese label.', example: 'Khăn' })

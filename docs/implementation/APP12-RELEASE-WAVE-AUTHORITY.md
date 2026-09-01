@@ -97,9 +97,19 @@ Mechanically inventoried from `packages/contracts/openapi/openapi.generated.json
 at `b695cf9d`: **116 paths, 128 operations** — 80 `admin*`, 43 `public*`,
 3 `staff*`, 2 `health*`. Counted, not estimated.
 
+**Amended by `APP12-C01`.** That checkpoint published one new public operation,
+`publicCategory_list` (`GET /api/public/categories`, the dynamic category
+inventory), taking the artifact to **117 paths, 129 operations** — 80 `admin*`,
+**44** `public*`, 3 `staff*`, 2 `health*`. It is a Wave-1 public read: it
+publishes published, non-archived category names and slugs, which is browsing
+metadata the Ready-Made catalogue needs, and it names no custom capability. The
+`DENY` set is **unchanged at 31**; the `ALLOW` set becomes **13**. No other
+classification in this section moved.
+
 | Family | Ops | Class | Wave-1 public exposure |
 |---|---|---|---|
 | `publicProduct_*`, `publicProductMedia_*`, `publicProductVariant_*` | 4 | `WAVE1_PUBLIC_READ` | `ALLOW` |
+| `publicCategory_list` (`APP12-C01`) | 1 | `WAVE1_PUBLIC_READ` | `ALLOW` |
 | `publicGalleryEntry_*` | 3 | `WAVE1_PUBLIC_READ` | `ALLOW` |
 | `publicSitemapEntry_list` | 1 | `WAVE1_PUBLIC_READ` | `ALLOW` |
 | `publicVerification_*` | 4 | `WAVE1_SHARED_PRIMITIVE` | `ALLOW` — §3.1 |
@@ -275,11 +285,14 @@ Therefore:
 `/san-pham/[slug]/thiet-ke`, `/truy-cap/bao-gia`, `/truy-cap/duyet-thiet-ke`,
 `/truy-cap/thanh-toan`, `/truy-cap/thanh-toan-con-lai`.
 
-**Block** — API level: every operation marked `DENY` in §3 — **31 of the 43
+**Block** — API level: every operation marked `DENY` in §3 — **31 of the 44
 public operations**: placement 1, side background 1, templates 3, sessions 6,
 custom requests 4, quotations 3, design reviews 3, deposit 5, final payment 3,
 shipping-fee acknowledgement 1, and `publicSecureLink_resolve` 1 per §3.2. The
-remaining 12 public operations are `ALLOW`.
+remaining **13** public operations are `ALLOW` — 12 at `G02`, plus
+`publicCategory_list` added and classified by `APP12-C01`. The withheld set was
+not touched by that checkpoint, and `publicSecureLink_resolve` remains `DENY`
+until `APP12-B04` converts it to a scope-sensitive gate (§3.2).
 
 **Allow** — `/`, `/kham-pha`, `/san-pham/[slug]`, `/bo-suu-tap*`, `/dich-vu`,
 `/cau-hoi-thuong-gap`, `/cua-hang`, `/chinh-sach/[slug]`, `/xac-minh-lien-he`,

@@ -7,11 +7,17 @@
  * the reset assertions meaningful rather than a restatement of the query key.
  */
 import { createUser, renderWithProviders, screen, waitFor } from '@embroidery/frontend-testing';
-import { adminProductList } from '@embroidery/api-client';
+import { adminProductList, publicCategoryList } from '@embroidery/api-client';
 
 import { ProductListScreen } from '../../src/features/products/components/product-list-screen';
 import { PRODUCT_COPY } from '../../src/features/products/model/product-copy';
-import { makeProduct, makeProductPage, productEnvelope } from '../support/product-fixture';
+import {
+  categoryEnvelope,
+  CATEGORY_FIXTURES,
+  makeProduct,
+  makeProductPage,
+  productEnvelope,
+} from '../support/product-fixture';
 
 // The factory owns its own state so it can be referenced before the test
 // module body has evaluated (jest.mock is hoisted above every import).
@@ -30,6 +36,7 @@ jest.mock('next/navigation', () => {
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   adminProductList: jest.fn(),
+  publicCategoryList: jest.fn(),
 }));
 
 import * as navigation from 'next/navigation';
@@ -37,6 +44,8 @@ import * as navigation from 'next/navigation';
 const navState = (navigation as unknown as { __state: { search: string } }).__state;
 const navRouter = (navigation as unknown as { __router: { replace: jest.Mock } }).__router;
 const listMock = adminProductList as jest.MockedFunction<typeof adminProductList>;
+// The category chips are the database inventory (`APP12-C01-C1`).
+const categoryMock = publicCategoryList as jest.MockedFunction<typeof publicCategoryList>;
 
 const DRAFT = makeProduct({ productId: 'p-1', name: 'Gấu bông thêu tay', status: 'DRAFT' });
 
@@ -52,6 +61,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   navState.search = '';
   listMock.mockResolvedValue(productEnvelope(makeProductPage([DRAFT])));
+  categoryMock.mockResolvedValue(categoryEnvelope());
 });
 
 describe('filter controls', () => {
@@ -65,25 +75,62 @@ describe('filter controls', () => {
     expect(selects[1]).toBe(categorySelect());
   });
 
-  it('offers exactly the approved options, defaulting to "all"', async () => {
+  it('offers the approved status options and the database categories, defaulting to "all"', async () => {
     renderWithProviders(<ProductListScreen />);
     await screen.findByRole('table');
 
+    // Status is a closed lifecycle vocabulary — code owns it.
     expect([...statusSelect().querySelectorAll('option')].map((o) => o.textContent)).toEqual([
       PRODUCT_COPY.filters.statusAll,
       PRODUCT_COPY.status.draft,
       PRODUCT_COPY.status.published,
       PRODUCT_COPY.status.archived,
     ]);
-    expect([...categorySelect().querySelectorAll('option')].map((o) => o.textContent)).toEqual([
-      PRODUCT_COPY.filters.categoryAll,
-      PRODUCT_COPY.category.thuBong,
-      PRODUCT_COPY.category.khan,
-      PRODUCT_COPY.category.quanAo,
-      PRODUCT_COPY.category.khac,
-    ]);
+    // Categories are data — the database owns them.
+    await waitFor(() => {
+      expect([...categorySelect().querySelectorAll('option')].map((o) => o.textContent)).toEqual([
+        PRODUCT_COPY.filters.categoryAll,
+        'Mũ lưỡi trai',
+        'Túi vải',
+      ]);
+    });
     expect(statusSelect()).toHaveValue('all');
     expect(categorySelect()).toHaveValue('all');
+  });
+
+  it('offers a category the build never knew, with no source change', async () => {
+    categoryMock.mockResolvedValue(
+      categoryEnvelope([
+        ...CATEGORY_FIXTURES,
+        {
+          slug: 'danh-muc-moi',
+          name: 'Danh mục hoàn toàn mới',
+          isIndexable: true,
+          displayOrder: 9,
+        },
+      ]),
+    );
+    renderWithProviders(<ProductListScreen />);
+    await screen.findByRole('table');
+
+    await waitFor(() => {
+      expect([...categorySelect().querySelectorAll('option')].map((o) => o.value)).toContain(
+        'danh-muc-moi',
+      );
+    });
+  });
+
+  it('offers "all" alone, never a remembered list, when the inventory read fails', async () => {
+    categoryMock.mockRejectedValue(new Error('boom'));
+    renderWithProviders(<ProductListScreen />);
+    await screen.findByRole('table');
+
+    await waitFor(() => {
+      expect([...categorySelect().querySelectorAll('option')]).toHaveLength(1);
+    });
+    for (const historical of ['Thú bông', 'Khăn', 'Quần áo', 'Khác']) {
+      expect(categorySelect().textContent).not.toContain(historical);
+    }
   });
 
   it('adds no search, sort, price, date or owner control', async () => {
@@ -217,10 +264,15 @@ describe('changing a filter', () => {
     const { rerender } = renderWithProviders(<ProductListScreen />);
     // Each product renders twice — once in the table, once in the card list.
     expect(await screen.findAllByText(FIRST.name)).toHaveLength(2);
+    // The options arrive from the inventory read; selecting before they render
+    // would fail for a reason unrelated to pagination.
+    await waitFor(() => {
+      expect(categorySelect().querySelectorAll('option').length).toBeGreaterThan(1);
+    });
 
-    await user.selectOptions(categorySelect(), 'khan');
+    await user.selectOptions(categorySelect(), 'mu-luoi-trai');
     // Replay what the router would do: the URL changed, so the screen re-renders.
-    navState.search = 'category=khan';
+    navState.search = 'category=mu-luoi-trai';
     rerender(<ProductListScreen />);
 
     await waitFor(() => {
@@ -229,7 +281,7 @@ describe('changing a filter', () => {
     // The pre-filter product is gone, and the new request started from page one.
     expect(screen.queryAllByText(FIRST.name)).toHaveLength(0);
     const last = listMock.mock.calls.at(-1)?.[0] as Record<string, unknown>;
-    expect(last).toEqual({ limit: 20, categorySlug: 'khan' });
+    expect(last).toEqual({ limit: 20, categorySlug: 'mu-luoi-trai' });
     expect(last.cursor).toBeUndefined();
     // The continuation offered under the previous filter is gone with it.
     expect(

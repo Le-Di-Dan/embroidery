@@ -9,7 +9,7 @@ import {
   normalizeApiClientError,
   publicProductList,
   publicProductDetail,
-  PublicProductListCategorySlug,
+  publicCategoryList,
   staffSelfGet,
   staffSessionCreate,
   staffSessionDelete,
@@ -19,6 +19,8 @@ import type {
   HealthStatusResponse,
   PublicProductSummaryResponse,
   PublicProductDetailResponse,
+  PublicCategoryListResponse,
+  PublicCategoryInventoryItemResponse,
   ReadinessStatusResponse,
   StaffLoginRequest,
   StaffSelfGet200,
@@ -89,13 +91,22 @@ describe('package public API smoke', () => {
     expect(typeof publicProductList).toBe('function');
   });
 
-  it('derives the public category slugs from the contract, not a hand-kept list', () => {
-    expect(Object.values(PublicProductListCategorySlug)).toEqual([
-      'thu-bong',
-      'khan',
-      'quan-ao',
-      'khac',
-    ]);
+  it('exposes the dynamic category inventory instead of a closed slug enum', () => {
+    // `APP12-C01` removed `PublicProductListCategorySlug`. The taxonomy is
+    // operator data, so the boundary carries the runtime read rather than a
+    // compile-time list — asserting the enum's four members is exactly the
+    // assertion that told `APP11-S04-C1` a fifth category could not exist while
+    // the database already held one.
+    expect(typeof publicCategoryList).toBe('function');
+
+    const item: PublicCategoryInventoryItemResponse = {
+      slug: 'ao-thun',
+      name: 'Áo thun',
+      isIndexable: true,
+      displayOrder: 40,
+    };
+    const inventory: PublicCategoryListResponse = { items: [item] };
+    expect(inventory.items[0]?.slug).toBe('ao-thun');
   });
 
   it('exposes the public list item shape on the public boundary', () => {

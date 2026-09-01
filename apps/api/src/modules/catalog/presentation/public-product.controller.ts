@@ -32,12 +32,12 @@ import { ENVELOPE_SCHEMA_NAMES } from '../../../openapi/envelope-schema.augmenta
 import { PublicProductQuery } from '../application/public-product.query';
 import type { PublicProductListView } from '../application/public-product.query';
 import type { PublicProductDetailView } from '../application/public-product.projection';
+import { CATEGORY_SLUG_PATTERN } from '../domain/category-slug';
 import { PUBLIC_CATALOG_CACHE_CONTROL } from '../domain/public-product-catalog.policy';
 import {
   isPublicProductCatalogError,
   toHttpException,
 } from '../domain/public-product-catalog.errors';
-import { APP2_CATEGORY_SLUGS } from '../domain/product-draft.policy';
 import {
   PublicProductListQueryDto,
   PublicProductSlugParam,
@@ -94,7 +94,15 @@ export class PublicProductController {
     required: false,
     schema: { type: 'integer', minimum: 1, maximum: 100 },
   })
-  @ApiQuery({ name: 'categorySlug', required: false, enum: APP2_CATEGORY_SLUGS })
+  @ApiQuery({
+    name: 'categorySlug',
+    required: false,
+    schema: { type: 'string', pattern: CATEGORY_SLUG_PATTERN.source },
+    description:
+      'Filter by category slug. Dynamic (`APP12-C01`) — the set comes from ' +
+      '`publicCategory_list`, not from this contract. A well-formed slug naming no public ' +
+      'category returns an empty page rather than an unfiltered one.',
+  })
   @ApiExtraModels(
     PublicProductListResponse,
     PublicProductSummaryResponse,

@@ -20,6 +20,7 @@ import { ADMIN_PRODUCTS_ROUTE } from '../model/product-route';
 import { useProductUpdateMutation } from '../hooks/use-product-mutations';
 import { useUnsavedChanges } from '../hooks/use-unsaved-changes';
 import { ProductConflictDialog, ProductUnsavedDialog } from './product-confirm-dialogs';
+import { useCategoryInventoryQuery } from '../hooks/use-category-inventory-query';
 import { ProductFormFields } from './product-form-fields';
 import { ProductMediaEditor } from './product-media-editor';
 import { ProductMetadataRail } from './product-metadata-rail';
@@ -54,6 +55,11 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
   const [values, setValues] = useState<ProductFormValues>(initial);
   const [submitted, setSubmitted] = useState(false);
   const [conflict, setConflict] = useState(false);
+
+  // The category options are the categories the database currently publishes
+  // (`APP12-C01-C1`). Empty while the read is in flight, or if it fails: the
+  // select then offers its placeholder alone rather than a remembered list.
+  const categories = useCategoryInventoryQuery();
 
   // Identity for every media id the screen can render: the product's own media
   // plus whatever the picker has loaded this session.
@@ -200,6 +206,7 @@ export function ProductEditForm({ product, onReload }: ProductEditFormProps) {
             errors={submitted ? errors : {}}
             disabled={saving || !editable}
             showPrice
+            categories={categories.data ?? []}
             onChange={(patch) => setValues((current) => ({ ...current, ...patch }))}
           />
 

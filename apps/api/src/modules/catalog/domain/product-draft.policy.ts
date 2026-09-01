@@ -5,32 +5,34 @@
  * so the service, the repository, the DTOs and the tests all read the same
  * value — a second copy is how a draft sentinel silently becomes two sentinels.
  *
- * The category taxonomy, the draft sentinels and the media roles are re-exported
- * from `@embroidery/database`, which is where the gate put the canonical list;
+ * The draft sentinels and the media roles are re-exported from
+ * `@embroidery/database`, which is where the gate put the canonical values;
  * re-declaring them here would fork the source the migration itself used.
+ *
+ * **No category taxonomy is here, and none may return** (`APP12-C01-C1`,
+ * `IMP-D062`). This module used to re-export `APP2_CATEGORY_SLUGS` and
+ * `APP2_CATEGORY_TAXONOMY` and to carry a `categoryNameOf(slug)` lookup — a
+ * slug-to-label map compiled into the API. The `categories` table is the sole
+ * authority for which categories exist and what they are called;
+ * `CategoryResolver` answers existence against rows, and a category's name
+ * reaches a client from the row the query joined, never from a constant.
  */
 import {
-  APP2_CATEGORY_SLUGS,
   APP2_PRODUCT_MEDIA_ROLES,
-  APP2_CATEGORY_TAXONOMY,
   PRODUCT_DRAFT_BASE_PRICE_AMOUNT,
   PRODUCT_DRAFT_DISPLAY_ORDER,
   PRODUCT_MEDIA_PRIMARY_ROLE,
   PRODUCT_MEDIA_SECONDARY_ROLE,
-  type App2CategorySlug,
   type ProductState,
 } from '@embroidery/database';
 
 export {
-  APP2_CATEGORY_SLUGS,
   APP2_PRODUCT_MEDIA_ROLES,
-  APP2_CATEGORY_TAXONOMY,
   PRODUCT_DRAFT_BASE_PRICE_AMOUNT,
   PRODUCT_DRAFT_DISPLAY_ORDER,
   PRODUCT_MEDIA_PRIMARY_ROLE,
   PRODUCT_MEDIA_SECONDARY_ROLE,
 };
-export type { App2CategorySlug };
 
 /** The only currency DB6 permits (`ck_products__currency_allowed`). */
 export const PRODUCT_CURRENCY = 'VND' as const;
@@ -81,8 +83,3 @@ export const PRODUCT_DESCRIPTION_MAX_LENGTH = 5000;
  * `numeric(14,2)` with the VND whole-number CHECK: twelve integer digits.
  */
 export const MAX_BASE_PRICE_AMOUNT = 999_999_999_999n;
-
-/** Look up a locked category label without touching the database. */
-export function categoryNameOf(slug: string): string | undefined {
-  return APP2_CATEGORY_TAXONOMY.find((category) => category.slug === slug)?.name;
-}

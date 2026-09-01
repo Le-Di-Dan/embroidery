@@ -1,7 +1,6 @@
 'use client';
 
 import { useDiscoverFeed } from '../hooks/use-discover-feed';
-import type { DiscoverCategorySlug } from '../model/discover-categories';
 import { DiscoverContinuation } from './discover-continuation';
 import { DiscoverEmptyFiltered } from './discover-empty-filtered';
 import { DiscoverEmptyUnfiltered } from './discover-empty-unfiltered';
@@ -11,7 +10,7 @@ import { ProductMasonry } from './product-masonry';
 
 interface DiscoverFeedScreenProps {
   /** Resolved by the server from the URL; `undefined` means the unfiltered feed. */
-  readonly categorySlug: DiscoverCategorySlug | undefined;
+  readonly categorySlug: string | undefined;
 }
 
 /**

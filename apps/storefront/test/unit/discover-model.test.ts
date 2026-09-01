@@ -7,9 +7,9 @@
  * tested without a DOM, independently of how any component renders them.
  */
 import {
-  DISCOVER_CATEGORIES,
-  DISCOVER_CATEGORY_SLUGS,
-  toDiscoverCategorySlug,
+  isKnownCategory,
+  toDiscoverChips,
+  type DiscoverCategory,
 } from '../../src/features/product-discovery/model/discover-categories';
 import {
   flattenDiscoverPages,
@@ -43,56 +43,127 @@ describe('Discover route authority (IMP-D038)', () => {
   it('omits the query for "all" and uses the locked key otherwise', () => {
     expect(DISCOVER_CATEGORY_QUERY_KEY).toBe('category');
     expect(buildDiscoverHref(undefined)).toBe('/kham-pha');
-    expect(buildDiscoverHref('thu-bong')).toBe('/kham-pha?category=thu-bong');
+    // An arbitrary slug, deliberately: the builder is shape logic and knows no
+    // taxonomy. Using a fixture value here rather than a "real" category is the
+    // point — nothing in this app decides which categories exist.
+    expect(buildDiscoverHref('mu-luoi-trai')).toBe('/kham-pha?category=mu-luoi-trai');
   });
 });
 
-describe('Discover categories', () => {
-  it('derives the four slugs from the contract enum', () => {
-    expect(DISCOVER_CATEGORY_SLUGS).toEqual(['thu-bong', 'khan', 'quan-ao', 'khac']);
-  });
+/**
+ * An arbitrary inventory, as `GET /api/public/categories` would return it.
+ *
+ * These values are **fixture data**, not a taxonomy: they are deliberately not
+ * the four categories migration `0033` seeded, so a test cannot quietly become
+ * the place the store's categories are declared (`APP12-C01-C1`).
+ */
+const INVENTORY: readonly DiscoverCategory[] = [
+  { slug: 'mu-luoi-trai', name: 'Mũ lưỡi trai', isIndexable: true, displayOrder: 7 },
+  { slug: 'tui-vai', name: 'Túi vải', isIndexable: false, displayOrder: 3 },
+];
 
-  it('offers five choices, "Tất cả" first', () => {
-    expect(DISCOVER_CATEGORIES.map((category) => category.label)).toEqual([
+describe('Discover categories are the database inventory', () => {
+  it('renders one chip per row, labelled by the row name', () => {
+    expect(toDiscoverChips(INVENTORY).map((chip) => chip.label)).toEqual([
       'Tất cả',
-      'Thú bông',
-      'Khăn',
-      'Quần áo',
-      'Khác',
+      'Mũ lưỡi trai',
+      'Túi vải',
     ]);
-    expect(DISCOVER_CATEGORIES[0]?.slug).toBeUndefined();
   });
 
-  it('narrows only contract slugs', () => {
-    expect(toDiscoverCategorySlug('khan')).toBe('khan');
-    expect(toDiscoverCategorySlug('KHAN')).toBeUndefined();
-    expect(toDiscoverCategorySlug('do-choi')).toBeUndefined();
-    expect(toDiscoverCategorySlug(undefined)).toBeUndefined();
+  it('leads with "Tất cả", which carries no slug because it is not a category', () => {
+    const [first] = toDiscoverChips(INVENTORY);
+    expect(first?.slug).toBeUndefined();
+    expect(first?.id).toBe('all');
+  });
+
+  it('preserves the API order rather than sorting by slug or label', () => {
+    // `tui-vai` has the lower `displayOrder`, but the API already applied the
+    // ordering; re-sorting here would be a second ordering authority. The chips
+    // therefore come back in the order they were given.
+    expect(toDiscoverChips(INVENTORY).map((chip) => chip.slug)).toEqual([
+      undefined,
+      'mu-luoi-trai',
+      'tui-vai',
+    ]);
+  });
+
+  it('includes a non-indexable category, because Discover is not a sitemap', () => {
+    expect(toDiscoverChips(INVENTORY).some((chip) => chip.slug === 'tui-vai')).toBe(true);
+  });
+
+  it('renders an empty inventory as the "all" chip alone, inventing nothing', () => {
+    expect(toDiscoverChips([])).toEqual([{ id: 'all', label: 'Tất cả' }]);
+  });
+
+  it('answers membership from the rows it was given', () => {
+    expect(isKnownCategory(INVENTORY, 'mu-luoi-trai')).toBe(true);
+    // A historical category is not privileged: if it is not in the inventory,
+    // it is not a category.
+    expect(isKnownCategory(INVENTORY, 'thu-bong')).toBe(false);
+    expect(isKnownCategory([], 'mu-luoi-trai')).toBe(false);
   });
 });
 
 describe('category URL resolution', () => {
   it('treats an absent query as the unfiltered feed', () => {
-    expect(resolveDiscoverSelection({})).toEqual({ kind: 'all' });
+    expect(resolveDiscoverSelection({}, INVENTORY)).toEqual({ kind: 'all' });
   });
 
-  it('resolves each of the four slugs', () => {
-    for (const slug of DISCOVER_CATEGORY_SLUGS) {
-      expect(resolveDiscoverSelection({ category: slug })).toEqual({ kind: 'category', slug });
+  it('resolves any slug the inventory currently contains', () => {
+    for (const category of INVENTORY) {
+      expect(resolveDiscoverSelection({ category: category.slug }, INVENTORY)).toEqual({
+        kind: 'category',
+        slug: category.slug,
+      });
     }
   });
 
-  it('rejects an unknown value rather than quietly showing everything', () => {
-    expect(resolveDiscoverSelection({ category: 'khong-ton-tai' })).toEqual({ kind: 'invalid' });
-    expect(resolveDiscoverSelection({ category: '' })).toEqual({ kind: 'invalid' });
+  it('rejects a well-formed slug the inventory does not contain', () => {
+    // Not "quietly show everything", and not "trust any slug": the inventory
+    // decides, so an archived or draft category stops resolving the moment the
+    // database says so — with no deployment.
+    expect(resolveDiscoverSelection({ category: 'khong-ton-tai' }, INVENTORY)).toEqual({
+      kind: 'invalid',
+    });
+  });
+
+  it('rejects a malformed value on syntax alone', () => {
+    for (const category of ['', 'MU-LUOI-TRAI', 'mu_luoi_trai', 'mu luoi trai', '-mu']) {
+      expect({ category, selection: resolveDiscoverSelection({ category }, INVENTORY) }).toEqual({
+        category,
+        selection: { kind: 'invalid' },
+      });
+    }
+  });
+
+  it('falls back to syntax when the inventory could not be read', () => {
+    // `undefined` is *unknown*, not *empty*. Narrowing against an inventory the
+    // app does not have would 404 perfectly valid categories during an API blip,
+    // and remembering a previous list would resurrect the compiled taxonomy.
+    expect(resolveDiscoverSelection({ category: 'bat-ky-danh-muc' }, undefined)).toEqual({
+      kind: 'category',
+      slug: 'bat-ky-danh-muc',
+    });
+    expect(resolveDiscoverSelection({ category: 'KHONG HOP LE' }, undefined)).toEqual({
+      kind: 'invalid',
+    });
+  });
+
+  it('treats an empty inventory as "no category resolves", not as unknown', () => {
+    expect(resolveDiscoverSelection({ category: 'mu-luoi-trai' }, [])).toEqual({ kind: 'invalid' });
   });
 
   it('rejects a repeated parameter, which names no single selection', () => {
-    expect(resolveDiscoverSelection({ category: ['khan', 'khac'] })).toEqual({ kind: 'invalid' });
+    expect(resolveDiscoverSelection({ category: ['mu-luoi-trai', 'tui-vai'] }, INVENTORY)).toEqual({
+      kind: 'invalid',
+    });
   });
 
   it('ignores unrelated query parameters', () => {
-    expect(resolveDiscoverSelection({ utm_source: 'newsletter' })).toEqual({ kind: 'all' });
+    expect(resolveDiscoverSelection({ utm_source: 'newsletter' }, INVENTORY)).toEqual({
+      kind: 'all',
+    });
   });
 });
 

@@ -1003,7 +1003,7 @@ this table against the `IMP-D038` register row and the surrounding authority set
 | `APP2-S01 discover route` | `/kham-pha` |
 | `Homepage route` | `/` |
 | `Category query key` | `category` |
-| `Category slugs` | `thu-bong, khan, quan-ao, khac` |
+| `Category value source of truth` | `DATABASE` |
 | `S01 product card interaction` | `NON_INTERACTIVE` |
 | `Product detail browser route` | `/san-pham/[slug]` |
 | `APP2-S02 status` | `READY` |

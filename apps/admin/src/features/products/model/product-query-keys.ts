@@ -45,6 +45,16 @@ export const productQueryKeys = {
    */
   publicationReadiness: (productId: string) =>
     [...ROOT, 'detail', productId, 'publication-readiness'] as const,
+  /**
+   * The category inventory the form's options and the list's filter chips are
+   * built from (`APP12-C01-C1`).
+   *
+   * Unparameterised, because the read is: it is the whole current taxonomy, not
+   * a page or a filtered view. One cache entry therefore serves the create
+   * form, the edit form and the filter bar, so a screen that opens after another
+   * does not re-fetch what is already known.
+   */
+  categories: () => [...ROOT, 'categories'] as const,
   /** Selectable catalog media for the picker dialog. */
   selectableAssets: (pageSize: number = PRODUCT_ASSET_PAGE_SIZE) =>
     [...ROOT, 'selectable-assets', { pageSize }] as const,

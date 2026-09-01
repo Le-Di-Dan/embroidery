@@ -143,26 +143,46 @@ describe('truthful projection', () => {
     expect(body.getByText(PRODUCT_COPY.status.archived)).toBeInTheDocument();
   });
 
-  it('renders the approved category labels from the slug, not the server name', async () => {
-    const misnamed = makeProduct({
+  it('renders the category name the server sent, never one rebuilt from the slug', async () => {
+    // The rule this assertion used to state was the exact inverse, and it was
+    // the defect: the label came from a compiled map keyed by slug, so a
+    // category the build had not heard of rendered as "Chưa xác định" and a
+    // renamed one kept its old label until someone deployed. The row's `name`
+    // is the authority (`APP12-C01-C1`).
+    const product = makeProduct({
       productId: 'p-9',
-      name: 'Khăn lụa',
-      category: { name: 'A stale server label', slug: 'khan' },
+      name: 'Mũ lụa',
+      category: { name: 'Mũ lưỡi trai', slug: 'mu-luoi-trai' },
     });
-    listMock.mockResolvedValue(productEnvelope(makeProductPage([misnamed])));
+    listMock.mockResolvedValue(productEnvelope(makeProductPage([product])));
     renderCollection();
 
     const body = within(await screen.findByRole('table'));
-    expect(body.getByText(PRODUCT_COPY.category.khan)).toBeInTheDocument();
-    expect(body.queryByText('A stale server label')).not.toBeInTheDocument();
+    expect(body.getByText('Mũ lưỡi trai')).toBeInTheDocument();
   });
 
-  it('falls back safely for an unrecognised status or category', async () => {
-    const odd = makeProduct({
+  it('renders a category no build could have known, with no source change', async () => {
+    const product = makeProduct({
       productId: 'p-8',
+      name: 'Sản phẩm mới',
+      category: { name: 'Đồ gốm', slug: 'do-gom' },
+    });
+    listMock.mockResolvedValue(productEnvelope(makeProductPage([product])));
+    renderCollection();
+
+    const body = within(await screen.findByRole('table'));
+    expect(body.getByText('Đồ gốm')).toBeInTheDocument();
+    // The slug is an identifier, not a label, and is still never rendered.
+    expect(body.queryByText('do-gom')).not.toBeInTheDocument();
+  });
+
+  it('still falls back safely for an unrecognised status', async () => {
+    // Status *is* a closed lifecycle vocabulary the code owns, so an unknown one
+    // is a contract drift and keeps its safe fallback. Category is not.
+    const odd = makeProduct({
+      productId: 'p-7',
       name: 'Sản phẩm lạ',
       status: 'PENDING_REVIEW' as never,
-      category: { name: 'Đồ gốm', slug: 'do-gom' as never },
     });
     listMock.mockResolvedValue(productEnvelope(makeProductPage([odd])));
     renderCollection();
@@ -170,8 +190,6 @@ describe('truthful projection', () => {
     const body = within(await screen.findByRole('table'));
     expect(body.getAllByText(PRODUCT_COPY.status.unknown).length).toBeGreaterThan(0);
     expect(body.queryByText('PENDING_REVIEW')).not.toBeInTheDocument();
-    expect(body.queryByText('do-gom')).not.toBeInTheDocument();
-    expect(body.queryByText('Đồ gốm')).not.toBeInTheDocument();
   });
 
   it('renders only the approved fields — never price, slug, timestamps or ids', async () => {

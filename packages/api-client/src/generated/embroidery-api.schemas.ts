@@ -1694,20 +1694,14 @@ export interface AdminPlacementSideResponse {
   supersededById: AdminPlacementSideResponseSupersededById;
 }
 
-export type AdminProductCategoryResponseSlug =
-  (typeof AdminProductCategoryResponseSlug)[keyof typeof AdminProductCategoryResponseSlug];
-
-export const AdminProductCategoryResponseSlug = {
-  'thu-bong': 'thu-bong',
-  khan: 'khan',
-  'quan-ao': 'quan-ao',
-  khac: 'khac',
-} as const;
-
 export interface AdminProductCategoryResponse {
   /** Canonical Vietnamese label. */
   name: string;
-  slug: AdminProductCategoryResponseSlug;
+  /**
+   * The dynamic category slug this product is filed under.
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  slug: string;
 }
 
 export type AdminProductDetailResponseCurrencyCode =
@@ -2954,18 +2948,13 @@ export interface CreateGalleryEntryBody {
   title: string;
 }
 
-export type CreateProductBodyCategorySlug =
-  (typeof CreateProductBodyCategorySlug)[keyof typeof CreateProductBodyCategorySlug];
-
-export const CreateProductBodyCategorySlug = {
-  'thu-bong': 'thu-bong',
-  khan: 'khan',
-  'quan-ao': 'quan-ao',
-  khac: 'khac',
-} as const;
-
 export interface CreateProductBody {
-  categorySlug: CreateProductBodyCategorySlug;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  categorySlug: string;
   /** @maxLength 5000 */
   description?: string;
   /**
@@ -4488,20 +4477,33 @@ export interface PrepareGalleryAssetBody {
   sourceAssetId: string;
 }
 
-export type PublicCategoryResponseSlug =
-  (typeof PublicCategoryResponseSlug)[keyof typeof PublicCategoryResponseSlug];
+export interface PublicCategoryInventoryItemResponse {
+  /** The operator's editorial position. The primary sort key of this response, published so a consumer that re-groups or merges the list can preserve the intended order instead of inventing one. */
+  displayOrder: number;
+  /** Whether this category may be indexed by a search engine. Not a visibility flag: a `false` category is listed here and remains fully browsable — it must simply not be advertised in a sitemap or an indexable breadcrumb. */
+  isIndexable: boolean;
+  /** Canonical Vietnamese label. */
+  name: string;
+  /**
+   * The stable public key, and the value the Product category filter accepts. Dynamic: the set of categories is operator data, not a closed contract enum, so a consumer must read this inventory rather than compile a taxonomy in.
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  slug: string;
+}
 
-export const PublicCategoryResponseSlug = {
-  'thu-bong': 'thu-bong',
-  khan: 'khan',
-  'quan-ao': 'quan-ao',
-  khac: 'khac',
-} as const;
+export interface PublicCategoryListResponse {
+  /** Every publicly browsable category, ordered by `displayOrder` then `slug`. Complete and unpaged: there is no cursor, and a taxonomy too large for one response fails the request rather than truncating. */
+  items: PublicCategoryInventoryItemResponse[];
+}
 
 export interface PublicCategoryResponse {
   /** Canonical Vietnamese label. */
   name: string;
-  slug: PublicCategoryResponseSlug;
+  /**
+   * The category this product is filed under. Dynamic: read `publicCategory_list` for the current set rather than compiling a taxonomy in.
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  slug: string;
 }
 
 export interface PublicDesignTemplateVersionResponse {
@@ -5697,20 +5699,15 @@ export interface UpdateGalleryEntryBody {
   title?: string;
 }
 
-export type UpdateProductBodyCategorySlug =
-  (typeof UpdateProductBodyCategorySlug)[keyof typeof UpdateProductBodyCategorySlug];
-
-export const UpdateProductBodyCategorySlug = {
-  'thu-bong': 'thu-bong',
-  khan: 'khan',
-  'quan-ao': 'quan-ao',
-  khac: 'khac',
-} as const;
-
 export interface UpdateProductBody {
   /** @pattern ^\d{1,12}$ */
   basePriceAmount?: string;
-  categorySlug?: UpdateProductBodyCategorySlug;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  categorySlug?: string;
   /**
    * @maxLength 5000
    * @nullable
@@ -6240,7 +6237,11 @@ export type AdminProductionJobTransition200 = ApiSuccessResponse & {
 };
 
 export type AdminProductListParams = {
-  categorySlug?: AdminProductListCategorySlug;
+  /**
+   * Filter by category slug. Dynamic (`APP12-C01`) — a well-formed slug naming no category returns an empty page rather than an unfiltered one.
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  categorySlug?: string;
   status?: AdminProductListStatus;
   /**
    * @minimum 1
@@ -6252,16 +6253,6 @@ export type AdminProductListParams = {
    */
   cursor?: unknown;
 };
-
-export type AdminProductListCategorySlug =
-  (typeof AdminProductListCategorySlug)[keyof typeof AdminProductListCategorySlug];
-
-export const AdminProductListCategorySlug = {
-  'thu-bong': 'thu-bong',
-  khan: 'khan',
-  'quan-ao': 'quan-ao',
-  khac: 'khac',
-} as const;
 
 export type AdminProductListStatus =
   (typeof AdminProductListStatus)[keyof typeof AdminProductListStatus];
@@ -6350,6 +6341,10 @@ export type AdminSkuStockAdjust200 = ApiSuccessResponse & {
 
 export type AdminSkuStockLedger200 = ApiSuccessResponse & {
   data: AdminSkuStockLedgerResponse;
+};
+
+export type PublicCategoryList200 = ApiSuccessResponse & {
+  data: PublicCategoryListResponse;
 };
 
 export type PublicCustomRequestAssetUploadParams = {
@@ -6506,7 +6501,11 @@ export type PublicOrderShippingFeeAcknowledge201 = ApiSuccessResponse & {
 };
 
 export type PublicProductListParams = {
-  categorySlug?: PublicProductListCategorySlug;
+  /**
+   * Filter by category slug. Dynamic (`APP12-C01`) — the set comes from `publicCategory_list`, not from this contract. A well-formed slug naming no public category returns an empty page rather than an unfiltered one.
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  categorySlug?: string;
   /**
    * @minimum 1
    * @maximum 100
@@ -6517,16 +6516,6 @@ export type PublicProductListParams = {
    */
   cursor?: unknown;
 };
-
-export type PublicProductListCategorySlug =
-  (typeof PublicProductListCategorySlug)[keyof typeof PublicProductListCategorySlug];
-
-export const PublicProductListCategorySlug = {
-  'thu-bong': 'thu-bong',
-  khan: 'khan',
-  'quan-ao': 'quan-ao',
-  khac: 'khac',
-} as const;
 
 export type PublicProductList200 = ApiSuccessResponse & {
   data: PublicProductListResponse;

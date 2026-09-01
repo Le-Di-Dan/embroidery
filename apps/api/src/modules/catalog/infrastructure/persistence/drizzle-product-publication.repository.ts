@@ -42,6 +42,7 @@ export class DrizzleProductPublicationRepository
       id: products.id,
       categoryId: products.categoryId,
       categorySlug: categories.slug,
+      categoryName: categories.name,
       name: products.name,
       slug: products.slug,
       description: products.description,

@@ -13,6 +13,15 @@ export const DISCOVER_COPY = {
   intro: 'Những tác phẩm, chất liệu và câu chuyện để bạn tìm thấy ý tưởng của riêng mình.',
   /** Accessible name for the category chip navigation. */
   categoryNavLabel: 'Lọc theo danh mục',
+  /**
+   * The unfiltered chip. UI state, not a category: it means "send no
+   * `category` parameter". It lives in the copy catalog rather than beside the
+   * category model because it is the one label on that row that is *not* data
+   * (`APP12-C01-C1`).
+   */
+  categoryAllLabel: 'Tất cả',
+  /** Shown in place of the chip row when the category inventory cannot be read. */
+  categoryUnavailable: 'Chưa thể tải danh mục.',
   /** Accessible name for the feed collection. */
   feedLabel: 'Tác phẩm đã xuất bản',
   initialLoading: 'Đang tải tác phẩm…',

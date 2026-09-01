@@ -216,12 +216,28 @@ describe('seeding from the authoritative record', () => {
     ]);
   });
 
-  it('falls back to "not chosen" for a category this build does not know', () => {
+  it('keeps a category this build has never heard of', () => {
+    // The inverse assertion used to stand here, and it was the defect: opening a
+    // product filed under a real category the build did not know silently
+    // cleared its category field, and saving would have moved the product. The
+    // categories are data (`APP12-C01-C1`).
     const detail = makeProductDetail({
-      category: { name: 'Không rõ', slug: 'khong-ro' as never },
+      category: { name: 'Mũ lưỡi trai', slug: 'mu-luoi-trai' },
     });
 
-    expect(formValuesFromDetail(detail).categorySlug).toBe('');
+    expect(formValuesFromDetail(detail).categorySlug).toBe('mu-luoi-trai');
+  });
+
+  it('falls back to "not chosen" only when the slug could not be a slug at all', () => {
+    // A malformed value is a data defect, not an unfamiliar category, and must
+    // not be echoed back into a request.
+    for (const slug of ['KHONG-RO', 'khong ro', 'khong_ro', '']) {
+      const detail = makeProductDetail({ category: { name: 'Không rõ', slug } });
+      expect({ slug, value: formValuesFromDetail(detail).categorySlug }).toEqual({
+        slug,
+        value: '',
+      });
+    }
   });
 });
 

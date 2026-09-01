@@ -37,10 +37,17 @@ import {
   WAVE2_WITHHELD_PUBLIC_OPERATIONS,
 } from './wave2-operation-authority';
 
-/** The counts `APP12-G01` fixed. Written as literals so a drift is a failure. */
-const AUTHORITY_PUBLIC_OPERATIONS = 43;
+/**
+ * The counts `APP12-G01` fixed, as `APP12-C01` extended them. Written as
+ * literals so a drift is a failure.
+ *
+ * `APP12-C01` added exactly one public operation — `publicCategory_list`, the
+ * dynamic category inventory — and classified it `ALLOW`. The withheld set is
+ * untouched: 43 -> 44 public, 12 -> 13 allowed, 31 denied either way.
+ */
+const AUTHORITY_PUBLIC_OPERATIONS = 44;
 const AUTHORITY_DENY = 31;
-const AUTHORITY_ALLOW = 12;
+const AUTHORITY_ALLOW = 13;
 
 /** Nest's own metadata key for a handler's route path. */
 const PATH_METADATA = 'path';

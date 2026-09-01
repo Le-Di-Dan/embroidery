@@ -15,6 +15,7 @@ import {
   buildDiscoverHref,
   type DiscoverSearchParams,
 } from '../../features/product-discovery';
+import { fetchCategoryInventoryOnServer } from '../../features/product-discovery/services/category-inventory.server';
 import { fetchFirstDiscoverPageOnServer } from '../../features/product-discovery/services/discover-catalog.server';
 import { publicPageMetadata } from '../../features/storefront-seo';
 
@@ -35,11 +36,14 @@ interface DiscoverPageProps {
  *
  * `?category=` is not decoration on one page — it is the canonical address of a
  * filtered feed (IMP-D038, `APP2-S01-G01`; there is no `/danh-muc/[slug]`). So
- * each of the four category states self-canonicalises to its own URL, and the
- * unfiltered feed canonicalises to `/kham-pha` with no query at all. Collapsing
- * the filtered states onto the bare path would tell a crawler that four
+ * every category state self-canonicalises to its own URL, and the unfiltered
+ * feed canonicalises to `/kham-pha` with no query at all. Collapsing the
+ * filtered states onto the bare path would tell a crawler that several
  * distinct, linked, browsable feeds are one page; adding a query to the
  * unfiltered one would invent an address nothing links to.
+ *
+ * *Every* category state, not four: the set is whatever the database currently
+ * publishes (`APP12-C01-C1`).
  *
  * Only the category parameter survives. The URL is rebuilt from the resolved
  * selection through `buildDiscoverHref` rather than echoed back, so a tracking
@@ -52,7 +56,8 @@ interface DiscoverPageProps {
  * Layout, query behaviour and the feed itself are untouched.
  */
 export async function generateMetadata({ searchParams }: DiscoverPageProps): Promise<Metadata> {
-  const selection = resolveDiscoverSelection(await searchParams);
+  const [params, categories] = await Promise.all([searchParams, fetchCategoryInventoryOnServer()]);
+  const selection = resolveDiscoverSelection(params, categories);
 
   return publicPageMetadata({
     // An invalid selection renders the not-found surface, which carries its own
@@ -84,7 +89,10 @@ export const dynamic = 'force-dynamic';
  *
  * An unknown or repeated `?category=` value takes the approved not-found
  * boundary rather than silently rendering everything, so a stale or mistyped
- * link never answers a question the visitor did not ask.
+ * link never answers a question the visitor did not ask. "Unknown" is now
+ * measured against the live category inventory (`APP12-C01-C1`), so a category
+ * published a minute ago resolves and one archived a minute ago stops
+ * resolving — neither needing a deployment.
  *
  * The prefetch absorbs its own failure by design: a first request that cannot
  * reach the API dehydrates nothing, the client issues it again, and a genuine
@@ -92,7 +100,13 @@ export const dynamic = 'force-dynamic';
  * as a rendered error page.
  */
 export default async function DiscoverPage({ searchParams }: DiscoverPageProps) {
-  const selection = resolveDiscoverSelection(await searchParams);
+  // Both reads start together: the inventory decides which `?category=` values
+  // are real, and the feed page depends on the resolved selection, so the
+  // category read is on the critical path and must not be serialised behind the
+  // params promise.
+  const [params, categories] = await Promise.all([searchParams, fetchCategoryInventoryOnServer()]);
+
+  const selection = resolveDiscoverSelection(params, categories);
   if (selection.kind === 'invalid') notFound();
 
   const categorySlug = selectionSlug(selection);
@@ -108,7 +122,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
   return (
     <div className="discover">
       <DiscoverIntro />
-      <DiscoverCategoryNav activeSlug={categorySlug} />
+      <DiscoverCategoryNav categories={categories} activeSlug={categorySlug} />
       <DiscoverQueryProvider>
         <HydrationBoundary state={dehydrate(queryClient)}>
           <DiscoverFeedScreen categorySlug={categorySlug} />

@@ -2,17 +2,27 @@
 
 import { PRODUCT_COPY } from '../model/product-copy';
 import {
-  PRODUCT_CATEGORY_FILTER_OPTIONS,
+  toProductCategoryFilterOptions,
   PRODUCT_STATUS_FILTER_OPTIONS,
   type ProductCategoryFilter,
   type ProductFilters,
   type ProductStatusFilter,
 } from '../model/product-filters';
+import type { ProductCategory } from '../services/category-inventory.service';
 
 interface ProductFilterBarProps {
   readonly filters: ProductFilters;
   readonly onStatusChange: (status: ProductStatusFilter) => void;
   readonly onCategoryChange: (category: ProductCategoryFilter) => void;
+  /**
+   * The category inventory, from `GET /api/public/categories` (`APP12-C01-C1`).
+   *
+   * Passed in rather than fetched here: this component renders and owns no data.
+   * An empty array — inventory still loading, or unreadable — yields the "all"
+   * option alone, a control that truthfully filters nothing rather than a
+   * remembered list of categories that may no longer exist.
+   */
+  readonly categories: readonly ProductCategory[];
 }
 
 /**
@@ -32,6 +42,7 @@ export function ProductFilterBar({
   filters,
   onStatusChange,
   onCategoryChange,
+  categories,
 }: ProductFilterBarProps) {
   return (
     <div className="product-filters">
@@ -61,9 +72,9 @@ export function ProductFilterBar({
           id="product-filter-category"
           className="product-filter__control"
           value={filters.category}
-          onChange={(event) => onCategoryChange(event.target.value as ProductCategoryFilter)}
+          onChange={(event) => onCategoryChange(event.target.value)}
         >
-          {PRODUCT_CATEGORY_FILTER_OPTIONS.map((option) => (
+          {toProductCategoryFilterOptions(categories).map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

@@ -1,7 +1,6 @@
 import { publicProductList, type PublicProductListResponse } from '@embroidery/api-client';
 
 import { getServerApiClient } from '../../../config/server-api-client';
-import type { DiscoverCategorySlug } from '../model/discover-categories';
 import { DISCOVER_PAGE_SIZE } from '../model/discover-query-keys';
 
 /**
@@ -18,7 +17,7 @@ import { DISCOVER_PAGE_SIZE } from '../model/discover-query-keys';
  * page for what may be a momentary API blip.
  */
 export async function fetchFirstDiscoverPageOnServer(
-  categorySlug: DiscoverCategorySlug | undefined,
+  categorySlug: string | undefined,
 ): Promise<PublicProductListResponse> {
   const body = await publicProductList(
     {

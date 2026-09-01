@@ -11,8 +11,8 @@ import type { ProductState } from '@embroidery/database';
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
+import { CATEGORY_SLUG_MAX_LENGTH, CATEGORY_SLUG_PATTERN } from '../../domain/category-slug';
 import {
-  APP2_CATEGORY_SLUGS,
   MAX_BASE_PRICE_AMOUNT,
   PRODUCT_DESCRIPTION_MAX_LENGTH,
   PRODUCT_NAME_MAX_LENGTH,
@@ -74,12 +74,29 @@ const productNameSchema = z.string().trim().min(1).max(PRODUCT_NAME_MAX_LENGTH);
  */
 const mediaAssetIdsSchema = z.array(z.string().uuid());
 
+/**
+ * The category slug an Admin request may name (`APP12-C01`).
+ *
+ * A shape, not a membership. The taxonomy is dynamic and lives in
+ * `categories`, so the boundary checks only that the value could be a slug at
+ * all; whether it names a category that exists and is currently active is
+ * `CategoryResolver`'s question, answered against rows, and still reported as
+ * `PRODUCT_CATEGORY_INVALID`. Admin semantics are therefore unchanged — a bad
+ * slug is refused either way — but a category the operator adds after this build
+ * is no longer refused by the contract before the database is ever asked.
+ */
+const categorySlugSchema = z
+  .string()
+  .min(1)
+  .max(CATEGORY_SLUG_MAX_LENGTH)
+  .regex(CATEGORY_SLUG_PATTERN);
+
 export const listProductsQuerySchema = z
   .object({
     cursor: z.string().min(1).max(512).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
     status: z.enum(PRODUCT_STATUS_FILTERS).optional(),
-    categorySlug: z.enum(APP2_CATEGORY_SLUGS).optional(),
+    categorySlug: categorySlugSchema.optional(),
   })
   .strict();
 
@@ -87,7 +104,7 @@ export class ListProductsQuery extends createZodDto(listProductsQuerySchema) {}
 
 export const createProductBodySchema = z
   .object({
-    categorySlug: z.enum(APP2_CATEGORY_SLUGS),
+    categorySlug: categorySlugSchema,
     name: productNameSchema,
     // Absent and blank are both "no description"; blank is normalised away so
     // the column never holds a value that renders as nothing.
@@ -114,7 +131,7 @@ export const updateProductBodySchema = z
     name: productNameSchema.optional(),
     description: z.string().max(PRODUCT_DESCRIPTION_MAX_LENGTH).nullable().optional(),
     basePriceAmount: basePriceAmountSchema.optional(),
-    categorySlug: z.enum(APP2_CATEGORY_SLUGS).optional(),
+    categorySlug: categorySlugSchema.optional(),
     mediaAssetIds: mediaAssetIdsSchema.optional(),
   })
   .strict()

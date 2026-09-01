@@ -198,7 +198,7 @@ describe('APP11-E01 — the content system has no backend', () => {
   });
 });
 
-describe('APP11-E01 — one predicate contains the category divergence', () => {
+describe('APP12-C01-C1 — the category divergence is removed, not contained', () => {
   const breadcrumb = readSource('features', 'product-detail', 'model', 'product-breadcrumb.ts');
   const continuation = readSource(
     'features',
@@ -206,58 +206,106 @@ describe('APP11-E01 — one predicate contains the category divergence', () => {
     'components',
     'detail-continue-discover.tsx',
   );
+  const discoverNav = readSource(
+    'features',
+    'product-discovery',
+    'components',
+    'discover-category-nav.tsx',
+  );
+  const staticRoutes = readSource('features', 'storefront-seo', 'model', 'public-static-routes.ts');
 
   /**
-   * `FU-APP11-S04-C1-02`: the committed contract declares a closed category
-   * enum that the running API does not honour (`ao-thun-cotton` carries
-   * `ao-thun`). E01 classified that as non-blocking for APP11 **on the evidence
-   * that the Storefront never emits a link for a category Discover cannot
-   * render** — and that argument is only true while both category-linking
-   * surfaces narrow through the same predicate.
+   * ## What this block used to assert, and why it no longer can
    *
-   * Two surfaces, one predicate: a crumb and a continuation CTA can then never
-   * disagree, and a future contract change moves both at once.
+   * `FU-APP11-S04-C1-02`: the committed contract declared a closed category enum
+   * the running API did not honour (`ao-thun-cotton` carries `ao-thun`). E01
+   * classified that non-blocking **on the evidence that the Storefront never
+   * emits a link for a category Discover cannot render** — enforced by both
+   * linking surfaces narrowing through `toDiscoverCategorySlug`, a predicate
+   * over four compiled slugs.
+   *
+   * That containment was correct for a divergence it could not fix. `APP12-C01`
+   * fixed the contract half and `APP12-C01-C1` fixed the Storefront half: the
+   * category set is the `categories` table, Discover lists from it, and a
+   * Product is publicly visible only when its category is published and not
+   * archived. There is no divergence left to contain, and the predicate — along
+   * with the compiled list behind it — is gone.
+   *
+   * So the invariant inverts. What must be proved now is that **no compiled
+   * category list has come back**, on any of the four surfaces that used to
+   * carry one.
    */
   it.each([
     ['the Product breadcrumb', breadcrumb],
     ['the Continue Discovering CTA', continuation],
-  ])('narrows the category in %s before building an href', (_name, source) => {
-    expect(source).toContain('toDiscoverCategorySlug');
+    ['the Discover category navigation', discoverNav],
+    ['the static Storefront route inventory', staticRoutes],
+  ])('holds no compiled category list in %s', (_name, source) => {
+    const code = source.replaceAll(/\/\*[\s\S]*?\*\//g, '').replaceAll(/\/\/[^\n]*/g, '');
+
+    for (const removed of [
+      'toDiscoverCategorySlug',
+      'DISCOVER_CATEGORY_SLUGS',
+      'LEGACY_CATEGORY_SLUGS',
+      'LegacyCategorySlug',
+    ]) {
+      expect({ removed, present: code.includes(removed) }).toEqual({ removed, present: false });
+    }
+    // And no historical value survives as a literal either.
+    for (const slug of ['thu-bong', 'quan-ao', 'khac']) {
+      expect({ slug, present: code.includes(`'${slug}'`) }).toEqual({ slug, present: false });
+    }
   });
 
   /**
-   * The narrowing must actually *guard* the href. Importing the predicate and
-   * then composing the link from the raw slug anyway would satisfy the check
-   * above while reintroducing the 404.
-   *
-   * The two surfaces degrade differently, and correctly so: the breadcrumb
-   * **drops the category level** (a trail may not name a place it cannot link
-   * to), while the continuation CTA **keeps its second link and points it at
-   * unfiltered Discover** (deleting it would let a data defect quietly remove a
-   * section of an approved design). What they share is the invariant that
-   * matters — `buildDiscoverHref` is only ever reached with the narrowed value,
-   * never with the raw one the API returned.
+   * The two linking surfaces still guard, but on **syntax** rather than
+   * membership: a slug is interpolated into a URL this page publishes, and a
+   * malformed value must not become an advertised address. That is a rule this
+   * app owns; which categories exist is not.
    */
   it.each([
     ['the Product breadcrumb', breadcrumb],
     ['the Continue Discovering CTA', continuation],
-  ])('builds a category href in %s only from the narrowed slug', (_name, source) => {
+  ])('guards the href in %s on slug shape, not on a taxonomy', (_name, source) => {
+    expect(source).toContain('isCategorySlugShape');
+
     const calls = [...source.matchAll(/buildDiscoverHref\(([^)]*)\)/g)].map((call) =>
       (call[1] ?? '').trim(),
     );
     expect(calls.length).toBeGreaterThan(0);
-    expect(calls.every((argument) => argument === 'canonicalSlug')).toBe(true);
+    // Built from the Product's own category slug, never from a narrowed
+    // stand-in for it.
+    expect(calls.every((argument) => argument.includes('categorySlug'))).toBe(true);
   });
 
   /**
-   * And each surface's own degradation, so a later edit cannot swap one for the
-   * other: the crumb must be able to vanish, the CTA must not.
+   * Each surface's own degradation is preserved, so a later edit cannot swap one
+   * for the other: the crumb may vanish, the CTA may not.
    */
-  it('drops the category crumb rather than linking it', () => {
-    expect(breadcrumb).toMatch(/canonicalSlug === undefined[\s\S]{0,40}\?\s*\[\]/);
+  it('drops the category crumb rather than advertising a malformed one', () => {
+    // The category level is spread in conditionally and collapses to `[]`, so a
+    // trail can still lose it — the one degradation the crumb is allowed.
+    expect(breadcrumb).toMatch(/hasLinkableCategory[\s\S]{0,200}:\s*\[\]\)/);
   });
 
   it('keeps the continuation CTA pointed at unfiltered Discover', () => {
-    expect(continuation).toMatch(/canonicalSlug === undefined[\s\S]{0,40}DISCOVER_ROUTE/);
+    expect(continuation).toMatch(/isCategorySlugShape[\s\S]{0,120}DISCOVER_ROUTE/);
+  });
+
+  /**
+   * And the positive half: the chip row and the sitemap are built from the
+   * inventory the API serves, so a category the operator publishes reaches both
+   * with no deployment.
+   */
+  it('builds the Discover chips from the API inventory', () => {
+    expect(discoverNav).toContain('toDiscoverChips');
+    expect(discoverNav).toContain('categories');
+  });
+
+  it('keeps category URLs out of the fixed route inventory entirely', () => {
+    const code = staticRoutes.replaceAll(/\/\*[\s\S]*?\*\//g, '');
+
+    expect(code).not.toContain('buildDiscoverHref');
+    expect(code).not.toContain('category=');
   });
 });

@@ -14,17 +14,26 @@
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import {
-  APP2_CATEGORY_SLUGS,
-  APP2_PRODUCT_MEDIA_ROLES,
-  PRODUCT_CURRENCY,
-} from '../../domain/product-draft.policy';
+import { CATEGORY_SLUG_PATTERN } from '../../domain/category-slug';
+import { APP2_PRODUCT_MEDIA_ROLES, PRODUCT_CURRENCY } from '../../domain/product-draft.policy';
 
 const PRODUCT_ID_EXAMPLE = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071';
 const ASSET_ID_EXAMPLE = '019826f0-1c3d-7a41-9b6e-2f5a8c4d1e07';
 
+/**
+ * The category embedded in an Admin product payload.
+ *
+ * `slug` stopped being a four-value enum at `APP12-C01`: the taxonomy is
+ * dynamic, so the contract publishes the slug's shape. The physical category id
+ * stays absent, exactly as before — the slug remains the only category identity
+ * an Admin client ever handles.
+ */
 export class AdminProductCategoryResponse {
-  @ApiProperty({ enum: APP2_CATEGORY_SLUGS, example: 'thu-bong' })
+  @ApiProperty({
+    pattern: CATEGORY_SLUG_PATTERN.source,
+    description: 'The dynamic category slug this product is filed under.',
+    example: 'thu-bong',
+  })
   slug!: string;
 
   @ApiProperty({ description: 'Canonical Vietnamese label.', example: 'Thú bông' })

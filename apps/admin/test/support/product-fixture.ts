@@ -6,6 +6,7 @@ import {
   type AdminProductPublicationReadinessResponse,
   type AdminProductPublicationResponse,
   type AdminProductSummaryResponse,
+  type PublicCategoryInventoryItemResponse,
 } from '@embroidery/api-client';
 
 /**
@@ -170,5 +171,41 @@ export function publicationEnvelope(result: AdminProductPublicationResponse) {
     message: 'ok',
     data: result,
     meta: { requestId: 'req-1', timestamp: '2026-07-31T00:00:00.000Z' },
+  } as never;
+}
+
+/**
+ * The category inventory the Admin product screens read (`APP12-C01-C1`).
+ *
+ * Arbitrary fixture values, deliberately **not** the four categories migration
+ * `0033` seeded. A test that asserted those would make this file a second place
+ * the store's taxonomy is declared, which is the defect that correction removed.
+ */
+export const CATEGORY_FIXTURES: readonly PublicCategoryInventoryItemResponse[] = [
+  { slug: 'mu-luoi-trai', name: 'Mũ lưỡi trai', isIndexable: true, displayOrder: 7 },
+  { slug: 'tui-vai', name: 'Túi vải', isIndexable: false, displayOrder: 8 },
+];
+
+export function makeCategory(
+  overrides: Partial<PublicCategoryInventoryItemResponse> = {},
+): PublicCategoryInventoryItemResponse {
+  return {
+    slug: 'mu-luoi-trai',
+    name: 'Mũ lưỡi trai',
+    isIndexable: true,
+    displayOrder: 7,
+    ...overrides,
+  };
+}
+
+export function categoryEnvelope(
+  items: readonly PublicCategoryInventoryItemResponse[] = CATEGORY_FIXTURES,
+) {
+  return {
+    success: true,
+    code: 'PUBLIC_CATEGORY_LIST_READ',
+    message: 'ok',
+    data: { items: [...items] },
+    meta: { requestId: 'req-1', timestamp: '2026-09-01T00:00:00.000Z' },
   } as never;
 }

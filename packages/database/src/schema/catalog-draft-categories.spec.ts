@@ -11,12 +11,11 @@
  * the frozen outputs; production ownership stays with the future Catalog
  * capability, which must reproduce the same table.
  */
+import { APP2_CATEGORY_STATUS, CATEGORY_STATES } from './catalog/categories';
 import {
-  APP2_CATEGORY_SLUGS,
-  APP2_CATEGORY_STATUS,
-  APP2_CATEGORY_TAXONOMY,
-  CATEGORY_STATES,
-} from './catalog/categories';
+  APP2_HISTORICAL_CATEGORIES,
+  APP2_HISTORICAL_CATEGORY_SLUGS,
+} from './catalog/__historical__/app2-category-fixture';
 import {
   PRODUCT_DRAFT_BASE_PRICE_AMOUNT,
   PRODUCT_DRAFT_DISPLAY_ORDER,
@@ -31,7 +30,7 @@ import {
 
 describe('APP2 category taxonomy', () => {
   it('is exactly the four locked categories, in canonical order', () => {
-    expect(APP2_CATEGORY_TAXONOMY.map((c) => [c.slug, c.name, c.displayOrder])).toEqual([
+    expect(APP2_HISTORICAL_CATEGORIES.map((c) => [c.slug, c.name, c.displayOrder])).toEqual([
       ['thu-bong', 'Thú bông', 10],
       ['khan', 'Khăn', 20],
       ['quan-ao', 'Quần áo', 30],
@@ -40,23 +39,25 @@ describe('APP2 category taxonomy', () => {
   });
 
   it('introduces no fifth category', () => {
-    expect(APP2_CATEGORY_TAXONOMY).toHaveLength(4);
-    expect(APP2_CATEGORY_SLUGS).toHaveLength(4);
+    expect(APP2_HISTORICAL_CATEGORIES).toHaveLength(4);
+    expect(APP2_HISTORICAL_CATEGORY_SLUGS).toHaveLength(4);
   });
 
   it('exposes the slug list in the same order as the taxonomy', () => {
-    expect([...APP2_CATEGORY_SLUGS]).toEqual(APP2_CATEGORY_TAXONOMY.map((c) => c.slug));
+    expect([...APP2_HISTORICAL_CATEGORY_SLUGS]).toEqual(
+      APP2_HISTORICAL_CATEGORIES.map((c) => c.slug),
+    );
   });
 
   it('has no duplicate id, slug, name or display order', () => {
     for (const key of ['id', 'slug', 'name', 'displayOrder'] as const) {
-      const values = APP2_CATEGORY_TAXONOMY.map((c) => c[key]);
+      const values = APP2_HISTORICAL_CATEGORIES.map((c) => c[key]);
       expect(new Set(values).size).toBe(values.length);
     }
   });
 
   it('uses deterministic UUIDv7-shaped ids, never a generated value', () => {
-    for (const category of APP2_CATEGORY_TAXONOMY) {
+    for (const category of APP2_HISTORICAL_CATEGORIES) {
       expect(category.id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
       );
@@ -64,7 +65,7 @@ describe('APP2 category taxonomy', () => {
   });
 
   it('uses ASCII kebab-case slugs so they are stable URL and wire keys', () => {
-    for (const { slug } of APP2_CATEGORY_TAXONOMY) {
+    for (const { slug } of APP2_HISTORICAL_CATEGORIES) {
       expect(slug).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
     }
   });

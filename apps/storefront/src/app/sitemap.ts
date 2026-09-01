@@ -1,15 +1,22 @@
 import type { MetadataRoute } from 'next';
 
 import { composeSitemap } from '../features/storefront-seo';
-import { fetchPublicSitemapInventory } from '../features/storefront-seo/services/sitemap-inventory.server';
+import {
+  fetchPublicCategoryInventory,
+  fetchPublicSitemapInventory,
+} from '../features/storefront-seo/services/sitemap-inventory.server';
 
 /**
  * `/sitemap.xml` — the public URL index (`APP11-S04`).
  *
  * A framework **metadata route**, not a page: it adds no browser page to the
  * Storefront's route count. Like every other segment in this app it is thin — it
- * reads the `APP11-B04` inventory and hands it to the composer, which owns the
- * static routes, the entity path mapping, the ordering and the capacity bound.
+ * reads the `APP11-B04` entity inventory and the `APP12-C01` category inventory
+ * and hands both to the composer, which owns the static routes, the entity path
+ * mapping, the category indexability rule, the ordering and the capacity bound.
+ *
+ * The two reads run concurrently: they are independent, and a sitemap should
+ * cost one round trip's latency rather than two.
  *
  * ## Nothing is absorbed
  *
@@ -29,5 +36,9 @@ import { fetchPublicSitemapInventory } from '../features/storefront-seo/services
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  return composeSitemap(await fetchPublicSitemapInventory());
+  const [inventory, categories] = await Promise.all([
+    fetchPublicSitemapInventory(),
+    fetchPublicCategoryInventory(),
+  ]);
+  return composeSitemap(inventory, categories);
 }

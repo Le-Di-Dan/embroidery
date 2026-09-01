@@ -21,6 +21,7 @@ export interface ProductDraftJoinedRow {
   readonly id: string;
   readonly categoryId: string;
   readonly categorySlug: string;
+  readonly categoryName: string;
   readonly name: string;
   readonly slug: string;
   readonly description: string | null;
@@ -38,6 +39,7 @@ export function toProductDraft(row: ProductDraftJoinedRow): ProductDraft {
     id: row.id as ProductDraftId,
     categoryId: row.categoryId,
     categorySlug: row.categorySlug,
+    categoryName: row.categoryName,
     name: row.name,
     slug: row.slug,
     description: row.description ?? undefined,

@@ -135,12 +135,14 @@ describe('Product Detail', () => {
     });
   });
 
-  it('omits the category crumb when the Catalog slug is not a Discover filter', async () => {
-    // `APP11-S04-C1`. The live `ao-thun-cotton` sits in `ao-thun`, which is not
-    // one of the four Discover filters, so S04 advertised
-    // `/kham-pha?category=ao-thun` — a URL Discover answers with its not-found
-    // boundary. A structured-data trail whose intermediate item is not a
-    // navigable page is worse than no trail.
+  it('advertises the category crumb for a category no build knew about', async () => {
+    // The inverse of the assertion that stood here, and the correction is the
+    // point. `APP11-S04` advertised `/kham-pha?category=ao-thun` while Discover
+    // could only render four compiled slugs, so the trail named a page that
+    // 404ed; `S04-C1` dropped the crumb instead, which meant a real category
+    // lost its crumb until someone deployed. `APP12-C01-C1` made Discover list
+    // from the same `categories` table the Product's category comes from, so
+    // the URL resolves and the crumb is ordinary (`FU-APP11-S04-C1-02`).
     productMock.mockResolvedValue(publicDetailEnvelope(makePublicDetailWithUncontractedCategory()));
 
     const html = renderToStaticMarkup(await ProductDetailPage(params('ao-thun-cotton')));
@@ -152,16 +154,33 @@ describe('Product Detail', () => {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Khám phá', item: `${ORIGIN}/kham-pha` },
-        { '@type': 'ListItem', position: 2, name: 'Áo thun cotton' },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Áo thun',
+          item: `${ORIGIN}/kham-pha?category=ao-thun`,
+        },
+        { '@type': 'ListItem', position: 3, name: 'Áo thun cotton' },
       ],
     });
     // And the rendered trail agrees, because it is the same resolved sequence.
-    // Scoped to the breadcrumb `<nav>` deliberately: the `Tiếp tục khám phá`
-    // continuation section further down the page still links this Product’s
-    // Catalog category, and that surface is outside `APP11-S04-C1`'s scope
-    // (`FU-APP11-S04-C1-01`). Asserting over the whole document would either
-    // fail for a reason this correction does not own, or quietly pull a visible
-    // call to action into a structured-data fix.
+    const nav = html.slice(html.indexOf('product-detail__breadcrumb'), html.indexOf('</nav>'));
+
+    expect(nav).toContain('href="/kham-pha?category=ao-thun"');
+  });
+
+  it('still omits the crumb when the category slug could not be a URL segment', async () => {
+    // A malformed slug is a data defect, not an unfamiliar category, and must
+    // never become an advertised address.
+    productMock.mockResolvedValue(
+      publicDetailEnvelope(
+        makePublicDetailWithUncontractedCategory({
+          category: { slug: 'ao thun', name: 'Áo thun' },
+        }),
+      ),
+    );
+
+    const html = renderToStaticMarkup(await ProductDetailPage(params('ao-thun-cotton')));
     const nav = html.slice(html.indexOf('product-detail__breadcrumb'), html.indexOf('</nav>'));
 
     expect(nav).not.toContain('category=');
@@ -174,7 +193,16 @@ describe('Product Detail', () => {
     const cases = [
       { detail: makePublicDetail(), expected: ['Khám phá', 'Thú bông', 'Gấu bông thêu tay'] },
       {
+        // A category the build never knew: three levels now, not two.
         detail: makePublicDetailWithUncontractedCategory({ name: 'Gấu bông thêu tay' }),
+        expected: ['Khám phá', 'Áo thun', 'Gấu bông thêu tay'],
+      },
+      {
+        // A malformed slug: still two, and still no advertised URL.
+        detail: makePublicDetailWithUncontractedCategory({
+          name: 'Gấu bông thêu tay',
+          category: { slug: 'ao thun', name: 'Áo thun' },
+        }),
         expected: ['Khám phá', 'Gấu bông thêu tay'],
       },
     ];

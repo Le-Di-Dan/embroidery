@@ -16,6 +16,7 @@ const PRODUCT: ProductDraft = {
   id: '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071' as ProductDraftId,
   categoryId: '019a0000-0000-7000-8000-000000000001',
   categorySlug: 'thu-bong',
+  categoryName: 'Thú bông',
   name: 'Gấu nâu',
   slug: 'gau-nau',
   description: 'Mô tả',

@@ -3,7 +3,6 @@ import Link from 'next/link';
 import type { AdminProductSummaryResponse } from '@embroidery/api-client';
 
 import { PRODUCT_COPY } from '../model/product-copy';
-import { parseProductCategory, productCategoryLabel } from '../model/product-category';
 import { adminProductDetailRoute } from '../model/product-route';
 import { ProductMediaPlaceholder } from './product-media-placeholder';
 import { ProductStatusBadge } from './product-status-badge';
@@ -54,9 +53,7 @@ export function ProductTable({ items }: ProductTableProps) {
                 <span className="product-table__name">{product.name}</span>
               </span>
             </th>
-            <td className="product-table__category">
-              {productCategoryLabel(parseProductCategory(product.category.slug))}
-            </td>
+            <td className="product-table__category">{product.category.name}</td>
             <td className="product-table__status">
               <ProductStatusBadge status={product.status} />
             </td>
