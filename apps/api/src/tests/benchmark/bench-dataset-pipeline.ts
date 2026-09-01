@@ -170,11 +170,12 @@ export async function seedPipelineVolume(
 
   await runner.execute(sql`
     insert into orders
-      (id, code, custom_request_id, customer_id, accepted_quotation_version_id,
+      (id, code, origin, custom_request_id, customer_id, accepted_quotation_version_id,
        current_approval_snapshot_id, status, total_amount, currency_code,
        cancelled_reason)
     select bench_uuid(${`${seed}:order`}, n),
            'ORD-' || lpad(n::text, 8, '0'),
+           'CUSTOM',
            bench_uuid(${`${seed}:request`}, n),
            bench_uuid(${`${seed}:customer`}, 1 + (n % ${spec.customers})),
            bench_uuid(${`${seed}:qversion`}, n),

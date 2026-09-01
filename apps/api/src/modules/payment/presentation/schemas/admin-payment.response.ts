@@ -199,7 +199,7 @@ export class AdminOrderPaymentsResponse {
   @ApiProperty({ example: 'ORD-7K3MPQ2XVD' })
   orderCode!: string;
 
-  @ApiProperty({ enum: schema.ORDER_STATES, example: 'AWAITING_DEPOSIT' })
+  @ApiProperty({ enum: schema.CUSTOM_ORDER_STATES, example: 'AWAITING_DEPOSIT' })
   orderStatus!: string;
 
   @ApiProperty({ format: 'uuid' })
@@ -280,7 +280,7 @@ export class PaymentDecisionResponse {
   orderId!: string;
 
   @ApiProperty({
-    enum: schema.ORDER_STATES,
+    enum: schema.CUSTOM_ORDER_STATES,
     example: 'DEPOSIT_PAID',
     description:
       'The order’s state after the decision committed, read back rather than assumed. A ' +

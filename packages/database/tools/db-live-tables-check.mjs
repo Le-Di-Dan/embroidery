@@ -9,7 +9,10 @@
 import { connect, report } from './live-db.mjs';
 
 const EXPECTED_TABLES = 79;
-const EXPECTED_COLUMNS = 853;
+// APP12-DB01 adds two columns and no table: `orders.origin` (the CUSTOM |
+// READY_MADE discriminator) and `secure_access_grants.order_id` (the
+// ORDER_ACCESS subject).
+const EXPECTED_COLUMNS = 855;
 
 const client = await connect(process.argv[2]);
 const { note, fail, finish } = report('tables');

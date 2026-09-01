@@ -25,6 +25,12 @@ export interface PaymentAttemptChain {
   readonly orderId: string;
   readonly paymentObligationId: string;
   readonly paymentAttemptId: string;
+  // APP12-DB01 additions: the origin-aware suites assert against the *custom*
+  // chain this fixture already seeds, and need to name its links to do so.
+  readonly customRequestId: string;
+  readonly quotationVersionId: string;
+  readonly approvalSnapshotId: string;
+  readonly productVariantId: string;
 }
 
 type Db = DatabaseClient['db'];
@@ -158,13 +164,32 @@ export async function seedPaymentAttemptChain(db: Db): Promise<PaymentAttemptCha
             ${customerId}, ${CHECKSUM}, ${productId}, ${variantId}, ${sideId}, ${areaId},
             'Tee', 'Front', 'Chest', 100.00, 100.00, 10, ${grantId}, ${challengeId}, now())
   `);
-  await db.execute(sql`
-    insert into orders
-      (id, code, custom_request_id, customer_id, accepted_quotation_version_id,
-       current_approval_snapshot_id, status, total_amount, currency_code)
-    values (${orderId}, ${`ORD-${orderId}`}, ${customRequestId}, ${customerId},
-            ${quotationVersionId}, ${approvalId}, 'AWAITING_DEPOSIT', 1000000.00, 'VND')
+  // APP12-DB01 added `orders.origin` (NOT NULL, no default). The APP12 upgrade
+  // suite seeds this same chain against the *pre*-0038 baseline, where the
+  // column does not exist yet, so the shape is chosen from the live catalog
+  // rather than assumed. Both branches seed the identical custom order.
+  const { rows: originColumn } = await db.execute<{ n: string }>(sql`
+    select count(*)::text as n from information_schema.columns
+    where table_schema = 'public' and table_name = 'orders' and column_name = 'origin'
   `);
+
+  if (originColumn[0]?.n === '1') {
+    await db.execute(sql`
+      insert into orders
+        (id, code, origin, custom_request_id, customer_id, accepted_quotation_version_id,
+         current_approval_snapshot_id, status, total_amount, currency_code)
+      values (${orderId}, ${`ORD-${orderId}`}, 'CUSTOM', ${customRequestId}, ${customerId},
+              ${quotationVersionId}, ${approvalId}, 'AWAITING_DEPOSIT', 1000000.00, 'VND')
+    `);
+  } else {
+    await db.execute(sql`
+      insert into orders
+        (id, code, custom_request_id, customer_id, accepted_quotation_version_id,
+         current_approval_snapshot_id, status, total_amount, currency_code)
+      values (${orderId}, ${`ORD-${orderId}`}, ${customRequestId}, ${customerId},
+              ${quotationVersionId}, ${approvalId}, 'AWAITING_DEPOSIT', 1000000.00, 'VND')
+    `);
+  }
   await db.execute(sql`
     insert into payment_obligations
       (id, order_id, kind, amount, currency_code, status, source_quotation_version_id)
@@ -179,5 +204,14 @@ export async function seedPaymentAttemptChain(db: Db): Promise<PaymentAttemptCha
             'BANK_TRANSFER', 'PENDING', ${grantId}, ${challengeId})
   `);
 
-  return { customerId, orderId, paymentObligationId, paymentAttemptId };
+  return {
+    customerId,
+    orderId,
+    paymentObligationId,
+    paymentAttemptId,
+    customRequestId,
+    quotationVersionId,
+    approvalSnapshotId: approvalId,
+    productVariantId: variantId,
+  };
 }

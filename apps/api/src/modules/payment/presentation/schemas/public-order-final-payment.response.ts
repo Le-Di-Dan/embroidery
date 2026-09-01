@@ -69,7 +69,7 @@ export class CustomerFinalPaymentResponse {
   orderCode!: string;
 
   @ApiProperty({
-    enum: schema.ORDER_STATES,
+    enum: schema.CUSTOM_ORDER_STATES,
     example: 'AWAITING_FINAL_PAYMENT',
     description:
       'The order’s own LC-14 state. `AWAITING_FINAL_PAYMENT` is the one state in which the ' +

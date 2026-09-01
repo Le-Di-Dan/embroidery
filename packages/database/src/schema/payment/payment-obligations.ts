@@ -1,6 +1,7 @@
 /**
  * TBL-054 `payment_obligations` — one independent payment obligation
- * (DEPOSIT or REMAINING) of an order (CTX-PAY, AGG-16, `root`, mutable).
+ * (DEPOSIT or REMAINING on a custom order, FULL on a Ready-Made one) of an
+ * order (CTX-PAY, AGG-16, `root`, mutable).
  *
  * Columns: COL-TBL054-01..09 · Constraints: CST-001, CST-039 (IDX-042, one
  * live obligation per (order, kind) among PENDING/SATISFIED — INV-04),
@@ -47,9 +48,22 @@ import { currencyScaleCheck } from '../../primitives/money';
 import { orders } from '../ordering/orders';
 import { quotationVersions } from '../quotation/quotation-versions';
 
-/** COL-TBL054-02 closed kind set (DB4). */
-export const PAYMENT_OBLIGATION_KINDS = ['DEPOSIT', 'REMAINING'] as const;
+/**
+ * COL-TBL054-02 closed kind set (DB4; `FULL` added by APP12-DB01).
+ *
+ * `DEPOSIT`/`REMAINING` are the two halves of the custom split and keep their
+ * exact DB4 meaning. `FULL` is the single Ready-Made obligation — one payment,
+ * collected once, after the Admin sets the shipping fee and the total freezes.
+ * It is not a rename or a reinterpretation of either existing kind.
+ */
+export const PAYMENT_OBLIGATION_KINDS = ['DEPOSIT', 'REMAINING', 'FULL'] as const;
 export type PaymentObligationKind = (typeof PAYMENT_OBLIGATION_KINDS)[number];
+
+/** The two kinds a `CUSTOM` order may carry (`tg_payment_obligations__origin_kind`). */
+export const CUSTOM_PAYMENT_OBLIGATION_KINDS = ['DEPOSIT', 'REMAINING'] as const;
+
+/** The single kind a `READY_MADE` order may carry. */
+export const READY_MADE_PAYMENT_OBLIGATION_KIND = 'FULL' as const;
 
 /** LC-15. Canonical source — see DB5-A09. */
 export const PAYMENT_OBLIGATION_STATES = [
@@ -72,7 +86,7 @@ export const paymentObligations = pgTable(
     satisfiedAt: instant('satisfied_at'),
     satisfiedByAttemptId: idReference('satisfied_by_attempt_id'),
     supersededByObligationId: idReference('superseded_by_obligation_id'),
-    sourceQuotationVersionId: idReference('source_quotation_version_id').notNull(),
+    sourceQuotationVersionId: idReference('source_quotation_version_id'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -104,6 +118,16 @@ export const paymentObligations = pgTable(
     // group's migration (circular-import cycle with payment-attempts.ts
     // otherwise).
     check('ck_payment_obligations__kind_allowed', stateCheck(t.kind, PAYMENT_OBLIGATION_KINDS)),
+    // APP12-DB01 — a DEPOSIT/REMAINING amount is derived from an accepted
+    // quotation version and must name it; a FULL amount is derived from the
+    // SKU price plus the frozen shipping fee and has no quotation to name.
+    // Nullability alone would let a custom obligation lose its derivation
+    // evidence, so the requirement moves into the kind/source CHECK rather
+    // than disappearing.
+    check(
+      'ck_payment_obligations__source_by_kind',
+      sql`(${t.kind} in ('DEPOSIT', 'REMAINING') and ${t.sourceQuotationVersionId} is not null) or (${t.kind} = 'FULL' and ${t.sourceQuotationVersionId} is null)`,
+    ),
     check(
       'ck_payment_obligations__status_allowed',
       stateCheck(t.status, PAYMENT_OBLIGATION_STATES),

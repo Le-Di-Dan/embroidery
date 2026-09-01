@@ -117,8 +117,14 @@ export class DrizzleAdminOrderReadRepository
       }
       return {
         ...toQueueRow(row),
-        acceptedQuotationVersionId: row.acceptedQuotationVersionId,
-        currentApprovalSnapshotId: row.currentApprovalSnapshotId,
+        acceptedQuotationVersionId: requireCustomChain(
+          row.acceptedQuotationVersionId,
+          'accepted_quotation_version_id',
+        ),
+        currentApprovalSnapshotId: requireCustomChain(
+          row.currentApprovalSnapshotId,
+          'current_approval_snapshot_id',
+        ),
         updatedAt: row.updatedAt,
       };
     });
@@ -159,18 +165,37 @@ export class DrizzleAdminOrderReadRepository
         unitPriceAmount: row.unitPriceAmount,
         lineTotalAmount: row.lineTotalAmount,
         currencyCode: row.currencyCode,
-        approvalSnapshotId: row.approvalSnapshotId,
+        approvalSnapshotId: requireCustomChain(row.approvalSnapshotId, 'approval_snapshot_id'),
       }));
     });
   }
 }
 
 /** The one place an `orders` row becomes a queue row. */
+/**
+ * Refuses a Ready-Made row on a custom-order read path.
+ *
+ * APP12-DB01 made the custom chain nullable for `READY_MADE` orders. Every
+ * read in this repository publishes the request, quotation and approval ids as
+ * required fields of the APP7 Admin order contract, so a null is refused here
+ * rather than published as an empty string. No Ready-Made order can exist yet;
+ * APP12-A02/B05 own the origin-aware Admin read when one can.
+ */
+function requireCustomChain(value: string | null, field: string): string {
+  if (value === null) {
+    throw new Error(
+      `admin order read: ${field} is null, so this order is not a custom order; ` +
+        'this read path is CUSTOM-only until APP12-A02.',
+    );
+  }
+  return value;
+}
+
 function toQueueRow(row: {
   id: string;
   code: string;
   status: string;
-  customRequestId: string;
+  customRequestId: string | null;
   customerId: string;
   totalAmount: string;
   currencyCode: string;
@@ -180,7 +205,7 @@ function toQueueRow(row: {
     id: row.id,
     code: row.code,
     status: row.status as OrderState,
-    customRequestId: row.customRequestId,
+    customRequestId: requireCustomChain(row.customRequestId, 'custom_request_id'),
     customerId: row.customerId,
     totalAmount: row.totalAmount,
     currencyCode: row.currencyCode,

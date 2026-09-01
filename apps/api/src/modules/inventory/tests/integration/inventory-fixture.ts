@@ -150,9 +150,9 @@ export async function seedInventoryChain(context: {
   `);
   await db.execute(sql`
     insert into orders
-      (id, code, custom_request_id, customer_id, accepted_quotation_version_id,
+      (id, code, origin, custom_request_id, customer_id, accepted_quotation_version_id,
        current_approval_snapshot_id, status, total_amount, currency_code)
-    values (${orderId}, ${`ORD-${orderId}`}, ${customRequestId}, ${customerId},
+    values (${orderId}, ${`ORD-${orderId}`}, 'CUSTOM', ${customRequestId}, ${customerId},
             ${quotationVersionId}, ${approvalId}, 'DEPOSIT_PAID', 1000000.00, 'VND')
   `);
 

@@ -52,20 +52,23 @@ describe('integration harness', () => {
       expect(failures).toEqual([]);
       expect(result.passed).toBe(true);
       expect(result.stages).toHaveLength(7);
-      // Moved by APP2-DB01 (migration 0032, `CATALOG_PREVIEW` + the watermark
-      // CHECK). The literal is repeated here rather than read from the canonical
-      // file on purpose: a test that reads the same file it verifies would keep
-      // passing through an unreviewed baseline edit.
+      // Last moved by APP12-DB01 (migration 0038 — `orders.origin`, the
+      // origin-aware CHECKs, `ORDER_ACCESS` and the origin guard triggers).
+      // The literal is repeated here rather than read from the canonical file
+      // on purpose: a test that reads the same file it verifies would keep
+      // passing through an unreviewed baseline edit. It had gone stale at
+      // 0035/0036/0037, which added no counterpart update here; APP12-DB01
+      // repaired it along with the two counts below.
       expect(result.stages.at(-1)?.summary).toContain(
-        '7abf3708f8acc7da1124677add5a95ef1bdd421e78ea7f735213fbf8030a3569',
+        '0bb3a11c0b48128192674f085b57bc5eca4cc12f40ef14dcacfc70f848f7b626',
       );
     }, 120_000);
 
-    it('applied all 34 migrations', async () => {
+    it('applied all 38 migrations', async () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(34);
+      expect(Number(result.rows[0]?.count)).toBe(38);
     });
 
     it('resets state between tests without disabling the S24 triggers', async () => {
@@ -87,7 +90,7 @@ describe('integration harness', () => {
       const triggers = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from pg_trigger where not tgisinternal`,
       );
-      expect(Number(triggers.rows[0]?.count)).toBe(34);
+      expect(Number(triggers.rows[0]?.count)).toBe(37);
     });
 
     it('leaves the migration history intact after a reset', async () => {
@@ -96,7 +99,7 @@ describe('integration harness', () => {
       const result = await disposable.client.db.execute<{ count: string }>(
         sql`select count(*)::text as count from drizzle.__drizzle_migrations`,
       );
-      expect(Number(result.rows[0]?.count)).toBe(34);
+      expect(Number(result.rows[0]?.count)).toBe(38);
     });
   });
 

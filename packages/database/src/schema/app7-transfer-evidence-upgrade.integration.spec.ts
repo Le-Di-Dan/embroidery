@@ -40,6 +40,18 @@ import type { PaymentAttemptChain } from './app7-transfer-evidence-fixture';
 const NEW_MIGRATION_TAG = '0037_add_app7_transfer_evidence_association';
 const POST_BASELINE_TAGS = [NEW_MIGRATION_TAG] as const;
 
+/**
+ * The migrations committed *after* this checkpoint's own.
+ *
+ * This suite proves one upgrade: the baseline, then `NEW_MIGRATION_TAG` and
+ * nothing else. Applying `migrationsFolder()` unfiltered stopped meaning that
+ * the moment a later migration landed — the count assertions and the
+ * "nothing else changed" assertion would then be measuring someone else's
+ * change. So the target folder is trimmed too, and each later migration is
+ * added here as it ships.
+ */
+const TRAILING_TAGS = ['0038_add_app12_ready_made_persistence'] as const;
+
 const BASELINE_MIGRATION_COUNT = 36;
 const FULL_MIGRATION_COUNT = 37;
 
@@ -48,6 +60,7 @@ describe('APP7 transfer-evidence upgrade path (integration)', () => {
   let baseUrl: string;
   let url: string;
   let baselineFolder: string;
+  let targetFolder: string;
   let client: DatabaseClient | undefined;
   let chain: PaymentAttemptChain;
   let assetId: string;
@@ -68,11 +81,12 @@ describe('APP7 transfer-evidence upgrade path (integration)', () => {
     }
   }
 
-  async function buildBaselineFolder(): Promise<string> {
+  /** Copies the committed migrations, minus `excluded`, into a temp folder. */
+  async function buildFolder(label: string, excluded: readonly string[]): Promise<string> {
     const source = migrationsFolder();
-    const folder = await mkdtemp(join(tmpdir(), 'app7db01-baseline-'));
+    const folder = await mkdtemp(join(tmpdir(), `app7db01-${label}-`));
     await cp(source, folder, { recursive: true });
-    for (const tag of POST_BASELINE_TAGS) {
+    for (const tag of excluded) {
       await rm(join(folder, `${tag}.sql`));
     }
 
@@ -80,9 +94,7 @@ describe('APP7 transfer-evidence upgrade path (integration)', () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as {
       entries: { tag: string }[];
     };
-    journal.entries = journal.entries.filter(
-      (entry) => !POST_BASELINE_TAGS.includes(entry.tag as (typeof POST_BASELINE_TAGS)[number]),
-    );
+    journal.entries = journal.entries.filter((entry) => !excluded.includes(entry.tag));
     await writeFile(journalPath, JSON.stringify(journal, null, 2));
     return folder;
   }
@@ -108,7 +120,8 @@ describe('APP7 transfer-evidence upgrade path (integration)', () => {
     baseUrl = resolveDatabaseUrl();
     url = urlFor(name);
     await maintenance(`CREATE DATABASE "${name}"`);
-    baselineFolder = await buildBaselineFolder();
+    baselineFolder = await buildFolder('baseline', [...POST_BASELINE_TAGS, ...TRAILING_TAGS]);
+    targetFolder = await buildFolder('target', TRAILING_TAGS);
 
     // Baseline: everything up to and including 0036, and nothing after.
     await runMigrations(configFor(url), baselineFolder);
@@ -122,6 +135,9 @@ describe('APP7 transfer-evidence upgrade path (integration)', () => {
     await client?.close();
     if (baselineFolder !== undefined) {
       await rm(baselineFolder, { recursive: true, force: true });
+    }
+    if (targetFolder !== undefined) {
+      await rm(targetFolder, { recursive: true, force: true });
     }
     if (url !== undefined) {
       await maintenance(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
@@ -137,7 +153,7 @@ describe('APP7 transfer-evidence upgrade path (integration)', () => {
   });
 
   it('applies 0037 over that baseline and creates the table', async () => {
-    await runMigrations(configFor(url), migrationsFolder());
+    await runMigrations(configFor(url), targetFolder);
 
     const { rows } = await client!.db.execute<{ n: string }>(
       sql`select count(*)::text as n from drizzle.__drizzle_migrations`,

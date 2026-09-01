@@ -21,9 +21,17 @@
  * reference, same absent-FK rule already established for
  * `customer_owned_products` itself (REL-063).
  *
- * `approval_snapshot_id` is **NOT NULL** (D7-07): every line item is
- * production-traceable to the exact approval evidence that authorized it,
- * never to a mutable current pointer.
+ * `approval_snapshot_id` is **required for a `CUSTOM` line** (D7-07): every
+ * custom line item is production-traceable to the exact approval evidence that
+ * authorized it, never to a mutable current pointer. APP12-DB01 made the column
+ * physically nullable because a Ready-Made SKU line has no approval snapshot to
+ * point at — and replaced the lost `NOT NULL` with
+ * `tg_order_items__origin_subject`, which reads `orders.origin` and rejects a
+ * CUSTOM line without a snapshot, a READY_MADE line carrying one, and a
+ * READY_MADE line whose subject is a customer-owned product. The column is not
+ * silently unconstrained: what it lost as a column constraint it regained as a
+ * cross-table one, because `origin` lives on the parent and no row CHECK can
+ * read it.
  */
 import { sql } from 'drizzle-orm';
 import {
@@ -60,7 +68,7 @@ export const orderItems = pgTable(
     unitPriceAmount: numeric('unit_price_amount', { precision: 14, scale: 2 }).notNull(),
     lineTotalAmount: numeric('line_total_amount', { precision: 14, scale: 2 }).notNull(),
     currencyCode: text('currency_code').notNull(),
-    approvalSnapshotId: idReference('approval_snapshot_id').notNull(),
+    approvalSnapshotId: idReference('approval_snapshot_id'),
     createdAt: createdAt(),
   },
   (t) => [

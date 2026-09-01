@@ -52,6 +52,7 @@ import {
 } from '../../domain/verification/payment-verification.policy';
 import { paymentVerificationError } from '../../domain/verification/payment-verification.errors';
 import {
+  isVerifiableObligationKind,
   verifiedPaymentTransitionFor,
   type VerifiableObligationKind,
   type VerifiedPaymentTransition,
@@ -118,7 +119,15 @@ export class PaymentDecisionChainResolver {
     if (transition === undefined) {
       throw paymentVerificationError('PAYMENT_ATTEMPT_NOT_VERIFIABLE');
     }
+    // The type-level half of the same refusal. APP12-DB01 added `FULL` to the
+    // database's kind set, so `PaymentObligationKind` is now wider than the two
+    // kinds this manual-verification path settles. Unreachable — a kind with no
+    // transition was already refused above — and kept so the narrowing is a
+    // check rather than a cast.
     const kind = locked.obligation.kind;
+    if (!isVerifiableObligationKind(kind)) {
+      throw paymentVerificationError('PAYMENT_ATTEMPT_NOT_VERIFIABLE');
+    }
     // `APP7-G01` §1: the manual MVP settles bank transfers and nothing else. A
     // `PROVIDER_REDIRECT` attempt is a provider's to confirm, and IMP-O007 is
     // open, so no operator may hand-settle one here.

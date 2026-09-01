@@ -45,9 +45,9 @@ describe('DB10-CP8 retention-bypass security matrix', () => {
     // An order + item give a `reject`-policy append-only table to probe.
     await db.client.db.execute(sql`
       insert into orders
-        (id, code, custom_request_id, customer_id, accepted_quotation_version_id,
+        (id, code, origin, custom_request_id, customer_id, accepted_quotation_version_id,
          current_approval_snapshot_id, status, total_amount, currency_code)
-      values (gen_random_uuid(), 'ORD-SEC-1', ${fixture.customRequestId}::uuid,
+      values (gen_random_uuid(), 'ORD-SEC-1', 'CUSTOM', ${fixture.customRequestId}::uuid,
               ${fixture.customerId}::uuid, ${fixture.quotationVersionId}::uuid,
               ${fixture.approvalSnapshotId}::uuid, 'AWAITING_DEPOSIT', 1050000, 'VND')
     `);

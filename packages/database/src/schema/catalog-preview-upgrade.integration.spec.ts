@@ -47,11 +47,15 @@ const POST_BASELINE_TAGS = [
   NEW_MIGRATION_TAG,
   '0033_provision_catalog_draft_categories',
   '0034_add_app3_placement_and_derivative_authority',
+  '0035_add_app5_intake_provenance',
+  '0036_add_app6_cop_design_context',
+  '0037_add_app7_transfer_evidence_association',
+  '0038_add_app12_ready_made_persistence',
 ] as const;
 
 /** Chain length before 0032, and after the full committed chain. */
 const BASELINE_MIGRATION_COUNT = 31;
-const FULL_MIGRATION_COUNT = 34;
+const FULL_MIGRATION_COUNT = 38;
 
 /** One row per kind that existed before APP2-DB01, with its watermark reality. */
 const LEGACY_ROWS = [

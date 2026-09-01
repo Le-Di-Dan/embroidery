@@ -21,7 +21,15 @@ import { connect, report } from './live-db.mjs';
 // one PK, one UNIQUE (the CST-043 attempt+asset pair) and two FKs (REL-109 ×2,
 // -> `payment_attempts` and -> `assets`). It adds no CHECK — the five-per-attempt
 // bound is an application guard under the attempt row lock, not a constraint.
-const EXPECTED = { p: 79, f: 167, u: 53, c: 204 };
+// APP12-DB01 adds no table, one FK (`secure_access_grants.order_id` ->
+// `orders`) and five CHECKs: `ck_orders__origin_allowed`,
+// `ck_orders__custom_chain_by_origin`, `ck_orders__origin_status_allowed`,
+// `ck_payment_obligations__source_by_kind` and
+// `ck_secure_access_grants__scope_subject`. The four constraints it widens
+// (`ck_orders__status_allowed`, both `ck_order_transitions__*_status_allowed`,
+// `ck_payment_obligations__kind_allowed`, `ck_secure_access_grants__scope_kind_allowed`)
+// are replaced in place and add nothing to the count.
+const EXPECTED = { p: 79, f: 168, u: 53, c: 209 };
 const NAMES = { p: 'PK', f: 'FK', u: 'UNIQUE', c: 'CHECK' };
 
 const client = await connect(process.argv[2]);
@@ -80,13 +88,21 @@ const APP5_DB01_EDGES = 1;
 const APP6_DB01_EDGES = 2;
 // APP7-DB01's pair is the `payment_transfer_evidence` association's two edges.
 const APP7_DB01_EDGES = 2;
+// APP12-DB01's single edge is the ORDER_ACCESS grant subject,
+// `fk_secure_access_grants__order_id`.
+const APP12_DB01_EDGES = 1;
 const EXPECTED_FKS =
-  DB6_RELATIONSHIP_CEILING + APP3_DB01_EDGES + APP5_DB01_EDGES + APP6_DB01_EDGES + APP7_DB01_EDGES;
+  DB6_RELATIONSHIP_CEILING +
+  APP3_DB01_EDGES +
+  APP5_DB01_EDGES +
+  APP6_DB01_EDGES +
+  APP7_DB01_EDGES +
+  APP12_DB01_EDGES;
 note(
   `relationship ceiling: ${relationshipCeiling[0].n} / ${EXPECTED_FKS} ` +
     `(${DB6_RELATIONSHIP_CEILING} DEV-DB6-017 + ${APP3_DB01_EDGES} APP3-DB01` +
     ` + ${APP5_DB01_EDGES} APP5-DB01 + ${APP6_DB01_EDGES} APP6-DB01` +
-    ` + ${APP7_DB01_EDGES} APP7-DB01)`,
+    ` + ${APP7_DB01_EDGES} APP7-DB01 + ${APP12_DB01_EDGES} APP12-DB01)`,
 );
 if (relationshipCeiling[0].n !== EXPECTED_FKS) {
   fail(

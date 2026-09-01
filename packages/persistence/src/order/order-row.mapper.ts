@@ -3,6 +3,7 @@
  *
  * Amounts stay strings: an order total that lost precision is money.
  */
+import { guardViolationError } from '@embroidery/database';
 import type { OrderState, ShippingDetailState, schema } from '@embroidery/database';
 
 import type { CustomRequestId } from './ordering-identity';
@@ -19,7 +20,30 @@ export type ItemRow = typeof schema.orderItems.$inferSelect;
 export type ShippingRow = typeof schema.shippingDetails.$inferSelect;
 export type ShippingFeeAcknowledgementRow = typeof schema.shippingFeeAcknowledgements.$inferSelect;
 
+/**
+ * Maps an order row onto the AGG-15 custom-order aggregate.
+ *
+ * APP12-DB01 made the three custom-chain columns nullable, because a
+ * `READY_MADE` order has no request, quotation or approval snapshot. This
+ * aggregate is the *custom* one — every consumer of it reads at least one of
+ * those three — so a Ready-Made row is refused here rather than mapped with
+ * empty strings or silently widened to optional fields. Until APP12-B02/B05
+ * give Ready-Made its own read path, reaching this function with such a row is
+ * a routing bug, and it should say so instead of producing a half-built order.
+ */
 export function toOrder(row: OrderRow): Order {
+  if (
+    row.customRequestId === null ||
+    row.acceptedQuotationVersionId === null ||
+    row.currentApprovalSnapshotId === null
+  ) {
+    throw guardViolationError(
+      'OrderRowMapper.toOrder',
+      'ORDER_ORIGIN_NOT_CUSTOM',
+      'This order has no custom request, quotation or approval chain to read.',
+    );
+  }
+
   return {
     id: row.id as OrderId,
     code: row.code,

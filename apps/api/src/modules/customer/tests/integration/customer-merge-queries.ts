@@ -318,13 +318,13 @@ export async function seedOwnedCommerce(
        product_id, product_variant_id, product_side_id, embroidery_area_id,
        product_name, side_name, area_name, physical_width_mm, physical_height_mm,
        quantity_total, grant_id, step_up_challenge_id, approved_at)
-    values (${id.approval}, ${id.designVersion}, ${id.designCase}, ${id.request}, ${customerId},
+    values (${id.approval}, ${id.designVersion}, ${id.designCase}, 'CUSTOM', ${id.request}, ${customerId},
             ${hash}, ${id.product}, ${id.variant}, ${id.side}, ${id.area},
             'Tee', 'Front', 'Chest', 100.00, 100.00, 10, ${id.grant}, ${id.challenge}, now())
   `);
   await db.execute(sql`
     insert into orders
-      (id, code, custom_request_id, customer_id, accepted_quotation_version_id,
+      (id, code, origin, custom_request_id, customer_id, accepted_quotation_version_id,
        current_approval_snapshot_id, status, total_amount, currency_code)
     values (${id.order}, ${`ORD-${id.order}`}, ${id.request}, ${customerId},
             ${id.quotationVersion}, ${id.approval}, 'DEPOSIT_PAID', 1000000.00, 'VND')

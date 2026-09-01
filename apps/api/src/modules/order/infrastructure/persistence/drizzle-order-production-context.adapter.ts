@@ -56,6 +56,18 @@ export class DrizzleOrderProductionContextAdapter
         return undefined;
       }
 
+      if (order.currentApprovalSnapshotId === null) {
+        // APP12-DB01 made the pointer nullable for `READY_MADE` orders, which
+        // have no approval snapshot because nothing is manufactured for them.
+        // Production is a custom-only context (APP8), so a null here means the
+        // caller routed a Ready-Made order into it — refused rather than
+        // producing a context with no production authority to point at.
+        throw new Error(
+          `order ${orderId} has no approval snapshot, so it is not a custom order; ` +
+            'production is CUSTOM-only.',
+        );
+      }
+
       const [subjects] = await this.db
         .select({
           catalog: count(orderItems.skuId),

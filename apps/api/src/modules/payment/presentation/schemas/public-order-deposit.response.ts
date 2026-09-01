@@ -111,7 +111,7 @@ export class CustomerDepositResponse {
   orderCode!: string;
 
   @ApiProperty({
-    enum: schema.ORDER_STATES,
+    enum: schema.CUSTOM_ORDER_STATES,
     example: 'AWAITING_DEPOSIT',
     description:
       'The order’s own LC-14 state. `DEPOSIT_PAID` appears only after an Admin has verified ' +

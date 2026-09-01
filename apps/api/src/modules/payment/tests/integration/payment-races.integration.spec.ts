@@ -50,9 +50,9 @@ describe('payment provider-event idempotent ingestion race (DB8-CP3, integration
     orderId = newId();
     await context.disposable.client.db.execute(sql`
       insert into orders
-        (id, code, custom_request_id, customer_id, accepted_quotation_version_id,
+        (id, code, origin, custom_request_id, customer_id, accepted_quotation_version_id,
          current_approval_snapshot_id, status, total_amount, currency_code)
-      values (${orderId}, ${`ORD-${orderId}`}, ${fixture.customRequestId}, ${fixture.customerId},
+      values (${orderId}, ${`ORD-${orderId}`}, 'CUSTOM', ${fixture.customRequestId}, ${fixture.customerId},
               ${fixture.quotationVersionId}, ${fixture.approvalSnapshotId},
               'AWAITING_DEPOSIT', 2550000.00, 'VND')
     `);

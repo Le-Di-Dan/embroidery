@@ -19,8 +19,11 @@ const { rows: total } = await client.query(`
   JOIN pg_namespace n ON n.oid = c.relnamespace
   WHERE c.relkind = 'i' AND n.nspname = 'public'
 `);
-note(`total physical indexes: ${total[0].n} / 217`);
-if (total[0].n !== 217) fail(`total physical index count is ${total[0].n}, expected 217`);
+// APP12-DB01 adds exactly two: `uq_secure_access_grants__customer_order__active`
+// (partial unique, the ORDER_ACCESS half of CST-009) and
+// `ix_secure_access_grants__order_id` (the IDX-106 counterpart for orders).
+note(`total physical indexes: ${total[0].n} / 219`);
+if (total[0].n !== 219) fail(`total physical index count is ${total[0].n}, expected 219`);
 
 const classify = async (label, expected, where) => {
   const { rows } = await client.query(`
@@ -41,16 +44,16 @@ await classify(
 );
 await classify(
   'partial unique',
-  13,
+  14,
   `i.indisunique AND NOT i.indisprimary AND i.indpred IS NOT NULL`,
 );
 await classify('partial performance', 35, `NOT i.indisunique AND i.indpred IS NOT NULL`);
 await classify(
   'non-partial performance',
-  37,
+  38,
   `NOT i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL`,
 );
-await classify('physical partial (total)', 48, `i.indpred IS NOT NULL`);
+await classify('physical partial (total)', 49, `i.indpred IS NOT NULL`);
 
 // volatile predicate scan — no now()/current_* in any partial predicate
 const { rows: volatile } = await client.query(`

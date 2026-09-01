@@ -177,6 +177,24 @@ constraint-created (78 PK + 50 UNIQUE = 128)
 > and both later access paths — APP7-B05's list/count by attempt and APP7-B06's
 > exact-pair resolve — are already served. No `IDX-*` slot is allocated, for the
 > same reason as APP3-DB01's and APP5-DB01's additions.
+>
+> `APP12-DB01` (migration 0038) added **two explicit** indexes on
+> `secure_access_grants`, both the `ORDER_ACCESS` counterparts of an existing
+> `REQUEST_ACCESS` one. `uq_secure_access_grants__customer_order__active` is the
+> ORDER_ACCESS half of CST-009: the existing partial unique leads on
+> `custom_request_id`, which is NULL on every order grant, and NULLs never
+> collide — so without it a customer could hold two ACTIVE grants on one order
+> and a revoke-then-reissue would stop being atomic.
+> `ix_secure_access_grants__order_id` is the IDX-106 counterpart, for the same
+> revoke fan-out and grant-resolution paths. A live database now carries **219**
+> physical indexes, of which **49** are partial (**14** partial-unique + 35
+> partial-performance). The migration's other three tables — `orders`,
+> `order_items`, `payment_obligations` — gained **no** index: the origin-aware
+> rules it adds are CHECKs and row triggers, `uq_orders__request` and
+> `uq_payment_obligations__order_kind__live` are reused exactly as written, and
+> `ix_inventory_reservations__expires_id__reserved` already indexes precisely
+> the rows a Ready-Made expiry sweep reads. No `IDX-*` slot is allocated, for
+> the same reason as APP3-DB01's, APP5-DB01's and APP7-DB01's additions.
 
 Four clarifications that the formula depends on:
 

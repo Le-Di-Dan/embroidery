@@ -46,9 +46,9 @@ describe('production persistence (integration)', () => {
     const id = newId();
     await context.disposable.client.db.execute(sql`
       insert into orders
-        (id, code, custom_request_id, customer_id, accepted_quotation_version_id,
+        (id, code, origin, custom_request_id, customer_id, accepted_quotation_version_id,
          current_approval_snapshot_id, status, total_amount, currency_code)
-      values (${id}, ${`ORD-${id}`}, ${target.customRequestId}, ${target.customerId},
+      values (${id}, ${`ORD-${id}`}, 'CUSTOM', ${target.customRequestId}, ${target.customerId},
               ${target.quotationVersionId}, ${target.approvalSnapshotId},
               'DEPOSIT_PAID', 2550000.00, 'VND')
     `);

@@ -16,7 +16,7 @@
  * inventory/production). A filter added because the SQL would support it is a
  * contract nothing asked for.
  */
-import type { OrderState } from '@embroidery/database';
+import type { CustomOrderState, OrderState } from '@embroidery/database';
 import { z } from 'zod';
 
 import { createZodDto, registerZodDtos } from '../../../../platform/validation';
@@ -32,6 +32,13 @@ import { createZodDto, registerZodDtos } from '../../../../platform/validation';
  * All eleven are accepted, including the ones APP7 offers no action in. The
  * queue reports the **stored** status, and refusing `IN_PRODUCTION` here would
  * make the endpoint claim the database cannot hold a value it does hold.
+ *
+ * APP12-DB01 widened the `orders.status` column vocabulary to thirteen by
+ * adding the two Ready-Made states. The proof below is therefore taken against
+ * `CustomOrderState` — the eleven a custom order may hold — because this
+ * endpoint is the custom order queue and no order can hold a Ready-Made state
+ * until APP12-B02 ships. Widening the published filter is APP12-A02's decision
+ * to make with its own contract change, not a side effect of a migration.
  */
 export const ORDER_STATUS_FILTERS = [
   'AWAITING_DEPOSIT',
@@ -47,7 +54,7 @@ export const ORDER_STATUS_FILTERS = [
   'CANCELLED',
 ] as const satisfies readonly OrderState[];
 
-type MissingOrderStatus = Exclude<OrderState, (typeof ORDER_STATUS_FILTERS)[number]>;
+type MissingOrderStatus = Exclude<CustomOrderState, (typeof ORDER_STATUS_FILTERS)[number]>;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- compile-time exhaustiveness proof
 type AssertNoMissingOrderStatus = MissingOrderStatus extends never
   ? true

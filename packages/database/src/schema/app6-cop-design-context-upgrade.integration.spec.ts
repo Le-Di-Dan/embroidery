@@ -37,6 +37,21 @@ import { disposableDatabaseName, migrationsFolder, resolveDatabaseUrl } from '..
 const NEW_MIGRATION_TAG = '0036_add_app6_cop_design_context';
 const POST_BASELINE_TAGS = [NEW_MIGRATION_TAG] as const;
 
+/**
+ * The migrations committed *after* this checkpoint's own.
+ *
+ * This suite proves one upgrade: the baseline, then `NEW_MIGRATION_TAG` and
+ * nothing else. Applying `migrationsFolder()` unfiltered stopped meaning that
+ * the moment a later migration landed — the count assertions and the
+ * "nothing else changed" assertion would then be measuring someone else's
+ * change. So the target folder is trimmed too, and each later migration is
+ * added here as it ships.
+ */
+const TRAILING_TAGS = [
+  '0037_add_app7_transfer_evidence_association',
+  '0038_add_app12_ready_made_persistence',
+] as const;
+
 const BASELINE_MIGRATION_COUNT = 35;
 const FULL_MIGRATION_COUNT = 36;
 
@@ -55,6 +70,7 @@ describe('APP6 COP design context upgrade path (integration)', () => {
   let baseUrl: string;
   let url: string;
   let baselineFolder: string;
+  let targetFolder: string;
   let client: DatabaseClient | undefined;
   let historicalVersionId: string;
   let historicalSnapshotId: string;
@@ -75,11 +91,12 @@ describe('APP6 COP design context upgrade path (integration)', () => {
     }
   }
 
-  async function buildBaselineFolder(): Promise<string> {
+  /** Copies the committed migrations, minus `excluded`, into a temp folder. */
+  async function buildFolder(label: string, excluded: readonly string[]): Promise<string> {
     const source = migrationsFolder();
-    const folder = await mkdtemp(join(tmpdir(), 'app6db01-baseline-'));
+    const folder = await mkdtemp(join(tmpdir(), `app6db01-${label}-`));
     await cp(source, folder, { recursive: true });
-    for (const tag of POST_BASELINE_TAGS) {
+    for (const tag of excluded) {
       await rm(join(folder, `${tag}.sql`));
     }
 
@@ -87,9 +104,7 @@ describe('APP6 COP design context upgrade path (integration)', () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as {
       entries: { tag: string }[];
     };
-    journal.entries = journal.entries.filter(
-      (entry) => !POST_BASELINE_TAGS.includes(entry.tag as (typeof POST_BASELINE_TAGS)[number]),
-    );
+    journal.entries = journal.entries.filter((entry) => !excluded.includes(entry.tag));
     await writeFile(journalPath, JSON.stringify(journal, null, 2));
     return folder;
   }
@@ -218,7 +233,8 @@ describe('APP6 COP design context upgrade path (integration)', () => {
   beforeAll(async () => {
     baseUrl = resolveDatabaseUrl();
     url = urlFor(name);
-    baselineFolder = await buildBaselineFolder();
+    baselineFolder = await buildFolder('baseline', [...POST_BASELINE_TAGS, ...TRAILING_TAGS]);
+    targetFolder = await buildFolder('target', TRAILING_TAGS);
 
     await maintenance(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
     await maintenance(`CREATE DATABASE ${name}`);
@@ -233,6 +249,9 @@ describe('APP6 COP design context upgrade path (integration)', () => {
     await maintenance(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`).catch(() => undefined);
     if (baselineFolder !== undefined) {
       await rm(baselineFolder, { recursive: true, force: true }).catch(() => undefined);
+    }
+    if (targetFolder !== undefined) {
+      await rm(targetFolder, { recursive: true, force: true }).catch(() => undefined);
     }
   });
 
@@ -270,7 +289,7 @@ describe('APP6 COP design context upgrade path (integration)', () => {
 
   describe('after applying 0036 from the committed folder', () => {
     beforeAll(async () => {
-      await runMigrations(configFor(url), migrationsFolder());
+      await runMigrations(configFor(url), targetFolder);
     }, 120_000);
 
     it('records exactly one additional migration', async () => {

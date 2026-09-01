@@ -260,6 +260,13 @@
       "when": 1787447328862,
       "tag": "0037_add_app7_transfer_evidence_association",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1788244576595,
+      "tag": "0038_add_app12_ready_made_persistence",
+      "breakpoints": true
     }
   ]
 }

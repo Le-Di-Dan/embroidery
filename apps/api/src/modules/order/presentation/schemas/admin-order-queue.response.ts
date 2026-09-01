@@ -23,7 +23,7 @@
  * **No inventory or production fact.** APP8 owns those.
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { OrderState } from '@embroidery/database';
+import type { CustomOrderState, OrderState } from '@embroidery/database';
 
 import { ORDER_STATUS_FILTERS } from './admin-order.request';
 
@@ -39,9 +39,15 @@ const CUSTOMER_ID_EXAMPLE = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072';
  */
 export const PUBLISHED_ORDER_STATES = ORDER_STATUS_FILTERS;
 
-/** Compile-time proof the published list omits no canonical state. */
+/**
+ * Compile-time proof the published list omits no custom-order state.
+ *
+ * Taken against `CustomOrderState` since APP12-DB01: the `orders.status`
+ * column vocabulary now also holds the two Ready-Made states, which this
+ * endpoint does not publish and no order can hold until APP12-B02 ships.
+ */
 export type PublishedOrderStatesAreComplete =
-  Exclude<OrderState, (typeof PUBLISHED_ORDER_STATES)[number]> extends never ? true : never;
+  Exclude<CustomOrderState, (typeof PUBLISHED_ORDER_STATES)[number]> extends never ? true : never;
 
 export class AdminOrderQueueItemResponse {
   @ApiProperty({ format: 'uuid', example: ORDER_ID_EXAMPLE })

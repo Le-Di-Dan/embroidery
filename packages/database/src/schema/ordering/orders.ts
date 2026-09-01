@@ -53,8 +53,26 @@ import { customers } from '../customer/customers';
 import { quotationVersions } from '../quotation/quotation-versions';
 import { approvalSnapshots } from '../design/approval-snapshots';
 
-/** LC-14 11-state set. Canonical source — see DB3 §"LC-14 — Order". */
-export const ORDER_STATES = [
+/**
+ * COL-TBL043-12 closed origin set (APP12-P01, APP12-DB01).
+ *
+ * The discriminator that decides which of the two order shapes a row is. It is
+ * immutable after insert (`tg_orders__origin_immutable`): every origin-aware
+ * rule below and in `order_items`/`payment_obligations` is evaluated against
+ * it, and a mutable discriminator would let a committed row change what its
+ * children were validated against.
+ */
+export const ORDER_ORIGINS = ['CUSTOM', 'READY_MADE'] as const;
+export type OrderOrigin = (typeof ORDER_ORIGINS)[number];
+
+/**
+ * LC-14 — the custom-embroidery lifecycle, unchanged since DB3.
+ *
+ * These eleven remain the *only* states a `CUSTOM` order may hold; APP12-DB01
+ * widened the column's global vocabulary without widening this set, and
+ * `ck_orders__origin_status_allowed` enforces the difference.
+ */
+export const CUSTOM_ORDER_STATES = [
   'AWAITING_DEPOSIT',
   'DEPOSIT_PAID',
   'IN_PRODUCTION',
@@ -67,6 +85,43 @@ export const ORDER_STATES = [
   'CANCELLING',
   'CANCELLED',
 ] as const;
+export type CustomOrderState = (typeof CUSTOM_ORDER_STATES)[number];
+
+/**
+ * The Ready-Made lifecycle (APP12-P01 §Ready-Made, consumed not reopened).
+ *
+ * `AWAITING_SHIPPING_FEE → AWAITING_PAYMENT → READY_FOR_DELIVERY → DELIVERED →
+ * COMPLETED`, plus the three shared exception states. There is no
+ * `AWAITING_DEPOSIT`, no production state and no `AWAITING_FINAL_PAYMENT`:
+ * a Ready-Made order is paid once, in full, and nothing is manufactured for it.
+ * There is deliberately no `PAID` state — satisfaction is the obligation's
+ * fact (LC-15), never a second copy on the order.
+ */
+export const READY_MADE_ORDER_STATES = [
+  'AWAITING_SHIPPING_FEE',
+  'AWAITING_PAYMENT',
+  'READY_FOR_DELIVERY',
+  'DELIVERED',
+  'COMPLETED',
+  'ON_HOLD',
+  'CANCELLING',
+  'CANCELLED',
+] as const;
+export type ReadyMadeOrderState = (typeof READY_MADE_ORDER_STATES)[number];
+
+/**
+ * The full `orders.status` vocabulary — the union of both lifecycles.
+ *
+ * This is the *column* vocabulary (`ck_orders__status_allowed`), not a
+ * lifecycle: no order may hold all thirteen. The custom eleven lead, in their
+ * original DB3 order, so every consumer that published this tuple keeps the
+ * exact enum it published before APP12-DB01.
+ */
+export const ORDER_STATES = [
+  ...CUSTOM_ORDER_STATES,
+  'AWAITING_SHIPPING_FEE',
+  'AWAITING_PAYMENT',
+] as const;
 export type OrderState = (typeof ORDER_STATES)[number];
 
 export const orders = pgTable(
@@ -74,10 +129,11 @@ export const orders = pgTable(
   {
     id: idColumn().notNull(),
     code: text('code').notNull(),
-    customRequestId: idReference('custom_request_id').notNull(),
+    origin: text('origin').notNull(),
+    customRequestId: idReference('custom_request_id'),
     customerId: idReference('customer_id').notNull(),
-    acceptedQuotationVersionId: idReference('accepted_quotation_version_id').notNull(),
-    currentApprovalSnapshotId: idReference('current_approval_snapshot_id').notNull(),
+    acceptedQuotationVersionId: idReference('accepted_quotation_version_id'),
+    currentApprovalSnapshotId: idReference('current_approval_snapshot_id'),
     status: stateColumn().notNull(),
     totalAmount: numeric('total_amount', { precision: 14, scale: 2 }).notNull(),
     currencyCode: text('currency_code').notNull(),
@@ -119,7 +175,24 @@ export const orders = pgTable(
       columns: [t.currentApprovalSnapshotId],
       foreignColumns: [approvalSnapshots.id],
     }).onDelete('restrict'),
+    check('ck_orders__origin_allowed', stateCheck(t.origin, ORDER_ORIGINS)),
     check('ck_orders__status_allowed', stateCheck(t.status, ORDER_STATES)),
+    // APP12-DB01 — the custom chain is required by CUSTOM and forbidden to
+    // READY_MADE. Nullability alone would let a Ready-Made row carry a
+    // fabricated request/quotation/approval, and would let a custom order lose
+    // the commercial basis DB3 made NOT NULL; this restores both halves.
+    check(
+      'ck_orders__custom_chain_by_origin',
+      sql`(${t.origin} = 'CUSTOM' and ${t.customRequestId} is not null and ${t.acceptedQuotationVersionId} is not null and ${t.currentApprovalSnapshotId} is not null) or (${t.origin} = 'READY_MADE' and ${t.customRequestId} is null and ${t.acceptedQuotationVersionId} is null and ${t.currentApprovalSnapshotId} is null)`,
+    ),
+    // APP12-DB01 — origin-aware status truth. The global allowlist above is the
+    // union of two lifecycles; this is the one that says a CUSTOM order may
+    // never reach AWAITING_SHIPPING_FEE/AWAITING_PAYMENT and a READY_MADE order
+    // may never reach a deposit, production or final-payment state.
+    check(
+      'ck_orders__origin_status_allowed',
+      sql`(${t.origin} = 'CUSTOM' and ${stateCheck(t.status, CUSTOM_ORDER_STATES)}) or (${t.origin} = 'READY_MADE' and ${stateCheck(t.status, READY_MADE_ORDER_STATES)})`,
+    ),
     check('ck_orders__total_non_negative', sql`${t.totalAmount} >= 0`),
     check('ck_orders__currency_vnd', sql`${t.currencyCode} = 'VND'`),
     // DB6-C5 (B2) — VND has no minor unit (DEV-DB6-005).

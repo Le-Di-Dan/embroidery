@@ -106,7 +106,8 @@ const ROWS: readonly MetricRow[] = [
   ['custom_request_transitions', 'G9', 6, 5, 2, 13],
   ['design_cases', 'G9', 2, 0, 3, 5],
   // G10 — Grants, holds, merge
-  ['secure_access_grants', 'G10', 9, 0, 3, 12],
+  // APP12-DB01 — `order_id`, the ORDER_ACCESS subject.
+  ['secure_access_grants', 'G10', 10, 0, 3, 13],
   ['inventory_soft_holds', 'G10', 7, 0, 3, 10],
   ['customer_merge_cases', 'G10', 6, 0, 3, 9],
   ['customer_merge_events', 'G10', 5, 0, 2, 7],
@@ -131,7 +132,8 @@ const ROWS: readonly MetricRow[] = [
   ['quotation_line_items', 'G14', 8, 1, 2, 11],
   ['quotation_acceptances', 'G14', 5, 2, 2, 9],
   // G15 — Order, official inventory reservation & shipping
-  ['orders', 'G15', 11, 2, 3, 16],
+  // APP12-DB01 — `origin`, the CUSTOM | READY_MADE discriminator.
+  ['orders', 'G15', 12, 2, 3, 17],
   ['order_items', 'G15', 9, 3, 2, 14],
   ['order_transitions', 'G15', 8, 5, 2, 15],
   ['order_cancellation_requests', 'G15', 8, 2, 3, 13],

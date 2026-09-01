@@ -131,6 +131,28 @@ const APP3_DB01_FUNCTIONS = [
 
 const APP3_TRIGGER_COUNT = Object.values(APP3_DB01_TRIGGERS).flat().length;
 
+/**
+ * APP12-DB01 order-origin guards (migration 0038), inventoried separately for
+ * the same reason the APP3 pair is.
+ *
+ * One function, three rules selected by TG_ARGV[0]. `orders.origin` is
+ * immutable after insert; an `order_items` row must carry an approval snapshot
+ * on a CUSTOM order, must not carry one on a READY_MADE order and must name a
+ * SKU there; a `payment_obligations` row must be DEPOSIT/REMAINING on a CUSTOM
+ * order and FULL on a READY_MADE one. All three read the *parent's* origin,
+ * which no row CHECK can see — the same cross-table predicate class that put
+ * the APP3 guards outside S24.
+ */
+const APP12_DB01_FUNCTION = 'fn_app12_order_origin_guard';
+
+const APP12_DB01_TRIGGERS = {
+  orders: [['tg_orders__origin_immutable', 'origin_immutable']],
+  order_items: [['tg_order_items__origin_subject', 'item_subject']],
+  payment_obligations: [['tg_payment_obligations__origin_kind', 'obligation_kind']],
+};
+
+const APP12_TRIGGER_COUNT = Object.values(APP12_DB01_TRIGGERS).flat().length;
+
 const client = await connect(process.argv[2]);
 const { note, fail, finish } = report('triggers');
 
@@ -154,12 +176,16 @@ const { rows: trig } = await client.query(`
   ORDER BY c.relname
 `);
 const isApp3 = (row) => APP3_DB01_FUNCTIONS.some((fn) => row.def.includes(fn));
-const s24 = trig.filter((row) => !isApp3(row));
+const isApp12 = (row) => row.def.includes(APP12_DB01_FUNCTION);
+const s24 = trig.filter((row) => !isApp3(row) && !isApp12(row));
 const app3 = trig.filter(isApp3);
+const app12 = trig.filter(isApp12);
 
-const expectedTotal = 30 + APP3_TRIGGER_COUNT;
+const expectedTotal = 30 + APP3_TRIGGER_COUNT + APP12_TRIGGER_COUNT;
 note(
-  `triggers: ${trig.length} / ${expectedTotal} (S24 ${s24.length} / 30, APP3-DB01 ${app3.length} / ${APP3_TRIGGER_COUNT})`,
+  `triggers: ${trig.length} / ${expectedTotal} (S24 ${s24.length} / 30, ` +
+    `APP3-DB01 ${app3.length} / ${APP3_TRIGGER_COUNT}, ` +
+    `APP12-DB01 ${app12.length} / ${APP12_TRIGGER_COUNT})`,
 );
 if (trig.length !== expectedTotal) {
   fail(`expected exactly ${expectedTotal} triggers, found ${trig.length}`);
@@ -220,6 +246,44 @@ if (app3Fns.length !== APP3_DB01_FUNCTIONS.length) {
   );
 }
 for (const fn of app3Fns) {
+  if (fn.prosecdef) fail(`${fn.proname} is SECURITY DEFINER, expected INVOKER`);
+}
+
+// APP12-DB01 half: exact names, exact table, exact guard rule argument.
+const app12Seen = new Set(app12.map((row) => `${row.table_name}:${row.tgname}`));
+for (const [table, triggers] of Object.entries(APP12_DB01_TRIGGERS)) {
+  for (const [name, rule] of triggers) {
+    const row = app12.find((candidate) => candidate.tgname === name);
+    if (!row) {
+      fail(`missing APP12-DB01 trigger ${name} on ${table}`);
+      continue;
+    }
+    if (row.table_name !== table) {
+      fail(`APP12-DB01 trigger ${name} is on ${row.table_name}, expected ${table}`);
+    }
+    if (!row.def.includes(`'${rule}'`)) {
+      fail(`APP12-DB01 trigger ${name} no longer passes rule '${rule}' — live def: ${row.def}`);
+    }
+    app12Seen.delete(`${table}:${name}`);
+  }
+}
+for (const extra of app12Seen) {
+  fail(`unexpected APP12 order-origin trigger ${extra}`);
+}
+
+const { rows: app12Fns } = await client.query(
+  `
+  SELECT p.proname, p.prosecdef FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = $1
+`,
+  [APP12_DB01_FUNCTION],
+);
+note(`APP12-DB01 trigger functions: ${app12Fns.length} / 1`);
+if (app12Fns.length !== 1) {
+  fail(`expected exactly 1 ${APP12_DB01_FUNCTION}, found ${app12Fns.length}`);
+}
+for (const fn of app12Fns) {
   if (fn.prosecdef) fail(`${fn.proname} is SECURITY DEFINER, expected INVOKER`);
 }
 

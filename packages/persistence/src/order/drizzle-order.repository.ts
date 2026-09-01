@@ -115,6 +115,11 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
         .values({
           id: input.id,
           code: input.code,
+          // APP12-DB01 — `orders.origin` is NOT NULL and deliberately has no
+          // default, so the writer states which order shape it is creating.
+          // This path is the custom one, by construction: it creates an order
+          // from an accepted quotation.
+          origin: 'CUSTOM',
           customRequestId: input.customRequestId,
           customerId: chain.customerId,
           acceptedQuotationVersionId: input.acceptedQuotationVersionId,

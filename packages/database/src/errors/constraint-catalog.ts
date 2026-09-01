@@ -116,6 +116,10 @@ export const CONSTRAINT_MEANINGS: Readonly<Record<string, ConstraintMeaning>> = 
     'GRANT_ALREADY_ACTIVE',
     'An active access grant already exists for this customer and request.',
   ),
+  uq_secure_access_grants__customer_order__active: conflict(
+    'GRANT_ALREADY_ACTIVE',
+    'An active access grant already exists for this customer and order.',
+  ),
   uq_verification_challenges__kind_value_purpose__issued: conflict(
     'CHALLENGE_ALREADY_OPEN',
     'A verification challenge is already open for this contact and purpose.',
