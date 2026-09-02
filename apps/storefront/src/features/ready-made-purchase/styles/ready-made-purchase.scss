@@ -1,0 +1,268 @@
+// Ready-Made purchase panel — the rule set (APP12-S01).
+//
+// The design provenance, the measured frame values and every local literal
+// live in the tokens partial beside this file; this one is the selectors.
+
+@use '@embroidery/styles' as styles;
+@use 'ready-made-purchase-tokens' as tokens;
+
+.ready-made-purchase {
+  display: flex;
+  justify-content: center;
+
+  &__panel {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(24);
+    width: 100%;
+    max-width: tokens.$panel-measure-max;
+    padding: styles.spacing(32);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-card;
+  }
+
+  // Price block (904:41) — Typography/Heading/M over Typography/Body/S, the two
+  // set 4px apart as one group while the 24px panel gap separates the groups.
+  &__price-block {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+  }
+
+  &__price {
+    margin: 0;
+    font-size: styles.$font-size-heading-m;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+
+  &__caption {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__fieldset {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(12);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  &__legend {
+    display: block;
+    padding: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__options {
+    display: flex;
+    // The one responsive rule the panel needs: at 390 the option rows wrap
+    // (905:215, 905:224); at 1024 and 1440 there is room and they do not.
+    flex-wrap: wrap;
+    gap: styles.spacing(12);
+  }
+
+  &__option {
+    display: inline-flex;
+    position: relative;
+  }
+
+  // The native radio is visually hidden but NOT removed: it keeps the group
+  // semantics, the arrow-key behaviour and a real disabled state, and the focus
+  // ring below is drawn on the pill it belongs to.
+  &__option-input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+    }
+  }
+
+  &__option-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: styles.spacing(8);
+    min-height: tokens.$control-min-target;
+    padding: styles.spacing(12) tokens.$option-padding-inline;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-md;
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-primary;
+  }
+
+  // Selected (904:47): the 2px brand ring on the secondary background. The
+  // border width grows and the padding gives back the pixel, so choosing an
+  // option cannot reflow the row it sits in.
+  &__option-input:checked + &__option-pill {
+    background: styles.$color-background-secondary;
+    border: 2px solid styles.$color-action-primary;
+    padding: calc(#{styles.spacing(12)} - 1px) calc(#{tokens.$option-padding-inline} - 1px);
+  }
+
+  // Disabled (904:62). Never colour-only: the option also loses its pointer
+  // affordance, and when the refusal really is stock it carries the note below.
+  &__option-input:disabled + &__option-pill {
+    background: styles.$color-background-secondary;
+    color: styles.$color-text-tertiary;
+  }
+
+  &__option-note {
+    font-size: styles.$font-size-caption;
+    color: styles.$color-text-tertiary;
+  }
+
+  // Focus has to stay visible on a control whose input is transparent.
+  &__option-input:focus-visible + &__option-pill {
+    outline: 2px solid styles.$color-action-primary;
+    outline-offset: 2px;
+  }
+
+  &__error {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-status-error;
+  }
+
+  &__quantity {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: styles.spacing(8);
+  }
+
+  &__stepper {
+    display: inline-flex;
+    align-items: center;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-md;
+  }
+
+  // 44px targets on every viewport (904:68) — the value the approved
+  // accessibility notes fix for touch, not a mobile-only affordance.
+  &__step {
+    width: tokens.$control-min-target;
+    height: tokens.$control-min-target;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: styles.$radius-md;
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-primary;
+    cursor: pointer;
+
+    &:disabled {
+      color: styles.$color-text-tertiary;
+      cursor: default;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: -2px;
+    }
+  }
+
+  &__quantity-input {
+    width: tokens.$stepper-value-width;
+    height: tokens.$control-min-target;
+    padding: 0;
+    background: none;
+    border: 0;
+    font-family: inherit;
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-primary;
+    text-align: center;
+    // The native spin buttons would place a second, 12px-tall increment control
+    // beside the approved 44px one.
+    appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: -2px;
+    }
+  }
+
+  &__availability {
+    display: flex;
+    align-items: center;
+    gap: styles.spacing(8);
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  // Status is never colour-only: the mark is decorative and the count beside it
+  // carries the whole meaning on its own.
+  &__availability-mark {
+    color: styles.$color-status-success;
+  }
+
+  // The DS Primary action (183:46), full panel width as every frame draws it.
+  // Rendered as an anchor when a SKU is resolved and as a disabled button
+  // otherwise, so the two states share one appearance and only one is navigable.
+  &__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: tokens.$control-min-target;
+    padding: styles.spacing(12) styles.spacing(24);
+    border: 0;
+    border-radius: styles.$radius-button;
+    background: styles.$color-action-primary;
+    font-family: inherit;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-surface-primary;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+
+    &:hover {
+      background: styles.$color-action-hover;
+    }
+
+    &:active {
+      background: styles.$color-action-active;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    // 183:49 — the disabled Primary. Its own label states the reason, or the
+    // fieldset error beside it does, so the state is never appearance-only.
+    &:disabled {
+      background: tokens.$action-disabled;
+      color: styles.$color-text-tertiary;
+      cursor: default;
+    }
+  }
+
+  &__panel--unavailable {
+    gap: styles.spacing(8);
+  }
+
+  &__unavailable-heading {
+    margin: 0;
+    font-size: styles.$font-size-body-l;
+    font-weight: styles.$font-weight-semibold;
+    color: styles.$color-text-primary;
+  }
+}

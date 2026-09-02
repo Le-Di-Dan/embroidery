@@ -74,6 +74,39 @@ export function buildStorefrontStudioPath(slug: string): string {
 }
 
 /**
+ * The canonical Ready-Made checkout route base (`APP12-D01` §H locks the path).
+ *
+ * Declared here, with every other Storefront path, at `APP12-S01` — the
+ * checkpoint that first *links* to it. The route itself is `APP12-S02`'s
+ * deliverable and does not exist yet, which is a deliberate and bounded
+ * exception to the model at the top of this file: that rule keeps a **primary
+ * navigation item** from becoming a dead anchor in the shell header, and this is
+ * not a nav item. The Product Detail purchase panel has to compose one exact
+ * `href` and assert it (`APP12-S01` §18, §34), and writing that path as a
+ * literal in the panel is how the address the panel promises and the address
+ * `APP12-S02` mounts start to disagree.
+ *
+ * `/checkout`, `/thanh-toan` and `/dat-hang` are rejected: `/thanh-toan` is
+ * already the custom deposit surface beneath `/truy-cap`, and reusing it for an
+ * anonymous Ready-Made purchase would put a released Wave-1 page inside the
+ * Wave-2 secure-access family the release gate withholds by name.
+ */
+export const STOREFRONT_CHECKOUT_ROUTE_BASE = '/mua-hang';
+
+/**
+ * The one place a Ready-Made checkout URL is built.
+ *
+ * Slug-addressed, exactly like Product Detail, so `/san-pham/<slug>` continues
+ * to `/mua-hang/<slug>` and the Product keeps one public identity across the
+ * two pages. The raw Product UUID is never in a customer URL (`APP12-S01` §20),
+ * and the selection hints the panel appends are query parameters composed by
+ * the feature — this builder owns the path and nothing else.
+ */
+export function buildStorefrontCheckoutPath(slug: string): string {
+  return `${STOREFRONT_CHECKOUT_ROUTE_BASE}/${encodeURIComponent(slug)}`;
+}
+
+/**
  * The canonical custom-request creation route (`APP5-D01` locks the path;
  * `APP5-S01` built it).
  *

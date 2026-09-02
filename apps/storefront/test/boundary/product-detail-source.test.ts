@@ -131,20 +131,36 @@ describe('route authority', () => {
 });
 
 describe('contract projection', () => {
-  it('drops price and stock at the projection boundary', () => {
+  // `APP12-S01` releases `price` through this boundary — the approved purchase
+  // panel states an amount before a SKU resolves — and tightens the other half:
+  // the operator display flag must never become stock truth (`APP12-S01` §19).
+  it('keeps the operator stock flag out of the projection boundary', () => {
     const view = codeOnly(
       readFileSync(join(FEATURE_DIR, 'model', 'product-detail-view.ts'), 'utf8'),
     );
-    expect(view).not.toContain('price');
     expect(view).not.toContain('isDisplayOutOfStock');
   });
 
-  it('lets no component read a commerce field', () => {
+  it('lets no Product Detail component read the stock flag or compute money', () => {
     const components = sources.filter((source) => source.path.includes('components'));
     for (const component of components) {
       const code = codeOnly(component.text);
-      expect(code).not.toMatch(/\bprice\b|isDisplayOutOfStock|currency/);
+      expect(code).not.toContain('isDisplayOutOfStock');
+      // The price crosses this screen as an opaque value handed to the purchase
+      // feature; no Product Detail component may parse or arithmetic one.
+      expect(code).not.toMatch(/Number\(|parseFloat|parseInt|Math\.round/);
     }
+  });
+
+  it('delegates every purchase decision to the ready-made-purchase feature', () => {
+    // The screen composes one panel and passes it the server projection. It owns
+    // no SKU, availability or quantity logic of its own, so a purchase rule can
+    // never end up stated twice with the two copies disagreeing.
+    const screen = codeOnly(
+      readFileSync(join(FEATURE_DIR, 'components', 'product-detail-screen.tsx'), 'utf8'),
+    );
+    expect(screen).toContain('ReadyMadePurchasePanel');
+    expect(screen).not.toMatch(/availableQuantity|skuId|unitPrice|quantity/);
   });
 
   it('invents no deferred section', () => {

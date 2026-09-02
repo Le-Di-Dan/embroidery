@@ -582,6 +582,9 @@ importers:
       '@embroidery/database':
         specifier: workspace:*
         version: link:../database
+      pg:
+        specifier: 8.22.0
+        version: 8.22.0
     devDependencies:
       '@embroidery/eslint-config':
         specifier: workspace:*

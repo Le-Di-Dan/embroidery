@@ -143,6 +143,14 @@ export type {
   PublicProductSeoResponse,
   PublicCategoryResponse,
   PublicMediaReferenceResponse,
+  // The public money shape (`APP12-S01`). Released as a **type only**: it is the
+  // one wire form every public price already takes — a decimal string plus the
+  // currency of the row that supplied it — and the Ready-Made purchase panel
+  // renders both a Product's catalog price and a SKU's resolved unit price
+  // through it. Naming the shape once is what keeps a screen from re-declaring
+  // an amount as a `number`, which is the shortest path from `numeric(14,2)` to
+  // an IEEE-754 double.
+  PublicPriceResponse,
 } from './generated/embroidery-api.schemas';
 
 // The dynamic public category inventory (`APP12-C01`).

@@ -115,7 +115,16 @@ export async function bootstrapAdmin({ config, databaseUrl, credentials, log, ex
  * configured with the staff-auth environment (allowed browser origins, non-secure
  * dev cookie) and the Admin app with its internal API base URL, so real staff
  * login, session and logout journeys run end-to-end through the gateway.
- * @param {{ runId: string, config: object, log: (msg: string) => void, withAdmin?: { email: string, password: string, displayName: string } }} params
+ * `withStorefront` (`APP12-S01`) hands the Storefront process its own runtime
+ * configuration. Until now only the Admin needed one — it resolves sessions
+ * server-side — while the Storefront rendered nothing that required a backend
+ * read at request time in this harness. The Ready-Made purchase state does: the
+ * Product Detail route reads the catalog and the purchase projection on the
+ * server, so it needs `INTERNAL_API_BASE_URL`, and the Wave-1 journeys must run
+ * with the custom-embroidery capability explicitly withheld. Absent, the
+ * Storefront environment is byte-identical to what it always was.
+ *
+ * @param {{ runId: string, config: object, log: (msg: string) => void, withAdmin?: { email: string, password: string, displayName: string }, withStorefront?: Record<string, string> }} params
  */
 export async function startEnvironment({
   runId,
@@ -124,6 +133,7 @@ export async function startEnvironment({
   withAdmin,
   withApp4,
   withMerchantBank,
+  withStorefront,
 }) {
   const cleanup = new CleanupStack();
   const projectName = `emb-e2e-${runId}`;
@@ -243,6 +253,7 @@ export async function startEnvironment({
         name: 'storefront',
         dir: join(config.repoRoot, 'apps', 'storefront'),
         port: config.ports.storefront,
+        ...(withStorefront === undefined ? {} : { env: withStorefront }),
       },
       {
         name: 'admin',

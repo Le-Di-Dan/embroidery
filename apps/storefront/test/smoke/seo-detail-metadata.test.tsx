@@ -10,7 +10,11 @@
  * only their resolution moved — and that a `noindex` entity keeps every one of
  * those tags while being absent from the sitemap.
  */
-import { publicGalleryEntryDetail, publicProductDetail } from '@embroidery/api-client';
+import {
+  publicGalleryEntryDetail,
+  publicProductDetail,
+  publicProductVariantList,
+} from '@embroidery/api-client';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import ProductDetailPage, {
@@ -31,10 +35,16 @@ import {
   makeGalleryDetail,
   GALLERY_DETAIL_SLUG,
 } from '../support/gallery-fixture';
+import {
+  makeVariantList,
+  makeVariantMatrix,
+  publicVariantEnvelope,
+} from '../support/ready-made-purchase-fixture';
 
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   publicProductDetail: jest.fn(),
+  publicProductVariantList: jest.fn(),
   publicGalleryEntryDetail: jest.fn(),
 }));
 
@@ -49,6 +59,12 @@ const productMock = publicProductDetail as jest.MockedFunction<typeof publicProd
 const galleryMock = publicGalleryEntryDetail as jest.MockedFunction<
   typeof publicGalleryEntryDetail
 >;
+// The Product Detail route reads the APP12-B01 purchase projection alongside the
+// Product. Mocked here so this suite keeps testing metadata and structured data
+// rather than accidentally testing what an unmocked Axios call does.
+const variantMock = publicProductVariantList as jest.MockedFunction<
+  typeof publicProductVariantList
+>;
 
 const ORIGIN = 'https://shop.example.test';
 const PRODUCT_SLUG = 'gau-bong-theu-tay';
@@ -56,6 +72,8 @@ const PRODUCT_SLUG = 'gau-bong-theu-tay';
 beforeEach(() => {
   productMock.mockReset();
   galleryMock.mockReset();
+  variantMock.mockReset();
+  variantMock.mockResolvedValue(publicVariantEnvelope(makeVariantList(makeVariantMatrix())));
   process.env.STOREFRONT_PUBLIC_ORIGIN = ORIGIN;
   process.env.INTERNAL_API_BASE_URL = 'http://api:4000/api';
 });

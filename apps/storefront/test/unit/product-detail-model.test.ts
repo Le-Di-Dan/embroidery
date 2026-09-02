@@ -50,12 +50,25 @@ describe('public product slug syntax', () => {
 });
 
 describe('toProductDetailView', () => {
-  it('drops price and the stock flag at the boundary', () => {
+  // `APP2-S02` dropped both commerce fields here, because the page was a studio
+  // Work Detail. `APP12-S01` carries `price` — the approved purchase panel
+  // states an amount before a SKU resolves — and keeps the stock flag out.
+  it('carries the published price through untouched', () => {
     const view = toProductDetailView(makePublicDetail());
-    expect(Object.keys(view)).not.toContain('price');
+    // Passed through as the server's own strings: no parse, no rounding, no
+    // recomputation, and the currency the server priced in rather than a literal.
+    expect(view.price).toEqual(makePublicDetail().price);
+    expect(typeof view.price.amount).toBe('string');
+  });
+
+  it('still drops the operator display flag at the boundary', () => {
+    const view = toProductDetailView(makePublicDetail());
+    // `isDisplayOutOfStock` is an operator display flag and not a computed stock
+    // level (`BR-022`). `APP12-S01` §19 forbids it as stock authority, and the
+    // projection is where that is made structural: a component cannot read a
+    // field it was never given. Availability comes from `APP12-B01` alone.
     expect(Object.keys(view)).not.toContain('isDisplayOutOfStock');
-    expect(JSON.stringify(view)).not.toContain('450000');
-    expect(JSON.stringify(view)).not.toContain('VND');
+    expect(JSON.stringify(view)).not.toContain('isDisplayOutOfStock');
   });
 
   it('preserves media in server order', () => {

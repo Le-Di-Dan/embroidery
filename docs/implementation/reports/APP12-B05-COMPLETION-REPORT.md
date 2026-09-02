@@ -543,7 +543,9 @@ in `close()`. No retention bypass, no G03 dataset.
 
 ## W. Files changed
 
-**New (11)**
+**New (13)** — corrected from `11` by `APP12-S01` §2. The label was wrong; the
+list below was always right and is unchanged. Bookkeeping only: no runtime,
+contract or test change, and `APP12-B05` is not reopened.
 
 ```text
 packages/persistence/src/order/order-lifecycle.ts
@@ -726,7 +728,7 @@ Ready-Made completion backend                 CLOSED_BY_APP12_B05
 |---|---|---|
 | `FU-APP12-B05-01` | `APP12-H01` | `admin-payment-review.integration` carries 2 APP9-B03-era stale expectations (`DEPOSIT_NOT_PAYABLE`, "REMAINING is not verifiable"). Correcting the *expectations*, not the code. |
 | `FU-APP12-B05-02` | `APP12-H01` | `drizzle-order-shipping.repository.ts` is 399/400. Split by responsibility — the freeze/snapshot writer is a separate concern from the fee baseline — before the next change to it. |
-| `FU-APP12-B05-03` | `APP12-H01` | `database-runtime.integration` asserts 78 tables; the schema has had 79 since `APP12-DB01`. |
+| ~~`FU-APP12-B05-03`~~ | — | **Closed as a duplicate by `APP12-S01` §2, on Product Owner routing.** The stale `database-runtime.integration` table-count assertion (78 asserted, 79 since `APP12-DB01`) is the same debt already recorded against `APP12-H02`, and is owned there. Merged rather than tracked twice; nothing about the assertion changed here. |
 
 **Not absorbed** (§50), each verified untouched: `FU-APP12-B04-02`,
 `FU-APP12-B04-03`, `FU-APP12-C03-01`, `FU-APP12-B02-01..04`, `FU-APP12-B03-01`,

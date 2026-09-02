@@ -20,9 +20,16 @@
 // Four operations, and the set is bounded on purpose:
 //
 // - `publicProductVariantList` (`APP5-B07`) is the only public read that yields
-//   a `productVariantId`. It publishes no SKU, price or stock and marks no
-//   variant as a default, which is why the screen must make the customer choose
-//   one rather than pick for them.
+//   a `productVariantId`, and it marks no variant as a default — which is why a
+//   screen must make the customer choose one rather than pick for them.
+//   `APP12-B01` extended it with each variant's Ready-Made purchase subjects
+//   (`skus[]`, each carrying its server-resolved unit price and the quantity
+//   available at read time), so it now serves two consumers: the APP5
+//   custom-request subject chooser, which reads only the three original fields,
+//   and the `APP12-S01` purchase panel, which reads the SKUs. Neither may treat
+//   the other's fields as its own — in particular, a variant is still returned
+//   when it has no sellable SKU, so the presence of a variant says nothing about
+//   whether anything can be bought.
 // - `publicCustomRequestAssetUpload` / `publicCustomRequestAssetStatus`
 //   (`APP5-B02`) are challenge-scoped: neither addresses a request, a customer
 //   or an asset that some other challenge uploaded.
@@ -50,6 +57,12 @@ export {
 export type {
   PublicProductVariantListResponse,
   PublicProductVariantResponse,
+  // One variant's Ready-Made purchase subject (`APP12-B01`, consumed by
+  // `APP12-S01`). Released beside the response that carries it rather than
+  // beneath the catalog reads, so the type and the operation that publishes it
+  // stay in one place. `skuId` is identity, not a credential: it authorizes
+  // nothing, and order creation re-resolves everything about it server-side.
+  PublicProductSkuResponse,
   CustomRequestAssetIntakeResponse,
   CustomRequestAssetStatusResponse,
   CustomRequestAssetBinding,

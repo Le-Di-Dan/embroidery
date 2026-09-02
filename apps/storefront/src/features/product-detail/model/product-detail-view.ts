@@ -1,12 +1,23 @@
-import type { PublicProductDetailResponse } from '@embroidery/api-client';
+import type { PublicPriceResponse, PublicProductDetailResponse } from '@embroidery/api-client';
 
 /**
  * The projection boundary between the delivered contract and the page.
  *
- * `publicProductDetail` returns `price` and `isDisplayOutOfStock`. This page is
- * a studio Work Detail, not an ecommerce PDP (IMP-D039), so those two fields are
- * dropped **here** rather than merely left unrendered. A component cannot show a
- * price it was never given, which makes the rule structural instead of a
+ * `publicProductDetail` returns `price` and `isDisplayOutOfStock`. `APP2-S02`
+ * dropped both **here** rather than merely leaving them unrendered, because the
+ * page was a studio Work Detail and not an ecommerce PDP (IMP-D039).
+ *
+ * `APP12-S01` reverses exactly half of that, under the Wave-1 Ready-Made
+ * authority that made this page a place a customer buys something: `price` is
+ * now carried, because the approved purchase panel states an amount before a SKU
+ * is resolved (`906:189`, `906:143`) and the Product's own published catalog
+ * price is the only truthful thing to state there.
+ *
+ * **`isDisplayOutOfStock` is still dropped, and that is not an oversight.** It
+ * is an operator display flag, explicitly not a computed stock level (`BR-022`),
+ * and `APP12-S01` §11/§19 forbid it as stock authority. Availability comes from
+ * `APP12-B01`'s `availableQuantity` and from nowhere else, so the field stays
+ * unavailable to this page's components by construction rather than by a
  * convention someone has to remember while adding a section.
  *
  * `seo` is likewise not part of the view model: it feeds `generateMetadata` from
@@ -28,6 +39,14 @@ export interface ProductDetailView {
   readonly categorySlug: string;
   readonly categoryName: string;
   readonly media: readonly ProductDetailMedia[];
+  /**
+   * The Product's published catalog price, as the server states it (`APP12-S01`).
+   *
+   * Passed through untouched — a decimal string and a currency code — because
+   * every amount on this page belongs to the server and nothing here may parse,
+   * round or recompute one.
+   */
+  readonly price: PublicPriceResponse;
 }
 
 /**
@@ -48,5 +67,6 @@ export function toProductDetailView(response: PublicProductDetailResponse): Prod
     categorySlug: response.category.slug,
     categoryName: response.category.name,
     media: response.media.map((item) => ({ url: item.url })),
+    price: response.price,
   };
 }

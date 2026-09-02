@@ -1,3 +1,4 @@
+import { ReadyMadePurchasePanel, type ReadyMadePurchaseResult } from '../../ready-made-purchase';
 import { buildStorefrontProductDetailPath } from '../../storefront-shell';
 import type { ProductDetailView } from '../model/product-detail-view';
 import { DetailBreadcrumb } from './detail-breadcrumb';
@@ -21,8 +22,22 @@ import { DetailStory } from './detail-story';
  * The category is rendered as identity, not as a control. The breadcrumb and the
  * continuation section are where a visitor navigates by category; a chip that
  * also filtered would give the same destination two different-looking doors.
+ *
+ * `APP12-S01` adds exactly one child: the Ready-Made purchase panel, placed
+ * after the identity group and before the story, as `902:4` / `905:67` /
+ * `905:187` draw it. Nothing else moved. The media hierarchy, the breadcrumb,
+ * the category chip, Share, the 640 story measure and the continuation section
+ * are labelled `UNCHANGED` in those frames and are unchanged here — the panel is
+ * a sibling in the same centred column, not a buy box that restructures the
+ * hero into a two-column commerce layout.
  */
-export function ProductDetailScreen({ product }: { product: ProductDetailView }) {
+export function ProductDetailScreen({
+  product,
+  purchase,
+}: {
+  readonly product: ProductDetailView;
+  readonly purchase: ReadyMadePurchaseResult;
+}) {
   return (
     <article className="product-detail">
       <DetailBreadcrumb
@@ -42,6 +57,8 @@ export function ProductDetailScreen({ product }: { product: ProductDetailView })
           {...(product.description === undefined ? {} : { description: product.description })}
         />
       </div>
+
+      <ReadyMadePurchasePanel slug={product.slug} basePrice={product.price} purchase={purchase} />
 
       {product.description === undefined ? null : <DetailStory description={product.description} />}
 

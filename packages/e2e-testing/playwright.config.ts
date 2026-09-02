@@ -129,6 +129,17 @@ export default defineConfig({
     // ordering guarantee across projects. The Admin journeys open their own
     // context against the Admin origin. Desktop 1440 is the approved reference
     // viewport (`APP7-D01`), and the mobile-390 state resizes its own context.
+    // APP12-S01 Ready-Made purchase state. One serial Storefront project: the
+    // suite drives the three approved viewports itself with `test.use`, because
+    // the responsive rule under test is one panel adapting rather than three
+    // pages, and splitting it across projects would triple the environment cost
+    // to prove the same thing. No Admin origin is involved — S01 is a public
+    // read and opens no staff surface at all.
+    {
+      name: 'app12-s01-chromium',
+      testMatch: '**/app12/s01-purchase-state.acceptance.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
     {
       name: 'app7-e01-chromium',
       testMatch: '**/app7/*.acceptance.spec.ts',

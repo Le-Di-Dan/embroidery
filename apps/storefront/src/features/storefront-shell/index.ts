@@ -35,6 +35,12 @@ export {
   STOREFRONT_STORE_ROUTE,
   STOREFRONT_POLICY_ROUTE_BASE,
   buildStorefrontPolicyPath,
+  // The Ready-Made checkout path (`APP12-S01` links it, `APP12-S02` mounts it).
+  // On the shell surface with every other Storefront path so the purchase
+  // panel's continue `href` and the route `APP12-S02` creates are composed from
+  // one function rather than from two literals that agree today.
+  STOREFRONT_CHECKOUT_ROUTE_BASE,
+  buildStorefrontCheckoutPath,
   // The section matcher behind the header's active state. Exported so a feature
   // that needs to reason about "am I inside this area" reuses the one rule the
   // header uses, instead of re-deriving prefix matching.

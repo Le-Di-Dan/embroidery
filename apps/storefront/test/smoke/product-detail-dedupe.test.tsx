@@ -27,7 +27,7 @@
  * visibility: that nothing is replayed across requests, that two slugs never
  * share a read, and that an unpublish takes effect on the very next request.
  */
-import { publicProductDetail } from '@embroidery/api-client';
+import { publicProductDetail, publicProductVariantList } from '@embroidery/api-client';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import ProductDetailPage, { generateMetadata } from '../../src/app/san-pham/[slug]/page';
@@ -36,10 +36,12 @@ import {
   publicDetailEnvelope,
   safeNotFoundError,
 } from '../support/product-detail-fixture';
+import { makeVariantList, publicVariantEnvelope } from '../support/ready-made-purchase-fixture';
 
 jest.mock('@embroidery/api-client', () => ({
   ...jest.requireActual<Record<string, unknown>>('@embroidery/api-client'),
   publicProductDetail: jest.fn(),
+  publicProductVariantList: jest.fn(),
 }));
 
 const notFoundError = new Error('NEXT_NOT_FOUND');
@@ -50,9 +52,17 @@ jest.mock('next/navigation', () => ({
 }));
 
 const detailMock = publicProductDetail as jest.MockedFunction<typeof publicProductDetail>;
+// The route also reads the APP12-B01 purchase projection. It is memoized by the
+// same request-scoped mechanism and is mocked so this suite measures the detail
+// read it is about, without a second unmocked operation reaching Axios.
+const variantMock = publicProductVariantList as jest.MockedFunction<
+  typeof publicProductVariantList
+>;
 
 beforeEach(() => {
   detailMock.mockReset();
+  variantMock.mockReset();
+  variantMock.mockResolvedValue(publicVariantEnvelope(makeVariantList()));
   process.env.INTERNAL_API_BASE_URL = 'http://api:4000/api';
   // `APP11-S04` gave the Storefront a `metadataBase` and absolute canonicals,
   // both composed from the one public-origin authority. It has no fallback by

@@ -8,6 +8,7 @@ import {
   toProductDetailView,
 } from '../../../features/product-detail';
 import { loadProductDetail } from '../../../features/product-detail/services/product-detail.server';
+import { loadReadyMadePurchase } from '../../../features/ready-made-purchase/services/ready-made-purchase.server';
 import { BreadcrumbJsonLd, publicPageMetadata } from '../../../features/storefront-seo';
 
 /**
@@ -119,6 +120,26 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
   const product = toProductDetailView(result.product);
 
+  /*
+   * The Ready-Made purchase projection (`APP12-S01`).
+   *
+   * Read here, on the server, in the same request as the Product itself, and
+   * handed to the panel as a prop. That is what makes "one
+   * `publicProductVariant_list` per render" structural rather than a rule to
+   * remember: the client island has no client to call with.
+   *
+   * It is read **after** the not-found and error decisions above, so the
+   * purchase state can never be what decides whether a Product exists — a
+   * Product with nothing to sell is an ordinary published Product and still
+   * renders its gallery, its story and its category (`APP12-S01` §23).
+   *
+   * Deliberately not awaited in parallel with `loadProductDetail`: the two
+   * decisions are ordered, and starting a purchase read for a slug that turns
+   * out to be a 404 would send the API a request for a Product this route has
+   * already decided the visitor may not see.
+   */
+  const purchase = await loadReadyMadePurchase(slug);
+
   return (
     <>
       {/*
@@ -138,7 +159,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
        * type has no field for them.
        */}
       <BreadcrumbJsonLd items={resolveProductBreadcrumb(product)} />
-      <ProductDetailScreen product={product} />
+      <ProductDetailScreen product={product} purchase={purchase} />
     </>
   );
 }

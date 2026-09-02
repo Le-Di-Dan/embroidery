@@ -1,0 +1,43 @@
+// Ready-Made purchase panel — feature-scoped styles (APP12-S01).
+//
+// Design source: FIG-APP12-S01-PURCHASE-DESKTOP / -TABLET / -MOBILE /
+// -OUT-OF-STOCK / -SELECTION-INCOMPLETE (file BQwqV8GdfUIELvsQDB1UQE, page
+// APP_12, frames 902:4 · 905:67 · 905:187 · 906:140 · 906:186; panel nodes
+// 904:40 · 905:89 · 905:209 · 906:143 · 906:189), approved under
+// FIG-APPROVAL-APP12-D01-PO-001.
+//
+// Colour, type, radius and spacing come from @embroidery/styles. Two option
+// measurements (20px inline padding, the 56px stepper value box) sit off the
+// shared spacing scale; each is a documented local literal, following the
+// APP2-S02 and APP5-S01 precedent for the same reason — inventing scale steps
+// would change a shared foundation to suit one screen. No global token is added
+// or modified.
+//
+// Measured from the approved frames:
+//   desktop 1440 — panel 640 wide, padding 32, section gap 24
+//   tablet  1024 — panel 560 wide, identical padding and gaps
+//   mobile   390 — panel 342 wide, identical padding and gaps, options wrap
+//
+// The panel width is therefore not a breakpoint rule at all: it is the story
+// measure the delivered page already owns. In each of the three frames the panel
+// and the Story column are exactly the same width, so this restates that one
+// measure instead of three numbers that would then have to be kept in step with
+// a column the panel must always match.
+
+@use '@embroidery/styles' as styles;
+
+// The delivered Product Detail story measure (product-detail.scss, locked by
+// APP2-S02-G01-C1). Mirrored rather than imported because it is that feature's
+// internal constant, exactly as product-detail.scss mirrors the shell's own
+// $bp-footer; a boundary test asserts the two stay equal.
+$panel-measure-max: 640px;
+
+// Off-scale local literals, measured from 904:47 / 904:62 / 904:68.
+$option-padding-inline: 20px;
+$control-min-target: 44px;
+$stepper-value-width: 56px;
+
+// The disabled action fill (183:49). The same value the foundation binds to
+// $color-border-secondary; aliased here so the intent reads as "disabled
+// action" rather than as a border colour reused for a surface.
+$action-disabled: styles.$color-border-secondary;

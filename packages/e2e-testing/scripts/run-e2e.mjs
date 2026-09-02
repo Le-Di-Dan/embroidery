@@ -53,6 +53,11 @@ const APP5_E01 = ['app5-e01-chromium'];
 // run's object storage) plus the merchant bank account `APP7-B03` fails fast
 // without.
 const APP7_E01 = ['app7-e01-chromium'];
+// APP12-S01 — the Ready-Made purchase state. The leanest browser topology in the
+// file: no Admin, no secret material, no object storage. It needs a disposable
+// database carrying a test-only catalog, the real API, the real Storefront and
+// the real gateway, and nothing else.
+const APP12_S01 = ['app12-s01-chromium'];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -173,12 +178,17 @@ function parseArgs(argv) {
   // APP7-E01: same topology and secret material as the APP5 run, one more
   // project and the merchant bank configuration.
   const app7E01 = flags.has('--app7-e01');
+  // APP12-S01: a Playwright mode of its own, on the plain smoke topology plus a
+  // seeded catalog and the Storefront's own runtime configuration.
+  const app12S01 = flags.has('--app12-s01');
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
   const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
-    : app7E01
+    : app12S01
+      ? 'app12-s01'
+      : app7E01
       ? 'app7-e01'
       : app5E01
         ? 'app5-e01'
@@ -189,24 +199,26 @@ function parseArgs(argv) {
             : full
               ? 'full'
               : 'smoke';
-  const projects = app7E01
-    ? APP7_E01
-    : app5E01
-      ? APP5_E01
-      : app4R01C1
-        ? APP4_R01_C1
-        : app4R01
-          ? APP4_R01
-          : app4Browser
-            ? APP4
-            : app1
-              ? APP1
-              : full
-                ? FULL
-                : SMOKE;
+  const projects = app12S01
+    ? APP12_S01
+    : app7E01
+      ? APP7_E01
+      : app5E01
+        ? APP5_E01
+        : app4R01C1
+          ? APP4_R01_C1
+          : app4R01
+            ? APP4_R01
+            : app4Browser
+              ? APP4
+              : app1
+                ? APP1
+                : full
+                  ? FULL
+                  : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
-    app1 || app4Browser
+    app1 || app4Browser || app12S01
       ? 'host'
       : runnerArg
         ? runnerArg.split('=')[1]
@@ -227,6 +239,7 @@ function parseArgs(argv) {
     app5E01,
     app7E01,
     app7QrScan,
+    app12S01,
   };
 }
 
@@ -256,6 +269,7 @@ async function main() {
     app5E01,
     app7E01,
     app7QrScan,
+    app12S01,
   } = parseArgs(process.argv.slice(2));
 
   // APP7-E01-U01 owns its own lean topology and teardown and starts no browser
@@ -298,9 +312,17 @@ async function main() {
   // browser, but `APP4-E01-R01` has to *navigate* the delivered link, so here it
   // must be this run's real gateway origin. Still a per-run test value; IMP-D050
   // is untouched.
-  const app4Secrets = app4Browser
-    ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
-    : undefined;
+  //
+  // `APP12-S01` needs the same material for a different reason: it opens no APP3
+  // or APP4 surface at all, but `AppModule` cannot be *constructed* without the
+  // Design Session pepper — anonymous Session secrets are verified with a
+  // peppered HMAC that has no unpeppered fallback — so the API would refuse to
+  // start and the failure would read as an S01 defect. Per-run, synthetic and
+  // in-memory, exactly as above.
+  const app4Secrets =
+    app4Browser || app12S01
+      ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
+      : undefined;
   // `APP7-B03`'s merchant bank configuration is a module-scoped fail-fast
   // provider, so a graph containing `CustomerDepositModule` cannot be composed
   // without all four values. Every run that boots the real `AppModule` — the
@@ -346,6 +368,19 @@ async function main() {
       log,
       withAdmin: adminCredentials,
       withMerchantBank: merchantBankEnv(merchant),
+      // APP12-S01: the Storefront renders the Ready-Made purchase state on the
+      // server, so this is the first mode that has to configure that process at
+      // all. Wave 2 is explicitly withheld — the purchase journeys are Wave-1
+      // surfaces and must be proved with the custom capability off.
+      ...(app12S01
+        ? {
+            withStorefront: {
+              INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api`,
+              STOREFRONT_PUBLIC_ORIGIN: config.baseUrls.storefront,
+              CUSTOM_EMBROIDERY_RELEASE_ENABLED: 'false',
+            },
+          }
+        : {}),
       ...(app4Secrets === undefined
         ? {}
         : {
@@ -376,6 +411,16 @@ async function main() {
     log(
       `environment ready — storefront ${config.baseUrls.storefront} admin ${config.baseUrls.admin}`,
     );
+
+    // APP12-S01: the test-only catalog, written into THIS run's disposable
+    // database and dropped with it. Seeded after the environment is up so a
+    // failure to start never leaves a half-written fixture, and after the API is
+    // listening so the first page view reads a complete catalog.
+    let app12S01Fixture;
+    if (app12S01) {
+      const { seedS01Catalog } = await import('../support/app12/s01-catalog-fixture.mjs');
+      app12S01Fixture = await seedS01Catalog({ databaseUrl: env.database.url, log });
+    }
     // E01 specs need the bootstrap Admin credentials and the disposable database
     // URL (for the session-mutation seam); passed only through the child env.
     const browserEnv =
@@ -410,7 +455,16 @@ async function main() {
             // the topology were configured identically.
             ...merchantBankEnv(merchant),
           }
-        : {};
+        : app12S01
+          ? {
+              // The seeded slugs, so the spec asserts against what this run
+              // actually created rather than against a literal that would rot
+              // the moment the fixture changed. Child environment only.
+              E2E_APP12_S01_PURCHASABLE_SLUG: app12S01Fixture.purchasableSlug,
+              E2E_APP12_S01_UNBUYABLE_SLUG: app12S01Fixture.unbuyableSlug,
+              E2E_APP12_S01_CATEGORY_SLUG: app12S01Fixture.categorySlug,
+            }
+          : {};
     exitCode =
       runner === 'container'
         ? await runContainer({
