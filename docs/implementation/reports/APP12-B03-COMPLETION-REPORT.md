@@ -9,9 +9,9 @@ Date: 2026-09-02
 ## A. Verdict
 
 ```text
-APP12-B03 = COMPLETE
+APP12-B03 = COMPLETE_AFTER_C1
 
-CORRECTION_USED  = 0 / 1
+CORRECTION_USED  = 1 / 1   (APP12-B03-C1, test harness only)
 NEW_HTTP_OPERATIONS = 0
 NEXT_CHECKPOINT  = APP12-B04
 PUSHED           = false
@@ -434,6 +434,35 @@ predecessor is `SUPERSEDED` with its pointer set — never left `PENDING`.
 points at a successor, no two point at the same one (a chain, not a fork), one
 live `FULL`, fee/total/obligation in agreement, and the window unchanged.
 
+> **SUPERSEDED BY `APP12-B03-C1` — the §41 evidence below is rejected.**
+>
+> The Product Owner rejected the "expiry wins" world this section recorded:
+>
+> ```text
+> 409 refused + EXPIRED reservation + 0 obligations + AWAITING_SHIPPING_FEE
+> ```
+>
+> A Ready-Made order may not stay active once its reservation has terminally
+> expired — `READY_MADE_ACTIVE_ORDER_WITH_EXPIRED_RESERVATION = FORBIDDEN`.
+>
+> The state was never reachable through the delivered runtime. It was
+> **manufactured by this suite**: §41 drove the sweep as a hand-written
+> `UPDATE inventory_reservations set status = 'EXPIRED'`, which is one sub-step
+> of the expiry transaction rather than the transaction, and the step it omitted
+> is the one that cancels the order. §P of this report describes the real path
+> correctly; §41's stand-in never ran it.
+>
+> Root cause: `TEST_HARNESS_DEFECT`. **No production runtime changed in
+> `APP12-B03-C1`** — no use case, no repository, no writer, no transaction, no
+> contract, no migration. The correction replaced the stand-in with the real
+> `ExpireReadyMadeReservationsUseCase`, run in its own OS process against the
+> same disposable database, and re-proved the two legal worlds plus the
+> stale-candidate and expiry-first orderings.
+>
+> The corrected evidence is `docs/implementation/reports/APP12-B03-C1-COMPLETION-REPORT.md`
+> and `apps/api/test/integration/ready-made-expiry-race.integration.spec.ts`.
+> The §33 and §34 races below are unaffected and stand as recorded.
+
 **§41 — fee write vs expiry**, run three times. Only the two coherent §23 states
 occur:
 
@@ -786,7 +815,7 @@ APP12-G03  representative UAT data
 ## AF. Roadmap
 
 ```text
-APP12-B03 COMPLETE
+APP12-B03 COMPLETE_AFTER_C1
 APP12-B04 NEXT
 ```
 

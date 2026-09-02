@@ -1,6 +1,6 @@
 /**
- * `APP12-B03` §33, §34, §41 — the three races the fee path can actually lose,
- * run against real PostgreSQL through the real HTTP surface.
+ * `APP12-B03` §33, §34 — the two fee-versus-fee races the write can lose, run
+ * against real PostgreSQL through the real HTTP surface.
  *
  * Each case fires genuinely concurrent requests, so each runs on its own pooled
  * connection in its own transaction. Nothing is stubbed and no lock is
@@ -185,64 +185,16 @@ describe('APP12-B03 — Ready-Made shipping fee concurrency', () => {
   });
 
   /**
-   * §41 — a fee write against the expiry sweep.
+   * §41 — a fee write against the expiry sweep — is **not** here.
    *
-   * The sweep is driven here as a direct SQL expiry racing the HTTP write,
-   * rather than through the worker: this suite is about the API transaction's
-   * arbitration, and the worker's own half is proved in the worker suite. Both
-   * contend on the same reservation row, so only the two coherent outcomes in
-   * §23 are reachable.
+   * It was, and it was wrong. It drove the sweep as a direct
+   * `UPDATE inventory_reservations set status = 'EXPIRED'`, which is one
+   * sub-step of the expiry transaction rather than the transaction, and the
+   * step it omitted is the one that cancels the order. The case therefore
+   * observed an active order beside an expired reservation and recorded it as a
+   * legitimate outcome; the Product Owner rejected that world in
+   * `APP12-B03-C1`. The race now runs against the real
+   * `ExpireReadyMadeReservationsUseCase`, in its own process, in
+   * `ready-made-expiry-race.integration.spec.ts`.
    */
-  describe('a fee write racing reservation expiry', () => {
-    it('lands on one coherent state, never a partial one', async () => {
-      for (const attempt of [1, 2, 3]) {
-        const { orderId } = await createReadyMadeOrder(context, {
-          label: `race3-${String(attempt)}`,
-          unitPrice: 250_000,
-          quantity: 1,
-        });
-
-        // Make the reservation due right now, so both paths are live at once.
-        await context.database.client.db.execute(
-          sql`update inventory_reservations set expires_at = now() - interval '1 minute'
-              where order_id = ${orderId}`,
-        );
-
-        const expire = context.database.client.db.execute(sql`
-          with due as (
-            select id from inventory_reservations
-            where order_id = ${orderId} and status = 'RESERVED' and expires_at <= now()
-            for update
-          )
-          update inventory_reservations r set status = 'EXPIRED', terminalized_at = now()
-          from due where r.id = due.id
-        `);
-
-        const [, saved] = await Promise.all([expire, put(orderId, '30000')]);
-
-        const order = await orderOf(context, orderId);
-        const reservation = await reservationOf(context, orderId);
-        const rows = await obligationsOf(context, orderId);
-        const live = rows.filter((one) => one.status === 'PENDING');
-
-        if (saved.status === 200) {
-          // Admin won: priced, payable, still holding stock.
-          expect(order.status).toBe('AWAITING_PAYMENT');
-          expect(reservation.status).toBe('RESERVED');
-          expect(live).toHaveLength(1);
-          expect(live[0]?.amount).toBe(order.total_amount);
-        } else {
-          // Expiry won: the write was refused and nothing commercial moved.
-          expect(saved.status).toBe(409);
-          expect(reservation.status).toBe('EXPIRED');
-          expect(rows).toHaveLength(0);
-          expect(order.status).toBe('AWAITING_SHIPPING_FEE');
-        }
-
-        // §23's two forbidden worlds, asserted directly.
-        expect(order.status === 'CANCELLED' && live.length > 0).toBe(false);
-        expect(order.status === 'AWAITING_PAYMENT' && reservation.status === 'EXPIRED').toBe(false);
-      }
-    });
-  });
 });
