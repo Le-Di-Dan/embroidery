@@ -58,6 +58,22 @@ export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
  *
  * `src` only. A package's `test/` tree, its specs and its historical fixtures
  * are not runtime, and `dist` is build output.
+ *
+ * ## Every production root, not only the ones a category lives in today
+ * (`APP12-C03`)
+ *
+ * `APP12-C01-C1` scanned the eight trees that then held category code. That is
+ * the wrong boundary for a gate: it fails only where a taxonomy already existed,
+ * and a compiled category list added to an unscanned package would pass. So the
+ * list is now every workspace that ships runtime code — the four applications
+ * and every publishable package — regardless of whether it mentions a category
+ * today.
+ *
+ * The workspaces deliberately absent are the ones that are not production
+ * runtime at all: `test-utils`, `frontend-testing` and `e2e-testing` exist to
+ * hold fixtures, and `eslint-config`, `prettier-config`, `typescript-config` and
+ * `styles` ship no TypeScript. Scanning a fixture tree would be the gate
+ * mistaking test data for authority — the same category error §25 forbids.
  */
 export const SCANNED_ROOTS = Object.freeze([
   join('apps', 'api', 'src'),
@@ -68,6 +84,14 @@ export const SCANNED_ROOTS = Object.freeze([
   join('packages', 'contracts', 'src'),
   join('packages', 'database', 'src'),
   join('packages', 'persistence', 'src'),
+  join('packages', 'design-document', 'src'),
+  join('packages', 'design-engine', 'src'),
+  join('packages', 'domain-types', 'src'),
+  join('packages', 'notification-delivery', 'src'),
+  join('packages', 'object-storage', 'src'),
+  join('packages', 'observability', 'src'),
+  join('packages', 'ui', 'src'),
+  join('packages', 'validation', 'src'),
 ]);
 
 /** Extensions that can carry runtime code. */

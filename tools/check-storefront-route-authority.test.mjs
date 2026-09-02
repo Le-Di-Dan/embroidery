@@ -100,14 +100,47 @@ describe('check-storefront-route-authority', () => {
     assert.match(failures, /`Category query key` is "danh-muc", expected "category"/);
   });
 
-  it('rejects removing a fixed category slug', () => {
+  /**
+   * The case that stood here — "rejects removing a fixed category slug" —
+   * asserted the gate failed when `| \`Category slugs\` | \`thu-bong, khan,
+   * quan-ao, khac\` |` lost a value. `APP12-C01-C1` deleted that fact and that
+   * assertion, correctly: a governance tool holding the category list is a
+   * second category authority, and it would fail the build for a data change.
+   * The **test** kept its copy of the four slugs and went red against a fact
+   * table that no longer has the row (`APP12-C03`).
+   *
+   * These two replace it. Together they pin both halves of §24: the gate must
+   * hold the *structural* category rule, and must stay silent about which
+   * categories exist.
+   */
+  it('rejects abandoning the database as the category value source of truth', () => {
     const failures = failuresFor('phase', (text) =>
       text.replace(
-        '| `Category slugs` | `thu-bong, khan, quan-ao, khac` |',
-        '| `Category slugs` | `thu-bong, khan, quan-ao` |',
+        '| `Category value source of truth` | `DATABASE` |',
+        '| `Category value source of truth` | `CONTRACT_ENUM` |',
       ),
     );
-    assert.match(failures, /`Category slugs` is "thu-bong, khan, quan-ao"/);
+    assert.match(
+      failures,
+      /`Category value source of truth` is "CONTRACT_ENUM", expected "DATABASE"/,
+    );
+  });
+
+  it('says nothing about which categories exist', () => {
+    // A category published, renamed or archived is a row change. No governance
+    // document may have to be edited for one, and this asserts the gate cannot
+    // become the thing that must be: neither the tool nor its expectations may
+    // name a slug value.
+    const source = readFileSync(
+      join(REPO_ROOT, 'tools/check-storefront-route-authority.mjs'),
+      'utf8',
+    );
+    const code = source.replaceAll(/\/\*[\s\S]*?\*\//g, '').replaceAll(/\/\/[^\n]*/g, '');
+
+    for (const slug of ['thu-bong', 'quan-ao', 'ao-thun']) {
+      assert.ok(!code.includes(slug), `the gate names the category value "${slug}"`);
+    }
+    assert.equal(EXPECTED.categorySlugs, undefined);
   });
 
   it('rejects requiring an S01 card link before S02 route authority', () => {

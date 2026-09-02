@@ -1,3 +1,5 @@
+import { cache } from 'react';
+
 import {
   publicCategoryList,
   type PublicCategoryInventoryItemResponse,
@@ -38,7 +40,7 @@ import { getServerApiClient } from '../../../config/server-api-client';
  * there must fail the whole file rather than emit a partial one
  * (`sitemap-inventory.server.ts`).
  */
-export async function fetchCategoryInventoryOnServer(): Promise<
+async function readCategoryInventory(): Promise<
   readonly PublicCategoryInventoryItemResponse[] | undefined
 > {
   try {
@@ -48,3 +50,20 @@ export async function fetchCategoryInventoryOnServer(): Promise<
     return undefined;
   }
 }
+
+/**
+ * The request-scoped inventory read (`APP12-C03`).
+ *
+ * Next.js calls `generateMetadata` and the page component separately for one
+ * browser request, and both need the same inventory: the head needs the
+ * selected category's `name` and `isIndexable`, the body needs the chip row and
+ * the membership test. React's `cache()` makes the two calls one API request,
+ * exactly as `loadProductDetail` does for the Product Detail route — so the
+ * head and the body can never describe two different reads of the taxonomy, and
+ * a dynamic category costs one round trip per render rather than one per
+ * consumer.
+ *
+ * The memo is per request, not a cache: a new request asks the API again, which
+ * is what keeps a category published a minute ago visible a minute ago.
+ */
+export const fetchCategoryInventoryOnServer = cache(readCategoryInventory);

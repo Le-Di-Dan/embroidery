@@ -78,3 +78,24 @@ export function toDiscoverChips(categories: readonly DiscoverCategory[]): readon
 export function isKnownCategory(categories: readonly DiscoverCategory[], slug: string): boolean {
   return categories.some((category) => category.slug === slug);
 }
+
+/**
+ * The inventory row for `slug`, or `undefined` when the inventory does not
+ * carry it (`APP12-C03`).
+ *
+ * `isKnownCategory` answers *whether* a slug is selectable; this answers *what*
+ * the selected category is. The metadata builder needs the row itself — the
+ * operator's `name` for the title and `isIndexable` for the robots directive —
+ * and reading it from the same fetched inventory the chips are built from is
+ * what keeps the head, the chip row and the sitemap describing one category.
+ *
+ * Nothing here decides which categories exist, and nothing may reconstruct a
+ * name from a slug: an absent row is `undefined`, never a fabricated category.
+ */
+export function findDiscoverCategory(
+  categories: readonly DiscoverCategory[] | undefined,
+  slug: string | undefined,
+): DiscoverCategory | undefined {
+  if (categories === undefined || slug === undefined) return undefined;
+  return categories.find((category) => category.slug === slug);
+}

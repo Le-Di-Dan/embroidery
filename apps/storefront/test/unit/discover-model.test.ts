@@ -7,6 +7,7 @@
  * tested without a DOM, independently of how any component renders them.
  */
 import {
+  findDiscoverCategory,
   isKnownCategory,
   toDiscoverChips,
   type DiscoverCategory,
@@ -16,6 +17,7 @@ import {
   nextCursorOf,
   toDiscoverCard,
 } from '../../src/features/product-discovery/model/discover-feed';
+import { discoverCategoryTitle } from '../../src/features/product-discovery/model/discover-copy';
 import { discoverQueryKeys } from '../../src/features/product-discovery/model/discover-query-keys';
 import {
   buildDiscoverHref,
@@ -102,6 +104,26 @@ describe('Discover categories are the database inventory', () => {
     // it is not a category.
     expect(isKnownCategory(INVENTORY, 'thu-bong')).toBe(false);
     expect(isKnownCategory([], 'mu-luoi-trai')).toBe(false);
+  });
+
+  it('resolves the selected row so the head can read its name and indexability', () => {
+    expect(findDiscoverCategory(INVENTORY, 'tui-vai')?.name).toBe('Túi vải');
+    expect(findDiscoverCategory(INVENTORY, 'tui-vai')?.isIndexable).toBe(false);
+  });
+
+  it('resolves nothing for "all", for an absent row, or for an unknown inventory', () => {
+    // Each of the three is a different question with the same safe answer:
+    // there is no category to describe, and none may be fabricated.
+    expect(findDiscoverCategory(INVENTORY, undefined)).toBeUndefined();
+    expect(findDiscoverCategory(INVENTORY, 'khong-ton-tai')).toBeUndefined();
+    expect(findDiscoverCategory(undefined, 'tui-vai')).toBeUndefined();
+  });
+
+  it('builds a category title from the row name, never from the slug', () => {
+    expect(discoverCategoryTitle('Mũ lưỡi trai')).toBe('Mũ lưỡi trai — Khám phá');
+    // A renamed category retitles the page with no source change; the slug is
+    // not an input, so it cannot leak into a title.
+    expect(discoverCategoryTitle('Mũ lưỡi trai cao cấp')).toBe('Mũ lưỡi trai cao cấp — Khám phá');
   });
 });
 

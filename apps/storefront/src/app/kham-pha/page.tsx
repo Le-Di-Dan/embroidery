@@ -12,6 +12,8 @@ import {
   nextCursorOf,
   resolveDiscoverSelection,
   selectionSlug,
+  findDiscoverCategory,
+  discoverCategoryTitle,
   buildDiscoverHref,
   type DiscoverSearchParams,
 } from '../../features/product-discovery';
@@ -53,21 +55,55 @@ interface DiscoverPageProps {
  * not-found boundary in the page component below, which is where a malformed
  * category has always been answered.
  *
+ * ## The title and the indexing directive are the category's own (`APP12-C03`)
+ *
+ * A selected category contributes its `name` to the title and its
+ * `isIndexable` to the robots directive, both read from the row this request
+ * already fetched. Neither is invented: there is no category SEO copy in this
+ * system, so a description rebuilt from a slug would be marketing text written
+ * by a build step, and the shared Discover description stays.
+ *
+ * `isIndexable=false` is the operator saying *do not index this filter*, and
+ * until now only the sitemap heard it — the page itself carried no directive,
+ * so a crawler following the chip indexed it anyway. `noindex, follow` closes
+ * that: the category stays a first-class customer filter, keeps its chip, its
+ * breadcrumb and its self-canonical, and is simply not indexed. Indexability is
+ * not visibility.
+ *
+ * When the inventory could not be read the directive is **omitted** rather than
+ * defaulted to `noindex`. An unreadable inventory is *unknown*, not *not
+ * indexable*, and a momentary API blip must not be able to ask a crawler to drop
+ * a real category page — the same reason the selection falls back to slug
+ * syntax instead of 404ing.
+ *
  * Layout, query behaviour and the feed itself are untouched.
  */
 export async function generateMetadata({ searchParams }: DiscoverPageProps): Promise<Metadata> {
   const [params, categories] = await Promise.all([searchParams, fetchCategoryInventoryOnServer()]);
   const selection = resolveDiscoverSelection(params, categories);
+  const selectedSlug = selectionSlug(selection);
+  const selectedCategory = findDiscoverCategory(categories, selectedSlug);
 
-  return publicPageMetadata({
-    // An invalid selection renders the not-found surface, which carries its own
-    // head; canonicalising it to the unfiltered feed here would be the closest
-    // thing to a redirect this checkpoint is allowed to emit, and it would
-    // reward a mistyped link with a real URL.
-    path: buildDiscoverHref(selectionSlug(selection)),
-    title: `${DISCOVER_COPY.heading} — Xưởng Thêu`,
-    description: DISCOVER_COPY.intro,
-  });
+  return {
+    ...publicPageMetadata({
+      // An invalid selection renders the not-found surface, which carries its own
+      // head; canonicalising it to the unfiltered feed here would be the closest
+      // thing to a redirect this checkpoint is allowed to emit, and it would
+      // reward a mistyped link with a real URL.
+      path: buildDiscoverHref(selectedSlug),
+      title: `${
+        selectedCategory === undefined
+          ? DISCOVER_COPY.heading
+          : discoverCategoryTitle(selectedCategory.name)
+      } — Xưởng Thêu`,
+      description: DISCOVER_COPY.intro,
+    }),
+    // Applied after the public block so it can never be overwritten by it, the
+    // same composition the Product and gallery detail routes use.
+    ...(selectedCategory === undefined
+      ? {}
+      : { robots: { index: selectedCategory.isIndexable, follow: true } }),
+  };
 }
 
 /**

@@ -202,6 +202,38 @@ RESERVATION       = created at durable order creation
 `APP12-P01` is documentation authority only: it changed no runtime source, no
 migration, no OpenAPI, no generated client, no Figma, no category data.
 
+### 0.9 Category lifecycle scope and deferred transitions (Product Owner, `APP12-C03`)
+
+The category lifecycle delivered in APP12 is, and remains:
+
+```text
+DRAFT -> PUBLISHED -> ARCHIVED
+```
+
+`LC-04` additionally authorises `ARCHIVED -> PUBLISHED` (relist) and
+`DRAFT -> ARCHIVED`. Neither is delivered in APP12, and `APP12-C02` correctly
+refuses both. The Product Owner has ruled on the follow-up that recorded the
+gap:
+
+```text
+FU-APP12-C02-01 = NONBLOCKING_DEFERRED_PRODUCT_DECISION
+OWNER           = POST_APP12_PRODUCT_BACKLOG
+```
+
+Not ownerless, and not an APP12 checkpoint. The reason is that a relist is a
+product question before it is an engineering one — what becomes of the products
+left behind under an archived category has no answer in any current business
+rule — and answering it inside APP12 would expand a locked 38-checkpoint scope
+for something Wave-1 production readiness does not need.
+
+`FU-APP12-C02-02` (audit and outbox rows left in the **development** database by
+C02's live run, which the append-only triggers correctly refuse to delete) is
+development-environment audit history. It is informational, owned by the same
+backlog, and is not a release blocker.
+
+No APP12 checkpoint may implement either transition without a new Product Owner
+ruling recorded here.
+
 ### 0.8 Canonical checkpoint status
 
 Exactly one checkpoint may be `NEXT`. Statuses come from
@@ -219,9 +251,9 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 6·C1 | `APP12-C01-C1` | Database category source-of-truth correction | `COMPLETE` |
 | 7 | `APP12-C02` | Admin category management authority (**MANDATORY**) | `COMPLETE` |
 | 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | `NOT_STARTED` |
-| 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | **`NEXT`** |
+| 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | `COMPLETE` |
 | 10 | `APP12-G03` | Representative UAT dataset | `NOT_STARTED` |
-| 11 | `APP12-B01` | Public purchasable SKU projection | `NOT_STARTED` |
+| 11 | `APP12-B01` | Public purchasable SKU projection | **`NEXT`** |
 | 12 | `APP12-B02` | Ready-Made order creation and reservation | `NOT_STARTED` |
 | 13 | `APP12-B03` | Admin shipping fee, total freeze, FULL obligation lifecycle | `NOT_STARTED` |
 | 14 | `APP12-B04` | ORDER_ACCESS read and FULL payment composition | `NOT_STARTED` |

@@ -14,7 +14,7 @@ export {
   DISCOVER_CATEGORY_QUERY_KEY,
   buildDiscoverHref,
 } from './model/discover-route';
-export { DISCOVER_COPY } from './model/discover-copy';
+export { DISCOVER_COPY, discoverCategoryTitle } from './model/discover-copy';
 export { discoverQueryKeys } from './model/discover-query-keys';
 export { nextCursorOf } from './model/discover-feed';
 // The public-product card projection. Exposed for the Homepage's Featured
@@ -32,7 +32,11 @@ export type { DiscoverSelection, DiscoverSearchParams } from './model/discover-s
 // more, because there is no longer one to export: `DISCOVER_CATEGORY_SLUGS` and
 // `toDiscoverCategorySlug` were a second taxonomy and are gone.
 export type { DiscoverCategory, DiscoverChip } from './model/discover-categories';
-export { toDiscoverChips, isKnownCategory } from './model/discover-categories';
+export {
+  toDiscoverChips,
+  isKnownCategory,
+  findDiscoverCategory,
+} from './model/discover-categories';
 // Slug **shape**, which is a rule this app owns, unlike the slug **values**,
 // which it does not. Product Detail uses it to reject a malformed category on a
 // Product response before building an href from it.

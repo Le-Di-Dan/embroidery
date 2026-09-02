@@ -57,6 +57,21 @@ export const DISCOVER_COPY = {
   },
 } as const;
 
+/**
+ * The metadata title stem for a category-filtered Discover feed (`APP12-C03`).
+ *
+ * The category half is `category.name` — the operator's own text, read from the
+ * row — never a label rebuilt from the slug and never invented SEO copy. The
+ * Discover heading stays in the title so a filtered feed still reads as part of
+ * `Khám phá` rather than as a page of its own.
+ *
+ * Deterministic: one category produces one title on every render, so two crawls
+ * of the same URL never disagree.
+ */
+export function discoverCategoryTitle(categoryName: string): string {
+  return `${categoryName} — ${DISCOVER_COPY.heading}`;
+}
+
 /** Alt text for a product thumbnail, derived from the product name only. */
 export function thumbnailAlt(productName: string): string {
   return productName;

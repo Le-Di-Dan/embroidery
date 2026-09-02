@@ -30,10 +30,7 @@ import {
 
 import { QuotationWorkbenchScreen } from '../../src/features/request-quotation';
 import { REQUEST_QUOTATION_COPY as COPY } from '../../src/features/request-quotation/model/request-quotation-copy';
-import {
-  presentRequestStatus,
-  UNKNOWN_REQUEST_STATUS_LABEL,
-} from '../../src/shared/presentation/request-status';
+import { presentRequestStatus } from '../../src/shared/presentation/request-status';
 import { makeApiClientError } from '../support/api-error';
 import {
   envelope,

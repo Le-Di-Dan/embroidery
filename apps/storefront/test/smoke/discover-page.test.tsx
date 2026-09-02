@@ -260,4 +260,71 @@ describe('/kham-pha server rendering', () => {
 
     expect(metadata.alternates?.canonical).toBe('https://example.test/kham-pha?category=ao-khoac');
   });
+
+  it('titles a category state with the operator name, never one rebuilt from the slug', async () => {
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    const metadata = await generateMetadata({
+      searchParams: Promise.resolve({ category: 'mu-luoi-trai' }),
+    });
+
+    // The name comes from the row. Renaming the category renames the title with
+    // no deployment, and no slug is ever title-cased into a label.
+    expect(metadata.title).toBe('Mũ lưỡi trai — Khám phá — Xưởng Thêu');
+    expect(metadata.openGraph?.title).toBe('Mũ lưỡi trai — Khám phá — Xưởng Thêu');
+  });
+
+  it('asks crawlers not to index a published non-indexable category, and still shows it', async () => {
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    const metadata = await generateMetadata({
+      searchParams: Promise.resolve({ category: 'tui-vai' }),
+    });
+
+    // `noindex, follow`: indexability is not visibility. The chip, the feed and
+    // the self-canonical all stay; only the index invitation is withdrawn — the
+    // half the sitemap could not say on its own (`APP12-C03`).
+    expect(metadata.robots).toEqual({ index: false, follow: true });
+    expect(metadata.alternates?.canonical).toBe('https://example.test/kham-pha?category=tui-vai');
+
+    const markup = renderToStaticMarkup(
+      await DiscoverPage({ searchParams: Promise.resolve({ category: 'tui-vai' }) }),
+    );
+    expect(markup).toContain('Túi vải');
+  });
+
+  it('invites indexing of a published indexable category', async () => {
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    const metadata = await generateMetadata({
+      searchParams: Promise.resolve({ category: 'mu-luoi-trai' }),
+    });
+
+    expect(metadata.robots).toEqual({ index: true, follow: true });
+  });
+
+  it('emits no indexing directive for the unfiltered feed', async () => {
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    const metadata = await generateMetadata({ searchParams: Promise.resolve({}) });
+
+    // `/kham-pha` is not a category and has no operator indexability decision;
+    // inventing one here would make this file the store's robots authority.
+    expect(metadata.robots).toBeUndefined();
+    expect(metadata.title).toBe('Khám phá — Xưởng Thêu');
+  });
+
+  it('withholds the directive rather than guessing noindex when the inventory is unreadable', async () => {
+    process.env.STOREFRONT_PUBLIC_ORIGIN = 'https://example.test';
+    categoryMock.mockRejectedValue(new Error('inventory unavailable'));
+
+    const metadata = await generateMetadata({
+      searchParams: Promise.resolve({ category: 'mu-luoi-trai' }),
+    });
+
+    // Unknown is not "not indexable". A momentary API blip must not be able to
+    // ask a crawler to drop a real category page, and the canonical still holds
+    // because the slug shape is a rule this app owns.
+    expect(metadata.robots).toBeUndefined();
+    expect(metadata.alternates?.canonical).toBe(
+      'https://example.test/kham-pha?category=mu-luoi-trai',
+    );
+    expect(metadata.title).toBe('Khám phá — Xưởng Thêu');
+  });
 });

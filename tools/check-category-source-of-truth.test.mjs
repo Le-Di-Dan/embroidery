@@ -7,15 +7,34 @@
  * takes, and the shapes that merely mention a category and must stay legal.
  */
 import assert from 'node:assert/strict';
+import { existsSync, readdirSync } from 'node:fs';
+import { join, sep } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
   BANNED_IMPORT_FRAGMENTS,
+  collectSourceFiles,
   BANNED_SYMBOLS,
   inspectFile,
   LIST_THRESHOLD,
+  REPO_ROOT,
+  SCANNED_ROOTS,
   withoutComments,
 } from './check-category-source-of-truth.mjs';
+
+/**
+ * Workspaces that are not production runtime and are deliberately unscanned:
+ * the three fixture/harness packages and the four configuration packages.
+ */
+const EXEMPT_WORKSPACES = new Set([
+  'packages/test-utils',
+  'packages/frontend-testing',
+  'packages/e2e-testing',
+  'packages/eslint-config',
+  'packages/prettier-config',
+  'packages/typescript-config',
+  'packages/styles',
+]);
 
 const FILE = 'apps/storefront/src/features/product-discovery/model/example.ts';
 
@@ -147,5 +166,50 @@ describe('comment stripping', () => {
     assert.ok(!stripped.includes('khan'));
     assert.ok(stripped.includes('const a = 1;'));
     assert.ok(stripped.includes('const b = 2;'));
+  });
+});
+
+describe('coverage of the production runtime roots (APP12-C03)', () => {
+  it('scans every workspace that ships runtime code', () => {
+    // Read from the filesystem rather than restated here: a list written into a
+    // test is a second answer to the same question, and the failure this guards
+    // against is precisely a new package the gate never learned about.
+    const workspaces = [
+      ...readdirSync(join(REPO_ROOT, 'apps'), { withFileTypes: true }).map((entry) =>
+        join('apps', entry.name),
+      ),
+      ...readdirSync(join(REPO_ROOT, 'packages'), { withFileTypes: true }).map((entry) =>
+        join('packages', entry.name),
+      ),
+    ].filter((workspace) => existsSync(join(REPO_ROOT, workspace, 'src')));
+
+    const missing = workspaces.filter(
+      (workspace) =>
+        !EXEMPT_WORKSPACES.has(workspace.split(sep).join('/')) &&
+        !SCANNED_ROOTS.includes(join(workspace, 'src')),
+    );
+
+    assert.deepEqual(missing, [], `unscanned production runtime root(s): ${missing.join(', ')}`);
+  });
+
+  it('exempts only test-fixture and configuration workspaces', () => {
+    // The exemptions are the ones §25 requires: a gate that scanned fixtures
+    // would mistake test data for authority, which is the same category error
+    // it exists to prevent. Everything else on the list ships no runtime source
+    // at all, which the filesystem is asked to confirm rather than the comment.
+    for (const workspace of EXEMPT_WORKSPACES) {
+      const shipsNoSource =
+        collectSourceFiles(join(REPO_ROOT, ...workspace.split('/'), 'src')).length === 0;
+      assert.ok(
+        /testing|test-utils|config$/.test(workspace) || shipsNoSource,
+        `${workspace} is exempt but ships production runtime source`,
+      );
+    }
+  });
+
+  it('scans a package that carries no category today', () => {
+    // The point of the widened list: `object-storage` has never named a
+    // category, and a taxonomy dropped into it must still fail.
+    assert.ok(SCANNED_ROOTS.includes(join('packages', 'object-storage', 'src')));
   });
 });
