@@ -2,12 +2,20 @@
  * The human order code (`COL-TBL043-02`, CST-030 family, `APP7-W01` §13).
  *
  * `ORD-` plus ten characters over the `G01-D12` alphabet, drawn by the **same**
- * mechanism `REQ-` and `QUO-` use — `@embroidery/domain-types`, promoted here by
- * this checkpoint because the order code is the third consumer and the first one
- * outside `apps/api` (`FU-APP6-B01-CODE-GENERATOR-PROMOTION-01`, closed).
+ * mechanism `REQ-` and `QUO-` use (`FU-APP6-B01-CODE-GENERATOR-PROMOTION-01`,
+ * closed). There is no second alphabet and no second mechanism: this file
+ * contributes a prefix and nothing else.
  *
- * There is no second alphabet and no second mechanism: this file contributes a
- * prefix and nothing else.
+ * ## Why it sits beside `human-code.ts` (`APP12-B02`)
+ *
+ * It was delivered inside `apps/worker`, where `APP7-W01` was the only writer
+ * that minted an order code. `APP12-B02` makes `apps/api` the second: a
+ * Ready-Made order is created synchronously by a public command and needs the
+ * same `ORD-` code under the same `uq_orders__code` arbiter. Two copies of one
+ * format sharing one uniqueness constraint is how two writers start drawing
+ * from different alphabets, so the file was **moved rather than duplicated** —
+ * the rule `reservation-requirements.ts` already follows under `IMP-D054`.
+ * Nothing about the format changed.
  *
  * Like its two siblings the code is **never an authorization input**. It is a
  * public-facing identifier an Admin and a customer can read aloud, and nothing
@@ -25,7 +33,7 @@ import {
   HUMAN_CODE_BODY_LENGTH,
   humanCodePattern,
   type RandomBytesSource,
-} from '@embroidery/domain-types';
+} from './human-code';
 
 /** The `G01-D12` alphabet, unchanged. */
 export const ORDER_CODE_ALPHABET = HUMAN_CODE_ALPHABET;

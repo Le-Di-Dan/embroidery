@@ -38,16 +38,19 @@ import {
 } from './wave2-operation-authority';
 
 /**
- * The counts `APP12-G01` fixed, as `APP12-C01` extended them. Written as
- * literals so a drift is a failure.
+ * The counts `APP12-G01` fixed, as `APP12-C01` and `APP12-B02` extended them.
+ * Written as literals so a drift is a failure.
  *
  * `APP12-C01` added exactly one public operation — `publicCategory_list`, the
- * dynamic category inventory — and classified it `ALLOW`. The withheld set is
- * untouched: 43 -> 44 public, 12 -> 13 allowed, 31 denied either way.
+ * dynamic category inventory — and classified it `ALLOW`: 43 -> 44 public,
+ * 12 -> 13 allowed. `APP12-B02` added exactly one more —
+ * `publicReadyMadeOrder_create`, the Ready-Made order command — and classified
+ * it `ALLOW` because Ready-Made direct commerce **is** Wave 1: 44 -> 45 public,
+ * 13 -> 14 allowed. The withheld set is untouched by both: 31 denied throughout.
  */
-const AUTHORITY_PUBLIC_OPERATIONS = 44;
+const AUTHORITY_PUBLIC_OPERATIONS = 45;
 const AUTHORITY_DENY = 31;
-const AUTHORITY_ALLOW = 13;
+const AUTHORITY_ALLOW = 14;
 
 /** Nest's own metadata key for a handler's route path. */
 const PATH_METADATA = 'path';
@@ -151,7 +154,7 @@ describe('Wave-2 API release gate', () => {
       expect(WAVE2_WITHHELD_PUBLIC_OPERATIONS.size).toBe(AUTHORITY_DENY);
     });
 
-    it('releases exactly the 12 operations APP12-G01 classified ALLOW', () => {
+    it('releases exactly the 14 operations the authority classifies ALLOW', () => {
       expect(WAVE1_RELEASED_PUBLIC_OPERATIONS.size).toBe(AUTHORITY_ALLOW);
     });
 
@@ -223,7 +226,7 @@ describe('Wave-2 API release gate', () => {
       expect(body).not.toContain(withheld?.operationId ?? '');
     });
 
-    it('admits every one of the 12 released public operations', () => {
+    it('admits every one of the 14 released public operations', () => {
       const denied = handlers
         .filter((handler) => WAVE1_RELEASED_PUBLIC_OPERATIONS.has(handler.operationId))
         .filter((handler) => {
@@ -237,6 +240,22 @@ describe('Wave-2 API release gate', () => {
         .map((handler) => handler.operationId);
 
       expect(denied).toEqual([]);
+    });
+
+    /**
+     * `APP12-B02` §42, asserted by name rather than only as a member of the
+     * set above. Ready-Made direct commerce **is** Wave 1, so the operation that
+     * creates the order has to work while custom embroidery is withheld — and a
+     * regression that reclassified it would otherwise only show up as a count.
+     */
+    it('admits the Ready-Made order command while custom embroidery is withheld', () => {
+      const handler = handlers.find(
+        (candidate) => candidate.operationId === 'publicReadyMadeOrder_create',
+      );
+      expect(handler).toBeDefined();
+      expect(WAVE1_RELEASED_PUBLIC_OPERATIONS.has('publicReadyMadeOrder_create')).toBe(true);
+      expect(WAVE2_WITHHELD_PUBLIC_OPERATIONS.has('publicReadyMadeOrder_create')).toBe(false);
+      expect(guard.canActivate(contextFor(handler as RouteHandler))).toBe(true);
     });
 
     /**

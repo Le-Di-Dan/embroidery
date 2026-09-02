@@ -280,6 +280,62 @@ Automated suites are unaffected: they already run against a **disposable**
 PostgreSQL the harness provisions and drops, which is why this rule is about live
 gateway evidence only.
 
+### 3A.5 `SHARED_DEV_DB_COMMERCIAL_WRITE_POLICY` (`APP12-B02`)
+
+Locked by the Product Owner at `APP12-B02` after live evidence for the
+Ready-Made order command created a **retain-forever** commercial record in the
+shared development database.
+
+§3A.4 above assumes a bounded fixture can always be removed again. For one class
+of row that assumption is false, and it is false **by design**:
+
+```text
+orders, order_items, payment_obligations, payment_attempts,
+inventory_reservations, inventory_ledger_entries, approval_snapshots
+```
+
+`order_items` carries the S24 delete policy `reject` with no operator exemption
+(migration `0030`), and `tools/db-retention.mjs` refuses commercial families
+outright — *"`retain` families (orders, payments, ledger, snapshots) are
+deliberately absent: they are not deletable regardless of the trigger's
+exemption."* Those protections are correct and are never weakened to tidy up
+after a test.
+
+The rule that follows is therefore about **where** such evidence runs, not about
+how it is cleaned:
+
+```text
+A checkpoint may not use the shared development database for live validation
+that creates an immutable or retain-forever commercial record.
+
+Commercial live validation runs on a DISPOSABLE database, always.
+```
+
+Consequences:
+
+- **Row-level cleanup is the wrong abstraction** for this class. Database-level
+  disposability is the right one: nothing has to be deleted, because the whole
+  database is dropped. A cleanup script that has to reach a frozen row has
+  already failed.
+- **Reuse the delivered harness.** `createDisposableDatabase` provisions a
+  pid-scoped database, applies the full migration chain, drops it on setup
+  failure, and exposes an idempotent `drop()`. `createApiIntegrationContext`
+  boots the real `AppModule` against it and pushes `drop database` first onto a
+  `CleanupStack` so it runs last, including from the failure path. It also calls
+  `assertDisposableName`, which refuses to point at the persistent database at
+  all. Extend that context rather than inventing a second harness.
+- **Teardown is structural, not remembered.** The drop belongs in
+  `finally`/`afterAll`, so a failing assertion still removes the database.
+- **The authorised persistent commercial dataset is `APP12-G03`'s**, under its
+  own authority. Before G03 there is no authorised persistent commercial
+  fixture; after G03, ad-hoc checkpoint orders still must not be written into
+  it.
+
+If a live surface genuinely cannot be exercised without writing a commercial
+record and no disposable environment can host it, the checkpoint reports
+`BLOCKED_CLEAN_DEV_REBUILD` rather than writing to the shared database and
+planning to clean up afterwards.
+
 ---
 
 ## 4. Previously closed checkpoints

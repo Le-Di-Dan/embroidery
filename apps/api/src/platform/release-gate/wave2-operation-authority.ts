@@ -4,8 +4,9 @@
  * This file is the **runtime transcription** of
  * `docs/implementation/APP12-RELEASE-WAVE-AUTHORITY.md` §3 and §7. The authority
  * document classified all public OpenAPI operations mechanically: **31** `DENY`
- * in Wave 1 and — since `APP12-C01` added the public category inventory — **13**
- * `ALLOW`, over **44** public operations. Both sets are written out here in full
+ * in Wave 1 and — since `APP12-C01` added the public category inventory and
+ * `APP12-B02` the Ready-Made order command — **14** `ALLOW`, over **45**
+ * public operations. Both sets are written out here in full
  * rather than derived from a prefix, because a prefix rule is exactly how
  * `publicProductPlacement_get` (custom) and `publicProduct_detail` (Wave-1
  * catalog) end up on the same side of a gate.
@@ -24,7 +25,7 @@
  * accidentally withhold something released", which is the more expensive
  * mistake: denying `publicVerification_*` denies Ready-Made checkout and
  * therefore denies Wave 1 (§3.1). Listing both sets lets one test assert that
- * the union is exactly the 44 public operations the contract publishes, so an
+ * the union is exactly the 45 public operations the contract publishes, so an
  * operation added by a later checkpoint cannot slip through unclassified.
  */
 
@@ -95,7 +96,7 @@ export const WAVE2_WITHHELD_PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The 13 released public operations.
+ * The 14 released public operations.
  *
  * Present so a false denial is a test failure rather than a support ticket. Two
  * of these groups are the ones §4 rule 4 warns about — "deny the capability, not
@@ -131,6 +132,13 @@ export const WAVE1_RELEASED_PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
 
   // The sitemap inventory behind /sitemap.xml.
   'publicSitemapEntry_list',
+
+  // The Ready-Made order-creation command (`APP12-B02`). Wave 1 by definition:
+  // Ready-Made direct commerce **is** Wave 1, and withholding the operation
+  // that creates the order would withhold the wave. It names no custom
+  // capability — no request, no quotation, no design, no session, no deposit —
+  // and its subject is a SKU, which only Wave 1 sells.
+  'publicReadyMadeOrder_create',
 
   // Contact verification — the shared identity primitive (§3.1).
   'publicVerification_issue',

@@ -18,17 +18,14 @@
  */
 import {
   generateHumanCode,
+  generateOrderCode,
   HUMAN_CODE_ALPHABET,
   HUMAN_CODE_BODY_LENGTH,
-} from '@embroidery/domain-types';
-
-import {
-  generateOrderCode,
   ORDER_CODE_ALPHABET,
   ORDER_CODE_LENGTH,
   ORDER_CODE_PATTERN,
   ORDER_CODE_PREFIX,
-} from './order-code';
+} from '@embroidery/domain-types';
 
 describe('promoted human-code mechanism', () => {
   it('keeps the G01-D12 alphabet and length exactly', () => {

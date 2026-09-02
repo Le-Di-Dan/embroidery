@@ -3,6 +3,7 @@ import { DatabaseModule } from '@embroidery/persistence';
 
 import { AssetInspectionModule } from '../jobs/asset-inspection/asset-inspection.module';
 import { IntakeCleanupModule } from '../jobs/app5-intake-cleanup/intake-cleanup.module';
+import { ReadyMadeReservationExpiryModule } from '../jobs/ready-made-reservation-expiry/reservation-expiry.module';
 import { AssetNormalizationModule } from '../jobs/asset-normalization/asset-normalization.module';
 import { InventoryReservationModule } from '../jobs/inventory-reservation/inventory-reservation.module';
 import { NotificationDeliveryModule } from '../jobs/notification-delivery/notification-delivery.module';
@@ -61,6 +62,13 @@ import { WorkerObjectStorageModule } from '../storage/object-storage.module';
     // clock and the storage client but registers nothing with the handler
     // registry, so it cannot affect what the poll loop claims.
     IntakeCleanupModule,
+    // `ReadyMadeReservationExpiryModule` (`APP12-B02`) is the second sweep and
+    // the second non-outbox capability. `BR-025` gives a Ready-Made reservation
+    // a 24-hour pre-payment window, and `BR-026` requires that window to
+    // actually release stock and cancel the order — a timestamp with no
+    // consumer is not production behaviour. It registers no handler either, so
+    // the claim filter is unchanged.
+    ReadyMadeReservationExpiryModule,
   ],
 })
 export class WorkerModule {}

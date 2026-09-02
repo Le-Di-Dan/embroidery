@@ -64,6 +64,7 @@ export function toReservation(row: ReservationRow): Reservation {
     orderId: row.orderId,
     quantity: row.quantity,
     status: row.status as InventoryReservationState,
+    expiresAt: row.expiresAt ?? undefined,
   };
 }
 
@@ -175,6 +176,99 @@ export async function applyRelease(
     onHandDelta: 0,
     reservationId: reservation.id,
     reason,
+    ...actorColumns(actor),
+  });
+}
+
+/**
+ * Locks one reservation and returns it only if it is **due to expire**
+ * (`BR-026`, `APP12-B02`).
+ *
+ * Beside the other two lock helpers because it makes the same kind of decision
+ * they do — which row may be terminalized — and takes the lock in the same
+ * order `APP8-B02` established: lock first, read state second.
+ *
+ * Three separate facts have to hold, and each of them is a way an expiry sweep
+ * could otherwise do damage:
+ *
+ * - the row is still `RESERVED` — a release or a consume that committed while
+ *   the sweep was reading its candidate list wins, and no second terminal
+ *   ledger entry is written for one reservation;
+ * - it carries an `expires_at` at all — a `CUSTOM` reservation is no-expiry by
+ *   `PO-APP8-002`, and a sweep that expired one would be rewriting a policy
+ *   decision it does not own;
+ * - that instant has actually passed by the caller's `now` — the window may
+ *   have been reset between the candidate read and this lock (`APP12-B03`
+ *   moves it to `shipping_fee_confirmed_at + 24h`), and a reservation whose
+ *   window was extended is not expired.
+ *
+ * Returns `undefined` when any of them fails, rather than throwing: for a
+ * sweep, a candidate that stopped being due is not an error, it is simply not
+ * this pass's work.
+ *
+ * @requiresTransaction
+ */
+export async function lockDueReservation(
+  tx: Transaction,
+  id: ReservationId,
+  now: Date,
+): Promise<Reservation | undefined> {
+  const [row] = await tx
+    .select()
+    .from(inventoryReservations)
+    .where(eq(inventoryReservations.id, id))
+    .limit(1)
+    .for('update');
+
+  if (row === undefined) {
+    return undefined;
+  }
+
+  const reservation = toReservation(row);
+  if (
+    reservation.status !== 'RESERVED' ||
+    reservation.expiresAt === undefined ||
+    reservation.expiresAt > now
+  ) {
+    return undefined;
+  }
+  return reservation;
+}
+
+/**
+ * Writes `RESERVED → EXPIRED` and its ledger entry, under the caller's lock.
+ *
+ * A sibling of {@link applyRelease}, not a variant of it. `EXPIRED` is what
+ * LC-17 calls the *automatic* terminal move, and the schema says so:
+ * `ck_inventory_reservations__released_reason_required` demands a
+ * `released_reason` for `RELEASED` and demands none for `EXPIRED`, because the
+ * elapsed window **is** the reason and inventing a sentence to put in the
+ * column would add no fact. The ledger entry is `RESERVATION_EXPIRED`, which is
+ * the vocabulary `INVENTORY_ENTRY_KINDS` already carries.
+ *
+ * No on-hand movement, for the same reason a release makes none: the quantity
+ * returns to availability and the goods never left (`BR-026`).
+ *
+ * @requiresTransaction — the caller must already hold this reservation's row lock.
+ */
+export async function applyExpiry(
+  tx: Transaction,
+  reservation: Reservation,
+  actor: InventoryActor,
+): Promise<void> {
+  const now = new Date();
+  await tx
+    .update(inventoryReservations)
+    .set({ status: 'EXPIRED', terminalizedAt: now, updatedAt: now })
+    .where(eq(inventoryReservations.id, reservation.id));
+
+  await tx.insert(inventoryLedgerEntries).values({
+    skuStockId: reservation.skuStockId,
+    entryKind: 'RESERVATION_EXPIRED',
+    quantity: reservation.quantity,
+    onHandDelta: 0,
+    reservationId: reservation.id,
+    orderId: reservation.orderId,
     ...actorColumns(actor),
   });
 }

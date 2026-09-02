@@ -174,10 +174,17 @@ export async function seedDepositPaidOrder(
 
   await executeRaw(
     db,
+    // `origin` is stated because `APP12-DB01` made the column `NOT NULL` with
+    // no default, deliberately, so every writer says which order shape it is
+    // creating. This fixture builds a **custom** order — it has a request, an
+    // accepted quotation and an approval snapshot, all three of which
+    // `ck_orders__custom_chain_by_origin` requires of `CUSTOM` and forbids to
+    // `READY_MADE`. Every API fixture was updated by DB01; this worker one was
+    // missed, and it is repaired here rather than worked around.
     sql`INSERT INTO orders
-          (id, code, custom_request_id, customer_id, accepted_quotation_version_id,
+          (id, code, origin, custom_request_id, customer_id, accepted_quotation_version_id,
            current_approval_snapshot_id, status, total_amount, currency_code)
-        VALUES (${ids.order}, ${`ORD-${ids.order}`}, ${ids.request}, ${ids.customer},
+        VALUES (${ids.order}, ${`ORD-${ids.order}`}, 'CUSTOM', ${ids.request}, ${ids.customer},
                 ${ids.quotationVersion}, ${ids.approval}, 'DEPOSIT_PAID', 1000000.00, 'VND')`,
   );
 

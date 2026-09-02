@@ -2,15 +2,13 @@
  * Drizzle implementation of the AGG-15 Order contract (TBL-043..TBL-049).
  */
 import { Injectable } from '@nestjs/common';
-import { guardViolationError, newId, notFoundError, schema } from '@embroidery/database';
+import { guardViolationError, newId, schema } from '@embroidery/database';
 import type { OrderState } from '@embroidery/database';
 import { DatabaseExecutor } from '../runtime/database-executor';
 import { DrizzleRepository } from '../repository/drizzle-repository';
 import { OutboxEventStore } from '../platform/outbox-event-store';
 import { asc, eq } from 'drizzle-orm';
 
-import { actorColumns } from './order-transition-actor';
-import { isLegalOrderTransition } from './order-transitions';
 import type { CustomRequestId, RequestActor } from './ordering-identity';
 import type {
   AcknowledgeShippingFeeInput,
@@ -29,6 +27,7 @@ import type {
 } from './order.repository';
 import { DrizzleOrderShippingRepository } from './drizzle-order-shipping.repository';
 import { OrderChainGuard } from './order-chain.guard';
+import { applyOrderTransition } from './order-transition-write';
 import { toItem, toOrder } from './order-row.mapper';
 
 const { orders, orderItems, orderTransitions } = schema;
@@ -205,78 +204,15 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     });
   }
 
+  /**
+   * The move itself is `applyOrderTransition` (`APP12-B02`); this method is the
+   * custom aggregate's mapping of its result. Both origins share one write, and
+   * each maps the returned row onto the aggregate its own consumers read.
+   */
   async transition(input: TransitionOrderInput): Promise<Order> {
     return this.run('transition', async () => {
       const tx = this.requireTransaction('transition');
-
-      const [current] = await tx
-        .select()
-        .from(orders)
-        .where(eq(orders.id, input.id))
-        .limit(1)
-        .for('update');
-
-      if (current === undefined) {
-        throw notFoundError('OrderRepository.transition', 'That order does not exist.');
-      }
-
-      const from = current.status as OrderState;
-      if (!isLegalOrderTransition(from, input.to)) {
-        throw guardViolationError(
-          'OrderRepository.transition',
-          'INVALID_TRANSITION',
-          'That status change is not allowed for this order.',
-        );
-      }
-
-      // `ck_orders__cancelled_reason_required` and
-      // `ck_orders__hold_reason_required` make a reason mandatory for these two
-      // moves. Checked here so the caller is told what is missing rather than
-      // getting a generic constraint failure — an order cancelled or held with
-      // no recorded reason is a customer conversation with no evidence behind
-      // it. The blank case is the application's: the CHECKs test NOT NULL.
-      const reasonRequired = input.to === 'CANCELLED' || input.to === 'ON_HOLD';
-      if (reasonRequired && (input.reason ?? '').trim() === '') {
-        throw guardViolationError(
-          'OrderRepository.transition',
-          'TRANSITION_REASON_REQUIRED',
-          'A reason is required for that status change.',
-        );
-      }
-
-      const now = new Date();
-      const [row] = await tx
-        .update(orders)
-        .set({
-          status: input.to,
-          cancelledReason:
-            input.to === 'CANCELLED' ? (input.reason ?? null) : current.cancelledReason,
-          // Cleared when the order resumes, so the column cannot describe a
-          // hold that has already been lifted.
-          holdReason: input.to === 'ON_HOLD' ? (input.reason ?? null) : null,
-          // Stamped with the move that causes them, so the columns cannot
-          // claim a delivery or completion that no transition explains.
-          deliveredAt: input.to === 'DELIVERED' ? now : current.deliveredAt,
-          completedAt: input.to === 'COMPLETED' ? now : current.completedAt,
-          updatedAt: now,
-        })
-        .where(eq(orders.id, input.id))
-        .returning();
-
-      await tx.insert(orderTransitions).values({
-        orderId: input.id,
-        fromStatus: from,
-        toStatus: input.to,
-        eventKind: input.eventKind ?? 'STATE_CHANGE',
-        ...actorColumns(input.actor),
-        reason: input.reason ?? null,
-        correlationId: input.correlationId,
-      });
-
-      if (row === undefined) {
-        throw notFoundError('OrderRepository.transition', 'That order does not exist.');
-      }
-      return toOrder(row);
+      return toOrder(await applyOrderTransition(tx, input));
     });
   }
 

@@ -15,6 +15,12 @@
  * `reservation-terminalization.ts`, because `APP8-B04` gave each of them a
  * second entry point keyed by (order, SKU) instead of by reservation id. One
  * write, two ways to name the row it acts on.
+ *
+ * `APP12-B02` adds the third terminal move, `RESERVED → EXPIRED`, and the
+ * optional `expires_at` that makes it reachable. Both are origin-scoped by the
+ * data rather than by a branch: a reservation with no `expires_at` — every
+ * custom one, by `PO-APP8-002` — can never be selected by the sweep or expired
+ * by {@link InventoryReservations.expireReservationIfDue}.
  */
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, schema } from '@embroidery/database';
@@ -34,7 +40,9 @@ import { actorColumns, InventoryCommitments } from './inventory-commitments';
 import { ReservationEligibilityGuard } from './reservation-eligibility.guard';
 import {
   applyConsume,
+  applyExpiry,
   applyRelease,
+  lockDueReservation,
   lockOrderReservation,
   lockReservedReservationById,
   reservationNotActive,
@@ -131,16 +139,33 @@ export class InventoryReservations extends DrizzleRepository {
     });
   }
 
+  /**
+   * Creates one official reservation against a locked stock anchor.
+   *
+   * `expiresAt` is optional and **absent means no expiry** — the delivered
+   * `PO-APP8-002` semantics for custom reservations, and the reason
+   * `inventory_reservations.expires_at` is nullable at all (`ADR-DB1-018` r3).
+   * `APP12-B02` is the first caller to supply one: `BR-025` gives a Ready-Made
+   * reservation a 24-hour pre-payment window measured from the order's own
+   * creation instant. The policy is the caller's — this writer stores the
+   * instant it is handed and computes no window of its own, because a window
+   * computed here would be a second copy of a business rule that already has a
+   * home.
+   *
+   * @requiresTransaction — rejects when available stock is short (G-DB7-26).
+   */
   async createReservation(input: {
     id: ReservationId;
     skuId: SkuId;
     orderId: string;
     quantity: number;
     actor: InventoryActor;
+    expiresAt?: Date | undefined;
   }): Promise<Reservation> {
     return this.run('createReservation', async () => {
       const tx = this.requireTransaction('createReservation');
-      // G-DB7-27/GRD-013 — same gate as `convertHold`.
+      // G-DB7-27/GRD-013 — same gate as `convertHold`, origin-aware since
+      // `APP12-B02`: a Ready-Made order has no deposit to satisfy.
       await this.eligibility.assertEligible(input.orderId, 'createReservation');
       const stock = await this.anchor.requireLocked(input.skuId, 'createReservation');
       await this.anchor.assertSufficient(stock, input.quantity, 'createReservation');
@@ -153,6 +178,7 @@ export class InventoryReservations extends DrizzleRepository {
           orderId: input.orderId,
           quantity: input.quantity,
           status: 'RESERVED',
+          expiresAt: input.expiresAt ?? null,
         })
         .returning();
 
@@ -294,6 +320,36 @@ export class InventoryReservations extends DrizzleRepository {
       }
 
       await applyRelease(tx, reservation, input.reason, input.actor);
+      return reservation;
+    });
+  }
+
+  /**
+   * Expires one reservation **if it is still due to expire** (`BR-026`).
+   *
+   * The three facts that make it due, and the lock they are read under, are
+   * `lockDueReservation`'s — beside every other terminal decision, for the
+   * reason that module states. This method is the transaction boundary and the
+   * write, and nothing else.
+   *
+   * Returns `undefined` when the candidate stopped being due between the
+   * sweep's unlocked read and this lock. That is an ordinary outcome rather
+   * than an error: the sweep re-reads the world every pass.
+   *
+   * @requiresTransaction
+   */
+  async expireReservationIfDue(input: {
+    id: ReservationId;
+    now: Date;
+    actor: InventoryActor;
+  }): Promise<Reservation | undefined> {
+    return this.run('expireReservationIfDue', async () => {
+      const tx = this.requireTransaction('expireReservationIfDue');
+      const reservation = await lockDueReservation(tx, input.id, input.now);
+      if (reservation === undefined) {
+        return undefined;
+      }
+      await applyExpiry(tx, reservation, input.actor);
       return reservation;
     });
   }

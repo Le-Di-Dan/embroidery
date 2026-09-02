@@ -3128,6 +3128,65 @@ export interface CreateQuotationDraftBody {
   stitchCount?: number;
 }
 
+/**
+ * Where the order is delivered. Vietnamese administrative shape, as shipping_details stores it. No fee, no carrier and no tracking: the operator sets those.
+ */
+export interface ReadyMadeOrderDelivery {
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  addressLine: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  district?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  province: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  recipientName: string;
+  /**
+   * @minLength 1
+   * @maxLength 32
+   */
+  recipientPhone: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  ward?: string;
+}
+
+/**
+ * Places one Ready-Made order for one SKU. The server resolves the customer, the price and the stock; no amount is accepted from the client.
+ */
+export interface CreateReadyMadeOrderBody {
+  /**
+   * A VERIFIED, unexpired SUBMISSION-purpose verification challenge. It authorizes the order and is also its idempotency scope: re-sending the same body replays the same result instead of creating a second order.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  challengeId: string;
+  delivery: ReadyMadeOrderDelivery;
+  /**
+   * How many units. Refused if it exceeds available stock at commit time.
+   * @maximum 100000
+   * @exclusiveMinimum 0
+   */
+  quantity: number;
+  /**
+   * The SKU to buy, from the public product variant read. Availability and price are re-resolved server-side; the values that read returned are advisory only.
+   * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+   */
+  skuId: string;
+}
+
 export interface CreateSkuBody {
   code: string;
   isActive: boolean;
@@ -5182,6 +5241,24 @@ export interface ReadinessStatusResponse {
   timestamp: string;
 }
 
+export interface ReadyMadeOrderSubtotalResponse {
+  /** Merchandise subtotal as numeric(14,2). A string, never a JSON number. */
+  amount: string;
+  /** The currency the amount is denominated in. */
+  currency: string;
+}
+
+export interface ReadyMadeOrderCreatedResponse {
+  /** Frozen merchandise subtotal — unit price x quantity. Excludes shipping. */
+  merchandiseSubtotal: ReadyMadeOrderSubtotalResponse;
+  /** Human order code. Quotable to support; never a credential. */
+  orderCode: string;
+  /** When the reserved stock is released if the order has not been paid for. Measured from the order's own creation instant. */
+  reservationExpiresAt: string;
+  /** Ready-Made lifecycle state. A new order always lands here: the operator has not yet set the shipping fee, so no payable total exists. */
+  status: string;
+}
+
 /**
  * Declines a REQUESTED merge case. A lifecycle decision only: no contact, grant, request, order or asset is touched, and neither Customer changes.
  */
@@ -6704,6 +6781,10 @@ export type PublicQuotationCurrent200 = ApiSuccessResponse & {
 
 export type PublicQuotationReject200 = ApiSuccessResponse & {
   data: QuotationRejectedResponse;
+};
+
+export type PublicReadyMadeOrderCreate201 = ApiSuccessResponse & {
+  data: ReadyMadeOrderCreatedResponse;
 };
 
 export type PublicSecureLinkResolve200 = ApiSuccessResponse & {

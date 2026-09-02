@@ -24,6 +24,7 @@ import { IssueVerificationChallengeUseCase } from './application/issue-verificat
 import { ReadVerificationChallengeStatus } from './application/read-verification-challenge-status.query';
 import { ResendVerificationChallengeUseCase } from './application/resend-verification-challenge.use-case';
 import { ResolveOrCreateVerifiedCustomer } from './application/resolve-or-create-verified-customer.service';
+import { VerifiedChallengeIdentityResolver } from './application/verified-challenge-identity.resolver';
 import { AuthorizeSecureLink } from './application/authorize-secure-link.service';
 import { ReauthorizeSecureGrant } from './application/reauthorize-secure-grant.service';
 import { ResolveSecureLink } from './application/resolve-secure-link.query';
@@ -143,6 +144,9 @@ import { PublicVerificationController } from './presentation/public-verification
     { provide: ADMIN_CUSTOMER_SUMMARY_PORT, useClass: DrizzleAdminCustomerSummaryAdapter },
     CustomerIdentityAuditRecorder,
     ResolveOrCreateVerifiedCustomer,
+    // `APP12-B02`. The challenge -> customer rule, moved here from Ordering once
+    // a second public write had to answer the same question the same way.
+    VerifiedChallengeIdentityResolver,
     // `APP10-B01`. The maintenance capabilities live here, beside the repository
     // and the audit seam they need, and are exported for the Admin surface to
     // call. The recorder stays unexported, on this module's standing rule: a
@@ -218,6 +222,7 @@ import { PublicVerificationController } from './presentation/public-verification
   // not services other contexts call.
   exports: [
     CUSTOMER_REPOSITORY,
+    VerifiedChallengeIdentityResolver,
     // `APP5-B04`'s narrow Admin projection. Exported as the port symbol, so a
     // consumer receives masked contacts and nothing it could unmask.
     ADMIN_CUSTOMER_SUMMARY_PORT,

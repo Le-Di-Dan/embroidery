@@ -126,6 +126,20 @@ export { DrizzleOrderRepository } from './order/drizzle-order.repository';
 export { DrizzleOrderShippingRepository } from './order/drizzle-order-shipping.repository';
 export { OrderPersistenceModule } from './order/order-persistence.module';
 
+// The READY_MADE half of AGG-15 (`APP12-B02`). A second contract over the same
+// table rather than a widened `Order`: see `ready-made-order.repository.ts`.
+export type {
+  CreateReadyMadeOrderInput,
+  ReadyMadeOrder,
+  ReadyMadeOrderLine,
+  ReadyMadeOrderRepository,
+} from './order/ready-made-order.repository';
+export { READY_MADE_ORDER_REPOSITORY } from './order/ready-made-order.repository';
+export type { OrderOriginPort } from './order/order-origin.port';
+export { ORDER_ORIGIN_PORT } from './order/order-origin.port';
+export { DrizzleReadyMadeOrderRepository } from './order/drizzle-ready-made-order.repository';
+export { DrizzleOrderOriginAdapter } from './order/drizzle-order-origin.adapter';
+
 export type {
   AttemptId,
   CreateObligationInput,

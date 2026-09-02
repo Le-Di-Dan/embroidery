@@ -109,6 +109,7 @@ import type {
   CreateProductBody,
   CreateProductionJobBody,
   CreateQuotationDraftBody,
+  CreateReadyMadeOrderBody,
   CreateSkuBody,
   DepositQrBody,
   FinalPaymentQrBody,
@@ -156,6 +157,7 @@ import type {
   PublicQuotationAccept200,
   PublicQuotationCurrent200,
   PublicQuotationReject200,
+  PublicReadyMadeOrderCreate201,
   PublicSecureLinkResolve200,
   PublicSitemapEntryList200,
   PublicVerificationIssue202,
@@ -2432,6 +2434,25 @@ export const publicQuotationReject = (
 };
 
 /**
+ * Creates one READY_MADE order at AWAITING_SHIPPING_FEE from a verified SUBMISSION challenge, freezes the merchandise line and reserves the stock for 24 hours — all in one transaction. The server re-resolves the price and re-checks availability under the stock lock, so no amount or quantity a client observed earlier is trusted. The challenge is also the idempotency scope: re-sending the same body replays the same result, and re-using it for a different body is refused. No payment obligation is created here — an operator sets the shipping fee first.
+ * @summary Place a Ready-Made order
+ */
+export const publicReadyMadeOrderCreate = (
+  createReadyMadeOrderBody: CreateReadyMadeOrderBody,
+  options?: SecondParameter<typeof apiRequest<PublicReadyMadeOrderCreate201>>,
+) => {
+  return apiRequest<PublicReadyMadeOrderCreate201>(
+    {
+      url: `/api/public/ready-made-orders`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createReadyMadeOrderBody,
+    },
+    options,
+  );
+};
+
+/**
  * Exchanges the opaque token from a secure link for the request it grants access to. The token travels in the request body only — never in a path, query or header — so it never reaches a server or proxy access log, and it is never echoed back. Resolving a link does not consume it: the same link works until it expires or is revoked. Every token that does not open a live grant — unknown, expired, revoked, superseded, or issued for something else — answers with one identical 404, so the response reveals nothing about whether a token ever existed.
  * @summary Resolve a secure-link token
  */
@@ -2898,6 +2919,9 @@ export type PublicQuotationCurrentResult = NonNullable<
 >;
 export type PublicQuotationRejectResult = NonNullable<
   Awaited<ReturnType<typeof publicQuotationReject>>
+>;
+export type PublicReadyMadeOrderCreateResult = NonNullable<
+  Awaited<ReturnType<typeof publicReadyMadeOrderCreate>>
 >;
 export type PublicSecureLinkResolveResult = NonNullable<
   Awaited<ReturnType<typeof publicSecureLinkResolve>>

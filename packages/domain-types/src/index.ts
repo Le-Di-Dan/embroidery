@@ -18,3 +18,11 @@ export {
   humanCodePattern,
 } from './codes/human-code';
 export type { RandomBytesSource } from './codes/human-code';
+
+export {
+  generateOrderCode,
+  ORDER_CODE_ALPHABET,
+  ORDER_CODE_LENGTH,
+  ORDER_CODE_PATTERN,
+  ORDER_CODE_PREFIX,
+} from './codes/order-code';

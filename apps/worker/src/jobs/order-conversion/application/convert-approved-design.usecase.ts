@@ -81,7 +81,7 @@ import {
 
 import type { DesignApprovedLookup } from '../domain/design-approved.payload';
 import { conversionInProgress, conversionRefusal } from '../domain/order-conversion.errors';
-import { generateOrderCode } from '../domain/order-code';
+import { generateOrderCode } from '@embroidery/domain-types';
 import {
   ORDER_CREATE_IDEMPOTENCY_TTL_MS,
   ORDER_CREATE_NAMESPACE,

@@ -31,9 +31,13 @@ import { Module } from '@nestjs/common';
 
 import { DatabaseModule } from '../database.module';
 import { DrizzleOrderRepository } from './drizzle-order.repository';
+import { DrizzleOrderOriginAdapter } from './drizzle-order-origin.adapter';
 import { DrizzleOrderShippingRepository } from './drizzle-order-shipping.repository';
+import { DrizzleReadyMadeOrderRepository } from './drizzle-ready-made-order.repository';
 import { OrderChainGuard } from './order-chain.guard';
+import { ORDER_ORIGIN_PORT } from './order-origin.port';
 import { ORDER_REPOSITORY } from './order.repository';
+import { READY_MADE_ORDER_REPOSITORY } from './ready-made-order.repository';
 
 @Module({
   imports: [DatabaseModule],
@@ -41,7 +45,11 @@ import { ORDER_REPOSITORY } from './order.repository';
     OrderChainGuard,
     DrizzleOrderShippingRepository,
     { provide: ORDER_REPOSITORY, useClass: DrizzleOrderRepository },
+    // APP12-B02 — the second origin's writer, and the one-column origin fact
+    // Inventory's eligibility gate depends on.
+    { provide: READY_MADE_ORDER_REPOSITORY, useClass: DrizzleReadyMadeOrderRepository },
+    { provide: ORDER_ORIGIN_PORT, useClass: DrizzleOrderOriginAdapter },
   ],
-  exports: [ORDER_REPOSITORY, OrderChainGuard],
+  exports: [ORDER_REPOSITORY, READY_MADE_ORDER_REPOSITORY, ORDER_ORIGIN_PORT, OrderChainGuard],
 })
 export class OrderPersistenceModule {}

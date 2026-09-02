@@ -60,6 +60,15 @@ export interface Reservation {
   readonly orderId: string;
   readonly quantity: number;
   readonly status: InventoryReservationState;
+  /**
+   * When the pre-payment window closes, or `undefined` for a no-expiry
+   * reservation (`PO-APP8-002`, `ADR-DB1-018` r3).
+   *
+   * Published by `APP12-B02` because a Ready-Made reservation now has one
+   * (`BR-025`) and its creator has to be able to report the exact instant it
+   * committed rather than the one it intended to.
+   */
+  readonly expiresAt: Date | undefined;
 }
 
 export interface LedgerEntry {
@@ -139,17 +148,41 @@ export interface SkuStockRepository {
     actor: InventoryActor;
   }): Promise<Reservation>;
 
-  /** @requiresTransaction — rejects when available stock is short (G-DB7-26). */
+  /**
+   * @requiresTransaction — rejects when available stock is short (G-DB7-26).
+   *
+   * `expiresAt` absent means **no expiry**, which is the delivered
+   * `PO-APP8-002` semantics for a custom reservation. `APP12-B02` supplies one
+   * for a Ready-Made reservation's `BR-025` pre-payment window; the window is
+   * the caller's policy and is not computed here.
+   */
   createReservation(input: {
     id: ReservationId;
     skuId: SkuId;
     orderId: string;
     quantity: number;
     actor: InventoryActor;
+    expiresAt?: Date | undefined;
   }): Promise<Reservation>;
 
   /** @requiresTransaction */
   releaseReservation(id: ReservationId, reason: string, actor: InventoryActor): Promise<void>;
+
+  /**
+   * Expires one reservation if it is still `RESERVED`, carries an `expires_at`
+   * and that instant has passed (`BR-026`, `APP12-B02`).
+   *
+   * Returns `undefined` when any of the three no longer holds — an ordinary
+   * outcome for a sweep, not a failure. A no-expiry (custom) reservation is
+   * therefore unreachable by this method by construction.
+   *
+   * @requiresTransaction
+   */
+  expireReservationIfDue(input: {
+    id: ReservationId;
+    now: Date;
+    actor: InventoryActor;
+  }): Promise<Reservation | undefined>;
 
   /** Consumes a reservation at production, reducing on-hand. @requiresTransaction */
   consumeReservation(id: ReservationId, actor: InventoryActor): Promise<void>;

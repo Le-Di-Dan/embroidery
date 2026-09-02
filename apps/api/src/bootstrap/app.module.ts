@@ -35,6 +35,7 @@ import { DesignVersionSendModule } from '../modules/design/design-version-send.m
 import { CustomRequestModerationModule } from '../modules/order/custom-request-moderation.module';
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
+import { ReadyMadeOrderModule } from '../modules/order/ready-made-order.module';
 import { QuotationDraftingModule } from '../modules/quotation/quotation-drafting.module';
 import { QuotationReadModule } from '../modules/quotation/quotation-read.module';
 import { QuotationSendModule } from '../modules/quotation/quotation-send.module';
@@ -149,6 +150,10 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // order cannot shadow anything: `public/custom-requests` is a base path no
     // other module claims.
     CustomRequestSubmissionModule,
+    // `APP12-B02` — the Wave-1 Ready-Made order-creation command. Released with
+    // Wave 1, so it is composed unconditionally; the Wave-2 gate withholds
+    // custom operations by operation id, never by omitting a module.
+    ReadyMadeOrderModule,
     // APP5-B02 — the pre-submission customer attachment lane. Registered after
     // the submission module because it exists to feed it, though not for
     // wiring: `public/custom-request-intake` is a base path no other module

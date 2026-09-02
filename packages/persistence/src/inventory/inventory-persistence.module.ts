@@ -20,6 +20,13 @@
  * `DrizzleDepositEligibilityAdapter`. There is no second port, no second
  * adapter and no copy of the SQL predicate (`APP8-G01` §7.1).
  *
+ * `OrderPersistenceModule` joins it at `APP12-B02`, on the same terms and for
+ * the same one fact: `ORDER_ORIGIN_PORT`. The eligibility gate became
+ * origin-aware because `GRD-013`'s deposit precondition is a custom-commerce
+ * rule and a Ready-Made order has no deposit at any point in its life
+ * (`BR-024`, `BR-029`). Ordering owns `orders.origin` and publishes it as a
+ * port; Inventory reads no Ordering table.
+ *
  * Only `SKU_STOCK_REPOSITORY` is exported. `StockAnchor`,
  * `InventoryCommitments`, `InventoryReservations` and
  * `ReservationEligibilityGuard` are the aggregate's internal split by
@@ -37,6 +44,7 @@
 import { Module } from '@nestjs/common';
 
 import { DatabaseModule } from '../database.module';
+import { OrderPersistenceModule } from '../order/order-persistence.module';
 import { PaymentPersistenceModule } from '../payment/payment-persistence.module';
 import { DrizzleSkuStockRepository } from './drizzle-sku-stock.repository';
 import { InventoryCommitments } from './inventory-commitments';
@@ -46,7 +54,7 @@ import { SKU_STOCK_REPOSITORY } from './sku-stock.repository';
 import { StockAnchor } from './stock-anchor';
 
 @Module({
-  imports: [DatabaseModule, PaymentPersistenceModule],
+  imports: [DatabaseModule, PaymentPersistenceModule, OrderPersistenceModule],
   providers: [
     StockAnchor,
     ReservationEligibilityGuard,
