@@ -23,6 +23,7 @@ import {
   waitFor,
   within,
 } from '@embroidery/frontend-testing';
+import { renderToString } from 'react-dom/server';
 
 import {
   publicReadyMadeOrderCreate,
@@ -383,5 +384,87 @@ describe('refusals', () => {
     await waitFor(() => {
       expect(screen.queryByText(/Sản phẩm vừa hết hàng/)).not.toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * The correction `APP12-S02-C1` makes, asserted on the markup the **server**
+ * actually sends rather than on the hydrated DOM.
+ *
+ * `renderToString` is the point of this block: every other test in this file
+ * runs after React has taken over, which is exactly the state in which the
+ * defect does not exist. The bytes on the wire are what a click before
+ * hydration acts on, so they are what has to be safe.
+ */
+describe('the server-rendered checkout is not submittable before hydration', () => {
+  /** The SSR HTML for a normal, resolvable checkout. */
+  function serverHtml(): string {
+    return renderToString(<CheckoutQueryProvider view={makeCheckoutView()} />);
+  }
+
+  it('emits the band as a disabled fieldset', () => {
+    const html = serverHtml();
+    // The guard is an attribute in the markup, not a handler that does not
+    // exist yet — see `pre-hydration-guard.tsx`.
+    expect(html).toMatch(/<fieldset[^>]*class="ready-made-checkout__columns"[^>]*disabled/);
+    expect(html).toContain('data-interactive="false"');
+  });
+
+  it('leaves no submit-capable control outside the guard', () => {
+    const parsed = new DOMParser().parseFromString(`<body>${serverHtml()}</body>`, 'text/html');
+    const band = parsed.querySelector('fieldset.ready-made-checkout__columns');
+    expect(band?.hasAttribute('disabled')).toBe(true);
+
+    // React does **not** stamp `disabled` onto descendants, and it should not:
+    // a disabled `<fieldset>` disables its descendant controls by the HTML
+    // standard, in the browser, at no cost in markup. So the assertion that
+    // matters here is containment — that nothing capable of submitting escapes
+    // the guarded subtree. The behavioural half (a click and an Enter that
+    // cannot navigate) is proved in a real browser by the `APP12-S02-C1`
+    // Playwright case, because only a browser implements this rule.
+    const controls = [...parsed.querySelectorAll('button, input, select, textarea')];
+    expect(controls.length).toBeGreaterThan(0);
+    const escaped = controls.filter((control) => band === null || !band.contains(control));
+    expect(escaped.map((control) => control.outerHTML)).toEqual([]);
+  });
+
+  it('has no form that could carry customer data into a URL', () => {
+    const parsed = new DOMParser().parseFromString(`<body>${serverHtml()}</body>`, 'text/html');
+
+    // Neither form declares an action or a method, which is exactly why the
+    // native default is a GET to the current URL — the behaviour the guard
+    // prevents. Recorded here so the reason the guard exists stays visible.
+    const forms = [...parsed.querySelectorAll('form')];
+    expect(forms.length).toBeGreaterThan(0);
+    for (const form of forms) {
+      expect(form.getAttribute('action')).toBeNull();
+      expect(form.getAttribute('method')).toBeNull();
+    }
+
+    // The blast radius of that default, stated exactly: the **only** named
+    // control on the page is the contact-kind radio group, so a native GET
+    // could only ever have written `…-kind=EMAIL` into the query. The contact
+    // value, the verification code and all four delivery fields carry no
+    // `name`, so none of them could reach a URL, a referrer or an access log
+    // even if a submission happened. What the defect destroyed was the
+    // customer's `?sku=&quantity=`, not their privacy.
+    const named = [...parsed.querySelectorAll('input[name], textarea[name], select[name]')];
+    expect(named.every((control) => control.getAttribute('type') === 'radio')).toBe(true);
+    expect(named.every((control) => /-kind$/.test(control.getAttribute('name') ?? ''))).toBe(true);
+  });
+
+  it('becomes interactive once React takes the markup over', async () => {
+    const user = createUser();
+    renderWithProviders(<CheckoutQueryProvider view={makeCheckoutView()} />);
+
+    // After hydration the same controls are usable, and the guard says so.
+    const band = document.querySelector('.ready-made-checkout__columns');
+    expect(band?.tagName).toBe('FIELDSET');
+    expect(band?.hasAttribute('disabled')).toBe(false);
+    expect(band?.getAttribute('data-interactive')).toBe('true');
+
+    await user.type(screen.getByLabelText(delivery.recipientNameLabel), 'Nguyễn Minh Anh');
+    expect(screen.getByLabelText(delivery.recipientNameLabel)).toHaveValue('Nguyễn Minh Anh');
+    expect(screen.getByRole('button', { name: summary.submit })).toBeEnabled();
   });
 });

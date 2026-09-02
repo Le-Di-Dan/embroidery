@@ -216,7 +216,46 @@ describe('the server / client boundary', () => {
       'ui/checkout-screen.tsx',
       'ui/checkout-success-panel.tsx',
       'ui/checkout-summary-card.tsx',
+      'ui/pre-hydration-guard.tsx',
     ]);
+  });
+});
+
+describe('the pre-hydration guard is markup, not script (APP12-S02-C1)', () => {
+  const guard = sources.find((source) => source.path.endsWith('pre-hydration-guard.tsx'));
+  const guardCode = codeOnly(guard?.text ?? '');
+
+  it('exists and disables a real fieldset', () => {
+    expect(guard).toBeDefined();
+    // The safety is an attribute the server emits, so it protects the HTML on
+    // the wire rather than a DOM that JavaScript has already reached.
+    expect(guardCode).toMatch(/<fieldset[\s\S]*disabled=\{!interactive\}/);
+  });
+
+  it('is composed as the checkout band itself', () => {
+    const screen = sources.find((source) => source.path.endsWith('checkout-screen.tsx'));
+    const screenCode = codeOnly(screen?.text ?? '');
+    expect(screenCode).toContain('<PreHydrationGuard className="ready-made-checkout__columns">');
+    // The `<div>` it replaced is gone, so no box was added to a grid measured
+    // from the approved frames.
+    expect(screenCode).not.toContain('<div className="ready-made-checkout__columns">');
+  });
+
+  it('does not rely on any of the mechanisms that cannot work before hydration', () => {
+    // `preventDefault` is precisely what is missing before hydration; pointer
+    // events, an overlay and a timer are styling and hope. None of them may be
+    // the guard (`APP12-S02-C1` §6).
+    expect(guardCode).not.toMatch(/preventDefault|pointerEvents|setTimeout|requestAnimationFrame/);
+    expect(guardCode).not.toMatch(/onSubmit|onClick|onKeyDown/);
+  });
+
+  it('preserves no state through a native GET, and none through storage', () => {
+    // `APP12-S02-C1` §7: the correct pre-hydration behaviour is to not submit.
+    // A hidden `sku`/`quantity` input would make the destructive navigation
+    // survivable instead of impossible, and is forbidden.
+    expect(allCode).not.toMatch(/type=['"]hidden['"]/);
+    expect(allCode).not.toMatch(/\bname=\{?['"]?(sku|quantity)/);
+    expect(allCode).not.toMatch(/localStorage|sessionStorage|document\.cookie/);
   });
 });
 

@@ -147,7 +147,10 @@ export default defineConfig({
     // so parallel workers would race the counts rather than the code.
     {
       name: 'app12-s02-chromium',
-      testMatch: '**/app12/s02-checkout.acceptance.spec.ts',
+      // Both S02 spec files: the checkout journeys and the `APP12-S02-C1`
+      // pre-hydration safety cases. They share one world module and run
+      // sequentially in the single worker this project uses.
+      testMatch: '**/app12/s02-*.acceptance.spec.ts',
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
     },
     {

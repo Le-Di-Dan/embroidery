@@ -1,3 +1,23 @@
+> ### Correction notice — `APP12-S02-C1` (2026-09-02)
+>
+> **`FU-APP12-S02-04` was rejected as deferred `APP12-H01` debt.**
+>
+> The native pre-hydration GET can destroy SKU/quantity state on the new Wave-1
+> checkout route, so it belongs to S02 correctness rather than to a later
+> hardening checkpoint.
+>
+> `APP12-S02-C1` makes the server-rendered pre-hydration form non-destructive
+> and proves it deterministically in real Chromium. The original evidence below
+> is unchanged and remains accurate; only §AC's disposition of
+> `FU-APP12-S02-04` is superseded — it is now `CLOSED_BY_APP12_S02_C1`.
+>
+> ```text
+> APP12-S02 = COMPLETE_AFTER_C1
+> CORRECTION_USED = 1 / 1
+> ```
+>
+> See `docs/implementation/reports/APP12-S02-C1-COMPLETION-REPORT.md`.
+
 # APP12-S02 — Ready-Made Checkout · Completion Report
 
 ```text

@@ -32,11 +32,45 @@
   // The 907:169 band. `minmax(0, 1fr)` rather than `1fr` so a long Vietnamese
   // address or product name shrinks the column instead of widening the page —
   // the sideways-scroll failure a grid track defaults into.
+  //
+  // The element is a `<fieldset>` (`APP12-S02-C1`): it is the pre-hydration
+  // guard, disabled until React takes the markup over, so the server-rendered
+  // forms inside it cannot natively submit. Every UA style it brings is reset
+  // here — `border`, `margin`, `padding` and, the one that actually matters,
+  // `min-inline-size: min-content`, which would otherwise stop this grid from
+  // ever shrinking below its content and reintroduce the horizontal overflow
+  // `minmax(0, 1fr)` exists to prevent. The rendered box is therefore identical
+  // to the `<div>` it replaced, at every viewport.
   &__columns {
     display: grid;
     grid-template-columns: minmax(0, 1fr) tokens.$aside-width;
     gap: tokens.$column-gap;
     align-items: start;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+
+  // The hydration window is not a busy state, and must not be painted like one.
+  //
+  // The safety is the `disabled` attribute on the fieldset above; this rule is
+  // presentation only. Without it, `:disabled` on every control would flash the
+  // whole checkout grey on each page load — alarming, uninformative, and about
+  // a condition that resolves in well under a second. The controls keep their
+  // normal colours and are still genuinely non-submittable; the cursor is left
+  // alone rather than set to `not-allowed`, because nothing is refused here,
+  // the page simply is not ready yet.
+  &__columns[data-interactive='false'] {
+    .ready-made-checkout__control:disabled {
+      background: styles.$color-surface-primary;
+      color: styles.$color-text-primary;
+    }
+
+    .ready-made-checkout__submit:disabled {
+      background: styles.$color-action-primary;
+      cursor: default;
+    }
   }
 
   &__main,

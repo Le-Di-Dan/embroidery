@@ -32,239 +32,47 @@
  * reader selects no `token_hash` column. What this run proves about the link is
  * its **count** and its **scope** (§48). Following it is `APP12-S03`'s job.
  */
-import { expect, test, type Page } from '@playwright/test';
+/* The shared world is built on the plain ESM `.mjs` harness layer, so the
+   evidence reader it hands back arrives untyped. As in `APP5-E01`, this spec
+   treats it as `any` and lets each explicit `expect` be the contract. */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+
+import { expect, test } from '@playwright/test';
 
 import { createS01Driver } from '../app4/support/s01-verification-driver';
 
-/* The harness helper layer is plain ESM `.mjs` — it has to be, because the same
-   modules load outside ts-jest — so everything imported from it arrives untyped.
-   As in `APP5-E01`, this spec treats those imports as `any` and lets each
-   explicit `expect` below be the contract. */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-
-function requiredEnv(name: string): string {
-  const value = process.env[name];
-  if (value === undefined || value === '') {
-    throw new Error(`${name} is required for the APP12-S02 acceptance run.`);
-  }
-  return value;
-}
-
-const PRODUCT = requiredEnv.bind(null, 'E2E_APP12_S02_PRODUCT_SLUG');
-const MAIN_SKU = requiredEnv.bind(null, 'E2E_APP12_S02_MAIN_SKU');
-const SCARCE_SKU = requiredEnv.bind(null, 'E2E_APP12_S02_SCARCE_SKU');
-const AMBIGUOUS_SKU = requiredEnv.bind(null, 'E2E_APP12_S02_AMBIGUOUS_SKU');
-
-/** The approved viewports (`APP12-D01` §L). */
-const VIEWPORTS = [
-  { name: '1440', width: 1440, height: 900 },
-  { name: '1024', width: 1024, height: 900 },
-  { name: '390', width: 390, height: 844 },
-] as const;
-
-/** Approved `APP12-D01` copy, duplicated here as a test expectation on purpose. */
-const COPY = {
-  heading: 'Xác nhận đơn hàng',
-  contactHeading: 'Liên hệ',
-  verified: 'Đã xác minh',
-  changeContact: 'Đổi liên hệ',
-  deliveryHeading: 'Giao hàng',
-  recipientName: 'Người nhận',
-  recipientPhone: 'Số điện thoại người nhận',
-  addressLine: 'Địa chỉ nhận hàng',
-  province: 'Tỉnh/Thành',
-  merchandise: 'Tiền hàng',
-  shippingPending: 'Xưởng xác nhận sau',
-  totalPending: 'Có sau khi xác nhận phí',
-  submit: 'Đặt hàng',
-  submitPending: 'Đang gửi…',
-  successTitle: 'Đã tạo đơn hàng của bạn',
-  orderCodeLabel: 'Mã đơn hàng',
-  secureLink: 'Chúng tôi đã gửi liên kết theo dõi tới liên hệ bạn đã xác minh',
-  invalidSelection: 'Chưa xác định được sản phẩm cần mua',
-  back: 'Quay lại sản phẩm',
-  outOfStock: 'Sản phẩm vừa hết hàng',
-  nameRequired: 'Vui lòng nhập tên người nhận.',
-  contactUnverified: 'Vui lòng xác minh liên hệ trước khi đặt hàng.',
-} as const;
-
-let runtime: any;
-let worker: any;
-let evidence: any;
-let contactSeed = 0;
-
-/** Safe facts only: booleans and counts. Never a code, a token or a contact. */
-const proofs: Record<string, boolean | number | string> = {};
+import {
+  COPY,
+  MAIN_SKU,
+  PRODUCT,
+  SCARCE_SKU,
+  AMBIGUOUS_SKU,
+  VIEWPORTS,
+  checkoutUrl,
+  closeS02World,
+  fillDelivery,
+  issueAndVerifyChallenge,
+  openS02World,
+  proofs,
+  runWorkerUntilIdle,
+  s02Evidence,
+  secureLinkDeliveryCount,
+  verifyContact,
+} from './support/s02-world';
 
 test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async () => {
   test.setTimeout(300_000);
-  const databaseUrl = requiredEnv('E2E_DATABASE_URL');
-  const { createApp4E01Runtime } = await import('../../support/app4/app4-runtime.mjs');
-  const { createWorkerControl } = (await import('../../support/app4/worker-control.mjs')) as any;
-  const { createS02Evidence } =
-    (await import('../../support/app12/s02-checkout-fixture.mjs')) as any;
-
-  runtime = await createApp4E01Runtime({
-    runId: requiredEnv('E2E_RUN_ID'),
-    app4: {
-      verificationCodePepper: requiredEnv('VERIFICATION_CODE_SECRET_PEPPER'),
-      secureLinkTokenPepper: requiredEnv('SECURE_LINK_TOKEN_SECRET_PEPPER'),
-      notificationDeliveryEnvelopeKey: requiredEnv('NOTIFICATION_DELIVERY_ENVELOPE_KEY'),
-      storefrontOrigin: requiredEnv('STOREFRONT_PUBLIC_ORIGIN'),
-      designSessionPepper: requiredEnv('DESIGN_SESSION_SECRET_PEPPER'),
-    },
-    databaseUrl,
-  });
-  worker = createWorkerControl(runtime);
-  evidence = await createS02Evidence(databaseUrl);
+  await openS02World();
 });
 
 test.afterAll(async () => {
-  await evidence?.close?.();
-  await runtime?.close?.();
-  process.stdout.write(`APP12_S02_PROOFS ${JSON.stringify(proofs)}\n`);
+  await closeS02World('APP12_S02_PROOFS');
 });
-
-/** A checkout address, composed exactly as `APP12-S01`'s panel composes it. */
-function checkoutUrl(skuId: string | undefined, quantity: string): string {
-  const query = new URLSearchParams();
-  if (skuId !== undefined) query.set('sku', skuId);
-  query.set('quantity', quantity);
-  return `/mua-hang/${PRODUCT()}?${query.toString()}`;
-}
-
-/**
- * Verify a contact through the **real** APP4 lane and leave the flow verified.
- *
- * A fresh synthetic address per call, so no two journeys share an idempotency
- * scope — two orders on one challenge is an `IDEMPOTENCY_CONFLICT` by design,
- * and a run that reused one would be measuring that instead of what it meant to.
- */
-async function verifyContact(page: Page): Promise<void> {
-  contactSeed += 1;
-  const driver = createS01Driver(page);
-  const address = `app12-s02-${String(contactSeed)}@vidu.test`;
-
-  const url = page.url();
-  const before = worker.deliveryCount();
-
-  // Submitted **after hydration**, and the two are asserted together.
-  //
-  // `ContactEntryCard` is a real `<form>` whose `onSubmit` calls
-  // `preventDefault`. Between first paint and hydration that handler is not
-  // attached yet, so a click in that window performs a *native* GET — which on
-  // this route replaces `?sku=&quantity=` with the contact form's own fields and
-  // lands the customer back on a checkout that names nothing to buy. That is
-  // ordinary Next.js behaviour rather than an S02 defect (the page is readable
-  // before any JavaScript arrives, which is the point), but it makes a bare
-  // click racy, exactly as `APP12-S01` records for its radio group. Retrying the
-  // action and its outcome together is deterministic: it either lands after
-  // hydration or fails loudly.
-  //
-  // The consequence on this particular route is recorded as `FU-APP12-S02-04`.
-  // The whole step is retried, not just the click: a native submit navigates,
-  // which clears the field it just posted, so re-entering the contact is part of
-  // the retry rather than something done once before it.
-  await expect(async () => {
-    if (new URL(page.url()).searchParams.get('sku') === null) await page.goto(url);
-    await driver.chooseContactKind('EMAIL');
-    await driver.enterContact('EMAIL', address);
-    await driver.submitContact();
-    await expect(page.getByRole('heading', { name: 'Nhập mã xác minh' })).toBeVisible({
-      timeout: 2_000,
-    });
-  }).toPass({ timeout: 30_000 });
-
-  // The selection survived: whatever happened, the customer still has one.
-  expect(new URL(page.url()).searchParams.get('sku')).not.toBeNull();
-
-  // The API raises a notification intent; the **worker** is what turns it into a
-  // delivery the recording adapter can be read from, and this topology holds the
-  // worker's poll loop closed on purpose (`WORKER_STARTUP_GATE`) so a background
-  // loop cannot race the assertions. So the run pumps it explicitly, exactly as
-  // `APP5-E01` does.
-  await runWorkerUntilIdle();
-
-  // The code exists only in this process's memory and in the field below.
-  const code = takeVerificationCode(before);
-  await driver.enterCode(code);
-  await driver.submitCode();
-
-  await expect(page.getByText(COPY.verified)).toBeVisible();
-}
-
-/**
- * The verification code from the deliveries this journey produced.
- *
- * **Searched by kind, never taken positionally.** Once a journey has created an
- * order, the queue also carries that order's `SECURE_LINK_TOKEN` delivery, and a
- * later journey that drains the worker picks it up first — so "the delivery at
- * index `from`" is the code only for the very first journey of a run. Asking for
- * the first `VERIFICATION_CODE` at or after `from` is what the caller actually
- * means, and it is order-independent.
- *
- * The plaintext is returned to be typed into a field and nowhere else: it is not
- * logged, not attached, and not compared with an operand-printing matcher.
- */
-function takeVerificationCode(from: number): string {
-  const end = worker.deliveryCount() as number;
-  // Newest first. A retried submit issues a *replacement* challenge, and
-  // `APP4`'s reducer says the replacement's identity wholly replaces the old
-  // one — so the code the card is now answering is the latest one, and taking
-  // the oldest would answer a challenge the server has already cancelled.
-  for (let index = end - 1; index >= from; index -= 1) {
-    if (worker.safeDelivery(index).secretKind === 'VERIFICATION_CODE') {
-      return worker.secretOf(index) as string;
-    }
-  }
-  throw new Error(
-    `No VERIFICATION_CODE delivery was recorded at or after index ${String(from)} ` +
-      `(${String(end - from)} delivery/deliveries seen).`,
-  );
-}
-
-/** How many secure-link deliveries the run has produced, by kind and never by value. */
-function secureLinkDeliveryCount(): number {
-  const end = worker.deliveryCount() as number;
-  let seen = 0;
-  for (let index = 0; index < end; index += 1) {
-    if (worker.safeDelivery(index).secretKind === 'SECURE_LINK_TOKEN') seen += 1;
-  }
-  return seen;
-}
-
-/**
- * Drains the worker's due jobs, one real attempt at a time.
- *
- * The guard is a bound, not a timeout: a run that still has due jobs after this
- * many attempts has a loop, and failing loudly is better than spinning.
- */
-async function runWorkerUntilIdle(guard = 12): Promise<number> {
-  let executed = 0;
-  for (let attempt = 0; attempt < guard; attempt += 1) {
-    const summary = await worker.runOnce();
-    if (summary === undefined) return executed;
-    executed += 1;
-  }
-  throw new Error(`Worker still had due jobs after ${String(guard)} attempts.`);
-}
-
-// `exact` on every lookup: `Người nhận` is a substring of
-// `Số điện thoại người nhận`, so a loose label match resolves to two inputs and
-// Playwright's strict mode refuses it. The same trap the APP4 driver records
-// for its own contact field.
-async function fillDelivery(page: Page, address = '12 Nguyễn Huệ, Phường Bến Nghé, Quận 1') {
-  await page.getByLabel(COPY.recipientName, { exact: true }).fill('Nguyễn Minh Anh');
-  await page.getByLabel(COPY.recipientPhone, { exact: true }).fill('0901234567');
-  await page.getByLabel(COPY.addressLine, { exact: true }).fill(address);
-  await page.getByLabel(COPY.province, { exact: true }).fill('TP. Hồ Chí Minh');
-}
 
 for (const viewport of VIEWPORTS) {
   test.describe(`viewport ${viewport.name}`, () => {
@@ -272,9 +80,9 @@ for (const viewport of VIEWPORTS) {
 
     test('completes one real checkout end to end', async ({ page }, testInfo) => {
       test.setTimeout(180_000);
-      const ordersBefore = await evidence.countReadyMadeOrders();
-      const stockBefore = await evidence.readAvailableQuantity(MAIN_SKU());
-      const onHandBefore = await evidence.readOnHandQuantity(MAIN_SKU());
+      const ordersBefore = await s02Evidence().countReadyMadeOrders();
+      const stockBefore = await s02Evidence().readAvailableQuantity(MAIN_SKU());
+      const onHandBefore = await s02Evidence().readOnHandQuantity(MAIN_SKU());
 
       await page.goto(checkoutUrl(MAIN_SKU(), '2'));
       await expect(page.getByRole('heading', { name: COPY.heading, level: 1 })).toBeVisible();
@@ -308,12 +116,12 @@ for (const viewport of VIEWPORTS) {
       // anchor and consumes nothing until fulfilment. Both halves are asserted,
       // because the interesting failure is a checkout that appears to reserve
       // and silently decrements instead.
-      expect(await evidence.countReadyMadeOrders()).toBe(ordersBefore + 1);
-      expect(await evidence.readAvailableQuantity(MAIN_SKU())).toBe(stockBefore - 2);
-      expect(await evidence.readOnHandQuantity(MAIN_SKU())).toBe(onHandBefore);
+      expect(await s02Evidence().countReadyMadeOrders()).toBe(ordersBefore + 1);
+      expect(await s02Evidence().readAvailableQuantity(MAIN_SKU())).toBe(stockBefore - 2);
+      expect(await s02Evidence().readOnHandQuantity(MAIN_SKU())).toBe(onHandBefore);
 
       // The order lands fee-pending, with no payable total anywhere on screen.
-      const orders = await evidence.readReadyMadeOrders();
+      const orders = await s02Evidence().readReadyMadeOrders();
       expect(orders[orders.length - 1].status).toBe('AWAITING_SHIPPING_FEE');
       // `exact`: the fallback caption below also mentions the order code by name.
       await expect(page.getByText(COPY.orderCodeLabel, { exact: true })).toBeVisible();
@@ -401,7 +209,7 @@ test.describe('the address is a hint and never an authority', () => {
       const line = await page.locator('.ready-made-checkout__item-variant').textContent();
       const ordered = Number(/SL (\d+)/.exec(line ?? '')?.[1] ?? '0');
       expect(ordered).toBeGreaterThanOrEqual(1);
-      expect(ordered).toBeLessThanOrEqual(await evidence.readAvailableQuantity(MAIN_SKU()));
+      expect(ordered).toBeLessThanOrEqual(await s02Evidence().readAvailableQuantity(MAIN_SKU()));
     }
   });
 });
@@ -410,14 +218,14 @@ test.describe('verification is required, and is bound to the contact', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('refuses an unverified submit and creates nothing', async ({ page }) => {
-    const before = await evidence.countReadyMadeOrders();
+    const before = await s02Evidence().countReadyMadeOrders();
     await page.goto(checkoutUrl(MAIN_SKU(), '1'));
 
     await fillDelivery(page);
     await page.getByRole('button', { name: COPY.submit }).click();
 
     await expect(page.getByText(COPY.contactUnverified)).toBeVisible();
-    expect(await evidence.countReadyMadeOrders()).toBe(before);
+    expect(await s02Evidence().countReadyMadeOrders()).toBe(before);
     proofs.unverified_submit_refused = true;
   });
 
@@ -435,7 +243,7 @@ test.describe('verification is required, and is bound to the contact', () => {
   });
 
   test('invalidates the verification when the contact changes (§16)', async ({ page }) => {
-    const before = await evidence.countReadyMadeOrders();
+    const before = await s02Evidence().countReadyMadeOrders();
     await page.goto(checkoutUrl(MAIN_SKU(), '1'));
 
     await verifyContact(page);
@@ -451,7 +259,7 @@ test.describe('verification is required, and is bound to the contact', () => {
 
     // The first contact's challenge cannot be spent on the second contact.
     await expect(page.getByText(COPY.contactUnverified)).toBeVisible();
-    expect(await evidence.countReadyMadeOrders()).toBe(before);
+    expect(await s02Evidence().countReadyMadeOrders()).toBe(before);
     proofs.contact_change_invalidates = true;
   });
 });
@@ -463,11 +271,11 @@ test.describe('idempotency and the stock race', () => {
     page,
   }) => {
     test.setTimeout(180_000);
-    const ordersBefore = await evidence.countReadyMadeOrders();
-    const reservationsBefore = await evidence.countReservations();
-    const grantsBefore = await evidence.countOrderAccessGrants();
-    const recordsBefore = await evidence.countIdempotencyRecords();
-    const intentsBefore = await evidence.countNotificationIntents();
+    const ordersBefore = await s02Evidence().countReadyMadeOrders();
+    const reservationsBefore = await s02Evidence().countReservations();
+    const grantsBefore = await s02Evidence().countOrderAccessGrants();
+    const recordsBefore = await s02Evidence().countIdempotencyRecords();
+    const intentsBefore = await s02Evidence().countNotificationIntents();
 
     await page.goto(checkoutUrl(MAIN_SKU(), '1'));
     await verifyContact(page);
@@ -496,12 +304,12 @@ test.describe('idempotency and the stock race', () => {
 
     // Exactly one of everything, and the browser issued exactly one request.
     expect(creates.length, 'the page issued more than one create request').toBe(1);
-    expect(await evidence.countReadyMadeOrders()).toBe(ordersBefore + 1);
-    expect(await evidence.countReservations()).toBe(reservationsBefore + 1);
-    expect(await evidence.countOrderAccessGrants()).toBe(grantsBefore + 1);
-    expect(await evidence.countIdempotencyRecords()).toBe(recordsBefore + 1);
-    expect(await evidence.countNotificationIntents()).toBeGreaterThan(intentsBefore);
-    expect(await evidence.readIdempotencyStatuses()).not.toContain('IN_PROGRESS');
+    expect(await s02Evidence().countReadyMadeOrders()).toBe(ordersBefore + 1);
+    expect(await s02Evidence().countReservations()).toBe(reservationsBefore + 1);
+    expect(await s02Evidence().countOrderAccessGrants()).toBe(grantsBefore + 1);
+    expect(await s02Evidence().countIdempotencyRecords()).toBe(recordsBefore + 1);
+    expect(await s02Evidence().countNotificationIntents()).toBeGreaterThan(intentsBefore);
+    expect(await s02Evidence().readIdempotencyStatuses()).not.toContain('IN_PROGRESS');
 
     // §48: the secure link really was handed to the notification path, proved by
     // running the worker and counting a delivery **of that kind**. Its value is
@@ -528,8 +336,8 @@ test.describe('idempotency and the stock race', () => {
     // The challenge is issued and verified here rather than lifted out of the
     // page, because the id deliberately never reaches the URL, storage or the
     // DOM — there is nothing in a rendered checkout to read it from.
-    const ordersBefore = await evidence.countReadyMadeOrders();
-    const recordsBefore = await evidence.countIdempotencyRecords();
+    const ordersBefore = await s02Evidence().countReadyMadeOrders();
+    const recordsBefore = await s02Evidence().countIdempotencyRecords();
 
     const verified = await issueAndVerifyChallenge(request);
     const body = {
@@ -553,8 +361,8 @@ test.describe('idempotency and the stock race', () => {
     const secondCode = (await second.json()).data.orderCode;
     // The same order, replayed — not a second one with a new code.
     expect(secondCode).toBe(firstCode);
-    expect(await evidence.countReadyMadeOrders()).toBe(ordersBefore + 1);
-    expect(await evidence.countIdempotencyRecords()).toBe(recordsBefore + 1);
+    expect(await s02Evidence().countReadyMadeOrders()).toBe(ordersBefore + 1);
+    expect(await s02Evidence().countIdempotencyRecords()).toBe(recordsBefore + 1);
 
     // And a *different* body on the same challenge is refused, not accepted.
     const conflicting = await request.post('/api/public/ready-made-orders', {
@@ -562,7 +370,7 @@ test.describe('idempotency and the stock race', () => {
     });
     expect(conflicting.status()).toBe(409);
     expect((await conflicting.json()).code).toBe('IDEMPOTENCY_CONFLICT');
-    expect(await evidence.countReadyMadeOrders()).toBe(ordersBefore + 1);
+    expect(await s02Evidence().countReadyMadeOrders()).toBe(ordersBefore + 1);
 
     proofs.idempotency_replay = true;
     proofs.idempotency_conflict_refused = true;
@@ -572,7 +380,7 @@ test.describe('idempotency and the stock race', () => {
     page,
   }) => {
     test.setTimeout(180_000);
-    const before = await evidence.countReadyMadeOrders();
+    const before = await s02Evidence().countReadyMadeOrders();
 
     // The page is loaded while the single unit is still there.
     await page.goto(checkoutUrl(SCARCE_SKU(), '1'));
@@ -581,7 +389,7 @@ test.describe('idempotency and the stock race', () => {
     await fillDelivery(page);
 
     // Somebody else takes it. Real inventory, not a mocked response.
-    await evidence.consumeStock(SCARCE_SKU(), 1);
+    await s02Evidence().consumeStock(SCARCE_SKU(), 1);
 
     await page.getByRole('button', { name: COPY.submit }).click();
 
@@ -590,53 +398,17 @@ test.describe('idempotency and the stock race', () => {
     await expect(page.getByRole('heading', { name: COPY.successTitle })).toHaveCount(0);
     await expect(page.getByRole('link', { name: COPY.back })).toBeVisible();
     // No order, and no silent retry at a smaller quantity.
-    expect(await evidence.countReadyMadeOrders()).toBe(before);
+    expect(await s02Evidence().countReadyMadeOrders()).toBe(before);
     proofs.stock_race_refused = true;
   });
 });
-
-/**
- * Issues and verifies one challenge through the real public endpoints.
- *
- * Used only by the API-level idempotency proof, which needs a challenge it can
- * name — the browser journey deliberately gives it none, because the id never
- * reaches the URL, storage or the DOM.
- */
-async function issueAndVerifyChallenge(request: any): Promise<string> {
-  contactSeed += 1;
-  const before = worker.deliveryCount();
-  const issued = await request.post('/api/public/verification/challenges', {
-    data: {
-      contactKind: 'EMAIL',
-      contact: `app12-s02-api-${String(contactSeed)}@vidu.test`,
-      purpose: 'SUBMISSION',
-    },
-  });
-  // `202`, not `201`: issuing a challenge *accepts* the request and hands the
-  // delivery to the notification path, which is a different claim from "a
-  // resource was created at a location". Asserted as `ok()` so this proof is
-  // about idempotency rather than about pinning APP4's success code.
-  expect(issued.ok(), `challenge issue answered ${String(issued.status())}`).toBe(true);
-  const challengeId = (await issued.json()).data.challengeId;
-
-  // Same reason as the browser path: the delivery only exists once the worker
-  // has actually run the job, and it is found by kind rather than by position.
-  await runWorkerUntilIdle();
-  const code = takeVerificationCode(before);
-  const attempt = await request.post(
-    `/api/public/verification/challenges/${String(challengeId)}/attempts`,
-    { data: { code } },
-  );
-  expect(attempt.ok()).toBe(true);
-  return challengeId as string;
-}
 
 test.describe('accessibility and the S01 hand-off', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('is completable from the keyboard alone', async ({ page }) => {
     test.setTimeout(180_000);
-    const before = await evidence.countReadyMadeOrders();
+    const before = await s02Evidence().countReadyMadeOrders();
     await page.goto(checkoutUrl(MAIN_SKU(), '1'));
     await verifyContact(page);
 
@@ -657,7 +429,7 @@ test.describe('accessibility and the S01 hand-off', () => {
     });
     // Focus lands on the outcome rather than at the top of a vanished form.
     await expect(page.locator('#checkout-success-heading')).toBeFocused();
-    expect(await evidence.countReadyMadeOrders()).toBe(before + 1);
+    expect(await s02Evidence().countReadyMadeOrders()).toBe(before + 1);
     proofs.keyboard_completable = true;
   });
 

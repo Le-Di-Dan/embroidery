@@ -57,6 +57,7 @@ import { CheckoutContactCard } from './checkout-contact-card';
 import { CheckoutDeliveryCard } from './checkout-delivery-card';
 import { CheckoutFailureCard, CheckoutInvalidSelectionCard } from './checkout-refusal-card';
 import { CheckoutSuccessPanel } from './checkout-success-panel';
+import { PreHydrationGuard } from './pre-hydration-guard';
 import { CheckoutSummaryCard } from './checkout-summary-card';
 
 export interface CheckoutScreenProps {
@@ -148,7 +149,13 @@ export function CheckoutScreen({ view }: CheckoutScreenProps) {
   return (
     <div className="ready-made-checkout">
       <h1 className="ready-made-checkout__title">{READY_MADE_CHECKOUT_COPY.pageTitle}</h1>
-      <div className="ready-made-checkout__columns">
+      {/*
+        The band is a disabled `<fieldset>` until React takes the markup over,
+        so the server-rendered forms inside it cannot natively submit — see
+        `pre-hydration-guard.tsx`. It replaces the `<div>` that used to be here
+        rather than wrapping it, so the box tree and the grid are unchanged.
+      */}
+      <PreHydrationGuard className="ready-made-checkout__columns">
         <div className="ready-made-checkout__main">
           <CheckoutContactCard
             verification={verification}
@@ -184,7 +191,7 @@ export function CheckoutScreen({ view }: CheckoutScreenProps) {
             formId={formId}
           />
         </aside>
-      </div>
+      </PreHydrationGuard>
     </div>
   );
 }
