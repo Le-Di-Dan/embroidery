@@ -20,8 +20,22 @@ import { isWave2WithheldOperation } from './wave2-operation-authority';
  * One guard, registered globally, deciding one question: may this operation run
  * while Wave 2 is unreleased? `APP12-RELEASE-WAVE-AUTHORITY.md` §4 requires the
  * decision at the API level *independently of the route* — "a blocked route with
- * a live API is not blocked" — and §7 names the exact 31 operations it applies
- * to.
+ * a live API is not blocked" — and §7 names the exact operations it applies to.
+ *
+ * ## What it does *not* decide, since `APP12-B04`
+ *
+ * Three public operations take a secure-link token and serve **both** waves
+ * through one operation: the resolver and the two halves of the attempt-scoped
+ * evidence lane. Their wave is a property of the grant row, which does not exist
+ * until the token has been digested and looked up — and this guard runs before
+ * the pipes, so it has nothing to decide with. They are therefore absent from
+ * `WAVE2_WITHHELD_PUBLIC_OPERATIONS`, listed in
+ * `SCOPE_GATED_PUBLIC_OPERATIONS`, admitted here, and refused by
+ * `GrantScopeReleaseGate` inside the resolution path when the resolved scope is
+ * `REQUEST_ACCESS` and Wave 2 is unreleased. That refusal is the
+ * indistinguishable `SECURE_LINK_UNAVAILABLE`, which is stronger than the
+ * generic 404 below: a valid custom link must not be distinguishable from a
+ * fictional one while its wave is withheld.
  *
  * ## Why a guard, and why global
  *
@@ -33,7 +47,7 @@ import { isWave2WithheldOperation } from './wave2-operation-authority';
  * right order. Whether a caller holds a valid grant is a question about a
  * capability that, in Wave 1, is not released to be asked about.
  *
- * The alternative — 31 inline conditionals in 31 handlers — was rejected by §14
+ * The alternative — one inline conditional per withheld handler — was rejected by §14
  * and would be unauditable: the failure it invites is the 32nd operation that
  * nobody remembers to guard. It is also not a feature-flag platform. There is no
  * registry, no per-request evaluation, no remote source and no second flag; the

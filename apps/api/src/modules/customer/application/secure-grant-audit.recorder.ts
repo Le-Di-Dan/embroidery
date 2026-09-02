@@ -56,10 +56,18 @@ export const GRANT_REISSUED_ACTION = 'secure_grant.reissued';
 /** A grant was withdrawn with a reason (`TR-LC03-02`). */
 export const GRANT_REVOKED_ACTION = 'secure_grant.revoked';
 
+/**
+ * The subject is scope-dependent since `APP12-B04`: a `REQUEST_ACCESS` issuance
+ * names a request and an `ORDER_ACCESS` one names an order, matching the typed
+ * XOR `ck_secure_access_grants__scope_subject` stores. Two optional fields
+ * rather than one polymorphic "subjectId", so an operator reading the trail does
+ * not have to decode `scopeKind` before the id means anything.
+ */
 export interface RecordGrantIssuedInput {
   readonly grantId: GrantId;
   readonly customerId: CustomerId;
-  readonly customRequestId: string;
+  readonly customRequestId?: string | undefined;
+  readonly orderId?: string | undefined;
   readonly scopeKind: string;
   readonly expiresAt: Date;
   /** Whether a delivery was requested with the issue. Never the destination. */
@@ -94,7 +102,11 @@ export class SecureGrantAuditRecorder {
       targetKind: GRANT_KIND,
       targetId: input.grantId,
       summary: {
-        customRequestId: input.customRequestId,
+        // Spread rather than written as `undefined`: the summary is `jsonb`, and
+        // a stored `"orderId": null` on every custom issuance would read as "the
+        // order is unknown" rather than "this grant has no order".
+        ...(input.customRequestId === undefined ? {} : { customRequestId: input.customRequestId }),
+        ...(input.orderId === undefined ? {} : { orderId: input.orderId }),
         scopeKind: input.scopeKind,
         expiresAt: input.expiresAt.toISOString(),
         notified: input.notified,

@@ -1,9 +1,11 @@
 import type { Server } from 'node:http';
+import { randomBytes } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { TestingModuleBuilder } from '@nestjs/testing';
 import { CleanupStack } from '@embroidery/test-utils';
+import { newId } from '@embroidery/database';
 import {
   createDisposableDatabase,
   resolveDatabaseUrl,
@@ -89,6 +91,21 @@ export async function createApiIntegrationContext(
   // than by weakening the production requirement — a fallback would make the
   // one rule that keeps a stolen database useless optional in production too.
   const restoreDesignSessionEnv = applyDesignSessionTestEnv();
+  // `APP12-B04` composes the `ORDER_ACCESS` grant issuer into Ready-Made order
+  // creation, so a booted API digests a token and seals an envelope on the
+  // Wave-1 checkout path. Synthetic, and only where a suite has not already set
+  // its own — the secure-link suites compute expected digests against theirs.
+  //
+  // Restored on **close**, not in the `finally` below. The three values beside
+  // it are read once when the module is composed, so clearing them immediately
+  // is safe; `App4SecretPepperProvider` and the delivery-envelope provider both
+  // read `process.env` lazily, on the first request that needs a digest. Undoing
+  // these at the end of setup would leave every booted API refusing to issue a
+  // grant — which is exactly what it did before this comment existed.
+  const restoreApp4SecretEnv = applyApp4SecretTestEnv();
+  cleanup.push('restore APP4 secret env', () => {
+    restoreApp4SecretEnv();
+  });
   // `APP7-B03` composes `CustomerDepositModule`, whose config refuses to resolve
   // without all four merchant bank values (`APP7-G01` §3). Synthetic, and
   // supplied here rather than by weakening the production requirement — a
@@ -162,6 +179,76 @@ export function applyMerchantBankTestEnv(): () => void {
   const previous = names.map(([name]) => [name, process.env[name]] as const);
   for (const [name, value] of names) {
     process.env[name] = value;
+  }
+  return () => {
+    for (const [name, value] of previous) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  };
+}
+
+/**
+ * Releases Wave 2 for one booted context (`APP12-G02`, `APP12-B04` §48).
+ *
+ * `CUSTOM_EMBROIDERY_RELEASE_ENABLED` defaults to withheld, which is correct:
+ * the gate fails closed. The consequence for the test tree is that every
+ * **Wave-2 customer** suite — the secure-link resolver, the deposit, the
+ * remaining balance, the transfer-evidence lane — asserts behaviour its own
+ * operations are withheld from, and has been red since `APP12-G02` composed the
+ * guard.
+ *
+ * A suite that tests a Wave-2 capability has to run in the wave that releases
+ * it. This is that switch, and it must be called **before**
+ * {@link createApiIntegrationContext}: `ReleaseGateModule` reads the value once
+ * when the module is composed, precisely so a release state cannot flip between
+ * two requests.
+ *
+ * It is deliberately **not** the default. A Wave-1 suite that silently ran with
+ * Wave 2 released would stop proving that Ready-Made works while custom is
+ * withheld, which is the whole property `APP12-R01` turns on.
+ */
+export function applyWave2ReleasedEnv(): () => void {
+  const name = 'CUSTOM_EMBROIDERY_RELEASE_ENABLED';
+  const previous = process.env[name];
+  process.env[name] = 'true';
+  return () => {
+    if (previous === undefined) delete process.env[name];
+    else process.env[name] = previous;
+  };
+}
+
+/**
+ * The synthetic APP4 secret environment every booted API now needs
+ * (`APP12-B04`).
+ *
+ * Before this checkpoint only the secure-link suites required it, because only
+ * they resolved a grant. `APP12-B04` issues an `ORDER_ACCESS` grant inside the
+ * Ready-Made order-creation transaction, so Wave-1 checkout now digests a token
+ * and seals a delivery envelope — an API booted without these three values
+ * refuses to create an order at all, which is the correct production posture
+ * (an order its customer cannot reach is worse than a refused checkout) and
+ * therefore has to be satisfied here rather than weakened there.
+ *
+ * Applied **only where nothing is already set**, exactly as the Design Session
+ * helper below does: the secure-link suites call `applyApp4SecretEnv` before
+ * building their context because they compute expected digests against their
+ * own pepper, and this must not overwrite it.
+ *
+ * Synthetic per run, never a checked-in literal: a fixed pepper in the
+ * repository is credential material whether or not anything real is peppered
+ * with it. The pair must also be distinct from each other and from the envelope
+ * key, which `loadApp4SecretPepperConfig` enforces.
+ */
+export function applyApp4SecretTestEnv(): () => void {
+  const names = [
+    ['SECURE_LINK_TOKEN_SECRET_PEPPER', `ctx-link-${newId()}-${newId()}`],
+    ['VERIFICATION_CODE_SECRET_PEPPER', `ctx-code-${newId()}-${newId()}`],
+    ['NOTIFICATION_DELIVERY_ENVELOPE_KEY', randomBytes(32).toString('base64')],
+  ] as const;
+  const previous = names.map(([name]) => [name, process.env[name]] as const);
+  for (const [name, value] of names) {
+    if (process.env[name] === undefined) process.env[name] = value;
   }
   return () => {
     for (const [name, value] of previous) {

@@ -36,6 +36,7 @@ import { CustomRequestModerationModule } from '../modules/order/custom-request-m
 import { CustomRequestStatusModule } from '../modules/order/custom-request-status.module';
 import { CustomRequestSubmissionModule } from '../modules/order/custom-request-submission.module';
 import { ReadyMadeOrderModule } from '../modules/order/ready-made-order.module';
+import { ReadyMadeOrderAccessModule } from '../modules/order/ready-made-order-access.module';
 import { QuotationDraftingModule } from '../modules/quotation/quotation-drafting.module';
 import { QuotationReadModule } from '../modules/quotation/quotation-read.module';
 import { QuotationSendModule } from '../modules/quotation/quotation-send.module';
@@ -154,6 +155,14 @@ import { ValidationModule } from '../platform/validation/validation.module';
     // Wave 1, so it is composed unconditionally; the Wave-2 gate withholds
     // custom operations by operation id, never by omitting a module.
     ReadyMadeOrderModule,
+    // `APP12-B04` — the Wave-1 secure Ready-Made order read. Its own module
+    // rather than a controller on the one above, because that module holds the
+    // creation command's writers, its idempotency store and the ORDER_ACCESS
+    // grant issuer, and a read route composed there could reach all three. It
+    // shares the `public/ready-made-orders` base path with a distinct segment
+    // (`current`), which Nest matches ahead of the bare `POST ''` regardless of
+    // registration order.
+    ReadyMadeOrderAccessModule,
     // APP5-B02 — the pre-submission customer attachment lane. Registered after
     // the submission module because it exists to feed it, though not for
     // wiring: `public/custom-request-intake` is a base path no other module

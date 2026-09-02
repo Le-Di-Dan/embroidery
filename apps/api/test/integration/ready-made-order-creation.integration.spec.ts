@@ -13,6 +13,7 @@
  */
 import { sql } from 'drizzle-orm';
 
+import { publishSecureAccessPolicies } from '../support/secure-access-policy-fixture';
 import {
   createApiIntegrationContext,
   type ApiIntegrationTestContext,
@@ -35,6 +36,11 @@ describe('APP12-B02 Ready-Made order creation (API)', () => {
 
   beforeAll(async () => {
     context = await createApiIntegrationContext('app12_b02_create');
+    // `APP12-B04` composed the ORDER_ACCESS grant issuer into order creation, so
+    // the fail-closed `secure_grant` policy is now on the Wave-1 checkout path:
+    // without a published version this command refuses rather than committing an
+    // order its own customer could never open.
+    await publishSecureAccessPolicies(context.app, context.database);
   }, 240_000);
 
   afterAll(async () => {
@@ -59,14 +65,25 @@ describe('APP12-B02 Ready-Made order creation (API)', () => {
       body = response.body as Envelope;
     });
 
-    it('returns the order code, status, subtotal and expiry — and nothing else', () => {
+    it('returns the order code, status, subtotal, expiry and access — and nothing else', () => {
       expect(body.code).toBe('READY_MADE_ORDER_CREATED');
+      // `APP12-B04` added `access` additively: the four fields below keep their
+      // names and meanings, and the fifth says the order is reachable and until
+      // when — never how. The credential is not here and cannot be: the raw
+      // token exists once, in the creating transaction, and only its peppered
+      // digest is stored.
       expect(Object.keys(body.data as object).sort()).toEqual([
+        'access',
         'merchandiseSubtotal',
         'orderCode',
         'reservationExpiresAt',
         'status',
       ]);
+      expect(body.data?.['access']).toEqual({
+        scopeKind: 'ORDER_ACCESS',
+        delivered: true,
+        expiresAt: expect.any(String) as unknown,
+      });
       expect(body.data?.['orderCode']).toMatch(ORDER_CODE_PATTERN);
       expect(body.data?.['status']).toBe('AWAITING_SHIPPING_FEE');
     });
@@ -298,7 +315,7 @@ describe('APP12-B02 Ready-Made order creation (API)', () => {
       expect(Number(attempts.rows[0]?.n)).toBe(0);
     });
 
-    it('creates no production job, no custom artifact and no ORDER_ACCESS grant', async () => {
+    it('creates no production job and no custom artifact, and exactly one order grant', async () => {
       const counts = await db().execute<{
         jobs: string;
         requests: string;
@@ -321,8 +338,16 @@ describe('APP12-B02 Ready-Made order creation (API)', () => {
       expect(Number(row?.requests)).toBe(0);
       expect(Number(row?.quotations)).toBe(0);
       expect(Number(row?.snapshots)).toBe(0);
-      // `ORDER_ACCESS` is `APP12-B04`. Nothing here issues a grant of any scope.
-      expect(Number(row?.grants)).toBe(0);
+      // `APP12-B04` made issuance part of this transaction: exactly one grant,
+      // and it is the `ORDER_ACCESS` one. A second, or one of the custom scope,
+      // would mean the command had grown a capability it has no business with.
+      expect(Number(row?.grants)).toBe(1);
+      const scopes = await db().execute<{ scope_kind: string; custom_request_id: string | null }>(
+        sql`select scope_kind, custom_request_id from secure_access_grants
+            where customer_id = ${fixture.customerId}`,
+      );
+      expect(scopes.rows[0]?.scope_kind).toBe('ORDER_ACCESS');
+      expect(scopes.rows[0]?.custom_request_id).toBeNull();
     });
   });
 

@@ -12,6 +12,13 @@
  * id published here would be the natural thing for a later client to put in a
  * URL, which is how an opaque credential's identifier becomes a logged one.
  *
+ * **No `orderId`.** `APP12-B04` added the `ORDER_ACCESS` scope, and the order
+ * subject is deliberately *not* published beside the request one. `BR-032`
+ * keeps raw order UUIDs off the customer surface, and nothing needs it:
+ * `/truy-cap` forwards on `scopeKind` alone, and every Ready-Made order and
+ * `FULL` payment operation re-resolves the token and reads the order from the
+ * grant row, so no client ever holds an order id to send back.
+ *
  * **No `customerId`.** Naming a customer would turn a token into a lookup into
  * the identity graph — the same rule `VerificationChallengeStatusResponse`
  * states for a challenge id.
@@ -39,7 +46,10 @@ const REQUEST_ID_EXAMPLE = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071';
  * to the canonical union, so neither an invented scope nor a forgotten one
  * compiles.
  */
-const PUBLISHED_SCOPES = ['REQUEST_ACCESS'] as const satisfies readonly GrantScopeKind[];
+const PUBLISHED_SCOPES = [
+  'REQUEST_ACCESS',
+  'ORDER_ACCESS',
+] as const satisfies readonly GrantScopeKind[];
 
 /** Compile-time proof the published list omits no canonical scope. */
 export type PublishedScopesAreComplete =
@@ -47,17 +57,25 @@ export type PublishedScopesAreComplete =
 
 export class SecureLinkResolutionResponse {
   @ApiProperty({
+    required: false,
     example: REQUEST_ID_EXAMPLE,
-    description: 'The custom request this link grants access to.',
+    description:
+      'The custom request this link grants access to. Present only when scopeKind is ' +
+      'REQUEST_ACCESS, and absent for ORDER_ACCESS — an order link publishes no ' +
+      'identifier at all. The two subjects are exclusive: a link opens a request or an ' +
+      'order, never both.',
   })
-  customRequestId!: string;
+  customRequestId?: string;
 
   @ApiProperty({
     enum: PUBLISHED_SCOPES,
-    example: 'REQUEST_ACCESS',
+    example: 'ORDER_ACCESS',
     description:
-      'What the grant covers. One value today; a link never carries a per-action scope, and ' +
-      'sensitive actions require a fresh step-up verification instead.',
+      'What the grant covers, and the only thing an order link publishes. REQUEST_ACCESS ' +
+      'opens a custom request; ORDER_ACCESS opens one Ready-Made order and is what the ' +
+      'order surface presents its token to. A link never carries a per-action scope, and ' +
+      'sensitive actions require a fresh step-up verification instead. The value is read ' +
+      'from the stored grant — a caller cannot ask for a scope.',
   })
   scopeKind!: GrantScopeKind;
 
@@ -73,7 +91,7 @@ export class SecureLinkResolutionResponse {
 
 /** The serialized projection. The only place this instant becomes a string. */
 export interface SecureLinkResolutionView {
-  readonly customRequestId: string;
+  readonly customRequestId?: string | undefined;
   readonly scopeKind: GrantScopeKind;
   readonly expiresAt: string;
 }

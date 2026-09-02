@@ -144,6 +144,27 @@ export const CONTROLLER_DOMAIN_KEYS: Readonly<Record<string, string>> = {
   // a sibling of `publicOrderDeposit`'s three rather than a rename of them:
   // both domains coexist and neither of APP7's ids moves.
   PublicOrderFinalPaymentAttemptController: 'publicOrderFinalPayment',
+  // `APP12-B04`. The Ready-Made payment surface repeats that split a third
+  // time, and for the same reason: the read module is *defined* by holding no
+  // transaction manager and no idempotency store, so an order-payment read and
+  // a QR download cannot open an attempt, while the initiation needs both. Only
+  // the second class needs an entry — `PublicOrderFullPaymentController`
+  // already derives `publicOrderFullPayment` — and without it the write would
+  // mint `publicOrderFullPaymentAttempt_initiate`, letting a module boundary
+  // name a public identifier. With it the family reads `_current`, `_qr`,
+  // `_initiate`, a sibling of `publicOrderDeposit`'s and
+  // `publicOrderFinalPayment`'s rather than a rename of either: all three
+  // domains coexist and no accepted id moves.
+  PublicOrderFullPaymentAttemptController: 'publicOrderFullPayment',
+  // `APP12-B04`. The secure Ready-Made order read joins `APP12-B02`'s published
+  // `publicReadyMadeOrder` domain. It is a second class because that module
+  // holds the creation command's order writer, inventory writer, idempotency
+  // store and ORDER_ACCESS grant issuer — the boundary that lets its suite say
+  // a read route cannot place an order, reserve stock or mint a credential.
+  // Without this entry the read would mint `publicReadyMadeOrderAccess_current`,
+  // letting that boundary name a public identifier; with it, `_create` stays
+  // untouched and the family reads `_create`, `_current`.
+  PublicReadyMadeOrderAccessController: 'publicReadyMadeOrder',
   // `APP8-B03`. Creating a production job, reading the queue and reading one job
   // are one published `adminProductionJob` domain. They are two classes because
   // a job is created **under the order it is produced for** — the approval is

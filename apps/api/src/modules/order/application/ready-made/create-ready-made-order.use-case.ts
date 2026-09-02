@@ -41,7 +41,8 @@
  * 5  insert the order + line       (the reservation's FK needs the order to exist)
  * 6  save the shipping detail
  * 7  reserve stock under the anchor lock, with expires_at = created_at + 24h
- * 8  complete the idempotency record
+ * 8  issue the ORDER_ACCESS grant and deliver its link
+ * 9  complete the idempotency record
  * ```
  *
  * Step 5 before step 7 is forced by `fk_inventory_reservations__order_id`, and
@@ -56,8 +57,32 @@
  *
  * No payment obligation and no payment attempt (`BR-029` — `APP12-B03` creates
  * the `FULL` obligation once an operator has set the fee), no shipping fee and
- * no payable total (`BR-027`), no `ORDER_ACCESS` grant (`APP12-B04`), no
- * production job and no custom artifact of any kind (`BR-030`, `BR-031`).
+ * no payable total (`BR-027`), no production job and no custom artifact of any
+ * kind (`BR-030`, `BR-031`).
+ *
+ * ## Access, added by `APP12-B04`
+ *
+ * Step 8 issues the customer's `ORDER_ACCESS` grant **inside this transaction**
+ * and asks APP4 to deliver its link to their primary verified contact. That is
+ * `APP12-B04` §6: a successful order must become customer-accessible with no
+ * operator step, and without a separate `POST /orders/{id}/access` route, which
+ * would be an unauthenticated way to mint someone else's credential.
+ *
+ * Being in this transaction is the point. An order that committed without its
+ * grant would be an order its own customer could never open, and a grant that
+ * committed without its order would point at nothing; the delivery intent, its
+ * sealed envelope and the outbox row commit with both or with neither.
+ *
+ * **The raw token is not in the result.** `SecureLinkTokenMinter` returns the
+ * plaintext once and only its peppered digest is stored, so a replay — which
+ * runs none of step 8 — has no plaintext to reproduce. Persisting it in the
+ * idempotency record to make replays identical would mean writing a live bearer
+ * credential into `jsonb`, which is exactly what the digest exists to prevent
+ * (`APP12-B04` §7, §32). So the response publishes the **fact and the deadline**
+ * of access rather than the credential — the delivered bootstrap pattern
+ * `APP5-B01` established, where the customer's link arrives through the APP4
+ * notification path and never in a response body — and a customer who loses the
+ * message recovers through APP4's own reissue, not through this command.
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { newId } from '@embroidery/database';
@@ -77,7 +102,10 @@ import {
 import { generateOrderCode } from '@embroidery/domain-types';
 
 import { AuditClock } from '../../../../platform/audit-context/audit-clock';
+import { OrderAccessGrantIssuer } from '../../../customer/application/order-access-grant.issuer';
 import { VerifiedChallengeIdentityResolver } from '../../../customer/application/verified-challenge-identity.resolver';
+import { ORDER_ACCESS_SCOPE } from '../../../customer/domain/grant/grant-subject';
+import type { CustomerId } from '../../../customer/domain/repositories/customer.repository';
 import type { ChallengeId } from '../../../customer/domain/repositories/verification-challenge.repository';
 import {
   PURCHASABLE_SKU_PORT,
@@ -129,6 +157,7 @@ export class CreateReadyMadeOrderUseCase {
     private readonly transactions: TransactionManager,
     private readonly idempotency: IdempotencyStore,
     private readonly identities: VerifiedChallengeIdentityResolver,
+    private readonly access: OrderAccessGrantIssuer,
     @Inject(PURCHASABLE_SKU_PORT) private readonly catalog: PurchasableSkuPort,
     @Inject(READY_MADE_ORDER_REPOSITORY) private readonly orders: ReadyMadeOrderRepository,
     @Inject(ORDER_REPOSITORY) private readonly shipping: OrderRepository,
@@ -258,6 +287,20 @@ export class CreateReadyMadeOrderUseCase {
         expiresAt,
       });
 
+      // `APP12-B04` §6, §7 — the customer's only credential for this order,
+      // minted here and delivered by APP4. `notify: true` sends the link to the
+      // customer's own primary verified contact; the issuer has no parameter a
+      // destination could be put into, so this cannot redirect it.
+      const access = await this.access.ensure({
+        // Branded at the seam, exactly as `challengeId` is above: the resolver
+        // publishes a plain string, and CTX-CUS's own brand is what its
+        // capability takes. The value is the one APP4 resolved from the
+        // verified challenge — never anything the client sent.
+        customerId: customerId as CustomerId,
+        orderId,
+        notify: true,
+      });
+
       const result: CreatedReadyMadeOrderResult = {
         // The committed row's own values, not the ones handed in: a replay must
         // serve what the order actually carries.
@@ -265,6 +308,13 @@ export class CreateReadyMadeOrderUseCase {
         status: order.status,
         merchandiseSubtotal: { amount: order.totalAmount, currency: order.currencyCode },
         reservationExpiresAt: expiresAt.toISOString(),
+        // The bootstrap, and deliberately not the token. `expiresAt` is a fact
+        // of the grant rather than a secret, so a replay reproduces it exactly.
+        access: {
+          scopeKind: ORDER_ACCESS_SCOPE,
+          delivered: true,
+          expiresAt: access.expiresAt.toISOString(),
+        },
       };
       await this.idempotency.complete(key, result);
       return result;

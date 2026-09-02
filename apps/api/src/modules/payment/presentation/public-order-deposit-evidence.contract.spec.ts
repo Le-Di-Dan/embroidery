@@ -32,6 +32,30 @@ const B03_PATHS = [
   '/api/public/orders/deposit/qr',
 ];
 
+/**
+ * Every *other* customer family published under `public/orders`.
+ *
+ * The bound below is exhaustive, so a sibling family that is not listed reads
+ * as this lane having grown a third operation. `APP12-B04` is the reason it is
+ * being written now: that checkpoint made the Ready-Made `FULL` obligation
+ * reuse **these two operations** rather than publish a fourth, so proving the
+ * lane still has exactly two while a third obligation kind flows through it is
+ * the claim this list protects.
+ *
+ * `APP9-B02`'s three and `APP9-B04`'s acknowledgement predate `APP12-B04` and
+ * were already missing here; they are added in the same edit because the
+ * assertion is one list and cannot be half-correct.
+ */
+const SIBLING_ORDER_PATHS = [
+  '/api/public/orders/final-payment',
+  '/api/public/orders/final-payment/qr',
+  '/api/public/orders/final-payment/attempts',
+  '/api/public/orders/full-payment',
+  '/api/public/orders/full-payment/qr',
+  '/api/public/orders/full-payment/attempts',
+  '/api/public/orders/shipping-fee-acknowledgements',
+];
+
 interface OperationShape {
   readonly operationId?: string;
   readonly parameters?: readonly { readonly name: string; readonly in: string }[];
@@ -182,11 +206,17 @@ describe('APP7-B05 — the published transfer-evidence contract', () => {
   }
 
   describe('the surface is exactly two operations', () => {
-    it('adds two paths under public/orders and no third', () => {
+    it('adds two paths under public/orders and no third, whatever else ships there', () => {
       const paths = Object.keys(document.paths).filter((path) =>
         path.startsWith('/api/public/orders'),
       );
-      expect(paths.sort()).toEqual([...B03_PATHS, UPLOAD_PATH, STATUS_PATH].sort());
+      expect(paths.sort()).toEqual(
+        [...B03_PATHS, ...SIBLING_ORDER_PATHS, UPLOAD_PATH, STATUS_PATH].sort(),
+      );
+      // The point of the bound, since `APP12-B04`: three obligation kinds now
+      // attach evidence through this lane, and it is still two operations.
+      const evidencePaths = paths.filter((path) => path.includes('evidence'));
+      expect(evidencePaths.sort()).toEqual([UPLOAD_PATH, STATUS_PATH].sort());
     });
 
     it('publishes exactly one method on each, both POST', () => {

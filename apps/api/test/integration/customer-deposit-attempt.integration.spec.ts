@@ -18,6 +18,7 @@ import { sql } from 'drizzle-orm';
 import {
   createApiIntegrationContext,
   type ApiIntegrationTestContext,
+  applyWave2ReleasedEnv,
 } from '../support/api-integration-context';
 import {
   DEPOSIT_ROUTES,
@@ -51,16 +52,23 @@ function nextKey(): string {
 
 describe('APP7-B03 — deposit attempt initiation', () => {
   let context: ApiIntegrationTestContext;
+  let restoreWave2: () => void;
   let restoreSecrets: () => void;
 
   beforeAll(async () => {
     restoreSecrets = applyDepositSecretEnv();
+    // `APP12-G02` withholds every Wave-2 customer operation by default, so a
+    // suite proving Wave-2 behaviour has to run in the wave that releases it.
+    // Set before the context is built: the gate reads the value once, at module
+    // composition (`APP12-B04` §48).
+    restoreWave2 = applyWave2ReleasedEnv();
     context = await createApiIntegrationContext('app7_b03_attempt');
     await publishDepositPolicies(context.app, context.database);
   });
 
   afterAll(async () => {
     await context?.close();
+    restoreWave2?.();
     restoreSecrets?.();
   });
 

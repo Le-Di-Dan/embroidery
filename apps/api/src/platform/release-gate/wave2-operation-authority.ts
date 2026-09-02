@@ -3,13 +3,25 @@
  *
  * This file is the **runtime transcription** of
  * `docs/implementation/APP12-RELEASE-WAVE-AUTHORITY.md` §3 and §7. The authority
- * document classified all public OpenAPI operations mechanically: **31** `DENY`
- * in Wave 1 and — since `APP12-C01` added the public category inventory and
- * `APP12-B02` the Ready-Made order command — **14** `ALLOW`, over **45**
- * public operations. Both sets are written out here in full
- * rather than derived from a prefix, because a prefix rule is exactly how
- * `publicProductPlacement_get` (custom) and `publicProduct_detail` (Wave-1
- * catalog) end up on the same side of a gate.
+ * document classifies all public OpenAPI operations mechanically. `APP12-G02`
+ * delivered two sets over 45 operations — 31 `DENY`, 14 `ALLOW` — and
+ * `APP12-B04` makes it three sets over **49**:
+ *
+ * ```text
+ * static DENY   28   withheld whole, by operation id
+ * static ALLOW  18   released whole, by operation id
+ * scope-gated    3   decided from the resolved grant scope, not the operation
+ * ```
+ *
+ * B04 published four Ready-Made operations (all `ALLOW`) and moved three
+ * secure-token operations out of `DENY` into the scope-gated class, where a
+ * `REQUEST_ACCESS` grant is still refused while Wave 2 is unreleased — see
+ * {@link SCOPE_GATED_PUBLIC_OPERATIONS}. Nothing withheld before B04 is
+ * reachable after it.
+ *
+ * All three sets are written out in full rather than derived from a prefix,
+ * because a prefix rule is exactly how `publicProductPlacement_get` (custom) and
+ * `publicProduct_detail` (Wave-1 catalog) end up on the same side of a gate.
  *
  * The keys are canonical operation ids — the same `<domain>_<method>` identifiers
  * the generated client depends on, minted by `createOperationId`. The guard
@@ -24,16 +36,21 @@
  * A deny-list alone answers "is this withheld". It cannot answer "did we
  * accidentally withhold something released", which is the more expensive
  * mistake: denying `publicVerification_*` denies Ready-Made checkout and
- * therefore denies Wave 1 (§3.1). Listing both sets lets one test assert that
- * the union is exactly the 45 public operations the contract publishes, so an
+ * therefore denies Wave 1 (§3.1). Listing every set lets one test assert that
+ * their union is exactly the public operations the contract publishes, so an
  * operation added by a later checkpoint cannot slip through unclassified.
  */
 
 /**
- * The 31 withheld operations, grouped as §3 groups them.
+ * The 28 wholly withheld operations, grouped as §3 groups them.
  *
  * Wave 1 releases none of these. Each group's membership is a product fact
  * recorded in the authority document, not a judgement made here.
+ *
+ * Three ids `APP12-G02` listed here are in {@link SCOPE_GATED_PUBLIC_OPERATIONS}
+ * instead since `APP12-B04`. They were not released: their refusal moved from
+ * the guard to the grant scope, because each of them serves both waves through
+ * one operation.
  */
 export const WAVE2_WITHHELD_PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
   // Placement geometry — the coordinate system the editor draws on (§3.3).
@@ -71,14 +88,13 @@ export const WAVE2_WITHHELD_PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
   'publicDesignReview_approve',
   'publicDesignReview_requestRevision',
 
-  // The custom DEPOSIT payment family and its transfer evidence (§3.4).
-  // Ready-Made is PAYMENT_KIND = FULL and has no deposit; APP12-B04 composes
-  // that surface as new operations rather than reusing these.
+  // The custom DEPOSIT payment family (§3.4). Ready-Made is
+  // PAYMENT_KIND = FULL and has no deposit; `APP12-B04` composed that surface
+  // as new operations rather than reusing these three, which resolve a
+  // REQUEST_ACCESS grant and have no Ready-Made caller.
   'publicOrderDeposit_current',
   'publicOrderDeposit_qr',
   'publicOrderDeposit_initiate',
-  'publicOrderDepositEvidence_upload',
-  'publicOrderDepositEvidence_status',
 
   // The custom REMAINING payment family (§3.4).
   'publicOrderFinalPayment_current',
@@ -89,14 +105,10 @@ export const WAVE2_WITHHELD_PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
   // Admin-set fee *before* payment, so there is nothing for the customer to
   // acknowledge afterwards.
   'publicOrderShippingFee_acknowledge',
-
-  // Secure-link resolution (§3.2). See SECURE_LINK_REOPEN_OBLIGATION below —
-  // this is the one entry that is temporary by construction.
-  'publicSecureLink_resolve',
 ]);
 
 /**
- * The 14 released public operations.
+ * The 18 released public operations.
  *
  * Present so a false denial is a test failure rather than a support ticket. Two
  * of these groups are the ones §4 rule 4 warns about — "deny the capability, not
@@ -145,35 +157,83 @@ export const WAVE1_RELEASED_PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
   'publicVerification_resend',
   'publicVerification_submitAttempt',
   'publicVerification_readStatus',
+
+  // The four `APP12-B04` Ready-Made customer operations. Wave 1 by the same
+  // argument as `publicReadyMadeOrder_create`: they read and pay for a
+  // READY_MADE order, which only Wave 1 sells. Each is reached through an
+  // ORDER_ACCESS grant, names no custom capability — no request, no quotation,
+  // no design, no session, no deposit, no remaining balance — and withholding
+  // any of them would leave a Wave-1 customer unable to pay for an order the
+  // shop has already reserved stock for.
+  'publicReadyMadeOrder_current',
+  'publicOrderFullPayment_current',
+  'publicOrderFullPayment_qr',
+  'publicOrderFullPayment_initiate',
 ]);
 
 /**
- * `APP12-B04`'s standing obligation, recorded where the denial is written.
+ * The operations whose release decision cannot be taken from the operation id
+ * (`APP12-B04`, `APP12-RELEASE-WAVE-AUTHORITY.md` §3.2).
  *
- * `publicSecureLink_resolve` is withheld as a **whole operation** today because
- * `SecureLinkResolutionResponse` returns `customRequestId` and a `scopeKind`
- * enum whose only member is `REQUEST_ACCESS`: the operation has no Wave-1 caller
- * and no Ready-Made scope, so there is nothing in it to keep open. That stops
- * being true the moment `APP12-B04` introduces `ORDER_ACCESS`.
+ * `APP12-G02` classified every public operation as a whole-operation `ALLOW` or
+ * `DENY`, and recorded that `publicSecureLink_resolve` was the one entry that
+ * was **temporary by construction**: it was withheld only because its single
+ * scope, `REQUEST_ACCESS`, had no Wave-1 caller. `APP12-DB01` added
+ * `ORDER_ACCESS` and `APP12-B04` issues it, so the same operation now serves
+ * both waves and no static rule can separate them.
  *
  * ```text
- * now (before DB01/B04):  publicSecureLink_resolve = DENY, whole operation
- * after B04 ships:        gate by scopeKind, not by operation
- *                         ORDER_ACCESS   = ALLOW  in Wave 1
- *                         REQUEST_ACCESS = DENY   until Wave 2
+ * at G02 time:   publicSecureLink_resolve = DENY, whole operation
+ * since B04:     gated by the resolved grant scope, not by the operation
+ *                  ORDER_ACCESS   = ALLOW in both waves
+ *                  REQUEST_ACCESS = ALLOW only when Wave 2 is released
  * ```
  *
- * `APP12-B04` **must** perform that conversion. A whole-operation denial written
- * here and never revisited would leave `/truy-cap/don-hang` unable to resolve
- * its own link, and the Wave-1 order surface would break at `APP12-S03` — for a
- * reason that looks nothing like this file.
+ * ## Why these three, and why the decision is not here
+ *
+ * Each of them takes a secure-link token and nothing else, and each therefore
+ * learns its wave only after digesting that token and reading the grant row.
+ * `CustomCapabilityReleaseGuard` runs before the pipes and before any body has
+ * been parsed, so it has nothing to decide with; the decision belongs to
+ * `GrantScopeReleaseGate`, applied inside `ResolveSecureLink` and
+ * `ReauthorizeSecureGrant` — the two places every one of these operations
+ * passes through.
+ *
+ * The evidence pair is here for the same reason as the resolver, not as a
+ * convenience: `APP12-B04` §22 requires the `FULL` obligation to reuse the
+ * delivered attempt-scoped evidence lane rather than publishing a fourth
+ * payment operation, so that lane must admit an `ORDER_ACCESS` caller in Wave 1
+ * while still refusing every `REQUEST_ACCESS` one. Their route prefix still
+ * reads `deposit` because renaming it would reissue two accepted operation ids
+ * for a naming decision; what they are is attempt-scoped, which is what
+ * `IMP-D055` made them.
+ *
+ * ## This set is not an exemption
+ *
+ * A scope-gated operation is **not** released. With Wave 2 unreleased, every
+ * custom capability behind these three is refused exactly as before — the
+ * refusal simply happens one layer in, and it is the indistinguishable
+ * `SECURE_LINK_UNAVAILABLE` rather than the guard's generic 404, which is
+ * stronger: a valid custom link must not be distinguishable from a fictional
+ * one while its wave is withheld.
  */
-export const SECURE_LINK_REOPEN_OBLIGATION = {
+export const SCOPE_GATED_PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
+  'publicSecureLink_resolve',
+  'publicOrderDepositEvidence_upload',
+  'publicOrderDepositEvidence_status',
+]);
+
+/**
+ * The delivered rule for the obligation `APP12-G02` recorded against
+ * `APP12-B04`, kept where the classification is written.
+ */
+export const SECURE_LINK_SCOPE_RULE = {
   operationId: 'publicSecureLink_resolve',
-  owner: 'APP12-B04',
+  deliveredBy: 'APP12-B04',
   authority: 'docs/implementation/APP12-RELEASE-WAVE-AUTHORITY.md §3.2',
-  currentRule: 'DENY_WHOLE_OPERATION',
-  requiredRule: 'GATE_BY_SCOPE_KIND',
+  rule: 'GATE_BY_SCOPE_KIND',
+  allowedInWave1: 'ORDER_ACCESS',
+  withheldUntilWave2: 'REQUEST_ACCESS',
 } as const;
 
 /**
@@ -183,6 +243,12 @@ export const SECURE_LINK_REOPEN_OBLIGATION = {
  * `health*` operation reaches this function, and none of them is customer-facing
  * release surface: Admin is governed by staff authentication (§5) and health
  * must stay healthy in both release states (§17).
+ *
+ * The three {@link SCOPE_GATED_PUBLIC_OPERATIONS} answer `false` too, and that
+ * is the whole point of the set: the guard must let them run so the grant can be
+ * resolved, and `GrantScopeReleaseGate` then refuses the withheld scope. They
+ * are absent from `WAVE2_WITHHELD_PUBLIC_OPERATIONS` for that reason, not
+ * because they were released.
  */
 export function isWave2WithheldOperation(operationId: string): boolean {
   return WAVE2_WITHHELD_PUBLIC_OPERATIONS.has(operationId);

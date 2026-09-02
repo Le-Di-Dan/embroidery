@@ -38,7 +38,10 @@ const REQUEST_ID_EXAMPLE = '019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6074';
  * value in. The `satisfies` clauses and the two completeness proofs tie both
  * directions to the canonical unions.
  */
-const PUBLISHED_SCOPES = ['REQUEST_ACCESS'] as const satisfies readonly GrantScopeKind[];
+const PUBLISHED_SCOPES = [
+  'REQUEST_ACCESS',
+  'ORDER_ACCESS',
+] as const satisfies readonly GrantScopeKind[];
 const PUBLISHED_STATES = [
   'ACTIVE',
   'EXPIRED',
@@ -56,15 +59,31 @@ export class AdminSecureGrantResponse {
   grantId!: string;
 
   @ApiProperty({
+    required: false,
     example: REQUEST_ID_EXAMPLE,
-    description: 'The custom request this grant authorises access to. An opaque reference.',
+    description:
+      'The custom request this grant authorises access to. An opaque reference, present ' +
+      'only when scopeKind is REQUEST_ACCESS.',
   })
-  customRequestId!: string;
+  customRequestId?: string;
+
+  @ApiProperty({
+    required: false,
+    example: REQUEST_ID_EXAMPLE,
+    description:
+      'The Ready-Made order this grant authorises access to. An opaque reference, present ' +
+      'only when scopeKind is ORDER_ACCESS. Exactly one of the two subjects is present on ' +
+      'any grant.',
+  })
+  orderId?: string;
 
   @ApiProperty({
     enum: PUBLISHED_SCOPES,
     example: 'REQUEST_ACCESS',
-    description: 'What the grant covers. One value today; a grant carries no per-action scope.',
+    description:
+      'What the grant covers, and which of the two subject fields is present. ' +
+      'REQUEST_ACCESS opens one custom request; ORDER_ACCESS opens one Ready-Made order. ' +
+      'A grant carries no per-action scope.',
   })
   scopeKind!: GrantScopeKind;
 
@@ -104,7 +123,8 @@ export class AdminCustomerGrantsResponse {
 export interface AdminCustomerGrantsPayload {
   readonly grants: readonly {
     readonly grantId: string;
-    readonly customRequestId: string;
+    readonly customRequestId?: string | undefined;
+    readonly orderId?: string | undefined;
     readonly scopeKind: GrantScopeKind;
     readonly status: SecureAccessGrantState;
     readonly expiresAt: string;

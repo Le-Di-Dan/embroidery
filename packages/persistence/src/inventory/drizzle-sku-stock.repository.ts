@@ -15,6 +15,7 @@ import { asc, eq } from 'drizzle-orm';
 import type { SkuId } from './inventory-identity';
 import { actorColumns, InventoryCommitments } from './inventory-commitments';
 import { InventoryReservations } from './inventory-reservations';
+import { readActiveReservationForOrder, readOrderStockEndedByExpiry } from './reservation-window';
 import { StockAnchor, toStock } from './stock-anchor';
 import type {
   InventoryActor,
@@ -170,6 +171,36 @@ export class DrizzleSkuStockRepository extends DrizzleRepository implements SkuS
 
   lockActiveOrderReservation(orderId: string): Promise<Reservation | undefined> {
     return this.reservations.lockActiveOrderReservation(orderId);
+  }
+
+  /**
+   * The order's one active reservation, unlocked (`APP12-B04` §36).
+   *
+   * Read here rather than delegated, on the `findBySku` precedent above: this
+   * is a lock-free projection read with no transaction and no write, and
+   * `InventoryReservations` is the class that owns the *locking* and
+   * terminalizing paths. Both call the same `reservation-window` function, so
+   * the predicate has one definition either way.
+   */
+  findActiveOrderReservation(orderId: string): Promise<Reservation | undefined> {
+    return this.run('findActiveOrderReservation', async () =>
+      readActiveReservationForOrder(this.db, orderId),
+    );
+  }
+
+  /**
+   * Whether this order's stock hold ended by expiry (`APP12-B04-C1`).
+   *
+   * Read here rather than delegated, for the reason the active read above is:
+   * both are lock-free projection reads with no transaction and no write, and
+   * `InventoryReservations` owns the locking and terminalizing paths. Both call
+   * the same `reservation-window` function, so the predicate has one
+   * definition either way.
+   */
+  orderStockEndedByExpiry(orderId: string): Promise<boolean> {
+    return this.run('orderStockEndedByExpiry', async () =>
+      readOrderStockEndedByExpiry(this.db, orderId),
+    );
   }
 
   rescheduleReservationExpiry(

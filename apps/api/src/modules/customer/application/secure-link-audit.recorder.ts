@@ -76,10 +76,19 @@ export const SECURE_LINK_UNAVAILABLE_ACTION = 'secure_link.unavailable';
 /** The one bounded failure class written to `failure_code`. */
 export const SECURE_LINK_UNAVAILABLE_FAILURE = 'SECURE_LINK_UNAVAILABLE';
 
+/**
+ * The subjects are a typed XOR since `APP12-B04`: a `REQUEST_ACCESS` resolution
+ * carries a request id and an `ORDER_ACCESS` one carries an order id, exactly as
+ * `ck_secure_access_grants__scope_subject` stores them. Both are optional here
+ * rather than one field named "subject", because the summary is read by
+ * operators and a single polymorphic column would need the scope decoded before
+ * it could be interpreted.
+ */
 export interface RecordResolvedInput {
   readonly grantId: GrantId;
   readonly customerId: CustomerId;
-  readonly customRequestId: string;
+  readonly customRequestId?: string | undefined;
+  readonly orderId?: string | undefined;
   readonly scopeKind: string;
 }
 
@@ -99,7 +108,15 @@ export class SecureLinkAuditRecorder {
       action: SECURE_LINK_RESOLVED_ACTION,
       targetKind: GRANT_KIND,
       targetId: input.grantId,
-      summary: { customRequestId: input.customRequestId, scopeKind: input.scopeKind },
+      summary: {
+        scopeKind: input.scopeKind,
+        // Spread rather than written as `undefined`: the summary is `jsonb`, and
+        // a stored `"orderId": null` on every custom resolution would be a
+        // column that reads as "this order is unknown" rather than "this grant
+        // has no order".
+        ...(input.customRequestId === undefined ? {} : { customRequestId: input.customRequestId }),
+        ...(input.orderId === undefined ? {} : { orderId: input.orderId }),
+      },
       correlationId: this.requestContext.requireRequestId(),
     });
   }

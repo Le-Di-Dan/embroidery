@@ -250,8 +250,10 @@ export class UploadTransferEvidenceService {
 
     const declared = assertAcceptedMediaType(opened.declaredMediaType);
     const scopeKey = transferEvidenceScopeKey({
-      // The proved chain, never the values the body asserted.
-      customRequestId: authorized.customRequestId,
+      // The proved chain, never the values the body asserted. The subject is the
+      // grant's own — a custom request or a Ready-Made order, depending on its
+      // scope — so the two lanes cannot collide on one caller-chosen key.
+      subjectId: authorized.subjectId,
       paymentAttemptId: authorized.attempt.id,
       idempotencyKey,
     });

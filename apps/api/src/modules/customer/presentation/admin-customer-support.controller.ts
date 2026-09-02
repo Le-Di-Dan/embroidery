@@ -269,7 +269,11 @@ function toGrantsPayload(grants: readonly AdminGrantView[]): AdminCustomerGrants
   return {
     grants: grants.map((grant) => ({
       grantId: grant.id,
-      customRequestId: grant.customRequestId,
+      // The subjects are a typed XOR since `APP12-B04`: a grant names a custom
+      // request or a Ready-Made order, never both. Spread rather than assigned,
+      // so a grant of one scope publishes no null key for the other.
+      ...(grant.customRequestId === undefined ? {} : { customRequestId: grant.customRequestId }),
+      ...(grant.orderId === undefined ? {} : { orderId: grant.orderId }),
       scopeKind: grant.scopeKind,
       status: grant.status,
       expiresAt: grant.expiresAt.toISOString(),

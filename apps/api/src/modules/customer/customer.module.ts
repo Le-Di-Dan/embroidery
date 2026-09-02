@@ -28,6 +28,9 @@ import { VerifiedChallengeIdentityResolver } from './application/verified-challe
 import { AuthorizeSecureLink } from './application/authorize-secure-link.service';
 import { ReauthorizeSecureGrant } from './application/reauthorize-secure-grant.service';
 import { ResolveSecureLink } from './application/resolve-secure-link.query';
+import { GrantScopeReleaseGate } from './application/grant-scope-release.gate';
+import { OrderAccessGrantIssuer } from './application/order-access-grant.issuer';
+import { ReleaseGateModule } from '../../platform/release-gate/release-gate.module';
 import { SecureLinkAuditRecorder } from './application/secure-link-audit.recorder';
 import { SecureGrantAuditRecorder } from './application/secure-grant-audit.recorder';
 import { SecureGrantIssuer } from './application/secure-grant.issuer';
@@ -119,6 +122,14 @@ import { PublicVerificationController } from './presentation/public-verification
     DatabaseModule,
     AuditModule,
     NotificationModule,
+    // `APP12-B04`. The release configuration only, for `GrantScopeReleaseGate`.
+    // `ReleaseGateModule` exports `CUSTOM_EMBROIDERY_RELEASE_CONFIG` and nothing
+    // else, and the global guard it registers is registered once wherever the
+    // module is composed — importing it here confers one frozen boolean and no
+    // second gate. Customer needs it because the wave a secure link belongs to
+    // is a property of the resolved grant, which no route-level guard can see
+    // (`APP12-RELEASE-WAVE-AUTHORITY.md` §3.2).
+    ReleaseGateModule,
     // `APP10-B02`. Two count-only read ports, each implemented by the context
     // that owns the table, so the merge consequence preview never reads another
     // module's tables (`CLAUDE.md` §5). Neither module exports a repository, a
@@ -199,6 +210,10 @@ import { PublicVerificationController } from './presentation/public-verification
     SecureGrantAuditRecorder,
     SecureGrantNotifier,
     SecureGrantIssuer,
+    // `APP12-B04`. The `ORDER_ACCESS` issuer, and the one class that decides
+    // whether a resolved scope is released on this deployment.
+    OrderAccessGrantIssuer,
+    GrantScopeReleaseGate,
     StepUpWindow,
     // `APP6-B05`. GRD-003's *evidence*, beside the boolean window: a sensitive
     // write records the challenge it was authorized by, so it needs the row.
@@ -237,6 +252,15 @@ import { PublicVerificationController } from './presentation/public-verification
     // machinery, and a caller that could reach the notifier could deliver a
     // token without a grant.
     SecureGrantIssuer,
+    // `APP12-B04`'s `ORDER_ACCESS` sibling, exported on the same rule: the
+    // Ready-Made order-creation command receives the capability and never the
+    // minter, the pepper or the notifier behind it.
+    OrderAccessGrantIssuer,
+    // `APP12-B04`. Exported so the release-gate contract suite can assert the
+    // scope matrix as a decision rather than by observing a 404, and so a
+    // consuming surface can report a withheld scope without re-reading the
+    // configuration itself.
+    GrantScopeReleaseGate,
     StepUpWindow,
     // `APP6-B05`'s two additions, on the same rule: a consuming context receives
     // the capability, never the machinery. `StepUpEvidenceResolver` composes the

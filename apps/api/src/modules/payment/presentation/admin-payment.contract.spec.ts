@@ -50,6 +50,16 @@ const CUSTOMER_PAYMENT_PATHS = [
   '/api/public/orders/final-payment',
   '/api/public/orders/final-payment/attempts',
   '/api/public/orders/final-payment/qr',
+  // `APP12-B04`'s Ready-Made FULL family. Listed for the reason the eight
+  // above are: the bound is exhaustive, so a customer payment operation this
+  // Admin surface accidentally published would surface here. B04 added no
+  // Admin operation at all — verification is `APP12-B05`'s.
+  '/api/public/orders/full-payment',
+  '/api/public/orders/full-payment/attempts',
+  '/api/public/orders/full-payment/qr',
+  // `APP9-B04`'s customer acknowledgement, which predates `APP12-B04` and was
+  // already missing from this list.
+  '/api/public/orders/shipping-fee-acknowledgements',
 ];
 
 interface SchemaShape {
@@ -284,7 +294,7 @@ describe('APP7-B04 — the published Admin payment contract', () => {
       expect(forbidden).toEqual([]);
     });
 
-    it('adds no customer payment operation — B03’s and B05’s five are unchanged', () => {
+    it('adds no customer payment operation — every delivered one is unchanged', () => {
       const customer = Object.keys(document.paths).filter((path) =>
         path.startsWith('/api/public/orders'),
       );

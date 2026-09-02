@@ -20,10 +20,31 @@ import type { CustomerId } from './customer.repository';
 
 export type GrantId = string & { readonly __brand: 'GrantId' };
 
+/**
+ * A live grant, in either of the two scopes (`APP12-B04`).
+ *
+ * `customRequestId` and `orderId` are a **typed XOR**, not two optional
+ * conveniences: `ck_secure_access_grants__scope_subject` refuses a row carrying
+ * both, neither, or the other scope's subject, so exactly one of them is a
+ * string on every row that exists. They are widened to `string | undefined`
+ * rather than split into a discriminated union because every resolver in this
+ * contract reads a grant *before* its scope is known — a union would make the
+ * repository decide the scope, which is precisely the decision that has to come
+ * from the row.
+ *
+ * A consumer serving one scope narrows with `requestSubjectOf` /
+ * `orderSubjectOf` (`domain/grant/grant-subject.ts`), which refuse the other
+ * scope with the one indistinguishable `SECURE_LINK_UNAVAILABLE`. Reading
+ * either field directly and trusting it is the mistake those helpers exist to
+ * prevent.
+ */
 export interface SecureAccessGrant {
   readonly id: GrantId;
   readonly customerId: CustomerId;
-  readonly customRequestId: string;
+  /** The `REQUEST_ACCESS` subject. `undefined` on an `ORDER_ACCESS` grant. */
+  readonly customRequestId: string | undefined;
+  /** The `ORDER_ACCESS` subject. `undefined` on a `REQUEST_ACCESS` grant. */
+  readonly orderId: string | undefined;
   readonly scopeKind: GrantScopeKind;
   readonly expiresAt: Date;
 }
@@ -51,21 +72,35 @@ export interface SecureAccessGrant {
  */
 export interface SecureAccessGrantSummary {
   readonly id: GrantId;
-  readonly customRequestId: string;
+  /** The `REQUEST_ACCESS` subject; `undefined` for an `ORDER_ACCESS` grant. */
+  readonly customRequestId: string | undefined;
+  /** The `ORDER_ACCESS` subject; `undefined` for a `REQUEST_ACCESS` grant. */
+  readonly orderId: string | undefined;
   readonly scopeKind: GrantScopeKind;
   readonly status: SecureAccessGrantState;
   readonly expiresAt: Date;
 }
 
-export interface IssueGrantInput {
+/**
+ * The grant subject, as a closed union (`APP12-B04`).
+ *
+ * The scope and its subject travel together and cannot be stated apart, so no
+ * caller can ask for an `ORDER_ACCESS` grant carrying a request id — the shape
+ * has nowhere to put one. That is the application-side form of
+ * `ck_secure_access_grants__scope_subject`, enforced by the compiler before the
+ * CHECK ever sees the row.
+ */
+export type GrantSubject =
+  | { readonly scopeKind: 'REQUEST_ACCESS'; readonly customRequestId: string }
+  | { readonly scopeKind: 'ORDER_ACCESS'; readonly orderId: string };
+
+export type IssueGrantInput = {
   readonly id: GrantId;
   readonly customerId: CustomerId;
-  readonly customRequestId: string;
   /** A hash of the link token — never the token itself. */
   readonly tokenHash: string;
-  readonly scopeKind: GrantScopeKind;
   readonly expiresAt: Date;
-}
+} & GrantSubject;
 
 /** What the caller is about to do, checked against the grant's scope. */
 export interface GrantUseContext {
@@ -123,9 +158,14 @@ export interface SecureAccessGrantRepository {
    * caller cannot influence them, which is a stronger guarantee than checking a
    * pair it was handed.
    *
-   * `scopeKind` stays an argument rather than a constant here, exactly as it is
-   * on {@link resolveActive}: the one legal value is business authority
-   * (ADR-DB3-004 r1) and belongs to the application layer, not to persistence.
+   * `scopes` stays an argument rather than a constant here, exactly as
+   * `scopeKind` is on {@link resolveActive}: which scopes a surface admits is
+   * business authority (ADR-DB3-004 r1, `APP12-RELEASE-WAVE-AUTHORITY.md` §3.2)
+   * and belongs to the application layer, not to persistence. It became a
+   * **set** at `APP12-B04` because the public resolver must admit a grant of
+   * either scope and then decide from the resolved row — a caller forced to name
+   * one scope up front could only cover both by asking twice, and two queries
+   * are two timings a probe can tell apart.
    *
    * Read-only, and returns nothing rather than throwing for every failing
    * reason — unknown digest, expired, revoked, superseded, wrong scope — for the
@@ -133,7 +173,7 @@ export interface SecureAccessGrantRepository {
    */
   resolveActiveByTokenDigest(
     tokenHash: string,
-    scopeKind: GrantScopeKind,
+    scopes: readonly GrantScopeKind[],
     now: Date,
   ): Promise<SecureAccessGrant | undefined>;
 
@@ -168,12 +208,26 @@ export interface SecureAccessGrantRepository {
    */
   lockActiveByTokenDigest(
     tokenHash: string,
-    scopeKind: GrantScopeKind,
+    scopes: readonly GrantScopeKind[],
     now: Date,
   ): Promise<SecureAccessGrant | undefined>;
 
   findById(id: GrantId): Promise<SecureAccessGrant | undefined>;
   listActiveForRequest(customRequestId: string): Promise<SecureAccessGrant[]>;
+
+  /**
+   * The `ORDER_ACCESS` counterpart of {@link listActiveForRequest}
+   * (`APP12-B04`).
+   *
+   * A second method rather than a widened first one: the request read leads with
+   * a column that is `NULL` on every order grant, so it can never return one,
+   * and a NULL-tolerant predicate would silently list *every* order grant for a
+   * caller that passed nothing. `uq_secure_access_grants__customer_order__active`
+   * — the `ORDER_ACCESS` half of CST-009 that `APP12-DB01` added for exactly
+   * this — admits at most one ACTIVE row per (customer, order), so this list is
+   * the friendly pre-read and the index stays the arbiter.
+   */
+  listActiveForOrder(orderId: string): Promise<SecureAccessGrant[]>;
 
   /**
    * Every grant belonging to one customer, whatever its state (`APP4-B07`).

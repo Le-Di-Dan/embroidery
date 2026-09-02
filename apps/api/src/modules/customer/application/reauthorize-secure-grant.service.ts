@@ -46,19 +46,25 @@
  * local that is equally never recorded.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { schema } from '@embroidery/database';
 import type { GrantScopeKind } from '@embroidery/database';
 
 import { App4SecretPepperProvider } from '../config/app4-secret-pepper.provider';
 import { digestSecret } from '../domain/secret/app4-secret-digest';
 import { secureLinkUnavailable } from '../domain/grant/secure-link.errors';
+import { ORDER_ACCESS_SCOPE, REQUEST_ACCESS_SCOPE } from '../domain/grant/grant-subject';
 import {
   SECURE_ACCESS_GRANT_REPOSITORY,
   type SecureAccessGrant,
   type SecureAccessGrantRepository,
 } from '../domain/repositories/secure-access-grant.repository';
+import { GrantScopeReleaseGate } from './grant-scope-release.gate';
 
-/** The single scope a secure link may carry (ADR-DB3-004 r1). Never caller-supplied. */
-const REQUEST_ACCESS: GrantScopeKind = 'REQUEST_ACCESS';
+/** The custom scope (ADR-DB3-004 r1). Never caller-supplied. */
+const REQUEST_ACCESS: GrantScopeKind = REQUEST_ACCESS_SCOPE;
+
+/** The Ready-Made scope (`APP12-DB01`). Never caller-supplied. */
+const ORDER_ACCESS: GrantScopeKind = ORDER_ACCESS_SCOPE;
 
 @Injectable()
 export class ReauthorizeSecureGrant {
@@ -66,6 +72,7 @@ export class ReauthorizeSecureGrant {
     @Inject(SECURE_ACCESS_GRANT_REPOSITORY)
     private readonly grants: SecureAccessGrantRepository,
     private readonly peppers: App4SecretPepperProvider,
+    private readonly release: GrantScopeReleaseGate,
   ) {}
 
   /**
@@ -83,12 +90,82 @@ export class ReauthorizeSecureGrant {
    * inside the caller's transaction.
    */
   async reauthorize(token: string, now: Date): Promise<SecureAccessGrant> {
+    return this.lock(token, REQUEST_ACCESS, now);
+  }
+
+  /**
+   * The `ORDER_ACCESS` sibling (`APP12-B04`).
+   *
+   * A **second method** rather than a scope parameter, on the reasoning
+   * `APP7-G01` §4 records for the two transfer-reference builders: a parameter
+   * would let a custom payment surface lock a Ready-Made order's grant, and a
+   * Ready-Made surface lock a custom request's, by passing the other value. Each
+   * caller is already the surface for exactly one scope, so each names its own
+   * method and neither can address the other's subject.
+   *
+   * @requiresTransaction
+   */
+  async reauthorizeOrderAccess(token: string, now: Date): Promise<SecureAccessGrant> {
+    return this.lock(token, ORDER_ACCESS, now);
+  }
+
+  /**
+   * The one lane that legitimately admits **either** scope (`APP12-B04` §22).
+   *
+   * `payment_transfer_evidence` is attempt-scoped (`IMP-D055`), not kind- or
+   * scope-scoped: a customer attaches a screenshot to an attempt they opened,
+   * and which grant opened it is not what the association is about. §22 requires
+   * the Ready-Made `FULL` obligation to reuse that delivered operation rather
+   * than publish a fourth one, so this method exists to let it.
+   *
+   * It is a **named method**, not a scope argument on {@link reauthorize}: a
+   * parameter would hand the union to every caller, and only this one has an
+   * argument for it. Its isolation does not come from the scope in any case —
+   * `EvidenceAttemptAuthorizer` proves the named attempt's obligation hangs off
+   * the order *this* grant resolved to, which is what stops either scope
+   * reaching the other's attempts.
+   *
+   * The release gate still applies, so with Wave 2 unreleased a
+   * `REQUEST_ACCESS` token is refused here exactly as it is everywhere else.
+   *
+   * @requiresTransaction
+   */
+  async reauthorizeForEvidence(token: string, now: Date): Promise<SecureAccessGrant> {
+    return this.lockAny(token, schema.GRANT_SCOPE_KINDS, now);
+  }
+
+  /**
+   * Digest, lock, release-check — the shared body of both methods.
+   *
+   * The scope is a pinned argument from one of the two methods above and is
+   * never reachable from a request body, so the `IN` predicate this produces is
+   * always a single-scope one. The release gate is applied for the same reason
+   * `ResolveSecureLink` applies it: a withheld wave's grant must be as unusable
+   * for a write as it is for a read, and must refuse identically.
+   */
+  private async lock(
+    token: string,
+    scopeKind: GrantScopeKind,
+    now: Date,
+  ): Promise<SecureAccessGrant> {
+    return this.lockAny(token, [scopeKind], now);
+  }
+
+  /** The same, over a scope set. Never reachable with a caller-chosen one. */
+  private async lockAny(
+    token: string,
+    scopes: readonly GrantScopeKind[],
+    now: Date,
+  ): Promise<SecureAccessGrant> {
     const tokenHash = digestSecret(this.peppers.require().secureLinkTokenPepper, token);
 
-    const grant = await this.grants.lockActiveByTokenDigest(tokenHash, REQUEST_ACCESS, now);
+    const grant = await this.grants.lockActiveByTokenDigest(tokenHash, scopes, now);
     if (grant === undefined) {
       throw secureLinkUnavailable();
     }
+    // Raised through the same factory as every other refusal above, so a
+    // withheld wave is not distinguishable from an unknown token even here.
+    this.release.requireReleased(grant.scopeKind);
     return grant;
   }
 }

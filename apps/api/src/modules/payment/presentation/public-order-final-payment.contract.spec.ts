@@ -49,6 +49,20 @@ const APP7_ADMIN_PAYMENT_PATHS = [
   '/api/admin/payment-evidence/{evidenceId}/content',
 ];
 
+/**
+ * The three `APP12-B04` Ready-Made payment paths.
+ *
+ * Listed here so the exhaustive bounds below stay exhaustive: B04 composed the
+ * `FULL` obligation as its own sibling family under the same base path, and
+ * published **no** fourth evidence operation — the attempt-scoped lane above is
+ * reused unchanged, which is the claim these bounds are what prove.
+ */
+const B04_FULL_PAYMENT_PATHS = [
+  '/api/public/orders/full-payment',
+  '/api/public/orders/full-payment/qr',
+  '/api/public/orders/full-payment/attempts',
+];
+
 /** The accepted APP7 operation ids, none of which B02 may rename. */
 const APP7_DEPOSIT_OPERATION_IDS = [
   'publicOrderDeposit_current',
@@ -254,12 +268,17 @@ describe('APP9-B02 — the published customer final-payment contract', () => {
   });
 
   describe('APP7’s payment surface is untouched', () => {
-    it('still publishes every APP7 payment path, and the whole payment surface is these plus three', () => {
+    it('still publishes every APP7 payment path, beside B02’s three and B04’s three', () => {
       const paths = Object.keys(document.paths).filter((path) =>
         /deposit|payment|evidence|webhook|refund/i.test(path),
       );
       expect(paths.sort()).toEqual(
-        [...APP7_DEPOSIT_PATHS, ...APP7_ADMIN_PAYMENT_PATHS, ...B02_PATHS].sort(),
+        [
+          ...APP7_DEPOSIT_PATHS,
+          ...APP7_ADMIN_PAYMENT_PATHS,
+          ...B02_PATHS,
+          ...B04_FULL_PAYMENT_PATHS,
+        ].sort(),
       );
     });
 

@@ -113,9 +113,11 @@ import type {
   CreateSkuBody,
   DepositQrBody,
   FinalPaymentQrBody,
+  FullPaymentQrBody,
   HealthStatusResponse,
   InitiateDepositAttemptBody,
   InitiateFinalPaymentAttemptBody,
+  InitiateFullPaymentAttemptBody,
   IssueVerificationChallengeBody,
   OpenCustomerMergeBody,
   PrepareGalleryAssetBody,
@@ -148,6 +150,8 @@ import type {
   PublicOrderDepositInitiate201,
   PublicOrderFinalPaymentCurrent200,
   PublicOrderFinalPaymentInitiate201,
+  PublicOrderFullPaymentCurrent200,
+  PublicOrderFullPaymentInitiate201,
   PublicOrderShippingFeeAcknowledge201,
   PublicProductDetail200,
   PublicProductList200,
@@ -158,6 +162,7 @@ import type {
   PublicQuotationCurrent200,
   PublicQuotationReject200,
   PublicReadyMadeOrderCreate201,
+  PublicReadyMadeOrderCurrent200,
   PublicSecureLinkResolve200,
   PublicSitemapEntryList200,
   PublicVerificationIssue202,
@@ -172,6 +177,8 @@ import type {
   ReadCustomRequestStatusBody,
   ReadDepositBody,
   ReadFinalPaymentBody,
+  ReadFullPaymentBody,
+  ReadReadyMadeOrderBody,
   ReadTransferEvidenceBody,
   ReadinessStatusResponse,
   RejectCustomerMergeBody,
@@ -2263,6 +2270,64 @@ export const publicOrderFinalPaymentQr = (
 };
 
 /**
+ * Returns what is owed on the one Ready-Made order the presented secure link grants access to. The order comes from the grant, so there is no order id, obligation id, attempt id, amount or customer identifier in the body. The amount is the live obligation’s own frozen figure — the merchandise subtotal the order froze at creation plus the exact shipping fee an operator set — and nothing is recomputed on read: no price is looked up, no fee is added to a subtotal and no deposit is subtracted, because a Ready-Made order has none. After a shipping-fee correction this returns the successor obligation’s amount, because only the live one is ever read. The transfer reference is derived from the order code with the FL suffix, so it is identical on every read and distinct from the custom deposit and balance memos. This read stays available after the payment window closes, so a customer whose transfer an Admin has verified can see that; `payable` is what distinguishes the two. Reading writes nothing: no attempt is opened, no state moves and the link is not consumed. Every token that does not open a live order grant, and every order with no live obligation — including one whose shipping fee is still unpriced — answer with one identical 404.
+ * @summary Read the payment owed on the Ready-Made order a secure link opens
+ */
+export const publicOrderFullPaymentCurrent = (
+  readFullPaymentBody: ReadFullPaymentBody,
+  options?: SecondParameter<typeof apiRequest<PublicOrderFullPaymentCurrent200>>,
+) => {
+  return apiRequest<PublicOrderFullPaymentCurrent200>(
+    {
+      url: `/api/public/orders/full-payment`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: readFullPaymentBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Records that the customer is about to transfer what the order costs. The order, the obligation, the amount, the currency and the step-up evidence are all resolved by the server from the grant — none of them is accepted from the caller, and no custom deposit or balance can be reached through this route. Inside one transaction the grant is re-checked under its row lock, the order must be AWAITING_PAYMENT and the obligation still PENDING, a recent re-verification of the customer’s own contact is required, and one BANK_TRANSFER attempt is created at PENDING for the obligation’s exact amount. If a shipping-fee correction has replaced the obligation, this binds to the live successor at its amount; the earlier attempt stays where it was, under the obligation it was opened against, and never becomes the successor’s. This is **not** a payment: no attempt is settled, no obligation is satisfied, no order becomes READY_FOR_DELIVERY and no reconciliation is written — only an Admin verifying that the money arrived can do any of that. Repeating the call with the same Idempotency-Key replays the same attempt and creates no second one; a deliberate retry sends a new key.
+ * @summary Open one bank-transfer attempt against the Ready-Made order a secure link opens
+ */
+export const publicOrderFullPaymentInitiate = (
+  initiateFullPaymentAttemptBody: InitiateFullPaymentAttemptBody,
+  options?: SecondParameter<typeof apiRequest<PublicOrderFullPaymentInitiate201>>,
+) => {
+  return apiRequest<PublicOrderFullPaymentInitiate201>(
+    {
+      url: `/api/public/orders/full-payment/attempts`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: initiateFullPaymentAttemptBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Streams a PNG QR encoding the bank transfer for the order: the merchant’s bank and account, the live obligation’s exact amount and the derived FL transfer reference. It is an EMVCo/NAPAS account-transfer payload — a banking application reads it and pre-fills the transfer — and it is not a checkout session: it contains no application URL, no secure-link token, no attempt id and no provider reference. The image is generated locally on the server on every request from the obligation that is live at that moment and is never stored, so after a shipping-fee correction the next download carries the corrected amount with no cache to invalidate. Requesting it changes no payment state whatsoever. Unlike the read, it is refused unless the order is currently payable, because a QR is an instruction to send money and one served for a cancelled or already-verified order would invite a transfer nobody owes.
+ * @summary Download the bank-transfer QR for the Ready-Made order a secure link opens
+ */
+export const publicOrderFullPaymentQr = (
+  fullPaymentQrBody: FullPaymentQrBody,
+  options?: SecondParameter<typeof apiRequest<Blob>>,
+) => {
+  return apiRequest<Blob>(
+    {
+      url: `/api/public/orders/full-payment/qr`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: fullPaymentQrBody,
+      responseType: 'blob',
+    },
+    options,
+  );
+};
+
+/**
  * Records the customer’s decision to accept a specific higher shipping fee. The order, the customer, the fee currently in force, the currency, the grant and the step-up evidence are all resolved by the server from the secure link — only the new fee being accepted is taken from the caller. Inside one transaction the grant is re-checked under its row lock, the shipping detail is locked and must still be editable, the fee must be a genuine increase over the one the order carries, and a recent re-verification of the customer’s own contact is required. Exactly one immutable acknowledgement is appended. This changes nothing else: the shipping fee is not updated, the remaining balance is not recalculated, no payment is created and the order does not move — the operator applies the fee afterwards, and can only apply the exact increase acknowledged here. Repeating the same confirmation replays it and writes no second record.
  * @summary Accept one exact shipping-fee increase on the order a secure link opens
  */
@@ -2447,6 +2512,25 @@ export const publicReadyMadeOrderCreate = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: createReadyMadeOrderBody,
+    },
+    options,
+  );
+};
+
+/**
+ * Returns the one Ready-Made order the presented secure link grants access to. The order comes from the grant, so no order id, order code, obligation id or customer identifier is accepted or returned. It answers in every state the order can reach. Before an operator sets the shipping fee there is no delivery fee and no payment object at all — not a zero and not a provisional total — because no amount is owed yet; once the fee is set, `payment.payableTotal` carries the exact figure the obligation froze, and a later fee correction is reflected because only the live obligation is ever read. The payment deadline is the reserved stock’s own expiry, read rather than recomputed, and disappears once the reservation no longer stands. Reading writes nothing: no state moves, no fee changes, no reservation is extended and the link is not consumed. Every token that does not open a live order grant — unknown, expired, revoked, superseded, or issued for a custom request rather than an order — answers with one identical 404.
+ * @summary Read the Ready-Made order a secure link opens
+ */
+export const publicReadyMadeOrderCurrent = (
+  readReadyMadeOrderBody: ReadReadyMadeOrderBody,
+  options?: SecondParameter<typeof apiRequest<PublicReadyMadeOrderCurrent200>>,
+) => {
+  return apiRequest<PublicReadyMadeOrderCurrent200>(
+    {
+      url: `/api/public/ready-made-orders/current`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: readReadyMadeOrderBody,
     },
     options,
   );
@@ -2892,6 +2976,15 @@ export type PublicOrderFinalPaymentInitiateResult = NonNullable<
 export type PublicOrderFinalPaymentQrResult = NonNullable<
   Awaited<ReturnType<typeof publicOrderFinalPaymentQr>>
 >;
+export type PublicOrderFullPaymentCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof publicOrderFullPaymentCurrent>>
+>;
+export type PublicOrderFullPaymentInitiateResult = NonNullable<
+  Awaited<ReturnType<typeof publicOrderFullPaymentInitiate>>
+>;
+export type PublicOrderFullPaymentQrResult = NonNullable<
+  Awaited<ReturnType<typeof publicOrderFullPaymentQr>>
+>;
 export type PublicOrderShippingFeeAcknowledgeResult = NonNullable<
   Awaited<ReturnType<typeof publicOrderShippingFeeAcknowledge>>
 >;
@@ -2922,6 +3015,9 @@ export type PublicQuotationRejectResult = NonNullable<
 >;
 export type PublicReadyMadeOrderCreateResult = NonNullable<
   Awaited<ReturnType<typeof publicReadyMadeOrderCreate>>
+>;
+export type PublicReadyMadeOrderCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof publicReadyMadeOrderCurrent>>
 >;
 export type PublicSecureLinkResolveResult = NonNullable<
   Awaited<ReturnType<typeof publicSecureLinkResolve>>

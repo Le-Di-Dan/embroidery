@@ -60,6 +60,106 @@ export async function lockActiveReservationForOrder(
 }
 
 /**
+ * The same active reservation, **read without a lock** (`APP12-B04` §36).
+ *
+ * A separate function rather than a flag on
+ * {@link lockActiveReservationForOrder}, because the two answer different
+ * questions. That one is the opening move of a transaction that is about to
+ * decide something about the stock, and its `FOR UPDATE` is what makes the fee
+ * write and the expiry sweep contend rather than interleave. This one serves a
+ * zero-write customer projection that needs the payment deadline to display,
+ * and taking row locks on a public read would let an anonymous caller queue a
+ * fee confirmation behind it.
+ *
+ * The predicate is otherwise identical, including `RESERVED`: a reservation
+ * that has expired, been released or been consumed is not a live deadline, and
+ * returning its stale `expires_at` would put a countdown on a screen for stock
+ * the shop no longer holds.
+ *
+ * Snapshot semantics, deliberately: the answer is true as of the read and
+ * nothing acts on it. A caller that must *decide* uses the locking sibling.
+ */
+export async function readActiveReservationForOrder(
+  db: Pick<Transaction, 'select'>,
+  orderId: string,
+): Promise<Reservation | undefined> {
+  const rows = await db
+    .select()
+    .from(inventoryReservations)
+    .where(
+      and(eq(inventoryReservations.orderId, orderId), eq(inventoryReservations.status, 'RESERVED')),
+    )
+    .orderBy(asc(inventoryReservations.id))
+    .limit(1);
+
+  return rows.length === 0 ? undefined : toReservation(rows[0]!);
+}
+
+/**
+ * Whether this order's stock hold ended because its window lapsed
+ * (`APP12-B04-C1`).
+ *
+ * ```text
+ * true  ⇔  the order holds at least one reservation
+ *          ∧ every reservation it holds is EXPIRED
+ * ```
+ *
+ * ### Why "every", and not "the latest one"
+ *
+ * `uq_inventory_reservations__order_stock__reserved` is **partial** — it
+ * constrains `RESERVED` rows only — so although `APP12-B02` writes exactly one
+ * reservation per Ready-Made order and nothing re-reserves, a second terminal
+ * row is not forbidden by the schema. A "most recent row wins" rule would
+ * therefore be a guess, and a guess about why a customer's order ended is the
+ * one thing this function exists to avoid.
+ *
+ * The universal form needs no cardinality assumption and fails **closed** in
+ * every ambiguous case:
+ *
+ * ```text
+ * one EXPIRED                     -> true   the sweep ran
+ * one RELEASED, one EXPIRED       -> false  the hold also ended another way
+ * one CONSUMED                    -> false  the stock was shipped, not lapsed
+ * one RESERVED                    -> false  the hold is still live
+ * none at all                     -> false  there is nothing to have expired
+ * ```
+ *
+ * ### It answers about the stock, not about the order
+ *
+ * Deliberately: `inventory_reservations` is Inventory's aggregate and what
+ * `EXPIRED` means is Inventory's to say. Whether that fact makes a *customer*
+ * order "expired" rather than "cancelled" is Ordering's decision, taken by the
+ * caller against the order's own status.
+ *
+ * Counted in the database rather than materialised and filtered in JavaScript:
+ * the answer is two integers, and a row array would put reservation ids in the
+ * memory of a public read that must never publish one.
+ *
+ * Read-only and lock-free, on the same terms as
+ * {@link readActiveReservationForOrder}.
+ */
+export async function readOrderStockEndedByExpiry(
+  db: Pick<Transaction, 'select'>,
+  orderId: string,
+): Promise<boolean> {
+  const rows = await db
+    .select({
+      total: sql<string>`count(*)`,
+      expired: sql<string>`count(*) filter (where ${inventoryReservations.status} = 'EXPIRED')`,
+    })
+    .from(inventoryReservations)
+    .where(eq(inventoryReservations.orderId, orderId));
+
+  const row = rows[0];
+  if (row === undefined) {
+    return false;
+  }
+  // `count(*)` arrives as a string from `bigint`; compared as strings after an
+  // explicit equality on the total, so no parse and no precision question.
+  return row.total !== '0' && row.total === row.expired;
+}
+
+/**
  * Moves a `RESERVED` reservation's `expires_at` to `now() + windowMs`.
  *
  * The instant is computed **in the statement**, so it is the database's own

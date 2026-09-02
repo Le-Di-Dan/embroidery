@@ -4062,7 +4062,7 @@
       "AdminSecureGrantResponse": {
         "properties": {
           "customRequestId": {
-            "description": "The custom request this grant authorises access to. An opaque reference.",
+            "description": "The custom request this grant authorises access to. An opaque reference, present only when scopeKind is REQUEST_ACCESS.",
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6074",
             "type": "string"
           },
@@ -4077,10 +4077,16 @@
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6073",
             "type": "string"
           },
+          "orderId": {
+            "description": "The Ready-Made order this grant authorises access to. An opaque reference, present only when scopeKind is ORDER_ACCESS. Exactly one of the two subjects is present on any grant.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6074",
+            "type": "string"
+          },
           "scopeKind": {
-            "description": "What the grant covers. One value today; a grant carries no per-action scope.",
+            "description": "What the grant covers, and which of the two subject fields is present. REQUEST_ACCESS opens one custom request; ORDER_ACCESS opens one Ready-Made order. A grant carries no per-action scope.",
             "enum": [
-              "REQUEST_ACCESS"
+              "REQUEST_ACCESS",
+              "ORDER_ACCESS"
             ],
             "example": "REQUEST_ACCESS",
             "type": "string"
@@ -4098,7 +4104,6 @@
         },
         "required": [
           "grantId",
-          "customRequestId",
           "scopeKind",
           "status",
           "expiresAt"
@@ -5967,6 +5972,75 @@
         ],
         "type": "object"
       },
+      "CustomerFullPaymentResponse": {
+        "properties": {
+          "accessExpiresAt": {
+            "description": "When this secure link stops opening the order.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "bankInstructions": {
+            "$ref": "#/components/schemas/FullPaymentBankInstructionsResponse"
+          },
+          "currencyCode": {
+            "description": "The obligation’s own currency, copied. Always VND, enforced physically.",
+            "example": "VND",
+            "type": "string"
+          },
+          "fullPaymentAmount": {
+            "description": "Exact `numeric(14,2)` VND, always a string. Never a JSON number.",
+            "example": "280000.00",
+            "type": "string"
+          },
+          "fullPaymentStatus": {
+            "description": "The payment obligation’s own state. `SATISFIED` means an Admin confirmed receipt; opening an attempt, downloading the QR and transferring at the bank all leave it `PENDING`. A Ready-Made order has exactly one obligation and no deposit (BR-029).",
+            "enum": [
+              "PENDING",
+              "SATISFIED",
+              "CANCELLED",
+              "SUPERSEDED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          },
+          "orderCode": {
+            "description": "The customer-facing order code. Display and support only — a code is never an authorization input (CST-026, ADR-DB1-007).",
+            "example": "ORD-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "orderStatus": {
+            "description": "The order’s own state. `AWAITING_PAYMENT` is the one state in which this payment may be made, and an operator reaches it by setting the shipping fee, which is also what creates the obligation. `READY_FOR_DELIVERY` appears only after an Admin has verified that the money arrived; nothing a customer does produces it. `CANCELLED` is where a lapsed stock reservation puts the order.",
+            "enum": [
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "AWAITING_PAYMENT",
+            "type": "string"
+          },
+          "payable": {
+            "description": "Whether the two states above currently permit payment: the order is AWAITING_PAYMENT and the obligation is still PENDING. Derived on every read and stored nowhere. It is not a claim that anything has been paid — that is `fullPaymentStatus` — but the single answer to \"may the QR and a new attempt be requested right now\", which the other two operations refuse when it is false.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "orderCode",
+          "orderStatus",
+          "fullPaymentStatus",
+          "fullPaymentAmount",
+          "currencyCode",
+          "payable",
+          "bankInstructions",
+          "accessExpiresAt"
+        ],
+        "type": "object"
+      },
       "CustomerOwnedRequestSubjectResponse": {
         "properties": {
           "description": {
@@ -7624,6 +7698,122 @@
         ],
         "type": "object"
       },
+      "FullPaymentAttemptResponse": {
+        "properties": {
+          "amount": {
+            "description": "Exact `numeric(14,2)` VND, always a string. Never a JSON number.",
+            "example": "280000.00",
+            "type": "string"
+          },
+          "attemptId": {
+            "description": "The attempt this call opened, or the one an identical earlier call opened. Opaque, and the one identifier this surface publishes — the delivered attempt-scoped evidence upload takes it, and nothing else does.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6072",
+            "type": "string"
+          },
+          "currencyCode": {
+            "description": "Copied from the obligation.",
+            "example": "VND",
+            "type": "string"
+          },
+          "method": {
+            "description": "Always BANK_TRANSFER. There is no payment provider in this flow.",
+            "enum": [
+              "PROVIDER_REDIRECT",
+              "BANK_TRANSFER",
+              "OTHER"
+            ],
+            "example": "BANK_TRANSFER",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "True when an earlier call with the same Idempotency-Key already opened this attempt and this response replays it. No second attempt was created.",
+            "example": false,
+            "type": "boolean"
+          },
+          "status": {
+            "description": "Always PENDING. Opening an attempt records an intention to transfer, never a payment: only Admin verification can settle it.",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "SUCCEEDED",
+              "FAILED",
+              "EXPIRED",
+              "REQUIRES_REVIEW",
+              "REFUNDED",
+              "PARTIALLY_REFUNDED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          },
+          "transferReference": {
+            "description": "The exact message to put on the bank transfer: `ORD`, the order code body, then `FL` for a Ready-Made order payment. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind, and identical on every read, every retry and across a shipping-fee correction — the memo names the order, not the obligation, so a transfer sent before a correction still reconciles. The `FL` suffix distinguishes it from the custom `DC` and `RM` memos. It carries no name, phone, email, token or attempt id.",
+            "example": "ORD7K3MPQ2XVDFL",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attemptId",
+          "method",
+          "status",
+          "amount",
+          "currencyCode",
+          "transferReference",
+          "replayed"
+        ],
+        "type": "object"
+      },
+      "FullPaymentBankInstructionsResponse": {
+        "properties": {
+          "accountName": {
+            "description": "The account holder, so the customer can check it against their banking app.",
+            "example": "CONG TY THEU",
+            "type": "string"
+          },
+          "accountNumber": {
+            "description": "The receiving account number. Server-owned configuration; never customer input.",
+            "example": "00000000000",
+            "type": "string"
+          },
+          "bankBin": {
+            "description": "The receiving bank’s NAPAS acquirer id, exactly as the QR encodes it. A public bank identifier, not a credential.",
+            "example": "970418",
+            "type": "string"
+          },
+          "bankDisplayName": {
+            "description": "The receiving bank’s name, for the customer to read.",
+            "example": "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam",
+            "type": "string"
+          },
+          "transferReference": {
+            "description": "The exact message to put on the bank transfer: `ORD`, the order code body, then `FL` for a Ready-Made order payment. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind, and identical on every read, every retry and across a shipping-fee correction — the memo names the order, not the obligation, so a transfer sent before a correction still reconciles. The `FL` suffix distinguishes it from the custom `DC` and `RM` memos. It carries no name, phone, email, token or attempt id.",
+            "example": "ORD7K3MPQ2XVDFL",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bankBin",
+          "bankDisplayName",
+          "accountNumber",
+          "accountName",
+          "transferReference"
+        ],
+        "type": "object"
+      },
+      "FullPaymentQrBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to download the bank-transfer QR for the Ready-Made order that link opens. The account, the amount and the transfer reference are all server-owned; no attempt id and no QR input is accepted.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
       "GroupElement": {
         "additionalProperties": false,
         "description": "A group names its children by id and does not contain them. Membership is a relationship, so grouping never rewrites top-level z-order — which is what lets a customer group two elements without anything moving on screen.",
@@ -7768,6 +7958,21 @@
       "InitiateFinalPaymentAttemptBody": {
         "additionalProperties": false,
         "description": "Presents a secure-link token to open one BANK_TRANSFER payment attempt against the final payment that link opens. The obligation, amount, currency, method and step-up evidence are all resolved by the server; none of them is accepted here. The caller’s attempt key travels in the Idempotency-Key header.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
+      "InitiateFullPaymentAttemptBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to open one BANK_TRANSFER payment attempt against the Ready-Made order that link opens. The obligation, amount, currency, method and step-up evidence are all resolved by the server; none of them is accepted here. The caller’s attempt key travels in the Idempotency-Key header.",
         "properties": {
           "token": {
             "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
@@ -9509,6 +9714,36 @@
         ],
         "type": "object"
       },
+      "ReadFullPaymentBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to read the payment owed on the Ready-Made order that link already opens. No order, obligation, attempt, amount or customer identifier is accepted.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
+      "ReadReadyMadeOrderBody": {
+        "additionalProperties": false,
+        "description": "Presents a secure-link token to read the one Ready-Made order that link opens. No order id, order code, obligation id or customer identifier is accepted.",
+        "properties": {
+          "token": {
+            "description": "The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
       "ReadTransferEvidenceBody": {
         "additionalProperties": false,
         "description": "Presents a secure-link token and one attempt locator to read the transfer images already submitted for that attempt. Reads only; it submits nothing and changes no payment, order or asset state.",
@@ -9562,8 +9797,137 @@
         ],
         "type": "object"
       },
+      "ReadyMadeOrderAccessBootstrapResponse": {
+        "properties": {
+          "delivered": {
+            "description": "That the secure link was handed to the notification path for the customer’s own primary verified contact. The link itself is never in this response and cannot be recovered from the server afterwards — only its hash is stored. A customer who loses the message asks for a new link; retrying this request replays the order and issues nothing.",
+            "example": true,
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "description": "When that link stops opening the order. Absolute and never extended by using it.",
+            "example": "2026-09-09T04:15:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "scopeKind": {
+            "description": "What the issued secure link covers. Always ORDER_ACCESS here: it opens this one order and nothing else — not the customer’s other orders, and not any custom request.",
+            "enum": [
+              "REQUEST_ACCESS",
+              "ORDER_ACCESS"
+            ],
+            "example": "ORDER_ACCESS",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scopeKind",
+          "delivered",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "ReadyMadeOrderAccessResponse": {
+        "properties": {
+          "accessExpiresAt": {
+            "description": "When this secure link stops opening the order.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "currencyCode": {
+            "description": "The order’s own currency.",
+            "example": "VND",
+            "type": "string"
+          },
+          "delivery": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadyMadeOrderDeliveryResponse"
+              }
+            ],
+            "description": "Where the order is going, and what delivery costs so far. Absent only if the order carries no delivery record, which order creation makes impossible."
+          },
+          "item": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadyMadeOrderItemResponse"
+              }
+            ],
+            "description": "The one SKU line, frozen."
+          },
+          "merchandiseSubtotal": {
+            "description": "The frozen merchandise subtotal — the line total, excluding delivery. It is never the amount to pay: before the shipping fee there is no payable total at all, and after it `payment.payableTotal` is the authority.",
+            "example": "250000.00",
+            "type": "string"
+          },
+          "orderCode": {
+            "description": "The customer-facing order code. Display and support only — a code is never an authorization input (CST-026, ADR-DB1-007).",
+            "example": "ORD-7K3MPQ2XVD",
+            "type": "string"
+          },
+          "payment": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadyMadeOrderPaymentResponse"
+              }
+            ],
+            "description": "What is owed, once there is anything owed. **Absent** while the order is AWAITING_SHIPPING_FEE: no obligation exists yet, so there is no amount, no transfer reference and no QR. It is also absent once a cancelled order’s obligation has been cancelled with it."
+          },
+          "paymentDeadline": {
+            "description": "When the reserved stock is released if the order has not been paid for. Read from the reservation itself, never recomputed on this request. **Absent** once no live reservation stands — the window lapsed, the stock was released, or it was consumed at dispatch — which is exactly when a countdown must stop being shown.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "placedAt": {
+            "description": "When the order was placed, as the database recorded it.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "description": "The order’s own state. `AWAITING_SHIPPING_FEE` means an operator has not priced delivery yet, so there is no total to pay; `AWAITING_PAYMENT` means there is. `READY_FOR_DELIVERY` appears only after an Admin has verified that the money arrived. `CANCELLED` is where a lapsed stock reservation puts the order — its payment, QR and new attempts all become unavailable and are not revived.",
+            "enum": [
+              "AWAITING_SHIPPING_FEE",
+              "AWAITING_PAYMENT",
+              "READY_FOR_DELIVERY",
+              "DELIVERED",
+              "COMPLETED",
+              "ON_HOLD",
+              "CANCELLING",
+              "CANCELLED"
+            ],
+            "example": "AWAITING_PAYMENT",
+            "type": "string"
+          },
+          "terminationReason": {
+            "description": "Why a terminal order ended, when that is a recorded fact rather than an inference. RESERVATION_EXPIRED means the stock reservation lapsed before the order was paid for, so the shop released the stock and closed the order — the state a client renders differently from an ordinary cancellation. It is derived from the reservation’s own committed status, which the expiry sweep writes in the same transaction as the cancellation, and never from any free-text reason. **Absent** means the order was not classified as an expiry — which is not the same as \"not cancelled\", and `status` is what says that. A cancelled order with no reason here is an ordinary cancellation.",
+            "enum": [
+              "RESERVATION_EXPIRED"
+            ],
+            "example": "RESERVATION_EXPIRED",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderCode",
+          "status",
+          "currencyCode",
+          "placedAt",
+          "item",
+          "merchandiseSubtotal",
+          "accessExpiresAt"
+        ],
+        "type": "object"
+      },
       "ReadyMadeOrderCreatedResponse": {
         "properties": {
+          "access": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadyMadeOrderAccessBootstrapResponse"
+              }
+            ],
+            "description": "How the customer reaches this order afterwards. Issued in the same transaction as the order, so an order that exists is always reachable by its own customer."
+          },
           "merchandiseSubtotal": {
             "allOf": [
               {
@@ -9593,7 +9957,8 @@
           "orderCode",
           "status",
           "merchandiseSubtotal",
-          "reservationExpiresAt"
+          "reservationExpiresAt",
+          "access"
         ],
         "type": "object"
       },
@@ -9637,6 +10002,130 @@
           "recipientPhone",
           "addressLine",
           "province"
+        ],
+        "type": "object"
+      },
+      "ReadyMadeOrderDeliveryResponse": {
+        "properties": {
+          "addressLine": {
+            "description": "Street address.",
+            "example": "12 Nguyễn Huệ",
+            "type": "string"
+          },
+          "district": {
+            "description": "District, if given.",
+            "example": "Quận 1",
+            "type": "string"
+          },
+          "feeAmount": {
+            "description": "The exact shipping fee an operator set. **Absent** until they have — which is not the same as free, and is why no zero is sent. While it is absent the order is not payable and `payment` is absent too.",
+            "example": "30000.00",
+            "type": "string"
+          },
+          "province": {
+            "description": "Province or city.",
+            "example": "TP. Hồ Chí Minh",
+            "type": "string"
+          },
+          "recipientName": {
+            "description": "Who the order is for.",
+            "example": "Nguyễn Văn A",
+            "type": "string"
+          },
+          "recipientPhone": {
+            "description": "The delivery contact number.",
+            "example": "0901234567",
+            "type": "string"
+          },
+          "ward": {
+            "description": "Ward, if given.",
+            "example": "Phường Bến Nghé",
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipientName",
+          "recipientPhone",
+          "addressLine",
+          "province"
+        ],
+        "type": "object"
+      },
+      "ReadyMadeOrderItemResponse": {
+        "properties": {
+          "currencyCode": {
+            "description": "The line’s own currency.",
+            "example": "VND",
+            "type": "string"
+          },
+          "lineTotalAmount": {
+            "description": "Frozen line total — unit price x quantity, taken at order creation.",
+            "example": "250000.00",
+            "type": "string"
+          },
+          "productName": {
+            "description": "The product name **as it was when the order was placed**, snapshotted onto the line. A later Catalog rename does not change it.",
+            "example": "Áo thun cotton basic",
+            "type": "string"
+          },
+          "quantity": {
+            "description": "How many units were bought.",
+            "example": 2,
+            "type": "number"
+          },
+          "sizeLabel": {
+            "description": "The size the customer bought, if the SKU has one. Absent on the same terms.",
+            "example": "L",
+            "type": "string"
+          },
+          "unitPriceAmount": {
+            "description": "Frozen unit price.",
+            "example": "125000.00",
+            "type": "string"
+          },
+          "variantLabel": {
+            "description": "The variant the customer bought, if the SKU has one. Absent when the product has no variant attribute — never \"N/A\" or an empty string.",
+            "example": "Trắng",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productName",
+          "quantity",
+          "unitPriceAmount",
+          "lineTotalAmount",
+          "currencyCode"
+        ],
+        "type": "object"
+      },
+      "ReadyMadeOrderPaymentResponse": {
+        "properties": {
+          "payable": {
+            "description": "Whether payment may be made right now: the order is AWAITING_PAYMENT and the obligation is still PENDING. Derived on every read and stored nowhere. The QR and a new payment attempt are refused when it is false.",
+            "example": true,
+            "type": "boolean"
+          },
+          "payableTotal": {
+            "description": "The exact amount owed: the frozen merchandise subtotal plus the exact shipping fee, composed once when the fee was set and read back verbatim. After a shipping-fee correction this is the corrected figure — the obligation is recomposed from the frozen subtotal rather than adjusted, so two corrections do not compound. This is the authoritative total; it is not re-derived from the two fields above.",
+            "example": "280000.00",
+            "type": "string"
+          },
+          "status": {
+            "description": "The payment obligation’s own state. `SATISFIED` means an Admin confirmed receipt of the transfer. A Ready-Made order has exactly one obligation and no deposit (BR-029).",
+            "enum": [
+              "PENDING",
+              "SATISFIED",
+              "CANCELLED",
+              "SUPERSEDED"
+            ],
+            "example": "PENDING",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "payableTotal",
+          "payable"
         ],
         "type": "object"
       },
@@ -10230,7 +10719,7 @@
       "SecureLinkResolutionResponse": {
         "properties": {
           "customRequestId": {
-            "description": "The custom request this link grants access to.",
+            "description": "The custom request this link grants access to. Present only when scopeKind is REQUEST_ACCESS, and absent for ORDER_ACCESS — an order link publishes no identifier at all. The two subjects are exclusive: a link opens a request or an order, never both.",
             "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6071",
             "type": "string"
           },
@@ -10241,16 +10730,16 @@
             "type": "string"
           },
           "scopeKind": {
-            "description": "What the grant covers. One value today; a link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead.",
+            "description": "What the grant covers, and the only thing an order link publishes. REQUEST_ACCESS opens a custom request; ORDER_ACCESS opens one Ready-Made order and is what the order surface presents its token to. A link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead. The value is read from the stored grant — a caller cannot ask for a scope.",
             "enum": [
-              "REQUEST_ACCESS"
+              "REQUEST_ACCESS",
+              "ORDER_ACCESS"
             ],
-            "example": "REQUEST_ACCESS",
+            "example": "ORDER_ACCESS",
             "type": "string"
           }
         },
         "required": [
-          "customRequestId",
           "scopeKind",
           "expiresAt"
         ],
@@ -33524,6 +34013,631 @@
         ]
       }
     },
+    "/api/public/orders/full-payment": {
+      "post": {
+        "description": "Returns what is owed on the one Ready-Made order the presented secure link grants access to. The order comes from the grant, so there is no order id, obligation id, attempt id, amount or customer identifier in the body. The amount is the live obligation’s own frozen figure — the merchandise subtotal the order froze at creation plus the exact shipping fee an operator set — and nothing is recomputed on read: no price is looked up, no fee is added to a subtotal and no deposit is subtracted, because a Ready-Made order has none. After a shipping-fee correction this returns the successor obligation’s amount, because only the live one is ever read. The transfer reference is derived from the order code with the FL suffix, so it is identical on every read and distinct from the custom deposit and balance memos. This read stays available after the payment window closes, so a customer whose transfer an Admin has verified can see that; `payable` is what distinguishes the two. Reading writes nothing: no attempt is opened, no state moves and the link is not consumed. Every token that does not open a live order grant, and every order with no live obligation — including one whose shipping fee is still unpriced — answer with one identical 404.",
+        "operationId": "publicOrderFullPayment_current",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadFullPaymentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CustomerFullPaymentResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The payment this link opens, projected for its customer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no readable payment. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for a custom request rather than an order, for another order, or the order has no live payment obligation — which includes an order whose shipping fee has not been set yet and one whose obligation a fee correction superseded. The custom deposit and balance are never substituted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FULL_PAYMENT_INSTRUCTIONS_UNAVAILABLE — secure-link resolution or the merchant bank configuration is not usable. It names no variable and no value.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read the payment owed on the Ready-Made order a secure link opens",
+        "tags": [
+          "publicOrderFullPayment"
+        ]
+      }
+    },
+    "/api/public/orders/full-payment/attempts": {
+      "post": {
+        "description": "Records that the customer is about to transfer what the order costs. The order, the obligation, the amount, the currency and the step-up evidence are all resolved by the server from the grant — none of them is accepted from the caller, and no custom deposit or balance can be reached through this route. Inside one transaction the grant is re-checked under its row lock, the order must be AWAITING_PAYMENT and the obligation still PENDING, a recent re-verification of the customer’s own contact is required, and one BANK_TRANSFER attempt is created at PENDING for the obligation’s exact amount. If a shipping-fee correction has replaced the obligation, this binds to the live successor at its amount; the earlier attempt stays where it was, under the obligation it was opened against, and never becomes the successor’s. This is **not** a payment: no attempt is settled, no obligation is satisfied, no order becomes READY_FOR_DELIVERY and no reconciliation is written — only an Admin verifying that the money arrived can do any of that. Repeating the call with the same Idempotency-Key replays the same attempt and creates no second one; a deliberate retry sends a new key.",
+        "operationId": "publicOrderFullPayment_initiate",
+        "parameters": [
+          {
+            "description": "The caller’s own key for this attempt, 8–128 characters from A–Z a–z 0–9 . _ : and -. The same key replays the attempt it already opened; a new key opens a new attempt. Keys are scoped to the obligation, so a key spent before a shipping-fee correction is free again against the obligation that replaced it. Never stored in the clear and never echoed back.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitiateFullPaymentAttemptBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FullPaymentAttemptResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The attempt this call opened, or a replay of an earlier identical one.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body, or a missing or malformed Idempotency-Key.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "REVERIFICATION_REQUIRED — the link is live, but no recent contact re-verification stands for this customer. Resolved by completing a STEP_UP verification and calling again; it is not a statement about the link.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no live obligation. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for a custom request rather than an order, for another order, the order’s shipping fee has not been set yet, or a fee correction superseded the obligation.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FULL_PAYMENT_NOT_PAYABLE when the order is not currently collectable — it has been cancelled (which is where a lapsed stock reservation puts it), has moved past payment, or the obligation is already SATISFIED, so a settled payment cannot be reopened by a new attempt; DUPLICATE_OPERATION when another initiation with this key is still in flight; IDEMPOTENCY_CONFLICT when this key was already spent on a different initiation.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FULL_PAYMENT_INSTRUCTIONS_UNAVAILABLE — secure-link resolution or the step-up policy is not usable. It discloses no configuration internal.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Open one bank-transfer attempt against the Ready-Made order a secure link opens",
+        "tags": [
+          "publicOrderFullPayment"
+        ]
+      }
+    },
+    "/api/public/orders/full-payment/qr": {
+      "post": {
+        "description": "Streams a PNG QR encoding the bank transfer for the order: the merchant’s bank and account, the live obligation’s exact amount and the derived FL transfer reference. It is an EMVCo/NAPAS account-transfer payload — a banking application reads it and pre-fills the transfer — and it is not a checkout session: it contains no application URL, no secure-link token, no attempt id and no provider reference. The image is generated locally on the server on every request from the obligation that is live at that moment and is never stored, so after a shipping-fee correction the next download carries the corrected amount with no cache to invalidate. Requesting it changes no payment state whatsoever. Unlike the read, it is refused unless the order is currently payable, because a QR is an instruction to send money and one served for a cancelled or already-verified order would invite a transfer nobody owes.",
+        "operationId": "publicOrderFullPayment_qr",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FullPaymentQrBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The transfer QR, as a downloadable PNG.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Always `no-store`. The bytes are stable only while the obligation is, and the link authorising them is not.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "description": "Always `attachment` with a fixed filename naming no order fact.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token and every request with no readable payment. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for a custom request rather than an order, for another order, or the order has no live payment obligation — which includes an order whose shipping fee has not been set yet and one whose obligation a fee correction superseded. The custom deposit and balance are never substituted.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FULL_PAYMENT_NOT_PAYABLE — the order has been cancelled (which is where a lapsed stock reservation puts it), has already moved past payment, or the obligation is already SATISFIED. One code for every case, so the response does not disclose the order’s internal state; the read carries both states honestly for a caller entitled to them.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "FULL_PAYMENT_INSTRUCTIONS_UNAVAILABLE — the merchant bank configuration or the QR encoder could not produce a payload. It discloses no configuration internal.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Download the bank-transfer QR for the Ready-Made order a secure link opens",
+        "tags": [
+          "publicOrderFullPayment"
+        ]
+      }
+    },
     "/api/public/orders/shipping-fee-acknowledgements": {
       "post": {
         "description": "Records the customer’s decision to accept a specific higher shipping fee. The order, the customer, the fee currently in force, the currency, the grant and the step-up evidence are all resolved by the server from the secure link — only the new fee being accepted is taken from the caller. Inside one transaction the grant is re-checked under its row lock, the shipping detail is locked and must still be editable, the fee must be a genuine increase over the one the order carries, and a recent re-verification of the customer’s own contact is required. Exactly one immutable acknowledgement is appended. This changes nothing else: the shipping fee is not updated, the remaining balance is not recalculated, no payment is created and the order does not move — the operator applies the fee afterwards, and can only apply the exact increase acknowledged here. Repeating the same confirmation replays it and writes no second record.",
@@ -35349,6 +36463,189 @@
           }
         },
         "summary": "Place a Ready-Made order",
+        "tags": [
+          "publicReadyMadeOrder"
+        ]
+      }
+    },
+    "/api/public/ready-made-orders/current": {
+      "post": {
+        "description": "Returns the one Ready-Made order the presented secure link grants access to. The order comes from the grant, so no order id, order code, obligation id or customer identifier is accepted or returned. It answers in every state the order can reach. Before an operator sets the shipping fee there is no delivery fee and no payment object at all — not a zero and not a provisional total — because no amount is owed yet; once the fee is set, `payment.payableTotal` carries the exact figure the obligation froze, and a later fee correction is reflected because only the live obligation is ever read. The payment deadline is the reserved stock’s own expiry, read rather than recomputed, and disappears once the reservation no longer stands. Reading writes nothing: no state moves, no fee changes, no reservation is extended and the link is not consumed. Every token that does not open a live order grant — unknown, expired, revoked, superseded, or issued for a custom request rather than an order — answers with one identical 404.",
+        "operationId": "publicReadyMadeOrder_current",
+        "parameters": [
+          {
+            "description": "Optional client-supplied correlation ID. A value matching the pattern is preserved end to end; anything missing or outside it is replaced by a safe generated ID and is never echoed back.",
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadReadyMadeOrderBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiSuccessResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ReadyMadeOrderAccessResponse"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The order this link opens, projected for its customer.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Malformed body.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "SECURE_LINK_UNAVAILABLE — the one answer to every unusable token. Identical in status, code, message and shape whether the token is unknown, expired, revoked, superseded, for a custom request rather than an order, or for an order that no longer exists.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Too many secure-link requests from this source; Retry-After indicates the wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "An unexpected error occurred. Please try again later.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Secure-link resolution is not configured.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "The effective correlation ID for this request, set by the gateway. Quote it when reporting a problem so the request can be found in the logs.",
+                "schema": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9._-]{1,64}$",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read the Ready-Made order a secure link opens",
         "tags": [
           "publicReadyMadeOrder"
         ]

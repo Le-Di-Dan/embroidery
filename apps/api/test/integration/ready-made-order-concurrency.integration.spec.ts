@@ -23,6 +23,7 @@
  */
 import { sql } from 'drizzle-orm';
 
+import { publishSecureAccessPolicies } from '../support/secure-access-policy-fixture';
 import {
   createApiIntegrationContext,
   type ApiIntegrationTestContext,
@@ -51,6 +52,11 @@ describe('APP12-B02 Ready-Made order concurrency', () => {
 
   beforeAll(async () => {
     context = await createApiIntegrationContext('app12_b02_race');
+    // `APP12-B04` composed the ORDER_ACCESS grant issuer into order creation, so
+    // the fail-closed `secure_grant` policy is now on the Wave-1 checkout path:
+    // without a published version this command refuses rather than committing an
+    // order its own customer could never open.
+    await publishSecureAccessPolicies(context.app, context.database);
   }, 240_000);
 
   afterAll(async () => {

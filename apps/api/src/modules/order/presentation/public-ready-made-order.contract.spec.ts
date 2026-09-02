@@ -20,6 +20,7 @@ import { join } from 'node:path';
 import { createOperationId } from '../../../openapi/operation-id';
 import { createReadyMadeOrderSchema } from './schemas/public-ready-made-order.request';
 import {
+  ReadyMadeOrderAccessBootstrapResponse,
   ReadyMadeOrderCreatedResponse,
   ReadyMadeOrderSubtotalResponse,
 } from './schemas/public-ready-made-order.response';
@@ -174,17 +175,34 @@ describe('APP12-B02 public Ready-Made order contract', () => {
   });
 
   describe('the response publishes only customer-safe facts', () => {
-    it('declares exactly four fields', () => {
+    it('declares exactly the accepted fields, plus APP12-B04 access bootstrap', () => {
+      // `APP12-B04` added `access` **additively**: the four `APP12-B02` fields
+      // keep their names and meanings, and the three the bootstrap declares say
+      // that the order is reachable and until when — never how.
       expect(declaredProperties(RESPONSE_SOURCE).sort()).toEqual([
+        'access',
         'amount',
         'currency',
+        'delivered',
+        'expiresAt',
         'merchandiseSubtotal',
         'orderCode',
         'reservationExpiresAt',
+        'scopeKind',
         'status',
       ]);
       expect(new ReadyMadeOrderCreatedResponse()).toBeDefined();
       expect(new ReadyMadeOrderSubtotalResponse()).toBeDefined();
+      expect(new ReadyMadeOrderAccessBootstrapResponse()).toBeDefined();
+    });
+
+    it('publishes no credential and no grant id in the bootstrap', () => {
+      // The raw ORDER_ACCESS token exists once, in the creating transaction,
+      // and only its peppered digest is stored — so a replay has none to
+      // reproduce and this shape must never grow a field that would need one.
+      for (const field of ['token', 'accessToken', 'rawToken', 'grantId', 'link', 'url']) {
+        expect(declaredProperties(RESPONSE_SOURCE)).not.toContain(field);
+      }
     });
 
     it.each([

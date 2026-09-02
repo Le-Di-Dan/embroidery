@@ -11,6 +11,7 @@
  */
 import { sql } from 'drizzle-orm';
 
+import { applyWave2ReleasedEnv } from '../support/api-integration-context';
 import { publishDepositPolicies } from '../support/customer-deposit-fixture';
 import {
   createTransferEvidenceContext,
@@ -37,14 +38,21 @@ jest.setTimeout(240_000);
 
 describe('APP7-B05 — customer transfer evidence', () => {
   let context: TransferEvidenceTestContext;
+  let restoreWave2: () => void;
 
   beforeAll(async () => {
+    // `APP12-G02` withholds every Wave-2 customer operation by default, so a
+    // suite proving Wave-2 behaviour has to run in the wave that releases it.
+    // Set before the context is built: the gate reads the value once, at module
+    // composition (`APP12-B04` §48).
+    restoreWave2 = applyWave2ReleasedEnv();
     context = await createTransferEvidenceContext('app7_b05_authorization');
     await publishDepositPolicies(context.app, context.database);
   });
 
   afterAll(async () => {
     await context?.close();
+    restoreWave2?.();
   });
 
   function status(token: string, attemptId: string) {

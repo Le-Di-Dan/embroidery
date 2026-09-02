@@ -101,6 +101,7 @@ import {
   AuthorizeSecureLink,
   type SecureLinkAdmission,
 } from '../../../customer/application/authorize-secure-link.service';
+import { requestSubjectOf } from '../../../customer/domain/grant/grant-subject';
 import { secureLinkUnavailable } from '../../../customer/domain/grant/secure-link.errors';
 import type { NetworkReadableRequest } from '../../../customer/infrastructure/rate-limit/public-network-key.service';
 import {
@@ -146,7 +147,10 @@ export class ReadCurrentDesignReview {
       return { outcome: 'RATE_LIMITED', retryAfterSeconds: admission.retryAfterSeconds };
     }
 
-    const reviewVersion = await this.resolveReview(admission.link.customRequestId);
+    // `APP12-B04` widened a resolved link's subject to a scope-dependent XOR.
+    // This is a `REQUEST_ACCESS` surface, so the narrowing is explicit and an
+    // `ORDER_ACCESS` token is refused with the one indistinguishable answer.
+    const reviewVersion = await this.resolveReview(requestSubjectOf(admission.link));
 
     // The agreement set is resolved only after the review target is, so an
     // unconfigured deployment cannot answer `503` to a token that would have got

@@ -20,6 +20,7 @@ import { SECURE_LINK_RESOLVE_POLICY_KEY } from '../../src/modules/customer/domai
 import {
   createApiIntegrationContext,
   type ApiIntegrationTestContext,
+  applyWave2ReleasedEnv,
 } from '../support/api-integration-context';
 import {
   RESOLVE_POLICY,
@@ -46,6 +47,7 @@ class FakeClock {
 
 describe('APP4-B06 secure-link resolve rate limit (API)', () => {
   let context: ApiIntegrationTestContext;
+  let restoreWave2: () => void;
   let clock: FakeClock;
   let live: SeededGrant;
   let restoreSecretEnv: () => void;
@@ -53,6 +55,11 @@ describe('APP4-B06 secure-link resolve rate limit (API)', () => {
   beforeAll(async () => {
     restoreSecretEnv = applyApp4SecretEnv();
     clock = new FakeClock();
+    // `APP12-G02` withholds every Wave-2 customer operation by default, so a
+    // suite proving Wave-2 behaviour has to run in the wave that releases it.
+    // Set before the context is built: the gate reads the value once, at module
+    // composition (`APP12-B04` §48).
+    restoreWave2 = applyWave2ReleasedEnv();
     context = await createApiIntegrationContext('app4_b06_rate', (builder) =>
       builder
         .overrideProvider(SlidingWindowRateLimiter)
@@ -69,6 +76,7 @@ describe('APP4-B06 secure-link resolve rate limit (API)', () => {
 
   afterAll(async () => {
     await context?.close();
+    restoreWave2?.();
     restoreSecretEnv?.();
   });
 

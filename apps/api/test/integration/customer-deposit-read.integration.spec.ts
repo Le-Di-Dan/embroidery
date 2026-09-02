@@ -20,6 +20,7 @@ import {
   createApiIntegrationContext,
   MERCHANT_BANK_TEST_CONFIG,
   type ApiIntegrationTestContext,
+  applyWave2ReleasedEnv,
 } from '../support/api-integration-context';
 import {
   DEPOSIT_ROUTES,
@@ -54,11 +55,17 @@ interface DepositBody {
 
 describe('APP7-B03 — customer deposit read and QR', () => {
   let context: ApiIntegrationTestContext;
+  let restoreWave2: () => void;
   let restoreSecrets: () => void;
   let deposit: SeededDeposit;
 
   beforeAll(async () => {
     restoreSecrets = applyDepositSecretEnv();
+    // `APP12-G02` withholds every Wave-2 customer operation by default, so a
+    // suite proving Wave-2 behaviour has to run in the wave that releases it.
+    // Set before the context is built: the gate reads the value once, at module
+    // composition (`APP12-B04` §48).
+    restoreWave2 = applyWave2ReleasedEnv();
     context = await createApiIntegrationContext('app7_b03_read');
     await publishDepositPolicies(context.app, context.database);
     deposit = await seedDeposit(context.app, context.database, {
@@ -68,6 +75,7 @@ describe('APP7-B03 — customer deposit read and QR', () => {
 
   afterAll(async () => {
     await context?.close();
+    restoreWave2?.();
     restoreSecrets?.();
   });
 

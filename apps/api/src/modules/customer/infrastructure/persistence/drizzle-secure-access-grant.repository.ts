@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseExecutor, DrizzleRepository } from '@embroidery/persistence';
 import { notFoundError, schema } from '@embroidery/database';
 import type { GrantScopeKind, SecureAccessGrantState } from '@embroidery/database';
-import { and, desc, eq, gt } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray } from 'drizzle-orm';
 
 import type { CustomerId } from '../../domain/repositories/customer.repository';
 import type {
@@ -31,6 +31,7 @@ type GrantRow = typeof secureAccessGrants.$inferSelect;
 const SUMMARY_COLUMNS = {
   id: secureAccessGrants.id,
   customRequestId: secureAccessGrants.customRequestId,
+  orderId: secureAccessGrants.orderId,
   scopeKind: secureAccessGrants.scopeKind,
   status: secureAccessGrants.status,
   expiresAt: secureAccessGrants.expiresAt,
@@ -38,28 +39,30 @@ const SUMMARY_COLUMNS = {
 } as const;
 
 /**
- * The request a grant authorizes, refusing an `ORDER_ACCESS` grant.
+ * A nullable subject column, as the domain states it.
  *
- * APP12-DB01 made `custom_request_id` nullable, because an `ORDER_ACCESS`
- * grant's subject is an order (`ck_secure_access_grants__scope_subject` makes
- * the pair an XOR). Everything in this repository is an APP4 `REQUEST_ACCESS`
- * read whose callers publish the request id, so a null is refused here rather
- * than mapped to an empty string. Nothing can issue an `ORDER_ACCESS` grant
- * yet; APP12-B04 owns widening these reads when something does.
+ * `APP12-DB01` made `custom_request_id` nullable and added `order_id`, and
+ * `ck_secure_access_grants__scope_subject` makes the pair a typed XOR: exactly
+ * one of them is non-NULL on every stored row. `APP12-B04` stopped this adapter
+ * refusing the `ORDER_ACCESS` half — before it, nothing could issue such a
+ * grant, so a NULL request id could only be a corrupt row; now it is the
+ * ordinary shape of an order grant.
+ *
+ * The mapping is `null -> undefined` and nothing else. No default, no empty
+ * string and no cross-fill: which subject a grant carries is decided by its
+ * scope in the database, and an adapter that invented one would be inventing
+ * the grant's meaning. The application narrows with `requestSubjectOf` and
+ * `orderSubjectOf`, which refuse the wrong scope with the one indistinguishable
+ * `SECURE_LINK_UNAVAILABLE`.
  */
-function requireRequestSubject(row: { customRequestId: string | null; scopeKind: string }): string {
-  if (row.customRequestId === null) {
-    throw new Error(
-      `secure access grant with scope ${row.scopeKind} has no custom request subject; ` +
-        'this read path is REQUEST_ACCESS-only until APP12-B04.',
-    );
-  }
-  return row.customRequestId;
+function subjectOf(value: string | null): string | undefined {
+  return value === null ? undefined : value;
 }
 
 type SummaryRow = {
   readonly id: string;
   readonly customRequestId: string | null;
+  readonly orderId: string | null;
   readonly scopeKind: string;
   readonly status: string;
   readonly expiresAt: Date;
@@ -68,7 +71,8 @@ type SummaryRow = {
 function toSummary(row: SummaryRow): SecureAccessGrantSummary {
   return {
     id: row.id as GrantId,
-    customRequestId: requireRequestSubject(row),
+    customRequestId: subjectOf(row.customRequestId),
+    orderId: subjectOf(row.orderId),
     scopeKind: row.scopeKind as GrantScopeKind,
     status: row.status as SecureAccessGrantState,
     expiresAt: row.expiresAt,
@@ -79,7 +83,8 @@ function toDomain(row: GrantRow): SecureAccessGrant {
   return {
     id: row.id as GrantId,
     customerId: row.customerId as CustomerId,
-    customRequestId: requireRequestSubject(row),
+    customRequestId: subjectOf(row.customRequestId),
+    orderId: subjectOf(row.orderId),
     scopeKind: row.scopeKind as GrantScopeKind,
     expiresAt: row.expiresAt,
   };
@@ -101,7 +106,13 @@ export class DrizzleSecureAccessGrantRepository
         .values({
           id: input.id,
           customerId: input.customerId,
-          customRequestId: input.customRequestId,
+          // The subject union, unpacked exactly once. Each branch writes its own
+          // column and leaves the other NULL, which is the shape
+          // `ck_secure_access_grants__scope_subject` demands — no path here can
+          // set both or neither.
+          ...(input.scopeKind === 'REQUEST_ACCESS'
+            ? { customRequestId: input.customRequestId }
+            : { orderId: input.orderId }),
           tokenHash: input.tokenHash,
           scopeKind: input.scopeKind,
           status: 'ACTIVE',
@@ -217,7 +228,7 @@ export class DrizzleSecureAccessGrantRepository
    */
   async resolveActiveByTokenDigest(
     tokenHash: string,
-    scopeKind: GrantScopeKind,
+    scopes: readonly GrantScopeKind[],
     now: Date,
   ): Promise<SecureAccessGrant | undefined> {
     return this.run('resolveActiveByTokenDigest', async () => {
@@ -227,7 +238,11 @@ export class DrizzleSecureAccessGrantRepository
         .where(
           and(
             eq(secureAccessGrants.tokenHash, tokenHash),
-            eq(secureAccessGrants.scopeKind, scopeKind),
+            // `IN` rather than `=` since `APP12-B04`. A caller admitting both
+            // scopes still issues **one** query: asking twice would make which
+            // scope matched measurable from outside, even though neither answer
+            // is published.
+            inArray(secureAccessGrants.scopeKind, [...scopes]),
             eq(secureAccessGrants.status, 'ACTIVE'),
             gt(secureAccessGrants.expiresAt, now),
           ),
@@ -240,7 +255,7 @@ export class DrizzleSecureAccessGrantRepository
 
   async lockActiveByTokenDigest(
     tokenHash: string,
-    scopeKind: GrantScopeKind,
+    scopes: readonly GrantScopeKind[],
     now: Date,
   ): Promise<SecureAccessGrant | undefined> {
     return this.run('lockActiveByTokenDigest', async () => {
@@ -257,7 +272,11 @@ export class DrizzleSecureAccessGrantRepository
         .where(
           and(
             eq(secureAccessGrants.tokenHash, tokenHash),
-            eq(secureAccessGrants.scopeKind, scopeKind),
+            // `IN` rather than `=` since `APP12-B04`. A caller admitting both
+            // scopes still issues **one** query: asking twice would make which
+            // scope matched measurable from outside, even though neither answer
+            // is published.
+            inArray(secureAccessGrants.scopeKind, [...scopes]),
             eq(secureAccessGrants.status, 'ACTIVE'),
             gt(secureAccessGrants.expiresAt, now),
           ),
@@ -290,6 +309,26 @@ export class DrizzleSecureAccessGrantRepository
             eq(secureAccessGrants.customRequestId, customRequestId),
             eq(secureAccessGrants.status, 'ACTIVE'),
           ),
+        );
+      return rows.map(toDomain);
+    });
+  }
+
+  /**
+   * The `APP12-B04` `ORDER_ACCESS` pre-read.
+   *
+   * The same shape as {@link listActiveForRequest} over the other subject
+   * column. Both are needed and neither can be widened into the other: NULLs
+   * never collide in a UNIQUE index, so the request predicate matches no order
+   * grant and the order predicate matches no request grant.
+   */
+  async listActiveForOrder(orderId: string): Promise<SecureAccessGrant[]> {
+    return this.run('listActiveForOrder', async () => {
+      const rows = await this.db
+        .select()
+        .from(secureAccessGrants)
+        .where(
+          and(eq(secureAccessGrants.orderId, orderId), eq(secureAccessGrants.status, 'ACTIVE')),
         );
       return rows.map(toDomain);
     });

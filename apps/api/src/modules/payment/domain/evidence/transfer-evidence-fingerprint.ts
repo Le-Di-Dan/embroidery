@@ -32,8 +32,21 @@ import {
 export const TRANSFER_EVIDENCE_FINGERPRINT_VERSION = 1;
 
 export interface TransferEvidenceScopeInput {
-  /** The request the grant resolved to — never one the caller named. */
-  readonly customRequestId: string;
+  /**
+   * The subject the grant resolved to — never one the caller named.
+   *
+   * The custom request for a `REQUEST_ACCESS` grant, and the order for an
+   * `ORDER_ACCESS` one (`APP12-B04` §22, §23). One field rather than two
+   * because the scope key needs *a* stable, proved owner for the attempt, and
+   * exactly one of the two subjects exists on any grant
+   * (`ck_secure_access_grants__scope_subject`).
+   *
+   * Only the field's **name** changed at `APP12-B04`. The digested string below
+   * is character-for-character the delivered one, so every key an in-flight
+   * custom upload already claimed still resolves to the same scope — a renamed
+   * prefix would have silently orphaned them mid-retry.
+   */
+  readonly subjectId: string;
   /** The attempt the server proved, not the locator the body carried. */
   readonly paymentAttemptId: string;
   /** Already validated by `parseIdempotencyKey`. Digested here and nowhere stored. */
@@ -42,7 +55,7 @@ export interface TransferEvidenceScopeInput {
 
 export function transferEvidenceScopeKey(input: TransferEvidenceScopeInput): string {
   return sha256Hex(
-    `app7-b05-evidence:${input.customRequestId}:${input.paymentAttemptId}:${input.idempotencyKey}`,
+    `app7-b05-evidence:${input.subjectId}:${input.paymentAttemptId}:${input.idempotencyKey}`,
   );
 }
 

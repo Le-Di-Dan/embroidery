@@ -587,13 +587,14 @@ export interface AdminCustomerDetailResponse {
 }
 
 /**
- * What the grant covers. One value today; a grant carries no per-action scope.
+ * What the grant covers, and which of the two subject fields is present. REQUEST_ACCESS opens one custom request; ORDER_ACCESS opens one Ready-Made order. A grant carries no per-action scope.
  */
 export type AdminSecureGrantResponseScopeKind =
   (typeof AdminSecureGrantResponseScopeKind)[keyof typeof AdminSecureGrantResponseScopeKind];
 
 export const AdminSecureGrantResponseScopeKind = {
   REQUEST_ACCESS: 'REQUEST_ACCESS',
+  ORDER_ACCESS: 'ORDER_ACCESS',
 } as const;
 
 /**
@@ -609,13 +610,15 @@ export const AdminSecureGrantResponseStatus = {
 } as const;
 
 export interface AdminSecureGrantResponse {
-  /** The custom request this grant authorises access to. An opaque reference. */
-  customRequestId: string;
+  /** The custom request this grant authorises access to. An opaque reference, present only when scopeKind is REQUEST_ACCESS. */
+  customRequestId?: string;
   /** When the link stops working. Absolute and never extended; enforced on every read whatever the stored status says. */
   expiresAt: string;
   /** The grant. */
   grantId: string;
-  /** What the grant covers. One value today; a grant carries no per-action scope. */
+  /** The Ready-Made order this grant authorises access to. An opaque reference, present only when scopeKind is ORDER_ACCESS. Exactly one of the two subjects is present on any grant. */
+  orderId?: string;
+  /** What the grant covers, and which of the two subject fields is present. REQUEST_ACCESS opens one custom request; ORDER_ACCESS opens one Ready-Made order. A grant carries no per-action scope. */
   scopeKind: AdminSecureGrantResponseScopeKind;
   /** The persisted lifecycle state. Read it together with `expiresAt`: expiry is enforced on every use rather than by a background sweep, so a grant may still be stored as ACTIVE after its `expiresAt` has passed and yet open nothing. ACTIVE **and** `expiresAt` in the future is the only combination that is still live. */
   status: AdminSecureGrantResponseStatus;
@@ -3637,6 +3640,67 @@ export interface CustomerFinalPaymentResponse {
   payable: boolean;
 }
 
+/**
+ * The payment obligation’s own state. `SATISFIED` means an Admin confirmed receipt; opening an attempt, downloading the QR and transferring at the bank all leave it `PENDING`. A Ready-Made order has exactly one obligation and no deposit (BR-029).
+ */
+export type CustomerFullPaymentResponseFullPaymentStatus =
+  (typeof CustomerFullPaymentResponseFullPaymentStatus)[keyof typeof CustomerFullPaymentResponseFullPaymentStatus];
+
+export const CustomerFullPaymentResponseFullPaymentStatus = {
+  PENDING: 'PENDING',
+  SATISFIED: 'SATISFIED',
+  CANCELLED: 'CANCELLED',
+  SUPERSEDED: 'SUPERSEDED',
+} as const;
+
+/**
+ * The order’s own state. `AWAITING_PAYMENT` is the one state in which this payment may be made, and an operator reaches it by setting the shipping fee, which is also what creates the obligation. `READY_FOR_DELIVERY` appears only after an Admin has verified that the money arrived; nothing a customer does produces it. `CANCELLED` is where a lapsed stock reservation puts the order.
+ */
+export type CustomerFullPaymentResponseOrderStatus =
+  (typeof CustomerFullPaymentResponseOrderStatus)[keyof typeof CustomerFullPaymentResponseOrderStatus];
+
+export const CustomerFullPaymentResponseOrderStatus = {
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface FullPaymentBankInstructionsResponse {
+  /** The account holder, so the customer can check it against their banking app. */
+  accountName: string;
+  /** The receiving account number. Server-owned configuration; never customer input. */
+  accountNumber: string;
+  /** The receiving bank’s NAPAS acquirer id, exactly as the QR encodes it. A public bank identifier, not a credential. */
+  bankBin: string;
+  /** The receiving bank’s name, for the customer to read. */
+  bankDisplayName: string;
+  /** The exact message to put on the bank transfer: `ORD`, the order code body, then `FL` for a Ready-Made order payment. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind, and identical on every read, every retry and across a shipping-fee correction — the memo names the order, not the obligation, so a transfer sent before a correction still reconciles. The `FL` suffix distinguishes it from the custom `DC` and `RM` memos. It carries no name, phone, email, token or attempt id. */
+  transferReference: string;
+}
+
+export interface CustomerFullPaymentResponse {
+  /** When this secure link stops opening the order. */
+  accessExpiresAt: string;
+  bankInstructions: FullPaymentBankInstructionsResponse;
+  /** The obligation’s own currency, copied. Always VND, enforced physically. */
+  currencyCode: string;
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  fullPaymentAmount: string;
+  /** The payment obligation’s own state. `SATISFIED` means an Admin confirmed receipt; opening an attempt, downloading the QR and transferring at the bank all leave it `PENDING`. A Ready-Made order has exactly one obligation and no deposit (BR-029). */
+  fullPaymentStatus: CustomerFullPaymentResponseFullPaymentStatus;
+  /** The customer-facing order code. Display and support only — a code is never an authorization input (CST-026, ADR-DB1-007). */
+  orderCode: string;
+  /** The order’s own state. `AWAITING_PAYMENT` is the one state in which this payment may be made, and an operator reaches it by setting the shipping fee, which is also what creates the obligation. `READY_FOR_DELIVERY` appears only after an Admin has verified that the money arrived; nothing a customer does produces it. `CANCELLED` is where a lapsed stock reservation puts the order. */
+  orderStatus: CustomerFullPaymentResponseOrderStatus;
+  /** Whether the two states above currently permit payment: the order is AWAITING_PAYMENT and the obligation is still PENDING. Derived on every read and stored nowhere. It is not a claim that anything has been paid — that is `fullPaymentStatus` — but the single answer to "may the QR and a new attempt be requested right now", which the other two operations refuse when it is false. */
+  payable: boolean;
+}
+
 export type CustomerQuotationLineItemResponseLineKind =
   (typeof CustomerQuotationLineItemResponseLineKind)[keyof typeof CustomerQuotationLineItemResponseLineKind];
 
@@ -4412,6 +4476,63 @@ export interface FinalPaymentQrBody {
   token: string;
 }
 
+/**
+ * Always BANK_TRANSFER. There is no payment provider in this flow.
+ */
+export type FullPaymentAttemptResponseMethod =
+  (typeof FullPaymentAttemptResponseMethod)[keyof typeof FullPaymentAttemptResponseMethod];
+
+export const FullPaymentAttemptResponseMethod = {
+  PROVIDER_REDIRECT: 'PROVIDER_REDIRECT',
+  BANK_TRANSFER: 'BANK_TRANSFER',
+  OTHER: 'OTHER',
+} as const;
+
+/**
+ * Always PENDING. Opening an attempt records an intention to transfer, never a payment: only Admin verification can settle it.
+ */
+export type FullPaymentAttemptResponseStatus =
+  (typeof FullPaymentAttemptResponseStatus)[keyof typeof FullPaymentAttemptResponseStatus];
+
+export const FullPaymentAttemptResponseStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  REQUIRES_REVIEW: 'REQUIRES_REVIEW',
+  REFUNDED: 'REFUNDED',
+  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
+} as const;
+
+export interface FullPaymentAttemptResponse {
+  /** Exact `numeric(14,2)` VND, always a string. Never a JSON number. */
+  amount: string;
+  /** The attempt this call opened, or the one an identical earlier call opened. Opaque, and the one identifier this surface publishes — the delivered attempt-scoped evidence upload takes it, and nothing else does. */
+  attemptId: string;
+  /** Copied from the obligation. */
+  currencyCode: string;
+  /** Always BANK_TRANSFER. There is no payment provider in this flow. */
+  method: FullPaymentAttemptResponseMethod;
+  /** True when an earlier call with the same Idempotency-Key already opened this attempt and this response replays it. No second attempt was created. */
+  replayed: boolean;
+  /** Always PENDING. Opening an attempt records an intention to transfer, never a payment: only Admin verification can settle it. */
+  status: FullPaymentAttemptResponseStatus;
+  /** The exact message to put on the bank transfer: `ORD`, the order code body, then `FL` for a Ready-Made order payment. Fifteen uppercase alphanumeric characters, derived from the order and the obligation kind, and identical on every read, every retry and across a shipping-fee correction — the memo names the order, not the obligation, so a transfer sent before a correction still reconciles. The `FL` suffix distinguishes it from the custom `DC` and `RM` memos. It carries no name, phone, email, token or attempt id. */
+  transferReference: string;
+}
+
+/**
+ * Presents a secure-link token to download the bank-transfer QR for the Ready-Made order that link opens. The account, the amount and the transfer reference are all server-owned; no attempt id and no QR input is accepted.
+ */
+export interface FullPaymentQrBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
 export type HealthStatusResponseService =
   (typeof HealthStatusResponseService)[keyof typeof HealthStatusResponseService];
 
@@ -4449,6 +4570,17 @@ export interface InitiateDepositAttemptBody {
  * Presents a secure-link token to open one BANK_TRANSFER payment attempt against the final payment that link opens. The obligation, amount, currency, method and step-up evidence are all resolved by the server; none of them is accepted here. The caller’s attempt key travels in the Idempotency-Key header.
  */
 export interface InitiateFinalPaymentAttemptBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
+/**
+ * Presents a secure-link token to open one BANK_TRANSFER payment attempt against the Ready-Made order that link opens. The obligation, amount, currency, method and step-up evidence are all resolved by the server; none of them is accepted here. The caller’s attempt key travels in the Idempotency-Key header.
+ */
+export interface InitiateFullPaymentAttemptBody {
   /**
    * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
    * @pattern ^[A-Za-z0-9_-]{43}$
@@ -5220,6 +5352,28 @@ export interface ReadFinalPaymentBody {
 }
 
 /**
+ * Presents a secure-link token to read the payment owed on the Ready-Made order that link already opens. No order, obligation, attempt, amount or customer identifier is accepted.
+ */
+export interface ReadFullPaymentBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
+/**
+ * Presents a secure-link token to read the one Ready-Made order that link opens. No order id, order code, obligation id or customer identifier is accepted.
+ */
+export interface ReadReadyMadeOrderBody {
+  /**
+   * The opaque token from the secure link, read by the client from the URL fragment. Sent in the request body only — never as a path segment, query parameter or header, so it cannot reach a server or proxy access log. Never echoed back, and never consumed: the same link works until it expires or is revoked.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+}
+
+/**
  * Presents a secure-link token and one attempt locator to read the transfer images already submitted for that attempt. Reads only; it submits nothing and changes no payment, order or asset state.
  */
 export interface ReadTransferEvidenceBody {
@@ -5257,6 +5411,134 @@ export interface ReadinessStatusResponse {
   timestamp: string;
 }
 
+/**
+ * What the issued secure link covers. Always ORDER_ACCESS here: it opens this one order and nothing else — not the customer’s other orders, and not any custom request.
+ */
+export type ReadyMadeOrderAccessBootstrapResponseScopeKind =
+  (typeof ReadyMadeOrderAccessBootstrapResponseScopeKind)[keyof typeof ReadyMadeOrderAccessBootstrapResponseScopeKind];
+
+export const ReadyMadeOrderAccessBootstrapResponseScopeKind = {
+  REQUEST_ACCESS: 'REQUEST_ACCESS',
+  ORDER_ACCESS: 'ORDER_ACCESS',
+} as const;
+
+export interface ReadyMadeOrderAccessBootstrapResponse {
+  /** That the secure link was handed to the notification path for the customer’s own primary verified contact. The link itself is never in this response and cannot be recovered from the server afterwards — only its hash is stored. A customer who loses the message asks for a new link; retrying this request replays the order and issues nothing. */
+  delivered: boolean;
+  /** When that link stops opening the order. Absolute and never extended by using it. */
+  expiresAt: string;
+  /** What the issued secure link covers. Always ORDER_ACCESS here: it opens this one order and nothing else — not the customer’s other orders, and not any custom request. */
+  scopeKind: ReadyMadeOrderAccessBootstrapResponseScopeKind;
+}
+
+/**
+ * The order’s own state. `AWAITING_SHIPPING_FEE` means an operator has not priced delivery yet, so there is no total to pay; `AWAITING_PAYMENT` means there is. `READY_FOR_DELIVERY` appears only after an Admin has verified that the money arrived. `CANCELLED` is where a lapsed stock reservation puts the order — its payment, QR and new attempts all become unavailable and are not revived.
+ */
+export type ReadyMadeOrderAccessResponseStatus =
+  (typeof ReadyMadeOrderAccessResponseStatus)[keyof typeof ReadyMadeOrderAccessResponseStatus];
+
+export const ReadyMadeOrderAccessResponseStatus = {
+  AWAITING_SHIPPING_FEE: 'AWAITING_SHIPPING_FEE',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLING: 'CANCELLING',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+/**
+ * Why a terminal order ended, when that is a recorded fact rather than an inference. RESERVATION_EXPIRED means the stock reservation lapsed before the order was paid for, so the shop released the stock and closed the order — the state a client renders differently from an ordinary cancellation. It is derived from the reservation’s own committed status, which the expiry sweep writes in the same transaction as the cancellation, and never from any free-text reason. **Absent** means the order was not classified as an expiry — which is not the same as "not cancelled", and `status` is what says that. A cancelled order with no reason here is an ordinary cancellation.
+ */
+export type ReadyMadeOrderAccessResponseTerminationReason =
+  (typeof ReadyMadeOrderAccessResponseTerminationReason)[keyof typeof ReadyMadeOrderAccessResponseTerminationReason];
+
+export const ReadyMadeOrderAccessResponseTerminationReason = {
+  RESERVATION_EXPIRED: 'RESERVATION_EXPIRED',
+} as const;
+
+export interface ReadyMadeOrderDeliveryResponse {
+  /** Street address. */
+  addressLine: string;
+  /** District, if given. */
+  district?: string;
+  /** The exact shipping fee an operator set. **Absent** until they have — which is not the same as free, and is why no zero is sent. While it is absent the order is not payable and `payment` is absent too. */
+  feeAmount?: string;
+  /** Province or city. */
+  province: string;
+  /** Who the order is for. */
+  recipientName: string;
+  /** The delivery contact number. */
+  recipientPhone: string;
+  /** Ward, if given. */
+  ward?: string;
+}
+
+export interface ReadyMadeOrderItemResponse {
+  /** The line’s own currency. */
+  currencyCode: string;
+  /** Frozen line total — unit price x quantity, taken at order creation. */
+  lineTotalAmount: string;
+  /** The product name **as it was when the order was placed**, snapshotted onto the line. A later Catalog rename does not change it. */
+  productName: string;
+  /** How many units were bought. */
+  quantity: number;
+  /** The size the customer bought, if the SKU has one. Absent on the same terms. */
+  sizeLabel?: string;
+  /** Frozen unit price. */
+  unitPriceAmount: string;
+  /** The variant the customer bought, if the SKU has one. Absent when the product has no variant attribute — never "N/A" or an empty string. */
+  variantLabel?: string;
+}
+
+/**
+ * The payment obligation’s own state. `SATISFIED` means an Admin confirmed receipt of the transfer. A Ready-Made order has exactly one obligation and no deposit (BR-029).
+ */
+export type ReadyMadeOrderPaymentResponseStatus =
+  (typeof ReadyMadeOrderPaymentResponseStatus)[keyof typeof ReadyMadeOrderPaymentResponseStatus];
+
+export const ReadyMadeOrderPaymentResponseStatus = {
+  PENDING: 'PENDING',
+  SATISFIED: 'SATISFIED',
+  CANCELLED: 'CANCELLED',
+  SUPERSEDED: 'SUPERSEDED',
+} as const;
+
+export interface ReadyMadeOrderPaymentResponse {
+  /** Whether payment may be made right now: the order is AWAITING_PAYMENT and the obligation is still PENDING. Derived on every read and stored nowhere. The QR and a new payment attempt are refused when it is false. */
+  payable: boolean;
+  /** The exact amount owed: the frozen merchandise subtotal plus the exact shipping fee, composed once when the fee was set and read back verbatim. After a shipping-fee correction this is the corrected figure — the obligation is recomposed from the frozen subtotal rather than adjusted, so two corrections do not compound. This is the authoritative total; it is not re-derived from the two fields above. */
+  payableTotal: string;
+  /** The payment obligation’s own state. `SATISFIED` means an Admin confirmed receipt of the transfer. A Ready-Made order has exactly one obligation and no deposit (BR-029). */
+  status: ReadyMadeOrderPaymentResponseStatus;
+}
+
+export interface ReadyMadeOrderAccessResponse {
+  /** When this secure link stops opening the order. */
+  accessExpiresAt: string;
+  /** The order’s own currency. */
+  currencyCode: string;
+  /** Where the order is going, and what delivery costs so far. Absent only if the order carries no delivery record, which order creation makes impossible. */
+  delivery?: ReadyMadeOrderDeliveryResponse;
+  /** The one SKU line, frozen. */
+  item: ReadyMadeOrderItemResponse;
+  /** The frozen merchandise subtotal — the line total, excluding delivery. It is never the amount to pay: before the shipping fee there is no payable total at all, and after it `payment.payableTotal` is the authority. */
+  merchandiseSubtotal: string;
+  /** The customer-facing order code. Display and support only — a code is never an authorization input (CST-026, ADR-DB1-007). */
+  orderCode: string;
+  /** What is owed, once there is anything owed. **Absent** while the order is AWAITING_SHIPPING_FEE: no obligation exists yet, so there is no amount, no transfer reference and no QR. It is also absent once a cancelled order’s obligation has been cancelled with it. */
+  payment?: ReadyMadeOrderPaymentResponse;
+  /** When the reserved stock is released if the order has not been paid for. Read from the reservation itself, never recomputed on this request. **Absent** once no live reservation stands — the window lapsed, the stock was released, or it was consumed at dispatch — which is exactly when a countdown must stop being shown. */
+  paymentDeadline?: string;
+  /** When the order was placed, as the database recorded it. */
+  placedAt: string;
+  /** The order’s own state. `AWAITING_SHIPPING_FEE` means an operator has not priced delivery yet, so there is no total to pay; `AWAITING_PAYMENT` means there is. `READY_FOR_DELIVERY` appears only after an Admin has verified that the money arrived. `CANCELLED` is where a lapsed stock reservation puts the order — its payment, QR and new attempts all become unavailable and are not revived. */
+  status: ReadyMadeOrderAccessResponseStatus;
+  /** Why a terminal order ended, when that is a recorded fact rather than an inference. RESERVATION_EXPIRED means the stock reservation lapsed before the order was paid for, so the shop released the stock and closed the order — the state a client renders differently from an ordinary cancellation. It is derived from the reservation’s own committed status, which the expiry sweep writes in the same transaction as the cancellation, and never from any free-text reason. **Absent** means the order was not classified as an expiry — which is not the same as "not cancelled", and `status` is what says that. A cancelled order with no reason here is an ordinary cancellation. */
+  terminationReason?: ReadyMadeOrderAccessResponseTerminationReason;
+}
+
 export interface ReadyMadeOrderSubtotalResponse {
   /** Merchandise subtotal as numeric(14,2). A string, never a JSON number. */
   amount: string;
@@ -5265,6 +5547,8 @@ export interface ReadyMadeOrderSubtotalResponse {
 }
 
 export interface ReadyMadeOrderCreatedResponse {
+  /** How the customer reaches this order afterwards. Issued in the same transaction as the order, so an order that exists is always reachable by its own customer. */
+  access: ReadyMadeOrderAccessBootstrapResponse;
   /** Frozen merchandise subtotal — unit price x quantity. Excludes shipping. */
   merchandiseSubtotal: ReadyMadeOrderSubtotalResponse;
   /** Human order code. Quotable to support; never a credential. */
@@ -5615,21 +5899,22 @@ export interface SaveShippingDetailBody {
 }
 
 /**
- * What the grant covers. One value today; a link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead.
+ * What the grant covers, and the only thing an order link publishes. REQUEST_ACCESS opens a custom request; ORDER_ACCESS opens one Ready-Made order and is what the order surface presents its token to. A link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead. The value is read from the stored grant — a caller cannot ask for a scope.
  */
 export type SecureLinkResolutionResponseScopeKind =
   (typeof SecureLinkResolutionResponseScopeKind)[keyof typeof SecureLinkResolutionResponseScopeKind];
 
 export const SecureLinkResolutionResponseScopeKind = {
   REQUEST_ACCESS: 'REQUEST_ACCESS',
+  ORDER_ACCESS: 'ORDER_ACCESS',
 } as const;
 
 export interface SecureLinkResolutionResponse {
-  /** The custom request this link grants access to. */
-  customRequestId: string;
+  /** The custom request this link grants access to. Present only when scopeKind is REQUEST_ACCESS, and absent for ORDER_ACCESS — an order link publishes no identifier at all. The two subjects are exclusive: a link opens a request or an order, never both. */
+  customRequestId?: string;
   /** When the link stops working. Absolute, never extended, and enforced on every read — a grant past this instant resolves for nobody whether or not a sweep has run. */
   expiresAt: string;
-  /** What the grant covers. One value today; a link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead. */
+  /** What the grant covers, and the only thing an order link publishes. REQUEST_ACCESS opens a custom request; ORDER_ACCESS opens one Ready-Made order and is what the order surface presents its token to. A link never carries a per-action scope, and sensitive actions require a fresh step-up verification instead. The value is read from the stored grant — a caller cannot ask for a scope. */
   scopeKind: SecureLinkResolutionResponseScopeKind;
 }
 
@@ -6750,6 +7035,14 @@ export type PublicOrderFinalPaymentInitiate201 = ApiSuccessResponse & {
   data: FinalPaymentAttemptResponse;
 };
 
+export type PublicOrderFullPaymentCurrent200 = ApiSuccessResponse & {
+  data: CustomerFullPaymentResponse;
+};
+
+export type PublicOrderFullPaymentInitiate201 = ApiSuccessResponse & {
+  data: FullPaymentAttemptResponse;
+};
+
 export type PublicOrderShippingFeeAcknowledge201 = ApiSuccessResponse & {
   data: ShippingFeeAcknowledgedResponse;
 };
@@ -6801,6 +7094,10 @@ export type PublicQuotationReject200 = ApiSuccessResponse & {
 
 export type PublicReadyMadeOrderCreate201 = ApiSuccessResponse & {
   data: ReadyMadeOrderCreatedResponse;
+};
+
+export type PublicReadyMadeOrderCurrent200 = ApiSuccessResponse & {
+  data: ReadyMadeOrderAccessResponse;
 };
 
 export type PublicSecureLinkResolve200 = ApiSuccessResponse & {

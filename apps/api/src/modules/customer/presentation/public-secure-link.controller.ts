@@ -36,7 +36,8 @@
  *
  * ### Every failure looks the same
  *
- * Unknown, expired, revoked, superseded, wrong target and wrong scope all leave
+ * Unknown, expired, revoked, superseded, wrong target, wrong scope and — since
+ * `APP12-B04` — a scope this release wave withholds all leave
  * the resolver as one `SecureLinkError` and arrive here as one
  * `404 / SECURE_LINK_UNAVAILABLE` with one message. This class contains no
  * branch on a cause, because it is never told one.
@@ -201,14 +202,23 @@ export class PublicSecureLinkController {
  * The resolved grant's id and customer are deliberately dropped here rather than
  * in the response class: the serializer has nowhere to put them, so no future
  * edit to the view type can leak one without also changing this function.
+ *
+ * `APP12-B04` adds a third dropped field. `ResolvedSecureLink` now carries an
+ * `orderId` for the in-process Ready-Made surfaces, and it is discarded here for
+ * the same reason: `BR-032` keeps raw order UUIDs off the customer surface, and
+ * `/truy-cap` needs only `scopeKind` to know which page to forward to. The
+ * request subject is spread rather than assigned so an `ORDER_ACCESS` resolution
+ * publishes no `customRequestId` key at all, instead of a null one.
  */
 function toView(resolved: {
-  readonly customRequestId: string;
+  readonly customRequestId: string | undefined;
   readonly scopeKind: SecureLinkResolutionView['scopeKind'];
   readonly expiresAt: Date;
 }): SecureLinkResolutionView {
   return {
-    customRequestId: resolved.customRequestId,
+    ...(resolved.customRequestId === undefined
+      ? {}
+      : { customRequestId: resolved.customRequestId }),
     scopeKind: resolved.scopeKind,
     expiresAt: resolved.expiresAt.toISOString(),
   };

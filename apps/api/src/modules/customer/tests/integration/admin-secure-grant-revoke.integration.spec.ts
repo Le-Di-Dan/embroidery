@@ -149,7 +149,7 @@ describe('APP4-B07 Admin secure-grant revocation (integration)', () => {
       // The link is live before the call, asked through the repository's own
       // live-grant resolver rather than by reading `status`.
       await expect(
-        grants.resolveActiveByTokenDigest(grant.tokenHash, 'REQUEST_ACCESS', new Date()),
+        grants.resolveActiveByTokenDigest(grant.tokenHash, ['REQUEST_ACCESS'], new Date()),
       ).resolves.toBeDefined();
 
       await revoke(grant.grantId, { reason: REASON }).expect(204);
@@ -159,7 +159,7 @@ describe('APP4-B07 Admin secure-grant revocation (integration)', () => {
       expect(row.revoke_reason).toBe(REASON);
 
       await expect(
-        grants.resolveActiveByTokenDigest(grant.tokenHash, 'REQUEST_ACCESS', new Date()),
+        grants.resolveActiveByTokenDigest(grant.tokenHash, ['REQUEST_ACCESS'], new Date()),
       ).resolves.toBeUndefined();
     });
 

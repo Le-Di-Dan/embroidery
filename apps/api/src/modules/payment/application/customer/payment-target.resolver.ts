@@ -8,6 +8,20 @@
  *   → payment_obligations(order_id, kind, live)     AGG-16
  * ```
  *
+ * ### The `ORDER_ACCESS` walk (`APP12-B04`)
+ *
+ * ```text
+ * ORDER_ACCESS grant
+ *   -> orders(id)                                 OrderDepositContextPort
+ *   -> payment_obligations(order_id, FULL, live)  AGG-16
+ * ```
+ *
+ * One hop shorter, because an order grant names its order directly. The port's
+ * `findOrderById` already existed for the Admin payment read (`APP7-B04` §7),
+ * so no new Ordering read is introduced; the containment assertion below is
+ * the same one, and is what makes a foreign obligation id unreachable on both
+ * walks.
+ *
  * ### Why the kind is a parameter (`APP9-B02`)
  *
  * `APP7-B03` delivered this walk closed to `DEPOSIT`, which was correct while
@@ -65,9 +79,43 @@ export class PaymentTargetResolver {
     return order;
   }
 
-  async resolve(requestId: CustomRequestId, kind: PaymentObligationKind): Promise<PaymentTarget> {
-    const order = await this.resolveOrder(requestId);
+  /**
+   * The order an `ORDER_ACCESS` grant names (`APP12-B04`).
+   *
+   * The `orderId` is read off the grant row by the caller and is never a body
+   * field, so this method cannot be reached with an order the caller chose.
+   * Refuses identically to {@link resolveOrder}: an order that does not exist
+   * and one the grant does not open have to look the same from outside.
+   */
+  async resolveOrderById(orderId: string): Promise<OrderDepositContext> {
+    const order = await this.orders.findOrderById(orderId);
+    if (order === undefined) {
+      throw secureLinkUnavailable();
+    }
+    return order;
+  }
 
+  async resolve(requestId: CustomRequestId, kind: PaymentObligationKind): Promise<PaymentTarget> {
+    return this.liveFor(await this.resolveOrder(requestId), kind);
+  }
+
+  /**
+   * The `ORDER_ACCESS` sibling of {@link resolve} (`APP12-B04`).
+   *
+   * Same second hop, different first one. Both end in {@link liveFor}, so the
+   * liveness rule and the containment check exist once: a divergence between
+   * them would be a Ready-Made surface admitting an obligation the custom one
+   * refuses, or the reverse, discovered only in production.
+   */
+  async resolveForOrder(orderId: string, kind: PaymentObligationKind): Promise<PaymentTarget> {
+    return this.liveFor(await this.resolveOrderById(orderId), kind);
+  }
+
+  /** The order's one live obligation of this kind, proved to belong to it. */
+  private async liveFor(
+    order: OrderDepositContext,
+    kind: PaymentObligationKind,
+  ): Promise<PaymentTarget> {
     // Kind-aware *and* live-aware: `findLiveForOrder` filters on the statuses
     // `uq_payment_obligations__order_kind__live` arbitrates, so a SUPERSEDED or
     // CANCELLED row is invisible here and can never become a payment target.

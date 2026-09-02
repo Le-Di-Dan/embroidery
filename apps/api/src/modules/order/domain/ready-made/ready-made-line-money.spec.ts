@@ -101,6 +101,13 @@ describe('APP12-B02 Ready-Made result codec', () => {
     status: 'AWAITING_SHIPPING_FEE',
     merchandiseSubtotal: { amount: '450000.00', currency: 'VND' },
     reservationExpiresAt: '2026-09-03T04:15:00.000Z',
+    // `APP12-B04` §7 — the access bootstrap. Three facts about the grant and no
+    // credential: the raw token is never stored, so a replay has none to serve.
+    access: {
+      scopeKind: 'ORDER_ACCESS',
+      delivered: true,
+      expiresAt: '2026-09-09T04:15:00.000Z',
+    },
   };
 
   it('returns a well-formed stored result unchanged', () => {
@@ -114,6 +121,11 @@ describe('APP12-B02 Ready-Made result codec', () => {
     ['a missing expiry', { ...stored, reservationExpiresAt: undefined }],
     ['a numeric amount', { ...stored, merchandiseSubtotal: { amount: 450000, currency: 'VND' } }],
     ['a missing subtotal', { ...stored, merchandiseSubtotal: undefined }],
+    // `APP12-B04`. A record written before the bootstrap existed replays as a
+    // fault rather than as a 201 that tells the customer nothing about how to
+    // reach their order.
+    ['a missing access bootstrap', { ...stored, access: undefined }],
+    ['a non-boolean delivered flag', { ...stored, access: { ...stored.access, delivered: 'yes' } }],
   ])('treats %s as a fault rather than as a response', (_label, malformed) => {
     expect(() => decodeReadyMadeOrderResult(malformed)).toThrow();
   });

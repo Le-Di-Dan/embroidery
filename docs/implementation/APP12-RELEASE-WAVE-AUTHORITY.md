@@ -113,6 +113,29 @@ operations**: **84** `admin*`, 44 `public*`, 3 `staff*`, 2 `health*`. All four
 are Admin-authenticated, so **this section’s public matrix does not move at
 all**: `public*` stays 44, `DENY` stays **31** and `ALLOW` stays **13**.
 
+**Amended by `APP12-B04`.** That checkpoint published **four** new public
+operations — `publicReadyMadeOrder_current` (the secure Ready-Made order read)
+and `publicOrderFullPayment_current` / `_qr` / `_initiate` (the `FULL` payment
+family) — taking the artifact to **125 paths, 138 operations**: 84 `admin*`,
+**49** `public*`, 3 `staff*`, 2 `health*`. All four are `WAVE1_READY_MADE` and
+therefore `ALLOW`.
+
+It also introduced a **third exposure class**. Three public operations take a
+secure-link token and serve both waves through one operation, so their release
+decision cannot be taken from an operation id at all:
+
+```text
+before B04    45 public   31 DENY   14 ALLOW    0 SCOPE_GATED
+after  B04    49 public   28 DENY   18 ALLOW    3 SCOPE_GATED
+```
+
+`SCOPE_GATED` = `publicSecureLink_resolve` (§3.2) plus
+`publicOrderDepositEvidence_upload` and `_status` (§3.4). Nothing withheld
+before B04 became reachable after it: a scope-gated operation still refuses
+every `REQUEST_ACCESS` grant while Wave 2 is unreleased — one layer in, where
+the resolved grant row can be read, and with the indistinguishable
+`SECURE_LINK_UNAVAILABLE` rather than the guard's generic 404.
+
 They are recorded here rather than left out because the inventory’s value is
 that it is complete: an operation missing from it is an operation nobody
 classified. Admin operations are outside the Wave-2 public gate by construction
@@ -129,14 +152,16 @@ C02 contract suite asserts directly.
 | `publicGalleryEntry_*` | 3 | `WAVE1_PUBLIC_READ` | `ALLOW` |
 | `publicSitemapEntry_list` | 1 | `WAVE1_PUBLIC_READ` | `ALLOW` |
 | `publicVerification_*` | 4 | `WAVE1_SHARED_PRIMITIVE` | `ALLOW` — §3.1 |
-| `publicSecureLink_resolve` | 1 | `WAVE2_CUSTOM` **today** | `DENY` — §3.2 |
+| `publicSecureLink_resolve` | 1 | `PRIVATE_SHARED` | `SCOPE_GATED` — §3.2 |
+| `publicReadyMadeOrder_current`, `publicOrderFullPayment_*` (`APP12-B04`) | 4 | `WAVE1_READY_MADE` | `ALLOW` |
 | `publicProductPlacement_get`, `publicProductSideBackground_get` | 2 | `WAVE2_CUSTOM` | `DENY` — §3.3 |
 | `publicDesignTemplate_*`, `publicDesignTemplateAsset_get` | 3 | `WAVE2_CUSTOM` | `DENY` |
 | `publicDesignSession_*`, `publicDesignSessionAsset_*` | 6 | `WAVE2_CUSTOM` | `DENY` |
 | `publicCustomRequest_*`, `publicCustomRequestAsset_*` | 4 | `WAVE2_CUSTOM` | `DENY` |
 | `publicQuotation_*` | 3 | `WAVE2_CUSTOM` | `DENY` |
 | `publicDesignReview_*` | 3 | `WAVE2_CUSTOM` | `DENY` |
-| `publicOrderDeposit_*`, `publicOrderDepositEvidence_*` | 5 | `WAVE2_CUSTOM` | `DENY` — §3.4 |
+| `publicOrderDeposit_*` | 3 | `WAVE2_CUSTOM` | `DENY` — §3.4 |
+| `publicOrderDepositEvidence_*` | 2 | `PRIVATE_SHARED` | `SCOPE_GATED` — §3.4 |
 | `publicOrderFinalPayment_*` | 3 | `WAVE2_CUSTOM` | `DENY` — §3.4 |
 | `publicOrderShippingFee_acknowledge` | 1 | `WAVE2_CUSTOM` | `DENY` — §3.4 |
 | `health_*` | 2 | `INTERNAL_WORKER` / infra | `NOT_APPLICABLE` |
@@ -144,11 +169,10 @@ C02 contract suite asserts directly.
 | `admin*` (all) | 80 | §5 | `NOT_APPLICABLE` |
 
 Reserved, not yet existing, and **not** to be invented before their checkpoint:
-Ready-Made purchasable SKU projection (`APP12-B01`), order creation
-(`B02`), Admin shipping fee and `FULL` obligation (`B03`), `ORDER_ACCESS` read
-and `FULL` payment composition (`B04`), Admin verification and origin-aware
-fulfilment (`B05`), dynamic public category read (`C01`), Admin category
-management (`C02`). Each is `WAVE1_READY_MADE` on arrival.
+Admin verification and origin-aware fulfilment (`B05`). It is
+`WAVE1_READY_MADE` on arrival. Every other reservation in this paragraph —
+`B01`, `B02`, `B03`, `B04`, `C01`, `C02` — has since been delivered and is
+classified above.
 
 ### 3.1 Contact verification is genuinely shared — do not deny it
 
@@ -167,15 +191,24 @@ It has no Wave-1 caller and no Ready-Made scope.
 
 ```text
 at G02 time (before DB01/B04):  publicSecureLink_resolve = DENY, whole operation
-after B04 ships ORDER_ACCESS:   gate by scopeKind, not by operation
-                                ORDER_ACCESS  = ALLOW
-                                REQUEST_ACCESS = DENY
+since B04 shipped ORDER_ACCESS: gated by scopeKind, not by operation
+                                ORDER_ACCESS   = ALLOW in both waves
+                                REQUEST_ACCESS = ALLOW only in Wave 2
 ```
 
-`APP12-B04` **must** re-open this operation by scope when it introduces
-`ORDER_ACCESS`, or `/truy-cap/don-hang` cannot resolve. This is recorded here
-because a whole-operation denial written at `G02` and never revisited would
-silently break the Wave-1 order surface at `S03`.
+**Delivered by `APP12-B04`.** The obligation is discharged. The decision is
+taken by `GrantScopeReleaseGate`, applied inside `ResolveSecureLink` and
+`ReauthorizeSecureGrant` — **after** the token is digested and the grant row is
+read, because that is the first moment the wave is knowable, and before the
+success audit row, so a withheld scope leaves the same trail an unknown token
+does. `CustomCapabilityReleaseGuard` runs before the pipes and therefore
+**admits** this operation; the class name for that is `SCOPE_GATED`, and it is
+not an exemption.
+
+The scope is never caller-supplied: no public body carries a `scopeKind` field
+and the resolver reads it from the persisted row. The refusal is the delivered
+`404 / SECURE_LINK_UNAVAILABLE`, identical to an unknown token, so a Wave-1
+deployment does not confirm that a custom customer's link is real.
 
 ### 3.3 Placement geometry is a Studio input, not catalog data
 
@@ -189,9 +222,23 @@ Ready-Made is `PAYMENT_KIND = FULL` — one obligation, no deposit, no remaining
 payment, and an Admin-set shipping fee that is frozen *before* payment rather
 than acknowledged by the customer afterwards. The deposit, final-payment and
 shipping-fee-acknowledgement operations all resolve through the custom order
-context and have no Ready-Made caller. `APP12-B04` composes the `FULL` payment
-surface as new operations. The payment *domain* underneath is shared internal
-code; no shared public payment operation exists to preserve.
+context and have no Ready-Made caller. `APP12-B04` composed the `FULL` payment
+surface as three new operations rather than reusing any of them.
+
+**One exception, delivered by `APP12-B04`: the transfer-evidence lane.**
+`payment_transfer_evidence` is attempt-scoped (`IMP-D055`), not kind-scoped: a
+customer attaches a screenshot to an attempt they opened, and which obligation
+kind that attempt belongs to is not what the association is about. So
+`publicOrderDepositEvidence_upload` and `_status` now serve all three kinds and
+are `SCOPE_GATED` rather than `DENY` — a Ready-Made customer holding an
+`ORDER_ACCESS` grant is admitted, a custom customer holding a `REQUEST_ACCESS`
+one is refused while Wave 2 is unreleased. `APP12-B04` §22 required that reuse
+(`NEW_EVIDENCE_OPERATION = 0`); publishing a fourth evidence route would have
+duplicated a lane that was already kind-agnostic below its first hop.
+
+Their route prefix still reads `deposit` because renaming it would reissue two
+accepted operation ids for a naming decision. The payment *domain* underneath
+is shared internal code.
 
 ## 4. Release-exposure policy
 
@@ -301,14 +348,20 @@ Therefore:
 `/san-pham/[slug]/thiet-ke`, `/truy-cap/bao-gia`, `/truy-cap/duyet-thiet-ke`,
 `/truy-cap/thanh-toan`, `/truy-cap/thanh-toan-con-lai`.
 
-**Block** — API level: every operation marked `DENY` in §3 — **31 of the 44
-public operations**: placement 1, side background 1, templates 3, sessions 6,
-custom requests 4, quotations 3, design reviews 3, deposit 5, final payment 3,
-shipping-fee acknowledgement 1, and `publicSecureLink_resolve` 1 per §3.2. The
-remaining **13** public operations are `ALLOW` — 12 at `G02`, plus
-`publicCategory_list` added and classified by `APP12-C01`. The withheld set was
-not touched by that checkpoint, and `publicSecureLink_resolve` remains `DENY`
-until `APP12-B04` converts it to a scope-sensitive gate (§3.2).
+**Block** — API level: every operation marked `DENY` in §3. At `G02` that was
+**31 of the 44 public operations**: placement 1, side background 1, templates 3,
+sessions 6, custom requests 4, quotations 3, design reviews 3, deposit 5, final
+payment 3, shipping-fee acknowledgement 1, and `publicSecureLink_resolve` 1 per
+§3.2, with the remaining **13** `ALLOW` — 12 at `G02` plus `publicCategory_list`
+from `APP12-C01`.
+
+**Since `APP12-B04` the static block is 28 of 49**, with **18** `ALLOW` and
+**3** `SCOPE_GATED`. `publicSecureLink_resolve` and the two
+`publicOrderDepositEvidence_*` operations left the static set because each
+serves both waves through one operation and their wave is a property of the
+grant row, which the guard cannot see. They are **not** released: the scope
+gate refuses every `REQUEST_ACCESS` grant while Wave 2 is unreleased, and does
+so indistinguishably from an unknown token (§3, §3.2, §3.4).
 
 **Allow** — `/`, `/kham-pha`, `/san-pham/[slug]`, `/bo-suu-tap*`, `/dich-vu`,
 `/cau-hoi-thuong-gap`, `/cua-hang`, `/chinh-sach/[slug]`, `/xac-minh-lien-he`,
@@ -327,7 +380,7 @@ test per blocked route and per blocked operation family.
 | Checkpoint | Consumes |
 |---|---|
 | `APP12-G02` | §2, §3, §4, §5, §7 |
-| `APP12-B04` | §3.2 — must re-open `publicSecureLink_resolve` by scope |
+| `APP12-B04` | §3.2 — **DELIVERED**: reopened `publicSecureLink_resolve` by scope, added the `SCOPE_GATED` class and the four Wave-1 Ready-Made operations |
 | `APP12-S01` | §2.1 — suppress the personalisation CTA |
 | `APP12-H01` | §5 — re-audit `STAFF_ONLY_PRE_RELEASE` |
 | `APP12-H06` | §6 — `noindex` on `/mua-hang` and the order surface |

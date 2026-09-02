@@ -43,6 +43,7 @@ import type { AuditActor } from '../../audit/domain/repositories/audit-event.rep
 import { App4SecretPepperProvider } from '../config/app4-secret-pepper.provider';
 import { digestSecret } from '../domain/secret/app4-secret-digest';
 import { GRANT_SUPERSEDED_REASON, SecureGrantError } from '../domain/grant/secure-grant-outcome';
+import { REQUEST_ACCESS_SCOPE, requestSubjectOf } from '../domain/grant/grant-subject';
 import { grantExpiryOf } from '../domain/grant/secure-grant-policy';
 import {
   CUSTOMER_REPOSITORY,
@@ -62,7 +63,7 @@ import { SecureGrantAuditRecorder } from './secure-grant-audit.recorder';
 import { SecureGrantNotifier } from './secure-grant.notifier';
 
 /** The single scope this phase issues (ADR-DB3-004 r1, `GRANT_SCOPE_KINDS`). */
-const REQUEST_ACCESS: GrantScopeKind = 'REQUEST_ACCESS';
+const REQUEST_ACCESS = REQUEST_ACCESS_SCOPE satisfies GrantScopeKind;
 
 /** CST-009 — one ACTIVE grant per (customer, request). */
 const GRANT_ALREADY_ACTIVE = 'GRANT_ALREADY_ACTIVE';
@@ -238,7 +239,13 @@ export class SecureGrantIssuer {
       await this.audit.recordRevoked({
         grantId,
         customerId: grant.customerId,
-        customRequestId: grant.customRequestId,
+        // `APP12-B04` widened the grant's subject to a scope-dependent XOR. This
+        // class issues, reissues and revokes `REQUEST_ACCESS` grants only, so a
+        // grant reaching here without a request subject is one of another scope
+        // — refused rather than revoked, because the audit row would otherwise
+        // record a withdrawal against no subject. `APP12-B04`'s
+        // `OrderAccessGrantIssuer` owns the other scope end to end.
+        customRequestId: requestSubjectOf(grant),
         reason,
         ...(actor === undefined ? {} : { actor }),
       });
@@ -270,9 +277,11 @@ export class SecureGrantIssuer {
       await this.grants.issue({
         id: grantId,
         customerId: input.target.customerId,
+        // The `REQUEST_ACCESS` arm of the subject union. The literal scope is
+        // what selects it, so this call cannot compile with an order subject.
+        scopeKind: REQUEST_ACCESS,
         customRequestId: input.target.customRequestId,
         tokenHash,
-        scopeKind: REQUEST_ACCESS,
         expiresAt: input.expiresAt,
       });
     } catch (error: unknown) {

@@ -205,6 +205,41 @@ export interface SkuStockRepository {
   lockActiveOrderReservation(orderId: string): Promise<Reservation | undefined>;
 
   /**
+   * The same active reservation, **read without a lock** (`APP12-B04` §36).
+   *
+   * Added for the customer's Ready-Made order projection, which publishes the
+   * payment deadline and must take it from the reservation's own `expires_at`
+   * rather than recomputing `now + 24h` on read. A public read may not take
+   * `FOR UPDATE` on this row: an anonymous caller could then queue an Admin's
+   * fee confirmation or the expiry sweep behind it.
+   *
+   * `undefined` once nothing `RESERVED` stands — expired, released or
+   * consumed — which is exactly when a countdown must stop being shown.
+   */
+  findActiveOrderReservation(orderId: string): Promise<Reservation | undefined>;
+
+  /**
+   * Whether this order's stock hold ended because its window lapsed
+   * (`APP12-B04-C1`).
+   *
+   * `true` only when the order holds at least one reservation and **every**
+   * reservation it holds is `EXPIRED` — the state the Ready-Made expiry sweep
+   * writes in the same transaction as the cancellation. A hold that also ended
+   * by release or consumption, one still live, and an order with no
+   * reservation at all all answer `false`, because none of them is a lapsed
+   * window and a guess about why a customer's order ended is worse than an
+   * absent answer.
+   *
+   * It answers about the **stock**. Whether that makes an order "expired"
+   * rather than "cancelled" is the caller's decision, taken against the
+   * order's own status.
+   *
+   * Read-only, lock-free and id-free: the result is a boolean, so no
+   * reservation identifier reaches a caller that must never publish one.
+   */
+  orderStockEndedByExpiry(orderId: string): Promise<boolean>;
+
+  /**
    * Moves one `RESERVED` reservation's `expires_at` to a new instant
    * (`BR-025`, `APP12-B03` §16, §17).
    *

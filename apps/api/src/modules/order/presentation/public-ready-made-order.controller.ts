@@ -48,6 +48,7 @@ import {
   readyMadeOrderFailureResponse,
 } from '../domain/ready-made/ready-made-order.errors';
 import {
+  ReadyMadeOrderAccessBootstrapResponse,
   ReadyMadeOrderCreatedResponse,
   ReadyMadeOrderSubtotalResponse,
 } from './schemas/public-ready-made-order.response';
@@ -59,7 +60,11 @@ import {
 const ERROR_SCHEMA = { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.error}` };
 
 @ApiTags('publicReadyMadeOrder')
-@ApiExtraModels(ReadyMadeOrderCreatedResponse, ReadyMadeOrderSubtotalResponse)
+@ApiExtraModels(
+  ReadyMadeOrderCreatedResponse,
+  ReadyMadeOrderSubtotalResponse,
+  ReadyMadeOrderAccessBootstrapResponse,
+)
 @Controller('public/ready-made-orders')
 export class PublicReadyMadeOrderController {
   constructor(private readonly orders: CreateReadyMadeOrderUseCase) {}

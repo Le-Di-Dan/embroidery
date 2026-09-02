@@ -67,6 +67,25 @@ const B04_ADMIN_PAYMENT_PATHS = [
   '/api/admin/payment-evidence/{evidenceId}/content',
 ];
 
+/**
+ * The customer paths every *other* checkpoint publishes under `public/orders`.
+ *
+ * Named here for the reason the two sets above are named: the bounds below are
+ * exhaustive, so a sibling family that is not listed reads as this suite's own
+ * surface having grown. `APP12-B04` added the three `full-payment` operations
+ * and no fourth evidence route — the attempt-scoped lane is reused unchanged,
+ * which is what makes its absence from this list meaningful.
+ *
+ * `shipping-fee-acknowledgements` is `APP9-B04`'s and predates `APP12-B04`; it
+ * was missing from these bounds before this checkpoint touched them.
+ */
+const SIBLING_ORDER_PATHS = [
+  '/api/public/orders/full-payment',
+  '/api/public/orders/full-payment/qr',
+  '/api/public/orders/full-payment/attempts',
+  '/api/public/orders/shipping-fee-acknowledgements',
+];
+
 interface OperationShape {
   readonly operationId?: string;
   readonly parameters?: readonly { readonly name: string; readonly in: string }[];
@@ -204,6 +223,7 @@ describe('APP7-B03 — the published customer deposit contract', () => {
           QR_PATH,
           ...B05_EVIDENCE_PATHS,
           ...B02_FINAL_PAYMENT_PATHS,
+          ...SIBLING_ORDER_PATHS,
         ].sort(),
       );
     });
@@ -238,6 +258,8 @@ describe('APP7-B03 — the published customer deposit contract', () => {
           ...B05_EVIDENCE_PATHS,
           ...B04_ADMIN_PAYMENT_PATHS,
           ...B02_FINAL_PAYMENT_PATHS,
+          // The shipping-fee acknowledgement does not match the money regex.
+          ...SIBLING_ORDER_PATHS.filter((path) => path.includes('payment')),
         ].sort(),
       );
     });

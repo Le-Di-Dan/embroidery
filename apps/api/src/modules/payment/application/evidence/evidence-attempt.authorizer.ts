@@ -4,10 +4,12 @@
  *
  * ```text
  * secure token          → the grant row, re-established under its lock
- *   → grant.customRequestId
- *     → orders.custom_request_id            uq_orders__request, exactly one
- *       → payment_obligations(order_id), of either kind
- *         → the exact payment_attempts row the caller named
+ *   REQUEST_ACCESS      → grant.customRequestId
+ *                         → orders.custom_request_id   uq_orders__request, one
+ *   ORDER_ACCESS        → grant.orderId
+ *                         → orders.id
+ *     → payment_obligations(order_id), of any CST-039 kind
+ *       → the exact payment_attempts row the caller named
  * ```
  *
  * ### The attempt id is a locator, and every link is re-proved
@@ -18,6 +20,23 @@
  * the order this request produced, and to have been opened by the one method
  * this surface has an evidence flow for. Changing the id therefore cannot reach
  * another customer's order — it reaches a row that fails the order comparison.
+ *
+ * ### Scope-aware, not request-scoped (`APP12-B04` §22, §23)
+ *
+ * `APP12-B04` §22 requires the Ready-Made `FULL` obligation to reuse **this**
+ * lane rather than publish a fourth payment operation, so the first hop became
+ * the union of the two grant scopes. Everything after it is unchanged, and the
+ * order comparison — the clause the whole isolation rests on — is untouched:
+ * whichever way the order was reached, the named attempt's obligation must hang
+ * off *that* order. A `REQUEST_ACCESS` grant therefore still cannot reach a
+ * Ready-Made attempt and an `ORDER_ACCESS` grant cannot reach a custom one, not
+ * because either is checked for but because neither walk arrives at the other's
+ * order.
+ *
+ * The two release states are handled one layer down: `ReauthorizeSecureGrant`
+ * applies `GrantScopeReleaseGate`, so with Wave 2 unreleased a
+ * `REQUEST_ACCESS` token cannot pass step one at all, and this lane is
+ * classified `SCOPE_GATED` rather than statically denied.
  *
  * ### Attempt-scoped, not kind-scoped (`APP9-B02`)
  *
@@ -58,6 +77,11 @@ import {
 } from '@embroidery/persistence';
 
 import { ReauthorizeSecureGrant } from '../../../customer/application/reauthorize-secure-grant.service';
+import {
+  ORDER_ACCESS_SCOPE,
+  orderSubjectOf,
+  requestSubjectOf,
+} from '../../../customer/domain/grant/grant-subject';
 import { secureLinkUnavailable } from '../../../customer/domain/grant/secure-link.errors';
 import type { CustomerId } from '../../../customer/domain/repositories/customer.repository';
 import type { CustomRequestId } from '../../../order/domain/repositories/custom-request.repository';
@@ -72,16 +96,24 @@ import { AttemptStepUpVerifier } from './attempt-step-up.verifier';
 /**
  * The obligation kinds a customer may attach transfer evidence to.
  *
- * Both of the two `CST-039` kinds, and stated as a closed set rather than
- * omitted: a third kind added later must fail here until someone decides that
- * this surface should carry its evidence.
+ * All three kinds, and stated as a closed set rather than omitted: a fourth
+ * kind added later must fail here until someone decides that this surface
+ * should carry its evidence. `FULL` joined at `APP12-B04`, which is the
+ * decision this set records — the alternative was a `/full-payment/evidence`
+ * operation duplicating a lane that is already attempt-scoped (`IMP-D055`) and
+ * therefore already kind-agnostic everywhere below this line.
  */
-const EVIDENCE_OBLIGATION_KINDS: readonly string[] = ['DEPOSIT', 'REMAINING'];
+const EVIDENCE_OBLIGATION_KINDS: readonly string[] = ['DEPOSIT', 'REMAINING', 'FULL'];
 
 /** Everything a proved evidence operation may act on. No token, no digest. */
 export interface AuthorizedEvidenceAttempt {
   readonly customerId: CustomerId;
-  readonly customRequestId: string;
+  /**
+   * The grant's own subject: the custom request for `REQUEST_ACCESS`, the order
+   * for `ORDER_ACCESS`. Whichever it is, it is the value the idempotency scope
+   * key is built from — the caller never supplies one.
+   */
+  readonly subjectId: string;
   readonly orderId: string;
   readonly obligationId: ObligationId;
   readonly attempt: LockedEvidenceAttempt;
@@ -112,18 +144,32 @@ export class EvidenceAttemptAuthorizer {
     /** Whether the attempt must still accept evidence. False for a zero-write read. */
     readonly requireOpenAttempt: boolean;
   }): Promise<AuthorizedEvidenceAttempt> {
-    const grant = await this.grants.reauthorize(input.token, input.now);
-    const order = await this.targets.resolveOrder(grant.customRequestId as CustomRequestId);
+    // The one lane that legitimately admits both scopes (`APP12-B04` §22). It
+    // is a named method rather than a scope parameter so no *other* surface
+    // acquires the union by passing a value.
+    const grant = await this.grants.reauthorizeForEvidence(input.token, input.now);
+
+    // The two walks, each narrowed by the scope the row carries. Neither can be
+    // reached with the other's subject: `requestSubjectOf` and `orderSubjectOf`
+    // refuse a mismatched scope with the same indistinguishable answer every
+    // other miss on this chain gives.
+    const subjectId =
+      grant.scopeKind === ORDER_ACCESS_SCOPE ? orderSubjectOf(grant) : requestSubjectOf(grant);
+    const order =
+      grant.scopeKind === ORDER_ACCESS_SCOPE
+        ? await this.targets.resolveOrderById(subjectId)
+        : await this.targets.resolveOrder(subjectId as CustomRequestId);
 
     const attempt = await this.evidence.lockAttemptForEvidence(input.attemptId as AttemptId);
     if (attempt === undefined) {
       throw secureLinkUnavailable();
     }
     // Three comparisons, none redundant: the first is what stops a foreign
-    // attempt id — the attempt's own obligation must hang off *this* request's
-    // order — and the third stops a reachable row opened by a method this
-    // surface has no evidence flow for. The kind is asserted against the closed
-    // set above rather than against one literal, so a third kind is refused.
+    // attempt id — the attempt's own obligation must hang off *this grant's*
+    // order, whichever of the two walks reached it — and the third stops a
+    // reachable row opened by a method this surface has no evidence flow for.
+    // The kind is asserted against the closed set above rather than against one
+    // literal, so a fourth kind is refused.
     if (
       attempt.obligationOrderId !== order.id ||
       !EVIDENCE_OBLIGATION_KINDS.includes(attempt.obligationKind) ||
@@ -142,7 +188,7 @@ export class EvidenceAttemptAuthorizer {
 
     return {
       customerId: grant.customerId,
-      customRequestId: grant.customRequestId,
+      subjectId,
       orderId: order.id,
       // The attempt's *own* obligation, read off the locked row. Never the one a
       // kind-scoped lookup returned: those were the same value only while

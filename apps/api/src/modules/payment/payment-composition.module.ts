@@ -5,6 +5,8 @@ import { CustomerDepositAttemptModule } from './customer-deposit-attempt.module'
 import { CustomerDepositEvidenceModule } from './customer-deposit-evidence.module';
 import { CustomerFinalPaymentModule } from './customer-final-payment.module';
 import { CustomerFinalPaymentAttemptModule } from './customer-final-payment-attempt.module';
+import { CustomerFullPaymentModule } from './customer-full-payment.module';
+import { CustomerFullPaymentAttemptModule } from './customer-full-payment-attempt.module';
 import { AdminOrderPaymentModule } from './admin-order-payment.module';
 import { AdminPaymentEvidenceModule } from './admin-payment-evidence.module';
 import { AdminPaymentVerificationModule } from './admin-payment-verification.module';
@@ -84,6 +86,31 @@ import { AdminPaymentVerificationModule } from './admin-payment-verification.mod
     // repository that the read is defined by not holding.
     // `CONTROLLER_DOMAIN_KEYS` keeps both publishing `publicOrderFinalPayment`.
     CustomerFinalPaymentAttemptModule,
+    // APP12-B04 — the customer's two zero-write Ready-Made payment operations,
+    // on the same `public/orders` base path with sub-paths (`full-payment`,
+    // `full-payment/qr`) disjoint from the deposit and final-payment lanes
+    // above, so registration order cannot make one shadow another. A sixth
+    // module on that base path for the reason the fourth was a fourth: each of
+    // these modules is the whole security boundary of one obligation kind, and
+    // a reviewer must be able to read one without the others. Defined by what
+    // it cannot inject: no `DatabaseModule`, so no transaction manager and no
+    // idempotency store; no `OrderModule` or `ReadyMadeOrderModule`, so no
+    // order transition and no shipping-fee write; no `IdentityModule`, so no
+    // Admin verification; no asset or storage module, so the QR is generated
+    // in-process and nothing is stored. Unlike the four above it resolves an
+    // `ORDER_ACCESS` grant rather than a `REQUEST_ACCESS` one — the second and
+    // last scope `APP12-DB01` added, not a new secure-access architecture —
+    // and it reuses the same merchant bank factory, so there is no second
+    // merchant configuration.
+    CustomerFullPaymentModule,
+    // APP12-B04 — the customer's one Ready-Made payment write, on the same base
+    // path with a distinct sub-path (`full-payment/attempts`). A second
+    // full-payment module for the reason `CustomerDepositAttemptModule` is a
+    // second deposit module: it is the mirror image of the read, holding the
+    // transaction manager, the idempotency store and the canonical AGG-16
+    // repository that the read is defined by not holding.
+    // `CONTROLLER_DOMAIN_KEYS` keeps both publishing `publicOrderFullPayment`.
+    CustomerFullPaymentAttemptModule,
     // APP7-B04 — the Admin deposit-payment read, on the `admin/orders` base path
     // with a sub-path (`{orderId}/payments`) disjoint from `AdminOrderModule`'s
     // two routes, so registration order cannot make one shadow another. A

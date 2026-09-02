@@ -27,6 +27,7 @@ import {
   createApiIntegrationContext,
   MERCHANT_BANK_TEST_CONFIG,
   type ApiIntegrationTestContext,
+  applyWave2ReleasedEnv,
 } from '../support/api-integration-context';
 import { DEPOSIT_ROUTES } from '../support/customer-deposit-fixture';
 import {
@@ -77,16 +78,23 @@ interface AttemptBody {
 
 describe('APP9-B02 — the customer final-payment surface', () => {
   let context: ApiIntegrationTestContext;
+  let restoreWave2: () => void;
   let restoreSecrets: () => void;
 
   beforeAll(async () => {
     restoreSecrets = applyFinalPaymentSecretEnv();
+    // `APP12-G02` withholds every Wave-2 customer operation by default, so a
+    // suite proving Wave-2 behaviour has to run in the wave that releases it.
+    // Set before the context is built: the gate reads the value once, at module
+    // composition (`APP12-B04` §48).
+    restoreWave2 = applyWave2ReleasedEnv();
     context = await createApiIntegrationContext('app9_b02');
     await publishFinalPaymentPolicies(context.app, context.database);
   });
 
   afterAll(async () => {
     await context?.close();
+    restoreWave2?.();
     restoreSecrets?.();
   });
 

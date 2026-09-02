@@ -54,7 +54,7 @@ describe('APP4-B06 secure-grant token-digest read (repository)', () => {
 
     const grant = await grants.resolveActiveByTokenDigest(
       expectedDigest(seeded.token),
-      'REQUEST_ACCESS',
+      ['REQUEST_ACCESS'],
       NOW,
     );
 
@@ -76,7 +76,7 @@ describe('APP4-B06 secure-grant token-digest read (repository)', () => {
 
     const grant = await grants.resolveActiveByTokenDigest(
       expectedDigest(seeded.token),
-      'SOMETHING_ELSE' as 'REQUEST_ACCESS',
+      ['SOMETHING_ELSE' as 'REQUEST_ACCESS'],
       NOW,
     );
 
@@ -87,7 +87,7 @@ describe('APP4-B06 secure-grant token-digest read (repository)', () => {
     ['an unknown digest', async (): Promise<string> => Promise.resolve(`missing-${newId()}`)],
   ])('returns nothing for %s', async (_label, digestOf) => {
     expect(
-      await grants.resolveActiveByTokenDigest(await digestOf(), 'REQUEST_ACCESS', NOW),
+      await grants.resolveActiveByTokenDigest(await digestOf(), ['REQUEST_ACCESS'], NOW),
     ).toBeUndefined();
   });
 
@@ -100,12 +100,14 @@ describe('APP4-B06 secure-grant token-digest read (repository)', () => {
     const before = new Date(seeded.expiresAt.getTime() - 1_000);
     const after = new Date(seeded.expiresAt.getTime() + 1_000);
 
-    expect(await grants.resolveActiveByTokenDigest(digest, 'REQUEST_ACCESS', before)).toBeDefined();
+    expect(
+      await grants.resolveActiveByTokenDigest(digest, ['REQUEST_ACCESS'], before),
+    ).toBeDefined();
 
     // One second later the same ACTIVE row stops resolving: expiry is enforced
     // on read, not by a background job.
     expect(
-      await grants.resolveActiveByTokenDigest(digest, 'REQUEST_ACCESS', after),
+      await grants.resolveActiveByTokenDigest(digest, ['REQUEST_ACCESS'], after),
     ).toBeUndefined();
   });
 
@@ -121,7 +123,11 @@ describe('APP4-B06 secure-grant token-digest read (repository)', () => {
     `);
 
     expect(
-      await grants.resolveActiveByTokenDigest(expectedDigest(seeded.token), 'REQUEST_ACCESS', NOW),
+      await grants.resolveActiveByTokenDigest(
+        expectedDigest(seeded.token),
+        ['REQUEST_ACCESS'],
+        NOW,
+      ),
     ).toBeUndefined();
   });
 
@@ -129,8 +135,8 @@ describe('APP4-B06 secure-grant token-digest read (repository)', () => {
     const seeded = await seedGrant(context.database, { label: 'repowrite' });
     const before = await snapshot(seeded.grantId);
 
-    await grants.resolveActiveByTokenDigest(expectedDigest(seeded.token), 'REQUEST_ACCESS', NOW);
-    await grants.resolveActiveByTokenDigest(`missing-${newId()}`, 'REQUEST_ACCESS', NOW);
+    await grants.resolveActiveByTokenDigest(expectedDigest(seeded.token), ['REQUEST_ACCESS'], NOW);
+    await grants.resolveActiveByTokenDigest(`missing-${newId()}`, ['REQUEST_ACCESS'], NOW);
 
     expect(await snapshot(seeded.grantId)).toEqual(before);
   });
