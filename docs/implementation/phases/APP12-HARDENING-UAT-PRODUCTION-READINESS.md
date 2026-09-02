@@ -11,6 +11,7 @@ NEXT                   = APP12-B02
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
+                         APP12-B01-C1 (2026-09-02, 1/1 — no C2)
 LOCKED_AT              = APP12-P01 entry, 2026-09-01, Product Owner authority
 ```
 
@@ -253,7 +254,8 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 8 | `APP12-A01` | Admin category management UI (**MANDATORY**) | `NOT_STARTED` |
 | 9 | `APP12-C03` | Storefront dynamic category discovery, breadcrumb, CTA, sitemap, gate reconciliation | `COMPLETE` |
 | 10 | `APP12-G03` | Representative UAT dataset | `NOT_STARTED` |
-| 11 | `APP12-B01` | Public purchasable SKU projection | `COMPLETE` |
+| 11 | `APP12-B01` | Public purchasable SKU projection | `COMPLETE_AFTER_C1` |
+| 11·C1 | `APP12-B01-C1` | Dev data provenance cleanup | `COMPLETE` |
 | 12 | `APP12-B02` | Ready-Made order creation and reservation | **`NEXT`** |
 | 13 | `APP12-B03` | Admin shipping fee, total freeze, FULL obligation lifecycle | `NOT_STARTED` |
 | 14 | `APP12-B04` | ORDER_ACCESS read and FULL payment composition | `NOT_STARTED` |

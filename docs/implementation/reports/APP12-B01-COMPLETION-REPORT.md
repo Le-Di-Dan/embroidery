@@ -6,10 +6,23 @@ Date: 2026-09-02
 
 ---
 
+> **CORRECTION NOTICE — `APP12-B01-C1` (2026-09-02).** The Product Owner
+> **rejected** this report's §P disposition of its live-evidence seed: four
+> `skus` rows and two `sku_stocks` rows were left standing on the development
+> Product `ao-thun-cotton`, which is persistent representative catalog data
+> `APP12-B01` never owned — that is `APP12-G03`'s deliverable. `APP12-B01-C1`
+> removed all six rows against proven provenance and this checkpoint is now
+> **`COMPLETE_AFTER_C1`** (correction 1/1, no C2). The evidence recorded in §P is
+> **preserved as history and is still true of the moment it was taken**; only the
+> decision to leave the rows behind is superseded. See
+> [`APP12-B01-C1-COMPLETION-REPORT.md`](APP12-B01-C1-COMPLETION-REPORT.md), and
+> `VALIDATION_GOVERNANCE.md` §3A.4 for the rule this closed. The B01
+> implementation itself is unchanged and was not re-worked.
+
 ## A. Verdict
 
 ```text
-APP12-B01 = COMPLETE
+APP12-B01 = COMPLETE_AFTER_C1
 
 BUYABLE_SUBJECT              = SKU
 operation                    = publicProductVariant_list  (extended)
@@ -428,6 +441,16 @@ SKUs and two anchors above were seeded as additive dev catalog data on the
 existing dev product. The synthetic soft hold was removed after the arithmetic
 was proved, so no fabricated commitment is left standing against a real
 `custom_requests` row. No business row was modified or deleted.
+
+> **SUPERSEDED by `APP12-B01-C1`.** Leaving those six rows in place was the
+> defect. "Additive dev catalog data" is still persistent business data, and a
+> checkpoint may not keep its live-evidence seed on the grounds that a later one
+> will want it — `APP12-G03` owns representative data under its own authority.
+> All four `skus` rows and both `sku_stocks` rows were removed by
+> `APP12-B01-C1` in one guarded transaction; the counts are now
+> `skus = 0, sku_stocks = 0, holds = 0, reservations = 0, ledger = 0`, and the
+> host Product and Variant survive with their original `updated_at`. The
+> measurements above stand as the evidence they were; the disposition does not.
 
 ---
 

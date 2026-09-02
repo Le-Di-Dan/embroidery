@@ -225,6 +225,61 @@ authorities**; `R01` and `R02` consume accepted checkpoint evidence rather
 than re-running history. **No full-repository "all tests" run is a release
 gate** unless a release plan explicitly authorizes one under §7.
 
+### 3A.4 Live evidence against the development database (`APP12-B01-C1`)
+
+Locked by `APP12-B01-C1` after the Product Owner rejected the disposition of
+`APP12-B01` §P, which left four `skus` rows and two `sku_stocks` rows standing
+on a development Product because they looked useful.
+
+A checkpoint that needs live HTTP evidence has exactly **two** permitted sources
+of subject data:
+
+```text
+1. existing development data, read without mutation
+2. a bounded, test-only fixture the same checkpoint removes again
+```
+
+There is no third option. In particular, **a checkpoint may not leave business
+rows behind on the grounds that a later checkpoint will want them.**
+Representative development and UAT data is `APP12-G03`'s deliverable under its
+own authority and its own evidence; ownership is never transferred implicitly by
+one checkpoint deciding its leftovers are worth keeping. Persistent data nobody
+planned is indistinguishable from real catalog data to everyone who meets it
+afterwards.
+
+When option 2 is used, all four steps are mandatory and the last is the one that
+is actually load-bearing:
+
+```text
+seed  -> run the HTTP evidence -> remove -> prove removal by row count
+```
+
+Rules for such a fixture:
+
+- **Record the primary keys you insert**, in the completion report. Cleanup that
+  has to *infer* what it created is cleanup that eventually deletes something
+  else. A code, a timestamp, a parent association or an expected row count is
+  corroboration, never proof of ownership.
+- **Use unmistakably test-only business keys** where the schema permits one, so a
+  row that outlives its checkpoint is at least recognisable as debris rather than
+  as catalog an operator authored.
+- **Delete child rows before parents** and let the declared foreign keys do their
+  work. Never disable a trigger, never drop a constraint, never truncate, never
+  reset the database.
+- **Guard the deletion inside the transaction** — assert the intended row counts
+  and the survival of the surrounding business rows before `COMMIT`, so a
+  mistaken predicate rolls back instead of committing.
+- **Append-only history is not cleaned.** An audit, outbox or inventory-ledger row
+  produced by live evidence stays, and is classified in the report as test-history
+  residue with its live business effect stated. Retention rules are never weakened
+  to tidy up.
+- If provenance cannot be proven from recorded evidence, the checkpoint reports
+  `BLOCKED_PROVENANCE` and deletes nothing.
+
+Automated suites are unaffected: they already run against a **disposable**
+PostgreSQL the harness provisions and drops, which is why this rule is about live
+gateway evidence only.
+
 ---
 
 ## 4. Previously closed checkpoints
