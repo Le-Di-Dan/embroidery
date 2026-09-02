@@ -50,9 +50,11 @@ import {
 } from '../domain/public-product-catalog.errors';
 import { PublicProductSlugParam } from './schemas/public-product.request';
 import {
+  PublicProductSkuResponse,
   PublicProductVariantListResponse,
   PublicProductVariantResponse,
 } from './schemas/public-product-variant.response';
+import { PublicPriceResponse } from './schemas/public-product.response';
 
 const ERROR_SCHEMA = { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.error}` };
 
@@ -85,13 +87,21 @@ export class PublicProductVariantController {
       'order then id, so repeated reads agree. An unknown slug, a draft, an archived product ' +
       'and a product without a public category all return the same 404. A published product ' +
       'with no selectable variant returns an empty list rather than a 404: it exists, it simply ' +
-      'cannot form a catalog request. Selection only — no SKU, price, stock or inventory is ' +
-      'published here, and no variant is marked as a default. Responses are never stored, ' +
-      'because publication is re-read on every request and nothing in this system invalidates ' +
-      'a cache.',
+      'cannot form a catalog request. No variant is marked as a default. Each variant also ' +
+      'carries its Ready-Made purchase subjects: the order-eligible SKUs, each with its ' +
+      'server-resolved unit price and the quantity available at read time. Both are advisory ' +
+      'display facts — reading this holds and reserves nothing, and order creation resolves the ' +
+      'price and re-checks stock under the inventory lock before committing either. A variant ' +
+      'is never withheld because it has no sellable SKU. Responses are never stored, because ' +
+      'publication is re-read on every request and nothing in this system invalidates a cache.',
   })
   @ApiParam({ name: 'slug', description: 'The immutable server-owned product slug.' })
-  @ApiExtraModels(PublicProductVariantListResponse, PublicProductVariantResponse)
+  @ApiExtraModels(
+    PublicProductVariantListResponse,
+    PublicProductVariantResponse,
+    PublicProductSkuResponse,
+    PublicPriceResponse,
+  )
   @ApiResponse({
     status: 200,
     description: 'The selectable variants of the published product.',

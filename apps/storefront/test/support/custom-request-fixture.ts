@@ -38,7 +38,10 @@ export function makeVariant(
   colorName: string | null,
   sizeLabel: string | null,
 ): PublicProductVariantResponse {
-  return { productVariantId, colorName, sizeLabel };
+  // `skus` is the `APP12-B01` Ready-Made purchase projection. Empty here on
+  // purpose: the custom-request flow neither reads it nor is affected by it, and
+  // a fixture that populated it would suggest this screen cared.
+  return { productVariantId, colorName, sizeLabel, skus: [] };
 }
 
 export function makeVariantList(

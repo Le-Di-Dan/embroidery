@@ -18,6 +18,17 @@ export interface InventoryFixture {
   readonly skuId: SkuId;
   readonly customRequestId: string;
   readonly orderId: string;
+  /**
+   * The published Product the chain hangs off, and its variant (`APP12-B01`).
+   *
+   * Returned so a suite that needs a hold or a reservation — both of which
+   * require this fixture's request and order — can also address the same rows
+   * through the public catalog, which is keyed on the slug. Purely additive: the
+   * seeded data is unchanged, and no existing caller has to read these.
+   */
+  readonly productId: string;
+  readonly productSlug: string;
+  readonly productVariantId: string;
 }
 
 /**
@@ -46,6 +57,8 @@ export async function seedInventoryChain(context: {
   const sideId = newId();
   const areaId = newId();
 
+  const productSlug = `tee-${productId}`;
+
   const skuId = newId() as SkuId;
   const customRequestId = newId();
   const orderId = newId();
@@ -68,7 +81,7 @@ export async function seedInventoryChain(context: {
     insert into products
       (id, category_id, name, slug, base_price_amount, currency_code, status,
        is_display_out_of_stock, display_order, is_indexable)
-    values (${productId}, ${categoryId}, 'Tee', ${`tee-${productId}`}, 150000, 'VND',
+    values (${productId}, ${categoryId}, 'Tee', ${productSlug}, 150000, 'VND',
             'PUBLISHED', false, 1, true)
   `);
   await db.execute(sql`
@@ -179,5 +192,12 @@ export async function seedInventoryChain(context: {
     where id = ${depositObligationId}
   `);
 
-  return { skuId, customRequestId, orderId };
+  return {
+    skuId,
+    customRequestId,
+    orderId,
+    productId,
+    productSlug,
+    productVariantId: variantId,
+  };
 }

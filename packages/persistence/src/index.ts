@@ -186,6 +186,12 @@ export type {
   StockAvailability,
 } from './inventory/sku-stock.repository';
 export { SKU_STOCK_REPOSITORY } from './inventory/sku-stock.repository';
+// The one active state on each side of LC-17. Exported so the APP12-B01 public
+// availability snapshot computes the same balance as the writer (APP12-B01).
+export {
+  ACTIVE_RESERVATION_STATE,
+  ACTIVE_SOFT_HOLD_STATE,
+} from './inventory/inventory-active-states';
 export { InventoryPersistenceModule } from './inventory/inventory-persistence.module';
 
 // The canonical Catalog reservation-requirement rule (`APP8-B04` §6).

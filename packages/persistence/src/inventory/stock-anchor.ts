@@ -18,6 +18,7 @@ import { DatabaseExecutor } from '../runtime/database-executor';
 import type { DatabaseExecutorHandle } from '../runtime/database-executor';
 import { and, eq, sum } from 'drizzle-orm';
 
+import { ACTIVE_RESERVATION_STATE, ACTIVE_SOFT_HOLD_STATE } from './inventory-active-states';
 import type { SkuId } from './inventory-identity';
 import type { SkuStock, SkuStockId, StockAvailability } from './sku-stock.repository';
 
@@ -85,7 +86,10 @@ export class StockAnchor extends DrizzleRepository {
       .select({ total: sum(inventorySoftHolds.quantity) })
       .from(inventorySoftHolds)
       .where(
-        and(eq(inventorySoftHolds.skuStockId, stock.id), eq(inventorySoftHolds.status, 'HELD')),
+        and(
+          eq(inventorySoftHolds.skuStockId, stock.id),
+          eq(inventorySoftHolds.status, ACTIVE_SOFT_HOLD_STATE),
+        ),
       );
 
     const [reserved] = await this.db
@@ -94,7 +98,7 @@ export class StockAnchor extends DrizzleRepository {
       .where(
         and(
           eq(inventoryReservations.skuStockId, stock.id),
-          eq(inventoryReservations.status, 'RESERVED'),
+          eq(inventoryReservations.status, ACTIVE_RESERVATION_STATE),
         ),
       );
 

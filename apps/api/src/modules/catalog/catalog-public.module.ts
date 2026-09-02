@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@embroidery/persistence';
 
+import { SkuAvailabilitySnapshotModule } from '../inventory/sku-availability-snapshot.module';
+
 import { PUBLIC_CATEGORY_REPOSITORY } from './domain/repositories/public-category.repository';
 import { PUBLIC_PRODUCT_REPOSITORY } from './domain/repositories/public-product.repository';
 import { PUBLIC_PRODUCT_VARIANT_REPOSITORY } from './domain/repositories/public-product-variant.repository';
@@ -45,9 +47,17 @@ import { PublicProductVariantController } from './presentation/public-product-va
  * deliberately elsewhere — `CATEGORY_REPOSITORY`, which creates rows and
  * changes status, belongs to `CatalogModule` and is not wired here, so no route
  * in this graph can mutate a category.
+ *
+ * `APP12-B01` adds `SkuAvailabilitySnapshotModule` — one read-only Inventory
+ * port and nothing else. Not `InventoryModule`, which re-exports
+ * `InventoryPersistenceModule` and would put `createSoftHold`,
+ * `createReservation`, `ensureStockRow` and `adjust` inside a graph of
+ * anonymous public GETs. What this module gains is a method that returns
+ * numbers, so "a public catalog read reserves nothing and provisions nothing" is
+ * a property of the wiring rather than of a query's restraint.
  */
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, SkuAvailabilitySnapshotModule],
   controllers: [PublicProductController, PublicProductVariantController, PublicCategoryController],
   providers: [
     { provide: PUBLIC_PRODUCT_REPOSITORY, useClass: DrizzlePublicProductRepository },

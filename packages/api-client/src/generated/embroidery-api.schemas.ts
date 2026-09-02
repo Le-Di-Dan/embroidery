@@ -4861,6 +4861,18 @@ export interface PublicProductPlacementResponse {
   studioEligible: boolean;
 }
 
+export interface PublicProductSkuResponse {
+  /**
+   * How many units could be taken at read time: on-hand less active holds less active reservations (`BR-022`), never negative. An exact count rather than a boolean because the purchase panel offers a quantity and needs a truthful maximum. Zero is a normal state, not an error, and means nothing may be bought right now — it is not the same as the SKU being absent, which means there is nothing sellable here at all. **Advisory**: nothing is held or reserved by reading this, and order creation re-checks availability under the stock lock before it commits any of it.
+   * @minimum 0
+   */
+  availableQuantity: number;
+  /** The purchasable subject. Ready-Made sells a SKU, not a Product Variant (`BR-021`), and this is the id a later order line is created against. Not a credential: it authorizes nothing, and order creation re-resolves everything about it server-side. */
+  skuId: string;
+  /** The server-resolved unit price: `COALESCE(price_override_amount, base_price_amount)` in the currency of whichever row supplied it (`BR-021`). **Advisory** — it is the catalog price at read time, for display only. Order creation resolves the price again on the server and freezes it on the line; a client-supplied amount is never trusted. */
+  unitPrice: PublicPriceResponse;
+}
+
 export interface PublicProductVariantResponse {
   /**
    * The variant colour attribute exactly as stored, or null. Product Variants carry no name column — DB4 locked two relational attributes instead — so the two labels are published as they are and never joined into an invented variant name.
@@ -4874,6 +4886,8 @@ export interface PublicProductVariantResponse {
    * @nullable
    */
   sizeLabel: string | null;
+  /** The Ready-Made purchase subjects of this variant, ordered by id (`APP12-B01`). An empty list is truthful and common: the variant has no SKU, or its SKUs are not order-eligible. It never removes the variant — a variant with nothing to sell may still be chosen for a custom-embroidery request, so selection and purchase are answered side by side rather than one overruling the other. No SKU is marked as a default or preferred: the set is published as it stands and the customer chooses. */
+  skus: PublicProductSkuResponse[];
 }
 
 export interface PublicProductVariantListResponse {

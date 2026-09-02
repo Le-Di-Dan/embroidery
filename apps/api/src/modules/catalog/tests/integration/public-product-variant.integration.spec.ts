@@ -213,35 +213,52 @@ describe('APP5-B07 public product variant selection (integration)', () => {
       // `product_variants` has no name column; a variant carrying only one
       // attribute keeps the other as an explicit null rather than an invented
       // label or a dropped field.
+      // `skus` is empty for all four: these variants have no SKU at all, which
+      // is a legal Catalog state and never removes a variant (`APP12-B01`).
       expect(view.variants).toEqual([
-        { productVariantId: seeded.variantIds[0], colorName: 'Xanh rêu', sizeLabel: 'M' },
-        { productVariantId: seeded.variantIds[1], colorName: 'Chỉ có màu', sizeLabel: null },
-        { productVariantId: seeded.variantIds[2], colorName: null, sizeLabel: 'XL' },
-        { productVariantId: seeded.variantIds[3], colorName: null, sizeLabel: null },
+        { productVariantId: seeded.variantIds[0], colorName: 'Xanh rêu', sizeLabel: 'M', skus: [] },
+        {
+          productVariantId: seeded.variantIds[1],
+          colorName: 'Chỉ có màu',
+          sizeLabel: null,
+          skus: [],
+        },
+        { productVariantId: seeded.variantIds[2], colorName: null, sizeLabel: 'XL', skus: [] },
+        { productVariantId: seeded.variantIds[3], colorName: null, sizeLabel: null, skus: [] },
       ]);
     });
 
-    it('publishes no commerce field even when the variant has a priced SKU', async () => {
+    it('keeps the APP5 selection fields intact when the variant has a priced SKU', async () => {
       const seeded = await seed({ variants: [{ sizeLabel: 'M', displayOrder: 0 }] });
+      const skuCode = `SKU-${newId()}`;
       await context.inTransaction(async () => {
         await products.addSku({
           id: newId() as never,
           productVariantId: seeded.variantIds[0]!,
-          code: `SKU-${newId()}`,
+          code: skuCode,
           priceOverrideAmount: '999000',
         });
       });
 
       const view = await query.publicRead(seeded.slug);
 
-      const serialized = JSON.stringify(view);
-      expect(serialized).not.toContain('999000');
-      expect(serialized).not.toContain('SKU-');
+      // `APP12-B01` added `skus` beside the three APP5 fields, not in place of
+      // them: an existing custom-request consumer reads the same names, with the
+      // same values, and never has to understand the fourth.
       expect(Object.keys(view.variants[0]!).sort()).toEqual([
         'colorName',
         'productVariantId',
         'sizeLabel',
+        'skus',
       ]);
+      expect(view.variants[0]).toMatchObject({
+        productVariantId: seeded.variantIds[0],
+        colorName: null,
+        sizeLabel: 'M',
+      });
+      // The business SKU code stays private — the id is what an order needs, and
+      // the code identifies the same SKU to an operator only.
+      expect(JSON.stringify(view)).not.toContain(skuCode);
     });
   });
 
