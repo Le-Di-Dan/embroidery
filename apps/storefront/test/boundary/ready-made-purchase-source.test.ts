@@ -104,11 +104,18 @@ describe('read-only by construction', () => {
     expect(allCode).not.toMatch(/<form|onSubmit|method=['"`]post/i);
   });
 
-  it('does not implement the checkout route it links to', () => {
-    // `APP12-S02` owns `/mua-hang/[slug]`. S01 composes the address and stops.
+  it('composes the checkout address without owning the route behind it', () => {
+    // S01 composes `/mua-hang/[slug]` and stops; `APP12-S02` built it, and the
+    // assertion moved with the fact rather than being deleted — the panel must
+    // still contain no page of its own, and `/truy-cap/don-hang` is still
+    // `APP12-S03`'s and must still not exist.
     const routes = walk(join(process.cwd(), 'src', 'app'));
-    expect(routes.filter((path) => path.includes('mua-hang'))).toEqual([]);
+    expect(routes.filter((path) => path.includes('mua-hang'))).toEqual([
+      join(process.cwd(), 'src', 'app', 'mua-hang', '[slug]', 'page.tsx'),
+    ]);
     expect(routes.filter((path) => path.includes('don-hang'))).toEqual([]);
+    // Nothing in this feature reaches into the route it links to.
+    expect(allCode).not.toContain('ready-made-checkout');
   });
 
   it('adds no second release flag', () => {

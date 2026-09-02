@@ -21,6 +21,7 @@
     "e2e:app5:e01": "node scripts/run-e2e.mjs --app5-e01",
     "e2e:app7:e01": "node scripts/run-e2e.mjs --app7-e01",
     "e2e:app12:s01": "node scripts/run-e2e.mjs --app12-s01",
+    "e2e:app12:s02": "node scripts/run-e2e.mjs --app12-s02",
     "app7:e01:qr-scan-prepare": "node scripts/run-e2e.mjs --app7-qr-scan",
     "e2e:headed": "node scripts/run-e2e.mjs --headed",
     "e2e:debug": "node scripts/run-e2e.mjs --debug",

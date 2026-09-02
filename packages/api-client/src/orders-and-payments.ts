@@ -295,3 +295,46 @@ export type {
   FinalPaymentBankInstructionsResponse,
   FinalPaymentAttemptResponse,
 } from './generated/embroidery-api.schemas';
+
+// The public Ready-Made order-creation command (`APP12-B02`), consumed by
+// `APP12-S02` on the one Storefront checkout route.
+//
+// One operation, released consumer-driven: `APP12-B02` delivered it, and until
+// `/mua-hang/[slug]` existed there was no approved surface behind it.
+//
+// ### `publicReadyMadeOrder_current` is deliberately absent
+//
+// It is the **secure order surface**'s read, opened by an `ORDER_ACCESS` token
+// the customer receives by notification. `APP12-S03` owns that route and will
+// release it here when it lands. Publishing it now would put a token-carrying
+// read on the boundary with no screen to present it, which is exactly the
+// "capability nobody reviewed" this barrel's release rule exists to prevent —
+// and would make it that much easier for a checkout to reach for the order it
+// just created instead of stopping where the token stops (`APP12-S02` §23).
+//
+// ### The challenge is the idempotency scope, not a header
+//
+// `CreateReadyMadeOrderBody.challengeId` is a VERIFIED, unexpired
+// `SUBMISSION` challenge, and it authorizes the write *and* scopes its
+// idempotency: the same body on the same challenge replays the first result, a
+// different body on it is refused. There is no `Idempotency-Key` parameter on
+// this operation and none should be added by a consumer.
+//
+// ### No amount crosses inbound
+//
+// The body carries a SKU, a quantity, the challenge and the delivery facts, and
+// has no field for a price, a subtotal or a total. The server resolves the price
+// and re-checks availability under the stock lock, and the response's
+// `merchandiseSubtotal` is the frozen figure it wrote — a decimal **string**,
+// like every other amount on this boundary. `ReadyMadeOrderAccessBootstrapResponse`
+// publishes only that a link was handed to the notification path and when it
+// expires; the link itself is never in the response and cannot be recovered.
+export { publicReadyMadeOrderCreate } from './generated/embroidery-api';
+export { ReadyMadeOrderAccessBootstrapResponseScopeKind } from './generated/embroidery-api.schemas';
+export type {
+  CreateReadyMadeOrderBody,
+  ReadyMadeOrderDelivery,
+  ReadyMadeOrderCreatedResponse,
+  ReadyMadeOrderSubtotalResponse,
+  ReadyMadeOrderAccessBootstrapResponse,
+} from './generated/embroidery-api.schemas';

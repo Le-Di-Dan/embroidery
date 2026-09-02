@@ -15,8 +15,9 @@
  * claims that would silently rot if nothing pinned them, and that no
  * checkpoint-owned suite is responsible for:
  *
- * 1. **The route authority is final.** Eighteen Storefront pages, an exact set.
- *    APP11 closes having added six and it may not add a nineteenth by accident.
+ * 1. **The route authority is exact.** APP11 closed at eighteen Storefront
+ *    pages, having added six; a nineteenth may only arrive with the checkpoint
+ *    that owns it (`APP12-S02`'s checkout did), never by accident.
  * 2. **Discover and Gallery are two capabilities, not one.** `APP11-G01`
  *    predicted the Gallery feed at Discover's `5 / 3 / 2`; the delivered
  *    authority is `3 / 2 / 1` against Discover's unchanged `5 / 3 / 2`. E01
@@ -79,9 +80,10 @@ function declaredColumns(scss: string): { mobile: string; tablet: string; deskto
 
 describe('APP11-E01 — Storefront route authority', () => {
   /**
-   * The eighteen pages APP11 exits with. Written out rather than counted so a
-   * *swap* — one route deleted and another added — fails as loudly as a
-   * nineteenth would.
+   * The pages the Storefront serves. APP11 exited with eighteen; `APP12-S02`
+   * added the nineteenth. Written out rather than counted so a
+   * *swap* — one route deleted and another added — fails as loudly as an
+   * unannounced twentieth would.
    *
    * `robots.ts` and `sitemap.ts` are framework metadata routes and are
    * deliberately absent: they are not pages and are never counted as such.
@@ -95,6 +97,8 @@ describe('APP11-E01 — Storefront route authority', () => {
     '/cua-hang',
     '/dich-vu',
     '/kham-pha',
+    // `APP12-S02` — Ready-Made checkout. The one route that checkpoint adds.
+    '/mua-hang/[slug]',
     '/san-pham/[slug]',
     '/san-pham/[slug]/thiet-ke',
     '/truy-cap',
@@ -107,7 +111,7 @@ describe('APP11-E01 — Storefront route authority', () => {
     '/yeu-cau/moi',
   ];
 
-  it('ships exactly the eighteen pages APP11 closes with', () => {
+  it('ships exactly the nineteen pages the Storefront serves today', () => {
     expect(collectPageRoutes(APP_ROUTER_ROOT).sort()).toEqual(EXPECTED_ROUTES);
   });
 

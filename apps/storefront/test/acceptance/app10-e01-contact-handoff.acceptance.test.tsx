@@ -49,11 +49,12 @@ const GROUP_NAME = 'Kết nối';
  * `/truy-cap/thanh-toan-con-lai`.
  *
  * What the assertion is for is unchanged and still holds: the handoff added
- * none of these and adds none. Every one of the six new routes belongs to a
+ * none of these and adds none. Every one of the seven new routes — six from
+ * APP11, plus `APP12-S02`'s checkout — belongs to a
  * checkpoint that declared it, and `robots.ts`/`sitemap.ts` are metadata routes
  * that are deliberately not counted as pages.
  */
-const STOREFRONT_ROUTE_COUNT = 18;
+const STOREFRONT_ROUTE_COUNT = 19;
 
 function setConfig(zalo: string | undefined, messenger: string | undefined) {
   if (zalo === undefined) {

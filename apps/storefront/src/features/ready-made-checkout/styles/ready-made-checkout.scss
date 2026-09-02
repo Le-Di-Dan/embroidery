@@ -1,0 +1,108 @@
+// Ready-Made checkout — the page band, the card shell and the shared text
+// (APP12-S02).
+//
+// This sheet is the entry point and owns the layout only; the form and the
+// summary/outcome rules live in the two partials it composes. The split is by
+// responsibility, and the three files together are what the feature styles.
+//
+// The design provenance, the measured frame values and every local literal live
+// in the tokens partial beside this file; this one is the selectors.
+
+@use '@embroidery/styles' as styles;
+@use 'ready-made-checkout-tokens' as tokens;
+
+// The two halves of the screen, each owning its own rules — see their headers.
+@use 'ready-made-checkout-form';
+@use 'ready-made-checkout-summary';
+
+.ready-made-checkout {
+  display: flex;
+  flex-direction: column;
+  gap: styles.spacing(24);
+  padding-block: styles.spacing(48);
+
+  &__title {
+    margin: 0;
+    font-size: styles.$font-size-heading-l;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  // The 907:169 band. `minmax(0, 1fr)` rather than `1fr` so a long Vietnamese
+  // address or product name shrinks the column instead of widening the page —
+  // the sideways-scroll failure a grid track defaults into.
+  &__columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) tokens.$aside-width;
+    gap: tokens.$column-gap;
+    align-items: start;
+  }
+
+  &__main,
+  &__aside {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.$column-gap;
+    min-width: 0;
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(16);
+    padding: styles.spacing(24);
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-card;
+  }
+
+  // The delivery card is a fieldset; the element's UA border, padding and
+  // min-width are reset so it draws as the same card as its siblings.
+  &__fieldset {
+    margin: 0;
+    min-width: 0;
+  }
+
+  &__card-heading {
+    margin: 0;
+    padding: 0;
+    font-size: styles.$font-size-heading-s;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+  }
+
+  &__body {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__hint,
+  &__caption {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-tertiary;
+  }
+
+  // 907:5738 — at mobile the band collapses to one column AND the summary
+  // leads: the customer confirms what they are buying before being asked to
+  // type. `order` rather than a reordered DOM, so the tab order and the reading
+  // order stay the source order the form submits in.
+  @media (max-width: tokens.$bp-columns) {
+    &__columns {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    &__main {
+      order: 2;
+    }
+
+    &__aside {
+      order: 1;
+    }
+  }
+}

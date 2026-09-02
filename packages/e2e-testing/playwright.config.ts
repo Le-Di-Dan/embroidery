@@ -140,6 +140,16 @@ export default defineConfig({
       testMatch: '**/app12/s01-purchase-state.acceptance.spec.ts',
       use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
     },
+    // APP12-S02 Ready-Made checkout. Serial and Storefront-only, for the same
+    // reason as S01 — the suite drives the three approved viewports itself with
+    // `test.use` — plus one this checkpoint adds: the run creates real orders in
+    // sequence and each case counts the commercial rows the one before it left,
+    // so parallel workers would race the counts rather than the code.
+    {
+      name: 'app12-s02-chromium',
+      testMatch: '**/app12/s02-checkout.acceptance.spec.ts',
+      use: { ...devices['Desktop Chrome'], ...chromiumLaunch, baseURL: STOREFRONT_URL },
+    },
     {
       name: 'app7-e01-chromium',
       testMatch: '**/app7/*.acceptance.spec.ts',

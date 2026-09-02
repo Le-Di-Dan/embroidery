@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-S02
+NEXT                   = APP12-S03
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -263,8 +263,8 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 14·C1 | `APP12-B04-C1` | Machine-readable Ready-Made termination reason | `COMPLETE` |
 | 15 | `APP12-B05` | Admin FULL verification and origin-aware fulfilment | `COMPLETE` |
 | 16 | `APP12-S01` | Product Detail purchase state | `COMPLETE` |
-| 17 | `APP12-S02` | Ready-Made checkout `/mua-hang/[slug]` | **`NEXT`** |
-| 18 | `APP12-S03` | Secure order surface `/truy-cap/don-hang` | `NOT_STARTED` |
+| 17 | `APP12-S02` | Ready-Made checkout `/mua-hang/[slug]` | `COMPLETE` |
+| 18 | `APP12-S03` | Secure order surface `/truy-cap/don-hang` | **`NEXT`** |
 | 19 | `APP12-A02` | Admin Ready-Made order branch UI | `NOT_STARTED` |
 | 20 | `APP12-H01` | Authorization and security audit (Wave 1) | `NOT_STARTED` |
 | 21 | `APP12-H02` | Production deployment and configuration readiness | `NOT_STARTED` |

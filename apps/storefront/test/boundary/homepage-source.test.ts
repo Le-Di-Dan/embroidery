@@ -67,6 +67,9 @@ const ROUTES_AT_S05 = [
   '/cua-hang',
   '/dich-vu',
   '/kham-pha',
+  // Added by `APP12-S02` — the Ready-Made checkout, the one route that
+  // checkpoint adds. Wave 1, `noindex`, and absent from the sitemap.
+  '/mua-hang/[slug]',
   '/san-pham/[slug]',
   '/san-pham/[slug]/thiet-ke',
   '/truy-cap',

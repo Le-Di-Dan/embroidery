@@ -58,6 +58,12 @@ const APP7_E01 = ['app7-e01-chromium'];
 // database carrying a test-only catalog, the real API, the real Storefront and
 // the real gateway, and nothing else.
 const APP12_S01 = ['app12-s01-chromium'];
+// APP12-S02 — the Ready-Made checkout. The S01 topology plus the APP4
+// verification lane and the in-process worker, because the customer has to
+// receive a real verification code before an order can be created at all. It is
+// the first Storefront mode that writes commercial rows, so it runs only
+// against the disposable database the orchestrator drops afterwards.
+const APP12_S02 = ['app12-s02-chromium'];
 
 /**
  * `--app4` (APP4-E01-H01) is not a Playwright mode.
@@ -181,44 +187,51 @@ function parseArgs(argv) {
   // APP12-S01: a Playwright mode of its own, on the plain smoke topology plus a
   // seeded catalog and the Storefront's own runtime configuration.
   const app12S01 = flags.has('--app12-s01');
+  // APP12-S02: the same Playwright mode family, with the APP4 secret material
+  // and the browser tier's in-process runtime the verification lane needs.
+  const app12S02 = flags.has('--app12-s02');
   // APP4-E01-H02: the browser tier, which IS a Playwright mode.
   const app4Browser = flags.has('--app4-browser') || app4R01 || app4R01C1 || app5E01 || app7E01;
   const full = flags.has('--full');
   const mode = app4
     ? 'app4'
-    : app12S01
-      ? 'app12-s01'
-      : app7E01
-      ? 'app7-e01'
-      : app5E01
-        ? 'app5-e01'
-        : app4Browser
-          ? 'app4-browser'
-          : app1
-            ? 'app1'
-            : full
-              ? 'full'
-              : 'smoke';
-  const projects = app12S01
-    ? APP12_S01
-    : app7E01
-      ? APP7_E01
-      : app5E01
-        ? APP5_E01
-        : app4R01C1
-          ? APP4_R01_C1
-          : app4R01
-            ? APP4_R01
+    : app12S02
+      ? 'app12-s02'
+      : app12S01
+        ? 'app12-s01'
+        : app7E01
+          ? 'app7-e01'
+          : app5E01
+            ? 'app5-e01'
             : app4Browser
-              ? APP4
+              ? 'app4-browser'
               : app1
-                ? APP1
+                ? 'app1'
                 : full
-                  ? FULL
-                  : SMOKE;
+                  ? 'full'
+                  : 'smoke';
+  const projects = app12S02
+    ? APP12_S02
+    : app12S01
+      ? APP12_S01
+      : app7E01
+        ? APP7_E01
+        : app5E01
+          ? APP5_E01
+          : app4R01C1
+            ? APP4_R01_C1
+            : app4R01
+              ? APP4_R01
+              : app4Browser
+                ? APP4
+                : app1
+                  ? APP1
+                  : full
+                    ? FULL
+                    : SMOKE;
   // The E01 suite is always host/Chromium; it cannot run in the container.
   const runner =
-    app1 || app4Browser || app12S01
+    app1 || app4Browser || app12S01 || app12S02
       ? 'host'
       : runnerArg
         ? runnerArg.split('=')[1]
@@ -240,6 +253,7 @@ function parseArgs(argv) {
     app7E01,
     app7QrScan,
     app12S01,
+    app12S02,
   };
 }
 
@@ -270,6 +284,7 @@ async function main() {
     app7E01,
     app7QrScan,
     app12S01,
+    app12S02,
   } = parseArgs(process.argv.slice(2));
 
   // APP7-E01-U01 owns its own lean topology and teardown and starts no browser
@@ -305,7 +320,20 @@ async function main() {
   // The APP4-E01-H02 browser tier needs the same real bootstrap Admin the APP1
   // journeys use: its A01 readiness check logs in through the real form, and no
   // guard may be bypassed with an injected cookie.
-  const adminCredentials = app1 || app4Browser ? createAdminCredentials(runId) : undefined;
+  //
+  // `APP12-S02` needs it for a different reason and opens no Admin surface at
+  // all. The staff-bootstrap CLI is the **canonical publisher of the APP4
+  // policy configurations** (`PublishApp4PolicyUseCase`, called from
+  // `staff-bootstrap.ts`), and `verification.challenge` is one of them. Without
+  // it the disposable database carries migrations and no policy rows, so
+  // `POST /api/public/verification/challenges` answers `503 — not configured to
+  // issue`, which the Storefront correctly renders as the approved back-off
+  // state. A checkout cannot be created without a verified challenge, so the
+  // run needs the policies, and the accepted way to get them is to run the CLI
+  // rather than to insert policy rows behind it. The Admin account it creates
+  // is a by-product; nothing in the S02 suite logs in.
+  const adminCredentials =
+    app1 || app4Browser || app12S02 ? createAdminCredentials(runId) : undefined;
   // The browser tier overrides one non-secret value: the canonical origin the
   // API renders secure links against. The generated default is an unresolvable
   // `.invalid` host — correct for the lean H01 mode, which never opens a
@@ -319,8 +347,15 @@ async function main() {
   // peppered HMAC that has no unpeppered fallback — so the API would refuse to
   // start and the failure would read as an S01 defect. Per-run, synthetic and
   // in-memory, exactly as above.
+  //
+  // `APP12-S02` needs it for the original reason as well as S01's: a Ready-Made
+  // order cannot be created without a **verified SUBMISSION challenge**, so the
+  // run has to issue real verification codes and read them back through the
+  // recording adapter — which only works if the browser tier's in-process
+  // contexts share the one pepper set and envelope key the API HTTP process was
+  // started with.
   const app4Secrets =
-    app4Browser || app12S01
+    app4Browser || app12S01 || app12S02
       ? { ...createApp4SecretConfig(runId), storefrontOrigin: config.baseUrls.storefront }
       : undefined;
   // `APP7-B03`'s merchant bank configuration is a module-scoped fail-fast
@@ -372,7 +407,7 @@ async function main() {
       // server, so this is the first mode that has to configure that process at
       // all. Wave 2 is explicitly withheld — the purchase journeys are Wave-1
       // surfaces and must be proved with the custom capability off.
-      ...(app12S01
+      ...(app12S01 || app12S02
         ? {
             withStorefront: {
               INTERNAL_API_BASE_URL: `http://localhost:${config.ports.api}/api`,
@@ -421,6 +456,15 @@ async function main() {
       const { seedS01Catalog } = await import('../support/app12/s01-catalog-fixture.mjs');
       app12S01Fixture = await seedS01Catalog({ databaseUrl: env.database.url, log });
     }
+    // APP12-S02: the same arrangement, and the same reasoning, for the checkout
+    // catalog. The seeder refuses any database that is not `embroidery_db7_*`,
+    // which is what keeps the run's **commercial** rows — orders, reservations,
+    // grants — off the shared development stack (`APP12-S02` §43, §44).
+    let app12S02Fixture;
+    if (app12S02) {
+      const { seedS02Catalog } = await import('../support/app12/s02-checkout-fixture.mjs');
+      app12S02Fixture = await seedS02Catalog({ databaseUrl: env.database.url, log });
+    }
     // E01 specs need the bootstrap Admin credentials and the disposable database
     // URL (for the session-mutation seam); passed only through the child env.
     const browserEnv =
@@ -464,7 +508,29 @@ async function main() {
               E2E_APP12_S01_UNBUYABLE_SLUG: app12S01Fixture.unbuyableSlug,
               E2E_APP12_S01_CATEGORY_SLUG: app12S01Fixture.categorySlug,
             }
-          : {};
+          : app12S02
+            ? {
+                // The seeded slugs and SKU ids, for the same reason. The SKU ids
+                // matter more here than in S01: the spec composes checkout
+                // addresses from them exactly as `APP12-S01`'s panel does, so a
+                // literal would be asserting against a URL nobody could reach.
+                E2E_APP12_S02_PRODUCT_SLUG: app12S02Fixture.productSlug,
+                E2E_APP12_S02_MAIN_SKU: app12S02Fixture.mainSkuId,
+                E2E_APP12_S02_SCARCE_SKU: app12S02Fixture.scarceSkuId,
+                E2E_APP12_S02_AMBIGUOUS_SKU: app12S02Fixture.ambiguousSkuIds[0],
+                // The run's universe, so the spec's in-process API and worker
+                // contexts join the same database and secret material the API
+                // HTTP process was started with — which is what lets it read a
+                // real verification code. Child environment only.
+                E2E_RUN_ID: runId,
+                E2E_REPO_ROOT: config.repoRoot,
+                E2E_DATABASE_URL: env.database.url,
+                ...app4SecretEnv(app4Secrets),
+                // The in-process `AppModule` composes the deposit module, so it
+                // needs the same four merchant values the API HTTP process got.
+                ...merchantBankEnv(merchant),
+              }
+            : {};
     exitCode =
       runner === 'container'
         ? await runContainer({

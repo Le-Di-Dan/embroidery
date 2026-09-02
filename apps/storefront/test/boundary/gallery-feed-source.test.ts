@@ -82,6 +82,8 @@ const ROUTES_AT_S05 = [
   '/cua-hang',
   '/dich-vu',
   '/kham-pha',
+  // Added by `APP12-S02` — the Ready-Made checkout, the one route it adds.
+  '/mua-hang/[slug]',
   '/san-pham/[slug]',
   '/san-pham/[slug]/thiet-ke',
   '/truy-cap',
@@ -124,10 +126,10 @@ const galleryCode = codeOnly(
 );
 
 describe('gallery feed route boundary', () => {
-  it('serves the feed route, and the Storefront serves eighteen in total', () => {
+  it('serves the feed route, and the Storefront serves nineteen in total', () => {
     expect(existsSync(ROUTE_FILE)).toBe(true);
     expect(routeSegments()).toEqual(ROUTES_AT_S05);
-    expect(routeSegments()).toHaveLength(18);
+    expect(routeSegments()).toHaveLength(19);
   });
 
   it('has the entry detail route APP11-S03 owns, beneath the feed', () => {

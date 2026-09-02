@@ -1,0 +1,94 @@
+// Ready-Made checkout — the contact and delivery form (APP12-S02).
+//
+// Split from the layout sheet by responsibility, not by line count: these are
+// the rules for a *field* and for the verified-contact affordance beside it, and
+// they change when the form changes rather than when the band does. The design
+// provenance and every local literal stay in the tokens partial.
+
+@use '@embroidery/styles' as styles;
+@use 'ready-made-checkout-tokens' as tokens;
+
+.ready-made-checkout {
+  // Field (907:174) ---------------------------------------------------------
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+  }
+
+  &__label {
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  &__control {
+    width: 100%;
+    min-height: tokens.$control-min-target;
+    padding: tokens.$control-padding-block tokens.$control-padding-inline;
+    background: styles.$color-surface-primary;
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-input;
+    font-family: inherit;
+    font-size: styles.$font-size-body-m;
+    color: styles.$color-text-primary;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      background: styles.$color-background-secondary;
+      color: styles.$color-text-tertiary;
+    }
+
+    // 909:263 — the error control. A border colour alone would be the only
+    // signal for a colour-blind customer, so the message below it is always
+    // rendered and is what `aria-describedby` points at.
+    &--error {
+      border-color: styles.$color-status-error;
+    }
+  }
+
+  &__error {
+    margin: 0;
+    font-size: styles.$font-size-caption;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-status-error;
+  }
+
+  // Verified affordance (907:179) -------------------------------------------
+
+  &__verified {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    align-items: flex-start;
+  }
+
+  &__verified-line {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-status-success;
+  }
+
+  &__link-action {
+    min-height: tokens.$control-min-target;
+    padding: 0;
+    background: none;
+    border: 0;
+    font-family: inherit;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-action-primary;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+  }
+}

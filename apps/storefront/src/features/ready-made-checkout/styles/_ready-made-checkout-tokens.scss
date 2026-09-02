@@ -1,0 +1,52 @@
+// Ready-Made checkout — feature-scoped style constants (APP12-S02).
+//
+// Design source: FIG-APP12-S02-CHECKOUT-DESKTOP / -TABLET / -MOBILE /
+// -VALIDATION / -SUBMIT-PENDING / -REFUSAL (file BQwqV8GdfUIELvsQDB1UQE, page
+// APP_12, frames 907:142 · 907:252 · 907:5738 · 909:256 · 909:266 · 909:274),
+// approved under FIG-APPROVAL-APP12-D01-PO-001.
+//
+// Colour, type, radius and spacing come from @embroidery/styles. A handful of
+// measurements sit off the shared scale; each is a documented local literal,
+// following the APP2-S02, APP4-S01 and APP12-S01 precedent for the same reason —
+// inventing scale steps would change a shared foundation to suit one screen. No
+// global token is added or modified.
+//
+// Measured from the approved frames:
+//   desktop 1440 — page gutter 80, main 816, aside 440, column gap 24
+//   tablet  1024 — page gutter 48, the same two-column band, narrowed
+//   mobile   390 — page gutter 24, one column, and the SUMMARY LEADS (907:5772
+//                  sits above 907:5743, the reverse of desktop)
+//   card         — padding 24, heading→content 45, field gap 92 pitch
+//
+// The 1024 frame keeps the two-column band, so the single-column switch is not
+// a tablet rule: it is the mobile frame's own composition, and the breakpoint
+// below is the one place that is written down.
+
+@use '@embroidery/styles' as styles;
+
+// The drawn band. 816 + 24 + 440 = 1280, which is the content width inside the
+// 80px desktop gutter — so the aside is expressed as a fixed track and the main
+// takes the rest, exactly as the frames lay it out.
+$aside-width: 440px;
+$column-gap: styles.spacing(24);
+
+// Below this the mobile frame's single column applies. 1024 is drawn as two
+// columns and 390 as one; the switch is placed at the shell's own wide
+// breakpoint, mirrored rather than imported because it is another feature's
+// internal constant (a boundary test asserts the two cannot drift apart).
+$bp-columns: 768px;
+
+// Field geometry, measured from 907:176 (51px control at 16px type).
+$control-padding-block: 16px;
+$control-padding-inline: styles.spacing(16);
+
+// The 44px minimum touch target the package keeps at every viewport (D01 §L).
+$control-min-target: styles.$size-touch-target-min;
+
+$line-height-snug: 1.35;
+$line-height-body: 1.5;
+
+// The disabled action fill, aliased so the intent reads as "disabled action"
+// rather than as a border colour reused for a surface — the same aliasing
+// APP12-S01 records for the same token.
+$action-disabled: styles.$color-border-secondary;

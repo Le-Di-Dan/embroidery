@@ -44,7 +44,16 @@ beforeEach(() => {
   process.env.INTERNAL_API_BASE_URL = 'http://api:4000/api';
 });
 
-/** The eight private routes whose metadata is a static object. */
+/**
+ * The nine private routes whose metadata is a static object.
+ *
+ * `/mua-hang/[slug]` joined them at `APP12-S02`. It is a **dynamic** segment
+ * whose metadata is nevertheless a static object, and deliberately so: a
+ * checkout title derived from the Product, the SKU or the quantity would put
+ * per-customer state into a browser history and a shared screenshot. So it is
+ * driven here exactly like the eight static routes, and the same three
+ * assertions apply — `noindex`, no canonical, no Open Graph.
+ */
 const STATIC_PRIVATE_ROUTES: readonly [string, () => Promise<{ metadata: Metadata }>][] = [
   ['/truy-cap', () => import('../../src/app/truy-cap/page')],
   ['/truy-cap/bao-gia', () => import('../../src/app/truy-cap/bao-gia/page')],
@@ -54,6 +63,7 @@ const STATIC_PRIVATE_ROUTES: readonly [string, () => Promise<{ metadata: Metadat
   ['/xac-minh-lien-he', () => import('../../src/app/xac-minh-lien-he/page')],
   ['/yeu-cau/moi', () => import('../../src/app/yeu-cau/moi/page')],
   ['/yeu-cau/da-gui', () => import('../../src/app/yeu-cau/da-gui/page')],
+  ['/mua-hang/[slug]', () => import('../../src/app/mua-hang/[slug]/page')],
 ];
 
 /** The Studio, resolved through a real Product exactly as a visitor would. */

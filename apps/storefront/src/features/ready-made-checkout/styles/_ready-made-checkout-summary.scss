@@ -1,0 +1,219 @@
+// Ready-Made checkout — the summary aside, the refusal and the confirmation
+// (APP12-S02).
+//
+// Split from the layout sheet by responsibility: the amount rows, the primary
+// action, the refusal card and the confirmation are the *outcome* half of the
+// screen. The design provenance and every local literal stay in the tokens
+// partial.
+
+@use '@embroidery/styles' as styles;
+@use 'ready-made-checkout-tokens' as tokens;
+
+.ready-made-checkout {
+  // Item snapshot (907:202) -------------------------------------------------
+
+  &__item {
+    display: flex;
+    gap: styles.spacing(12);
+    align-items: flex-start;
+  }
+
+  &__thumb {
+    flex: 0 0 auto;
+    width: 72px;
+    height: 72px;
+    background: styles.$color-background-secondary;
+    border-radius: styles.$radius-sm;
+    object-fit: cover;
+  }
+
+  &__item-lines {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(4);
+    min-width: 0;
+  }
+
+  &__item-name {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  &__item-variant {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+  }
+
+  &__item-price {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+  }
+
+  // Amount rows (907:210) ---------------------------------------------------
+
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(16);
+    margin: 0;
+  }
+
+  // A definition row. `dt`/`dd` rather than two spans, because a label and its
+  // value are exactly that pair; the wrap keeps a long value under its label at
+  // 390 instead of truncating it.
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: styles.spacing(8);
+    justify-content: space-between;
+    font-size: styles.$font-size-body-s;
+    color: styles.$color-text-secondary;
+
+    dt {
+      margin: 0;
+    }
+
+    dd {
+      margin: 0;
+      text-align: right;
+      color: styles.$color-text-primary;
+      overflow-wrap: anywhere;
+    }
+
+    // 907:219 — the total row sits under a divider and reads a size larger.
+    &--total {
+      padding-top: styles.spacing(16);
+      border-top: 1px solid styles.$color-border-primary;
+      font-size: styles.$font-size-body-m;
+      font-weight: styles.$font-weight-medium;
+    }
+  }
+
+  &__order-code {
+    font-weight: styles.$font-weight-semibold;
+  }
+
+  // 907:223 — the shipping-fee notice block.
+  &__notice {
+    margin: 0;
+    padding: styles.spacing(16);
+    background: styles.$color-background-secondary;
+    border-radius: styles.$radius-sm;
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__submit {
+    min-height: tokens.$control-min-target;
+    padding: styles.spacing(12) styles.spacing(24);
+    background: styles.$color-action-primary;
+    border: 0;
+    border-radius: styles.$radius-button;
+    font-family: inherit;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-surface-primary;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: styles.$color-action-hover;
+    }
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+
+    // 909:271 — the pending variant. `not-allowed` rather than a spinner: the
+    // caption beneath it is what states the wait, and it is announced.
+    &:disabled {
+      background: tokens.$action-disabled;
+      cursor: not-allowed;
+    }
+  }
+
+  // Refusal (909:278) -------------------------------------------------------
+
+  &__refusal {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(8);
+    padding: styles.spacing(16);
+    background: styles.$color-background-secondary;
+    border-radius: styles.$radius-sm;
+  }
+
+  &__refusal-title {
+    margin: 0;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-status-error;
+  }
+
+  &__refusal-body {
+    margin: 0;
+    font-size: styles.$font-size-body-s;
+    line-height: tokens.$line-height-body;
+    color: styles.$color-text-secondary;
+  }
+
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: tokens.$control-min-target;
+    padding: styles.spacing(12) styles.spacing(24);
+    border: 1px solid styles.$color-border-primary;
+    border-radius: styles.$radius-button;
+    font-size: styles.$font-size-body-m;
+    font-weight: styles.$font-weight-medium;
+    color: styles.$color-text-primary;
+    text-decoration: none;
+
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  // Confirmation ------------------------------------------------------------
+
+  &__success {
+    display: flex;
+    flex-direction: column;
+    gap: styles.spacing(24);
+    align-items: stretch;
+  }
+
+  &__success-title {
+    margin: 0;
+    font-size: styles.$font-size-heading-m;
+    font-weight: styles.$font-weight-semibold;
+    line-height: tokens.$line-height-snug;
+    color: styles.$color-text-primary;
+
+    // Focused programmatically on mount; the ring must be visible when it is.
+    &:focus-visible {
+      outline: 2px solid styles.$color-action-primary;
+      outline-offset: 4px;
+    }
+  }
+
+  &__visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
