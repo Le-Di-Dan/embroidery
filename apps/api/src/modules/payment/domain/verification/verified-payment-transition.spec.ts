@@ -30,19 +30,33 @@ describe('APP9-B03 — the verified-payment transition table', () => {
     });
   });
 
-  it('never lets one kind inherit the other’s move', () => {
-    const deposit = verifiedPaymentTransitionFor('DEPOSIT');
-    const remaining = verifiedPaymentTransitionFor('REMAINING');
-    expect(deposit?.source).not.toBe(remaining?.source);
-    expect(deposit?.target).not.toBe(remaining?.target);
+  it('maps FULL to the Ready-Made payment move (APP12-B05)', () => {
+    expect(verifiedPaymentTransitionFor('FULL')).toEqual({
+      source: 'AWAITING_PAYMENT',
+      target: 'READY_FOR_DELIVERY',
+    });
   });
 
-  it('carries exactly the two CST-039 kinds', () => {
-    expect([...VERIFIABLE_OBLIGATION_KINDS].sort()).toEqual(['DEPOSIT', 'REMAINING']);
+  it('never lets one kind inherit another’s move', () => {
+    const deposit = verifiedPaymentTransitionFor('DEPOSIT');
+    const remaining = verifiedPaymentTransitionFor('REMAINING');
+    const full = verifiedPaymentTransitionFor('FULL');
+    expect(deposit?.source).not.toBe(remaining?.source);
+    expect(deposit?.target).not.toBe(remaining?.target);
+    // FULL and REMAINING deliberately share a *target*: both commerce shapes
+    // converge on one fulfilment lifecycle. What keeps them from being applied
+    // to each other’s orders is the source, which is disjoint.
+    expect(full?.source).not.toBe(remaining?.source);
+    expect(full?.source).not.toBe(deposit?.source);
+    expect(full?.target).toBe('READY_FOR_DELIVERY');
+  });
+
+  it('carries exactly the three CST-039 kinds', () => {
+    expect([...VERIFIABLE_OBLIGATION_KINDS].sort()).toEqual(['DEPOSIT', 'FULL', 'REMAINING']);
   });
 
   it.each([
-    ['a third kind the database might grow later', 'INSTALMENT'],
+    ['a fourth kind the database might grow later', 'INSTALMENT'],
     ['a lowercase spelling', 'deposit'],
     ['an order state mistaken for a kind', 'DEPOSIT_PAID'],
     ['an empty string', ''],

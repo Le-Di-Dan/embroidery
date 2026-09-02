@@ -128,28 +128,35 @@ describe('APP12-B04 — when a FULL obligation is payable', () => {
 });
 
 /**
- * `APP12-B04` §34 — the boundary this checkpoint must **not** cross.
+ * `APP12-B05` §7 — the boundary `APP12-B04` deliberately stopped at, now
+ * crossed.
  *
- * Admin verification of a `FULL` obligation, and with it
- * `AWAITING_PAYMENT -> READY_FOR_DELIVERY`, belongs to `APP12-B05`. B04 makes
- * the payment *collectable* and stops there.
+ * B04 made the Ready-Made payment *collectable* and left `FULL` unverifiable,
+ * so no Admin could settle it before the inventory half of that settlement
+ * existed. B05 delivered that half, and the crossing is what this asserts:
+ * `AWAITING_PAYMENT -> READY_FOR_DELIVERY` on a verified `FULL`.
  *
  * Asserted against the delivered transition table rather than through an HTTP
- * call, because the table is where the boundary actually lives: adding `FULL`
- * is a row here plus the tests that justify it — never an `if` in a use case —
- * so a row appearing before B05 fails this immediately.
+ * call, because the table is where the boundary actually lives. `APP12-B05`
+ * moved it: `FULL` is now a row, added the way this file predicted it would
+ * have to be — one entry plus the tests that justify it, never an `if` in a
+ * use case — so the assertion below is the same assertion inverted, and a
+ * regression that dropped the row would fail it just as loudly.
  */
-describe('APP12-B04 — FULL verification is not implemented', () => {
-  it('leaves the verifiable kinds at DEPOSIT and REMAINING', () => {
-    expect([...VERIFIABLE_OBLIGATION_KINDS]).toEqual(['DEPOSIT', 'REMAINING']);
-    expect(isVerifiableObligationKind('FULL')).toBe(false);
+describe('APP12-B05 — FULL is verifiable through the one canonical table', () => {
+  it('admits FULL alongside the two custom kinds', () => {
+    expect([...VERIFIABLE_OBLIGATION_KINDS].sort()).toEqual(['DEPOSIT', 'FULL', 'REMAINING']);
+    expect(isVerifiableObligationKind('FULL')).toBe(true);
   });
 
-  it('publishes no LC-14 transition for a verified FULL payment', () => {
-    // `undefined`, not a pair: an Admin verification that reached a FULL
-    // obligation has no move to make and refuses rather than guessing one.
-    expect(verifiedPaymentTransitionFor('FULL')).toBeUndefined();
-    // The two delivered kinds are untouched.
+  it('publishes the Ready-Made LC-14 pair and leaves the custom ones untouched', () => {
+    // The whole of B05’s contribution to this file: one row. A `FULL`
+    // verification moves the order off the one state only a Ready-Made order
+    // reaches, so it can never be applied to a custom one.
+    expect(verifiedPaymentTransitionFor('FULL')).toEqual({
+      source: 'AWAITING_PAYMENT',
+      target: 'READY_FOR_DELIVERY',
+    });
     expect(verifiedPaymentTransitionFor('DEPOSIT')).toEqual({
       source: 'AWAITING_DEPOSIT',
       target: 'DEPOSIT_PAID',

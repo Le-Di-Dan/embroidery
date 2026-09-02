@@ -5,6 +5,7 @@
  * ```text
  * DEPOSIT     AWAITING_DEPOSIT        -> DEPOSIT_PAID          TR-LC14-02
  * REMAINING   AWAITING_FINAL_PAYMENT  -> READY_FOR_DELIVERY    TR-LC14-06
+ * FULL        AWAITING_PAYMENT        -> READY_FOR_DELIVERY    APP12-B05
  * ```
  *
  * ### One table, not two code paths
@@ -32,16 +33,37 @@
  * that into a deterministic refusal that writes nothing, instead of a
  * mid-transaction guard violation after the attempt was already settled.
  *
+ * ### The third kind is a row, exactly as this file promised
+ *
+ * `APP12-DB01` added `FULL` to the database's kind set and `APP12-B03` gave
+ * it a lifecycle; `APP12-B04` deliberately left it unverifiable, so no Admin
+ * could settle a Ready-Made payment before the inventory half of that
+ * settlement existed. `APP12-B05` is that half, and its whole contribution
+ * here is one row plus one entry in the reference table — no branch, no second
+ * verifier, no origin parameter.
+ *
+ * `FULL` shares `READY_FOR_DELIVERY` with `REMAINING`, and that is the
+ * point: the two commerce shapes converge on one fulfilment lifecycle, so
+ * `adminOrder_dispatch` and `adminOrder_complete` need no Ready-Made twin.
+ * They do **not** share a source. `AWAITING_PAYMENT` is reachable only on the
+ * Ready-Made side and `AWAITING_FINAL_PAYMENT` only on the custom one, so
+ * neither kind's transition can be applied to the other's order: the source
+ * guard refuses it before anything is written.
+ *
+ * `ck_payment_obligations__kind_by_origin` makes the kinds mutually exclusive
+ * by origin, which is why the kind read off the locked obligation row is also
+ * the origin discriminator, and why nothing here accepts an origin.
+ *
  * ### Verifiability is a closed set
  *
- * `CST-039` has exactly two kinds and both are here. A third added to the
- * database later resolves to `undefined` and is refused as not verifiable,
- * rather than silently inheriting the deposit's transition.
+ * `CST-039` has exactly three kinds and all three are here. A fourth added to
+ * the database later resolves to `undefined` and is refused as not verifiable,
+ * rather than silently inheriting another kind's transition.
  */
 import type { OrderState } from '@embroidery/database';
 
 /** The obligation kinds an Admin may verify. Nothing else is settleable here. */
-export const VERIFIABLE_OBLIGATION_KINDS = ['DEPOSIT', 'REMAINING'] as const;
+export const VERIFIABLE_OBLIGATION_KINDS = ['DEPOSIT', 'REMAINING', 'FULL'] as const;
 
 export type VerifiableObligationKind = (typeof VERIFIABLE_OBLIGATION_KINDS)[number];
 
@@ -55,6 +77,7 @@ export interface VerifiedPaymentTransition {
 const TRANSITION_BY_KIND: Readonly<Record<VerifiableObligationKind, VerifiedPaymentTransition>> = {
   DEPOSIT: { source: 'AWAITING_DEPOSIT', target: 'DEPOSIT_PAID' },
   REMAINING: { source: 'AWAITING_FINAL_PAYMENT', target: 'READY_FOR_DELIVERY' },
+  FULL: { source: 'AWAITING_PAYMENT', target: 'READY_FOR_DELIVERY' },
 };
 
 export function isVerifiableObligationKind(kind: string): kind is VerifiableObligationKind {

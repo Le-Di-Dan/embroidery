@@ -99,7 +99,10 @@ export class CompleteOrderUseCase {
 
     try {
       return await this.transactions.runInTransaction(async () => {
-        const order = await this.orders.loadForUpdate(id);
+        // Origin-neutral: `loadForUpdate` maps the custom aggregate and refuses
+        // a Ready-Made row (`APP12-B05` §23). Closing an order is the same act
+        // whichever way it was created, so it reads the shape both origins have.
+        const order = await this.orders.loadLifecycleForUpdate(id);
         if (order === undefined) {
           throw orderDeliveryError('ORDER_NOT_FOUND');
         }
@@ -107,7 +110,7 @@ export class CompleteOrderUseCase {
           throw orderDeliveryError('ORDER_INVALID_TRANSITION');
         }
 
-        const moved = await this.orders.transition({
+        const moved = await this.orders.transitionLifecycle({
           id: order.id,
           to: COMPLETION_TARGET_STATE,
           actor: { kind: 'ADMIN', adminId },

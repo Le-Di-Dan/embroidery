@@ -20,8 +20,8 @@
  * provider  -> nothing
  * ```
  *
- * `satisfy()` is never called and `ORDER_REPOSITORY` is used for one `findById`
- * — a read — so the response can report the order's unchanged state truthfully.
+ * `satisfy()` is never called and `ORDER_REPOSITORY` is used for one
+ * origin-neutral read — so the response can report the order's unchanged state truthfully.
  * There is no branch in this file that can settle an attempt `SUCCEEDED`, and
  * that is the point: an escalation must not be a second, quieter door to
  * `DEPOSIT_PAID`.
@@ -156,7 +156,7 @@ export class ReviewPaymentAttemptUseCase {
         // that the obligation and the order did not move, and reporting a
         // remembered value would be this file asserting that instead of
         // observing it.
-        const order = await this.orders.findById(orderId as OrderId);
+        const order = await this.orders.findLifecycleById(orderId as OrderId);
         return {
           attemptId: attempt.id,
           attemptStatus: 'REQUIRES_REVIEW',
@@ -164,7 +164,7 @@ export class ReviewPaymentAttemptUseCase {
           depositStatus: obligation.status,
           orderId,
           // Falling back to what the chain observed rather than to a deposit
-          // literal: this operation now runs for either kind.
+          // literal: this operation runs for every verifiable kind.
           orderStatus: order?.status ?? orderStatus,
           reconciliationAction: action,
           replayed: false,

@@ -97,7 +97,10 @@ export class RouteAttemptToReview {
       input.note,
     );
 
-    const order = await this.orders.findById(input.orderId as OrderId);
+    // Origin-neutral, because this branch now runs for a Ready-Made order too
+    // and `findById` maps the custom aggregate — it would throw here rather
+    // than fall back, turning a committed review into a 500 (`APP12-B05`).
+    const order = await this.orders.findLifecycleById(input.orderId as OrderId);
     return {
       attemptId: input.attemptId,
       attemptStatus: 'REQUIRES_REVIEW',
@@ -109,8 +112,9 @@ export class RouteAttemptToReview {
       orderId: input.orderId,
       // Read back rather than assumed, and falling back to what the chain saw
       // rather than to a deposit literal: `APP9-B03` made this branch run for
-      // either kind, and an order genuinely at `AWAITING_FINAL_PAYMENT` must not
-      // be reported as `AWAITING_DEPOSIT` because a re-read raced.
+      // either custom kind and `APP12-B05` for `FULL`, so an order genuinely at
+      // `AWAITING_FINAL_PAYMENT` or `AWAITING_PAYMENT` must not be reported as
+      // `AWAITING_DEPOSIT` because a re-read raced.
       orderStatus: order?.status ?? input.orderStatus,
       reconciliationAction: input.action,
       replayed: false,

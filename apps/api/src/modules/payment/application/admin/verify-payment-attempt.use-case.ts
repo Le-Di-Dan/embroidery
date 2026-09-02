@@ -62,12 +62,18 @@
  * fake callback. IMP-O007 stays open, and its uniqueness arbiter stays intact
  * for whenever a provider is locked.
  *
- * ### It stops at `DEPOSIT_PAID`
+ * ### Where it stops depends on the kind, and only through a table
  *
- * No reservation, no soft hold, no ledger entry, no production job and no
- * remaining-payment collection. APP8 consumes `DEPOSIT_PAID` later through the
- * delivered `DepositEligibilityPort`; this module injects none of those and
- * could not write one.
+ * A `DEPOSIT` verification writes no reservation, soft hold, ledger entry or
+ * production job: APP8 consumes `DEPOSIT_PAID` later through the delivered
+ * `DepositEligibilityPort`. `REMAINING` writes none either — custom stock was
+ * committed at production start long before the balance arrived. A `FULL`
+ * verification commits the Ready-Made hold, because payment is the moment
+ * those units stop being reserved and become sold (`APP12-B05` §5).
+ *
+ * That difference is a row in `verified-payment-settlement.ts` and a port call,
+ * not a branch: this file names no origin, holds no inventory repository and
+ * could not write an on-hand balance if the table said it should.
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { isPersistenceError } from '@embroidery/database';
@@ -92,6 +98,7 @@ import {
   type ObservedTransferFacts,
 } from '../../domain/verification/payment-verification.policy';
 import { reconciliationActionFor } from '../../domain/verification/reconciliation-evidence';
+import { ApplyVerifiedSettlement } from './apply-verified-settlement.service';
 import type { PaymentDecisionView } from './admin-payment.view';
 import { PaymentDecisionChainResolver } from './payment-decision-chain.resolver';
 import { PaymentDecisionRecorder } from './payment-decision.recorder';
@@ -141,6 +148,7 @@ export class VerifyPaymentAttemptUseCase {
     @Inject(PAYMENT_OBLIGATION_REPOSITORY)
     private readonly obligations: PaymentObligationRepository,
     @Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository,
+    private readonly settlement: ApplyVerifiedSettlement,
     private readonly recorder: PaymentDecisionRecorder,
     private readonly reviewRouter: RouteAttemptToReview,
     private readonly requestContext: RequestContextService,
@@ -180,7 +188,7 @@ export class VerifyPaymentAttemptUseCase {
           // state, so guarding first would answer a lost-response retry with
           // "this order is not awaiting that payment" — a refusal that reads as
           // "the payment failed" for a payment that succeeded.
-          const order = await this.orders.findById(orderId as OrderId);
+          const order = await this.orders.findLifecycleById(orderId as OrderId);
           return {
             attemptId: attempt.id,
             attemptStatus: attempt.status,
@@ -247,6 +255,8 @@ export class VerifyPaymentAttemptUseCase {
           });
         }
 
+        await this.settlement.apply(kind, orderId, transition.source, adminId);
+
         await this.obligations.settleAttempt(attempt.id, 'SUCCEEDED', now);
         // G-DB7-06 / G-DB7-33 are re-proved inside this call, under the
         // obligation's own row lock. Nothing here writes a satisfaction column.
@@ -265,7 +275,7 @@ export class VerifyPaymentAttemptUseCase {
         // or a saga step. A `DEPOSIT_VERIFIED` kind would be an invented
         // vocabulary the CHECK rejects; *why* the order moved is carried by the
         // reconciliation row and the audit event, which are built for it.
-        const order = await this.orders.transition({
+        const order = await this.orders.transitionLifecycle({
           id: orderId as OrderId,
           to: transition.target,
           actor: { kind: 'ADMIN', adminId },

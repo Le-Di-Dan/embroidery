@@ -18,18 +18,22 @@ import { and, eq } from 'drizzle-orm';
 
 import { actorColumns } from './order-transition-actor';
 import { DISPATCHABLE_FROM } from './order-transitions';
+import type { OrderLifecycle } from './order-lifecycle';
 import type { RequestActor } from './ordering-identity';
 import type {
   AcknowledgeShippingFeeInput,
   FindShippingFeeAcknowledgementInput,
-  Order,
   OrderId,
   SaveShippingDetailInput,
   ShippingDetail,
   ShippingFeeAcknowledgement,
   ShippingFeeBaseline,
 } from './order.repository';
-import { toOrder, toShippingDetail, toShippingFeeAcknowledgement } from './order-row.mapper';
+import {
+  toOrderLifecycle,
+  toShippingDetail,
+  toShippingFeeAcknowledgement,
+} from './order-row.mapper';
 
 const {
   orders,
@@ -178,7 +182,7 @@ export class DrizzleOrderShippingRepository extends DrizzleRepository {
     dispatchedAt: Date,
     correlationId: string,
     actor: RequestActor = DISPATCH_SEED_ACTOR,
-  ): Promise<Order> {
+  ): Promise<OrderLifecycle> {
     return this.run('dispatch', async () => {
       const tx = this.requireTransaction('dispatch');
 
@@ -270,7 +274,8 @@ export class DrizzleOrderShippingRepository extends DrizzleRepository {
       if (row === undefined) {
         throw notFoundError('OrderRepository.dispatch', 'That order does not exist.');
       }
-      return toOrder(row);
+      // Origin-neutral — `toOrder` refuses a Ready-Made row (`APP12-B05`).
+      return toOrderLifecycle(row);
     });
   }
 

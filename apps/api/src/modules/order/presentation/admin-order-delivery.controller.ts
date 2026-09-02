@@ -118,9 +118,14 @@ export class AdminOrderDeliveryController {
       'still be editable, and carry a shipping fee, because the snapshot records an amount and ' +
       'a freeze with no fee would record one nobody agreed to. **A carrier name and a tracking ' +
       'code are not required**: they are static internal notes, copied into the snapshot when ' +
-      'present. GRD-016 requires the order’s live REMAINING obligation to be SATISFIED — the ' +
-      'lifecycle state is not taken as proof of it, because a shipping-fee recalculation can ' +
-      'replace a satisfied balance with a new pending one without moving the order.\n\n' +
+      'present. GRD-016 requires the payment the order actually settles on to be SATISFIED — ' +
+      'the live REMAINING obligation for a custom order, the live FULL one for a Ready-Made ' +
+      'order, chosen from the order’s own immutable origin. The lifecycle state is not taken ' +
+      'as proof of it, because a shipping-fee recalculation can replace a satisfied payment ' +
+      'with a new pending one without moving the order.\n\n' +
+      'It is one command for both kinds of commerce. A Ready-Made order needs no production ' +
+      'job, quotation, design approval or deposit to be dispatched — only that it is ' +
+      'READY_FOR_DELIVERY, which it reaches when its full payment is verified.\n\n' +
       'After it commits, the shipping details are immutable: the Admin shipping write refuses ' +
       'them and a database trigger rejects any mutation. Corrections after this point are ' +
       'recorded as compensating events, never as edits.\n\n' +
@@ -152,8 +157,8 @@ export class AdminOrderDeliveryController {
       'ORDER_INVALID_TRANSITION — the order is not READY_FOR_DELIVERY, which includes an order ' +
       'already dispatched; ORDER_SHIPPING_NOT_READY — GRD-017, the shipping details are ' +
       'missing or incomplete; ORDER_REMAINING_PAYMENT_UNSATISFIED — GRD-016, the balance is ' +
-      'not settled; ORDER_REMAINING_PAYMENT_MISSING — the order has no live remaining ' +
-      'obligation at all. Nothing was committed in any of the four cases.',
+      'not settled; ORDER_REMAINING_PAYMENT_MISSING — the order has no live obligation of ' +
+      'the kind its origin settles on. Nothing was committed in any of the four cases.',
     schema: ERROR_SCHEMA,
   })
   async dispatch(@Param() params: AdminOrderIdParam): Promise<AdminOrderDispatchPayload> {

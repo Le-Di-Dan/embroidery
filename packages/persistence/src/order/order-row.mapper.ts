@@ -4,8 +4,9 @@
  * Amounts stay strings: an order total that lost precision is money.
  */
 import { guardViolationError } from '@embroidery/database';
-import type { OrderState, ShippingDetailState, schema } from '@embroidery/database';
+import type { OrderOrigin, OrderState, ShippingDetailState, schema } from '@embroidery/database';
 
+import type { OrderLifecycle } from './order-lifecycle';
 import type { CustomRequestId } from './ordering-identity';
 import type {
   Order,
@@ -102,5 +103,31 @@ export function toShippingFeeAcknowledgement(
     grantId: row.grantId,
     stepUpChallengeId: row.stepUpChallengeId,
     acknowledgedAt: row.acknowledgedAt,
+  };
+}
+
+/**
+ * Maps an order row onto the origin-neutral lifecycle shape (`APP12-B05`).
+ *
+ * Every column it reads is `NOT NULL` on `orders`, so this mapper has no
+ * refusal to make and no nullability to invent: it is total over the table,
+ * which is exactly what lets `adminPaymentAttempt_verify`, `adminOrder_dispatch`
+ * and `adminOrder_complete` be one command each instead of two.
+ *
+ * It is deliberately **not** a relaxed `toOrder`. The custom chain is not
+ * mapped to `undefined` here — it is not mapped at all, so no consumer of this
+ * shape can reach for a quotation or an approval snapshot and find a hole where
+ * `toOrder`'s refusal used to be.
+ */
+export function toOrderLifecycle(row: OrderRow): OrderLifecycle {
+  return {
+    id: row.id as OrderId,
+    code: row.code,
+    customerId: row.customerId,
+    origin: row.origin as OrderOrigin,
+    status: row.status as OrderState,
+    totalAmount: row.totalAmount,
+    currencyCode: row.currencyCode,
+    deliveredAt: row.deliveredAt ?? undefined,
   };
 }

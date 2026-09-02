@@ -25,10 +25,11 @@ import type {
   ShippingFeeBaseline,
   TransitionOrderInput,
 } from './order.repository';
+import type { OrderLifecycle } from './order-lifecycle';
 import { DrizzleOrderShippingRepository } from './drizzle-order-shipping.repository';
 import { OrderChainGuard } from './order-chain.guard';
 import { applyOrderTransition } from './order-transition-write';
-import { toItem, toOrder } from './order-row.mapper';
+import { toItem, toOrder, toOrderLifecycle } from './order-row.mapper';
 
 const { orders, orderItems, orderTransitions } = schema;
 
@@ -59,7 +60,7 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     dispatchedAt: Date,
     correlationId: string,
     actor?: RequestActor,
-  ): Promise<Order> {
+  ): Promise<OrderLifecycle> {
     return this.shipping.dispatch(orderId, dispatchedAt, correlationId, actor);
   }
 
@@ -208,6 +209,18 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     });
   }
 
+  async loadLifecycleForUpdate(id: OrderId): Promise<OrderLifecycle | undefined> {
+    return this.run('loadLifecycleForUpdate', async () => {
+      const tx = this.requireTransaction('loadLifecycleForUpdate');
+      // The same statement as `loadForUpdate`, deliberately: one lock, one
+      // direction, one entry in `DB8_LOCK_ORDER_MATRIX.md`. Only the mapping
+      // differs, so a Ready-Made order queues behind exactly what a custom one
+      // queues behind.
+      const [row] = await tx.select().from(orders).where(eq(orders.id, id)).limit(1).for('update');
+      return row === undefined ? undefined : toOrderLifecycle(row);
+    });
+  }
+
   /**
    * The move itself is `applyOrderTransition` (`APP12-B02`); this method is the
    * custom aggregate's mapping of its result. Both origins share one write, and
@@ -220,10 +233,24 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     });
   }
 
+  async transitionLifecycle(input: TransitionOrderInput): Promise<OrderLifecycle> {
+    return this.run('transitionLifecycle', async () => {
+      const tx = this.requireTransaction('transitionLifecycle');
+      return toOrderLifecycle(await applyOrderTransition(tx, input));
+    });
+  }
+
   async findById(id: OrderId): Promise<Order | undefined> {
     return this.run('findById', async () => {
       const [row] = await this.db.select().from(orders).where(eq(orders.id, id)).limit(1);
       return row === undefined ? undefined : toOrder(row);
+    });
+  }
+
+  async findLifecycleById(id: OrderId): Promise<OrderLifecycle | undefined> {
+    return this.run('findLifecycleById', async () => {
+      const [row] = await this.db.select().from(orders).where(eq(orders.id, id)).limit(1);
+      return row === undefined ? undefined : toOrderLifecycle(row);
     });
   }
 

@@ -16,6 +16,7 @@
  */
 import type { OrderState, ShippingDetailState } from '@embroidery/database';
 
+import type { OrderLifecycle } from './order-lifecycle';
 import type { CustomRequestId, RequestActor } from './ordering-identity';
 
 export type OrderId = string & { readonly __brand: 'OrderId' };
@@ -214,8 +215,37 @@ export interface OrderRepository {
    */
   loadForUpdate(id: OrderId): Promise<Order | undefined>;
 
+  /**
+   * The same row lock as {@link loadForUpdate}, mapped onto the origin-neutral
+   * shape (`APP12-B05`).
+   *
+   * `loadForUpdate` returns the **custom** aggregate, so it refuses a
+   * `READY_MADE` row outright — which is what made every shared lifecycle
+   * command unreachable for that origin. This is the seam those commands take
+   * instead: the identical `FOR UPDATE` on `orders`, first in the flow's
+   * lock order, carrying the discriminator so the caller can branch where the
+   * business actually differs.
+   *
+   * @requiresTransaction
+   */
+  loadLifecycleForUpdate(id: OrderId): Promise<OrderLifecycle | undefined>;
+
   /** @requiresTransaction — move and evidence together, legality checked. */
   transition(input: TransitionOrderInput): Promise<Order>;
+
+  /**
+   * The same LC-14 move, mapped onto the origin-neutral shape (`APP12-B05`).
+   *
+   * One writer underneath — `applyOrderTransition` — shared with
+   * {@link transition} and `transitionReadyMade`, so legality, the
+   * `order_transitions` evidence row and the cancellation-reason rule are
+   * proved once and cannot drift between origins. Only the mapping of the
+   * committed row differs, and a shared command reads the shape both origins
+   * have.
+   *
+   * @requiresTransaction
+   */
+  transitionLifecycle(input: TransitionOrderInput): Promise<OrderLifecycle>;
 
   /** @requiresTransaction — rejected once the detail is frozen. */
   saveShippingDetails(input: SaveShippingDetailInput): Promise<ShippingDetail>;
@@ -250,7 +280,7 @@ export interface OrderRepository {
     dispatchedAt: Date,
     correlationId: string,
     actor?: RequestActor,
-  ): Promise<Order>;
+  ): Promise<OrderLifecycle>;
 
   /**
    * The fee baseline for one order, taken under the shipping detail's own
@@ -332,6 +362,17 @@ export interface OrderRepository {
   resolveCancellationRequest(id: string, approved: boolean, adminId: string): Promise<void>;
 
   findById(id: OrderId): Promise<Order | undefined>;
+
+  /**
+   * The unlocked read of {@link findById}, origin-neutral (`APP12-B05`).
+   *
+   * Used where a command needs the order's identity and committed state but has
+   * no custom chain to read: the payment decision chain deriving a transfer memo
+   * from `orders.code`, and the verification replay quoting the state it
+   * found. Unlocked because each caller either takes the row lock separately or
+   * is reporting committed truth rather than deciding on it.
+   */
+  findLifecycleById(id: OrderId): Promise<OrderLifecycle | undefined>;
   findByCode(code: string): Promise<Order | undefined>;
   findByRequest(customRequestId: CustomRequestId): Promise<Order | undefined>;
   loadItems(id: OrderId): Promise<OrderItem[]>;

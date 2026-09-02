@@ -1,19 +1,23 @@
 import { Module } from '@nestjs/common';
 import {
   DatabaseModule,
+  InventoryPersistenceModule,
   OrderPersistenceModule,
   PaymentPersistenceModule,
 } from '@embroidery/persistence';
 
 import { AuditContextModule } from '../../platform/audit-context/audit-context.module';
 import { AuditModule } from '../audit/audit.module';
+import { CommitReadyMadeStockService } from '../order/application/ready-made/commit-ready-made-stock.service';
 import { IdentityModule } from '../identity/identity.module';
+import { ApplyVerifiedSettlement } from './application/admin/apply-verified-settlement.service';
 import { PaymentDecisionChainResolver } from './application/admin/payment-decision-chain.resolver';
 import { PaymentDecisionRecorder } from './application/admin/payment-decision.recorder';
 import { ReviewPaymentAttemptUseCase } from './application/admin/review-payment-attempt.use-case';
 import { RouteAttemptToReview } from './application/admin/route-attempt-to-review.service';
 import { VerifyPaymentAttemptUseCase } from './application/admin/verify-payment-attempt.use-case';
 import { AdminPaymentAttemptController } from './presentation/admin-payment-attempt.controller';
+import { VERIFIED_PAYMENT_SETTLEMENT_PORT } from './domain/verification/verified-payment-settlement';
 
 /**
  * `APP7-B04` — Admin manual verification and review.
@@ -36,9 +40,11 @@ import { AdminPaymentAttemptController } from './presentation/admin-payment-atte
  *   module and no second satisfy implementation;
  * - `OrderPersistenceModule` — the one canonical AGG-15 writer, imported
  *   directly rather than through `OrderModule` so `CUSTOM_REQUEST_REPOSITORY`
- *   stays out of a payment injector. `transition()` is used for exactly one
- *   move, `AWAITING_DEPOSIT → DEPOSIT_PAID`, and the LC-14 legality check inside
- *   it is what refuses every other;
+ *   stays out of a payment injector. Its transition writer performs exactly the
+ *   three moves the kind table names, and the LC-14 legality check inside it is
+ *   what refuses every other;
+ * - `InventoryPersistenceModule` — added by `APP12-B05`, and reachable only
+ *   through `VERIFIED_PAYMENT_SETTLEMENT_PORT`. See below;
  * - `AuditModule` — the delivered append-only audit writer, not a second
  *   mechanism;
  * - `DatabaseModule` — `TransactionManager` and `OutboxEventStore`. One
@@ -58,9 +64,26 @@ import { AdminPaymentAttemptController } from './presentation/admin-payment-atte
  * (`APP7-G01` §7.6) and cannot become a verification input here even by
  * accident. There is no `CustomerModule`, so no grant, token or step-up is
  * reachable: Admin verification is authorized by the Admin session and nothing
- * else. There is no inventory or production module, so `DEPOSIT_PAID` is where
- * this module's authority ends — APP8 consumes it later through the delivered
- * `DepositEligibilityPort`. And there is no provider SDK, webhook controller or
+ * else. There is no production module, so no verification can start, schedule
+ * or advance a production job.
+ *
+ * ### The one absence `APP12-B05` had to end, and how narrowly
+ *
+ * `APP7-B04` recorded that this module holds no inventory, so `DEPOSIT_PAID`
+ * was where its authority ended. That is still true of a deposit: APP8 reserves
+ * against one later through `DepositEligibilityPort`, not here. But Ready-Made
+ * inverts the order — the stock is already reserved when the payment arrives,
+ * and payment is the moment it becomes sold — so the commitment has to be in
+ * the verifying transaction or it is not atomic (`APP12-B05` §11).
+ *
+ * `InventoryPersistenceModule` is therefore imported, and nothing in this
+ * module may inject `SKU_STOCK_REPOSITORY`: the only consumer is
+ * `CommitReadyMadeStockService`, registered here as the implementation of the
+ * port Payment declares. The verification use case holds the port's narrow
+ * interface — one method, one order, one verdict — so this surface can commit
+ * an order's own reservation and cannot adjust a balance, release a hold,
+ * create a reservation or write a ledger entry of its own. And there is no
+ * provider SDK, webhook controller or
  * `recordProviderEvent` call anywhere in it, so `IMP-O007` cannot be reopened
  * through this surface.
  *
@@ -72,11 +95,14 @@ import { AdminPaymentAttemptController } from './presentation/admin-payment-atte
     AuditModule,
     DatabaseModule,
     IdentityModule,
+    InventoryPersistenceModule,
     OrderPersistenceModule,
     PaymentPersistenceModule,
   ],
   controllers: [AdminPaymentAttemptController],
   providers: [
+    { provide: VERIFIED_PAYMENT_SETTLEMENT_PORT, useClass: CommitReadyMadeStockService },
+    ApplyVerifiedSettlement,
     PaymentDecisionChainResolver,
     PaymentDecisionRecorder,
     RouteAttemptToReview,

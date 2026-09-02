@@ -21,7 +21,7 @@
  * move, so the actor is passed in rather than left to the repository's seeding
  * default.
  *
- * ### GRD-016 is checked here, and it is not reassurance
+ * ### GRD-016 is checked here, origin-aware, and it is not reassurance
  *
  * Three canonical documents put the remaining-payment check *inside* the
  * dispatch transaction: `DB3_SHIPPING_FEE_AND_FREEZE_SPEC.md` §2 ("validate
@@ -33,11 +33,19 @@
  * `READY_FOR_DELIVERY` owing money. Refusing that is the whole point of the
  * guard, and the read is a kind-aware one through the single AGG-16 authority.
  *
+ * *Which* kind is a lookup on the order's origin (`APP12-B05` §22). A
+ * Ready-Made order settles one `FULL` obligation and has no `REMAINING` one
+ * at any point in its life, so asking for `REMAINING` unconditionally would
+ * have refused every paid Ready-Made order for a payment that was collected in
+ * full. The supersession hazard applies to it identically — `APP12-B03`'s fee
+ * correction supersedes a `FULL` without moving the order — which is why both
+ * origins get a live-obligation read rather than a source-state shortcut.
+ *
  * ### The transaction and the lock order (§10, §17)
  *
  * ```text
  * 1. orders             FOR UPDATE   loadForUpdate — the decision's own lock
- * 2. shipping_details   FOR UPDATE   lockShippingFeeBaseline — GRD-017's subject
+ * 2. shipping_details   FOR UPDATE   lockShippingDetail — GRD-017's subject
  * 3. payment_obligations             findLiveForOrder — GRD-016, kind-aware
  * 4. shipping_details / shipping_snapshots / orders / order_transitions
  *                                    dispatch — freeze + snapshot + move
@@ -76,7 +84,7 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { isPersistenceError } from '@embroidery/database';
-import type { OrderState, ShippingDetailState } from '@embroidery/database';
+import type { OrderOrigin, OrderState, ShippingDetailState } from '@embroidery/database';
 import {
   ORDER_REPOSITORY,
   PAYMENT_OBLIGATION_REPOSITORY,
@@ -88,6 +96,7 @@ import {
 
 import { RequestContextService } from '../../../../platform/request-context/request-context.service';
 import { orderDeliveryError } from '../../domain/lifecycle/order-delivery.errors';
+import { settlementObligationKindFor } from '../../domain/lifecycle/settlement-obligation-kind';
 import { requireOrderLifecycleAdminId } from './order-lifecycle-actor';
 
 /** The one source state `TR-LC14-07` is legal from. */
@@ -124,7 +133,11 @@ export class DispatchOrderUseCase {
 
     try {
       return await this.transactions.runInTransaction(async () => {
-        const order = await this.orders.loadForUpdate(id);
+        // The origin-neutral lock. `loadForUpdate` maps the custom aggregate and
+        // refuses a Ready-Made row outright, which made this command — an
+        // origin-neutral one — unreachable for half the shop (`APP12-B05` §21).
+        // Same statement, same lock, same place in the lock order.
+        const order = await this.orders.loadLifecycleForUpdate(id);
         if (order === undefined) {
           throw orderDeliveryError('ORDER_NOT_FOUND');
         }
@@ -133,7 +146,7 @@ export class DispatchOrderUseCase {
         }
 
         await this.assertShippingReady(id);
-        await this.assertRemainingSatisfied(order.id);
+        await this.assertSettlementSatisfied(order.id, order.origin);
 
         // One call, one transaction: freeze, snapshot and move. The instant is
         // taken once and used for all three, so `frozen_at`, the snapshot's
@@ -175,10 +188,19 @@ export class DispatchOrderUseCase {
    * `GRD-017` — the shipping detail exists, is still editable, and carries the
    * one nullable fact the freeze cannot do without.
    *
-   * The lock is the point of using `lockShippingFeeBaseline` rather than an
-   * unlocked read: it is the delivered `APP9-B04` seam for taking the shipping
-   * detail `FOR UPDATE`, and holding it from here to commit is what serialises
-   * this dispatch against a concurrent fee recalculation.
+   * The lock is the point of using a locking seam rather than an unlocked read:
+   * holding the shipping detail `FOR UPDATE` from here to commit is what
+   * serialises this dispatch against a concurrent fee recalculation.
+   *
+   * `lockShippingDetail` rather than `lockShippingFeeBaseline`, which is what
+   * `APP9-B05` used. The two open with the *identical* statement — the same
+   * `shipping_details` row, the same `FOR UPDATE`, so the serialisation is
+   * unchanged — and the baseline then adds an inner join through
+   * `orders.accepted_quotation_version_id` to `quotation_versions`. That column
+   * is `NULL` on a Ready-Made order, so the join matched nothing and the whole
+   * command answered `ORDER_NOT_FOUND` for an order that plainly exists
+   * (`APP12-B05` §21). The quoted fee it fetched was never read here: GRD-017
+   * asks whether the *detail* carries a fee, not what a quotation once said.
    *
    * Completeness is the schema's own answer. Recipient, phone, address and
    * province are `NOT NULL` columns, so a stored detail always has them; the fee
@@ -188,14 +210,13 @@ export class DispatchOrderUseCase {
    * them would be a carrier integration smuggled in as a guard.
    */
   private async assertShippingReady(id: OrderId): Promise<void> {
-    const baseline = await this.orders.lockShippingFeeBaseline(id);
-    if (baseline === undefined) {
-      throw orderDeliveryError('ORDER_NOT_FOUND');
-    }
-    if (baseline.detail === undefined || baseline.detail.feeAmount === undefined) {
+    // The order itself was proved to exist under its own lock by the caller,
+    // so a missing detail here is a missing *detail* and says so.
+    const detail = await this.orders.lockShippingDetail(id);
+    if (detail === undefined || detail.feeAmount === undefined) {
       throw orderDeliveryError('ORDER_SHIPPING_NOT_READY');
     }
-    if (baseline.detail.status !== 'EDITABLE') {
+    if (detail.status !== 'EDITABLE') {
       // A detail already FROZEN means an order already dispatched, which the
       // source-state assertion has refused; reaching here would mean the two
       // records disagree, and freezing again is not the way to reconcile them.
@@ -203,13 +224,27 @@ export class DispatchOrderUseCase {
     }
   }
 
-  /** `GRD-016` — the live REMAINING obligation, kind-aware, must be SATISFIED. */
-  private async assertRemainingSatisfied(id: OrderId): Promise<void> {
-    const remaining = await this.obligations.findLiveForOrder(id, 'REMAINING');
-    if (remaining === undefined) {
+  /**
+   * `GRD-016` — the live obligation this origin settles on must be SATISFIED.
+   *
+   * The kind comes from the order's own immutable `origin` column, read under
+   * the row lock above: `REMAINING` for a custom order, `FULL` for a
+   * Ready-Made one. It is not a widened read — `findLiveForOrder` is still
+   * kind-aware, and the guard still refuses an order that owes money — but the
+   * kind it asks for is no longer a constant only one origin can satisfy.
+   *
+   * The refusal codes are the delivered ones. They say "remaining payment"
+   * because that is the vocabulary APP9 published, and a Ready-Made operator
+   * reads them in the same situation — this order still owes its payment — so
+   * a parallel Ready-Made family would be two spellings of one refusal.
+   */
+  private async assertSettlementSatisfied(id: OrderId, origin: OrderOrigin): Promise<void> {
+    const kind = settlementObligationKindFor(origin);
+    const owed = await this.obligations.findLiveForOrder(id, kind);
+    if (owed === undefined) {
       throw orderDeliveryError('ORDER_REMAINING_PAYMENT_MISSING');
     }
-    if (remaining.status !== 'SATISFIED') {
+    if (owed.status !== 'SATISFIED') {
       throw orderDeliveryError('ORDER_REMAINING_PAYMENT_UNSATISFIED');
     }
   }

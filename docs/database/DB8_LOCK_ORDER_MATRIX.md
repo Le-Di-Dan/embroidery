@@ -20,6 +20,7 @@ production code, not a real race.
 | Order official reservation (`APP8-W01`) | `ReserveOrderInventoryUseCase.reserve` → `SkuStockRepository.createReservation` × N | `payment_obligations` (read, no lock — GRD-013 via `DepositEligibilityPort`) | `sku_stocks` FOR UPDATE, **once per required SKU, in ascending `skus.id`** | — |
 | Guarded production transition (`APP8-B04`) | `TransitionProductionJobUseCase.transition` → `OrderRepository.loadForUpdate` → `ProductionJobRepository.loadForUpdate`/`transition` → `SkuStockRepository.consumeOrderReservation` / `releaseOrderReservationIfActive` × N → `OrderRepository.transition` | `orders` FOR UPDATE | `production_jobs` FOR UPDATE | `inventory_reservations` FOR UPDATE then `sku_stocks` FOR UPDATE, **once per required SKU, in ascending `skus.id`** |
 | Payment obligation satisfaction | `PaymentObligationRepository.satisfy` | `payment_obligations` FOR UPDATE | — | — |
+| Ready-Made FULL verification (`APP12-B05`) | `VerifyPaymentAttemptUseCase.verify` → `PaymentDecisionChainResolver.resolve` → `CommitReadyMadeStockService.commitReservedStock` → `PaymentObligationRepository.settleAttempt`/`satisfy` → `OrderRepository.transitionLifecycle` | `payment_attempts` FOR UPDATE (`lockAttemptForVerification`) | `orders` FOR UPDATE (`loadLifecycleForUpdate`) then `inventory_reservations` FOR UPDATE then `sku_stocks` FOR UPDATE (`lockActiveOrderReservation` → `consumeReservation`) | `payment_obligations` FOR UPDATE, then `orders` again (already held) |
 | Design case version pointer | `DesignCaseRepository.setCurrentVersion` | `design_cases` FOR UPDATE | — | — |
 | Quotation acceptance | `QuotationRepository.accept` | `quotations` FOR UPDATE | — | — |
 | Agreement publish | `AgreementRepository.setCurrentVersion` | `agreements` FOR UPDATE | — | — |
@@ -77,6 +78,27 @@ same tables in a documented order except:
   id because the anchor id is not knowable until the anchor has been read, and an
   ordering that cannot be computed before locking begins is not an ordering. No
   `SERIALIZABLE`, no advisory lock, no distributed lock (`APP8-W01` §8).
+- **`payment_attempts` → `orders` → `inventory_reservations` → `sku_stocks` →
+  `payment_obligations`** — added by `APP12-B05`, the first flow to take all
+  five. It is deliberately **not** the delivered custom verification order.
+
+  A `DEPOSIT` or `REMAINING` verification takes `payment_attempts`, then
+  `payment_obligations` (`satisfy`), then `orders` (`transition`), and it may:
+  no other flow reaching those three ever wants `orders` while holding a
+  `payment_obligations` lock. The Ready-Made reservation-expiry sweep does the
+  opposite — `orders` first, then the reservation and its anchor, then
+  `payment_obligations.cancel` — so a `FULL` verification that kept the custom
+  order would have closed a cycle with it and produced `40P01` under load
+  instead of the clean arbitration `BR-026` needs.
+
+  So the `FULL` path takes `orders` **before** the obligation, through the
+  settlement effect, and consumes the reservation while holding it. Both
+  Ready-Made writers — `APP12-B03`'s fee command and the sweep — already open
+  with that same `orders` row lock, so all three serialise on one row per
+  order and can never interleave past it. The `payment_attempts` lock ahead of
+  it closes no cycle: neither the sweep nor the fee command touches that
+  table.
+
 - **`inventory_reservations` then `sku_stocks`** — added by `APP8-B02`'s CC-21
   repair, in that direction only. No delivered path locks the anchor and then an
   *existing* reservation row: `createReservation` and `convertHold` lock the

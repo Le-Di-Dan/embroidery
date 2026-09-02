@@ -119,6 +119,7 @@ export type {
   TransitionOrderInput,
 } from './order/order.repository';
 export { ORDER_REPOSITORY } from './order/order.repository';
+export type { OrderLifecycle } from './order/order-lifecycle';
 export { DISPATCHABLE_FROM, isLegalOrderTransition } from './order/order-transitions';
 export type { OrderChain } from './order/order-chain.guard';
 export { OrderChainGuard } from './order/order-chain.guard';

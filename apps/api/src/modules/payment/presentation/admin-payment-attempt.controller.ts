@@ -100,19 +100,24 @@ export class AdminPaymentAttemptController {
   @ApiOperation({
     summary: 'Verify one bank-transfer payment attempt against funds received',
     description:
-      'The only operation that can move money state. It settles either of an order’s two ' +
-      'obligations, and which one is **derived** from the attempt, never stated by the caller: ' +
+      'The only operation that can move money state. It settles whichever obligation an order ' +
+      'carries — a custom order’s deposit or balance, or a Ready-Made order’s single full ' +
+      'payment — and which one is **derived** from the attempt, never stated by the caller: ' +
       'the request carries an attempt id and nothing else identifying a payment. The server ' +
       'proves the whole chain inside one transaction — the attempt belongs to this obligation, ' +
       'the obligation is one this operation has authority over, it belongs to this order, the ' +
       'order is already at the step that obligation is collected at, and the attempt is a bank ' +
       'transfer — then compares the operator’s observed amount and reference against the ' +
       'obligation’s own frozen amount and the reference derived from the order code and the ' +
-      'obligation kind (`…DC` for a deposit, `…RM` for the balance). Exact match only: no ' +
+      'obligation kind (`…DC` for a deposit, `…RM` for the balance, `…FL` for a Ready-Made ' +
+      'full payment). Exact match only: no ' +
       'tolerance, no rounding and no floating-point comparison. On a match the attempt becomes ' +
       '`SUCCEEDED`, the obligation becomes `SATISFIED` by that exact attempt, the order moves ' +
-      '`AWAITING_DEPOSIT` → `DEPOSIT_PAID` for a deposit or `AWAITING_FINAL_PAYMENT` → ' +
-      '`READY_FOR_DELIVERY` for the balance, a reconciliation is appended and ' +
+      '`AWAITING_DEPOSIT` → `DEPOSIT_PAID` for a deposit, `AWAITING_FINAL_PAYMENT` → ' +
+      '`READY_FOR_DELIVERY` for the balance, or `AWAITING_PAYMENT` → `READY_FOR_DELIVERY` for ' +
+      'a full payment — which also commits the Ready-Made order’s inventory reservation, ' +
+      'permanently and exactly once, in the same transaction, so the stock it was holding can ' +
+      'no longer lapse back into availability — a reconciliation is appended and ' +
       '`payment.verified` is emitted once carrying the real obligation kind — all atomically, ' +
       'or none of it. No worker performs the lifecycle move and no second event type exists. ' +
       'On a mismatch nothing is satisfied, the order does not move, and the attempt is routed ' +

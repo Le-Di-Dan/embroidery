@@ -5,10 +5,10 @@
  * ```text
  * lock the attempt                      payment_attempts FOR UPDATE
  * read its obligation in the same tx
- * assert obligation.kind = DEPOSIT
+ * assert obligation.kind is verifiable here
  * assert attempt.method = BANK_TRANSFER
  * read the order the obligation belongs to
- * derive the expected amount, currency and DC reference from those rows
+ * derive the expected amount, currency and the kind's memo from those rows
  * ```
  *
  * One resolver, used by both mutations, so the chain is proved identically by
@@ -46,6 +46,7 @@ import {
 } from '../../../order/domain/repositories/order.repository';
 import { depositTransferReference } from '../../domain/deposit/deposit-reference';
 import { remainingTransferReference } from '../../domain/final-payment/final-payment-reference';
+import { fullTransferReference } from '../../domain/full-payment/full-payment-reference';
 import {
   BANK_TRANSFER_METHOD,
   type ExpectedTransferFacts,
@@ -80,14 +81,16 @@ export interface PaymentDecisionChain {
 /**
  * The transfer memo each kind's obligation is paid against.
  *
- * Two builders rather than one parameterised function: `APP7-G01` §4 forbids a
- * kind parameter on the reference derivation itself, so the choice is made here,
- * from the kind the database reported, and each builder stays unable to derive
- * the other's memo.
+ * Three builders rather than one parameterised function: `APP7-G01` §4 forbids
+ * a kind parameter on the reference derivation itself, so the choice is made
+ * here, from the kind the database reported, and each builder stays unable to
+ * derive the others' memos. `APP12-B04` added the `FL` one for the Ready-Made
+ * full payment; this is the row that lets an Admin verify against it.
  */
 const REFERENCE_BUILDER: Readonly<Record<VerifiableObligationKind, (code: string) => string>> = {
   DEPOSIT: depositTransferReference,
   REMAINING: remainingTransferReference,
+  FULL: fullTransferReference,
 };
 
 @Injectable()
@@ -111,19 +114,19 @@ export class PaymentDecisionChainResolver {
     // `fk_payment_attempts__payment_obligation_id` proves the row exists, and only
     // this lookup proves the surface has authority over it.
     //
-    // `APP9-B03` widened the set from `DEPOSIT` alone to both `CST-039` kinds. It
-    // is a *lookup*, not a widened comparison: a third kind added to the
-    // database later returns `undefined` and is refused here, rather than
-    // silently inheriting the deposit's LC-14 transition.
+    // `APP9-B03` widened the set from `DEPOSIT` alone to both custom kinds, and
+    // `APP12-B05` added `FULL`. It is a *lookup*, not a widened comparison: a
+    // fourth kind added to the database later returns `undefined` and is refused
+    // here, rather than silently inheriting another kind's LC-14 transition.
     const transition = verifiedPaymentTransitionFor(locked.obligation.kind);
     if (transition === undefined) {
       throw paymentVerificationError('PAYMENT_ATTEMPT_NOT_VERIFIABLE');
     }
-    // The type-level half of the same refusal. APP12-DB01 added `FULL` to the
-    // database's kind set, so `PaymentObligationKind` is now wider than the two
-    // kinds this manual-verification path settles. Unreachable — a kind with no
-    // transition was already refused above — and kept so the narrowing is a
-    // check rather than a cast.
+    // The type-level half of the same refusal, kept even though the three
+    // database kinds and the three verifiable ones now coincide: they coincide
+    // by accident of this checkpoint, not by contract, and the next kind added
+    // to `CST-039` must be refused here rather than admitted by a cast.
+    // Unreachable — a kind with no transition was already refused above.
     const kind = locked.obligation.kind;
     if (!isVerifiableObligationKind(kind)) {
       throw paymentVerificationError('PAYMENT_ATTEMPT_NOT_VERIFIABLE');
@@ -135,7 +138,13 @@ export class PaymentDecisionChainResolver {
       throw paymentVerificationError('PAYMENT_ATTEMPT_NOT_VERIFIABLE');
     }
 
-    const order = await this.orders.findById(locked.obligation.orderId as OrderId);
+    // The origin-neutral read. `findById` maps the **custom** aggregate and
+    // refuses a Ready-Made row outright, which is what kept
+    // `adminPaymentAttempt_verify` unreachable for a `FULL` obligation however
+    // wide the kind table was. Nothing on this path needs a quotation, a
+    // request or an approval snapshot: the memo is derived from `orders.code`
+    // and the guard reads `orders.status` (`APP12-B05`).
+    const order = await this.orders.findLifecycleById(locked.obligation.orderId as OrderId);
     if (order === undefined) {
       // Unreachable through `payment_obligations.order_id NOT NULL` and its FK.
       // Reported rather than asserted away: a decision that cannot see the order
