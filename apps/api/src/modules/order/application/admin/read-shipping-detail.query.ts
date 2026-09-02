@@ -27,8 +27,10 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  ORDER_ORIGIN_PORT,
   ORDER_REPOSITORY,
   type OrderId,
+  type OrderOriginPort,
   type OrderRepository,
   type ShippingDetail,
 } from '@embroidery/persistence';
@@ -37,7 +39,10 @@ import { adminShippingError } from '../../domain/shipping/admin-shipping.errors'
 
 @Injectable()
 export class ReadShippingDetailQuery {
-  constructor(@Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository) {}
+  constructor(
+    @Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository,
+    @Inject(ORDER_ORIGIN_PORT) private readonly origins: OrderOriginPort,
+  ) {}
 
   /**
    * The stored detail, or a refusal.
@@ -51,8 +56,15 @@ export class ReadShippingDetailQuery {
   async read(orderId: string): Promise<ShippingDetail> {
     const id = orderId as OrderId;
 
-    const order = await this.orders.findById(id);
-    if (order === undefined) {
+    // Existence is proved through the origin fact rather than through
+    // `findById` (`APP12-B03` §29). `findById` maps onto the **custom**
+    // aggregate and `toOrder` refuses a Ready-Made row by design, so reading a
+    // Ready-Made order's shipping detail through it turned an ordinary read
+    // into `ORDER_ORIGIN_NOT_CUSTOM`. This read has no use for the custom chain
+    // — it returns the shipping record and nothing else — so it asks the one
+    // question it actually needs answered: is there an order with this id.
+    const origin = await this.origins.originOf(id);
+    if (origin === undefined) {
       throw adminShippingError('ORDER_NOT_FOUND');
     }
 

@@ -561,12 +561,41 @@ only when it *creates* a customer, which is `APP4-B02`'s behaviour and unchanged
 paths        120 -> 121     (+1: /api/public/ready-made-orders)
 operations   133 -> 134     (+1: publicReadyMadeOrder_create)
 public ops    44 ->  45
-schemas      263 -> 265     (+2: ReadyMadeOrderDelivery request object,
-                                 ReadyMadeOrderCreatedResponse + subtotal)
+schemas      261 -> 265     (+4 — see the reconciliation below)
 ```
 
 `pnpm --filter @embroidery/api openapi:generate` then `openapi:check` — artifact
 up to date, no hand edits.
+
+### Schema-count reconciliation (corrected at `APP12-B03` §2)
+
+This section originally recorded the schema delta as `263 -> 265`. That start
+figure was wrong, and the correction is recorded here rather than in a new
+checkpoint because it is a **prose error in this report**, not a defect in what
+B02 built: no runtime, contract or generated artifact changes as a result.
+
+Measured mechanically from the committed artifacts:
+
+| Commit | Checkpoint | paths | operations | schemas |
+|---|---|---|---|---|
+| `47c59044` | `APP12-B01-C1` (accepted baseline) | 120 | 133 | **261** |
+| `972b3261` | `APP12-B02` | 121 | 134 | **265** |
+
+So the accepted-baseline delta is `261 -> 265`, and no independent pre-B02
+drift exists: `47c59044` measures exactly the 261 the accepted `APP12-B01-C1`
+baseline states. B02 introduced **four** schemas, not two — the two named above
+plus the two the report's parenthetical omitted:
+
+```text
++ CreateReadyMadeOrderBody
++ ReadyMadeOrderDelivery
++ ReadyMadeOrderCreatedResponse
++ ReadyMadeOrderSubtotalResponse
+```
+
+No schema was removed, and the one added path and operation are unchanged from
+what this section already recorded. `APP12-B03`'s frozen baseline therefore
+starts at `121 / 134 / 265`.
 
 ---
 

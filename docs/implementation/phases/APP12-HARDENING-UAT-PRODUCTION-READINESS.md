@@ -7,7 +7,7 @@ ROADMAP_STATUS         = LOCKED
 ROADMAP_LOCK           = LOCKED
 IMPLEMENTATION_STARTED = true
 CHECKPOINTS            = 38
-NEXT                   = APP12-B03
+NEXT                   = APP12-B04
 CORRECTION             = PRE_IMPLEMENTATION_AUDIT_C1 (2026-09-01)
                          APP12-G02-C1 (2026-09-01, 1/1 — no C2)
                          APP12-C01-C1 (2026-09-01, 1/1 — no C2)
@@ -257,8 +257,8 @@ Exactly one checkpoint may be `NEXT`. Statuses come from
 | 11 | `APP12-B01` | Public purchasable SKU projection | `COMPLETE_AFTER_C1` |
 | 11·C1 | `APP12-B01-C1` | Dev data provenance cleanup | `COMPLETE` |
 | 12 | `APP12-B02` | Ready-Made order creation and reservation | `COMPLETE` |
-| 13 | `APP12-B03` | Admin shipping fee, total freeze, FULL obligation lifecycle | **`NEXT`** |
-| 14 | `APP12-B04` | ORDER_ACCESS read and FULL payment composition | `NOT_STARTED` |
+| 13 | `APP12-B03` | Admin shipping fee, total freeze, FULL obligation lifecycle | `COMPLETE` |
+| 14 | `APP12-B04` | ORDER_ACCESS read and FULL payment composition | **`NEXT`** |
 | 15 | `APP12-B05` | Admin FULL verification and origin-aware fulfilment | `NOT_STARTED` |
 | 16 | `APP12-S01` | Product Detail purchase state | `NOT_STARTED` |
 | 17 | `APP12-S02` | Ready-Made checkout `/mua-hang/[slug]` | `NOT_STARTED` |

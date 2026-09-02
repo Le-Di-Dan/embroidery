@@ -67,6 +67,50 @@ export const ADMIN_SHIPPING_FAILURES = [
    * surface as a constraint violation.
    */
   'SHIPPING_FEE_NOT_APPLICABLE',
+  /**
+   * A Ready-Made fee was set against an order whose lifecycle does not permit
+   * one (`APP12-B03` §9, §23).
+   *
+   * `BR-027` gives the fee exactly two legal moments: the **first** set while
+   * the order is `AWAITING_SHIPPING_FEE`, and a **correction** while it is
+   * `AWAITING_PAYMENT` and still unpaid. Everything else is this refusal —
+   * most importantly an order the expiry sweep has already `CANCELLED`, which
+   * must stay cancelled. Confirming a fee on it would hand back a payable
+   * order whose stock was returned to availability minutes earlier, and LC-14
+   * defines no move out of `CANCELLED` to carry it.
+   */
+  'ORDER_SHIPPING_FEE_NOT_SETTABLE',
+  /**
+   * The Ready-Made order holds no active `RESERVED` reservation
+   * (`APP12-B03` §9).
+   *
+   * The stock behind this order has been expired, released or consumed. A fee
+   * set would price merchandise that is no longer committed to this customer,
+   * so it is refused rather than allowed to create a payable total against
+   * nothing. Nothing is re-reserved here: a new reservation would be a silent
+   * second claim on stock another order may already hold.
+   */
+  'ORDER_RESERVATION_NOT_HELD',
+  /**
+   * The order is `AWAITING_PAYMENT` but carries no live `FULL` obligation to
+   * correct (`APP12-B03` §18).
+   *
+   * A historical data fault for an operator to escalate, never a repair: the
+   * obligation is created by the first fee confirmation in the same
+   * transaction that moved the order into this state, so its absence means the
+   * two halves have already diverged and minting a replacement would hide that.
+   */
+  'ORDER_FULL_PAYMENT_MISSING',
+  /**
+   * The order's frozen lines carry no subtotal this path can price against
+   * (`APP12-B03` §10).
+   *
+   * `sum(order_items.line_total_amount)` was absent or not a whole đồng. The
+   * Catalog is deliberately **not** consulted as a fallback — that is the one
+   * substitution `BR-021` forbids — so an order whose frozen history cannot be
+   * read is escalated rather than repriced from a live product.
+   */
+  'ORDER_SUBTOTAL_NOT_AVAILABLE',
 ] as const;
 
 export type AdminShippingFailure = (typeof ADMIN_SHIPPING_FAILURES)[number];
@@ -146,6 +190,38 @@ const RESPONSE_OF: Readonly<Record<AdminShippingFailure, () => HttpException>> =
       {
         code: 'SHIPPING_FEE_NOT_APPLICABLE',
         message: 'That shipping fee does not leave a valid remaining balance on this order.',
+      },
+      HttpStatus.CONFLICT,
+    ),
+  ORDER_SHIPPING_FEE_NOT_SETTABLE: () =>
+    new HttpException(
+      {
+        code: 'ORDER_SHIPPING_FEE_NOT_SETTABLE',
+        message: 'This order is not at a stage where its shipping fee can be set.',
+      },
+      HttpStatus.CONFLICT,
+    ),
+  ORDER_RESERVATION_NOT_HELD: () =>
+    new HttpException(
+      {
+        code: 'ORDER_RESERVATION_NOT_HELD',
+        message: 'The stock reserved for this order is no longer held.',
+      },
+      HttpStatus.CONFLICT,
+    ),
+  ORDER_FULL_PAYMENT_MISSING: () =>
+    new HttpException(
+      {
+        code: 'ORDER_FULL_PAYMENT_MISSING',
+        message: 'This order has no live payment to recalculate.',
+      },
+      HttpStatus.CONFLICT,
+    ),
+  ORDER_SUBTOTAL_NOT_AVAILABLE: () =>
+    new HttpException(
+      {
+        code: 'ORDER_SUBTOTAL_NOT_AVAILABLE',
+        message: 'This order’s recorded items do not add up to a total that can be priced.',
       },
       HttpStatus.CONFLICT,
     ),

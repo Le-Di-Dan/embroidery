@@ -76,8 +76,8 @@ import {
 import { AuthenticatedAdminGuard } from '../../identity/presentation/guards/authenticated-admin.guard';
 import { StaffJsonBodyGuard } from '../../identity/presentation/guards/staff-json-body.guard';
 import { StaffOriginGuard } from '../../identity/presentation/guards/staff-origin.guard';
+import { AdminShippingFeeRouter } from '../application/admin/admin-shipping-fee.router';
 import { ReadShippingDetailQuery } from '../application/admin/read-shipping-detail.query';
-import { SaveShippingDetailUseCase } from '../application/admin/save-shipping-detail.use-case';
 import { guardedAdminShipping } from '../domain/shipping/admin-shipping.errors';
 import { AdminOrderIdParam } from './schemas/admin-order.request';
 import { SaveShippingDetailBody } from './schemas/admin-order-shipping.request';
@@ -101,7 +101,7 @@ const ERROR_SCHEMA = { $ref: `#/components/schemas/${ENVELOPE_SCHEMA_NAMES.error
 export class AdminOrderShippingController {
   constructor(
     private readonly detail: ReadShippingDetailQuery,
-    private readonly saving: SaveShippingDetailUseCase,
+    private readonly saving: AdminShippingFeeRouter,
   ) {}
 
   @Get(':orderId/shipping-detail')
@@ -251,12 +251,14 @@ export class AdminOrderShippingController {
           frozenAt: result.detail.frozenAt?.toISOString() ?? null,
         },
         fee: {
-          changed: result.fee.changed,
-          previousFeeAmount: result.fee.previousFeeAmount,
-          acknowledged: result.fee.acknowledged,
-          supersededObligationId: result.fee.supersededObligationId ?? null,
-          remainingObligationId: result.fee.remainingObligationId ?? null,
-          remainingAmount: result.fee.remainingAmount ?? null,
+          changed: result.changed,
+          previousFeeAmount: result.previousFeeAmount,
+          acknowledged: result.acknowledged ?? null,
+          supersededObligationId: result.supersededObligationId ?? null,
+          remainingObligationId: result.remainingObligationId ?? null,
+          remainingAmount: result.remainingAmount ?? null,
+          fullObligationId: result.fullObligationId ?? null,
+          payableTotalAmount: result.payableTotalAmount ?? null,
         },
       };
     });

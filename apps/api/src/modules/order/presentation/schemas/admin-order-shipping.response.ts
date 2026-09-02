@@ -122,20 +122,35 @@ export class AdminShippingFeeOutcomeResponse {
   changed!: boolean;
 
   @ApiProperty({
+    required: false,
+    nullable: true,
+    // Stated rather than reflected. This property became `string | null` in
+    // `APP12-B03`, and a union gives the metadata reader no scalar to infer —
+    // it would publish as `object` and the generated client would lose the
+    // string. The neighbouring APP9 fields carry that shape already; this one
+    // is not allowed to regress into it.
+    type: 'string',
     example: '50000.00',
     description:
       'The fee this write was measured against: the stored one, or — before any fee had been ' +
-      'stored — the accepted quotation version’s frozen shipping fee.',
+      'stored — for a custom order the accepted quotation version’s frozen shipping fee. ' +
+      '`null` on a ready-made order’s **first** fee confirmation, where no fee had been priced ' +
+      'yet: a pending fee is an absence, not a zero.',
   })
-  previousFeeAmount!: string;
+  previousFeeAmount?: string | null;
 
   @ApiProperty({
+    required: false,
+    nullable: true,
+    type: 'boolean',
     example: false,
     description:
       'Whether this change required and recorded the customer’s acknowledgement. True only for ' +
-      'an increase; a decrease needs none (DB3 §1.2).',
+      'a custom order’s fee increase; a decrease needs none (DB3 §1.2). `null` on a ready-made ' +
+      'order, which requires no acknowledgement at any point — reporting `false` would suggest ' +
+      'one had been looked for.',
   })
-  acknowledged!: boolean;
+  acknowledged?: boolean | null;
 
   @ApiProperty({
     required: false,
@@ -164,6 +179,32 @@ export class AdminShippingFeeOutcomeResponse {
     description: 'The successor’s amount: the previous live amount moved by the fee difference.',
   })
   remainingAmount?: string | null;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    type: 'string',
+    format: 'uuid',
+    example: OBLIGATION_ID_EXAMPLE,
+    description:
+      'Ready-made orders only: the live FULL obligation after this write — the one created by ' +
+      'the first fee confirmation, or the successor a correction produced. `null` on a custom ' +
+      'order, which is paid as a deposit and a remaining balance and never carries a FULL.',
+  })
+  fullObligationId?: string | null;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    type: 'string',
+    example: '280000.00',
+    description:
+      'Ready-made orders only: the exact payable total — the order’s frozen merchandise subtotal ' +
+      'plus this shipping fee — which is also the live FULL obligation’s amount and the order ' +
+      'total. It is recomposed from the frozen order lines on every accepted fee, never derived ' +
+      'from the previous total, so successive corrections do not compound.',
+  })
+  payableTotalAmount?: string | null;
 }
 
 export class AdminShippingDetailSavedResponse {

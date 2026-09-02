@@ -85,8 +85,19 @@ export interface CreateObligationInput {
   readonly orderId: string;
   readonly kind: PaymentObligationKind;
   readonly amount: string;
-  /** The priced version this obligation derives from — the amount's provenance. */
-  readonly sourceQuotationVersionId: string;
+  /**
+   * The priced version this obligation derives from — the amount's provenance.
+   *
+   * `null` for a `FULL` obligation, and only for one. `APP12-DB01`'s
+   * `ck_payment_obligations__source_by_kind` makes that the physical rule:
+   * `DEPOSIT` and `REMAINING` amounts come from an accepted quotation version
+   * and must name it, while a `FULL` amount is composed from the frozen
+   * merchandise subtotal plus the exact shipping fee (`APP12-B03` §12) and has
+   * no quotation to name. The type is widened rather than made optional so a
+   * caller on the custom branch cannot omit the provenance by accident — the
+   * absence has to be written down.
+   */
+  readonly sourceQuotationVersionId: string | null;
 }
 
 export interface OpenAttemptInput {

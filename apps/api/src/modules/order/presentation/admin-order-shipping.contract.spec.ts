@@ -37,6 +37,8 @@ interface SchemaShape {
   readonly properties?: Record<string, SchemaShape>;
   readonly enum?: readonly string[];
   readonly $ref?: string;
+  /** `APP12-B03` — the ready-made fields a custom order genuinely lacks. */
+  readonly nullable?: boolean;
 }
 interface OperationShape {
   readonly operationId?: string;
@@ -217,10 +219,17 @@ describe('APP9-B04 — the published shipping-detail and fee-acknowledgement con
     expect(Object.keys(schemaOf(DETAIL_SCHEMA).properties ?? {})).not.toContain('fulfillmentNote');
   });
 
-  it('publishes the fee outcome as ids and the new balance, never a deposit or total', () => {
+  it('publishes the fee outcome as ids and the payable figure, never a deposit', () => {
+    // `APP12-B03` added the ready-made half. The two origins report different
+    // obligation kinds and the fields stay separate on purpose: `remaining*` is
+    // a balance moved by a fee difference, `full*`/`payableTotalAmount` is a
+    // total recomposed from the frozen subtotal, and one shared field would let
+    // a consumer read "the obligation" without knowing which rule produced it.
     expect(Object.keys(schemaOf(FEE_SCHEMA).properties ?? {}).sort()).toEqual([
       'acknowledged',
       'changed',
+      'fullObligationId',
+      'payableTotalAmount',
       'previousFeeAmount',
       'remainingAmount',
       'remainingObligationId',
@@ -229,8 +238,16 @@ describe('APP9-B04 — the published shipping-detail and fee-acknowledgement con
     const names = Object.keys(schemaOf(FEE_SCHEMA).properties ?? {}).map((one) =>
       one.toLowerCase(),
     );
+    // `totalAmount` stays forbidden — the *order* total is not this response's
+    // to publish. `payableTotalAmount` is the ready-made obligation's own
+    // amount, which the operator needs precisely because they just set it.
     for (const forbidden of ['depositamount', 'totalamount', 'orderstatus', 'attemptid']) {
       expect(names).not.toContain(forbidden);
+    }
+    // The three fields a ready-made write fills are all nullable, because a
+    // custom order genuinely has none of them.
+    for (const optional of ['fullObligationId', 'payableTotalAmount', 'previousFeeAmount']) {
+      expect(schemaOf(FEE_SCHEMA).properties?.[optional]?.nullable).toBe(true);
     }
     expect(Object.keys(schemaOf(SAVED_SCHEMA).properties ?? {}).sort()).toEqual([
       'detail',

@@ -45,19 +45,38 @@
  * is never cancelled for an expiry that did not happen, and stock is never
  * released without the order that held it being closed.
  *
- * ## What it does not do
+ * ## The payment window, and the obligation it belongs to
  *
- * It cancels no payment obligation, because at `APP12-B02` there are none —
- * `BR-029` gives Ready-Made one `FULL` obligation and `APP12-B03` is what
- * creates it. When B03 lands, the live-obligation half of `BR-026` is added
- * here; nothing about the two writes above changes.
+ * `APP12-B03` gave the second expirable state its money. An order that reached
+ * `AWAITING_PAYMENT` carries one live `FULL` obligation (`BR-029`), and letting
+ * its window lapse must close that too:
+ *
+ * ```text
+ * AWAITING_SHIPPING_FEE   reservation EXPIRED → order CANCELLED
+ *                         payment obligations: none exist (§25)
+ *
+ * AWAITING_PAYMENT        reservation EXPIRED → FULL CANCELLED → order CANCELLED
+ * ```
+ *
+ * The obligation is cancelled through the delivered `cancel` writer, which
+ * moves `PENDING → CANCELLED` and nothing else. A `SATISFIED` `FULL` is
+ * therefore untouched by construction rather than by a branch: `cancel`
+ * refuses it, and this use case never reaches it anyway, because an order whose
+ * payment succeeded is no longer expirable — `APP12-B05` owns making that true
+ * when it verifies the payment.
+ *
+ * The **first** window keeps needing no obligation at all (§25). Requiring one
+ * would break every order that lapsed before it was ever priced, which is the
+ * ordinary case for an abandoned checkout.
  */
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
+  PAYMENT_OBLIGATION_REPOSITORY,
   READY_MADE_ORDER_REPOSITORY,
   SKU_STOCK_REPOSITORY,
   TransactionManager,
   type OrderId,
+  type PaymentObligationRepository,
   type ReadyMadeOrderRepository,
   type ReservationId,
   type SkuStockRepository,
@@ -75,6 +94,9 @@ import {
   type DueReservation,
   type DueReservationRepository,
 } from '../domain/repositories/due-reservation.repository';
+
+/** `BR-029` — the one obligation kind a Ready-Made order ever carries. */
+const FULL = 'FULL';
 
 export interface ReservationExpiryOutcome {
   /** Candidates the unlocked read offered this pass. */
@@ -94,6 +116,8 @@ export class ExpireReadyMadeReservationsUseCase {
     @Inject(DUE_RESERVATION_REPOSITORY) private readonly due: DueReservationRepository,
     @Inject(SKU_STOCK_REPOSITORY) private readonly stock: SkuStockRepository,
     @Inject(READY_MADE_ORDER_REPOSITORY) private readonly orders: ReadyMadeOrderRepository,
+    @Inject(PAYMENT_OBLIGATION_REPOSITORY)
+    private readonly obligations: PaymentObligationRepository,
     @Inject(WORKER_CLOCK) private readonly clock: WorkerClock,
   ) {}
 
@@ -135,8 +159,18 @@ export class ExpireReadyMadeReservationsUseCase {
       });
       if (reservation === undefined) {
         // Consumed, released, no-expiry, or its window was extended between the
-        // candidate read and this lock. Nothing to cancel an order for.
+        // candidate read and this lock — which is exactly what a fee
+        // confirmation does (`APP12-B03` §16). Nothing to cancel an order for.
         return false;
+      }
+
+      // The money, before the lifecycle move that makes it unpayable. Only the
+      // live `FULL` is touched, and only while it is `PENDING`: an order still
+      // at `AWAITING_SHIPPING_FEE` has none at all (§25), and a `SATISFIED` one
+      // is not a balance to withdraw.
+      const live = await this.obligations.findLiveForOrder(order.id, FULL);
+      if (live !== undefined && live.status === 'PENDING') {
+        await this.obligations.cancel(live.id);
       }
 
       // `STATE_CHANGE` — the default, and the only honest one:

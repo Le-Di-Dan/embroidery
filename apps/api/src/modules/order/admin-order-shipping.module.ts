@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common';
 import {
   DatabaseModule,
+  InventoryPersistenceModule,
   OrderPersistenceModule,
   PaymentPersistenceModule,
 } from '@embroidery/persistence';
 
 import { IdentityModule } from '../identity/identity.module';
+import { AdminShippingFeeRouter } from './application/admin/admin-shipping-fee.router';
 import { ReadShippingDetailQuery } from './application/admin/read-shipping-detail.query';
 import { SaveShippingDetailUseCase } from './application/admin/save-shipping-detail.use-case';
+import { ReadyMadePayableTotalResolver } from './application/ready-made/payable-total.resolver';
+import { SetReadyMadeShippingFeeUseCase } from './application/ready-made/set-ready-made-shipping-fee.use-case';
 import { AdminOrderShippingController } from './presentation/admin-order-shipping.controller';
 
 /**
@@ -71,8 +75,20 @@ import { AdminOrderShippingController } from './presentation/admin-order-shippin
  * It exports nothing, and has one entry point.
  */
 @Module({
-  imports: [DatabaseModule, IdentityModule, OrderPersistenceModule, PaymentPersistenceModule],
+  imports: [
+    DatabaseModule,
+    IdentityModule,
+    InventoryPersistenceModule,
+    OrderPersistenceModule,
+    PaymentPersistenceModule,
+  ],
   controllers: [AdminOrderShippingController],
-  providers: [ReadShippingDetailQuery, SaveShippingDetailUseCase],
+  providers: [
+    ReadShippingDetailQuery,
+    SaveShippingDetailUseCase,
+    ReadyMadePayableTotalResolver,
+    SetReadyMadeShippingFeeUseCase,
+    AdminShippingFeeRouter,
+  ],
 })
 export class AdminOrderShippingModule {}

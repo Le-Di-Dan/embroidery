@@ -115,6 +115,26 @@ export class DrizzleOrderShippingRepository extends DrizzleRepository {
     });
   }
 
+  async lockShippingDetail(orderId: OrderId): Promise<ShippingDetail | undefined> {
+    return this.run('lockShippingDetail', async () => {
+      const tx = this.requireTransaction('lockShippingDetail');
+
+      // Deliberately the same statement `lockShippingFeeBaseline` opens with,
+      // minus the quotation join it cannot use. Taking the identical row lock
+      // is what keeps the two origin paths serialised against each other: a
+      // Ready-Made fee confirmation and a custom fee edit can never both be
+      // mid-flight on one order, whatever routing bug led them there.
+      const [detail] = await tx
+        .select()
+        .from(shippingDetails)
+        .where(eq(shippingDetails.orderId, orderId))
+        .limit(1)
+        .for('update');
+
+      return detail === undefined ? undefined : toShippingDetail(detail);
+    });
+  }
+
   async lockShippingFeeBaseline(orderId: OrderId): Promise<ShippingFeeBaseline | undefined> {
     return this.run('lockShippingFeeBaseline', async () => {
       const tx = this.requireTransaction('lockShippingFeeBaseline');

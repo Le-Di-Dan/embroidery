@@ -266,6 +266,31 @@ export interface OrderRepository {
   lockShippingFeeBaseline(orderId: OrderId): Promise<ShippingFeeBaseline | undefined>;
 
   /**
+   * The order's shipping detail under its own `FOR UPDATE` lock, with no
+   * quotation baseline (`APP12-B03` §9).
+   *
+   * The origin-neutral half of {@link lockShippingFeeBaseline}. That method
+   * resolves the baseline through an **inner join** on
+   * `orders.accepted_quotation_version_id`, which is the right rule for a
+   * custom order and unreachable for a Ready-Made one: `BR-031` leaves the
+   * custom chain `NULL`, so the join matches nothing and the whole order reads
+   * as absent. A Ready-Made fee has no quoted baseline to compare against in
+   * the first place — the stored fee is `NULL` until the operator sets it
+   * (`BR-027`) — so this takes the same lock and returns only what exists.
+   *
+   * `undefined` means the order has no shipping detail row yet, which for a
+   * Ready-Made order created by `APP12-B02` cannot happen; the caller refuses
+   * rather than creating one, because a fee set against a detail that is not
+   * there would be a fee against no delivery destination.
+   *
+   * The lock is the same row `lockShippingFeeBaseline` takes, so the two paths
+   * serialise against each other even though they read different things.
+   *
+   * @requiresTransaction
+   */
+  lockShippingDetail(orderId: OrderId): Promise<ShippingDetail | undefined>;
+
+  /**
    * Appends one customer acknowledgement of a shipping-fee increase.
    *
    * Written by the **customer's** own command (`APP9-B04-C1`), never by the

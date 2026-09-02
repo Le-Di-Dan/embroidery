@@ -205,6 +205,60 @@ describe('APP12-B02 Ready-Made reservation expiry (integration)', () => {
     return { orderId, reservationId, skuStockId: options.skuStockId, skuId: options.skuId };
   }
 
+  /**
+   * One `FULL` obligation on a Ready-Made order (`APP12-B03` §24).
+   *
+   * `source_quotation_version_id` stays null, which
+   * `ck_payment_obligations__source_by_kind` requires of a `FULL`. A
+   * `SATISFIED` one additionally needs real evidence
+   * (`ck_payment_obligations__satisfied_evidence_required`), so a genuine
+   * `SUCCEEDED` attempt is written for the same amount rather than the
+   * constraint being worked around.
+   */
+  async function seedFullObligation(orderId: string, status: string): Promise<string> {
+    const obligationId = newId();
+    await executeRaw(
+      db(),
+      sql`insert into payment_obligations
+            (id, order_id, kind, amount, currency_code, status, source_quotation_version_id)
+          values (${obligationId}, ${orderId}, 'FULL', 180000.00, 'VND', 'PENDING', null)`,
+    );
+
+    if (status === 'SATISFIED') {
+      const attemptId = newId();
+      await executeRaw(
+        db(),
+        sql`insert into payment_attempts
+              (id, payment_obligation_id, amount, currency_code, method, status, succeeded_at)
+            values (${attemptId}, ${obligationId}, 180000.00, 'VND',
+                    'BANK_TRANSFER', 'SUCCEEDED', now())`,
+      );
+      await executeRaw(
+        db(),
+        sql`update payment_obligations
+            set status = 'SATISFIED', satisfied_at = now(), satisfied_by_attempt_id = ${attemptId}
+            where id = ${obligationId}`,
+      );
+    }
+    return obligationId;
+  }
+
+  async function obligationStatusOf(obligationId: string): Promise<string> {
+    const rows = await executeRaw<{ status: string }>(
+      db(),
+      sql`select status from payment_obligations where id = ${obligationId}`,
+    );
+    return String(rows[0]?.status);
+  }
+
+  async function obligationCountOf(orderId: string): Promise<number> {
+    const rows = await executeRaw<{ n: string }>(
+      db(),
+      sql`select count(*)::text as n from payment_obligations where order_id = ${orderId}`,
+    );
+    return Number(rows[0]?.n ?? '0');
+  }
+
   async function reservationStatusOf(reservationId: string): Promise<string> {
     const rows = await executeRaw<{ status: string }>(
       db(),
@@ -331,6 +385,76 @@ describe('APP12-B02 Ready-Made reservation expiry (integration)', () => {
       expect((await expiry.run()).expired).toBe(1);
       expect(await reservationStatusOf(seeded.reservationId)).toBe('EXPIRED');
       expect((await orderStatusOf(seeded.orderId)).status).toBe('CANCELLED');
+    });
+  });
+
+  /**
+   * `APP12-B03` §24, §25, §40 — the payment window, and the obligation that
+   * only the second expirable state has.
+   */
+  describe('the payment window of a priced order', () => {
+    it('cancels the live PENDING FULL alongside the reservation and the order', async () => {
+      const catalog = await seedCatalog();
+      const seeded = await seedReadyMadeOrder({
+        ...catalog,
+        status: 'AWAITING_PAYMENT',
+        expiresInHours: -1,
+      });
+      const obligationId = await seedFullObligation(seeded.orderId, 'PENDING');
+
+      expect((await expiry.run()).expired).toBe(1);
+
+      expect(await reservationStatusOf(seeded.reservationId)).toBe('EXPIRED');
+      expect((await orderStatusOf(seeded.orderId)).status).toBe('CANCELLED');
+      // `cancel` produces CANCELLED and never writes the supersession pointer:
+      // a lapsed obligation is withdrawn, not replaced.
+      expect(await obligationStatusOf(obligationId)).toBe('CANCELLED');
+    });
+
+    it('is idempotent — a second sweep finds nothing and cancels nothing twice', async () => {
+      const catalog = await seedCatalog();
+      const seeded = await seedReadyMadeOrder({
+        ...catalog,
+        status: 'AWAITING_PAYMENT',
+        expiresInHours: -1,
+      });
+      const obligationId = await seedFullObligation(seeded.orderId, 'PENDING');
+
+      expect((await expiry.run()).expired).toBe(1);
+      const second = await expiry.run();
+
+      expect(second.expired).toBe(0);
+      expect(await obligationStatusOf(obligationId)).toBe('CANCELLED');
+      expect((await orderStatusOf(seeded.orderId)).status).toBe('CANCELLED');
+    });
+
+    it('leaves a SATISFIED FULL alone, and the order with it', async () => {
+      const catalog = await seedCatalog();
+      const seeded = await seedReadyMadeOrder({
+        ...catalog,
+        status: 'AWAITING_PAYMENT',
+        expiresInHours: -1,
+      });
+      const obligationId = await seedFullObligation(seeded.orderId, 'SATISFIED');
+
+      // The sweep still expires the stock here, because `APP12-B05` is what
+      // will make a paid order stop being expiry-eligible. What matters at B03
+      // is that settled money is never withdrawn: `cancel` moves `PENDING`
+      // alone, so the obligation is untouched either way.
+      await expiry.run();
+      expect(await obligationStatusOf(obligationId)).toBe('SATISFIED');
+    });
+
+    it('still expires a first-window order that has no obligation at all', async () => {
+      // §25 — requiring a payment row here would break every checkout abandoned
+      // before it was ever priced, which is the ordinary case.
+      const catalog = await seedCatalog();
+      const seeded = await seedReadyMadeOrder({ ...catalog, expiresInHours: -1 });
+
+      expect((await expiry.run()).expired).toBe(1);
+      expect(await reservationStatusOf(seeded.reservationId)).toBe('EXPIRED');
+      expect((await orderStatusOf(seeded.orderId)).status).toBe('CANCELLED');
+      expect(await obligationCountOf(seeded.orderId)).toBe(0);
     });
   });
 

@@ -48,6 +48,7 @@ import {
   reservationNotActive,
   toReservation,
 } from './reservation-terminalization';
+import { applyWindowReschedule, lockActiveReservationForOrder } from './reservation-window';
 import { StockAnchor } from './stock-anchor';
 
 const { skuStocks, inventoryLedgerEntries, inventorySoftHolds, inventoryReservations } = schema;
@@ -351,6 +352,33 @@ export class InventoryReservations extends DrizzleRepository {
       }
       await applyExpiry(tx, reservation, input.actor);
       return reservation;
+    });
+  }
+
+  /**
+   * The order's one active reservation, locked (`APP12-B03` §17).
+   *
+   * @requiresTransaction
+   */
+  async lockActiveOrderReservation(orderId: string): Promise<Reservation | undefined> {
+    return this.run('lockActiveOrderReservation', async () => {
+      const tx = this.requireTransaction('lockActiveOrderReservation');
+      return lockActiveReservationForOrder(tx, orderId);
+    });
+  }
+
+  /**
+   * Moves a `RESERVED` reservation's payment window (`BR-025`).
+   *
+   * @requiresTransaction
+   */
+  async rescheduleReservationExpiry(input: {
+    id: ReservationId;
+    windowMs: number;
+  }): Promise<Reservation> {
+    return this.run('rescheduleReservationExpiry', async () => {
+      const tx = this.requireTransaction('rescheduleReservationExpiry');
+      return applyWindowReschedule(tx, input.id, input.windowMs);
     });
   }
 

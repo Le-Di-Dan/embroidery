@@ -67,6 +67,10 @@ export class DrizzleOrderRepository extends DrizzleRepository implements OrderRe
     return this.shipping.lockShippingFeeBaseline(orderId);
   }
 
+  lockShippingDetail(orderId: OrderId): Promise<ShippingDetail | undefined> {
+    return this.shipping.lockShippingDetail(orderId);
+  }
+
   acknowledgeShippingFee(input: AcknowledgeShippingFeeInput): Promise<ShippingFeeAcknowledgement> {
     return this.shipping.acknowledgeShippingFee(input);
   }

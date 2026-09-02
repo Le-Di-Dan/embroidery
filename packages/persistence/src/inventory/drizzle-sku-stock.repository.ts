@@ -168,6 +168,16 @@ export class DrizzleSkuStockRepository extends DrizzleRepository implements SkuS
     return this.reservations.expireReservationIfDue(input);
   }
 
+  lockActiveOrderReservation(orderId: string): Promise<Reservation | undefined> {
+    return this.reservations.lockActiveOrderReservation(orderId);
+  }
+
+  rescheduleReservationExpiry(
+    input: Parameters<InventoryReservations['rescheduleReservationExpiry']>[0],
+  ): Promise<Reservation> {
+    return this.reservations.rescheduleReservationExpiry(input);
+  }
+
   consumeOrderReservation(
     input: Parameters<InventoryReservations['consumeOrderReservation']>[0],
   ): Promise<Reservation> {

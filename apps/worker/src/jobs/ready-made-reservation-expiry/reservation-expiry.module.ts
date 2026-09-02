@@ -30,6 +30,7 @@ import {
   DatabaseModule,
   InventoryPersistenceModule,
   OrderPersistenceModule,
+  PaymentPersistenceModule,
 } from '@embroidery/persistence';
 
 import { WorkerRuntimeModule } from '../../runtime/worker-runtime.module';
@@ -44,6 +45,7 @@ import { ReservationExpiryRuntimeService } from './reservation-expiry.runtime';
     WorkerRuntimeModule,
     InventoryPersistenceModule,
     OrderPersistenceModule,
+    PaymentPersistenceModule,
   ],
   providers: [
     { provide: DUE_RESERVATION_REPOSITORY, useClass: SqlDueReservationRepository },

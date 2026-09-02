@@ -4207,8 +4207,9 @@
       "AdminShippingFeeOutcomeResponse": {
         "properties": {
           "acknowledged": {
-            "description": "Whether this change required and recorded the customer’s acknowledgement. True only for an increase; a decrease needs none (DB3 §1.2).",
+            "description": "Whether this change required and recorded the customer’s acknowledgement. True only for a custom order’s fee increase; a decrease needs none (DB3 §1.2). `null` on a ready-made order, which requires no acknowledgement at any point — reporting `false` would suggest one had been looked for.",
             "example": false,
+            "nullable": true,
             "type": "boolean"
           },
           "changed": {
@@ -4216,9 +4217,23 @@
             "example": false,
             "type": "boolean"
           },
+          "fullObligationId": {
+            "description": "Ready-made orders only: the live FULL obligation after this write — the one created by the first fee confirmation, or the successor a correction produced. `null` on a custom order, which is paid as a deposit and a remaining balance and never carries a FULL.",
+            "example": "019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6082",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "payableTotalAmount": {
+            "description": "Ready-made orders only: the exact payable total — the order’s frozen merchandise subtotal plus this shipping fee — which is also the live FULL obligation’s amount and the order total. It is recomposed from the frozen order lines on every accepted fee, never derived from the previous total, so successive corrections do not compound.",
+            "example": "280000.00",
+            "nullable": true,
+            "type": "string"
+          },
           "previousFeeAmount": {
-            "description": "The fee this write was measured against: the stored one, or — before any fee had been stored — the accepted quotation version’s frozen shipping fee.",
+            "description": "The fee this write was measured against: the stored one, or — before any fee had been stored — for a custom order the accepted quotation version’s frozen shipping fee. `null` on a ready-made order’s **first** fee confirmation, where no fee had been priced yet: a pending fee is an absence, not a zero.",
             "example": "50000.00",
+            "nullable": true,
             "type": "string"
           },
           "remainingAmount": {
@@ -4243,9 +4258,7 @@
           }
         },
         "required": [
-          "changed",
-          "previousFeeAmount",
-          "acknowledged"
+          "changed"
         ],
         "type": "object"
       },

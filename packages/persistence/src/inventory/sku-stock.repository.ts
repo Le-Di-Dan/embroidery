@@ -184,6 +184,61 @@ export interface SkuStockRepository {
     actor: InventoryActor;
   }): Promise<Reservation | undefined>;
 
+  /**
+   * The order's one active `RESERVED` reservation, under its row lock
+   * (`APP12-B03` §17).
+   *
+   * The (order) form of the pair {@link consumeOrderReservation} takes, for the
+   * caller that knows which order it is acting on but has no SKU in hand: the
+   * Ready-Made shipping-fee transaction reaches the reservation through the
+   * order alone, and a Ready-Made order holds exactly one
+   * (`APP12-P01` — one SKU per checkout).
+   *
+   * Every reservation the order holds is locked in `id` order, so two
+   * transactions reaching the same order queue in the same direction, and the
+   * status is read under those locks rather than before them. `undefined` when
+   * nothing active stands — expired, released or consumed — which the caller
+   * treats as a refusal rather than as licence to create a replacement.
+   *
+   * @requiresTransaction
+   */
+  lockActiveOrderReservation(orderId: string): Promise<Reservation | undefined>;
+
+  /**
+   * Moves one `RESERVED` reservation's `expires_at` to a new instant
+   * (`BR-025`, `APP12-B03` §16, §17).
+   *
+   * The payment window a Ready-Made order gets when its fee is first confirmed:
+   * the customer has had no payable figure until that moment, so the window
+   * that was measured from creation restarts from the confirmation. It is the
+   * **same reservation row** throughout — nothing is released, nothing is
+   * re-reserved and no second row is created — because the identity and the
+   * ledger history of the hold on that stock must survive a repricing.
+   *
+   * Deliberately narrow: it changes one timestamp and writes **no ledger
+   * entry**. `G-DB7-29` requires an entry for every change to committed
+   * quantity, and this changes none — the reserved quantity, the anchor and
+   * availability are all untouched. Inventing a ledger kind for a deadline move
+   * would put a non-movement in the movement log.
+   *
+   * Refuses when the reservation is not `RESERVED`: a terminal hold has no
+   * window to extend, and silently reviving one would hand back stock the
+   * expiry sweep has already returned to availability.
+   *
+   * The new instant is `now() + windowMs`, computed **in the statement** so it
+   * is the database's own clock (`APP12-B03` §16). The caller supplies the
+   * window length, which is business policy, and never the resulting timestamp:
+   * an API process whose clock has drifted would otherwise be able to write a
+   * payment deadline the database does not agree with, and the reservation
+   * sweep — which compares against `now()` — is the thing that would act on the
+   * difference. The committed row is returned so the caller can report the
+   * instant that actually landed.
+   *
+   * @requiresTransaction — the caller must already hold this reservation's row
+   * lock, taken by {@link lockActiveOrderReservation}.
+   */
+  rescheduleReservationExpiry(input: { id: ReservationId; windowMs: number }): Promise<Reservation>;
+
   /** Consumes a reservation at production, reducing on-hand. @requiresTransaction */
   consumeReservation(id: ReservationId, actor: InventoryActor): Promise<void>;
 

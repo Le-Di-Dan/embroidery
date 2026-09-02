@@ -2448,12 +2448,28 @@ export type AdminShippingFeeOutcomeResponseSupersededObligationId = {
 } | null;
 
 export interface AdminShippingFeeOutcomeResponse {
-  /** Whether this change required and recorded the customer’s acknowledgement. True only for an increase; a decrease needs none (DB3 §1.2). */
-  acknowledged: boolean;
+  /**
+   * Whether this change required and recorded the customer’s acknowledgement. True only for a custom order’s fee increase; a decrease needs none (DB3 §1.2). `null` on a ready-made order, which requires no acknowledgement at any point — reporting `false` would suggest one had been looked for.
+   * @nullable
+   */
+  acknowledged?: boolean | null;
   /** Whether the effective fee moved. When false, no payment record was touched. */
   changed: boolean;
-  /** The fee this write was measured against: the stored one, or — before any fee had been stored — the accepted quotation version’s frozen shipping fee. */
-  previousFeeAmount: string;
+  /**
+   * Ready-made orders only: the live FULL obligation after this write — the one created by the first fee confirmation, or the successor a correction produced. `null` on a custom order, which is paid as a deposit and a remaining balance and never carries a FULL.
+   * @nullable
+   */
+  fullObligationId?: string | null;
+  /**
+   * Ready-made orders only: the exact payable total — the order’s frozen merchandise subtotal plus this shipping fee — which is also the live FULL obligation’s amount and the order total. It is recomposed from the frozen order lines on every accepted fee, never derived from the previous total, so successive corrections do not compound.
+   * @nullable
+   */
+  payableTotalAmount?: string | null;
+  /**
+   * The fee this write was measured against: the stored one, or — before any fee had been stored — for a custom order the accepted quotation version’s frozen shipping fee. `null` on a ready-made order’s **first** fee confirmation, where no fee had been priced yet: a pending fee is an absence, not a zero.
+   * @nullable
+   */
+  previousFeeAmount?: string | null;
   /**
    * The successor’s amount: the previous live amount moved by the fee difference.
    * @nullable

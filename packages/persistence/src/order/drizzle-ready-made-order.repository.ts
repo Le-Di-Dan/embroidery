@@ -24,7 +24,7 @@
 import { Injectable } from '@nestjs/common';
 import { guardViolationError, newId, schema } from '@embroidery/database';
 import type { OrderState } from '@embroidery/database';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 import { DatabaseExecutor } from '../runtime/database-executor';
 import { DrizzleRepository } from '../repository/drizzle-repository';
@@ -164,6 +164,52 @@ export class DrizzleReadyMadeOrderRepository
     return this.run('transitionReadyMade', async () => {
       const tx = this.requireTransaction('transitionReadyMade');
       return toReadyMadeOrder(await applyOrderTransition(tx, input));
+    });
+  }
+
+  async frozenMerchandiseSubtotal(id: OrderId): Promise<string | undefined> {
+    return this.run('frozenMerchandiseSubtotal', async () => {
+      // Summed in the database rather than by reading the lines into the
+      // process and adding them: `numeric` addition is exact in PostgreSQL, and
+      // pulling the rows out to add them in JavaScript is the one place a
+      // `Number` could get involved. The cast keeps the `numeric(14,2)` shape
+      // the column has, so the result parses under the same rule as a stored
+      // amount instead of arriving as an unscaled sum.
+      const [row] = await this.db
+        .select({
+          subtotal: sql<string | null>`sum(${orderItems.lineTotalAmount})::numeric(14, 2)`,
+        })
+        .from(orderItems)
+        .where(eq(orderItems.orderId, id));
+
+      // `sum()` over no rows is SQL `NULL`, not zero — an order with no lines
+      // has no subtotal rather than a subtotal of nothing.
+      return row?.subtotal ?? undefined;
+    });
+  }
+
+  async setPayableTotal(id: OrderId, amount: string): Promise<void> {
+    return this.run('setPayableTotal', async () => {
+      const tx = this.requireTransaction('setPayableTotal');
+
+      // The origin predicate is part of the `UPDATE`, not a prior read: this
+      // writer carries `BR-027`'s Ready-Made money semantics, and a custom
+      // order's total is the accepted quotation's — reached only through
+      // `applyOrderChain`. A routing mistake updates nothing here rather than
+      // silently repricing a custom order.
+      const rows = await tx
+        .update(orders)
+        .set({ totalAmount: amount, updatedAt: new Date() })
+        .where(and(eq(orders.id, id), eq(orders.origin, READY_MADE)))
+        .returning({ id: orders.id });
+
+      if (rows.length === 0) {
+        throw guardViolationError(
+          'ReadyMadeOrderRepository.setPayableTotal',
+          'ORDER_ORIGIN_NOT_READY_MADE',
+          'Only a Ready-Made order carries a composed payable total.',
+        );
+      }
     });
   }
 }

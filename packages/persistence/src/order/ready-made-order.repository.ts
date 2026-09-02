@@ -157,4 +157,40 @@ export interface ReadyMadeOrderRepository {
    * @requiresTransaction
    */
   transitionReadyMade(input: TransitionOrderInput): Promise<ReadyMadeOrder>;
+
+  /**
+   * The frozen merchandise subtotal, summed from the order's own committed
+   * lines (`APP12-B03` §10).
+   *
+   * `sum(order_items.line_total_amount)` and nothing else. The Catalog is not
+   * joined, `skus.price_override_amount` is not read and `products` is not
+   * touched: `BR-021` froze every money fact onto the line at creation
+   * precisely so a later price edit cannot move an order that already exists. A
+   * subtotal re-derived from a live price would make the payable total a figure
+   * the customer never agreed to.
+   *
+   * Returned as the `numeric(14,2)` string the column holds, never a number —
+   * the caller parses it into exact hundredths. `undefined` for an order with
+   * no lines, which for this origin cannot happen and is therefore a fault to
+   * refuse on rather than an empty subtotal to default to zero.
+   */
+  frozenMerchandiseSubtotal(id: OrderId): Promise<string | undefined>;
+
+  /**
+   * Writes the exact payable total onto the order (`APP12-B03` §14).
+   *
+   * `orders.total_amount` carries the **merchandise subtotal** from creation
+   * until the Admin sets the shipping fee, and the exact payable total from
+   * then on (`BR-027`). The column does not change meaning silently: this is
+   * the only writer that performs that transition, and it runs in the same
+   * transaction that creates or supersedes the `FULL` obligation, so the order
+   * total and the live obligation amount are never observable as two different
+   * figures.
+   *
+   * No new column and no migration — `APP12-DB01` sized `orders.total_amount`
+   * for exactly this.
+   *
+   * @requiresTransaction — the caller must already hold the order's row lock.
+   */
+  setPayableTotal(id: OrderId, amount: string): Promise<void>;
 }
